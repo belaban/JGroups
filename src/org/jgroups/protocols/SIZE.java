@@ -1,4 +1,4 @@
-// $Id: SIZE.java,v 1.10 2004/09/23 16:29:42 belaban Exp $
+// $Id: SIZE.java,v 1.11 2005/01/24 12:37:27 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -74,21 +74,19 @@ public class SIZE extends Protocol {
 
         switch(evt.getType()) {
 
-            case Event.MSG:
-                msg=(Message)evt.getArg();
-                 {
-                    if((payload_size=msg.getLength()) > 0) {
-                        serialized_size=sizeOf(msg);
-                        if(serialized_size > min_size) {
-                            if(log.isInfoEnabled()) log.info("size of message is " + serialized_size +
-                                    ", " + msg.getHeaders().size() + " headers");
-                            if(print_msg)
-                                if(log.isInfoEnabled()) log.info("headers are " + msg.getHeaders() +
-                                        ", payload size=" + payload_size);
-                        }
-                    }
+        case Event.MSG:
+            msg=(Message)evt.getArg();
+            if((payload_size=msg.getLength()) > 0) {
+                serialized_size=sizeOf(msg);
+                if(serialized_size > min_size) {
+                    if(log.isInfoEnabled()) log.info("size of message is " + serialized_size +
+                                                     ", " + msg.getHeaders().size() + " headers");
+                    if(print_msg)
+                        if(log.isInfoEnabled()) log.info("headers are " + msg.getHeaders() +
+                                                         ", payload size=" + payload_size);
                 }
-                break;
+            }
+            break;
         }
 
         passUp(evt);            // Pass up to the layer above us
@@ -98,25 +96,22 @@ public class SIZE extends Protocol {
     public void down(Event evt) {
         Message msg;
         int payload_size=0, serialized_size;
-        byte[] buf;
 
         switch(evt.getType()) {
 
             case Event.MSG:
-                msg=(Message)evt.getArg();
-                 {
-                    if((payload_size=msg.getLength()) > 0) {
-                        serialized_size=sizeOf(msg);
-                        if(serialized_size > min_size) {
-                            if(log.isInfoEnabled()) log.info("size of message is " + serialized_size +
-                                    ", " + msg.getHeaders().size() + " headers");
-                            if(print_msg)
-                                if(log.isInfoEnabled()) log.info("headers are " + msg.getHeaders() +
-                                        ", payload size=" + payload_size);
-                        }
-                    }
+            msg=(Message)evt.getArg();
+            if((payload_size=msg.getLength()) > 0) {
+                serialized_size=sizeOf(msg);
+                if(serialized_size > min_size) {
+                    if(log.isInfoEnabled()) log.info("size of message is " + serialized_size +
+                                                     ", " + msg.getHeaders().size() + " headers");
+                    if(print_msg)
+                        if(log.isInfoEnabled()) log.info("headers are " + msg.getHeaders() +
+                                                         ", payload size=" + payload_size);
                 }
-                break;
+            }
+            break;
         }
 
         passDown(evt);          // Pass on to the layer below us
