@@ -1,8 +1,9 @@
-// $Id: WanPipeAddress.java,v 1.4 2004/10/05 15:46:18 belaban Exp $
+// $Id: WanPipeAddress.java,v 1.5 2004/10/05 16:05:45 belaban Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.Address;
+import org.jgroups.util.Util;
 
 import java.io.*;
 
@@ -97,18 +98,10 @@ public class WanPipeAddress implements Address {
 
 
     public void writeTo(DataOutputStream outstream) throws IOException {
-        if(logical_name != null) {
-            outstream.write(1);
-            outstream.writeUTF(logical_name);
-        }
-        else {
-            outstream.write(0);
-        }
+        Util.writeString(logical_name, outstream);
     }
 
     public void readFrom(DataInputStream instream) throws IOException, IllegalAccessException, InstantiationException {
-        int b=instream.read();
-        if(b == 1) 
-            logical_name=instream.readUTF();
+        logical_name=Util.readString(instream);
     }
 }
