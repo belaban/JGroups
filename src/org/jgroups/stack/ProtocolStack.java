@@ -1,4 +1,4 @@
-// $Id: ProtocolStack.java,v 1.4 2003/09/24 22:52:20 belaban Exp $
+// $Id: ProtocolStack.java,v 1.5 2003/09/24 23:20:08 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -15,6 +15,7 @@ import org.jgroups.log.Trace;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.util.Queue;
 import org.jgroups.util.Util;
+import org.jgroups.util.Promise;
 
 
 
@@ -37,6 +38,7 @@ public class ProtocolStack extends Protocol implements Transport {
     private JChannel                channel=null;
     private boolean                 stopped=true;
     public  TimeScheduler           timer=new TimeScheduler(5000);
+    Promise                         ack_promise=new Promise();
     public static final int         ABOVE=1; // used by insertProtocol()
     public static final int         BELOW=2; // used by insertProtocol()
 
@@ -267,6 +269,20 @@ public class ProtocolStack extends Protocol implements Transport {
     }
 
 
+    /**
+     * Flushes all events currently in the <em>down</em> queues and returns when done. This guarantees
+     * that all events sent <em>before</em> this call will have been handled.
+     */
+    public void flushEvents() {
+        long start, stop;
+        ack_promise.reset();
+        start=System.currentTimeMillis();
+        down(new Event(Event.ACK));
+        ack_promise.getResult(0);
+        stop=System.currentTimeMillis();
+        if(Trace.trace)
+            Trace.info("ProtocolStack.flushEvents()", "flushing took " + (stop-start) + " msecs");
+    }
 
 
 
@@ -292,6 +308,8 @@ public class ProtocolStack extends Protocol implements Transport {
 
 
     public void up(Event evt) {
+        if(evt.getType() == Event.ACK_OK)
+            ack_promise.setResult(Boolean.TRUE);
         if(channel != null)
             channel.up(evt);
     }
