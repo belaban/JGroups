@@ -1,4 +1,4 @@
-// $Id: DistributedTree.java,v 1.10 2004/10/04 20:18:41 belaban Exp $
+// $Id: DistributedTree.java,v 1.11 2004/12/07 12:10:04 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -91,7 +91,7 @@ public class DistributedTree implements MessageListener, MembershipListener {
         channel = (Channel)adapter.getTransport();
         disp=new RpcDispatcher(adapter, id, this, this, this);
         channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
-        boolean rc = channel.getState(null, 8000);
+        boolean rc = channel.getState(null, state_timeout);
         if(rc) {
             if(log.isInfoEnabled()) log.info("state was retrieved successfully");
         }
@@ -103,6 +103,10 @@ public class DistributedTree implements MessageListener, MembershipListener {
         return channel != null? channel.getLocalAddress() : null;
     }
 
+    public void setDeadlockDetection(boolean flag) {
+        if(disp != null)
+            disp.setDeadlockDetection(flag);
+    }
 
     public void start() throws Exception {
         start(8000);
