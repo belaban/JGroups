@@ -1,4 +1,4 @@
-// $Id: DistributedTree.java,v 1.9 2004/09/23 16:29:11 belaban Exp $
+// $Id: DistributedTree.java,v 1.10 2004/10/04 20:18:41 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -90,7 +90,7 @@ public class DistributedTree implements MessageListener, MembershipListener {
         throws ChannelException {
         channel = (Channel)adapter.getTransport();
         disp=new RpcDispatcher(adapter, id, this, this, this);
-        channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.valueOf(true));
+        channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
         boolean rc = channel.getState(null, 8000);
         if(rc) {
             if(log.isInfoEnabled()) log.info("state was retrieved successfully");

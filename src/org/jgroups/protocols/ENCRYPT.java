@@ -1,36 +1,8 @@
 
 
-// $Id: ENCRYPT.java,v 1.4 2004/09/23 16:29:41 belaban Exp $
+// $Id: ENCRYPT.java,v 1.5 2004/10/04 20:18:05 belaban Exp $
 
 package org.jgroups.protocols;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.security.InvalidKeyException;
-import java.security.KeyFactory;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.PublicKey;
-import java.security.SecureRandom;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
-import java.security.spec.X509EncodedKeySpec;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
-import java.util.WeakHashMap;
-
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.KeyGenerator;
-import javax.crypto.NoSuchPaddingException;
-import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
 
 import org.jgroups.Address;
 import org.jgroups.Event;
@@ -39,8 +11,16 @@ import org.jgroups.View;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.QueueClosedException;
 
-import EDU.oswego.cs.dl.util.concurrent.BoundedBuffer;
-import EDU.oswego.cs.dl.util.concurrent.LinkedQueue;
+import javax.crypto.*;
+import javax.crypto.spec.SecretKeySpec;
+import java.io.IOException;
+import java.io.InputStream;
+import java.security.*;
+import java.security.cert.CertificateException;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.Map;
+import java.util.Properties;
+import java.util.WeakHashMap;
 
 
 /**
@@ -251,10 +231,8 @@ public class ENCRYPT extends Protocol {
 	// queues to buffer data while we are swapping shared key
 	// or obtsining key for first time
 	
-	private final LinkedQueue upMessageQueue = new LinkedQueue();
 	private boolean queue_up = true;
 	
-	private final LinkedQueue downMessageQueue = new LinkedQueue();
 	private boolean queue_down = true;
 	
 	// decrypting cypher for secret key requests
@@ -461,11 +439,11 @@ public class ENCRYPT extends Protocol {
 			tempKey = (SecretKey) store
 					.getKey(alias, keyPassword.toCharArray());
 			} catch (IOException e){
-				throw new Exception("Unable to load keystore "+ keyStoreName,e);
+				throw new Exception("Unable to load keystore "+ keyStoreName + ": " + e);
 			}catch (NoSuchAlgorithmException e){
-				throw new Exception("No Such algorithm "+ keyStoreName,e);
+				throw new Exception("No Such algorithm "+ keyStoreName + ": " + e);
 			}catch(CertificateException e){
-				throw new Exception("Certificate exception "+ keyStoreName,e);
+				throw new Exception("Certificate exception "+ keyStoreName + ": " + e);
 			}
 			
 			if (tempKey == null)
