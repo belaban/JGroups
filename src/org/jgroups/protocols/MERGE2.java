@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.12 2005/03/23 14:32:18 belaban Exp $
+// $Id: MERGE2.java,v 1.13 2005/03/23 14:35:40 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -284,7 +284,7 @@ public class MERGE2 extends Protocol {
             passDown(new Event(Event.FIND_INITIAL_MBRS));
             Vector retval=(Vector)find_promise.getResult(0); // wait indefinitely until response is received
             if(retval != null && is_coord && local_addr != null && !retval.contains(local_addr))
-                retval.add(local_addr);
+                retval.add(new PingRsp(local_addr, local_addr, true));
             return retval;
         }
 

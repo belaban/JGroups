@@ -1,4 +1,4 @@
-// $Id: TCPPING.java,v 1.21 2005/03/23 11:00:57 belaban Exp $
+// $Id: TCPPING.java,v 1.22 2005/03/23 14:33:03 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -69,9 +69,9 @@ public class TCPPING extends Discovery {
         // Add own address to initial_hosts if not present: we must always be able to ping ourself !
         if(initial_hosts != null && addr != null) {
             if(initial_hosts.contains(addr)) {
+                initial_hosts.remove(addr);
                 if(log.isDebugEnabled()) log.debug("[SET_LOCAL_ADDRESS]: removing my own address (" + addr +
                                                    ") from initial_hosts; initial_hosts=" + initial_hosts);
-                initial_hosts.remove(addr);
             }
         }
     }
