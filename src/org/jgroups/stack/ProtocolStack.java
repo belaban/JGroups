@@ -1,4 +1,4 @@
-// $Id: ProtocolStack.java,v 1.3 2003/09/23 00:41:39 belaban Exp $
+// $Id: ProtocolStack.java,v 1.4 2003/09/24 22:52:20 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -35,7 +35,6 @@ public class ProtocolStack extends Protocol implements Transport {
     private Object                  mutex=new Object();
     private String                  setup_string;
     private JChannel                channel=null;
-    private Object                  local_addr=null;
     private boolean                 stopped=true;
     public  TimeScheduler           timer=new TimeScheduler(5000);
     public static final int         ABOVE=1; // used by insertProtocol()
@@ -203,24 +202,9 @@ public class ProtocolStack extends Protocol implements Transport {
 
         timer.start();
 
-        long start=0, stop;
-
         synchronized(mutex) {
             for(int i=0; i < prots.size(); i++) {
                 p=(Protocol)prots.elementAt(i);
-
-                // flush events out of the queue, e.g. Event.CONFIG
-                try {
-                    start=System.currentTimeMillis();
-                    p.getDownQueue().waitUntilEmpty(0);
-                }
-                catch(Exception ex) {}
-                finally {
-                    stop=System.currentTimeMillis();
-                }
-                if(Trace.trace)
-                    Trace.info("ProtocolStack.start()", "time for flushing down events for " +
-                            p.getName() + ": " + (stop-start) + " msecs");
                 p.start();
             }
             stopped=false;
@@ -308,13 +292,6 @@ public class ProtocolStack extends Protocol implements Transport {
 
 
     public void up(Event evt) {
-        switch(evt.getType()) {
-
-        case Event.SET_LOCAL_ADDRESS:
-            local_addr=evt.getArg();
-            break;
-        }
-
         if(channel != null)
             channel.up(evt);
     }
