@@ -4,8 +4,7 @@ import org.apache.log4j.Logger;
 import org.jgroups.log.Trace;
 import org.jgroups.util.Util;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
+import java.io.*;
 import java.util.*;
 
 /**  You start the test by running this class.
@@ -43,18 +42,17 @@ public class Test implements Receiver {
 
 
 
-    public void start(Properties config) throws Exception {
+    public void start(Properties c) throws Exception {
         String          config_file="config.txt";
         BufferedReader  fileReader;
         String          line;
         String          key, val;
         StringTokenizer st;
+        Properties      tmp=new Properties();
 
-        this.config=config;
         Trace.init();
 
-        sender=new Boolean(config.getProperty("sender")).booleanValue();
-        config_file=config.getProperty("config");
+        config_file=c.getProperty("config");
 
         fileReader=new BufferedReader(new FileReader(config_file));
         while((line=fileReader.readLine()) != null) {
@@ -66,11 +64,17 @@ public class Test implements Receiver {
             st=new StringTokenizer(line, "=", false);
             key=st.nextToken().toLowerCase();
             val=st.nextToken();
-            config.put(key, val);
+            tmp.put(key, val);
         }
         fileReader.close();
+
+        // 'tmp' now contains all properties from the file, now we need to override the ones
+        // passed to us by 'c'
+        tmp.putAll(c);
+        this.config=tmp;
+
         StringBuffer sb=new StringBuffer();
-        for(Iterator it=config.entrySet().iterator(); it.hasNext();) {
+        for(Iterator it=this.config.entrySet().iterator(); it.hasNext();) {
             Map.Entry entry=(Map.Entry)it.next();
             sb.append(entry.getKey()).append(":\t").append(entry.getValue()).append("\n");
         }
@@ -78,12 +82,13 @@ public class Test implements Receiver {
         System.out.println("Configuration is: " + sb.toString());
         Logger.getLogger(Test.class).info("main(): " + sb.toString());
 
-        props=config.getProperty("props");
-        num_members=Integer.parseInt(config.getProperty("num_members"));
+        props=this.config.getProperty("props");
+        num_members=Integer.parseInt(this.config.getProperty("num_members"));
+        sender=new Boolean(this.config.getProperty("sender")).booleanValue();
 
-        String transport_name=config.getProperty("transport");
+        String transport_name=this.config.getProperty("transport");
         transport=(Transport)Thread.currentThread().getContextClassLoader().loadClass(transport_name).newInstance();
-        transport.create(config);
+        transport.create(this.config);
         transport.setReceiver(this);
         transport.start();
         local_addr=transport.getLocalAddress();
@@ -135,7 +140,8 @@ public class Test implements Receiver {
                         info.num_msgs_received++;
                         info.total_bytes_received+=d.payload.length;
                         if(info.num_msgs_received % 1000 == 0)
-                            System.out.println("-- received " + info.num_msgs_received + " messages");
+                            System.out.println("-- received " + info.num_msgs_received +
+                                    " messages from " + sender);
                         if(info.num_msgs_received >= info.num_msgs_expected) {
                             info.done=true;
                             if(info.stop == 0)
@@ -145,6 +151,11 @@ public class Test implements Receiver {
                                 if(stop == 0)
                                     stop=System.currentTimeMillis();
                                 sendResults();
+                                if(!this.sender)
+                                    dumpSenders();
+                                synchronized(this) {
+                                    this.notify();
+                                }
                             }
                         }
                     }
@@ -154,6 +165,8 @@ public class Test implements Receiver {
                     break;
 
                 case Data.DONE:
+                    if(all_received)
+                        return;
                     MemberInfo mi=(MemberInfo)this.senders.get(sender);
                     if(mi != null) {
                         mi.done=true;
@@ -164,6 +177,11 @@ public class Test implements Receiver {
                             if(stop == 0)
                                 stop=System.currentTimeMillis();
                             sendResults();
+                            if(!this.sender)
+                                dumpSenders();
+                            synchronized(this) {
+                                this.notify();
+                            }
                         }
                     }
                     else {
@@ -172,6 +190,12 @@ public class Test implements Receiver {
                     break;
 
                 case Data.RESULTS:
+                    synchronized(results) {
+                        if(!results.containsKey(sender)) {
+                            results.put(sender, d.results);
+                            results.notify();
+                        }
+                    }
                     break;
 
                 default:
@@ -209,14 +233,13 @@ public class Test implements Receiver {
         int msg_size=Integer.parseInt(config.getProperty("msg_size"));
         int num_msgs=Integer.parseInt(config.getProperty("num_msgs"));
         int log_interval=Integer.parseInt(config.getProperty("log_interval"));
-        boolean gnuplot_output=Boolean.getBoolean(config.getProperty("gnuplot_output", "false"));
+        // boolean gnuplot_output=Boolean.getBoolean(config.getProperty("gnuplot_output", "false"));
         byte[] buf=new byte[msg_size];
-        for(int i=0; i < msg_size; i++)
-            buf[i]='.';
+        for(int k=0; k < msg_size; k++)
+            buf[k]='.';
         Data d=new Data(Data.DATA);
         d.payload=buf;
         byte[] payload=Util.objectToByteBuffer(d);
-
 
         for(int i=0; i < num_msgs; i++) {
             transport.send(null, payload);
@@ -229,12 +252,77 @@ public class Test implements Receiver {
                 //  log.info(dumpStats(total_msgs));
             }
         }
-        System.out.println("Sent all messages. Asking receivers if they received all messages\n");
 
+    }
+
+
+    void fetchResults() throws Exception {
+        System.out.println("-- sent all messages. Asking receivers if they received all messages\n");
+
+        int expected_responses=this.members.size();
 
         // now send DONE message (periodically re-send to make up for message loss over unreliable transport)
         // when all results have been received, dump stats and exit
+        Data d2=new Data(Data.DONE);
+        byte[] tmp=Util.objectToByteBuffer(d2);
+        System.out.println("-- fetching results (from " + expected_responses + " members)");
+        synchronized(this.results) {
+            while((results.size()) < expected_responses) {
+                transport.send(null, tmp);
+                this.results.wait(1000);
+            }
+        }
+        System.out.println("-- received all responses");
     }
+
+
+    void dumpResults() {
+        Object      member;
+        Map.Entry   entry;
+        HashMap     map;
+        StringBuffer sb=new StringBuffer();
+        sb.append("\n-- results:\n\n");
+
+        for(Iterator it=results.entrySet().iterator(); it.hasNext();) {
+            entry=(Map.Entry)it.next();
+            member=entry.getKey();
+            map=(HashMap)entry.getValue();
+            sb.append("-- results from ").append(member).append(":\n");
+            dump(map, sb);
+            sb.append("\n");
+        }
+        System.out.println(sb.toString());
+    }
+
+
+    void dumpSenders() {
+        StringBuffer sb=new StringBuffer();
+        dump(this.senders, sb);
+        System.out.println(sb.toString());
+    }
+
+    void dump(HashMap map, StringBuffer sb) {
+        Map.Entry  entry;
+        Object     sender;
+        MemberInfo mi;
+        MemberInfo combined=new MemberInfo(0);
+        combined.start=System.currentTimeMillis();
+        combined.stop=System.currentTimeMillis();
+
+        for(Iterator it2=map.entrySet().iterator(); it2.hasNext();) {
+            entry=(Map.Entry)it2.next();
+            sender=entry.getKey();
+            mi=(MemberInfo)entry.getValue();
+            combined.start=Math.min(combined.start, mi.start);
+            combined.stop=Math.max(combined.stop, mi.stop);
+            combined.num_msgs_expected+=mi.num_msgs_expected;
+            combined.num_msgs_received+=mi.num_msgs_received;
+            combined.total_bytes_received+=mi.total_bytes_received;
+            sb.append("sender: ").append(sender).append(": ").append(mi).append("\n");
+        }
+        sb.append("\ncombined: ").append(combined).append("\n");
+    }
+
 
     void runDiscoveryPhase() throws Exception {
         Data d=new Data(Data.DISCOVERY_REQ);
@@ -265,14 +353,6 @@ public class Test implements Receiver {
         boolean sender=false;
         Test t=null;
 
-        config.put("sender", "false");
-        config.put("num_msgs", "1000");
-        config.put("msg_size", "1000");
-        config.put("num_members", "2");
-        config.put("num_senders", "1");
-        config.put("log_interval", "1000");
-        config.put("transport", "org.jgroups.tests.perf.transports.JGroupsTransport");
-
         for(int i=0; i < args.length; i++) {
             if(args[i].equals("-sender")) {
                 config.put("sender", "true");
@@ -302,10 +382,17 @@ public class Test implements Receiver {
             t=new Test();
             t.start(config);
             t.runDiscoveryPhase();
-            if(sender)
+            if(sender) {
                 t.sendMessages();
-
-            Thread.sleep(15000);
+                t.fetchResults();
+                t.dumpResults();
+            }
+            else {
+                synchronized(t) {
+                    t.wait(60000);
+                }
+                Util.sleep(2000);
+            }
         }
         catch(Exception e) {
             e.printStackTrace();
