@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.11 2004/04/16 06:03:21 belaban Exp $
+// $Id: JChannel.java,v 1.12 2004/04/19 18:41:35 belaban Exp $
 
 package org.jgroups;
 
@@ -23,7 +23,7 @@ import java.util.Vector;
  * protocol stack
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.11 $
+ * @version $Revision: 1.12 $
  */
 public class JChannel extends Channel {
 
@@ -1051,8 +1051,9 @@ public class JChannel extends Channel {
         checkClosed();
         checkNotConnected();
         if(!state_transfer_supported)
-            if(log.isWarnEnabled()) log.warn("fetching state will fail as state transfer is not supported. "
-                       + "Add one of the STATE_TRANSFER protocols to your protocol specification");
+            if(log.isWarnEnabled())
+                log.warn("fetching state will fail as state transfer is not supported. "
+                        + "Add one of the STATE_TRANSFER protocols to your protocol specification");
         synchronized(get_state_mutex) {
             state=null;
             state_received=false;

@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.5 2004/03/30 06:47:18 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.6 2004/04/19 18:41:34 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -151,8 +151,7 @@ public class CoordGmsImpl extends GmsImpl {
         }
         merging=true;
         this.merge_id=(Serializable)merge_id;
-
-            if(log.isInfoEnabled()) log.info("sender=" + sender + ", merge_id=" + merge_id);
+        if(log.isInfoEnabled()) log.info("sender=" + sender + ", merge_id=" + merge_id);
 
         digest=gms.getDigest();
         view=new View(gms.view_id.copy(), gms.members.getMembers());
@@ -232,17 +231,15 @@ public class CoordGmsImpl extends GmsImpl {
         View v=null;
         Digest d, tmp;
 
-
-            if(log.isInfoEnabled()) log.info("mbr=" + mbr);
-
+        if(log.isInfoEnabled()) log.info("mbr=" + mbr);
         if(gms.local_addr.equals(mbr)) {
             if(log.isErrorEnabled()) log.error("cannot join myself !");
             return null;
         }
 
         if(gms.members.contains(mbr)) {
-
-                if(log.isErrorEnabled()) log.error("member " + mbr
+            if(log.isErrorEnabled())
+                log.error("member " + mbr
                         + " already present; returning existing view " + gms.members.getMembers());
             return new JoinRsp(new View(gms.view_id, gms.members.getMembers()), gms.getDigest());
             // already joined: return current digest and membership
@@ -253,8 +250,7 @@ public class CoordGmsImpl extends GmsImpl {
             if(log.isErrorEnabled()) log.error("received null digest from GET_DIGEST: will cause JOIN to fail");
             return null;
         }
-
-            if(log.isInfoEnabled()) log.info("got digest=" + tmp);
+        if(log.isInfoEnabled()) log.info("got digest=" + tmp);
 
         d=new Digest(tmp.size() + 1);
         // create a new digest, which contains 1 more member
@@ -262,8 +258,7 @@ public class CoordGmsImpl extends GmsImpl {
         d.add(mbr, 0, 0);
         // ... and add the new member. it's first seqno will be 1
         v=gms.getNextView(new_mbrs, null, null);
-
-            if(log.isDebugEnabled()) log.debug("joined member " + mbr + ", view is " + v);
+        if(log.isDebugEnabled()) log.debug("joined member " + mbr + ", view is " + v);
         return new JoinRsp(v, d);
     }
 
@@ -642,8 +637,7 @@ public class CoordGmsImpl extends GmsImpl {
                 return;
             }
 
-
-                if(log.isInfoEnabled()) log.info("merge task started");
+            if(log.isInfoEnabled()) log.info("merge task started");
             try {
 
                 /* 1. Generate a merge_id that uniquely identifies the merge in progress */
@@ -657,8 +651,8 @@ public class CoordGmsImpl extends GmsImpl {
                 removeRejectedMergeRequests(coords);
 
                 if(merge_rsps.size() <= 1) {
-                    if(log.isWarnEnabled()) log.warn("merge responses from subgroup coordinators <= 1 (" +
-                            merge_rsps + "). Cancelling merge");
+                    if(log.isWarnEnabled())
+                        log.warn("merge responses from subgroup coordinators <= 1 (" + merge_rsps + "). Cancelling merge");
                     sendMergeCancelledMessage(coords, merge_id);
                     return;
                 }

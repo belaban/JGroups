@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.11 2004/04/08 04:59:04 belaban Exp $
+// $Id: NAKACK.java,v 1.12 2004/04/19 18:41:34 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -342,9 +342,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
 
                     case NakAckHeader.XMIT_REQ:
                         if(hdr.range == null) {
-
-                                if(log.isErrorEnabled()) log.error("XMIT_REQ: range of xmit msg == null; discarding request from " +
-                                                           msg.getSrc());
+                            if(log.isErrorEnabled())
+                                log.error("XMIT_REQ: range of xmit msg is null; discarding request from " + msg.getSrc());
                             return;
                         }
                         handleXmitReq(msg.getSrc(), hdr.range.low, hdr.range.high);
@@ -509,7 +508,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
             m=(Message)sent_msgs.get(new Long(i));
             if(m == null) {
                 if(log.isErrorEnabled())
-                    log.error("(requester=" + dest + ") message with " +
+                    log.error("(requester=" + dest + ", local_addr=" + this.local_addr + ") message with " +
                             "seqno=" + i + " not found in sent_msgs ! sent_msgs=" + printSentMsgs());
                 continue;
             }
@@ -654,8 +653,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
             sender=(Address)members.elementAt(i);
             range=getLowestAndHighestSeqno(sender, false);  // get the highest received seqno
             if(range == null) {
-
-                    if(log.isErrorEnabled()) log.error("range is null");
+                if(log.isErrorEnabled()) log.error("range is null");
                 continue;
             }
             digest.add(sender, range.low, range.high);  // add another entry to the digest
@@ -681,8 +679,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
             sender=(Address)members.elementAt(i);
             range=getLowestAndHighestSeqno(sender, true);  // get the highest deliverable seqno
             if(range == null) {
-
-                    if(log.isErrorEnabled()) log.error("range is null");
+                if(log.isErrorEnabled()) log.error("range is null");
                 continue;
             }
             high_seqno_seen=getHighSeqnoSeen(sender);
@@ -773,14 +770,12 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
         NakReceiverWindow win;
 
         if(sender == null) {
-
-                if(log.isErrorEnabled()) log.error("sender is null");
+            if(log.isErrorEnabled()) log.error("sender is null");
             return r;
         }
         win=(NakReceiverWindow)received_msgs.get(sender);
         if(win == null) {
-            if(log.isErrorEnabled()) log.error("sender " + sender +
-                                                             " not found in received_msgs");
+            if(log.isErrorEnabled()) log.error("sender " + sender + " not found in received_msgs");
             return r;
         }
         if(stop_at_gaps)
