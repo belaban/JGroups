@@ -1,4 +1,4 @@
-// $Id: RpcDispatcher.java,v 1.12 2004/05/15 00:37:43 belaban Exp $
+// $Id: RpcDispatcher.java,v 1.13 2004/08/14 01:46:25 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -75,6 +75,7 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
 
     public Marshaller getMarshaller()             {return marshaller;}
 
+    public Object getServerObject() {return server_obj;}
 
 
     public RspList castMessage(Vector dests, Message msg, int mode, long timeout) {
