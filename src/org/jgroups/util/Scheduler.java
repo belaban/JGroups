@@ -1,4 +1,4 @@
-// $Id: Scheduler.java,v 1.6 2004/04/27 15:47:42 belaban Exp $
+// $Id: Scheduler.java,v 1.7 2004/05/11 00:17:30 belaban Exp $
 
 package org.jgroups.util;
 
@@ -137,7 +137,7 @@ public class Scheduler implements Runnable {
                 continue;
             }
         }
-         if(log.isInfoEnabled()) log.info("scheduler thread treminated");
+         if(log.isTraceEnabled()) log.trace("scheduler thread terminated");
     }
 
 
