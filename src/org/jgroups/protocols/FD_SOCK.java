@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.14 2004/09/23 16:29:41 belaban Exp $
+// $Id: FD_SOCK.java,v 1.15 2004/10/06 08:09:25 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -73,7 +73,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
 
     public boolean setProperties(Properties props) {
-        String str;
+        String str, tmp=null;
 
         super.setProperties(props);
         str=props.getProperty("get_cache_timeout");
@@ -100,7 +100,13 @@ public class FD_SOCK extends Protocol implements Runnable {
             props.remove("start_port");
         }
 
-        str=props.getProperty("srv_sock_bind_addr");
+
+        // PropertyPermission not granted if running in an untrusted environment with JNLP.
+        try {tmp=System.getProperty("bind.address");} catch (SecurityException ex){}
+        if(tmp != null)
+            str=tmp;
+        else
+            str=props.getProperty("srv_sock_bind_addr");
         if(str != null) {
             try {
                 srv_sock_bind_addr=InetAddress.getByName(str);
@@ -813,7 +819,8 @@ public class FD_SOCK extends Protocol implements Runnable {
             while(acceptor != null && srv_sock != null) {
                 try {
                     if(log.isTraceEnabled()) // +++ remove
-                        log.trace("waiting for client connections on port " + srv_sock.getLocalPort());
+                        log.trace("waiting for client connections on " + srv_sock.getInetAddress() + ":" +
+                                  srv_sock.getLocalPort());
                     client_sock=srv_sock.accept();
                     if(log.isTraceEnabled()) // +++ remove
                         log.trace("accepted connection from " + client_sock.getInetAddress() + ':' + client_sock.getPort());
