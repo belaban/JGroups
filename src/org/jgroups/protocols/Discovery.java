@@ -23,7 +23,7 @@ import java.util.*;
  * <li>num_ping_requests - the number of GET_MBRS_REQ messages to be sent (min=1), distributed over timeout ms
  * </ul>
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.5 2005/03/23 09:26:44 belaban Exp $
+ * @version $Id: Discovery.java,v 1.6 2005/03/31 08:23:12 belaban Exp $
  */
 public abstract class Discovery extends Protocol {
     final Vector  members=new Vector(11);
@@ -178,6 +178,11 @@ public abstract class Discovery extends Protocol {
             switch(hdr.type) {
 
             case PingHeader.GET_MBRS_REQ:   // return Rsp(local_addr, coord)
+                if(local_addr != null && msg.getSrc() != null && local_addr.equals(msg.getSrc())) {
+                    if(log.isTraceEnabled())
+                        log.trace("discarded my own discovery request");
+                    return;
+                }
                 synchronized(members) {
                     coord=members.size() > 0 ? (Address)members.firstElement() : local_addr;
                 }
