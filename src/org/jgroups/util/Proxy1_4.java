@@ -1,4 +1,4 @@
-// $Id: Proxy1_4.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+// $Id: Proxy1_4.java,v 1.2 2003/12/13 00:10:51 belaban Exp $
 
 package org.jgroups.util;
 
@@ -58,7 +58,7 @@ import EDU.oswego.cs.dl.util.concurrent.PooledExecutor;
  * If you run a web browser, simply enter https://<host>:<port> as URL to connect to an SSLServerSocket
  * <br/>Note that we cannot use JDK 1.4's selectors for SSL sockets, as
  * getChannel() on an SSL socket doesn't seem to work.
- * @todo Check whether SSLSocket.getChannel() or SSLServerSocket.getChannel() works
+ * todo Check whether SSLSocket.getChannel() or SSLServerSocket.getChannel() works
  * @author Bela Ban
  */
 public class Proxy1_4 {
@@ -79,8 +79,8 @@ public class Proxy1_4 {
         this.local_port=local_port;
         this.remote=remote;
         this.remote_port=remote_port;
-        this.verbose=verbose;
-        this.debug=debug;
+        Proxy1_4.verbose=verbose;
+        Proxy1_4.debug=debug;
     }
 
     public Proxy1_4(InetAddress local, int local_port, InetAddress remote, int remote_port,
@@ -90,8 +90,6 @@ public class Proxy1_4 {
     }
 
     public void start() throws Exception {
-        byte[]              input_buffer=new byte[1024];
-        int                 num;
         Map.Entry           entry;
         Selector            selector;
         ServerSocketChannel sock_channel;
@@ -161,12 +159,10 @@ public class Proxy1_4 {
 
     /** We handle only non-SSL connections */
     void loop(Selector selector) {
-        int                 num_keys;
         Set                 ready_keys;
         SelectionKey        key;
         ServerSocketChannel srv_sock;
         SocketChannel       in_sock, out_sock;
-        Socket              sock;
         InetSocketAddress   src, dest;
 
         while (true) {
@@ -175,7 +171,7 @@ public class Proxy1_4 {
 
             // 4. Call Selector.select()
             try {
-                num_keys=selector.select();
+                selector.select();
 
                 // get set of ready objects
                 ready_keys=selector.selectedKeys();
@@ -253,8 +249,7 @@ public class Proxy1_4 {
                     Set ready_keys;
                     SelectionKey key;
                     ByteBuffer transfer_buf=ByteBuffer.allocate(BUFSIZE);
-                    int num_keys;
-                    
+
                     try {
                         sel=Selector.open();
                         in_channel.configureBlocking(false);
@@ -262,7 +257,7 @@ public class Proxy1_4 {
                         in_channel.register(sel, SelectionKey.OP_READ);
                         out_channel.register(sel, SelectionKey.OP_READ);
                         
-                        while ((num_keys=sel.select()) > 0) {
+                        while (sel.select() > 0) {
                             ready_keys=sel.selectedKeys();
                             for (Iterator it=ready_keys.iterator(); it.hasNext();) {
                                 key=(SelectionKey) it.next();
@@ -400,11 +395,9 @@ public class Proxy1_4 {
     void populateMappings(String filename) throws Exception {
         FileInputStream   in=new FileInputStream(filename);
         BufferedReader    reader;
-        String            hostname, tmp, line;
+        String            line;
         URI               key, value;
-        Map.Entry         entry;
-        InetSocketAddress addr;
-        int               port, index;
+        int               index;
         boolean           ssl_key, ssl_value;
         final String      HTTPS="https";
 
@@ -435,18 +428,15 @@ public class Proxy1_4 {
 
     /** Checks whether a URI is http(s)://<host>:<port> */
     void check(URI u) throws Exception {
-        String scheme, host;
-        int port;
-
-        if ((scheme=u.getScheme()) == null)
+        if (u.getScheme() == null)
             throw new Exception(
                 "scheme is null in " + u + ", (valid URI is \"http(s)://<host>:<port>\")");
 
-        if ((host=u.getHost()) == null)
+        if (u.getHost() == null)
             throw new Exception(
                 "host is null in " + u + ", (valid URI is \"http(s)://<host>:<port>\")");
 
-        if ((port=u.getPort()) <=0)
+        if (u.getPort() <=0)
             throw new Exception(
                 "port is <=0 in " + u + ", (valid URI is \"http(s)://<host>:<port>\")");
 
@@ -455,7 +445,6 @@ public class Proxy1_4 {
     /** Input is "host:port" */
     SocketAddress strToAddr(String input) throws Exception {
         StringTokenizer tok=new StringTokenizer(input, ":");
-        SocketAddress addr=null;
         String host, port;
 
         host=tok.nextToken();
