@@ -1,4 +1,4 @@
-// $Id: Scheduler.java,v 1.5 2004/04/16 15:21:31 belaban Exp $
+// $Id: Scheduler.java,v 1.6 2004/04/27 15:47:42 belaban Exp $
 
 package org.jgroups.util;
 
@@ -92,24 +92,19 @@ public class Scheduler implements Runnable {
                             Util.sleep(WAIT_FOR_THREAD_AVAILABILITY);
                             continue;
                         }
-                        // The notification has to be *before* handling the message, otherwise 
-                        // the header will already have been removed !
-                        if(listener != null) listener.started(current_task.target);
-                        if(current_task.thread.assignTask(current_task.target) == false)
-                            continue;
                     }
-                    else {
-                        if(listener != null) listener.started(current_task.target);
-                        if(current_task.thread.assignTask(current_task.target) == false)
-                            continue;
-                    }
+
+                    // if we get here, current_task.thread and current_task.target are guaranteed to be non-null
+                    if(listener != null) listener.started(current_task.target);
+                    if(current_task.thread.assignTask(current_task.target) == false)
+                        continue;
                 }
 
                 if(sched_thread.isInterrupted()) { // will continue at "catch(InterruptedException)" below
                     // sched_thread.interrupt();
 
                     // changed on suggestion from Victor Cardoso: sched_thread.interrupt() does *not* throw an
-                    // InterruptedException, so we don't land in the catch calse, but rather execute the code below
+                    // InterruptedException, so we don't land in the catch clause, but rather execute the code below
                     // (which we don't want) - bela April 15 2004
 
                     throw new InterruptedException();
@@ -131,7 +126,7 @@ public class Scheduler implements Runnable {
                     if(listener != null) listener.suspended(current_task.target);
                     current_task.suspended=true;
                 }
-                Thread.interrupted(); // clear the interrupt-flag
+                Thread.interrupted(); // clears the interrupt-flag
                 continue;
             }
             catch(QueueClosedException closed_ex) {
