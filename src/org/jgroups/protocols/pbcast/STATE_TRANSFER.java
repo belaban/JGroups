@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.5 2004/04/21 23:07:08 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.6 2004/04/22 23:50:16 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -91,13 +91,12 @@ public class STATE_TRANSFER extends Protocol {
             case Event.GET_DIGEST_STATE_OK:
                 synchronized(state_requesters) {
                     if(digest != null) {
-                        if(log.isWarnEnabled()) log.warn("GET_DIGEST_STATE_OK: existing digest is not null, " +
-                                "overwriting it !");
+                        if(log.isWarnEnabled())
+                            log.warn("GET_DIGEST_STATE_OK: existing digest is not null, overwriting it !");
                     }
-
                     digest=(Digest)evt.getArg();
-                    if(log.isInfoEnabled()) log.info("GET_DIGEST_STATE_OK: digest is " +
-                            digest + "\npassUp(GET_APPLSTATE)");
+                    if(log.isInfoEnabled())
+                        log.info("GET_DIGEST_STATE_OK: digest is " + digest + "\npassUp(GET_APPLSTATE)");
                     passUp(new Event(Event.GET_APPLSTATE));
                 }
                 return;
@@ -169,13 +168,13 @@ public class STATE_TRANSFER extends Protocol {
                     }
                 }
                 if(target == null) {
-                     if(log.isInfoEnabled()) log.info("GET_STATE: first member (no state)");
+                    if(log.isInfoEnabled()) log.info("GET_STATE: first member (no state)");
                     passUp(new Event(Event.GET_STATE_OK, null));
                 }
                 else {
                     state_req=new Message(target, null, null);
                     state_req.putHeader(getName(), new StateHeader(StateHeader.STATE_REQ, local_addr, state_id++, null));
-                     if(log.isInfoEnabled()) log.info("GET_STATE: asking " + target + " for state");
+                    if(log.isInfoEnabled()) log.info("GET_STATE: asking " + target + " for state");
                     passDown(new Event(Event.MSG, state_req));
                 }
                 return;                 // don't pass down any further !
@@ -184,8 +183,8 @@ public class STATE_TRANSFER extends Protocol {
                 state=(byte[])evt.getArg();
                 synchronized(state_requesters) {
                     if(state_requesters.size() == 0) {
-                        if(log.isWarnEnabled()) log.warn("GET_APPLSTATE_OK: received application state, " +
-                                "but there are no requesters !");
+                        if(log.isWarnEnabled())
+                            log.warn("GET_APPLSTATE_OK: received application state, but there are no requesters !");
                         return;
                     }
                     if(digest == null)
@@ -276,8 +275,7 @@ public class STATE_TRANSFER extends Protocol {
             else {
                 state_requesters.add(sender);
                 digest=null;
-
-                    if(log.isInfoEnabled()) log.info("passing down GET_DIGEST_STATE");
+                if(log.isInfoEnabled()) log.info("passing down GET_DIGEST_STATE");
                 passDown(new Event(Event.GET_DIGEST_STATE));
             }
         }
@@ -286,22 +284,20 @@ public class STATE_TRANSFER extends Protocol {
 
     /** Set the digest and the send the state up to the application */
     void handleStateRsp(Object sender, Digest digest, byte[] state) {
-        if(digest == null)
+        if(digest == null) {
             if(log.isWarnEnabled())
                 log.warn("digest received from " + sender + " is null, skipping setting digest !");
-        else
-            setDigest(digest);
-        if(state == null)
+        }
+        else {
+            passDown(new Event(Event.SET_DIGEST, digest)); // set the digest (e.g. in NAKACK)
+        }
+        if(state == null) {
             if(log.isWarnEnabled())
                 log.warn("state received from " + sender + " is null, will return null state to application");
+        }
         passUp(new Event(Event.GET_STATE_OK, state));
     }
 
-
-    /** Send down a SET_DIGEST event */
-    void setDigest(Digest d) {
-        passDown(new Event(Event.SET_DIGEST, d));
-    }
 
     /* ------------------------ End of Private Methods ------------------------------ */
 

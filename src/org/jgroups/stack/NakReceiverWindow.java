@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindow.java,v 1.4 2004/04/21 23:07:36 belaban Exp $
+// $Id: NakReceiverWindow.java,v 1.5 2004/04/22 23:50:16 belaban Exp $
 
 
 package org.jgroups.stack;
@@ -405,9 +405,8 @@ public class NakReceiverWindow {
         long my_high;
 
         if(low > high) {
-
-                if(log.isErrorEnabled()) log.error("invalid range: low (" + low +
-                                                                      ") is higher than high (" + high + ")");
+            if(log.isErrorEnabled()) log.error("invalid range: low (" + low +
+                    ") is higher than high (" + high + ")");
             return null;
         }
 
@@ -535,8 +534,7 @@ public class NakReceiverWindow {
         Entry entry;
 
         if(missing_msgs == null) {
-
-                if(log.isErrorEnabled()) log.error("argument list is null");
+            if(log.isErrorEnabled()) log.error("argument list is null");
             return ret;
         }
 

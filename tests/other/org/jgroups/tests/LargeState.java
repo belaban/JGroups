@@ -1,4 +1,4 @@
-// $Id: LargeState.java,v 1.6 2004/03/30 06:47:34 belaban Exp $
+// $Id: LargeState.java,v 1.7 2004/04/22 23:49:58 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -39,11 +39,23 @@ public class LargeState {
         channel.connect("TestChannel");
 
         if(provider) {
+
+//            channel.send(new Message(null, null, "Hello1"));
+//            channel.send(new Message(null, null, "Hello2"));
+//            channel.send(new Message(null, null, "Hello3"));
+//            channel.send(new Message(null, null, "Hello4"));
+
             System.out.println("Creating state of " + size + " bytes");
             state=createLargeState(size);
             System.out.println("Done. Waiting for other members to join and fetch large state");
         }
         else {
+
+//            channel.send(null, null, "Hello5");
+//            channel.send(null, null, "Hello6");
+//            channel.send(null, null, "Hello7");
+//            channel.send(null, null, "Hello8");
+
             System.out.println("Getting state");
             start=System.currentTimeMillis();
             rc=channel.getState(null, 20000);
@@ -64,6 +76,8 @@ public class LargeState {
                 ret=channel.receive(0);
 
                 if(ret instanceof Message) {
+                    System.out.println("-- received msg " + ((Message)ret).getObject() + " from " +
+                            ((Message)ret).getSrc());
                 }
                 else if(ret instanceof GetStateEvent) {
                     System.out.println("--> returned state: " + ret);
