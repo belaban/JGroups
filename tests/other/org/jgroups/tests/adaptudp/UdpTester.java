@@ -31,26 +31,25 @@ public class UdpTester {
     private long log_interval=1000;
     MulticastSocket recv_sock;
     DatagramSocket send_sock;
-    List nodes;
+    int num_members;
 
 
     public UdpTester(MulticastSocket recv_sock, DatagramSocket send_sock, boolean snd, int num_msgs,
-                     int msg_size, int gm, int ns, long log_interval,
-                     ServerSocket srv_sock, List nodes) {
+                     int msg_size, int num_members, int ns, long log_interval) {
         sender=snd;
         this.num_msgs=num_msgs;
         this.msg_size=msg_size;
         num_senders=ns;
+        this.num_members=num_members;
         this.log_interval=log_interval;
         this.recv_sock=recv_sock;
         this.send_sock=send_sock;
-        this.nodes=nodes;
     }
 
     public void initialize() {
         new ReceiverThread(recv_sock, num_msgs, msg_size, num_senders, log_interval).start();
         if(sender) {
-            new SenderThread(send_sock, nodes, num_msgs, msg_size, log_interval).start();
+            new SenderThread(send_sock, num_msgs, msg_size, log_interval).start();
         }
     }
 }
