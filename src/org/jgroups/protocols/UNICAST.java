@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.15 2005/01/28 13:16:43 belaban Exp $
+// $Id: UNICAST.java,v 1.16 2005/02/07 08:56:59 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -11,10 +11,7 @@ import org.jgroups.util.Util;
 import org.jgroups.util.Streamable;
 
 import java.io.*;
-import java.util.Enumeration;
-import java.util.Hashtable;
-import java.util.Properties;
-import java.util.Vector;
+import java.util.*;
 
 
 
@@ -39,7 +36,7 @@ import java.util.Vector;
 public class UNICAST extends Protocol implements AckSenderWindow.RetransmitCommand {
     boolean          operational=false;
     final Vector     members=new Vector(11);
-    final Hashtable  connections=new Hashtable(11); // Object (sender or receiver) -- Entries
+    final HashMap    connections=new HashMap(11);   // Object (sender or receiver) -- Entries
     long[]           timeout={400, 800,1600,3200};  // for AckSenderWindow: max time to wait for missing acks
     Address          local_addr=null;
     TimeScheduler    timer=null;                    // used for retransmissions (passed to AckSenderWindow)
@@ -195,67 +192,67 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
         switch (evt.getType()) {
 
-            case Event.MSG: // Add UnicastHeader, add to AckSenderWindow and pass down
-                msg = (Message) evt.getArg();
-                dst = msg.getDest();
+        case Event.MSG: // Add UnicastHeader, add to AckSenderWindow and pass down
+            msg = (Message) evt.getArg();
+            dst = msg.getDest();
 
-                /* only handle unicast messages */
-                if (dst == null || ((Address) dst).isMulticastAddress()) {
-                    msg=null;
-                    break;
-                }
+            /* only handle unicast messages */
+            if (dst == null || ((Address) dst).isMulticastAddress()) {
+                msg=null;
+                break;
+            }
 
+            synchronized(connections) {
                 entry = (Entry) connections.get(dst);
                 if (entry == null) {
                     entry = new Entry();
                     connections.put(dst, entry);
                 }
+            }
 
-                hdr = new UnicastHeader(UnicastHeader.DATA, entry.sent_msgs_seqno);
-                if (entry.sent_msgs == null) { // first msg to peer 'dst'
-                    hdr.first = true;
-                    entry.sent_msgs = new AckSenderWindow(this, timeout, this);
-                    if (window_size > 0)
-                        entry.sent_msgs.setWindowSize(window_size, min_threshold);
+            hdr = new UnicastHeader(UnicastHeader.DATA, entry.sent_msgs_seqno);
+            if (entry.sent_msgs == null) { // first msg to peer 'dst'
+                hdr.first = true;
+                entry.sent_msgs = new AckSenderWindow(this, timeout, this);
+                if (window_size > 0)
+                    entry.sent_msgs.setWindowSize(window_size, min_threshold);
+            }
+            msg.putHeader(getName(), hdr);
+            if(log.isTraceEnabled()) log.trace("[" + local_addr + "] --> DATA(" + dst + ": #" +
+                                               entry.sent_msgs_seqno + ", first=" + hdr.first + ')');
+
+            if (Global.copy)
+                entry.sent_msgs.add(entry.sent_msgs_seqno, msg.copy());  // add *including* UnicastHeader
+            else
+                entry.sent_msgs.add(entry.sent_msgs_seqno, msg);         // add *including* UnicastHeader
+
+            entry.sent_msgs_seqno++;
+            msg=null;
+            return; // AckSenderWindow will send message for us
+
+        case Event.BECOME_SERVER:
+            operational = true;
+            break;
+
+        case Event.VIEW_CHANGE:  // remove connections to peers that are not members anymore !
+            Vector new_members = ((View) evt.getArg()).getMembers();
+            Vector left_members;
+            synchronized (members) {
+                left_members = Util.determineLeftMembers(members, new_members);
+                members.removeAllElements();
+                if (new_members != null)
+                    members.addAll(new_members);
+            }
+
+            // Remove all connections for members that left between the current view and the new view
+            // See DESIGN for details
+            if (use_gms && left_members.size() > 0) {
+                for (int i = 0; i < left_members.size(); i++) {
+                    mbr = left_members.elementAt(i);
+                    removeConnection(mbr);
                 }
-                msg.putHeader(getName(), hdr);
-                if(log.isTraceEnabled()) log.trace("[" + local_addr + "] --> DATA(" + dst + ": #" +
-                        entry.sent_msgs_seqno + ", first=" + hdr.first + ')');
-
-                if (Global.copy)
-                    entry.sent_msgs.add(entry.sent_msgs_seqno, msg.copy());  // add *including* UnicastHeader
-                else
-                    entry.sent_msgs.add(entry.sent_msgs_seqno, msg);         // add *including* UnicastHeader
-
-                entry.sent_msgs_seqno++;
-                msg=null;
-                return; // AckSenderWindow will send message for us
-
-            case Event.BECOME_SERVER:
-                operational = true;
-                break;
-
-            case Event.VIEW_CHANGE:  // remove connections to peers that are not members anymore !
-                Vector new_members = ((View) evt.getArg()).getMembers();
-                Vector left_members;
-                synchronized (members) {
-                    left_members = Util.determineLeftMembers(members, new_members);
-                    members.removeAllElements();
-                    if (new_members != null)
-                        members.addAll(new_members);
-                }
-	    
-                // Remove all connections for members that left between the current view and the new view
-                // See DESIGN for details
-                if (use_gms && left_members.size() > 0) {
-                    synchronized (connections) {
-                        for (int i = 0; i < left_members.size(); i++) {
-                            mbr = left_members.elementAt(i);
-                            removeConnection(mbr);
-                        }
-                    }
-                }
-                break;
+            }
+            break;
         }
 
         passDown(evt);          // Pass on to the layer below us
@@ -263,22 +260,25 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
 
     /** Removes and resets from connection table (which is already locked) */
-    void removeConnection(Object mbr) {
-        Entry entry=(Entry)connections.get(mbr);
+    private void removeConnection(Object mbr) {
+        Entry entry;
+
+        synchronized(connections) {
+            entry=(Entry)connections.remove(mbr);
+        }
         if(entry != null) {
             entry.reset();
             if(log.isTraceEnabled()) log.trace("removed " + mbr + " from connection table");
         }
-        connections.remove(mbr);
     }
 
 
-    void removeAllConnections() {
+    private void removeAllConnections() {
         Entry entry;
 
         synchronized(connections) {
-            for(Enumeration e=connections.elements(); e.hasMoreElements();) {
-                entry=(Entry)e.nextElement();
+            for(Iterator it=connections.values().iterator(); it.hasNext();) {
+                entry=(Entry)it.next();
                 entry.reset();
             }
             connections.clear();
@@ -289,7 +289,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
 
     /** Returns random initial sequence number between 1 and 100 */
-    long getInitialSeqno() {
+    static long getInitialSeqno() {
         long ret=(long)((Math.random() * 100) % 100);
         return ret;
     }
@@ -341,11 +341,13 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
         if(log.isTraceEnabled())
             log.trace("[" + local_addr + "] <-- DATA(" + sender + ": #" + seqno + ", first=" + first);
-	
-        entry=(Entry)connections.get(sender);
-        if(entry == null) {
-            entry=new Entry();
-            connections.put(sender, entry);
+
+        synchronized(connections) {
+            entry=(Entry)connections.get(sender);
+            if(entry == null) {
+                entry=new Entry();
+                connections.put(sender, entry);
+            }
         }
 
         if(entry.received_msgs == null) {
@@ -377,15 +379,16 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
 
     /** Add the ACK to hashtable.sender.sent_msgs */
-    void handleAckReceived(Object sender, long seqno) {
+    private void handleAckReceived(Object sender, long seqno) {
         Entry           entry;
         AckSenderWindow win;
 
         if(log.isTraceEnabled()) log.trace("[" + local_addr + "] <-- ACK(" + sender + ": #" + seqno + ')');
-        entry=(Entry)connections.get(sender);
-        if(entry == null || entry.sent_msgs == null) {
-            return;
+        synchronized(connections) {
+            entry=(Entry)connections.get(sender);
         }
+        if(entry == null || entry.sent_msgs == null)
+            return;
         win=entry.sent_msgs;
         win.ack(seqno); // removes message from retransmission
     }
@@ -424,7 +427,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             return "[UNICAST: " + type2Str(type) + ", seqno=" + seqno + ']';
         }
 	
-        public String type2Str(byte t) {
+        public static String type2Str(byte t) {
             switch(t) {
                 case DATA: return "DATA";
                 case DATA_ACK: return "DATA_ACK";
