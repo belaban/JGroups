@@ -1,4 +1,4 @@
-// $Id: MethodCallTest.java,v 1.4 2004/05/19 17:28:17 belaban Exp $
+// $Id: MethodCallTest.java,v 1.5 2004/05/19 17:30:06 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -110,6 +110,16 @@ public class MethodCallTest extends TestCase {
         }
     }
 
+    public void testOldWithNull4() {
+        try {
+            MethodCall mc=new MethodCall("foobar", new Object[0]);
+            mc.invoke(this);
+        }
+        catch(Throwable t) {
+            fail(t.toString());
+        }
+    }
+
     public void testMethod() {
         Method m;
         try {
@@ -200,6 +210,21 @@ public class MethodCallTest extends TestCase {
             fail(t.toString());
         }
     }
+
+    public void testTypesWithNullArgument5() {
+        MethodCall mc;
+        mc=new MethodCall("foobar", new Object[0], new Class[0]);
+        try {
+            mc.invoke(this);
+        }
+        catch(IllegalArgumentException ex) {
+            assertTrue("this was expected", true);
+        }
+        catch(Throwable t) {
+            fail(t.toString());
+        }
+    }
+
 
     public void testSignature() {
         MethodCall mc;
