@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.16 2005/03/23 11:02:08 belaban Exp $
+// $Id: TCP.java,v 1.17 2005/03/24 12:35:03 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -61,6 +61,7 @@ public class TCP extends Protocol implements ConnectionTable.Receiver {
 
     int                    recv_buf_size=150000;
     int                    send_buf_size=150000;
+    int                    sock_conn_timeout=2000; // max time in millis for a socket creation in ConnectionTable
 
     static final String IGNORE_BIND_ADDRESS_PROPERTY="ignore.bind.address";
 
@@ -91,6 +92,7 @@ public class TCP extends Protocol implements ConnectionTable.Receiver {
         // ct.addConnectionListener(this);
         ct.setReceiveBufferSize(recv_buf_size);
         ct.setSendBufferSize(send_buf_size);
+        ct.setSocketConnectionTimeout(sock_conn_timeout);
         local_addr=ct.getLocalAddress();
         if(additional_data != null && local_addr instanceof IpAddress)
             ((IpAddress)local_addr).setAdditionalData(additional_data);
@@ -293,6 +295,12 @@ public class TCP extends Protocol implements ConnectionTable.Receiver {
         if(str != null) {
             conn_expire_time=Long.parseLong(str);
             props.remove("conn_expire_time");
+        }
+
+        str=props.getProperty("sock_conn_timeout");
+        if(str != null) {
+            sock_conn_timeout=Integer.parseInt(str);
+            props.remove("sock_conn_timeout");
         }
 
         str=props.getProperty("recv_buf_size");
