@@ -1,4 +1,4 @@
-// $Id: EnsChannelFactory.java,v 1.1 2003/09/09 01:24:07 belaban Exp $
+// $Id: EnsChannelFactory.java,v 1.2 2004/07/31 22:14:48 jiwils Exp $
 
 package org.jgroups;
 
@@ -9,7 +9,7 @@ public class EnsChannelFactory implements ChannelFactory {
 
     public EnsChannelFactory() {}
 
-    
+
     public EnsChannelFactory(String transport_properties, int outboard_port) {
 	setTransport(transport_properties);
 	setOutboardPort(outboard_port);
@@ -28,5 +28,15 @@ public class EnsChannelFactory implements ChannelFactory {
 
     public Channel createChannel(Object properties) throws ChannelException {
 	return new EnsChannel(properties, transport_props, outboard_port);
+    }
+
+    /**
+     * No-Op implementation of the createChannel() method specified by the
+     * <code>Channel</code> interface.
+     *
+     * @return this implementation always returns <code>null</code>.
+     */
+    public Channel createChannel() throws ChannelException {
+        return null;
     }
 }
