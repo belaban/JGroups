@@ -23,11 +23,8 @@ import java.util.List;
  */
 public class TcpTester {
     private boolean sender;
-    private long msgs_burst;
-    private long sleep_msec;
     private int num_msgs;
     private int msg_size;
-    private int grpMembers;
     private int num_senders;
     private long log_interval=1000;
     ServerSocket srv_sock;
@@ -40,7 +37,6 @@ public class TcpTester {
         sender=snd;
         this.num_msgs=num_msgs;
         this.msg_size=msg_size;
-        grpMembers=gm;
         num_senders=ns;
         this.log_interval=log_interval;
         this.srv_sock=srv_sock;

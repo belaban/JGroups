@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.2 2003/11/29 01:48:35 belaban Exp $
+// $Id: NAKACK.java,v 1.3 2004/01/08 02:39:56 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -296,12 +296,14 @@ public class NAKACK extends Protocol {
                 if(send_next_msg_out_of_band) {
                     out_of_bander.send(msg);
                     send_next_msg_out_of_band=false;
-                } else if(send_next_msg_acking) {
+                }
+                else if(send_next_msg_acking) {
                     naker.setAcks(true);  // require acks when sending a msg
                     naker.send(msg);
                     naker.setAcks(false);  // don't require acks when sending a msg
                     send_next_msg_acking=false;
-                } else
+                }
+                else
                     naker.send(msg);
 
                 return;    // don't pass down the stack, naker does this for us !
@@ -443,9 +445,11 @@ public class NAKACK extends Protocol {
             rc=hdr.vid.compareTo(vid);
             if(rc == 0) {               // same vid -> OK
                 up(new Event(Event.MSG, tmpmsg));
-            } else if(rc > 0) {
+            }
+            else if(rc > 0) {
                 ;
-            } else
+            }
+            else
             /** todo Maybe messages from previous vids are stored while client */
                 ; // can't be the case; only messages for future views are stored !
         }
@@ -525,7 +529,8 @@ public class NAKACK extends Protocol {
                                     last_xmitted_seqno + ", num_times=" + num_times);
                         if(--num_times <= 0)
                             return;
-                    } else {
+                    }
+                    else {
                         num_times=3;
                         last_xmitted_seqno=prevSeqno;
                     }
@@ -758,12 +763,13 @@ public class NAKACK extends Protocol {
 
             if(vid == null)
                 return;
-            vid_copy=(ViewId)vid.clone(); /** @todo No needs to copy vid */
+            vid_copy=(ViewId)vid.clone(); /** todo No needs to copy vid */
 
             if(acking) {
                 msg.putHeader(getName(), new NakAckHeader(NakAckHeader.NAK_ACK_MSG, id, vid_copy));
                 sender_win.add(id, msg.copy(), (Vector)members.clone()); // msg must be copied !
-            } else
+            }
+            else
                 msg.putHeader(getName(), new NakAckHeader(NakAckHeader.NAK_MSG, id, vid_copy));
 
             if(Trace.trace) Trace.info("NAKACK.NAKer.send()", "sending msg #" + id);
@@ -822,12 +828,10 @@ public class NAKACK extends Protocol {
         }
 
 
-        void receive(long id, Message msg, Vector stable_msgs) {  /** @todo Vector stable_msgs is not used in NAKer.receive() */
+        void receive(long id, Message msg, Vector stable_msgs) {  /** todo Vector stable_msgs is not used in NAKer.receive() */
             Address sender=msg.getSrc();
             NakReceiverWindow win=(NakReceiverWindow)received_msgs.get(sender);
-            Message msg_to_deliver, copy;
-            NakAckHeader hdr;
-
+            Message msg_to_deliver;
 
             if(win == null) {
                 win=new NakReceiverWindow(sender, this, 0);
@@ -899,7 +903,7 @@ public class NAKACK extends Protocol {
                         "retransmit([" + first_seqno + ", " + last_seqno +
                         "]) to " + sender + ", vid=" + vid);
 
-            NakAckHeader hdr=new NakAckHeader(NakAckHeader.RETRANSMIT_MSG, first_seqno, (ViewId)vid.clone()); /** @todo Not necessary to clone vid */
+            NakAckHeader hdr=new NakAckHeader(NakAckHeader.RETRANSMIT_MSG, first_seqno, (ViewId)vid.clone()); /** todo Not necessary to clone vid */
             Message retransmit_msg=new Message(sender, null, null);
 
             hdr.last_seqno=last_seqno;
@@ -924,7 +928,8 @@ public class NAKACK extends Protocol {
 
                 try {
                     passDown(new Event(Event.MSG, retr_msg));
-                } catch(Exception e) {
+                }
+                catch(Exception e) {
                     Trace.debug("NAKACK.NAKer.retransmit()", "exception is " + e);
                 }
             }
@@ -999,7 +1004,6 @@ public class NAKACK extends Protocol {
 
 
         void send(Message msg) {
-            Message copy;
             long id=seqno++;
             Vector stable_msgs=sender_win.getStableMessages();
             NakAckHeader hdr;

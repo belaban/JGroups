@@ -151,6 +151,9 @@ public class ReceiverThread extends Thread {
         double tmp;
         long   current=System.currentTimeMillis();
 
+        if(last_dump == 0 || (current - last_dump) <= 0)
+            return;
+
         tmp=(1000 * counter) / (current - beginning);
         if(gnuplot_output)
             sb.append(tmp).append(" ");
