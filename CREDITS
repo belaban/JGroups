@@ -47,6 +47,7 @@ Ananda Bollu (akbollu@users.sf.net)
 
 Mandar Shinde (whizkid_bay@users.sf.net)
 - Persistence manager (org.javagroups.persistence)
+- Port to J2ME
 
 Ovidiu Feodorov (ovidiuf@users.sourceforge.net)
 - WAN capabilities, TUNNEL and Router
