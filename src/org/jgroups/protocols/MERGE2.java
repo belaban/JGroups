@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.6 2004/07/05 14:17:15 belaban Exp $
+// $Id: MERGE2.java,v 1.7 2004/09/15 13:43:53 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -49,6 +49,9 @@ public class MERGE2 extends Protocol {
     boolean is_coord=false;
     Promise find_promise=new Promise(); // to synchronize FindSubgroups.findInitialMembers() on
 
+    /** Use a new thread to send the MERGE event up the stack */
+    boolean use_separate_thread=false;
+
 
     public String getName() {
         return "MERGE2";
@@ -78,6 +81,12 @@ public class MERGE2 extends Protocol {
         if(max_interval <= min_interval) {
             if(log.isErrorEnabled()) log.error("max_interval has to be greater than min_interval");
             return false;
+        }
+
+        str=props.getProperty("use_separate_thread");
+        if(str != null) {
+            use_separate_thread=new Boolean(str).booleanValue();
+            props.remove("use_separate_thread");
         }
 
         if(props.size() > 0) {
@@ -224,7 +233,6 @@ public class MERGE2 extends Protocol {
         public void run() {
             long interval;
             Vector coords=null;
-            Event evt;
             Vector initial_mbrs;
 
             if(log.isDebugEnabled()) log.debug("merge task started");
@@ -239,8 +247,19 @@ public class MERGE2 extends Protocol {
                 if(coords != null && coords.size() > 1) {
                     if(log.isDebugEnabled())
                         log.debug("found multiple coordinators: " + coords + "; sending up MERGE event");
-                    evt=new Event(Event.MERGE, coords);
-                    passUp(evt);
+                    final Event evt=new Event(Event.MERGE, coords);
+                    if(use_separate_thread) {
+                        Thread merge_notifier=new Thread() {
+                            public void run() {
+                                passUp(evt);
+                            }
+                        };
+                        merge_notifier.setDaemon(true);
+                        merge_notifier.setName("merge notifier thread");
+                    }
+                    else {
+                        passUp(evt);
+                    }
                 }
             }
         }
