@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.15 2005/03/17 18:33:45 belaban Exp $
+// $Id: TCP.java,v 1.16 2005/03/23 11:02:08 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -34,7 +34,7 @@ import java.util.Vector;
  * registers with the connection table to receive all incoming messages.
  * @author Bela Ban
  */
-public class TCP extends Protocol implements ConnectionTable.Receiver, ConnectionTable.ConnectionListener {
+public class TCP extends Protocol implements ConnectionTable.Receiver {
     private ConnectionTable ct=null;
     private Address         local_addr=null;
     private String          group_addr=null;
@@ -88,7 +88,7 @@ public class TCP extends Protocol implements ConnectionTable.Receiver, Connectio
 
     public void start() throws Exception {
         ct=getConnectionTable(reaper_interval,conn_expire_time,bind_addr,external_addr,start_port,end_port);
-        ct.addConnectionListener(this);
+        // ct.addConnectionListener(this);
         ct.setReceiveBufferSize(recv_buf_size);
         ct.setSendBufferSize(send_buf_size);
         local_addr=ct.getLocalAddress();
@@ -219,14 +219,14 @@ public class TCP extends Protocol implements ConnectionTable.Receiver, Connectio
 
 
     // ConnectionTable.ConnectionListener interface
-    public void connectionOpened(Address peer_addr) {
-        if(log.isTraceEnabled()) log.trace("opened connection to " + peer_addr);
-    }
-
-    public void connectionClosed(Address peer_addr) {
-        if(peer_addr != null)
-            if(log.isTraceEnabled()) log.trace("closed connection to " + peer_addr);
-    }
+//    public void connectionOpened(Address peer_addr) {
+//        if(log.isTraceEnabled()) log.trace("opened connection to " + peer_addr);
+//    }
+//
+//    public void connectionClosed(Address peer_addr) {
+//        if(peer_addr != null)
+//            if(log.isTraceEnabled()) log.trace("closed connection to " + peer_addr);
+//    }
 
 
     /** Setup the Protocol instance acording to the configuration string */
