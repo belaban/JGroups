@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.37 2004/02/12 23:23:24 belaban Exp $
+Revision: $Id: history.txt,v 1.38 2004/02/20 21:03:53 akbollu Exp $
 
 [For current version, see file Version.java (or invoke 'java JGroups.Version')]
 
@@ -27,6 +27,11 @@ romuald     = Romuald du Song
 
 Version 2.2.1
 -------------
+
+- Added NIO version of ConnectionTable1_4; works with JDK 1.4 or later. 
+  TCP1_4.java protocol uses ConnectionTable1_4 and tcp1_4.xml config file for NIO 
+  based TCP stack.
+  (akbollu Fed 18 2004)
 
 - Added send_buf_size and recv_buf_size to TCP
   (bela Feb 11 2004)
