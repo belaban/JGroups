@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.5 2003/11/21 17:36:46 belaban Exp $
+// $Id: GMS.java,v 1.6 2003/11/22 00:35:45 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -7,10 +7,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
-import java.util.Hashtable;
-import java.util.Properties;
-import java.util.Vector;
-import java.util.Iterator;
+import java.util.*;
 
 import org.jgroups.*;
 import org.jgroups.util.*;
@@ -32,7 +29,13 @@ public class GMS extends Protocol {
     public String      group_addr=null;
     public Membership  members=new Membership();     // real membership
     public Membership  tmp_members=new Membership(); // base for computing next view
-    public Vector      joining=new Vector();         // members joined but for which no view has been yet
+
+    /** Members joined but for which no view has been received yet */
+    public Vector      joining=new Vector();
+
+    /** Members excluded from group, but for which no view has been received yet */
+    public Vector      leaving=new Vector();
+
     public ViewId      view_id=null;
     public long        ltime=0;
     public long        join_timeout=5000;
@@ -199,6 +202,22 @@ public class GMS extends Protocol {
                 }
             }
 
+            // Update leaving list (see DESIGN for explanations)
+            if(old_mbrs != null) {
+                for(Iterator it=old_mbrs.iterator(); it.hasNext();) {
+                    Address addr=(Address)it.next();
+                    if(!leaving.contains(addr))
+                        leaving.add(addr);
+                }
+            }
+            if(suspected_mbrs != null) {
+                for(Iterator it=suspected_mbrs.iterator(); it.hasNext();) {
+                    Address addr=(Address)it.next();
+                    if(!leaving.contains(addr))
+                        leaving.add(addr);
+                }
+            }
+
             if(Trace.trace)
                 Trace.debug("GMS.getNextView()", "new view is " + v);
             return v;
@@ -329,7 +348,11 @@ public class GMS extends Protocol {
                 members.set(mbrs);
                 tmp_members.set(members);
                 joining.removeAll(mbrs);  // remove all members in mbrs from joining
-                tmp_members.add(joining); // adjust temporary membership
+                // remove all elements from 'leaving' that are not in 'mbrs'
+                leaving.retainAll(mbrs);
+
+                tmp_members.add(joining);    // add members that haven't yet shown up in the membership
+                tmp_members.remove(leaving); // remove members that haven't yet been removed from the membership
 
                 // add to prev_members
                 for(Iterator it=mbrs.iterator(); it.hasNext();) {
