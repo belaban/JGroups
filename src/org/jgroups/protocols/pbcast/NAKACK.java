@@ -1,14 +1,20 @@
-// $Id: NAKACK.java,v 1.5 2004/01/16 16:47:50 belaban Exp $
+// $Id: NAKACK.java,v 1.6 2004/02/02 20:14:43 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
-import java.util.*;
-import java.io.IOException;
-
-import org.jgroups.*;
-import org.jgroups.util.*;
-import org.jgroups.stack.*;
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Message;
+import org.jgroups.View;
 import org.jgroups.log.Trace;
+import org.jgroups.stack.NakReceiverWindow;
+import org.jgroups.stack.Protocol;
+import org.jgroups.stack.Retransmitter;
+import org.jgroups.util.Range;
+import org.jgroups.util.TimeScheduler;
+import org.jgroups.util.Util;
+
+import java.util.*;
 
 
 /**
@@ -19,7 +25,11 @@ import org.jgroups.log.Trace;
  * FRAG, we cannot count on FRAG to fragement/defragment the (possibly) large message into smaller ones. Therefore
  * we only bundle messages up to max_xmit_size bytes to prevent too large messages. For example, if the bundled message
  * size was a total of 34000 bytes, and max_xmit_size=16000, we'd send 3 messages: 2 16K and a 2K message. <em>Note that
- * max_xmit_size should be the same value as FRAG.frag_size (or smaller).</em>
+ * max_xmit_size should be the same value as FRAG.frag_size (or smaller).</em><br/>
+ * Retransmit requests are always sent to the sender. If the sender dies, and not everyone has received its messages,
+ * they will be lost. In the future, this may be changed to have receivers store all messages, so that retransmit
+ * requests can be answered by any member. Trivial to implement, but not done yet. For most apps, the default
+ * retransmit properties are sufficient, if not use vsync.
  * @author Bela Ban
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand {
@@ -35,8 +45,17 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
     /** Retransmit messages using multicast rather than unicast. This has the advantage that, if many
      * receivers lost a message, the sender only retransmits once. */
     boolean       use_mcast_xmit=false;
-    Hashtable     received_msgs=new Hashtable();             // sender -> NakReceiverWindow
-    Hashtable     sent_msgs=new Hashtable();                 // seqno (sent by me) -> Messages
+
+
+    /** Hashtable<Address,NakReceiverWindow>. Stores received messages (keyed by sender).
+     * Note that this is no long term storage; messages are just stored until they can be delivered (ie., until
+     * the correct FIFO order is established)
+     */
+    Hashtable     received_msgs=new Hashtable();
+
+    /** Hashtable<Long,Message>. Hashmap of messages sent by me (keyed on sequence number) */
+    Hashtable     sent_msgs=new Hashtable();
+
     boolean       leaving=false;
     TimeScheduler timer=null;
     final String  name="NAKACK";
@@ -398,7 +417,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
     /* --------------------------------- Private Methods --------------------------------------- */
 
     long getNextSeqno() {
-        return seqno++;
+        return seqno++; // no need for synchronization; access to seqno is serialized anyway
     }
 
 
