@@ -1,4 +1,4 @@
-// $Id: Trace.java,v 1.2 2003/11/27 21:09:14 belaban Exp $
+// $Id: Trace.java,v 1.3 2004/02/24 15:56:33 belaban Exp $
 
 package org.jgroups.log;
 
@@ -344,49 +344,49 @@ public class Trace {
     /** Helper method. Will call Trace.println(module, Trace.DEBUG, module) */
     public static void debug(String module, String message) {
         if(identifier == null)
-            Logger.getLogger(module).debug(module + ": " + message);
+            Logger.getLogger(module).debug(message);
         else
-            Logger.getLogger(identifier + "." + module).debug(module + ": " + message);
+            Logger.getLogger(identifier + "." + module).debug(message);
     }
 
     /** Helper method. Will call Trace.println(module, Trace.TEST, module) */
     public static void test(String module, String message) {
         if(identifier == null)
-            Logger.getLogger(module).debug(module + ": " + message);
+            Logger.getLogger(module).debug(message);
         else
-            Logger.getLogger(identifier + "." + module).debug(module + ": " + message);
+            Logger.getLogger(identifier + "." + module).debug(message);
     }
 
     /** Helper method. Will call Trace.println(module, Trace.INFO, module) */
     public static void info(String module, String message) {
         if(identifier == null)
-            Logger.getLogger(module).info(module + ": " + message);
+            Logger.getLogger(module).info(message);
         else
-            Logger.getLogger(identifier + "." + module).info(module + ": " + message);
+            Logger.getLogger(identifier + "." + module).info(message);
     }
 
     /** Helper method. Will call Trace.println(module, Trace.WARN, module) */
     public static void warn(String module, String message) {
         if(identifier == null)
-            Logger.getLogger(module).warn(module + ": " + message);
+            Logger.getLogger(module).warn(message);
         else
-            Logger.getLogger(identifier + "." + module).warn(module + ": " + message);
+            Logger.getLogger(identifier + "." + module).warn(message);
     }
 
     /** Helper method. Will call Trace.println(module, Trace.ERROR, module) */
     public static void error(String module, String message) {
         if(identifier == null)
-            Logger.getLogger(module).error(module + ": " + message);
+            Logger.getLogger(module).error(message);
         else
-            Logger.getLogger(identifier + "." + module).error(module + ": " + message);
+            Logger.getLogger(identifier + "." + module).error(message);
     }
 
     /** Helper method. Will call Trace.println(module, Trace.FATAL, module) */
     public static void fatal(String module, String message) {
         if(identifier == null)
-            Logger.getLogger(module).fatal(module + ": " + message);
+            Logger.getLogger(module).fatal(message);
         else
-            Logger.getLogger(identifier + "." + module).fatal(module + ": " + message);
+            Logger.getLogger(identifier + "." + module).fatal(message);
     }
 
 
