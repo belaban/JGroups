@@ -1,4 +1,4 @@
-// $Id: Marshaller.java,v 1.3 2004/09/23 22:31:24 belaban Exp $
+// $Id: Marshaller.java,v 1.4 2004/09/24 09:03:45 belaban Exp $
 
 package org.jgroups.util;
 
@@ -23,7 +23,7 @@ import java.io.ObjectOutput;
  * @author Bela Ban
  * @version 1.0
  *
- * This class marshalls classes, in other words it serializes and deserizlizes classes
+ * This class marshalls classes, in other words it serializes and deserializes classes
  * to and from object streams.
  * It performs a magic number matching to decrease the number of bytes that are being sent
  * over the wire.
