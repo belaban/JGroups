@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.112 2004/09/08 10:35:37 belaban Exp $
+Revision: $Id: history.txt,v 1.113 2004/09/10 10:10:59 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -29,6 +29,9 @@ Version 2.2.8
 -------------
 
 
+
+- FD_SOCK: added bind address for server socket
+  (bela Sept 10 2004)
 
 
 
