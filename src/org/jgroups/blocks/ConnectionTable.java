@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.19 2005/03/24 12:35:33 belaban Exp $
+// $Id: ConnectionTable.java,v 1.20 2005/03/24 14:42:47 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -251,8 +251,8 @@ public class ConnectionTable implements Runnable {
             conn.send(msg);
         }
         catch(Throwable ex) {
-            if(log.isInfoEnabled()) log.info("sending message to " + dest + " failed (ex=" +
-                                             ex.getClass().getName() + "); removing from connection table");
+            if(log.isTraceEnabled())
+                log.trace("sending msg to " + dest + " failed (" + ex.getClass().getName() + "); removing from connection table");
             remove(dest);
         }
     }
@@ -879,8 +879,8 @@ public class ConnectionTable implements Runnable {
                 Socket tmp_sock=sock;
                 local=tmp_sock.getLocalAddress();
                 remote=tmp_sock.getInetAddress();
-                local_str=local != null ? Util.shortName(local.getHostName()) : "<null>";
-                remote_str=remote != null ? Util.shortName(remote.getHostName()) : "<null>";
+                local_str=local != null ? Util.shortName(local) : "<null>";
+                remote_str=remote != null ? Util.shortName(remote) : "<null>";
                 ret.append('<' + local_str + ':' + tmp_sock.getLocalPort() +
                            " --> " + remote_str + ':' + tmp_sock.getPort() + "> (" +
                            ((System.currentTimeMillis() - last_access) / 1000) + " secs old)");

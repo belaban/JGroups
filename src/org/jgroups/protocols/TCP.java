@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.17 2005/03/24 12:35:03 belaban Exp $
+// $Id: TCP.java,v 1.18 2005/03/24 14:42:36 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -100,30 +100,31 @@ public class TCP extends Protocol implements ConnectionTable.Receiver {
     }
 
    /**
-    * @param ri
-    * @param cet
-    * @param b_addr
-    * @param s_port
+    * @param reaperInterval
+    * @param connExpireTime
+    * @param bindAddress
+    * @param startPort
     * @throws Exception
     * @return ConnectionTable
     * Sub classes overrides this method to initialize a different version of
     * ConnectionTable.
     */
-   protected ConnectionTable getConnectionTable(long ri, long cet, InetAddress b_addr, InetAddress bc_addr, int s_port, int e_port) throws Exception {
+   protected ConnectionTable getConnectionTable(long reaperInterval, long connExpireTime, InetAddress bindAddress,
+                                                InetAddress externalAddress, int startPort, int endPort) throws Exception {
        ConnectionTable cTable=null;
-       if(ri == 0 && cet == 0) {
-           cTable=new ConnectionTable(this, b_addr, bc_addr, start_port, end_port);
+       if(reaperInterval == 0 && connExpireTime == 0) {
+           cTable=new ConnectionTable(this, bindAddress, externalAddress, startPort, endPort);
        }
        else {
-           if(ri == 0) {
-               ri=5000;
-               if(log.isWarnEnabled()) log.warn("reaper_interval was 0, set it to " + ri);
+           if(reaperInterval == 0) {
+               reaperInterval=5000;
+               if(log.isWarnEnabled()) log.warn("reaper_interval was 0, set it to " + reaperInterval);
            }
-           if(cet == 0) {
-               cet=1000 * 60 * 5;
-               if(log.isWarnEnabled()) log.warn("conn_expire_time was 0, set it to " + cet);
+           if(connExpireTime == 0) {
+               connExpireTime=1000 * 60 * 5;
+               if(log.isWarnEnabled()) log.warn("conn_expire_time was 0, set it to " + connExpireTime);
            }
-           cTable=new ConnectionTable(this, b_addr, bc_addr, s_port, end_port, ri, cet);
+           cTable=new ConnectionTable(this, bindAddress, externalAddress, startPort, endPort, reaperInterval, connExpireTime);
        }
        return cTable;
    }
