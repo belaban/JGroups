@@ -1,4 +1,4 @@
-// $Id: PullPushAdapter.java,v 1.3 2004/03/30 06:47:12 belaban Exp $
+// $Id: PullPushAdapter.java,v 1.4 2004/04/28 19:37:56 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -164,14 +164,27 @@ public class PullPushAdapter implements Runnable {
 
                 }
                 else if(obj instanceof GetStateEvent) {
+                    byte[] retval=null;
                     if(listener != null) {
-                        if(transport instanceof Channel)
-                            ((Channel)transport).returnState(listener.getState());
-                        else {
-                            if(log.isErrorEnabled()) log.error("underlying transport is not a Channel, but a " +
-                                    transport.getClass().getName() + ": cannot fetch state using returnState()");
-                            continue;
+                        try {
+                            retval=listener.getState();
                         }
+                        catch(Throwable t) {
+                            log.error("getState() from application failed, will return empty state", t);
+                        }
+                    }
+                    else {
+                        log.warn("no listener registered, returning empty state");
+                    }
+
+                    if(transport instanceof Channel) {
+                        ((Channel)transport).returnState(retval);
+                    }
+                    else {
+                        if(log.isErrorEnabled())
+                            log.error("underlying transport is not a Channel, but a " +
+                                    transport.getClass().getName() + ": cannot return state using returnState()");
+                        continue;
                     }
                 }
                 else if(obj instanceof SetStateEvent) {
