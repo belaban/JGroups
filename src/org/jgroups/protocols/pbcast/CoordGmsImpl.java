@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.17 2004/10/05 15:30:06 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.18 2005/03/24 14:41:52 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -121,8 +121,12 @@ public class CoordGmsImpl extends GmsImpl {
         merge_leader=(Address)tmp.elementAt(0);
         if(log.isDebugEnabled()) log.debug("coordinators in merge protocol are: " + tmp);
         if(merge_leader.equals(gms.local_addr)) {
-            if(log.isDebugEnabled()) log.debug("I (" + merge_leader + ") will be the leader. Starting the merge task");
+            if(log.isTraceEnabled()) log.trace("I (" + gms.local_addr + ") will be the leader. Starting the merge task");
             startMergeTask(other_coords);
+        }
+        else {
+            if(log.isTraceEnabled()) log.trace("I (" + gms.local_addr + ") am not the merge leader (" +
+                                               merge_leader + "), waiting for merge leader to initiate merge");
         }
     }
 
