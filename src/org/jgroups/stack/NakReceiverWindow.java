@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindow.java,v 1.2 2004/03/30 06:47:27 belaban Exp $
+// $Id: NakReceiverWindow.java,v 1.3 2004/04/19 18:41:07 belaban Exp $
 
 
 package org.jgroups.stack;
@@ -103,10 +103,11 @@ public class NakReceiverWindow {
     /** highest deliverable (or delivered) seqno so far */
     private long   highest_seen=0;
 
-    /** received msgs; list of Entries */
+    /** List<Entry>. Received (but not yet delivered) msgs. */
     private List   msgs=new List();
 
-    /** msgs removed by remove(); list of Entries */
+    /** List<Entry>. Delivered (= seen by all members) messages. A remove() method causes a message to
+     * be moved from msgs to delivered_msgs. Message garbage colection will gradually remove elements in this list  */
     private List   delivered_msgs=new List();
 
     /** if not set, no retransmitter thread will be started. Useful if
@@ -197,10 +198,6 @@ public class NakReceiverWindow {
 
             // add at end (regular expected msg)
             if(seqno == tail) {
-
-                //
-                  //  if(log.isDebugEnabled()) log.debug("TRACE.special()", "ADD_NO_GAP: " + seqno + ", sender=" + msg.getSrc());
-
                 msgs.add(new Entry(seqno, msg));
                 tail++;
             }
@@ -209,11 +206,6 @@ public class NakReceiverWindow {
             // ii. add real msg
             // iii. tell retransmitter to retrieve missing msgs
             else if(seqno > tail) {
-
-                //
-                  //  if(log.isDebugEnabled()) log.debug("TRACE.special()", "ADD_GAP [" + tail + " - " + seqno + "]: " +
-                    //        seqno + ", sender=" + msg.getSrc());
-
                 for(long i=tail; i < seqno; i++) {
                     msgs.add(new Entry(i, null));
                     // XmitEntry xmit_entry=new XmitEntry();
@@ -245,14 +237,8 @@ public class NakReceiverWindow {
                               //  xmit_entry.received=System.currentTimeMillis();
                             //long xmit_diff=xmit_entry == null? -1 : xmit_entry.received - xmit_entry.created;
                             //NAKACK.addXmitResponse(msg.getSrc(), seqno);
-
-                            //
-                              //  if(log.isDebugEnabled()) log.debug("TRACE.special()", "ADD_MISSING: " + msg.getSrc() + "#" + seqno +
-                                //        " [xmit_diff=" + xmit_diff + "]");
-
                             if(retransmitter != null) retransmitter.remove(seqno);
                         }
-
                         break;
                     }
                 }
@@ -604,22 +590,32 @@ public class NakReceiverWindow {
     /* ------------------------------- Private Methods -------------------------------------- */
 
 
+    /**
+     * Sets the value of lowest_seen to the lowest seqno of the delivered messages (if available), otherwise
+     * to the lowest seqno of received messages.
+     */
     private void _updateLowestSeen() {
         Entry entry=null;
 
         // If both delivered and received messages are empty, let the highest
         // seen seqno be the one *before* the one which is expected to be
         // received next by the NakReceiverWindow (head-1)
+
+        // incorrect: if received and delivered msgs are empty, don't do anything: we may have initial values,
+        // but both lists are cleaned after some time of inactivity
+        // (bela April 19 2004)
+        /*
         if((delivered_msgs.size() == 0) && (msgs.size() == 0)) {
             lowest_seen=0;
             return;
         }
+        */
 
-        // Else let is be the first of the delivered messages
-        // get last seqno of delivered messages
+        // The lowest seqno is the first seqno of the delivered messages
         entry=(Entry)delivered_msgs.peekAtHead();
         if(entry != null)
             lowest_seen=entry.seqno;
+        // If no elements in delivered messages (e.g. due to message garbage collection), use the received messages
         else {
             if(msgs.size() != 0) {
                 entry=(Entry)msgs.peekAtHead();
@@ -642,14 +638,17 @@ public class NakReceiverWindow {
         // If both delivered and received messages are empty, let the highest
         // seen seqno be the one *before* the one which is expected to be
         // received next by the NakReceiverWindow (head-1)
-        if((delivered_msgs.size() == 0) && (msgs.size() == 0)) {
+
+        // changed by bela (April 19 2004): we don't change the value if received and delivered msgs are empty
+        /*if((delivered_msgs.size() == 0) && (msgs.size() == 0)) {
             highest_seen=0;
             return;
-        }
-        // Else let is be the last of the delivered messages, to start with,
+        }*/
+
+
+        // The highest seqno is the last of the delivered messages, to start with,
         // or again the one before the first seqno expected (if no delivered
-        // msgs)
-        // Get last seqno of delivered messages
+        // msgs). Then iterate through the received messages, and find the highest seqno *before* a gap
         entry=(Entry)delivered_msgs.peek();
         if(entry != null)
             ret=entry.seqno;
