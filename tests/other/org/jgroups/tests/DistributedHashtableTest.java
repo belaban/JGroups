@@ -1,4 +1,4 @@
-// $Id: DistributedHashtableTest.java,v 1.1 2003/09/09 01:24:13 belaban Exp $
+// $Id: DistributedHashtableTest.java,v 1.2 2003/12/04 01:20:51 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -79,11 +79,14 @@ public class DistributedHashtableTest implements Runnable {
             int num=Integer.parseInt(line);
             start=System.currentTimeMillis();
             for(int i=0; i < num; i++) {
-                System.out.print(i + " ");
+                if(i % 100 == 0)
+                    System.out.print(i + " ");
                 ht.put(local.toString() + "#" + i, new Integer(i));
             }
             stop=System.currentTimeMillis();
-            System.out.println("\nInserted " + num + " elements in " + (stop - start) + " ms, size=" + ht.size());
+            double num_per_sec=num / ((stop-start)/1000.0);
+            System.out.println("\nInserted " + num + " elements in " + (stop - start) +
+                    " ms, size=" + ht.size() + " [" + num_per_sec + " / sec]");
         }
         catch(Exception ex) {
             System.err.println(ex);
@@ -119,10 +122,11 @@ public class DistributedHashtableTest implements Runnable {
             for(it=keys.iterator(); it.hasNext();) {
                 key=it.next();
                 ht.remove(key);
-                System.out.println("removed " + key);
             }
             stop=System.currentTimeMillis();
-            System.out.println("\nRemoved " + keys.size() + " elements in " + (stop - start) + "ms, size=" + ht.size());
+            double num_per_sec=num / ((stop-start)/1000.0);
+            System.out.println("\nRemoved " + keys.size() + " elements in " + (stop - start) +
+                    "ms, size=" + ht.size() + " [" + num_per_sec + " / sec]");
         }
         catch(Exception ex) {
             System.err.println(ex);

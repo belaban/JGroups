@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.3 2003/11/27 21:22:47 belaban Exp $
+// $Id: MessageDispatcher.java,v 1.4 2003/12/04 01:20:33 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -195,6 +195,10 @@ public class MessageDispatcher implements RequestHandler {
                                            this, deadlock_detection, local_addr);
             }
             corr.start();
+        }
+        if(channel != null) {
+            Vector tmp_mbrs=channel.getView() != null? channel.getView().getMembers() : null;
+            setMembers(tmp_mbrs);
         }
     }
 
