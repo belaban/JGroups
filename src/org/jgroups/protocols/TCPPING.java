@@ -1,4 +1,4 @@
-// $Id: TCPPING.java,v 1.3 2003/12/22 17:14:33 belaban Exp $
+// $Id: TCPPING.java,v 1.4 2003/12/24 01:40:31 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -248,16 +248,6 @@ public class TCPPING extends Protocol {
     /* -------------------------- Private methods ---------------------------- */
 
 
-//    private View makeView(Vector mbrs) {
-//	Address  coord=null;
-//	long     id=0;
-//	ViewId   view_id=new ViewId(local_addr);
-//
-//	coord=view_id.getCoordAddress();
-//	id=view_id.getId();
-//
-//	return new View(coord, id, mbrs);
-//    }
 
     /**
      * Input is "daddy[8880],sindhu[8880],camille[5555]. Return List of IpAddresses
