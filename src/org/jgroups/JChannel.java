@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.4 2003/12/06 01:24:21 belaban Exp $
+// $Id: JChannel.java,v 1.5 2003/12/15 22:52:32 belaban Exp $
 
 package org.jgroups;
 
@@ -21,7 +21,7 @@ import java.util.Vector;
  * protocol stack
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.4 $
+ * @version $Revision: 1.5 $
  */
 public class JChannel extends Channel {
 
@@ -49,6 +49,10 @@ public class JChannel extends Channel {
     private Queue mq=new Queue();
     /*the protocol stack, used to send and receive messages from the protocol stack*/
     private ProtocolStack prot_stack=null;
+
+    /** Thread responsible for closing a channel and potentially reconnecting to it (e.g. when shunned) */
+    protected CloserThread closer=null;
+
     /*lock objects*/
     private Object  local_addr_mutex=new Object();
     private Object  connect_mutex=new Object();
@@ -1108,27 +1112,26 @@ public class JChannel extends Channel {
         if(channel_listener != null)
             channel_listener.channelShunned();
 
-        new CloserThread(evt);
+        if(closer != null && !closer.isAlive())
+            closer=null;
+        if(closer == null) {
+            closer=new CloserThread(evt);
+            closer.start();
+        }
     }
 
     /* ------------------------------- End of Private Methods ---------------------------------- */
 
 
-    class CloserThread implements Runnable {
+    class CloserThread extends Thread {
         Event evt;
         Thread t=null;
 
 
         CloserThread(Event evt) {
             this.evt=evt;
-            start();
-        }
-
-
-        public void start() {
-            t=new Thread(this, "CloserThread");
-            t.setDaemon(true);
-            t.start();
+            setName("CloserThread");
+            setDaemon(true);
         }
 
 
@@ -1183,6 +1186,9 @@ public class JChannel extends Channel {
             }
             catch(Exception ex) {
                 Trace.error("JChannel.CloserThread.run()", "exception: " + ex);
+            }
+            finally {
+                closer=null;
             }
         }
     }
