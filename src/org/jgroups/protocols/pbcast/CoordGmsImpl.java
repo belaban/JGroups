@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.3 2003/11/21 01:59:07 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.4 2004/01/08 18:08:32 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -143,6 +143,36 @@ public class CoordGmsImpl extends GmsImpl {
         view=new View(gms.view_id.copy(), gms.members.getMembers());
         sendMergeResponse(sender, view, digest);
     }
+
+
+    MergeData getMergeResponse(Address sender, Object merge_id) {
+        Digest         digest;
+        View           view;
+        MergeData      retval;
+
+        if(sender == null) {
+            Trace.error("CoordGmsImpl.getMergeResponse()", "sender == null; cannot send back a response");
+            return null;
+        }
+        if(merging) {
+            Trace.error("CoordGmsImpl.getMergeResponse()", "merge already in progress");
+            retval=new MergeData(sender, null, null);
+            retval.merge_rejected=true;
+            return retval;
+        }
+        merging=true;
+        this.merge_id=(Serializable)merge_id;
+        if(Trace.trace)
+            Trace.info("CoordGmsImpl.getMergeRespon()", "sender=" + sender + ", merge_id=" + merge_id);
+
+        digest=gms.getDigest();
+        view=new View(gms.view_id.copy(), gms.members.getMembers());
+        retval=new MergeData(sender, view, digest);
+        retval.view=view;
+        retval.digest=digest;
+        return retval;
+    }
+
 
     public void handleMergeResponse(MergeData data, Object merge_id) {
         if(data == null) {
@@ -363,6 +393,12 @@ public class CoordGmsImpl extends GmsImpl {
                         "sending MERGE_REQ to " + coords);
             for(int i=0; i < coords.size(); i++) {
                 coord=(Address)coords.elementAt(i);
+
+                if(gms.local_addr != null && gms.local_addr.equals(coord)) {
+                    merge_rsps.add(getMergeResponse(gms.local_addr, merge_id));
+                    continue;
+                }
+
                 msg=new Message(coord, null, null);
                 hdr=new GMS.GmsHeader(GMS.GmsHeader.MERGE_REQ);
                 hdr.mbr=gms.local_addr;
@@ -383,10 +419,12 @@ public class CoordGmsImpl extends GmsImpl {
                             "waiting for "
                             + time_to_wait
                             + " msecs for merge responses");
-                try {
-                    merge_rsps.wait(time_to_wait);
-                }
-                catch(Exception ex) {
+                if(merge_rsps.size() < num_rsps_expected) {
+                    try {
+                        merge_rsps.wait(time_to_wait);
+                    }
+                    catch(Exception ex) {
+                    }
                 }
                 if(Trace.trace)
                     Trace.info("CoordGmsImpl.getMergeDataFromSubgroupCoordinators()",
