@@ -11,9 +11,13 @@ import java.util.Properties;
 
 /**
  * Uses its own IP multicast socket to send and receive discovery requests/responses. Can be used in
- * conjuntion with a non-UDP transport, e.g. TCP.
+ * conjuntion with a non-UDP transport, e.g. TCP.<p>
+ * The discovery is <em>assymetric</em>: discovery requests are broadcast via the multicast socket, and
+ * received via the multicast socket by everyone in the group. However, the discovery responses are sent
+ * back via the regular transport (e.g. TCP) to the sender (discovery request contained sender's regular address,
+ * e.g. 192.168.0.2:7800).
  * @author Bela Ban
- * @version $Id: MPING.java,v 1.3 2005/03/31 08:31:47 belaban Exp $
+ * @version $Id: MPING.java,v 1.4 2005/03/31 08:35:23 belaban Exp $
  */
 public class MPING extends PING implements Runnable {
     MulticastSocket mcast_sock=null;
@@ -151,7 +155,6 @@ public class MPING extends PING implements Runnable {
 
     public void run() {
         DatagramPacket       packet=new DatagramPacket(receive_buf, receive_buf.length);
-        int                  len;
         byte[]               data;
         ByteArrayInputStream inp_stream=null;
         DataInputStream      inp=null;
@@ -161,9 +164,6 @@ public class MPING extends PING implements Runnable {
             packet.setData(receive_buf, 0, receive_buf.length);
             try {
                 mcast_sock.receive(packet);
-                len=packet.getLength();
-                //if(log.isTraceEnabled())
-                  //  log.trace("received " + len + " bytes from " + packet.getAddress() + ":" + packet.getPort());
                 data=packet.getData();
                 inp_stream=new ByteArrayInputStream(data, 0, data.length);
                 inp=new DataInputStream(inp_stream);
