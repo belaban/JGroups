@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.33 2004/12/28 15:57:01 belaban Exp $
+// $Id: MessageDispatcher.java,v 1.34 2005/01/04 20:48:54 ovidiuf Exp $
 
 package org.jgroups.blocks;
 
@@ -296,6 +296,14 @@ public class MessageDispatcher implements RequestHandler {
 
     public void setRequestHandler(RequestHandler rh) {
         req_handler=rh;
+    }
+
+    /**
+     * Offers access to the underlying Channel. 
+     * @return a reference to the underlying Channel.
+     */
+    public Channel getChannel() {
+        return channel;
     }
 
 
