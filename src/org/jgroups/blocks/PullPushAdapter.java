@@ -1,4 +1,4 @@
-// $Id: PullPushAdapter.java,v 1.10 2004/09/30 14:47:34 belaban Exp $
+// $Id: PullPushAdapter.java,v 1.11 2005/01/12 01:36:51 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -36,10 +36,10 @@ import java.util.List;
 public class PullPushAdapter implements Runnable, ChannelListener {
     protected Transport       transport=null;
     protected MessageListener listener=null;           // main message receiver
-    protected final List            membership_listeners=new ArrayList();
+    protected final List      membership_listeners=new ArrayList();
     protected Thread          receiver_thread=null;
-    protected final HashMap         listeners=new HashMap(); // keys=identifier (Serializable), values=MessageListeners
-    protected final Log log=LogFactory.getLog(getClass());
+    protected final HashMap   listeners=new HashMap(); // keys=identifier (Serializable), values=MessageListeners
+    protected final Log       log=LogFactory.getLog(getClass());
     static final String       PULL_HEADER="PULL_HEADER";
 
 
@@ -76,7 +76,7 @@ public class PullPushAdapter implements Runnable, ChannelListener {
 
 
     public void start() {
-        if(receiver_thread == null) {
+        if(receiver_thread == null || !receiver_thread.isAlive()) {
             receiver_thread=new Thread(this, "PullPushAdapterThread");
             receiver_thread.setDaemon(true);
             receiver_thread.start();
@@ -187,7 +187,7 @@ public class PullPushAdapter implements Runnable, ChannelListener {
     public void run() {
         Object obj;
 
-        while(receiver_thread != null) {
+        while(receiver_thread != null && Thread.currentThread().equals(receiver_thread)) {
             try {
                 obj=transport.receive(0);
                 if(obj == null)
@@ -195,7 +195,6 @@ public class PullPushAdapter implements Runnable, ChannelListener {
 
                 if(obj instanceof Message) {
                     handleMessage((Message)obj);
-
                 }
                 else if(obj instanceof GetStateEvent) {
                     byte[] retval=null;
@@ -255,7 +254,7 @@ public class PullPushAdapter implements Runnable, ChannelListener {
                 Address local_addr=((Channel)transport).getLocalAddress();
                 if(log.isWarnEnabled()) log.warn('[' + (local_addr == null ? "<null>" : local_addr.toString()) +
                         "] channel closed, exception is " + closed_ex);
-                Util.sleep(1000);
+                // Util.sleep(1000);
                 receiver_thread=null;
                 break;
             }
@@ -336,20 +335,25 @@ public class PullPushAdapter implements Runnable, ChannelListener {
     }
 
     public void channelConnected(Channel channel) {
+        if(log.isTraceEnabled())
+            log.trace("channel is connected");
     }
 
     public void channelDisconnected(Channel channel) {
+        if(log.isTraceEnabled())
+            log.trace("channel is disconnected");
     }
 
     public void channelClosed(Channel channel) {
     }
 
     public void channelShunned() {
+        if(log.isTraceEnabled())
+            log.trace("channel is shunned");
     }
 
     public void channelReconnected(Address addr) {
-        if(receiver_thread == null)
-            start();
+        start();
     }
 
 

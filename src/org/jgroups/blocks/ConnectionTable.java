@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.11 2004/10/08 10:00:15 belaban Exp $
+// $Id: ConnectionTable.java,v 1.12 2005/01/12 01:36:51 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -198,6 +198,7 @@ public class ConnectionTable implements Runnable {
             if(conn == null) return;
         }
         catch(SocketException sock_ex) {
+            // log.error("exception sending message to " + dest, sock_ex);
             throw sock_ex;
         }
         catch(Throwable ex) {
@@ -232,7 +233,7 @@ public class ConnectionTable implements Runnable {
                 }
                 catch(IllegalArgumentException ex) {
                     if(log.isErrorEnabled()) log.error("exception setting send buffer size to " +
-                            send_buf_size + " bytes: " + ex);
+                                                       send_buf_size + " bytes: " + ex);
                 }
                 try {
                     sock.setReceiveBufferSize(recv_buf_size);
@@ -345,7 +346,8 @@ public class ConnectionTable implements Runnable {
         while(srv_sock != null) {
             try {
                 client_sock=srv_sock.accept();
-                if(log.isInfoEnabled()) log.info("accepted connection, client_sock=" + client_sock);
+                if(log.isTraceEnabled())
+                    log.trace("accepted connection from " + client_sock.getInetAddress() + ":" + client_sock.getPort());
 
                 // create new thread and add to conn table
                 conn=new Connection(client_sock, null); // will call receive(msg)
@@ -378,6 +380,10 @@ public class ConnectionTable implements Runnable {
                 if(log.isWarnEnabled()) log.warn("exception is " + ex);
                 if(srv_sock == null)
                     break;  // socket was closed, therefore stop
+            }
+            finally {
+                if(log.isTraceEnabled())
+                    log.trace(Thread.currentThread().getName() + " terminated");
             }
         }
     }
@@ -498,7 +504,7 @@ public class ConnectionTable implements Runnable {
         }
 
         void init() {
-            if(log.isInfoEnabled()) log.info("connection was created to " + peer_addr);
+            // if(log.isInfoEnabled()) log.info("connection was created to " + peer_addr);
             if(handler == null) {
                 // Roland Kurmann 4/7/2003, put in thread_group
                 handler=new Thread(thread_group, this, "ConnectionTable.Connection.HandlerThread");
@@ -584,7 +590,7 @@ public class ConnectionTable implements Runnable {
          * the connection will be refused
          */
         Address readPeerAddress(Socket client_sock) throws Exception {
-            Address     peer_addr=null;
+            Address     client_peer_addr=null;
             byte[]      version, buf, input_cookie=new byte[cookie.length];
             int         len=0, client_port=client_sock != null? client_sock.getPort() : 0;
             InetAddress client_addr=client_sock != null? client_sock.getInetAddress() : null;
@@ -596,7 +602,7 @@ public class ConnectionTable implements Runnable {
                 in.read(input_cookie, 0, input_cookie.length);
                 if(!matchCookie(input_cookie))
                     throw new SocketException("ConnectionTable.Connection.readPeerAddress(): cookie sent by " +
-                                              peer_addr + " does not match own cookie; terminating connection");
+                                              client_peer_addr + " does not match own cookie; terminating connection");
                 // then read the version
                 version=new byte[Version.version_id.length];
                 in.read(version, 0, version.length);
@@ -615,10 +621,10 @@ public class ConnectionTable implements Runnable {
                 // finally read the address itself
                 buf=new byte[len];
                 in.readFully(buf, 0, len);
-                peer_addr=(Address)Util.objectFromByteBuffer(buf);
+                client_peer_addr=(Address)Util.objectFromByteBuffer(buf);
                 updateLastAccessed();
             }
-            return peer_addr;
+            return client_peer_addr;
         }
 
 

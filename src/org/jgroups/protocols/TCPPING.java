@@ -1,4 +1,4 @@
-// $Id: TCPPING.java,v 1.18 2005/01/04 08:18:41 belaban Exp $
+// $Id: TCPPING.java,v 1.19 2005/01/12 01:36:54 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -75,16 +75,16 @@ public class TCPPING extends Discovery {
         msg=new Message(null, null, null);
         msg.putHeader(getName(), new PingHeader(PingHeader.GET_MBRS_REQ, null));
 
-        Vector tmpMbrs;
-        synchronized(members) {
-            tmpMbrs=new Vector(members);
-        }
+        //Vector tmpMbrs;
+        //synchronized(members) {
+          //  tmpMbrs=new Vector(members);
+        //}
 
         for(Iterator it=initial_hosts.iterator(); it.hasNext();) {
             Address addr=(Address)it.next();
-            if(tmpMbrs.contains(addr)) {
-                ; // continue; // changed as suggested by Mark Kopec
-            }
+            // if(tmpMbrs.contains(addr)) {
+               // ; // continue; // changed as suggested by Mark Kopec
+            // }
             msg.setDest(addr);
             if(log.isTraceEnabled()) log.trace("[FIND_INITIAL_MBRS] sending PING request to " + msg.getDest());
             passDown(new Event(Event.MSG, msg.copy()));
