@@ -1,11 +1,15 @@
-# This file contains the necessary parameters for running the JGroups
-#  performance tests.
+#
+# This file contains configuration for the JGroups performance tests (org.jgroups.tests.perf package)
+# $Id: config.txt,v 1.2 2004/01/24 16:59:35 belaban Exp $
+#
 
+# Class implementing the org.jgroups.tests.perf.Transport interface
 
-# Class implementing the Transport interface
-transport=org.jgroups.tests.perf.transports.JGroupsTransport
+#transport=org.jgroups.tests.perf.transports.JGroupsTransport
+#transport=org.jgroups.tests.perf.transports.UdpTransport
+transport=org.jgroups.tests.perf.transports.TcpTransport
 
-# Number of messages a sender is supposed to multicast
+# Number of messages a sender multicasts
 num_msgs=10000
 
 # Message size in bytes.
@@ -28,8 +32,26 @@ props=file:c:\\default.xml
 # dump throughput data in column format, easy to read for gnuplot
 gnuplot_output=false
 
-# only used by TCP Transport
-cluster=192.168.0.3,192.168.0.10
 
+#####################################################
+# These properties are only used by the UDP transport
+#####################################################
+bind_addr=localhost
+mcast_addr=228.1.2.3
+mcast_port=7500
+
+
+############################
+# only used by TCP Transport
+############################
+
+# List of hosts in the cluster. Since we don't specify ports, you cannot run multiple TcpTransports
+# on the same machine: each ember has to be run on a separate machine (this may be changed in a next version)
+cluster=192.168.0.3,192.168.0.10
+srv_port=7777
+
+
+#################################################
 # JNDI name of topic (only used by JMS transport)
+#################################################
 topic=topic/testTopic
