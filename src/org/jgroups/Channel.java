@@ -1,4 +1,4 @@
-// $Id: Channel.java,v 1.5 2004/07/23 02:47:08 belaban Exp $
+// $Id: Channel.java,v 1.6 2004/07/30 04:41:11 jiwils Exp $
 
 package org.jgroups;
 
@@ -53,27 +53,6 @@ public abstract class Channel implements Transport {
 
     protected UpHandler up_handler=null;   // when set, <em>all</em> events are passed to it !
     protected ChannelListener channel_listener=null;
-
-
-    /** Hidden from clients */
-    protected Channel() {
-    }
-
-
-    /**
-     Creates a channel (initially not connected).
-
-     @param properties Properties of the channel. This argument serves a generic option (hint)
-     for subclasses as to how to create the channel (parameterization). Interpreted by
-     the channel subclasses. May be for example a <code>String</code> denoting the QoS
-     required by the underlying transport, or <code>null</code> to use default
-     properties.
-
-     @exception ChannelException Channel creation failed.
-
-     */
-    protected Channel(Object properties) throws ChannelException {
-    }
 
 
     /**
