@@ -1,4 +1,4 @@
-// $Id: IpAddressTest.java,v 1.8 2005/01/01 08:16:20 belaban Exp $
+// $Id: IpAddressTest.java,v 1.9 2005/01/07 08:24:38 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -14,6 +14,8 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.HashSet;
+import java.util.HashMap;
 
 
 public class IpAddressTest extends TestCase {
@@ -51,9 +53,42 @@ public class IpAddressTest extends TestCase {
         assertTrue(a.equals(e));
         assertTrue(c.equals(e));
     }
-   
 
-    public void testInequality() throws Exception {        
+    public void testEqualityWithDnsRoundRobin() throws UnknownHostException {
+        IpAddress x1, x2, x3;
+
+        InetAddress addr=InetAddress.getByName("127.0.0.1");
+        byte[] rawAddr=addr.getAddress();
+
+        InetAddress inet1=InetAddress.getByAddress("MyHost1", rawAddr);
+        InetAddress inet2=InetAddress.getByAddress("MyHost2", rawAddr);
+        InetAddress inet3=InetAddress.getByAddress("MyHost3", rawAddr);
+        assertEquals(inet1, inet2);
+
+        x1=new IpAddress(inet1, 5555);
+        x2=new IpAddress(inet2, 5555);
+        x3=new IpAddress(inet3, 5555);
+
+        assertEquals(x1, x2);
+        assertEquals(x3, x1);
+
+        HashSet s=new HashSet();
+        s.add(x1);
+        s.add(x2);
+        s.add(x3);
+        System.out.println("s=" + s);
+        assertEquals(1, s.size());
+
+        HashMap m=new HashMap();
+        m.put(x1, "Bela");
+        m.put(x2, "Michelle");
+        m.put(x3, "Nicole");
+        assertEquals(1, m.size());
+        assertEquals("Nicole", m.get(x1));
+    }
+
+
+    public void testInequality() throws Exception {
         assertTrue(!a.equals(d));
         assertTrue(!c.equals(d));
         assertTrue(!a.equals(f));
