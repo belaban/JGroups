@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.86 2004/07/13 01:46:49 ovidiuf Exp $
+Revision: $Id: history.txt,v 1.87 2004/07/13 08:55:16 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -28,11 +28,15 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 Version 2.2.6
 -------------
 
-- Ran code through Intellij inspector, changed various things (e.g. redundant code etc).
-  (bela July 4 2004)
 
 - Fixed a TUNNEL bug.
   (ovidiu July 12 2004)
+
+- Ran code through Intellij inspector, changed various things (e.g. redundant code etc).
+  (bela July 4 2004)
+
+
+
 
 Version 2.2.5
 -------------
