@@ -1,4 +1,4 @@
-// $Id: ChannelDuo.java,v 1.4 2004/07/05 14:15:04 belaban Exp $
+// $Id: ChannelDuo.java,v 1.5 2004/07/30 04:44:33 jiwils Exp $
 
 package org.jgroups.tests;
 
@@ -42,7 +42,7 @@ public class ChannelDuo extends TestCase
     {
         try
         {
-            channel1 = new JChannel(null);
+            channel1 = new JChannel();
             channel1.connect(channelName);
         }
         catch (ChannelException e)
@@ -72,7 +72,7 @@ public class ChannelDuo extends TestCase
             ReadItems mythread = new ReadItems(channel1, 0, nitems);
             mythread.start();
 
-            channel2 = new JChannel(null);
+            channel2 = new JChannel();
             channel2.connect(channelName);
 
             start = System.currentTimeMillis();
@@ -117,7 +117,7 @@ public class ChannelDuo extends TestCase
 
         try
         {
-            channel2 = new JChannel(null);
+            channel2 = new JChannel();
             channel2.connect(channelName);
         }
         catch (Exception e)
@@ -215,7 +215,7 @@ public class ChannelDuo extends TestCase
 
         try
         {
-            channel2 = new JChannel(null);
+            channel2 = new JChannel();
             channel2.connect(channelName);
         }
         catch (Exception e)
@@ -321,7 +321,7 @@ public class ChannelDuo extends TestCase
 
         try
         {
-            channel2 = new JChannel(null);
+            channel2 = new JChannel();
             channel2.connect(channelName);
         }
         catch (Exception ex)
@@ -413,7 +413,7 @@ public class ChannelDuo extends TestCase
 
         try
         {
-            channel2 = new JChannel(null);
+            channel2 = new JChannel();
             channel2.connect(channelName);
         }
         catch (Exception e)

@@ -1,4 +1,4 @@
-// $Id: ChannelTest.java,v 1.2 2004/02/26 19:14:15 belaban Exp $
+// $Id: ChannelTest.java,v 1.3 2004/07/30 04:44:51 jiwils Exp $
 
 package org.jgroups.tests;
 
@@ -17,7 +17,7 @@ public class ChannelTest implements Runnable {
 
 
     public void start() throws Exception {
-        channel=new JChannel(null);
+        channel=new JChannel();
         channel.connect("ExampleGroup");
         mythread=new Thread(this);
         mythread.start();

@@ -1,4 +1,4 @@
-// $Id: ChannelTrio.java,v 1.4 2004/07/05 14:15:04 belaban Exp $
+// $Id: ChannelTrio.java,v 1.5 2004/07/30 04:44:33 jiwils Exp $
 
 package org.jgroups.tests;
 
@@ -57,17 +57,17 @@ public class ChannelTrio extends TestCase
         {
             logger.info("Inserting " + nitems + " elements");
 
-            channel1 = new JChannel(null);
+            channel1 = new JChannel();
             channel1.connect(channelName);
             ReadItems rthread1 = new ReadItems(channel1, 0, nitems);
             rthread1.start();
 
-            channel2 = new JChannel(null);
+            channel2 = new JChannel();
             channel2.connect(channelName);
             ReadItems rthread2 = new ReadItems(channel2, 0, nitems);
             rthread2.start();
 
-            channel3 = new JChannel(null);
+            channel3 = new JChannel();
             channel3.connect(channelName);
             start = System.currentTimeMillis();
             for (int i = 0; i < nitems; i++)
@@ -116,7 +116,7 @@ public class ChannelTrio extends TestCase
         try
         {
 
-            channel1 = new JChannel(null);
+            channel1 = new JChannel();
             channel1.connect(channelName);
             for (int i = 0; i < removersGroupOne.length; i++)
             {
@@ -124,7 +124,7 @@ public class ChannelTrio extends TestCase
                 removersGroupOne[i].start();
             }
 
-            channel2 = new JChannel(null);
+            channel2 = new JChannel();
             channel2.connect(channelName);
             for (int i = 0; i < removersGroupTwo.length; i++)
             {
@@ -132,7 +132,7 @@ public class ChannelTrio extends TestCase
                 removersGroupTwo[i].start();
             }
 
-            channel3 = new JChannel(null);
+            channel3 = new JChannel();
             channel3.connect(channelName);
         }
         catch (Exception e)
@@ -313,7 +313,7 @@ public class ChannelTrio extends TestCase
 
         try
         {
-            channel1 = new JChannel(null);
+            channel1 = new JChannel();
             channel1.connect(channelName);
         }
         catch (Exception ex)
@@ -328,7 +328,7 @@ public class ChannelTrio extends TestCase
 
         try
         {
-            channel2 = new JChannel(null);
+            channel2 = new JChannel();
             channel2.connect(channelName);
         }
         catch (Exception ex)
@@ -350,7 +350,7 @@ public class ChannelTrio extends TestCase
 
         try
         {
-            channel3 = new JChannel(null);
+            channel3 = new JChannel();
             channel3.connect(channelName);
         }
         catch (Exception ex)
@@ -510,9 +510,9 @@ public class ChannelTrio extends TestCase
 
         try
         {
-            channel2 = new JChannel(null);
+            channel2 = new JChannel();
             channel2.connect(channelName);
-            channel1 = new JChannel(null);
+            channel1 = new JChannel();
             channel1.connect(channelName);
         }
         catch (Exception e)
@@ -535,7 +535,7 @@ public class ChannelTrio extends TestCase
 
         try
         {
-            channel3 = new JChannel(null);
+            channel3 = new JChannel();
             channel3.connect(channelName);
         }
         catch (Exception e)
