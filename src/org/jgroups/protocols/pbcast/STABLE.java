@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.13 2004/07/05 05:49:41 belaban Exp $
+// $Id: STABLE.java,v 1.14 2004/09/06 09:18:54 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -55,7 +55,7 @@ public class STABLE extends Protocol {
     Object              stable_task_mutex=new Object(); // to sync on stable_task
     TimeScheduler       timer=null;                   // to send periodic STABLE msgs (and STABILITY messages)
     int                 max_gossip_runs=3;            // max. number of times the StableTask runs before terminating
-    int                 num_gossip_runs=3;            // this number is decremented (max_gossip_runs doesn't change)
+    int                 num_gossip_runs=max_gossip_runs; // this number is decremented (max_gossip_runs doesn't change)
     static final String name="STABLE";
 
     /** Total amount of bytes from incoming messages (default = 0 = disabled). When exceeded, a STABLE
