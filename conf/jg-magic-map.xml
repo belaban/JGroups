@@ -182,22 +182,70 @@
         <magic-number>30</magic-number>
     </class>
     <class>
+        <description>View</description>
+        <class-name>org.jgroups.View</class-name>
+        <preload>true</preload>
+        <magic-number>31</magic-number>
+    </class>
+     <class>
+        <description>ViewId</description>
+        <class-name>org.jgroups.ViewId</class-name>
+        <preload>true</preload>
+        <magic-number>32</magic-number>
+    </class>
+    <class>
         <description>List</description>
         <class-name>org.jgroups.util.List</class-name>
         <preload>true</preload>
-        <magic-number>31</magic-number>
+        <magic-number>33</magic-number>
     </class>
     <class>
         <description>Address</description>
         <class-name>org.jgroups.Address</class-name>
         <preload>true</preload>
-        <magic-number>32</magic-number>
+        <magic-number>34</magic-number>
     </class>
     <class>
         <description>Array of Address</description>
         <class-name>[Lorg.jgroups.Address;</class-name>
         <preload>true</preload>
-        <magic-number>33</magic-number>
+        <magic-number>35</magic-number>
+    </class>
+     <class>
+        <description>PingRsp</description>
+        <class-name>org.jgroups.protocols.PingRsp</class-name>
+        <preload>true</preload>
+        <magic-number>36</magic-number>
+    </class>
+     <class>
+        <description>Object Array</description>
+        <class-name>[Ljava.lang.Object;</class-name>
+        <preload>true</preload>
+        <magic-number>37</magic-number>
+    </class>
+     <class>
+        <description>Vector</description>
+        <class-name>java.util.Vector</class-name>
+        <preload>true</preload>
+        <magic-number>38</magic-number>
+     </class>
+    <class>
+        <description>JoinRsp</description>
+        <class-name>org.jgroups.protocols.pbcast.JoinRsp</class-name>
+        <preload>true</preload>
+        <magic-number>39</magic-number>
+    </class>
+    <class>
+        <description>Digest</description>
+        <class-name>org.jgroups.protocols.pbcast.Digest</class-name>
+        <preload>true</preload>
+        <magic-number>40</magic-number>
+    </class>
+    <class>
+        <description>Hashtable</description>
+        <class-name>java.util.Hashtable</class-name>
+        <preload>true</preload>
+        <magic-number>41</magic-number>
     </class>
     <class>
         <description>Request header to lease service</description>
