@@ -1,4 +1,4 @@
-// $Id: Configurator.java,v 1.8 2004/09/23 16:29:53 belaban Exp $
+// $Id: Configurator.java,v 1.9 2004/10/23 20:57:00 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -216,9 +216,17 @@ public class Configurator {
         StringTokenizer tok;
         String token;
 
+        /*tok=new StringTokenizer(config_str, delimiter, false);
+        while(tok.hasMoreTokens()) {
+            token=tok.nextToken();
+            retval.addElement(token);
+        }*/
+        // change suggested by gwoolsey
         tok=new StringTokenizer(config_str, delimiter, false);
         while(tok.hasMoreTokens()) {
             token=tok.nextToken();
+            while(token.endsWith("\\"))
+                token=token.substring(0, token.length() - 1) + delimiter + tok.nextToken();
             retval.addElement(token);
         }
 
