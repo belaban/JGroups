@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.16 2004/10/06 08:27:58 belaban Exp $
+// $Id: FD_SOCK.java,v 1.17 2004/10/08 12:46:58 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -8,6 +8,7 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.Promise;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
+import org.jgroups.util.Streamable;
 
 import java.io.*;
 import java.net.ServerSocket;
@@ -692,7 +693,7 @@ public class FD_SOCK extends Protocol implements Runnable {
     /* ------------------------------- End of Private Methods ------------------------------------ */
 
 
-    public static class FdHeader extends Header {
+    public static class FdHeader extends Header implements Streamable {
         static final int SUSPECT=10;
         static final int WHO_HAS_SOCK=11;
         static final int I_HAVE_SOCK=12;
@@ -703,6 +704,8 @@ public class FD_SOCK extends Protocol implements Runnable {
         int       type=SUSPECT;
         Address   mbr=null;           // set on WHO_HAS_SOCK (requested mbr), I_HAVE_SOCK
         IpAddress sock_addr;          // set on I_HAVE_SOCK
+
+        // Hashtable<Address,IpAddress>
         Hashtable cachedAddrs=null;   // set on GET_CACHE_RSP
         Vector    mbrs=null;          // set on SUSPECT (list of suspected members)
 
@@ -762,6 +765,58 @@ public class FD_SOCK extends Protocol implements Runnable {
             sock_addr=(IpAddress) in.readObject();
             cachedAddrs=(Hashtable) in.readObject();
             mbrs=(Vector) in.readObject();
+        }
+
+        public void writeTo(DataOutputStream out) throws IOException {
+            int size;
+            out.writeInt(type);
+            Util.writeAddress(mbr, out);
+            Util.writeStreamable(sock_addr, out);
+            size=cachedAddrs != null? cachedAddrs.size() : 0;
+            out.writeInt(size);
+            if(size > 0) {
+                for(Iterator it=cachedAddrs.entrySet().iterator(); it.hasNext();) {
+                    Map.Entry entry=(Map.Entry)it.next();
+                    Address key=(Address)entry.getKey();
+                    IpAddress val=(IpAddress)entry.getValue();
+                    Util.writeAddress(key, out);
+                    Util.writeStreamable(val, out);
+                }
+            }
+            size=mbrs != null? mbrs.size() : 0;
+            out.writeInt(size);
+            if(size > 0) {
+                for(Iterator it=mbrs.iterator(); it.hasNext();) {
+                    Address address=(Address)it.next();
+                    Util.writeAddress(address, out);
+                }
+            }
+        }
+
+        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+            int size;
+            type=in.readInt();
+            mbr=Util.readAddress(in);
+            sock_addr=(IpAddress)Util.readStreamable(IpAddress.class, in);
+            size=in.readInt();
+            if(size > 0) {
+                if(cachedAddrs == null)
+                    cachedAddrs=new Hashtable();
+                for(int i=0; i < size; i++) {
+                    Address key=Util.readAddress(in);
+                    IpAddress val=(IpAddress)Util.readStreamable(IpAddress.class, in);
+                    cachedAddrs.put(key, val);
+                }
+            }
+            size=in.readInt();
+            if(size > 0) {
+                if(mbrs == null)
+                    mbrs=new Vector();
+                for(int i=0; i < size; i++) {
+                    Address addr=Util.readAddress(in);
+                    mbrs.add(addr);
+                }
+            }
         }
 
     }
