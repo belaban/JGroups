@@ -1,4 +1,4 @@
-// $Id: PING.java,v 1.5 2003/12/22 17:09:00 belaban Exp $
+// $Id: PING.java,v 1.6 2003/12/22 17:10:06 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -419,36 +419,6 @@ public class PING extends Protocol {
 
         return tmp;
     }
-
-
-//    class HostInfo {
-//        public String host;
-//        public int port;
-//
-//
-//        HostInfo() {
-//        }
-//
-//        HostInfo(String h, int p) {
-//            host=h;
-//            port=p;
-//        }
-//
-//        public String toString() {
-//            return host + ":" + port;
-//        }
-//
-//
-//        public boolean equals(Object obj) {
-//            if(obj == null || !(obj instanceof PING.HostInfo))
-//                return false;
-//            if(host == null || ((PING.HostInfo)obj).host == null)
-//                return false;
-//            return host.equals(((PING.HostInfo)obj).host);
-//        }
-//
-//
-//    }
 
 
 }
