@@ -4,10 +4,12 @@ package org.jgroups.blocks;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import java.io.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Vector;
 
 
 
@@ -17,7 +19,7 @@ import java.util.Vector;
  * It includes the name of the method (case sensitive) and a list of arguments.
  * A method call is serializable and can be passed over the wire.
  * @author Bela Ban
- * @version $Revision: 1.4 $
+ * @version $Revision: 1.5 $
  */
 public class MethodCall implements Externalizable {
 
@@ -27,7 +29,7 @@ public class MethodCall implements Externalizable {
     protected String method_name=null;
 
     /** the arguments of the method */
-    protected Object[] args=new Object[0];
+    protected Object[] args=null;
 
     /** the class types, e.g. new Class[]{String.class, int.class} */
     protected Class[] types=null;
@@ -58,7 +60,7 @@ public class MethodCall implements Externalizable {
 
     /**
      * creates an empty method call, this is always invalid, until
-     * <code>SetName</code> has been called
+     * <code>setName()</code> has been called
      */
     public MethodCall() {
     }
@@ -70,116 +72,6 @@ public class MethodCall implements Externalizable {
     public MethodCall(Method method, Object[] arguments) {
         init(method);
         if(arguments != null) args=arguments;
-    }
-
-
-    public void init(Method method) {
-        this.method=method;
-        this.mode=METHOD;
-        method_name=method.getName();
-    }
-
-    /**
-     * creates a method call without arguments for a certain method.
-     * Arguments can always be added using the AddArg method
-     * @param name the name of the method, cannot be null
-     * @deprecated use the complete constructor with a java.lang.reflect.Method argument since null
-     * arguments can not be correctly handled using null arguments
-     * @see #MethodCall(java.lang.reflect.Method)
-     */
-    public MethodCall(String name) {
-        method_name=name;
-    }
-
-    /**
-     * creates a MethodCall with the given name and the given arguments
-     * @param name the name of the method, cannot be null
-     * @param args an array of the arguments, can be null (no arguments)
-     * @deprecated use the complete constructor with a java.lang.reflect.Method argument since null
-     * arguments can not be correctly handled using null arguments
-     * @see #MethodCall(java.lang.reflect.Method)
-     */
-    public MethodCall(String name, Object[] args) {
-        this(name);
-        if(args != null) {
-            for(int i=0; i < args.length; i++) {
-                addArg(args[i]);
-            }
-        }
-    }
-
-    /**
-     * creates a MethodCall with the given name and the given arguments
-     * @param name the name of the method, cannot be null
-     * @param arg1 an object
-     * @deprecated use the complete constructor with a java.lang.reflect.Method argument since null
-     * arguments can not be correctly handled using null arguments
-     * @see #MethodCall(java.lang.reflect.Method)
-     */
-    public MethodCall(String name, Object arg1) {
-        this(name, new Object[]{arg1});
-    }
-
-
-    /**
-     * creates a MethodCall with the given name and the given arguments
-     * @param name the name of the method, cannot be null
-     * @param arg1 first argument
-     * @param arg1 second argument
-     * @deprecated use the complete constructor with a java.lang.reflect.Method argument since null
-     * arguments can not be correctly handled using null arguments
-     * @see #MethodCall(java.lang.reflect.Method)
-     */
-    public MethodCall(String name, Object arg1, Object arg2) {
-        this(name, new Object[]{arg1, arg2});
-    }
-
-
-    /**
-     * creates a MethodCall with the given name and the given arguments
-     * @param name the name of the method, cannot be null
-     * @param arg1 first argument
-     * @param arg2 second argument
-     * @param arg3 third argument
-     * @deprecated use the complete constructor with a java.lang.reflect.Method argument since null
-     * arguments can not be correctly handled using null arguments
-     * @see #MethodCall(java.lang.reflect.Method)
-     */
-    public MethodCall(String name, Object arg1, Object arg2, Object arg3) {
-        this(name, new Object[]{arg1, arg2, arg3});
-    }
-
-
-    /**
-     * creates a MethodCall with the given name and the given arguments
-     * @param name the name of the method, cannot be null
-     * @param arg1 first argument
-     * @param arg2 second argument
-     * @param arg3 third argument
-     * @param arg4 fourth argument
-     * @deprecated use the complete constructor with a java.lang.reflect.Method argument since null
-     * arguments can not be correctly handled using null arguments
-     * @see #MethodCall(java.lang.reflect.Method)
-     */
-    public MethodCall(String name, Object arg1, Object arg2, Object arg3, Object arg4) {
-        this(name, new Object[]{arg1, arg2, arg3, arg4});
-    }
-
-
-    /**
-     * creates a MethodCall with the given name and the given arguments
-     * @param name the name of the method, cannot be null
-     * @param arg1 first argument
-     * @param arg2 second argument
-     * @param arg3 third argument
-     * @param arg4 fourth argument
-     * @param arg5 firth argument
-     * @deprecated use the complete constructor with a java.lang.reflect.Method argument since null
-     * arguments can not be correctly handled using null arguments
-     * @see #MethodCall(java.lang.reflect.Method)
-     */
-    public MethodCall(String name, Object arg1, Object arg2, Object arg3, Object arg4, Object arg5) {
-        this(name, new Object[]{arg1, arg2, arg3, arg4, arg5});
     }
 
 
@@ -197,18 +89,17 @@ public class MethodCall implements Externalizable {
         this.mode=SIGNATURE;
     }
 
+    void init(Method method) {
+        this.method=method;
+        this.mode=METHOD;
+        method_name=method.getName();
+    }
+
 
     public int getMode() {
         return mode;
     }
 
-    /**
-     * Allocates an array for a given number of arguments. Using setArgs() will help us avoid argument array
-     * allocation/deallocation if the number of args is constant
-     */
-    public void setNumArgs(int num) {
-        args=new Object[num];
-    }
 
 
     /**
@@ -232,11 +123,13 @@ public class MethodCall implements Externalizable {
      * returns an ordered list of arguments used for the method invokation
      * @return returns the list of ordered arguments
      */
-    public Vector getArgs() {
-        Vector v=new Vector();
-        for(int i=0; i < args.length; i++)
-            v.addElement(args[i]);
-        return v;
+    public Object[] getArgs() {
+        return args;
+    }
+
+    public void setArgs(Object[] args) {
+        if(args != null)
+            this.args=args;
     }
 
     public Method getMethod() {
@@ -244,100 +137,25 @@ public class MethodCall implements Externalizable {
     }
 
 
-    /**
-     * adds an argument to the end of the argument list
-     * @param arg - object argument for the method invokation
-     */
-    public void addArg(Object arg) {
-        Object[] newarg=new Object[args.length + 1];
-        System.arraycopy(args, 0, newarg, 0, args.length);
-        newarg[args.length]=arg;
-        args=newarg;
-    }
-
-    /**
-     * adds a primitive byte as an argument to the end of the argument list
-     * @param b - a byte argument for the method invokation
-     */
-    public void addArg(byte b) {
-        Byte obj=new Byte(b);
-        addArg(obj);
-    }
-
-    /**
-     * adds a primitive char as an argument to the end of the argument list
-     * @param c - a char argument for the method invokation
-     */
-    public void addArg(char c) {
-        Character obj=new Character(c);
-        addArg(obj);
-    }
-
-    /**
-     * adds a primitive boolean as an argument to the end of the argument list
-     * @param b - a boolean argument for the method invokation
-     */
-    public void addArg(boolean b) {
-        Boolean obj=new Boolean(b);
-        addArg(obj);
-    }
-
-    /**
-     * adds a primitive int as an argument to the end of the argument list
-     * @param i - an int argument for the method invokation
-     */
-    public void addArg(int i) {
-        Integer obj=new Integer(i);
-        addArg(obj);
-    }
-
-    /**
-     * adds a primitive long as an argument to the end of the argument list
-     * @param l - a long argument for the method invokation
-     */
-    public void addArg(long l) {
-        Long obj=new Long(l);
-        addArg(obj);
-    }
 
 
     /**
-     * Sets the argument at index to arg. If index is smaller than args.length(), addArg() will be used instead
-     */
-    public void setArg(int index, Object arg) {
-        if(index >= args.length)
-            addArg(arg);
-        else
-            args[index]=arg;
-    }
-
-
-    public void clearArgs() {
-        args=new Object[0];
-    }
-
-
-    /**
-     * returns a method instance for a certain class matching the name
-     * and the argument types
+     * Returns a method instance for a certain class matching the name and the argument types
      * @param target_class - the class that you will invoke the method on
-     * @param method_name - the name of the method
-     * @param args - the list of arguments (or just class instances of the arguments. args[i].getClass() will be used
      * in this method, not the actual value.
      */
-    Method findMethod(Class target_class, String method_name, Vector args) throws Exception {
-        int     len=args != null? args.size() : 0;
+    Method findMethod(Class target_class) throws Exception {
+        int     len=args != null? args.length : 0;
         Class[] formal_parms=new Class[len];
         Method  retval;
 
         for(int i=0; i < len; i++) {
-            formal_parms[i]=args.elementAt(i).getClass();
+            formal_parms[i]=args[i].getClass();
         }
 
         /* getDeclaredMethod() is a bit faster, but only searches for methods in the current
         class, not in superclasses */
         retval=target_class.getMethod(method_name, formal_parms);
-
         return retval;
     }
 
@@ -348,13 +166,9 @@ public class MethodCall implements Externalizable {
      * If a method lookup is provided, it will be used. Otherwise, the default
      * method lookup will be used.
      * @param target - the object that you want to invoke the method on
-     * @param lookup - an object that allows you to lookup the method on a target object
-     *                 if null is passed as a parameter, the internal FindMethod will be used
-     *                 using core reflection
-     *
      * @return an object
      */
-    public Object invoke(Object target, MethodLookup lookup) {
+    public Object invoke(Object target) throws Throwable {
         Class  cl;
         Method meth=null;
         Object retval=null;
@@ -368,10 +182,7 @@ public class MethodCall implements Externalizable {
         try {
             switch(mode) {
                 case OLD:
-                    if(lookup == null)
-                        meth=findMethod(cl, method_name, getArgs());
-                    else
-                        meth=lookup.findMethod(cl, method_name, getArgs());
+                    meth=findMethod(cl);
                     break;
                 case METHOD:
                     if(this.method != null)
@@ -399,32 +210,33 @@ public class MethodCall implements Externalizable {
             }
             return retval;
         }
-        catch(IllegalArgumentException illegal_arg) {
-            return illegal_arg;
-        }
-        catch(IllegalAccessException illegal_access) {
-            illegal_access.printStackTrace();
-            return illegal_access;
-        }
         catch(InvocationTargetException inv_ex) {
-            return inv_ex.getTargetException();
+            throw inv_ex.getTargetException();
         }
         catch(NoSuchMethodException no) {
-            System.out.print("MethodCall.invoke(): found no method called " + method_name +
-                             " in class " + cl.getName() + " with [");
+            StringBuffer sb=new StringBuffer();
+            sb.append("found no method called ").append(method_name).append(" in class ");
+            sb.append(cl.getName()).append(" with (");
             for(int i=0; i < args.length; i++) {
                 if(i > 0)
-                    System.out.print(", ");
-                System.out.print((args[i] != null)? args[i].getClass().getName() : "null");
+                    sb.append(", ");
+                sb.append((args[i] != null)? args[i].getClass().getName() : "null");
             }
-            System.out.println("] formal parameters");
-            return no;
+            sb.append(") formal parameters");
+            log.error(sb.toString());
+            throw no;
         }
         catch(Throwable e) {
             if(log.isErrorEnabled()) log.error("exception=" + e);
-            return e;
+            throw e;
         }
     }
+
+    public Object invoke(Object target, Object[] args) throws Throwable {
+        this.args=args;
+        return invoke(target);
+    }
+
 
     Class[] getTypesFromString(Class cl, String[] signature) throws Exception {
         String  name;
@@ -542,23 +354,7 @@ public class MethodCall implements Externalizable {
     }
 
 
-    public static void main(String[] args) throws Exception {
-        MethodCall m=new MethodCall(MethodCall.class.getMethod("invoke", new Class[]{Object.class}));
-        m.addArg(m);
-        ByteArrayOutputStream msg_data=new ByteArrayOutputStream();
-        ObjectOutputStream msg_out=new ObjectOutputStream(msg_data);
-        m.writeExternal(msg_out);
-        msg_out.flush();
-        msg_out.close();
-        byte[] data=msg_data.toByteArray();
-        ByteArrayInputStream msg_in_data=new ByteArrayInputStream(data);
-        ObjectInputStream msg_in=new ObjectInputStream(msg_in_data);
-        MethodCall m2=new MethodCall();
-        m2.readExternal(msg_in);
-        System.out.println(m2.getName());
-        System.out.println(m2.getArgs().size());
 
-    }
 
 }
 
