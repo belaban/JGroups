@@ -1,4 +1,4 @@
-// $Id: GmsImpl.java,v 1.2 2004/03/30 06:47:18 belaban Exp $
+// $Id: GmsImpl.java,v 1.3 2004/07/28 22:46:59 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -16,9 +16,9 @@ import java.util.Vector;
 
 
 public abstract class GmsImpl {
-    protected GMS          gms=null;
-     protected Log log=LogFactory.getLog(getClass());
-
+    protected GMS   gms=null;
+    protected Log   log=LogFactory.getLog(getClass());
+    boolean         leaving=false;
 
     public abstract void      join(Address mbr);
     public abstract void      leave(Address mbr);
@@ -43,9 +43,9 @@ public abstract class GmsImpl {
     public boolean            handleUpEvent(Event evt) {return true;}
     public boolean            handleDownEvent(Event evt) {return true;}
 
-    public void               init() throws Exception {;}
-    public void               start() throws Exception {;}
-    public void               stop() {;}
+    public void               init() throws Exception {leaving=false;}
+    public void               start() throws Exception {leaving=false;}
+    public void               stop() {leaving=true;}
 
 
 

@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.8 2004/07/05 05:49:41 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.9 2004/07/28 22:46:59 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -20,7 +20,6 @@ import java.util.Vector;
  */
 public class CoordGmsImpl extends GmsImpl {
     boolean      merging=false;
-    boolean      leaving=false;
     Promise      leave_promise=null;
     MergeTask    merge_task=new MergeTask();
     Vector       merge_rsps=new Vector(11);
@@ -316,6 +315,7 @@ public class CoordGmsImpl extends GmsImpl {
     }
 
     public void stop() {
+        leaving=true;
         merge_task.stop();
     }
 

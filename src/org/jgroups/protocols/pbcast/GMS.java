@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.12 2004/07/05 05:49:41 belaban Exp $
+// $Id: GMS.java,v 1.13 2004/07/28 22:46:59 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -87,7 +87,7 @@ public class GMS extends Protocol {
     public void setImpl(GmsImpl new_impl) {
         synchronized(impl_mutex) {
             impl=new_impl;
-             if(log.isDebugEnabled()) log.debug("changed role to " + new_impl.getClass().getName());
+            if(log.isDebugEnabled()) log.debug("changed role to " + new_impl.getClass().getName());
         }
     }
 
@@ -151,7 +151,7 @@ public class GMS extends Protocol {
         }
         tmp.initial_mbrs.removeAllElements();
         setImpl(tmp);
-         if(log.isDebugEnabled()) log.debug(local_addr + " became client");
+        if(log.isDebugEnabled()) log.debug(local_addr + " became client");
     }
 
 
