@@ -1,4 +1,4 @@
-// $Id: ConnectStressTest.java,v 1.4 2003/11/21 09:14:42 belaban Exp $
+// $Id: ConnectStressTest.java,v 1.5 2003/11/21 23:16:00 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -16,7 +16,7 @@ import org.jgroups.log.Trace;
 /**
  * Creates 1 channel, then creates NUM channels, all try to join the same channel concurrently.
  * @author Bela Ban Nov 20 2003
- * @version $Id: ConnectStressTest.java,v 1.4 2003/11/21 09:14:42 belaban Exp $
+ * @version $Id: ConnectStressTest.java,v 1.5 2003/11/21 23:16:00 belaban Exp $
  */
 public class ConnectStressTest extends TestCase {
     static CyclicBarrier  start_connecting=null;
@@ -29,13 +29,13 @@ public class ConnectStressTest extends TestCase {
     static String         groupname="ConcurrentTestDemo";
 
 
-    static String props="UDP(mcast_addr=228.8.8.8;mcast_port=45566;ip_ttl=32;" +
+    static String props="UDP(mcast_addr=228.8.8.9;mcast_port=7788;ip_ttl=32;" +
             "mcast_send_buf_size=150000;mcast_recv_buf_size=80000):" +
-            "PING(timeout=2000;num_initial_members=3):" +
+            "PING(timeout=3000;num_initial_members=3):" +
             "MERGE2(min_interval=5000;max_interval=10000):" +
             "FD_SOCK:" +
             "VERIFY_SUSPECT(timeout=1500):" +
-            "pbcast.NAKACK(gc_lag=50;retransmit_timeout=600,1200,2400,4800):" +
+            "pbcast.NAKACK(gc_lag=50;retransmit_timeout=1200,2400,4800):" +
             "UNICAST(timeout=600,1200,2400):" +
             "pbcast.STABLE(desired_avg_gossip=20000):" +
             "FRAG(frag_size=4096;down_thread=false;up_thread=false):" +
@@ -63,6 +63,7 @@ public class ConnectStressTest extends TestCase {
         channel=new JChannel(props);
         channel.connect(groupname);
         // at this point we have successfully connected
+
         assertEquals(channel.getView().getMembers().size(), 1);
 
         threads=new MyThread[NUM];
@@ -80,10 +81,15 @@ public class ConnectStressTest extends TestCase {
             connected.barrier();
             stop=System.currentTimeMillis();
             System.out.println("-- took " + (stop-start) + " msecs for all " + NUM + " threads to connect");
-            Util.sleep(1000);
-            int num_members=channel.getView().getMembers().size();
-            System.out.println("*--* number of members connected: " + num_members + ", (expected: " +
-                               (NUM+1) + ")");
+
+            int num_members=0;
+            for(int i=0; i < 10; i++) {
+                num_members=channel.getView().getMembers().size();
+                System.out.println("*--* number of members connected: " + num_members + ", (expected: " +(NUM+1) + ")");
+                if(num_members >= NUM+1)
+                    break;
+                Util.sleep(500);
+            }
             assertEquals((NUM+1), num_members);
         }
         catch(Exception ex) {
@@ -99,12 +105,16 @@ public class ConnectStressTest extends TestCase {
         disconnected.barrier();
         stop=System.currentTimeMillis();
         System.out.println("-- took " + (stop-start) + " msecs for " + NUM + " threads to disconnect");
-        Util.sleep(1000);
-        View view=channel.getView();
-        System.out.println("-- view is " + view);
-        int num_members=view.getMembers().size();
-        System.out.println("*--* number of members conncected: " + num_members + ", (expected: " +
-                           1 + ")");
+
+
+        int num_members=0;
+        for(int i=0; i < 10; i++) {
+            num_members=channel.getView().getMembers().size();
+            System.out.println("*--* number of members connected: " + num_members + ", (expected: 1)");
+            if(num_members == 1)
+                break;
+            Util.sleep(500);
+        }
         assertEquals(1, num_members);
     }
 
@@ -130,13 +140,13 @@ public class ConnectStressTest extends TestCase {
                 start_connecting.barrier();
 
                 //Util.sleepRandom(5000);
-                log("starting work: connecting to channel");
+                log("connecting to channel");
                 long start=System.currentTimeMillis(), stop;
                 ch.connect(groupname);
                 stop=System.currentTimeMillis();
                 total_connect_time=stop-start;
                 log("connected in " + total_connect_time + " msecs (" + channel.getView().getMembers().size() +
-                    " members). local_addr=" + ch.getLocalAddress());
+                    " members). local_addr=" + ch.getLocalAddress() + ", view: " + channel.getView());
 
                 connected.barrier();
 
