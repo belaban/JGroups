@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.10 2004/03/30 06:47:29 belaban Exp $
+// $Id: JChannel.java,v 1.11 2004/04/16 06:03:21 belaban Exp $
 
 package org.jgroups;
 
@@ -23,7 +23,7 @@ import java.util.Vector;
  * protocol stack
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.10 $
+ * @version $Revision: 1.11 $
  */
 public class JChannel extends Channel {
 
@@ -1185,7 +1185,7 @@ public class JChannel extends Channel {
                     try {
                         if(log.isInfoEnabled()) log.info("reconnecting to group " + old_channel_name);
                         open();
-                         }
+                    }
                     catch(Exception ex) {
                         if(log.isErrorEnabled()) log.error("failure reopening channel: " + ex);
                         return;
