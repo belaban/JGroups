@@ -124,7 +124,7 @@ security.provider.6=org.bouncycastle.jce.provider.BouncyCastleProvider<br>
   &lt;ENCRYPT1_4 key_store_name="defaultStore.keystore" store_password="changeit" alias="myKey"/&gt;<br>
   </b><p>
   An example bare-bones.xml file showing the keystore version can be found in the conf 
-  directory in a file called <b>EncryptKeyStore.xml</b> - along with a <b>defaultStore.keystore</b> file.<br>
+  directory in a file called <b>EncryptKeyStore.xml</b> - you will need to generate a keystore - see the KeyStoreGenerator file in the demo directory or use the makeKeystore target in the build file.<br>
   In order to use the Encrypt layer in this manner it is necessary to have the secretKey already generated 
   in a keystore file. The directory containing the keystore file must be on the application's classpath.
   You cannot create a SecretKey keystore file using the keytool application shipped with the JDK.
@@ -132,7 +132,7 @@ security.provider.6=org.bouncycastle.jce.provider.BouncyCastleProvider<br>
   package that can be used from the command line (or IDE) to generate a suitable keystore.
   <p>
   <b>IMPORTANT- A keystore generated under each version of the 1.4 JDK can be incompatible with other JDK versions.
-  Make sure you generate the keystore with the same JDK version as you are going to use at runtime.</b><p>
+  Make sure you generate the keystore with the same JDK version as you are going to use at runtime. This is important for 1.4.2_04 and 1.4.2_05.</b><p>
   
   <h2>Option 2 - Dynamic Key Generation (JDK1.3/1.4)</h2><br>
   This option is suited to an application that does not ship with a shared key but instead it is generated 
