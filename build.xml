@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.19 2005/01/07 15:17:13 steview Exp $ -->
+<!-- $Id: build.xml,v 1.20 2005/01/28 07:10:53 belaban Exp $ -->
 
 <project name="JGroups" default="compile-1.4" basedir=".">
     <description>
@@ -84,6 +84,7 @@
         depends="prepare"
         description="Compiles are Java files (including files dependent on JDK 1.4)">
         <javac destdir="${compile.dir}"
+            source="1.4"
             classpathref="jg.classpath"
             debug="on"
             deprecation="off"
@@ -105,6 +106,7 @@
          depends="prepare"
          description="Compiles are Java files (including files dependent on JDK 1.5)">
          <javac destdir="${compile.dir}"
+             source="1.5"
              classpathref="jg.classpath"
              debug="on"
              deprecation="off"
