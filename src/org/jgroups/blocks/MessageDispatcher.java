@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.28 2004/08/04 14:29:15 belaban Exp $
+// $Id: MessageDispatcher.java,v 1.29 2004/08/05 07:55:07 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -682,7 +682,8 @@ public class MessageDispatcher implements RequestHandler {
             upProcessingThread=new Thread(new Runnable() {
                 public void run() {
                     Event event=null;
-                    while(upProcessingThread != null) {
+                    // while(upProcessingThread != null) {
+                    while(Thread.currentThread() == upProcessingThread) { // changed, see bug 998920
                         try {
                             event=(Event)upQueue.remove();
                             m_upLatch.passThrough();
