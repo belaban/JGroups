@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.9 2004/09/23 16:29:41 belaban Exp $
+// $Id: MERGE2.java,v 1.10 2005/01/03 10:51:04 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -211,7 +211,7 @@ public class MERGE2 extends Protocol {
 
 
         public void start() {
-            if(thread == null) {
+            if(thread == null || !thread.isAlive()) {
                 thread=new Thread(this, "MERGE2.FindSubgroups thread");
                 thread.setDaemon(true);
                 thread.start();
@@ -220,7 +220,7 @@ public class MERGE2 extends Protocol {
 
 
         public void stop() {
-            if(thread != null && thread.isAlive()) {
+            if(thread != null) {
                 Thread tmp=thread;
                 thread=null;
                 tmp.interrupt(); // wakes up sleeping thread
@@ -262,6 +262,8 @@ public class MERGE2 extends Protocol {
                     }
                 }
             }
+            if(log.isTraceEnabled())
+                log.trace("MERGE2.FindSubgroups thread terminated");
         }
 
 
