@@ -11,7 +11,11 @@ package org.jgroups.persistence;
 import org.jgroups.log.Trace;
 
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.Properties;
+import java.lang.reflect.Method;
+import java.lang.reflect.Constructor;
 
 
 public class PersistenceFactory
@@ -34,10 +38,10 @@ public class PersistenceFactory
      * @return PersistenceFactory;
      */
     public static PersistenceFactory getInstance() {
-	System.err.println(" getting factory instance ");
+        System.err.println(" getting factory instance ");
         if (_factory == null)
-	    _factory = new PersistenceFactory();
-	return _factory;
+            _factory = new PersistenceFactory();
+        return _factory;
     }
 
     /**
@@ -58,20 +62,19 @@ public class PersistenceFactory
      * @exception Exception;
      */ 
     public synchronized PersistenceManager createManager() throws Exception {
-	// will return null if not initialized
-	// uses default properties
-	if (_manager == null)
-	    {
-		if (checkDB())
-		    _manager = createManagerDB(propPath);
-		else
-		    _manager = createManagerFile(propPath);
-	    }
-	return _manager;	    
-    }// end of default
+        // will return null if not initialized
+        // uses default properties
+        if (_manager == null)
+        {
+            if (checkDB())
+                _manager = createManagerDB(propPath);
+            else
+                _manager = createManagerFile(propPath);
+        }
+        return _manager;
+    }
 
 
-    
     /**
      * Duplicated signature to create PersistenceManager to allow user to
      * provide property path. 
@@ -81,14 +84,14 @@ public class PersistenceFactory
      */
     public synchronized PersistenceManager createManager (String filePath) throws Exception 
     {
-	if (_manager == null)
-	    {
-		if (checkDB(filePath))
-		    _manager = createManagerDB(filePath);
-		else
-		    _manager = createManagerFile(filePath);
-	    }
-	return _manager;
+        if (_manager == null)
+        {
+            if (checkDB(filePath))
+                _manager = createManagerDB(filePath);
+            else
+                _manager = createManagerFile(filePath);
+        }
+        return _manager;
     }
 
 
@@ -114,10 +117,25 @@ public class PersistenceFactory
     {
         if (Trace.trace)
             Trace.info("persistence", "Creating file manager: " + filePath);
+        Properties props;
+
         try
         {
             if (_manager == null)
-                _manager = new FilePersistenceManager(filePath);
+            {
+                props=readProps(filePath);
+                String classname=props.getProperty(filePersistMgr);
+                if(classname != null)
+                {
+                    Class cl=Thread.currentThread().getContextClassLoader().loadClass(classname);
+                    Constructor ctor=cl.getConstructor(new Class[]{String.class});
+                    _manager=(PersistenceManager)ctor.newInstance(new Object[]{filePath});
+                }
+                else
+                {
+                    _manager = new FilePersistenceManager(filePath);
+                }
+            }
             return _manager;
         }
         catch (Throwable t)
@@ -135,15 +153,14 @@ public class PersistenceFactory
      */
     private boolean checkDB() throws Exception
     {
-	Properties props;
-	FileInputStream _stream = new FileInputStream(propPath);
-	props = new Properties();
-	props.load(_stream);
-	String persist = props.getProperty(persistProp);
-	if (persist.equals("DB"))
-	    return true;
-	return false;
-    }// end of default check
+        Properties props=readProps(propPath);
+        String persist = props.getProperty(persistProp);
+        if (persist.equals("DB"))
+            return true;
+        return false;
+    }
+
+
 
 
     /**
@@ -152,16 +169,22 @@ public class PersistenceFactory
      */
     private boolean checkDB(String filePath) throws Exception
     {
-	Properties props;
-	FileInputStream _stream = new FileInputStream(filePath);
-	props = new Properties();
-	props.load(_stream);
-	String persist = props.getProperty(persistProp);
-	if (persist.equals("DB"))
-	    return true;
-	return false;
+        Properties props=readProps(filePath);
+        String persist = props.getProperty(persistProp);
+        if (persist.equals("DB"))
+            return true;
+        return false;
     }
-    
+
+
+    Properties readProps(String fileName) throws IOException
+    {
+        Properties props;
+        FileInputStream _stream = new FileInputStream(fileName);
+        props=new Properties();
+        props.load(_stream);
+        return props;
+    }
 
     private static PersistenceManager _manager = null;
     private static PersistenceFactory _factory = null;
@@ -170,4 +193,7 @@ public class PersistenceFactory
     /* Please set this according to configuration */
     final static String propPath = "persist.properties";
     final static String persistProp = "persist";
+
+    /** The class that implements a file-based PersistenceManager */
+    final static String filePersistMgr="filePersistMgr";
 }
