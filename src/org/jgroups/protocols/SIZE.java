@@ -1,4 +1,4 @@
-// $Id: SIZE.java,v 1.2 2003/12/26 22:50:20 belaban Exp $
+// $Id: SIZE.java,v 1.3 2003/12/27 00:08:35 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -23,6 +23,10 @@ import java.util.Vector;
 public class SIZE extends Protocol {
     Vector members=new Vector();
     boolean print_msg=false;
+
+    /** Min size in bytes above which msgs should be printed */
+    long min_size=0;
+
     ByteArrayOutputStream out_stream=new ByteArrayOutputStream(65535);
 
 
@@ -50,6 +54,12 @@ public class SIZE extends Protocol {
             props.remove("print_msg");
         }
 
+        str=props.getProperty("min_size");
+        if(str != null) {
+            min_size=Integer.parseInt(str);
+            props.remove("min_size");
+        }
+
         if(props.size() > 0) {
             System.err.println("SIZE.setProperties(): the following properties are not recognized:");
             props.list(System.out);
@@ -71,11 +81,13 @@ public class SIZE extends Protocol {
                 if(Trace.trace) {
                     if((buf=msg.getBuffer()) != null)
                         payload_size=buf.length;
-                    Trace.info("SIZE.up()", "size of message is " + sizeOf(msg) +
-                            ", " + msg.getHeaders().size() + " headers");
-                    if(print_msg)
-                        Trace.info("SIZE.up()", "headers are " + msg.getHeaders() +
-                                ", payload size=" + payload_size);
+                    if(payload_size > min_size) {
+                        Trace.info("SIZE.up()", "size of message is " + sizeOf(msg) +
+                                ", " + msg.getHeaders().size() + " headers");
+                        if(print_msg)
+                            Trace.info("SIZE.up()", "headers are " + msg.getHeaders() +
+                                    ", payload size=" + payload_size);
+                    }
                 }
                 break;
         }
@@ -96,12 +108,13 @@ public class SIZE extends Protocol {
                 if(Trace.trace) {
                     if((buf=msg.getBuffer()) != null)
                         payload_size=buf.length;
-
-                    Trace.info("SIZE.down()", "size of message is " + sizeOf(msg) +
-                            ", " + msg.getHeaders().size() + " headers");
-                    if(print_msg)
-                        Trace.info("SIZE.up()", "headers are " + msg.getHeaders() +
-                                ", payload size=" + payload_size);
+                    if(payload_size > min_size) {
+                        Trace.info("SIZE.down()", "size of message is " + sizeOf(msg) +
+                                ", " + msg.getHeaders().size() + " headers");
+                        if(print_msg)
+                            Trace.info("SIZE.up()", "headers are " + msg.getHeaders() +
+                                    ", payload size=" + payload_size);
+                    }
                 }
                 break;
         }
