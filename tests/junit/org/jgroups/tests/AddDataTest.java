@@ -1,32 +1,94 @@
 package org.jgroups.tests;
 
 import junit.framework.TestCase;
-import org.jgroups.ChannelException;
-import org.jgroups.Event;
-import org.jgroups.JChannel;
+import org.jgroups.*;
 import org.jgroups.log.Trace;
 import org.jgroups.stack.IpAddress;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.jgroups.util.Util;
 
 /**
  *
  * @author Bela Ban
- * @version $Id: AddDataTest.java,v 1.3 2003/12/06 01:23:00 belaban Exp $
+ * @version $Id: AddDataTest.java,v 1.4 2003/12/15 23:37:16 belaban Exp $
  */
 public class AddDataTest extends TestCase {
+
+    
+    String props="UDP(mcast_addr=228.1.2.3;mcast_port=45566;ip_ttl=32):" +
+        "PING(timeout=2000;num_initial_members=2):" +
+        "FD(timeout=1000;max_tries=2):" +
+        "VERIFY_SUSPECT(timeout=1500):" +
+        "pbcast.NAKACK(gc_lag=10;retransmit_timeout=600,1200,2400,4800):" +
+            "UNICAST(timeout=600,1200,2400,4800):" +
+        "pbcast.STABLE(desired_avg_gossip=10000):" +
+        "FRAG:" +
+        "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
+        "shun=true;print_local_addr=true)";
+
+
 
     public AddDataTest(String name) {
         super(name);
         Trace.init();
     }
 
+
+    /**
+     * Uncomment to test shunning/reconnecting (using CTRL-Z and fg)
+     */
+//    public void testAdditionalDataWithShun() {
+//        try {
+//            JChannel c=new JChannel(props);
+//            Map m=new HashMap();
+//            m.put("additional_data", new byte[]{'b', 'e', 'l', 'a'});
+//            c.down(new Event(Event.CONFIG, m));
+//            c.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
+//            c.setChannelListener(new ChannelListener() {
+//                public void channelDisconnected(Channel channel) {
+//                    System.out.println("channel disconnected");
+//                }
+//
+//                public void channelShunned() {
+//                    System.out.println("channel shunned");
+//                }
+//
+//                public void channelReconnected(Address addr) {
+//                    System.out.println("channel reconnected");
+//                }
+//
+//                public void channelConnected(Channel channel) {
+//                    System.out.println("channel connected");
+//                }
+//
+//                public void channelClosed(Channel channel) {
+//                    System.out.println("channel closed");
+//                }
+//            });
+//            System.out.println("CONNECTING");
+//            c.connect("bla");
+//            System.out.println("CONNECTING: done");
+//            IpAddress addr=(IpAddress)c.getLocalAddress();
+//            System.out.println("address is " + addr);
+//            assertNotNull(addr.getAdditionalData());
+//            assertEquals(addr.getAdditionalData()[0], 'b');
+//            Util.sleep(600000);
+//            c.close();
+//        }
+//        catch(ChannelException e) {
+//            e.printStackTrace();
+//            fail(e.toString());
+//        }
+//    }
+
+
     public void testAdditionalData() {
         try {
             for(int i=1; i <= 10; i++) {
                 System.out.println("-- attempt # " + i + "/10");
-                JChannel c=new JChannel();
+                JChannel c=new JChannel(props);
                 Map m=new HashMap();
                 m.put("additional_data", new byte[]{'b', 'e', 'l', 'a'});
                 c.down(new Event(Event.CONFIG, m));
