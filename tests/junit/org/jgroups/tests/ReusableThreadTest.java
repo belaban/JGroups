@@ -1,4 +1,4 @@
-// $Id: ReusableThreadTest.java,v 1.5 2004/07/05 14:15:04 belaban Exp $
+// $Id: ReusableThreadTest.java,v 1.6 2005/01/16 01:04:34 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -46,39 +46,28 @@ public class ReusableThreadTest extends TestCase {
             name="LongRunningThread #" + num;
         }
 
+        public LongRunningThread(int num, long sleep_time) {
+            super(num);
+            this.sleep_time=sleep_time;
+            name="LongRunningThread #" + num;
+        }
+
         public void run() {
             System.out.println("LongRunningThread " + name + " is run");
-            System.out.print("LongRunningThread #" + num + ": sleeping " + sleep_time + " msecs");
+            System.out.println("LongRunningThread #" + num + ": sleeping " + sleep_time + " msecs");
             Util.sleep(sleep_time);
-            //System.out.println("LongRunningThread -- done");
         }
     }
 
 
+
+
     public void testReusableThread() {
         ReusableThread t=new ReusableThread("Demo ReusableThread");
-        // t.start();
-
         MyThread m1=new MyThread(1);
         MyThread m2=new MyThread(2);
-        MyThread m3=new MyThread(3);
-        MyThread m5=new MyThread(5);
-        MyThread m6=new MyThread(6);
-        MyThread m7=new MyThread(7);
-        MyThread m8=new MyThread(8);
-
 
         LongRunningThread m4=new LongRunningThread(4);
-
-
-        // Util.sleep(3000);
-        // t.stop();
-
-        // t.assignTask(m4);
-        // t.waitUntilDone();
-        // t.stop();
-
-
 
         System.out.println("Assigning task");
         t.assignTask(m4);
@@ -89,7 +78,6 @@ public class ReusableThreadTest extends TestCase {
         System.out.println("stop()");
         t.stop();
         System.out.println("stop() -- done");
-
 
         Util.printThreads();
 
@@ -110,6 +98,38 @@ public class ReusableThreadTest extends TestCase {
         System.out.println("done");
 
         Util.printThreads();
+    }
+
+
+    public void testAssignMultipleTimes() {
+        ReusableThread t=new ReusableThread("Demo ReusableThread");
+
+        LongRunningThread t1, t2;
+        t1=new LongRunningThread(1, 500);
+        t2=new LongRunningThread(2, 300);
+
+        t.start();
+
+        t.assignTask(t1);
+        t.waitUntilDone();
+        assertTrue(t.done());
+        t.assignTask(t2);
+        t.waitUntilDone();
+        assertTrue(t.done());
+    }
+
+    public void testStop() {
+        ReusableThread t=new ReusableThread("Demo ReusableThread");
+
+        LongRunningThread t1;
+        t1=new LongRunningThread(1, 20000);
+
+        t.assignTask(t1);
+        Util.sleep(1000);
+        t.stop();
+        t.waitUntilDone();
+        assertTrue(t.done());
+        assertFalse(t.isAlive());
     }
 
 
