@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.22 2004/05/05 13:52:27 belaban Exp $
+// $Id: NAKACK.java,v 1.23 2004/05/05 13:59:35 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -557,9 +557,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
             if(m == null) {
                 if(log.isErrorEnabled()) {
                     log.error("(requester=" + dest + ", local_addr=" + this.local_addr + ") message with " +
-                            "seqno=" + i +
-                            " not found in sent_msgs ! sent_msgs=" +
-                            printSentMsgs());
+                            "seqno=" + i + " not found in sent_msgs ! sent_msgs=" + printSentMsgs());
                 }
                 continue;
             }
@@ -595,6 +593,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
                 log.trace("xmitting msgs [" + marker + "-" + last_seqno + "] to " + dest);
             }
             sendXmitRsp(dest, (LinkedList)list.clone(), marker, last_seqno);
+            list.clear();
         }
     }
 
