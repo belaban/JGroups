@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.14 2004/08/19 09:24:11 belaban Exp $
+// $Id: GMS.java,v 1.15 2004/08/31 16:29:25 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -367,7 +367,9 @@ public class GMS extends Protocol {
             passUp(view_event);
 
             coord=determineCoordinator();
-            if(coord != null && coord.equals(local_addr) && !(coord.equals(vid.getCoordAddress()))) {
+            // if(coord != null && coord.equals(local_addr) && !(coord.equals(vid.getCoordAddress()))) {
+            // changed on suggestion by yaronr
+            if(coord != null && coord.equals(local_addr)) {
                 becomeCoordinator();
             }
             else {
