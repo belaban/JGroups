@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.13 2004/10/08 13:56:12 belaban Exp $
+// $Id: UNICAST.java,v 1.14 2005/01/28 12:20:10 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -39,16 +39,16 @@ import java.util.Vector;
 public class UNICAST extends Protocol implements AckSenderWindow.RetransmitCommand {
     boolean          operational=false;
     final Vector     members=new Vector(11);
-    final Hashtable  connections=new Hashtable(11);   // Object (sender or receiver) -- Entries
-    long[]           timeout={800,1600,3200,6400};  // for AckSenderWindow: max time to wait for missing acks
+    final Hashtable  connections=new Hashtable(11); // Object (sender or receiver) -- Entries
+    long[]           timeout={400, 800,1600,3200};  // for AckSenderWindow: max time to wait for missing acks
     Address          local_addr=null;
     TimeScheduler    timer=null;                    // used for retransmissions (passed to AckSenderWindow)
 
     // if UNICAST is used without GMS, don't consult the membership on retransmit() if use_gms=false
     // default is true
     boolean          use_gms=true;
-    int              window_size=-1;                // sliding window: max number of msgs in table
-    int              min_threshold=-1;              // num under which table has to fall before we resume adding msgs
+    int              window_size=-1;               // sliding window: max number of msgs in table (disabled by default)
+    int              min_threshold=-1;             // num under which table has to fall before we resume adding msgs
     
 
 
@@ -109,9 +109,9 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             props.remove("min_threshold");
         }
 
-	str=props.getProperty("use_gms");
+        str=props.getProperty("use_gms");
         if(str != null) {
-	    use_gms=Boolean.valueOf(str).booleanValue();
+            use_gms=Boolean.valueOf(str).booleanValue();
             props.remove("use_gms");
         }
 
