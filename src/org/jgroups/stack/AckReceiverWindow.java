@@ -1,4 +1,4 @@
-// $Id: AckReceiverWindow.java,v 1.8 2004/09/23 16:29:53 belaban Exp $
+// $Id: AckReceiverWindow.java,v 1.9 2005/01/28 09:53:08 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -11,7 +11,8 @@ import java.util.HashMap;
 
 
 /**
- * Counterpart of AckSenderWindow. Every message received is ACK'ed (even duplicates) and added to a hashmap
+ * Counterpart of AckSenderWindow. Simple FIFO buffer.
+ * Every message received is ACK'ed (even duplicates) and added to a hashmap
  * keyed by seqno. The next seqno to be received is stored in <code>next_to_remove</code>. When a message with
  * a seqno less than next_to_remove is received, it will be discarded. The <code>remove()</code> method removes
  * and returns a message whose seqno is equal to next_to_remove, or null if not found.<br>
@@ -21,7 +22,8 @@ import java.util.HashMap;
  * @author Bela Ban
  */
 public class AckReceiverWindow {
-    long initial_seqno=0, next_to_remove=0;
+    final long initial_seqno;
+    long next_to_remove=0;
     final HashMap msgs=new HashMap();  // keys: seqnos (Long), values: Messages
     static final Log log=LogFactory.getLog(AckReceiverWindow.class);
 
@@ -35,8 +37,7 @@ public class AckReceiverWindow {
     public void add(long seqno, Message msg) {
         if(seqno < next_to_remove) {
             if(log.isTraceEnabled())
-                log.trace("discarded msg with seqno=" + seqno +
-                        " (next msg to receive is " + next_to_remove + ')');
+                log.trace("discarded msg with seqno=" + seqno + " (next msg to receive is " + next_to_remove + ')');
             return;
         }
         msgs.put(new Long(seqno), msg);
@@ -61,58 +62,14 @@ public class AckReceiverWindow {
         next_to_remove=initial_seqno;
     }
 
+    public int size() {
+        return msgs.size();
+    }
 
     public String toString() {
         return msgs.keySet().toString();
     }
 
 
-    public static void main(String[] args) {
-        AckReceiverWindow win=new AckReceiverWindow(33);
-        Message m=new Message();
-
-        win.add(37, m);
-        System.out.println(win);
-
-        while((win.remove()) != null) {
-            System.out.println("Removed message, win is " + win);
-        }
-
-
-        win.add(35, m);
-        System.out.println(win);
-
-        win.add(36, m);
-        System.out.println(win);
-
-        while((win.remove()) != null) {
-            System.out.println("Removed message, win is " + win);
-        }
-
-
-        win.add(33, m);
-        System.out.println(win);
-
-        win.add(34, m);
-        System.out.println(win);
-
-
-        win.add(38, m);
-        System.out.println(win);
-
-
-        while((win.remove()) != null) {
-            System.out.println("Removed message, win is " + win);
-        }
-
-
-        win.add(35, m);
-        System.out.println(win);
-
-        win.add(332, m);
-        System.out.println(win);
-
-
-    }
 
 }
