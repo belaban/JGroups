@@ -1,6 +1,6 @@
 
 
-// $Id: ENCRYPT.java,v 1.5 2004/10/04 20:18:05 belaban Exp $
+// $Id: ENCRYPT.java,v 1.6 2005/01/07 15:16:02 steview Exp $
 
 package org.jgroups.protocols;
 
@@ -755,8 +755,11 @@ public class ENCRYPT extends Protocol {
 					drainUpQueue();
 				}
 				// try and decrypt the message
-				decryptMessage(symDecodingCipher, msg);
-				passUp(evt);
+				if (decryptMessage(symDecodingCipher, msg) != null){
+				    passUp(evt);
+				} else {
+				    log.warn("Unrecognised cipher discarding message");
+				}
 			}
 		} else
 		{
