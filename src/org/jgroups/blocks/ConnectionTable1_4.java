@@ -1,4 +1,4 @@
-// $Id: ConnectionTable1_4.java,v 1.5 2004/03/30 06:47:12 belaban Exp $
+// $Id: ConnectionTable1_4.java,v 1.6 2004/09/08 07:26:05 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -220,7 +220,7 @@ public class ConnectionTable1_4 extends ConnectionTable implements Runnable {
     /**
      * Finds first available port starting at start_port and returns server socket. Sets srv_port
      */
-    ServerSocket createServerSocket(int start_port) throws Exception {
+    protected ServerSocket createServerSocket(int start_port) throws Exception {
         this.selector=Selector.open();
         srv_sock_ch=ServerSocketChannel.open();
         srv_sock_ch.configureBlocking(false);
