@@ -31,7 +31,7 @@ import java.util.*;
  * the unicast routing caches should ensure that unicasts are only sent via 1 interface in almost all cases.
  * 
  * @author Bela Ban Oct 2003
- * @version $Id: UDP1_4.java,v 1.10 2004/01/02 20:39:27 belaban Exp $
+ * @version $Id: UDP1_4.java,v 1.11 2004/01/02 22:32:28 belaban Exp $
  * todo: sending of dummy packets
  */
 public class UDP1_4 extends Protocol implements  Receiver {
@@ -619,6 +619,9 @@ public class UDP1_4 extends Protocol implements  Receiver {
             if((dst == null || dst.isMulticastAddress()) && src != null && local_addr.equals(src)) {
                 if(Trace.debug)
                     Trace.info("UDP1_4.handleIncomingUdpPacket()", "discarded own loopback multicast packet");
+
+                // System.out.println("-- discarded " + msg.getObject());
+
                 return;
             }
 
@@ -696,7 +699,11 @@ public class UDP1_4 extends Protocol implements  Receiver {
             if(observer != null)
                 observer.up(evt, up_queue.size());
             if(Trace.debug) Trace.info("UDP1_4.sendUdpMessage()", "looped back local message " + copy);
+
+            // System.out.println("\n-- passing up packet id=" + copy.getObject());
             passUp(evt);
+            // System.out.println("-- passed up packet id=" + copy.getObject());
+
             if(dest != null && !dest.isMulticastAddress())
                 return; // it is a unicast message to myself, no need to put on the network
         }
@@ -708,7 +715,14 @@ public class UDP1_4 extends Protocol implements  Receiver {
         out.flush(); // needed if out buffers its output to out_stream
         buf=out_stream.toByteArray();
         packet=new DatagramPacket(buf, buf.length, mcast_addr);
+
+        //System.out.println("-- sleeping 4 secs");
+        // Thread.sleep(4000);
+
+
+        // System.out.println("\n-- sending packet " + msg.getObject());
         ct.send(packet);
+        // System.out.println("-- sent " + msg.getObject());
     }
 
 
