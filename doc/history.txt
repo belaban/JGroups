@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.83 2004/06/26 01:53:31 belaban Exp $
+Revision: $Id: history.txt,v 1.84 2004/06/26 01:57:14 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -29,7 +29,7 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 Version 2.2.5
 -------------
 
-- Created distribution (CVS tag = JG_2_2_5)
+- Created distribution (CVS tag = JG_2_2_5_0)
 
 - pbcast.NAKACK/NakReceiverWindow: messages that have been received in order are sent up the stack
   (= delivered to the application). Delivered messages are removed from NakReceiverWindow.received_msgs
