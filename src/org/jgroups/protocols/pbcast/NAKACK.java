@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.30 2004/12/28 10:44:05 belaban Exp $
+// $Id: NAKACK.java,v 1.31 2004/12/28 16:01:12 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 

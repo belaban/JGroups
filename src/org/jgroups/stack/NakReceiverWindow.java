@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindow.java,v 1.15 2004/09/23 16:29:53 belaban Exp $
+// $Id: NakReceiverWindow.java,v 1.16 2004/12/28 16:00:37 belaban Exp $
 
 
 package org.jgroups.stack;
@@ -72,7 +72,7 @@ public class NakReceiverWindow {
     /** highest deliverable (or delivered) seqno so far */
     private long   highest_seen=0;
 
-    /** TreeMap<Long,Message>. Maintains messages keyed by sequence numbers */
+    /** TreeMap<Long,Message>. Maintains messages keyed by (sorted) sequence numbers */
     private final TreeMap received_msgs=new TreeMap();
 
     /** TreeMap<Long,Message>. Delivered (= seen by all members) messages. A remove() method causes a message to be
@@ -87,6 +87,12 @@ public class NakReceiverWindow {
      * around, and don't need to wait for garbage collection to remove them.
      */
     private boolean discard_delivered_msgs=false;
+
+
+    /** If value is > 0, the retransmit buffer is bounded: only the max_xmit_buf_size latest messages are kept,
+     * older ones are discarded when the buffer size is exceeded. A value <= 0 means unbounded buffers
+     */
+    private int max_xmit_buf_size=0;
 
     /** if not set, no retransmitter thread will be started. Useful if
      * protocols do their own retransmission (e.g PBCAST) */
@@ -151,6 +157,15 @@ public class NakReceiverWindow {
     public void setDiscardDeliveredMessages(boolean flag) {
         this.discard_delivered_msgs=flag;
     }
+
+    public int getMaxXmitBufSize() {
+        return max_xmit_buf_size;
+    }
+
+    public void setMaxXmitBufSize(int max_xmit_buf_size) {
+        this.max_xmit_buf_size=max_xmit_buf_size;
+    }
+
 
     /**
      * Adds a message according to its sequence number (ordered).
@@ -228,15 +243,23 @@ public class NakReceiverWindow {
 
     /**
      * Returns the first entry (with the lowest seqno) from the received_msgs map if its associated message is not
-     * null, otherwise returns null. The entry is then added to delivered_msgs
+     * null, otherwise returns null. The entry is then added to delivered_msgs. If a bounded buffer is used: if message
+     * is not null: return it, else remove null messages until number of received messages drops below max size
+     * of bounded buffer
      */
-    public Message remove() {
+   /* public Message remove() {
         Message retval=null;
         Object key;
 
         lock.writeLock();
         try {
             if(received_msgs.size() > 0) {
+
+                if(log.isTraceEnabled())
+                    log.trace("received msgs=" + received_msgs.size() + "max_xmit_buf_size=" + max_xmit_buf_size);
+
+                if(max_xmit_buf_size > 0 && received_msgs.size() > max_xmit_buf_size)
+                    return removeBounded();
                 key=received_msgs.firstKey();
                 retval=(Message)received_msgs.get(key);
                 if(retval != null) {
@@ -252,7 +275,75 @@ public class NakReceiverWindow {
         finally {
             lock.writeUnlock();
         }
+    }*/
+
+
+     public Message remove() {
+        Message retval=null;
+        Long    key;
+        boolean bounded_buffer_enabled=max_xmit_buf_size > 0;
+
+        lock.writeLock();
+        try {
+            while(received_msgs.size() > 0) {
+                if(log.isTraceEnabled())
+                    log.trace("received msgs=" + received_msgs.size() + ", max_xmit_buf_size=" + max_xmit_buf_size);
+
+                key=(Long)received_msgs.firstKey();
+                retval=(Message)received_msgs.get(key);
+                if(retval != null) { // message exists and is ready for delivery
+                    received_msgs.remove(key);       // move from received_msgs to ...
+                    if(discard_delivered_msgs == false) {
+                        delivered_msgs.put(key, retval); // delivered_msgs
+                    }
+                    head++;  // is removed from retransmitter somewhere else (when missing message is received)
+                    return retval;
+                }
+                else { // message has not yet been received (gap in the message sequence stream)
+                    if(bounded_buffer_enabled && received_msgs.size() > max_xmit_buf_size) {
+                        received_msgs.remove(key);       // move from received_msgs to ...
+                        head++;
+                        retransmitter.remove(key.longValue());
+                    }
+                    else {
+                        break;
+                    }
+                }
+            }
+            return retval;
+        }
+        finally {
+            lock.writeUnlock();
+        }
     }
+
+
+ /*   private Message removeBounded() {
+        Message retval=null;
+        Map.Entry entry;
+
+        for(Iterator it=received_msgs.entrySet().iterator(); it.hasNext();) {
+            entry=(Map.Entry)it.next();
+            retval=(Message)entry.getValue();
+            it.remove();
+            head++;
+            if(retval != null) {
+                if(discard_delivered_msgs == false) {
+                    delivered_msgs.put(entry.getKey(), retval); // delivered_msgs
+                }
+                return retval;
+            }
+            else {
+                if(log.isTraceEnabled())
+                    log.trace("removed message #" + entry.getKey() +
+                              " to maintain bounded buffer (number of received msgs=" + received_msgs.size() +
+                              ", max_xmit_buf_size=" + max_xmit_buf_size + ")");
+                if(received_msgs.size() < max_xmit_buf_size)
+                    break;
+            }
+        }
+        return retval;
+    }*/
 
 
     /**
