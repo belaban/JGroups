@@ -1,4 +1,4 @@
-// $Id: IpAddress.java,v 1.7 2004/07/05 14:17:33 belaban Exp $
+// $Id: IpAddress.java,v 1.8 2004/08/12 14:08:11 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -27,19 +27,30 @@ public class IpAddress implements Address {
     protected static HashMap  sAddrCache=new HashMap();
     protected static Log log=LogFactory.getLog(IpAddress.class);
 
-    static transient boolean resolve_dns=Boolean.valueOf(System.getProperty("resolve.dns", "true")).booleanValue();
+    static transient boolean resolve_dns=true;//Boolean.valueOf(System.getProperty("resolve.dns", "true")).booleanValue();
+    static final transient  char[] digits = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'};
 
-    static final transient  char[] digits = {
-        '0', '1', '2', '3', '4', '5',   
-        '6', '7', '8', '9'}; 
+
+    static {
+        /* Trying to get value of resolve_dns. PropertyPermission not granted if
+        * running in an untrusted environment  with JNLP */
+        try {
+            resolve_dns=Boolean.valueOf(System.getProperty("resolve.dns", "true")).booleanValue();
+        }
+        catch (SecurityException ex){
+            resolve_dns=true;
+        }
+    }
+
+
 
     // Used only by Externalization
     public IpAddress() {
     }
     
     public IpAddress(String i, int p) {
-        try {
-            ip_addr=InetAddress.getByName(i);
+    	try {
+        	ip_addr=InetAddress.getByName(i);
         }
         catch(Exception e) {
             if(log.isWarnEnabled()) log.warn("failed to get " + i + ':' + p +

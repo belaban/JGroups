@@ -32,7 +32,14 @@ public class DBPersistenceManager implements PersistenceManager {
      * @exception Exception;
      */
     public DBPersistenceManager(String filename) throws Exception {
-        String home_dir=System.getProperty("user.home");
+        String home_dir = null;
+
+        // PropertyPermission not granted if running in an untrusted environment with JNLP.
+        try {
+            home_dir = System.getProperty("user.home");
+        }
+        catch (SecurityException ex1) {
+        }
 
         // 1. Try ${user.home}/persist.properties
         try {
@@ -136,7 +143,6 @@ public class DBPersistenceManager implements PersistenceManager {
         PreparedStatement prepStat=null;
         try {
             conn=this.getConnection();
-            Statement stat=null;
             String keyStr=null;
             keyStr=key.toString();
             byte[] keyBytes=getBytes(key);

@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.22 2004/07/30 04:42:53 jiwils Exp $
+// $Id: JChannel.java,v 1.23 2004/08/12 14:08:13 belaban Exp $
 
 package org.jgroups;
 
@@ -30,7 +30,7 @@ import java.util.Vector;
  * protocol stack
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.22 $
+ * @version $Revision: 1.23 $
  */
 public class JChannel extends Channel {
 
@@ -78,7 +78,7 @@ public class JChannel extends Channel {
     private final Object  flow_control_mutex=new Object();
 
     /** wait until we have a non-null local_addr */
-    private long LOCAL_ADDR_TIMEOUT=Long.parseLong(System.getProperty("local_addr.timeout", "30000"));
+    private long LOCAL_ADDR_TIMEOUT=30000; //=Long.parseLong(System.getProperty("local_addr.timeout", "30000"));
     /*if the states is fetched automatically, this is the default timeout, 5 secs*/
     private long GET_STATE_DEFAULT_TIMEOUT=5000;
     /*flag to indicate whether to receive views from the protocol stack*/
@@ -328,7 +328,16 @@ public class JChannel extends Channel {
             throw new ChannelException(e.toString());
         }
 
-        /* Wait LOCAL_ADDR_TIMEOUT milliseconds for local_addr to have a non-null value (set by SET_LOCAL_ADDRESS) */
+        /* try to get LOCAL_ADDR_TIMEOUT. Catch SecurityException thrown if called
+         * in an untrusted environment (e.g. using JNLP) */
+        try {
+            LOCAL_ADDR_TIMEOUT=Long.parseLong(System.getProperty("local_addr.timeout","30000"));
+        }
+        catch (SecurityException e1) {
+            /* Use the default value specified above*/
+        }
+
+		/* Wait LOCAL_ADDR_TIMEOUT milliseconds for local_addr to have a non-null value (set by SET_LOCAL_ADDRESS) */
         synchronized(local_addr_mutex) {
             long wait_time=LOCAL_ADDR_TIMEOUT, start=System.currentTimeMillis();
             while(local_addr == null && wait_time > 0) {

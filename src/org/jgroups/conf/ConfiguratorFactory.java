@@ -1,4 +1,4 @@
-// $Id: ConfiguratorFactory.java,v 1.11 2004/08/04 14:15:32 belaban Exp $
+// $Id: ConfiguratorFactory.java,v 1.12 2004/08/12 14:08:10 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -41,16 +41,21 @@ public class ConfiguratorFactory {
 
     static Log log=LogFactory.getLog(ConfiguratorFactory.class);
 
-    static final String propertiesOverride;
+    static String propertiesOverride=null;
 
     // Check for the presence of the system property "force.properties", and
     // act appropriately if it is set.  We only need to do this once since the
     // system properties are highly unlikely to change.
     static {
-        Properties properties = System.getProperties();
-        propertiesOverride = properties.getProperty(FORCE_CONFIGURATION);
+        try {
+            Properties properties = System.getProperties();
+            propertiesOverride = properties.getProperty(FORCE_CONFIGURATION);
+        }
+        catch (SecurityException e) {
+            propertiesOverride = null;
+        }
 
-        if (propertiesOverride != null && log.isInfoEnabled()) {
+        if(propertiesOverride != null && log.isInfoEnabled()) {
             log.info("using properties override: " + propertiesOverride);
         }
     }
