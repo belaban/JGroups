@@ -1,4 +1,4 @@
-// $Id: Digest.java,v 1.3 2004/04/05 03:57:27 belaban Exp $
+// $Id: Digest.java,v 1.4 2004/04/28 17:41:41 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -165,6 +165,28 @@ public class Digest implements Externalizable {
         return getIndex(sender) != -1;
     }
 
+
+    /**
+     * Compares two digests and returns true if the senders are the same, otherwise false
+     * @param other
+     * @return
+     */
+    public boolean sameSenders(Digest other) {
+        Address a1, a2;
+        if(other == null) return false;
+        if(this.senders == null || other.senders == null) return false;
+        if(this.senders.length != other.senders.length) return false;
+        for(int i=0; i < this.senders.length; i++) {
+            a1=this.senders[i];
+            a2=other.senders[i];
+            if(a1 == null && a2 == null) continue;
+            if(a1 != null && a2 != null && a1.equals(a2))
+                continue;
+            else
+                return false;
+        }
+        return true;
+    }
 
     /** Increment the sender's high_seqno by 1 */
     public void incrementHighSeqno(Address sender) {
