@@ -8,6 +8,8 @@ package org.jgroups.persistence;
  */
 
 
+import org.jgroups.log.Trace;
+
 import java.io.FileInputStream;
 import java.util.Properties;
 
@@ -38,7 +40,15 @@ public class PersistenceFactory
 	return _factory;
     }
 
-    
+    /**
+     * Register a custom persistence manager as opposed to the
+     * {@link FilePersistenceManager} or {@link DBPersistenceManager}.
+     */ 
+    public synchronized void registerManager(PersistenceManager manager)
+    {
+        _manager = manager;
+    }
+
     /**
      * Reads the default properties and creates a persistencemanager
      * The default properties are picked up from the $USER_HOME or 
@@ -65,7 +75,7 @@ public class PersistenceFactory
     /**
      * Duplicated signature to create PersistenceManager to allow user to
      * provide property path. 
-     * @param String; complete pathname to get the properties
+     * @param filePath complete pathname to get the properties
      * @return PersistenceManager;
      * @exception Exception;
      */
@@ -86,37 +96,35 @@ public class PersistenceFactory
     /**
      * Internal creator of DB persistence manager, the outside user accesses only
      * the PersistenceManager interface API
-     * @param String path;
-     * @return PersistenceManager;
-     * @exception Exception;
      */
-    private PersistenceManager createManagerDB(String filePath) throws Exception {
-	System.err.println(" Calling db persist from factory");
-        if (_manager == null)	    
+    private PersistenceManager createManagerDB(String filePath) throws Exception
+    {
+        if (Trace.trace)
+            Trace.info("persistence", "Calling db persist from factory: " + filePath);
+        if (_manager == null)
             _manager = new DBPersistenceManager(filePath);
         return _manager;
     }// end of DB persistence
 
-
-
     /**
      * creates instance of file based persistency manager
-     * @param String path;
      * @return PersistenceManager
      */
     private PersistenceManager createManagerFile(String filePath)
     {
-	System.err.println(" Calling file persist from factory");
-	try
-	    {
-		if (_manager == null)	    
-		    _manager = new FilePersistenceManager(filePath);
-		return _manager;
-	    }catch (Throwable t)
-		{
-		    t.printStackTrace();
-		    return null;
-		}
+        if (Trace.trace)
+            Trace.info("persistence", "Creating file manager: " + filePath);
+        try
+        {
+            if (_manager == null)
+                _manager = new FilePersistenceManager(filePath);
+            return _manager;
+        }
+        catch (Throwable t)
+        {
+            t.printStackTrace();
+            return null;
+        }
     }// end of file persistence
     
 
@@ -127,7 +135,7 @@ public class PersistenceFactory
      */
     private boolean checkDB() throws Exception
     {
-	Properties props = null;
+	Properties props;
 	FileInputStream _stream = new FileInputStream(propPath);
 	props = new Properties();
 	props.load(_stream);
@@ -144,7 +152,7 @@ public class PersistenceFactory
      */
     private boolean checkDB(String filePath) throws Exception
     {
-	Properties props = null;
+	Properties props;
 	FileInputStream _stream = new FileInputStream(filePath);
 	props = new Properties();
 	props.load(_stream);
