@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.12 2005/01/12 01:36:51 belaban Exp $
+// $Id: ConnectionTable.java,v 1.13 2005/02/18 01:18:49 ovidiuf Exp $
 
 package org.jgroups.blocks;
 
@@ -742,7 +742,7 @@ public class ConnectionTable implements Runnable {
                 local=tmp_sock.getLocalAddress();
                 remote=tmp_sock.getInetAddress();
                 local_str=local != null ? Util.shortName(local.getHostName()) : "<null>";
-                remote_str=remote != null ? Util.shortName(local.getHostName()) : "<null>";
+                remote_str=remote != null ? Util.shortName(remote.getHostName()) : "<null>";
                 ret.append('<' + local_str + ':' + tmp_sock.getLocalPort() +
                            " --> " + remote_str + ':' + tmp_sock.getPort() + "> (" +
                            ((System.currentTimeMillis() - last_access) / 1000) + " secs old)");
