@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.4 2003/12/04 01:20:33 belaban Exp $
+// $Id: MessageDispatcher.java,v 1.5 2003/12/11 06:36:55 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -34,6 +34,12 @@ public class MessageDispatcher implements RequestHandler {
     protected boolean             deadlock_detection=true;
     protected PullPushAdapter     adapter=null;
     protected Serializable        id=null;
+
+    /** Process items on the queue concurrently (RequestCorrelator). The default is to wait until the
+     * processing of an item has completed before fetching the next item from the queue. Note that setting
+     * this to true may destroy the properties of a protocol stack, e.g total or causal order may not be
+     * guaranteed. Set this to true only if you know what you're doing ! */
+    protected boolean             concurrent_processing=false;
 
 
 
@@ -161,7 +167,36 @@ public class MessageDispatcher implements RequestHandler {
         start();
     }
 
-    /** 
+
+    public MessageDispatcher(PullPushAdapter adapter, Serializable id,
+                             MessageListener l, MembershipListener l2,
+                             RequestHandler req_handler, boolean concurrent_processing) {
+        this.concurrent_processing=concurrent_processing;
+        this.adapter=adapter; this.id=id;
+        setMembers (((Channel) adapter.getTransport()).getView().getMembers());
+        setRequestHandler(req_handler);
+        setMessageListener(l);
+        setMembershipListener(l2);
+        PullPushHandler handler=new PullPushHandler();
+        Transport       tp;
+
+        transport_adapter=new TransportAdapter();
+        adapter.addMembershipListener(handler);
+        if(id == null) // no other building block around, let's become the main consumer of this PullPushAdapter
+            adapter.setListener(handler);
+        else
+            adapter.registerListener(id, handler);
+
+        if((tp=adapter.getTransport()) instanceof Channel) {
+            ((Channel)tp).setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
+            local_addr=((Channel)tp).getLocalAddress(); // fixed bug #800774
+        }
+
+        start();
+    }
+
+
+    /**
      * If this dispatcher is using a user-provided PullPushAdapter, then need to set the members
      * from the adapter initially since viewChange has most likely already been called in PullPushAdapter. 
      */
@@ -179,6 +214,9 @@ public class MessageDispatcher implements RequestHandler {
         corr.setDeadlockDetection(flag);
     }
 
+    public void setConcurrentProcessing(boolean flag) {
+        this.concurrent_processing=flag;
+    }
 
     public void finalize() {
         stop();
@@ -189,10 +227,10 @@ public class MessageDispatcher implements RequestHandler {
         if(corr == null) {
             if(transport_adapter != null)
                 corr=new RequestCorrelator("MessageDispatcher", transport_adapter, 
-                                           this, deadlock_detection, local_addr);
+                                           this, deadlock_detection, local_addr, concurrent_processing);
             else {
                 corr=new RequestCorrelator("MessageDispatcher", prot_adapter, 
-                                           this, deadlock_detection, local_addr);
+                                           this, deadlock_detection, local_addr, concurrent_processing);
             }
             corr.start();
         }
