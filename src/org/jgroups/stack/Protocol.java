@@ -1,4 +1,4 @@
-// $Id: Protocol.java,v 1.3 2003/12/03 20:59:27 igeorg Exp $
+// $Id: Protocol.java,v 1.4 2003/12/06 01:24:21 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -106,7 +106,12 @@ class DownHandler extends Thread {
                         continue;
                     }
                 }
-                handler.down(evt);
+
+                int type=evt.getType();
+                if(type == Event.ACK || type == Event.START || type == Event.STOP)
+                    handler.handleSpecialDownEvent(evt);
+                else
+                    handler.down(evt);
                 evt=null;
             }
             catch(QueueClosedException queue_closed) {
@@ -445,7 +450,11 @@ public abstract class Protocol {
                     return;
                 }
             }
-            down(evt);
+            int type=evt.getType();
+            if(type == Event.ACK || type == Event.START || type == Event.STOP)
+                handleSpecialDownEvent(evt);
+            else
+                down(evt);
             return;
         }
         try {
@@ -517,5 +526,41 @@ public abstract class Protocol {
         passDown(evt);
     }
 
+
+    /**  These are special internal events that should not be handled by protocols */
+    protected void handleSpecialDownEvent(Event evt) {
+        switch(evt.getType()) {
+            case Event.ACK:
+                if(down_prot == null) {
+                    passUp(new Event(Event.ACK_OK));
+                    return;
+                }
+            case Event.START:
+                try {
+                    start();
+
+                    // if we're the transport protocol, reply with a START_OK up the stack
+                    if(down_prot == null) {
+                        passUp(new Event(Event.START_OK));
+                        return;
+                    }
+                }
+                catch(Exception e) {
+                    passUp(new Event(Event.START_OK, new Exception("exception caused by " + getName() + ".start()", e)));
+                    return;
+                }
+                break;
+            case Event.STOP:
+                stop();
+                if(down_prot == null) {
+                    passUp(new Event(Event.STOP_OK));
+                    return;
+                }
+                break;
+        }
+
+        if(down_prot != null)
+            passDown(evt);
+    }
 
 }

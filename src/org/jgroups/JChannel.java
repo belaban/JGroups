@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.3 2003/11/14 04:19:23 belaban Exp $
+// $Id: JChannel.java,v 1.4 2003/12/06 01:24:21 belaban Exp $
 
 package org.jgroups;
 
@@ -21,7 +21,7 @@ import java.util.Vector;
  * protocol stack
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.3 $
+ * @version $Revision: 1.4 $
  */
 public class JChannel extends Channel {
 
@@ -221,7 +221,7 @@ public class JChannel extends Channel {
             this.channel_name=channel_name;
 
         try {
-            prot_stack.start(); // calls start() in all protocols, from top to bottom
+            prot_stack.startStack(); // calls start() in all protocols, from top to bottom
         }
         catch(Throwable e) {
             Trace.error("JChannel.connect()", "exception: " + e);
@@ -322,7 +322,7 @@ public class JChannel extends Channel {
 
             connected=false;
             try {
-                prot_stack.stop(); // calls stop() in all protocols, from top to bottom
+                prot_stack.stopStack(); // calls stop() in all protocols, from top to bottom
             }
             catch(Exception e) {
                 Trace.error("JChannel.disconnect()", "exception: " + e);
@@ -1083,7 +1083,7 @@ public class JChannel extends Channel {
 
         if(prot_stack != null) {
             try {
-                prot_stack.stop();
+                prot_stack.stopStack();
                 prot_stack.destroy();
             }
             catch(Exception e) {

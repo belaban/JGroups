@@ -1,4 +1,4 @@
-// $Id: ProtocolStack.java,v 1.5 2003/09/24 23:20:08 belaban Exp $
+// $Id: ProtocolStack.java,v 1.6 2003/12/06 01:24:21 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -33,12 +33,18 @@ public class ProtocolStack extends Protocol implements Transport {
     private Protocol                top_prot=null;
     private Protocol                bottom_prot=null;
     private Configurator            conf=new Configurator();
-    private Object                  mutex=new Object();
     private String                  setup_string;
     private JChannel                channel=null;
     private boolean                 stopped=true;
     public  TimeScheduler           timer=new TimeScheduler(5000);
     Promise                         ack_promise=new Promise();
+
+    /** Used to sync on START/START_OK events for start()*/
+    Promise                         start_promise=null;
+
+    /** used to sync on STOP/STOP_OK events for stop() */
+    Promise                         stop_promise=null;
+
     public static final int         ABOVE=1; // used by insertProtocol()
     public static final int         BELOW=2; // used by insertProtocol()
 
@@ -196,21 +202,35 @@ public class ProtocolStack extends Protocol implements Transport {
      * <em>from top to bottom</em>.
      * Each layer can perform some initialization, e.g. create a multicast socket
      */
-    public void start() throws Exception {
-        Protocol p;
-        Vector   prots=getProtocols();
-
+    public void startStack() throws Exception {
+        Object start_result=null;
         if(stopped == false) return;
 
         timer.start();
 
-        synchronized(mutex) {
-            for(int i=0; i < prots.size(); i++) {
-                p=(Protocol)prots.elementAt(i);
-                p.start();
-            }
-            stopped=false;
+        if(start_promise == null)
+            start_promise=new Promise();
+        else
+            start_promise.reset();
+
+        down(new Event(Event.START));
+        start_result=start_promise.getResult(0);
+        if(start_result != null && start_result instanceof Throwable) {
+            if(start_result instanceof Exception)
+                throw (Exception)start_result;
+            else
+                throw new Exception("ProtocolStack.start(): exception is ", (Throwable)start_result);
         }
+
+        stopped=false;
+
+//        synchronized(mutex) {
+//            for(int i=0; i < prots.size(); i++) {
+//                p=(Protocol)prots.elementAt(i);
+//                p.start();
+//            }
+//            stopped=false;
+//        }
     }
 
 
@@ -231,7 +251,7 @@ public class ProtocolStack extends Protocol implements Transport {
      * <li>Calls stop() on the protocol
      * </ol>
      */
-    public void stop() {
+    public void stopStack() {
         if(timer != null) {
             try {
                 timer.stop();
@@ -241,27 +261,39 @@ public class ProtocolStack extends Protocol implements Transport {
         }
 
         if(stopped) return;
-        synchronized(mutex) {
-            Protocol p;
-            Vector   prots=getProtocols(); // from top to bottom
-            Queue    down_queue;
 
-            for(int i=0; i < prots.size(); i++) {
-                p=(Protocol)prots.elementAt(i);
 
-                // 1. Wait until down queue is empty
-                down_queue=p.getDownQueue();
-                if(down_queue != null) {
-                    while(down_queue.size() > 0 && !down_queue.closed()) {
-                        Util.sleep(100);  // FIXME: use a signal when empty (implement when switching to util.concurrent)
-                    }
-                }
+        if(stop_promise == null)
+            stop_promise=new Promise();
+        else
+            stop_promise.reset();
 
-                // 2. Call stop() on protocol
-                p.stop();
-            }
-            stopped=true;
-        }
+        down(new Event(Event.STOP));
+        stop_promise.getResult(0);
+        stopped=true;
+
+
+//        synchronized(mutex) {
+//            Protocol p;
+//            Vector   prots=getProtocols(); // from top to bottom
+//            Queue    down_queue;
+//
+//            for(int i=0; i < prots.size(); i++) {
+//                p=(Protocol)prots.elementAt(i);
+//
+//                // 1. Wait until down queue is empty
+//                down_queue=p.getDownQueue();
+//                if(down_queue != null) {
+//                    while(down_queue.size() > 0 && !down_queue.closed()) {
+//                        Util.sleep(100);  // FIXME: use a signal when empty (implement when switching to util.concurrent)
+//                    }
+//                }
+//
+//                // 2. Call stop() on protocol
+//                p.stop();
+//            }
+//            stopped=true;
+//        }
     }
 
     public void stopInternal() {
@@ -308,8 +340,20 @@ public class ProtocolStack extends Protocol implements Transport {
 
 
     public void up(Event evt) {
-        if(evt.getType() == Event.ACK_OK)
-            ack_promise.setResult(Boolean.TRUE);
+        switch(evt.getType()) {
+            case Event.ACK_OK:
+                ack_promise.setResult(Boolean.TRUE);
+                return;
+            case Event.START_OK:
+                if(start_promise != null)
+                    start_promise.setResult(evt.getArg());
+                return;
+            case Event.STOP_OK:
+                if(stop_promise != null)
+                    stop_promise.setResult(evt.getArg());
+                return;
+        }
+
         if(channel != null)
             channel.up(evt);
     }
