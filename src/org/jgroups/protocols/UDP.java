@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.36 2004/08/17 08:08:30 belaban Exp $
+// $Id: UDP.java,v 1.37 2004/08/18 19:01:10 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -114,7 +114,7 @@ public class UDP extends Protocol implements Runnable {
 
     /** Discard packets with a different version. Usually minor version differences are okay. Setting this property
      * to true means that we expect the exact same version on all incoming packets */
-    boolean discard_incompatibe_packets=false;
+    boolean discard_incompatible_packets=false;
 
     /** Sometimes receivers are overloaded (they have to handle de-serialization etc).
      * Packet handler is a separate thread taking care of de-serialization, receiver
@@ -229,13 +229,13 @@ public class UDP extends Protocol implements Runnable {
                         sb.append("packet from ").append(packet.getAddress()).append(':').append(packet.getPort());
                         sb.append(" has different version (").append(Version.printVersionId(data, Version.version_id.length));
                         sb.append(") from ours (").append(Version.printVersionId(Version.version_id)).append("). ");
-                        if(discard_incompatibe_packets)
+                        if(discard_incompatible_packets)
                             sb.append("Packet is discarded");
                         else
                             sb.append("This may cause problems");
                         log.warn(sb.toString());
                     }
-                    if(discard_incompatibe_packets)
+                    if(discard_incompatible_packets)
                         continue;
                 }
 
@@ -448,7 +448,7 @@ public class UDP extends Protocol implements Runnable {
 
         str=props.getProperty("discard_incompatibe_packets");
         if(str != null) {
-            discard_incompatibe_packets=Boolean.valueOf(str).booleanValue();
+            discard_incompatible_packets=Boolean.valueOf(str).booleanValue();
             props.remove("discard_incompatibe_packets");
         }
 
