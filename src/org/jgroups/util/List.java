@@ -1,4 +1,4 @@
-// $Id: List.java,v 1.2 2003/11/21 06:36:03 belaban Exp $
+// $Id: List.java,v 1.3 2004/05/04 17:44:12 belaban Exp $
 
 package org.jgroups.util;
 
@@ -20,8 +20,8 @@ import java.util.Vector;
  */
 public class List implements Externalizable, Cloneable {
     protected Element head=null, tail=null;
-    protected int size=0;
-    protected Object mutex=new Object();
+    protected int     size=0;
+    protected Object  mutex=new Object();
 
     class Element {
         Object obj=null;
