@@ -1,4 +1,4 @@
-// $Id: DistributedHashtable.java,v 1.5 2003/11/29 01:05:19 belaban Exp $
+// $Id: DistributedHashtable.java,v 1.6 2003/12/22 10:11:18 rds13 Exp $
 
 package org.jgroups.blocks;
 
@@ -35,7 +35,7 @@ import org.jgroups.persistence.*;
  * initial state (using the state exchange funclet <code>StateExchangeFunclet</code>.
  * @author Bela Ban
  * @author <a href="mailto:aolias@yahoo.com">Alfonso Olias-Sanz</a>
- * @version $Id: DistributedHashtable.java,v 1.5 2003/11/29 01:05:19 belaban Exp $
+ * @version $Id: DistributedHashtable.java,v 1.6 2003/12/22 10:11:18 rds13 Exp $
  */
 public class DistributedHashtable extends Hashtable implements MessageListener, MembershipListener, Cloneable {
 
@@ -127,7 +127,7 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
         init(state_timeout);
     }
 
-    /*
+    /**
      * Uses a user-provided PullPushAdapter to create the dispatcher rather than a Channel. If id is non-null, it will be
      * used to register under that id. This is typically used when another building block is already using
      * PullPushAdapter, and we want to add this building block in addition. The id is the used to discriminate
@@ -143,6 +143,7 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
         throws ChannelNotConnectedException, ChannelClosedException {
         initMethods();
         this.channel = (Channel)adapter.getTransport();
+        this.groupname = this.channel.getChannelName();
         disp=new RpcDispatcher(adapter, id, this, this, this);
         channel.setOpt(Channel.GET_STATE_EVENTS, new Boolean(true));
         start(state_timeout);
