@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.9 2004/09/13 10:33:23 belaban Exp $
+// $Id: FD_SOCK.java,v 1.10 2004/09/13 20:17:34 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -370,7 +370,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                 handleSocketClose(ex);
             }
             catch(Throwable catch_all_the_rest) {
-                log.error("exception=" + catch_all_the_rest);
+                log.error("exception", catch_all_the_rest);
             }
         }
         if(log.isDebugEnabled()) log.debug("pinger thread terminated");
