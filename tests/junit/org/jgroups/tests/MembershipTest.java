@@ -1,4 +1,4 @@
-// $Id: MembershipTest.java,v 1.3 2004/09/06 12:18:28 belaban Exp $
+// $Id: MembershipTest.java,v 1.4 2004/09/23 11:04:04 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -43,10 +43,39 @@ public class MembershipTest extends TestCase {
         v1.addElement(a2);
         v1.addElement(a3);
         m2=new Membership(v1);
-        assertTrue(m2.size() == 3);
+        assertTrue(m2.size() == 2);
         assertTrue(m2.contains(a1));
         assertTrue(m2.contains(a2));
         assertTrue(m2.contains(a3));
+    }
+
+    public void testClone() {
+        v1=new Vector();
+        v1.addElement(a1);
+        v1.addElement(a2);
+        v1.addElement(a3);
+        m2=new Membership(v1);
+        m1=(Membership)m2.clone();
+        assertEquals(m1.size(), m2.size());
+        assertTrue(m1.contains(a1));
+        assertTrue(m1.contains(a2));
+        assertTrue(m2.contains(a1));
+        assertTrue(m2.contains(a2));
+    }
+
+
+    public void testCopy() {
+        v1=new Vector();
+        v1.addElement(a1);
+        v1.addElement(a2);
+        v1.addElement(a3);
+        m2=new Membership(v1);
+        m1=m2.copy();
+        assertEquals(m1.size(), m2.size());
+        assertTrue(m1.contains(a1));
+        assertTrue(m1.contains(a2));
+        assertTrue(m2.contains(a1));
+        assertTrue(m2.contains(a2));
     }
 
 
