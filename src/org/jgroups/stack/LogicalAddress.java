@@ -1,15 +1,16 @@
-// $Id: LogicalAddress.java,v 1.2 2003/12/23 23:52:34 belaban Exp $
+// $Id: LogicalAddress.java,v 1.3 2003/12/24 00:05:14 belaban Exp $
 
 package org.jgroups.stack;
+
+import org.jgroups.Address;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.net.InetAddress;
-import java.util.*;
-import org.jgroups.util.Util;
-import org.jgroups.Address;
-import org.jgroups.log.Trace;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 
 
