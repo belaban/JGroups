@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.21 2004/10/07 15:05:42 belaban Exp $
+// $Id: Util.java,v 1.22 2004/10/08 12:07:01 belaban Exp $
 
 package org.jgroups.util;
 
@@ -241,6 +241,38 @@ public class Util {
             return buf;
         }
         return null;
+    }
+
+
+
+    public static boolean match(Object obj1, Object obj2) {
+        if(obj1 == null && obj2 == null)
+            return true;
+        if(obj1 != null)
+            return obj1.equals(obj2);
+        else
+            return obj2.equals(obj1);
+    }
+
+
+    public static boolean match(long[] a1, long[] a2) {
+        if(a1 == null && a2 == null)
+            return true;
+        if(a1 == null || a2 == null)
+            return false;
+
+        if(a1 == a2) // identity
+            return true;
+
+        // at this point, a1 != null and a2 != null
+        if(a1.length != a2.length)
+            return false;
+
+        for(int i=0; i < a1.length; i++) {
+            if(a1[i] != a2[i])
+                return false;
+        }
+        return true;
     }
 
     /** Sleep for timeout msecs. Returns when timeout has elapsed or thread was interrupted */
