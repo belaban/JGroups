@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.26 2004/06/08 15:50:51 belaban Exp $
+// $Id: UDP.java,v 1.27 2004/06/09 15:32:57 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -883,9 +883,7 @@ public class UDP extends Protocol implements Runnable {
         }
 
         setBufferSizes();
-
-
-            if(log.isInfoEnabled()) log.info("socket information:\n" + dumpSocketInfo());
+        if(log.isInfoEnabled()) log.info("socket information:\n" + dumpSocketInfo());
     }
 
 
