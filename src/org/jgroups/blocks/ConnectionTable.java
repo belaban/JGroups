@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.3 2004/02/10 05:10:27 belaban Exp $
+// $Id: ConnectionTable.java,v 1.4 2004/02/12 23:23:25 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -36,6 +36,8 @@ public class ConnectionTable implements Runnable {
     int           srv_port=7800;
     Thread        acceptor=null;               // continuously calls srv_sock.accept()
     final int     backlog=20;                  // 20 conn requests are queued by ServerSocket (addtl will be discarded)
+    int           recv_buf_size=120000;
+    int           send_buf_size=60000;
     Vector        conn_listeners=new Vector(); // listeners to be notified when a conn is established/torn down
     Object        recv_mutex=new Object();     // to serialize simultaneous access to receive() from multiple Connections
     Reaper        reaper=null;                 // closes conns that have been idle for more than n secs
@@ -158,9 +160,25 @@ public class ConnectionTable implements Runnable {
     }
 
 
+    public int getSendBufferSize() {
+        return send_buf_size;
+    }
+
+    public void setSendBufferSize(int send_buf_size) {
+        this.send_buf_size=send_buf_size;
+    }
+
+    public int getReceiveBufferSize() {
+        return recv_buf_size;
+    }
+
+    public void setReceiveBufferSize(int recv_buf_size) {
+        this.recv_buf_size=recv_buf_size;
+    }
+
     /** Sends a message to a unicast destination. The destination has to be set
      * @param msg The message to send
-     * @throws SocketException. Thrown if connection cannot be established
+     * @throws SocketException Thrown if connection cannot be established
      */
     public void send(Message msg) throws SocketException {
         Address dest=msg != null ? msg.getDest() : null;
@@ -207,6 +225,20 @@ public class ConnectionTable implements Runnable {
             if(conn == null) {
                 // changed by bela Jan 18 2004: use the bind address for the client sockets as well
                 sock=new Socket(((IpAddress)dest).getIpAddress(), ((IpAddress)dest).getPort(), bind_addr, 0);
+                try {
+                    sock.setSendBufferSize(send_buf_size);
+                }
+                catch(IllegalArgumentException ex) {
+                    Trace.error("ConnectionTable.getConnection()", "exception setting send buffer size to " +
+                            send_buf_size + " bytes: " + ex);
+                }
+                try {
+                    sock.setReceiveBufferSize(recv_buf_size);
+                }
+                catch(IllegalArgumentException ex) {
+                    Trace.error("ConnectionTable.getConnection()", "exception setting receive buffer size to " +
+                            send_buf_size + " bytes: " + ex);
+                }
                 conn=new Connection(sock, dest);
                 conn.sendLocalAddress(local_addr);
                 notifyConnectionOpened(dest);
@@ -538,7 +570,7 @@ public class ConnectionTable implements Runnable {
                 }
 
 
-                // we're using 'double-writes', sending the buffer to the destination twice. this would
+                // we're using 'double-writes', sending the buffer to the destination in 2 pieces. this would
                 // ensure that, if the peer closed the connection while we were idle, we would get an exception.
                 // this won't happen if we use a single write (see Stevens, ch. 5.13).
                 if(out != null) {

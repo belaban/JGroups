@@ -1,4 +1,4 @@
-// $Id: ConnectionTableUnitTest.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+// $Id: ConnectionTableUnitTest.java,v 1.2 2004/02/12 23:23:26 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -7,6 +7,8 @@ import junit.framework.TestCase;
 import org.jgroups.blocks.ConnectionTable;
 import org.jgroups.Message;
 import org.jgroups.Address;
+
+import java.net.SocketException;
 
 
 /**
@@ -147,8 +149,14 @@ public class ConnectionTableUnitTest extends TestCase {
             if(num_received % modulo == 0)
                 log("received msg# " + num_received);
             if(send_response) {
-                if(ct != null)
-                    ct.send(new Message(sender, null, null));
+                if(ct != null) {
+                    try {
+                        ct.send(new Message(sender, null, null));
+                    }
+                    catch(SocketException e) {
+                        e.printStackTrace();
+                    }
+                }
             }
             if(num_received >= num_expected) {
                 synchronized(this) {

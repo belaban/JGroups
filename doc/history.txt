@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.36 2004/02/10 04:40:21 belaban Exp $
+Revision: $Id: history.txt,v 1.37 2004/02/12 23:23:24 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java JGroups.Version')]
 
@@ -27,6 +27,9 @@ romuald     = Romuald du Song
 
 Version 2.2.1
 -------------
+
+- Added send_buf_size and recv_buf_size to TCP
+  (bela Feb 11 2004)
 
 - Fixed problem in ConnectionTable/TCP: when a message was sent to a crashed member,
   the connection establishment would take a long time. Now we can skip messages to

@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.3 2004/02/10 05:10:28 belaban Exp $
+// $Id: TCP.java,v 1.4 2004/02/12 23:23:25 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -58,6 +58,9 @@ public class TCP extends Protocol implements ConnectionTable.Receiver, Connectio
     /** Should we drop unicast messages to suspected members or not */
     boolean                skip_suspected_members=true;
 
+    int                    recv_buf_size=150000;
+    int                    send_buf_size=150000;
+
 
 
     public TCP() {
@@ -97,6 +100,8 @@ public class TCP extends Protocol implements ConnectionTable.Receiver, Connectio
             ct=new ConnectionTable(this, bind_addr, start_port, reaper_interval, conn_expire_time);
         }
         ct.addConnectionListener(this);
+        ct.setReceiveBufferSize(recv_buf_size);
+        ct.setSendBufferSize(send_buf_size);
         local_addr=ct.getLocalAddress();
         if(additional_data != null && local_addr instanceof IpAddress)
             ((IpAddress)local_addr).setAdditionalData(additional_data);
@@ -244,6 +249,18 @@ public class TCP extends Protocol implements ConnectionTable.Receiver, Connectio
         if(str != null) {
             conn_expire_time=Long.parseLong(str);
             props.remove("conn_expire_time");
+        }
+
+        str=props.getProperty("recv_buf_size");
+        if(str != null) {
+            recv_buf_size=Integer.parseInt(str);
+            props.remove("recv_buf_size");
+        }
+
+        str=props.getProperty("send_buf_size");
+        if(str != null) {
+            send_buf_size=Integer.parseInt(str);
+            props.remove("send_buf_size");
         }
 
         str=props.getProperty("loopback");
