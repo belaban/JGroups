@@ -1,4 +1,4 @@
-// $Id: SpeedTest.java,v 1.7 2004/01/02 22:32:11 belaban Exp $
+// $Id: SpeedTest.java,v 1.8 2004/01/03 02:08:59 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -14,6 +14,8 @@ import org.jgroups.util.Util;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
+import java.net.DatagramSocket;
+import java.io.IOException;
 
 
 /**
@@ -34,12 +36,13 @@ public class SpeedTest {
 
 
     public static void main(String[] args) {
-        MulticastSocket sock=null;
+        DatagramSocket sock=null;
         Receiver receiver;
         int num_msgs=1000;
         byte[] buf;
         DatagramPacket packet;
         InetAddress group_addr=null;
+        int         group_port=7500;
         int[][] matrix;
         boolean jg=false; // use JGroups channel instead of UDP MulticastSocket
         JChannel channel=null;
@@ -160,30 +163,17 @@ public class SpeedTest {
                     debugger=new Debugger(channel, cummulative);
                     debugger.start();
                 }
-
-                class Closer extends Thread {
-                    Channel ch;
-                    Closer(Channel ch) {
-                        this.ch=ch;
-                    }
-                    public void run() {
-                        if(ch != null)
-                            ch.close();
-                    }
-                }
-                Runtime.getRuntime().addShutdownHook(new Closer(channel));
             }
             else {
                 group_addr=InetAddress.getByName("224.0.0.36");
-                sock=new MulticastSocket(7777);
-                sock.joinGroup(group_addr);
+                sock=new DatagramSocket();
             }
 
             if(debug) {
                 System.out.println("Press key to start");
                 System.in.read();
             }
-            receiver=new Receiver(sock, channel, matrix, jg);
+            receiver=new Receiver(group_addr, group_port, channel, matrix, jg);
             receiver.start();
 
             start=System.currentTimeMillis();
@@ -196,7 +186,7 @@ public class SpeedTest {
                     channel.send(send_msg);
                 }
                 else {
-                    packet=new DatagramPacket(buf, buf.length, group_addr, 7777);
+                    packet=new DatagramPacket(buf, buf.length, group_addr, group_port);
                     sock.send(packet);
                 }
                 if(i % 100 == 0)
@@ -220,7 +210,8 @@ public class SpeedTest {
             }
         }
         catch(Exception ex) {
-            System.err.println(ex);
+            ex.printStackTrace();
+            System.exit(-1);
         }
     }
 
@@ -284,12 +275,15 @@ public class SpeedTest {
         int[][] matrix=null;
         boolean jg=false;
 
-        Receiver(MulticastSocket sock, Channel channel, int[][] matrix, boolean jg) {
-            this.sock=sock;
+        Receiver(InetAddress group_addr, int group_port, Channel channel, int[][] matrix, boolean jg) throws IOException {
             this.channel=channel;
             this.matrix=matrix;
             this.jg=jg;
             num_msgs=matrix.length;
+            if(group_addr != null) {
+                sock=new MulticastSocket(group_port);
+                sock.joinGroup(group_addr);
+            }
         }
 
         public void start() {

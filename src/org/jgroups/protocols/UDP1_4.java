@@ -31,7 +31,7 @@ import java.util.*;
  * the unicast routing caches should ensure that unicasts are only sent via 1 interface in almost all cases.
  * 
  * @author Bela Ban Oct 2003
- * @version $Id: UDP1_4.java,v 1.11 2004/01/02 22:32:28 belaban Exp $
+ * @version $Id: UDP1_4.java,v 1.12 2004/01/03 02:08:58 belaban Exp $
  * todo: sending of dummy packets
  */
 public class UDP1_4 extends Protocol implements  Receiver {
@@ -86,16 +86,16 @@ public class UDP1_4 extends Protocol implements  Receiver {
     UdpHeader udp_hdr=null;
 
     /** Send buffer size of the multicast datagram socket */
-    int mcast_send_buf_size=32000;
+    int mcast_send_buf_size=300000;
 
     /** Receive buffer size of the multicast datagram socket */
-    int mcast_recv_buf_size=64000;
+    int mcast_recv_buf_size=300000;
 
     /** Send buffer size of the unicast datagram socket */
-    int ucast_send_buf_size=32000;
+    int ucast_send_buf_size=300000;
 
     /** Receive buffer size of the unicast datagram socket */
-    int ucast_recv_buf_size=64000;
+    int ucast_recv_buf_size=300000;
 
     /**
      * If true, messages sent to self are treated specially: unicast messages are
@@ -135,7 +135,7 @@ public class UDP1_4 extends Protocol implements  Receiver {
     /** Number of bytes to allocate to receive a packet. Needs to be set to be higher than frag_size
      * (handle CONFIG event)
      */
-    final int DEFAULT_RECEIVE_BUFFER_SIZE=65000;  // todo: make settable and/or use CONFIG event
+    final int DEFAULT_RECEIVE_BUFFER_SIZE=120000;  // todo: make settable and/or use CONFIG event
 
 
 
@@ -927,6 +927,8 @@ public class UDP1_4 extends Protocol implements  Receiver {
 
         protected Thread t=null;
 
+        protected SenderThread sender_thread=null;
+
         /** Interface on which ucast_sock and mcast_sender_sock are created */
         NetworkInterface bind_interface;
 
@@ -946,6 +948,38 @@ public class UDP1_4 extends Protocol implements  Receiver {
         /** Buffer for incoming unicast packets */
         protected byte[] receive_buffer=null;
 
+
+        Queue send_queue=new Queue();
+
+
+        class SenderThread extends Thread {
+
+
+            public void run() {
+                Object[] arr;
+                byte[] buf;
+                SocketAddress dest;
+
+                while(send_queue != null) {
+                    try {
+                        arr=(Object[])send_queue.remove();
+                        buf=(byte[])arr[0];
+                        dest=(SocketAddress)arr[1];
+                        mcast_sock.send(new DatagramPacket(buf, buf.length, dest));
+                    }
+                    catch(QueueClosedException e) {
+                        break;
+                    }
+                    catch(SocketException e) {
+                        e.printStackTrace();
+                    }
+                    catch(IOException e) {
+                        e.printStackTrace();
+                    }
+
+                }
+            }
+        }
 
 
 
@@ -969,6 +1003,8 @@ public class UDP1_4 extends Protocol implements  Receiver {
             mcast_sock.setNetworkInterface(this.bind_interface); // for outgoing multicasts
             local_addr=mcast_sock.getLocalSocketAddress();
             System.out.println("-- local_addr=" + local_addr);
+            System.out.println("-- mcast_sock: send_bufsize=" + mcast_sock.getSendBufferSize() +
+                    ", recv_bufsize=" + mcast_sock.getReceiveBufferSize());
         }
 
 
@@ -991,6 +1027,9 @@ public class UDP1_4 extends Protocol implements  Receiver {
             t=new Thread(this, "ConnectorThread for " + local_addr);
             t.setDaemon(true);
             t.start();
+
+            sender_thread=new SenderThread();
+            sender_thread.start();
         }
 
         /** Stops the connector. After this call, start() cannot be called, but a new connector has to
@@ -1007,7 +1046,11 @@ public class UDP1_4 extends Protocol implements  Receiver {
 
         /** Sends a message using mcast_sock */
         public void send(DatagramPacket packet) throws Exception {
-            mcast_sock.send(packet);
+            //mcast_sock.send(packet);
+
+            byte[] buf=(byte[])packet.getData().clone();
+            Object[] arr=new Object[]{buf, packet.getSocketAddress()};
+            send_queue.add(arr);
         }
 
         public void run() {

@@ -10,6 +10,8 @@
 				<protocol-param name="mcast_send_buf_size" value="150000"/>
 				<protocol-param name="mcast_recv_buf_size" value="80000"/>
 				<protocol-param name="ip_ttl"              value="32"/>
+                <protocol-param name="use_incoming_packet_handler" value="false"/>
+                <protocol-param name="use_outgoing_packet_handler" value="false"/>
 			</protocol-params>
 		</protocol>
 		<protocol>
