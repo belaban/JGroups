@@ -1,4 +1,4 @@
-// $Id: WANPING.java,v 1.7 2004/09/23 16:29:43 belaban Exp $
+// $Id: WANPING.java,v 1.8 2004/12/31 14:10:38 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -95,9 +95,6 @@ public class WANPING extends Protocol {
 	PingHeader   hdr, rsp_hdr;
 	PingRsp      rsp;
 	Address      coord;
-	Address      sender;
-	boolean      contains;
-	Vector       tmp;
 
 
 	switch(evt.getType()) {
@@ -129,7 +126,7 @@ public class WANPING extends Protocol {
 		return;
 
 	    case PingHeader.GET_MBRS_RSP:   // add response to vector and notify waiting thread
-		rsp=(PingRsp)hdr.arg;
+		rsp=hdr.arg;
 		synchronized(initial_members) {
 		    initial_members.addElement(rsp);
 		    initial_members.notifyAll();
@@ -162,7 +159,6 @@ public class WANPING extends Protocol {
 	Message      msg, copy;
 	PingHeader   hdr;
 	long         time_to_wait, start_time;
-	List         gossip_rsps=null;
 	String       h;
 
 	switch(evt.getType()) {
@@ -198,7 +194,7 @@ public class WANPING extends Protocol {
 		
 		while(initial_members.size() < num_initial_members && time_to_wait > 0) {
 		    try {initial_members.wait(time_to_wait);} catch(Exception e) {}
-		    time_to_wait-=System.currentTimeMillis() - start_time;
+		    time_to_wait=timeout - (System.currentTimeMillis() - start_time);
 		}
 	    }
 
@@ -246,17 +242,7 @@ public class WANPING extends Protocol {
     /* -------------------------- Private methods ---------------------------- */
 
 
-    private View makeView(Vector mbrs) {
-	Address coord=null;
-	long    id=0;
-	ViewId  view_id=new ViewId(local_addr);
-
-	coord=view_id.getCoordAddress();
-	id=view_id.getId();
-
-	return new View(coord, id, mbrs);
-    }
-
+  
     /** Input is "pipe1,pipe2". Return List of Strings */
     private List createInitialHosts(String l) {
 	List            tmp=new List();

@@ -1,4 +1,4 @@
-// $Id: PING.java,v 1.18 2004/10/13 15:56:53 belaban Exp $
+// $Id: PING.java,v 1.19 2004/12/31 14:10:38 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -373,7 +373,7 @@ public class PING extends Protocol {
                     }
                     catch(Exception e) {
                     }
-                    time_to_wait-=System.currentTimeMillis() - start_time;
+                    time_to_wait=timeout - (System.currentTimeMillis() - start_time);
                 }
             }
 

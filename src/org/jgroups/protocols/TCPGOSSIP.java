@@ -1,4 +1,4 @@
-// $Id: TCPGOSSIP.java,v 1.9 2004/09/23 16:29:42 belaban Exp $
+// $Id: TCPGOSSIP.java,v 1.10 2004/12/31 14:10:38 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -152,7 +152,7 @@ public class TCPGOSSIP extends Protocol {
                 return;
 
             case PingHeader.GET_MBRS_RSP:   // add response to vector and notify waiting thread
-                rsp=(PingRsp)hdr.arg;
+                rsp=hdr.arg;
                 synchronized(initial_members) {
                     initial_members.addElement(rsp);
                     initial_members.notifyAll();
@@ -244,7 +244,7 @@ public class TCPGOSSIP extends Protocol {
                     }
                     catch(Exception e) {
                     }
-                    time_to_wait-=System.currentTimeMillis() - start_time;
+                    time_to_wait=timeout - (System.currentTimeMillis() - start_time);
                 }
             }
             if(log.isTraceEnabled()) log.trace("[FIND_INITIAL_MBRS] initial members are " + initial_members);

@@ -1,4 +1,4 @@
-// $Id: TCPPING.java,v 1.15 2004/10/07 07:03:00 belaban Exp $
+// $Id: TCPPING.java,v 1.16 2004/12/31 14:10:38 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -168,74 +168,74 @@ public class TCPPING extends Protocol {
 
         switch(evt.getType()) {
 
-            case Event.FIND_INITIAL_MBRS:   // sent by GMS layer, pass up a GET_MBRS_OK event
-                initial_members.removeAllElements();
-                msg=new Message(null, null, null);
-                msg.putHeader(getName(), new PingHeader(PingHeader.GET_MBRS_REQ, null));
+        case Event.FIND_INITIAL_MBRS:   // sent by GMS layer, pass up a GET_MBRS_OK event
+            initial_members.removeAllElements();
+            msg=new Message(null, null, null);
+            msg.putHeader(getName(), new PingHeader(PingHeader.GET_MBRS_REQ, null));
 
-                synchronized(members) {
-                    for(Iterator it=initial_hosts.iterator(); it.hasNext();) {
-                        Address addr=(Address)it.next();
-                        if(members.contains(addr)) {
-                           ; // continue; // changed as suggested by Mark Kopec
-                        }
-                        msg.setDest(addr);
-                        if(log.isTraceEnabled()) log.trace("[FIND_INITIAL_MBRS] sending PING request to " + msg.getDest());
-                        passDown(new Event(Event.MSG, msg.copy()));
+            synchronized(members) {
+                for(Iterator it=initial_hosts.iterator(); it.hasNext();) {
+                    Address addr=(Address)it.next();
+                    if(members.contains(addr)) {
+                        ; // continue; // changed as suggested by Mark Kopec
                     }
+                    msg.setDest(addr);
+                    if(log.isTraceEnabled()) log.trace("[FIND_INITIAL_MBRS] sending PING request to " + msg.getDest());
+                    passDown(new Event(Event.MSG, msg.copy()));
                 }
+            }
 
-                // 2. Wait 'timeout' ms or until 'num_initial_members' have been retrieved
-                synchronized(initial_members) {
-                    start_time=System.currentTimeMillis();
-                    time_to_wait=timeout;
+            // 2. Wait 'timeout' ms or until 'num_initial_members' have been retrieved
+            synchronized(initial_members) {
+                start_time=System.currentTimeMillis();
+                time_to_wait=timeout;
 
-                    while(initial_members.size() < num_initial_members && time_to_wait > 0) {
-                        try {
-                            initial_members.wait(time_to_wait);
-                        }
-                        catch(Exception e) {
-                        }
-                        time_to_wait-=System.currentTimeMillis() - start_time;
+                while(initial_members.size() < num_initial_members && time_to_wait > 0) {
+                    try {
+                        initial_members.wait(time_to_wait);
                     }
+                    catch(Exception e) {
+                    }
+                    time_to_wait=timeout - (System.currentTimeMillis() - start_time);
                 }
+            }
             if(log.isTraceEnabled()) log.trace("[FIND_INITIAL_MBRS] initial members are " + initial_members);
 
-                // 3. Send response
-                passUp(new Event(Event.FIND_INITIAL_MBRS_OK, initial_members));
-                break;
+            // 3. Send response
+            passUp(new Event(Event.FIND_INITIAL_MBRS_OK, initial_members));
+            break;
 
-            case Event.TMP_VIEW:
-            case Event.VIEW_CHANGE:
-                Vector tmp;
-                if((tmp=((View)evt.getArg()).getMembers()) != null) {
-                    synchronized(members) {
-                        members.clear();
-                        members.addAll(tmp);
-                        members_set.clear();
-                        members_set.addAll(tmp);
-                    }
+        case Event.TMP_VIEW:
+        case Event.VIEW_CHANGE:
+            Vector tmp;
+            if((tmp=((View)evt.getArg()).getMembers()) != null) {
+                synchronized(members) {
+                    members.clear();
+                    members.addAll(tmp);
+                    members_set.clear();
+                    members_set.addAll(tmp);
                 }
-                passDown(evt);
-                break;
+            }
+            passDown(evt);
+            break;
 
-            case Event.BECOME_SERVER: // called after client has joined and is fully working group member
-                passDown(evt);
-                is_server=true;
-                break;
+        case Event.BECOME_SERVER: // called after client has joined and is fully working group member
+            passDown(evt);
+            is_server=true;
+            break;
 
-            case Event.CONNECT:
-                group_addr=(String) evt.getArg();
-                passDown(evt);
-                break;
+        case Event.CONNECT:
+            group_addr=(String) evt.getArg();
+            passDown(evt);
+            break;
 
-            case Event.DISCONNECT:
-                passDown(evt);
-                break;
+        case Event.DISCONNECT:
+            passDown(evt);
+            break;
 
-            default:
-                passDown(evt);          // Pass on to the layer below us
-                break;
+        default:
+            passDown(evt);          // Pass on to the layer below us
+            break;
         }
     }
 
