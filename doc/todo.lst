@@ -1,4 +1,4 @@
-$Id: todo.lst,v 1.17 2004/11/15 08:04:54 belaban Exp $
+$Id: todo.lst,v 1.18 2004/12/03 05:20:37 belaban Exp $
 
 
 
@@ -28,6 +28,8 @@ $Id: todo.lst,v 1.17 2004/11/15 08:04:54 belaban Exp $
   duplication
 
 - Add list of joined, crashed and left members to View
+
+- Support for IPv6 addresses
 
 - TCP: instead of sending to each receiver in turn, use 1 queue/thread per receiver. This prevents
   the server from hanging of a receiver hangs
