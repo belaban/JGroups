@@ -1,4 +1,4 @@
-// $Id: DistributedHashtable.java,v 1.7 2004/01/05 09:19:20 rds13 Exp $
+// $Id: DistributedHashtable.java,v 1.8 2004/01/05 09:56:29 rds13 Exp $
 
 package org.jgroups.blocks;
 
@@ -35,7 +35,7 @@ import org.jgroups.persistence.*;
  * initial state (using the state exchange funclet <code>StateExchangeFunclet</code>.
  * @author Bela Ban
  * @author <a href="mailto:aolias@yahoo.com">Alfonso Olias-Sanz</a>
- * @version $Id: DistributedHashtable.java,v 1.7 2004/01/05 09:19:20 rds13 Exp $
+ * @version $Id: DistributedHashtable.java,v 1.8 2004/01/05 09:56:29 rds13 Exp $
  */
 public class DistributedHashtable extends Hashtable implements MessageListener, MembershipListener, Cloneable {
 
@@ -145,7 +145,6 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
         this.channel = (Channel)adapter.getTransport();
         this.groupname = this.channel.getChannelName();
         disp=new RpcDispatcher(adapter, id, this, this, this);
-	5B
         channel.setOpt(Channel.GET_STATE_EVENTS, new Boolean(true));
         start(state_timeout);
     }
