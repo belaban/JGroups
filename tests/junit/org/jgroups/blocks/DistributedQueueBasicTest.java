@@ -1,4 +1,4 @@
-// $Id: DistributedQueueBasicTest.java,v 1.3 2004/03/30 06:47:30 belaban Exp $
+// $Id: DistributedQueueBasicTest.java,v 1.4 2004/05/03 14:53:39 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -68,7 +68,8 @@ public class DistributedQueueBasicTest extends TestCase implements MessageListen
 
     public void tearDown() throws Exception
     {
-        tQueue2.stop();
+        if(tQueue2 != null)
+            tQueue2.stop();
 
         try
         {
@@ -77,8 +78,8 @@ public class DistributedQueueBasicTest extends TestCase implements MessageListen
         catch (InterruptedException ex)
         {
         }
-
-        tQueue1.stop();
+        if(tQueue1 != null)
+            tQueue1.stop();
     }
 
     class FetchTask implements Runnable
