@@ -1,4 +1,4 @@
-// $Id: Protocol.java,v 1.7 2003/12/26 23:50:44 belaban Exp $
+// $Id: Protocol.java,v 1.8 2004/02/15 18:34:11 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -218,7 +218,7 @@ public abstract class Protocol {
 
     public void setObserver(ProtocolObserver observer) {
         this.observer=observer;
-	observer.setProtocol(this);
+        observer.setProtocol(this);
         if(up_handler != null)
             up_handler.setObserver(observer);
         if(down_handler != null)

@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.8 2003/12/04 10:47:55 rds13 Exp $ -->
+<!-- $Id: build.xml,v 1.9 2004/02/15 18:34:13 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -13,6 +13,7 @@
     <property name="tests.dir" value="${root.dir}/tests/other"/>
     <property name="junit.dir" value="${root.dir}/tests/junit"/>
     <property name="stress.dir" value="${root.dir}/tests/stress"/>
+    <property name="perf.dir" value="${root.dir}/tests/perf"/>
     <property name="log4j.dir" value="${root.dir}/log4j"/>
     <property name="compile.dir" value="${root.dir}/classes"/>
     <property name="lib.dir" value="${root.dir}/lib"/>
@@ -73,6 +74,7 @@
             <src path="${tests.dir}"/>
             <src path="${junit.dir}"/>
             <src path="${stress.dir}"/>
+            <src path="${perf.dir}"/>
         </javac>
     </target>
 
@@ -91,6 +93,7 @@
             <src path="${tests.dir}"/>
             <src path="${junit.dir}"/>
             <src path="${stress.dir}"/>
+            <src path="${perf.dir}"/>
         </javac>
     </target>
 
@@ -122,6 +125,7 @@
             <src path="${tests.dir}"/>
             <src path="${junit.dir}"/>
             <src path="${stress.dir}"/>
+            <src path="${perf.dir}"/>
         </javac>
     </target>
 
