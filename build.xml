@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.3 2003/11/21 14:17:15 rds13 Exp $ -->
+<!-- $Id: build.xml,v 1.4 2003/11/21 15:48:25 rds13 Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -339,7 +339,7 @@
 			<param name="protocol.url" value="file:conf/vsync.xml"/>
 		</antcall>
 		<antcall target="protocol-test">
-			<param name="protocol.url" value="file:conf/fc.xm"/>
+			<param name="protocol.url" value="file:conf/fc.xml"/>
 		</antcall>
 		<antcall target="protocol-test">
 			<param name="protocol.url" value="file:conf/flow_control.xml"/>
