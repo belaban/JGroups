@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.16 2004/04/26 18:40:14 belaban Exp $
+// $Id: NAKACK.java,v 1.17 2004/04/28 16:01:40 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -514,7 +514,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
             }
             len=m.size();
             size+=len;
-            if(size >= max_xmit_size) {
+            if(size > max_xmit_size) { // changed from >= to > (yaron-r, bug #943709)
                 // size has reached max_xmit_size. go ahead and send message (excluding the current message)
                 if(log.isTraceEnabled())
                     log.trace("xmitting msgs [" + marker + "-" + (i - 1) + "] to " + dest);
