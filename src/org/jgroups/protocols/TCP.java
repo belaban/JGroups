@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.18 2005/03/24 14:42:36 belaban Exp $
+// $Id: TCP.java,v 1.19 2005/04/05 14:34:35 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -36,7 +36,7 @@ import java.util.Vector;
  */
 public class TCP extends Protocol implements ConnectionTable.Receiver {
     private ConnectionTable ct=null;
-    private Address         local_addr=null;
+    protected Address       local_addr=null;
     private String          group_addr=null;
     private InetAddress     bind_addr=null;  // local IP address to bind srv sock to (m-homed systems)
     private InetAddress	    external_addr=null; // the IP address which is broadcast to other group members
@@ -77,6 +77,10 @@ public class TCP extends Protocol implements ConnectionTable.Receiver {
         return "TCP";
     }
 
+
+    protected final Vector getMembers() {
+        return members;
+    }
 
     /**
      DON'T REMOVE ! This prevents the up-handler thread to be created, which essentially is superfluous:
@@ -404,7 +408,7 @@ public class TCP extends Protocol implements ConnectionTable.Receiver {
     }
 
 
-    private void sendMulticastMessage(Message msg) {
+    protected void sendMulticastMessage(Message msg) {
         Address dest;
         Vector mbrs=(Vector)members.clone();
         for(int i=0; i < mbrs.size(); i++) {
@@ -415,7 +419,7 @@ public class TCP extends Protocol implements ConnectionTable.Receiver {
     }
 
 
-    private void handleDownEvent(Event evt) {
+    protected void handleDownEvent(Event evt) {
         switch(evt.getType()) {
 
             case Event.TMP_VIEW:
