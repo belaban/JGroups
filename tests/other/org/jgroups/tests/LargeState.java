@@ -1,11 +1,10 @@
-// $Id: LargeState.java,v 1.4 2003/12/19 17:14:08 belaban Exp $
+// $Id: LargeState.java,v 1.5 2004/03/01 16:51:13 belaban Exp $
 
 
 package org.jgroups.tests;
 
 
 import org.jgroups.*;
-import org.jgroups.util.Promise;
 import org.jgroups.log.Trace;
 
 
