@@ -1,4 +1,4 @@
-// $Id: IpAddress.java,v 1.15 2004/10/13 16:06:07 belaban Exp $
+// $Id: IpAddress.java,v 1.16 2005/01/12 23:44:57 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -24,7 +24,7 @@ public class IpAddress implements Address {
     protected static final HashMap  sAddrCache=new HashMap();
     protected static final Log log=LogFactory.getLog(IpAddress.class);
 
-    static boolean resolve_dns=true;
+    static boolean resolve_dns=false;
     static final  char[] digits = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'};
 
 
@@ -32,10 +32,10 @@ public class IpAddress implements Address {
         /* Trying to get value of resolve_dns. PropertyPermission not granted if
         * running in an untrusted environment  with JNLP */
         try {
-            resolve_dns=Boolean.valueOf(System.getProperty("resolve.dns", "true")).booleanValue();
+            resolve_dns=Boolean.valueOf(System.getProperty("resolve.dns", "false")).booleanValue();
         }
         catch (SecurityException ex){
-            resolve_dns=true;
+            resolve_dns=false;
         }
     }
 
