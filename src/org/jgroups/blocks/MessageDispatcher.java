@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.6 2003/12/11 06:58:55 belaban Exp $
+// $Id: MessageDispatcher.java,v 1.7 2004/03/10 02:07:23 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -332,45 +332,47 @@ public class MessageDispatcher implements RequestHandler {
                       <em>or</em> timeout time.
        @return RspList A list of responses. Each response is an <code>Object</code> and associated
                        to its sender.
-   */    
-    public RspList castMessage(final Vector dests, Message msg, int mode, long timeout) {
-        GroupRequest  _req=null;
-        Vector        real_dests;
-        Channel       tmp;
+   */
+   public RspList castMessage(final Vector dests, Message msg, int mode, long timeout) {
+       GroupRequest  _req=null;
+       Vector        real_dests;
+       Channel       tmp;
 
-        // we need to clone because we don't want to modify the original
-        // (we remove ourselves if LOCAL is false, see below) !
-        real_dests=dests != null ? (Vector)dests.clone() : (members != null? (Vector)members.clone() : null);
+       // we need to clone because we don't want to modify the original
+       // (we remove ourselves if LOCAL is false, see below) !
+       real_dests=dests != null ? (Vector)dests.clone() : (members != null? (Vector)members.clone() : null);
 
-        // if local delivery is off, then we should not wait for the message from the local member.
-        // therefore remove it from the membership
-        tmp=channel;
-        if(tmp == null) {
-            if(adapter != null && adapter.getTransport() instanceof Channel)
-                tmp=(Channel)adapter.getTransport();
-        }
+       // if local delivery is off, then we should not wait for the message from the local member.
+       // therefore remove it from the membership
+       tmp=channel;
+       if(tmp == null) {
+           if(adapter != null && adapter.getTransport() instanceof Channel)
+               tmp=(Channel)adapter.getTransport();
+       }
 
-        if(tmp != null && tmp.getOpt(Channel.LOCAL).equals(Boolean.FALSE)) {
-            if(local_addr == null)
-                local_addr=tmp.getLocalAddress();
-            if(local_addr != null && real_dests != null)
-                real_dests.removeElement(local_addr);
-        }
-        
-        // don't even send the message if the destination list is empty
-        if(real_dests == null || real_dests.size() == 0) {
-            if(Trace.trace) {
-                Trace.info("MessageDispatcher.castMessage()",
-                           "destination list is empty, won't send message");
-                return new RspList(); // return empty response list
-            }
-        }
+       if(tmp != null && tmp.getOpt(Channel.LOCAL).equals(Boolean.FALSE)) {
+           if(local_addr == null)
+               local_addr=tmp.getLocalAddress();
+           if(local_addr != null && real_dests != null)
+               real_dests.removeElement(local_addr);
+       }
 
-        _req=new GroupRequest(msg, corr, real_dests, mode, timeout, 0);
-        _req.execute();
+       // don't even send the message if the destination list is empty
+       if(Trace.trace)
+           Trace.debug("MessageDispatcher.castMessage()", "real_dests=" + real_dests);
+       if(real_dests == null || real_dests.size() == 0) {
+           if(Trace.trace) {
+               Trace.info("MessageDispatcher.castMessage()",
+                       "destination list is empty, won't send message");
+               return new RspList(); // return empty response list
+           }
+       }
 
-        return _req.getResults();
-    }
+       _req=new GroupRequest(msg, corr, real_dests, mode, timeout, 0);
+       _req.execute();
+
+       return _req.getResults();
+   }
 
 
     /**

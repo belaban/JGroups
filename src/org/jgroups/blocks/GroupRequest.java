@@ -1,9 +1,7 @@
-// $Id: GroupRequest.java,v 1.3 2004/02/26 19:14:59 belaban Exp $
+// $Id: GroupRequest.java,v 1.4 2004/03/10 02:07:23 belaban Exp $
 
 package org.jgroups.blocks;
 
-
-import java.util.Vector;
 
 import org.jgroups.Address;
 import org.jgroups.Message;
@@ -12,7 +10,8 @@ import org.jgroups.View;
 import org.jgroups.log.Trace;
 import org.jgroups.util.Command;
 import org.jgroups.util.RspList;
-import org.jgroups.util.Util;
+
+import java.util.Vector;
 
 
 
@@ -39,7 +38,7 @@ import org.jgroups.util.Util;
  * to do so.<p>
  * <b>Requirements</b>: lossless delivery, e.g. acknowledgment-based message confirmation.
  * @author Bela Ban
- * @version $Revision: 1.3 $
+ * @version $Revision: 1.4 $
  */
 public class GroupRequest implements RspCollector, Command {
     /** return only first response */
@@ -266,14 +265,11 @@ public class GroupRequest implements RspCollector, Command {
         Address sender=m.getSrc(), mbr;
         Object val=null;
         if(done) {
-            Trace.warn(
-                    "GroupRequest.receiveResponse()",
-                    "command is done; cannot add response !");
+            Trace.warn("GroupRequest.receiveResponse()", "command is done; cannot add response !");
             return;
         }
         if(suspects != null && suspects.size() > 0 && suspects.contains(sender)) {
-            Trace.warn(
-                    "GroupRequest.receiveResponse()",
+            Trace.warn("GroupRequest.receiveResponse()",
                     "received response from suspected member " + sender + "; discarding");
             return;
         }
@@ -292,6 +288,9 @@ public class GroupRequest implements RspCollector, Command {
                     if(received[i] == NOT_RECEIVED) {
                         responses[i]=val;
                         received[i]=RECEIVED;
+                        if(Trace.trace)
+                            Trace.debug("GroupRequest.receiveResponse()", "received response for request " +
+                                    req_id + ", sender=" + sender + ", val=" + val);
                         rsp_mutex.notifyAll(); // wakes up execute()
                         break;
                     }
@@ -466,13 +465,11 @@ public class GroupRequest implements RspCollector, Command {
         }
 
         try {
+            if(Trace.trace)
+                Trace.debug("GroupRequest.doExecute()", "sending request (id=" + req_id + ")");
             if(corr != null) {
                 java.util.List tmp=members != null? members : null;
-                corr.sendRequest(
-                        req_id,
-                        tmp,
-                        request_msg,
-                        rsp_mode == GET_NONE? null : this);
+                corr.sendRequest(req_id, tmp, request_msg, rsp_mode == GET_NONE? null : this);
             }
             else {
                 transport.send(request_msg);
@@ -491,6 +488,8 @@ public class GroupRequest implements RspCollector, Command {
                 if(getResponses()) {
                     if(corr != null)
                         corr.done(req_id);
+                    if(Trace.trace)
+                        Trace.debug("GroupRequest.doExecute()", "received all responses: " + toString());
                     return true;
                 }
                 try {
@@ -506,6 +505,8 @@ public class GroupRequest implements RspCollector, Command {
                 if(getResponses()) {
                     if(corr != null)
                         corr.done(req_id);
+                    if(Trace.trace)
+                        Trace.debug("GroupRequest.doExecute()", "received all responses: " + toString());
                     return true;
                 }
                 timeout=timeout - (System.currentTimeMillis() - start_time);
