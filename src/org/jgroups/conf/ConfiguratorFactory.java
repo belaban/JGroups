@@ -1,4 +1,4 @@
-// $Id: ConfiguratorFactory.java,v 1.8 2004/07/30 04:43:52 jiwils Exp $
+// $Id: ConfiguratorFactory.java,v 1.9 2004/08/04 10:32:46 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -7,6 +7,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.jgroups.ChannelException;
+import org.jgroups.JChannel;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -175,11 +176,14 @@ public class ConfiguratorFactory {
      *                   XML configuration, or a string representing a file name
      *                   that contains a JGroups XML configuration.
      */
-    public static ProtocolStackConfigurator getStackConfigurator(String properties)
-    throws ChannelException {
+    public static ProtocolStackConfigurator getStackConfigurator(String properties) throws ChannelException {
         if (propertiesOverride != null && propertiesOverride != properties) {
             properties = propertiesOverride;
         }
+
+        // added by bela: for null String props we use the default properties
+        if(properties == null)
+            properties=JChannel.DEFAULT_PROTOCOL_STACK;
 
         checkForNullConfiguration(properties);
 
@@ -227,6 +231,10 @@ public class ConfiguratorFactory {
         if (propertiesOverride != null) {
             properties = propertiesOverride;
         }
+
+        // added by bela: for null String props we use the default properties
+        if(properties == null)
+            properties=JChannel.DEFAULT_PROTOCOL_STACK;
 
         if(properties instanceof URL) {
             try {
