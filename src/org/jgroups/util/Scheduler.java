@@ -1,4 +1,4 @@
-// $Id: Scheduler.java,v 1.4 2004/03/30 06:47:28 belaban Exp $
+// $Id: Scheduler.java,v 1.5 2004/04/16 15:21:31 belaban Exp $
 
 package org.jgroups.util;
 
@@ -71,9 +71,9 @@ public class Scheduler implements Runnable {
         while(sched_thread != null) {
             if(queue.closed()) break;
             try {
-                current_task=(Task)queue.peek(); // get the first task in the queue
+                current_task=(Task)queue.peek(); // get the first task in the queue (blocks until available)
                 if(current_task == null) { // @remove
-                    if(log.isErrorEnabled()) log.error("current task is null, queue.size()=" + queue.size() +
+                    if(log.isWarnEnabled()) log.warn("current task is null, queue.size()=" + queue.size() +
                             ", queue.closed()=" + queue.closed() + ", continuing");
                     continue;
                 }
@@ -106,7 +106,13 @@ public class Scheduler implements Runnable {
                 }
 
                 if(sched_thread.isInterrupted()) { // will continue at "catch(InterruptedException)" below
-                    sched_thread.interrupt();
+                    // sched_thread.interrupt();
+
+                    // changed on suggestion from Victor Cardoso: sched_thread.interrupt() does *not* throw an
+                    // InterruptedException, so we don't land in the catch calse, but rather execute the code below
+                    // (which we don't want) - bela April 15 2004
+
+                    throw new InterruptedException();
                 }
 
                 if(concurrent_processing == false) { // this is the default: process serially
