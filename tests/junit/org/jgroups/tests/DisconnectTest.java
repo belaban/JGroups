@@ -1,4 +1,4 @@
-// $Id: DisconnectTest.java,v 1.6 2004/04/28 18:44:16 belaban Exp $
+// $Id: DisconnectTest.java,v 1.7 2005/02/19 11:45:27 ovidiuf Exp $
 
 package org.jgroups.tests;
 
@@ -10,19 +10,9 @@ import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.MessageListener;
 import org.jgroups.View;
+import org.jgroups.tests.stack.Utilities;
 import org.jgroups.blocks.PullPushAdapter;
-import org.jgroups.stack.GossipData;
-import org.jgroups.stack.GossipServer;
-import org.jgroups.stack.Router;
 import org.jgroups.util.Promise;
-
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.ObjectOutputStream;
-import java.net.ServerSocket;
-import java.net.Socket;
-
-
 
 
 /**
@@ -31,32 +21,31 @@ import java.net.Socket;
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
  * @author Bela Ban belaban@yahoo.com
- * @version $Revision: 1.6 $
+ * @version $Revision: 1.7 $
  **/
 public class DisconnectTest extends TestCase {
 
     private JChannel channel;
+    private int routerPort;
 
     public DisconnectTest(String name) {
         super(name);
     }
 
     public void setUp() throws Exception {
+
         super.setUp();
+        routerPort = Utilities.startGossipRouter();
     }
 
     public void tearDown() throws Exception {
 
         super.tearDown();
-
-        // TO_DO: no elegant way to stop the Router/GossipServer threads and
-        //        clean-up resources. Use the Router/GossipServer
-        //        administrative interface.
-
         if(channel != null) {
             channel.close();
             channel=null;
         }
+        Utilities.stopGossipRouter();
     }
 
 
@@ -74,29 +63,24 @@ public class DisconnectTest extends TestCase {
                 "print_local_addr=false;down_thread=true;up_thread=true)";
     }
 
-
-
-    /**
-     * Tests if the channel has a null local address after disconnect (using
-     * TUNNEL).
-     *
-     * TO_DO: uncomment or delete after clarifying the semantics of
-     * getLocalAddress() on a disconnected channel.
-     *
-     **/
-//     public void testNullLocalAddress_TUNNEL() throws Exception {
-
-// 	String props = getTUNNELProps(startRouter(),startGossipServer());
-
-//   	channel = new JChannel(props);
-// 	channel.connect("testgroup");
-// 	assertTrue(channel.getLocalAddress()!=null);
-// 	channel.disconnect();
-// 	assertNull(channel.getLocalAddress());
-//     }
-
-
-
+//    /**
+//     * Tests if the channel has a null local address after disconnect (using
+//     * TUNNEL).
+//     *
+//     * TO_DO: uncomment or delete after clarifying the semantics of
+//     * getLocalAddress() on a disconnected channel.
+//     *
+//     **/
+////     public void testNullLocalAddress_TUNNEL() throws Exception {
+//
+//// 	String props = getTUNNELProps(startRouter(),startGossipServer());
+//
+////   	channel = new JChannel(props);
+//// 	channel.connect("testgroup");
+//// 	assertTrue(channel.getLocalAddress()!=null);
+//// 	channel.disconnect();
+//// 	assertNull(channel.getLocalAddress());
+////     }
 
 
     /**
@@ -150,9 +134,8 @@ public class DisconnectTest extends TestCase {
         final Promise msgPromise=new Promise();
         JChannel coordinator=new JChannel();
         coordinator.connect("testgroup");
-        PullPushAdapter ppa=
-                new PullPushAdapter(coordinator,
-                                    new PromisedMessageListener(msgPromise));
+        PullPushAdapter ppa= new PullPushAdapter(coordinator,
+                                                 new PromisedMessageListener(msgPromise));
         ppa.start();
 
         channel=new JChannel();
@@ -177,7 +160,7 @@ public class DisconnectTest extends TestCase {
       **/
      public void testDisconnectConnectOne_TUNNEL() throws Exception {
 
-         String props=getTUNNELProps(startRouter(), startGossipServer());
+         String props=getTUNNELProps(routerPort, routerPort);
 
          channel=new JChannel(props);
          channel.connect("testgroup1");
@@ -195,7 +178,7 @@ public class DisconnectTest extends TestCase {
       **/
      public void testDisconnectConnectTwo_TUNNEL() throws Exception {
 
-         String props=getTUNNELProps(startRouter(), startGossipServer());
+         String props=getTUNNELProps(routerPort, routerPort);
 
          JChannel coordinator=new JChannel(props);
          coordinator.connect("testgroup");
@@ -222,7 +205,7 @@ public class DisconnectTest extends TestCase {
       **/
      public void testDisconnectConnectSendTwo_TUNNEL() throws Exception {
 
-         String props=getTUNNELProps(startRouter(), startGossipServer());
+         String props=getTUNNELProps(routerPort, routerPort);
 
          final Promise msgPromise=new Promise();
          JChannel coordinator=new JChannel(props);
@@ -257,135 +240,6 @@ public class DisconnectTest extends TestCase {
         String[] testCaseName={DisconnectTest.class.getName()};
         junit.textui.TestRunner.main(testCaseName);
     }
-
-
-    //
-    // HELPERS
-    //
-
-    /**
-     * Starts the router on a separate thread and makes sure it answers the
-     * requests. Required by TUNNEL.
-     **/
-    private int startRouter() throws Exception {
-
-        final int routerPort=getFreePort();
-        Thread routerThread=new Thread(new Runnable() {
-            public void run() {
-                try {
-                    new Router(routerPort).start();
-                }
-                catch(Exception e) {
-                    System.err.println("Failed to start the router " +
-                                       "on port " + routerPort);
-                    e.printStackTrace();
-                }
-            }
-        });
-        routerThread.start();
-
-        // verify the router - try to connect for 10 secs
-        long startms=System.currentTimeMillis();
-        long crtms=startms;
-        Exception lastConnectException=null;
-        while(crtms - startms < 10000) {
-            Socket s=null;
-            try {
-                s=new Socket("localhost", routerPort);
-            }
-            catch(Exception e) {
-                lastConnectException=e;
-                Thread.sleep(1000);
-                crtms=System.currentTimeMillis(); 
-                continue;
-            }
-            lastConnectException=null;
-            DataInputStream dis=new DataInputStream(s.getInputStream());
-            DataOutputStream dos=new DataOutputStream(s.getOutputStream());
-
-            // read the IpAddress
-            int len=dis.readInt();
-            byte[] buffer=new byte[len];
-            dis.read(buffer, 0, len);
-
-            // write a GET
-            dos.writeInt(Router.GET);
-            dos.writeUTF("nogroup_setup");
-            dis.readInt();
-
-            s.close();
-            break;
-        }
-        if(lastConnectException != null) {
-            lastConnectException.printStackTrace();
-            fail("Cannot connect to the router");
-        }
-        System.out.println("router ok");
-        return routerPort;
-    }
-
-
-    /**
-     * Starts the gossip server on a separate thread and makes sure it answers
-     * the requests. Required by TUNNEL.
-     **/
-    private int startGossipServer() throws Exception {
-
-        final int gossipPort=getFreePort();
-        Thread gossipThread=new Thread(new Runnable() {
-            public void run() {
-                try {
-                    new GossipServer(gossipPort).run();
-                }
-                catch(Exception e) {
-                    System.err.println("Failed to start the gossip " +
-                                       "server on port " + gossipPort);
-                    e.printStackTrace();
-                }
-            }
-        });
-        gossipThread.start();
-
-        // verify the gossip server - try to connect for 10 secs
-        long startms=System.currentTimeMillis();
-        long crtms=startms;
-        Exception lastConnectException=null;
-        while(crtms - startms < 10000) {
-            Socket s=null;
-            try {
-                s=new Socket("localhost", gossipPort);
-            }
-            catch(Exception e) {
-                lastConnectException=e;
-                Thread.sleep(1000);
-                crtms=System.currentTimeMillis();
-                continue;
-            }
-            lastConnectException=null;
-            // send a null GossipData which will be silently discared
-            ObjectOutputStream oos=
-                    new ObjectOutputStream(s.getOutputStream());
-            GossipData gd=null;
-            oos.writeObject(gd);
-            oos.close();
-            s.close();
-            break;
-        }
-        if(lastConnectException != null) {
-            lastConnectException.printStackTrace();
-            fail("Cannot connect to the gossip server");
-        }
-        System.out.println("gossip server ok");
-        return gossipPort;
-    }
-
-    private int getFreePort() throws Exception {
-        ServerSocket ss=new ServerSocket(0);
-        int port=ss.getLocalPort();
-        ss.close();
-        return port;
-    }
-
 
     private class PromisedMessageListener implements MessageListener {
 
