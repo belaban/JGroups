@@ -1,4 +1,4 @@
-// $Id: MessageDispatcherTest.java,v 1.10 2004/07/05 14:15:11 belaban Exp $
+// $Id: MessageDispatcherTest.java,v 1.11 2004/07/29 09:08:52 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -85,7 +85,7 @@ public class MessageDispatcherTest implements RequestHandler {
 
     public Object handle(Message msg) {
         System.out.println("handle(): " + msg.getObject());
-        Util.sleepRandom(5000);
+        Util.sleepRandom(2000);
         return "Success !";
     }
 
