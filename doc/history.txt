@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.66 2004/04/28 19:58:54 belaban Exp $
+Revision: $Id: history.txt,v 1.67 2004/05/02 05:37:18 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -26,6 +26,10 @@ romuald     = Romuald du Song
 
 Version 2.2.4
 -------------
+
+- Optimization in RpcDispatcher: before marshalling the args and handing the call over to the superclass, we
+  make sure the destination list is not empty: if empty we return immediately.
+  (bela May 1 2004) 
 
 - Fixed bugs #943480 and #938584. STABLE handles SUSPEND_STABLE and RESUME_STABLE events, and STATE_TRANSFER
   sends SUSPEND_STABLE before fetching the state and RESUME_STABLE after receiving the state, to prevent
