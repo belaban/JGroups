@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.40 2004/09/09 19:57:02 belaban Exp $
+// $Id: UDP.java,v 1.41 2004/09/13 14:27:42 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -45,6 +45,15 @@ public class UDP extends Protocol implements Runnable {
      * </ol>
      * The address of this socket will be our local address (<tt>local_addr</tt>) */
     DatagramSocket  sock=null;
+
+    /**
+     * BoundedList<Integer> of the last 100 ports used. This is to avoid reusing a port for DatagramSocket
+     */
+    private static BoundedList last_ports_used=null;
+
+    /** Maintain a list of local ports opened by DatagramSocket. If this is 0, this option is turned off.
+     * If bind_port is null, then this options will be ignored */
+    int num_last_ports=100;
 
     /** IP multicast socket for <em>receiving</em> multicast packets */
     MulticastSocket mcast_recv_sock=null;
@@ -184,7 +193,11 @@ public class UDP extends Protocol implements Runnable {
     }
 
 
-
+    BoundedList getLastPortsUsed() {
+        if(last_ports_used == null)
+            last_ports_used=new BoundedList(num_last_ports);
+        return last_ports_used;
+    }
 
     /* ----------------------- Receiving of MCAST UDP packets ------------------------ */
 
@@ -379,6 +392,12 @@ public class UDP extends Protocol implements Runnable {
         if(str != null) {
             bind_port=Integer.parseInt(str);
             props.remove("bind_port");
+        }
+
+        str=props.getProperty("num_last_ports");
+        if(str != null) {
+            num_last_ports=Integer.parseInt(str);
+            props.remove("num_last_ports");
         }
 
 		str=props.getProperty("start_port");
@@ -868,29 +887,13 @@ public class UDP extends Protocol implements Runnable {
 
         // 2. Create socket for receiving unicast UDP packets. The address and port
         //    of this socket will be our local address (local_addr)
-
-		// 27-6-2003 bgooren, find available port in range (start_port, start_port+port_range)
-        int rcv_port=bind_port, max_port=bind_port + port_range;
-        while(rcv_port <= max_port) {
-
-            try {
-                sock=new DatagramSocket(rcv_port, bind_addr);
-                break;
-            }
-            catch(SocketException bind_ex) {	// Cannot listen on this port
-                rcv_port++;
-            }
-            catch(SecurityException sec_ex) { // Not allowed to list on this port
-                rcv_port++;
-            }
-
-            // Cannot listen at all, throw an Exception
-            if(rcv_port == max_port + 1) { // +1 due to the increment above
-                throw new Exception("UDP.createSockets(): cannot list on any port in range " +
-                        bind_port + '-' + (bind_port + port_range));
-            }
+        if(bind_port > 0) {
+            sock=createDatagramSocketWithBindPort();
         }
-		//ucast_recv_sock=new DatagramSocket(bind_port, bind_addr);
+        else {
+            sock=createEphemeralDatagramSocket();
+        }
+
         if(sock == null)
             throw new Exception("UDP.createSocket(): sock is null");
 
@@ -920,6 +923,66 @@ public class UDP extends Protocol implements Runnable {
 
         setBufferSizes();
         if(log.isInfoEnabled()) log.info("socket information:\n" + dumpSocketInfo());
+    }
+
+
+    /** Creates a DatagramSocket with a random port. Because in certain operating systems, ports are reused,
+     * we keep a list of the n last used ports, and avoid port reuse */
+    DatagramSocket createEphemeralDatagramSocket() throws SocketException {
+        DatagramSocket tmp=null;
+        int localPort=0;
+        while(true) {
+            tmp=new DatagramSocket(localPort, bind_addr); // first time localPort is 0
+            if(num_last_ports <= 0)
+                break;
+            localPort=tmp.getLocalPort();
+            if(getLastPortsUsed().contains(new Integer(localPort))) {
+                if(log.isDebugEnabled())
+                    log.debug("local port " + localPort + " already seen in this session; will try to get other port");
+                try {tmp.close();} catch(Throwable e) {}
+                localPort++;
+                continue;
+            }
+            else {
+                getLastPortsUsed().add(new Integer(localPort));
+                break;
+            }
+        }
+        return tmp;
+    }
+
+
+
+
+    /**
+     * Creates a DatagramSocket when bind_port > 0. Attempts to allocate the socket with port == bind_port, and
+     * increments until it finds a valid port, or until port_range has been exceeded
+     * @return DatagramSocket The newly created socket
+     * @throws Exception
+     */
+    DatagramSocket createDatagramSocketWithBindPort() throws Exception {
+        DatagramSocket tmp=null;
+        // 27-6-2003 bgooren, find available port in range (start_port, start_port+port_range)
+        int rcv_port=bind_port, max_port=bind_port + port_range;
+        while(rcv_port <= max_port) {
+            try {
+                tmp=new DatagramSocket(rcv_port, bind_addr);
+                break;
+            }
+            catch(SocketException bind_ex) {	// Cannot listen on this port
+                rcv_port++;
+            }
+            catch(SecurityException sec_ex) { // Not allowed to list on this port
+                rcv_port++;
+            }
+
+            // Cannot listen at all, throw an Exception
+            if(rcv_port >= max_port + 1) { // +1 due to the increment above
+                throw new Exception("UDP.createSockets(): cannot list on any port in range " +
+                        bind_port + '-' + (bind_port + port_range));
+            }
+        }
+        return tmp;
     }
 
 
