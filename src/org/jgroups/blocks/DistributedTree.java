@@ -1,4 +1,4 @@
-// $Id: DistributedTree.java,v 1.6 2004/07/05 05:41:45 belaban Exp $
+// $Id: DistributedTree.java,v 1.7 2004/09/21 13:49:43 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -21,7 +21,7 @@ import java.util.Vector;
  * @author Bela Ban
  * @author <a href="mailto:aolias@yahoo.com">Alfonso Olias-Sanz</a>
  */
-public class DistributedTree implements MessageListener, MembershipListener, Cloneable {
+public class DistributedTree implements MessageListener, MembershipListener {
     Node root=null;
     Vector listeners=new Vector();
     Vector view_listeners=new Vector();

@@ -1,4 +1,4 @@
-// $Id: IpAddressTest.java,v 1.4 2004/07/05 14:15:04 belaban Exp $
+// $Id: IpAddressTest.java,v 1.5 2004/09/21 13:49:44 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -54,7 +54,7 @@ public class IpAddressTest extends TestCase {
         assertTrue(!a.equals(f));
         assertTrue(!e.equals(f));
         assertTrue(!f.equals(g));
-        assertTrue(!a.equals(null));
+        assertFalse(a.equals(null));
     }
 
 
