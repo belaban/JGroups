@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.2 2003/09/24 23:03:43 belaban Exp $
+// $Id: Event.java,v 1.3 2003/12/05 23:38:48 belaban Exp $
 
 package org.jgroups;
 
@@ -69,6 +69,10 @@ public class Event {
     public static final int GET_DIGEST_STABLE_OK      = 58;  // response to GET_DIGEST_STABLE
     public static final int ACK                       = 59;  // used to flush down events
     public static final int ACK_OK                    = 60;  // response to ACK
+    public static final int START                     = 61;  // triggers start() - internal event, handled by Protocol
+    public static final int START_OK                  = 62;  // arg = exception of null - internal event, handled by Protocol
+    public static final int STOP                      = 63;  // triggers stop() - internal event, handled by Protocol
+    public static final int STOP_OK                   = 64;  // arg = exception or null - internal event, handled by Protocol
 
 
 
@@ -168,6 +172,10 @@ public class Event {
             case GET_DIGEST_STABLE_OK:   return "GET_DIGEST_STABLE_OK";
             case ACK:                    return "ACK";
             case ACK_OK:                 return "ACK_OK";
+            case START:                  return "START";
+            case START_OK:               return "START_OK";
+            case STOP:                   return "STOP";
+            case STOP_OK:                return "STOP_OK";
 
             case USER_DEFINED:           return "USER_DEFINED";
             default:                     return "UNDEFINED";
