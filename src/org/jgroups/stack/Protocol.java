@@ -1,4 +1,4 @@
-// $Id: Protocol.java,v 1.4 2003/12/06 01:24:21 belaban Exp $
+// $Id: Protocol.java,v 1.5 2003/12/15 21:23:36 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -108,10 +108,11 @@ class DownHandler extends Thread {
                 }
 
                 int type=evt.getType();
-                if(type == Event.ACK || type == Event.START || type == Event.STOP)
-                    handler.handleSpecialDownEvent(evt);
-                else
-                    handler.down(evt);
+                if(type == Event.ACK || type == Event.START || type == Event.STOP) {
+                    if(handler.handleSpecialDownEvent(evt) == false)
+                        continue;
+                }
+                handler.down(evt);
                 evt=null;
             }
             catch(QueueClosedException queue_closed) {
@@ -451,10 +452,11 @@ public abstract class Protocol {
                 }
             }
             int type=evt.getType();
-            if(type == Event.ACK || type == Event.START || type == Event.STOP)
-                handleSpecialDownEvent(evt);
-            else
-                down(evt);
+            if(type == Event.ACK || type == Event.START || type == Event.STOP) {
+                if(handleSpecialDownEvent(evt) == false)
+                    return;
+            }
+            down(evt);
             return;
         }
         try {
@@ -527,13 +529,16 @@ public abstract class Protocol {
     }
 
 
-    /**  These are special internal events that should not be handled by protocols */
-    protected void handleSpecialDownEvent(Event evt) {
+    /**  These are special internal events that should not be handled by protocols
+     * @return boolean True: the event should be passed further down the stack. False: the event should
+     * be discarded (not passed down the stack)
+     */
+    protected boolean handleSpecialDownEvent(Event evt) {
         switch(evt.getType()) {
             case Event.ACK:
                 if(down_prot == null) {
                     passUp(new Event(Event.ACK_OK));
-                    return;
+                    return false; // don't pass down the stack
                 }
             case Event.START:
                 try {
@@ -542,25 +547,25 @@ public abstract class Protocol {
                     // if we're the transport protocol, reply with a START_OK up the stack
                     if(down_prot == null) {
                         passUp(new Event(Event.START_OK));
-                        return;
+                        return false; // don't pass down the stack
                     }
+                    else
+                        return true; // pass down the stack
                 }
                 catch(Exception e) {
                     passUp(new Event(Event.START_OK, new Exception("exception caused by " + getName() + ".start()", e)));
-                    return;
+                    return false;
                 }
-                break;
             case Event.STOP:
                 stop();
                 if(down_prot == null) {
                     passUp(new Event(Event.STOP_OK));
-                    return;
+                    return false; // don't pass down the stack
                 }
-                break;
+                else
+                    return true; // pass down the stack
+            default:
+                return true; // pass down by default
         }
-
-        if(down_prot != null)
-            passDown(evt);
     }
-
 }
