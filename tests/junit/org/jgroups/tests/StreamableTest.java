@@ -1,4 +1,4 @@
-// $Id: StreamableTest.java,v 1.1 2004/10/04 20:40:11 belaban Exp $
+// $Id: StreamableTest.java,v 1.2 2005/01/05 10:39:29 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -30,14 +30,6 @@ public class StreamableTest extends TestCase {
         super(name);
     }
 
-
-    public void setUp() {
-
-    }
-
-    public void tearDown() {
-        
-    }
 
 
     static {
@@ -140,7 +132,7 @@ public class StreamableTest extends TestCase {
         dest=new IpAddress("228.1.2.3", 5555);
         src=new IpAddress("127.0.0.1", 6666);
         Message msg=new Message(dest, src, "Hello world".getBytes());
-        PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ, new PingRsp(src, src));
+        PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ, new PingRsp(src, src, true));
         msg.putHeader("ping-header", hdr);
         UdpHeader udp_hdr=new UdpHeader("bla");
         msg.putHeader("udp-header", udp_hdr);
@@ -155,7 +147,7 @@ public class StreamableTest extends TestCase {
         src=new IpAddress("127.0.0.1", 6666);
         src.setAdditionalData("foobar".getBytes());
         Message msg=new Message(dest, src, "Hello world".getBytes());
-        PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ, new PingRsp(src, src));
+        PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ, new PingRsp(src, src, false));
         msg.putHeader("ping-header", hdr);
         UdpHeader udp_hdr=new UdpHeader("bla");
         msg.putHeader("udp-header", udp_hdr);
@@ -167,7 +159,7 @@ public class StreamableTest extends TestCase {
         dest=new WanPipeAddress("foo");
         src=new WanPipeAddress("foobar");
         Message msg=new Message(dest, src, "Hello world".getBytes());
-        PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ, new PingRsp(src, src));
+        PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ, new PingRsp(src, src, false));
         msg.putHeader("ping-header", hdr);
         UdpHeader udp_hdr=new UdpHeader("bla");
         msg.putHeader("udp-header", udp_hdr);

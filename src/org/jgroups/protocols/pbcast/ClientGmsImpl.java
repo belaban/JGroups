@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.16 2004/09/23 16:29:38 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.17 2005/01/05 10:39:27 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -8,9 +8,7 @@ import org.jgroups.protocols.PingRsp;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
 
-import java.util.Enumeration;
-import java.util.Hashtable;
-import java.util.Vector;
+import java.util.*;
 
 
 /**
@@ -21,7 +19,7 @@ import java.util.Vector;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.16 $
+ * @version $Revision: 1.17 $
  */
 public class ClientGmsImpl extends GmsImpl {
     private final Vector  initial_mbrs=new Vector(11);
@@ -68,9 +66,9 @@ public class ClientGmsImpl extends GmsImpl {
             if(log.isDebugEnabled()) log.debug("initial_mbrs are " + initial_mbrs);
             if(initial_mbrs.size() == 0) {
                 if(gms.disable_initial_coord) {
-                    if(log.isDebugEnabled())
-                        log.debug("received an initial membership of 0, but cannot become coordinator (disable_initial_coord=" +
-                                gms.disable_initial_coord + "), will retry fetching the initial membership");
+                    if(log.isTraceEnabled())
+                        log.trace("received an initial membership of 0, but cannot become coordinator " +
+                                  "(disable_initial_coord=true), will retry fetching the initial membership");
                     continue;
                 }
                 if(log.isDebugEnabled())
@@ -80,9 +78,33 @@ public class ClientGmsImpl extends GmsImpl {
             }
 
             coord=determineCoord(initial_mbrs);
-            if(coord == null) {
-                if(log.isErrorEnabled())
-                    log.error("could not determine coordinator from responses " + initial_mbrs);
+            if(coord == null) { // e.g. because we have all clients only
+                if(log.isTraceEnabled())
+                    log.trace("could not determine coordinator from responses " + initial_mbrs);
+
+                // so the member to become singleton member (and thus coord) is the first of all clients
+                Set clients=new TreeSet(); // sorted
+                clients.add(mbr); // add myself again (was removed by findInitialMembers())
+                for(int i=0; i < initial_mbrs.size(); i++) {
+                    PingRsp pingRsp=(PingRsp)initial_mbrs.elementAt(i);
+                    Address client_addr=pingRsp.getAddress();
+                    if(client_addr != null)
+                        clients.add(client_addr);
+                }
+                if(log.isTraceEnabled())
+                    log.trace("clients to choose new coord from are: " + clients);
+                Address new_coord=(Address)clients.iterator().next();
+                if(new_coord.equals(mbr)) {
+                    if(log.isTraceEnabled())
+                        log.trace("I'm the first of the clients, will become singleton");
+                    becomeSingletonMember(mbr);
+                    return;
+                }
+                else {
+                    if(log.isTraceEnabled())
+                        log.trace("I'm not the first of the clients, waiting for another client to become coord");
+                    Util.sleep(500);
+                }
                 continue;
             }
 
@@ -212,9 +234,9 @@ public class ClientGmsImpl extends GmsImpl {
             case Event.FIND_INITIAL_MBRS_OK:
                 tmp=(Vector)evt.getArg();
                 synchronized(initial_mbrs) {
-                    if(tmp != null && tmp.size() > 0)
-                        for(int i=0; i < tmp.size(); i++)
-                            initial_mbrs.addElement(tmp.elementAt(i));
+                    if(tmp != null && tmp.size() > 0) {
+                        initial_mbrs.addAll(tmp);
+                    }
                     initial_mbrs_received=true;
                     initial_mbrs.notifyAll();
                 }
@@ -294,7 +316,7 @@ public class ClientGmsImpl extends GmsImpl {
         // count *all* the votes (unlike the 2000 election)
         for(int i=0; i < mbrs.size(); i++) {
             mbr=(PingRsp)mbrs.elementAt(i);
-            if(mbr.coord_addr != null) {
+            if(mbr.is_server && mbr.coord_addr != null) {
                 if(!votes.containsKey(mbr.coord_addr))
                     votes.put(mbr.coord_addr, new Integer(1));
                 else {

@@ -17,10 +17,13 @@ import java.util.*;
  * response.<p> The FIND_INITIAL_MBRS event will eventually be answered with a
  * FIND_INITIAL_MBRS_OK event up the stack.
  * The following properties are available
- * property: timeout - the timeout (ms) to wait for the initial members, default is 3000=3 secs
- * property: num_initial_members - the minimum number of initial members for a FIND_INITAL_MBRS, default is 2
+ * <ul>
+ * <li>timeout - the timeout (ms) to wait for the initial members, default is 3000=3 secs
+ * <li>num_initial_members - the minimum number of initial members for a FIND_INITAL_MBRS, default is 2
+ * <li>num_ping_requests - the number of GET_MBRS_REQ messages to be sent (min=1), distributed over timeout ms
+ * </ul>
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.1 2005/01/04 08:17:06 belaban Exp $
+ * @version $Id: Discovery.java,v 1.2 2005/01/05 10:39:28 belaban Exp $
  */
 public abstract class Discovery extends Protocol {
     final Vector  members=new Vector(11);
@@ -31,7 +34,11 @@ public abstract class Discovery extends Protocol {
     long          timeout=3000;
     int           num_initial_members=2;
     boolean       is_server=false;
-    PingWaiter    waiter;
+    PingWaiter    ping_waiter;
+
+
+    /** Number of GET_MBRS_REQ messages to be sent (min=1), distributed over timeout ms */
+    int           num_ping_requests=1;
 
 
     public abstract String getName();
@@ -80,8 +87,10 @@ public abstract class Discovery extends Protocol {
         str=props.getProperty("timeout");              // max time to wait for initial members
         if(str != null) {
             timeout=Long.parseLong(str);
-            if(timeout <= 0)
+            if(timeout <= 0) {
                 if(log.isErrorEnabled()) log.error("timeout must be > 0");
+                return false;
+            }
             props.remove("timeout");
         }
 
@@ -89,6 +98,14 @@ public abstract class Discovery extends Protocol {
         if(str != null) {
             num_initial_members=Integer.parseInt(str);
             props.remove("num_initial_members");
+        }
+
+        str=props.getProperty("num_ping_requests");  // number of GET_MBRS_REQ messages
+        if(str != null) {
+            num_ping_requests=Integer.parseInt(str);
+            props.remove("num_ping_requests");
+            if(num_ping_requests < 1)
+                num_ping_requests=1;
         }
 
         if(props.size() > 0) {
@@ -107,14 +124,15 @@ public abstract class Discovery extends Protocol {
 
     public void start() throws Exception {
         super.start();
-        if(waiter == null)
-            waiter=new PingWaiter(timeout, num_initial_members, this);
+        PingSender ping_sender=new PingSender(timeout, num_ping_requests, this);
+        if(ping_waiter == null)
+            ping_waiter=new PingWaiter(timeout, num_initial_members, this, ping_sender);
     }
 
     public void stop() {
         is_server=false;
-        if(waiter != null)
-            waiter.stop();
+        if(ping_waiter != null)
+            ping_waiter.stop();
     }
 
 
@@ -161,14 +179,11 @@ public abstract class Discovery extends Protocol {
             switch(hdr.type) {
 
             case PingHeader.GET_MBRS_REQ:   // return Rsp(local_addr, coord)
-                if(!is_server)
-                    return;
-
                 synchronized(members) {
                     coord=members.size() > 0 ? (Address)members.firstElement() : local_addr;
                 }
 
-                PingRsp ping_rsp=new PingRsp(local_addr, coord);
+                PingRsp ping_rsp=new PingRsp(local_addr, coord, is_server);
                 rsp_msg=new Message(msg.getSrc(), null, null);
                 rsp_hdr=new PingHeader(PingHeader.GET_MBRS_RSP, ping_rsp);
                 rsp_msg.putHeader(getName(), rsp_hdr);
@@ -182,14 +197,7 @@ public abstract class Discovery extends Protocol {
 
                 if(log.isTraceEnabled())
                     log.trace("received FIND_INITAL_MBRS_RSP, rsp=" + rsp);
-
-
-                // synchronized(initial_members) {
-                   // initial_members.addElement(rsp);
-                    //initial_members.notifyAll();
-                //}
-                waiter.addResponse(rsp);
-
+                ping_waiter.addResponse(rsp);
                 return;
 
             default:
@@ -233,47 +241,9 @@ public abstract class Discovery extends Protocol {
         switch(evt.getType()) {
 
         case Event.FIND_INITIAL_MBRS:   // sent by GMS layer, pass up a GET_MBRS_OK event
-
-
-            //synchronized(initial_members) {
-              //  initial_members.removeAllElements();
-            //}
-            waiter.clearResponses();
-
-            // 1. Send the GET_MBRS_REQ to all members (to be overridden by subclasses)
-            sendGetMembersRequest();
-
-
-
-            // 2. Wait 'timeout' ms or until 'num_initial_members' have been retrieved
-            waiter.start();
-
-            /*synchronized(initial_members) {
-                start_time=System.currentTimeMillis();
-                time_to_wait=timeout;
-
-                while(initial_members.size() < num_initial_members && time_to_wait > 0) {
-                    if(log.isTraceEnabled()) // +++ remove
-                        log.trace("waiting for initial members: time_to_wait=" + time_to_wait +
-                                  ", got " + initial_members.size() + " rsps");
-
-                    try {
-                        initial_members.wait(time_to_wait);
-                    }
-                    catch(Exception e) {
-                    }
-                    time_to_wait=timeout - (System.currentTimeMillis() - start_time);
-                }
-            }
-
-            // 3. Send response
-            if(log.isDebugEnabled())
-                log.debug("initial mbrs are " + initial_members);
-            passUp(new Event(Event.FIND_INITIAL_MBRS_OK, initial_members));*/
-
-
+            // sends the GET_MBRS_REQ to all members, waits 'timeout' ms or until 'num_initial_members' have been retrieved
+            ping_waiter.start();
             break;
-
 
         case Event.TMP_VIEW:
         case Event.VIEW_CHANGE:
