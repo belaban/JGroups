@@ -252,15 +252,7 @@ public class PartitionerTest extends JFrame implements Runnable {
             if(received instanceof Message) {
                 msg=(Message)received;
                 Object tmp=null;
-                try {
-                    tmp=msg.getObject();
-                }
-                catch(IOException e) {
-                    e.printStackTrace();
-                }
-                catch(ClassNotFoundException e) {
-                    e.printStackTrace();
-                }
+                tmp=msg.getObject();
                 if(tmp instanceof String) {
                     payload=(String)tmp;
                     if(payload.equals("stop")) {

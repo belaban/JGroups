@@ -1,4 +1,4 @@
-// $Id: PullPushTestMux.java,v 1.2 2004/01/16 07:48:16 belaban Exp $
+// $Id: PullPushTestMux.java,v 1.3 2004/01/16 16:47:52 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -113,13 +113,8 @@ public class PullPushTestMux implements MessageListener {
 	}
 	
 	public void receive(Message msg) {
-        try {
-            System.out.println("MyListener #" + id + ": received message from " +
-                       msg.getSrc() + ": " + msg.getObject());
-        }
-        catch(Exception e) {
-            e.printStackTrace();
-        }
+        System.out.println("MyListener #" + id + ": received message from " +
+                msg.getSrc() + ": " + msg.getObject());
     }
 
 	public byte[] getState() {

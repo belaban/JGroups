@@ -1,4 +1,4 @@
-// $Id: GroupRequestPull.java,v 1.2 2004/01/16 07:48:16 belaban Exp $
+// $Id: GroupRequestPull.java,v 1.3 2004/01/16 16:47:52 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -98,12 +98,7 @@ public class GroupRequestPull implements MessageListener, MembershipListener, Tr
             // System.out.println("-- received REQUEST from " + msg.getSrc());
             rsp=new Message(msg.getSrc(), null, null);
             rsp.putHeader(HDRNAME, new MyHeader(MyHeader.RESPONSE));
-            try {
-                rsp.setObject("Hello from member " + ch.getLocalAddress());
-            }
-            catch(IOException e) {
-                e.printStackTrace();
-            }
+            rsp.setObject("Hello from member " + ch.getLocalAddress());
             try {
                 adapter.send(rsp);
             }

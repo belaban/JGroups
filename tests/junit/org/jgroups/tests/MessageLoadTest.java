@@ -21,7 +21,7 @@ import org.jgroups.debug.*;
  * <li><code>-debug</code> - pop-up protocol debugger;
  * <li><code>-cummulative</code> - debugger shows cummulative messages.
  * </ul>
- * $Id: MessageLoadTest.java,v 1.2 2004/01/16 07:48:15 belaban Exp $
+ * $Id: MessageLoadTest.java,v 1.3 2004/01/16 16:47:52 belaban Exp $
  */
 public class MessageLoadTest extends TestCase {
 
@@ -210,17 +210,7 @@ public class MessageLoadTest extends TestCase {
                 }
 
                 public void receive(Message jgMessage) {
-                    Object message=null;
-
-                    try {
-                        message=jgMessage.getObject();
-                    }
-                    catch(IOException e) {
-                        e.printStackTrace();
-                    }
-                    catch(ClassNotFoundException e) {
-                        e.printStackTrace();
-                    }
+                    Object message=jgMessage.getObject();
 
                     if(startMessage.equals(message)) {
                         started=true;

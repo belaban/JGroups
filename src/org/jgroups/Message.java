@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.3 2004/01/16 07:45:37 belaban Exp $
+// $Id: Message.java,v 1.4 2004/01/16 16:47:51 belaban Exp $
 
 package org.jgroups;
 
@@ -59,7 +59,7 @@ public class Message implements Externalizable {
      *              has to be serializable </em>! Note that the resulting buffer must not be modified
      *              (e.g. buf[0]=0 is not allowed), since we don't copy the contents on clopy() or clone().
      */
-    public Message(Address dest, Address src, Serializable obj) throws IOException {
+    public Message(Address dest, Address src, Serializable obj) {
         dest_addr=dest;
         src_addr=src;
         setObject(obj);
@@ -103,19 +103,29 @@ public class Message implements Externalizable {
         return headers;
     }
 
-    public void setObject(Serializable obj) throws IOException {
+    public void setObject(Serializable obj) {
         if(obj == null) return;
-        ByteArrayOutputStream out_stream=new ByteArrayOutputStream(256);
-        ObjectOutputStream out=new ObjectOutputStream(out_stream);
-        out.writeObject(obj);
-        buf=out_stream.toByteArray();
+        try {
+            ByteArrayOutputStream out_stream=new ByteArrayOutputStream(256);
+            ObjectOutputStream out=new ObjectOutputStream(out_stream);
+            out.writeObject(obj);
+            buf=out_stream.toByteArray();
+        }
+        catch(IOException ex) {
+            throw new IllegalArgumentException(ex.toString());
+        }
     }
 
-    public Object getObject() throws IOException, ClassNotFoundException {
+    public Object getObject() {
         if(buf == null) return null;
-        ByteArrayInputStream in_stream=new ByteArrayInputStream(buf);
-        ObjectInputStream in=new ObjectInputStream(in_stream);
-        return in.readObject();
+        try {
+            ByteArrayInputStream in_stream=new ByteArrayInputStream(buf);
+            ObjectInputStream in=new ObjectInputStream(in_stream);
+            return in.readObject();
+        }
+        catch(Exception ex) {
+            throw new IllegalArgumentException(ex.toString());
+        }
     }
 
 

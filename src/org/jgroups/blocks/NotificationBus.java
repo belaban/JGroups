@@ -1,16 +1,15 @@
-// $Id: NotificationBus.java,v 1.2 2004/01/16 07:45:34 belaban Exp $
+// $Id: NotificationBus.java,v 1.3 2004/01/16 16:47:50 belaban Exp $
 
 package org.jgroups.blocks;
 
 
-import java.io.Serializable;
-import java.io.IOException;
-import java.util.Vector;
-
 import org.jgroups.*;
+import org.jgroups.log.Trace;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
-import org.jgroups.log.Trace;
+
+import java.io.Serializable;
+import java.util.Vector;
 
 
 /**
@@ -206,13 +205,7 @@ public class NotificationBus implements MessageListener, MembershipListener {
 
             if(dst != null) {
                 info=new Info(Info.GET_CACHE_REQ);
-                try {
-                    msg=new Message(dst, null, info);
-                }
-                catch(IOException e) {
-                    Trace.error("NotificationBus.getCacheFromMember()", "exception: "+ e);
-                    continue;
-                }
+                msg=new Message(dst, null, info);
                 channel.down(new Event(Event.MSG, msg));
 
                 start=System.currentTimeMillis();
@@ -384,14 +377,9 @@ public class NotificationBus implements MessageListener, MembershipListener {
         synchronized(cache_mutex) {
             cache=getCache(); // get the cache from the consumer
             info=new Info(Info.GET_CACHE_RSP, cache);
-            try {
-                msg=new Message(sender, null, info);
-                Trace.info("NotificationBus.handleCacheRequest()", "[" + getLocalAddress() + "] returning cache to " + sender);
-                channel.down(new Event(Event.MSG, msg));
-            }
-            catch(IOException e) {
-                Trace.error("NotificationBus.handleCacheRequest()", "exception: " + e);                
-            }
+            msg=new Message(sender, null, info);
+            Trace.info("NotificationBus.handleCacheRequest()", "[" + getLocalAddress() + "] returning cache to " + sender);
+            channel.down(new Event(Event.MSG, msg));
         }
     }
 

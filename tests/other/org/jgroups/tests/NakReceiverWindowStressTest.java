@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindowStressTest.java,v 1.2 2004/01/16 07:48:16 belaban Exp $
+// $Id: NakReceiverWindowStressTest.java,v 1.3 2004/01/16 16:47:52 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -39,14 +39,8 @@ public class NakReceiverWindowStressTest implements Retransmitter.RetransmitComm
         for(long i=first_seqno; i <= last_seqno; i++) {
             if(debug)
                 out("-- xmit: " + i);
-            Message m=null;
-            try {
-                m=new Message(null, sender, new Long(i));
-                win.add(i, m);
-            }
-            catch(IOException e) {
-                e.printStackTrace();
-            }
+            Message m=new Message(null, sender, new Long(i));
+            win.add(i, m);
         }
     }
 
@@ -57,17 +51,11 @@ public class NakReceiverWindowStressTest implements Retransmitter.RetransmitComm
 	sender=new IpAddress("localhost", 5555);
 	win=new NakReceiverWindow(sender, this, 1);
 	start=System.currentTimeMillis();
-        try {
-            sendMessages(num_msgs);
-        }
-        catch(ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-
+        sendMessages(num_msgs);
     }
 
 
-    void sendMessages(int num_msgs) throws IOException, ClassNotFoundException {
+    void sendMessages(int num_msgs) {
         Message msg;
 
         for(long i=1; i <= num_msgs; i++) {
@@ -92,7 +80,7 @@ public class NakReceiverWindowStressTest implements Retransmitter.RetransmitComm
 
 
 
-    void processMessage(Message msg) throws IOException, ClassNotFoundException {
+    void processMessage(Message msg) {
         long i;
 
         i=((Long)msg.getObject()).longValue();
