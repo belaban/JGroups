@@ -1,4 +1,4 @@
-// $Id: DisconnectTest.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+// $Id: DisconnectTest.java,v 1.2 2003/10/15 20:16:09 ovidiuf Exp $
 
 package org.jgroups.tests;
 
@@ -31,7 +31,7 @@ import java.net.Socket;
  * stack configurations.
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.2 $
  **/
 public class DisconnectTest extends TestCase {
 
@@ -295,7 +295,8 @@ public class DisconnectTest extends TestCase {
             }
             catch(Exception e) {
                 lastConnectException=e;
-                crtms=System.currentTimeMillis();
+                Thread.currentThread().sleep(1000);
+                crtms=System.currentTimeMillis(); 
                 continue;
             }
             lastConnectException=null;
@@ -356,6 +357,7 @@ public class DisconnectTest extends TestCase {
             }
             catch(Exception e) {
                 lastConnectException=e;
+                Thread.currentThread().sleep(1000);
                 crtms=System.currentTimeMillis();
                 continue;
             }
