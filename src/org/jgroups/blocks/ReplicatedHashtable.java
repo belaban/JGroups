@@ -1,4 +1,4 @@
-// $Id: ReplicatedHashtable.java,v 1.7 2004/09/23 16:29:11 belaban Exp $
+// $Id: ReplicatedHashtable.java,v 1.8 2005/01/23 17:44:45 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -60,7 +60,7 @@ public class ReplicatedHashtable extends Hashtable implements MessageListener, M
      * messages when there are no member in the group */
     private transient boolean send_message=false;
 
-    protected final Log log=LogFactory.getLog(this.getClass());
+    protected final transient Log log=LogFactory.getLog(this.getClass());
 
     /**
      * Creates a ReplicatedHashtable
