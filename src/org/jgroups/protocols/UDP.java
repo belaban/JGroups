@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.32 2004/07/15 21:49:43 belaban Exp $
+// $Id: UDP.java,v 1.33 2004/07/19 22:22:52 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -513,7 +513,6 @@ public class UDP extends Protocol implements Runnable {
      * @param evt - the event being send from the stack
      */
     public void up(Event evt) {
-        passUp(evt);
 
         switch(evt.getType()) {
 
