@@ -1,4 +1,4 @@
-// $Id: UtilTest.java,v 1.3 2004/10/07 15:45:57 belaban Exp $
+// $Id: UtilTest.java,v 1.4 2004/10/08 12:07:22 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -176,14 +176,20 @@ public class UtilTest extends TestCase {
     }
 
 
+    public void testMatch() {
+        long[] a={1,2,3};
+        long[] b={2,3,4};
+        long[] c=null;
+        long[] d={1,2,3,4};
+        long[] e={1,2,3};
 
-    boolean match(IpAddress a1, IpAddress a2) {
-        if(a1 == null && a2 == null)
-            return true;
-        if(a1 != null)
-            return a1.equals(a2);
-        else
-            return a2.equals(a1);
+        assertTrue(Util.match(a,a));
+        assertFalse(Util.match(a,b));
+        assertFalse(Util.match(a,c));
+        assertFalse(Util.match(a,d));
+        assertTrue(Util.match(a,e));
+        assertTrue(Util.match(c,c));
+        assertFalse(Util.match(c, a));
     }
 
 
