@@ -1,4 +1,4 @@
-// $Id: DistributedTree.java,v 1.2 2003/09/24 23:20:46 belaban Exp $
+// $Id: DistributedTree.java,v 1.3 2003/11/27 21:21:45 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -9,6 +9,7 @@ import java.util.Vector;
 
 import org.jgroups.Address;
 import org.jgroups.Channel;
+import org.jgroups.ChannelException;
 import org.jgroups.JChannel;
 import org.jgroups.MembershipListener;
 import org.jgroups.Message;
@@ -77,6 +78,30 @@ public class DistributedTree implements MessageListener, MembershipListener, Clo
             this.channel_properties=channel_properties;
     }
 
+    /*
+     * Uses a user-provided PullPushAdapter to create the dispatcher rather than a Channel. If id is non-null, it will be
+     * used to register under that id. This is typically used when another building block is already using
+     * PullPushAdapter, and we want to add this building block in addition. The id is the used to discriminate
+     * between messages for the various blocks on top of PullPushAdapter. If null, we will assume we are the
+     * first block created on PullPushAdapter.
+     * @param adapter The PullPushAdapter which to use as underlying transport
+     * @param id A serializable object (e.g. an Integer) used to discriminate (multiplex/demultiplex) between
+     *           requests/responses for different building blocks on top of PullPushAdapter.
+     * @param state_timeout Max number of milliseconds to wait until state is
+     * retrieved
+     */
+    public DistributedTree(PullPushAdapter adapter, Serializable id, long state_timeout) 
+        throws ChannelException {
+        channel = (Channel)adapter.getTransport();
+        disp=new RpcDispatcher(adapter, id, this, this, this);
+        channel.setOpt(Channel.GET_STATE_EVENTS, new Boolean(true));
+        boolean rc = channel.getState(null, 8000);
+        if(rc) {
+            Trace.info("DistributedTree.start()", "state was retrieved successfully");
+        }
+        else
+            Trace.info("DistributedTree.start()", "state could not be retrieved (must be first member in group)");
+    }
 
     public Object getLocalAddress() {
         return channel != null? channel.getLocalAddress() : null;
