@@ -1,4 +1,4 @@
-// $Id: PerfTest.java,v 1.2 2004/01/08 02:39:56 belaban Exp $
+// $Id: PerfTest.java,v 1.3 2004/01/08 20:03:51 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -338,7 +338,7 @@ public class PerfTest implements MessageListener, MembershipListener{
         int      msg_size=10000; // in bytes
         boolean  sender=true;
 
-        NetworkUtilization t;
+        PerfTest t;
 
         Trace.init();
         for(int i=0; i < args.length; i++) {
@@ -370,7 +370,7 @@ public class PerfTest implements MessageListener, MembershipListener{
             return;
         }
         try {
-            t=new NetworkUtilization(props, num_bursts, num_msgs_per_burst, msg_size, sleep_time, sender);
+            t=new PerfTest(props, num_bursts, num_msgs_per_burst, msg_size, sleep_time, sender);
             t.start();
         }
         catch(Throwable ex) {
