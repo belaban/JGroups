@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.10 2004/03/30 06:47:12 belaban Exp $
+// $Id: MessageDispatcher.java,v 1.11 2004/04/08 04:58:35 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -565,30 +565,36 @@ public class MessageDispatcher implements RequestHandler {
          * message listener's corresponding methods
          */
         public void passUp(Event evt) {
+            byte[] tmp_state=null;
             switch(evt.getType()) {
-            case Event.MSG:
-                if(msg_listener != null)
-                    msg_listener.receive((Message)evt.getArg());
-                break;            
+                case Event.MSG:
+                    if(msg_listener != null)
+                        msg_listener.receive((Message)evt.getArg());
+                    break;
 
-            case Event.GET_APPLSTATE: // reply with GET_APPLSTATE_OK
-                if(msg_listener != null)
-                    channel.returnState(msg_listener.getState());
-                else
-                    channel.returnState(null);
-                break;
-
-            case Event.GET_STATE_OK:
-                if(msg_listener != null) {
-                    try {
-                        msg_listener.setState((byte[])evt.getArg());
+                case Event.GET_APPLSTATE: // reply with GET_APPLSTATE_OK
+                    if(msg_listener != null) {
+                        try {
+                            tmp_state=msg_listener.getState();
+                        }
+                        catch(Throwable t) {
+                            log.error("failed getting state from message listener (" + msg_listener + ")", t);
+                        }
                     }
-                    catch(ClassCastException cast_ex) {
-                        if(log.isErrorEnabled()) log.error("received SetStateEvent, but argument " +
+                    channel.returnState(tmp_state);
+                    break;
+
+                case Event.GET_STATE_OK:
+                    if(msg_listener != null) {
+                        try {
+                            msg_listener.setState((byte[])evt.getArg());
+                        }
+                        catch(ClassCastException cast_ex) {
+                            if(log.isErrorEnabled()) log.error("received SetStateEvent, but argument " +
                                     evt.getArg() + " is not serializable. Discarding message.");
+                        }
                     }
-                }
-                break;
+                    break;
 
                 case Event.VIEW_CHANGE:
                     View    v=(View)evt.getArg();
@@ -608,15 +614,15 @@ public class MessageDispatcher implements RequestHandler {
 //                    local_addr=(Address)evt.getArg();
 //                    break;
 
-            case Event.SUSPECT:
-                if(membership_listener != null)
-                    membership_listener.suspect((Address)evt.getArg());
-                break;
-            
-            case Event.BLOCK:
-                if(membership_listener != null)
-                    membership_listener.block();
-                break;
+                case Event.SUSPECT:
+                    if(membership_listener != null)
+                        membership_listener.suspect((Address)evt.getArg());
+                    break;
+
+                case Event.BLOCK:
+                    if(membership_listener != null)
+                        membership_listener.block();
+                    break;
             }
         }
 
