@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.5 2004/02/25 21:07:30 belaban Exp $
+// $Id: Util.java,v 1.6 2004/02/25 21:35:27 belaban Exp $
 
 package org.jgroups.util;
 
@@ -304,29 +304,31 @@ public class Util {
      * This is a total of 3 fragments: the first fragment starts at 0, and has a length of 4 bytes, the second fragment
      * starts at offset 4 and has a length of 4 bytes, and the last fragment starts at offset 8 and has a length
      * of 2 bytes.
-     * @param buf
      * @param frag_size
      * @return List. A List<Range> of offset/length pairs
      */
-    public static java.util.List computeFragOffsets(byte[] buf, int frag_size) {
+    public static java.util.List computeFragOffsets(int offset, int length, int frag_size) {
         java.util.List   retval=new ArrayList();
-        long   total_size=buf.length;
-        int    accumulated_size=0;
+        long   total_size=length + offset;
+        int    index=offset;
         int    tmp_size=0;
         Range  r;
 
-        while(accumulated_size < total_size) {
-            if(accumulated_size + frag_size <= total_size)
+        while(index < total_size) {
+            if(index + frag_size <= total_size)
                 tmp_size=frag_size;
             else
-                tmp_size=(int)(total_size - accumulated_size);
-            r=new Range(accumulated_size, tmp_size);
+                tmp_size=(int)(total_size - index);
+            r=new Range(index, tmp_size);
             retval.add(r);
-            accumulated_size+=tmp_size;
+            index+=tmp_size;
         }
         return retval;
     }
 
+    public static java.util.List computeFragOffsets(byte[] buf, int frag_size) {
+        return computeFragOffsets(0, buf.length, frag_size);
+    }
 
     /**
      Concatenates smaller fragments into entire buffers.
