@@ -1,4 +1,4 @@
-// $Id: ConnectStressTest.java,v 1.3 2003/11/21 09:12:40 belaban Exp $
+// $Id: ConnectStressTest.java,v 1.4 2003/11/21 09:14:42 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -16,14 +16,14 @@ import org.jgroups.log.Trace;
 /**
  * Creates 1 channel, then creates NUM channels, all try to join the same channel concurrently.
  * @author Bela Ban Nov 20 2003
- * @version $Id: ConnectStressTest.java,v 1.3 2003/11/21 09:12:40 belaban Exp $
+ * @version $Id: ConnectStressTest.java,v 1.4 2003/11/21 09:14:42 belaban Exp $
  */
 public class ConnectStressTest extends TestCase {
     static CyclicBarrier  start_connecting=null;
     static CyclicBarrier  connected=null;
     static CyclicBarrier  start_disconnecting=null;
     static CyclicBarrier  disconnected=null;
-    final int             NUM=50;
+    final int             NUM=10;
     MyThread[]            threads;
     static JChannel       channel;
     static String         groupname="ConcurrentTestDemo";
