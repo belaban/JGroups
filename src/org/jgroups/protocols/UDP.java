@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.52 2004/10/14 07:47:24 belaban Exp $
+// $Id: UDP.java,v 1.53 2004/11/27 12:20:55 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -1083,7 +1083,7 @@ public class UDP extends Protocol implements Runnable {
             catch(SocketException bind_ex) {	// Cannot listen on this port
                 rcv_port++;
             }
-            catch(SecurityException sec_ex) { // Not allowed to list on this port
+            catch(SecurityException sec_ex) { // Not allowed to listen on this port
                 rcv_port++;
             }
 
