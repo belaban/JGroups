@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+// $Id: Util.java,v 1.2 2003/12/24 01:45:19 belaban Exp $
 
 package org.jgroups.util;
 
@@ -9,6 +9,7 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.util.StringTokenizer;
 import java.util.Vector;
+import java.util.ArrayList;
 
 import org.jgroups.*;
 import org.jgroups.log.Trace;
@@ -601,6 +602,20 @@ public class Util {
         for(int i=0; i < v.size(); i++)
             retval[i]=((Long)v.elementAt(i)).longValue();
         return retval;
+    }
+
+    /** e.g. "bela,jeannette,michelle" --> List{"bela", "jeannette", "michelle"} */
+    public static java.util.List parseCommaDelimitedStrings(String l) {
+        java.util.List tmp=new ArrayList();
+        StringTokenizer tok=new StringTokenizer(l, ",");
+        String t;
+
+        while(tok.hasMoreTokens()) {
+            t=tok.nextToken();
+            tmp.add(t);
+        }
+
+        return tmp;
     }
 
 
