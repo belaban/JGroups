@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.8 2004/03/16 17:50:36 belaban Exp $
+// $Id: MessageDispatcher.java,v 1.9 2004/03/16 17:55:54 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -602,10 +602,10 @@ public class MessageDispatcher implements RequestHandler {
                     if(membership_listener != null)
                         membership_listener.viewAccepted(v);
                     break;
-
-                case Event.SET_LOCAL_ADDRESS:
-                    local_addr=(Address)evt.getArg();
-                    break;
+//
+//                case Event.SET_LOCAL_ADDRESS:
+//                    local_addr=(Address)evt.getArg();
+//                    break;
 
             case Event.SUSPECT:
                 if(membership_listener != null)
@@ -628,6 +628,11 @@ public class MessageDispatcher implements RequestHandler {
         /** Called by channel (we registered before) when event is received. This is the UpHandler interface.
          */
         public void up(Event evt) {
+            if(evt.getType() == Event.SET_LOCAL_ADDRESS) {
+                local_addr=(Address)evt.getArg(); // suggested by Yaron Rosenbaum
+                if(corr != null)
+                    corr.setLocalAddress(local_addr);
+            }
             if(corr != null)
                 corr.receive(evt);
             else
