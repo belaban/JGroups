@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.18 2003/12/11 06:50:46 belaban Exp $
+Revision: $Id: history.txt,v 1.19 2003/12/12 00:00:37 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java JGroups.Version')]
 
@@ -27,6 +27,9 @@ romuald     = Romuald du Song
 
 Version 2.2.1
 -------------
+
+- Added initial_hosts support for PING (copied from TCPPING)
+  (bela Dec 11 2003)
 
 - Scheduler can now handle incoming requests concurrently (if concurrent_processing is true). By default,
   this is false: setting this to true can destroy the ordering properties provided by a protocol stack, e.g.
