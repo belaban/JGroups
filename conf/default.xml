@@ -16,6 +16,9 @@
                 <protocol-param name="use_outgoing_packet_handler" value="false"/>
 				<protocol-param name="loopback"            value="true"/>
 				<protocol-param name="ip_ttl"              value="32"/>
+                <protocol-param name="enable_bundling"     value="false"/>
+                <protocol-param name="max_bundle_size"     value="60000"/>
+                <protocol-param name="max_bundle_timeout"  value="30"/>
 			</protocol-params>
 		</protocol>
 		<!--
