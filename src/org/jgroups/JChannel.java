@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.1 2003/09/09 01:24:07 belaban Exp $
+// $Id: JChannel.java,v 1.2 2003/09/25 18:40:16 belaban Exp $
 
 package org.jgroups;
 
@@ -21,7 +21,7 @@ import java.util.Vector;
  * protocol stack
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.2 $
  */
 public class JChannel extends Channel {
 
@@ -936,8 +936,10 @@ public class JChannel extends Channel {
         local_addr=null;
         channel_name=null;
         my_view=null;
-        if(mq != null && mq.closed())
-            mq.reset();
+
+        // changed by Bela Sept 25 2003
+        //if(mq != null && mq.closed())
+          //  mq.reset();
 
         connect_ok_event_received=false;
         disconnect_ok_event_received=false;
@@ -1122,7 +1124,7 @@ public class JChannel extends Channel {
         public void run() {
             try {
                 String old_channel_name=channel_name; // remember because close() will null it
-                _close(false, false); // do not disconnect before closing channel, do not close mq
+                _close(false, false); // do not disconnect before closing channel, do not close mq (yet !)
 
                 if(up_handler != null)
                     up_handler.up(this.evt);
