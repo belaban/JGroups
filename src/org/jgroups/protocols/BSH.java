@@ -1,4 +1,4 @@
-// $Id: BSH.java,v 1.8 2004/07/05 14:17:15 belaban Exp $
+// $Id: BSH.java,v 1.9 2004/07/23 02:28:01 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -16,7 +16,6 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
-import java.util.Properties;
 
 
 
