@@ -1,4 +1,4 @@
-// $Id: Promise.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+// $Id: Promise.java,v 1.2 2003/12/15 22:30:20 belaban Exp $
 
 package org.jgroups.util;
 
@@ -13,7 +13,7 @@ public class Promise {
 
 
     /** Gets result. If result was already submitted, returns it immediately (resetting it), else blocks until
-     results get available.
+     results get available. <em>Note that the result has to be non-null</em>
      @param timeout Max time to wait for result. If it is 0, we wait indefinitely
      */
     public Object getResult(long timeout) {
