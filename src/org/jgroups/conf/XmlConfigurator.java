@@ -1,4 +1,4 @@
-// $Id: XmlConfigurator.java,v 1.7 2004/07/14 10:22:48 belaban Exp $
+// $Id: XmlConfigurator.java,v 1.8 2004/07/14 22:04:11 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -320,13 +320,13 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
          * If somebody wants to improve this, please be my guest.
          */
         try {
-            Node root=null;
-            NodeList roots=root_element.getChildNodes();
-            for(int i =0; i < roots.getLength(); i++) {
-                root=roots.item(i);
-                if(root.getNodeType() != Node.ELEMENT_NODE)
-                    continue;
-            }
+            Node root=root_element;
+//            NodeList roots=root_element.getChildNodes();
+//            for(int i =0; i < roots.getLength(); i++) {
+//                root=roots.item(i);
+//                if(root.getNodeType() != Node.ELEMENT_NODE)
+//                    continue;
+//            }
 
             String root_name=root.getNodeName();
             if(!"config".equals(root_name.trim().toLowerCase())) {
