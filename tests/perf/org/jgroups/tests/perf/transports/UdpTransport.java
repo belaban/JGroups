@@ -15,7 +15,7 @@ import java.util.Properties;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: UdpTransport.java,v 1.2 2004/03/30 06:47:36 belaban Exp $
+ * @version $Id: UdpTransport.java,v 1.3 2004/07/05 06:18:12 belaban Exp $
  */
 public class UdpTransport implements Transport {
     Receiver         receiver=null;
@@ -120,7 +120,7 @@ public class UdpTransport implements Transport {
         }
 
         void start() throws Exception {
-            t=new Thread(this, "ReceiverThread for " + sock.getLocalAddress() + ":" + sock.getLocalPort());
+            t=new Thread(this, "ReceiverThread for " + sock.getLocalAddress() + ':' + sock.getLocalPort());
             t.start();
         }
 
