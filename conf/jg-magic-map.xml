@@ -182,6 +182,24 @@
         <magic-number>30</magic-number>
     </class>
     <class>
+        <description>List</description>
+        <class-name>org.jgroups.util.List</class-name>
+        <preload>true</preload>
+        <magic-number>31</magic-number>
+    </class>
+    <class>
+        <description>Address</description>
+        <class-name>org.jgroups.Address</class-name>
+        <preload>true</preload>
+        <magic-number>32</magic-number>
+    </class>
+    <class>
+        <description>Array of Address</description>
+        <class-name>[Lorg.jgroups.Address;</class-name>
+        <preload>true</preload>
+        <magic-number>33</magic-number>
+    </class>
+    <class>
         <description>Request header to lease service</description>
         <class-name>org.jgroups.service.lease.LeaseRequestHeader</class-name>
         <preload>false</preload>
