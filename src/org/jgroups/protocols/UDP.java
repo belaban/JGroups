@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.12 2004/02/15 18:34:10 belaban Exp $
+// $Id: UDP.java,v 1.13 2004/02/24 23:54:28 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -149,7 +149,7 @@ public class UDP extends Protocol implements Runnable {
     long max_bundle_timeout=20;
 
     /** Enabled bundling of smaller messages into bigger ones */
-    boolean enable_bundling=true;
+    boolean enable_bundling=false;
 
     /** Used by BundlingOutgoingPacketHandler */
     TimeScheduler timer=null;
@@ -690,6 +690,9 @@ public class UDP extends Protocol implements Runnable {
                             ch_name + "). Sender was " + msg.getSrc());
                 return;
             }
+        }
+        else {
+            Trace.error("UDP.handleMessage()", "message does not have a UDP header");
         }
         passUp(evt);
     }
@@ -1320,6 +1323,8 @@ public class UDP extends Protocol implements Runnable {
     }
 
 
+
+
     /**
      * Bundles smaller messages into bigger ones. Collects messages in a list until
      * messages of a total of <tt>max_bundle_size bytes</tt> have accumulated, or until
@@ -1349,7 +1354,7 @@ public class UDP extends Protocol implements Runnable {
             public void run() {
                 if(timer_running) {
                     bundleAndSend();
-                    timer_running=false;
+                    // timer_running=false;
                     //if(Trace.trace)
                       //  Trace.info("UDP.BundlingOutgoingPacketHandler.startTimer()", "timer done");
                 }
@@ -1386,10 +1391,12 @@ public class UDP extends Protocol implements Runnable {
                         "message size (" + len + ") is greater than UDP fragmentation size. " +
                         "Set the fragmentation/bundle size in FRAG and UDP correctly");
 
-            l=(MessageList)msgs.get(dest);
-            if(l == null) {
-                l=new MessageList();
-                msgs.put(dest, l);
+            synchronized(msgs) {
+                l=(MessageList)msgs.get(dest);
+                if(l == null) {
+                    l=new MessageList();
+                    msgs.put(dest, l);
+                }
             }
 
             total_bytes=l.getTotalSize();
@@ -1398,7 +1405,7 @@ public class UDP extends Protocol implements Runnable {
             }
 
             l.add(msg);
-            if(task.cancelled()) // first message to be bundled
+            if(!timer_running) // first message to be bundled
                 startTimer();
         }
 
@@ -1419,7 +1426,7 @@ public class UDP extends Protocol implements Runnable {
                         "\nsending msgs:\n" + dumpMessages(msgs));
             }
 
-            synchronized(this) {
+            synchronized(msgs) {
                 stopTimer();
                 for(Iterator it=msgs.entrySet().iterator(); it.hasNext();) {
                     entry=(Map.Entry)it.next();
@@ -1445,7 +1452,6 @@ public class UDP extends Protocol implements Runnable {
                                 "exception sending msg (to dest=" + dest + "): " + e);
                     }
                 }
-
                 msgs.clear();
             }
         }
@@ -1466,11 +1472,15 @@ public class UDP extends Protocol implements Runnable {
         StringBuffer sb=new StringBuffer();
         Map.Entry entry;
         MessageList ml;
-        for(Iterator it=map.entrySet().iterator(); it.hasNext();) {
-            entry=(Map.Entry)it.next();
-            ml=(MessageList)entry.getValue();
-            sb.append(entry.getKey()).append(": ");
-            sb.append(ml.size()).append(" msgs (" + ml.getTotalSize() + " bytes total)").append("\n");
+        if(map != null) {
+            synchronized(map) {
+                for(Iterator it=map.entrySet().iterator(); it.hasNext();) {
+                    entry=(Map.Entry)it.next();
+                    ml=(MessageList)entry.getValue();
+                    sb.append(entry.getKey()).append(": ");
+                    sb.append(ml.size()).append(" msgs (" + ml.getTotalSize() + " bytes total)").append("\n");
+                }
+            }
         }
         return sb.toString();
     }
