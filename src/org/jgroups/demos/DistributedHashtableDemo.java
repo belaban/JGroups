@@ -1,4 +1,4 @@
-// $Id: DistributedHashtableDemo.java,v 1.1 2003/09/09 01:24:09 belaban Exp $
+// $Id: DistributedHashtableDemo.java,v 1.2 2003/11/29 01:25:28 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -7,6 +7,7 @@ package org.jgroups.demos;
 import org.jgroups.ChannelFactory;
 import org.jgroups.JChannelFactory;
 import org.jgroups.ChannelException;
+import org.jgroups.persistence.PersistenceFactory;
 import org.jgroups.blocks.DistributedHashtable;
 import org.jgroups.log.Trace;
 
@@ -273,8 +274,9 @@ public class DistributedHashtableDemo extends Frame implements WindowListener, A
         try {
             for(int i=0; i < args.length; i++) {
                 arg=args[i];
-                if(arg.equals("-persist")) {
+                if(arg.equals("-persist") && i+1<args.length) {
                     persist=true;
+                    PersistenceFactory.getInstance().createManager(args[++i]);
                     continue;
                 }
                 help();
