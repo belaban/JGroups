@@ -1,4 +1,4 @@
-// $Id: FRAG.java,v 1.1 2003/09/09 01:24:10 belaban Exp $
+// $Id: FRAG.java,v 1.2 2004/01/08 19:17:44 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -279,6 +279,8 @@ public class FRAG extends Protocol {
         if(map == null) return;
         if(map.containsKey("frag_size")) {
             frag_size=((Integer)map.get("frag_size")).intValue();
+            if(Trace.trace)
+                Trace.info("FRAG.handleConfigEvent()", "setting frag_size=" + frag_size);
         }
     }
 
