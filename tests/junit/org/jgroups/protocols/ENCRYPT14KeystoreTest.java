@@ -172,6 +172,59 @@ public class ENCRYPT14KeystoreTest extends TestCase {
 
 	}
 	
+	public void testMessageUpWrongKey() throws Exception{
+		// initialise the encryption
+		Properties props = new Properties();
+		String defaultKeystore = "defaultStore.keystore";
+		String defaultKeystore2 = "defaultStore2.keystore";
+		props.put("key_store_name",defaultKeystore);
+
+		//javax.
+		ENCRYPT encrypt = new ENCRYPT();
+		encrypt.setProperties(props);
+		try {
+			encrypt.init();
+		} catch (Exception e){
+			fail(e.getMessage());
+		}
+		// use a second instance so we know we are not accidentally using internal key
+
+	
+		
+//		javax.
+		Properties props2 = new Properties();
+		ENCRYPT encrypt2 = new ENCRYPT();
+		props2.setProperty("key_store_name",defaultKeystore2);
+		
+		encrypt2.setProperties(props2);
+		try {
+			encrypt2.init();
+		} catch (Exception e){
+			fail(e.getMessage());
+		}
+		MockObserver observer = new MockObserver();
+		encrypt.setObserver(observer);
+		
+		encrypt.keyServer = true;
+		String messageText = "hello this is a test message";
+		Cipher cipher = encrypt2.getSymEncodingCipher();
+		byte[] encodedBytes = cipher.doFinal(messageText.getBytes());
+		assertNotSame(new String(encodedBytes),messageText);
+		
+		MessageDigest digest = MessageDigest.getInstance("MD5");
+		digest.reset();
+		digest.update(encrypt2.getDesKey().getEncoded());
+	     
+		String symVersion = new String(digest.digest());
+		
+		Message msg = new Message(null,null,encodedBytes);
+		msg.putHeader(ENCRYPT.EncryptHeader.KEY, new ENCRYPT.EncryptHeader(ENCRYPT.EncryptHeader.ENCRYPT,symVersion));
+		Event event = new Event(Event.MSG,msg);
+		encrypt.up(event);
+		assertEquals(observer.getUpMessages().size(),0);
+
+	}
+	
 	public void testMessageUpNoEncryptHeader() throws Exception{
 		// initialise the encryption
 		Properties props = new Properties();
