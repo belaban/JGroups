@@ -1,15 +1,14 @@
-// $Id: Digest.java,v 1.7 2004/09/15 17:40:58 belaban Exp $
+// $Id: Digest.java,v 1.8 2004/10/08 12:09:10 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
+import org.jgroups.util.Streamable;
+import org.jgroups.util.Util;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.*;
 
 
 /**
@@ -25,7 +24,7 @@ import java.io.ObjectOutput;
  * it (e.g. because msg was dropped) will request a retransmission. See DESIGN for details.
  * @author Bela Ban
  */
-public class Digest implements Externalizable {
+public class Digest implements Externalizable, Streamable {
     Address[] senders=null;
     long[]    low_seqnos=null;       // lowest seqnos seen
     long[]    high_seqnos=null;      // highest seqnos seen so far *that are deliverable*, initially 0
@@ -40,6 +39,26 @@ public class Digest implements Externalizable {
     public Digest(int size) {
         reset(size);
     }
+
+
+    public boolean equals(Object obj) {
+        if(obj == null)
+            return false;
+        Digest other=(Digest)obj;
+        if(sameSenders(other) == false)
+            return false;
+
+        if(!Util.match(low_seqnos, other.low_seqnos))
+            return false;
+        if(!Util.match(high_seqnos, other.high_seqnos))
+            return false;
+        if(!Util.match(high_seqnos_seen, other.high_seqnos_seen))
+            return false;
+
+        return true;
+    }
+
+
 
 
     public void add(Address sender, long low_seqno, long high_seqno) {
@@ -482,6 +501,55 @@ public class Digest implements Externalizable {
 
         index=in.readInt();
     }
+
+    public void writeTo(DataOutputStream out) throws IOException {
+        out.writeInt(senders == null? 0 : senders.length);
+        for(int i=0; i < senders.length; i++) {
+            Address sender=senders[i];
+            Util.writeAddress(sender, out);
+        }
+        writeArray(low_seqnos, out);
+        writeArray(high_seqnos, out);
+        writeArray(high_seqnos_seen, out);
+        out.writeInt(index);
+    }
+
+    private void writeArray(long[] arr, DataOutputStream out) throws IOException {
+        int len=arr != null? arr.length : 0;
+        out.writeInt(len);
+        if(len > 0) {
+            for(int i=0; i < arr.length; i++) {
+                out.writeLong(arr[i]);
+            }
+        }
+    }
+
+    private long[] readArray(DataInputStream in) throws IOException {
+        int b=in.readInt();
+        if(b == 0)
+            return null;
+        long[] retval=new long[b];
+        for(int i=0; i < b; i++)
+            retval[i]=in.readLong();
+        return retval;
+    }
+
+    public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        int b=in.readInt();
+        if(b > 0) {
+            senders=new Address[b];
+            Address sender;
+            for(int i=0; i < b; i++) {
+                sender=Util.readAddress(in);
+                senders[i]=sender;
+            }
+        }
+        low_seqnos=readArray(in);
+        high_seqnos=readArray(in);
+        high_seqnos_seen=readArray(in);
+        index=in.readInt();
+    }
+
 
 
 }
