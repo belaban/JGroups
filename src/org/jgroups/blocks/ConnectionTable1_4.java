@@ -1,4 +1,4 @@
-// $Id: ConnectionTable1_4.java,v 1.8 2005/03/17 18:33:44 belaban Exp $
+// $Id: ConnectionTable1_4.java,v 1.9 2005/03/23 15:42:40 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -165,7 +165,7 @@ public class ConnectionTable1_4 extends ConnectionTable implements Runnable {
                             conn.setPeerAddress(peer_addr);
 
                             synchronized(conns) {
-                                if(conns.contains(peer_addr)) {
+                                if(conns.containsKey(peer_addr)) {
 
                                     if(log.isWarnEnabled())
                                         log.warn(peer_addr
