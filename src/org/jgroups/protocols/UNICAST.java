@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.12 2004/10/08 13:39:24 belaban Exp $
+// $Id: UNICAST.java,v 1.13 2004/10/08 13:56:12 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -37,18 +37,18 @@ import java.util.Vector;
  * @author Bela Ban
  */
 public class UNICAST extends Protocol implements AckSenderWindow.RetransmitCommand {
-    boolean       operational=false;
-    final Vector        members=new Vector(11);
-    final Hashtable     connections=new Hashtable(11);   // Object (sender or receiver) -- Entries
-    long[]        timeout={800,1600,3200,6400};  // for AckSenderWindow: max time to wait for missing acks
-    Address       local_addr=null;
-    TimeScheduler timer=null;                    // used for retransmissions (passed to AckSenderWindow)
+    boolean          operational=false;
+    final Vector     members=new Vector(11);
+    final Hashtable  connections=new Hashtable(11);   // Object (sender or receiver) -- Entries
+    long[]           timeout={800,1600,3200,6400};  // for AckSenderWindow: max time to wait for missing acks
+    Address          local_addr=null;
+    TimeScheduler    timer=null;                    // used for retransmissions (passed to AckSenderWindow)
 
     // if UNICAST is used without GMS, don't consult the membership on retransmit() if use_gms=false
     // default is true
-    boolean       use_gms=true;
-    int           window_size=-1;                // sliding window: max number of msgs in table
-    int           min_threshold=-1;              // num under which table has to fall before we resume adding msgs
+    boolean          use_gms=true;
+    int              window_size=-1;                // sliding window: max number of msgs in table
+    int              min_threshold=-1;              // num under which table has to fall before we resume adding msgs
     
 
 
@@ -405,17 +405,17 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
 
     public static class UnicastHeader extends Header implements Streamable {
-        static final short DATA=0;
-        static final short DATA_ACK=1;
+        static final byte DATA=0;
+        static final byte DATA_ACK=1;
 	
-        short   type=DATA;
+        byte    type=DATA;
         long    seqno=0;   // First msg is 0
         boolean first=false;
 
 
         public UnicastHeader() {} // used for externalization
 	
-        public UnicastHeader(short type, long seqno) {
+        public UnicastHeader(byte type, long seqno) {
             this.type=type == DATA_ACK ? DATA_ACK : DATA;
             this.seqno=seqno;
         }
@@ -424,7 +424,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             return "[UNICAST: " + type2Str(type) + ", seqno=" + seqno + ']';
         }
 	
-        public String type2Str(short t) {
+        public String type2Str(byte t) {
             switch(t) {
                 case DATA: return "DATA";
                 case DATA_ACK: return "DATA_ACK";
@@ -434,7 +434,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 	
 	
         public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeShort(type);
+            out.writeByte(type);
             out.writeLong(seqno);
             out.writeBoolean(first);
         }
@@ -442,19 +442,19 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 	
 	
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            type=in.readShort();
+            type=in.readByte();
             seqno=in.readLong();
             first=in.readBoolean();
         }
 
         public void writeTo(DataOutputStream out) throws IOException {
-            out.writeShort(type);
+            out.writeByte(type);
             out.writeLong(seqno);
             out.writeBoolean(first);
         }
 
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
-            type=in.readShort();
+            type=in.readByte();
             seqno=in.readLong();
             first=in.readBoolean();
         }
