@@ -1,4 +1,4 @@
-// $Id: DistributedQueue.java,v 1.9 2004/04/05 01:41:15 belaban Exp $
+// $Id: DistributedQueue.java,v 1.10 2004/05/15 00:19:28 belaban Exp $
 package org.jgroups.blocks;
 
 import org.apache.log4j.Logger;
@@ -195,7 +195,7 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
         try
         {
             Object retval = null;
-            add_method.setArg(0, value);
+            add_method.setArgs(new Object[]{value});
 
             RspList rsp = disp.callRemoteMethods(null, add_method, GroupRequest.GET_ALL, 0);
             Vector results = rsp.getResults();
@@ -226,7 +226,7 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
     {
         try
         {
-            addAtHead_method.setArg(0, value);
+            addAtHead_method.setArgs(new Object[]{value});
             disp.callRemoteMethods(null, addAtHead_method, GroupRequest.GET_ALL, 0);
         }
          catch (Exception e)
@@ -247,7 +247,7 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
     {
         try
         {
-            addAll_method.setArg(0, values);
+            addAll_method.setArgs(new Object[]{values});
             disp.callRemoteMethods(null, addAll_method, GroupRequest.GET_ALL, 0);
         }
          catch (Exception e)
@@ -673,19 +673,16 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
             if (add_method == null)
             {
                 add_method = new MethodCall(getClass().getMethod("_add", new Class[] { Object.class }));
-                add_method.setNumArgs(1); // we always have 1 args
             }
 
             if (addAtHead_method == null)
             {
                 addAtHead_method = new MethodCall(getClass().getMethod("_addAtHead", new Class[] { Object.class }));
-                addAtHead_method.setNumArgs(1); // we always have 1 args
             }
 
             if (addAll_method == null)
             {
                 addAll_method = new MethodCall(getClass().getMethod("_addAll", new Class[] { Collection.class }));
-                addAll_method.setNumArgs(1); // we always have 1 args
             }
 
             if (reset_method == null)

@@ -1,4 +1,4 @@
-// $Id: DistributedHashtable.java,v 1.10 2004/03/30 06:47:12 belaban Exp $
+// $Id: DistributedHashtable.java,v 1.11 2004/05/15 00:19:56 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -35,7 +35,7 @@ import java.util.*;
  * initial state (using the state exchange funclet <code>StateExchangeFunclet</code>.
  * @author Bela Ban
  * @author <a href="mailto:aolias@yahoo.com">Alfonso Olias-Sanz</a>
- * @version $Id: DistributedHashtable.java,v 1.10 2004/03/30 06:47:12 belaban Exp $
+ * @version $Id: DistributedHashtable.java,v 1.11 2004/05/15 00:19:56 belaban Exp $
  */
 public class DistributedHashtable extends Hashtable implements MessageListener, MembershipListener, Cloneable {
 
@@ -274,8 +274,7 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
         //if true, propagate action to the group
         if(send_message == true) {
             try {
-                put_method.setArg(0, key);
-                put_method.setArg(1, value);
+                put_method.setArgs(new Object[]{key,value});
                 disp.callRemoteMethods(
                         null,
                         put_method,
@@ -302,7 +301,7 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
 		//if true, propagate action to the group
         if(send_message == true) {
             try {
-                putAll_method.setArg(0, m);
+                putAll_method.setArgs(new Object[]{m});
                 disp.callRemoteMethods(
                         null,
                         putAll_method,
@@ -352,7 +351,7 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
         //if true, propagate action to the group
         if(send_message == true) {
             try {
-                remove_method.setArg(0, key);
+                remove_method.setArgs(new Object[]{key});
                 disp.callRemoteMethods(
                         null,
                         remove_method,
@@ -586,12 +585,10 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
         try {
             if(put_method == null) {
                 put_method=new MethodCall(getClass().getMethod("_put",new Class[] {Object.class,Object.class}));
-                put_method.setNumArgs(2); // we always have 2 args
             }
 
             if(putAll_method == null) {
                 putAll_method=new MethodCall(getClass().getMethod("_putAll",new Class[] {Map.class}));
-                putAll_method.setNumArgs(1); // always 1 argument
             }
 
             if(clear_method == null)
@@ -599,7 +596,6 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
 
             if(remove_method == null) {
                 remove_method=new MethodCall(getClass().getMethod("_remove",new Class[] {Object.class}));
-                remove_method.setNumArgs(1); // always 1 args
             }
         }
         catch(Throwable ex) {
