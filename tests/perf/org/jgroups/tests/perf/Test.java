@@ -55,7 +55,7 @@ public class Test implements Receiver {
 
 
 
-    public void start(Properties c, boolean silent) throws Exception {
+    public void start(Properties c, boolean verbose) throws Exception {
         String          config_file="config.txt";
         BufferedReader  fileReader;
         String          line;
@@ -87,15 +87,15 @@ public class Test implements Receiver {
         sb.append("\n\n----------------------- TEST -----------------------\n");
         sb.append("Date: ").append(new Date()).append('\n');
         sb.append("Run by: ").append(System.getProperty("user.name")).append("\n\n");
-        sb.append("Properties: ").append(printProperties()).append("\n-------------------------\n\n");
+        if(verbose)
+            sb.append("Properties: ").append(printProperties()).append("\n-------------------------\n\n");
 
         for(Iterator it=this.config.entrySet().iterator(); it.hasNext();) {
             Map.Entry entry=(Map.Entry)it.next();
             sb.append(entry.getKey()).append(":\t").append(entry.getValue()).append('\n');
         }
         sb.append('\n');
-        if(!silent)
-            System.out.println("Configuration is: " + sb);
+        System.out.println("Configuration is: " + sb);
 
         log.info(sb.toString());
 
@@ -153,7 +153,16 @@ public class Test implements Receiver {
         Data d;
 
         try {
-            d=(Data)Util.objectFromByteBuffer(payload);
+            int type=payload[0];
+            if(type == 1) { // DATA
+                int len=payload.length -1;
+                handleData(sender, len);
+                return;
+            }
+
+            byte[] tmp=new byte[payload.length-1];
+            System.arraycopy(payload, 1, tmp, 0, tmp.length);
+            d=(Data)Util.objectFromByteBuffer(tmp);
 
             switch(d.getType()) {
                 case Data.DISCOVERY_REQ:
@@ -173,50 +182,6 @@ public class Test implements Receiver {
                             }
                             this.members.notify();
                         }
-                    }
-                    break;
-
-                case Data.DATA:
-                    if(all_received)
-                        return;
-                    if(start == 0) {
-                        start=System.currentTimeMillis();
-                        last_dump=start;
-                    }
-                    MemberInfo info=(MemberInfo)this.senders.get(sender);
-                    if(info != null) {
-                        if(info.start == 0)
-                            info.start=System.currentTimeMillis();
-                        info.num_msgs_received++;
-                        counter++;
-                        info.total_bytes_received+=d.payload.length;
-                        if(info.num_msgs_received % 1000 == 0)
-                            System.out.println("-- received " + info.num_msgs_received +
-                                    " messages from " + sender);
-
-                        if(counter % log_interval == 0) {
-                            if(log.isInfoEnabled()) log.info(dumpStats(counter));
-                        }
-
-                        if(info.num_msgs_received >= info.num_msgs_expected) {
-                            info.done=true;
-                            if(info.stop == 0)
-                                info.stop=System.currentTimeMillis();
-                            if(allReceived()) {
-                                all_received=true;
-                                if(stop == 0)
-                                    stop=System.currentTimeMillis();
-                                sendResults();
-                                if(!this.sender)
-                                    dumpSenders();
-                                synchronized(this) {
-                                    this.notify();
-                                }
-                            }
-                        }
-                    }
-                    else {
-                        System.err.println("-- sender " + sender + " not found in senders hashmap");
                     }
                     break;
 
@@ -264,11 +229,60 @@ public class Test implements Receiver {
         }
     }
 
+    private void handleData(Object sender, int num_bytes) {
+        if(all_received)
+            return;
+        if(start == 0) {
+            start=System.currentTimeMillis();
+            last_dump=start;
+        }
+        MemberInfo info=(MemberInfo)this.senders.get(sender);
+        if(info != null) {
+            if(info.start == 0)
+                info.start=System.currentTimeMillis();
+            info.num_msgs_received++;
+            counter++;
+            info.total_bytes_received+=num_bytes;
+            if(info.num_msgs_received % 1000 == 0)
+                System.out.println("-- received " + info.num_msgs_received +
+                                   " messages from " + sender);
+
+            if(counter % log_interval == 0) {
+                if(log.isInfoEnabled()) log.info(dumpStats(counter));
+            }
+
+            if(info.num_msgs_received >= info.num_msgs_expected) {
+                info.done=true;
+                if(info.stop == 0)
+                    info.stop=System.currentTimeMillis();
+                if(allReceived()) {
+                    all_received=true;
+                    if(stop == 0)
+                        stop=System.currentTimeMillis();
+                    try {
+                        sendResults();
+                    }
+                    catch(Exception e) {
+                        e.printStackTrace();
+                    }
+                    if(!this.sender)
+                        dumpSenders();
+                    synchronized(this) {
+                        this.notify();
+                    }
+                }
+            }
+        }
+        else {
+            System.err.println("-- sender " + sender + " not found in senders hashmap");
+        }
+    }
+
     void sendResults() throws Exception {
         Data d=new Data(Data.RESULTS);
         byte[] buf;
         d.results=(HashMap)this.senders.clone();
-        buf=Util.objectToByteBuffer(d);
+        buf=generatePayload(d, null);
         transport.send(null, buf);
     }
 
@@ -294,9 +308,7 @@ public class Test implements Receiver {
         for(int k=0; k < msg_size; k++)
             buf[k]='.';
         Data d=new Data(Data.DATA);
-        d.payload=buf;
-        byte[] payload=Util.objectToByteBuffer(d);
-
+        byte[] payload=generatePayload(d, buf);
         for(int i=0; i < num_msgs; i++) {
             transport.send(null, payload);
             total_msgs++;
@@ -308,7 +320,26 @@ public class Test implements Receiver {
                 //  if(log.isInfoEnabled()) log.info(dumpStats(total_msgs));
             }
         }
+    }
 
+
+    byte[] generatePayload(Data d, byte[] buf) throws Exception {
+        byte[] tmp=buf != null? buf : Util.objectToByteBuffer(d);
+        byte[] payload=new byte[tmp.length +1];
+        payload[0]=intToByte(d.getType());
+        System.arraycopy(tmp, 0, payload, 1, tmp.length);
+        return payload;
+    }
+
+    private byte intToByte(int type) {
+        switch(type) {
+            case Data.DATA: return 1;
+            case Data.DISCOVERY_REQ: return 2;
+            case Data.DISCOVERY_RSP: return 3;
+            case Data.DONE: return 4;
+            case Data.RESULTS: return 5;
+            default: return 0;
+        }
     }
 
 
@@ -320,7 +351,7 @@ public class Test implements Receiver {
         // now send DONE message (periodically re-send to make up for message loss over unreliable transport)
         // when all results have been received, dump stats and exit
         Data d2=new Data(Data.DONE);
-        byte[] tmp=Util.objectToByteBuffer(d2);
+        byte[] tmp=generatePayload(d2, null);
         System.out.println("-- fetching results (from " + expected_responses + " members)");
         synchronized(this.results) {
             while((results.size()) < expected_responses) {
@@ -444,7 +475,7 @@ public class Test implements Receiver {
 
     void runDiscoveryPhase() throws Exception {
         Data d=new Data(Data.DISCOVERY_REQ);
-        transport.send(null, Util.objectToByteBuffer(d));
+        transport.send(null, generatePayload(d, null));
         sendDiscoveryResponse();
 
         synchronized(this.members) {
@@ -462,13 +493,13 @@ public class Test implements Receiver {
             d2.sender=true;
             d2.num_msgs=Long.parseLong(config.getProperty("num_msgs"));
         }
-        transport.send(null, Util.objectToByteBuffer(d2));
+        transport.send(null, generatePayload(d2, null));
     }
 
 
     public static void main(String[] args) {
         Properties config=new Properties();
-        boolean sender=false, silent=false;
+        boolean sender=false, verbose=false;
         Test t=null;
 
         for(int i=0; i < args.length; i++) {
@@ -492,8 +523,8 @@ public class Test implements Receiver {
                 config.put("props", props);
                 continue;
             }
-            if("-silent".equals(args[i])) {
-                silent=true;
+            if("-verbose".equals(args[i])) {
+                verbose=true;
                 continue;
             }
             help();
@@ -502,7 +533,7 @@ public class Test implements Receiver {
 
         try {
             t=new Test();
-            t.start(config, silent);
+            t.start(config, verbose);
             t.runDiscoveryPhase();
             if(sender) {
                 t.sendMessages();
@@ -527,7 +558,7 @@ public class Test implements Receiver {
 
 
     static void help() {
-        System.out.println("Test [-help] ([-sender] | [-receiver]) [-config <config file>] [-props <stack config>] [-silent]");
+        System.out.println("Test [-help] ([-sender] | [-receiver]) [-config <config file>] [-props <stack config>] [-verbose]");
     }
 
 
