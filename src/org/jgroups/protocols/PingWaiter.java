@@ -12,7 +12,7 @@ import java.util.Vector;
 /**
  * Class that waits for n PingRsp'es, or m milliseconds to return the initial membership
  * @author Bela Ban
- * @version $Id: PingWaiter.java,v 1.2 2005/01/04 08:19:41 belaban Exp $
+ * @version $Id: PingWaiter.java,v 1.3 2005/01/04 13:34:09 belaban Exp $
  */
 public class PingWaiter implements Runnable {
     Thread              t=null;
@@ -75,28 +75,6 @@ public class PingWaiter implements Runnable {
         return rsps;
     }
 
-
-//    public void waitUntil(long timeout, int num_members) {
-//        long start_time, time_to_wait;
-//
-//        synchronized(rsps) {
-//            start_time=System.currentTimeMillis();
-//            time_to_wait=timeout;
-//
-//            while(rsps.size() < num_rsps && time_to_wait > 0 && t != null) {
-//                if(log.isTraceEnabled()) // +++ remove
-//                    log.trace("waiting for initial members: time_to_wait=" + time_to_wait +
-//                              ", got " + rsps.size() + " rsps");
-//
-//                try {
-//                    rsps.wait(time_to_wait);
-//                }
-//                catch(Exception e) {
-//                }
-//                time_to_wait=timeout - (System.currentTimeMillis() - start_time);
-//            }
-//        }
-//    }
 
 
     public void run() {
