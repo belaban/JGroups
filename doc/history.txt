@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.56 2004/04/01 04:10:28 belaban Exp $
+Revision: $Id: history.txt,v 1.57 2004/04/16 15:22:43 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -25,6 +25,9 @@ romuald     = Romuald du Song
 
 Version 2.2.3
 -------------
+
+- Minor change in Scheduler: replaced sched_thread.interrupt() with throwing of exception
+  (bela April 15 2004)
 
 - Created distribution (CVS tag = JG_2_2_3)
   (bela March 31 2004)
