@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.20 2004/10/08 16:57:37 belaban Exp $
+// $Id: Message.java,v 1.21 2004/10/13 16:02:14 belaban Exp $
 
 package org.jgroups;
 
@@ -54,6 +54,7 @@ public class Message implements Externalizable, Streamable {
     static final byte HDRS_SET=8;
     static final byte IPADDR_DEST=16;
     static final byte IPADDR_SRC=32;
+    static final byte SRC_HOST_NULL=64;
 
     static final HashSet nonStreamableHeaders=new HashSet(); // todo: remove when all headers are streamable
 
@@ -528,8 +529,12 @@ public class Message implements Externalizable, Streamable {
         }
         if(src_addr != null) {
             leading+=SRC_SET;
-            if(src_addr instanceof IpAddress)
+            if(src_addr instanceof IpAddress) {
                 leading+=IPADDR_SRC;
+                if(((IpAddress)src_addr).getIpAddress() == null) {
+                    leading+=SRC_HOST_NULL;
+                }
+            }
         }
         if(buf != null)
             leading+=BUF_SET;
@@ -549,10 +554,16 @@ public class Message implements Externalizable, Streamable {
 
         // 3. src_addr
         if(src_addr != null) {
-            if(src_addr instanceof IpAddress)
-                src_addr.writeTo(out);
-            else
+            if(src_addr instanceof IpAddress) {
+                if(((IpAddress)src_addr).getIpAddress() != null)
+                    src_addr.writeTo(out);
+                else {
+                    out.writeInt(((IpAddress)src_addr).getPort());
+                }
+            }
+            else {
                 Util.writeAddress(src_addr, out);
+            }
         }
 
         // 4. buf
@@ -596,8 +607,14 @@ public class Message implements Externalizable, Streamable {
         // 2. src_addr
         if((leading & SRC_SET) == SRC_SET) {
             if((leading & IPADDR_SRC) == IPADDR_SRC) {
-                src_addr=new IpAddress();
-                src_addr.readFrom(in);
+                if((leading & SRC_HOST_NULL) == SRC_HOST_NULL) {
+                    int src_port=in.readInt();
+                    src_addr=new IpAddress(src_port, false); // keep a null host part
+                }
+                else {
+                    src_addr=new IpAddress();
+                    src_addr.readFrom(in);
+                }
             }
             else {
                 src_addr=Util.readAddress(in);
