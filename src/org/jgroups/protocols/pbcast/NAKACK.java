@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.18 2004/05/04 01:57:38 belaban Exp $
+// $Id: NAKACK.java,v 1.19 2004/05/04 20:57:41 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -46,7 +46,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
      * Note that this is no long term storage; messages are just stored until they can be delivered (ie., until
      * the correct FIFO order is established)
      */
-    Hashtable     received_msgs=new Hashtable();
+    HashMap       received_msgs=new HashMap();
 
     /** TreeMap<Long,Message>. Map of messages sent by me (keyed and sorted on sequence number) */
     TreeMap       sent_msgs=new TreeMap();
@@ -191,6 +191,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
             catch(Exception ex) {
             }
         }
+
         removeAll();  // clears sent_msgs and destroys all NakReceiverWindows
     }
 
@@ -466,7 +467,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
         // Changed by bela Jan 29 2003: we currently don't resend from received msgs, just from sent_msgs !
         // msg.putHeader(getName(), hdr);
 
-        win=(NakReceiverWindow)received_msgs.get(sender);
+        synchronized(received_msgs) {
+            win=(NakReceiverWindow)received_msgs.get(sender);
+        }
         if(win == null) {  // discard message if there is no entry for sender
             if(leaving)
                 return;
@@ -627,25 +630,28 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
         Address sender;
         NakReceiverWindow win;
 
-        // 1. Remove all senders in received_msgs that are not members anymore
-        for(Enumeration e=received_msgs.keys(); e.hasMoreElements();) {
-            sender=(Address)e.nextElement();
-            if(!members.contains(sender)) {
-                win=(NakReceiverWindow)received_msgs.get(sender);
-                win.reset();
-                if(log.isDebugEnabled())
-                    log.debug("removing " + sender + " from received_msgs (not member anymore)");
-                received_msgs.remove(sender);
-            }
-        }
+        synchronized(received_msgs) {
 
-        // 2. Add newly joined members to received_msgs (starting seqno=0)
-        for(int i=0; i < members.size(); i++) {
-            sender=(Address)members.elementAt(i);
-            if(!received_msgs.containsKey(sender)) {
-                win=new NakReceiverWindow(sender, this, 0, timer);
-                win.setRetransmitTimeouts(retransmit_timeout);
-                received_msgs.put(sender, win);
+            // 1. Remove all senders in received_msgs that are not members anymore
+            for(Iterator it=received_msgs.keySet().iterator(); it.hasNext();) {
+                sender=(Address)it.next();
+                if(!members.contains(sender)) {
+                    win=(NakReceiverWindow)received_msgs.get(sender);
+                    win.reset();
+                    if(log.isDebugEnabled())
+                        log.debug("removing " + sender + " from received_msgs (not member anymore)");
+                    it.remove();
+                }
+            }
+
+            // 2. Add newly joined members to received_msgs (starting seqno=0)
+            for(int i=0; i < members.size(); i++) {
+                sender=(Address)members.elementAt(i);
+                if(!received_msgs.containsKey(sender)) {
+                    win=new NakReceiverWindow(sender, this, 0, timer);
+                    win.setRetransmitTimeouts(retransmit_timeout);
+                    received_msgs.put(sender, win);
+                }
             }
         }
     }
@@ -723,7 +729,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
             initial_seqno=d.highSeqnoAt(i);
             win=new NakReceiverWindow(sender, this, initial_seqno, timer);
             win.setRetransmitTimeouts(retransmit_timeout);
-            received_msgs.put(sender, win);
+            synchronized(received_msgs) {
+                received_msgs.put(sender, win);
+            }
         }
     }
 
@@ -750,19 +758,21 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
                 continue;
             }
             initial_seqno=d.highSeqnoAt(i);
-            win=(NakReceiverWindow)received_msgs.get(sender);
-            if(win == null) {
-                win=new NakReceiverWindow(sender, this, initial_seqno, timer);
-                win.setRetransmitTimeouts(retransmit_timeout);
-                received_msgs.put(sender, win);
-            }
-            else {
-                if(win.getHighestReceived() < initial_seqno) {
-                    win.reset();
-                    received_msgs.remove(sender);
+            synchronized(received_msgs) {
+                win=(NakReceiverWindow)received_msgs.get(sender);
+                if(win == null) {
                     win=new NakReceiverWindow(sender, this, initial_seqno, timer);
                     win.setRetransmitTimeouts(retransmit_timeout);
                     received_msgs.put(sender, win);
+                }
+                else {
+                    if(win.getHighestReceived() < initial_seqno) {
+                        win.reset();
+                        received_msgs.remove(sender);
+                        win=new NakReceiverWindow(sender, this, initial_seqno, timer);
+                        win.setRetransmitTimeouts(retransmit_timeout);
+                        received_msgs.put(sender, win);
+                    }
                 }
             }
         }
@@ -784,7 +794,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
             if(log.isErrorEnabled()) log.error("sender is null");
             return r;
         }
-        win=(NakReceiverWindow)received_msgs.get(sender);
+        synchronized(received_msgs) {
+            win=(NakReceiverWindow)received_msgs.get(sender);
+        }
         if(win == null) {
             if(log.isErrorEnabled()) log.error("sender " + sender + " not found in received_msgs");
             return r;
@@ -813,7 +825,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
         if(sender.equals(local_addr))
             return seqno - 1;
 
-        win=(NakReceiverWindow)received_msgs.get(sender);
+        synchronized(received_msgs) {
+            win=(NakReceiverWindow)received_msgs.get(sender);
+        }
         if(win == null) {
             if(log.isErrorEnabled()) log.error("sender " + sender + " not found in received_msgs");
             return ret;
@@ -854,7 +868,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
             // check whether the last seqno received for a sender P in the stability vector is > last seqno
             // received for P in my digest. if yes, request retransmission (see "Last Message Dropped" topic
             // in DESIGN)
-            recv_win=(NakReceiverWindow)received_msgs.get(sender);
+            synchronized(received_msgs) {
+                recv_win=(NakReceiverWindow)received_msgs.get(sender);
+            }
             if(recv_win != null) {
                 my_highest_rcvd=recv_win.getHighestReceived();
                 stability_highest_rcvd=d.highSeqnoSeenAt(i);
@@ -934,43 +950,57 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
 
         // sent_msgs.clear();
 
-        for(Enumeration e=received_msgs.elements(); e.hasMoreElements();) {
-            win=(NakReceiverWindow)e.nextElement();
-            win.reset();
+        synchronized(received_msgs) {
+            for(Iterator it=received_msgs.values().iterator(); it.hasNext();) {
+                win=(NakReceiverWindow)it.next();
+                win.reset();
+            }
+            received_msgs.clear();
         }
-        received_msgs.clear();
     }
 
 
     void removeAll() {
         NakReceiverWindow win;
-        Address key;
+
+        if(log.isDebugEnabled()) {
+            if(sent_msgs.size() > 0 && received_msgs.size() > 0) {
+                String contents=dumpContents();
+                log.debug("contents for " + local_addr + ":\n" + contents);
+            }
+        }
 
         synchronized(sent_msgs) {
             sent_msgs.clear();
         }
 
-        for(Enumeration e=received_msgs.keys(); e.hasMoreElements();) {
-            key=(Address)e.nextElement();
-            win=(NakReceiverWindow)received_msgs.get(key);
-            win.destroy();
+        synchronized(received_msgs) {
+            for(Iterator it=received_msgs.values().iterator(); it.hasNext();) {
+                win=(NakReceiverWindow)it.next();
+                win.destroy();
+            }
+            received_msgs.clear();
         }
-        received_msgs.clear();
     }
 
 
     String dumpContents() {
         StringBuffer ret=new StringBuffer();
+        Map.Entry entry;
+        Address addr;
+        Object w;
 
-        ret.append("\nsent_msgs: " + sent_msgs.size());
 
-        ret.append("\nreceived_msgs: ");
-        for(Enumeration e=received_msgs.keys(); e.hasMoreElements();) {
-            Address key=(Address)e.nextElement();
-            NakReceiverWindow w=(NakReceiverWindow)received_msgs.get(key);
-            ret.append("\n" + w.toString());
+        ret.append("\nsent_msgs: " + printSentMsgs());
+        ret.append("\nreceived_msgs:\n");
+        synchronized(received_msgs) {
+            for(Iterator it=received_msgs.entrySet().iterator(); it.hasNext();) {
+                entry=(Map.Entry)it.next();
+                addr=(Address)entry.getKey();
+                w=entry.getValue();
+                ret.append(addr).append(": ").append(w.toString()).append("\n");
+            }
         }
-
         return ret.toString();
     }
 
@@ -978,8 +1008,10 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
     String printSentMsgs() {
         StringBuffer sb=new StringBuffer();
         Long min_seqno, max_seqno;
-        min_seqno=sent_msgs.size() > 0? (Long)sent_msgs.firstKey() : new Long(0);
-        max_seqno=sent_msgs.size() > 0? (Long)sent_msgs.lastKey() : new Long(0);
+        synchronized(sent_msgs) {
+            min_seqno=sent_msgs.size() > 0? (Long)sent_msgs.firstKey() : new Long(0);
+            max_seqno=sent_msgs.size() > 0? (Long)sent_msgs.lastKey() : new Long(0);
+        }
         sb.append("[").append(min_seqno).append(" - ").append(max_seqno).append("]");
         return sb.toString();
     }
