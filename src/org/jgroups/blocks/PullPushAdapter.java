@@ -1,4 +1,4 @@
-// $Id: PullPushAdapter.java,v 1.6 2004/07/05 05:41:45 belaban Exp $
+// $Id: PullPushAdapter.java,v 1.7 2004/09/02 14:45:24 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -33,7 +33,7 @@ import java.util.List;
  * @author Bela Ban
  * @version $Revision
  */
-public class PullPushAdapter implements Runnable {
+public class PullPushAdapter implements Runnable, ChannelListener {
     protected Transport       transport=null;
     protected MessageListener listener=null;           // main message receiver
     protected List            membership_listeners=new ArrayList();
@@ -81,6 +81,8 @@ public class PullPushAdapter implements Runnable {
             receiver_thread.setDaemon(true);
             receiver_thread.start();
         }
+        if(transport instanceof JChannel)
+            ((JChannel)transport).setChannelListener(this);
     }
 
     public void stop() {
@@ -325,6 +327,25 @@ public class PullPushAdapter implements Runnable {
             }
         }
     }
+
+    public void channelConnected(Channel channel) {
+    }
+
+    public void channelDisconnected(Channel channel) {
+    }
+
+    public void channelClosed(Channel channel) {
+    }
+
+    public void channelShunned() {
+    }
+
+    public void channelReconnected(Address addr) {
+        if(receiver_thread == null)
+            start();
+    }
+
+
 
 
     public static final class PullHeader extends Header {
