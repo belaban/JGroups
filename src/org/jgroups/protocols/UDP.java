@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.6 2003/12/15 23:52:04 belaban Exp $
+// $Id: UDP.java,v 1.7 2004/01/03 02:08:58 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -115,18 +115,29 @@ public class UDP extends Protocol implements Runnable {
      * Packet handler is a separate thread taking care of de-serialization, receiver
      * thread(s) simply put packet in queue and return immediately. Setting this to
      * true adds one more thread */
-    boolean         use_packet_handler=false;
+    boolean         use_incoming_packet_handler=false;
 
     /** Used by packet handler to store incoming DatagramPackets */
-    Queue           packet_queue=null;
+    Queue           incoming_queue=null;
+
+    /** Dequeues DatagramPackets from packet_queue, unmarshalls them and
+     * calls <tt>handleIncomingUdpPacket()</tt> */
+    IncomingPacketHandler   incoming_packet_handler=null;
+
+    /** Packets to be sent are stored in outgoing_queue and sent by a separate thread. Enabling this
+     * value uses an additional thread */
+    boolean         use_outgoing_packet_handler=false;
+
+    /** Used by packet handler to store outgoing DatagramPackets */
+    Queue           outgoing_queue=null;
+
+    OutgoingPacketHandler outgoing_packet_handler=null;
 
     /** If set it will be added to <tt>local_addr</tt>. Used to implement
      * for example transport independent addresses */
     byte[]          additional_data=null;
 
-    /** Dequeues DatagramPackets from packet_queue, unmarshalls them and
-     * calls <tt>handleIncomingUdpPacket()</tt> */
-    PacketHandler   packet_handler=null;
+
 
     /** The name of this protocol */
     final String    name="UDP";
@@ -200,11 +211,11 @@ public class UDP extends Protocol implements Runnable {
                                "). This may cause problems");
                 }
 
-                if(use_packet_handler) {
+                if(use_incoming_packet_handler) {
                     tmp1=packet.getData();
                     tmp2=new byte[len];
                     System.arraycopy(tmp1, 0, tmp2, 0, len);
-                    packet_queue.add(tmp2);
+                    incoming_queue.add(tmp2);
                 }
                 else
                     handleIncomingUdpPacket(packet.getData());
@@ -261,9 +272,13 @@ public class UDP extends Protocol implements Runnable {
 
 
     public void init() throws Exception {
-        if(use_packet_handler) {
-            packet_queue=new Queue();
-            packet_handler=new PacketHandler();
+        if(use_incoming_packet_handler) {
+            incoming_queue=new Queue();
+            incoming_packet_handler=new IncomingPacketHandler();
+        }
+        if(use_outgoing_packet_handler) {
+            outgoing_queue=new Queue();
+            outgoing_packet_handler=new OutgoingPacketHandler();
         }
     }
 
@@ -389,10 +404,25 @@ public class UDP extends Protocol implements Runnable {
             props.remove("loopback");
         }
 
+        // this is deprecated, just left for compatibility (use use_incoming_packet_handler)
         str=props.getProperty("use_packet_handler");
         if(str != null) {
-            use_packet_handler=new Boolean(str).booleanValue();
+            use_incoming_packet_handler=new Boolean(str).booleanValue();
             props.remove("use_packet_handler");
+            Trace.warn("UDP.setProperties()",
+                    "'use_packet_handler' is deprecated; use 'use_incoming_packet_handler' instead");
+        }
+
+        str=props.getProperty("use_incoming_packet_handler");
+        if(str != null) {
+            use_incoming_packet_handler=new Boolean(str).booleanValue();
+            props.remove("use_incoming_packet_handler");
+        }
+
+        str=props.getProperty("use_outgoing_packet_handler");
+        if(str != null) {
+            use_outgoing_packet_handler=new Boolean(str).booleanValue();
+            props.remove("use_outgoing_packet_handler");
         }
 
         if(props.size() > 0) {
@@ -619,6 +649,11 @@ public class UDP extends Protocol implements Runnable {
                 return;
         }
 
+        if(use_outgoing_packet_handler) {
+            outgoing_queue.add(msg);
+            return;
+        }
+
         out_stream.reset();
         out_stream.write(Version.version_id, 0, Version.version_id.length); // write the version
         out=new ObjectOutputStream(out_stream);
@@ -679,7 +714,6 @@ public class UDP extends Protocol implements Runnable {
         InetAddress tmp_addr=null;
 
         // bind_addr not set, try to assign one by default. This is needed on Windows
-        // @todo: replace this code in JDK 1.4 with java.net.NetworkInterface API
 
         // changed by bela Feb 12 2003: by default multicast sockets will be bound to all network interfaces
 
@@ -948,8 +982,10 @@ public class UDP extends Protocol implements Runnable {
                 mcast_receiver.start();
             }
         }
-        if(use_packet_handler)
-            packet_handler.start();
+        if(use_outgoing_packet_handler)
+            outgoing_packet_handler.start();
+        if(use_incoming_packet_handler)
+            incoming_packet_handler.start();
     }
 
 
@@ -983,8 +1019,8 @@ public class UDP extends Protocol implements Runnable {
         }
 
         // 3. Stop the in_packet_handler thread
-        if(packet_handler != null)
-            packet_handler.stop();
+        if(incoming_packet_handler != null)
+            incoming_packet_handler.stop();
     }
 
 
@@ -1112,11 +1148,11 @@ public class UDP extends Protocol implements Runnable {
                                    "). This may cause problems");
                     }
 
-                    if(use_packet_handler) {
+                    if(use_incoming_packet_handler) {
                         tmp1=packet.getData();
                         tmp2=new byte[len];
                         System.arraycopy(tmp1, 0, tmp2, 0, len);
-                        packet_queue.add(tmp2);
+                        incoming_queue.add(tmp2);
                     }
                     else
                         handleIncomingUdpPacket(packet.getData());
@@ -1145,17 +1181,17 @@ public class UDP extends Protocol implements Runnable {
      * This thread fetches byte buffers from the packet_queue, converts them into messages and passes them up
      * to the higher layer (done in handleIncomingUdpPacket()).
      */
-    class PacketHandler implements Runnable {
+    class IncomingPacketHandler implements Runnable {
         Thread t=null;
 
         public void run() {
             byte[] data;
-            while(packet_queue != null && packet_handler != null) {
+            while(incoming_queue != null && incoming_packet_handler != null) {
                 try {
-                    data=(byte[])packet_queue.remove();
+                    data=(byte[])incoming_queue.remove();
                 }
                 catch(QueueClosedException closed_ex) {
-                    if(Trace.trace) Trace.info("UDP.PacketHandler.run()", "packet_handler thread terminating");
+                    if(Trace.trace) Trace.info("UDP.IncomingPacketHandler.run()", "packet_handler thread terminating");
                     break;
                 }
                 handleIncomingUdpPacket(data);
@@ -1165,17 +1201,84 @@ public class UDP extends Protocol implements Runnable {
 
         void start() {
             if(t == null) {
-                t=new Thread(this, "UDP.PacketHandler thread");
+                t=new Thread(this, "UDP.IncomingPacketHandler thread");
                 t.setDaemon(true);
                 t.start();
             }
         }
 
         void stop() {
-            if(packet_queue != null)
-                packet_queue.close(false); // should terminate the packet_handler thread too
+            if(incoming_queue != null)
+                incoming_queue.close(false); // should terminate the packet_handler thread too
             t=null;
-            packet_queue=null;
+            incoming_queue=null;
+        }
+    }
+
+
+    /**
+     * This thread fetches byte buffers from the outgoing_packet_queue, converts them into messages and sends them
+     * using the unicast or multicast socket
+     */
+    class OutgoingPacketHandler implements Runnable {
+        Thread             t=null;
+        ObjectOutputStream out;
+        byte[]             buf;
+        DatagramPacket     packet;
+        IpAddress          dest;
+
+        public void run() {
+            Message msg;
+
+            while(outgoing_queue != null && outgoing_packet_handler != null) {
+                try {
+                    msg=(Message)outgoing_queue.remove();
+                    dest=(IpAddress)msg.getDest();
+                    out_stream.reset();
+                    out_stream.write(Version.version_id, 0, Version.version_id.length); // write the version
+                    out=new ObjectOutputStream(out_stream);
+                    msg.writeExternal(out);
+                    out.flush(); // needed if out buffers its output to out_stream
+                    buf=out_stream.toByteArray();
+                    packet=new DatagramPacket(buf, buf.length, dest.getIpAddress(), dest.getPort());
+
+                    if(dest.getIpAddress().isMulticastAddress()) { // multicast message
+                        mcast_sock.send(packet);
+                    }
+                    else {                                         // unicast message
+                        if(send_sock != null) {
+                            send_sock.send(packet);
+                        }
+                        else {
+                            Trace.error("UDP.OutgoingPacketHandler.run()", "(unicast) send_sock is null. Message is " +
+                                    msg + ", headers are " + msg.getHeaders());
+                        }
+                    }
+                }
+                catch(QueueClosedException closed_ex) {
+                    if(Trace.trace) Trace.info("UDP.OutgoingPacketHandler.run()", "packet_handler thread terminating");
+                    break;
+                }
+                catch(Throwable t) {
+                    Trace.error("UDP.OutgoingPacketHandler.run()", "exception sending packet: " + t);
+                }
+                msg=null; // let's give the poor garbage collector a hand...
+            }
+        }
+
+        void start() {
+            if(t == null) {
+                t=new Thread(this, "UDP.OutgoingPacketHandler thread");
+                t.setDaemon(true);
+                t.start();
+            }
+        }
+
+        void stop() {
+            if(outgoing_queue != null)
+                outgoing_queue.close(false); // should terminate the packet_handler thread too
+            t=null;
+            outgoing_queue=null;
         }
     }
 

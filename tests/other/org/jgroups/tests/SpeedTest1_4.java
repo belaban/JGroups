@@ -1,6 +1,6 @@
 package org.jgroups.tests;
 
-// $Id: SpeedTest1_4.java,v 1.3 2004/01/02 20:19:16 belaban Exp $
+// $Id: SpeedTest1_4.java,v 1.4 2004/01/03 02:08:59 belaban Exp $
 
 
 import org.jgroups.Channel;
@@ -162,18 +162,6 @@ public class SpeedTest1_4 {
                     debugger=new Debugger(channel, cummulative);
                     debugger.start();
                 }
-
-                class Closer extends Thread {
-                    Channel ch;
-                    Closer(Channel ch) {
-                        this.ch=ch;
-                    }
-                    public void run() {
-                        if(ch != null)
-                            ch.close();
-                    }
-                }
-                Runtime.getRuntime().addShutdownHook(new Closer(channel));
             }
             else {
                 group_addr=InetAddress.getByName("224.0.0.36");

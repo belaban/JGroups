@@ -1,5 +1,5 @@
 
-	<protocol-stack name="Simple Multicast ACK Protocol Stack" version="$Revision: 1.1 $">
+	<protocol-stack name="Simple Multicast ACK Protocol Stack" version="$Revision: 1.2 $">
 		<description>
 		Stack based on SMACK and minimal threads. SMACK is a
 		simple reliable multicast transport based on positive
@@ -15,6 +15,8 @@
 				<protocol-param name="mcast_addr" value="228.8.8.8"/>
 				<protocol-param name="mcast_port" value="45566"/>
 				<protocol-param name="ip_ttl" value="32"/>
+                <protocol-param name="use_incoming_packet_handler" value="false"/>
+                <protocol-param name="use_outgoing_packet_handler" value="false"/>
 			</protocol-params>
 		</protocol>
 		<!--

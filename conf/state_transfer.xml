@@ -1,4 +1,4 @@
-	<!-- $Id: state_transfer.xml,v 1.1 2003/09/09 01:24:04 belaban Exp $   -->
+	<!-- $Id: state_transfer.xml,v 1.2 2004/01/03 02:08:55 belaban Exp $   -->
 	<protocol-stack name="Protocol stack to be used for testing
 	transferring of state" version="1.0.0">
 		<description>JGroups State Transfer Protocol Stack</description>
@@ -13,7 +13,8 @@
 				<protocol-param name="ucast_recv_buf_size" value="64000"/>
 				<protocol-param name="mcast_send_buf_size" value="32000"/>
 				<protocol-param name="mcast_recv_buf_size" value="64000"/>
-				<protocol-param name="use_packet_handler"  value="false"/>
+                <protocol-param name="use_incoming_packet_handler" value="false"/>   
+                <protocol-param name="use_outgoing_packet_handler" value="false"/>
 				<protocol-param name="loopback"            value="true"/>
 				<protocol-param name="ip_ttl"              value="32"/>
 			</protocol-params>

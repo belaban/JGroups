@@ -12,7 +12,8 @@
 				<protocol-param name="ucast_recv_buf_size" value="64000"/>
 				<protocol-param name="mcast_send_buf_size" value="32000"/>
 				<protocol-param name="mcast_recv_buf_size" value="64000"/>
-				<protocol-param name="use_packet_handler"  value="false"/>
+                <protocol-param name="use_incoming_packet_handler" value="false"/>
+                <protocol-param name="use_outgoing_packet_handler" value="false"/>
 				<protocol-param name="loopback"            value="false"/>
 				<protocol-param name="ip_ttl"              value="1"/>
 				<protocol-param name="ip_mcast"            value="true"/>
