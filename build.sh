@@ -29,11 +29,13 @@ fi
 
 
 
-echo "CP is ${CP}"
-
 if [ -n "$JAVA_HOME" ]; then
     if [ -f "$JAVA_HOME/lib/tools.jar" ]; then
-	CP=${CP}:${JAVA_HOME}/lib/tools.jar
+        if [ $cygwin = "true" ]; then
+            CP=${CP}\;${JAVA_HOME}/lib/tools.jar
+        else
+            CP=${CP}:${JAVA_HOME}/lib/tools.jar
+        fi
     fi
 else
     echo "WARNING: JAVA_HOME environment variable is not set."
@@ -42,4 +44,6 @@ else
     echo "  to the installation directory of java."
 fi
 
+
 java -classpath "${CP}" org.apache.tools.ant.Main -buildfile ${JG_HOME}/build.xml $*
+#echo "CP is ${CP}"
