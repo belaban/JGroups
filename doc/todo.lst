@@ -1,4 +1,4 @@
-$Id: todo.lst,v 1.14 2004/10/06 09:06:53 belaban Exp $
+$Id: todo.lst,v 1.15 2004/10/07 07:32:54 belaban Exp $
 
 
 
@@ -17,6 +17,10 @@ $Id: todo.lst,v 1.14 2004/10/06 09:06:53 belaban Exp $
   - Test m-m mode (everyone sends to everyone) with 4 nodes
   - Expose statistics (e.g. retransmission counter, flow control
     stats), maybe use AOP to do so
+
+- Create common TransportProtocol (subclass of Protocol): handles all message bundling, loopback etc, real transports
+  (UDP, TCP, TUNNEL) have to extend this class and provide a send() and receive() method. Avoids code
+  duplication
 
 - Add list of joined, crashed and left members to View
 
