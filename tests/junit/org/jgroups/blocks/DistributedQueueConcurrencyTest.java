@@ -1,4 +1,4 @@
-// $Id: DistributedQueueConcurrencyTest.java,v 1.1 2003/10/15 16:15:09 rds13 Exp $
+// $Id: DistributedQueueConcurrencyTest.java,v 1.2 2003/10/20 14:38:57 rds13 Exp $
 
 package org.jgroups.blocks;
 
@@ -21,9 +21,9 @@ public class DistributedQueueConcurrencyTest extends TestCase implements ICounte
 {
     protected static int items = 0;
 
-	final int NUM_CLIENTS = 10;
+    final int NUM_CLIENTS = 10;
     final int NUM_ITEMS = 10;
-    final int REPEAT_TEST= 5;
+    final int REPEAT_TEST= 1;
 
     static Logger logger = Logger.getLogger(DistributedQueueConcurrencyTest.class.getName());
     String props;
@@ -42,8 +42,8 @@ public class DistributedQueueConcurrencyTest extends TestCase implements ICounte
     protected DistributedQueue queue2;
     protected DistributedQueue queue3;
 
-	protected DistributedQueue queue;
-	protected DistributedQueue queuePut;
+    protected DistributedQueue queue;
+    protected DistributedQueue queuePut;
 
     public void setUp() throws Exception
     {
