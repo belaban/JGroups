@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.78 2004/06/08 15:52:16 belaban Exp $
+Revision: $Id: history.txt,v 1.79 2004/06/09 15:32:45 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -28,6 +28,10 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
 Version 2.2.5
 -------------
+
+- Added system property resolve.dns: if set to false, IpAddresses will not attempt to resolve DNS host names, but
+  just print addresses in dotted-decimal format
+  (bela June 8 2004)
 
 - UDP: system property bind.address overrides configuration option. Start e.g. with -Dbind.address=192.168.0.10
   (bela June 8 2004)
