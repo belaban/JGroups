@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.101 2004/08/12 14:08:09 belaban Exp $
+Revision: $Id: history.txt,v 1.102 2004/08/17 08:09:26 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -27,6 +27,9 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
 Version 2.2.7
 -------------
+
+- Added discard_incompatibe_packets to UDP
+  (bela Aug 17 2004)
 
 - Added checking for system property bind.address (set by JBoss) in TCP (like UDP)
   (bela Aug 14 2004)
