@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.14 2004/10/08 13:59:59 belaban Exp $
+// $Id: FD.java,v 1.15 2005/01/10 14:50:39 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -35,7 +35,7 @@ import java.util.Vector;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Revision: 1.14 $
+ * @version $Revision: 1.15 $
  */
 public class FD extends Protocol {
     Address               ping_dest=null;
@@ -311,7 +311,7 @@ public class FD extends Protocol {
                 num_pings=((Integer)invalid_pingers.get(hb_sender)).intValue();
                 if(num_pings >= max_tries) {
                     if(log.isDebugEnabled())
-                        log.debug(hb_sender + " is not in " + members + " ! Telling it to leave group");
+                        log.debug(hb_sender + " is not in " + members + " ! Shunning it");
                     shun_msg=new Message(hb_sender, null, null);
                     shun_msg.putHeader(getName(), new FdHeader(FdHeader.NOT_MEMBER));
                     passDown(new Event(Event.MSG, shun_msg));
