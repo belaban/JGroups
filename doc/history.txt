@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.24 2003/12/19 00:38:33 belaban Exp $
+Revision: $Id: history.txt,v 1.25 2003/12/22 17:15:10 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java JGroups.Version')]
 
@@ -27,6 +27,9 @@ romuald     = Romuald du Song
 
 Version 2.2.1
 -------------
+
+- Replaced HostInfo with IpAddress in PING/TCPPING
+  (bela Dec 22 2003)
 
 - Added get_interfaces script to 'bin' directory: discovery of all network interfaces on a box.
   Needs 1.4 to work
