@@ -1,4 +1,4 @@
-// $Id: ConnectionTableTest1_4.java,v 1.3 2004/03/30 06:47:34 belaban Exp $
+// $Id: ConnectionTableTest1_4.java,v 1.4 2004/07/05 06:10:43 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -19,7 +19,7 @@ public class ConnectionTableTest1_4 implements ConnectionTable1_4.Receiver, Conn
 
     public void receive(Message m) {
         String s=(String)m.getObject();
-        System.out.println("<-- " + s + " (from " + m.getSrc() + ")");
+        System.out.println("<-- " + s + " (from " + m.getSrc() + ')');
     }
 
     public void connectionOpened(Address peer_addr) {
@@ -80,23 +80,23 @@ public class ConnectionTableTest1_4 implements ConnectionTable1_4.Receiver, Conn
 
         for(int i=0; i < args.length; i++) {
             tmp=args[i];
-            if(tmp.equals("-local_port")) {
+            if("-local_port".equals(tmp)) {
                 local_port=Integer.parseInt(args[++i]);
                 continue;
             }
-            if(tmp.equals("-remote_host")) {
+            if("-remote_host".equals(tmp)) {
                 host=args[++i];
                 continue;
             }
-            if(tmp.equals("-remote_port")) {
+            if("-remote_port".equals(tmp)) {
                 port=Integer.parseInt(args[++i]);
                 continue;
             }
-            if(tmp.equals("-reaper_interval")) {
+            if("-reaper_interval".equals(tmp)) {
                 reaper_interval=Long.parseLong(args[++i]);
                 continue;
             }
-            if(tmp.equals("-conn_expire_time")) {
+            if("-conn_expire_time".equals(tmp)) {
                 conn_expire_time=Long.parseLong(args[++i]);
                 continue;
             }

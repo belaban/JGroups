@@ -1,4 +1,4 @@
-// $Id: PerfTest.java,v 1.4 2004/03/30 06:47:34 belaban Exp $
+// $Id: PerfTest.java,v 1.5 2004/07/05 06:10:45 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -161,21 +161,21 @@ public class PerfTest implements MessageListener, MembershipListener{
         total_time=stop_time - start_time;
 
         StringBuffer sb=new StringBuffer();
-        sb.append("total number of messages sent by me: ").append(sent_msgs).append("\n");
-        sb.append("total number of messages received: ").append(num_msgs).append("\n");
-        sb.append("total number of senders: ").append(num_senders).append("\n");
+        sb.append("total number of messages sent by me: ").append(sent_msgs).append('\n');
+        sb.append("total number of messages received: ").append(num_msgs).append('\n');
+        sb.append("total number of senders: ").append(num_senders).append('\n');
         sb.append("total time: ").append(total_time).append(" ms\n");
-        sb.append("msgs/sec: ").append((double)num_msgs / (total_time/1000.0)).append("\n");
-        sb.append("throughput (kb/sec): ").append((num_msgs * msg_size/1000.0) / (total_time / 1000.0)).append("\n");
+        sb.append("msgs/sec: ").append((double)num_msgs / (total_time/1000.0)).append('\n');
+        sb.append("throughput (kb/sec): ").append((num_msgs * msg_size/1000.0) / (total_time / 1000.0)).append('\n');
         System.out.println(sb.toString());
     }
 
 
     private void printParams() {
-        System.out.println("num_bursts: " + num_bursts + "\n" +
-                           "num_msgs_per_burst: " + num_msgs_per_burst + "\n" +
-                           "msg_size: " + msg_size + "\n" +
-                           "sleep_time: " + sleep_time + "\n" +
+        System.out.println("num_bursts: " + num_bursts + '\n' +
+                           "num_msgs_per_burst: " + num_msgs_per_burst + '\n' +
+                           "msg_size: " + msg_size + '\n' +
+                           "sleep_time: " + sleep_time + '\n' +
                            "sender: " + sender);
     }
 
@@ -183,7 +183,7 @@ public class PerfTest implements MessageListener, MembershipListener{
         for(Iterator it=data.entrySet().iterator(); it.hasNext();) {
             Map.Entry entry=(Map.Entry)it.next();
             System.out.println("stats for " + entry.getKey() + "");
-            System.out.println(((Entry)entry.getValue()).printStats() + "\n");
+            System.out.println(((Entry)entry.getValue()).printStats() + '\n');
         }
     }
 
@@ -272,7 +272,7 @@ public class PerfTest implements MessageListener, MembershipListener{
                 else {
                     entry.add(hdr.seqno);
                     if((hdr.seqno) % 100 == 0)
-                        System.out.println("-- received " + sender + ":" + hdr.seqno);
+                        System.out.println("-- received " + sender + ':' + hdr.seqno);
                     if(entry.getNumReceived() >= num_bursts * num_msgs_per_burst) {
                         if(entry.done())
                             System.out.println("*--* " + sender + " DONE");
@@ -341,28 +341,28 @@ public class PerfTest implements MessageListener, MembershipListener{
 
 
         for(int i=0; i < args.length; i++) {
-            if(args[i].equals("-props")) {
+            if("-props".equals(args[i])) {
                 props=args[++i];
                 continue;
             }
-            if(args[i].equals("-num_bursts")) {
+            if("-num_bursts".equals(args[i])) {
                 num_bursts=Integer.parseInt(args[++i]);
                 continue;
             }
-            if(args[i].equals("-num_msgs_per_burst")) {
+            if("-num_msgs_per_burst".equals(args[i])) {
                 num_msgs_per_burst=Integer.parseInt(args[++i]);
                 continue;
             }
-            if(args[i].equals("-sleep_time")) {
+            if("-sleep_time".equals(args[i])) {
                 sleep_time=Long.parseLong(args[++i]);
                 continue;
             }
-            if(args[i].equals("-msg_size")) {
+            if("-msg_size".equals(args[i])) {
                 msg_size=Integer.parseInt(args[++i]);
                 continue;
             }
-            if(args[i].equals("-sender")) {
-                sender=new Boolean(args[++i]).booleanValue();
+            if("-sender".equals(args[i])) {
+                sender=Boolean.valueOf(args[++i]).booleanValue();
                 continue;
             }
             help();
@@ -412,7 +412,7 @@ public class PerfTest implements MessageListener, MembershipListener{
         public String toString() {
             StringBuffer sb=new StringBuffer();
             switch(type) {
-                case DATA: sb.append("DATA (seqno=").append(seqno).append(")"); break;
+                case DATA: sb.append("DATA (seqno=").append(seqno).append(')'); break;
                 case START: sb.append("START"); break;
                 case CLEAR: sb.append("CLEAR"); break;
                 default: sb.append("<n/a>"); break;
@@ -482,11 +482,11 @@ public class PerfTest implements MessageListener, MembershipListener{
 
         String printStats() {
             StringBuffer sb=new StringBuffer();
-            sb.append("done=").append(done()).append("\n");
-            sb.append("number of messages received: ").append(getRealReceived()).append("\n");
+            sb.append("done=").append(done()).append('\n');
+            sb.append("number of messages received: ").append(getRealReceived()).append('\n');
             sb.append("total time: ").append(stop-start).append(" ms\n");
-            sb.append("msgs/sec: ").append((double)getRealReceived() / ((stop-start)/1000.0)).append("\n");
-            sb.append("throughput (kb/sec): ").append((getRealReceived() * msg_size/1000.0) / ((stop-start) / 1000.0)).append("\n");
+            sb.append("msgs/sec: ").append((double)getRealReceived() / ((stop-start)/1000.0)).append('\n');
+            sb.append("throughput (kb/sec): ").append((getRealReceived() * msg_size/1000.0) / ((stop-start) / 1000.0)).append('\n');
             return sb.toString();
         }
     }

@@ -253,10 +253,10 @@ public class PartitionerTest extends JFrame implements Runnable {
                 tmp=msg.getObject();
                 if(tmp instanceof String) {
                     payload=(String)tmp;
-                    if(payload.equals("stop")) {
+                    if("stop".equals(payload)) {
                         running=false;
                     }
-                    output.append(":" + payload + "\n");
+                    output.append(':' + payload + '\n');
                 }
                 else
                     output.append("Received not a String\n");

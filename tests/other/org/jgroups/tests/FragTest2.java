@@ -1,4 +1,4 @@
-// $Id: FragTest2.java,v 1.3 2004/03/30 06:47:34 belaban Exp $
+// $Id: FragTest2.java,v 1.4 2004/07/05 06:10:43 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -124,31 +124,31 @@ public class FragTest2 {
 	int  frag_size=20000;
 
 	for(int i=0; i < args.length; i++) {
-	    if(args[i].equals("-help")) {
+	    if("-help".equals(args[i])) {
 		usage();
 		return;
 	    }
-	    if(args[i].equals("-sender")) {
+	    if("-sender".equals(args[i])) {
 		default_mode=1;
 		continue;
 	    }
-	    if(args[i].equals("-size")) {
+	    if("-size".equals(args[i])) {
 		MSG_SIZE=Integer.parseInt(args[++i]);
 		continue;
 	    }
-	    if(args[i].equals("-num_msgs")) {
+	    if("-num_msgs".equals(args[i])) {
 		num_msgs=Integer.parseInt(args[++i]);
 		continue;
 	    }
-	    if(args[i].equals("-frag_size")) {
+	    if("-frag_size".equals(args[i])) {
 		frag_size=Integer.parseInt(args[++i]);
 		continue;
 	    }
-	    if(args[i].equals("-timeout")) {
+	    if("-timeout".equals(args[i])) {
 		timeout=Long.parseLong(args[++i]);
 		continue;
 	    }
-	    if(args[i].equals("-char")) {
+	    if("-char".equals(args[i])) {
 		defaultChar=args[++i].charAt(0);
 		continue;
 	    }

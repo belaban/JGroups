@@ -1,4 +1,4 @@
-// $Id: McastReceiverTest1_4.java,v 1.2 2004/03/30 06:47:34 belaban Exp $
+// $Id: McastReceiverTest1_4.java,v 1.3 2004/07/05 06:10:44 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -19,7 +19,7 @@ import java.util.Enumeration;
    This class compiles and runs only under JDK 1.4 or higher
    @see McastSenderTest
    @author Bela Ban
-   @version $Revision: 1.2 $
+   @version $Revision: 1.3 $
  */
 public class McastReceiverTest1_4 {
 
@@ -32,23 +32,23 @@ public class McastReceiverTest1_4 {
 	try {
 	    for(int i=0; i < args.length; i++) {
 		tmp=args[i];
-		if(tmp.equals("-help")) {
+		if("-help".equals(tmp)) {
 		    help();
 		    return;
 		}
-		if(tmp.equals("-bind_addr")) {
+		if("-bind_addr".equals(tmp)) {
 		    bind_addr=InetAddress.getByName(args[++i]);
 		    continue;
 		}
-		if(tmp.equals("-mcast_addr")) {
+		if("-mcast_addr".equals(tmp)) {
 		    mcast_addr=InetAddress.getByName(args[++i]);
 		    continue;
 		}
-		if(tmp.equals("-port")) {
+		if("-port".equals(tmp)) {
 		    port=Integer.parseInt(args[++i]);
 		    continue;
 		}
-		if(tmp.equals("-use_all_interfaces")) {
+		if("-use_all_interfaces".equals(tmp)) {
 		    use_all_interfaces=true;
 		    continue;
 		}
@@ -126,7 +126,7 @@ public class McastReceiverTest1_4 {
 	    if(bind_interface != null)
 		sock.setInterface(bind_interface);
 	    sock.joinGroup(mcast_addr);	    
-	    System.out.println("Socket=" + sock.getLocalAddress() + ":" + sock.getLocalPort() + ", bind interface=" +
+	    System.out.println("Socket=" + sock.getLocalAddress() + ':' + sock.getLocalPort() + ", bind interface=" +
 			       sock.getInterface());
 	}
 	
@@ -139,7 +139,7 @@ public class McastReceiverTest1_4 {
 		    sock.receive(packet);
 		    recv_buf=packet.getData();
 		    System.out.println(new String(recv_buf) + " [sender=" + packet.getAddress().getHostAddress() +
-				       ":" + packet.getPort() + "]");
+                               ':' + packet.getPort() + ']');
 		}
 		catch(Exception ex) {
 		    System.err.println("Receiver terminated: " + ex);

@@ -1,4 +1,4 @@
-// $Id: UnicastTest.java,v 1.2 2004/03/30 06:47:34 belaban Exp $
+// $Id: UnicastTest.java,v 1.3 2004/07/05 06:10:46 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -223,7 +223,7 @@ public class UnicastTest implements Runnable {
     }
     
     void printView() {
-	System.out.println("\n-- view: " + channel.getView() + "\n");
+	System.out.println("\n-- view: " + channel.getView() + '\n');
 	try {
 	    System.in.skip(System.in.available());
 	}
@@ -301,27 +301,27 @@ public class UnicastTest implements Runnable {
 	String  loopback_props="LOOPBACK:" + regular_props;
 
 	for(int i=0; i < args.length; i++) {
-	    if(args[i].equals("-help")) {
+	    if("-help".equals(args[i])) {
 		help();
 		return;
 	    }
-	    if(args[i].equals("-props")) {
+	    if("-props".equals(args[i])) {
 		props=args[++i];
 		continue;
 	    }
-	    if(args[i].equals("-sleep")) {
+	    if("-sleep".equals(args[i])) {
 		sleep_time=Long.parseLong(args[++i]);
 		continue;
 	    }
-	    if(args[i].equals("-loopback")) {
+	    if("-loopback".equals(args[i])) {
 		props=loopback_props;
 		continue;
 	    }
-	    if(args[i].equals("-exit_on_end")) {
+	    if("-exit_on_end".equals(args[i])) {
 		exit_on_end=true;
 		continue;
 	    }
-	    if(args[i].equals("-busy_sleep")) {
+	    if("-busy_sleep".equals(args[i])) {
 		busy_sleep=true;
 		continue;
 	    }

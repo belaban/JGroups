@@ -1,4 +1,4 @@
-// $Id: MessageDispatcherTest.java,v 1.8 2004/03/30 06:47:34 belaban Exp $
+// $Id: MessageDispatcherTest.java,v 1.9 2004/07/05 06:10:44 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -73,11 +73,11 @@ public class MessageDispatcherTest implements RequestHandler {
 
         public void run() {
             for(int i=0; i < 10; i++) {
-                System.out.println("[" + getName() + "] casting message #" +i);
+                System.out.println('[' + getName() + "] casting message #" +i);
                 rsp_list=disp.castMessage(null,
-                        new Message(null, null, new String("[" + getName() + "] number #" +i)),
+                        new Message(null, null, '[' + getName() + "] number #" + i),
                         GroupRequest.GET_ALL, 0);
-                System.out.println("[" + getName() + "] responses:\n" + rsp_list);
+                System.out.println('[' + getName() + "] responses:\n" + rsp_list);
             }
         }
     }
@@ -86,7 +86,7 @@ public class MessageDispatcherTest implements RequestHandler {
     public Object handle(Message msg) {
         System.out.println("handle(): " + msg.getObject());
         Util.sleepRandom(5000);
-        return new String("Success !");
+        return "Success !";
     }
 
 

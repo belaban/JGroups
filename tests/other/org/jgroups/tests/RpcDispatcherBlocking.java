@@ -1,4 +1,4 @@
-// $Id: RpcDispatcherBlocking.java,v 1.3 2004/07/03 22:42:58 belaban Exp $
+// $Id: RpcDispatcherBlocking.java,v 1.4 2004/07/05 06:10:45 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -104,11 +104,11 @@ public class RpcDispatcherBlocking implements MembershipListener {
         String props=null;
 
         for(int i=0; i < args.length; i++) {
-            if(args[i].equals("-props")) {
+            if("-props".equals(args[i])) {
                 props=args[++i];
                 continue;
             }
-            if(args[i].equals("-timeout")) {
+            if("-timeout".equals(args[i])) {
                 timeout=Long.parseLong(args[++i]);
                 continue;
             }

@@ -1,4 +1,4 @@
-// $Id: LargeState.java,v 1.7 2004/04/22 23:49:58 belaban Exp $
+// $Id: LargeState.java,v 1.8 2004/07/05 06:10:44 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -104,7 +104,7 @@ public class LargeState {
     byte[] createLargeState(long size) {
         StringBuffer ret=new StringBuffer();
         for(int i=0; i < size; i++)
-            ret.append(".");
+            ret.append('.');
         return ret.toString().getBytes();
     }
 
@@ -131,19 +131,19 @@ public class LargeState {
 
 
         for(int i=0; i < args.length; i++) {
-            if(args[i].equals("-help")) {
+            if("-help".equals(args[i])) {
                 help();
                 return;
             }
-            if(args[i].equals("-provider")) {
+            if("-provider".equals(args[i])) {
                 provider=true;
                 continue;
             }
-            if(args[i].equals("-size")) {
-                size=new Long(args[++i]).longValue();
+            if("-size".equals(args[i])) {
+                size=Long.parseLong(args[++i]);
                 continue;
             }
-            if(args[i].equals("-props")) {
+            if("-props".equals(args[i])) {
                 props=args[++i];
                 continue;
             }

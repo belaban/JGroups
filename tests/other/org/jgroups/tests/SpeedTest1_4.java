@@ -1,6 +1,6 @@
 package org.jgroups.tests;
 
-// $Id: SpeedTest1_4.java,v 1.5 2004/03/30 06:47:34 belaban Exp $
+// $Id: SpeedTest1_4.java,v 1.6 2004/07/05 06:10:46 belaban Exp $
 
 
 import org.jgroups.Channel;
@@ -89,46 +89,46 @@ public class SpeedTest1_4 {
 
 
         for(int i=0; i < args.length; i++) {
-            if(args[i].equals("-help")) {
+            if("-help".equals(args[i])) {
                 help();
                 return;
             }
-            if(args[i].equals("-jg")) {
+            if("-jg".equals(args[i])) {
                 jg=true;
                 continue;
             }
-            if(args[i].equals("-loopback")) {
+            if("-loopback".equals(args[i])) {
                 loopback=true;
                 props=loopback_props;
                 continue;
             }
-            if(args[i].equals("-props")) {
+            if("-props".equals(args[i])) {
                 props=args[++i];
                 continue;
             }
-            if(args[i].equals("-debug")) {
+            if("-debug".equals(args[i])) {
                 debug=true;
                 continue;
             }
-            if(args[i].equals("-cummulative")) {
+            if("-cummulative".equals(args[i])) {
                 cummulative=true;
                 continue;
             }
-            if(args[i].equals("-busy_sleep")) {
+            if("-busy_sleep".equals(args[i])) {
                 busy_sleep=true;
                 continue;
             }
-            if(args[i].equals("-yield")) {
+            if("-yield".equals(args[i])) {
                 yield=true;
                 num_yields++;
                 continue;
             }
-            if(args[i].equals("-sleep")) {
-                sleep_time=new Long(args[++i]).longValue();
+            if("-sleep".equals(args[i])) {
+                sleep_time=Long.parseLong(args[++i]);
                 continue;
             }
-            if(args[i].equals("-num_msgs")) {
-                num_msgs=new Integer(args[++i]).intValue();
+            if("-num_msgs".equals(args[i])) {
+                num_msgs=Integer.parseInt(args[++i]);
                 continue;
             }
             help();
@@ -143,7 +143,7 @@ public class SpeedTest1_4 {
                 "\nyield=" + yield +
                 "\nnum_yields=" + num_yields +
                 "\nnum_msgs = " + num_msgs +
-                "\n");
+                           '\n');
 
 
 

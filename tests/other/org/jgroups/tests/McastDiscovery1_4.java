@@ -1,4 +1,4 @@
-// $Id: McastDiscovery1_4.java,v 1.1 2003/09/09 01:24:13 belaban Exp $
+// $Id: McastDiscovery1_4.java,v 1.2 2004/07/05 06:10:44 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -17,7 +17,7 @@ import java.util.*;
  * After n responses or m milliseconds, the sender terminates and computes the network interfaces which should be used.
  * The network interface is the intersection of the interface variable of all ACKs received.
  * @author Bela Ban July 26 2002
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.2 $
  */
 public class McastDiscovery1_4 {
     int ttl = 32;
@@ -137,7 +137,7 @@ public class McastDiscovery1_4 {
         }
 
         if (map.size() > 0)
-            System.out.println("\n-- Valid interfaces are " + map.keySet() + "\n");
+            System.out.println("\n-- Valid interfaces are " + map.keySet() + '\n');
         else {
             System.out.println("\nNo valid interfaces found, listing interfaces by number of responses/interface:\n" +
                     "(it is best to use the interface with the most responses)");
@@ -313,23 +313,23 @@ public class McastDiscovery1_4 {
 
 
         for (int i = 0; i < args.length; i++) {
-            if (args[i].equals("-help")) {
+            if ("-help".equals(args[i])) {
                 help();
                 return;
             }
-            if (args[i].equals("-mcast_addr")) {
+            if ("-mcast_addr".equals(args[i])) {
                 mcast_addr = args[++i];
                 continue;
             }
-            if (args[i].equals("-mcast_port")) {
+            if ("-mcast_port".equals(args[i])) {
                 mcast_port = Integer.parseInt(args[++i]);
                 continue;
             }
-            if (args[i].equals("-interval")) {
+            if ("-interval".equals(args[i])) {
                 interval = Long.parseLong(args[++i]);
                 continue;
             }
-            if (args[i].equals("-ttl")) {
+            if ("-ttl".equals(args[i])) {
                 ttl = Integer.parseInt(args[++i]);
                 continue;
             }
@@ -367,7 +367,7 @@ class DiscoveryRequest extends DiscoveryPacket {
 
 
     public String toString() {
-        return "DiscoveryRequest [sender_addr=" + sender_addr + "]";
+        return "DiscoveryRequest [sender_addr=" + sender_addr + ']';
     }
 
 }
@@ -385,7 +385,7 @@ class DiscoveryResponse extends DiscoveryPacket {
 
     public String toString() {
         return "DiscoveryResponse [discovery_responder=" + discovery_responder +
-                ", interface_used=" + interface_used + "]";
+                ", interface_used=" + interface_used + ']';
     }
 }
 

@@ -1,4 +1,4 @@
-// $Id: DeadlockTest.java,v 1.4 2004/05/15 00:18:32 belaban Exp $
+// $Id: DeadlockTest.java,v 1.5 2004/07/05 06:10:43 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -94,6 +94,6 @@ public class DeadlockTest {
 		System.out.println("DeadlockTest <true|false (use_deadlock_detection)>");
 		return;
 	    }
-	    new DeadlockTest(new Boolean(args[0]).booleanValue());
+	    new DeadlockTest(Boolean.valueOf(args[0]).booleanValue());
 	}
 }

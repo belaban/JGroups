@@ -31,7 +31,7 @@ public class HashtableTest {
 	public void entrySet(Object key, Object value) {
 	    tmp=((Integer)key).intValue();
 	    if(tmp % 100 == 0)
-		System.out.println("** entrySet(" + key + ")");
+		System.out.println("** entrySet(" + key + ')');
 	    if(tmp >= num_items) {
 		stop=System.currentTimeMillis();
 		System.out.println(num_items + " elements took " + 
@@ -44,7 +44,7 @@ public class HashtableTest {
 	}
 
 	public void viewChange(Vector new_mbrs, Vector old_mbrs) {
-	    System.out.println("** viewChange(" + new_mbrs + ", " + old_mbrs + ")");
+	    System.out.println("** viewChange(" + new_mbrs + ", " + old_mbrs + ')');
 	}
 
         public void contentsSet(Map m) {
@@ -125,23 +125,23 @@ public class HashtableTest {
 	
 
 	for(i=0; i < args.length; i++) {
-	    if(args[i].equals("-help")) {
+	    if("-help".equals(args[i])) {
 		help();
 		return;
 	    }
-	    if(args[i].equals("-use_rht")) {
+	    if("-use_rht".equals(args[i])) {
 		use_replicated_hashtable=true;
 		continue;
 	    }
-	    if(args[i].equals("-props")) {
+	    if("-props".equals(args[i])) {
 		props=args[++i];
 		continue;
 	    }
-	    if(args[i].equals("-debug")) {
+	    if("-debug".equals(args[i])) {
 		debug=true;
 		continue;
 	    }
-	    if(args[i].equals("-cummulative")) {
+	    if("-cummulative".equals(args[i])) {
 		cummulative=true;
 		continue;
 	    }

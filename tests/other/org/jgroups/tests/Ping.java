@@ -1,4 +1,4 @@
-// $Id: Ping.java,v 1.2 2004/03/30 06:47:34 belaban Exp $
+// $Id: Ping.java,v 1.3 2004/07/05 06:10:45 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -116,7 +116,7 @@ public class Ping implements UpHandler {
             key=e.nextElement();
             val=(Vector)votes.get(key);
             System.out.println("\n\nCoord: " + key);
-            System.out.println("Votes: " + val + "\n");
+            System.out.println("Votes: " + val + '\n');
         }
     }
 
@@ -131,23 +131,23 @@ public class Ping implements UpHandler {
                 "PING(timeout=5000;num_initial_members=30)";
 
         for(int i=0; i < args.length; i++) {
-            if(args[i].equals("-help")) {
+            if("-help".equals(args[i])) {
                 usage();
                 return;
             }
-            if(args[i].equals("-trace")) {
+            if("-trace".equals(args[i])) {
                 trace=true;
                 continue;
             }
-            if(args[i].equals("-printall")) {
+            if("-printall".equals(args[i])) {
                 printall=true;
                 continue;
             }
-            if(args[i].equals("-group")) {
+            if("-group".equals(args[i])) {
                 groupname=args[++i];
                 continue;
             }
-            if(args[i].equals("-props")) {
+            if("-props".equals(args[i])) {
                 props=args[++i];
                 continue;
             }

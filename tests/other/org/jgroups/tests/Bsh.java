@@ -1,4 +1,4 @@
-// $Id: Bsh.java,v 1.4 2004/03/30 06:47:34 belaban Exp $
+// $Id: Bsh.java,v 1.5 2004/07/05 06:10:43 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -30,22 +30,22 @@ public class Bsh {
         for(int i=0; i < args.length; i++) {
             String tmp=args[i];
 
-            if(tmp.equals("-props")) {
+            if("-props".equals(tmp)) {
                 props=args[++i];
                 continue;
             }
 
-            if(tmp.equals("-host")) {
+            if("-host".equals(tmp)) {
                 host=args[++i];
                 continue;
             }
 
-            if(tmp.equals("-port")) {
+            if("-port".equals(tmp)) {
                 port=Integer.parseInt(args[++i]);
                 continue;
             }
 
-            if(tmp.equals("-timeout")) {
+            if("-timeout".equals(tmp)) {
                 timeout=Long.parseLong(args[++i]);
                 continue;
             }

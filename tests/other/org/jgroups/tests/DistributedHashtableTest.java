@@ -1,4 +1,4 @@
-// $Id: DistributedHashtableTest.java,v 1.3 2004/03/30 06:47:34 belaban Exp $
+// $Id: DistributedHashtableTest.java,v 1.4 2004/07/05 06:10:43 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -83,7 +83,7 @@ public class DistributedHashtableTest implements Runnable {
             for(int i=0; i < num; i++) {
                 if(i % 100 == 0)
                     System.out.print(i + " ");
-                ht.put(local.toString() + "#" + i, new Integer(i));
+                ht.put(local.toString() + '#' + i, new Integer(i));
             }
             stop=System.currentTimeMillis();
             double num_per_sec=num / ((stop-start)/1000.0);
@@ -189,15 +189,15 @@ public class DistributedHashtableTest implements Runnable {
                 "pbcast.STATE_TRANSFER";
 
         for(int i=0; i < args.length; i++) {
-            if(args[i].equals("-help")) {
+            if("-help".equals(args[i])) {
                 help();
                 return;
             }
-            if(args[i].equals("-props")) {
+            if("-props".equals(args[i])) {
                 props=args[++i];
                 continue;
             }
-            if(args[i].equals("-timeout")) {
+            if("-timeout".equals(args[i])) {
                 timeout=Long.parseLong(args[++i]);
                 continue;
             }

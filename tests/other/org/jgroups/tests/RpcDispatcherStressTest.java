@@ -1,4 +1,4 @@
-// $Id: RpcDispatcherStressTest.java,v 1.4 2004/05/13 06:13:51 belaban Exp $
+// $Id: RpcDispatcherStressTest.java,v 1.5 2004/07/05 06:10:45 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -155,19 +155,19 @@ public class RpcDispatcherStressTest implements MembershipListener {
         
         try {
             for(int i=0; i < args.length; i++) {
-                if(args[i].equals("-num_threads")) {
+                if("-num_threads".equals(args[i])) {
                     num_threads=Integer.parseInt(args[++i]);
                     continue;
                 }
-                if(args[i].equals("-interval")) {
+                if("-interval".equals(args[i])) {
                     interval=Long.parseLong(args[++i]);
                     continue;
                 }
-                if(args[i].equals("-props")) {
+                if("-props".equals(args[i])) {
                     props=args[++i];
                     continue;
                 }
-                if(args[i].equals("-discard_local")) {
+                if("-discard_local".equals(args[i])) {
                     discard_local=true;
                     continue;
                 }

@@ -1,4 +1,4 @@
-// $Id: UpHandlerTest.java,v 1.2 2004/03/30 06:47:34 belaban Exp $
+// $Id: UpHandlerTest.java,v 1.3 2004/07/05 06:10:46 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -23,7 +23,7 @@ public class UpHandlerTest implements UpHandler {
 	channel.setUpHandler(this);
 	channel.connect("UpHandlerTestGroup");
 
-	channel.send(new Message(null, null, new String("Hello").getBytes()));
+	channel.send(new Message(null, null, "Hello".getBytes()));
 	Util.sleep(2000);
 	channel.close();
     }

@@ -1,4 +1,4 @@
-// $Id: UcastTest.java,v 1.1 2003/09/09 01:24:13 belaban Exp $
+// $Id: UcastTest.java,v 1.2 2004/07/05 06:10:46 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -12,7 +12,7 @@ import java.util.StringTokenizer;
 
 /**
    @author Bela Ban
-   @version $Revision: 1.1 $
+   @version $Revision: 1.2 $
  */
 public class UcastTest {
 
@@ -29,15 +29,15 @@ public class UcastTest {
 	
 	for(int i=0; i < args.length; i++) {
 	    val=args[i];
-	    if(val.equals("-help")) {
+	    if("-help".equals(val)) {
 		help();
 		return;
 	    }
-	    if(val.equals("-sender")) {
+	    if("-sender".equals(val)) {
 		receiver=false;
 		continue;
 	    }
-	    if(val.equals("-sender_addr")) {
+	    if("-sender_addr".equals(val)) {
 		try {
 		    sender_addr=InetAddress.getByName(args[++i]);
 		    sender_port=Integer.parseInt(args[++i]);
@@ -49,7 +49,7 @@ public class UcastTest {
 		    return;
 		}
 	    }
-	    if(val.equals("-receiver")) {
+	    if("-receiver".equals(val)) {
 		receiver=true;
 		try {
 		    receiver_addr=InetAddress.getByName(args[++i]);
@@ -69,7 +69,7 @@ public class UcastTest {
 	try {
 	    if(receiver) {
 		sock=new DatagramSocket(receiver_port, receiver_addr);
-		System.out.println("Socket=" + sock.getLocalAddress() + ":" + sock.getLocalPort());
+		System.out.println("Socket=" + sock.getLocalAddress() + ':' + sock.getLocalPort());
 		System.out.println("starting as receiver");
 		receiverLoop(sock);
 	    }
@@ -78,7 +78,7 @@ public class UcastTest {
 		    sock=new DatagramSocket(sender_port, sender_addr);
 		else
 		    sock=new DatagramSocket();
-		System.out.println("Socket=" + sock.getLocalAddress() + ":" + sock.getLocalPort());
+		System.out.println("Socket=" + sock.getLocalAddress() + ':' + sock.getLocalPort());
 		System.out.println("starting as sender");
 		senderLoop(sock);
 	    }
@@ -100,7 +100,7 @@ public class UcastTest {
 	    try {
 		sock.receive(packet);
 		System.out.println("Receive packet from " + packet.getAddress().getHostAddress() +
-				   ":" + packet.getPort() + ": " + new String(packet.getData()));
+                           ':' + packet.getPort() + ": " + new String(packet.getData()));
 
 		buf="ACK".getBytes();
 		packet=new DatagramPacket(buf, buf.length, packet.getAddress(), packet.getPort());
@@ -147,7 +147,7 @@ public class UcastTest {
 		sb=new StringBuffer();
 		while(tok.hasMoreTokens()) {
 		    tmp=tok.nextToken();
-		    sb.append(tmp + " ");
+		    sb.append(tmp + ' ');
 		}
 		buf=sb.toString();
 		System.out.println("sending " + buf);
@@ -181,7 +181,7 @@ public class UcastTest {
 		    packet=new DatagramPacket(buf, buf.length);
 		    sock.receive(packet);
 		    System.out.println("<< Received packet from " + 
-				       packet.getAddress().getHostAddress() + ":" +
+				       packet.getAddress().getHostAddress() + ':' +
 				       packet.getPort() + ": " + new String(packet.getData()));
 		}
 		catch(Exception e) {
