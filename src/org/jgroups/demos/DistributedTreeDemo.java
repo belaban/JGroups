@@ -1,4 +1,4 @@
-// $Id: DistributedTreeDemo.java,v 1.1 2003/09/09 01:24:09 belaban Exp $
+// $Id: DistributedTreeDemo.java,v 1.2 2004/03/01 16:04:52 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -201,7 +201,7 @@ public class DistributedTreeDemo extends Frame implements WindowListener,
         addNotify();
 	setSize(getInsets().left + getInsets().right + 485, 
 		getInsets().top + getInsets().bottom + 367);
-        setTitle("HANS - High Availability for NETSMART");
+        setTitle("DistributedTree");
         
         tree_model=new DefaultTreeModel(root);
         jtree=new JTree(tree_model);
