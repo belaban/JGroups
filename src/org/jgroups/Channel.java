@@ -1,4 +1,4 @@
-// $Id: Channel.java,v 1.4 2004/07/05 14:17:36 belaban Exp $
+// $Id: Channel.java,v 1.5 2004/07/23 02:47:08 belaban Exp $
 
 package org.jgroups;
 
@@ -56,7 +56,7 @@ public abstract class Channel implements Transport {
 
 
     /** Hidden from clients */
-    protected Channel() throws ChannelException {
+    protected Channel() {
     }
 
 
