@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.27 2005/02/18 08:16:34 belaban Exp $
+// $Id: Util.java,v 1.28 2005/03/24 12:34:37 belaban Exp $
 
 package org.jgroups.util;
 
@@ -1085,6 +1085,29 @@ public class Util {
         }
     }
 
+
+    public static int getJavaVersion() {
+        String version=System.getProperty("java.version");
+        int retval=0;
+        if(version != null) {
+            if(version.startsWith("1.2"))
+                return 12;
+            if(version.startsWith("1.3"))
+                return 13;
+            if(version.startsWith("1.4"))
+                return 14;
+            if(version.startsWith("1.5"))
+                return 15;
+            if(version.startsWith("5"))
+                return 15;
+            if(version.startsWith("1.6"))
+                return 16;
+            if(version.startsWith("6"))
+                return 16;
+        }
+        return retval;
+    }
+
     public static String memStats(boolean gc) {
         StringBuffer sb=new StringBuffer();
         Runtime rt=Runtime.getRuntime();
@@ -1145,6 +1168,7 @@ public class Util {
         System.out.println("Check for Linux:   " + checkForLinux());
         System.out.println("Check for Solaris: " + checkForSolaris());
         System.out.println("Check for Windows: " + checkForWindows());
+        System.out.println("version: " + getJavaVersion());
     }
 
 
