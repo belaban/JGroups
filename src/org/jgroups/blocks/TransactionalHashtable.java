@@ -1,4 +1,4 @@
-// $Id: TransactionalHashtable.java,v 1.5 2004/07/05 05:41:45 belaban Exp $
+// $Id: TransactionalHashtable.java,v 1.6 2004/08/21 10:07:03 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -45,6 +45,7 @@ import java.util.*;
  * </ol>
  * This class needs to have a state transfer protocol present in the protocol stack used (e.g. pbcast.STATE_TRANSFER).
  * @author Bela Ban Nov 2002
+ * @deprecated Succeeded by JBossCache project (www.jboss.org for information)
  */
 public class TransactionalHashtable extends HashMap implements ReplicationReceiver, MessageListener {
     protected ReplicationManager repl_mgr;
@@ -224,7 +225,7 @@ public class TransactionalHashtable extends HashMap implements ReplicationReceiv
      *                             take precedence over TimeoutExceptions, e.g. if we have both locking and timeout
      *                             exceptions, a LockingException will be thrown.
      */
-    public Object put(Object key, Object value, long sync_timeout, 
+    public Object put(Object key, Object value, long sync_timeout,
                       long lock_acquisition_timeout, long lock_lease_timeout,
                       boolean commit) throws LockingException, TimeoutException {
         Data    data;
