@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.10 2003/10/29 16:07:04 ovidiuf Exp $
+Revision: $Id: history.txt,v 1.11 2003/11/14 04:18:31 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java JGroups.Version')]
 
@@ -23,14 +23,21 @@ romuald     = Romuald du Song
 
 
 
-- GossipRouter can be managed as MBean under the JBoss JMX server.
-  To build a dist/jgroups-router.sar service archive, run build.sh jboss-service.
-  The router deploys as 'jgroups:service=GossipRouter' and it can be further
-  managed from http://<your_server>:8080/jmx-console 
-  (ovidiuf Oct 29 2003)
+
 
 Version 2.2.1
 -------------
+
+- Fixed JChannel._getState(): when the state transfer protocol is just underneath the Channel, and
+  is configured to use the caller's thread, then we always run into the state transfer timeout for first
+  member.
+  (bela Nov 13 2003)
+
+- GossipRouter can be managed as MBean under the JBoss JMX server.
+  To build a dist/jgroups-router.sar service archive, run build.sh jboss-service.
+  The router deploys as 'jgroups:service=GossipRouter' and it can be further
+  managed from http://<your_server>:8080/jmx-console
+  (ovidiuf Oct 29 2003)
 
 - Added compression protocol (COMPRESS) and example stack (compress.xml)
   (bela Oct 17 2003)

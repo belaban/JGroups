@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.2 2003/09/25 18:40:16 belaban Exp $
+// $Id: JChannel.java,v 1.3 2003/11/14 04:19:23 belaban Exp $
 
 package org.jgroups;
 
@@ -21,7 +21,7 @@ import java.util.Vector;
  * protocol stack
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.2 $
+ * @version $Revision: 1.3 $
  */
 public class JChannel extends Channel {
 
@@ -83,8 +83,12 @@ public class JChannel extends Channel {
     private boolean block_sending=false;  // block send()/down() if true (unlocked by UNBLOCK_SEND event)
     /*channel closed flag*/
     private boolean closed=false;      // close() has been called, channel is unusable
+
     /*the last state of the application-this is set by the up(Event) operation if the receive_get_states flag is true*/
     private Object state=null;
+
+    /** Indicates whether the state was retrieved correctly (even a null state if we are the first member) */
+    protected boolean state_received=false;
 
     /** True if a state transfer protocol is available, false otherwise */
     private boolean state_transfer_supported=false; // set by CONFIG event from STATE_TRANSFER protocol
@@ -819,6 +823,7 @@ public class JChannel extends Channel {
 
                 synchronized(get_state_mutex) {
                     state=evt.getArg();
+                    state_received=true;
                     get_state_mutex.notify();
                 }
                 break;
@@ -1010,7 +1015,7 @@ public class JChannel extends Channel {
     }
 
 
-       /**
+    /**
      * Receives the state from the group and modifies the JChannel.state object<br>
      * This method initializes the local state variable to null, and then sends the state
      * event down the stack. It waits for a GET_STATE_OK event to bounce back
@@ -1022,27 +1027,33 @@ public class JChannel extends Channel {
         checkClosed();
         checkNotConnected();
         if(!state_transfer_supported)
-            Trace.warn(
-                    "JChannel._getState()",
-                    "fetching state will fail as state transfer is not supported. "
-                    + "Add one of the STATE_TRANSFER protocols to your protocol specification");
+            Trace.warn("JChannel._getState()", "fetching state will fail as state transfer is not supported. "
+                       + "Add one of the STATE_TRANSFER protocols to your protocol specification");
         synchronized(get_state_mutex) {
             state=null;
+            state_received=false;
             down(evt);
-            try {
-                if(timeout <= 0)
-                    get_state_mutex.wait(); // waits until notified by GET_STATE_OK event
-                else
-                    get_state_mutex.wait(timeout); // waits until notified by GET_STATE_OK event or timeout msecs
+
+            // down() might run on *our* thread, so state_received might get changed to true, therefore the check !
+            if(!state_received) {
+                try {
+                    if(timeout <= 0)
+                        get_state_mutex.wait(); // waits until notified by GET_STATE_OK event
+                    else
+                        get_state_mutex.wait(timeout); // waits until notified by GET_STATE_OK event or timeout msecs
+                }
+                catch(Exception e) {
+                    ;
+                }
             }
-            catch(Exception e) {
-            }
+
             if(state != null) // 'state' set by GET_STATE_OK event
                 return true;
             else
                 return false;
         }
     }
+
 
     /**
      * Disconnects and closes the channel.
