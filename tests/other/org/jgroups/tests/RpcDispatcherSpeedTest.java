@@ -17,7 +17,7 @@ import java.lang.reflect.Method;
 /**
  * Interactive test for measuring group RPCs using different invocation techniques.
  * @author Bela Ban
- * @version $Revision: 1.4 $
+ * @version $Revision: 1.5 $
  */
 public class RpcDispatcherSpeedTest implements MembershipListener {
     Channel             channel;
@@ -95,7 +95,8 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
                     start_time=new Long(System.currentTimeMillis());
                     rsp_list=disp.callRemoteMethods(null,
                                                     "measure",
-                                                    start_time,
+                                                    new Object[] {start_time},
+                                                    new Class[]{long.class},
                                                     GroupRequest.GET_ALL, TIMEOUT);
                     total_time+=getAverage(rsp_list);
                     if(i % show == 0)
