@@ -1,4 +1,4 @@
-// $Id: JMS.java,v 1.1 2003/09/09 01:24:10 belaban Exp $ 
+// $Id: JMS.java,v 1.2 2004/01/08 15:51:57 belaban Exp $ 
 
 package org.jgroups.protocols;
 
@@ -98,7 +98,6 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
     private String group_addr;
     private Address local_addr;
     private Address mcast_addr;
-    private boolean disconnected;
 
     private ByteArrayOutputStream out_stream = new ByteArrayOutputStream(65535);
     
@@ -303,7 +302,6 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
                 break;
 
             case Event.DISCONNECT:
-                disconnected = true;
                 passUp(new Event(Event.DISCONNECT_OK));
                 break;
         }
@@ -312,7 +310,7 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
     /**
      * Called by the protocol above this. We check the event type, and if it is
      * message, we publish it in the topic, otherwise we let the 
-     * {@link handleDownEvent(Event)} take care of it.
+     * {@link #handleDownEvent(Event)} take care of it.
      * 
      * @param evt event to process.
      */
@@ -469,8 +467,6 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
     /**
      * Stops the work of the JMS protocol. This method closes JMS session and
      * connection and deregisters itself from the message notification.
-     * 
-     * @throws javax.jms.JMSException if something goes wrong with JMS.
      */
     public void stop() {
         if (Trace.trace)
@@ -591,7 +587,7 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
          * addresses of the same class. Also they both should be either 
          * multicast or unicast addresses.
          * 
-         * @return value compliant with the {@link Comparable.compareTo(Object)}
+         * @return value compliant with the {@link Comparable#compareTo(Object)}
          * specififaction.
          */
         public int compareTo(Object o) throws ClassCastException {
