@@ -1,4 +1,4 @@
-// $Id: VERIFY_SUSPECT.java,v 1.9 2004/10/07 14:25:55 belaban Exp $
+// $Id: VERIFY_SUSPECT.java,v 1.10 2004/10/08 13:26:37 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -222,21 +222,21 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
 
 
     public static class VerifyHeader extends Header implements Streamable {
-        static final int ARE_YOU_DEAD=1;  // 'from' is sender of verify msg
-        static final int I_AM_NOT_DEAD=2;  // 'from' is suspected member
+        static final short ARE_YOU_DEAD=1;  // 'from' is sender of verify msg
+        static final short I_AM_NOT_DEAD=2;  // 'from' is suspected member
 
-        int type=ARE_YOU_DEAD;
+        short type=ARE_YOU_DEAD;
         Address from=null;     // member who wants to verify that suspected_mbr is dead
 
 
         public VerifyHeader() {
         } // used for externalization
 
-        VerifyHeader(int type) {
+        VerifyHeader(short type) {
             this.type=type;
         }
 
-        VerifyHeader(int type, Address from) {
+        VerifyHeader(short type, Address from) {
             this(type);
             this.from=from;
         }
@@ -254,23 +254,23 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         }
 
         public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeInt(type);
+            out.writeShort(type);
             out.writeObject(from);
         }
 
 
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            type=in.readInt();
+            type=in.readShort();
             from=(Address)in.readObject();
         }
 
         public void writeTo(DataOutputStream out) throws IOException {
-            out.writeInt(type);
+            out.writeShort(type);
             Util.writeAddress(from, out);
         }
 
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
-            type=in.readInt();
+            type=in.readShort();
             from=Util.readAddress(in);
         }
 
