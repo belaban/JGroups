@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.49 2004/10/08 15:51:35 belaban Exp $
+// $Id: UDP.java,v 1.50 2004/10/08 16:06:26 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -214,6 +214,7 @@ public class UDP extends Protocol implements Runnable {
             try {
                 packet.setData(receive_buf, 0, receive_buf.length);
                 mcast_recv_sock.receive(packet);
+                // printPacket(packet);
                 len=packet.getLength();
                 data=packet.getData();
                 if(len == 1 && data[0] == 0) {
@@ -275,6 +276,12 @@ public class UDP extends Protocol implements Runnable {
         }
          if(log.isDebugEnabled()) log.debug("multicast thread terminated");
     }
+
+//    private void printPacket(DatagramPacket packet) {
+//        StringBuffer sb=new StringBuffer();
+//        sb.append(packet.getAddress()).append(":").append(packet.getPort());
+//        System.out.println("packet: " + sb.toString());
+//    }
 
     void handleDiagnosticProbe(InetAddress sender, int port) {
         try {
@@ -1379,6 +1386,7 @@ public class UDP extends Protocol implements Runnable {
                 try {
                     packet.setData(receive_buf, 0, receive_buf.length);
                     sock.receive(packet);
+                    // printPacket(packet);
                     len=packet.getLength();
                     data=packet.getData();
                     if(len == 1 && data[0] == 0) {
@@ -1389,9 +1397,10 @@ public class UDP extends Protocol implements Runnable {
                         log.trace("received (ucast) " + len + " bytes from " +
                                 packet.getAddress() + ':' + packet.getPort());
                     if(len > receive_buf.length) {
-                        if(log.isErrorEnabled()) log.error("size of the received packet (" + len + ") is bigger than " +
-                                                               "allocated buffer (" + receive_buf.length + "): will not be able to handle packet. " +
-                                                               "Use the FRAG protocol and make its frag_size lower than " + receive_buf.length);
+                        if(log.isErrorEnabled())
+                            log.error("size of the received packet (" + len + ") is bigger than allocated buffer (" +
+                                      receive_buf.length + "): will not be able to handle packet. " +
+                                      "Use the FRAG protocol and make its frag_size lower than " + receive_buf.length);
                     }
 
                     if(Version.compareTo(data) == false) {
