@@ -1,4 +1,4 @@
-// $Id: DistributedQueueConcurrencyTest.java,v 1.3 2003/11/21 15:47:47 rds13 Exp $
+// $Id: DistributedQueueConcurrencyTest.java,v 1.4 2003/11/24 16:37:13 rds13 Exp $
 
 package org.jgroups.blocks;
 
@@ -93,8 +93,11 @@ public class DistributedQueueConcurrencyTest extends TestCase implements ICounte
 
     public void tearDown() throws Exception
     {
+		logger.info("start tearDown()");
         queue1.stop();
+		logger.info("intermediate tearDown()");
         queue2.stop();
+		logger.info("end tearDown()");
 		Util.sleep(1000);
     }
 
@@ -127,7 +130,7 @@ public class DistributedQueueConcurrencyTest extends TestCase implements ICounte
         rTask1.start();
         rTask2.start();
 
-		Util.sleep(10000);
+		Util.sleep(6000);
 
         queue3 = new DistributedQueue("concurency", null, props, STATE_TRANSFER_TIMEOUT);
 
@@ -190,10 +193,10 @@ public class DistributedQueueConcurrencyTest extends TestCase implements ICounte
         rTask1.start();
         rTask2.start();
 
-        Util.sleep(10000);
+        Util.sleep(6000);
 
         queue3 = new DistributedQueue("concurency", null, props, STATE_TRANSFER_TIMEOUT);
-        DistributedQueuePutTask t3 = new DistributedQueuePutTask("Queue3", queue3, NUM_ITEMS, 10000);
+        DistributedQueuePutTask t3 = new DistributedQueuePutTask("Queue3", queue3, NUM_ITEMS, 6000);
         Thread rTask3 = new Thread(t3);
 
         rTask3.start();
@@ -249,7 +252,7 @@ public class DistributedQueueConcurrencyTest extends TestCase implements ICounte
 		{
 			queue = new DistributedQueue("crashme", null, props, STATE_TRANSFER_TIMEOUT);
 			// give some time for the channel to become a coordinator
-			Util.sleep(1000);
+			Util.sleep(500);
 			queues.add(queue);
 		}
 		
@@ -261,7 +264,7 @@ public class DistributedQueueConcurrencyTest extends TestCase implements ICounte
 			vTask.add(t);
 			Thread task = new Thread(t);
 			task.start();
-			Util.sleep(1000);
+			Util.sleep(500);
 		}
 
 
