@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.11 2004/09/23 16:29:41 belaban Exp $
+// $Id: GMS.java,v 1.12 2005/03/17 19:47:22 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -423,7 +423,8 @@ public class GMS extends RpcProtocol implements Runnable {
 
             coord=determineCoordinator();
             if(coord != null && coord.equals(local_addr)) {
-                becomeCoordinator();
+               if (! haveCoordinatorRole())   // this avoids deadlock on coordinator - when suspect/join occurs simultaneously
+                   becomeCoordinator();
             }
             else {
                 if(haveCoordinatorRole() && !local_addr.equals(coord))
