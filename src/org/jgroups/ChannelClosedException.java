@@ -1,4 +1,4 @@
-// $Id: ChannelClosedException.java,v 1.1 2003/09/09 01:24:07 belaban Exp $
+// $Id: ChannelClosedException.java,v 1.2 2003/11/27 21:36:46 belaban Exp $
 
 package org.jgroups;
 
@@ -14,6 +14,6 @@ public class ChannelClosedException extends ChannelException {
     }
 
     public String toString() {
-        return "ChannelClosed";
+        return "ChannelClosedException";
     }
 }
