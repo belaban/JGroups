@@ -1,16 +1,20 @@
-// $Id: PING.java,v 1.2 2003/11/21 19:45:51 belaban Exp $
+// $Id: PING.java,v 1.3 2003/12/11 23:59:43 belaban Exp $
 
 package org.jgroups.protocols;
 
-import java.net.InetAddress;
-import java.util.Properties;
-import java.util.Vector;
-import java.util.Enumeration;
-
 import org.jgroups.*;
-import org.jgroups.util.*;
-import org.jgroups.stack.*;
 import org.jgroups.log.Trace;
+import org.jgroups.stack.GossipClient;
+import org.jgroups.stack.IpAddress;
+import org.jgroups.stack.Protocol;
+import org.jgroups.util.List;
+import org.jgroups.util.Util;
+
+import java.net.InetAddress;
+import java.util.Enumeration;
+import java.util.Properties;
+import java.util.StringTokenizer;
+import java.util.Vector;
 
 
 /**
@@ -39,6 +43,8 @@ public class PING extends Protocol {
     long gossip_refresh=20000; // time in msecs after which the entry in GossipServer will be refreshed
     GossipClient client;
     boolean is_server=false;
+    int       port_range=5;        // number of ports to be probed for initial membership
+    List initial_hosts=null;  // hosts to be contacted for the initial membership
 
 
     public String getName() {
@@ -59,6 +65,7 @@ public class PING extends Protocol {
      * property: num_initial_members - the minimum number of initial members for a FIND_INITAL_MBRS, default is 2
      * property: gossip_host - if you are using GOSSIP then this defines the host of the GossipServer, default is null
      * property: gossip_port - if you are using GOSSIP then this defines the port of the GossipServer, default is null
+     * 
      * @param props - a property set containing only PING properties
      * @return returns true if all properties were parsed properly
      *         returns false if there are unrecnogized properties in the property set
@@ -108,15 +115,27 @@ public class PING extends Protocol {
             }
         }
 
+        str=props.getProperty("initial_hosts");
+        if(str != null) {
+            props.remove("initial_hosts");
+            initial_hosts=createInitialHosts(str);
+        }
+
+        str=props.getProperty("port_range");           // if member cannot be contacted on base port,
+        if(str != null) {                              // how many times can we increment the port
+            port_range=new Integer(str).intValue();
+            props.remove("port_range");
+        }
+
         if(props.size() > 0) {
-	    StringBuffer sb = new StringBuffer();
-	    for(Enumeration e = props.propertyNames(); e.hasMoreElements(); ) {
-		sb.append(e.nextElement().toString());
-		if (e.hasMoreElements()) {
-		    sb.append(", ");
-		}
-	    }
-	    Trace.error("PING.setProperties()", "The following properties are not recognized: "+sb.toString());
+            StringBuffer sb=new StringBuffer();
+            for(Enumeration e=props.propertyNames(); e.hasMoreElements();) {
+                sb.append(e.nextElement().toString());
+                if(e.hasMoreElements()) {
+                    sb.append(", ");
+                }
+            }
+            Trace.error("PING.setProperties()", "The following properties are not recognized: " + sb.toString());
             return false;
         }
         return true;
@@ -141,16 +160,17 @@ public class PING extends Protocol {
      * Finally the event is either a) discarded, or b) an event is sent down
      * the stack using <code>PassDown</code> or c) the event (or another event) is sent up
      * the stack using <code>PassUp</code>.
-     *
+     * <p/>
      * For the PING protocol, the Up operation does the following things.
      * 1. If the event is a Event.MSG then PING will inspect the message header.
-     *    If the header is null, PING simply passes up the event
-     *    If the header is PingHeader.GET_MBRS_REQ then the PING protocol
-     *    will PassDown a PingRequest message
-     *    If the header is PingHeader.GET_MBRS_RSP we will add the message to the initial members
-     *    vector and wake up any waiting threads.
+     * If the header is null, PING simply passes up the event
+     * If the header is PingHeader.GET_MBRS_REQ then the PING protocol
+     * will PassDown a PingRequest message
+     * If the header is PingHeader.GET_MBRS_RSP we will add the message to the initial members
+     * vector and wake up any waiting threads.
      * 2. If the event is Event.SET_LOCAL_ADDR we will simple set the local address of this protocol
      * 3. For all other messages we simple pass it up to the protocol above
+     * 
      * @param evt - the event that has been sent from the layer below
      */
 
@@ -181,7 +201,7 @@ public class PING extends Protocol {
                             return;
                         }
                         synchronized(members) {
-                            coord=members.size() > 0 ? (Address)members.firstElement() : local_addr;
+                            coord=members.size() > 0? (Address)members.firstElement() : local_addr;
                         }
 
                         PingRsp ping_rsp=new PingRsp(local_addr, coord);
@@ -247,6 +267,8 @@ public class PING extends Protocol {
         switch(evt.getType()) {
 
             case Event.FIND_INITIAL_MBRS:   // sent by GMS layer, pass up a GET_MBRS_OK event
+                initial_members.removeAllElements();
+
                 if(client != null) {
                     gossip_rsps=client.getMembers(group_addr);
                     if(gossip_rsps != null && gossip_rsps.size() > 0) {
@@ -261,15 +283,35 @@ public class PING extends Protocol {
                     }
                     Util.sleep(500);
                 }
+                else {
+                    if(initial_hosts != null && initial_hosts.size() > 0) {
+                        HostInfo h;
+                        msg=new Message(null, null, null);
+                        msg.putHeader(getName(), new PingHeader(PingHeader.GET_MBRS_REQ, null));
 
-                initial_members.removeAllElements();
+                        for(Enumeration en=initial_hosts.elements(); en.hasMoreElements();) {
+                            h=(HostInfo) en.nextElement();
 
-                // 1. Mcast GET_MBRS_REQ message
-                if(Trace.trace) Trace.info("PING.down()", "FIND_INITIAL_MBRS");
-                hdr=new PingHeader(PingHeader.GET_MBRS_REQ, null);
-                msg=new Message(null, null, null);  // mcast msg
-                msg.putHeader(getName(), hdr);
-                passDown(new Event(Event.MSG, msg));
+                            for(int i=h.port; i < h.port + port_range; i++) { // send to next ports too
+                                msg.setDest(new IpAddress(h.host, i));
+                                if(Trace.trace)
+                                    Trace.info("PING.down()", "[FIND_INITIAL_MBRS] sending PING request to " +
+                                            msg.getDest());
+                                passDown(new Event(Event.MSG, msg.copy()));
+                            }
+                        }
+                    }
+                    else {
+
+                        // 1. Mcast GET_MBRS_REQ message
+                        if(Trace.trace) Trace.info("PING.down()", "FIND_INITIAL_MBRS");
+                        hdr=new PingHeader(PingHeader.GET_MBRS_REQ, null);
+                        msg=new Message(null, null, null);  // mcast msg
+                        msg.putHeader(getName(), hdr);
+                        passDown(new Event(Event.MSG, msg));
+                    }
+                }
+
 
 
                 // 2. Wait 'timeout' ms or until 'num_initial_members' have been retrieved
@@ -281,7 +323,7 @@ public class PING extends Protocol {
 
                         if(Trace.debug) // +++ remove
                             Trace.info("PING.down()", "waiting for initial members: time_to_wait=" + time_to_wait +
-                                                      ", got " + initial_members.size() + " rsps");
+                                    ", got " + initial_members.size() + " rsps");
 
                         try {
                             initial_members.wait(time_to_wait);
@@ -351,6 +393,61 @@ public class PING extends Protocol {
         id=view_id.getId();
 
         return new View(coord, id, mbrs);
+    }
+
+    /**
+     * Input is "daddy[8880],sindhu[8880],camille[5555]. Return List of HostInfos
+     */
+    private List createInitialHosts(String l) {
+        List tmp=new List();
+        HostInfo h;
+        StringTokenizer tok=new StringTokenizer(l, ",");
+        String t;
+
+        while(tok.hasMoreTokens()) {
+            try {
+                t=tok.nextToken();
+                h=new HostInfo();
+                h.host=t.substring(0, t.indexOf('['));
+                h.port=new Integer(t.substring(t.indexOf('[') + 1, t.indexOf(']'))).intValue();
+                tmp.add(h);
+            }
+            catch(NumberFormatException e) {
+                Trace.error("TCPPING.createInitialHosts()", "exeption is " + e);
+            }
+        }
+
+        return tmp;
+    }
+
+
+    class HostInfo {
+        public String host;
+        public int port;
+
+
+        HostInfo() {
+        }
+
+        HostInfo(String h, int p) {
+            host=h;
+            port=p;
+        }
+
+        public String toString() {
+            return host + ":" + port;
+        }
+
+
+        public boolean equals(Object obj) {
+            if(obj == null || !(obj instanceof TCPPING.HostInfo))
+                return false;
+            if(host == null || ((TCPPING.HostInfo)obj).host == null)
+                return false;
+            return host.equals(((TCPPING.HostInfo)obj).host);
+        }
+
+
     }
 
 
