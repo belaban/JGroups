@@ -1,4 +1,4 @@
-// $Id: ReusableThread.java,v 1.2 2004/03/30 06:47:28 belaban Exp $
+// $Id: ReusableThread.java,v 1.3 2004/04/27 15:47:30 belaban Exp $
 
 package org.jgroups.util;
 
@@ -54,13 +54,14 @@ public class ReusableThread implements Runnable {
     }
 
 
+    /**
+     * Will always be called from synchronized method, no need to do our own synchronization
+     */
     public void start() {
-        synchronized(this) {
-            if(thread == null) {
-                thread=new Thread(this, thread_name);
-                thread.setDaemon(true);
-                thread.start();
-            }
+        if(thread == null) {
+            thread=new Thread(this, thread_name);
+            thread.setDaemon(true);
+            thread.start();
         }
     }
 
@@ -173,11 +174,9 @@ public class ReusableThread implements Runnable {
                 if(log.isTraceEnabled()) log.trace("entering ASSIGN");
                 synchronized(this) {
                     if(log.isTraceEnabled())
-                        log.trace("entered ASSIGN (task=" +
-                                printObj(task) + ", thread=" + printObj(thread) + ")");
+                        log.trace("entered ASSIGN (task=" + printObj(task) + ", thread=" + printObj(thread) + ")");
 
-                    while(task == null &&
-                            thread != null) {   // first wait-loop: wait for task to be assigned (assignTask())
+                    while(task == null && thread != null) { // first wait-loop: wait for task to be assigned (assignTask())
                         if(log.isTraceEnabled()) log.trace("wait ASSIGN");
                         wait();
                         if(log.isTraceEnabled()) log.trace("wait ASSIGN completed");
@@ -193,10 +192,8 @@ public class ReusableThread implements Runnable {
                 if(log.isTraceEnabled()) log.trace("entering SUSPEND");
                 synchronized(this) {
                     if(log.isTraceEnabled())
-                        log.trace("entered SUSPEND (suspended=" +
-                                suspended + ", task=" + printObj(task) + ")");
-                    while(suspended &&
-                            thread != null) {        // second wait-loop: wait for thread to resume (resume())
+                        log.trace("entered SUSPEND (suspended=" + suspended + ", task=" + printObj(task) + ")");
+                    while(suspended && thread != null) {    // second wait-loop: wait for thread to resume (resume())
                         if(log.isTraceEnabled()) log.trace("wait SUSPEND");
                         wait();
                         if(log.isTraceEnabled()) log.trace("wait SUSPEND completed");
@@ -208,11 +205,10 @@ public class ReusableThread implements Runnable {
             }
             if(thread == null) return; // we need to terminate
 
-
             if(task != null) {
                 if(log.isTraceEnabled()) log.trace("running task");
                 try {
-                    task.run();
+                    task.run(); //here we are actually running the task
                 }
                 catch(Throwable ex) {
                     if(log.isErrorEnabled()) log.error("exception=" + Util.printStackTrace(ex));
