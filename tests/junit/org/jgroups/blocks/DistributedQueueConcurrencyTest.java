@@ -1,4 +1,4 @@
-// $Id: DistributedQueueConcurrencyTest.java,v 1.4 2003/11/24 16:37:13 rds13 Exp $
+// $Id: DistributedQueueConcurrencyTest.java,v 1.5 2004/01/09 18:23:27 rds13 Exp $
 
 package org.jgroups.blocks;
 
@@ -81,24 +81,10 @@ public class DistributedQueueConcurrencyTest extends TestCase implements ICounte
 
         Trace.init();
 
-        queue1 = new DistributedQueue("concurency", null, props, STATE_TRANSFER_TIMEOUT);
-
-        // give some time for the channel to become a coordinator
-		Util.sleep(1000);
-
-        queue2 = new DistributedQueue("concurency", null, props, STATE_TRANSFER_TIMEOUT);
-		Util.sleep(1000);
-
     }
 
     public void tearDown() throws Exception
     {
-		logger.info("start tearDown()");
-        queue1.stop();
-		logger.info("intermediate tearDown()");
-        queue2.stop();
-		logger.info("end tearDown()");
-		Util.sleep(1000);
     }
 
 	public synchronized int increment()
@@ -122,6 +108,15 @@ public class DistributedQueueConcurrencyTest extends TestCase implements ICounte
     public void testConcurrentOneItem() throws Exception
     {
         logger.info("start testConcurrentOneItem");
+		queue1 = new DistributedQueue("concurency", null, props, STATE_TRANSFER_TIMEOUT);
+
+		// give some time for the channel to become a coordinator
+		Util.sleep(1000);
+
+		queue2 = new DistributedQueue("concurency", null, props, STATE_TRANSFER_TIMEOUT);
+		Util.sleep(1000);
+
+
         DistributedQueueReadTask t1 = new DistributedQueueReadTask("Queue1", queue1, this, 1, 5000);
         DistributedQueueReadTask t2 = new DistributedQueueReadTask("Queue2", queue2, this, 1, 5000);
         Thread rTask1 = new Thread(t1);
@@ -161,6 +156,10 @@ public class DistributedQueueConcurrencyTest extends TestCase implements ICounte
         checkContents(t3.getContent(), totalContent);
 
         queue3.stop();
+
+		queue1.stop();
+		queue2.stop();
+		Util.sleep(1000);
         logger.info("end testConcurrentOneItem");
     }
 
@@ -183,6 +182,13 @@ public class DistributedQueueConcurrencyTest extends TestCase implements ICounte
     protected void _concurrentMultipleItems(int i) throws Exception
     {
         logger.info("start testConcurrentMultipleItems " + i + " run");
+		queue1 = new DistributedQueue("concurency", null, props, STATE_TRANSFER_TIMEOUT);
+
+		// give some time for the channel to become a coordinator
+		Util.sleep(1000);
+
+		queue2 = new DistributedQueue("concurency", null, props, STATE_TRANSFER_TIMEOUT);
+		Util.sleep(1000);
         items = 0;
 
         DistributedQueueReadTask t1 = new DistributedQueueReadTask("Queue1", queue1, this, NUM_ITEMS, 5000);
@@ -231,6 +237,10 @@ public class DistributedQueueConcurrencyTest extends TestCase implements ICounte
 
         queue3.stop();
         queue3 = null;
+
+		queue1.stop();
+		queue2.stop();
+		Util.sleep(1000);
         logger.info("end testConcurrentMultipleItems");
     }
 
@@ -322,6 +332,88 @@ public class DistributedQueueConcurrencyTest extends TestCase implements ICounte
 
 		logger.info("end testMultipleReaderOneWriter");
 	}
+
+    public void testMultipleWriterOneReader() throws Exception
+    {
+    	logger.info("start testMultipleWriterOneReader");
+    	// reset counter
+    	items = 0;
+    
+    	Vector queues = new Vector();
+    	for (int i = 0; i < NUM_CLIENTS; i++)
+    	{
+    		queue = new DistributedQueue("crashme", null, props, STATE_TRANSFER_TIMEOUT);
+    		// give some time for the channel to become a coordinator
+    		Util.sleep(500);
+    		queues.add(queue);
+    	}
+    	
+    	Vector vTask = new Vector();
+    	for (int i = 0; i < NUM_CLIENTS; i++)
+    	{
+    		queue = (DistributedQueue) queues.elementAt(i);
+			DistributedQueuePutTask t = new DistributedQueuePutTask("PutQueue" + i, queue, NUM_ITEMS, 1000);
+    		vTask.add(t);
+    		Thread task = new Thread(t);
+    		task.start();
+    		Util.sleep(500);
+    	}
+    
+    
+    	queuePut = new DistributedQueue("crashme", null, props, STATE_TRANSFER_TIMEOUT);
+    	Util.sleep(1000);
+    
+		DistributedQueueReadTask readerTask = new DistributedQueueReadTask("ReaderQueue", queuePut, this, NUM_ITEMS*NUM_CLIENTS, 1000);
+    	Thread rTask3 = new Thread(readerTask);
+    
+    	rTask3.start();
+    	while (!readerTask.finished())
+    	{
+    		Util.sleep(1000);
+    	}
+    
+    	boolean finished = false;
+    	while (!finished)
+    	{
+    		finished = true;
+    		for (int i = 0; i < NUM_CLIENTS; i++)
+    		{
+				DistributedQueuePutTask reader = (DistributedQueuePutTask) vTask.elementAt(i);
+    			if (!reader.finished())
+    			{
+    				finished = false;
+    				break;
+    			}
+    		}
+    		Util.sleep(1000);
+    	}
+    
+    	Vector totalContent = new Vector();
+    	for (int i = 0; i < NUM_CLIENTS; i++)
+    	{
+    		queue = (DistributedQueue) queues.elementAt(i);
+    		assertEquals(0, queue.size());
+			DistributedQueuePutTask t = (DistributedQueuePutTask) vTask.elementAt(i);
+    		totalContent.addAll(t.getContent());
+    		logger.debug("New total:"+totalContent.size());
+    	}
+    
+    	assertEquals(0, queuePut.size());
+    
+    	assertEquals(NUM_ITEMS*NUM_CLIENTS, totalContent.size());
+    	assertEquals(NUM_ITEMS*NUM_CLIENTS, readerTask.getContent().size());
+    	checkContents(readerTask.getContent(), totalContent);
+    
+    	queuePut.stop();
+    	
+    	for (int i = 0; i < NUM_CLIENTS; i++)
+    	{
+    		queue = (DistributedQueue) queues.elementAt(i);
+    		queue.stop();
+    	}
+    
+    	logger.info("end testMultipleWriterOneReader");
+    }
 
 
     public static void main(String[] args)
