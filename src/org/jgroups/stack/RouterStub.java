@@ -1,4 +1,4 @@
-// $Id: RouterStub.java,v 1.9 2004/10/07 10:10:38 belaban Exp $
+// $Id: RouterStub.java,v 1.10 2004/12/13 15:30:06 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -10,9 +10,12 @@ import org.jgroups.Message;
 import org.jgroups.protocols.TunnelHeader;
 import org.jgroups.util.List;
 import org.jgroups.util.Util;
+import org.jgroups.util.ExposedByteArrayOutputStream;
+import org.jgroups.util.Buffer;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.ByteArrayInputStream;
 import java.net.Socket;
 
 
@@ -22,6 +25,7 @@ public class RouterStub {
     String router_host=null;       // name of the router host
     int router_port=0;          // port on which router listens on router_host
     Socket sock=null;              // socket connecting to the router
+    final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(512);
     DataOutputStream output=null;            // output stream associated with sock
     DataInputStream input=null;             // input stream associated with sock
     Address local_addr=null;        // addr of group mbr. Once assigned, remains the same
@@ -175,8 +179,8 @@ public class RouterStub {
     public List get(String groupname) {
         List ret=null;
         Socket tmpsock=null;
-        DataOutputStream output=null;
-        DataInputStream input=null;
+        DataOutputStream tmpOutput=null;
+        DataInputStream tmpInput=null;
         int len;
         byte[] buf;
 
@@ -189,24 +193,24 @@ public class RouterStub {
         try {
             tmpsock=new Socket(router_host, router_port);
             tmpsock.setSoLinger(true, 500);
-            input=new DataInputStream(tmpsock.getInputStream());
+            tmpInput=new DataInputStream(tmpsock.getInputStream());
 
-            len=input.readInt();     // discard my own address
+            len=tmpInput.readInt();     // discard my own address
             buf=new byte[len];       // (first thing returned by router on acept())
-            input.readFully(buf);
-            output=new DataOutputStream(tmpsock.getOutputStream());
+            tmpInput.readFully(buf);
+            tmpOutput=new DataOutputStream(tmpsock.getOutputStream());
 
             // request membership for groupname
-            output.writeInt(Router.GET);
-            output.writeUTF(groupname);
+            tmpOutput.writeInt(Router.GET);
+            tmpOutput.writeUTF(groupname);
 
             // wait for response (List)
-            len=input.readInt();
+            len=tmpInput.readInt();
             if(len == 0)
                 return null;
 
             buf=new byte[len];
-            input.readFully(buf);
+            tmpInput.readFully(buf);
             ret=(List)Util.objectFromByteBuffer(buf);
         }
         catch(Exception e) {
@@ -214,12 +218,12 @@ public class RouterStub {
         }
         finally {
             try {
-                if(output != null) output.close();
+                if(tmpOutput != null) tmpOutput.close();
             }
             catch(Exception e) {
             }
             try {
-                if(input != null) input.close();
+                if(tmpInput != null) tmpInput.close();
             }
             catch(Exception e) {
             }
@@ -236,9 +240,7 @@ public class RouterStub {
     /** Sends a message to the router. Returns false if message cannot be sent (e.g. no connection to
      router, true otherwise. */
     public boolean send(Message msg, String groupname) {
-        byte[] msg_buf=null;
-        byte[] dst_buf=null;
-        Object dst_addr=null;
+        Address dst_addr=null;
 
         if(sock == null || output == null || input == null) {
             if(log.isErrorEnabled()) log.error("no connection to router (groupname=" + groupname + ')');
@@ -253,25 +255,26 @@ public class RouterStub {
 
         try {
             dst_addr=msg.getDest(); // could be null in case of mcast
-            if(dst_addr != null)
-                dst_buf=Util.objectToByteBuffer(dst_addr);
+            out_stream.reset();
+            DataOutputStream tmp=new DataOutputStream(out_stream);
+            msg.writeTo(tmp);
+            tmp.close();
+            Buffer buf=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
 
-            msg_buf=Util.objectToByteBuffer(msg);
-
+            // 1. Group name
             output.writeUTF(groupname);
 
-            if(dst_buf != null && dst_buf.length > 0) {
-                output.writeInt(dst_buf.length);
-                output.write(dst_buf, 0, dst_buf.length);
-            }
-            else
-                output.writeInt(0);
+            // 2. Destination address
+            Util.writeAddress(dst_addr, output);
 
-            output.writeInt(msg_buf.length);
-            output.write(msg_buf, 0, msg_buf.length);
+            // 3. Length of byte buffer
+            output.writeInt(buf.getLength());
+
+            // 4. Byte buffer
+            output.write(buf.getBuf(), 0, buf.getLength());
         }
         catch(Exception e) {
-            if(log.isErrorEnabled()) log.error("failure: " + Util.getStackTrace(e));
+            if(log.isErrorEnabled()) log.error("failed sending message to " + dst_addr, e);
             connected=false;
             return false;
         }
@@ -299,12 +302,16 @@ public class RouterStub {
             else {
                 buf=new byte[len];
                 input.readFully(buf, 0, len);
-                ret=(Message)Util.objectFromByteBuffer(buf);
+                ret=new Message();
+                ByteArrayInputStream tmp=new ByteArrayInputStream(buf);
+                DataInputStream in=new DataInputStream(tmp);
+                ret.readFrom(in);
+                in.close();
             }
         }
         catch(Exception e) {
             if (connected) {
-                if(log.isErrorEnabled()) log.error("failure: "+Util.getStackTrace(e));
+                if(log.isErrorEnabled()) log.error("failed receiving message", e);
             }
             connected=false;
             return null;

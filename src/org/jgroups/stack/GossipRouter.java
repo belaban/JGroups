@@ -1,4 +1,4 @@
-// $Id: GossipRouter.java,v 1.8 2004/09/23 16:29:53 belaban Exp $
+// $Id: GossipRouter.java,v 1.9 2004/12/13 15:30:06 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -77,7 +77,7 @@ public class GossipRouter {
     // failed.
     private long routingClientReplyTimeout;
 
-    // (groupname - vector of AddressEntry's)
+    // HashMap<String,List<Address>. Maintains associations between groups and their members
     private final Hashtable routingTable=new Hashtable();
 
     // (groupname - vector of AddressEntry's)
@@ -285,7 +285,6 @@ public class GossipRouter {
      * The main server loop. Runs on the JGroups Router Main Thread.
      **/
     private void mainLoop() {
-
         Socket sock = null;
         DataInputStream input = null;
         DataOutputStream output = null;
@@ -300,10 +299,8 @@ public class GossipRouter {
             bindAddress=srvSock.getInetAddress();
         }
         d=new Date();
-         {
-            System.out.println("GossipRouter started at " + d +
-                    "\nListening on port " + port + " bound on address " + bindAddress + '\n');
-        }
+        System.out.println("GossipRouter started at " + d +
+                           "\nListening on port " + port + " bound on address " + bindAddress + '\n');
         d=null;
 
         while(up) {
@@ -408,9 +405,6 @@ public class GossipRouter {
 
                 gname=input.readUTF();
 
-                if(log.isTraceEnabled()) {
-                    log.trace("routing request for group "+gname);
-                }
 
                 // We can have 2 kinds of messages at this point: GET requests or REGISTER requests.
                 // GET requests are processed right here, REGISTRATION requests cause the spawning of
@@ -430,7 +424,7 @@ public class GossipRouter {
                     buf=new byte[len];
                     input.readFully(buf, 0, buf.length); // read Address
                     addr=(Address)Util.objectFromByteBuffer(buf);
-                    SocketThread st = new SocketThread(sock, input);
+                    SocketThread st = new SocketThread(sock, input, addr);
                     addEntry(gname, new AddressEntry(addr, sock, st, output));
                     st.start();
                     break;
@@ -770,19 +764,21 @@ public class GossipRouter {
 
 
 
-    private synchronized void route(Address dest, String dest_group, byte[] msg) {
+    private void route(Address dest, String dest_group, byte[] msg, Address sender) {
+        if(log.isTraceEnabled()) {
+            int len=msg != null? msg.length : 0;
+            log.trace("routing request from " + sender + " for "+dest_group+" to " +
+                      (dest==null?"ALL":dest.toString())+", " + len + " bytes");
+        }
 
-//         if(log.isDebugEnabled()) log.debug("GossipRouter", "routing request for "+dest_group+", destination "+
-//                     (dest==null?"ALL":dest.toString())+", message="+message);
-
-        if(dest == null) { 
+        if(dest == null) {
             // send to all members in group dest.getChannelName()
             if(dest_group == null) {
                 if(log.isErrorEnabled()) log.error("both dest address and group are null");
                 return;
             }
             else {
-                sendToAllMembersInGroup(dest_group, msg);
+                sendToAllMembersInGroup(dest_group, msg, sender);
             }
         }
         else {                  
@@ -811,7 +807,6 @@ public class GossipRouter {
      * Adds a new member to the routing group.
      **/
     private void addEntry(String groupname, AddressEntry e) {
-
         List val;
 
         if(groupname == null) {
@@ -821,7 +816,6 @@ public class GossipRouter {
 
         synchronized(routingTable) {
             val=(List)routingTable.get(groupname);
-
             if(val == null) {
                 val=Collections.synchronizedList(new ArrayList());
                 routingTable.put(groupname, val);
@@ -882,18 +876,23 @@ public class GossipRouter {
 
 
 
-    private void sendToAllMembersInGroup(String groupname, byte[] msg) {
-
-//         if(log.isDebugEnabled()) log.debug("GossipRouter", "sendToAllMembersInGroup("+groupname+", ... )");
+    private void sendToAllMembersInGroup(String groupname, byte[] msg, Address sender) {
         List val;
-        synchronized(routingTable) {
-            val=(List)routingTable.get(groupname);
-            if(val == null || val.size() == 0) {
-                return;
-            }
+        val=(List)routingTable.get(groupname);
+        if(val == null || val.size() == 0) {
+            return;
+        }
+
+        synchronized(val) {
             for(Iterator i=val.iterator(); i.hasNext();) {
                 AddressEntry ae = (AddressEntry)i.next();
+                if(ae.addr != null && ae.addr.equals(sender)) {
+                    // if(log.isTraceEnabled())
+                       // log.trace("dropped message to sender of multicast (" + ae.addr + ")");
+                    continue;
+                }
                 DataOutputStream dos = ae.output;
+
                 if (dos!=null) {
                     // send only to 'connected' members
                     try {
@@ -914,12 +913,14 @@ public class GossipRouter {
      * @exception IOException 
      **/
     private void sendToMember(DataOutputStream out, byte[] msg) throws IOException {
-
         if (out==null) {
             return;
         }
-        out.writeInt(msg.length);
-        out.write(msg, 0, msg.length);
+
+        synchronized(out) {
+            out.writeInt(msg.length);
+            out.write(msg, 0, msg.length);
+        }
     }
 
 
@@ -930,7 +931,6 @@ public class GossipRouter {
      * they're null and only the timestamp counts.
      **/
     class AddressEntry {
-        
         Address addr=null;
         Socket sock=null;
         DataOutputStream output=null;
@@ -998,20 +998,22 @@ public class GossipRouter {
         }
     }
 
-    /** A SocketThread manages one connection to a client. Its main task is message routing. */
 
     private static int threadCounter = 0;
 
-    class SocketThread extends Thread {
 
+    /** A SocketThread manages one connection to a client. Its main task is message routing. */
+    class SocketThread extends Thread {
         private volatile boolean active = true;
         Socket sock=null;
         DataInputStream input=null;
+        Address addr=null;
 
-        public SocketThread(Socket sock, DataInputStream ois) {
+        public SocketThread(Socket sock, DataInputStream ois, Address addr) {
             super("SocketThread "+(threadCounter++));
             this.sock=sock;
             input=ois;
+            this.addr=addr;
         }
 
         void closeSocket() {
@@ -1026,15 +1028,12 @@ public class GossipRouter {
         }
 
         void finish() {
-             {
-                if(log.isDebugEnabled()) log.debug("finishing the SocketThread for "+sock);
-            }
+            if(log.isDebugEnabled()) log.debug("terminating the SocketThread for "+sock);
             active = false;
         }
 
 
         public void run() {
-
             byte[] buf;
             int len;
             Address dst_addr=null;
@@ -1042,30 +1041,30 @@ public class GossipRouter {
 
             while(active) {
                 try {
-                    gname=input.readUTF(); // group name
-                    len=input.readInt();
-                    if(len == 0)
-                        dst_addr=null;
-                    else {
-                        buf=new byte[len];
-                        input.readFully(buf, 0, buf.length);  // dest address
-                        dst_addr=(Address)Util.objectFromByteBuffer(buf);
-                    }
+                    // 1. Group name is first
+                    gname=input.readUTF();
 
+                    // 2. Second is the destination address
+                    dst_addr=Util.readAddress(input);
+
+                    // 3. Then the length of the byte buffer representing the message
                     len=input.readInt();
                     if(len == 0) {
                         if(log.isWarnEnabled()) log.warn("received null message");
                         continue;
                     }
+
+                    // 4. Finally the message itself, as a byte buffer
                     buf=new byte[len];
                     input.readFully(buf, 0, buf.length);  // message
-                    route(dst_addr, gname, buf);
+
+                    // Then route the message to everyone else except me
+                    route(dst_addr, gname, buf, addr);
                 }
                 catch(EOFException io_ex) {
-                     {
-                        if(log.isInfoEnabled()) log.info("client " +sock.getInetAddress().getHostName() + ':' + sock.getPort() +
-                                " closed connection; removing it from routing table");
-                    }
+                    if(log.isInfoEnabled())
+                        log.info("client " +sock.getInetAddress().getHostName() + ':' + sock.getPort() +
+                                 " closed connection; removing it from routing table");
                     removeEntry(sock); // will close socket
                     return;
                 }
