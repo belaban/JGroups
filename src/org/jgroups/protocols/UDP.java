@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.54 2004/12/11 14:40:56 belaban Exp $
+// $Id: UDP.java,v 1.55 2004/12/28 16:02:04 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -998,7 +998,7 @@ public class UDP extends Protocol implements Runnable {
             bind_addr=InetAddress.getLocalHost();
 
         if(bind_addr != null)
-            if(log.isInfoEnabled()) log.info("unicast sockets will use interface " + bind_addr.getHostAddress());
+            if(log.isInfoEnabled()) log.info("sockets will use interface " + bind_addr.getHostAddress());
 
 
         // 2. Create socket for receiving unicast UDP packets. The address and port
