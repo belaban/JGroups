@@ -437,10 +437,8 @@ public class Test implements Receiver {
         double tmp;
         long   current=System.currentTimeMillis();
 
-        //if(last_dump == 0 || (current - last_dump) <= 0) {
-          //  last_dump=System.currentTimeMillis();
-            //return;
-        //}
+        if(current - start == 0 || current - last_dump == 0)
+            return;
 
         tmp=(1000 * received_msgs) / (current - start);
         if(gnuplot_output)
