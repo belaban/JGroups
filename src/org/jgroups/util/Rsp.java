@@ -1,6 +1,8 @@
-// $Id: Rsp.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+// $Id: Rsp.java,v 1.2 2005/01/20 02:04:13 ovidiuf Exp $
 
 package org.jgroups.util;
+
+import org.jgroups.Address;
 
 
 /**
@@ -13,23 +15,23 @@ public class Rsp
     /* flag that represents whether the response was suspected */
     boolean suspected=false;
     /* The sender of this response */
-    Object  sender=null;
+    Address  sender=null;
     /* the value from the response */
     Object  retval=null;
 
 
-    Rsp(Object sender)
+    Rsp(Address sender)
     {
         this.sender=sender;
     }
 
-    Rsp(Object sender, boolean suspected)
+    Rsp(Address sender, boolean suspected)
     {
         this.sender=sender;
         this.suspected=suspected;
     }
 
-    Rsp(Object sender, Object retval)
+    Rsp(Address sender, Object retval)
     {
         this.sender=sender;
         this.retval=retval;
@@ -41,7 +43,7 @@ public class Rsp
         return retval;
     }
 
-    public Object  getSender()
+    public Address  getSender()
     {
         return sender;
     }
