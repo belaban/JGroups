@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.12 2004/04/19 18:41:34 belaban Exp $
+// $Id: NAKACK.java,v 1.13 2004/04/22 23:49:28 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -212,7 +212,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
                 msg=(Message)evt.getArg();
                 if(msg.getDest() != null && !msg.getDest().isMulticastAddress())
                     break; // unicast address: not null and not mcast, pass down unchanged
-
                 send(msg);
                 return;    // don't pass down the stack
 
@@ -245,7 +244,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
 
             case Event.CONFIG:
                 passDown(evt);
-                 if(log.isInfoEnabled()) log.info("received CONFIG event: " + evt.getArg());
+                if(log.isInfoEnabled()) log.info("received CONFIG event: " + evt.getArg());
                 handleConfigEvent((HashMap)evt.getArg());
                 return;
 
@@ -312,7 +311,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
 
             case Event.CONFIG:
                 passUp(evt);
-                 if(log.isInfoEnabled()) log.info("received CONFIG event: " + evt.getArg());
+                if(log.isInfoEnabled()) log.info("received CONFIG event: " + evt.getArg());
                 handleConfigEvent((HashMap)evt.getArg());
                 return;
 
@@ -516,7 +515,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
             size+=len;
             if(size >= max_xmit_size) {
                 // size has reached max_xmit_size. go ahead and send message (excluding the current message)
-                if(log.isDebugEnabled()) log.debug("xmitting msgs [" + marker + "-" + (i - 1) + "] to " + dest);
+                if(log.isDebugEnabled())
+                    log.debug("xmitting msgs [" + marker + "-" + (i - 1) + "] to " + dest);
                 sendXmitRsp(dest, (LinkedList)list.clone(), marker, i - 1);
                 marker=i;
                 list.clear();
@@ -534,7 +534,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
         }
 
         if(list.size() > 0) {
-            if(log.isDebugEnabled()) log.debug("xmitting msgs [" + marker + "-" + last_seqno + "] to " + dest);
+            if(log.isDebugEnabled())
+                log.debug("xmitting msgs [" + marker + "-" + last_seqno + "] to " + dest);
             sendXmitRsp(dest, (LinkedList)list.clone(), marker, last_seqno);
         }
     }
@@ -915,7 +916,12 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
     void clear() {
         NakReceiverWindow win;
 
-        sent_msgs.clear();
+        // changed April 21 2004 (bela): SourceForge bug# 938584. We cannot delete our own messages sent between
+        // a join() and a getState(). Otherwise retransmission requests from members who missed those msgs might
+        // fail. Not to worry though: those msgs will be cleared by STABLE (message garbage collection)
+
+        // sent_msgs.clear();
+
         for(Enumeration e=received_msgs.elements(); e.hasMoreElements();) {
             win=(NakReceiverWindow)e.nextElement();
             win.reset();
@@ -956,8 +962,13 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
 
     String printSentMsgs() {
         StringBuffer sb=new StringBuffer();
-        for(Enumeration e=sent_msgs.keys(); e.hasMoreElements();)
-            sb.append(e.nextElement() + " ");
+        Set s=sent_msgs.keySet(); // set of seqnos (Longs)
+        Long min_seqno=null, max_seqno=null;
+        if(s != null) {
+            min_seqno=(Long)Collections.min(s);
+            max_seqno=(Long)Collections.max(s);
+        }
+        sb.append("[").append(min_seqno).append(" - ").append(max_seqno).append("]");
         return sb.toString();
     }
 
