@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.40 2004/02/20 22:16:40 belaban Exp $
+Revision: $Id: history.txt,v 1.41 2004/02/24 17:11:03 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java JGroups.Version')]
 
@@ -27,6 +27,10 @@ romuald     = Romuald du Song
 
 Version 2.2.1
 -------------
+
+- Changes to log4j.Trace: we now use the fully qualified classname and methodname of the caller, e.g.
+  "org.jgroups.protocols.PING.down"
+  (bela Feb 24 2004)
 
 - RequestCorrelator: catching exceptions caused by non-serializable return value, return them
   as exceptions. This fixes bug# 901274.
