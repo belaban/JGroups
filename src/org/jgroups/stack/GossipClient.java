@@ -1,4 +1,4 @@
-// $Id: GossipClient.java,v 1.6 2004/09/23 16:29:53 belaban Exp $
+// $Id: GossipClient.java,v 1.7 2004/10/07 10:10:38 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -151,9 +151,8 @@ public class GossipClient {
                 continue;
             }
             try {
-
-                    if(log.isInfoEnabled()) log.info("REGISTER_REQ --> " +
-                                                           entry.getIpAddress() + ':' + entry.getPort());
+                if(log.isInfoEnabled())
+                    log.info("REGISTER_REQ --> " + entry.getIpAddress() + ':' + entry.getPort());
                 sock=new Socket(entry.getIpAddress(), entry.getPort());
                 out=new ObjectOutputStream(sock.getOutputStream());
                 gossip_req=new GossipData(GossipData.REGISTER_REQ, group, mbr, null);
