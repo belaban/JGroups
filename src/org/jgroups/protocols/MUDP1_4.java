@@ -33,7 +33,7 @@ import java.util.Vector;
  * the unicast routing caches should ensure that unicasts are only sent via 1 interface in almost all cases.
  * 
  * @author Bela Ban Oct 2003
- * @version $Id: MUDP1_4.java,v 1.2 2003/12/10 23:58:03 belaban Exp $
+ * @version $Id: MUDP1_4.java,v 1.3 2003/12/11 06:44:50 belaban Exp $
  */
 public class MUDP1_4 extends Protocol implements Runnable {
 
@@ -1137,5 +1137,26 @@ public class MUDP1_4 extends Protocol implements Runnable {
         }
     }
 
+    /**
+     * Manages a multicast and unicast socket on a given interface (NIC). The multicast socket is used
+     * to listen for incoming multicast packets, the unicast socket is used to (1) listen for incoming
+     * unicast packets, (2) to send unicast packets and (3) to send multicast packets
+     */
+    class Connector implements Runnable {
+        
+        Thread t=null;
+
+
+        void start() throws Exception {
+
+        }
+
+        void stop() {
+
+        }
+
+        public void run() {
+        }
+    }
 
 }
