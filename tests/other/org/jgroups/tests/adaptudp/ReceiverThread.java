@@ -1,10 +1,13 @@
-package org.jgroups.tests.adaptjms;
+package org.jgroups.tests.adaptudp;
 
 import org.apache.log4j.Logger;
 
-import javax.jms.*;
+import java.io.BufferedInputStream;
+import java.io.DataInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ObjectInputStream;
+import java.net.MulticastSocket;
+import java.net.Socket;
 import java.net.DatagramPacket;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,7 +23,7 @@ import java.util.List;
  * @author Bela Ban (belaban@yahoo.com)
 
  */
-public class ReceiverThread implements MessageListener {
+public class ReceiverThread extends Thread {
     private int msg_size;
     private int num_senders;
     private long expected_msgs;
@@ -29,96 +32,102 @@ public class ReceiverThread implements MessageListener {
     long    beginning=0, ending=0, elapsed_time, last_dump;
     long    log_interval=1000;
     boolean gnuplot_output=Boolean.getBoolean("gnuplot_output");
-    TopicSession session;
+    MulticastSocket recv_sock;
     List    receivers=new ArrayList();
     Object  counter_mutex=new Object();
     boolean started=false;
 
-    double throughput_s, throughput_b;
-    boolean done=false;
-    Request req;
-    byte[] buf=new byte[300000];
-    DatagramPacket p=new DatagramPacket(buf, buf.length);
-    ByteArrayInputStream input;
-    ObjectInputStream in;
 
-
-    public ReceiverThread(TopicSession session, Topic topic, int num_msgs, int ms, int ns, long log_interval) throws JMSException {
+    public ReceiverThread(MulticastSocket recv_sock, int num_msgs, int ms, int ns, long log_interval) {
         msg_size=ms;
         num_senders=ns;
         expected_msgs=num_msgs * num_senders;
         this.log_interval=log_interval;
-        this.session=session;
-        TopicSubscriber sub=session.createSubscriber(topic);
-        sub.setMessageListener(this);
+        this.recv_sock=recv_sock;
     }
 
-    public void start() {
-        System.out.println("\nReceiver started...\n");
+
+
+    public void run() {
+        double throughput_s, throughput_b;
+        System.out.println("\nReceiver thread started...\n");
         counter=1;
         beginning=0;
         ending=0;
-    }
+        boolean done=false;
+        Request req;
+        byte[] buf=new byte[300000];
+        DatagramPacket p=new DatagramPacket(buf, buf.length);
+        ByteArrayInputStream input;
+        ObjectInputStream in;
 
-    public void onMessage(Message message) {
-        if(done)
-            return;
+        while(recv_sock != null && counter < expected_msgs && !done) {
+            try {
+                p.setData(buf);
+                recv_sock.receive(p);
+                input=new ByteArrayInputStream(p.getData(), 0, p.getLength());
+                in=new ObjectInputStream(input);
+                req=(Request)in.readObject();
+                if(req.type != Request.DATA)
+                    continue;
 
-        if(message instanceof ObjectMessage) {
-            Request req=(Request)message;
-            if(req.type != Request.DATA)
-                return;
-            synchronized(counter_mutex) {
-                if(counter == 1 && !started) {
-                    beginning=System.currentTimeMillis();
-                    last_dump=beginning;
-                    started=true;
-                }
-                counter++;
-                if(counter % 100 == 0) {
-                    System.out.println("-- received " + counter + " msgs");
-                }
-                if(counter % log_interval == 0) {
-                    log.info(dumpStats(counter));
-                }
-                if(counter >= expected_msgs && !done) {
-                    ending=System.currentTimeMillis();
-                    done=true;
+                synchronized(counter_mutex) {
+                    if(counter == 1 && !started) {
+                        beginning=System.currentTimeMillis();
+                        last_dump=beginning;
+                        started=true;
+                    }
+                    counter++;
+                    if(counter % 100 == 0) {
+                        System.out.println("-- received " + counter + " msgs");
+                    }
+                    if(counter % log_interval == 0) {
+                        log.info(dumpStats(counter));
+                    }
+                    if(counter >= expected_msgs && !done) {
+                        ending=System.currentTimeMillis();
+                        done=true;
+                    }
                 }
             }
-
-            if(counter >= expected_msgs) {
-                done=true;
-                if(gnuplot_output) {
-                    StringBuffer sb=new StringBuffer();
-                    sb.append("\n##### msgs_received");
-                    sb.append(", free_mem [KB] ");
-                    sb.append(", total_mem [KB] ");
-                    sb.append(", total_msgs_sec [msgs/sec] ");
-                    sb.append(", total_throughput [KB/sec] ");
-                    sb.append(", rolling_msgs_sec (last ").append(log_interval).append(" msgs) ");
-                    sb.append(" [msgs/sec] ");
-                    sb.append(", rolling_throughput (last ").append(log_interval).append(" msgs) ");
-                    sb.append(" [KB/sec]\n");
-                    log.info(sb.toString());
-                }
-                elapsed_time=(ending - beginning);
-
-                System.out.println("expected_msgs=" + expected_msgs + ", elapsed_time=" + elapsed_time);
-
-                throughput_s=expected_msgs / (elapsed_time/1000.0);
-                throughput_b=(expected_msgs * (msg_size/1000.0)) / (elapsed_time/1000.0);
-
-                String result="Received " + expected_msgs + " msgs. in " + elapsed_time + " msec.\n" +
-                        "Throughput: " + throughput_s + " [msgs/sec]\n" +
-                        "Throughput: " + throughput_b + " [KB/sec]\n" +
-                        "Total received: " + expected_msgs * (msg_size / 1000.0 / 1000.0) + " [MB]\n";
-                System.out.println(result);
-                log.info(result);
+            catch(Exception ex) {
+                if(recv_sock == null) return;
+                break;
             }
         }
-    }
 
+
+        if(gnuplot_output) {
+            StringBuffer sb=new StringBuffer();
+            sb.append("\n##### msgs_received");
+            sb.append(", free_mem [KB] ");
+            sb.append(", total_mem [KB] ");
+            sb.append(", total_msgs_sec [msgs/sec] ");
+            sb.append(", total_throughput [KB/sec] ");
+            sb.append(", rolling_msgs_sec (last ").append(log_interval).append(" msgs) ");
+            sb.append(" [msgs/sec] ");
+            sb.append(", rolling_throughput (last ").append(log_interval).append(" msgs) ");
+            sb.append(" [KB/sec]\n");
+            log.info(sb.toString());
+        }
+
+
+
+
+        elapsed_time=(ending - beginning);
+
+        System.out.println("expected_msgs=" + expected_msgs + ", elapsed_time=" + elapsed_time);
+
+        throughput_s=expected_msgs / (elapsed_time/1000.0);
+        throughput_b=(expected_msgs * (msg_size/1000.0)) / (elapsed_time/1000.0);
+
+        String result="Received " + expected_msgs + " msgs. in " + elapsed_time + " msec.\n" +
+                "Throughput: " + throughput_s + " [msgs/sec]\n" +
+                "Throughput: " + throughput_b + " [KB/sec]\n" +
+                "Total received: " + expected_msgs * (msg_size / 1000.0 / 1000.0) + " [MB]\n";
+        System.out.println(result);
+        log.info(result);
+    }
 
 
     String dumpStats(long received_msgs) {
@@ -175,7 +184,5 @@ public class ReceiverThread implements MessageListener {
         }
         last_dump=current;
     }
-
-
 
 }
