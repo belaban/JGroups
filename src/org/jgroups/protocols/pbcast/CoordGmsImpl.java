@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.13 2004/09/08 09:17:17 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.14 2004/09/13 20:48:26 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -26,6 +26,16 @@ public class CoordGmsImpl extends GmsImpl {
 
     public CoordGmsImpl(GMS g) {
         gms=g;
+    }
+
+    public void init() throws Exception {
+        super.init();
+        merging=false;
+        merge_task.stop();
+        synchronized(merge_rsps) {
+            merge_rsps.clear();
+        }
+        merge_id=null;
     }
 
     public void join(Address mbr) {
@@ -114,9 +124,7 @@ public class CoordGmsImpl extends GmsImpl {
         }
         merging=true;
         this.merge_id=(Serializable)merge_id;
-
-            if(log.isDebugEnabled()) log.debug("sender=" + sender + ", merge_id=" + merge_id);
-
+        if(log.isDebugEnabled()) log.debug("sender=" + sender + ", merge_id=" + merge_id);
         digest=gms.getDigest();
         view=new View(gms.view_id.copy(), gms.members.getMembers());
         sendMergeResponse(sender, view, digest);
@@ -317,7 +325,7 @@ public class CoordGmsImpl extends GmsImpl {
     }
 
     public void stop() {
-        leaving=true;
+        super.stop(); // sets leaving=false
         merge_task.stop();
     }
 
@@ -354,7 +362,7 @@ public class CoordGmsImpl extends GmsImpl {
         synchronized(merge_rsps) {
             merge_rsps.removeAllElements();
 
-                if(log.isDebugEnabled()) log.debug("sending MERGE_REQ to " + coords);
+            if(log.isDebugEnabled()) log.debug("sending MERGE_REQ to " + coords);
             for(int i=0; i < coords.size(); i++) {
                 coord=(Address)coords.elementAt(i);
 
@@ -389,8 +397,8 @@ public class CoordGmsImpl extends GmsImpl {
                     }
                 }
 
-                    if(log.isDebugEnabled()) log.debug("num_rsps_expected=" + num_rsps_expected
-                               + ", actual responses=" + merge_rsps.size());
+                if(log.isDebugEnabled()) log.debug("num_rsps_expected=" + num_rsps_expected
+                                                   + ", actual responses=" + merge_rsps.size());
 
                 if(merge_rsps.size() >= num_rsps_expected)
                     break;

@@ -1,4 +1,4 @@
-// $Id: ParticipantGmsImpl.java,v 1.7 2004/07/28 22:46:59 belaban Exp $
+// $Id: ParticipantGmsImpl.java,v 1.8 2004/09/13 20:48:26 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -18,9 +18,14 @@ public class ParticipantGmsImpl extends GmsImpl {
 
     public ParticipantGmsImpl(GMS g) {
         gms=g;
-        suspected_mbrs.removeAllElements();
     }
 
+
+    public void init() throws Exception {
+        super.init();
+        suspected_mbrs.removeAllElements();
+        leave_promise.reset();
+    }
 
     public void join(Address mbr) {
         wrongMethod("join");
