@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.2 2003/10/29 16:00:53 ovidiuf Exp $ -->
+<!-- $Id: build.xml,v 1.3 2003/11/21 14:17:15 rds13 Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -23,6 +23,7 @@
     <property name="docbook.dir" value="${pg.dir}/docbook-xsl"/>
     <property name="build.compiler.emacs" value="true"/>
     <property name="javadoc.packages" value="org.jgroups.*"/>
+    <property name="unittest.timeout" value="180000"/>
 
 
     <path id="jg.classpath">
@@ -311,13 +312,49 @@
     <target name="unittests"
         depends="compile"
         description="Runs all unit tests in tests/junit and prints results to stdout">
-        <junit printsummary="yes" timeout="120000" fork="yes">
+        <junit printsummary="yes" timeout="${unittest.timeout}" fork="yes">
             <classpath refid="jg.classpath"/>
             <formatter type="brief" usefile="false"/>
             <batchtest todir="${root.dir}/tmp">
                 <fileset dir="${junit.dir}"
                     includes="**/*Test.java"/>
             </batchtest>
+        </junit>
+    </target>
+
+    <target name="multiprotocol-tests">
+		<antcall target="protocol-test">
+			<param name="protocol.url" value="file:conf/default.xml"/>
+		</antcall>
+		<antcall target="protocol-test">
+			<param name="protocol.url" value="file:conf/default-minimalthreads.xml"/>
+		</antcall>
+		<antcall target="protocol-test">
+			<param name="protocol.url" value="file:conf/state_transfer.xml"/>
+		</antcall>
+		<antcall target="protocol-test">
+			<param name="protocol.url" value="file:conf/total-token.xml"/>
+		</antcall>
+		<antcall target="protocol-test">
+			<param name="protocol.url" value="file:conf/vsync.xml"/>
+		</antcall>
+		<antcall target="protocol-test">
+			<param name="protocol.url" value="file:conf/fc.xm"/>
+		</antcall>
+		<antcall target="protocol-test">
+			<param name="protocol.url" value="file:conf/flow_control.xml"/>
+		</antcall>
+    </target>
+
+    <target name="protocol-test"
+        depends="compile"
+        description="Runs a particular test in tests/junit with a specific protocol and prints results to stdout">
+        <junit printsummary="yes" timeout="${unittest.timeout}" fork="yes">
+            <classpath refid="jg.classpath"/>
+            <formatter type="brief" usefile="false"/>
+             <jvmarg value="-Dforce.properties=${protocol.url}"/>
+            <test todir="${root.dir}/tmp" name="org.jgroups.tests.ChannelTrioTest">
+            </test>
         </junit>
     </target>
 
@@ -337,7 +374,7 @@
     <target name="unittests-xml" depends="compile">
         <delete dir="${root.dir}/tmp/tests-results"/>
         <mkdir dir="${root.dir}/tmp/tests-results"/>
-        <junit printsummary="yes" timeout="120000" fork="yes">
+        <junit printsummary="yes" timeout="${unittest.timeout}" fork="yes">
             <jvmarg value="-Dtests.tmp.dir=${root.dir}/tmp"/>
             <classpath refid="jg.classpath"/>
             <formatter type="xml" usefile="true"/>
