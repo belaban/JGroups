@@ -3,10 +3,12 @@ package org.jgroups.tests;
 import junit.framework.TestCase;
 import org.jgroups.*;
 
+import java.io.IOException;
+
 /**
  * Tests unicasts to self (loopback of transport protocol)
  * @author Bela Ban Dec 31 2003
- * @version $Id: UnicastLoopbackTest.java,v 1.2 2004/01/02 15:48:37 belaban Exp $
+ * @version $Id: UnicastLoopbackTest.java,v 1.3 2004/01/16 07:48:15 belaban Exp $
  */
 public class UnicastLoopbackTest extends TestCase {
     JChannel channel=null;
@@ -29,7 +31,7 @@ public class UnicastLoopbackTest extends TestCase {
     }
 
 
-    public void testUnicastMsgs() throws ChannelClosedException, ChannelNotConnectedException, TimeoutException {
+    public void testUnicastMsgs() throws ChannelClosedException, ChannelNotConnectedException, TimeoutException, IOException, ClassNotFoundException {
         int NUM=1000;
         Address local_addr=channel.getLocalAddress();
         for(int i=1; i <= NUM; i++) {

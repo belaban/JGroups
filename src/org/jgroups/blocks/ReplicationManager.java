@@ -1,18 +1,14 @@
-// $Id: ReplicationManager.java,v 1.1 2003/09/09 01:24:08 belaban Exp $
+// $Id: ReplicationManager.java,v 1.2 2004/01/16 07:45:34 belaban Exp $
 
 package org.jgroups.blocks;
 
-import java.io.Serializable;
-import org.jgroups.Address;
-import org.jgroups.Channel;
-import org.jgroups.MembershipListener;
-import org.jgroups.MessageListener;
-import org.jgroups.Message;
-import org.jgroups.blocks.MessageDispatcher;
-import org.jgroups.blocks.PullPushAdapter;
+import org.jgroups.*;
 import org.jgroups.log.Trace;
-import org.jgroups.util.Util;
 import org.jgroups.util.RspList;
+import org.jgroups.util.Util;
+
+import java.io.IOException;
+import java.io.Serializable;
 
 
 
@@ -200,8 +196,7 @@ public class ReplicationManager implements RequestHandler {
                         long    lock_lease_timeout,
                         boolean use_locks) { // throws UpdateException, TimeoutException, LockingException {
         
-        RspList         rsps;
-        Message         msg;
+        Message         msg=null;
         ReplicationData d=new ReplicationData(ReplicationData.SEND,
                                               data,
                                               transaction,
@@ -211,19 +206,25 @@ public class ReplicationManager implements RequestHandler {
                                               use_locks);
         if(Trace.trace)
             Trace.info("ReplicationManager.send()", "data is " + d + " (synchronous=" + synchronous + ")");
-        msg=new Message(dest, null, d);        
-        if(synchronous) {
-            return disp.castMessage(null, msg, GroupRequest.GET_ALL, synchronous_timeout);
+        try {
+            msg=new Message(dest, null, d);
+            if(synchronous) {
+                return disp.castMessage(null, msg, GroupRequest.GET_ALL, synchronous_timeout);
+            }
+            else {
+                disp.castMessage(null, msg, GroupRequest.GET_NONE, 0);
+                return null;
+            }
         }
-        else {
-            disp.castMessage(null, msg, GroupRequest.GET_NONE, 0);
+        catch(IOException e) {
+            e.printStackTrace();
             return null;
         }
     }
 
     
     /**
-     * Commits all modifications sent to the receivers via {@link send} and releases all locks associated with
+     * Commits all modifications sent to the receivers via {@link #send} and releases all locks associated with
      * this transaction. If modifications were made to stable storage (but not to resource), those modifications
      * would now need to be transferred to the resource (e.g. database).
      */
@@ -233,7 +234,7 @@ public class ReplicationManager implements RequestHandler {
 
 
     /**
-     * Discards all modifications sent to the receivers via {@link send} and releases all locks associated with
+     * Discards all modifications sent to the receivers via {@link #send} and releases all locks associated with
      * this transaction.
      */
     public void rollback(Xid transaction) {
@@ -337,9 +338,14 @@ public class ReplicationManager implements RequestHandler {
     void sendMessage(int type, Xid transaction) {
         ReplicationData data=new ReplicationData(type, null, transaction, null, 0, 0, false);
         Message         msg;
-        
-        msg=new Message(null, null, data);
-        disp.castMessage(null, msg, GroupRequest.GET_NONE, 0); // send commit message asynchronously        
+
+        try {
+            msg=new Message(null, null, data);
+            disp.castMessage(null, msg, GroupRequest.GET_NONE, 0); // send commit message asynchronously
+        }
+        catch(IOException e) {
+            e.printStackTrace();
+        }
     }
 
 

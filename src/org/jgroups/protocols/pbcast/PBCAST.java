@@ -1,4 +1,4 @@
-// $Id: PBCAST.java,v 1.2 2003/11/09 04:57:00 belaban Exp $
+// $Id: PBCAST.java,v 1.3 2004/01/16 07:45:35 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -6,6 +6,7 @@ import java.util.Vector;
 import java.util.Enumeration;
 import java.util.Properties;
 import java.util.Hashtable;
+import java.io.IOException;
 
 import org.jgroups.*;
 import org.jgroups.util.*;
@@ -772,9 +773,14 @@ public class PBCAST extends Protocol implements Runnable {
             }
 
             // create a msg with the List of xmit_msgs as contents, add header
-            msg=new Message(requester, null, xmit_msgs);
-            msg.putHeader(getName(), new PbcastHeader(PbcastHeader.XMIT_RSP));
-            passDown(new Event(Event.MSG, msg));
+            try {
+                msg=new Message(requester, null, xmit_msgs);
+                msg.putHeader(getName(), new PbcastHeader(PbcastHeader.XMIT_RSP));
+                passDown(new Event(Event.MSG, msg));
+            }
+            catch(IOException e1) {
+                e1.printStackTrace();
+            }
         }
     }
 

@@ -1,4 +1,4 @@
-// $Id: EnsChannel.java,v 1.1 2003/09/09 01:24:07 belaban Exp $
+// $Id: EnsChannel.java,v 1.2 2004/01/16 07:45:37 belaban Exp $
 
 package org.jgroups;
 
@@ -60,10 +60,9 @@ public class EnsChannel extends Channel implements Hot_Callbacks {
 
 
     /**
-       Creates a new EnsChannel, which spawns an outboard process and connects to it.
-       @param name Channel name. All channels with the same name form a group.
-       @param properties Ensemble properties (cf. Ensemble reference manual). 
-                         A value of <code>null</code> uses the default properties.
+     Creates a new EnsChannel, which spawns an outboard process and connects to it.
+     @param props Ensemble properties (cf. Ensemble reference manual).
+     A value of <code>null</code> uses the default properties.
      */
     public EnsChannel(Object props) throws ChannelException {
 	String properties=null;
@@ -93,7 +92,7 @@ public class EnsChannel extends Channel implements Hot_Callbacks {
        This allows multiple EnsChannels to share a copy of outboard. If the port is 0, outboard
        <em>will</em> be spawned. Parameter <code>transport_props</code> defines the type 
        of transport to be used (UDP, ATM, IP MCAST etc).
-       @param properties Ensemble properties (cf. Ensemble reference manual). 
+       @param props Ensemble properties (cf. Ensemble reference manual).
                          A value of <code>null</code> uses the default properties.
        @param transport_props Transport parameters. <code>Null</code> means use default (UDP).
                               Example: <code>"UDP:DEERING"</code> uses IP multicast (gossip is not
@@ -293,7 +292,12 @@ public class EnsChannel extends Channel implements Hot_Callbacks {
 
     
     public void send(Address dst, Address src, Serializable obj) throws ChannelNotConnectedException, ChannelClosedException  {
-	send(new Message(dst, src, obj));
+        try {
+            send(new Message(dst, src, obj));
+        }
+        catch(Exception e) {
+            e.printStackTrace();
+        }
     }
 	
 

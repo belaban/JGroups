@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindowStressTest.java,v 1.1 2003/09/09 01:24:13 belaban Exp $
+// $Id: NakReceiverWindowStressTest.java,v 1.2 2004/01/16 07:48:16 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -7,6 +7,8 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.stack.*;
 import org.jgroups.util.Util;
+
+import java.io.IOException;
 
 
 
@@ -34,76 +36,87 @@ public class NakReceiverWindowStressTest implements Retransmitter.RetransmitComm
 
 
     public void retransmit(long first_seqno, long last_seqno, Address sender) {
-	for(long i=first_seqno; i <= last_seqno; i++) {
-	    if(debug)
-		out("-- xmit: " + i);
-	    win.add(i, new Message(null, sender, new Long(i)));
-	}
-	    
+        for(long i=first_seqno; i <= last_seqno; i++) {
+            if(debug)
+                out("-- xmit: " + i);
+            Message m=null;
+            try {
+                m=new Message(null, sender, new Long(i));
+                win.add(i, m);
+            }
+            catch(IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
 
-    public void start() {
+    public void start() throws IOException {
 	System.out.println("num_msgs=" + num_msgs + "\ndiscard_prob=" + discard_prob);
 
 	sender=new IpAddress("localhost", 5555);
 	win=new NakReceiverWindow(sender, this, 1);
 	start=System.currentTimeMillis();
-	sendMessages(num_msgs);
+        try {
+            sendMessages(num_msgs);
+        }
+        catch(ClassNotFoundException e) {
+            e.printStackTrace();
+        }
 
     }
 
 
-    void sendMessages(int num_msgs) {
-	Message msg;
+    void sendMessages(int num_msgs) throws IOException, ClassNotFoundException {
+        Message msg;
 
-	for(long i=1; i <= num_msgs; i++) {
-	    if(Util.tossWeightedCoin(discard_prob) && i <= num_msgs) {
-		if(debug) out("-- discarding " + i);
-	    }
-	    else {
-		if(debug) out("-- adding " + i);
-		win.add(i, new Message(null, null, new Long(i)));
-		if(trace && i % 100 == 0)
-		    System.out.println("-- added " + i);
-		while((msg=win.remove()) != null)
-		    processMessage(msg);
-	    }
-	}
-	while(true) {
-	    while((msg=win.remove()) != null)
-		processMessage(msg);
-	    Util.sleep(50);
-	}
+        for(long i=1; i <= num_msgs; i++) {
+            if(Util.tossWeightedCoin(discard_prob) && i <= num_msgs) {
+                if(debug) out("-- discarding " + i);
+            }
+            else {
+                if(debug) out("-- adding " + i);
+                win.add(i, new Message(null, null, new Long(i)));
+                if(trace && i % 100 == 0)
+                    System.out.println("-- added " + i);
+                while((msg=win.remove()) != null)
+                    processMessage(msg);
+            }
+        }
+        while(true) {
+            while((msg=win.remove()) != null)
+                processMessage(msg);
+            Util.sleep(50);
+        }
     }
 
 
 
-    void processMessage(Message msg) {
-	long    i;
+    void processMessage(Message msg) throws IOException, ClassNotFoundException {
+        long i;
 
-	i=((Long)msg.getObject()).longValue();
-	if(prev_value +1 != i) {
-	    System.err.println("** processMessage(): removed seqno (" + i + ") is not 1 greater than " +
-			       "previous value (" + prev_value + ")");
-	    System.exit(0);
-	}
-	prev_value++;
-	if(trace &&i % 100 == 0)
-	    System.out.println("Removed " + i);
-	if(i == num_msgs) {
-	    stop=System.currentTimeMillis();
-	    System.out.println("Inserting and removing " + num_msgs + 
-			       " messages into NakReceiverWindow took " + (stop-start) + "ms");
-	    System.out.println("<enter> to terminate");
-	    try {
-		System.in.read();
-	    }
-	    catch(Exception ex) {
-		System.err.println(ex);
-	    }
-	    System.exit(0);
-	}
+        i=((Long)msg.getObject()).longValue();
+        if(prev_value + 1 != i) {
+            System.err.println("** processMessage(): removed seqno (" + i + ") is not 1 greater than " +
+                    "previous value (" + prev_value + ")");
+            System.exit(0);
+        }
+        prev_value++;
+        if(trace && i % 100 == 0)
+            System.out.println("Removed " + i);
+        if(i == num_msgs) {
+            stop=System.currentTimeMillis();
+            System.out.println("Inserting and removing " + num_msgs +
+                    " messages into NakReceiverWindow took " + (stop - start) + "ms");
+            System.out.println("<enter> to terminate");
+            try {
+                System.in.read();
+            }
+            catch(Exception ex) {
+                System.err.println(ex);
+            }
+            System.exit(0);
+        }
     }
 
     
@@ -150,7 +163,12 @@ public class NakReceiverWindowStressTest implements Retransmitter.RetransmitComm
 
 
 	test=new NakReceiverWindowStressTest(num_msgs, discard_prob, trace, debug);
-	test.start();
+        try {
+            test.start();
+        }
+        catch(IOException e) {
+            e.printStackTrace();
+        }
     }
 
 
