@@ -10,13 +10,12 @@ import java.net.MulticastSocket;
 /**
  * Discovers all UDP-based members running on a certain mcast address
  * @author Bela Ban
- * @version $Revision: 1.7 $
+ * @version $Revision: 1.8 $
  * Date: Jun 2, 2003
  * Time: 4:35:29 PM
  */
 public class Probe {
     MulticastSocket mcast_sock;
-    DatagramSocket  sock;
 
 
     public Probe() {
@@ -28,9 +27,6 @@ public class Probe {
         mcast_sock.setTimeToLive(ttl);
         if(bind_addr != null)
             mcast_sock.setInterface(bind_addr);
-        // mcast_sock.joinGroup(addr);
-
-        sock=new DatagramSocket();
 
         byte[] probe_buf=new byte[]{'d', 'i', 'a', 'g'};
         DatagramPacket probe=new DatagramPacket(probe_buf, 0, probe_buf.length, addr, port);
@@ -41,7 +37,7 @@ public class Probe {
         new Thread() {
             public void run() {
                 Util.sleep(timeout);
-                sock.close();
+                mcast_sock.close();
             }
         }.start();
 
