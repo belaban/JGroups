@@ -1,4 +1,4 @@
-//$Id: UdpRingNode.java,v 1.2 2004/01/16 07:45:36 belaban Exp $
+//$Id: UdpRingNode.java,v 1.3 2004/01/16 16:47:50 belaban Exp $
 
 package org.jgroups.protocols.ring;
 
@@ -82,16 +82,10 @@ public class UdpRingNode implements RingNode
 
    public synchronized void passToken(Object token)
    {
-       Message t = null;
-       try {
-           t=new Message(nextNode, thisNode, (Serializable) token);
-           t.putHeader(TOTAL_TOKEN.prot_name, tokenHeader);
-           rpcProtocol.passDown(new Event(Event.MSG, t));
-           tokenInStack = false;
-       }
-       catch(IOException e) {
-           e.printStackTrace();
-       }
+       Message t = new Message(nextNode, thisNode, (Serializable) token);
+       t.putHeader(TOTAL_TOKEN.prot_name, tokenHeader);
+       rpcProtocol.passDown(new Event(Event.MSG, t));
+       tokenInStack = false;
    }
 
 

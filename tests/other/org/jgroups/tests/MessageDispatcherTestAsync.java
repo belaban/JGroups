@@ -1,4 +1,4 @@
-// $Id: MessageDispatcherTestAsync.java,v 1.3 2004/01/16 07:48:16 belaban Exp $
+// $Id: MessageDispatcherTestAsync.java,v 1.4 2004/01/16 16:47:52 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -50,12 +50,7 @@ public class MessageDispatcherTestAsync implements RequestHandler {
     class MyCollector implements RspCollector {
 
 	public void receiveResponse(Message msg) {
-        Object tmp=null;
-        try {
-            tmp=msg.getObject();
-        }
-        catch(Exception e) {
-        }
+        Object tmp=msg.getObject();
         System.out.println("** received response " + tmp + " [sender=" + msg.getSrc() + "]");
 	}
 
@@ -127,17 +122,7 @@ public class MessageDispatcherTestAsync implements RequestHandler {
 
 
     public Object handle(Message msg) {
-        Object tmp=null;
-
-        try {
-            tmp=msg.getObject();
-        }
-        catch(IOException e) {
-            e.printStackTrace();
-        }
-        catch(ClassNotFoundException e) {
-            e.printStackTrace();
-        }
+        Object tmp=msg.getObject();
         System.out.println("** handle(" + tmp + ")");
         return new String(tmp + ": success");
     }

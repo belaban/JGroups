@@ -1,4 +1,4 @@
-//$Id: TOTAL_TOKEN.java,v 1.2 2004/01/16 07:45:36 belaban Exp $
+//$Id: TOTAL_TOKEN.java,v 1.3 2004/01/16 16:47:51 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -53,7 +53,7 @@ import org.jgroups.util.Util;
  *
  *
  *@author Vladimir Blagojevic vladimir@cs.yorku.ca
- *@version $Revision: 1.2 $
+ *@version $Revision: 1.3 $
  *
  *@see org.jgroups.protocols.ring.RingNodeFlowControl
  *@see org.jgroups.protocols.ring.RingNode
@@ -303,16 +303,7 @@ public class TOTAL_TOKEN extends RpcProtocol
             else if (h instanceof RingTokenHeader)
             {
                 if(node != null) {
-                    Object tmp=null;
-                    try {
-                        tmp=msg.getObject();
-                    }
-                    catch(IOException e) {
-                        e.printStackTrace();
-                    }
-                    catch(ClassNotFoundException e) {
-                        e.printStackTrace();
-                    }
+                    Object tmp=msg.getObject();
                     node.tokenArrived(tmp);
                 }
                return false;

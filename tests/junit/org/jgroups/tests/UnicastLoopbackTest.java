@@ -8,7 +8,7 @@ import java.io.IOException;
 /**
  * Tests unicasts to self (loopback of transport protocol)
  * @author Bela Ban Dec 31 2003
- * @version $Id: UnicastLoopbackTest.java,v 1.3 2004/01/16 07:48:15 belaban Exp $
+ * @version $Id: UnicastLoopbackTest.java,v 1.4 2004/01/16 16:47:52 belaban Exp $
  */
 public class UnicastLoopbackTest extends TestCase {
     JChannel channel=null;
@@ -31,7 +31,7 @@ public class UnicastLoopbackTest extends TestCase {
     }
 
 
-    public void testUnicastMsgs() throws ChannelClosedException, ChannelNotConnectedException, TimeoutException, IOException, ClassNotFoundException {
+    public void testUnicastMsgs() throws ChannelClosedException, ChannelNotConnectedException, TimeoutException {
         int NUM=1000;
         Address local_addr=channel.getLocalAddress();
         for(int i=1; i <= NUM; i++) {

@@ -1,4 +1,4 @@
-// $Id: EnsChannel.java,v 1.2 2004/01/16 07:45:37 belaban Exp $
+// $Id: EnsChannel.java,v 1.3 2004/01/16 16:47:51 belaban Exp $
 
 package org.jgroups;
 
@@ -292,12 +292,7 @@ public class EnsChannel extends Channel implements Hot_Callbacks {
 
     
     public void send(Address dst, Address src, Serializable obj) throws ChannelNotConnectedException, ChannelClosedException  {
-        try {
-            send(new Message(dst, src, obj));
-        }
-        catch(Exception e) {
-            e.printStackTrace();
-        }
+        send(new Message(dst, src, obj));
     }
 	
 

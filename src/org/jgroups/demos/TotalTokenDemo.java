@@ -1,4 +1,4 @@
-//$Id: TotalTokenDemo.java,v 1.2 2004/01/16 07:45:35 belaban Exp $
+//$Id: TotalTokenDemo.java,v 1.3 2004/01/16 16:47:50 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -39,7 +39,7 @@ import java.util.Vector;
  *
  *@author Vladimir Blagojevic vladimir@cs.yorku.ca
  *@author Ivan Bilenjkij  ivan@ibossa.com
- *@version $Revision: 1.2 $
+ *@version $Revision: 1.3 $
  *
  *@see org.jgroups.protocols.TOTAL_TOKEN
  *
@@ -288,12 +288,6 @@ public class TotalTokenDemo extends JFrame implements Runnable
                 }
                 catch (TimeoutException e)
                 {
-                    e.printStackTrace();
-                }
-                catch(IOException e) {
-                    e.printStackTrace();
-                }
-                catch(ClassNotFoundException e) {
                     e.printStackTrace();
                 }
             }

@@ -1,4 +1,4 @@
-// $Id: CAUSAL.java,v 1.2 2004/01/16 07:45:36 belaban Exp $
+// $Id: CAUSAL.java,v 1.3 2004/01/16 16:47:51 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -62,7 +62,7 @@ import org.jgroups.log.Trace;
  *    for every k:1...n VT(pj)[k] == max(VT(mi)[k],VT(pj)[k])
  *</p>
  *  @author Vladimir Blagojevic vladimir@cs.yorku.ca
- *  @version $Revision: 1.2 $
+ *  @version $Revision: 1.3 $
  *
  **/
 
@@ -195,14 +195,7 @@ public class CAUSAL extends Protocol
             if (msg.getDest() != null && !msg.getDest().isMulticastAddress())
                break;
 
-            Message causalMsg = null;
-
-              try {
-                  causalMsg=new Message(msg.getDest(), msg.getSrc(), msg);
-              }
-              catch(IOException e) {
-                  e.printStackTrace();
-              }
+              Message causalMsg=new Message(msg.getDest(), msg.getSrc(), msg);
               synchronized (this)
             {
                localVector.increment();
@@ -252,16 +245,7 @@ public class CAUSAL extends Protocol
             {
                if (localVector.isCausallyNext(messageVector))
                {
-                   Object tmp=null;
-                   try {
-                       tmp=msg.getObject();
-                   }
-                   catch(IOException e) {
-                       e.printStackTrace();
-                   }
-                   catch(ClassNotFoundException e) {
-                       e.printStackTrace();
-                   }
+                   Object tmp=msg.getObject();
                    passUp(new Event(Event.MSG, tmp));
                   localVector.max(messageVector);
                }
@@ -275,17 +259,7 @@ public class CAUSAL extends Protocol
                      localVector.isCausallyNext((queuedVector = (TransportedVectorTime) delayQueue.getFirst())))
                {
                   delayQueue.remove(queuedVector);
-                   Object tmp=null;
-
-                   try {
-                       tmp=queuedVector.getAssociatedMessage().getObject();
-                   }
-                   catch(IOException e) {
-                       e.printStackTrace();
-                   }
-                   catch(ClassNotFoundException e) {
-                       e.printStackTrace();
-                   }
+                   Object tmp=queuedVector.getAssociatedMessage().getObject();
                    passUp(new Event(Event.MSG, tmp));
                   localVector.max(queuedVector);
                }

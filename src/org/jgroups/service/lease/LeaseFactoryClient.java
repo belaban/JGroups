@@ -118,12 +118,7 @@ public class LeaseFactoryClient implements LeaseFactory {
 
                     Message msg = new Message();
                     msg.putHeader(LeaseRequestHeader.HEADER_KEY, requestHeader);
-                    try {
-                        msg.setObject((Serializable)existingLease.getLeaseTarget());
-                    }
-                    catch(IOException e) {
-                        e.printStackTrace();
-                    }
+                    msg.setObject((Serializable)existingLease.getLeaseTarget());
 
                     // send message to leasing service
                     clientChannel.send(msg);
@@ -223,12 +218,7 @@ public class LeaseFactoryClient implements LeaseFactory {
 
                         Message msg = new Message();
                         msg.putHeader(LeaseRequestHeader.HEADER_KEY, requestHeader);
-                        try {
-                            msg.setObject((Serializable)leaseTarget);
-                        }
-                        catch(IOException e) {
-                            e.printStackTrace();
-                        }
+                        msg.setObject((Serializable)leaseTarget);
 
                         clientChannel.send(msg);
                         
@@ -271,15 +261,7 @@ public class LeaseFactoryClient implements LeaseFactory {
 	    
 	    // throw exception if service denied lease request
         if (denyHeader != null) {
-            Object tmp=null;
-            try {
-                tmp=reply.getObject();
-            }
-            catch(IOException e) {
-            }
-            catch(ClassNotFoundException e) {
-                e.printStackTrace();
-            }
+            Object tmp=reply.getObject();
             throw new LeaseDeniedException(
                     denyHeader.getDenialReason(), tmp);
         }
@@ -354,12 +336,7 @@ public class LeaseFactoryClient implements LeaseFactory {
                         
                     Message msg = new Message();
                     msg.putHeader(LeaseRequestHeader.HEADER_KEY, requestHeader);
-                    try {
-                        msg.setObject((Serializable)existingLease.getLeaseTarget());
-                    }
-                    catch(IOException e) {
-                        e.printStackTrace();
-                    }
+                    msg.setObject((Serializable)existingLease.getLeaseTarget());
                 
                     // send message to leasing service
                     clientChannel.send(msg);
@@ -455,17 +432,7 @@ public class LeaseFactoryClient implements LeaseFactory {
 	    if (denyHeader == null && leaseHeader == null)
 		return;
 		
-	    Object leaseTarget = null;
-
-        try {
-            leaseTarget=msg.getObject();
-        }
-        catch(IOException e) {
-            e.printStackTrace();
-        }
-        catch(ClassNotFoundException e) {
-            e.printStackTrace();
-        }
+	    Object leaseTarget = msg.getObject();
 
         Object tenant = denyHeader != null ?
 		denyHeader.getTenant() : leaseHeader.getTenant();

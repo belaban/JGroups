@@ -133,12 +133,7 @@ public class LeaseFactoryService extends AbstractService {
 
         Message msg = new Message();
         msg.putHeader(LeaseInfoReplicationHeader.HEADER_KEY, header);
-        try {
-            msg.setObject((Serializable)leaseTarget);
-        }
-        catch(IOException e) {
-            e.printStackTrace();
-        }
+        msg.setObject((Serializable)leaseTarget);
 
         try {
             serviceChannel.send(msg);
@@ -164,19 +159,14 @@ public class LeaseFactoryService extends AbstractService {
 	Message msg = new Message();
 	msg.putHeader(DenyResponseHeader.HEADER_KEY, responseHeader);
 	msg.setDest(requester);
-        try {
-            msg.setObject((Serializable)leaseTarget);
-        }
-        catch(IOException e) {
-            e.printStackTrace();
-        }
+        msg.setObject((Serializable)leaseTarget);
 
         try {
-	    clientChannel.send(msg);
-	} catch(Exception ex) {
-	    ex.printStackTrace();
-	    // hmmm... and what should I do?
-	}
+            clientChannel.send(msg);
+        } catch(Exception ex) {
+            ex.printStackTrace();
+            // hmmm... and what should I do?
+        }
     }
 
     /**
@@ -389,15 +379,10 @@ public class LeaseFactoryService extends AbstractService {
 	leases.remove(leaseTarget);
 	
 	Message msg = new Message();
-	msg.putHeader(LeaseResponseHeader.HEADER_KEY, 
-	    new LeaseResponseHeader(LeaseResponseHeader.LEASE_CANCELED, header.getTenant()));
-	msg.setDest(requester);
-        try {
-            msg.setObject((Serializable)leaseTarget);
-        }
-        catch(IOException e) {
-            e.printStackTrace();
-        }
+        msg.putHeader(LeaseResponseHeader.HEADER_KEY,
+                new LeaseResponseHeader(LeaseResponseHeader.LEASE_CANCELED, header.getTenant()));
+        msg.setDest(requester);
+        msg.setObject((Serializable)leaseTarget);
 
         try {
 	    clientChannel.send(msg);
@@ -457,16 +442,7 @@ public class LeaseFactoryService extends AbstractService {
 	    }
 
 	    Object leaseTarget = null;
-
-        try {
-            leaseTarget=msg.getObject();
-        }
-        catch(IOException e) {
-            e.printStackTrace();
-        }
-        catch(ClassNotFoundException e) {
-            e.printStackTrace();
-        }
+        leaseTarget=msg.getObject();
 
         Address requester = msg.getSrc();
 	    
@@ -543,15 +519,7 @@ public class LeaseFactoryService extends AbstractService {
 
         Object tmp=null;
 
-        try {
-            tmp=msg.getObject();
-        }
-        catch(IOException e) {
-            e.printStackTrace();
-        }
-        catch(ClassNotFoundException e) {
-            e.printStackTrace();
-        }
+        tmp=msg.getObject();
 
         switch(header.getType()) {
 		

@@ -1,4 +1,4 @@
-// $Id: PBCAST.java,v 1.3 2004/01/16 07:45:35 belaban Exp $
+// $Id: PBCAST.java,v 1.4 2004/01/16 16:47:50 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -773,14 +773,9 @@ public class PBCAST extends Protocol implements Runnable {
             }
 
             // create a msg with the List of xmit_msgs as contents, add header
-            try {
-                msg=new Message(requester, null, xmit_msgs);
-                msg.putHeader(getName(), new PbcastHeader(PbcastHeader.XMIT_RSP));
-                passDown(new Event(Event.MSG, msg));
-            }
-            catch(IOException e1) {
-                e1.printStackTrace();
-            }
+            msg=new Message(requester, null, xmit_msgs);
+            msg.putHeader(getName(), new PbcastHeader(PbcastHeader.XMIT_RSP));
+            passDown(new Event(Event.MSG, msg));
         }
     }
 

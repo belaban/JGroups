@@ -1,4 +1,4 @@
-// $Id: ReplicatedHashtable.java,v 1.3 2004/01/16 07:45:34 belaban Exp $
+// $Id: ReplicatedHashtable.java,v 1.4 2004/01/16 16:47:50 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -320,15 +320,7 @@ public class ReplicatedHashtable extends Hashtable implements MessageListener, M
 
         if(msg == null)
             return;
-        try {
-            req=(Request)msg.getObject();
-        }
-        catch(IOException e) {
-            e.printStackTrace();
-        }
-        catch(ClassNotFoundException e) {
-            e.printStackTrace();
-        }
+        req=(Request)msg.getObject();
         if(req == null)
             return;
         switch(req.req_type) {

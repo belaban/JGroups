@@ -1,4 +1,4 @@
-// $Id: RouterTest.java,v 1.3 2004/01/16 07:48:15 belaban Exp $
+// $Id: RouterTest.java,v 1.4 2004/01/16 16:47:51 belaban Exp $
 
 package org.jgroups.tests.stack;
 
@@ -30,7 +30,7 @@ import org.jgroups.util.Util;
  * @since 2.2.1
  *
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Revision: 1.3 $
+ * @version $Revision: 1.4 $
  **/
 public class RouterTest extends TestCase {
 
@@ -309,13 +309,7 @@ public class RouterTest extends TestCase {
         new Thread(new Runnable() {
                 public void run() {
                     for(int i=0; i<count; i++) {
-                        Message msg = null;
-                        try {
-                            msg=new Message(null, localAddr, new Integer(i));
-                        }
-                        catch(IOException e) {
-                            e.printStackTrace();
-                        }
+                        Message msg = new Message(null, localAddr, new Integer(i));
                         try {
                             byte[] buffer = Util.objectToByteBuffer(msg);
                             dos.writeUTF(groupName); 

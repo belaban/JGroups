@@ -1,4 +1,4 @@
-// $Id: ReplicationManager.java,v 1.2 2004/01/16 07:45:34 belaban Exp $
+// $Id: ReplicationManager.java,v 1.3 2004/01/16 16:47:50 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -206,18 +206,12 @@ public class ReplicationManager implements RequestHandler {
                                               use_locks);
         if(Trace.trace)
             Trace.info("ReplicationManager.send()", "data is " + d + " (synchronous=" + synchronous + ")");
-        try {
-            msg=new Message(dest, null, d);
-            if(synchronous) {
-                return disp.castMessage(null, msg, GroupRequest.GET_ALL, synchronous_timeout);
-            }
-            else {
-                disp.castMessage(null, msg, GroupRequest.GET_NONE, 0);
-                return null;
-            }
+        msg=new Message(dest, null, d);
+        if(synchronous) {
+            return disp.castMessage(null, msg, GroupRequest.GET_ALL, synchronous_timeout);
         }
-        catch(IOException e) {
-            e.printStackTrace();
+        else {
+            disp.castMessage(null, msg, GroupRequest.GET_NONE, 0);
             return null;
         }
     }
@@ -337,15 +331,8 @@ public class ReplicationManager implements RequestHandler {
     
     void sendMessage(int type, Xid transaction) {
         ReplicationData data=new ReplicationData(type, null, transaction, null, 0, 0, false);
-        Message         msg;
-
-        try {
-            msg=new Message(null, null, data);
-            disp.castMessage(null, msg, GroupRequest.GET_NONE, 0); // send commit message asynchronously
-        }
-        catch(IOException e) {
-            e.printStackTrace();
-        }
+        Message msg=new Message(null, null, data);
+        disp.castMessage(null, msg, GroupRequest.GET_NONE, 0); // send commit message asynchronously
     }
 
 

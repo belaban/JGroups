@@ -1,4 +1,4 @@
-// $Id: BSH.java,v 1.2 2004/01/16 07:45:36 belaban Exp $
+// $Id: BSH.java,v 1.3 2004/01/16 16:47:51 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -151,15 +151,10 @@ public class BSH extends Protocol {
             // serialize the object if serializable, otherwise just send string
             // representation
             if(retval != null) {
-                try {
-                    if(retval instanceof Serializable)
-                        rsp.setObject((Serializable)retval);
-                    else
-                        rsp.setObject(retval.toString());
-                }
-                catch(IOException ex) {
-                    ;
-                }
+                if(retval instanceof Serializable)
+                    rsp.setObject((Serializable)retval);
+                else
+                    rsp.setObject(retval.toString());
             }
 
             if(Trace.trace)

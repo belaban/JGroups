@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.7 2004/01/16 07:45:37 belaban Exp $
+// $Id: JChannel.java,v 1.8 2004/01/16 16:47:51 belaban Exp $
 
 package org.jgroups;
 
@@ -22,7 +22,7 @@ import java.util.Map;
  * protocol stack
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.7 $
+ * @version $Revision: 1.8 $
  */
 public class JChannel extends Channel {
 
@@ -424,12 +424,7 @@ public class JChannel extends Channel {
      * @see JChannel#send
      */
     public void send(Address dst, Address src, Serializable obj) throws ChannelNotConnectedException, ChannelClosedException {
-        try {
-            send(new Message(dst, src, obj));
-        }
-        catch(Exception e) {
-            Trace.error("JChannel.send()", "exception sending message: " + e);
-        }
+        send(new Message(dst, src, obj));
     }
 
 

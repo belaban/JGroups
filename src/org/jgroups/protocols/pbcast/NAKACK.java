@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.4 2004/01/16 07:45:35 belaban Exp $
+// $Id: NAKACK.java,v 1.5 2004/01/16 16:47:50 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -538,16 +538,10 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
         }
         if(use_mcast_xmit)
             dest=null;
-        Message msg=null;
 
-        try {
-            msg=new Message(dest, null, xmit_list);
-            msg.putHeader(name, new NakAckHeader(NakAckHeader.XMIT_RSP, first_seqno, last_seqno));
-            passDown(new Event(Event.MSG, msg));
-        }
-        catch(IOException e) {
-            Trace.error("NAKACK.sendXmitRsp()", "exception: " + e.toString());            
-        }
+        Message msg=new Message(dest, null, xmit_list);
+        msg.putHeader(name, new NakAckHeader(NakAckHeader.XMIT_RSP, first_seqno, last_seqno));
+        passDown(new Event(Event.MSG, msg));
     }
 
 
