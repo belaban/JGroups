@@ -1,4 +1,4 @@
-// $Id: ChannelMonoTest.java,v 1.4 2003/09/24 09:04:38 rds13 Exp $
+// $Id: ChannelDuoTest.java,v 1.1 2003/09/24 09:04:38 rds13 Exp $
 
 package org.jgroups.tests;
 
@@ -16,18 +16,20 @@ import org.jgroups.View;
 import org.jgroups.util.Util;
 
 /*
- * Tests operations on one Channel instance with various threads reading/writing :
+ * Tests operations on two Channel instance with various threads reading/writing :
  * - one writer, n readers with or without timeout
  * - one reader, n writers
  * @author rds13
  */
-public class ChannelMonoTest extends TestCase
+public class ChannelDuoTest extends TestCase
 {
-	private Channel channel = null;
-	static Logger logger = Logger.getLogger(ChannelMonoTest.class);
-	String channelName = "ChannelLg4jTest";
+	private Channel channel1 = null;
+	private Channel channel2 = null;
 
-	public ChannelMonoTest(String Name_)
+	static Logger logger = Logger.getLogger(ChannelDuoTest.class);
+	String channelName = "ChannelLog4jTest";
+
+	public ChannelDuoTest(String Name_)
 	{
 		super(Name_);
 	}
@@ -36,8 +38,8 @@ public class ChannelMonoTest extends TestCase
 	{
 		try
 		{
-			channel = new JChannel(null);
-			channel.connect(channelName);
+			channel1 = new JChannel(null);
+			channel1.connect(channelName);
 		}
 		catch (ChannelException e)
 		{
@@ -47,46 +49,45 @@ public class ChannelMonoTest extends TestCase
 
 	public void tearDown()
 	{
-		channel.disconnect();
-		channel.close();
-		channel = null;
-	}
-
-	public void testChannel()
-	{
-		assertNotNull(channel);
-		assertTrue(channel.isOpen());
-		assertTrue(channel.isConnected());
+		channel1.disconnect();
+		channel1.close();
+		channel1 = null;
 	}
 
 	public void testLargeInsertion()
 	{
 		long start, stop;
 		int nitems = 10000;
+		logger.debug("Starting testLargeInsertion");
 
 		try
 		{
 			logger.info("Inserting " + nitems + " elements");
-			ReadItems mythread = new ReadItems(0, nitems);
+			ReadItems mythread = new ReadItems(channel1, 0, nitems);
 			mythread.start();
+
+			channel2 = new JChannel(null);
+			channel2.connect(channelName);
 
 			start = System.currentTimeMillis();
 			for (int i = 0; i < nitems; i++)
-				channel.send(new Message(null, null, new String("Msg #" + i).getBytes()));
-
+				channel2.send(new Message(null, null, new String("Msg #" + i).getBytes()));
+			mythread.join();
 			stop = System.currentTimeMillis();
 			logger.info("Took " + (stop - start) + " msecs");
 
-			mythread.join();
-
 			assertEquals(nitems, mythread.getNum_items());
 			assertFalse(mythread.isAlive());
+
+			channel2.close();
+			channel2 = null;
 		}
 		catch (Exception ex)
 		{
 			logger.error("Problem", ex);
 			assertTrue(false);
 		}
+		logger.debug("end testLargeInsertion");
 	}
 
 	/** 
@@ -96,14 +97,26 @@ public class ChannelMonoTest extends TestCase
 	 */
 	public void testBarrierWithTimeOut()
 	{
+		logger.info("start testBarrierWithTimeOut");
+
 		RemoveOneItemWithTimeout[] removers = new RemoveOneItemWithTimeout[10];
 		int num_dead = 0;
 		long timeout = 200;
 
 		for (int i = 0; i < removers.length; i++)
 		{
-			removers[i] = new RemoveOneItemWithTimeout(i, timeout);
+			removers[i] = new RemoveOneItemWithTimeout(channel1, i, timeout);
 			removers[i].start();
+		}
+
+		try
+		{
+			channel2 = new JChannel(null);
+			channel2.connect(channelName);
+		}
+		catch (Exception e)
+		{
+			logger.error("Problem", e);
 		}
 
 		Util.sleep(5000);
@@ -111,7 +124,7 @@ public class ChannelMonoTest extends TestCase
 		logger.info("-- adding element 99");
 		try
 		{
-			channel.send(null, null, new Long(99));
+			channel2.send(null, null, new Long(99));
 		}
 		catch (Exception ex)
 		{
@@ -122,14 +135,14 @@ public class ChannelMonoTest extends TestCase
 		logger.info("-- adding element 100");
 		try
 		{
-			channel.send(null, null, new Long(100));
+			channel2.send(null, null, new Long(100));
 		}
 		catch (Exception ex)
 		{
 			logger.error("Problem", ex);
 		}
 
-		Util.sleep(5000);
+		Util.sleep(1000);
 
 		for (int i = 0; i < removers.length; i++)
 		{
@@ -143,8 +156,8 @@ public class ChannelMonoTest extends TestCase
 		assertEquals(2, num_dead);
 
 		// Testing handling of disconnect by reader threads
-		channel.disconnect();
-		// channel.close();
+		channel1.disconnect();
+		// channel1.close();
 		Util.sleep(2000);
 
 		for (int i = 0; i < removers.length; i++)
@@ -176,6 +189,11 @@ public class ChannelMonoTest extends TestCase
 		{
 			removers[i] = null;
 		}
+
+		channel2.close();
+		channel2 = null;
+
+		logger.info("end testBarrierWithTimeOut");
 	}
 
 	/** 
@@ -183,14 +201,27 @@ public class ChannelMonoTest extends TestCase
 	 */
 	public void testMultipleWriterOneReader()
 	{
+		logger.info("start testMultipleWriterOneReader");
 		AddOneItem[] adders = new AddOneItem[10];
 		int num_dead = 0;
 		int num_items = 0;
 		int items = 200;
 
+		try
+		{
+			channel2 = new JChannel(null);
+			channel2.connect(channelName);
+		}
+		catch (Exception e)
+		{
+			logger.error("Problem", e);
+		}
+
+		Util.sleep(1000);
+
 		for (int i = 0; i < adders.length; i++)
 		{
-			adders[i] = new AddOneItem(i, items);
+			adders[i] = new AddOneItem(channel1, i, items);
 			adders[i].start();
 		}
 
@@ -201,14 +232,18 @@ public class ChannelMonoTest extends TestCase
 
 			try
 			{
-				obj = channel.receive(0); // no timeout
+				obj = channel2.receive(0); // no timeout
 				if (obj instanceof View)
 					logger.info("--> NEW VIEW: " + obj);
 				else if (obj instanceof Message)
 				{
 					msg = (Message) obj;
 					num_items++;
-					logger.debug("Received " + msg.getObject());
+					logger.info("Received " + msg.getObject());
+				}
+				else
+				{
+					logger.error("Unexpected object type " + obj.getClass());
 				}
 			}
 			catch (ChannelNotConnectedException conn)
@@ -254,6 +289,9 @@ public class ChannelMonoTest extends TestCase
 		}
 
 		assertEquals(adders.length, num_dead);
+		channel2.close();
+		channel2 = null;
+		logger.info("end testMultipleWriterOneReader");
 	}
 
 	/** 
@@ -264,13 +302,25 @@ public class ChannelMonoTest extends TestCase
 	 */
 	public void testBarrier()
 	{
+		logger.info("start testBarrier");
+
 		ReadItems[] removers = new ReadItems[10];
 		int num_dead = 0;
 
 		for (int i = 0; i < removers.length; i++)
 		{
-			removers[i] = new ReadItems(i, 1);
+			removers[i] = new ReadItems(channel1, i, 1);
 			removers[i].start();
+		}
+
+		try
+		{
+			channel2 = new JChannel(null);
+			channel2.connect(channelName);
+		}
+		catch (Exception ex)
+		{
+			logger.error("Problem", ex);
 		}
 
 		Util.sleep(1000);
@@ -278,7 +328,7 @@ public class ChannelMonoTest extends TestCase
 		logger.info("-- adding element 99");
 		try
 		{
-			channel.send(null, null, new String("99").getBytes());
+			channel2.send(null, null, new String("99").getBytes());
 		}
 		catch (Exception ex)
 		{
@@ -289,14 +339,14 @@ public class ChannelMonoTest extends TestCase
 		logger.info("-- adding element 100");
 		try
 		{
-			channel.send(null, null, new String("100").getBytes());
+			channel2.send(null, null, new String("100").getBytes());
 		}
 		catch (Exception ex)
 		{
 			logger.error("Problem", ex);
 		}
 
-		Util.sleep(1000);
+		Util.sleep(5000);
 
 		for (int i = 0; i < removers.length; i++)
 		{
@@ -309,6 +359,130 @@ public class ChannelMonoTest extends TestCase
 
 		assertEquals(2, num_dead);
 
+		channel1.close();
+
+		for (int i = 0; i < removers.length; i++)
+		{
+			try
+			{
+				removers[i].join(1000);
+			}
+			catch (InterruptedException e)
+			{
+				logger.error("Thread joining() interrupted", e);
+			}
+		}
+
+		channel2.close();
+		channel2 = null;
+		logger.info("stop testBarrier");
+	}
+
+	/** 
+	 * Multiple threads add one element, one thread read them all.
+	 */
+	public void testMultipleWriterMultipleReader()
+	{
+		logger.info("start testMultipleWriterMultipleReader");
+		int nWriters = 3;
+		int nReaders = 5;
+
+		Writer[] adders = new Writer[nWriters];
+		Reader[] readers = new Reader[nReaders];
+		int num_dead = 0;
+		int num_items = 0;
+		int[] writes = new int[nWriters];
+		int[] reads = new int[nReaders];
+
+		try
+		{
+			channel2 = new JChannel(null);
+			channel2.connect(channelName);
+		}
+		catch (Exception e)
+		{
+			logger.error("Problem", e);
+		}
+
+		for (int i = 0; i < readers.length; i++)
+		{
+			readers[i] = new Reader(channel2, i, reads);
+			readers[i].start();
+		}
+
+		Util.sleep(2000);
+
+		for (int i = 0; i < adders.length; i++)
+		{
+			adders[i] = new Writer(channel1, i, writes);
+			adders[i].start();
+		}
+
+		Util.sleep(15000);
+
+		for (int i = 0; i < adders.length; i++)
+		{
+				adders[i].stopThread();
+		}
+		channel1.close();
+
+		for (int i = 0; i < adders.length; i++)
+		{
+			try
+			{
+				logger.debug("Waiting for thread " + i + " to join");
+				adders[i].join(1000);
+				logger.info("adder #" + i + " is " + (adders[i].isAlive() ? "alive" : "terminated"));
+				adders[i] = null;
+			}
+			catch (InterruptedException e)
+			{
+				logger.error("Thread joining() interrupted", e);
+			}
+		}
+		
+		Util.sleep(10000);
+
+		for (int i = 0; i < readers.length; i++)
+		{
+				readers[i].stopThread();
+		}
+		channel2.close();
+
+		for (int i = 0; i < readers.length; i++)
+		{
+			try
+			{
+				logger.debug("Waiting for thread " + i + " to join");
+				readers[i].join(1000);
+				logger.info("reader #" + i + " is " + (readers[i].isAlive() ? "alive" : "terminated"));
+				readers[i] = null;
+			}
+			catch (InterruptedException e)
+			{
+				logger.error("Thread joining() interrupted", e);
+			}
+		}
+
+		int total_writes = 0;
+		for (int i = 0; i < writes.length; i++)
+		{
+			total_writes += writes[i];
+		}
+
+		int total_reads = 0;
+		for (int i = 0; i < reads.length; i++)
+		{
+			total_reads += reads[i];
+		}
+		logger.info("Total writes:" + total_writes);
+		logger.info("Total reads:" + total_reads);
+
+		assertEquals(total_writes, total_reads);
+		
+		channel2.close();
+		channel2 = null;
+		logger.info("end testMultipleWriterMultipleReader");
 	}
 
 	class ReadItems extends Thread
@@ -317,12 +491,14 @@ public class ChannelMonoTest extends TestCase
 		int num_items = 0;
 		int max = 0;
 		int rank;
+		Channel channel;
 
-		public ReadItems(int rank, int num)
+		public ReadItems(Channel channel, int rank, int num)
 		{
 			super("ReadItems thread #" + rank);
 			this.rank = rank;
 			this.max = num;
+			this.channel = channel;
 			setDaemon(true);
 		}
 
@@ -348,7 +524,6 @@ public class ChannelMonoTest extends TestCase
 						num_items++;
 						if (num_items >= max)
 							looping = false;
-						logger.debug("Thread #" + rank + " received :" + new String(msg.getBuffer()));
 					}
 				}
 				catch (ChannelNotConnectedException conn)
@@ -409,7 +584,7 @@ public class ChannelMonoTest extends TestCase
 			{
 				try
 				{
-					obj = channel.receive(0); // no timeout
+					obj = channel1.receive(0); // no timeout
 					if (obj instanceof View)
 						logger.info("Thread #" + rank + ":--> NEW VIEW: " + obj);
 					else if (obj instanceof Message)
@@ -447,13 +622,15 @@ public class ChannelMonoTest extends TestCase
 		Long retval = null;
 		int rank = 0;
 		int iteration = 0;
+		Channel channel = null;
 
-		AddOneItem(int rank, int iteration)
+		AddOneItem(Channel channel, int rank, int iteration)
 		{
 			super("AddOneItem thread #" + rank);
 			this.rank = rank;
 			this.iteration = iteration;
 			setDaemon(true);
+			this.channel = channel;
 		}
 
 		public void run()
@@ -464,6 +641,7 @@ public class ChannelMonoTest extends TestCase
 				{
 					channel.send(null, null, new Long(rank));
 					logger.debug("Thread #" + rank + " added element (" + rank + ")");
+					Util.sleepRandom(100);
 				}
 			}
 			catch (ChannelException ex)
@@ -479,13 +657,15 @@ public class ChannelMonoTest extends TestCase
 		Long retval = null;
 		int rank = 0;
 		long timeout = 0;
+		Channel channel = null;
 
-		RemoveOneItemWithTimeout(int rank, long timeout)
+		RemoveOneItemWithTimeout(Channel channel, int rank, long timeout)
 		{
 			super("RemoveOneItemWithTimeout thread #" + rank);
 			this.rank = rank;
 			this.timeout = timeout;
 			setDaemon(true);
+			this.channel = channel;
 		}
 
 		public void run()
@@ -549,13 +729,15 @@ public class ChannelMonoTest extends TestCase
 		int num_writes = 0;
 		boolean running = true;
 		int[] writes = null;
+		Channel channel = null;
 
-		Writer(int i, int[] writes)
+		Writer(Channel channel, int i, int[] writes)
 		{
-			super("WriterThread");
+			super("Writer thread #"+i);
 			rank = i;
 			this.writes = writes;
 			setDaemon(true);
+			this.channel = channel;
 		}
 
 		public void run()
@@ -565,6 +747,7 @@ public class ChannelMonoTest extends TestCase
 				try
 				{
 					channel.send(null, null, new Long(System.currentTimeMillis()));
+					Util.sleepRandom(50);
 					num_writes++;
 				}
 				catch (ChannelException closed)
@@ -591,39 +774,51 @@ public class ChannelMonoTest extends TestCase
 		int num_reads = 0;
 		int[] reads = null;
 		boolean running = true;
+		Channel channel = null;
 
-		Reader(int i, int[] reads)
+		Reader(Channel channel, int i, int[] reads)
 		{
-			super("ReaderThread");
+			super("Reader thread #"+i);
 			rank = i;
 			this.reads = reads;
 			setDaemon(true);
+			this.channel = channel;
 		}
 
 		public void run()
 		{
-			Long el;
+			Long retval;
+			Message msg = null;
 
 			while (running)
 			{
 				try
 				{
-					el = (Long) channel.receive(0);
-					if (el == null)
-					{ // @remove
-						logger.info("ChannelTest.Reader.run(): peek() returned null element. ");
+					Object obj = channel.receive(0); // no timeout
+					if (obj instanceof View)
+						logger.info("Thread #" + rank + ":--> NEW VIEW: " + obj);
+					else if (obj instanceof Message)
+					{
+						msg = (Message) obj;
+						retval = (Long) msg.getObject();
+						logger.debug("Thread #" + rank + ": received " + retval);
+						num_reads++;
+						assertNotNull(retval);
 					}
-					assertNotNull(el);
-					num_reads++;
 				}
-				catch (ChannelException ex)
+				catch (ChannelNotConnectedException conn)
 				{
+					logger.error("Thread #" + rank + ": problem", conn);
 					running = false;
-					logger.debug("Terminating ?", ex);
 				}
-				catch (Throwable t)
+				catch (TimeoutException e)
 				{
-					logger.error("ChannelTest.Reader.run(): exception=", t);
+					logger.error("Thread #" + rank + ": channel time out but should'nt have...", e);
+					running = false;
+				}
+				catch (Exception e)
+				{
+					logger.error("Thread #" + rank + ": problem", e);
 				}
 			}
 			reads[rank] = num_reads;
@@ -638,7 +833,7 @@ public class ChannelMonoTest extends TestCase
 
 	public static void main(String[] args)
 	{
-		String[] testCaseName = { ChannelMonoTest.class.getName()};
+		String[] testCaseName = { ChannelDuoTest.class.getName()};
 		junit.textui.TestRunner.main(testCaseName);
 	}
 
