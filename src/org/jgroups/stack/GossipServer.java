@@ -1,4 +1,4 @@
-// $Id: GossipServer.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+// $Id: GossipServer.java,v 1.2 2003/10/15 20:18:32 ovidiuf Exp $
 
 package org.jgroups.stack;
 
@@ -104,8 +104,8 @@ public class GossipServer {
         else
             srv_sock=new ServerSocket(port, 20, bind_address);  // backlog of 20 connections
         if(Trace.trace) {
-            Trace.info("GossipServe.init()", "GossipServer was created at " + new Date());
-            Trace.info("GossipServe.init()", "Listening on port " + port + " bound on address " + bind_address);
+            Trace.info("GossipServer.init()", "GossipServer was created at " + new Date());
+            Trace.info("GossipServer.init()", "Listening on port " + port + " bound on address " + bind_address);
         }
         cache_cleaner=new CacheCleaner();
         timer.schedule(cache_cleaner, EXPIRY_TIME, EXPIRY_TIME);
