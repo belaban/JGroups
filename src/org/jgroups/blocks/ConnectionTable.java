@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.21 2005/03/31 06:39:40 belaban Exp $
+// $Id: ConnectionTable.java,v 1.22 2005/04/06 12:51:00 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -412,14 +412,18 @@ public class ConnectionTable implements Runnable {
 
                 synchronized(conns) {
                     if(conns.containsKey(peer_addr)) {
-                        if(log.isWarnEnabled()) log.warn(peer_addr + " is already there, will terminate connection");
-                        conn.destroy();
-                        continue; // return; // we cannot terminate the thread (bela Sept 2 2004)
+                        if(log.isTraceEnabled())
+                            log.trace(peer_addr + " is already there, will reuse connection");
+                        //conn.destroy();
+                        //continue; // return; // we cannot terminate the thread (bela Sept 2 2004)
                     }
-                    // conns.put(peer_addr, conn);
-                    addConnection(peer_addr, conn);
+                    else {
+                        // conns.put(peer_addr, conn);
+                        addConnection(peer_addr, conn);
+                        notifyConnectionOpened(peer_addr);
+                    }
                 }
-                notifyConnectionOpened(peer_addr);
+
                 conn.init(); // starts handler thread on this socket
             }
             catch(SocketException sock_ex) {
