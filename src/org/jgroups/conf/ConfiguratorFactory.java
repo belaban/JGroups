@@ -1,4 +1,4 @@
-// $Id: ConfiguratorFactory.java,v 1.9 2004/08/04 10:32:46 belaban Exp $
+// $Id: ConfiguratorFactory.java,v 1.10 2004/08/04 10:35:20 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -341,7 +341,7 @@ public class ConfiguratorFactory {
         // Check to see if the properties string is the name of a file.
         if (configStream == null) {
             try {
-                configStream=new FileInputStream((String)properties);
+                configStream=new FileInputStream(properties);
             }
             catch(FileNotFoundException fnfe) {
                 // the properties string is likely not a file
