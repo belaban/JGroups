@@ -1,4 +1,4 @@
-// $Id: AckSenderWindow.java,v 1.8 2004/09/23 16:29:53 belaban Exp $
+// $Id: AckSenderWindow.java,v 1.9 2005/01/28 09:33:29 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -24,18 +24,18 @@ import java.util.HashMap;
  * @author Bela Ban
  */
 public class AckSenderWindow implements Retransmitter.RetransmitCommand {
-    RetransmitCommand retransmit_command = null;   // called to request XMIT of msg
-    final HashMap           msgs = new HashMap();        // keys: seqnos (Long), values: Messages
-    long[]            interval = new long[]{1000, 2000, 3000, 4000};
-    final Retransmitter     retransmitter = new Retransmitter(null, this);
-    final Queue             msg_queue = new Queue(); // for storing messages if msgs is full
-    int               window_size = -1;   // the max size of msgs, when exceeded messages will be queued
+    RetransmitCommand   retransmit_command = null;   // called to request XMIT of msg
+    final HashMap       msgs = new HashMap();        // keys: seqnos (Long), values: Messages
+    long[]              interval = new long[]{1000, 2000, 3000, 4000};
+    final Retransmitter retransmitter = new Retransmitter(null, this);
+    final Queue         msg_queue = new Queue(); // for storing messages if msgs is full
+    int                 window_size = -1;   // the max size of msgs, when exceeded messages will be queued
 
     /** when queueing, after msgs size falls below this value, msgs are added again (queueing stops) */
-    int               min_threshold = -1;
-    boolean           use_sliding_window = false, queueing = false;
-    Protocol          transport = null; // used to send messages
-    protected static final Log log=LogFactory.getLog(AckSenderWindow.class);
+    int                 min_threshold = -1;
+    boolean             use_sliding_window = false, queueing = false;
+    Protocol            transport = null; // used to send messages
+    protected static    final Log log=LogFactory.getLog(AckSenderWindow.class);
 
 
     public interface RetransmitCommand {
@@ -85,7 +85,7 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
                     ") has to be less than window_size ( " + window_size + "). Values are swapped");
         }
         if (this.window_size <= 0) {
-            this.window_size = this.min_threshold > 0 ? (int) (this.min_threshold * 1.5) : 500;
+            this.window_size = this.min_threshold > 0 ? (int) (this.min_threshold * 1.5) : 1000;
             if(log.isWarnEnabled()) log.warn("window_size is <= 0, setting it to " + this.window_size);
         }
         if (this.min_threshold <= 0) {
@@ -202,11 +202,12 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
     public void retransmit(long first_seqno, long last_seqno, Address sender) {
         Message msg;
 
-        if (retransmit_command != null) {
-            for (long i = first_seqno; i <= last_seqno; i++) {
-                if ((msg = (Message) msgs.get(new Long(i))) != null) { // find the message to retransmit
+        if(retransmit_command != null) {
+            //if(log.isTraceEnabled())
+              //  log.trace("retransmitting messages " + first_seqno + " - " + last_seqno + " to " + sender);
+            for(long i = first_seqno; i <= last_seqno; i++) {
+                if((msg = (Message) msgs.get(new Long(i))) != null) { // find the message to retransmit
                     retransmit_command.retransmit(i, msg);
-                    //System.out.println("### retr(" + first_seqno + "): tstamp=" + System.currentTimeMillis());
                 }
             }
         }
