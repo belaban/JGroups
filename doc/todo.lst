@@ -1,10 +1,12 @@
-$Id: todo.lst,v 1.18 2004/12/03 05:20:37 belaban Exp $
+$Id: todo.lst,v 1.19 2004/12/07 18:09:17 belaban Exp $
 
 
 
 
 			      Todo List
 			      ---------
+
+- Make TUNNEL/GossipRouter use Streamable, plus GossipRouter should use a ConnectionTable
 
 - FC: on a fast network, we can still run out of memory because received_msgs/delivered_msgs becomes very big.
   Instead of basing FC on the speed of the network, we should also take the number of messages processed
