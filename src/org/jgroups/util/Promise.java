@@ -1,6 +1,8 @@
-// $Id: Promise.java,v 1.5 2004/03/30 06:47:28 belaban Exp $
+// $Id: Promise.java,v 1.6 2004/09/16 15:04:25 belaban Exp $
 
 package org.jgroups.util;
+
+import org.jgroups.TimeoutException;
 
 
 /**
@@ -13,71 +15,81 @@ public class Promise {
     boolean hasResult=false;
 
 
+
+
+
     /**
-     * Gets result. If result was already submitted,
-     * returns it immediately (resetting it), else blocks
-     * until
-     * results get available.
-     * 
-     * @param timeout Max time to wait for result. If it
-     *                is 0, we wait indefinitely
+     * Blocks until a result is available, or timeout milliseconds have elapsed
+     * @param timeout
+     * @return An object
+     * @throws TimeoutException. If a timeout occurred (implies that timeout > 0)
      */
-    public Object getResult(long timeout) {
-        Object ret=null;
-        // long   time_to_wait=timeout;
-
-//        synchronized(this) {
-//            while(hasResult == false) {
-//                try {
-//                    if(timeout <= 0) {
-//                        wait();
-//                        break;
-//                    }
-//                    else {
-//                        wait(time_to_wait);
-//
-//                    }
-//                }
-//                catch(InterruptedException ex) {
-//                    ;
-//                }
-//            }
-//            if(hasResult) {
-//                ret=result;
-//                result=null;
-//                hasResult=false;
-//                return ret;
-//            }
-//        }
-
+    public Object getResultWithTimeout(long timeout) throws TimeoutException {
+        Object  ret=null;
+        long    time_to_wait=timeout, start;
+        boolean timeout_occurred=false;
 
         synchronized(this) {
-            if(hasResult) {
-                ret=result;
-                result=null;
-                hasResult=false;
-                return ret;
-            }
-            try {
+            start=System.currentTimeMillis();
+            while(hasResult == false) {
                 if(timeout <= 0) {
-                    wait();
+                    doWait();
                 }
                 else {
-                    wait(timeout);
+                    if(time_to_wait <= 0) {
+                        timeout_occurred=true;
+                        break; // terminate the while loop
+                    }
+                    else {
+                        doWait(time_to_wait);
+                        time_to_wait-=System.currentTimeMillis()-start;
+                    }
                 }
             }
-            catch(Exception ex) {
 
-            }
-            if(hasResult) {
-                ret=result;
-                result=null;
-                hasResult=false;
+            ret=result;
+            result=null;
+            hasResult=false;
+            if(timeout_occurred)
+                throw new TimeoutException();
+            else
                 return ret;
-            }
+        }
+    }
+
+    public Object getResult() {
+        try {
+            return getResultWithTimeout(0);
+        }
+        catch(TimeoutException e) {
             return null;
         }
     }
+
+    /**
+     * Returns the result, but never throws a TimeoutException; returns null instead
+     * @param timeout
+     * @return
+     */
+    public Object getResult(long timeout) {
+        try {
+            return getResultWithTimeout(timeout);
+        }
+        catch(TimeoutException e) {
+            return null;
+        }
+    }
+
+
+    void doWait() {
+        try {wait();} catch(InterruptedException e) {}
+    }
+
+    void doWait(long timeout) {
+        try {wait(timeout);} catch(InterruptedException e) {}
+    }
+
+
 
 
     /**
