@@ -1,4 +1,4 @@
-// $Id: Queue.java,v 1.6 2003/09/23 00:43:16 belaban Exp $
+// $Id: Queue.java,v 1.7 2003/09/24 13:39:07 belaban Exp $
 
 package org.jgroups.util;
 
@@ -38,7 +38,6 @@ public class Queue {
 
     /*the number of end markers that have been added*/
     int     num_markers=0;
-
 
     /**
      * if the queue closes during the runtime
