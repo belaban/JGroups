@@ -1,4 +1,4 @@
-// $Id: RpcDispatcher.java,v 1.13 2004/08/14 01:46:25 belaban Exp $
+// $Id: RpcDispatcher.java,v 1.14 2005/01/10 11:25:01 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -245,7 +245,8 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
     }
 
     public void channelReconnected(Address new_addr) {
-        
+        if(log.isTraceEnabled())
+            log.trace("channel has been rejoined, old local_addr=" + local_addr + ", new local_addr=" + new_addr);
     }
     /* ----------------------------------------------------------------------- */
 

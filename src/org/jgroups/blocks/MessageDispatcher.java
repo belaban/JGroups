@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.34 2005/01/04 20:48:54 ovidiuf Exp $
+// $Id: MessageDispatcher.java,v 1.35 2005/01/10 11:25:18 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -646,6 +646,8 @@ public class MessageDispatcher implements RequestHandler {
                     break;
 
                 case Event.SET_LOCAL_ADDRESS:
+                    if(log.isTraceEnabled())
+                        log.trace("setting local_addr (" + local_addr + ") to " + evt.getArg());
                     local_addr=(Address)evt.getArg();
                     break;
 
