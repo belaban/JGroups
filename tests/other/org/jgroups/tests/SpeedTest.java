@@ -1,4 +1,4 @@
-// $Id: SpeedTest.java,v 1.12 2004/07/05 06:10:45 belaban Exp $
+// $Id: SpeedTest.java,v 1.13 2004/07/05 14:15:11 belaban Exp $
 
 
 package org.jgroups.tests;

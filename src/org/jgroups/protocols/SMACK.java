@@ -1,4 +1,4 @@
-// $Id: SMACK.java,v 1.6 2004/07/05 05:51:24 belaban Exp $
+// $Id: SMACK.java,v 1.7 2004/07/05 14:17:15 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -46,7 +46,7 @@ import java.util.Vector;
  * </ul>
  * Advantage of this protocol: no group membership necessary, fast.
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.6 $
+ * @version $Revision: 1.7 $
  * todo: initial mcast to announce new member (for view change)
  * todo: fix membershop bug: start a, b, kill b, restart b: b will be suspected by a
  */

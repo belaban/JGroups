@@ -1,4 +1,4 @@
-// $Id: MessageDispatcherTestAsync.java,v 1.7 2004/07/05 06:10:44 belaban Exp $
+// $Id: MessageDispatcherTestAsync.java,v 1.8 2004/07/05 14:15:11 belaban Exp $
 
 package org.jgroups.tests;
 

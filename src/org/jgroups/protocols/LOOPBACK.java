@@ -1,4 +1,4 @@
-// $Id: LOOPBACK.java,v 1.7 2004/07/05 05:51:24 belaban Exp $
+// $Id: LOOPBACK.java,v 1.8 2004/07/05 14:17:15 belaban Exp $
 
 package org.jgroups.protocols;
 

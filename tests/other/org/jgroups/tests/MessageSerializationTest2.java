@@ -8,7 +8,7 @@ import java.io.*;
 
 /**
  * @author Bela Ban Feb 12, 2004
- * @version $Id: MessageSerializationTest2.java,v 1.3 2004/07/05 06:10:44 belaban Exp $
+ * @version $Id: MessageSerializationTest2.java,v 1.4 2004/07/05 14:15:11 belaban Exp $
  */
 public class MessageSerializationTest2 {
 

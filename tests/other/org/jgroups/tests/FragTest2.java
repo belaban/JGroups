@@ -1,4 +1,4 @@
-// $Id: FragTest2.java,v 1.4 2004/07/05 06:10:43 belaban Exp $
+// $Id: FragTest2.java,v 1.5 2004/07/05 14:15:11 belaban Exp $
 
 
 package org.jgroups.tests;

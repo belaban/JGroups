@@ -1,4 +1,4 @@
-// $Id: InexistentRouterTest.java,v 1.3 2004/07/05 06:04:28 belaban Exp $
+// $Id: InexistentRouterTest.java,v 1.4 2004/07/05 14:15:04 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -20,7 +20,7 @@ import java.net.Socket;
  * only.
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
- * @version $Revision: 1.3 $
+ * @version $Revision: 1.4 $
  */
 public class InexistentRouterTest extends TestCase {
     private int SERVER_SOCKET_TIMEOUT=20000;

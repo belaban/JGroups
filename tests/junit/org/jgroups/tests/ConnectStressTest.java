@@ -1,4 +1,4 @@
-// $Id: ConnectStressTest.java,v 1.9 2004/07/05 06:04:27 belaban Exp $
+// $Id: ConnectStressTest.java,v 1.10 2004/07/05 14:15:04 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -17,7 +17,7 @@ import java.util.Vector;
 /**
  * Creates 1 channel, then creates NUM channels, all try to join the same channel concurrently.
  * @author Bela Ban Nov 20 2003
- * @version $Id: ConnectStressTest.java,v 1.9 2004/07/05 06:04:27 belaban Exp $
+ * @version $Id: ConnectStressTest.java,v 1.10 2004/07/05 14:15:04 belaban Exp $
  */
 public class ConnectStressTest extends TestCase {
     static CyclicBarrier  start_connecting=null;

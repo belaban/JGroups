@@ -32,7 +32,7 @@ import java.util.*;
  * the unicast routing caches should ensure that unicasts are only sent via 1 interface in almost all cases.
  * 
  * @author Bela Ban Oct 2003
- * @version $Id: UDP1_4.java,v 1.17 2004/07/05 05:51:25 belaban Exp $
+ * @version $Id: UDP1_4.java,v 1.18 2004/07/05 14:17:16 belaban Exp $
  * todo: sending of dummy packets
  */
 public class UDP1_4 extends Protocol implements  Receiver {

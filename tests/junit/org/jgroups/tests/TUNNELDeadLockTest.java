@@ -1,4 +1,4 @@
-// $Id: TUNNELDeadLockTest.java,v 1.4 2004/07/05 06:04:28 belaban Exp $
+// $Id: TUNNELDeadLockTest.java,v 1.5 2004/07/05 14:15:04 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -22,7 +22,7 @@ import java.net.Socket;
  * under heavy load.
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
- * @version $Revision: 1.4 $
+ * @version $Revision: 1.5 $
  * @see TUNNELDeadLockTest#testStress
  */
 public class TUNNELDeadLockTest extends TestCase {

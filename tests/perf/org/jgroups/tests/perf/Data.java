@@ -10,7 +10,7 @@ import java.util.HashMap;
  * Data sent around between members
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: Data.java,v 1.5 2004/07/05 06:18:36 belaban Exp $
+ * @version $Id: Data.java,v 1.6 2004/07/05 14:15:21 belaban Exp $
  */
 public class Data implements Externalizable {
     final static int DISCOVERY_REQ = 1;

@@ -1,4 +1,4 @@
-// $Id: PING.java,v 1.14 2004/07/05 05:51:24 belaban Exp $
+// $Id: PING.java,v 1.15 2004/07/05 14:17:15 belaban Exp $
 
 package org.jgroups.protocols;
 

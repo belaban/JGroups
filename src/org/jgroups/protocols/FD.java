@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.9 2004/07/05 05:51:24 belaban Exp $
+// $Id: FD.java,v 1.10 2004/07/05 14:17:15 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -35,7 +35,7 @@ import java.util.Vector;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Revision: 1.9 $
+ * @version $Revision: 1.10 $
  */
 public class FD extends Protocol {
     Address         ping_dest=null;

@@ -1,4 +1,4 @@
-// $Id: DistributedQueueBasicTest.java,v 1.5 2004/07/05 06:02:27 belaban Exp $
+// $Id: DistributedQueueBasicTest.java,v 1.6 2004/07/05 14:15:02 belaban Exp $
 
 package org.jgroups.blocks;
 

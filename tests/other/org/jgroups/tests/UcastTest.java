@@ -1,4 +1,4 @@
-// $Id: UcastTest.java,v 1.2 2004/07/05 06:10:46 belaban Exp $
+// $Id: UcastTest.java,v 1.3 2004/07/05 14:15:11 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -12,7 +12,7 @@ import java.util.StringTokenizer;
 
 /**
    @author Bela Ban
-   @version $Revision: 1.2 $
+   @version $Revision: 1.3 $
  */
 public class UcastTest {
 

@@ -1,4 +1,4 @@
-// $Id: McastReceiverTest1_4.java,v 1.3 2004/07/05 06:10:44 belaban Exp $
+// $Id: McastReceiverTest1_4.java,v 1.4 2004/07/05 14:15:11 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -19,7 +19,7 @@ import java.util.Enumeration;
    This class compiles and runs only under JDK 1.4 or higher
    @see McastSenderTest
    @author Bela Ban
-   @version $Revision: 1.3 $
+   @version $Revision: 1.4 $
  */
 public class McastReceiverTest1_4 {
 

@@ -1,4 +1,4 @@
-// $Id: ChannelDuo.java,v 1.3 2004/07/05 06:04:23 belaban Exp $
+// $Id: ChannelDuo.java,v 1.4 2004/07/05 14:15:04 belaban Exp $
 
 package org.jgroups.tests;
 

@@ -1,6 +1,6 @@
 package org.jgroups.tests;
 
-// $Id: SpeedTest1_4.java,v 1.6 2004/07/05 06:10:46 belaban Exp $
+// $Id: SpeedTest1_4.java,v 1.7 2004/07/05 14:15:11 belaban Exp $
 
 
 import org.jgroups.Channel;
