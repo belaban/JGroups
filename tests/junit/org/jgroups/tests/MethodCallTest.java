@@ -1,4 +1,4 @@
-// $Id: MethodCallTest.java,v 1.2 2004/05/17 17:05:53 belaban Exp $
+// $Id: MethodCallTest.java,v 1.3 2004/05/19 17:12:18 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -32,10 +32,65 @@ public class MethodCallTest extends TestCase {
     }
 
 
+
+    public boolean foo(int a, String b) {
+        System.out.println("test(" + a + ", " + b + ")");
+        return true;
+    }
+
+
+    public void bar(String[] a, String b) {
+        if(a != null) {
+            for(int i=0; i < a.length; i++) {
+                String s=a[i];
+                System.out.print(s + " ");
+            }
+        }
+        else
+            System.out.println("a=null");
+        if(b != null)
+            System.out.println("b=" + b);
+        else
+            System.out.println("b=null");
+    }
+
+
+
+
     public void testOld() {
         try {
             MethodCall mc=new MethodCall("foo", new Object[]{new Integer(22), "Bela"});
             assertEquals(mc.invoke(this), Boolean.TRUE);
+        }
+        catch(Throwable t) {
+            fail(t.toString());
+        }
+    }
+
+    public void testOld2() {
+        try {
+            MethodCall mc=new MethodCall("bar", new Object[]{new String[]{"one", "two", "three"}, "Bela"});
+            mc.invoke(this);
+        }
+        catch(Throwable t) {
+            fail(t.toString());
+        }
+    }
+
+    public void testOldWithNull() {
+        try {
+            MethodCall mc=new MethodCall("bar", new Object[]{new String[]{"one", "two", "three"}, null});
+            mc.invoke(this);
+        }
+        catch(Throwable t) {
+            fail(t.toString());
+        }
+    }
+
+    public void testOldWithNull2() {
+        try {
+            MethodCall mc=new MethodCall("bar", new Object[]{null, "Bela"});
+            mc.invoke(this);
         }
         catch(Throwable t) {
             fail(t.toString());
@@ -66,6 +121,46 @@ public class MethodCallTest extends TestCase {
     }
 
 
+    public void testTypesWithArray() {
+        MethodCall mc;
+        mc=new MethodCall("bar", new Object[]{new String[]{"one", "two", "three"}, "Bela"},
+                          new Class[]{String[].class, String.class});
+        try {
+            mc.invoke(this);
+        }
+        catch(Throwable t) {
+            fail(t.toString());
+        }
+    }
+
+    public void testTypesWithNullArgument() {
+        MethodCall mc;
+        mc=new MethodCall("bar", new Object[]{new String[]{"one", "two", "three"}, null},
+                          new Class[]{String[].class, String.class});
+        try {
+            mc.invoke(this);
+        }
+        catch(Throwable t) {
+            fail(t.toString());
+        }
+    }
+
+    public void testTypesWithNullArgument2() {
+        MethodCall mc;
+        mc=new MethodCall("bar", new Object[]{new String[]{"one", "two", "three"}, new Object[]{}},
+                          new Class[]{String[].class, String.class});
+        try {
+            mc.invoke(this);
+        }
+        catch(IllegalArgumentException ex) {
+            assertTrue("this was expected", true);
+        }
+        catch(Throwable t) {
+            fail(t.toString());
+        }
+    }
+
+
     public void testSignature() {
         MethodCall mc;
         mc=new MethodCall("foo", new Object[]{new Integer(35), "Bela"},
@@ -78,10 +173,8 @@ public class MethodCallTest extends TestCase {
         }
     }
 
-    public boolean foo(int a, String b) {
-        System.out.println("test(" + a + ", " + b + ")");
-        return true;
-    }
+
+
 
 
 
