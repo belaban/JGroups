@@ -1,4 +1,4 @@
-// $Id: AckSenderWindowTest.java,v 1.2 2004/03/30 06:47:31 belaban Exp $
+// $Id: AckSenderWindowTest.java,v 1.3 2005/01/28 12:17:31 belaban Exp $
 package org.jgroups.tests;
 
 
@@ -125,14 +125,7 @@ public class AckSenderWindowTest extends TestCase {
 
     public AckSenderWindowTest(String name) { super(name); }
     
-    
-    public void setUp() {
-	
-    }
-    
-    public void tearDown() {
-	
-    }
+
     
     
     /** Tests whether retransmits are called at correct times for 1000 messages */
