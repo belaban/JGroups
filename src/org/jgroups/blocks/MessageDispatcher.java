@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.26 2004/08/04 10:36:43 belaban Exp $
+// $Id: MessageDispatcher.java,v 1.27 2004/08/04 12:38:39 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -699,6 +699,8 @@ public class MessageDispatcher implements RequestHandler {
                             //this is ok.
                         }
                     }
+                    Thread.interrupted(); // clears the interrupt flag in case we didn't terminate via the
+                                          // catch clause
                 }
             });
             m_upProcessingThread.setName("MessageDispatcher up processing thread");
