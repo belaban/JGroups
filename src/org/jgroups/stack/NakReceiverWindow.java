@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindow.java,v 1.9 2004/05/06 16:38:12 belaban Exp $
+// $Id: NakReceiverWindow.java,v 1.10 2004/05/10 22:27:55 belaban Exp $
 
 
 package org.jgroups.stack;
@@ -43,7 +43,7 @@ import java.util.*;
  * iii. Internal or externally provided retransmission scheduler thread.<br>
  * iv. Exponential backoff in time for retransmissions.<br>
  *
- * @author Bela Ban May 27 1999
+ * @author Bela Ban May 27 1999, May 2004
  * @author John Georgiadis May 8 2001
  */
 public class NakReceiverWindow {
