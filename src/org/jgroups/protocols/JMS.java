@@ -1,4 +1,4 @@
-// $Id: JMS.java,v 1.9 2004/10/25 09:42:38 belaban Exp $ 
+// $Id: JMS.java,v 1.10 2004/10/25 09:45:31 belaban Exp $ 
 
 package org.jgroups.protocols;
 
@@ -452,29 +452,20 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
                 }
         }*/
 
+
         // Patch below submitted by Greg Woolsey
         // Check if JMS connection contains client ID, if not, try to assign randomly generated one
         // setClientID() must be the first method called on a new connection, per the JMS spec.
         // If the client ID is already set, this will throw IllegalStateException and keep the original value.
-        try
-        {
-            connection.setClientID(generateLocalAddress());
-            addressAssigned = true;
-        } catch (javax.jms.IllegalStateException e) {
-            // expected if connection already has a client ID.
-            addressAssigned = true;
-        } catch(javax.jms.InvalidClientIDException ex) {
-            // duplicate... ok, let's try again
-        }
-        while(!addressAssigned)
-        {
-            try
-            {
+        while(!addressAssigned) {
+            try {
                 connection.setClientID(generateLocalAddress());
                 addressAssigned = true;
-            } catch(javax.jms.InvalidClientIDException
-                    ex) {
-                // duplicate... ok, let's try again
+            } catch (javax.jms.IllegalStateException e) {
+                // expected if connection already has a client ID.
+                addressAssigned = true;
+            } catch(javax.jms.InvalidClientIDException ex) {
+                // duplicate... OK, let's try again
             }
         }
 
@@ -482,7 +473,7 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
         mcast_addr = new JMSAddress(topicName, true);
 
         session = connection.createTopicSession(false,
-            javax.jms.Session.AUTO_ACKNOWLEDGE);
+                                                javax.jms.Session.AUTO_ACKNOWLEDGE);
 
         publisher = session.createPublisher(topic);
         publisher.setTimeToLive(timeToLive);
