@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.15 2004/04/23 19:36:12 belaban Exp $
+// $Id: NAKACK.java,v 1.16 2004/04/26 18:40:14 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -221,17 +221,17 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
 
             case Event.GET_DIGEST:
                 digest=getDigest();
-                passUp(new Event(Event.GET_DIGEST_OK, digest));
+                passUp(new Event(Event.GET_DIGEST_OK, digest != null? digest.copy() : null));
                 return;
 
             case Event.GET_DIGEST_STABLE:
                 digest=getDigestHighestDeliveredMsgs();
-                passUp(new Event(Event.GET_DIGEST_STABLE_OK, digest));
+                passUp(new Event(Event.GET_DIGEST_STABLE_OK, digest != null? digest.copy() : null));
                 return;
 
             case Event.GET_DIGEST_STATE:
                 digest=getDigest();
-                passUp(new Event(Event.GET_DIGEST_STATE_OK, digest));
+                passUp(new Event(Event.GET_DIGEST_STATE_OK, digest != null? digest.copy() : null));
                 return;
 
             case Event.SET_DIGEST:

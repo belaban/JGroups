@@ -1,4 +1,4 @@
-// $Id: RpcDispatcher.java,v 1.7 2004/03/30 06:47:12 belaban Exp $
+// $Id: RpcDispatcher.java,v 1.8 2004/04/26 18:40:12 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -161,9 +161,8 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         Message  msg=null;
         RspList  retval=null;
 
-
-            if(log.isDebugEnabled()) log.debug("dests=" + dests +
-                    ", method_call=" + method_call + ", mode=" + mode + ", timeout=" + timeout);
+        if(log.isDebugEnabled())
+            log.debug("dests=" + dests + ", method_call=" + method_call + ", mode=" + mode + ", timeout=" + timeout);
 
         try {
             buf=marshaller != null? marshaller.objectToByteBuffer(method_call) : Util.objectToByteBuffer(method_call);
@@ -175,8 +174,7 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
 
         msg=new Message(null, null, buf);
         retval=super.castMessage(dests, msg, mode, timeout);
-
-            if(log.isDebugEnabled()) log.debug("responses: " + retval);
+        if(log.isDebugEnabled()) log.debug("responses: " + retval);
         return retval;
     }
 

@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.6 2004/04/23 19:36:12 belaban Exp $
+// $Id: STABLE.java,v 1.7 2004/04/26 18:40:14 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -41,7 +41,7 @@ public class STABLE extends Protocol {
     Digest              digest=new Digest();          // keeps track of the highest seqnos from all members
     Promise             digest_promise=new Promise(); // for fetching digest (from NAKACK layer)
     Vector              heard_from=new Vector();      // keeps track of who we already heard from (STABLE_GOSSIP msgs)
-    long                digest_timeout=10000;         // time to wait until digest is received (from NAKACK)
+    long                digest_timeout=60000;         // time to wait until digest is received (from NAKACK)
 
     /** Sends a STABLE gossip every 20 seconds on average. 0 disables gossipping of STABLE messages */
     long                desired_avg_gossip=20000;
@@ -83,7 +83,7 @@ public class STABLE extends Protocol {
         super.setProperties(props);
         str=props.getProperty("digest_timeout");
         if(str != null) {
-            digest_timeout=new Long(str).longValue();
+            digest_timeout=Long.parseLong(str);
             props.remove("digest_timeout");
         }
 
@@ -363,9 +363,10 @@ public class STABLE extends Protocol {
         Digest ret=null;
         passDown(new Event(Event.GET_DIGEST_STABLE));
         ret=(Digest)digest_promise.getResult(digest_timeout);
-        if(ret == null)
-            if(log.isErrorEnabled()) log.error("digest could not be fetched from below " +
-                    "(timeout was " + digest_timeout + " msecs)");
+        if(ret == null) {
+            if(log.isErrorEnabled())
+                log.error("digest could not be fetched from below " + "(timeout was " + digest_timeout + " msecs)");
+        }
         return ret;
     }
 

@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.13 2004/04/22 23:50:17 belaban Exp $
+// $Id: JChannel.java,v 1.14 2004/04/26 18:40:15 belaban Exp $
 
 package org.jgroups;
 
@@ -23,7 +23,7 @@ import java.util.Vector;
  * protocol stack
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.13 $
+ * @version $Revision: 1.14 $
  */
 public class JChannel extends Channel {
 
@@ -151,7 +151,7 @@ public class JChannel extends Channel {
             catch(Exception x) {
                 String strace=Util.getStackTrace(x);
                 if(log.isErrorEnabled()) log.error(strace);
-                throw new ChannelException("JChannel: Unable to load protocol stack: {" + x.getMessage() + ";" + strace + "}");
+                throw new ChannelException("unable to load protocol stack: {" + x.getMessage() + ";" + strace + "}");
             }
         }
 

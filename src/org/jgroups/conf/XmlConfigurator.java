@@ -1,4 +1,4 @@
-// $Id: XmlConfigurator.java,v 1.3 2004/04/24 11:19:27 belaban Exp $
+// $Id: XmlConfigurator.java,v 1.4 2004/04/26 18:40:13 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -11,19 +11,16 @@ package org.jgroups.conf;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.util.Util;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
+import org.w3c.dom.*;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.Vector;
+import java.util.*;
 
 
 public class XmlConfigurator implements ProtocolStackConfigurator {
@@ -43,12 +40,10 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
     private String mStackName;
     protected static Log log=LogFactory.getLog(XmlConfigurator.class);
 
-    protected XmlConfigurator(String stackName,
-                              ProtocolData[] protocols) {
+    protected XmlConfigurator(String stackName, ProtocolData[] protocols) {
         mStackName=stackName;
         for(int i=0; i < protocols.length; i++)
             mProtocolStack.add(protocols[i]);
-
     }
 
     protected XmlConfigurator(String stackName) {
@@ -56,41 +51,50 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
     }
 
 
-    public static XmlConfigurator getInstance(URL url)
-            throws java.io.IOException {
+    public static XmlConfigurator getInstance(URL url) throws java.io.IOException {
         return getInstance(url.openStream());
     }
 
-    public static XmlConfigurator getInstance(InputStream stream)
-            throws java.io.IOException {
+    public static XmlConfigurator getInstanceOldFormat(URL url) throws java.io.IOException {
+        return getInstanceOldFormat(url.openStream());
+    }
+
+    public static XmlConfigurator getInstance(InputStream stream) throws java.io.IOException {
         return parse(stream);
     }
 
+    public static XmlConfigurator getInstanceOldFormat(InputStream stream) throws java.io.IOException {
+        return parseOldFormat(stream);
+    }
 
-    public static XmlConfigurator getInstance(Element el)
-            throws java.io.IOException {
+
+    public static XmlConfigurator getInstance(Element el) throws java.io.IOException {
         return parse(el);
     }
 
 
     /**
      *
-     * @param new_format If false: print old plain output, else print new XML format
+     * @param convert If false: print old plain output, else print new XML format
      * @return
      */
-    public String getProtocolStackString(boolean new_format) {
+    public String getProtocolStackString(boolean convert) {
         StringBuffer buf=new StringBuffer();
         Iterator it=mProtocolStack.iterator();
+        if(convert) buf.append("<config>\n");
         while(it.hasNext()) {
             ProtocolData d=(ProtocolData)it.next();
-            buf.append("<").append(d.getProtocolString(new_format)).append("/>");
+            if(convert) buf.append("    <");
+            buf.append(d.getProtocolString(convert));
+            if(convert) buf.append("/>");
             if(it.hasNext()) {
-                if(new_format)
+                if(convert)
                     buf.append("\n");
                 else
                     buf.append(":");
             }
         }
+        if(convert) buf.append("\n</config>");
         return buf.toString();
     }
 
@@ -121,7 +125,56 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
     }
 
 
-    protected static XmlConfigurator parse(InputStream stream) throws java.io.IOException {
+//    protected static XmlConfigurator parse(InputStream stream) throws java.io.IOException {
+//        XmlConfigurator configurator=null;
+//        try {
+//            DocumentBuilderFactory factory=DocumentBuilderFactory.newInstance();
+//            factory.setValidating(false); //for now
+//            DocumentBuilder builder=factory.newDocumentBuilder();
+//            builder.setEntityResolver(new ClassPathEntityResolver());
+//            Document document=builder.parse(stream);
+//            Element root=(Element)document.getElementsByTagName("protocol-stack").item(0);
+//            root.normalize();
+//            //print("",new PrintWriter(System.out),root);
+//            String stackname=root.getAttribute(ATTR_NAME);
+//            String inherit=root.getAttribute(ATTR_INHERIT);
+//            boolean isinherited=(inherit != null && inherit.length() > 0);
+//            NodeList protocol_list=document.getElementsByTagName(isinherited ? ELMT_PROT_OVERRIDE : ELMT_PROT);
+//            Vector v=new Vector();
+//            for(int i=0; i < protocol_list.getLength(); i++) {
+//                if(protocol_list.item(i).getNodeType() == Node.ELEMENT_NODE) {
+//                    v.addElement(parseProtocolData(protocol_list.item(i)));
+//                }
+//            }
+//            ProtocolData[] protocols=new ProtocolData[v.size()];
+//            v.copyInto(protocols);
+//
+//            if(isinherited) {
+//                URL inheritURL=new URL(inherit);
+//                configurator=XmlConfigurator.getInstance(inheritURL);
+//                for(int i=0; i < protocols.length; i++)
+//                    configurator.override(protocols[i]);
+//            }
+//            else {
+//                configurator=new XmlConfigurator(stackname, protocols);
+//            }//end if
+//
+//        }
+//        catch(Exception x) {
+//            if(x instanceof java.io.IOException)
+//                throw (java.io.IOException)x;
+//            else {
+//                if(xml_debug) x.printStackTrace();
+//                String error=Util.getStackTrace(x);
+//                if(log.isErrorEnabled()) log.error(error);
+//                throw new java.io.IOException(x.getMessage());
+//            }
+//        }
+//        return configurator;
+//    }
+
+
+        protected static XmlConfigurator parseOldFormat(InputStream stream) throws java.io.IOException {
         XmlConfigurator configurator=null;
         try {
             DocumentBuilderFactory factory=DocumentBuilderFactory.newInstance();
@@ -168,6 +221,90 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
         }
         return configurator;
     }
+
+
+
+
+    protected static XmlConfigurator parse(InputStream stream) throws java.io.IOException {
+        XmlConfigurator configurator=null;
+        /** LinkedList<ProtocolData> */
+        LinkedList prot_data=new LinkedList();
+
+
+        /**
+         * CAUTION: crappy code ahead ! I (bela) am not an XML expert, so the code below is pretty amateurish...
+         * But it seems to work, and it is executed only on startup, so no perf loss on the critical path.
+         * If somebody wants to improve this, please be my guest.
+         */
+        try {
+            DocumentBuilderFactory factory=DocumentBuilderFactory.newInstance();
+            factory.setValidating(false); //for now
+            DocumentBuilder builder=factory.newDocumentBuilder();
+            builder.setEntityResolver(new ClassPathEntityResolver());
+            Document document=builder.parse(stream);
+            NodeList roots=document.getChildNodes();
+            Node root=null;
+
+            for(int i =0; i < roots.getLength(); i++) {
+                root=roots.item(i);
+                if(root.getNodeType() != Node.ELEMENT_NODE)
+                    continue;
+            }
+
+            String root_name=root.getNodeName();
+            if(!root_name.trim().toLowerCase().equals("config")) {
+                log.fatal("XML protocol stack configuration does not start with a '<config>' element; " +
+                        "maybe the XML configuration needs to be converted to the new format ?\n" +
+                        "use 'java org.jgroups.conf.XmlConfigurator <old XML file> -new_format' to do so");
+                throw new IOException("invalid XML configuration");
+            }
+
+            NodeList prots=root.getChildNodes();
+            for(int i=0; i < prots.getLength(); i++) {
+                Node node = prots.item(i);
+                if( node.getNodeType() != Node.ELEMENT_NODE )
+                    continue;
+
+                Element tag = (Element) node;
+                String protocol = tag.getTagName();
+                // System.out.println("protocol: " + protocol);
+                LinkedList tmp=new LinkedList();
+
+                NamedNodeMap attrs = tag.getAttributes();
+                int attrLength = attrs.getLength();
+                for(int a = 0; a < attrLength; a ++) {
+                    Attr attr = (Attr) attrs.item(a);
+                    String name = attr.getName();
+                    String value = attr.getValue();
+                    // System.out.println("    name=" + name + ", value=" + value);
+                    tmp.add(new ProtocolParameter(name, value));
+                }
+                ProtocolParameter[] params=new ProtocolParameter[tmp.size()];
+                for(int j=0; j < tmp.size(); j++)
+                    params[j]=(ProtocolParameter)tmp.get(j);
+                ProtocolData data=new ProtocolData(protocol, "bla", "" + protocol, params);
+                prot_data.add(data);
+            }
+
+            ProtocolData[] data=new ProtocolData[(prot_data.size())];
+            for(int k=0; k < prot_data.size(); k++)
+                data[k]=(ProtocolData)prot_data.get(k);
+            configurator=new XmlConfigurator("bla", data);
+        }
+        catch(Exception x) {
+            if(x instanceof java.io.IOException)
+                throw (java.io.IOException)x;
+            else {
+                if(xml_debug) x.printStackTrace();
+                String error=Util.getStackTrace(x);
+                if(log.isErrorEnabled()) log.error(error);
+                throw new java.io.IOException(x.getMessage());
+            }
+        }
+        return configurator;
+    }
+
+
 
 
     protected static XmlConfigurator parse(Element root) throws java.io.IOException {
@@ -315,11 +452,14 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
         XmlConfigurator conf;
         boolean new_format=false;
 
-        for(int i=0; i < args.length; i++) {
-            if(args[i].equals("-url")) {
-                input_file=args[++i];
-                continue;
-            }
+        if(args.length == 0) {
+            help();
+            return;
+        }
+
+        input_file=args[0];
+
+        for(int i=1; i < args.length; i++) {
             if(args[i].equals("-new_format")) {
                 new_format=true;
                 continue;
@@ -330,9 +470,26 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
 
         xml_debug=true;
         if(input_file != null) {
-            conf=XmlConfigurator.getInstance(new URL(input_file));
+            InputStream input=null;
+
+            try {
+                input=new FileInputStream(new File(input_file));
+            }
+            catch(Throwable t) {
+            }
+            if(input == null) {
+                try {
+                    input=new URL(input_file).openStream();
+                }
+                catch(Throwable t) {
+                }
+            }
+
+            conf=XmlConfigurator.getInstanceOldFormat(input);
             output=conf.getProtocolStackString(new_format);
             output=replace(output, "org.jgroups.protocols.", "");
+            if(new_format)
+                System.out.println(getTitle(input_file));
             System.out.println("\n" + output);
         }
         else {
@@ -340,11 +497,18 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
         }
     }
 
+    private static String getTitle(String input) {
+        StringBuffer sb=new StringBuffer();
+        sb.append("\n\n<!-- ************ JGroups Protocol Stack Configuration ************** -->\n");
+        sb.append("<!-- generated by XmlConfigurator on " + new Date() + " -->\n");
+        sb.append("<!-- input file: " + input + " -->");
+        return sb.toString();
+    }
+
 
     public static String replace(String input, final String expr, String replacement) {
         StringBuffer sb=new StringBuffer();
         int new_index=0, index=0, len=expr.length(), input_len=input.length();
-
 
         while(true) {
             new_index=input.indexOf(expr, index);
@@ -363,6 +527,7 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
 
 
     static void help() {
-        System.out.println("XmlConfigurator [-help] [-url <URL> ] [-new_format]");
+        System.out.println("XmlConfigurator <input XML file> [-new_format]");
+        System.out.println("(-new_format: converts old XML format into new format)");
     }
 }
