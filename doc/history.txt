@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.76 2004/05/15 00:39:38 belaban Exp $
+Revision: $Id: history.txt,v 1.77 2004/05/19 00:14:15 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -28,6 +28,10 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
 Version 2.2.5
 -------------
+
+- UDP: we cannot remove the header, because further retransmissions will fail. This lead to the
+  'missing UDP header bug'. Replaced removeHeader() with getHeader()
+  (bela May 18 2004)
 
 - Removed all deprecated methods from MethodCall.
 - Changed all dependent classes (RpcDispatcher, RpcProtocol etc)
