@@ -1,11 +1,8 @@
-// $Id: ProtocolStack.java,v 1.13 2004/09/23 16:29:53 belaban Exp $
+// $Id: ProtocolStack.java,v 1.14 2004/09/23 22:31:23 belaban Exp $
 
 package org.jgroups.stack;
 
-import org.jgroups.Event;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
-import org.jgroups.Transport;
+import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.util.Promise;
 import org.jgroups.util.TimeScheduler;
@@ -48,7 +45,7 @@ public class ProtocolStack extends Protocol implements Transport {
 
 
 
-    public ProtocolStack(JChannel channel, String setup_string) {
+    public ProtocolStack(JChannel channel, String setup_string) throws ChannelException {
         this.setup_string=setup_string;
         this.channel=channel;
         ClassConfigurator.getInstance(); // will create the singleton

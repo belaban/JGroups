@@ -1,4 +1,4 @@
-// $Id: FCTest.java,v 1.1 2004/09/23 16:30:01 belaban Exp $
+// $Id: FCTest.java,v 1.2 2004/09/23 22:31:25 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -31,7 +31,7 @@ public class FCTest extends TestCase {
     Vector members;
     View v;
     Simulator s;
-    final int NUM=50000;
+    final int NUM=10000;
     final int SIZE=1000; // bytes
 
 

@@ -1,4 +1,4 @@
-// $Id: ClassConfigurator.java,v 1.7 2004/09/23 16:29:14 belaban Exp $
+// $Id: ClassConfigurator.java,v 1.8 2004/09/23 22:31:22 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -6,6 +6,7 @@ package org.jgroups.conf;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.util.Util;
+import org.jgroups.ChannelException;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -35,9 +36,11 @@ public class ClassConfigurator {
     protected final Log log=LogFactory.getLog(getClass());
 
 
-    private ClassConfigurator(boolean init) {
+    private ClassConfigurator() {
+    }
+
+    public void init() throws ChannelException {
         //populate the map
-        if(!init) return;
         try {
             // make sure we have a class for DocumentBuilderFactory
             getClass().getClassLoader().loadClass("javax.xml.parsers.DocumentBuilderFactory");
@@ -53,45 +56,47 @@ public class ClassConfigurator {
                 }
             }
             catch (SecurityException ex){
-            	
             }
+
             ClassMap[] mapping=reader.readMagicNumberMapping();
             if(mapping != null) {
                 for(int i=0; i < mapping.length; i++) {
+                    Integer m=new Integer(mapping[i].getMagicNumber());
                     try {
-                        Integer m=new Integer(mapping[i].getMagicNumber());
                         Class clazz=mapping[i].getClassForMap();
-                        if(clazz == null) {
-                            if(log.isErrorEnabled()) log.error("failed to create class " + mapping[i].getClassName());
-                            continue;
-                        }
                         if(magicMap.containsKey(m)) {
-                            if(log.isErrorEnabled())
-                                log.error("magic key " + m + " (" + clazz.getName() + ')' +
-                                        " is already in map (won't be overwritten). Please make sure that " +
-                                        "all magic keys are unique");
+                            throw new ChannelException("magic key " + m + " (" + clazz.getName() + ')' +
+                                                       " is already in map; please make sure that " +
+                                                       "all magic keys are unique");
                         }
                         else {
                             magicMap.put(m, clazz);
                             classMap.put(clazz, m);
                         }
                     }
-                    catch(Exception cx) {
-                        if(log.isErrorEnabled()) log.error("Failed to load class:" + mapping[i].getClassName());
+                    catch(ClassNotFoundException cnf) {
+                        throw new ChannelException("failed loading class: " + cnf);
                     }
                 }
-
                 if(log.isDebugEnabled()) log.debug("mapping is:\n" + printMagicMap());
             }
         }
+        catch(ChannelException ex) {
+            throw ex;
+        }
         catch(Throwable x) {
-            if(log.isErrorEnabled()) log.error(ConfiguratorFactory.JAXP_MISSING_ERROR_MSG + "\nstack trace:\n" + Util.print(x));
+            // if(log.isErrorEnabled()) log.error("failed reading the magic number mapping file, reason: " + Util.print(x));
+            throw new ChannelException("failed reading the magic number mapping file", x);
         }
     }
 
 
-    public static ClassConfigurator getInstance() {
-        return instance != null ? instance : (instance=new ClassConfigurator(true));
+    public static ClassConfigurator getInstance() throws ChannelException {
+        if(instance == null) {
+            instance=new ClassConfigurator();
+            instance.init();
+        }
+        return instance;
     }
 
 
