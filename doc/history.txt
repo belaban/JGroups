@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.98 2004/08/05 07:57:25 belaban Exp $
+Revision: $Id: history.txt,v 1.99 2004/08/06 08:06:04 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -27,6 +27,14 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
 Version 2.2.7
 -------------
+
+
+
+- Reverted use of ContextInputStream in Message.getObject()
+  (bela Aug 6 2004)
+
+
+
 
 
 
