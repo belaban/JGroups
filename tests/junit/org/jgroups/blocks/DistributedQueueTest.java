@@ -1,4 +1,4 @@
-// $Id: DistributedQueueTest.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+// $Id: DistributedQueueTest.java,v 1.2 2003/10/15 16:10:02 rds13 Exp $
 
 package org.jgroups.blocks;
 
@@ -131,7 +131,7 @@ public class DistributedQueueTest extends TestCase
 	}
 
 
-	public void testConcurrent() throws Exception
+	public void testMultipleWriter() throws Exception
 	{
 		PutTask t1 = new PutTask("Queue1", queue1);
 		PutTask t2 = new PutTask("Queue2", queue2);
