@@ -23,7 +23,7 @@ import java.util.*;
  * <li>num_ping_requests - the number of GET_MBRS_REQ messages to be sent (min=1), distributed over timeout ms
  * </ul>
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.4 2005/01/12 01:36:54 belaban Exp $
+ * @version $Id: Discovery.java,v 1.5 2005/03/23 09:26:44 belaban Exp $
  */
 public abstract class Discovery extends Protocol {
     final Vector  members=new Vector(11);
@@ -228,7 +228,7 @@ public abstract class Discovery extends Protocol {
      * the layer may need to add a header to it (or do nothing at all) before sending it down
      * the stack using <code>PassDown</code>. In case of a GET_ADDRESS event (which tries to
      * retrieve the stack's address from one of the bottom layers), the layer may need to send
-     * a new response event back up the stack using <code>PassUp</code>.
+     * a new response event back up the stack using <code>passUp()</code>.
      * The PING protocol is interested in several different down events,
      * Event.FIND_INITIAL_MBRS - sent by the GMS layer and expecting a GET_MBRS_OK
      * Event.TMP_VIEW and Event.VIEW_CHANGE - a view change event
