@@ -1,4 +1,4 @@
-// $Id: List.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+// $Id: List.java,v 1.2 2003/11/21 06:36:03 belaban Exp $
 
 package org.jgroups.util;
 
@@ -11,8 +11,6 @@ import java.util.NoSuchElementException;
 import java.util.Vector;
 
 
-
-
 /**
  * Doubly-linked list. Elements can be added at head or tail and removed from head/tail.
  * This class is tuned for element access at either head or tail, random access to elements
@@ -21,323 +19,314 @@ import java.util.Vector;
  * @author Bela Ban
  */
 public class List implements Externalizable, Cloneable {
-    protected Element   head=null, tail=null;
-    protected int       size=0;
-    protected Object    mutex=new Object();
+    protected Element head=null, tail=null;
+    protected int size=0;
+    protected Object mutex=new Object();
 
     class Element {
-	Object  obj=null;
-	Element next=null;
-	Element prev=null;
+        Object obj=null;
+        Element next=null;
+        Element prev=null;
 
-	Element(Object o) {obj=o;}
+        Element(Object o) {
+            obj=o;
+        }
     }
 
 
-    public List() {}
-
+    public List() {
+    }
 
 
     /**
-       Adds an object at the tail of the list.
+     Adds an object at the tail of the list.
      */
     public void add(Object obj) {
-	Element el=new Element(obj);
+        Element el=new Element(obj);
 
-	synchronized(mutex) {
-	    if(head == null) {
-		head=el;
-		tail=head;
-		size=1;
-	    }
-	    else {
-		el.prev=tail;
-		tail.next=el;
-		tail=el;
-		size++;
-	    }
-	}
+        synchronized(mutex) {
+            if(head == null) {
+                head=el;
+                tail=head;
+                size=1;
+            }
+            else {
+                el.prev=tail;
+                tail.next=el;
+                tail=el;
+                size++;
+            }
+        }
     }
 
     /**
-       Adds an object at the head of the list.
+     Adds an object at the head of the list.
      */
     public void addAtHead(Object obj) {
-	Element el=new Element(obj);
+        Element el=new Element(obj);
 
-	synchronized(mutex) {
-	    if(head == null) {
-		head=el;
-		tail=head;
-		size=1;
-	    }
-	    else {
-		el.next=head;
-		head.prev=el;
-		head=el;
-		size++;
-	    }
-	}
+        synchronized(mutex) {
+            if(head == null) {
+                head=el;
+                tail=head;
+                size=1;
+            }
+            else {
+                el.next=head;
+                head.prev=el;
+                head=el;
+                size++;
+            }
+        }
     }
 
 
     /**
-       Removes an object from the tail of the list. Returns null if no elements available
-    */
+     Removes an object from the tail of the list. Returns null if no elements available
+     */
     public Object remove() {
-	Element retval=null;
+        Element retval=null;
 
-	synchronized(mutex) {
-	    if(tail == null)
-		return null;
-	    retval=tail;
-	    if(head == tail) { // last element
-		head=null; tail=null;
-	    }
-	    else {
-		tail.prev.next=null;
-		tail=tail.prev;
-		retval.prev=null;
-	    }
+        synchronized(mutex) {
+            if(tail == null)
+                return null;
+            retval=tail;
+            if(head == tail) { // last element
+                head=null;
+                tail=null;
+            }
+            else {
+                tail.prev.next=null;
+                tail=tail.prev;
+                retval.prev=null;
+            }
 
-	    size--;
-	}
-	return retval.obj;
+            size--;
+        }
+        return retval.obj;
     }
 
 
     /** Removes an object from the head of the list. Returns null if no elements available */
     public Object removeFromHead() {
-	Element retval=null;
+        Element retval=null;
 
-	synchronized(mutex) {
-	    if(head == null)
-		return null;
-	    retval=head;
-	    if(head == tail) { // last element
-		head=null; tail=null;
-	    }
-	    else {
-		head=head.next;
-		head.prev=null;
-		retval.next=null;
-	    }
-	    size--;
-	}
-	return retval.obj;
+        synchronized(mutex) {
+            if(head == null)
+                return null;
+            retval=head;
+            if(head == tail) { // last element
+                head=null;
+                tail=null;
+            }
+            else {
+                head=head.next;
+                head.prev=null;
+                retval.next=null;
+            }
+            size--;
+        }
+        return retval.obj;
     }
 
 
-
-
     /**
-       Returns element at the tail (if present), but does not remove it from list.
+     Returns element at the tail (if present), but does not remove it from list.
      */
     public Object peek() {
-	synchronized(mutex) {
-	    return tail != null ? tail.obj : null;
-	}
+        synchronized(mutex) {
+            return tail != null ? tail.obj : null;
+        }
     }
 
 
-
     /**
-       Returns element at the head (if present), but does not remove it from list.
+     Returns element at the head (if present), but does not remove it from list.
      */
     public Object peekAtHead() {
-	synchronized(mutex) {
-	    return head != null ? head.obj : null;
-	}
+        synchronized(mutex) {
+            return head != null ? head.obj : null;
+        }
     }
-
-
-
-
 
 
     /**
-       Removes element <code>obj</code> from the list, checking for equality using the <code>equals</code>
-       operator. Only the first duplicate object is removed. Returns the removed object.
+     Removes element <code>obj</code> from the list, checking for equality using the <code>equals</code>
+     operator. Only the first duplicate object is removed. Returns the removed object.
      */
     public Object removeElement(Object obj) {
-	Element el=null;
-	Object  retval=null;
+        Element el=null;
+        Object retval=null;
 
-	synchronized(mutex) {
-	    el=head;
-	    while(el != null) {
-		if(el.obj.equals(obj)) {
-		    retval=el.obj;
-		    if(head == tail) {           // only 1 element left in the list
-			head=null; tail=null;
-		    }
-		    else if(el.prev == null) {  // we're at the head
-			head=el.next;
-			head.prev=null;
-			el.next=null;
-		    }
-		    else if(el.next == null) {  // we're at the tail
-			tail=el.prev;
-			tail.next=null;
-			el.prev=null;
-		    }
-		    else {                      // we're somewhere in the middle of the list
-			el.prev.next=el.next;
-			el.next.prev=el.prev;
-			el.next=null;
-			el.prev=null;
-		    }
-		    size--;
-		    break;
-		}
+        synchronized(mutex) {
+            el=head;
+            while(el != null) {
+                if(el.obj.equals(obj)) {
+                    retval=el.obj;
+                    if(head == tail) {           // only 1 element left in the list
+                        head=null;
+                        tail=null;
+                    }
+                    else
+                        if(el.prev == null) {  // we're at the head
+                            head=el.next;
+                            head.prev=null;
+                            el.next=null;
+                        }
+                        else
+                            if(el.next == null) {  // we're at the tail
+                                tail=el.prev;
+                                tail.next=null;
+                                el.prev=null;
+                            }
+                            else {                      // we're somewhere in the middle of the list
+                                el.prev.next=el.next;
+                                el.next.prev=el.prev;
+                                el.next=null;
+                                el.prev=null;
+                            }
+                    size--;
+                    break;
+                }
 
-		el=el.next;
-	    }
-	}
-	return retval;
+                el=el.next;
+            }
+        }
+        return retval;
     }
-
-
 
 
     public void removeAll() {
-	synchronized(mutex) {
-	    size=0;
-	    head=null;
-	    tail=null;
-	}
+        synchronized(mutex) {
+            size=0;
+            head=null;
+            tail=null;
+        }
     }
-
 
 
     public int size() {
-	return size;
+        return size;
     }
 
     public String toString() {
-	StringBuffer ret=new StringBuffer("[");
-	Element el=head;
+        StringBuffer ret=new StringBuffer("[");
+        Element el=head;
 
-	while(el != null) {
-	    if(el.obj != null)
-		ret.append(el.obj + " ");
-	    el=el.next;
-	}
-	ret.append("]");
-	return ret.toString();
+        while(el != null) {
+            if(el.obj != null)
+                ret.append(el.obj + " ");
+            el=el.next;
+        }
+        ret.append("]");
+        return ret.toString();
     }
 
 
     public String dump() {
-	StringBuffer ret=new StringBuffer("[");
-	for(Element el=head; el != null; el=el.next)
-	    ret.append(el.obj + " ");
+        StringBuffer ret=new StringBuffer("[");
+        for(Element el=head; el != null; el=el.next)
+            ret.append(el.obj + " ");
 
-	return ret.toString() + "]";
+        return ret.toString() + "]";
     }
 
 
-
     public Vector getContents() {
-	Vector   retval=new Vector(size);
-	Element  el;
+        Vector retval=new Vector(size);
+        Element el;
 
-	synchronized(mutex) {
-	    el=head;
-	    while(el != null) {
-		retval.addElement(el.obj);
-		el=el.next;
-	    }
-	}
-	return retval;
+        synchronized(mutex) {
+            el=head;
+            while(el != null) {
+                retval.addElement(el.obj);
+                el=el.next;
+            }
+        }
+        return retval;
     }
 
 
     public Enumeration elements() {
-	return new ListEnumerator(head);
+        return new ListEnumerator(head);
     }
 
 
     public boolean contains(Object obj) {
-	Element el=head;
+        Element el=head;
 
-	while(el != null) {
-	    if(el.obj != null && el.obj.equals(obj))
-		return true;
-	    el=el.next;
-	}
-	return false;
+        while(el != null) {
+            if(el.obj != null && el.obj.equals(obj))
+                return true;
+            el=el.next;
+        }
+        return false;
     }
 
 
-
     public List copy() {
-	List    retval=new List();
+        List retval=new List();
 
-	synchronized(mutex) {
-	    for(Element el=head; el != null; el=el.next)
-		retval.add(el.obj);
-	}
-	return retval;
+        synchronized(mutex) {
+            for(Element el=head; el != null; el=el.next)
+                retval.add(el.obj);
+        }
+        return retval;
     }
 
 
     protected Object clone() {
-	return copy();
+        return copy();
     }
-
 
 
     public void writeExternal(ObjectOutput out) throws IOException {
-	Element el;
+        Element el;
 
-	synchronized(mutex) {
-	    el=head;
-	    out.writeInt(size);
-	    for(int i=0; i < size; i++) {
-		out.writeObject(el.obj);
-		el=el.next;
-	    }
-	}
+        synchronized(mutex) {
+            el=head;
+            out.writeInt(size);
+            for(int i=0; i < size; i++) {
+                out.writeObject(el.obj);
+                el=el.next;
+            }
+        }
     }
-
 
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-	Object obj;
-	int    new_size=in.readInt();
+        Object obj;
+        int new_size=in.readInt();
 
-	if(new_size == 0)
-	    return;
-	for(int i=0; i < new_size; i++) {
-	    obj=in.readObject();
-	    add(obj);
-	}
+        if(new_size == 0)
+            return;
+        for(int i=0; i < new_size; i++) {
+            obj=in.readObject();
+            add(obj);
+        }
     }
 
 
-
-
     class ListEnumerator implements Enumeration {
-	Element curr=null;
+        Element curr=null;
 
-	ListEnumerator(Element start) {
-	    curr=start;
-	}
+        ListEnumerator(Element start) {
+            curr=start;
+        }
 
-	public boolean hasMoreElements() {
-	    return curr != null;
-	}
+        public boolean hasMoreElements() {
+            return curr != null;
+        }
 
-	public Object nextElement() {
-	    Object retval;
+        public Object nextElement() {
+            Object retval;
 
-	    if(curr == null)
-		throw new NoSuchElementException();
-	    retval=curr.obj;
-	    curr=curr.next;
-	    return retval;
-	}
+            if(curr == null)
+                throw new NoSuchElementException();
+            retval=curr.obj;
+            curr=curr.next;
+            return retval;
+        }
 
     }
 
@@ -374,43 +363,43 @@ public class List implements Externalizable, Cloneable {
 
 
     public static void main(String[] args) {
-	List l=new List();
-	Long n;
+        List l=new List();
+        Long n;
 
 
-	l.addAtHead(new Integer(1));
-	l.addAtHead(new Integer(2));
-	l.addAtHead(new Integer(3));
-	l.addAtHead(new Integer(4));
-	l.addAtHead(new Integer(5));
+        l.addAtHead(new Integer(1));
+        l.addAtHead(new Integer(2));
+        l.addAtHead(new Integer(3));
+        l.addAtHead(new Integer(4));
+        l.addAtHead(new Integer(5));
 
-	System.out.println("Removed from head: " + l.removeFromHead());
-	System.out.println("Removed from head: " + l.removeFromHead());
-	System.out.println("Removed from head: " + l.removeFromHead());
-	System.out.println("Removed from head: " + l.removeFromHead());
-	System.out.println("Removed from head: " + l.removeFromHead());
-	System.out.println("Removed from head: " + l.removeFromHead());
-	System.out.println("Removed from head: " + l.removeFromHead());
+        System.out.println("Removed from head: " + l.removeFromHead());
+        System.out.println("Removed from head: " + l.removeFromHead());
+        System.out.println("Removed from head: " + l.removeFromHead());
+        System.out.println("Removed from head: " + l.removeFromHead());
+        System.out.println("Removed from head: " + l.removeFromHead());
+        System.out.println("Removed from head: " + l.removeFromHead());
+        System.out.println("Removed from head: " + l.removeFromHead());
 
 
-	System.out.print("Adding 50000 numbers:");
-	for(long i=0; i < 50000; i++) {
-	    n=new Long(i);
-	    if(i % 2 == 0) {
-		l.addAtHead(n);
-	    }
-	    else {
-		l.add(n);
-	    }
-	}
-	System.out.println(" OK");
+        System.out.print("Adding 50000 numbers:");
+        for(long i=0; i < 50000; i++) {
+            n=new Long(i);
+            if(i % 2 == 0) {
+                l.addAtHead(n);
+            }
+            else {
+                l.add(n);
+            }
+        }
+        System.out.println(" OK");
 
-	long   num=0;
-	Object obj;
-	System.out.print("Removing all elements: ");
-	while((obj=l.remove()) != null)
-	      num++;
-	System.out.println("OK, removed " + num + " objects");
+        long num=0;
+        Object obj;
+        System.out.print("Removing all elements: ");
+        while((obj=l.remove()) != null)
+            num++;
+        System.out.println("OK, removed " + num + " objects");
     }
 
 
