@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.9 2004/07/05 14:17:15 belaban Exp $
+// $Id: NAKACK.java,v 1.10 2004/09/23 16:29:41 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -79,7 +79,7 @@ public class NAKACK extends Protocol {
     View view=null;
     boolean is_server=false;
     Address local_addr=null;
-    List queued_msgs=new List();      // msgs for next view (vid > current vid)
+    final List queued_msgs=new List();      // msgs for next view (vid > current vid)
     Vector members=null;                // for OutOfBander: this is the destination set to
     // send messages to
     boolean send_next_msg_out_of_band=false;
@@ -487,15 +487,15 @@ public class NAKACK extends Protocol {
 
     class NAKer implements Retransmitter.RetransmitCommand, AckMcastSenderWindow.RetransmitCommand {
         long seqno=0;                       // current message sequence number
-        Hashtable received_msgs=new Hashtable(); // ordered by sender -> NakReceiverWindow
-        Hashtable sent_msgs=new Hashtable();     // ordered by seqno (sent by me !) - Messages
-        AckMcastSenderWindow sender_win=new AckMcastSenderWindow(this, timer);
+        final Hashtable received_msgs=new Hashtable(); // ordered by sender -> NakReceiverWindow
+        final Hashtable sent_msgs=new Hashtable();     // ordered by seqno (sent by me !) - Messages
+        final AckMcastSenderWindow sender_win=new AckMcastSenderWindow(this, timer);
         boolean acking=false;                  // require acks when sending msgs
         long deleted_up_to=0;
 
 
         // Used to periodically retransmit the last message
-        LastMessageRetransmitter last_msg_xmitter=new LastMessageRetransmitter();
+        final LastMessageRetransmitter last_msg_xmitter=new LastMessageRetransmitter();
 
 
         private class LastMessageRetransmitter implements TimeScheduler.Task {
@@ -993,8 +993,8 @@ public class NAKACK extends Protocol {
 
 
     class OutOfBander implements AckMcastSenderWindow.RetransmitCommand {
-        AckMcastSenderWindow sender_win=new AckMcastSenderWindow(this, timer);
-        AckMcastReceiverWindow receiver_win=new AckMcastReceiverWindow();
+        final AckMcastSenderWindow sender_win=new AckMcastSenderWindow(this, timer);
+        final AckMcastReceiverWindow receiver_win=new AckMcastReceiverWindow();
         long seqno=0;
 
 

@@ -1,4 +1,4 @@
-// $Id: DEADLOCK.java,v 1.4 2004/07/05 14:17:15 belaban Exp $
+// $Id: DEADLOCK.java,v 1.5 2004/09/23 16:29:41 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -20,11 +20,12 @@ import java.util.Vector;
 
 
 class MyFrame extends Frame {
-    List        list=new List();
-    Label       result=new Label("Result:          ");
-    Button      send=new Button("Send Request"), quit=new Button("Quit");
-    Panel       button_panel=new Panel();
-    Panel       main_panel=new Panel();
+    final List        list=new List();
+    final Label       result=new Label("Result:          ");
+    final Button      send=new Button("Send Request");
+    final Button quit=new Button("Quit");
+    final Panel       button_panel=new Panel();
+    final Panel       main_panel=new Panel();
     DEADLOCK    deadlock=null;
     Vector      members=null;
     

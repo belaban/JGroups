@@ -1,4 +1,4 @@
-// $Id: Chat.java,v 1.6 2004/07/05 05:45:31 belaban Exp $
+// $Id: Chat.java,v 1.7 2004/09/23 16:29:35 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -20,11 +20,11 @@ import java.awt.event.WindowListener;
  * Originally written by a student, modified by Bela Ban
  */
 public class Chat implements MouseListener, WindowListener, MessageListener, MembershipListener {
-    static Chat selfRef;
+    static Chat selfRef=null;
     Channel channel;
     PullPushAdapter ad;
     Thread mainThread;
-    String group_name="ChatGroup";
+    final String group_name="ChatGroup";
     String props=null;
     Frame mainFrame;
     TextArea ta;

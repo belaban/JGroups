@@ -40,21 +40,21 @@ public class LeaseFactoryClient implements LeaseFactory {
     
     public static final int DEFAULT_CANCEL_TIMEOUT = 1000;
     
-    protected Channel clientChannel;
+    protected final Channel clientChannel;
 
-    protected PullPushAdapter clientAdapter;
+    protected final PullPushAdapter clientAdapter;
     
-    protected int leaseTimeout = DEFAULT_LEASE_TIMEOUT;
+    protected final int leaseTimeout = DEFAULT_LEASE_TIMEOUT;
     
-    protected int cancelTimeout = DEFAULT_CANCEL_TIMEOUT;
+    protected final int cancelTimeout = DEFAULT_CANCEL_TIMEOUT;
     
-    protected HashMap pendingLeases = new HashMap();
+    protected final HashMap pendingLeases = new HashMap();
     
-    protected HashMap pendingRenewals = new HashMap();
+    protected final HashMap pendingRenewals = new HashMap();
     
-    protected HashMap pendingCancels = new HashMap();
+    protected final HashMap pendingCancels = new HashMap();
 
-    protected Log log=LogFactory.getLog(this.getClass());
+    protected final Log log=LogFactory.getLog(this.getClass());
 
     /**
      * Create instance of this class for specified client channel with
@@ -487,9 +487,9 @@ public class LeaseFactoryClient implements LeaseFactory {
      */
     private static class ClientLeaseInfo {
 	
-	private Object leaseTarget;
+	private final Object leaseTarget;
 	
-	private Object tenant;
+	private final Object tenant;
 	
 	/**
 	 * Create instance of this class.
@@ -540,13 +540,13 @@ public class LeaseFactoryClient implements LeaseFactory {
      * This class represents lease granted by lease factory.
      */
     private class LocalLease implements Lease {
-	private long expiresAt;
+	private final long expiresAt;
 	
-	private long creationTime;
+	private final long creationTime;
 	
-	private Object leaseTarget;
+	private final Object leaseTarget;
 	
-	private Object tenant;
+	private final Object tenant;
 	
 	/**
 	 * Create instance of this class for the specified lease target,

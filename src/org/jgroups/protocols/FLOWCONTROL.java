@@ -21,9 +21,9 @@ import java.util.Vector;
  */
 public class FLOWCONTROL extends Protocol {
 
-  Vector queuedMsgs = new Vector();
+  final Vector queuedMsgs = new Vector();
   int sentMsgs = 0;
-  static int MAXSENTMSGS = 1;
+  static final int MAXSENTMSGS = 1;
   Address myAddr;
 
 

@@ -1,4 +1,4 @@
-// $Id: ReusableThread.java,v 1.5 2004/07/05 14:17:35 belaban Exp $
+// $Id: ReusableThread.java,v 1.6 2004/09/23 16:29:56 belaban Exp $
 
 package org.jgroups.util;
 
@@ -32,8 +32,8 @@ public class ReusableThread implements Runnable {
     Runnable task=null;    // task assigned to thread
     String thread_name="ReusableThread";
     volatile boolean suspended=false;
-    protected static Log log=LogFactory.getLog(ReusableThread.class);
-    long TASK_JOIN_TIME=3000; // wait 3 secs for an interrupted thread to terminate
+    protected static final Log log=LogFactory.getLog(ReusableThread.class);
+    final long TASK_JOIN_TIME=3000; // wait 3 secs for an interrupted thread to terminate
 
 
     public ReusableThread() {

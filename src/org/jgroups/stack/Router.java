@@ -1,4 +1,4 @@
-// $Id: Router.java,v 1.4 2004/07/05 14:17:33 belaban Exp $
+// $Id: Router.java,v 1.5 2004/09/23 16:29:53 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -41,11 +41,11 @@ import java.util.Iterator;
  * @author Bela Ban
  */
 public class Router {
-    Hashtable    groups=new Hashtable();  // groupname - vector of AddressEntry's
+    final Hashtable    groups=new Hashtable();  // groupname - vector of AddressEntry's
     int          port=8080;
     ServerSocket srv_sock=null;
     InetAddress  bind_address;
-    protected Log log=LogFactory.getLog(getClass());
+    protected final Log log=LogFactory.getLog(getClass());
 
     public static final int GET=-10;
     public static final int REGISTER=-11;

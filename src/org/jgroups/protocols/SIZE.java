@@ -1,4 +1,4 @@
-// $Id: SIZE.java,v 1.9 2004/07/05 14:17:15 belaban Exp $
+// $Id: SIZE.java,v 1.10 2004/09/23 16:29:42 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -20,13 +20,13 @@ import java.util.Vector;
  * @author Bela Ban June 13 2001
  */
 public class SIZE extends Protocol {
-    Vector members=new Vector();
+    final Vector members=new Vector();
     boolean print_msg=false;
 
     /** Min size in bytes above which msgs should be printed */
     long min_size=0;
 
-    ByteArrayOutputStream out_stream=new ByteArrayOutputStream(65535);
+    final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(65535);
 
 
     /**

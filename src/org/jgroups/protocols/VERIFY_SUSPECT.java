@@ -1,4 +1,4 @@
-// $Id: VERIFY_SUSPECT.java,v 1.7 2004/07/05 14:17:16 belaban Exp $
+// $Id: VERIFY_SUSPECT.java,v 1.8 2004/09/23 16:29:43 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -27,8 +27,8 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     Address local_addr=null;
     long timeout=2000;   // number of millisecs to wait for an are-you-dead msg
     int num_msgs=1;     // number of are-you-alive msgs and i-am-not-dead responses (for redundancy)
-    Vector members=null;
-    Hashtable suspects=new Hashtable();  // keys=Addresses, vals=time in mcses since added
+    final Vector members=null;
+    final Hashtable suspects=new Hashtable();  // keys=Addresses, vals=time in mcses since added
     Thread timer=null;
 
 

@@ -1,4 +1,4 @@
-// $Id: GossipServer.java,v 1.6 2004/09/22 10:34:14 belaban Exp $
+// $Id: GossipServer.java,v 1.7 2004/09/23 16:29:53 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -30,14 +30,14 @@ import java.util.*;
  * @author Bela Ban Oct 4 2001
  */
 public class GossipServer {
-    Hashtable groups=new Hashtable();  // groupname - vector of Entry's
+    final Hashtable groups=new Hashtable();  // groupname - vector of Entry's
     int port=7500;
     ServerSocket srv_sock=null;
     long EXPIRY_TIME=30000;       // time (in msecs) until a cache entry expires
     CacheCleaner cache_cleaner=null;      // task that is periodically invoked to sweep old entries from the cache
-    Timer timer=new Timer(true);   // start as daemon thread, so we won't block on it upon termination
+    final Timer timer=new Timer(true);   // start as daemon thread, so we won't block on it upon termination
     InetAddress bind_address=null;
-    protected Log log=LogFactory.getLog(getClass());
+    protected final Log log=LogFactory.getLog(getClass());
 
 
     public GossipServer(int port) throws Exception {

@@ -1,4 +1,4 @@
-// $Id: SMACK.java,v 1.7 2004/07/05 14:17:15 belaban Exp $
+// $Id: SMACK.java,v 1.8 2004/09/23 16:29:42 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -46,17 +46,17 @@ import java.util.Vector;
  * </ul>
  * Advantage of this protocol: no group membership necessary, fast.
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.7 $
+ * @version $Revision: 1.8 $
  * todo: initial mcast to announce new member (for view change)
  * todo: fix membershop bug: start a, b, kill b, restart b: b will be suspected by a
  */
 public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCommand {
     long[]                 timeout={1000,2000,3000};  // retransmit timeouts (for AckMcastSenderWindow)
     int                    max_xmits=10;              // max retransmissions (if still no ack, member will be removed)
-    Vector                 members=new Vector();      // contains Addresses
+    final Vector                 members=new Vector();      // contains Addresses
     AckMcastSenderWindow   sender_win=null;
-    HashMap                receivers=new HashMap();   // keys=sender (Address), values=AckReceiverWindow
-    HashMap                xmit_table=new HashMap();  // keeps track of num xmits / member (keys: mbr, val:num)
+    final HashMap                receivers=new HashMap();   // keys=sender (Address), values=AckReceiverWindow
+    final HashMap                xmit_table=new HashMap();  // keeps track of num xmits / member (keys: mbr, val:num)
     Address                local_addr=null;           // my own address
     long                   seqno=1;                   // seqno for msgs sent by this sender
     long                   vid=1;                     // for the fake view changes

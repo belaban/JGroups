@@ -1,4 +1,4 @@
-// $Id: QUEUE.java,v 1.6 2004/07/23 02:28:01 belaban Exp $
+// $Id: QUEUE.java,v 1.7 2004/09/23 16:29:42 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -21,8 +21,8 @@ import java.util.Vector;
  */
 
 public class QUEUE extends Protocol {
-    Vector    up_vec=new Vector();
-    Vector    dn_vec=new Vector();
+    final Vector    up_vec=new Vector();
+    final Vector    dn_vec=new Vector();
     boolean   queueing_up=false, queueing_dn=false;
     Observer  observer=null;
 

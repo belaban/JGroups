@@ -1,4 +1,4 @@
-// $Id: DUMMY.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
+// $Id: DUMMY.java,v 1.3 2004/09/23 16:29:41 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -15,8 +15,8 @@ import java.util.Vector;
  */
 
 public class DUMMY extends Protocol {
-    Vector   members=new Vector();
-    String   name="DUMMY";
+    final Vector   members=new Vector();
+    final String   name="DUMMY";
 
     /** All protocol names have to be unique ! */
     public String  getName() {return "DUMMY";}

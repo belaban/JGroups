@@ -1,4 +1,4 @@
-// $Id: MessageProtocol.java,v 1.3 2004/09/08 07:33:38 belaban Exp $
+// $Id: MessageProtocol.java,v 1.4 2004/09/23 16:29:53 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -33,7 +33,7 @@ import java.util.Vector;
  */
 public abstract class MessageProtocol extends Protocol implements RequestHandler {
     protected RequestCorrelator _corr=null;
-    protected Vector members=new Vector();
+    protected final Vector members=new Vector();
 
 
     public void start() throws Exception {

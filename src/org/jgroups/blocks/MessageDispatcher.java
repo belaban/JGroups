@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.30 2004/09/02 14:00:40 belaban Exp $
+// $Id: MessageDispatcher.java,v 1.31 2004/09/23 16:29:11 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -26,12 +26,12 @@ public class MessageDispatcher implements RequestHandler {
     protected RequestHandler req_handler=null;
     protected ProtocolAdapter prot_adapter=null;
     protected TransportAdapter transport_adapter=null;
-    protected Vector members=new Vector();
+    protected final Vector members=new Vector();
     protected Address local_addr=null;
     protected boolean deadlock_detection=false;
     protected PullPushAdapter adapter=null;
     protected Serializable id=null;
-    protected Log log=LogFactory.getLog(getClass());
+    protected final Log log=LogFactory.getLog(getClass());
 
 
     /**
@@ -553,8 +553,8 @@ public class MessageDispatcher implements RequestHandler {
 
     class ProtocolAdapter extends Protocol implements UpHandler {
         private Thread upProcessingThread=null;
-        private Queue upQueue=new Queue();
-        private ReentrantLatch m_upLatch=new ReentrantLatch(false);
+        private final Queue upQueue=new Queue();
+        private final ReentrantLatch m_upLatch=new ReentrantLatch(false);
 
 
 

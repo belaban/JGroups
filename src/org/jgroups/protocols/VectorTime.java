@@ -1,4 +1,4 @@
-// $Id: VectorTime.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
+// $Id: VectorTime.java,v 1.3 2004/09/23 16:29:43 belaban Exp $
 
 
 package org.jgroups.protocols;
@@ -13,14 +13,14 @@ import java.util.*;
  * Vector timestamp used in CAUSAL order protocol stack
  *
  * @author Vladimir Blagojevic vladimir@cs.yorku.ca
- * @version $Revision: 1.2 $
+ * @version $Revision: 1.3 $
  */
 public class VectorTime
 {
    /**
     * vector entry sorted map of members
     */
-   private TreeMap entries;
+   private final TreeMap entries;
 
    /**
     * index of the group member that owns this VectorTime
@@ -30,7 +30,7 @@ public class VectorTime
    /**
     * address of the owner member
     */
-   private Address owner;
+   private final Address owner;
 
    /**
     * Constructs VectorTime given an adress of a owning group member

@@ -1,4 +1,4 @@
-// $Id: PING.java,v 1.16 2004/09/22 10:34:11 belaban Exp $
+// $Id: PING.java,v 1.17 2004/09/23 16:29:42 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -29,8 +29,9 @@ import java.util.*;
  * property: gossip_port - if you are using GOSSIP then this defines the port of the GossipServer, default is null
  */
 public class PING extends Protocol {
-    Vector members=new Vector(11), initial_members=new Vector(11);
-    Set members_set=new HashSet(11); //copy of the members vector for fast random access
+    final Vector members=new Vector(11);
+    final Vector initial_members=new Vector(11);
+    final Set members_set=new HashSet(11); //copy of the members vector for fast random access
     Address local_addr=null;
     String group_addr=null;
     long timeout=3000;

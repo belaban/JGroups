@@ -1,4 +1,4 @@
-// $Id: AckMcastSenderWindow.java,v 1.7 2004/09/22 10:34:14 belaban Exp $
+// $Id: AckMcastSenderWindow.java,v 1.8 2004/09/23 16:29:53 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -33,7 +33,7 @@ import java.util.*;
  *
  * @author Bela Ban June 9 1999
  * @author John Georgiadis May 8 2001
- * @version $Revision: 1.7 $
+ * @version $Revision: 1.8 $
  */
 public class AckMcastSenderWindow {
     /**
@@ -60,7 +60,7 @@ public class AckMcastSenderWindow {
      * The retransmit task executed by the scheduler in regular intervals
      */
     private static abstract class Task implements TimeScheduler.Task {
-	private Interval intervals;
+	private final Interval intervals;
 	private boolean  cancelled;
 
 	protected Task(long[] intervals) {
@@ -78,11 +78,11 @@ public class AckMcastSenderWindow {
      */
     private class Entry extends Task {
 	/** The msg sequence number */
-	public long seqno;
+	public final long seqno;
 	/** The msg to retransmit */
 	public Message msg = null;
 	/** destination addr -> boolean (true = received, false = not) */
-	public Hashtable senders = new Hashtable();
+	public final Hashtable senders = new Hashtable();
 	/** How many destinations have received the msg */
 	public int num_received = 0;
 
@@ -126,19 +126,19 @@ public class AckMcastSenderWindow {
 
     // Msg tables related
     /** Table of pending msgs: seqno -> Entry */
-    private Hashtable  msgs = new Hashtable();
+    private final Hashtable  msgs = new Hashtable();
 
     /** List of recently suspected members. Used to cease retransmission to suspected members */
-    private LinkedList suspects=new LinkedList();
+    private final LinkedList suspects=new LinkedList();
 
     /** Max number in suspects list */
-    private int max_suspects=20;
+    private final int max_suspects=20;
 
     /**
      * List of acknowledged msgs since the last call to
      * <code>getStableMessages()</code>
      */
-    private Vector stable_msgs = new Vector();
+    private final Vector stable_msgs = new Vector();
     /** Whether a call to <code>waitUntilAcksReceived()</code> is still active */
     private boolean waiting = false;
 

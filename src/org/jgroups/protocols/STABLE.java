@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.6 2004/09/22 10:34:11 belaban Exp $
+// $Id: STABLE.java,v 1.7 2004/09/23 16:29:42 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -63,7 +63,7 @@ public class STABLE extends RpcProtocol {
 
     private Address local_addr=null;
     private ViewId vid=null;
-    private Vector mbrs=new Vector(11);
+    private final Vector mbrs=new Vector(11);
 
     /** gossip round */
     private long round=1;
@@ -92,7 +92,7 @@ public class STABLE extends RpcProtocol {
     private long num_msgs=max_msgs;
 
     /** mutex for interacting with NAKACK layer (GET_MSGS_RECVD) */
-    private Object highest_seqnos_mutex=new Object();
+    private final Object highest_seqnos_mutex=new Object();
     
     /** Time to wait for a reply from NAKACK layer (GET_MSGS_RECVD) */
     private long highest_seqnos_timeout=4000;
@@ -724,7 +724,7 @@ public class STABLE extends RpcProtocol {
      * The gossiping task
      */
     private class Task implements TimeScheduler.Task {
-        private Times intervals;
+        private final Times intervals;
         private boolean cancelled=false;
 
         public Task(Times intervals) {

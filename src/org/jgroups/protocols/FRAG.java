@@ -1,4 +1,4 @@
-// $Id: FRAG.java,v 1.12 2004/09/15 17:40:59 belaban Exp $
+// $Id: FRAG.java,v 1.13 2004/09/23 16:29:41 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -45,7 +45,7 @@ import java.util.Vector;
  *
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.12 2004/09/15 17:40:59 belaban Exp $
+ * @version $Id: FRAG.java,v 1.13 2004/09/23 16:29:41 belaban Exp $
  */
 public class FRAG extends Protocol {
     private int frag_size=8192;  // conservative value
@@ -53,11 +53,11 @@ public class FRAG extends Protocol {
     /*the fragmentation list contains a fragmentation table per sender
      *this way it becomes easier to clean up if a sender (member) leaves or crashes
      */
-    private FragmentationList fragment_list=new FragmentationList();
+    private final FragmentationList fragment_list=new FragmentationList();
     private int curr_id=1;
     private Address local_addr=null;
-    private ByteArrayOutputStream bos=new ByteArrayOutputStream(frag_size);  // to serialize messages to be fragmented
-    private Vector members=new Vector(11);
+    private final ByteArrayOutputStream bos=new ByteArrayOutputStream(frag_size);  // to serialize messages to be fragmented
+    private final Vector members=new Vector(11);
 
 
     public String getName() {
@@ -338,7 +338,7 @@ public class FRAG extends Protocol {
          * tables
          * 11 is the best growth capacity to start with
          */
-        private Hashtable frag_tables=new Hashtable(11);
+        private final Hashtable frag_tables=new Hashtable(11);
 
 
         /**
@@ -434,9 +434,9 @@ public class FRAG extends Protocol {
      * The first dimension of the array is the order of the fragmentation, in case the arrive out of order
      */
     static class FragmentationTable {
-        private Address sender;
+        private final Address sender;
         /* the hashtable that holds the fragmentation entries for this sender*/
-        private Hashtable h=new Hashtable(11);  // keys: frag_ids, vals: Entrys
+        private final Hashtable h=new Hashtable(11);  // keys: frag_ids, vals: Entrys
 
 
         public FragmentationTable(Address sender) {

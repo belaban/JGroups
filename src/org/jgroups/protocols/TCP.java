@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.12 2004/09/02 14:32:55 belaban Exp $
+// $Id: TCP.java,v 1.13 2004/09/23 16:29:42 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -40,7 +40,7 @@ public class TCP extends Protocol implements ConnectionTable.Receiver, Connectio
     private String          group_addr=null;
     private InetAddress     bind_addr=null;  // local IP address to bind srv sock to (m-homed systems)
     private int             start_port=7800; // find first available port starting at this port
-    private Vector          members=new Vector(11);
+    private final Vector          members=new Vector(11);
     private long            reaper_interval=0;  // time in msecs between connection reaps
     private long            conn_expire_time=0; // max time a conn can be idle before being reaped
     boolean                 loopback=false;     // loops back msgs to self if true
@@ -52,7 +52,7 @@ public class TCP extends Protocol implements ConnectionTable.Receiver, Connectio
     /** List the maintains the currently suspected members. This is used so we don't send too many SUSPECT
      * events up the stack (one per message !)
      */
-    BoundedList            suspected_mbrs=new BoundedList(20);
+    final BoundedList            suspected_mbrs=new BoundedList(20);
 
     /** Should we drop unicast messages to suspected members or not */
     boolean                skip_suspected_members=true;

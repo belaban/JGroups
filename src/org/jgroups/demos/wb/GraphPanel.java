@@ -1,4 +1,4 @@
-// $Id: GraphPanel.java,v 1.2 2004/09/22 10:34:09 belaban Exp $
+// $Id: GraphPanel.java,v 1.3 2004/09/23 16:29:34 belaban Exp $
 
 
 package org.jgroups.demos.wb;
@@ -17,8 +17,9 @@ import org.jgroups.util.Util;
 
 
 public class GraphPanel extends Panel implements MouseListener, MouseMotionListener {    
-    Whiteboard     wb;
-    Vector         nodes=new Vector(), copy=new Vector();
+    final Whiteboard     wb;
+    final Vector         nodes=new Vector();
+    final Vector copy=new Vector();
     String         myname=null;
     public Object  my_addr=null;
     Node           pick;

@@ -24,7 +24,7 @@ import java.util.*;
  */
 public class DBPersistenceManager implements PersistenceManager {
 
-    protected Log log=LogFactory.getLog(this.getClass());
+    protected final Log log=LogFactory.getLog(this.getClass());
 
     /**
      * Default construct
@@ -675,7 +675,7 @@ public class DBPersistenceManager implements PersistenceManager {
     private String userPass=null;
     private String connStr=null;
     private String createTable=null;
-    private boolean oracleDB=false;
+    private final boolean oracleDB=false;
     private Vector list=null;
 
 

@@ -1,4 +1,4 @@
-// $Id: TOTAL_OLD.java,v 1.6 2004/07/23 02:28:01 belaban Exp $
+// $Id: TOTAL_OLD.java,v 1.7 2004/09/23 16:29:42 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -27,8 +27,8 @@ class SavedMessages {
      * object type to store in the messages Vector (need to store sequence id in addition to message)
      */
     class Entry {
-	private Message msg;
-	private long seq;
+	private final Message msg;
+	private final long seq;
 
 	public Entry( Message msg, long seq ) {
 	    this.msg = msg;
@@ -45,7 +45,7 @@ class SavedMessages {
     } // class Entry
 
 
-    private Vector messages;  // vector of "Entry"s to store "Message"s, sorted by sequence id
+    private final Vector messages;  // vector of "Entry"s to store "Message"s, sorted by sequence id
 
 
     /**
@@ -252,7 +252,7 @@ class MessageAcks {
      *   and the sequence id of a message
      */
     class Entry {
-	public  Address        addr;
+	public final  Address        addr;
 	public  long           seq;
 
 	public Entry( Address addr, long seq ) {
@@ -267,9 +267,9 @@ class MessageAcks {
     } // class Entry
 
     // Vector of "Entry"s representing cumulative acknowledgements for each member of the group
-    private Vector acks;
+    private final Vector acks;
 
-    private SavedMessages  message_history;  // history of broadcast messages sent
+    private final SavedMessages  message_history;  // history of broadcast messages sent
 
 
     /**
@@ -484,7 +484,7 @@ public class TOTAL_OLD extends Protocol {
      *   broadcast messages that we received that we are storing so that we can
      *   deterministically order the messages based on their sequence ids
      */
-    private SavedMessages  queued_messages = new SavedMessages();
+    private final SavedMessages  queued_messages = new SavedMessages();
 
     /**
      * ack_history
@@ -500,7 +500,7 @@ public class TOTAL_OLD extends Protocol {
      *   thread that handles sending requests to the sequencer for messages
      *     that may not have been received but were expected to arrive
      */
-    private TotalRetransmissionThread   retrans_thread = new TotalRetransmissionThread( this );
+    private final TotalRetransmissionThread   retrans_thread = new TotalRetransmissionThread( this );
 
 
     /**
@@ -748,7 +748,7 @@ public class TOTAL_OLD extends Protocol {
     }
 
 
-    private long last_request_time = -1;
+    private final long last_request_time = -1;
     /**
      * stores the message in the list of messages. also passes up any messages
      *   if it can (i.e. if it satisfies total ordering).

@@ -1,4 +1,4 @@
-// $Id: ConnectionTable1_4.java,v 1.6 2004/09/08 07:26:05 belaban Exp $
+// $Id: ConnectionTable1_4.java,v 1.7 2004/09/23 16:29:10 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -250,7 +250,7 @@ public class ConnectionTable1_4 extends ConnectionTable implements Runnable {
         private SocketChannel sock_ch=null;
         private static final int HEADER_SIZE=4;
         private static final int DEFAULT_BUFF_SIZE=256;
-        ByteBuffer headerBuffer=ByteBuffer.allocate(HEADER_SIZE);
+        final ByteBuffer headerBuffer=ByteBuffer.allocate(HEADER_SIZE);
         NBMessageForm1_4 nioMsgReader=null;
 
         Connection(SocketChannel s, Address peer_addr) {

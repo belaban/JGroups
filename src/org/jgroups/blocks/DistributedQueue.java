@@ -1,4 +1,4 @@
-// $Id: DistributedQueue.java,v 1.13 2004/09/22 10:34:08 belaban Exp $
+// $Id: DistributedQueue.java,v 1.14 2004/09/23 16:29:11 belaban Exp $
 package org.jgroups.blocks;
 
 import org.apache.log4j.Logger;
@@ -38,18 +38,18 @@ public class DistributedQueue implements MessageListener, MembershipListener
         void contentsSet(Collection new_entries);
     }
 
-    static Logger logger = Logger.getLogger(DistributedQueue.class.getName());
-    private long internal_timeout = 10000; // 10 seconds to wait for a response
+    static final Logger logger = Logger.getLogger(DistributedQueue.class.getName());
+    private final long internal_timeout = 10000; // 10 seconds to wait for a response
 
     /*lock object for synchronization*/
-    protected Object mutex = new Object();
+    protected final Object mutex = new Object();
     protected boolean stopped = false; // whether to we are stopped !
     protected LinkedList internalQueue;
     protected Channel channel;
     protected RpcDispatcher disp = null;
     protected String groupname = null;
-    protected Vector notifs = new Vector(); // to be notified when mbrship changes
-    protected Vector members = new Vector(); // keeps track of all DHTs
+    protected final Vector notifs = new Vector(); // to be notified when mbrship changes
+    protected final Vector members = new Vector(); // keeps track of all DHTs
     private Class[] add_signature = null;
     private Class[] addAtHead_signature = null;
     private Class[] addAll_signature = null;

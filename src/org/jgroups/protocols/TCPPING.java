@@ -1,4 +1,4 @@
-// $Id: TCPPING.java,v 1.12 2004/09/22 10:34:11 belaban Exp $
+// $Id: TCPPING.java,v 1.13 2004/09/23 16:29:42 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -26,11 +26,12 @@ import java.util.*;
  * @author Bela Ban
  */
 public class TCPPING extends Protocol {
-    Vector    members=new Vector(), initial_members=new Vector();
-    Set members_set=new HashSet(); //copy of the members vector for fast random access    
+    final Vector    members=new Vector();
+    final Vector initial_members=new Vector();
+    final Set members_set=new HashSet(); //copy of the members vector for fast random access
     Address   local_addr=null;
     String    group_addr=null;
-    String    groupname=null;
+    final String    groupname=null;
     long      timeout=3000;
     long      num_initial_members=2;
     int       port_range=1;        // number of ports to be probed for initial membership

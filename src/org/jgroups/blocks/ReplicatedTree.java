@@ -1,4 +1,4 @@
-// $Id: ReplicatedTree.java,v 1.7 2004/09/22 10:34:08 belaban Exp $
+// $Id: ReplicatedTree.java,v 1.8 2004/09/23 16:29:11 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -26,16 +26,16 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
     public static final String SEPARATOR="/";
     final static int INDENT=4;
     Node root=new Node(SEPARATOR, SEPARATOR, null, null);
-    Vector listeners=new Vector();
-    Queue request_queue=new Queue();
+    final Vector listeners=new Vector();
+    final Queue request_queue=new Queue();
     Thread request_handler=null;
     JChannel channel=null;
     PullPushAdapter adapter=null;
     String groupname="ReplicatedTree-Group";
-    Vector members=new Vector();
+    final Vector members=new Vector();
     long state_fetch_timeout=10000;
 
-    protected Log log=LogFactory.getLog(this.getClass());
+    protected final Log log=LogFactory.getLog(this.getClass());
 
 
     /** Whether or not to use remote calls. If false, all methods will be invoked directly on this

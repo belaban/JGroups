@@ -1,4 +1,4 @@
-// $Id: AckMcastReceiverWindow.java,v 1.5 2004/09/15 17:41:00 belaban Exp $
+// $Id: AckMcastReceiverWindow.java,v 1.6 2004/09/23 16:29:53 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -23,7 +23,7 @@ import java.util.Vector;
  * @author Bela Ban June 17 1999
  */
 public class AckMcastReceiverWindow {
-    Hashtable msgs=new Hashtable();  // sender -- Vector (of seqnos)
+    final Hashtable msgs=new Hashtable();  // sender -- Vector (of seqnos)
 
     protected static final Log log=LogFactory.getLog(AckMcastReceiverWindow.class);
 

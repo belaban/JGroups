@@ -1,4 +1,4 @@
-// $Id: DrawCommand.java,v 1.2 2004/07/05 05:45:31 belaban Exp $
+// $Id: DrawCommand.java,v 1.3 2004/09/23 16:29:35 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -8,7 +8,7 @@ import java.io.Serializable;
 public class DrawCommand implements Serializable {
     static final int DRAW=1;
     static final int CLEAR=2;
-    int mode;
+    final int mode;
     int x=0;
     int y=0;
     int r=0;

@@ -1,4 +1,4 @@
-// $Id: WANPIPE.java,v 1.5 2004/07/05 14:17:16 belaban Exp $
+// $Id: WANPIPE.java,v 1.6 2004/09/23 16:29:43 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -30,12 +30,12 @@ import java.util.Vector;
 public class WANPIPE extends Protocol implements LogicalLink.Receiver {
     LogicalLink    pipe=null;
     String         name=null;         // logical name of WAN pipe
-    List           links=new List();  // contains the parsed link descriptions
+    final List           links=new List();  // contains the parsed link descriptions
 
     Address        local_addr=null;
     String         group_addr=null;
-    Properties     properties=null;
-    Vector         members=new Vector();
+    final Properties     properties=null;
+    final Vector         members=new Vector();
 
 
 

@@ -1,4 +1,4 @@
-//$Id: TOTAL_TOKEN.java,v 1.7 2004/07/05 14:17:16 belaban Exp $
+//$Id: TOTAL_TOKEN.java,v 1.8 2004/09/23 16:29:42 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -49,7 +49,7 @@ import java.util.*;
  *
  *
  *@author Vladimir Blagojevic vladimir@cs.yorku.ca
- *@version $Revision: 1.7 $
+ *@version $Revision: 1.8 $
  *
  *@see org.jgroups.protocols.ring.RingNodeFlowControl
  *@see org.jgroups.protocols.ring.RingNode
@@ -157,23 +157,23 @@ public class TOTAL_TOKEN extends RpcProtocol
    }
 
 
-   private static int OPERATIONAL_STATE = 0;
-   private static int RECOVERY_STATE = 1;
+   private static final int OPERATIONAL_STATE = 0;
+   private static final int RECOVERY_STATE = 1;
 
    UdpRingNode node;
    RingNodeFlowControl flowControl;
    Address localAddress;
-   TokenTransmitter tokenRetransmitter=new TokenTransmitter();
+   final TokenTransmitter tokenRetransmitter=new TokenTransmitter();
    List newMessagesQueue;
    SortedSet liveMembersInRecovery,suspects;
 
-   Object mutex = new Object();
+   final Object mutex = new Object();
    TreeMap receivedMessagesQueue;
    long myAru = 0;
 
-   Object threadCoordinationMutex = new Object();
-   boolean tokenInStack = false;
-   boolean threadDeliveringMessage = false;
+   final Object threadCoordinationMutex = new Object();
+   final boolean tokenInStack = false;
+   final boolean threadDeliveringMessage = false;
    boolean tokenSeen = false;
 
 
@@ -1073,8 +1073,8 @@ public class TOTAL_TOKEN extends RpcProtocol
       long rtt = 0;
       long timer;
       double srtt = 1000; //1 second to start
-      double a = 0.09;
-      int timeoutFactor = 10;
+      final double a = 0.09;
+      final int timeoutFactor = 10;
       volatile boolean running = false;
 
       private TokenTransmitter()

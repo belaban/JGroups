@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.8 2004/09/22 10:34:08 belaban Exp $
+// $Id: ConnectionTable.java,v 1.9 2004/09/23 16:29:10 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -29,7 +29,7 @@ import java.util.*;
  * @author Bela Ban
  */
 public class ConnectionTable implements Runnable {
-    Hashtable     conns=new Hashtable();       // keys: Addresses (peer address), values: Connection
+    final Hashtable     conns=new Hashtable();       // keys: Addresses (peer address), values: Connection
     Receiver      receiver=null;
     ServerSocket  srv_sock=null;
     InetAddress   bind_addr=null;
@@ -39,14 +39,14 @@ public class ConnectionTable implements Runnable {
     static final int     backlog=20;           // 20 conn requests are queued by ServerSocket (addtl will be discarded)
     int           recv_buf_size=120000;
     int           send_buf_size=60000;
-    Vector        conn_listeners=new Vector(); // listeners to be notified when a conn is established/torn down
-    Object        recv_mutex=new Object();     // to serialize simultaneous access to receive() from multiple Connections
+    final Vector        conn_listeners=new Vector(); // listeners to be notified when a conn is established/torn down
+    final Object        recv_mutex=new Object();     // to serialize simultaneous access to receive() from multiple Connections
     Reaper        reaper=null;                 // closes conns that have been idle for more than n secs
     long          reaper_interval=60000;       // reap unused conns once a minute
     long          conn_expire_time=300000;     // connections can be idle for 5 minutes before they are reaped
     boolean       use_reaper=false;            // by default we don't reap idle conns
     ThreadGroup   thread_group=null;
-    protected Log log=LogFactory.getLog(getClass());
+    protected final Log log=LogFactory.getLog(getClass());
     final byte[]  cookie={'b', 'e', 'l', 'a'};
 
 
@@ -473,7 +473,7 @@ public class ConnectionTable implements Runnable {
         DataInputStream  in=null;                  // for receiving messages
         Thread           handler=null;             // thread for receiving messages
         Address          peer_addr=null;           // address of the 'other end' of the connection
-        Object           send_mutex=new Object();  // serialize sends
+        final Object     send_mutex=new Object();  // serialize sends
         long             last_access=System.currentTimeMillis(); // last time a message was sent or received
         // final byte[]     cookie={(byte)'b', (byte)'e', (byte)'l', (byte)'a'};
 

@@ -1,4 +1,4 @@
-// $Id: EXAMPLE.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
+// $Id: EXAMPLE.java,v 1.3 2004/09/23 16:29:41 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -29,7 +29,7 @@ class ExampleHeader implements Serializable {
  */
 
 public class EXAMPLE extends Protocol {
-    Vector   members=new Vector();
+    final Vector   members=new Vector();
 
     /** All protocol names have to be unique ! */
     public String  getName() {return "EXAMPLE";}

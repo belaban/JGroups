@@ -1,4 +1,4 @@
-// $Id: Draw2Channels.java,v 1.6 2004/07/05 05:45:31 belaban Exp $
+// $Id: Draw2Channels.java,v 1.7 2004/09/23 16:29:35 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -24,23 +24,25 @@ import java.util.Random;
  * @author Bela Ban, Nov 1 2001
  */
 public class Draw2Channels implements ActionListener {
-    private ByteArrayOutputStream  out=new ByteArrayOutputStream();
-    private String                 control_groupname="Draw2ChannelsGroup-Control";
-    private String                 data_groupname="Draw2ChannelsGroup-Data";
+    private final ByteArrayOutputStream  out=new ByteArrayOutputStream();
+    private final String                 control_groupname="Draw2ChannelsGroup-Control";
+    private final String                 data_groupname="Draw2ChannelsGroup-Data";
     private Channel                control_channel=null;
     private Channel                data_channel=null;
     String                         control_props=null, data_props=null;
     private Thread                 control_receiver=null;
     private Thread                 data_receiver=null;
     private int                    member_size=1;
-    boolean                        first=true, cummulative=true;
+    final boolean                        first=true;
+    final boolean cummulative=true;
     private JFrame                 mainFrame=null;
     private JPanel                 sub_panel=null;
     private DrawPanel              panel=null;
     private JButton                clear_button, leave_button;
-    private Random                 random=new Random(System.currentTimeMillis());
+    private final Random                 random=new Random(System.currentTimeMillis());
     private final Font             default_font=new Font("Helvetica",Font.PLAIN,12);
-    private Color                  draw_color=selectColor(), background_color=Color.white;
+    private final Color                  draw_color=selectColor();
+    private final Color background_color=Color.white;
     boolean                        no_channel=false;
 
 
@@ -402,7 +404,7 @@ public class Draw2Channels implements ActionListener {
 
 
     private class DrawPanel extends JPanel implements MouseMotionListener {	
-	Dimension        preferred_size=new Dimension(235, 170);
+	final Dimension        preferred_size=new Dimension(235, 170);
 	Image            img=null; // for drawing pixels
 	Dimension        d, imgsize;
 	Graphics         gr=null;

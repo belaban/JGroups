@@ -1,4 +1,4 @@
-// $Id: ReplicationManager.java,v 1.6 2004/07/05 05:41:45 belaban Exp $
+// $Id: ReplicationManager.java,v 1.7 2004/09/23 16:29:11 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -32,7 +32,7 @@ public class ReplicationManager implements RequestHandler {
     /** Used to broadcast updates and receive responses (latter only in synchronous case) */
     protected MessageDispatcher disp=null;
 
-    protected Log log=LogFactory.getLog(this.getClass());
+    protected final Log log=LogFactory.getLog(this.getClass());
 
 
 

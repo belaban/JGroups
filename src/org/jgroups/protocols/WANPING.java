@@ -1,4 +1,4 @@
-// $Id: WANPING.java,v 1.6 2004/09/22 10:34:12 belaban Exp $
+// $Id: WANPING.java,v 1.7 2004/09/23 16:29:43 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -19,10 +19,11 @@ import java.util.Vector;
    Similar to TCPPING, except that the initial host list is specified as a list of logical pipe names.
 */
 public class WANPING extends Protocol {
-    Vector          members=new Vector(), initial_members=new Vector();
+    final Vector          members=new Vector();
+    final Vector initial_members=new Vector();
     Address         local_addr=null;
     String          group_addr=null;
-    String          groupname=null;
+    final String          groupname=null;
     long            timeout=3000;
     long            num_initial_members=2;
     int             port_range=5;        // number of ports to be probed for initial membership

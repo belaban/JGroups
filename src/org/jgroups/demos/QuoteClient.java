@@ -1,4 +1,4 @@
-// $Id: QuoteClient.java,v 1.5 2004/09/22 10:34:10 belaban Exp $
+// $Id: QuoteClient.java,v 1.6 2004/09/23 16:29:35 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -32,17 +32,21 @@ public class QuoteClient extends Frame implements WindowListener, ActionListener
     static final String channel_name="Quotes";
     RpcDispatcher disp;
     Channel channel;
-    Button get=new Button("Get"), set=new Button("Set");
-    Button quit=new Button("Quit"), get_all=new Button("All");
-    Label stock=new Label("Stock"), value=new Label("Value");
-    Label err_msg=new Label("Error");
-    TextField stock_field=new TextField(), value_field=new TextField();
-    java.awt.List listbox=new java.awt.List();
+    final Button get=new Button("Get");
+    final Button set=new Button("Set");
+    final Button quit=new Button("Quit");
+    final Button get_all=new Button("All");
+    final Label stock=new Label("Stock");
+    final Label value=new Label("Value");
+    final Label err_msg=new Label("Error");
+    final TextField stock_field=new TextField();
+    final TextField value_field=new TextField();
+    final java.awt.List listbox=new java.awt.List();
     final Font default_font=new Font("Helvetica", Font.PLAIN, 12);
     //    String         props="UDP:PING:FD:STABLE:NAKACK:UNICAST:FRAG:FLUSH:GMS:"+
     //                 "VIEW_ENFORCER:STATE_TRANSFER:QUEUE";
 
-    String props="UDP:" +
+    final String props="UDP:" +
             "PING(num_initial_members=2;timeout=3000):" +
             "FD:" +
             "pbcast.PBCAST(gossip_interval=5000;gc_lag=50):" +

@@ -1,4 +1,4 @@
-// $Id: DISCARD.java,v 1.5 2004/07/05 14:17:15 belaban Exp $
+// $Id: DISCARD.java,v 1.6 2004/09/23 16:29:41 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -20,12 +20,12 @@ import java.util.Vector;
 
 public class DISCARD extends Protocol
 {
-   Vector members = new Vector();
+   final Vector members = new Vector();
    double up = 0.0;    // probability of dropping up   msgs
    double down = 0.0;  // probability of dropping down msgs
    boolean excludeItself = false;   //if true don't discard messages sent/received in this stack
    Address localAddress;
-   int num_sent = 25;  // don't discard the first 5 messages. Temporary, +++remove later !
+   final int num_sent = 25;  // don't discard the first 5 messages. Temporary, +++remove later !
 
 
    /** All protocol names have to be unique ! */

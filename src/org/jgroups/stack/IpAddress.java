@@ -1,4 +1,4 @@
-// $Id: IpAddress.java,v 1.10 2004/09/22 10:34:14 belaban Exp $
+// $Id: IpAddress.java,v 1.11 2004/09/23 16:29:53 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -23,11 +23,11 @@ import java.util.HashMap;
 public class IpAddress implements Address {
     private InetAddress       ip_addr=null;
     private int               port=0;
-    private byte[] additional_data=null;
+    private byte[]            additional_data=null;
     protected static final HashMap  sAddrCache=new HashMap();
     protected static final Log log=LogFactory.getLog(IpAddress.class);
 
-    static boolean resolve_dns=true;//Boolean.valueOf(System.getProperty("resolve.dns", "true")).booleanValue();
+    static boolean resolve_dns=true;
     static final  char[] digits = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'};
 
 
@@ -327,7 +327,7 @@ public class IpAddress implements Address {
     } 
     
     static class HashKey {   
-        private byte[] mIpAddress;
+        private final byte[] mIpAddress;
 
         public HashKey(byte[] ipaddress) {            
             if (ipaddress == null)

@@ -1,4 +1,4 @@
-// $Id: PerfHeader.java,v 1.4 2004/07/05 14:17:15 belaban Exp $
+// $Id: PerfHeader.java,v 1.5 2004/09/23 16:29:42 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -37,8 +37,8 @@ public class PerfHeader extends Header {
 
 
     static {
-	size=Util.sizeOf(classname);
-	if(size <= 0) size=400;
+        size=Util.sizeOf(classname);
+        if(size <= 0) size=400;
     }
 
 

@@ -1,4 +1,4 @@
-// $Id: Gossip.java,v 1.5 2004/07/05 05:45:31 belaban Exp $
+// $Id: Gossip.java,v 1.6 2004/09/23 16:29:35 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -29,19 +29,19 @@ public class Gossip implements Runnable, WindowListener, ActionListener, Channel
     private Graphics graphics=null;
     private Frame mainFrame=null;
     private JPanel panel=null, sub_panel=null;
-    private ByteArrayOutputStream out=new ByteArrayOutputStream();
-    private Random random=new Random(System.currentTimeMillis());
+    private final ByteArrayOutputStream out=new ByteArrayOutputStream();
+    private final Random random=new Random(System.currentTimeMillis());
     private Button gossip_button, clear_button, leave_button;
     private final Font default_font=new Font("Helvetica", Font.PLAIN, 12);
-    private String groupname="GossipGroupDemo";
+    private final String groupname="GossipGroupDemo";
     private Channel channel=null;
     private Thread receiver=null;
     private int member_size=1;
-    private Vector members=new Vector();
+    private final Vector members=new Vector();
     private int red=0, green=0, blue=0;
     private Color default_color=null;
     boolean first=true;
-    double subset=0.1;
+    final double subset=0.1;
     Address local_addr=null;
     TrafficGenerator gen=null;
     long traffic_interval=0;
@@ -446,7 +446,7 @@ public class Gossip implements Runnable, WindowListener, ActionListener, Channel
     private static class Command implements Serializable {
         static final int GOSSIP=1;
         static final int CLEAR=2;
-        int mode;
+        final int mode;
         int r=0;
         int g=0;
         int b=0;
@@ -509,7 +509,7 @@ public class Gossip implements Runnable, WindowListener, ActionListener, Channel
 
 
     private class MyPanel extends JPanel {
-        Dimension preferred_size=new Dimension(200, 200);
+        final Dimension preferred_size=new Dimension(200, 200);
 
         public Dimension getPreferredSize() {
             return preferred_size;

@@ -1,4 +1,4 @@
-// $Id: TOTAL.java,v 1.6 2004/07/05 14:17:16 belaban Exp $
+// $Id: TOTAL.java,v 1.7 2004/09/23 16:29:42 belaban Exp $
 package org.jgroups.protocols;
 
 
@@ -180,7 +180,7 @@ public class TOTAL extends Protocol {
 	private static final String TRACE_PROP = "trace";
 
 	/** Average time between broadcast request retransmissions */
-	private long[] AVG_RETRANSMIT_INTERVAL = new long[]{1000,2000,3000,4000};
+	private final long[] AVG_RETRANSMIT_INTERVAL = new long[]{1000,2000,3000,4000};
 
 	/** Null value for the IDs */
 	private static final long NULL_ID = -1;
@@ -199,7 +199,7 @@ public class TOTAL extends Protocol {
 
 
 	/** The state lock allowing multiple reads or a single write */
-	private RWLock stateLock = new RWLock();
+	private final RWLock stateLock = new RWLock();
 	/** Protocol layer message-sending state */
 	private int state = NULL_STATE;
 	/** The address of this stack */

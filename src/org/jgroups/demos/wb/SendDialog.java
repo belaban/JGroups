@@ -1,4 +1,4 @@
-// $Id: SendDialog.java,v 1.1 2003/09/09 01:24:09 belaban Exp $
+// $Id: SendDialog.java,v 1.2 2004/09/23 16:29:34 belaban Exp $
 
 package org.jgroups.demos.wb;
 
@@ -10,7 +10,7 @@ import org.jgroups.blocks.*;
 
 
 public class SendDialog extends Dialog implements ActionListener {
-    private TextArea       msg=new TextArea("");
+    private final TextArea       msg=new TextArea("");
     private final Font     default_font=new Font("Helvetica",Font.PLAIN,12);
     private RpcDispatcher  disp=null;
     private String         groupname=null;

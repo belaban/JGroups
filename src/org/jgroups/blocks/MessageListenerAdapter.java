@@ -19,7 +19,7 @@ public class MessageListenerAdapter implements MessageListener {
     
     protected MessageListener stateListener;
     
-    protected HashSet messageListeners = new HashSet();
+    protected final HashSet messageListeners = new HashSet();
     
     // we need this cache, because every call to messageListeners.iterator()
     // would generate few new objects, but iteration over the cache would not.

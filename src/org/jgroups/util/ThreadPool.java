@@ -1,4 +1,4 @@
-// $Id: ThreadPool.java,v 1.7 2004/07/05 14:17:35 belaban Exp $
+// $Id: ThreadPool.java,v 1.8 2004/09/23 16:29:56 belaban Exp $
 
 package org.jgroups.util;
 
@@ -22,7 +22,7 @@ public class ThreadPool {
     int              current_index=0;   /// next available thread
     ReusableThread[] pool=null;
     boolean[]        available_threads=null;
-    protected static Log log=LogFactory.getLog(ThreadPool.class);
+    protected static final Log log=LogFactory.getLog(ThreadPool.class);
 
 
 

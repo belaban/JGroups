@@ -1,4 +1,4 @@
-// $Id: PullPushAdapter.java,v 1.8 2004/09/22 10:34:08 belaban Exp $
+// $Id: PullPushAdapter.java,v 1.9 2004/09/23 16:29:11 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -36,10 +36,10 @@ import java.util.List;
 public class PullPushAdapter implements Runnable, ChannelListener {
     protected Transport       transport=null;
     protected MessageListener listener=null;           // main message receiver
-    protected List            membership_listeners=new ArrayList();
+    protected final List            membership_listeners=new ArrayList();
     protected Thread          receiver_thread=null;
-    protected HashMap         listeners=new HashMap(); // keys=identifier (Serializable), values=MessageListeners
-    protected Log log=LogFactory.getLog(getClass());
+    protected final HashMap         listeners=new HashMap(); // keys=identifier (Serializable), values=MessageListeners
+    protected final Log log=LogFactory.getLog(getClass());
     static final String       PULL_HEADER="PULL_HEADER";
 
 

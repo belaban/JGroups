@@ -1,4 +1,4 @@
-// $Id: ProtocolParameter.java,v 1.3 2004/07/05 05:43:51 belaban Exp $
+// $Id: ProtocolParameter.java,v 1.4 2004/09/23 16:29:14 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -11,8 +11,8 @@ package org.jgroups.conf;
 
 public class ProtocolParameter {
 
-    private String mParameterName;
-    private Object mParameterValue;
+    private final String mParameterName;
+    private final Object mParameterValue;
 
     public ProtocolParameter(String parameterName,
                              Object parameterValue) {

@@ -1,4 +1,4 @@
-// $Id: ParticipantGmsImpl.java,v 1.8 2004/09/13 20:48:26 belaban Exp $
+// $Id: ParticipantGmsImpl.java,v 1.9 2004/09/23 16:29:38 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -12,8 +12,8 @@ import java.util.Vector;
 
 
 public class ParticipantGmsImpl extends GmsImpl {
-    Vector     suspected_mbrs=new Vector(11);
-    Promise    leave_promise=new Promise();
+    private final Vector     suspected_mbrs=new Vector(11);
+    private final Promise    leave_promise=new Promise();
 
 
     public ParticipantGmsImpl(GMS g) {

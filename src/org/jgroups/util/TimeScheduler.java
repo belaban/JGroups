@@ -1,4 +1,4 @@
-// $Id: TimeScheduler.java,v 1.4 2004/04/28 18:26:24 belaban Exp $
+// $Id: TimeScheduler.java,v 1.5 2004/09/23 16:29:56 belaban Exp $
 
 package org.jgroups.util;
 
@@ -73,7 +73,7 @@ public class TimeScheduler {
         /**
          * The user task
          */
-        public Task task;
+        public final Task task;
         /**
          * The next execution time
          */
@@ -81,7 +81,7 @@ public class TimeScheduler {
         /**
          * Whether this task is scheduled fixed-delay or fixed-rate
          */
-        public boolean relative;
+        public final boolean relative;
 
         /**
          * @param task     the task to schedule & execute
@@ -149,7 +149,7 @@ public class TimeScheduler {
         /**
          * Sorted list of <tt>IntTask</tt>s
          */
-        private SortedSet set;
+        private final SortedSet set;
 
         public TaskQueue() {
             super();
@@ -268,9 +268,9 @@ public class TimeScheduler {
     /**
      * The task queue ordered according to task's next execution time
      */
-    private TaskQueue queue;
+    private final TaskQueue queue;
 
-    protected static Log log=LogFactory.getLog(TimeScheduler.class);
+    protected static final Log log=LogFactory.getLog(TimeScheduler.class);
 
 
     /**

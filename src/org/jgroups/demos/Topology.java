@@ -1,4 +1,4 @@
-// $Id: Topology.java,v 1.3 2004/09/22 10:34:10 belaban Exp $
+// $Id: Topology.java,v 1.4 2004/09/23 16:29:35 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -27,10 +27,10 @@ import java.util.Vector;
  * @author Bela Ban
  */
 public class Topology extends Frame implements WindowListener, MembershipListener {
-    private Vector members=new Vector();
-    private Font font;
-    private FontMetrics fm;
-    private Color node_color=new Color(250, 220, 100);
+    private final Vector members=new Vector();
+    private final Font font;
+    private final FontMetrics fm;
+    private final Color node_color=new Color(250, 220, 100);
     private boolean coordinator=false;
     private static final int NormalStyle=0;
     private static final int CheckStyle=1;

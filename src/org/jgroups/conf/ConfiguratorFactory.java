@@ -1,4 +1,4 @@
-// $Id: ConfiguratorFactory.java,v 1.13 2004/09/15 17:40:57 belaban Exp $
+// $Id: ConfiguratorFactory.java,v 1.14 2004/09/23 16:29:14 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -39,7 +39,7 @@ public class ConfiguratorFactory {
 
     static final String FORCE_CONFIGURATION="force.properties";
 
-    static Log log=LogFactory.getLog(ConfiguratorFactory.class);
+    static final Log log=LogFactory.getLog(ConfiguratorFactory.class);
 
     static String propertiesOverride=null;
 

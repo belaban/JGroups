@@ -1,32 +1,22 @@
-// $Id: JChannel.java,v 1.28 2004/09/22 10:34:16 belaban Exp $
+// $Id: JChannel.java,v 1.29 2004/09/23 16:29:59 belaban Exp $
 
 package org.jgroups;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import org.jgroups.conf.ConfiguratorFactory;
 import org.jgroups.conf.ProtocolStackConfigurator;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.stack.StateTransferInfo;
-import org.jgroups.util.Queue;
-import org.jgroups.util.QueueClosedException;
-import org.jgroups.util.Util;
-import org.jgroups.util.Promise;
-
+import org.jgroups.util.*;
 import org.w3c.dom.Element;
 
 import java.io.File;
 import java.io.Serializable;
-
 import java.net.URL;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Vector;
-
-import EDU.oswego.cs.dl.util.concurrent.SynchronizedBoolean;
-import EDU.oswego.cs.dl.util.concurrent.WaitableBoolean;
 
 /**
  * JChannel is a pure Java implementation of Channel
@@ -34,7 +24,7 @@ import EDU.oswego.cs.dl.util.concurrent.WaitableBoolean;
  * protocol stack
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.28 $
+ * @version $Revision: 1.29 $
  */
 public class JChannel extends Channel {
 
@@ -56,7 +46,7 @@ public class JChannel extends Channel {
     static final String FORCE_PROPS="force.properties";
 
     /* the protocol stack configuration string */
-    private String props;
+    private String props=null;
 
     /*the address of this JChannel instance*/
     private Address local_addr=null;
@@ -65,7 +55,7 @@ public class JChannel extends Channel {
     /*the latest view of the group membership*/
     private View my_view=null;
     /*the queue that is used to receive messages (events) from the protocol stack*/
-    private Queue mq=new Queue();
+    private final Queue mq=new Queue();
     /*the protocol stack, used to send and receive messages from the protocol stack*/
     private ProtocolStack prot_stack=null;
 
@@ -89,7 +79,7 @@ public class JChannel extends Channel {
     /** wait until we have a non-null local_addr */
     private long LOCAL_ADDR_TIMEOUT=30000; //=Long.parseLong(System.getProperty("local_addr.timeout", "30000"));
     /*if the states is fetched automatically, this is the default timeout, 5 secs*/
-    private long GET_STATE_DEFAULT_TIMEOUT=5000;
+    private static final long GET_STATE_DEFAULT_TIMEOUT=5000;
     /*flag to indicate whether to receive views from the protocol stack*/
     private boolean receive_views=true;
     /*flag to indicate whether to receive suspect messages*/
@@ -110,8 +100,7 @@ public class JChannel extends Channel {
     private boolean connected=false;
 
     /** block send()/down() if true (unlocked by UNBLOCK_SEND event) */
-    private final WaitableBoolean block_sending=new WaitableBoolean(false);
-
+    private final CondVar block_sending=new CondVar("block_sending", Boolean.FALSE);
 
     /*channel closed flag*/
     private boolean closed=false;      // close() has been called, channel is unusable
@@ -124,7 +113,7 @@ public class JChannel extends Channel {
      */
     private byte[] additional_data=null;
 
-    protected Log log=LogFactory.getLog(getClass());
+    protected final Log log=LogFactory.getLog(getClass());
 
     /**
      * Constructs a <code>JChannel</code> instance with the protocol stack
@@ -915,15 +904,14 @@ public class JChannel extends Channel {
                 handleExit(evt);
                 return;  // no need to pass event up; already done in handleExit()
 
-            case Event.BLOCK_SEND:
+            case Event.BLOCK_SEND: // emitted by FLOW_CONTROL
                 if(log.isInfoEnabled()) log.info("received BLOCK_SEND");
-                block_sending.set(true);
+                block_sending.set(Boolean.TRUE);
                 break;
 
-            case Event.UNBLOCK_SEND:
+            case Event.UNBLOCK_SEND:  // emitted by FLOW_CONTROL
                 if(log.isInfoEnabled()) log.info("received UNBLOCK_SEND");
-                block_sending.set(false);
-                // flow_control_promise.setResult(Boolean.TRUE);
+                block_sending.set(Boolean.FALSE);
                 break;
 
             default:
@@ -959,26 +947,10 @@ public class JChannel extends Channel {
         // only block for messages; all other events are passed through
         // we use double-checked locking; it is okay to 'lose' one or more messages because block_sending changes
         // to true after an initial false value
-
-
-        if(evt.getType() == Event.MSG) {
-
-            Runnable r=new Runnable() {
-              public void run() {
-                  block_sending.whenFalse(null);
-              }
-            };
-
-            block_sending.whenTrue(r);
-
+        if(evt.getType() == Event.MSG && block_sending.get().equals(Boolean.TRUE)) {
+            if(log.isInfoEnabled()) log.info("down() blocks because block_sending == true");
+            block_sending.waitUntil(Boolean.FALSE);
         }
-
-
-//        if(block_sending.get() && evt.getType() == Event.MSG) {
-//            if(log.isInfoEnabled()) log.info("down() blocks because block_sending == true");
-//            flow_control_promise.getResult();
-//
-//        }
 
         // handle setting of additional data (kludge, will be removed soon)
         if(evt.getType() == Event.CONFIG) {
@@ -1046,8 +1018,7 @@ public class JChannel extends Channel {
         connect_promise.reset();
         disconnect_promise.reset();
         connected=false;
-        block_sending.set(false);
-        // flow_control_promise.reset();
+        block_sending.set(Boolean.FALSE);
     }
 
 
@@ -1208,8 +1179,8 @@ public class JChannel extends Channel {
 
 
     class CloserThread extends Thread {
-        Event evt;
-        Thread t=null;
+        final Event evt;
+        final Thread t=null;
 
 
         CloserThread(Event evt) {

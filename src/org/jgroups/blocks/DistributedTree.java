@@ -1,4 +1,4 @@
-// $Id: DistributedTree.java,v 1.8 2004/09/22 10:34:08 belaban Exp $
+// $Id: DistributedTree.java,v 1.9 2004/09/23 16:29:11 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -23,9 +23,9 @@ import java.util.Vector;
  */
 public class DistributedTree implements MessageListener, MembershipListener {
     Node root=null;
-    Vector listeners=new Vector();
-    Vector view_listeners=new Vector();
-    Vector members=new Vector();
+    final Vector listeners=new Vector();
+    final Vector view_listeners=new Vector();
+    final Vector members=new Vector();
     Channel channel=null;
     RpcDispatcher disp=null;
     String groupname="DistributedTreeGroup";
@@ -40,13 +40,13 @@ public class DistributedTree implements MessageListener, MembershipListener {
             "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
             "shun=false;print_local_addr=true):" +
             "pbcast.STATE_TRANSFER(trace=true)";
-    long state_timeout=5000;   // wait 5 secs max to obtain state
+    final long state_timeout=5000;   // wait 5 secs max to obtain state
 
 	/** Determines when the updates have to be sent across the network, avoids sending unnecessary
      * messages when there are no member in the group */
 	private boolean send_message = false;
 
-    protected static Log log=LogFactory.getLog(DistributedTree.class);
+    protected static final Log log=LogFactory.getLog(DistributedTree.class);
 
 
 

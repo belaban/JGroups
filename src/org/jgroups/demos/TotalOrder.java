@@ -1,4 +1,4 @@
-// $Id: TotalOrder.java,v 1.6 2004/09/22 10:34:10 belaban Exp $
+// $Id: TotalOrder.java,v 1.7 2004/09/23 16:29:35 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -32,11 +32,13 @@ public class TotalOrder extends Frame {
     final Font     def_font=new Font("Helvetica", Font.BOLD, 12);
     final Font     def_font2=new Font("Helvetica", Font.PLAIN, 12);
     MyCanvas       canvas;
-    MenuBar        menubar=createMenuBar();
-    Button         start=new Button("Start"), stop=new Button("Stop");
-    Button         clear=new Button("Clear"), get_state=new Button("Get State");
-    Button         quit=new Button("Quit");
-    Panel          button_panel=new Panel();
+    final MenuBar        menubar=createMenuBar();
+    final Button         start=new Button("Start");
+    final Button stop=new Button("Stop");
+    final Button         clear=new Button("Clear");
+    final Button get_state=new Button("Get State");
+    final Button         quit=new Button("Quit");
+    final Panel          button_panel=new Panel();
     SenderThread   sender=null;
     ReceiverThread receiver=null;
     Channel        channel;
@@ -56,7 +58,7 @@ public class TotalOrder extends Frame {
 
 
     class EventHandler extends WindowAdapter {
-	Frame gui;
+	final Frame gui;
 
 	public EventHandler(Frame g) {gui=g;}
 

@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.10 2004/07/05 14:17:15 belaban Exp $
+// $Id: FD.java,v 1.11 2004/09/23 16:29:41 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -35,7 +35,7 @@ import java.util.Vector;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Revision: 1.10 $
+ * @version $Revision: 1.11 $
  */
 public class FD extends Protocol {
     Address         ping_dest=null;
@@ -44,18 +44,18 @@ public class FD extends Protocol {
     long            last_ack=System.currentTimeMillis();
     int             num_tries=0;
     int             max_tries=2;   // number of times to send a are-you-alive msg (tot time= max_tries*timeout)
-    Vector          members=new Vector(11);
-    Hashtable       invalid_pingers=new Hashtable(7);  // keys=Address, val=Integer (number of pings from suspected mbrs)
+    final Vector          members=new Vector(11);
+    final Hashtable       invalid_pingers=new Hashtable(7);  // keys=Address, val=Integer (number of pings from suspected mbrs)
 
     /** Members from which we select ping_dest. may be subset of {@link #members} */
-    Vector          pingable_mbrs=new Vector(11);
+    final Vector          pingable_mbrs=new Vector(11);
 
     boolean         shun=true;
     TimeScheduler   timer=null;
     Monitor         monitor=null;  // task that performs the actual monitoring for failure detection
 
     /** Transmits SUSPECT message until view change or UNSUSPECT is received */
-    BroadcastTask   bcast_task=new BroadcastTask();
+    final BroadcastTask   bcast_task=new BroadcastTask();
 
 
 
@@ -463,7 +463,7 @@ public class FD extends Protocol {
      * any longer. Then the task terminates.
      */
     private class BroadcastTask implements TimeScheduler.Task {
-        Vector suspected_mbrs=new Vector(7);
+        final Vector suspected_mbrs=new Vector(7);
         boolean stopped=false;
 
 

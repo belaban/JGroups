@@ -13,7 +13,7 @@ import org.jgroups.ChannelException;
  */
 public class TwoPhaseVotingAdapter {
 
-    private VotingAdapter voteChannel;
+    private final VotingAdapter voteChannel;
 
     /**
      * Creats an instance of the class.
@@ -75,7 +75,7 @@ public class TwoPhaseVotingAdapter {
  
     public static class TwoPhaseVoteWrapper implements VotingListener {
     
-        private TwoPhaseVotingListener listener;
+        private final TwoPhaseVotingListener listener;
     
         public TwoPhaseVoteWrapper(TwoPhaseVotingListener listener) {
             this.listener = listener;

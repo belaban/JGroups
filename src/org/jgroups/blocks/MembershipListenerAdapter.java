@@ -18,7 +18,7 @@ import java.util.HashSet;
 
 public class MembershipListenerAdapter implements MembershipListener {
     
-    protected HashSet membershipListeners = new HashSet();
+    protected final HashSet membershipListeners = new HashSet();
     protected MembershipListener[] membershipListenersCache = 
         new MembershipListener[0];
 

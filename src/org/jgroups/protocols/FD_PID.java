@@ -1,4 +1,4 @@
-// $Id: FD_PID.java,v 1.5 2004/07/05 14:17:15 belaban Exp $
+// $Id: FD_PID.java,v 1.6 2004/09/23 16:29:41 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -44,13 +44,13 @@ public class FD_PID extends Protocol {
     int local_pid=0;                    // PID of this process
     long timeout=3000;                   // msecs to wait for an are-you-alive msg
     long get_pids_timeout=3000;          // msecs to wait for the PID cache from the coordinator
-    long get_pids_retry_timeout=500;     // msecs to wait until we retry fetching the cache from the coord
+    final long get_pids_retry_timeout=500;     // msecs to wait until we retry fetching the cache from the coord
     int num_tries=3;                    // attempts the coord is solicited for PID cache until we give up
-    Vector members=new Vector();           // list of group members (updated on VIEW_CHANGE)
-    Hashtable pids=new Hashtable();           // keys=Addresses, vals=Integer (PIDs)
+    final Vector members=new Vector();           // list of group members (updated on VIEW_CHANGE)
+    final Hashtable pids=new Hashtable();           // keys=Addresses, vals=Integer (PIDs)
     boolean own_pid_sent=false;             // has own PID been broadcast yet ?
-    Vector pingable_mbrs=new Vector();     // mbrs from which we select ping_dest. possible subset of 'members'
-    Promise get_pids_promise=new Promise(); // used for rendezvous on GET_PIDS and GET_PIDS_RSP
+    final Vector pingable_mbrs=new Vector();     // mbrs from which we select ping_dest. possible subset of 'members'
+    final Promise get_pids_promise=new Promise(); // used for rendezvous on GET_PIDS and GET_PIDS_RSP
     boolean got_cache_from_coord=false;     // was cache already fetched ?
     TimeScheduler timer=null;                     // timer for recurring task of liveness pinging
     Monitor monitor=null;                   // object that performs the actual monitoring

@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.9 2004/07/05 14:17:16 belaban Exp $
+// $Id: UNICAST.java,v 1.10 2004/09/23 16:29:43 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -39,8 +39,8 @@ import java.util.Vector;
  */
 public class UNICAST extends Protocol implements AckSenderWindow.RetransmitCommand {
     boolean       operational=false;
-    Vector        members=new Vector(11);
-    Hashtable     connections=new Hashtable(11);   // Object (sender or receiver) -- Entries
+    final Vector        members=new Vector(11);
+    final Hashtable     connections=new Hashtable(11);   // Object (sender or receiver) -- Entries
     long[]        timeout={800,1600,3200,6400};  // for AckSenderWindow: max time to wait for missing acks
     Address       local_addr=null;
     TimeScheduler timer=null;                    // used for retransmissions (passed to AckSenderWindow)

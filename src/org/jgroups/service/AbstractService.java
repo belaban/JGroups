@@ -19,13 +19,13 @@ import java.util.LinkedList;
  */
 public abstract class AbstractService implements MembershipListener {
 
-    protected Channel serviceChannel;
+    protected final Channel serviceChannel;
 
-    protected PullPushAdapter serviceAdapter;
+    protected final PullPushAdapter serviceAdapter;
     
-    protected Channel clientChannel;
+    protected final Channel clientChannel;
     
-    protected LinkedList members = new LinkedList();
+    protected final LinkedList members = new LinkedList();
 
     protected boolean blocked;
 
@@ -33,14 +33,14 @@ public abstract class AbstractService implements MembershipListener {
     // inter-service communication when new view is being
     // installed. Simple blockMonitor.wait() will stop sending
     // thread until new view is accepted.
-    protected Object blockMonitor = new Object();
+    protected final Object blockMonitor = new Object();
     
     // this monitor is used to start service as standalone
     // application if value of runThread is true
-    protected Object threadMonitor = new Object();
+    protected final Object threadMonitor = new Object();
     protected boolean runThread;
 
-    protected Log log=LogFactory.getLog(this.getClass());
+    protected final Log log=LogFactory.getLog(this.getClass());
 
 
     /**

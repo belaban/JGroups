@@ -1,4 +1,4 @@
-// $Id: CausalDemo.java,v 1.3 2004/07/05 05:45:31 belaban Exp $
+// $Id: CausalDemo.java,v 1.4 2004/09/23 16:29:35 belaban Exp $
 package org.jgroups.demos;
 
 import org.jgroups.*;
@@ -25,11 +25,11 @@ public class CausalDemo implements Runnable
 {
    private Channel channel;
    private Thread mythread;
-   private Vector alphabet = new Vector();
+   private final Vector alphabet = new Vector();
    private boolean starter = false;
    private int doneCount=0;
 
-   private String props = "UDP(mcast_addr=228.8.8.8;mcast_port=45566;ip_ttl=32;" +
+   private final String props = "UDP(mcast_addr=228.8.8.8;mcast_port=45566;ip_ttl=32;" +
            "mcast_send_buf_size=150000;mcast_recv_buf_size=80000):" +
            "PING(timeout=2000;num_initial_members=5):" +
            "DISCARD(up=0.05;excludeitself=true):" +
@@ -193,8 +193,8 @@ public class CausalDemo implements Runnable
 
 class CausalMessage implements Serializable
 {
-   public String message;
-   public Address member;
+   public final String message;
+   public final Address member;
 
    public CausalMessage(String message, Address member)
    {

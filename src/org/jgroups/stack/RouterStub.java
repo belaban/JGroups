@@ -1,4 +1,4 @@
-// $Id: RouterStub.java,v 1.7 2004/09/22 10:34:14 belaban Exp $
+// $Id: RouterStub.java,v 1.8 2004/09/23 16:29:53 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -30,7 +30,7 @@ public class RouterStub {
 
     private volatile boolean reconnect=false;   // controls reconnect() loop
 
-    protected static Log log=LogFactory.getLog(RouterStub.class);
+    protected static final Log log=LogFactory.getLog(RouterStub.class);
 
 
     /**

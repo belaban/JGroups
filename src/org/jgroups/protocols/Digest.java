@@ -1,4 +1,4 @@
-// $Id: Digest.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
+// $Id: Digest.java,v 1.3 2004/09/23 16:29:41 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -16,7 +16,7 @@ import java.io.Serializable;
  */
 public class Digest implements Serializable {
     public long[]     highest_seqnos=null; // highest seqno received for each member
-    public List       msgs=new List();     // msgs (for each member) whose seqnos are higher than the 
+    public final List       msgs=new List();     // msgs (for each member) whose seqnos are higher than the
                                            // ones sent by the FLUSH coordinator
     public Digest(int size) {
 	highest_seqnos=new long[size];

@@ -1,4 +1,4 @@
-//$Id: UdpRingNode.java,v 1.4 2004/03/30 06:47:20 belaban Exp $
+//$Id: UdpRingNode.java,v 1.5 2004/09/23 16:29:40 belaban Exp $
 
 package org.jgroups.protocols.ring;
 
@@ -16,11 +16,12 @@ import java.util.Vector;
 public class UdpRingNode implements RingNode
 {
 
-   Address thisNode,nextNode;
-   RpcProtocol rpcProtocol;
+   final Address thisNode;
+     Address nextNode;
+   final RpcProtocol rpcProtocol;
    Object token;
-   Object mutex = new Object();
-   TOTAL_TOKEN.RingTokenHeader tokenHeader;
+   final Object mutex = new Object();
+   final TOTAL_TOKEN.RingTokenHeader tokenHeader;
    boolean tokenInStack = false;
 
 

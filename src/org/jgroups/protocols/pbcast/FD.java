@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.4 2004/07/05 05:49:41 belaban Exp $
+// $Id: FD.java,v 1.5 2004/09/23 16:29:38 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -36,8 +36,8 @@ public class FD extends Protocol implements Runnable {
     Thread checker=null;   // checks timestamps for timeout, generates SUSPECT event
     long timeout=6000;   // number of millisecs to wait for a member to be suspected
     // (should be higher than the gossip_interval value in PBCAST
-    Hashtable members=new Hashtable(11); // keys=Addresses (members), vals=Entries (timestamp)
-    Vector suspected_mbrs=new Vector(11); // currently suspected members (dynamically updated)
+    final Hashtable members=new Hashtable(11); // keys=Addresses (members), vals=Entries (timestamp)
+    final Vector suspected_mbrs=new Vector(11); // currently suspected members (dynamically updated)
 
 
     static class Entry {

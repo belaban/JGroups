@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.6 2004/07/26 10:52:31 belaban Exp $
+// $Id: Draw.java,v 1.7 2004/09/23 16:29:35 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -24,19 +24,21 @@ import java.util.Random;
  * @author Bela Ban, Oct 17 2001
  */
 public class Draw implements ActionListener, ChannelListener {
-    private ByteArrayOutputStream  out=new ByteArrayOutputStream();
-    private String                 groupname="DrawGroupDemo";
+    private final ByteArrayOutputStream  out=new ByteArrayOutputStream();
+    private final String                 groupname="DrawGroupDemo";
     private JChannel               channel=null;
     private int                    member_size=1;
     Debugger                       debugger=null;
-    boolean                        first=true, cummulative=true;
+    final boolean                        first=true;
+    final boolean cummulative=true;
     private JFrame                 mainFrame=null;
     private JPanel                 sub_panel=null;
     private DrawPanel              panel=null;
     private JButton                clear_button, leave_button;
-    private Random                 random=new Random(System.currentTimeMillis());
+    private final Random                 random=new Random(System.currentTimeMillis());
     private final Font             default_font=new Font("Helvetica",Font.PLAIN,12);
-    private Color                  draw_color=selectColor(), background_color=Color.white;
+    private final Color                  draw_color=selectColor();
+    private final Color background_color=Color.white;
     boolean                        no_channel=false;
 
 
@@ -368,7 +370,7 @@ public class Draw implements ActionListener, ChannelListener {
 
 
     private class DrawPanel extends JPanel implements MouseMotionListener {
-        Dimension        preferred_size=new Dimension(235, 170);
+        final Dimension        preferred_size=new Dimension(235, 170);
         Image            img=null; // for drawing pixels
         Dimension        d, imgsize;
         Graphics         gr=null;

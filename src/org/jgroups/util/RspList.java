@@ -1,4 +1,4 @@
-// $Id: RspList.java,v 1.3 2004/03/30 06:47:28 belaban Exp $
+// $Id: RspList.java,v 1.4 2004/09/23 16:29:56 belaban Exp $
 
 package org.jgroups.util;
 
@@ -13,7 +13,7 @@ import java.util.Vector;
  * A RspList is a response list used in peer-to-peer protocols.
  */
 public class RspList {
-    Vector rsps=new Vector();
+    final Vector rsps=new Vector();
 
 
     public void reset()

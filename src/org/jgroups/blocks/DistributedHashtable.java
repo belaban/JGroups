@@ -1,4 +1,4 @@
-// $Id: DistributedHashtable.java,v 1.15 2004/09/22 10:34:08 belaban Exp $
+// $Id: DistributedHashtable.java,v 1.16 2004/09/23 16:29:10 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -35,7 +35,7 @@ import java.util.*;
  * initial state (using the state exchange funclet <code>StateExchangeFunclet</code>.
  * @author Bela Ban
  * @author <a href="mailto:aolias@yahoo.com">Alfonso Olias-Sanz</a>
- * @version $Id: DistributedHashtable.java,v 1.15 2004/09/22 10:34:08 belaban Exp $
+ * @version $Id: DistributedHashtable.java,v 1.16 2004/09/23 16:29:10 belaban Exp $
  */
 public class DistributedHashtable extends Hashtable implements MessageListener, MembershipListener {
 
@@ -53,8 +53,8 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
     private transient Channel               channel;
     protected transient RpcDispatcher       disp=null;
     private transient String                groupname=null;
-    private transient Vector                notifs=new Vector();  // to be notified when mbrship changes
-    private transient Vector                members=new Vector(); // keeps track of all DHTs
+    private final transient Vector                notifs=new Vector();  // to be notified when mbrship changes
+    private final transient Vector                members=new Vector(); // keeps track of all DHTs
     private transient Class[]               put_signature=null;
     private transient Class[]               putAll_signature=null;
     private transient Class[]               clear_signature=null;
@@ -66,9 +66,9 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
      * messages when there are no member in the group */
 	private transient boolean            send_message = false;
 
-    protected transient Promise          state_promise=new Promise();
+    protected final transient Promise          state_promise=new Promise();
 
-    protected Log log=LogFactory.getLog(this.getClass());
+    protected final Log log=LogFactory.getLog(this.getClass());
 
 
 
@@ -317,7 +317,7 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
 	/**
 	 * Clears this hashtable so that it contains no keys
 	 */
-	public void clear() {
+	public synchronized void clear() {
 		//Changes done by <aos>
 		//if true, propagate action to the group
         if(send_message == true) {

@@ -1,4 +1,4 @@
-// $Id: FD_SIMPLE.java,v 1.6 2004/09/22 10:34:11 belaban Exp $
+// $Id: FD_SIMPLE.java,v 1.7 2004/09/23 16:29:41 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -23,7 +23,7 @@ import java.util.Vector;
  * suspected. When a message or a heartbeat are received, the counter is reset to 0.
  *
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.6 $
+ * @version $Revision: 1.7 $
  */
 public class FD_SIMPLE extends Protocol {
     Address local_addr=null;
@@ -31,8 +31,8 @@ public class FD_SIMPLE extends Protocol {
     HeartbeatTask task=null;
     long interval=3000;            // interval in msecs between are-you-alive messages
     long timeout=3000;             // time (in msecs) to wait for a response to are-you-alive
-    Vector members=new Vector();
-    HashMap counters=new HashMap();   // keys=Addresses, vals=Integer (count)
+    final Vector members=new Vector();
+    final HashMap counters=new HashMap();   // keys=Addresses, vals=Integer (count)
     int max_missed_hbs=5;         // max number of missed responses until a member is suspected
     static final String name="FD_SIMPLE";
 
@@ -289,7 +289,7 @@ public class FD_SIMPLE extends Protocol {
 
     class HeartbeatTask implements TimeScheduler.Task {
         boolean stopped=false;
-        Promise promise=new Promise();
+        final Promise promise=new Promise();
         Address dest=null;
 
         void stop() {

@@ -1,4 +1,4 @@
-// $Id: PIGGYBACK.java,v 1.7 2004/07/05 14:17:15 belaban Exp $
+// $Id: PIGGYBACK.java,v 1.8 2004/09/23 16:29:42 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -24,7 +24,7 @@ import java.util.Vector;
 public class PIGGYBACK extends Protocol {
     long max_wait_time=20; // milliseconds: max. wait between consecutive msgs
     long max_size=8192;    // don't piggyback if created msg would exceed this size (in bytes)
-    Queue msg_queue=new Queue();
+    final Queue msg_queue=new Queue();
     Packer packer=null;
     boolean packing=false;
     Address local_addr=null;

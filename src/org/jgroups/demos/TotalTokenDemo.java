@@ -1,4 +1,4 @@
-//$Id: TotalTokenDemo.java,v 1.7 2004/09/22 10:34:10 belaban Exp $
+//$Id: TotalTokenDemo.java,v 1.8 2004/09/23 16:29:35 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -37,7 +37,7 @@ import java.util.Vector;
  *
  *@author Vladimir Blagojevic vladimir@cs.yorku.ca
  *@author Ivan Bilenjkij  ivan@ibossa.com
- *@version $Revision: 1.7 $
+ *@version $Revision: 1.8 $
  *
  *@see org.jgroups.protocols.TOTAL_TOKEN
  *
@@ -49,15 +49,15 @@ public class TotalTokenDemo extends JFrame implements Runnable
     private JChannel channel;
     //main tabbed pane
 
-    JTabbedPane tabbedPane;
+    final JTabbedPane tabbedPane;
 
     private ReceiverThread receiverThread;
 
     private ColorPanel colorPanel;
-    private ControlPanel control;
+    private final ControlPanel control;
     private int mSize = 1024;
     private volatile boolean transmitting = false;
-    private String channelProperties;
+    private final String channelProperties;
     private Dimension preffered;
 
     public TotalTokenDemo(String props)
@@ -159,7 +159,7 @@ public class TotalTokenDemo extends JFrame implements Runnable
         volatile boolean running = true;
         Thread nullifier = null;
         private long startTimeThroughput = System.currentTimeMillis();
-        private long oneSecond = 1000;
+        private final long oneSecond = 1000;
         private long throughput = 1;
 
         public ReceiverThread()
@@ -292,7 +292,7 @@ public class TotalTokenDemo extends JFrame implements Runnable
 
     public static class TotalPayload implements Serializable
     {
-        private int seqRandom;
+        private final int seqRandom;
 
         public TotalPayload(int random)
         {
@@ -339,8 +339,13 @@ public class TotalTokenDemo extends JFrame implements Runnable
 
         private static final String DISCONNECT = "Disconnect";
         private static final String CONNECT = "Connect";
-        JTextField numMessagesInLastView,throughput,viewNumber,messageSize,state;
-        JButton transmit,connectButton;
+        final JTextField numMessagesInLastView;
+        final JTextField throughput;
+        final JTextField viewNumber;
+        final JTextField messageSize;
+        final JTextField state;
+        final JButton transmit;
+        final JButton connectButton;
 
         JTabbedPane pane;
 
@@ -481,7 +486,7 @@ public class TotalTokenDemo extends JFrame implements Runnable
     }
     class StackPanel extends JPanel
     {
-        ProtocolStack stack;
+        final ProtocolStack stack;
         public StackPanel(JChannel channel)
         {
             super();

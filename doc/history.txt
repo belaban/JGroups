@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.120 2004/09/22 10:34:07 belaban Exp $
+Revision: $Id: history.txt,v 1.121 2004/09/23 16:29:09 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -27,6 +27,12 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
 Version 2.2.8
 -------------
+
+- Added Simulator and FCTest
+  (bela Sept 23 2004)
+
+- More IntelliJ Inspector changes
+  (bela Sept 23 2004)
 
 - Various fixes for findbugs and IntelliJ's Inspector
   (bela Sept 22 2004)

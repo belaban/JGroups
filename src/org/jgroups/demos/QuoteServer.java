@@ -1,4 +1,4 @@
-// $Id: QuoteServer.java,v 1.4 2004/09/22 10:34:10 belaban Exp $
+// $Id: QuoteServer.java,v 1.5 2004/09/23 16:29:35 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -31,15 +31,15 @@ import java.util.Hashtable;
  */
 
 public class QuoteServer implements MembershipListener, MessageListener {
-    Hashtable stocks=new Hashtable();
+    final Hashtable stocks=new Hashtable();
     Channel channel;
     RpcDispatcher disp;
     static final String channel_name="Quotes";
-    int num_members=1;
+    final int num_members=1;
     //String          props="UDP:PING:FD:STABLE:NAKACK:UNICAST:FRAG:FLUSH:GMS:"+
     //                  "VIEW_ENFORCER:STATE_TRANSFER:QUEUE";
 
-    String props=
+    final String props=
             "UDP:"
             + "PING(num_initial_members=2;timeout=3000):"
             + "FD:"

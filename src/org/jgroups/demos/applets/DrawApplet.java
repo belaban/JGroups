@@ -1,4 +1,4 @@
-// $Id: DrawApplet.java,v 1.2 2004/02/26 19:14:59 belaban Exp $
+// $Id: DrawApplet.java,v 1.3 2004/09/23 16:29:17 belaban Exp $
 
 package org.jgroups.demos.applets;
 
@@ -22,26 +22,26 @@ import org.jgroups.*;
 public class DrawApplet extends Applet implements Runnable, MouseMotionListener, ActionListener {
     private Graphics               graphics=null;
     private Panel                  panel=null, sub_panel=null;
-    private ByteArrayOutputStream  out=new ByteArrayOutputStream();
+    private final ByteArrayOutputStream  out=new ByteArrayOutputStream();
     private DataOutputStream       outstream;
     private DataInputStream        instream;
-    private Random                 random=new Random(System.currentTimeMillis());
+    private final Random                 random=new Random(System.currentTimeMillis());
     private Button                 clear_button, leave_button;
     private Label                  mbr_label;
     private final Font             default_font=new Font("Helvetica",Font.PLAIN,12);
-    private String                 groupname="DrawGroup";
+    private final String                 groupname="DrawGroup";
     private Channel                channel=null;
     private Thread                 receiver=null;
     private int                    member_size=1;
     private int                    red=0, green=0, blue=0;
     private Color                  default_color=null;
 
-    private ChannelFactory         factory=new JChannelFactory();
+    private final ChannelFactory         factory=new JChannelFactory();
     private String                 props="TUNNEL(router_host=janet;router_port=12002):" + 
 	                                 "PING(gossip_host=janet;gossip_port=12002):" +
 	                                 "FD:STABLE:NAKACK:UNICAST:FRAG:FLUSH:GMS:VIEW_ENFORCER:QUEUE";
 
-    private Vector                 members=new Vector();
+    private final Vector                 members=new Vector();
     private boolean                fl=true;
     
 

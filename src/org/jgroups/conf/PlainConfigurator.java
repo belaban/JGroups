@@ -1,4 +1,4 @@
-// $Id: PlainConfigurator.java,v 1.1 2003/09/09 01:24:08 belaban Exp $
+// $Id: PlainConfigurator.java,v 1.2 2004/09/23 16:29:14 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -15,7 +15,7 @@ package org.jgroups.conf;
 
 public class PlainConfigurator implements ProtocolStackConfigurator
 {
-    private String mProperties;
+    private final String mProperties;
     
     /**
      * Instantiates a PlainConfigurator with old style properties

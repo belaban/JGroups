@@ -1,4 +1,4 @@
-// $Id: TransactionalHashtable.java,v 1.6 2004/08/21 10:07:03 belaban Exp $
+// $Id: TransactionalHashtable.java,v 1.7 2004/09/23 16:29:11 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -50,7 +50,7 @@ import java.util.*;
 public class TransactionalHashtable extends HashMap implements ReplicationReceiver, MessageListener {
     protected ReplicationManager repl_mgr;
     protected Channel            channel=null;
-    protected Address            local_addr=null;
+    protected final Address            local_addr=null;
     protected String             groupname="TransactionalHashtable-Group";
     protected String             properties=null;
     protected long               state_timeout=10000;            // number of milliseconds to wait for initial state
@@ -59,16 +59,16 @@ public class TransactionalHashtable extends HashMap implements ReplicationReceiv
     protected long               lock_acquisition_timeout=5000;  // default lock acquisition timeout
     protected long               lock_lease_timeout=0    ;       // default lock lease timeout (forever)
     protected int                transaction_mode=Xid.DIRTY_READS; // default tx mode, used when no tx is defined explicitly
-    protected RWLock             table_lock=new RWLock();        // lock on entire hashmap
-    protected HashMap            row_locks=new HashMap();        // locks for individual rows (keys=row key, values=RWLock)
+    protected final RWLock             table_lock=new RWLock();        // lock on entire hashmap
+    protected final HashMap            row_locks=new HashMap();        // locks for individual rows (keys=row key, values=RWLock)
     protected boolean            auto_commit=false;              // commit after each upate (e.g. put()) ?
-    protected List               notifs=new ArrayList();         // for Notification observers
+    protected final List               notifs=new ArrayList();         // for Notification observers
 
     //public static final int      ASYNC           = 1;  // asynchronous replication
     //public static final int      SYNC            = 2;  // synchronous replication
     //public static final int      SYNC_WITH_LOCKS = 3;  // synchronous replication with locking
 
-    protected Log log=LogFactory.getLog(this.getClass());
+    protected final Log log=LogFactory.getLog(this.getClass());
 
 
 
@@ -82,7 +82,7 @@ public class TransactionalHashtable extends HashMap implements ReplicationReceiv
     /**
      * Thread local variable. Is initialized with a hashmap
      */
-    private static ThreadLocal thread_local = new ThreadLocal() {
+    private static final ThreadLocal thread_local = new ThreadLocal() {
             protected synchronized Object initialValue() {
                 return new HashMap();
             }

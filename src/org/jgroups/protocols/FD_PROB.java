@@ -1,4 +1,4 @@
-// $Id: FD_PROB.java,v 1.5 2004/07/05 14:17:15 belaban Exp $
+// $Id: FD_PROB.java,v 1.6 2004/09/23 16:29:41 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -26,7 +26,7 @@ import java.util.Vector;
  * for timeout seconds, Q will be suspected.<p>
  * This protocol can be used both with a PBCAST *and* regular stacks.
  * @author Bela Ban 1999
- * @version $Revision: 1.5 $
+ * @version $Revision: 1.6 $
  */
 public class FD_PROB extends Protocol implements Runnable {
     Address local_addr=null;
@@ -34,8 +34,8 @@ public class FD_PROB extends Protocol implements Runnable {
     long timeout=3000;  // before a member with a non updated timestamp is suspected
     long gossip_interval=1000;
     Vector members=null;
-    Hashtable counters=new Hashtable();        // keys=Addresses, vals=FdEntries
-    Hashtable invalid_pingers=new Hashtable(); // keys=Address, vals=Integer (number of pings from suspected mbrs)
+    final Hashtable counters=new Hashtable();        // keys=Addresses, vals=FdEntries
+    final Hashtable invalid_pingers=new Hashtable(); // keys=Address, vals=Integer (number of pings from suspected mbrs)
     int max_tries=2;   // number of times to send a are-you-alive msg (tot time= max_tries*timeout)
 
 

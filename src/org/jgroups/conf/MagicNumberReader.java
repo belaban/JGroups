@@ -1,4 +1,4 @@
-// $Id: MagicNumberReader.java,v 1.5 2004/09/15 17:40:57 belaban Exp $
+// $Id: MagicNumberReader.java,v 1.6 2004/09/23 16:29:14 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -23,7 +23,7 @@ import java.io.FileNotFoundException;
 import java.io.InputStream;
 
 public class MagicNumberReader {
-    private static boolean xml_debug=false;
+    private static final boolean xml_debug=false;
     public static final String MAGIC_NUMBER_FILE="jg-magic-map.xml";
 
     public String mMagicNumberFile=MAGIC_NUMBER_FILE;

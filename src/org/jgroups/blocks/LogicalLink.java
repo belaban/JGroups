@@ -1,4 +1,4 @@
-// $Id: LogicalLink.java,v 1.2 2004/07/05 05:41:45 belaban Exp $
+// $Id: LogicalLink.java,v 1.3 2004/09/23 16:29:11 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -16,8 +16,8 @@ import java.util.Vector;
 */
 public class LogicalLink implements Link.Receiver {
     Receiver receiver=null;
-    Vector   links=new Vector();  // of Links
-    int      link_to_use=0;
+    final Vector   links=new Vector();  // of Links
+    final int      link_to_use=0;
 
 
     public class NoLinksAvailable extends Exception {

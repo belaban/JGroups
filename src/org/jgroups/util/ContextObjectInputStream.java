@@ -10,14 +10,14 @@ import java.util.HashMap;
  * ObjectInputStream which sets a contact classloader for reading bytes into objects. Copied from
  * MarshalledValueInputStream of JBoss
  * @author Bela Ban
- * @version $Id: ContextObjectInputStream.java,v 1.2 2004/08/27 08:31:44 belaban Exp $
+ * @version $Id: ContextObjectInputStream.java,v 1.3 2004/09/23 16:29:56 belaban Exp $
  */
 public class ContextObjectInputStream extends ObjectInputStream {
 
     /**
      * A class wide cache of proxy classes populated by resolveProxyClass
      */
-    private static HashMap classCache=new HashMap();
+    private static final HashMap classCache=new HashMap();
 
     private static final HashMap primClasses = new HashMap(8, 1.0F);
     static {

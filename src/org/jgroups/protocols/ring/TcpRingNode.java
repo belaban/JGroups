@@ -1,4 +1,4 @@
-//$Id: TcpRingNode.java,v 1.2 2004/03/30 06:47:20 belaban Exp $
+//$Id: TcpRingNode.java,v 1.3 2004/09/23 16:29:40 belaban Exp $
 
 package org.jgroups.protocols.ring;
 
@@ -24,16 +24,17 @@ import java.util.Vector;
 public class TcpRingNode implements RingNode
 {
 
-   ServerSocket tokenReceiver;
+   final ServerSocket tokenReceiver;
    Socket previous,next;
-   Address thisNode,nextNode;
+   final Address thisNode;
+     Address nextNode;
    ObjectInputStream ios;
    ObjectOutputStream oos;
-   RpcProtocol rpcProtocol;
-   boolean failedOnTokenLostException = false;
+   final RpcProtocol rpcProtocol;
+   final boolean failedOnTokenLostException = false;
 
-   Object socketMutex = new Object();
-    protected Log log=LogFactory.getLog(this.getClass());
+   final Object socketMutex = new Object();
+    protected final Log log=LogFactory.getLog(this.getClass());
 
    public TcpRingNode(RpcProtocol owner, Address memberAddress)
    {

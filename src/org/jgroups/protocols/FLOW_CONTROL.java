@@ -1,4 +1,4 @@
-// $Id: FLOW_CONTROL.java,v 1.5 2004/07/05 14:17:15 belaban Exp $
+// $Id: FLOW_CONTROL.java,v 1.6 2004/09/23 16:29:41 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -41,17 +41,17 @@ import java.util.Properties;
 public class FLOW_CONTROL extends MessageProtocol implements Runnable {
     private int _numMSGsSentThisPeriod=0;
     private static final String FLOW_CONTROL="FLOW_CONTROL";
-    private HashMap _rcvdMSGCounter=new HashMap();
+    private final HashMap _rcvdMSGCounter=new HashMap();
 
     private int _windowSize=1000;
     private int _fwdMarginSize=200;
     private int _estimatedRTT=100000;
     private boolean waitingForResponse=false;
-    private ReusableThread _reusableThread;
+    private final ReusableThread _reusableThread;
     private double RTT_WEIGHT=0.125;
     private int _msgsSentAfterFCreq=0;
-    private double TIME_OUT_FACTOR=0.25;//if resp not received from more than n*TIME_OUT_INCREMENT_FACTOR
-    private double TIME_OUT_INCR_MULT=1.25;
+    private final double TIME_OUT_FACTOR=0.25;//if resp not received from more than n*TIME_OUT_INCREMENT_FACTOR
+    private final double TIME_OUT_INCR_MULT=1.25;
     private double WINDOW_SIZE_REDUCTION=0.75;
     private double WINDOW_SIZE_EXPANSION=1.25;
     private boolean isBlockState=false;
