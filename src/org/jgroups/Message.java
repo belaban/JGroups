@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.17 2004/10/04 20:43:36 belaban Exp $
+// $Id: Message.java,v 1.18 2004/10/06 18:56:09 belaban Exp $
 
 package org.jgroups;
 
@@ -502,7 +502,7 @@ public class Message implements Externalizable, Streamable {
     /* --------------------------------- End of Interface Externalizable ----------------------------- */
 
 
-    /* ----------------------------------- Interface Externalizable ------------------------------- */
+    /* ----------------------------------- Interface Streamable  ------------------------------- */
 
     /**
      * Streams all members (dest and src addresses, buffer and headers to the output stream
