@@ -1,0 +1,29 @@
+<!-- Combination that disabled IP multicast (ip_mcast=false) and uses TCPPING for discovery. Each message to a group
+of 5 generates 5 UDP datagram packets, 1 for each member.
+author: B. S. Navin
+version: $Id: udp_tcpping.xml,v 1.1 2005/01/28 14:32:05 belaban Exp $
+-->
+
+<config>
+    <UDP bind_addr="localhost" mcast_send_buf_size="1000000"
+        ucast_recv_buf_size="1000000" loopback="false"
+        mcast_recv_buf_size="1000000" max_bundle_size="11250"
+        max_bundle_timeout="30" use_incoming_packet_handler="false"
+        use_outgoing_packet_handler="true"
+        ucast_send_buf_size="1000000"
+        enable_bundling="false"
+        ip_mcast="false"
+        start_port="7800" port_range="3"/>
+    <TCPPING timeout="2000" initial_hosts="localhost[7800]" port_range="3" num_initial_members="2"/>
+    <MERGE2 max_interval="10000" down_thread="false" min_interval="5000"/>
+    <FD timeout="1000" max_tries="2"/>
+    <VERIFY_SUSPECT timeout="1500" down_thread="false"/>
+    <pbcast.NAKACK max_xmit_size="60000" down_thread="false" use_mcast_xmit="true" gc_lag="50" retransmit_timeout="300,600,1200,2400,4800"/>
+    <UNICAST timeout="300,600,1200,2400,3600" down_thread="false"/>
+    <pbcast.STABLE stability_delay="1000" desired_avg_gossip="5000" down_thread="false" max_bytes="250000"/>
+    <pbcast.GMS print_local_addr="true" join_timeout="3000" down_thread="false" join_retry_timeout="2000" shun="true"/>
+    <FC max_credits="1000000" down_thread="false" min_threshold="0.10"/>
+    <FRAG frag_size="60000" down_thread="false" up_thread="true"/>
+    <COMPRESS down_thread="false" min_size="500" compression_level="3" up_thread="true"/>
+    <pbcast.STATE_TRANSFER down_thread="false" up_thread="false"/>
+</config>
