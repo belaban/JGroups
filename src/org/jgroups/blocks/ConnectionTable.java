@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.18 2005/03/24 11:20:19 belaban Exp $
+// $Id: ConnectionTable.java,v 1.19 2005/03/24 12:35:33 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -56,9 +56,16 @@ public class ConnectionTable implements Runnable {
     long                reaper_interval=60000;       // reap unused conns once a minute
     long                conn_expire_time=300000;     // connections can be idle for 5 minutes before they are reaped
     boolean             use_reaper=false;            // by default we don't reap idle conns
+    int                 sock_conn_timeout=1000;      // max time in millis to wait for Socket.connect() to return
     ThreadGroup         thread_group=null;
     protected final Log log=LogFactory.getLog(getClass());
+    static int          javaVersion=0;
     final byte[]        cookie={'b', 'e', 'l', 'a'};
+
+
+    static {
+        javaVersion=Util.getJavaVersion();
+    }
 
 
     /** Used for message reception */
@@ -203,6 +210,14 @@ public class ConnectionTable implements Runnable {
         this.recv_buf_size=recv_buf_size;
     }
 
+    public int getSocketConnectionTimeout() {
+        return sock_conn_timeout;
+    }
+
+    public void setSocketConnectionTimeout(int sock_conn_timeout) {
+        this.sock_conn_timeout=sock_conn_timeout;
+    }
+
     /** Sends a message to a unicast destination. The destination has to be set
      * @param msg The message to send
      * @throws SocketException Thrown if connection cannot be established
@@ -252,7 +267,19 @@ public class ConnectionTable implements Runnable {
             conn=(Connection)conns.get(dest);
             if(conn == null) {
                 // changed by bela Jan 18 2004: use the bind address for the client sockets as well
-                sock=new Socket(((IpAddress)dest).getIpAddress(), ((IpAddress)dest).getPort(), bind_addr, 0);
+
+                if(javaVersion >= 14) {
+                    SocketAddress tmpBindAddr=new InetSocketAddress(bind_addr, 0);
+                    InetAddress tmpDest=((IpAddress)dest).getIpAddress();
+                    SocketAddress destAddr=new InetSocketAddress(tmpDest, ((IpAddress)dest).getPort());
+                    sock=new Socket();
+                    sock.bind(tmpBindAddr);
+                    sock.connect(destAddr, sock_conn_timeout);
+                }
+                else {
+                    sock=new Socket(((IpAddress)dest).getIpAddress(), ((IpAddress)dest).getPort(), bind_addr, 0);
+                }
+
                 try {
                     sock.setSendBufferSize(send_buf_size);
                 }
