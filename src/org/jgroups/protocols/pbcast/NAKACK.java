@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.24 2004/05/06 16:33:46 belaban Exp $
+// $Id: NAKACK.java,v 1.25 2004/06/25 00:27:49 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -43,6 +43,16 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
      * message, the sender only retransmits once.
      */
     boolean use_mcast_xmit=false;
+
+
+    /**
+     * Messages that have been received in order are sent up the stack (= delivered to the application). Delivered
+     * messages are removed from NakReceiverWindow.received_msgs and moved to NakReceiverWindow.delivered_msgs, where
+     * they are later garbage collected (by STABLE). Since we do retransmits only from sent messages, never
+     * received or delivered messages, we can turn the moving to delivered_msgs off, so we don't keep the message
+     * around, and don't need to wait for garbage collection to remove them.
+     */
+    boolean discard_delivered_msgs=false;
 
 
     /**
@@ -416,6 +426,12 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
             props.remove("use_mcast_xmit");
         }
 
+        str=props.getProperty("discard_delivered_msgs");
+        if(str != null) {
+            discard_delivered_msgs=new Boolean(str).booleanValue();
+            props.remove("discard_delivered_msgs");
+        }
+
         if(props.size() > 0) {
             System.err.println("NAKACK.setProperties(): these properties are not recognized:");
             props.list(System.out);
@@ -541,7 +557,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
         long size=0, marker=first_seqno, len;
 
         if(log.isTraceEnabled()) {
-            log.trace("received xmit request for " + dest + " [" + first_seqno + " - " + last_seqno + "]");
+            log.trace(local_addr + ": received xmit request for " + dest + " [" + first_seqno + " - " + last_seqno + "]");
         }
 
         if(first_seqno > last_seqno) {
@@ -704,6 +720,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
                 if(!received_msgs.containsKey(sender)) {
                     win=new NakReceiverWindow(sender, this, 0, timer);
                     win.setRetransmitTimeouts(retransmit_timeout);
+                    win.setDiscardDeliveredMessages(discard_delivered_msgs);
                     received_msgs.put(sender, win);
                 }
             }
@@ -791,6 +808,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
             initial_seqno=d.highSeqnoAt(i);
             win=new NakReceiverWindow(sender, this, initial_seqno, timer);
             win.setRetransmitTimeouts(retransmit_timeout);
+            win.setDiscardDeliveredMessages(discard_delivered_msgs);
             synchronized(received_msgs) {
                 received_msgs.put(sender, win);
             }
@@ -828,6 +846,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
                 if(win == null) {
                     win=new NakReceiverWindow(sender, this, initial_seqno, timer);
                     win.setRetransmitTimeouts(retransmit_timeout);
+                    win.setDiscardDeliveredMessages(discard_delivered_msgs);
                     received_msgs.put(sender, win);
                 }
                 else {
@@ -836,6 +855,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
                         received_msgs.remove(sender);
                         win=new NakReceiverWindow(sender, this, initial_seqno, timer);
                         win.setRetransmitTimeouts(retransmit_timeout);
+                        win.setDiscardDeliveredMessages(discard_delivered_msgs);
                         received_msgs.put(sender, win);
                     }
                 }
@@ -1010,8 +1030,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
         NakAckHeader hdr;
         Message retransmit_msg=new Message(sender, null, null);
 
-        if(log.isDebugEnabled()) {
-            log.debug("sending XMIT_REQ ([" + first_seqno + ", " + last_seqno + "]) to " + sender);
+        if(log.isTraceEnabled()) {
+            log.trace(local_addr + ": sending XMIT_REQ ([" + first_seqno + ", " + last_seqno + "]) to " + sender);
         }
         //
         //  if(log.isDebugEnabled()) log.debug("TRACE.special()", "XMIT: " + first_seqno + " - " + last_seqno + ", sender=" + sender);
