@@ -1,4 +1,4 @@
-// $Id: Queue.java,v 1.17 2004/11/11 09:16:01 belaban Exp $
+// $Id: Queue.java,v 1.18 2004/11/11 09:19:03 belaban Exp $
 
 package org.jgroups.util;
 
@@ -171,7 +171,6 @@ public class Queue {
      * thrown if the queue has not been flushed yet.
      * @param obj - the object to be added to the queue
      * @exception QueueClosedException exception if closed() returns true
-     *
      */
     public void addAtHead(Object obj) throws QueueClosedException {
         if(obj == null) {
@@ -215,9 +214,7 @@ public class Queue {
      * @return the first element to be taken of the queue
      */
     public Object remove() throws QueueClosedException {
-        /*initialize the return value*/
         Object retval;
-        /*lock the queue*/
         synchronized(mutex) {
             /*wait as long as the queue is empty. return when an element is present or queue is closed*/
             while(size == 0) {
@@ -247,8 +244,6 @@ public class Queue {
             close(false); // mark queue as closed
             throw new QueueClosedException();
         }
-
-        /*return the object*/
         return retval;
     }
 
