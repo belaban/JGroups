@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.59 2004/04/23 01:39:02 belaban Exp $
+Revision: $Id: history.txt,v 1.60 2004/04/23 19:15:51 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -25,6 +25,10 @@ romuald     = Romuald du Song
 
 Version 2.2.3
 -------------
+
+- Changed handling of Protocol.setProperties(). Each Protocol has to call super.setProperties() if it wants
+  to store the properties in this.props now
+  (bela April 23 2004)
 
 - Made several protocols less verbose (info --> debug level)
   (bela April 22 2004) 

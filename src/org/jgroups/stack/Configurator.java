@@ -1,4 +1,4 @@
-// $Id: Configurator.java,v 1.2 2004/03/30 06:47:27 belaban Exp $
+// $Id: Configurator.java,v 1.3 2004/04/23 19:11:34 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -607,8 +607,7 @@ public class Configurator {
                 retval.init();
             }
             catch(InstantiationException inst_ex) {
-                if(log.isErrorEnabled()) log.error("an instance of " +
-                        protocol_name + " could not be created. Please check that it implements" +
+                log.error("an instance of " + protocol_name + " could not be created. Please check that it implements" +
                         " interface Protocol and that is has a public empty constructor !");
                 throw inst_ex;
             }
