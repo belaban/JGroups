@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.8 2004/01/16 16:47:51 belaban Exp $
+// $Id: JChannel.java,v 1.9 2004/02/15 18:34:12 belaban Exp $
 
 package org.jgroups;
 
@@ -22,7 +22,7 @@ import java.util.Map;
  * protocol stack
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.8 $
+ * @version $Revision: 1.9 $
  */
 public class JChannel extends Channel {
 
@@ -1097,7 +1097,8 @@ public class JChannel extends Channel {
 
         if(close_mq) {
             try {
-                mq.close(false);              // closes and removes all messages
+                if(mq != null)
+                    mq.close(false);              // closes and removes all messages
             }
             catch(Exception e) {
                 Trace.error("JChannel._close()", "exception: " + e);
@@ -1183,6 +1184,12 @@ public class JChannel extends Channel {
                     try {
                         Trace.info("JChannel.CloserThread.run()", "reconnecting to group " + old_channel_name);
                         open();
+                         }
+                    catch(Exception ex) {
+                        Trace.error("JChannel.CloserThread.run()", "failure reopening channel: " + ex);
+                        return;
+                    }
+                    try {
                         if(additional_data != null) {
                             // set previously set additional data
                             Map m=new HashMap();
@@ -1194,7 +1201,7 @@ public class JChannel extends Channel {
                             channel_listener.channelReconnected(local_addr);
                     }
                     catch(Exception ex) {
-                        Trace.error("JChannel.CloserThread.run()", "failure reopening channel: " + ex);
+                        Trace.error("JChannel.CloserThread.run()", "failure reconnecting to channel: " + ex);
                         return;
                     }
                 }
