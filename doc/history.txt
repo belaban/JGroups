@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.15 2003/11/22 00:42:22 belaban Exp $
+Revision: $Id: history.txt,v 1.16 2003/11/22 00:44:10 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java JGroups.Version')]
 
@@ -29,7 +29,8 @@ Version 2.2.1
 -------------
 
 - Fixed bug in pbcast.GMS which incorrectly generated view when many members left at exactly the same time.
-  Bug was reproduced in ConnectStressTest
+  Bug was reproduced in ConnectStressTest. We may have to revisit huge concurrent JOINs later (30 work fine in
+  the test now)
   (bela Nov 20 2003)
 
 - Added ConnectStressTest unit test
