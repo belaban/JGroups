@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.19 2003/12/12 00:00:37 belaban Exp $
+Revision: $Id: history.txt,v 1.20 2003/12/12 18:07:45 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java JGroups.Version')]
 
@@ -27,6 +27,24 @@ romuald     = Romuald du Song
 
 Version 2.2.1
 -------------
+
+- Fixed bug #854887. When AUTOCONF determines the correct
+  fragmentation size (e.g. 65507 on my WinXP laptop),
+  fragments are cut down to 65507 bytes max.
+  However, those fragments are regular messages, so we add
+  some headers, plus serialization adds its own stuff, so we
+  end up with more than  65507 bytes, causing UDP to fail
+  (AUTOCONF measured exactly how many bytes could be sent over
+  the UDP datagram socket). Solution: add a buffer to the frag size determined
+  by AUTOCONF (e.g. 1000 bytes). This will be subtracted from the computed
+  frag size, so we have enough space. The buffer is always more or less
+  constant, as headers or serialization is constant too.
+  (bela Dec 12 2003)
+
+This is the same problem for NAKACK and max_xmit_size.
+
+The solution is to subtract a certain number of bytes from
+AUTOCONF's value, so we're below the threshold
 
 - Added initial_hosts support for PING (copied from TCPPING)
   (bela Dec 11 2003)
