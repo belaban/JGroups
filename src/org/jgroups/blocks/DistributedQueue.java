@@ -1,4 +1,4 @@
-// $Id: DistributedQueue.java,v 1.11 2004/07/05 05:41:45 belaban Exp $
+// $Id: DistributedQueue.java,v 1.12 2004/07/30 08:30:47 rds13 Exp $
 package org.jgroups.blocks;
 
 import org.apache.log4j.Logger;
@@ -50,12 +50,12 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
     protected transient String groupname = null;
     protected transient Vector notifs = new Vector(); // to be notified when mbrship changes
     protected transient Vector members = new Vector(); // keeps track of all DHTs
-    private transient MethodCall add_method = null;
-    private transient MethodCall addAtHead_method = null;
-    private transient MethodCall addAll_method = null;
-    private transient MethodCall reset_method = null;
-    private transient MethodCall remove_method = null;
-
+    private transient Class[] add_signature = null;
+    private transient Class[] addAtHead_signature = null;
+    private transient Class[] addAll_signature = null;
+    private transient Class[] reset_signature = null;
+    private transient Class[] remove_signature = null;
+    
     /**
      * Creates a DistributedQueue
      * @param groupname The name of the group to join
@@ -72,7 +72,7 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
         }
 
         this.groupname = groupname;
-        initMethods();
+        initSignatures();
         internalQueue = new LinkedList();
         channel = (factory != null) ? factory.createChannel(properties) : new JChannel(properties);
         disp = new RpcDispatcher(channel, this, this, this);
@@ -106,7 +106,7 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
         this.channel = (Channel)adapter.getTransport();
         this.groupname = this.channel.getChannelName();
 
-        initMethods();
+        initSignatures();
         internalQueue = new LinkedList();
 
         channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
@@ -116,7 +116,7 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
 
     protected void init()
     {
-        initMethods();
+        initSignatures();
         internalQueue = new LinkedList();
         channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
         disp = new RpcDispatcher(channel, this, this, this);
@@ -195,9 +195,8 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
         try
         {
             Object retval = null;
-            add_method.setArgs(new Object[]{value});
 
-            RspList rsp = disp.callRemoteMethods(null, add_method, GroupRequest.GET_ALL, 0);
+            RspList rsp = disp.callRemoteMethods(null, "_add", new Object[]{value}, add_signature, GroupRequest.GET_ALL, 0);
             Vector results = rsp.getResults();
 
             if (results.size() > 0)
@@ -226,8 +225,7 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
     {
         try
         {
-            addAtHead_method.setArgs(new Object[]{value});
-            disp.callRemoteMethods(null, addAtHead_method, GroupRequest.GET_ALL, 0);
+            disp.callRemoteMethods(null, "_addAtHead", new Object[]{value}, addAtHead_signature, GroupRequest.GET_ALL, 0);
         }
          catch (Exception e)
         {
@@ -247,8 +245,7 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
     {
         try
         {
-            addAll_method.setArgs(new Object[]{values});
-            disp.callRemoteMethods(null, addAll_method, GroupRequest.GET_ALL, 0);
+            disp.callRemoteMethods(null, "_addAll", new Object[]{values}, addAll_signature, GroupRequest.GET_ALL, 0);
         }
          catch (Exception e)
         {
@@ -298,7 +295,7 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
     {
         try
         {
-            disp.callRemoteMethods(null, reset_method, GroupRequest.GET_ALL, 0);
+            disp.callRemoteMethods(null, "_reset", null, reset_signature, GroupRequest.GET_ALL, 0);
         }
          catch (Exception e)
         {
@@ -333,7 +330,7 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
     public Object remove()
     {
         Object retval = null;
-        RspList rsp = disp.callRemoteMethods(null, remove_method, GroupRequest.GET_ALL, internal_timeout);
+        RspList rsp = disp.callRemoteMethods(null, "_remove", null, remove_signature, GroupRequest.GET_ALL, internal_timeout);
         Vector results = rsp.getResults();
 
         if (results.size() > 0)
@@ -362,7 +359,7 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
         {
             while (!stopped && (retval == null))
             {
-                RspList rsp = disp.callRemoteMethods(null, remove_method, GroupRequest.GET_ALL, internal_timeout);
+                RspList rsp = disp.callRemoteMethods(null, "_remove", null, remove_signature, GroupRequest.GET_ALL, internal_timeout);
                 Vector results = rsp.getResults();
 
                 if (results.size() > 0)
@@ -394,7 +391,7 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
         {
             while (((System.currentTimeMillis() - start) < timeout) && !stopped && (retval == null))
             {
-                RspList rsp = disp.callRemoteMethods(null, remove_method, GroupRequest.GET_ALL, internal_timeout);
+                RspList rsp = disp.callRemoteMethods(null, "_remove", null, remove_signature, GroupRequest.GET_ALL, internal_timeout);
                 Vector results = rsp.getResults();
 
                 if (results.size() > 0)
@@ -666,33 +663,33 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
         }
     }
 
-    void initMethods()
+    void initSignatures()
     {
         try
         {
-            if (add_method == null)
+            if (add_signature == null)
             {
-                add_method = new MethodCall(getClass().getMethod("_add", new Class[] { Object.class }));
+                add_signature = new Class[] { Object.class };
             }
 
-            if (addAtHead_method == null)
+            if (addAtHead_signature == null)
             {
-                addAtHead_method = new MethodCall(getClass().getMethod("_addAtHead", new Class[] { Object.class }));
+                addAtHead_signature = new Class[] { Object.class };
             }
 
-            if (addAll_method == null)
+            if (addAll_signature == null)
             {
-                addAll_method = new MethodCall(getClass().getMethod("_addAll", new Class[] { Collection.class }));
+                addAll_signature = new Class[] { Collection.class };
             }
 
-            if (reset_method == null)
+            if (reset_signature == null)
             {
-                reset_method = new MethodCall(getClass().getMethod("_reset", new Class[0]));
+                reset_signature = new Class[0];
             }
 
-            if (remove_method == null)
+            if (remove_signature == null)
             {
-                remove_method = new MethodCall(getClass().getMethod("_remove", new Class[0]));
+                remove_signature = new Class[0];
             }
         }
          catch (Throwable ex)

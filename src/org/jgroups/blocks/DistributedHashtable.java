@@ -1,4 +1,4 @@
-// $Id: DistributedHashtable.java,v 1.12 2004/07/05 05:41:45 belaban Exp $
+// $Id: DistributedHashtable.java,v 1.13 2004/07/30 08:31:14 rds13 Exp $
 
 package org.jgroups.blocks;
 
@@ -35,7 +35,7 @@ import java.util.*;
  * initial state (using the state exchange funclet <code>StateExchangeFunclet</code>.
  * @author Bela Ban
  * @author <a href="mailto:aolias@yahoo.com">Alfonso Olias-Sanz</a>
- * @version $Id: DistributedHashtable.java,v 1.12 2004/07/05 05:41:45 belaban Exp $
+ * @version $Id: DistributedHashtable.java,v 1.13 2004/07/30 08:31:14 rds13 Exp $
  */
 public class DistributedHashtable extends Hashtable implements MessageListener, MembershipListener, Cloneable {
 
@@ -51,15 +51,15 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
 
 
     private transient Channel            channel;
-    private transient RpcDispatcher      disp=null;
-    private transient String             groupname=null;
-    private transient Vector             notifs=new Vector();  // to be notified when mbrship changes
-    private transient Vector             members=new Vector(); // keeps track of all DHTs
-    private transient MethodCall         put_method=null;
-    private transient MethodCall         putAll_method=null;
-    private transient MethodCall         clear_method=null;
-    private transient MethodCall         remove_method=null;
-    private transient boolean            persistent=false; // whether to use PersistenceManager to save state
+    private transient RpcDispatcher  disp=null;
+    private transient String                groupname=null;
+    private transient Vector               notifs=new Vector();  // to be notified when mbrship changes
+    private transient Vector               members=new Vector(); // keeps track of all DHTs
+    private transient Class[]               put_signature=null;
+    private transient Class[]               putAll_signature=null;
+    private transient Class[]               clear_signature=null;
+    private transient Class[]               remove_signature=null;
+    private transient boolean           persistent=false; // whether to use PersistenceManager to save state
     private transient PersistenceManager persistence_mgr=null;
 
 	/** Determines when the updates have to be sent across the network, avoids sending unnecessary
@@ -84,7 +84,7 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
                                 String properties, long state_timeout)
             throws ChannelException {
         this.groupname=groupname;
-        initMethods();
+        initSignatures();
         channel=factory != null ? factory.createChannel(properties) : new JChannel(properties);
         disp=new RpcDispatcher(channel, this, this, this);
         channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
@@ -107,7 +107,7 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
             throws ChannelException {
         this.groupname=groupname;
         this.persistent=persistent;
-        initMethods();
+        initSignatures();
         channel=factory != null ? factory.createChannel(properties) : new JChannel(properties);
         disp=new RpcDispatcher(channel, this, this, this);
         channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
@@ -144,7 +144,7 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
      */
     public DistributedHashtable(PullPushAdapter adapter, Serializable id, long state_timeout)
         throws ChannelNotConnectedException, ChannelClosedException {
-        initMethods();
+        initSignatures();
         this.channel = (Channel)adapter.getTransport();
         this.groupname = this.channel.getChannelName();
         disp=new RpcDispatcher(adapter, id, this, this, this);
@@ -153,7 +153,7 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
     }
 
     public DistributedHashtable(PullPushAdapter adapter, Serializable id) {
-        initMethods();
+        initSignatures();
         this.channel = (Channel)adapter.getTransport();
         this.groupname = this.channel.getChannelName();
         disp=new RpcDispatcher(adapter, id, this, this, this);
@@ -161,7 +161,7 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
     }
 
     protected void init(long state_timeout) throws ChannelClosedException, ChannelNotConnectedException {
-        initMethods();
+        initSignatures();
         channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
         disp = new RpcDispatcher(channel, this, this, this);
 
@@ -274,10 +274,9 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
         //if true, propagate action to the group
         if(send_message == true) {
             try {
-                put_method.setArgs(new Object[]{key,value});
                 disp.callRemoteMethods(
-                        null,
-                        put_method,
+                        null, "_put", new Object[]{key,value},
+                        put_signature,
                         GroupRequest.GET_ALL,
                         0);
             }
@@ -301,10 +300,9 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
 		//if true, propagate action to the group
         if(send_message == true) {
             try {
-                putAll_method.setArgs(new Object[]{m});
                 disp.callRemoteMethods(
-                        null,
-                        putAll_method,
+                        null, "_putAll", new Object[]{m}, 
+                        putAll_signature,
                         GroupRequest.GET_ALL,
                         0);
             }
@@ -325,8 +323,8 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
         if(send_message == true) {
             try {
                 disp.callRemoteMethods(
-                        null,
-                        clear_method,
+                        null, "_clear", null,
+                        clear_signature,
                         GroupRequest.GET_ALL,
                         0);
             }
@@ -351,10 +349,9 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
         //if true, propagate action to the group
         if(send_message == true) {
             try {
-                remove_method.setArgs(new Object[]{key});
                 disp.callRemoteMethods(
-                        null,
-                        remove_method,
+                        null, "_remove", new Object[]{key},
+                        remove_signature,
                         GroupRequest.GET_ALL,
                         0);
                 //return retval;
@@ -581,21 +578,21 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
     }
 
 
-    void initMethods() {
+    void initSignatures() {
         try {
-            if(put_method == null) {
-                put_method=new MethodCall(getClass().getMethod("_put",new Class[] {Object.class,Object.class}));
+            if(put_signature == null) {
+                put_signature=new Class[] {Object.class,Object.class};
             }
 
-            if(putAll_method == null) {
-                putAll_method=new MethodCall(getClass().getMethod("_putAll",new Class[] {Map.class}));
+            if(putAll_signature == null) {
+                putAll_signature=new Class[] {Map.class};
             }
 
-            if(clear_method == null)
-                clear_method=new MethodCall(getClass().getMethod("_clear",new Class[0]));
+            if(clear_signature == null)
+                clear_signature=new Class[0];
 
-            if(remove_method == null) {
-                remove_method=new MethodCall(getClass().getMethod("_remove",new Class[] {Object.class}));
+            if(remove_signature == null) {
+                remove_signature=new Class[] {Object.class};
             }
         }
         catch(Throwable ex) {
