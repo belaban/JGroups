@@ -1,4 +1,4 @@
-// $Id: PING.java,v 1.3 2003/12/11 23:59:43 belaban Exp $
+// $Id: PING.java,v 1.4 2003/12/22 17:02:03 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -413,7 +413,7 @@ public class PING extends Protocol {
                 tmp.add(h);
             }
             catch(NumberFormatException e) {
-                Trace.error("TCPPING.createInitialHosts()", "exeption is " + e);
+                Trace.error("PING.createInitialHosts()", "exeption is " + e);
             }
         }
 
@@ -440,11 +440,11 @@ public class PING extends Protocol {
 
 
         public boolean equals(Object obj) {
-            if(obj == null || !(obj instanceof TCPPING.HostInfo))
+            if(obj == null || !(obj instanceof PING.HostInfo))
                 return false;
-            if(host == null || ((TCPPING.HostInfo)obj).host == null)
+            if(host == null || ((PING.HostInfo)obj).host == null)
                 return false;
-            return host.equals(((TCPPING.HostInfo)obj).host);
+            return host.equals(((PING.HostInfo)obj).host);
         }
 
 
