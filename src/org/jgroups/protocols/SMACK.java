@@ -1,4 +1,4 @@
-// $Id: SMACK.java,v 1.2 2003/12/11 02:39:59 ovidiuf Exp $
+// $Id: SMACK.java,v 1.3 2003/12/11 06:15:48 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -46,7 +46,7 @@ import org.jgroups.log.Trace;
  * </ul>
  * Advantage of this protocol: no group membership necessary, fast.
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.2 $
+ * @version $Revision: 1.3 $
  * todo: initial mcast to announce new member (for view change)
  * todo: fix membershop bug: start a, b, kill b, restart b: b will be suspected by a
  */
@@ -236,7 +236,7 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
                 leave_msg=new Message();
                 leave_msg.putHeader(name, new SmackHeader(SmackHeader.LEAVE_ANNOUNCEMENT, -1));
                 passDown(new Event(Event.MSG, leave_msg));
-                passUp(new Event(Event.DISCONNECT_OK));
+                // passUp(new Event(Event.DISCONNECT_OK));
                 break;
 
             case Event.CONNECT:
