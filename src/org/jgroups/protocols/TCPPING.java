@@ -1,4 +1,4 @@
-// $Id: TCPPING.java,v 1.7 2004/04/23 19:36:13 belaban Exp $
+// $Id: TCPPING.java,v 1.8 2004/05/18 01:27:04 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -157,8 +157,8 @@ public class TCPPING extends Protocol {
                       hlist = new List();
                       hlist.add(local_addr);
                       initial_hosts.add(hlist);
-                      if(log.isInfoEnabled()) log.info("[SET_LOCAL_ADDRESS]: adding my own address (" + local_addr +
-                              ") to initial_hosts; initial_hosts=" + initial_hosts);
+                       if(log.isDebugEnabled()) log.debug("[SET_LOCAL_ADDRESS]: adding my own address (" + local_addr +
+                                                          ") to initial_hosts; initial_hosts=" + initial_hosts);
                    }
                 }
                 break;
@@ -200,17 +200,13 @@ public class TCPPING extends Protocol {
                                 initial_members.add(new PingRsp(h, coord));
                                 isMember = true;
                                 numMemberInitialHosts++;
-                                 {
-                                    if(log.isInfoEnabled()) log.info("[FIND_INITIAL_MBRS] " + h + " is already a member");
-                                }
-                            } 
+                                if(log.isTraceEnabled()) log.trace("[FIND_INITIAL_MBRS] " + h + " is already a member");
+                            }
                         }
                         for(Enumeration hen=hlist.elements(); hen.hasMoreElements() && !isMember;) {
                             h=(IpAddress)hen.nextElement();
                             msg.setDest(h);
-                             {
-                                if(log.isInfoEnabled()) log.info("[FIND_INITIAL_MBRS] sending PING request to " + msg.getDest());
-                            }
+                            if(log.isTraceEnabled()) log.trace("[FIND_INITIAL_MBRS] sending PING request to " + msg.getDest());
                             passDown(new Event(Event.MSG, msg.copy()));
                         }
                     }
@@ -230,8 +226,7 @@ public class TCPPING extends Protocol {
                         time_to_wait-=System.currentTimeMillis() - start_time;
                     }
                 }
-
-                 if(log.isInfoEnabled()) log.info("[FIND_INITIAL_MBRS] initial members are " + initial_members);
+            if(log.isTraceEnabled()) log.trace("[FIND_INITIAL_MBRS] initial members are " + initial_members);
 
                 // 3. Send response
                 passUp(new Event(Event.FIND_INITIAL_MBRS_OK, initial_members));
