@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.122 2004/09/24 09:01:48 belaban Exp $
+Revision: $Id: history.txt,v 1.123 2004/09/26 11:09:21 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -27,6 +27,9 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
 Version 2.2.8
 -------------
+
+- Added ExposedByteArrayOutputStream (exposes the raw buffer), avoids copying the underlying byte buffer
+  (bela Set 26 2004)
 
 - Added Magic{Input,Output}ObjectStream. They use the magic numbers mapping table to provide efficient
   class descriptors on serialization
