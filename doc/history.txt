@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.39 2004/02/20 21:46:00 belaban Exp $
+Revision: $Id: history.txt,v 1.40 2004/02/20 22:16:40 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java JGroups.Version')]
 
@@ -98,8 +98,8 @@ Version 2.2.1
   Needs 1.4 to work
   (bela Dec 18 2003)
 
-- Fixed handling of additional_data: additional_data was not retained across shuns/reconnects,
-  so the additional_data would not be available.
+- JChannel: fixed handling of additional_data: additional_data was not retained across shuns/reconnects,
+  so the additional_data would not be available. Run AddDataTest for unit testing.
   (bela Dec 15 2003)
 
 - Added scripts for pinging all members given an mcast address and port (probe), and
