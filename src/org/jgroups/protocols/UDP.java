@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.23 2004/05/14 00:16:21 belaban Exp $
+// $Id: UDP.java,v 1.24 2004/05/15 00:20:11 belaban Exp $
 
 package org.jgroups.protocols;
 
