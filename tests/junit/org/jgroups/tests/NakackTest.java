@@ -1,4 +1,4 @@
-// $Id: NakackTest.java,v 1.1 2003/09/09 01:24:13 belaban Exp $
+// $Id: NakackTest.java,v 1.2 2004/02/26 19:14:14 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -122,7 +122,7 @@ public class NakackTest extends TestCase {
 	    highest_seqno=s.longValue();
 
 	    try {
-		s=(Long)Util.objectFromByteBuffer(msg.getBuffer());
+		s=(Long)msg.getObject();
 		received_seqno=s.longValue();
 		if(received_seqno == highest_seqno +1) {
 		    // correct

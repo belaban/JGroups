@@ -1,4 +1,4 @@
-// $Id: FragTest.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+// $Id: FragTest.java,v 1.2 2004/02/26 19:14:14 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -63,7 +63,7 @@ public class FragTest extends TestCase {
 	    for(int i=0; i < NUM_MSGS; i++) {
 		big_msg=createBigMessage(MSG_SIZE);
 		big_msg.setSrc(local_addr);
-		System.out.println("sending msg #" + i + " [" + big_msg.getBuffer().length + " bytes]");
+		System.out.println("sending msg #" + i + " [" + big_msg.getLength() + " bytes]");
 		frag_receiver.down(new Event(Event.MSG, big_msg));
 		Util.sleep(10);
 	    }	    
@@ -113,7 +113,7 @@ public class FragTest extends TestCase {
 		System.err.println("FragTest.FragReceiver.up(): sender is null; discarding msg");
 		return;
 	    }
-	    System.out.println("Received msg from " + sender + " [" + msg.getBuffer().length + " bytes]");
+	    System.out.println("Received msg from " + sender + " [" + msg.getLength() + " bytes]");
 	}
 	
     }

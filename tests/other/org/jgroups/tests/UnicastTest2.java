@@ -1,4 +1,4 @@
-// $Id: UnicastTest2.java,v 1.1 2003/09/09 01:24:13 belaban Exp $
+// $Id: UnicastTest2.java,v 1.2 2004/02/26 19:14:15 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -89,7 +89,7 @@ public class UnicastTest2 implements Runnable {
 		}
 		else if(obj instanceof Message) {
 		    msg=(Message)obj;
-		    info=(UnicastTest2Info)Util.objectFromByteBuffer(msg.getBuffer());
+		    info=(UnicastTest2Info)msg.getObject();
 		    System.out.println("Received msg: " + info);
 
 		    myinfo=(UnicastTest2Info)senders.get(info.sender);

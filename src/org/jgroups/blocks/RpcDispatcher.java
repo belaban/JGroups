@@ -1,4 +1,4 @@
-// $Id: RpcDispatcher.java,v 1.3 2003/12/11 07:18:03 belaban Exp $
+// $Id: RpcDispatcher.java,v 1.4 2004/02/26 19:14:59 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -295,14 +295,13 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
             return null;
         }
 
-        if(req == null || req.getBuffer() == null) {
+        if(req == null || req.getLength() == 0) {
             Trace.error("RpcProtocol.handle()", "message or message buffer is null");
             return null;
         }
 
         try {
-            body=marshaller != null? marshaller.objectFromByteBuffer(req.getBuffer()) :
-                    Util.objectFromByteBuffer(req.getBuffer());
+            body=marshaller != null? marshaller.objectFromByteBuffer(req.getBuffer()) : req.getObject();
         }
         catch(Exception e) {
             Trace.error("RpcDispatcher.handle()", "exception=" + e);

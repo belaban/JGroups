@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.1 2003/09/09 01:24:11 belaban Exp $
+// $Id: STABLE.java,v 1.2 2004/02/26 19:15:00 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -144,7 +144,7 @@ public class STABLE extends Protocol {
                 msg=(Message)evt.getArg();
 
                 if(max_bytes > 0) {  // message counting is enabled
-                    long size=msg.getBuffer() != null? msg.getBuffer().length : 24;
+                    long size=Math.max(msg.getLength(), 24);
                     num_bytes_received+=size;
                     if(Trace.debug)
                         Trace.info("STABLE.up()", "received message of " + size +

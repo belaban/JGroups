@@ -1,4 +1,4 @@
-// $Id: ReplicatedTree.java,v 1.2 2003/09/24 23:20:46 belaban Exp $
+// $Id: ReplicatedTree.java,v 1.3 2004/02/26 19:14:59 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -567,13 +567,11 @@ public class ReplicatedTree implements Runnable, Cloneable, MessageListener, Mem
     /** Callback. Process the contents of the message; typically an _add() or _set() request */
     public void receive(Message msg) {
         Request req=null;
-        byte[] data;
 
-        if(msg == null || (data=msg.getBuffer()) == null)
+        if(msg == null || msg.getLength() == 0)
             return;
-        data=msg.getBuffer();
         try {
-            req=(Request)Util.objectFromByteBuffer(data);
+            req=(Request)msg.getObject();
             request_queue.add(req);
         }
         catch(QueueClosedException queue_closed_ex) {

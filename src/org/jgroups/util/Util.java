@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.6 2004/02/25 21:35:27 belaban Exp $
+// $Id: Util.java,v 1.7 2004/02/26 19:15:01 belaban Exp $
 
 package org.jgroups.util;
 
@@ -189,7 +189,7 @@ public class Util {
         if(evt.getType() == Event.MSG) {
             msg=(Message)evt.getArg();
             if(msg != null) {
-                if(msg.getBuffer() != null)
+                if(msg.getLength() > 0)
                     return printMessage(msg);
                 else
                     return msg.printObjectHeaders();
@@ -205,13 +205,11 @@ public class Util {
 
         if(msg == null)
             return "";
-        byte[] buf=msg.getBuffer();
-        if(buf == null)
+        if(msg.getLength() == 0)
             return null;
 
         try {
-            obj=objectFromByteBuffer(buf);
-            return obj.toString();
+            return msg.getObject().toString();
         }
         catch(Exception e) {  // it is not an object
             return "";
@@ -226,12 +224,11 @@ public class Util {
         Object obj;
         if(msg == null)
             return "";
-        byte[] buf=msg.getBuffer();
-        if(buf == null)
+        if(msg.getLength() == 0)
             return "";
 
         try {
-            obj=objectFromByteBuffer(buf);
+            obj=msg.getObject();
             return obj.toString();
         }
         catch(Exception e) {  // it is not an object

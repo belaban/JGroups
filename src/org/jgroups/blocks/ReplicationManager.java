@@ -1,13 +1,11 @@
-// $Id: ReplicationManager.java,v 1.3 2004/01/16 16:47:50 belaban Exp $
+// $Id: ReplicationManager.java,v 1.4 2004/02/26 19:14:59 belaban Exp $
 
 package org.jgroups.blocks;
 
 import org.jgroups.*;
 import org.jgroups.log.Trace;
 import org.jgroups.util.RspList;
-import org.jgroups.util.Util;
 
-import java.io.IOException;
 import java.io.Serializable;
 
 
@@ -240,7 +238,6 @@ public class ReplicationManager implements RequestHandler {
 
     public Object handle(Message msg) {
         Object          retval=null;
-        byte[]          buf;
         ReplicationData data;
 
         if(msg == null) {
@@ -248,14 +245,13 @@ public class ReplicationManager implements RequestHandler {
             return null;
         }
 
-        buf=msg.getBuffer();
-        if(buf == null) {
+        if(msg.getLength() == 0) {
             Trace.error("ReplicationManager.handle()", "payload of received message was null");
             return null;
         }
         
         try {
-            data=(ReplicationData)Util.objectFromByteBuffer(buf);
+            data=(ReplicationData)msg.getObject();
         }
         catch(Throwable ex) {
             Trace.error("ReplicationManager.handle()", "failure unmarshalling message: " + ex);

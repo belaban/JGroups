@@ -1,4 +1,4 @@
-// $Id: Chat.java,v 1.3 2004/01/16 07:45:35 belaban Exp $
+// $Id: Chat.java,v 1.4 2004/02/26 19:15:00 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -124,7 +124,7 @@ public class Chat implements MouseListener, WindowListener, MessageListener, Mem
         Object o;
 
         try {
-            o=Util.objectFromByteBuffer(msg.getBuffer());
+            o=msg.getObject();
             ta.append(o.toString() + " [" + msg.getSrc() + "]\n");
         }
         catch(Exception e) {

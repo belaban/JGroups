@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.2 2003/09/24 23:20:47 belaban Exp $
+// $Id: Draw.java,v 1.3 2004/02/26 19:15:00 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -228,7 +228,7 @@ public class Draw implements ActionListener, ChannelListener {
                 msg=(Message)tmp;
                 comm=null;
 
-                Object obj=Util.objectFromByteBuffer(msg.getBuffer());
+                Object obj=msg.getObject();
                 if(obj instanceof DrawCommand)
                     comm=(DrawCommand)obj;
                 else if(obj instanceof Message) {

@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.9 2004/02/15 18:34:13 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.10 2004/02/26 19:15:23 belaban Exp $ -->
 
-<project name="JGroups" default="compile" basedir=".">
+<project name="JGroups" default="compile-1.4" basedir=".">
     <description>
         build.xml file for JGroups. Needs Ant (jakarta.apache.org) to run
     </description>

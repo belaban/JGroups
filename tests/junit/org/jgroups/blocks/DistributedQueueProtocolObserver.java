@@ -1,7 +1,5 @@
-// $Id: DistributedQueueProtocolObserver.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+// $Id: DistributedQueueProtocolObserver.java,v 1.2 2004/02/26 19:14:13 belaban Exp $
 package org.jgroups.blocks;
-
-import java.util.Vector;
 
 import org.apache.log4j.Logger;
 import org.jgroups.Event;
@@ -9,7 +7,8 @@ import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolObserver;
-import org.jgroups.util.Util;
+
+import java.util.Vector;
 
 public class DistributedQueueProtocolObserver  implements ProtocolObserver
 {
@@ -49,7 +48,6 @@ public class DistributedQueueProtocolObserver  implements ProtocolObserver
 	public boolean passUp(Event evt)
 	{
 		Object obj = null;
-		byte[] buf;
 		Message msg;
 
 		if (evt.getType() != Event.MSG)
@@ -59,12 +57,11 @@ public class DistributedQueueProtocolObserver  implements ProtocolObserver
 		}
 
 		msg = (Message) evt.getArg();
-		buf = msg.getBuffer();
-		if (buf != null)
+		if (msg.getLength() > 0)
 		{
 			try
 			{
-				obj = Util.objectFromByteBuffer(buf);
+				obj = msg.getObject();
 			}
 			catch (ClassCastException cast_ex)
 			{
@@ -92,7 +89,6 @@ public class DistributedQueueProtocolObserver  implements ProtocolObserver
 	public boolean down(Event evt, int num_evts)
 	{
 		Object       obj=null;
-		byte[]       buf;
 		Message      msg;
 
 		if(evt.getType() != Event.MSG) {
@@ -101,10 +97,9 @@ public class DistributedQueueProtocolObserver  implements ProtocolObserver
 		}
 
 		msg=(Message)evt.getArg();
-		buf=msg.getBuffer();
-		if(buf != null) {
+		if(msg.getLength() > 0) {
 			try {
-			obj=Util.objectFromByteBuffer(buf);
+                obj=msg.getObject();
 			}
 			catch(ClassCastException cast_ex) {
 				logger.debug("For queue "+name+" sent:"+msg);

@@ -1,4 +1,4 @@
-// $Id: MessageTest.java,v 1.7 2004/02/26 18:15:08 belaban Exp $
+// $Id: MessageTest.java,v 1.8 2004/02/26 19:14:14 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -36,10 +36,12 @@ public class MessageTest extends TestCase {
  
     public void testBufferSize() throws Exception {
         m1=new Message(null, null, "bela");
+        assertNotNull(m1.getRawBuffer());
         assertNotNull(m1.getBuffer());
         assertEquals(m1.getBuffer().length, m1.getLength());
         byte[] new_buf={'m', 'i', 'c', 'h', 'e', 'l', 'l', 'e'};
         m1.setBuffer(new_buf);
+        assertNotNull(m1.getRawBuffer());
         assertNotNull(m1.getBuffer());
         assertEquals(new_buf.length, m1.getLength());
         assertEquals(m1.getBuffer().length, m1.getLength());
@@ -87,6 +89,20 @@ public class MessageTest extends TestCase {
         }
     }
 
+    public void testGetRawBuffer() {
+        byte[] buf={'b', 'e', 'l', 'a', 'b', 'a', 'n'};
+        m1=new Message(null, null, buf, 0, 4);
+        m2=new Message(null, null, buf, 4, 3);
+
+        assertEquals(buf.length, m1.getRawBuffer().length);
+        assertEquals(4, m1.getBuffer().length);
+        assertEquals(4, m1.getLength());
+
+        assertEquals(buf.length, m2.getRawBuffer().length);
+        assertEquals(3, m2.getBuffer().length);
+        assertEquals(3, m2.getLength());
+    }
+
     public void testSerialization() throws Exception {
         byte[] buf={'b', 'e', 'l', 'a', 'b', 'a', 'n'};
         byte[] tmp;
@@ -106,6 +122,7 @@ public class MessageTest extends TestCase {
 
         m3=(Message)in.readObject();
         assertEquals(4, m3.getLength());
+        assertEquals(4, m3.getRawBuffer().length);
         assertEquals(4, m3.getBuffer().length);
         assertEquals(0, m3.getOffset());
 
@@ -120,6 +137,7 @@ public class MessageTest extends TestCase {
         m4=(Message)in.readObject();
         assertEquals(3, m4.getLength());
         assertEquals(3, m4.getBuffer().length);
+        assertEquals(3, m4.getRawBuffer().length);
         assertEquals(0, m4.getOffset());
     }
 
@@ -139,6 +157,7 @@ public class MessageTest extends TestCase {
         assertEquals(0, m1.getOffset());
         assertEquals(0, m1.getLength());
         assertNull(m1.getBuffer());
+        assertNull(m1.getRawBuffer());
     }
 
     public void testCopy() {
@@ -189,7 +208,7 @@ public class MessageTest extends TestCase {
 
     public void testComputeFragOffsetsWithOffsets() {
         Range r;
-        byte[] buf={'p', 'a', 'd', 0,1,2,3,4,5,6,7,8,9, 'p', 'a', 'd', 'd', 'i', 'e'};
+        // byte[] buf={'p', 'a', 'd', 0,1,2,3,4,5,6,7,8,9, 'p', 'a', 'd', 'd', 'i', 'e'};
         java.util.List retval=Util.computeFragOffsets(3, 10, 4);
         System.out.println("list is " + retval);
         assertEquals(3, retval.size());

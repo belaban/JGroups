@@ -1,4 +1,4 @@
-// $Id: Gossip.java,v 1.2 2003/09/24 23:20:47 belaban Exp $
+// $Id: Gossip.java,v 1.3 2004/02/26 19:15:00 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -224,7 +224,7 @@ public class Gossip implements Runnable, WindowListener, ActionListener, Channel
                 msg=(Message)tmp;
                 comm=null;
 
-                Object obj=Util.objectFromByteBuffer(msg.getBuffer());
+                Object obj=msg.getObject();
 
                 // System.out.println("obj is " + obj);
 

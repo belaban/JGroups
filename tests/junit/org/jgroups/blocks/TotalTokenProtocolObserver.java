@@ -1,4 +1,4 @@
-// $Id: TotalTokenProtocolObserver.java,v 1.1 2003/10/20 14:42:19 rds13 Exp $
+// $Id: TotalTokenProtocolObserver.java,v 1.2 2004/02/26 19:14:13 belaban Exp $
 package org.jgroups.blocks;
 
 import java.util.Vector;
@@ -44,7 +44,6 @@ public class TotalTokenProtocolObserver  implements ProtocolObserver
 	public boolean passUp(Event evt)
 	{
 		Object obj = null;
-		byte[] buf;
 		Message msg;
 
 		if (evt.getType() != Event.MSG)
@@ -54,12 +53,11 @@ public class TotalTokenProtocolObserver  implements ProtocolObserver
 		}
 
 		msg = (Message) evt.getArg();
-		buf = msg.getBuffer();
-		if (buf != null)
+		if (msg.getLength() > 0)
 		{
 			try
 			{
-				obj = Util.objectFromByteBuffer(buf);
+                obj=msg.getObject();
 			}
 			catch (ClassCastException cast_ex)
 			{
@@ -87,7 +85,6 @@ public class TotalTokenProtocolObserver  implements ProtocolObserver
 	public boolean down(Event evt, int num_evts)
 	{
 		Object       obj=null;
-		byte[]       buf;
 		Message      msg;
 
 		if(evt.getType() != Event.MSG) {
@@ -96,10 +93,9 @@ public class TotalTokenProtocolObserver  implements ProtocolObserver
 		}
 
 		msg=(Message)evt.getArg();
-		buf=msg.getBuffer();
-		if(buf != null) {
+		if(msg.getLength() > 0) {
 			try {
-			obj=Util.objectFromByteBuffer(buf);
+                obj=msg.getObject();
 			}
 			catch(ClassCastException cast_ex) {
 				logger.debug("For channel "+name+" sent:"+msg);

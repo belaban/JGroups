@@ -1,4 +1,4 @@
-// $Id: PIGGYBACK.java,v 1.2 2004/01/08 02:39:56 belaban Exp $
+// $Id: PIGGYBACK.java,v 1.3 2004/02/26 19:15:00 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -167,7 +167,7 @@ public class PIGGYBACK extends Protocol {
 
                 msg.removeHeader(getName());
                 try {
-                    messages=(Vector)Util.objectFromByteBuffer(msg.getBuffer());
+                    messages=(Vector)msg.getObject();
                     if(Trace.trace) Trace.info("PIGGYBACK.up()", "unpacking " + messages.size() + " messages");
                     for(int i=0; i < messages.size(); i++)
                         passUp(new Event(Event.MSG, messages.elementAt(i)));

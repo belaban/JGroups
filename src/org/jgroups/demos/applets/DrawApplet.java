@@ -1,4 +1,4 @@
-// $Id: DrawApplet.java,v 1.1 2003/09/09 01:24:09 belaban Exp $
+// $Id: DrawApplet.java,v 1.2 2004/02/26 19:14:59 belaban Exp $
 
 package org.jgroups.demos.applets;
 
@@ -21,7 +21,6 @@ import org.jgroups.*;
 
 public class DrawApplet extends Applet implements Runnable, MouseMotionListener, ActionListener {
     private Graphics               graphics=null;
-    private Frame                  mainFrame=null;
     private Panel                  panel=null, sub_panel=null;
     private ByteArrayOutputStream  out=new ByteArrayOutputStream();
     private DataOutputStream       outstream;
@@ -175,12 +174,12 @@ public class DrawApplet extends Applet implements Runnable, MouseMotionListener,
 		    continue;
 		msg=(Message)tmp;
 
-		if(msg == null || msg.getBuffer() == null) {
+		if(msg == null || msg.getLength() == 0) {
 		    System.err.println("DrawApplet.run(): msg or msg.buffer is null !");
 		    continue;
 		}
 
-		instream=new DataInputStream(new ByteArrayInputStream(msg.getBuffer()));
+		instream=new DataInputStream(new ByteArrayInputStream(msg.getRawBuffer(), msg.getOffset(), msg.getLength()));
 		r=instream.readInt();   // red
 		if(r == -13) {
 		    clearPanel();
