@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.8 2004/03/30 06:47:28 belaban Exp $
+// $Id: Util.java,v 1.9 2004/05/17 18:28:54 belaban Exp $
 
 package org.jgroups.util;
 
@@ -757,7 +757,18 @@ public class Util {
         return os != null && os.toLowerCase().startsWith("win") ? true : false;
     }
 
-
+    public static void prompt(String s) {
+        System.out.println(s);
+        System.out.flush();
+        try {
+            while(System.in.available() > 0)
+                System.in.read();
+            System.in.read();
+        }
+        catch(IOException e) {
+            e.printStackTrace();
+        }
+    }
 
 
     /*
