@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.17 2004/02/27 21:10:41 belaban Exp $
+// $Id: UDP.java,v 1.18 2004/02/28 02:42:00 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -544,6 +544,31 @@ public class UDP extends Protocol implements Runnable {
             handleDownEvent(evt);
             return;
         }
+
+
+
+
+        // ****************** profiling ******************
+        /*if(num_msgs == 0) {
+            start=System.currentTimeMillis();
+            num_msgs++;
+        }
+        else if(num_msgs >= 1000) {
+            stop=System.currentTimeMillis();
+
+            long total_time=stop-start;
+            double msgs_per_msec=num_msgs / (double)total_time;
+
+            if(Trace.trace)
+                Trace.info("UDP.down.profile()",
+                        "total_time=" + total_time + ", msgs/ms=" + msgs_per_msec);
+            num_msgs=0;
+        }
+        else {
+            num_msgs++;
+        }*/
+        // ****************** profiling ******************
+
 
         msg=(Message)evt.getArg();
 
@@ -1356,8 +1381,6 @@ public class UDP extends Protocol implements Runnable {
 
             public void run() {
                 if(timer_running) {
-                    if(Trace.trace)
-                        Trace.info("timer", "sending " + total_bytes + " bytes"); // todo: remove
                     bundleAndSend();
                 }
             }
@@ -1385,28 +1408,6 @@ public class UDP extends Protocol implements Runnable {
             Address        dest=msg.getDest();
             long           len;
             List           tmp;
-
-
-            // ****************** profiling ******************
-/*            if(num_msgs == 0) {
-                start=System.currentTimeMillis();
-                num_msgs++;
-            }
-            else if(num_msgs >= 1000) {
-                stop=System.currentTimeMillis();
-
-                long total_time=stop-start;
-                double msgs_per_msec=num_msgs / (double)total_time;
-
-                if(Trace.trace)
-                    Trace.info("UDP.BundlingOutgoingPacketHandler.handleMessage()",
-                            "total_time=" + total_time + ", msgs/ms=" + msgs_per_msec);
-                num_msgs=0;
-            }
-            else {
-                num_msgs++;
-            }*/
-            // ****************** profiling ******************
 
             len=msg.size(); // todo: use msg.getLength() instead of msg.getSize()
             if(len > max_bundle_size)
