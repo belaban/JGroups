@@ -4,3 +4,4 @@ configure.cache
 .classpath
 classes
 dist
+eclipse-bin
