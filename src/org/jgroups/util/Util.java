@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.3 2004/02/25 20:46:23 belaban Exp $
+// $Id: Util.java,v 1.4 2004/02/25 21:07:17 belaban Exp $
 
 package org.jgroups.util;
 
@@ -291,6 +291,39 @@ public class Util {
             fragment=new byte[tmp_size];
             System.arraycopy(buf, accumulated_size, fragment, 0, tmp_size);
             retval[index++]=fragment;
+            accumulated_size+=tmp_size;
+        }
+        return retval;
+    }
+
+
+    /**
+     * Given a buffer and a fragmentation size, compute a list of fragmentation offset/length pairs, and
+     * return them in a list. Example:<br/>
+     * Buffer is 10 bytes, frag_size is 4 bytes. Return value will be ({0,4}, {4,4}, {8,2}).
+     * This is a total of 3 fragments: the first fragment starts at 0, and has a length of 4 bytes, the second fragment
+     * starts at offset 4 and has a length of 4 bytes, and the last fragment starts at offset 8 and has a length
+     * of 2 bytes.
+     * @param buf
+     * @param frag_size
+     * @return List. A List<Range> of offset/length pairs
+     */
+    public static java.util.List computeFragOffsets(byte[] buf, int frag_size) {
+        java.util.List   retval=new ArrayList();
+        long   total_size=buf.length;
+        int    accumulated_size=0;
+        int    tmp_size=0;
+        Range  r;
+
+        num_frags=buf.length % frag_size == 0 ? buf.length / frag_size : buf.length / frag_size + 1;
+
+        while(accumulated_size < total_size) {
+            if(accumulated_size + frag_size <= total_size)
+                tmp_size=frag_size;
+            else
+                tmp_size=(int)(total_size - accumulated_size);
+            r=new Range(accumulated_size, tmp_size);
+            retval.add(r);
             accumulated_size+=tmp_size;
         }
         return retval;
