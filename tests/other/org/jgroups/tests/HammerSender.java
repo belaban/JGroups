@@ -47,8 +47,7 @@ public class HammerSender {
     {
         try {
             java.lang.reflect.Method method = HammerListener.class.getMethod("printnum",new Class[] { Integer.class });
-            printnumMethod = new org.jgroups.blocks.MethodCall( method );
-            printnumMethod.addArg(new Integer(2));
+            printnumMethod = new org.jgroups.blocks.MethodCall( method, new Object[]{new Integer(2)});
 
         }
 
@@ -88,7 +87,7 @@ public class HammerSender {
 
     /**
      * executes a command across app-servers
-     * @param c the command to execute across boxes in an environment
+     * @param cmd the command to execute across boxes in an environment
      */
     public static void executeDistributedCommand(String cmd) {
 
