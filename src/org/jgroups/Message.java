@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.7 2004/02/26 19:15:01 belaban Exp $
+// $Id: Message.java,v 1.8 2004/02/27 01:32:07 belaban Exp $
 
 package org.jgroups;
 
@@ -277,6 +277,12 @@ public class Message implements Externalizable {
         retval.src_addr=src_addr;
 
         if(copy_buffer && buf != null) {
+
+            // change bela Feb 26 2004: we don't resolve the reference
+            retval.setBuffer(buf, offset, length);
+
+
+            /*
             byte[] new_buf;
             if(offset > 0 || length != buf.length) { // resolve reference to subset by copying subset into new buffer
                 new_buf=new byte[length];
@@ -285,12 +291,14 @@ public class Message implements Externalizable {
             else
                 new_buf=buf;
             retval.setBuffer(new_buf);
+            */
         }
 
         if(headers != null)
             retval.headers=(HashMap)headers.clone();
         return retval;
     }
+
 
     protected Object clone() throws CloneNotSupportedException {
         return copy();
