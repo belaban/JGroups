@@ -1,4 +1,4 @@
-// $Id: Protocol.java,v 1.11 2004/04/21 11:57:00 yaron-r Exp $
+// $Id: Protocol.java,v 1.12 2004/04/21 13:31:44 yaron-r Exp $
 
 package org.jgroups.stack;
 
@@ -178,8 +178,8 @@ public abstract class Protocol {
 	protected boolean up_thread = true;    // determines whether the up_handler thread should be started
 	protected Log log = LogFactory.getLog(this.getClass());
 
-	private final Mutex m_upLock = new Mutex(); 		// obtain lock if not ready for up, release when ready
-	private final Mutex m_downLock = new Mutex();    	// obtain lock if not ready for down, release when ready
+	protected final Mutex m_upLock = new Mutex(); 		// obtain lock if not ready for up, release when ready
+	protected final Mutex m_downLock = new Mutex();    	// obtain lock if not ready for down, release when ready
 
 
 	/**
@@ -558,11 +558,27 @@ public abstract class Protocol {
 	 * Call this method before calling 'up'. This method will block (not return) until 'up' is ready.
 	 */
 	public void blockUntilUpReady() {
+		acquireUpLock();
+		releaseUpLock();
+	}
+
+	/**
+	 * Call this method to acquire the 'up' lock. This method will block if the lock is already obtained by some thread,
+	 * and will release when that thread returns the lock. Release it immediately when not needed.
+	 */
+	public void acquireUpLock() {
 		try {
-			m_upLock.acquire();
+			m_upLock.acquire();  //I prefered to encapsulate the details of the actual locking.
 		} catch (InterruptedException ex) {
 			//this is ok
 		}
+	}
+
+	/**
+	 * Releases the 'up' lock, let other threads obtain it. Calling this method multiple times has no side effect on all
+	 * but the first call.
+	 */
+	public void releaseUpLock() {
 		m_upLock.release();
 	}
 
@@ -582,11 +598,27 @@ public abstract class Protocol {
 	 * Call this method before calling 'down'. This method will block (not return) until 'down' is ready.
 	 */
 	public void blockUntilDownReady() {
+		acquireDownLock();
+		releaseDownLock();
+	}
+
+	/**
+	 * Call this method to acquire the 'down' lock. This method will block if the lock is already obtained by some thread,
+	 * and will release when that thread returns the lock. Release it immediately when not needed.
+	 */
+	public void acquireDownLock() {
 		try {
-			m_downLock.acquire();
+			m_downLock.acquire();  //I prefered to encapsulate the details of the actual locking.
 		} catch (InterruptedException ex) {
 			//this is ok
 		}
+	}
+
+	/**
+	 * Releases the 'down' lock, let other threads obtain it. Calling this method multiple times has no side effect on all
+	 * but the first call.
+	 */
+	public void releaseDownLock() {
 		m_downLock.release();
 	}
 
