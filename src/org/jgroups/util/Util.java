@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.4 2004/02/25 21:07:17 belaban Exp $
+// $Id: Util.java,v 1.5 2004/02/25 21:07:30 belaban Exp $
 
 package org.jgroups.util;
 
@@ -314,8 +314,6 @@ public class Util {
         int    accumulated_size=0;
         int    tmp_size=0;
         Range  r;
-
-        num_frags=buf.length % frag_size == 0 ? buf.length / frag_size : buf.length / frag_size + 1;
 
         while(accumulated_size < total_size) {
             if(accumulated_size + frag_size <= total_size)
