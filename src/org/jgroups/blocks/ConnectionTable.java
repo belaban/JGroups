@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.20 2005/03/24 14:42:47 belaban Exp $
+// $Id: ConnectionTable.java,v 1.21 2005/03/31 06:39:40 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -486,11 +486,18 @@ public class ConnectionTable implements Runnable {
             try {
                 if(bind_addr == null)
                     ret=new ServerSocket(start_port);
-                else
+                else {
+
                     ret=new ServerSocket(start_port, backlog, bind_addr);
+                }
             }
             catch(BindException bind_ex) {
                 if (start_port==end_port) throw new BindException("No available port to bind to");
+                if(bind_addr != null && javaVersion >= 14) {
+                    NetworkInterface nic=NetworkInterface.getByInetAddress(bind_addr);
+                    if(nic == null)
+                        throw new BindException("bind_addr " + bind_addr + " is not a valid interface");
+                }
                 start_port++;
                 continue;
             }
