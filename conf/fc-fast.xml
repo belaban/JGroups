@@ -128,9 +128,9 @@
             <description>Provides multicast or unicast flow control</description>
             <class-name>org.jgroups.protocols.FC</class-name>
             <protocol-params>
-                <protocol-param name="max_credits" value="2000000"/>
+                <protocol-param name="max_credits" value="1000000"/>
                 <!--protocol-param name="min_credits" value="20000"/-->
-                <protocol-param name="min_threshold" value="0.20"/>
+                <protocol-param name="min_threshold" value="0.10"/>
                 <protocol-param name="down_thread" value="false"/>
             </protocol-params>
         </protocol>
@@ -158,6 +158,16 @@
 				<protocol-param name="up_thread" value="true"/>
             </protocol-params>
         </protocol>
+            <protocol>
+            	<protocol-name>pbcase State Transfer</protocol-name>
+            	<description>Transfers the state</description>
+            	<class-name>org.jgroups.protocols.pbcast.STATE_TRANSFER</class-name>
+            	<protocol-params>
+                	<protocol-param name="down_thread" value="false"/>
+                	<protocol-param name="up_thread"   value="false"/>
+            	</protocol-params>
+        </protocol>
+
 
 
 	</protocol-stack>
