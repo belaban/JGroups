@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.61 2004/04/23 20:02:13 belaban Exp $
+Revision: $Id: history.txt,v 1.62 2004/04/24 11:20:26 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -25,6 +25,9 @@ romuald     = Romuald du Song
 
 Version 2.2.3
 -------------
+
+- Added -new_format flag to XmlConfigurator; dumps input XML file in the format used by JBoss
+  (bela April 24 2004)
 
 - Added flag use_scheduler to RequestCorrelator, which allows one to bypass the Scheduler altogether.
   If deadlock detection is enabled, however, the Scheduler is needed, therefore use_scheduler is set to true.
