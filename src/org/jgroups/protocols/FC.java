@@ -1,4 +1,4 @@
-// $Id: FC.java,v 1.12 2004/07/05 14:17:15 belaban Exp $
+// $Id: FC.java,v 1.13 2004/08/30 09:31:40 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -18,7 +18,7 @@ import java.util.*;
  * Note that this protocol must be located towards the top of the stack, or all down_threads from JChannel to this
  * protocol must be set to false ! This is in order to block JChannel.send()/JChannel.down().
  * @author Bela Ban
- * @version $Revision: 1.12 $
+ * @version $Revision: 1.13 $
  */
 public class FC extends Protocol {
 
@@ -190,8 +190,8 @@ public class FC extends Protocol {
             return;
         }
 
-        if(src.equals(local_addr))
-            return;
+        // if(src.equals(local_addr))
+            // return;
 
         if(log.isTraceEnabled()) log.trace("credit for " + src + " is " + received.get(src));
 
@@ -271,8 +271,8 @@ public class FC extends Protocol {
         dest=msg.getDest();
         size=Math.max(24, msg.getLength());
         if(dest != null && !dest.isMulticastAddress()) { // unicast destination
-            if(dest.equals(local_addr))
-                return true;
+            // if(dest.equals(local_addr))
+               // return true;
 
             if(log.isTraceEnabled()) log.trace("credit for " + dest + " is " + sent.get(dest));
             if(sufficientCredit(sent, dest, size)) {
@@ -286,8 +286,8 @@ public class FC extends Protocol {
         else {                 // multicast destination
             for(Iterator it=members.iterator(); it.hasNext();) {
                 dest=(Address)it.next();
-                if(dest.equals(local_addr))
-                    continue;
+                // if(dest.equals(local_addr))
+                   //  continue;
 
                 if(log.isTraceEnabled()) log.trace("credit for " + dest + " is " + sent.get(dest));
                 if(sufficientCredit(sent, dest, size) == false) {
@@ -388,12 +388,13 @@ public class FC extends Protocol {
             new_credits_left=Math.max(0, credits_left - credits_required);
             map.put(dest, new Long(new_credits_left));
 
-            if(new_credits_left >= min_credits) {
+            if(new_credits_left >= min_credits + credits_required) {
                 return true;
             }
             else {
                 if(log.isTraceEnabled()) log.trace("not enough credits left for " +
-                        dest + ": left=" + credits_left + ", required=" + credits_required);
+                        dest + ": left=" + new_credits_left + ", required+min_credits=" + (credits_required +min_credits) + 
+                                                   ", required=" + credits_required + ", min_credits=" + min_credits);
                 return false;
             }
         }
@@ -414,8 +415,8 @@ public class FC extends Protocol {
         // add members not in membership (with full credit)
         for(int i=0; i < mbrs.size(); i++) {
             addr=(Address) mbrs.elementAt(i);
-            if(addr.equals(local_addr))
-                continue;
+            // if(addr.equals(local_addr))
+                // continue;
             if(!sent.containsKey(addr))
                 sent.put(addr, new Long(max_credits));
         }
@@ -429,8 +430,8 @@ public class FC extends Protocol {
         // ditto for received messages
         for(int i=0; i < mbrs.size(); i++) {
             addr=(Address) mbrs.elementAt(i);
-            if(addr.equals(local_addr))
-                continue;
+            //if(addr.equals(local_addr))
+              //  continue;
             if(!received.containsKey(addr))
                 received.put(addr, new Long(max_credits));
         }
