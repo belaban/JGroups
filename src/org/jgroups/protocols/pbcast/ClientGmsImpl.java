@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.2 2003/11/21 19:45:41 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.3 2004/01/07 01:28:16 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -22,11 +22,12 @@ import java.util.Vector;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.2 $
+ * @version $Revision: 1.3 $
  */
 public class ClientGmsImpl extends GmsImpl {
-    Vector initial_mbrs=new Vector();
-    Object view_installation_mutex=new Object();
+    Vector  initial_mbrs=new Vector();
+    boolean initial_mbrs_received=false;
+    Object  view_installation_mutex=new Object();
     Promise join_promise=new Promise();
 
 
@@ -219,6 +220,7 @@ public class ClientGmsImpl extends GmsImpl {
                     if(tmp != null && tmp.size() > 0)
                         for(int i=0; i < tmp.size(); i++)
                             initial_mbrs.addElement(tmp.elementAt(i));
+                    initial_mbrs_received=true;
                     initial_mbrs.notify();
                 }
                 return false;  // don't pass up the stack
@@ -254,11 +256,17 @@ public class ClientGmsImpl extends GmsImpl {
 
         synchronized(initial_mbrs) {
             initial_mbrs.removeAllElements();
+            initial_mbrs_received=false;
             gms.passDown(new Event(Event.FIND_INITIAL_MBRS));
-            try {
-                initial_mbrs.wait();
-            }
-            catch(Exception e) {
+
+            // the initial_mbrs_received flag is needed when passDown() is executed on the same thread, so when
+            // it returns, a response might actually have been received (even though the initial_mbrs might still be empty)
+            if(initial_mbrs_received == false) {
+                try {
+                    initial_mbrs.wait();
+                }
+                catch(Exception e) {
+                }
             }
 
             for(int i=0; i < initial_mbrs.size(); i++) {
