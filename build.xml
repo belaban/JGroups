@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.7 2003/12/03 20:29:52 igeorg Exp $ -->
+<!-- $Id: build.xml,v 1.8 2003/12/04 10:47:55 rds13 Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -332,7 +332,7 @@
             </test>
             <batchtest todir="${root.dir}/tmp">
                 <fileset dir="${junit.dir}"
-                    includes="**/Channel*Test.java"/>
+                    includes="**/Channel*DefaultTest.java"/>
             </batchtest>
         </junit>
     </target>
@@ -370,7 +370,7 @@
             </test>
             <batchtest todir="${root.dir}/tmp/tests-results">
                 <fileset dir="${junit.dir}"
-                    includes="**/Channel*Test.java"/>
+                    includes="**/Channel*DefaultTest.java"/>
             </batchtest>
         </junit>
     </target>
@@ -395,6 +395,6 @@
         </junitreport>
         <echo message="********************************************************************"/>
         <echo message="The unit test report is available in ${root.dir}/tmp/html/index.html"/>
-        <echo message="***********************"/>
+        <echo message="********************************************************************"/>
     </target>
 </project>
