@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.4 2003/11/21 09:19:26 belaban Exp $
+// $Id: GMS.java,v 1.5 2003/11/21 17:36:46 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -292,7 +292,7 @@ public class GMS extends Protocol {
             rc=vid.compareTo(view_id);
             if(rc <= 0) {
                 Trace.error("GMS.installView()", "[" + local_addr + "] received view <= current view;" +
-                                                 " discarding it ! (current vid: " + view_id + ", new vid: " + vid + ")");
+                                                 " discarding it (current vid: " + view_id + ", new vid: " + vid + ")");
                 return;
             }
         }
