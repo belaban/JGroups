@@ -1,4 +1,4 @@
-// $Id: DistributedQueue.java,v 1.4 2003/12/22 10:12:16 rds13 Exp $
+// $Id: DistributedQueue.java,v 1.5 2003/12/23 12:54:34 rds13 Exp $
 
 package org.jgroups.blocks;
 
@@ -119,7 +119,7 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
 	  * @param state_timeout Max number of milliseconds to wait for state to be retrieved
 	  */
 	 public DistributedQueue(PullPushAdapter adapter, Serializable id)
-		 throws ChannelNotConnectedException, ChannelClosedException {
+ 	 {
 		 this.channel = (Channel)adapter.getTransport();
 		 this.groupname = this.channel.getChannelName();
 
