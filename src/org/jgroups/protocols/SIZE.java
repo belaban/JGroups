@@ -1,4 +1,4 @@
-// $Id: SIZE.java,v 1.11 2005/01/24 12:37:27 belaban Exp $
+// $Id: SIZE.java,v 1.12 2005/01/24 13:03:05 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -7,7 +7,8 @@ import org.jgroups.Message;
 import org.jgroups.stack.Protocol;
 
 import java.io.ByteArrayOutputStream;
-import java.io.ObjectOutputStream;
+import java.io.DataOutputStream;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Vector;
 
@@ -22,6 +23,7 @@ import java.util.Vector;
 public class SIZE extends Protocol {
     final Vector members=new Vector();
     boolean print_msg=false;
+    boolean raw_buffer=false; // just print size of message buffer
 
     /** Min size in bytes above which msgs should be printed */
     long min_size=0;
@@ -53,6 +55,12 @@ public class SIZE extends Protocol {
             props.remove("print_msg");
         }
 
+        str=props.getProperty("raw_buffer");
+        if(str != null) {
+            raw_buffer=Boolean.valueOf(str).booleanValue();
+            props.remove("raw_buffer");
+        }
+
         str=props.getProperty("min_size");
         if(str != null) {
             min_size=Integer.parseInt(str);
@@ -60,7 +68,7 @@ public class SIZE extends Protocol {
         }
 
         if(props.size() > 0) {
-            System.err.println("SIZE.setProperties(): the following properties are not recognized:");
+            System.err.println("the following properties are not recognized:");
             props.list(System.out);
             return false;
         }
@@ -76,20 +84,29 @@ public class SIZE extends Protocol {
 
         case Event.MSG:
             msg=(Message)evt.getArg();
-            if((payload_size=msg.getLength()) > 0) {
+            payload_size=msg.getLength();
+
+            if(raw_buffer) {
+                if(log.isTraceEnabled())
+                    log.trace("size of message buffer is " + payload_size + ", " + numHeaders(msg) + " headers");
+            }
+            else {
                 serialized_size=sizeOf(msg);
                 if(serialized_size > min_size) {
-                    if(log.isInfoEnabled()) log.info("size of message is " + serialized_size +
-                                                     ", " + msg.getHeaders().size() + " headers");
-                    if(print_msg)
-                        if(log.isInfoEnabled()) log.info("headers are " + msg.getHeaders() +
-                                                         ", payload size=" + payload_size);
+                    if(log.isTraceEnabled())
+                        log.trace("size of serialized message is " + serialized_size +
+                                  ", " + numHeaders(msg) + " headers");
+
                 }
+            }
+            if(print_msg) {
+                if(log.isTraceEnabled())
+                    log.trace("headers are " + msg.getHeaders() + ", payload size=" + payload_size);
             }
             break;
         }
 
-        passUp(evt);            // Pass up to the layer above us
+        passUp(evt);            // pass up to the layer above us
     }
 
 
@@ -101,15 +118,23 @@ public class SIZE extends Protocol {
 
             case Event.MSG:
             msg=(Message)evt.getArg();
-            if((payload_size=msg.getLength()) > 0) {
+            payload_size=msg.getLength();
+
+            if(raw_buffer) {
+                if(log.isTraceEnabled())
+                    log.trace("size of message buffer is " + payload_size + ", " + numHeaders(msg) + " headers");
+            }
+            else {
                 serialized_size=sizeOf(msg);
                 if(serialized_size > min_size) {
-                    if(log.isInfoEnabled()) log.info("size of message is " + serialized_size +
-                                                     ", " + msg.getHeaders().size() + " headers");
-                    if(print_msg)
-                        if(log.isInfoEnabled()) log.info("headers are " + msg.getHeaders() +
-                                                         ", payload size=" + payload_size);
+                    if(log.isTraceEnabled())
+                        log.trace("size of serialized message is " + serialized_size + ", " + numHeaders(msg) + " headers");
+
                 }
+            }
+            if(print_msg) {
+                if(log.isTraceEnabled())
+                    log.trace("headers are " + msg.getHeaders() + ", payload size=" + payload_size);
             }
             break;
         }
@@ -119,13 +144,13 @@ public class SIZE extends Protocol {
 
 
     int sizeOf(Message msg) {
-        ObjectOutputStream out;
+        DataOutputStream out;
 
         synchronized(out_stream) {
             try {
                 out_stream.reset();
-                out=new ObjectOutputStream(out_stream);
-                msg.writeExternal(out);
+                out=new DataOutputStream(out_stream);
+                msg.writeTo(out);
                 out.flush();
                 return out_stream.size();
             }
@@ -133,6 +158,13 @@ public class SIZE extends Protocol {
                 return 0;
             }
         }
+    }
+
+    int numHeaders(Message msg) {
+        if(msg == null)
+            return 0;
+        Map hdrs=msg.getHeaders();
+        return hdrs !=null? hdrs.size() : 0;
     }
 
 
