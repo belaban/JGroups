@@ -1,16 +1,19 @@
-// $Id: SpeedTest.java,v 1.1 2003/09/09 01:24:13 belaban Exp $
+// $Id: SpeedTest.java,v 1.2 2003/12/31 23:37:38 belaban Exp $
 
 
 package org.jgroups.tests;
 
 
-import java.net.*;
-
-import org.jgroups.*;
-import org.jgroups.util.*;
-import org.jgroups.log.Trace;
+import org.jgroups.Channel;
+import org.jgroups.JChannel;
+import org.jgroups.Message;
 import org.jgroups.debug.Debugger;
+import org.jgroups.log.Trace;
+import org.jgroups.util.Util;
 
+import java.net.DatagramPacket;
+import java.net.InetAddress;
+import java.net.MulticastSocket;
 
 
 /**
@@ -23,193 +26,191 @@ import org.jgroups.debug.Debugger;
  * trace0=NAKACK.retransmit DEBUG STDOUT
  * trace1=UNICAST.retransmit DEBUG STDOUT
  * </pre>
+ * 
  * @author Bela Ban
  */
 public class SpeedTest {
     static long start, stop;
 
 
-    
     public static void main(String[] args) {
-	MulticastSocket sock=null;
-	Receiver        receiver;
-	int             num_msgs=1000;
-	byte[]          buf;
-	DatagramPacket  packet;
-	InetAddress     group_addr=null;
-	int[][]         matrix;
-	boolean         jg=false; // use JGroups channel instead of UDP MulticastSocket
-	JChannel        channel=null;
-	String          props=null, loopback_props;
-	String          group_name="SpeedTest-Group";
-	Message         send_msg;
-	boolean         debug=false, cummulative=false;
-	Debugger        debugger=null;
-	long            sleep_time=1; // sleep in msecs between msg sends
-	boolean         busy_sleep=false;
-	boolean         yield=false;
-	int             num_yields=0;
-	boolean         loopback=false;
+        MulticastSocket sock=null;
+        Receiver receiver;
+        int num_msgs=1000;
+        byte[] buf;
+        DatagramPacket packet;
+        InetAddress group_addr=null;
+        int[][] matrix;
+        boolean jg=false; // use JGroups channel instead of UDP MulticastSocket
+        JChannel channel=null;
+        String props=null, loopback_props;
+        String group_name="SpeedTest-Group";
+        Message send_msg;
+        boolean debug=false, cummulative=false;
+        Debugger debugger=null;
+        long sleep_time=1; // sleep in msecs between msg sends
+        boolean busy_sleep=false;
+        boolean yield=false;
+        int num_yields=0;
+        boolean loopback=false;
 
 
-	
-	props="UDP(mcast_addr=224.0.0.36;mcast_port=55566;ip_ttl=32;" +
-            "ucast_send_buf_size=32000;ucast_recv_buf_size=64000;" +
-            "mcast_send_buf_size=32000;mcast_recv_buf_size=64000):" +
-            "PING(timeout=2000;num_initial_members=3):" +
-            "MERGE2(min_interval=5000;max_interval=10000):" +
-            "FD_SOCK:" +
-            "VERIFY_SUSPECT(timeout=1500):" +
-            "pbcast.NAKACK(max_xmit_size=8192;gc_lag=50;retransmit_timeout=600,800,1200,2400,4800):" +
-            "UNICAST(timeout=1200):" +
-            "pbcast.STABLE(desired_avg_gossip=10000):" +
-            "FRAG(frag_size=8192;down_thread=false;up_thread=false):" +
-            // "PIGGYBACK(max_size=16000;max_wait_time=500):" +
-            "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
-            "shun=false;print_local_addr=true):" +
-            "pbcast.STATE_TRANSFER";
+        props="UDP(mcast_addr=224.0.0.36;mcast_port=55566;ip_ttl=32;" +
+                "ucast_send_buf_size=32000;ucast_recv_buf_size=64000;" +
+                "mcast_send_buf_size=32000;mcast_recv_buf_size=64000):" +
+                "PING(timeout=2000;num_initial_members=3):" +
+                "MERGE2(min_interval=5000;max_interval=10000):" +
+                "FD_SOCK:" +
+                "VERIFY_SUSPECT(timeout=1500):" +
+                "pbcast.NAKACK(max_xmit_size=8192;gc_lag=50;retransmit_timeout=600,800,1200,2400,4800):" +
+                "UNICAST(timeout=1200):" +
+                "pbcast.STABLE(desired_avg_gossip=10000):" +
+                "FRAG(frag_size=8192;down_thread=false;up_thread=false):" +
+// "PIGGYBACK(max_size=16000;max_wait_time=500):" +
+                "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
+                "shun=false;print_local_addr=true):" +
+                "pbcast.STATE_TRANSFER";
         // "PERF(details=true)";
 
 
-	loopback_props="LOOPBACK:" +
-            "PING(timeout=2000;num_initial_members=3):" +
-            "MERGE2(min_interval=5000;max_interval=10000):" +
-            "FD_SOCK:" +
-            "VERIFY_SUSPECT(timeout=1500):" +
-            "pbcast.NAKACK(gc_lag=50;retransmit_timeout=600,800,1200,2400,4800):" +
-            "UNICAST(timeout=5000):" +
-            "pbcast.STABLE(desired_avg_gossip=20000):" +
-            "FRAG(frag_size=16000;down_thread=false;up_thread=false):" +
-            "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
-            "shun=false;print_local_addr=true):" +
-            "pbcast.STATE_TRANSFER";
-	
+        loopback_props="LOOPBACK:" +
+                "PING(timeout=2000;num_initial_members=3):" +
+                "MERGE2(min_interval=5000;max_interval=10000):" +
+                "FD_SOCK:" +
+                "VERIFY_SUSPECT(timeout=1500):" +
+                "pbcast.NAKACK(gc_lag=50;retransmit_timeout=600,800,1200,2400,4800):" +
+                "UNICAST(timeout=5000):" +
+                "pbcast.STABLE(desired_avg_gossip=20000):" +
+                "FRAG(frag_size=16000;down_thread=false;up_thread=false):" +
+                "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
+                "shun=false;print_local_addr=true):" +
+                "pbcast.STATE_TRANSFER";
 
 
-	for(int i=0; i < args.length; i++) {
-	    if(args[i].equals("-help")) {
-		help();
-		return;
-	    }
-	    if(args[i].equals("-jg")) {
-		jg=true;
-		continue;
-	    }
-	    if(args[i].equals("-loopback")) {
-		loopback=true;
-		props=loopback_props;
-		continue;
-	    }
-	    if(args[i].equals("-props")) {
-		props=args[++i];
-		continue;
-	    }
-	    if(args[i].equals("-debug")) {
-		debug=true;
-		continue;
-	    }
-	    if(args[i].equals("-cummulative")) {
-		cummulative=true;
-		continue;
-	    }  
-	    if(args[i].equals("-busy_sleep")) {
-		busy_sleep=true;
-		continue;
-	    }
-	    if(args[i].equals("-yield")) {
-		yield=true;
-		num_yields++;
-		continue;
-	    }
-	    if(args[i].equals("-sleep")) {
-		sleep_time=new Long(args[++i]).longValue();
-		continue;
-	    }
-	    if(args[i].equals("-num_msgs")) {
-		num_msgs=new Integer(args[++i]).intValue();
-		continue;
-	    }
+        for(int i=0; i < args.length; i++) {
+            if(args[i].equals("-help")) {
+                help();
+                return;
+            }
+            if(args[i].equals("-jg")) {
+                jg=true;
+                continue;
+            }
+            if(args[i].equals("-loopback")) {
+                loopback=true;
+                props=loopback_props;
+                continue;
+            }
+            if(args[i].equals("-props")) {
+                props=args[++i];
+                continue;
+            }
+            if(args[i].equals("-debug")) {
+                debug=true;
+                continue;
+            }
+            if(args[i].equals("-cummulative")) {
+                cummulative=true;
+                continue;
+            }
+            if(args[i].equals("-busy_sleep")) {
+                busy_sleep=true;
+                continue;
+            }
+            if(args[i].equals("-yield")) {
+                yield=true;
+                num_yields++;
+                continue;
+            }
+            if(args[i].equals("-sleep")) {
+                sleep_time=new Long(args[++i]).longValue();
+                continue;
+            }
+            if(args[i].equals("-num_msgs")) {
+                num_msgs=new Integer(args[++i]).intValue();
+                continue;
+            }
             help();
             return;
-	}
+        }
 
-	System.out.println("jg       = " + jg +
-			   "\nloopback = " + loopback +
-			   "\ndebug    = " + debug +
-			   "\nsleep    = " + sleep_time +
-			   "\nbusy_sleep=" + busy_sleep +
-			   "\nyield=" + yield +
-			   "\nnum_yields=" + num_yields +
-			   "\nnum_msgs = " + num_msgs +
-			   "\n");
-	
-	Trace.init();
+        System.out.println("jg       = " + jg +
+                "\nloopback = " + loopback +
+                "\ndebug    = " + debug +
+                "\nsleep    = " + sleep_time +
+                "\nbusy_sleep=" + busy_sleep +
+                "\nyield=" + yield +
+                "\nnum_yields=" + num_yields +
+                "\nnum_msgs = " + num_msgs +
+                "\n");
 
-	try {
-	    matrix=new int[num_msgs][2];
-	    for(int i=0; i < num_msgs; i++) {
-		for(int j=0; j < matrix[i].length; j++)
-		    matrix[i][j]=0;
-	    }
+        Trace.init();
 
-	    if(jg) {
-		channel=new JChannel(props);
-		channel.connect(group_name);
-		if(debug) {
-		    debugger=new Debugger(channel, cummulative);
-		    debugger.start();
-		}
-	    }
-	    else {
-		group_addr=InetAddress.getByName("224.0.0.36");
-		sock=new MulticastSocket(7777);
-		sock.joinGroup(group_addr);
-	    }
+        try {
+            matrix=new int[num_msgs][2];
+            for(int i=0; i < num_msgs; i++) {
+                for(int j=0; j < matrix[i].length; j++)
+                    matrix[i][j]=0;
+            }
 
-	    if(debug) {
-		System.out.println("Press key to start");
-		System.in.read();
-	    }
-	    receiver=new Receiver(sock, channel, matrix, jg);
-	    receiver.start();
+            if(jg) {
+                channel=new JChannel(props);
+                channel.connect(group_name);
+                if(debug) {
+                    debugger=new Debugger(channel, cummulative);
+                    debugger.start();
+                }
+            }
+            else {
+                group_addr=InetAddress.getByName("224.0.0.36");
+                sock=new MulticastSocket(7777);
+                sock.joinGroup(group_addr);
+            }
 
-	    start=System.currentTimeMillis();
-	    send_msg=new Message();
-	    for(int i=0; i < num_msgs; i++) {
-		buf=Util.objectToByteBuffer(new Integer(i));
+            if(debug) {
+                System.out.println("Press key to start");
+                System.in.read();
+            }
+            receiver=new Receiver(sock, channel, matrix, jg);
+            receiver.start();
 
-		if(jg) {
-		    send_msg=new Message(null, null, buf);
-		    channel.send(send_msg);
-		}
-		else {
-		    packet=new DatagramPacket(buf, buf.length, group_addr, 7777);
-		    sock.send(packet);
-		}
-		
-		matrix[i][0]=1;
-		if(yield) {
-		    for(int k=0; k < num_yields; k++) {
-			Thread.yield();
-		    }
-		}
-		else {
-		    if(sleep_time > 0) {
-			sleep(sleep_time, busy_sleep);
-		    }
-		}
-	    }
-	    while(true) {
-		System.in.read();
-		printMatrix(matrix);
-	    }
-	}
-	catch(Exception ex) {
-	    System.err.println(ex);
-	}
+            start=System.currentTimeMillis();
+            send_msg=new Message();
+            for(int i=0; i < num_msgs; i++) {
+                buf=Util.objectToByteBuffer(new Integer(i));
+
+                if(jg) {
+                    send_msg=new Message(null, null, buf);
+                    channel.send(send_msg);
+                }
+                else {
+                    packet=new DatagramPacket(buf, buf.length, group_addr, 7777);
+                    sock.send(packet);
+                }
+                if(i % 100 == 0)
+                    System.out.println("-- sent " + i);
+
+                matrix[i][0]=1;
+                if(yield) {
+                    for(int k=0; k < num_yields; k++) {
+                        Thread.yield();
+                    }
+                }
+                else {
+                    if(sleep_time > 0) {
+                        sleep(sleep_time, busy_sleep);
+                    }
+                }
+            }
+            while(true) {
+                System.in.read();
+                printMatrix(matrix);
+            }
+        }
+        catch(Exception ex) {
+            System.err.println(ex);
+        }
     }
-
-
 
 
     /**
@@ -218,122 +219,122 @@ public class SpeedTest {
      * thread never relinquishes control and therefore the sleep(x) is exactly x ms long.
      */
     static void sleep(long msecs, boolean busy_sleep) {
-	if(!busy_sleep) {
-	    Util.sleep(msecs);
-	    return;
-	}
+        if(!busy_sleep) {
+            Util.sleep(msecs);
+            return;
+        }
 
-	long start=System.currentTimeMillis();
-	long stop=start+msecs;
-	
-	while(stop > start) {
-	    start=System.currentTimeMillis();
-	}
+        long start=System.currentTimeMillis();
+        long stop=start + msecs;
+
+        while(stop > start) {
+            start=System.currentTimeMillis();
+        }
     }
 
     static void printMatrix(int[][] m) {
-	int tmp=0;
-	System.out.print("not sent: ");
-	for(int i=0; i < m.length; i++) {
-	    if(m[i][0] == 0) {
-		System.out.print(i + " ");
-		tmp++;
-	    }
-	}
-	System.out.println("\ntotal not sent: " + tmp);
+        int tmp=0;
+        System.out.print("not sent: ");
+        for(int i=0; i < m.length; i++) {
+            if(m[i][0] == 0) {
+                System.out.print(i + " ");
+                tmp++;
+            }
+        }
+        System.out.println("\ntotal not sent: " + tmp);
 
-	tmp=0;
-	System.out.print("not received: ");
-	for(int i=0; i < m.length; i++) {
-	    if(m[i][1] == 0) {
-		System.out.print(i + " ");
-		tmp++;
-	    }
-	}
-	System.out.println("\ntotal not received: " + tmp);
+        tmp=0;
+        System.out.print("not received: ");
+        for(int i=0; i < m.length; i++) {
+            if(m[i][1] == 0) {
+                System.out.print(i + " ");
+                tmp++;
+            }
+        }
+        System.out.println("\ntotal not received: " + tmp);
         System.out.println("Press CTRL-C to kill this test");
     }
 
 
     static void help() {
-	System.out.println("SpeedTest [-help] [-num_msgs <num>] [-sleep <sleeptime in msecs between messages>] " +
-			   "[-busy_sleep] [-yield] [-jg] [-loopback] [-props <channel properties>] [-debug] [-cummulative]");
-	System.out.println("Options -props -debug and -cummulative are only valid if -jg is used");
+        System.out.println("SpeedTest [-help] [-num_msgs <num>] [-sleep <sleeptime in msecs between messages>] " +
+                "[-busy_sleep] [-yield] [-jg] [-loopback] [-props <channel properties>] [-debug] [-cummulative]");
+        System.out.println("Options -props -debug and -cummulative are only valid if -jg is used");
     }
 
 
     static class Receiver implements Runnable {
-	Thread          t=null;
-	byte[]          buf=new byte[1024];
-	MulticastSocket sock;
-	Channel         channel;
-	int             num_msgs=1000;
-	int[][]         matrix=null;
-	boolean         jg=false;
+        Thread t=null;
+        byte[] buf=new byte[1024];
+        MulticastSocket sock;
+        Channel channel;
+        int num_msgs=1000;
+        int[][] matrix=null;
+        boolean jg=false;
 
-	Receiver(MulticastSocket sock, Channel channel, int[][] matrix, boolean jg) {
-	    this.sock=sock;
-	    this.channel=channel;
-	    this.matrix=matrix;
-	    this.jg=jg;
-	    num_msgs=matrix.length;
-	}
+        Receiver(MulticastSocket sock, Channel channel, int[][] matrix, boolean jg) {
+            this.sock=sock;
+            this.channel=channel;
+            this.matrix=matrix;
+            this.jg=jg;
+            num_msgs=matrix.length;
+        }
 
-	public void start() {
-	    if(t == null) {
-		t=new Thread(this, "receiver thread");
-		t.start();
-	    }
-	}
+        public void start() {
+            if(t == null) {
+                t=new Thread(this, "receiver thread");
+                t.start();
+            }
+        }
 
-	public void run() {
-	    int             num_received=0;
-	    int             number;
-	    DatagramPacket  packet;
-	    Object          obj;
-	    Message         msg;
-	    byte[]          msg_data=null;
-	    long            total_time;
-	    long            msgs_per_sec=0;
-	    
-	    packet=new DatagramPacket(buf, buf.length);
-	    while(num_received <= num_msgs) {
-		msg_data=null;
-		try {
-		    if(jg) {
-			obj=channel.receive(0);
-			if(obj instanceof Message) {
-			    msg=(Message)obj;
-			    msg_data=msg.getBuffer();
-			}
-			else {
-			    System.out.println("received non-msg: " + obj.getClass());
-			    continue;
-			}
-		    }
-		    else {
-			sock.receive(packet);
-			msg_data=packet.getData();
-		    }
+        public void run() {
+            int num_received=0;
+            int number;
+            DatagramPacket packet;
+            Object obj;
+            Message msg;
+            byte[] msg_data=null;
+            long total_time;
+            long msgs_per_sec=0;
 
-		    number=((Integer)Util.objectFromByteBuffer(msg_data)).intValue();
-		    matrix[number][1]=1;
-		    num_received++;
-		    if(num_received % 100 == 0)
-			System.out.println("received " + num_received + " packets");
-		    if(num_received >= num_msgs)
-			break;
-		}
-		catch(Exception ex) {
-		    System.err.println(ex);
-		}
-	    }
-	    stop=System.currentTimeMillis();
-	    total_time=stop-start;
-	    msgs_per_sec=(long)(num_received / (float)(total_time / 1000));
-	    System.out.println("\n** Sending and receiving " + num_received + " took " +
-			       total_time + " msecs (" + msgs_per_sec + " msgs/sec) **");
-	}
+            packet=new DatagramPacket(buf, buf.length);
+            while(num_received <= num_msgs) {
+                msg_data=null;
+                try {
+                    if(jg) {
+                        obj=channel.receive(0);
+                        if(obj instanceof Message) {
+                            msg=(Message)obj;
+                            msg_data=msg.getBuffer();
+                        }
+                        else {
+                            System.out.println("received non-msg: " + obj.getClass());
+                            continue;
+                        }
+                    }
+                    else {
+                        sock.receive(packet);
+                        msg_data=packet.getData();
+                    }
+
+                    number=((Integer)Util.objectFromByteBuffer(msg_data)).intValue();
+                    matrix[number][1]=1;
+                    num_received++;
+                    if(num_received % 100 == 0)
+                        System.out.println("received " + num_received + " packets");
+                    if(num_received >= num_msgs)
+                        break;
+                }
+                catch(Exception ex) {
+                    System.err.println(ex);
+                }
+            }
+            stop=System.currentTimeMillis();
+            total_time=stop - start;
+            msgs_per_sec=(long)(num_received / (float)(total_time / 1000));
+            System.out.println("\n** Sending and receiving " + num_received + " took " +
+                    total_time + " msecs (" + msgs_per_sec + " msgs/sec) **");
+        }
     }
 
 }
