@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.14 2004/12/11 14:40:56 belaban Exp $
+// $Id: TCP.java,v 1.15 2005/03/17 18:33:45 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -39,7 +39,9 @@ public class TCP extends Protocol implements ConnectionTable.Receiver, Connectio
     private Address         local_addr=null;
     private String          group_addr=null;
     private InetAddress     bind_addr=null;  // local IP address to bind srv sock to (m-homed systems)
+    private InetAddress	    external_addr=null; // the IP address which is broadcast to other group members
     private int             start_port=7800; // find first available port starting at this port
+    private int	            end_port=0;      // maximum port to bind to
     private final Vector    members=new Vector(11);
     private long            reaper_interval=0;  // time in msecs between connection reaps
     private long            conn_expire_time=0; // max time a conn can be idle before being reaped
@@ -85,7 +87,7 @@ public class TCP extends Protocol implements ConnectionTable.Receiver, Connectio
 
 
     public void start() throws Exception {
-        ct=getConnectionTable(reaper_interval,conn_expire_time,bind_addr,start_port);
+        ct=getConnectionTable(reaper_interval,conn_expire_time,bind_addr,external_addr,start_port,end_port);
         ct.addConnectionListener(this);
         ct.setReceiveBufferSize(recv_buf_size);
         ct.setSendBufferSize(send_buf_size);
@@ -105,10 +107,10 @@ public class TCP extends Protocol implements ConnectionTable.Receiver, Connectio
     * Sub classes overrides this method to initialize a different version of
     * ConnectionTable.
     */
-   protected ConnectionTable getConnectionTable(long ri, long cet, InetAddress b_addr, int s_port) throws Exception {
+   protected ConnectionTable getConnectionTable(long ri, long cet, InetAddress b_addr, InetAddress bc_addr, int s_port, int e_port) throws Exception {
        ConnectionTable cTable=null;
        if(ri == 0 && cet == 0) {
-           cTable=new ConnectionTable(this, b_addr, start_port);
+           cTable=new ConnectionTable(this, b_addr, bc_addr, start_port, end_port);
        }
        else {
            if(ri == 0) {
@@ -119,7 +121,7 @@ public class TCP extends Protocol implements ConnectionTable.Receiver, Connectio
                cet=1000 * 60 * 5;
                if(log.isWarnEnabled()) log.warn("conn_expire_time was 0, set it to " + cet);
            }
-           cTable=new ConnectionTable(this, b_addr, s_port, ri, cet);
+           cTable=new ConnectionTable(this, b_addr, bc_addr, s_port, end_port, ri, cet);
        }
        return cTable;
    }
@@ -237,6 +239,12 @@ public class TCP extends Protocol implements ConnectionTable.Receiver, Connectio
             start_port=Integer.parseInt(str);
             props.remove("start_port");
         }
+	
+        str=props.getProperty("end_port");
+        if(str != null) {
+            end_port=Integer.parseInt(str);
+            props.remove("end_port");
+        }
 
         // PropertyPermission not granted if running in an untrusted environment with JNLP.
         try {
@@ -261,6 +269,18 @@ public class TCP extends Protocol implements ConnectionTable.Receiver, Connectio
                 return false;
             }
             props.remove("bind_addr");
+        }
+
+        str=props.getProperty("external_addr");
+        if(str != null) {
+            try {
+                external_addr=InetAddress.getByName(str);
+            }
+            catch(UnknownHostException unknown) {
+                if(log.isFatalEnabled()) log.fatal("(external_addr): host " + str + " not known");
+                return false;
+            }
+            props.remove("external_addr");
         }
 
         str=props.getProperty("reaper_interval");

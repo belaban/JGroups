@@ -13,10 +13,10 @@ public class TCP1_4 extends TCP
 	 * @see org.jgroups.protocols.TCP#initConnectionTable1_4(long, long)
 	 */
 	protected ConnectionTable1_4 getConnectionTable1_4(long ri, long cet,
-			InetAddress b_addr, int s_port) throws Exception {
+			InetAddress b_addr, InetAddress bc_addr, int s_port, int e_port) throws Exception {
 		ConnectionTable1_4 ct = null;
 		if (ri == 0 && cet == 0) {
-			ct = new ConnectionTable1_4(this, b_addr, s_port);
+			ct = new ConnectionTable1_4(this, b_addr, bc_addr, s_port, e_port);
 		} else {
 			if (ri == 0) {
 				ri = 5000;
@@ -28,7 +28,7 @@ public class TCP1_4 extends TCP
 				if(log.isWarnEnabled()) log.warn("conn_expire_time was 0, set it to "
 						+ cet);
 			}
-			ct = new ConnectionTable1_4(this, b_addr, s_port, ri, cet);
+			ct = new ConnectionTable1_4(this, b_addr, bc_addr, s_port, e_port, ri, cet);
 		}
 		return ct;
 	}
