@@ -1,4 +1,4 @@
-// $Id: ChannelMonoTest.java,v 1.6 2003/09/24 12:09:55 rds13 Exp $
+// $Id: ChannelMonoTest.java,v 1.7 2003/09/24 18:31:46 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -386,6 +386,7 @@ public class ChannelMonoTest extends TestCase
 				try
 				{
 					logger.debug("Waiting for Reader thread " + i + " to join");
+                    readers[i].stopThread(); // added by Bela
 					readers[i].join(1000);
 					if (readers[i].isAlive())
 					{
@@ -400,7 +401,7 @@ public class ChannelMonoTest extends TestCase
 				}
 			}
 		}
-		while (!allStopped);
+        while (!allStopped);
 
 		int total_writes = 0;
 		for (int i = 0; i < writes.length; i++)
