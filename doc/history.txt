@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.29 2004/01/08 18:09:54 belaban Exp $
+Revision: $Id: history.txt,v 1.30 2004/01/09 00:30:36 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java JGroups.Version')]
 
@@ -27,6 +27,9 @@ romuald     = Romuald du Song
 
 Version 2.2.1
 -------------
+
+- Removed direct_blocking from FC; this is now default
+  (bela Jan 8 2004)
 
 - Fixed failed merging when all up/down threads are disabled (default-minimalthreads.xml)
   (bela Jan 8 2004)
