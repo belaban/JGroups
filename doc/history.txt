@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.45 2004/02/27 01:38:17 belaban Exp $
+Revision: $Id: history.txt,v 1.46 2004/03/01 17:42:04 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java JGroups.Version')]
 
@@ -27,6 +27,12 @@ romuald     = Romuald du Song
 
 Version 2.2.1
 -------------
+
+- Created distribution (CVS tag = JG_2_2_1)
+
+- Added bundling capability to UDP. Bundles multiple smaller message into a larger one and then sends the
+  larger message. Waits with sending until n bytes have accumulatd or n ms have elapsed, whichever is first
+  (bela March 1 2004)
 
 - Added first version of new fragmentation protocol (FRAG2). Main 2 advantages over FRAG: doesn not serialize message
   and does not copy message (deferred until the message hits the transport). FRAG2 is about 3 times faster than FRAG.
