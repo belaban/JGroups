@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.17 2003/12/06 01:22:10 belaban Exp $
+Revision: $Id: history.txt,v 1.18 2003/12/11 06:50:46 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java JGroups.Version')]
 
@@ -27,6 +27,16 @@ romuald     = Romuald du Song
 
 Version 2.2.1
 -------------
+
+- Scheduler can now handle incoming requests concurrently (if concurrent_processing is true). By default,
+  this is false: setting this to true can destroy the ordering properties provided by a protocol stack, e.g.
+  in the case of total or causal order. FIFO (default) should be fine, but please know what you are doing !
+  (bela Dec 10 2003) 
+
+- Modified SMACK protcol: handling of CONNECT/CONNECT_OK and DISCONNECT/DISCONNECT_OK was incorrect. Worked only
+  on UDP. Now works on TUNNEL as well.
+  Also added a new protocol config smack_tunnel.xml to conf.
+  (bela Dec 10 2003)
 
 - ProtocolStack.startStack() and stopStack() now use START/START_OK and STOP/STOP_OK pairs (again). Protocol will
   handle these events internally. This prevents subtle timing problems, e.g. a CONFIG event being passed by
