@@ -1,4 +1,4 @@
-// $Id: XmlConfigurator.java,v 1.11 2004/09/15 17:40:57 belaban Exp $
+// $Id: XmlConfigurator.java,v 1.12 2004/09/23 16:29:14 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -36,8 +36,8 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
     public static final String ELMT_DESCRIPTION="description";
     public static final String ELMT_PROT_PARAMS="protocol-params";
 
-    private ArrayList mProtocolStack=new ArrayList();
-    private String mStackName;
+    private final ArrayList mProtocolStack=new ArrayList();
+    private final String mStackName;
     protected static final Log log=LogFactory.getLog(XmlConfigurator.class);
 
     protected XmlConfigurator(String stackName, ProtocolData[] protocols) {

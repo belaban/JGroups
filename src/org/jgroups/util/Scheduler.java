@@ -1,4 +1,4 @@
-// $Id: Scheduler.java,v 1.11 2004/09/22 10:34:15 belaban Exp $
+// $Id: Scheduler.java,v 1.12 2004/09/23 16:29:56 belaban Exp $
 
 package org.jgroups.util;
 
@@ -20,13 +20,13 @@ import org.apache.commons.logging.LogFactory;
  * @author Bela Ban
  */
 public class Scheduler implements Runnable {
-    Queue              queue=new Queue();
+    final Queue              queue=new Queue();
     Thread             sched_thread=null;
     Task               current_task=null;
     ThreadPool         pool=null;
     SchedulerListener  listener=null;
 
-    protected static Log log=LogFactory.getLog(Scheduler.class);
+    protected static final Log log=LogFactory.getLog(Scheduler.class);
 
     /** Process items on the queue concurrently. The default is to wait until the processing of an item
      * has completed before fetching the next item from the queue. Note that setting this to true

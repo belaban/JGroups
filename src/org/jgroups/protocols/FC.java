@@ -1,8 +1,9 @@
-// $Id: FC.java,v 1.14 2004/09/22 10:34:11 belaban Exp $
+// $Id: FC.java,v 1.15 2004/09/23 16:29:41 belaban Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.*;
+import org.jgroups.util.CondVar;
 import org.jgroups.stack.Protocol;
 
 import java.io.IOException;
@@ -18,7 +19,7 @@ import java.util.*;
  * Note that this protocol must be located towards the top of the stack, or all down_threads from JChannel to this
  * protocol must be set to false ! This is in order to block JChannel.send()/JChannel.down().
  * @author Bela Ban
- * @version $Revision: 1.14 $
+ * @version $Revision: 1.15 $
  */
 public class FC extends Protocol {
 
@@ -27,19 +28,19 @@ public class FC extends Protocol {
 
     /** HashMap<Address,Long>: keys are members, values are credits left. For each send, the
      * number of credits is decremented by the message size */
-    HashMap sent=new HashMap(11);
+    final HashMap sent=new HashMap(11);
 
     /** HashMap<Address,Long>: keys are members, values are credits left (in bytes).
      * For each receive, the credits for the sender are decremented by the size of the received message.
      * When the credits are 0, we refill and send a CREDIT message to the sender. Sender blocks until CREDIT
      * is received after reaching <tt>min_credits</tt> credits. */
-    HashMap received=new HashMap(11);
+    final HashMap received=new HashMap(11);
 
     /** We cache the membership */
-    Vector members=new Vector(11);
+    final Vector members=new Vector(11);
 
     /** List of members from whom we expect credits */
-    List creditors=new ArrayList(11);
+    final List creditors=new ArrayList(11);
 
     /** Max number of bytes to send per receiver until an ack must
      * be received before continuing sending */
@@ -54,17 +55,15 @@ public class FC extends Protocol {
     long min_credits=0;
 
     /** Current mode. True if channel was sent a BLOCK_SEND event, false if UNBLOCK_EVENT was sent */
-    boolean blocking=false;
-
-    /** When <tt>direct_blocking</tt> is enabled, block for a max number of milliseconds regardless of whether
-     * credits have been received. If value is 0 we will wait forever. */
-    long MAX_BLOCK_TIME=10000;
+    CondVar blocking=new CondVar("blocking", Boolean.FALSE, sent); // we're using the sender's map as sync
 
     static final String name="FC";
 
+    long start_blocking=0, stop_blocking=0;
 
 
-    
+
+
     public String getName() {
         return name;
     }
@@ -107,17 +106,21 @@ public class FC extends Protocol {
 
 
 
-    public void down(Event evt) {
-        synchronized(this) {
-            switch(evt.getType()) {
-                case Event.VIEW_CHANGE:
-                    handleViewChange(((View)evt.getArg()).getMembers());
-                    break;
-                case Event.MSG:
-                    if(handleDownMessage((Message)evt.getArg()) == false)
-                        return;
-                    break;
-            }
+    public void down(final Event evt) {
+        switch(evt.getType()) {
+            case Event.VIEW_CHANGE:
+                // this has to be run in a separate thread because waitUntilEnoughCreditsAvailable() might block,
+                // and the view change could potentially unblock it
+                new Thread() {
+                    public void run() {
+                        handleViewChange(((View)evt.getArg()).getMembers());
+                    }
+                }.start();
+                break;
+            case Event.MSG:
+                // blocks until enought credits are available to send message
+                waitUntilEnoughCreditsAvailable(evt);
+                return;
         }
         passDown(evt); // this could potentially use the lower protocol's thread which may block
     }
@@ -126,129 +129,105 @@ public class FC extends Protocol {
 
 
     public void up(Event evt) {
-        synchronized(this) {
-            switch(evt.getType()) {
-                case Event.SET_LOCAL_ADDRESS:
-                    local_addr=(Address)evt.getArg();
-                    break;
-                case Event.VIEW_CHANGE:
-                    handleViewChange(((View)evt.getArg()).getMembers());
-                    break;
-                case Event.MSG:
-                    Message msg=(Message)evt.getArg();
-                    FcHeader hdr=(FcHeader)msg.removeHeader(getName());
-                    if(hdr != null) {
-                        if(hdr.type == FcHeader.CREDIT) {
-                            handleCredit(msg.getSrc(), hdr.num_credits);
-                            return; // don't pass message up
-                        }
+        switch(evt.getType()) {
+            case Event.SET_LOCAL_ADDRESS:
+                local_addr=(Address)evt.getArg();
+                break;
+            case Event.VIEW_CHANGE:
+                handleViewChange(((View)evt.getArg()).getMembers());
+                break;
+            case Event.MSG:
+                Message msg=(Message)evt.getArg();
+                FcHeader hdr=(FcHeader)msg.removeHeader(getName());
+                if(hdr != null) {
+                    if(hdr.type == FcHeader.REPLENISH) {
+                        handleCredit(msg.getSrc());
+                        return; // don't pass message up
                     }
-                    else {
-                        handleUpMessage(msg);
-                    }
-                    break;
-            }
+                }
+                else {
+                    adjustCredit(msg);
+                }
+                break;
         }
         passUp(evt);
     }
 
 
 
-    void handleCredit(Address src, long num_credits) {
+    void handleCredit(Address src) {
         if(src == null) return;
-        long  new_credits;
 
-        new_credits=num_credits + getCredits(sent, src);
-        if(log.isTraceEnabled())
-            log.trace("received " + num_credits + " credits from " + src + ", old credit was " + sent.get(src) +
-                    ", new credits are " + new_credits + ". Creditors are\n" + printCreditors());
+        synchronized(sent) {
+            if(log.isTraceEnabled())
+                log.trace("received replenishment message from " + src + ", old credit was " + sent.get(src) +
+                          ", new credits are " + max_credits + ". Creditors are\n" + printCreditors());
 
-        //System.out.println("** received credit for " + src + ": " + num_credits +
-          //      ", creditors:\n" + printCreditors());
-        sent.put(src, new Long(new_credits));
-        //System.out.println("** applied credit for " + src + ": " + num_credits +
-          //      ", creditors:\n" + printCreditors());
-
-
-        if(creditors.size() > 0) {  // we are blocked because we expect credit from one or more members
-            removeCreditor(src);
-            if(blocking && creditors.size() == 0) {
-                unblockSender();
+            sent.put(src, new Long(max_credits));
+            if(creditors.size() > 0) {  // we are blocked because we expect credit from one or more members
+                removeCreditor(src);
+                if(creditors.size() == 0 && blocking.get().equals(Boolean.TRUE)) {
+                    unblockSender(); // triggers sent.notifyAll()...
+                }
             }
         }
     }
 
 
-
-    void handleUpMessage(Message msg) {
+    /**
+     * Check whether sender has enough credits left. If not, send him some more
+     * @param msg
+     */
+    void adjustCredit(Message msg) {
         Address src=msg.getSrc();
         long    size=Math.max(24, msg.getLength());
-        long    new_credits;
 
         if(src == null) {
             if(log.isErrorEnabled()) log.error("src is null");
             return;
         }
 
-        // if(src.equals(local_addr))
-            // return;
-
-        if(log.isTraceEnabled()) log.trace("credit for " + src + " is " + received.get(src));
-
-        if(decrementCredit(received, src, size) == false) {
-            // not enough credits left
-            new_credits=max_credits - getCredits(received, src);
-            if(log.isTraceEnabled()) log.trace("sending " + new_credits + " credits to " + src);
-            sendCredit(src, new_credits);
-            replenishCredits(received, src, new_credits);
+        synchronized(received) {
+            if(log.isTraceEnabled()) log.trace("credit for " + src + " is " + received.get(src));
+            if(decrementCredit(received, src, size) == false) {
+                received.put(src, new Long(max_credits));
+                // not enough credits left
+                if(log.isTraceEnabled()) log.trace("sending replenishment message to " + src);
+                sendCredit(src);
+            }
         }
     }
 
 
-    void replenishCredits(HashMap received, Address dest, long new_credits) {
-        long tmp_credits=getCredits(received, dest);
-        tmp_credits+=new_credits;
-        received.put(dest, new Long(tmp_credits));
-    }
 
-    void sendCredit(Address dest, long new_credits) {
+    void sendCredit(Address dest) {
         Message  msg=new Message(dest, null, null);
-        FcHeader hdr=new FcHeader(FcHeader.CREDIT, new_credits);
+        FcHeader hdr=new FcHeader(FcHeader.REPLENISH);
         msg.putHeader(getName(), hdr);
         passDown(new Event(Event.MSG, msg));
     }
 
 
     /**
-     * Handles a message. Returns true if message should be passed down, false if message should be discarded
-     * @param msg
+     * Checks whether enough credits are available to send message. If not, blocks until enough credits
+     * are available
+     * @param evt Guaranteed to be a Message
      * @return
      */
-    boolean handleDownMessage(Message msg) {
-        if(blocking) {
-            if(log.isTraceEnabled()) log.trace("blocking message to " + msg.getDest());
-            while(blocking) {
-                try {this.wait(MAX_BLOCK_TIME);} catch(InterruptedException e) {}
+    void waitUntilEnoughCreditsAvailable(Event evt) {
+        Message msg=(Message)evt.getArg();
+
+        // not enough credits, block until replenished with credits
+        synchronized(sent) { // 'sent' is the same lock as blocking.getLock()...
+            passDown(evt); // let this one go, but block on the next message if not sufficient credit
+            if(decrMessage(msg) == false) {
+                if(log.isTraceEnabled())
+                    log.trace("blocking due to insufficient credits, creditors=\n" + printCreditors());
+                start_blocking=System.currentTimeMillis();
+                blocking.set(Boolean.TRUE);
+                blocking.waitUntil(Boolean.FALSE);  // waits on 'sent'
             }
         }
-
-        if(decrMessage(msg) == false) {
-            blocking=true;
-
-            while(blocking) {
-                if(log.isTraceEnabled()) log.trace("blocking " + MAX_BLOCK_TIME +
-                        " msecs. Creditors are\n" + printCreditors());
-                try {this.wait(MAX_BLOCK_TIME);}
-                catch(Throwable e) {e.printStackTrace();}
-                if(decrMessage(msg) == true)
-                    return true;
-                else {
-                    if(log.isTraceEnabled())
-                        log.trace("insufficient credits to send message, creditors=\n" + printCreditors());
-                }
-            }
-        }
-        return true;
     }
 
 
@@ -259,24 +238,25 @@ public class FC extends Protocol {
      * @param msg
      * @return false: will block, true: will not block
      */
-    boolean decrMessage(Message msg) {
+    private boolean decrMessage(Message msg) {
         Address dest;
         long    size;
         boolean success=true;
 
+        // ******************************************************************************************************
+        // this method is called by waitUntilEnoughCredits() which syncs on 'sent', so we don't need to sync here
+        // ******************************************************************************************************
+
         if(msg == null) {
             if(log.isErrorEnabled()) log.error("msg is null");
-            return false;
+            return true; // don't block !
         }
         dest=msg.getDest();
         size=Math.max(24, msg.getLength());
         if(dest != null && !dest.isMulticastAddress()) { // unicast destination
-            // if(dest.equals(local_addr))
-               // return true;
-
             if(log.isTraceEnabled()) log.trace("credit for " + dest + " is " + sent.get(dest));
-            if(sufficientCredit(sent, dest, size)) {
-                decrementCredit(sent, dest, size);
+            if(decrementCredit(sent, dest, size)) {
+                return true;
             }
             else {
                 addCreditor(dest);
@@ -286,20 +266,10 @@ public class FC extends Protocol {
         else {                 // multicast destination
             for(Iterator it=members.iterator(); it.hasNext();) {
                 dest=(Address)it.next();
-                // if(dest.equals(local_addr))
-                   //  continue;
-
                 if(log.isTraceEnabled()) log.trace("credit for " + dest + " is " + sent.get(dest));
-                if(sufficientCredit(sent, dest, size) == false) {
+                if(decrementCredit(sent, dest, size) == false) {
                     addCreditor(dest);
                     success=false;
-                }
-            }
-
-            if(success) {
-                for(Iterator it=members.iterator(); it.hasNext();) {
-                    dest=(Address) it.next();
-                    decrementCredit(sent, dest, size);
                 }
             }
         }
@@ -310,13 +280,27 @@ public class FC extends Protocol {
 
 
     /** If message queueing is enabled, sends queued messages and unlocks sender (if successful) */
-    void unblockSender() {
+    private void unblockSender() {
+        // **********************************************************************
+        // always called with 'sent' lock acquired, so we don't need to sync here
+        // **********************************************************************
         if(log.isTraceEnabled()) log.trace("setting blocking=false");
-        blocking=false;
-        this.notifyAll();
+        blocking.set(Boolean.FALSE);
+        printBlockTime();
     }
 
-    String printCreditors() {
+    private void printBlockTime() {
+        stop_blocking=System.currentTimeMillis();
+        long diff=stop_blocking - start_blocking;
+        stop_blocking=start_blocking=0;
+        if(log.isTraceEnabled())
+            log.trace("blocking time was " + diff + "ms");
+    }
+
+    private String printCreditors() {
+        // **********************************************************************
+        // always called with 'sent' lock acquired, so we don't need to sync here
+        // **********************************************************************
         StringBuffer sb=new StringBuffer();
         for(Iterator it=creditors.iterator(); it.hasNext();) {
             Address creditor=(Address)it.next();
@@ -325,17 +309,17 @@ public class FC extends Protocol {
         return sb.toString();
     }
 
-    void addCreditor(Address mbr) {
+    private void addCreditor(Address mbr) {
         if(mbr != null && !creditors.contains(mbr))
             creditors.add(mbr);
     }
 
-    void removeCreditor(Address mbr) {
+    private void removeCreditor(Address mbr) {
         if(mbr != null)
             creditors.remove(mbr);
     }
 
-    long getCredits(Map map, Address mbr) {
+    private long getCredits(Map map, Address mbr) {
         Long tmp=(Long)map.get(mbr);
         if(tmp == null) {
             map.put(mbr, new Long(max_credits));
@@ -344,32 +328,7 @@ public class FC extends Protocol {
         return tmp.longValue();
     }
 
-    boolean sufficientCredit(Map map, Address mbr, long credits_required) {
-        return checkCredit(map, mbr, credits_required, 0);
-    }
 
-
-    boolean checkCredit(Map map, Address mbr, long credits_required, long min_credits) {
-        long    credits_left;
-        Long    tmp=(Long)map.get(mbr);
-
-        if(tmp != null) {
-            credits_left=tmp.longValue();
-            if(credits_left - credits_required >= min_credits) {
-                return true;
-            }
-            else {
-                if(log.isTraceEnabled()) log.trace("insufficient credit for " + mbr +
-                        ": credits left=" + credits_left + ", credits required=" + credits_required +
-                        " (min_credits=" + min_credits + ')');
-                return false;
-            }
-        }
-        else {
-            map.put(mbr, new Long(max_credits - credits_required));
-            return true;
-        }
-    }
 
 
 
@@ -379,7 +338,7 @@ public class FC extends Protocol {
      * @param dest
      * @return Whether the required credits could successfully be subtracted from the credits left
      */
-    boolean decrementCredit(HashMap map, Address dest, long credits_required) {
+    private boolean decrementCredit(HashMap map, Address dest, long credits_required) {
         long    credits_left, new_credits_left;
         Long    tmp=(Long)map.get(dest);
 
@@ -392,15 +351,14 @@ public class FC extends Protocol {
                 return true;
             }
             else {
-                if(log.isTraceEnabled()) log.trace("not enough credits left for " +
-                        dest + ": left=" + new_credits_left + ", required+min_credits=" + (credits_required +min_credits) + 
-                                                   ", required=" + credits_required + ", min_credits=" + min_credits);
+                if(log.isTraceEnabled())
+                    log.trace("not enough credits left for " + dest + ": left=" + new_credits_left +
+                              ", required+min_credits=" + (credits_required +min_credits) +
+                              ", required=" + credits_required + ", min_credits=" + min_credits);
                 return false;
             }
         }
-        else {
-            return false;
-        }
+        return true;
     }
 
 
@@ -412,87 +370,94 @@ public class FC extends Protocol {
         members.clear();
         members.addAll(mbrs);
 
-        // add members not in membership (with full credit)
-        for(int i=0; i < mbrs.size(); i++) {
-            addr=(Address) mbrs.elementAt(i);
-            // if(addr.equals(local_addr))
-                // continue;
-            if(!sent.containsKey(addr))
-                sent.put(addr, new Long(max_credits));
-        }
-        // remove members that left
-        for(Iterator it=sent.keySet().iterator(); it.hasNext();) {
-            addr=(Address)it.next();
-            if(!mbrs.contains(addr))
-                it.remove(); // modified the underlying map
-        }
-
-        // ditto for received messages
-        for(int i=0; i < mbrs.size(); i++) {
-            addr=(Address) mbrs.elementAt(i);
-            //if(addr.equals(local_addr))
-              //  continue;
-            if(!received.containsKey(addr))
-                received.put(addr, new Long(max_credits));
-        }
-        for(Iterator it=received.keySet().iterator(); it.hasNext();) {
-            addr=(Address) it.next();
-            if(!mbrs.contains(addr))
-                it.remove();
+        synchronized(received) {
+            // add members not in membership to received hashmap (with full credits)
+            for(int i=0; i < mbrs.size(); i++) {
+                addr=(Address) mbrs.elementAt(i);
+                if(!received.containsKey(addr))
+                    received.put(addr, new Long(max_credits));
+            }
+            // remove members that left
+            for(Iterator it=received.keySet().iterator(); it.hasNext();) {
+                addr=(Address) it.next();
+                if(!mbrs.contains(addr))
+                    it.remove();
+            }
         }
 
-        // remove all creditors which are not in the new view
-        for(Iterator it=creditors.iterator(); it.hasNext();) {
-            Address creditor=(Address) it.next();
-            if(!mbrs.contains(creditor))
-                it.remove();
-        }
+        synchronized(sent) {
+            // add members not in membership to sent hashmap (with full credits)
+            for(int i=0; i < mbrs.size(); i++) {
+                addr=(Address) mbrs.elementAt(i);
+                if(!sent.containsKey(addr))
+                    sent.put(addr, new Long(max_credits));
+            }
+            // remove members that left
+            for(Iterator it=sent.keySet().iterator(); it.hasNext();) {
+                addr=(Address)it.next();
+                if(!mbrs.contains(addr))
+                    it.remove(); // modified the underlying map
+            }
 
-        if(log.isTraceEnabled()) log.trace("creditors are\n" + printCreditors());
-        if(creditors.size() == 0 && blocking)
-            unblockSender();
+
+
+            // remove all creditors which are not in the new view
+            for(Iterator it=creditors.iterator(); it.hasNext();) {
+                Address creditor=(Address) it.next();
+                if(!mbrs.contains(creditor))
+                    it.remove();
+            }
+
+            if(log.isTraceEnabled()) log.trace("creditors are\n" + printCreditors());
+            if(creditors.size() == 0 && blocking.get().equals(Boolean.TRUE))
+                unblockSender();
+        }
     }
 
 
 
-    String dumpSentMessages() {
-        StringBuffer sb=new StringBuffer();
-        for(Iterator it=sent.entrySet().iterator(); it.hasNext();) {
-            Map.Entry entry=(Map.Entry)it.next();
-            sb.append(entry.getKey()).append(": ").append(entry.getValue()).append('\n');
-        }
-        return sb.toString();
-    }
+//    private String dumpSentMessages() {
+//        StringBuffer sb=new StringBuffer();
+//        for(Iterator it=sent.entrySet().iterator(); it.hasNext();) {
+//            Map.Entry entry=(Map.Entry)it.next();
+//            sb.append(entry.getKey()).append(": ").append(entry.getValue()).append('\n');
+//        }
+//        return sb.toString();
+//    }
 
-    String dumpReceivedMessages() {
-        Map tmp=(Map)received.clone();
-        StringBuffer sb=new StringBuffer();
-        for(Iterator it=tmp.entrySet().iterator(); it.hasNext();) {
-            Map.Entry entry=(Map.Entry)it.next();
-            sb.append(entry.getKey()).append(": ").append(entry.getValue()).append('\n');
-        }
-        return sb.toString();
-    }
+//    private String dumpReceivedMessages() {
+//        Map tmp;
+//
+//        synchronized(received) {
+//            tmp=(Map)received.clone();
+//        }
+//        StringBuffer sb=new StringBuffer();
+//        for(Iterator it=tmp.entrySet().iterator(); it.hasNext();) {
+//            Map.Entry entry=(Map.Entry)it.next();
+//            sb.append(entry.getKey()).append(": ").append(entry.getValue()).append('\n');
+//        }
+//        return sb.toString();
+//    }
 
-    String dumpMessages() {
-        StringBuffer sb=new StringBuffer();
-        sb.append("sent:\n").append(sent).append('\n');
-        sb.append("received:\n").append(received).append('\n');
-        return sb.toString();
-    }
+//    private String dumpMessages() {
+//        StringBuffer sb=new StringBuffer();
+//        sb.append("sent:\n").append(sent).append('\n');
+//        synchronized(received) {
+//            sb.append("received:\n").append(received).append('\n');
+//        }
+//        return sb.toString();
+//    }
 
     public static class FcHeader extends Header {
-        public static final int CREDIT = 1;
-        int  type = CREDIT;
-        long num_credits=0;
+        public static final int REPLENISH = 1;
+        int  type = REPLENISH;
 
         public FcHeader() {
 
         }
 
-        public FcHeader(int type, long num_credits) {
+        public FcHeader(int type) {
             this.type=type;
-            this.num_credits=num_credits;
         }
 
 
@@ -504,30 +469,13 @@ public class FC extends Protocol {
 
         public void writeExternal(ObjectOutput out) throws IOException {
             out.writeInt(type);
-            out.writeLong(num_credits);
         }
 
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             type=in.readInt();
-            num_credits=in.readLong();
         }
 
     }
 
-
-//    public static void main(String[] args) {
-//        HashMap m=new HashMap();
-//        m.put("Bela", new Integer(38));
-//        m.put("Jeannette", new Integer(35));
-//
-//        for(Iterator it=m.keySet().iterator(); it.hasNext();) {
-//            String key=(String) it.next();
-//            System.out.println(key);
-//            if(key.equals("Bela")) {
-//                //it.remove();
-//                m.remove(key);
-//            }
-//        }
-//    }
 
 }

@@ -1,4 +1,4 @@
-// $Id: PARTITIONER.java,v 1.3 2004/04/23 19:36:13 belaban Exp $
+// $Id: PARTITIONER.java,v 1.4 2004/09/23 16:29:42 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -27,7 +27,7 @@ import java.util.Vector;
  */
 
 public class PARTITIONER extends Protocol {
-    Vector   members=new Vector();
+    final Vector   members=new Vector();
     Address  local_addr=null;
     int      my_partition=1;
 

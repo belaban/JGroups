@@ -4,7 +4,7 @@ public class UnknownLeaseException extends LeaseException {
     public static final
 	String DEFAULT_MESSAGE = "Specified lease is unknown.";
 
-    protected
+    protected final
 	Lease unknownLease;
 
     public UnknownLeaseException(Lease unknownLease) {

@@ -1,4 +1,4 @@
-// $Id: CondVarTest.java,v 1.1 2004/09/22 10:32:41 belaban Exp $
+// $Id: CondVarTest.java,v 1.2 2004/09/23 16:30:01 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -35,7 +35,7 @@ public class CondVarTest extends TestCase {
 
     public void testConditionTrue() {
         try {
-            cond.waitUntil(Boolean.FALSE, 500);
+            cond.waitUntilWithTimeout(Boolean.FALSE, 500);
         }
         catch(org.jgroups.TimeoutException e) {
             fail("received TimeoutException");
@@ -49,7 +49,7 @@ public class CondVarTest extends TestCase {
 
     public void testWithTimeoutException() {
         try {
-            cond.waitUntil(Boolean.TRUE, 500);
+            cond.waitUntilWithTimeout(Boolean.TRUE, 500);
             fail("expected timeout exception");
         }
         catch(org.jgroups.TimeoutException e) {
@@ -59,16 +59,30 @@ public class CondVarTest extends TestCase {
 
     public void testWithResultSetter() throws org.jgroups.TimeoutException {
         new ResultSetter(cond, 500).start();
-        cond.waitUntil(Boolean.TRUE,  2000);
+        cond.waitUntilWithTimeout(Boolean.TRUE,  2000);
     }
 
     public void testWithResultSetter_ResultSetBeforeAccess() throws org.jgroups.TimeoutException {
         new ResultSetter(cond, 10).start();
         Util.sleep(100);
-        cond.waitUntil(Boolean.TRUE,  2000);
+        cond.waitUntilWithTimeout(Boolean.TRUE,  2000);
     }
 
 
+    public void testStressOnGet() {
+        long start, stop;
+        long NUM=1000000L;
+        start=System.currentTimeMillis();
+        for(int i=0; i < NUM; i++) {
+            if(cond.get().equals(Boolean.TRUE))
+                ;
+        }
+        stop=System.currentTimeMillis();
+        long diff=stop-start;
+        diff*=1000; // microsecs
+        double microsecs_per_get=diff / (double)NUM;
+        System.out.println("took " + microsecs_per_get + " microsecs/get for " + NUM + " gets (" + diff + " microsecs)");
+    }
 
 
     class ResultSetter extends Thread {

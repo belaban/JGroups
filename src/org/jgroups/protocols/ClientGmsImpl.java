@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.7 2004/09/22 10:34:11 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.8 2004/09/23 16:29:41 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -25,11 +25,11 @@ import java.util.Vector;
  * tell the client what its initial membership is.
  * 
  * @author Bela Ban
- * @version $Revision: 1.7 $
+ * @version $Revision: 1.8 $
  */
 public class ClientGmsImpl extends GmsImpl {
-    Vector initial_mbrs=new Vector(7);
-    Object view_installation_mutex=new Object();
+    final Vector initial_mbrs=new Vector(7);
+    final Object view_installation_mutex=new Object();
     boolean joined=false;
 
 
@@ -92,13 +92,13 @@ public class ClientGmsImpl extends GmsImpl {
             coord=determineCoord(initial_mbrs);
             if(coord == null) {
                 if(log.isWarnEnabled()) log.warn("could not determine coordinator " +
-                        "from responses " + initial_mbrs);
+                                                 "from responses " + initial_mbrs);
                 continue;
             }
 
             synchronized(view_installation_mutex) {
                 try {
-                     if(log.isInfoEnabled()) log.info("sending handleJoin() to " + coord);
+                    if(log.isInfoEnabled()) log.info("sending handleJoin() to " + coord);
                     MethodCall call=new MethodCall("handleJoin", new Object[]{mbr}, new Class[]{Address.class});
                     gms.callRemoteMethod(coord, call, GroupRequest.GET_NONE, 0);
                     view_installation_mutex.wait(gms.join_timeout);  // wait for view -> handleView()
@@ -110,11 +110,11 @@ public class ClientGmsImpl extends GmsImpl {
             } // end synchronized
 
             if(joined) {
-                 if(log.isInfoEnabled()) log.info("joined successfully");
+                if(log.isInfoEnabled()) log.info("joined successfully");
                 return;  // --> SUCCESS
             }
             else {
-                 if(log.isInfoEnabled()) log.info("failed, retrying");
+                if(log.isInfoEnabled()) log.info("failed, retrying");
                 Util.sleep(gms.join_retry_timeout);
             }
 

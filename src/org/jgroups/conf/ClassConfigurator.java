@@ -1,4 +1,4 @@
-// $Id: ClassConfigurator.java,v 1.6 2004/08/12 14:08:10 belaban Exp $
+// $Id: ClassConfigurator.java,v 1.7 2004/09/23 16:29:14 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -30,9 +30,9 @@ public class ClassConfigurator {
     static ClassConfigurator instance=null;
 
     //this is where we store magic numbers
-    private Map classMap=new HashMap(); // key=Class, value=magic number
-    private Map magicMap=new TreeMap(); // key=magic number, value=Class
-    protected Log log=LogFactory.getLog(getClass());
+    private final Map classMap=new HashMap(); // key=Class, value=magic number
+    private final Map magicMap=new TreeMap(); // key=magic number, value=Class
+    protected final Log log=LogFactory.getLog(getClass());
 
 
     private ClassConfigurator(boolean init) {

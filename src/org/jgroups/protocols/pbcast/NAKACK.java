@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.27 2004/09/22 10:34:11 belaban Exp $
+// $Id: NAKACK.java,v 1.28 2004/09/23 16:29:38 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -30,19 +30,19 @@ import java.util.*;
  * @author Bela Ban
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand {
-    long[]  retransmit_timeout={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
-    boolean is_server=false;
-    Address local_addr=null;
-    Vector  members=new Vector(11);
-    long    seqno=0;                                   // current message sequence number (starts with 0)
-    long    max_xmit_size=8192;                        // max size of a retransmit message (otherwise send multiple)
-    int     gc_lag=20;                                 // number of msgs garbage collection lags behind
+    private long[]  retransmit_timeout={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
+    private boolean is_server=false;
+    private Address local_addr=null;
+    private final Vector  members=new Vector(11);
+    private long    seqno=0;                                   // current message sequence number (starts with 0)
+    private long    max_xmit_size=8192;                        // max size of a retransmit message (otherwise send multiple)
+    private int     gc_lag=20;                                 // number of msgs garbage collection lags behind
 
     /**
      * Retransmit messages using multicast rather than unicast. This has the advantage that, if many receivers lost a
      * message, the sender only retransmits once.
      */
-    boolean use_mcast_xmit=false;
+    private boolean use_mcast_xmit=false;
 
 
     /**
@@ -52,22 +52,22 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
      * received or delivered messages, we can turn the moving to delivered_msgs off, so we don't keep the message
      * around, and don't need to wait for garbage collection to remove them.
      */
-    boolean discard_delivered_msgs=false;
+    private boolean discard_delivered_msgs=false;
 
 
     /**
      * Hashtable<Address,NakReceiverWindow>. Stores received messages (keyed by sender). Note that this is no long term
      * storage; messages are just stored until they can be delivered (ie., until the correct FIFO order is established)
      */
-    HashMap received_msgs=new HashMap(11);
+    private final HashMap received_msgs=new HashMap(11);
 
     /**
      * TreeMap<Long,Message>. Map of messages sent by me (keyed and sorted on sequence number)
      */
-    TreeMap sent_msgs=new TreeMap();
+    private final TreeMap sent_msgs=new TreeMap();
 
-    boolean leaving=false;
-    TimeScheduler timer=null;
+    private boolean leaving=false;
+    private TimeScheduler timer=null;
     static final String name="NAKACK";
 
 

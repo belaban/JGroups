@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.15 2004/09/15 17:40:58 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.16 2004/09/23 16:29:38 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -18,11 +18,11 @@ import java.util.Vector;
  * @author Bela Ban
  */
 public class CoordGmsImpl extends GmsImpl {
-    boolean      merging=false;
-    MergeTask    merge_task=new MergeTask();
-    Vector       merge_rsps=new Vector(11);
+    private boolean        merging=false;
+    private final MergeTask      merge_task=new MergeTask();
+    private final Vector   merge_rsps=new Vector(11);
     // for MERGE_REQ/MERGE_RSP correlation, contains MergeData elements
-    Serializable merge_id=null;
+    private Serializable   merge_id=null;
 
     public CoordGmsImpl(GMS g) {
         gms=g;

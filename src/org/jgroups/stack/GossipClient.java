@@ -1,4 +1,4 @@
-// $Id: GossipClient.java,v 1.5 2004/07/05 14:17:32 belaban Exp $
+// $Id: GossipClient.java,v 1.6 2004/09/23 16:29:53 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -23,13 +23,13 @@ import java.util.*;
  */
 public class GossipClient {
     Timer timer=new Timer();
-    Hashtable groups=new Hashtable();               // groups - Vector of Addresses
+    final Hashtable groups=new Hashtable();               // groups - Vector of Addresses
     Refresher refresher_task=new Refresher();
-    Vector gossip_servers=new Vector();          // a list of GossipServers (IpAddress)
+    final Vector gossip_servers=new Vector();          // a list of GossipServers (IpAddress)
     boolean timer_running=false;
     long EXPIRY_TIME=20000;                    // must be less than in GossipServer
 
-    protected Log log=LogFactory.getLog(this.getClass());
+    protected final Log log=LogFactory.getLog(this.getClass());
 
 
     /**

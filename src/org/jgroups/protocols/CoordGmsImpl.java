@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.6 2004/09/22 10:34:11 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.7 2004/09/23 16:29:41 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -18,7 +18,7 @@ import java.util.Vector;
 public class CoordGmsImpl extends GmsImpl {
     boolean leaving=false;
     boolean received_last_view=false;
-    Object leave_mutex=new Object();
+    final Object leave_mutex=new Object();
 
 
     public CoordGmsImpl(GMS g) {

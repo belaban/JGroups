@@ -4,7 +4,7 @@ public class LeaseDeniedException extends LeaseException {
     public static final
 	String DEFAULT_MESSAGE = "Lease cannot be granted.";
 
-    protected
+    protected final
 	Object leaseTarget;
 
     public LeaseDeniedException(Object leaseTarget) {

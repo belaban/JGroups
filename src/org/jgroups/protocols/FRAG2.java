@@ -1,4 +1,4 @@
-// $Id: FRAG2.java,v 1.10 2004/09/22 10:34:11 belaban Exp $
+// $Id: FRAG2.java,v 1.11 2004/09/23 16:29:41 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -27,7 +27,7 @@ import java.util.*;
  * size addition for headers and src and dest address is minimal when the transport finally has to serialize the
  * message, so we add a constant (1000 bytes).
  * @author Bela Ban
- * @version $Id: FRAG2.java,v 1.10 2004/09/22 10:34:11 belaban Exp $
+ * @version $Id: FRAG2.java,v 1.11 2004/09/23 16:29:41 belaban Exp $
  */
 public class FRAG2 extends Protocol {
 
@@ -41,10 +41,10 @@ public class FRAG2 extends Protocol {
     /*the fragmentation list contains a fragmentation table per sender
      *this way it becomes easier to clean up if a sender (member) leaves or crashes
      */
-    private FragmentationList     fragment_list=new FragmentationList();
+    private final FragmentationList     fragment_list=new FragmentationList();
     private int                   curr_id=1;
     private Address               local_addr=null;
-    private Vector                members=new Vector(11);
+    private final Vector                members=new Vector(11);
     private static final String          name="FRAG2";
 
 
@@ -331,7 +331,7 @@ public class FRAG2 extends Protocol {
          * tables
          * 11 is the best growth capacity to start with
          */
-        private Hashtable frag_tables=new Hashtable(11);
+        private final Hashtable frag_tables=new Hashtable(11);
 
 
         /**
@@ -419,9 +419,9 @@ public class FRAG2 extends Protocol {
      * The first dimension of the array is the order of the fragmentation, in case the arrive out of order
      */
     class FragmentationTable {
-        private Address sender;
+        private final Address sender;
         /* the hashtable that holds the fragmentation entries for this sender*/
-        private Hashtable h=new Hashtable(11);  // keys: frag_ids, vals: Entrys
+        private final Hashtable h=new Hashtable(11);  // keys: frag_ids, vals: Entrys
 
 
         public FragmentationTable(Address sender) {

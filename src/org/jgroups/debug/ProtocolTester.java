@@ -1,4 +1,4 @@
-// $Id: ProtocolTester.java,v 1.3 2004/03/30 06:47:15 belaban Exp $
+// $Id: ProtocolTester.java,v 1.4 2004/09/23 16:29:16 belaban Exp $
 
 package org.jgroups.debug;
 
@@ -26,7 +26,7 @@ public class ProtocolTester {
     String props=null;
     Configurator config=null;
 
-    protected Log log=LogFactory.getLog(this.getClass());
+    protected final Log log=LogFactory.getLog(this.getClass());
 
 
     public ProtocolTester(String prot_spec, Protocol harness) throws Exception {

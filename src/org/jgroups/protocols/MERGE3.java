@@ -1,4 +1,4 @@
-// $Id: MERGE3.java,v 1.4 2004/09/21 13:49:44 belaban Exp $
+// $Id: MERGE3.java,v 1.5 2004/09/23 16:29:41 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -37,10 +37,10 @@ public class MERGE3 extends Protocol {
     long min_interval=5000;     // minimum time between executions of the FindSubgroups task
     long max_interval=20000;    // maximum time between executions of the FindSubgroups task
     boolean is_coord=false;
-    Vector  mbrs=new Vector();
+    final Vector  mbrs=new Vector();
     TimeScheduler timer=null;
     CoordinatorAnnouncer announcer_task=null;
-    Set announcements=Collections.synchronizedSet(new HashSet());
+    final Set announcements=Collections.synchronizedSet(new HashSet());
 
     /** Use a new thread to send the MERGE event up the stack */
     boolean use_separate_thread=false;

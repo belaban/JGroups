@@ -1,4 +1,4 @@
-// $Id: JMS.java,v 1.6 2004/07/05 14:17:15 belaban Exp $ 
+// $Id: JMS.java,v 1.7 2004/09/23 16:29:41 belaban Exp $ 
 
 package org.jgroups.protocols;
 
@@ -81,7 +81,7 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
     public static final
         String DEST_PROPERTY = "dest";
 
-    private Vector members = new Vector();
+    private final Vector members = new Vector();
 
     private javax.jms.TopicConnectionFactory connectionFactory;
     private javax.jms.Topic topic;
@@ -104,7 +104,7 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
     private Address local_addr;
     private Address mcast_addr;
 
-    private ByteArrayOutputStream out_stream = new ByteArrayOutputStream(65535);
+    private final ByteArrayOutputStream out_stream = new ByteArrayOutputStream(65535);
     
     private static final java.util.Random RND = new java.util.Random();
 

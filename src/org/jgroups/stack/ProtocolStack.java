@@ -1,4 +1,4 @@
-// $Id: ProtocolStack.java,v 1.12 2004/07/05 14:17:33 belaban Exp $
+// $Id: ProtocolStack.java,v 1.13 2004/09/23 16:29:53 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -30,12 +30,12 @@ import java.util.Vector;
 public class ProtocolStack extends Protocol implements Transport {
     private Protocol                top_prot=null;
     private Protocol                bottom_prot=null;
-    private Configurator            conf=new Configurator();
-    private String                  setup_string;
+    private final Configurator            conf=new Configurator();
+    private final String                  setup_string;
     private JChannel                channel=null;
     private boolean                 stopped=true;
-    public  TimeScheduler           timer=new TimeScheduler(5000);
-    Promise                         ack_promise=new Promise();
+    public final  TimeScheduler           timer=new TimeScheduler(5000);
+    final Promise                         ack_promise=new Promise();
 
     /** Used to sync on START/START_OK events for start()*/
     Promise                         start_promise=null;

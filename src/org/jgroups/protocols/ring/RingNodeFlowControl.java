@@ -1,4 +1,4 @@
-//$Id: RingNodeFlowControl.java,v 1.2 2004/03/30 06:47:20 belaban Exp $
+//$Id: RingNodeFlowControl.java,v 1.3 2004/09/23 16:29:40 belaban Exp $
 
 package org.jgroups.protocols.ring;
 
@@ -7,14 +7,14 @@ import org.apache.commons.logging.LogFactory;
 
 public class RingNodeFlowControl
 {
-   int initialWindow;
-   float windowReduceFactor;
-   int belowThresholdAdvanceAmount;
-   float aboveThresholdAdvanceAmount;
+   final int initialWindow;
+   final float windowReduceFactor;
+   final int belowThresholdAdvanceAmount;
+   final float aboveThresholdAdvanceAmount;
    private int memberCount;
    private int previousBacklog;
    private int backlog;
-    protected Log log=LogFactory.getLog(this.getClass());
+    protected final Log log=LogFactory.getLog(this.getClass());
 
    public RingNodeFlowControl(int initialWindow,
                               float windowReduceFactor,

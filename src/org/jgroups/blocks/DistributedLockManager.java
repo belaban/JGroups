@@ -20,28 +20,28 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
      * If there were no "commit" operation on prepared lock, then it
      * is treated as expired and is removed from the prepared locks table.
      */
-    private static long ACQUIRE_EXPIRATION = 5000;
+    private static final long ACQUIRE_EXPIRATION = 5000;
     
     /**
      * This parameter is used during lock releasing. If group fails to release
      * the lock during the specified period of time, unlocking fails.
      */
-    private static long VOTE_TIMEOUT = 10000;
+    private static final long VOTE_TIMEOUT = 10000;
 
 	// list of all prepared locks
-	private HashMap preparedLocks = new HashMap();
+	private final HashMap preparedLocks = new HashMap();
 
 	// list of all prepared releases
-	private HashMap preparedReleases = new HashMap();
+	private final HashMap preparedReleases = new HashMap();
 
 	// list of locks on the node
-	private HashMap heldLocks = new HashMap();
+	private final HashMap heldLocks = new HashMap();
 
-	private TwoPhaseVotingAdapter votingAdapter;
+	private final TwoPhaseVotingAdapter votingAdapter;
 
-	private Object id;
+	private final Object id;
 
-    protected Log log=LogFactory.getLog(getClass());
+    protected final Log log=LogFactory.getLog(getClass());
 
 
     /**
@@ -420,9 +420,9 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
      */
     public static class LockDecree implements Serializable {
 
-        protected Object lockId;
-        protected Object requester;
-        protected Object managerId;
+        protected final Object lockId;
+        protected final Object requester;
+        protected final Object managerId;
 
         protected boolean commited;
 
@@ -467,7 +467,7 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
      * This class represents the lock to be released.
      */
     public static class AcquireLockDecree extends LockDecree {
-        private long creationTime;
+        private final long creationTime;
 
         private AcquireLockDecree(LockDecree lockDecree) {
             this(lockDecree.lockId, lockDecree.requester, lockDecree.managerId);

@@ -1,4 +1,4 @@
-// $Id: ReplicatedTreeDemo.java,v 1.5 2004/09/22 10:34:10 belaban Exp $
+// $Id: ReplicatedTreeDemo.java,v 1.6 2004/09/23 16:29:35 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -42,17 +42,17 @@ public class ReplicatedTreeDemo {
             TreeSelectionListener, TableModelListener {
         DefaultTreeModel tree_model=null;
         JTree jtree=null;
-        DefaultTableModel table_model=new DefaultTableModel();
-        JTable table=new JTable(table_model);
-        MyNode root=new MyNode(SEP);
-        String props=null;
+        final DefaultTableModel table_model=new DefaultTableModel();
+        final JTable table=new JTable(table_model);
+        final MyNode root=new MyNode(SEP);
+        final String props=null;
         String selected_node=null;
         ReplicatedTree tree=null;  // the underlying model
         JPanel tablePanel=null;
         JMenu operationsMenu=null;
         JPopupMenu operationsPopup=null;
         JMenuBar menubar=null;
-        static String SEP=ReplicatedTree.SEPARATOR;
+        static final String SEP=ReplicatedTree.SEPARATOR;
         private static final int KEY_COL_WIDTH=20;
         private static final int VAL_COL_WIDTH=300;
 

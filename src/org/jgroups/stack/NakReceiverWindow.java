@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindow.java,v 1.14 2004/09/15 17:41:00 belaban Exp $
+// $Id: NakReceiverWindow.java,v 1.15 2004/09/23 16:29:53 belaban Exp $
 
 
 package org.jgroups.stack;
@@ -60,7 +60,7 @@ public class NakReceiverWindow {
 
 
     /** The big read/write lock */
-    private RWLock lock=new RWLock();
+    private final RWLock lock=new RWLock();
 
     /** keep track of *next* seqno to remove and highest received */
     private long   head=0;
@@ -73,11 +73,11 @@ public class NakReceiverWindow {
     private long   highest_seen=0;
 
     /** TreeMap<Long,Message>. Maintains messages keyed by sequence numbers */
-    private TreeMap received_msgs=new TreeMap();
+    private final TreeMap received_msgs=new TreeMap();
 
     /** TreeMap<Long,Message>. Delivered (= seen by all members) messages. A remove() method causes a message to be
      moved from received_msgs to delivered_msgs. Message garbage colection will gradually remove elements in this map */
-    private TreeMap delivered_msgs=new TreeMap();
+    private final TreeMap delivered_msgs=new TreeMap();
 
     /**
      * Messages that have been received in order are sent up the stack (= delivered to the application). Delivered

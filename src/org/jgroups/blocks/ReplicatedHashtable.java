@@ -1,4 +1,4 @@
-// $Id: ReplicatedHashtable.java,v 1.6 2004/09/22 10:34:08 belaban Exp $
+// $Id: ReplicatedHashtable.java,v 1.7 2004/09/23 16:29:11 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -50,17 +50,17 @@ public class ReplicatedHashtable extends Hashtable implements MessageListener, M
 
     transient Channel channel;
     transient PullPushAdapter adapter=null;
-    transient Vector notifs=new Vector();
+    final transient Vector notifs=new Vector();
     // to be notified when mbrship changes
-    transient Vector members=new Vector(); // keeps track of all DHTs
-    transient List state_transfer_listeners=new ArrayList();
+    final transient Vector members=new Vector(); // keeps track of all DHTs
+    final transient List state_transfer_listeners=new ArrayList();
     transient boolean state_transfer_running=false;
 
     /** Determines when the updates have to be sent across the network, avoids sending unnecessary
      * messages when there are no member in the group */
     private transient boolean send_message=false;
 
-    protected Log log=LogFactory.getLog(this.getClass());
+    protected final Log log=LogFactory.getLog(this.getClass());
 
     /**
      * Creates a ReplicatedHashtable

@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.20 2004/09/15 17:40:58 belaban Exp $
+// $Id: GMS.java,v 1.21 2004/09/23 16:29:38 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -27,42 +27,41 @@ import java.util.Vector;
  * any messages until they are members.
  */
 public class GMS extends Protocol {
-    private GmsImpl    impl=null;
-    public Address     local_addr=null;
-    public String      group_addr=null;
-    public Membership  members=new Membership();     // real membership
-    public Membership  tmp_members=new Membership(); // base for computing next view
+    private GmsImpl           impl=null;
+    Address                   local_addr=null;
+    final Membership          members=new Membership();     // real membership
+    private final Membership  tmp_members=new Membership(); // base for computing next view
 
     /** Members joined but for which no view has been received yet */
-    public Vector      joining=new Vector(7);
+    private final Vector      joining=new Vector(7);
 
     /** Members excluded from group, but for which no view has been received yet */
-    public Vector      leaving=new Vector(7);
+    private final Vector      leaving=new Vector(7);
 
-    public ViewId      view_id=null;
-    public long        ltime=0;
-    public long        join_timeout=5000;
-    public long        join_retry_timeout=2000;
-    public long        leave_timeout=5000;
-    public long        digest_timeout=5000;        // time to wait for a digest (from PBCAST). should be fast
-    public long        merge_timeout=10000;        // time to wait for all MERGE_RSPS
-    public Object      impl_mutex=new Object();    // synchronizes event entry into impl
-    private Object     digest_mutex=new Object();  // synchronizes the GET_DIGEST/GET_DIGEST_OK events
-    private Digest     digest=null;                // holds result of GET_DIGEST event
-    private Hashtable  impls=new Hashtable(3);
-    private boolean    shun=true;
-    private boolean    print_local_addr=true;
-    boolean            disable_initial_coord=false; // can the member become a coord on startup or not ?
-    static final String CLIENT="Client";
-    static final String COORD="Coordinator";
-    static final String PART="Participant";
-    TimeScheduler      timer=null;
+    ViewId                    view_id=null;
+    private long              ltime=0;
+    long                      join_timeout=5000;
+    long                      join_retry_timeout=2000;
+    long                      leave_timeout=5000;
+    private long              digest_timeout=5000;        // time to wait for a digest (from PBCAST). should be fast
+    long                      merge_timeout=10000;        // time to wait for all MERGE_RSPS
+    private final Object      impl_mutex=new Object();    // synchronizes event entry into impl
+    private final Object      digest_mutex=new Object();  // synchronizes the GET_DIGEST/GET_DIGEST_OK events
+    private Digest            digest=null;                // holds result of GET_DIGEST event
+    private final Hashtable   impls=new Hashtable(3);
+    private boolean           shun=true;
+    private boolean           print_local_addr=true;
+    boolean                   disable_initial_coord=false; // can the member become a coord on startup or not ?
+    static final String       CLIENT="Client";
+    static final String       COORD="Coordinator";
+    static final String       PART="Participant";
+    TimeScheduler             timer=null;
 
     /** Max number of old members to keep in history */
-    protected int      num_prev_mbrs=50;
+    protected int             num_prev_mbrs=50;
 
     /** Keeps track of old members (up to num_prev_mbrs) */
-    BoundedList        prev_members=null;
+    BoundedList               prev_members=null;
 
 
     public GMS() {
@@ -316,7 +315,7 @@ public class GMS extends Protocol {
         ViewId vid=new_view.getVid();
         Vector mbrs=new_view.getMembers();
 
-         if(log.isDebugEnabled()) log.debug("[local_addr=" + local_addr + "] view is " + new_view);
+        if(log.isDebugEnabled()) log.debug("[local_addr=" + local_addr + "] view is " + new_view);
 
         // Discards view with id lower than our own. Will be installed without check if first view
         if(view_id != null) {
@@ -616,12 +615,6 @@ public class GMS extends Protocol {
 
             case Event.CONNECT:
                 passDown(evt);
-                try {
-                    group_addr=(String)evt.getArg();
-                }
-                catch(ClassCastException cce) {
-                    if(log.isErrorEnabled()) log.error("[CONNECT]: group address must be a string (channel name)");
-                }
                 if(local_addr == null)
                     if(log.isFatalEnabled()) log.fatal("[CONNECT] local_addr is null");
                 impl.join(local_addr);

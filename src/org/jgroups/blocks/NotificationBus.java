@@ -1,4 +1,4 @@
-// $Id: NotificationBus.java,v 1.7 2004/08/24 09:31:27 belaban Exp $
+// $Id: NotificationBus.java,v 1.8 2004/09/23 16:29:11 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -19,16 +19,16 @@ import java.util.Vector;
  * @author Bela Ban
  */
 public class NotificationBus implements MessageListener, MembershipListener {
-    Vector members=new Vector();
+    final Vector members=new Vector();
     JChannel channel=null;
     Address local_addr=null;
     PullPushAdapter ad=null;
     Consumer consumer=null; // only a single consumer allowed
     String bus_name="notification_bus";
-    Promise get_cache_promise=new Promise();
-    Object cache_mutex=new Object();
+    final Promise get_cache_promise=new Promise();
+    final Object cache_mutex=new Object();
 
-    protected Log log=LogFactory.getLog(getClass());
+    protected final Log log=LogFactory.getLog(getClass());
 
 
     String props=null;

@@ -1,4 +1,4 @@
-// $Id: Marshaller.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+// $Id: Marshaller.java,v 1.2 2004/09/23 16:29:56 belaban Exp $
 
 package org.jgroups.util;
 
@@ -32,7 +32,7 @@ public class Marshaller {
     /**
      * The class configurator maps classes to magic numbers
      */
-    private static ClassConfigurator mConfigurator=ClassConfigurator.getInstance();
+    private static final ClassConfigurator mConfigurator=ClassConfigurator.getInstance();
 
     public Marshaller() {
     }

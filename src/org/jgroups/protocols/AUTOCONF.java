@@ -1,4 +1,4 @@
-// $Id: AUTOCONF.java,v 1.9 2004/07/05 14:17:14 belaban Exp $
+// $Id: AUTOCONF.java,v 1.10 2004/09/23 16:29:41 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -25,7 +25,7 @@ import java.util.Properties;
  * @author Bela Ban
  */
 public class AUTOCONF extends Protocol {
-    HashMap config=new HashMap();
+    final HashMap config=new HashMap();
     static int num_iterations=10; // to find optimal frag_size
 
     /** Number of bytes to subtract from computed fragmentation size, due to (a) headers and

@@ -1,4 +1,4 @@
-// $Id: GroupRequest.java,v 1.9 2004/09/15 17:40:56 belaban Exp $
+// $Id: GroupRequest.java,v 1.10 2004/09/23 16:29:11 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -39,7 +39,7 @@ import java.util.Vector;
  * to do so.<p>
  * <b>Requirements</b>: lossless delivery, e.g. acknowledgment-based message confirmation.
  * @author Bela Ban
- * @version $Revision: 1.9 $
+ * @version $Revision: 1.10 $
  */
 public class GroupRequest implements RspCollector, Command {
     /** return only first response */
@@ -69,20 +69,20 @@ public class GroupRequest implements RspCollector, Command {
     private short received[]=null;     // status of response for each mbr (see above)
 
     /** bounded queue of suspected members */
-    private Vector suspects=new Vector();
+    private final Vector suspects=new Vector();
 
     /** list of members, changed by viewChange() */
-    private Vector members=new Vector();
+    private final Vector members=new Vector();
 
     /** keep suspects vector bounded */
-    private int max_suspects=40;
+    private final int max_suspects=40;
     protected Message request_msg=null;
     protected RequestCorrelator corr=null; // either use RequestCorrelator or ...
     protected Transport transport=null;    // Transport (one of them has to be non-null)
 
     protected int rsp_mode=GET_ALL;
     protected boolean done=false;
-    protected Object rsp_mutex=new Object();
+    protected final Object rsp_mutex=new Object();
     protected long timeout=0;
     protected int expected_mbrs=0;
 

@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.15 2004/09/10 10:02:08 belaban Exp $
+// $Id: Util.java,v 1.16 2004/09/23 16:29:56 belaban Exp $
 
 package org.jgroups.util;
 
@@ -23,10 +23,10 @@ import java.util.Vector;
  * Collection of various utility routines that can not be assigned to other classes.
  */
 public class Util {
-    private static Object mutex=new Object();
-    private static ByteArrayOutputStream out_stream=new ByteArrayOutputStream(65535);
+    private static final Object mutex=new Object();
+    private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(65535);
 
-    protected static Log log=LogFactory.getLog(Util.class);
+    protected static final Log log=LogFactory.getLog(Util.class);
 
     // constants
     public static final int MAX_PORT=65535; // highest port allocatable

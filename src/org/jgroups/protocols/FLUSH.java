@@ -1,4 +1,4 @@
-// $Id: FLUSH.java,v 1.7 2004/09/22 10:34:11 belaban Exp $
+// $Id: FLUSH.java,v 1.8 2004/09/23 16:29:41 belaban Exp $
 
 
 
@@ -53,22 +53,22 @@ import java.util.Vector;
 
 */
 public class FLUSH extends RpcProtocol {
-    Vector   mbrs=new Vector();
+    final Vector   mbrs=new Vector();
     boolean  is_server=false;
-    Object   block_mutex=new Object();
+    final Object   block_mutex=new Object();
     long     block_timeout=5000;
     Address  local_addr=null;
     boolean  blocked=false;  // BLOCK: true, VIEW_CHANGE: false
-    Object   digest_mutex=new Object();
+    final Object   digest_mutex=new Object();
     long     digest_timeout=2000;   // time to wait for retrieval of unstable msgs
 
-    Object   highest_delivered_mutex=new Object();
+    final Object   highest_delivered_mutex=new Object();
     long[]   highest_delivered_msgs;
 
     Digest   digest=null;
 
-    Object   get_msgs_mutex=new Object();
-    long     get_msgs_timeout=4000;
+    final Object   get_msgs_mutex=new Object();
+    final long     get_msgs_timeout=4000;
     List     get_msgs=null;
 
 

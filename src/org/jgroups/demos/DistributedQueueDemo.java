@@ -1,4 +1,4 @@
-// $Id: DistributedQueueDemo.java,v 1.5 2004/07/05 05:45:31 belaban Exp $
+// $Id: DistributedQueueDemo.java,v 1.6 2004/09/23 16:29:35 belaban Exp $
 package org.jgroups.demos;
 
 import org.jgroups.ChannelException;
@@ -27,14 +27,14 @@ public class DistributedQueueDemo extends Frame implements WindowListener, Actio
                                                            DistributedQueue.Notification
 {
     DistributedQueue h = null;
-    JButton add = new JButton("Add");
-    JButton quit = new JButton("Quit");
-    JButton get_all = new JButton("All");
-    JButton remove = new JButton("Remove");
-    JLabel value = new JLabel("Value");
-    JLabel err_msg = new JLabel("Error");
-    JTextField value_field = new JTextField();
-    java.awt.List listbox = new java.awt.List();
+    final JButton add = new JButton("Add");
+    final JButton quit = new JButton("Quit");
+    final JButton get_all = new JButton("All");
+    final JButton remove = new JButton("Remove");
+    final JLabel value = new JLabel("Value");
+    final JLabel err_msg = new JLabel("Error");
+    final JTextField value_field = new JTextField();
+    final java.awt.List listbox = new java.awt.List();
     final Font default_font = new Font("Helvetica", Font.PLAIN, 12);
 
     public DistributedQueueDemo()

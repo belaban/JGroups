@@ -1,4 +1,4 @@
-// $Id: Queue2.java,v 1.3 2004/09/15 17:41:02 belaban Exp $
+// $Id: Queue2.java,v 1.4 2004/09/23 16:29:56 belaban Exp $
 
 package org.jgroups.util;
 
@@ -36,18 +36,18 @@ public class Queue2 {
     int     size=0;
 
     /* Lock object for synchronization. Is notified when element is added */
-    Sync    mutex=new Mutex();
+    final Sync    mutex=new Mutex();
 
     /** Signals to listeners when an element has been added */
-    CondVar add_condvar=new CondVar(mutex);
+    final CondVar add_condvar=new CondVar(mutex);
 
     /** Signals to listeners when an element has been removed */
-    CondVar remove_condvar=new CondVar(mutex);
+    final CondVar remove_condvar=new CondVar(mutex);
 
     /*the number of end markers that have been added*/
     int     num_markers=0;
 
-    protected static Log log=LogFactory.getLog(Queue2.class);
+    protected static final Log log=LogFactory.getLog(Queue2.class);
 
 
     /**

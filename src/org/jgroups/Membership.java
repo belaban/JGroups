@@ -1,4 +1,4 @@
-// $Id: Membership.java,v 1.6 2004/09/21 15:38:21 belaban Exp $
+// $Id: Membership.java,v 1.7 2004/09/23 16:30:00 belaban Exp $
 
 package org.jgroups;
 
@@ -6,9 +6,7 @@ package org.jgroups;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import java.util.Collections;
-import java.util.Vector;
-import java.util.LinkedList;
+import java.util.*;
 
 
 /**
@@ -18,7 +16,7 @@ import java.util.LinkedList;
  */
 public class Membership implements Cloneable {
     /* private vector to hold all the addresses */
-    private LinkedList members;
+    private final LinkedList members=new LinkedList();
     protected static final Log log=LogFactory.getLog(Membership.class);
 
     /**
@@ -26,8 +24,6 @@ public class Membership implements Cloneable {
      * Creates a member ship object with zero members
      */
     public Membership() {
-        // 11 is the optimized value for vector growth
-        members=new LinkedList();
     }
 
 
@@ -39,10 +35,11 @@ public class Membership implements Cloneable {
      *
      * @param initial_members - a list of members that belong to this membership
      */
-    public Membership(Vector initial_members) {
+    public Membership(Collection initial_members) {
         if(initial_members != null)
-            members=new LinkedList(initial_members);
+            add(initial_members);
     }
+
 
 
     /**
@@ -82,10 +79,11 @@ public class Membership implements Cloneable {
      * @throws ClassCastException if v contains objects that don't implement the Address interface
      * @see #add
      */
-    public void add(Vector v) {
+    public void add(Collection v) {
         if(v != null) {
-            for(int i=0; i < v.size(); i++) {
-                add((Address)v.elementAt(i));
+            for(Iterator it=v.iterator(); it.hasNext();) {
+                Address addr=(Address)it.next();
+                add(addr);
             }
         }
     }
@@ -111,7 +109,7 @@ public class Membership implements Cloneable {
      *
      * @param v - a vector containing all the members to be removed
      */
-    public void remove(Vector v) {
+    public void remove(Collection v) {
         if(v != null) {
             synchronized(members) {
                 members.removeAll(v);
@@ -137,7 +135,7 @@ public class Membership implements Cloneable {
      *
      * @param v - a vector containing all the members this membership will contain
      */
-    public void set(Vector v) {
+    public void set(Collection v) {
         clear();
         if(v != null) {
             add(v);
@@ -172,7 +170,7 @@ public class Membership implements Cloneable {
      * @param new_mems - a vector containing a list of members (Address) to be added to this membership
      * @param suspects - a vector containing a list of members (Address) to be removed from this membership
      */
-    public void merge(Vector new_mems, Vector suspects) {
+    public void merge(Collection new_mems, Collection suspects) {
         remove(suspects);
         add(new_mems);
     }
@@ -217,17 +215,7 @@ public class Membership implements Cloneable {
      *         container
      */
     public Object clone() {
-        Membership m;
-        try {
-            m=(Membership)super.clone();
-        }
-        catch(CloneNotSupportedException e) {
-            m=new Membership();
-        }
-        synchronized(members) {
-            m.members=(LinkedList)members.clone();
-        }
-        return (m);
+        return new Membership(this.members);
     }
 
 

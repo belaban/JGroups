@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.9 2004/09/22 10:34:11 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.10 2004/09/23 16:29:42 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -26,7 +26,7 @@ class StateTransferRequest implements Serializable {
     static final int RETURN_STATE=2;  // arg = orginator of request
 
     int type=0;
-    Object arg;
+    final Object arg;
 
 
     public StateTransferRequest(int type, Object arg) {
@@ -75,16 +75,16 @@ class StateTransferRequest implements Serializable {
  */
 public class STATE_TRANSFER extends Protocol implements RequestHandler {
     Address local_addr=null;
-    Vector members=new Vector(11);
-    Message m=null;
+    final Vector members=new Vector(11);
+    final Message m=null;
     boolean is_server=false;
     byte[] cached_state=null;
-    Object state_xfer_mutex=new Object(); // get state from appl (via channel).
+    final Object state_xfer_mutex=new Object(); // get state from appl (via channel).
     long timeout_get_appl_state=5000;
     long timeout_return_state=5000;
     RequestCorrelator corr=null;
-    Vector observers=new Vector(5);
-    HashMap map=new HashMap(7);
+    final Vector observers=new Vector(5);
+    final HashMap map=new HashMap(7);
 
 
     /**

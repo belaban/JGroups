@@ -1,6 +1,6 @@
 
 
-// $Id: ENCRYPT.java,v 1.3 2004/09/22 10:34:11 belaban Exp $
+// $Id: ENCRYPT.java,v 1.4 2004/09/23 16:29:41 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -212,7 +212,7 @@ public class ENCRYPT extends Protocol {
 
 	// encryption properties in no supplied key mode
 	String asymProvider = null;
-	String symProvider = null;
+	final String symProvider = null;
 	String asymAlgorithm = "RSA";
 	String symAlgorithm = "Blowfish";
 	int asymInit = 512; // initial public/private key length
@@ -243,7 +243,7 @@ public class ENCRYPT extends Protocol {
 	SecretKey secretKey = null;
 	
 	// map to hold previous keys so we can decrypt some earlier messages if we need to
-	Map keyMap = new WeakHashMap();
+    final Map keyMap = new WeakHashMap();
 	// locks for queue access
 	final Object downLock = new Object();
 	final Object upLock = new Object();
@@ -251,10 +251,10 @@ public class ENCRYPT extends Protocol {
 	// queues to buffer data while we are swapping shared key
 	// or obtsining key for first time
 	
-	private LinkedQueue upMessageQueue = new LinkedQueue();
+	private final LinkedQueue upMessageQueue = new LinkedQueue();
 	private boolean queue_up = true;
 	
-	private LinkedQueue downMessageQueue = new LinkedQueue();
+	private final LinkedQueue downMessageQueue = new LinkedQueue();
 	private boolean queue_down = true;
 	
 	// decrypting cypher for secret key requests

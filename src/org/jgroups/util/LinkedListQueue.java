@@ -1,4 +1,4 @@
-// $Id: LinkedListQueue.java,v 1.5 2004/09/15 17:41:02 belaban Exp $
+// $Id: LinkedListQueue.java,v 1.6 2004/09/23 16:29:56 belaban Exp $
 
 package org.jgroups.util;
 
@@ -23,13 +23,13 @@ import java.util.Vector;
  */
 public class LinkedListQueue {
 
-    LinkedList l=new LinkedList();
+    final LinkedList l=new LinkedList();
 
     /*flag to determine the state of the Queue*/
     boolean closed=false;
 
     /*lock object for synchronization*/
-    Object mutex=new Object();
+    final Object mutex=new Object();
 
     /*the number of end markers that have been added*/
     int num_markers=0;
@@ -45,7 +45,7 @@ public class LinkedListQueue {
      */
     private static final Object endMarker=new Object();
 
-    protected static Log log=LogFactory.getLog(LinkedListQueue.class);
+    protected static final Log log=LogFactory.getLog(LinkedListQueue.class);
 
 
     /**

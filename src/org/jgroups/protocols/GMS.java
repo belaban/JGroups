@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.10 2004/09/22 10:34:11 belaban Exp $
+// $Id: GMS.java,v 1.11 2004/09/23 16:29:41 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -27,7 +27,7 @@ public class GMS extends RpcProtocol implements Runnable {
     private GmsImpl impl=null;
     public Address local_addr=null;
     public String group_addr=null;
-    public Membership members=new Membership();
+    public final Membership members=new Membership();
     public ViewId view_id=null;
     public long ltime=0;
     public long join_timeout=5000;
@@ -36,17 +36,17 @@ public class GMS extends RpcProtocol implements Runnable {
     private long rebroadcast_timeout=0;       // 0=wait forever until REBROADCAST completes
     private long view_change_timeout=10000;   // until all handleViewChange() RPCs have returned
     public long leave_timeout=5000;
-    public Object impl_mutex=new Object();     // synchronizes event entry into impl
-    public Object view_mutex=new Object();     // synchronizes view installations
+    public final Object impl_mutex=new Object();     // synchronizes event entry into impl
+    public final Object view_mutex=new Object();     // synchronizes view installations
     private Queue event_queue=new Queue();     // stores SUSPECT, MERGE events
     private Thread evt_thread=null;
-    private Object flush_mutex=new Object();
+    private final Object flush_mutex=new Object();
     private FlushRsp flush_rsp=null;
-    private Object rebroadcast_mutex=new Object();
+    private final Object rebroadcast_mutex=new Object();
     private boolean rebroadcast_unstable_msgs=true;
     private boolean print_local_addr=true;
     boolean disable_initial_coord=false; // can the member become a coord on startup or not ?
-    private Hashtable impls=new Hashtable();
+    private final Hashtable impls=new Hashtable();
     static final String CLIENT="Client";
     static final String COORD="Coordinator";
     static final String PART="Participant";

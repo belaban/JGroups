@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.13 2004/09/16 13:55:32 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.14 2004/09/23 16:29:38 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -26,11 +26,11 @@ import java.util.Vector;
  */
 public class STATE_TRANSFER extends Protocol {
     Address  local_addr=null;
-    Vector   members=new Vector();
+    final Vector   members=new Vector();
     long     state_id=1;  // used to differentiate between state transfers (not currently used)
-    List     state_requesters=new List(); // requesters of state (usually just 1, could be more)
+    final List     state_requesters=new List(); // requesters of state (usually just 1, could be more)
     Digest   digest=null;
-    HashMap  map=new HashMap(); // to store configuration information
+    final HashMap  map=new HashMap(); // to store configuration information
     long     start, stop; // to measure state transfer time
 
 

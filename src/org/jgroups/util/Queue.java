@@ -1,4 +1,4 @@
-// $Id: Queue.java,v 1.15 2004/09/15 17:41:02 belaban Exp $
+// $Id: Queue.java,v 1.16 2004/09/23 16:29:56 belaban Exp $
 
 package org.jgroups.util;
 
@@ -47,7 +47,7 @@ public class Queue {
      */
     private static final Object endMarker=new Object();
 
-    protected static Log log=LogFactory.getLog(Queue.class);
+    protected static final Log log=LogFactory.getLog(Queue.class);
 
     
     /**

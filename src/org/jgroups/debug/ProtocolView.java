@@ -1,4 +1,4 @@
-// $Id: ProtocolView.java,v 1.1 2003/09/09 01:24:09 belaban Exp $
+// $Id: ProtocolView.java,v 1.2 2004/09/23 16:29:16 belaban Exp $
 
 package org.jgroups.debug;
 
@@ -15,11 +15,12 @@ import org.jgroups.Event;
  * @author  Bela Ban, created July 22 2000
  */
 public class ProtocolView implements ProtocolObserver {
-    DefaultTableModel  model;
+    final DefaultTableModel  model;
     int                my_index=-1;
     Protocol           prot=null;
     String             prot_name=null;
-    JButton            down_label=new JButton("0"), up_label=new JButton("0");
+    final JButton            down_label=new JButton("0");
+    final JButton up_label=new JButton("0");
     boolean            cummulative=false;
     long               tot_up=0, tot_down=0;
 

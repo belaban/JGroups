@@ -1,4 +1,4 @@
-// $Id: NotificationBusDemo.java,v 1.3 2004/07/05 05:45:31 belaban Exp $
+// $Id: NotificationBusDemo.java,v 1.4 2004/09/23 16:29:35 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -24,8 +24,8 @@ public class NotificationBusDemo implements NotificationBus.Consumer {
     NotificationBus bus=null;
     BufferedReader  in=null;
     String          line;
-    long            timeout=0;
-    Vector          cache=null;
+    final long            timeout=0;
+    final Vector          cache=null;
 
 
 

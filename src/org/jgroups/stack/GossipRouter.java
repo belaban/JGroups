@@ -1,4 +1,4 @@
-// $Id: GossipRouter.java,v 1.7 2004/07/13 01:45:25 ovidiuf Exp $
+// $Id: GossipRouter.java,v 1.8 2004/09/23 16:29:53 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -55,7 +55,7 @@ public class GossipRouter {
     public static final long ROUTING_CLIENT_REPLY_TIMEOUT = 120000;
 
     // BufferedInputStream mark buffer size
-    private int MARK_BUFFER_SIZE = 2048;
+    private final int MARK_BUFFER_SIZE = 2048;
 
     private static final Object GOSSIP_REQUEST = new Object();
     private static final Object GOSSIP_FAILURE = new Object();
@@ -78,10 +78,10 @@ public class GossipRouter {
     private long routingClientReplyTimeout;
 
     // (groupname - vector of AddressEntry's)
-    private Hashtable routingTable=new Hashtable();  
+    private final Hashtable routingTable=new Hashtable();
 
     // (groupname - vector of AddressEntry's)
-    private Map gossipTable = new HashMap();
+    private final Map gossipTable = new HashMap();
 
     private ServerSocket srvSock = null;
     private InetAddress bindAddress = null;
@@ -89,7 +89,7 @@ public class GossipRouter {
     // the cache sweeper
     Timer timer = null;
 
-    protected Log log=LogFactory.getLog(this.getClass());
+    protected final Log log=LogFactory.getLog(this.getClass());
 
     //
     // JMX INSTRUMENTATION - MANAGEMENT INTERFACE
@@ -935,7 +935,7 @@ public class GossipRouter {
         Socket sock=null;
         DataOutputStream output=null;
         long timestamp=0;
-        SocketThread thread;
+        final SocketThread thread;
 
         /**
          * AddressEntry for a 'gossip' membership.

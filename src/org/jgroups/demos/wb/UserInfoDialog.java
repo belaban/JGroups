@@ -1,4 +1,4 @@
-// $Id: UserInfoDialog.java,v 1.2 2004/07/05 05:44:56 belaban Exp $
+// $Id: UserInfoDialog.java,v 1.3 2004/09/23 16:29:34 belaban Exp $
 
 package org.jgroups.demos.wb;
 
@@ -10,9 +10,9 @@ import java.awt.event.ActionListener;
 
 public class UserInfoDialog extends Dialog implements ActionListener {
 
-    Button              ok=new Button("OK");
-    Label               l=new Label("Name: ");
-    TextField           name=new TextField("");
+    final Button              ok=new Button("OK");
+    final Label               l=new Label("Name: ");
+    final TextField           name=new TextField("");
     private final Font  default_font=new Font("Helvetica",Font.PLAIN,12);
     
 

@@ -1,4 +1,4 @@
-// $Id: Proxy1_4.java,v 1.6 2004/09/15 17:41:02 belaban Exp $
+// $Id: Proxy1_4.java,v 1.7 2004/09/23 16:29:56 belaban Exp $
 
 package org.jgroups.util;
 
@@ -71,7 +71,7 @@ public class Proxy1_4 {
     static boolean verbose=false;
     static boolean debug=false;
     String         mapping_file=null; // contains a list of src and dest host:port pairs
-    HashMap        mappings=new HashMap(); // keys=MyInetSocketAddr (src), values=MyInetSocketAddr (dest)
+    final HashMap        mappings=new HashMap(); // keys=MyInetSocketAddr (src), values=MyInetSocketAddr (dest)
     Executor       executor; // maintains a thread pool
     static final int      MAX_THREAD_POOL_SIZE=64; // for processing requests
     static final int      BUFSIZE=1024; // size of data transfer buffer
@@ -588,11 +588,12 @@ public class Proxy1_4 {
     }
 
     static class Relayer implements Runnable {
-        Socket         in_sock, out_sock;
-        InputStream    in;
-        OutputStream   out;
+        final Socket         in_sock;
+        final Socket out_sock;
+        final InputStream    in;
+        final OutputStream   out;
         Thread         t=null;
-        java.util.List listeners=new ArrayList();
+        final java.util.List listeners=new ArrayList();
         String         name=null;
 
         interface Listener {

@@ -1,4 +1,4 @@
-// $Id: LOSS.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
+// $Id: LOSS.java,v 1.3 2004/09/23 16:29:41 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -16,8 +16,8 @@ import java.util.Vector;
  */
 
 public class LOSS extends Protocol {
-    Vector    members=new Vector();
-    long      i=0;
+    final Vector    members=new Vector();
+    final long      i=0;
     boolean   drop_next_msg=false;
 
     /** All protocol names have to be unique ! */

@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.8 2004/09/21 13:49:44 belaban Exp $
+// $Id: MERGE2.java,v 1.9 2004/09/23 16:29:41 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -47,7 +47,7 @@ public class MERGE2 extends Protocol {
     long min_interval=5000;     // minimum time between executions of the FindSubgroups task
     long max_interval=20000;    // maximum time between executions of the FindSubgroups task
     boolean is_coord=false;
-    Promise find_promise=new Promise(); // to synchronize FindSubgroups.findInitialMembers() on
+    final Promise find_promise=new Promise(); // to synchronize FindSubgroups.findInitialMembers() on
 
     /** Use a new thread to send the MERGE event up the stack */
     boolean use_separate_thread=false;

@@ -1,4 +1,4 @@
-// $Id: PBCAST.java,v 1.9 2004/07/05 05:49:41 belaban Exp $
+// $Id: PBCAST.java,v 1.10 2004/09/23 16:29:38 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -31,20 +31,20 @@ public class PBCAST extends Protocol implements Runnable {
     long seqno=1;                  // seqno for messages. 1 for the first message
     long gossip_round=1;           // identifies the gossip (together with sender)
     Address local_addr=null;
-    Hashtable digest=new Hashtable();   // stores all messages from members (key: member, val: NakReceiverWindow)
+    final Hashtable digest=new Hashtable();   // stores all messages from members (key: member, val: NakReceiverWindow)
     Thread gossip_thread=null;
     GossipHandler gossip_handler=null;      // removes gossips and other requests from queue and handles them
-    Queue gossip_queue=new Queue(); // (bounded) queue for incoming gossip requests
+    final Queue gossip_queue=new Queue(); // (bounded) queue for incoming gossip requests
     int max_queue=100;            // max elements in gossip_queue (bounded buffer)
     long gossip_interval=5000;     // gossip every 5 seconds
     double subset=0.1;               // send gossip messages to a subset consisting of 10% of the mbrship
     long desired_avg_gossip=30000; // receive a gossip every 30 secs on average
-    Vector members=new Vector();
-    List gossip_list=new List();   // list of gossips received, we periodically purge it (FIFO)
+    final Vector members=new Vector();
+    final List gossip_list=new List();   // list of gossips received, we periodically purge it (FIFO)
     int max_gossip_cache=100;     // number of gossips to keep until gossip list is purged
     int gc_lag=30;                // how many seqnos should we lag behind (see DESIGN)
-    Hashtable invalid_gossipers=new Hashtable(); // keys=Address, val=Integer (number of gossips from suspected mbrs)
-    int max_invalid_gossips=2;    // max number of gossip from non-member before that member is shunned
+    final Hashtable invalid_gossipers=new Hashtable(); // keys=Address, val=Integer (number of gossips from suspected mbrs)
+    final int max_invalid_gossips=2;    // max number of gossip from non-member before that member is shunned
     Vector seen_list=null;
     boolean shun=false;               // whether invalid gossipers will be shunned or not
     boolean dynamic=true;             // whether to use dynamic or static gosssip_interval (overrides gossip_interval)
@@ -915,7 +915,7 @@ public class PBCAST extends Protocol implements Runnable {
      */
     private class GossipHandler implements Runnable {
         Thread t=null;
-        Queue gossip_queue;
+        final Queue gossip_queue;
 
 
         GossipHandler(Queue q) {

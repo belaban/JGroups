@@ -1,4 +1,4 @@
-// $Id: DrawRepl.java,v 1.3 2004/07/05 05:45:31 belaban Exp $
+// $Id: DrawRepl.java,v 1.4 2004/09/23 16:29:35 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -32,18 +32,18 @@ public class DrawRepl implements MouseMotionListener, WindowListener, ActionList
     private Graphics               graphics=null;
     private Frame                  mainFrame=null;
     private Panel                  panel=null, sub_panel=null;
-    private byte                   buf[]=new byte[128];
-    private ByteArrayOutputStream  out=new ByteArrayOutputStream();
+    private final byte[]                   buf=new byte[128];
+    private final ByteArrayOutputStream  out=new ByteArrayOutputStream();
     private DataOutputStream       outstream;
     private ByteArrayInputStream   inp;
     private DataInputStream        instream;
     private int                    x, y;
-    private Hashtable              colors=new Hashtable();
-    private Random                 random=new Random(System.currentTimeMillis());
+    private final Hashtable              colors=new Hashtable();
+    private final Random                 random=new Random(System.currentTimeMillis());
     private int                    col_val=1;
     private Color                  current_color=Color.red;
     private Button                 clear_button, leave_button;
-    private String                 groupname="DrawReplGroup";
+    private final String                 groupname="DrawReplGroup";
     private final Font             default_font=new Font("Helvetica",Font.PLAIN,12);
 
     private EventQueue             event_queue=null;

@@ -1,4 +1,4 @@
-// $Id: Configurator.java,v 1.7 2004/09/22 10:34:14 belaban Exp $
+// $Id: Configurator.java,v 1.8 2004/09/23 16:29:53 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -23,7 +23,7 @@ import java.util.Vector;
  */
 public class Configurator {
 
-     protected Log log=LogFactory.getLog(getClass());
+     protected final Log log=LogFactory.getLog(getClass());
 
 
     /**
@@ -485,7 +485,7 @@ public class Configurator {
     public class ProtocolConfiguration {
         private String protocol_name=null;
         private String properties_str=null;
-        private Properties properties=new Properties();
+        private final Properties properties=new Properties();
         private static final String protocol_prefix="org.jgroups.protocols";
 
 

@@ -55,11 +55,11 @@ public class VotingAdapter implements MessageListener, MembershipListener {
     private static final int PROCESS_BREAK = 2;
     
 
-    private RpcDispatcher rpcDispatcher;
+    private final RpcDispatcher rpcDispatcher;
 
-    protected Log log=LogFactory.getLog(getClass());
+    protected final Log log=LogFactory.getLog(getClass());
 
-    private HashSet suspectedNodes = new HashSet();
+    private final HashSet suspectedNodes = new HashSet();
     private boolean blocked = false;
     private boolean closed;
 
@@ -302,7 +302,7 @@ public class VotingAdapter implements MessageListener, MembershipListener {
         // ignore the state, we do not have any.
     }
             
-    private Set voteListeners = new HashSet();
+    private final Set voteListeners = new HashSet();
     private VotingListener[] listeners;
 
     /**
@@ -418,7 +418,7 @@ public class VotingAdapter implements MessageListener, MembershipListener {
      * Class that represents a result of local voting on the failed node.
      */
     public static class FailureVoteResult extends VoteResult {
-        private String reason;
+        private final String reason;
         
         public FailureVoteResult(String reason) {
             this.reason = reason;

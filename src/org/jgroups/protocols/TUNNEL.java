@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.7 2004/07/13 01:44:35 ovidiuf Exp $
+// $Id: TUNNEL.java,v 1.8 2004/09/23 16:29:42 belaban Exp $
 
 
 package org.jgroups.protocols;
@@ -32,9 +32,9 @@ import java.util.Vector;
  * @author Bela Ban
  */
 public class TUNNEL extends Protocol implements Runnable {
-    Properties properties=null;
+    final Properties properties=null;
     String channel_name=null;
-    Vector members=new Vector();
+    final Vector members=new Vector();
     String router_host=null;
     int router_port=0;
     Address local_addr=null;  // sock's local addr and local port

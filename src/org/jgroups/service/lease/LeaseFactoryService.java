@@ -65,9 +65,9 @@ public class LeaseFactoryService extends AbstractService {
     
     public static final int MAXIMUM_DURATION = 60 * 1000;
 
-    protected PullPushAdapter clientAdapter;
+    protected final PullPushAdapter clientAdapter;
 
-    protected Map leases;
+    protected final Map leases;
 
     /**
      * Create instance of this class. This constructor constructs registers

@@ -1,4 +1,4 @@
-// $Id: XmlValidator.java,v 1.4 2004/07/23 02:26:54 belaban Exp $
+// $Id: XmlValidator.java,v 1.5 2004/09/23 16:29:15 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -21,9 +21,9 @@ import java.net.URL;
 public class XmlValidator
 {
 
-    private String mXmlUrl;
-    private String mDtdUrl;
-    private boolean mPrintXml;
+    private final String mXmlUrl;
+    private final String mDtdUrl;
+    private final boolean mPrintXml;
     
     public XmlValidator(String xmlUrl, String dtdUrl)
     {
@@ -88,7 +88,7 @@ public class XmlValidator
     
     class JGEntityResolver implements org.xml.sax.EntityResolver 
     {
-        private String mDtdUrl;
+        private final String mDtdUrl;
         public JGEntityResolver(String dtdUrl)
         {
             mDtdUrl = dtdUrl;
@@ -106,7 +106,7 @@ public class XmlValidator
     
     class JGErrorHandler implements org.xml.sax.ErrorHandler
     {
-        private StringBuffer mErrors = new StringBuffer();
+        private final StringBuffer mErrors = new StringBuffer();
         int count = 1;
         public void warning(SAXParseException exception)
              throws SAXException

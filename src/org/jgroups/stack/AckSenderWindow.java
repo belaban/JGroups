@@ -1,4 +1,4 @@
-// $Id: AckSenderWindow.java,v 1.7 2004/09/15 17:41:00 belaban Exp $
+// $Id: AckSenderWindow.java,v 1.8 2004/09/23 16:29:53 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -25,10 +25,10 @@ import java.util.HashMap;
  */
 public class AckSenderWindow implements Retransmitter.RetransmitCommand {
     RetransmitCommand retransmit_command = null;   // called to request XMIT of msg
-    HashMap           msgs = new HashMap();        // keys: seqnos (Long), values: Messages
+    final HashMap           msgs = new HashMap();        // keys: seqnos (Long), values: Messages
     long[]            interval = new long[]{1000, 2000, 3000, 4000};
-    Retransmitter     retransmitter = new Retransmitter(null, this);
-    Queue             msg_queue = new Queue(); // for storing messages if msgs is full
+    final Retransmitter     retransmitter = new Retransmitter(null, this);
+    final Queue             msg_queue = new Queue(); // for storing messages if msgs is full
     int               window_size = -1;   // the max size of msgs, when exceeded messages will be queued
 
     /** when queueing, after msgs size falls below this value, msgs are added again (queueing stops) */
@@ -250,8 +250,8 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
 
     /** Struct used to store message alongside with its seqno in the message queue */
     class Entry {
-        long seqno;
-        Message msg;
+        final long seqno;
+        final Message msg;
 
         Entry(long seqno, Message msg) {
             this.seqno = seqno;
@@ -261,7 +261,8 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
 
 
     static class Dummy implements RetransmitCommand {
-        long last_xmit_req = 0, curr_time;
+        final long last_xmit_req = 0;
+         long curr_time;
 
 
         public void retransmit(long seqno, Message msg) {

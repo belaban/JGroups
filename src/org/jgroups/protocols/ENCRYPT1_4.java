@@ -4,7 +4,7 @@
 // replacing SecretKey with SecretKey
 
 
-// $Id: ENCRYPT1_4.java,v 1.5 2004/07/05 14:17:15 belaban Exp $
+// $Id: ENCRYPT1_4.java,v 1.6 2004/09/23 16:29:41 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -71,12 +71,12 @@ public static class EncryptHeader extends org.jgroups.Header {
     // for public/private Key
     KeyPair Kpair;			// to store own's public/private Key
     SecretKey desKey=null;
-    PublicKey pubKey=null;               // for server to store the temporary client public key
+    final PublicKey pubKey=null;               // for server to store the temporary client public key
     PublicKey serverPubKey=null;         // for client to store server's public Key
     Cipher cipher;
     Cipher rsa;
-    Vector members=new Vector();
-    Vector notReady=new Vector();
+    final Vector members=new Vector();
+    final Vector notReady=new Vector();
 
     public ENCRYPT1_4() {
         //Provider prov = Security.getProvider("SUN");

@@ -1,4 +1,4 @@
-// $Id: ClassMap.java,v 1.1 2003/09/09 01:24:08 belaban Exp $
+// $Id: ClassMap.java,v 1.2 2004/09/23 16:29:14 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -11,10 +11,10 @@ package org.jgroups.conf;
  */
 public class ClassMap
 {
-    private String mClassname;
-    private String mDescription;
-    private boolean mPreload;
-    private int mMagicNumber;
+    private final String mClassname;
+    private final String mDescription;
+    private final boolean mPreload;
+    private final int mMagicNumber;
     
     public ClassMap(String clazz,
                     String desc,

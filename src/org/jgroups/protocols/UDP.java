@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.42 2004/09/22 10:34:11 belaban Exp $
+// $Id: UDP.java,v 1.43 2004/09/23 16:29:42 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -98,10 +98,10 @@ public class UDP extends Protocol implements Runnable {
     int             ip_ttl=64;
 
     /** The members of this group (updated when a member joins or leaves) */
-    Vector          members=new Vector(11);
+    final Vector          members=new Vector(11);
 
     /** Pre-allocated byte stream. Used for serializing datagram packets. Will grow as needed */
-    ByteArrayOutputStream out_stream=new ByteArrayOutputStream(65535);
+    final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(65535);
 
     /** Send buffer size of the multicast datagram socket */
     int             mcast_send_buf_size=32000;
@@ -1487,9 +1487,9 @@ public class UDP extends Protocol implements Runnable {
         boolean       timer_running=false;
 
         /** HashMap<Address, List>. Keys are destinations, values are lists of Messages */
-        HashMap       msgs=new HashMap(11);
+        final HashMap       msgs=new HashMap(11);
 
-        MyTask        task=new MyTask();
+        final MyTask        task=new MyTask();
 
 
         class MyTask implements TimeScheduler.Task {
@@ -1528,7 +1528,7 @@ public class UDP extends Protocol implements Runnable {
         }
 
         protected void handleMessage(Message msg) throws Exception {
-            Address        dest=msg.getDest();
+            Address        dst=msg.getDest();
             long           len;
             List           tmp;
 
@@ -1545,10 +1545,10 @@ public class UDP extends Protocol implements Runnable {
             }
 
             synchronized(msgs) {
-                tmp=(List)msgs.get(dest);
+                tmp=(List)msgs.get(dst);
                 if(tmp == null) {
                     tmp=new List();
-                    msgs.put(dest, tmp);
+                    msgs.put(dst, tmp);
                 }
                 tmp.add(msg);
                 total_bytes+=len;
@@ -1561,8 +1561,8 @@ public class UDP extends Protocol implements Runnable {
 
         void bundleAndSend() {
             Map.Entry            entry;
-            IpAddress            dest;
-            ObjectOutputStream   out;
+            IpAddress            dst;
+            ObjectOutputStream   outstream;
             InetAddress          addr;
             int                  port;
             byte[]               data;
@@ -1577,24 +1577,24 @@ public class UDP extends Protocol implements Runnable {
 
                 for(Iterator it=msgs.entrySet().iterator(); it.hasNext();) {
                     entry=(Map.Entry)it.next();
-                    dest=(IpAddress)entry.getKey();
-                    addr=dest.getIpAddress();
-                    port=dest.getPort();
+                    dst=(IpAddress)entry.getKey();
+                    addr=dst.getIpAddress();
+                    port=dst.getPort();
                     l=(List)entry.getValue();
                     try {
                         out_stream.reset();
                         // BufferedOutputStream bos=new BufferedOutputStream(out_stream);
                         out_stream.write(Version.version_id, 0, Version.version_id.length); // write the version
                         //bos.write(Version.version_id, 0, Version.version_id.length); // write the version
-                        out=new ObjectOutputStream(out_stream);
+                        outstream=new ObjectOutputStream(out_stream);
                         // out=new ObjectOutputStream(bos);
-                        l.writeExternal(out);
-                        out.close(); // needed if out buffers its output to out_stream
+                        l.writeExternal(outstream);
+                        outstream.close(); // needed if out buffers its output to out_stream
                         data=out_stream.toByteArray();
                         doSend(data, addr, port);
                     }
                     catch(IOException e) {
-                        if(log.isErrorEnabled()) log.error("exception sending msg (to dest=" + dest + "): " + e);
+                        if(log.isErrorEnabled()) log.error("exception sending msg (to dest=" + dst + "): " + e);
                     }
                 }
                 msgs.clear();

@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.15 2004/09/16 13:55:32 belaban Exp $
+// $Id: STABLE.java,v 1.16 2004/09/23 16:29:38 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -37,10 +37,10 @@ import java.util.Vector;
  */
 public class STABLE extends Protocol {
     Address             local_addr=null;
-    Vector              mbrs=new Vector();
-    Digest              digest=new Digest();          // keeps track of the highest seqnos from all members
-    Promise             digest_promise=new Promise(); // for fetching digest (from NAKACK layer)
-    Vector              heard_from=new Vector();      // keeps track of who we already heard from (STABLE_GOSSIP msgs)
+    final Vector              mbrs=new Vector();
+    final Digest              digest=new Digest();          // keeps track of the highest seqnos from all members
+    final Promise             digest_promise=new Promise(); // for fetching digest (from NAKACK layer)
+    final Vector              heard_from=new Vector();      // keeps track of who we already heard from (STABLE_GOSSIP msgs)
     long                digest_timeout=60000;         // time to wait until digest is received (from NAKACK)
 
     /** Sends a STABLE gossip every 20 seconds on average. 0 disables gossipping of STABLE messages */
@@ -50,9 +50,9 @@ public class STABLE extends Protocol {
      * small number (> 0 !) if <code>max_bytes</code> is used */
     long                stability_delay=6000;
     StabilitySendTask   stability_task=null;
-    Object              stability_mutex=new Object(); // to synchronize on stability_task
+    final Object              stability_mutex=new Object(); // to synchronize on stability_task
     StableTask          stable_task=null;             // bcasts periodic STABLE message (added to timer below)
-    Object              stable_task_mutex=new Object(); // to sync on stable_task
+    final Object              stable_task_mutex=new Object(); // to sync on stable_task
     TimeScheduler       timer=null;                   // to send periodic STABLE msgs (and STABILITY messages)
     int                 max_gossip_runs=3;            // max. number of times the StableTask runs before terminating
     int                 num_gossip_runs=max_gossip_runs; // this number is decremented (max_gossip_runs doesn't change)

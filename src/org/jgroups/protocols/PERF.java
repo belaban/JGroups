@@ -1,4 +1,4 @@
-// $Id: PERF.java,v 1.6 2004/07/05 14:17:15 belaban Exp $
+// $Id: PERF.java,v 1.7 2004/09/23 16:29:42 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -29,11 +29,11 @@ import java.util.Vector;
  * all trace output to the given file.
  * </ol>
  * @author Bela Ban Oct 2001
- * @version $Revision: 1.6 $
+ * @version $Revision: 1.7 $
  */
 public class PERF extends Protocol {
     boolean              details=false;
-    Vector               members=new Vector();
+    final Vector               members=new Vector();
     Vector               protocols=null;
     static final String  name="PERF";
 
@@ -199,7 +199,7 @@ public class PERF extends Protocol {
    Observes a protocol and adds its timings to the PerfHeader attached to each protocol.
  */
 class PerfObserver implements ProtocolObserver {
-    String   prot_name;
+    final String   prot_name;
     boolean  bottom=false;
 
     PerfObserver(String prot_name) {

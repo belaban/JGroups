@@ -1,4 +1,4 @@
-// $Id: ProtocolData.java,v 1.5 2004/07/05 05:43:51 belaban Exp $
+// $Id: ProtocolData.java,v 1.6 2004/09/23 16:29:14 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -12,10 +12,10 @@ import java.util.HashMap;
 import java.util.Iterator;
 
 public class ProtocolData {
-    private HashMap mParameters=new HashMap();
-    private String mProtocolName;
-    private String mDescription;
-    private String mClassName;
+    private final HashMap mParameters=new HashMap();
+    private final String mProtocolName;
+    private final String mDescription;
+    private final String mClassName;
     private boolean mIsOverRide=false;
 
     public ProtocolData(String protocolName,

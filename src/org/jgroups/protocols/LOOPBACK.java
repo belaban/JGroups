@@ -1,4 +1,4 @@
-// $Id: LOOPBACK.java,v 1.8 2004/07/05 14:17:15 belaban Exp $
+// $Id: LOOPBACK.java,v 1.9 2004/09/23 16:29:41 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -20,7 +20,7 @@ import java.util.Vector;
 public class LOOPBACK extends Protocol {
     private Address local_addr=null;
     private String group_addr=null;
-    private Vector members=new Vector();
+    private final Vector members=new Vector();
 
 
     public LOOPBACK() {

@@ -1,4 +1,4 @@
-// $Id: NBMessageForm1_4.java,v 1.1 2003/12/21 03:47:56 akbollu Exp $
+// $Id: NBMessageForm1_4.java,v 1.2 2004/09/23 16:29:11 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -15,7 +15,7 @@ public class NBMessageForm1_4
 	ByteBuffer headerBuffer = null;
 	ByteBuffer dataBuffer = null;
 	static final int HEADER_SIZE = 4;
-	boolean isComplete = false;
+	final boolean isComplete = false;
 	int messageSize = 0;
 	boolean w_in_p = false;
 	SocketChannel channel = null;

@@ -1,4 +1,4 @@
-// $Id: DistributedTreeDemo.java,v 1.5 2004/07/05 05:45:31 belaban Exp $
+// $Id: DistributedTreeDemo.java,v 1.6 2004/09/23 16:29:35 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -167,10 +167,10 @@ public class DistributedTreeDemo extends Frame implements WindowListener,
 							  TreeSelectionListener, TableModelListener {
     DefaultTreeModel         tree_model=null;
     JTree                    jtree=null;
-    DefaultTableModel        table_model=new DefaultTableModel();
-    JTable                   table=new JTable(table_model);
+    final DefaultTableModel        table_model=new DefaultTableModel();
+    final JTable                   table=new JTable(table_model);
     JScrollPane              scroll_pane=null;
-    MyNode                   root=new MyNode("/");
+    final MyNode                   root=new MyNode("/");
     DistributedTree          dt=null;
     String                   props=null;
     String                   selected_node=null;

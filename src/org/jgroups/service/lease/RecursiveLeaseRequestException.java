@@ -7,7 +7,7 @@ package org.jgroups.service.lease;
  */
 public class RecursiveLeaseRequestException extends LeaseDeniedException {
     
-    protected Object tenant;
+    protected final Object tenant;
 
     public RecursiveLeaseRequestException(Object leaseTarget, Object tenant) {
         super(leaseTarget);

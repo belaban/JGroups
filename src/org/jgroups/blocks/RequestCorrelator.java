@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.14 2004/09/22 10:34:08 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.15 2004/09/23 16:29:11 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -42,7 +42,7 @@ public class RequestCorrelator {
     protected Object transport=null;
 
     /** The table of pending requests (keys=Long (request IDs), values=<tt>RequestEntry</tt>) */
-    protected HashMap requests=new HashMap();
+    protected final HashMap requests=new HashMap();
 
     /** The handler for the incoming requests. It is called from inside the
      * dispatcher thread */
@@ -75,7 +75,7 @@ public class RequestCorrelator {
      * This field is used only if deadlock detection is enabled.
      * It sets the calling stack for to that for the currently running request
      */
-    protected CallStackSetter call_stack_setter=null;
+    protected final CallStackSetter call_stack_setter=null;
 
     /** Process items on the queue concurrently (Scheduler). The default is to wait until the processing of an item
      * has completed before fetching the next item from the queue. Note that setting this to true
@@ -266,7 +266,7 @@ public class RequestCorrelator {
                 java.util.Stack new_call_stack = (call_stack != null?
                                                   (java.util.Stack)call_stack.clone():new java.util.Stack());
                 new_call_stack.push(local_addr);
-                hdr.call_stack=new_call_stack;
+                hdr.callStack=new_call_stack;
             }
             addEntry(hdr.id, new RequestEntry(coll));
         }
@@ -447,10 +447,10 @@ public class RequestCorrelator {
         }
 
         hdr=(Header)tmpHdr;
-        if(hdr.name == null || !hdr.name.equals(name)) {
+        if(hdr.corrName == null || !hdr.corrName.equals(name)) {
             if(log.isDebugEnabled()) {
                 log.debug("name of request correlator header (" +
-                        hdr.name + ") is different from ours (" + name + "). Msg not accepted, passed up");
+                        hdr.corrName + ") is different from ours (" + name + "). Msg not accepted, passed up");
             }
             return (true);
         }
@@ -496,7 +496,7 @@ public class RequestCorrelator {
                     }
 
                     Request req=new Request(msg);
-                    stack=hdr.call_stack;
+                    stack=hdr.callStack;
                     if(hdr.rsp_expected && stack != null && local_addr != null) {
                         if(stack.contains(local_addr)) {
                             scheduler.addPrio(req);
@@ -712,10 +712,10 @@ public class RequestCorrelator {
         /** msg is synchronous if true */
         public boolean rsp_expected=true;
         /** The unique name of the associated <tt>RequestCorrelator</tt> */
-        public String name=null;
+        public String corrName=null;
 
         /** Contains senders (e.g. P --> Q --> R) */
-        public java.util.Stack call_stack=null;
+        public java.util.Stack callStack=null;
 
         /** Contains a list of members who should receive the request (others will drop). Ignored if null */
         public java.util.List dest_mbrs=null;
@@ -738,14 +738,14 @@ public class RequestCorrelator {
             this.type         = type;
             this.id           = id;
             this.rsp_expected = rsp_expected;
-            this.name         = name;
+            this.corrName         = name;
         }
 
         /**
          */
         public String toString() {
             StringBuffer ret=new StringBuffer();
-            ret.append("[Header: name=" + name + ", type=");
+            ret.append("[Header: name=" + corrName + ", type=");
             ret.append(type == REQ ? "REQ" : type == RSP ? "RSP" : "<unknown>");
             ret.append(", id=" + id);
             ret.append(", rsp_expected=" + rsp_expected + ']');
@@ -762,14 +762,14 @@ public class RequestCorrelator {
             out.writeInt(type);
             out.writeLong(id);
             out.writeBoolean(rsp_expected);
-            if(name != null) {
+            if(corrName != null) {
                 out.writeBoolean(true);
-                out.writeUTF(name);                
+                out.writeUTF(corrName);
             }
             else {
                 out.writeBoolean(false);
             }
-            out.writeObject(call_stack);
+            out.writeObject(callStack);
             out.writeObject(dest_mbrs);
         }
 
@@ -783,8 +783,8 @@ public class RequestCorrelator {
             id           = in.readLong();
             rsp_expected = in.readBoolean();
             if(in.readBoolean())
-                name         = in.readUTF();
-            call_stack   = (java.util.Stack)in.readObject();
+                corrName         = in.readUTF();
+            callStack   = (java.util.Stack)in.readObject();
             dest_mbrs=(java.util.List)in.readObject();
         }
     }
@@ -827,7 +827,7 @@ public class RequestCorrelator {
             if(hdr.rsp_expected == false)
                 return;
 
-            new_stack=hdr.call_stack;
+            new_stack=hdr.callStack;
             if(new_stack != null)
                 call_stack=(java.util.Stack)new_stack.clone();
         }
@@ -839,7 +839,7 @@ public class RequestCorrelator {
      * dispatcher
      */
     private class Request implements Runnable {
-        public Message req;
+        public final Message req;
 
         public Request(Message req) { this.req=req; }
         public void run() { handleRequest(req); }

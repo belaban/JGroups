@@ -1,4 +1,4 @@
-// $Id: DistributedHashtableDemo.java,v 1.5 2004/09/22 10:34:10 belaban Exp $
+// $Id: DistributedHashtableDemo.java,v 1.6 2004/09/23 16:29:35 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -34,13 +34,17 @@ public class DistributedHashtableDemo extends Frame implements WindowListener, A
                                           DistributedHashtable.Notification {
     static final String          groupname="HashDemo";
     DistributedHashtable  h=null;
-    JButton               get=new JButton("Get"), set=new JButton("Set");
-    JButton               quit=new JButton("Quit"), get_all=new JButton("All");
-    JButton               delete=new JButton("Delete");
-    JLabel                stock=new JLabel("Key"), value=new JLabel("Value");
-    JLabel                err_msg=new JLabel("Error");
-    JTextField            stock_field=new JTextField(), value_field=new JTextField();
-    java.awt.List         listbox=new java.awt.List();
+    final JButton               get=new JButton("Get");
+    final JButton set=new JButton("Set");
+    final JButton               quit=new JButton("Quit");
+    final JButton get_all=new JButton("All");
+    final JButton               delete=new JButton("Delete");
+    final JLabel                stock=new JLabel("Key");
+    final JLabel value=new JLabel("Value");
+    final JLabel                err_msg=new JLabel("Error");
+    final JTextField            stock_field=new JTextField();
+    final JTextField value_field=new JTextField();
+    final java.awt.List         listbox=new java.awt.List();
     final Font            default_font=new Font("Helvetica", Font.PLAIN,12);
 
 

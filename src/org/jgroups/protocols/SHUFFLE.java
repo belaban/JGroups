@@ -20,7 +20,7 @@ import java.util.*;
 public class SHUFFLE extends Protocol implements Runnable {
 
     String       name="SHUFFLE";
-    List         messages;
+    final List         messages;
     Thread       messagesHandler;
 
     public SHUFFLE() {

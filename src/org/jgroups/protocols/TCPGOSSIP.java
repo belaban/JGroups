@@ -1,4 +1,4 @@
-// $Id: TCPGOSSIP.java,v 1.8 2004/09/22 10:34:11 belaban Exp $
+// $Id: TCPGOSSIP.java,v 1.9 2004/09/23 16:29:42 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -28,10 +28,11 @@ import java.util.Vector;
  * @author Bela Ban
  */
 public class TCPGOSSIP extends Protocol {
-    Vector members=new Vector(), initial_members=new Vector();
+    final Vector members=new Vector();
+    final Vector initial_members=new Vector();
     Address local_addr=null;
     String group_addr=null;
-    String groupname=null;
+    final String groupname=null;
     long timeout=3000;
     long num_initial_members=2;
     Vector initial_hosts=null;  // (list of IpAddresses) hosts to be contacted for the initial membership

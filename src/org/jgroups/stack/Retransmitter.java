@@ -1,4 +1,4 @@
-// $Id: Retransmitter.java,v 1.5 2004/09/15 17:41:00 belaban Exp $
+// $Id: Retransmitter.java,v 1.6 2004/09/23 16:29:53 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -26,7 +26,7 @@ import java.util.ListIterator;
  *
  * @author John Giorgiadis
  * @author Bela Ban
- * @version $Revision: 1.5 $
+ * @version $Revision: 1.6 $
  */
 public class Retransmitter {
 
@@ -37,7 +37,7 @@ public class Retransmitter {
     private static final long SUSPEND_TIMEOUT=2000;
 
     private Address           sender=null;
-    private LinkedList        msgs=new LinkedList();
+    private final LinkedList        msgs=new LinkedList();
     private RetransmitCommand cmd=null;
     private boolean           retransmitter_owned;
     private TimeScheduler     retransmitter=null;
@@ -221,7 +221,7 @@ public class Retransmitter {
      * The retransmit task executed by the scheduler in regular intervals
      */
     private static abstract class Task implements TimeScheduler.Task {
-        private Interval intervals;
+        private final Interval intervals;
         private boolean cancelled;
 
         protected Task(long[] intervals) {
@@ -257,7 +257,7 @@ public class Retransmitter {
     private class Entry extends Task {
         public long low;
         public long high;
-        public java.util.List list;
+        public final java.util.List list;
 
         public Entry(long low, long high, long[] intervals) {
             super(intervals);

@@ -1,4 +1,4 @@
-// $Id: Link.java,v 1.4 2004/09/22 10:34:08 belaban Exp $
+// $Id: Link.java,v 1.5 2004/09/23 16:29:11 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -41,13 +41,13 @@ public class Link implements Runnable {
     boolean                stop=false;
     boolean                trace=false;
     Thread                 receiver_thread=null;
-    long                   receiver_thread_join_timeout=2000;
+    final long                   receiver_thread_join_timeout=2000;
     Receiver               receiver=null;
     static final int              HB_PACKET=-99;
     Heartbeat              hb=null;
     long                   timeout=10000;  // if no heartbeat was received for timeout msecs, assume peer is dead
     long                   hb_interval=3000;        // send a heartbeat every n msecs
-    Object                 outgoing_mutex=new Object();  // sync on creation and closing of outgoing socket
+    final Object                 outgoing_mutex=new Object();  // sync on creation and closing of outgoing socket
     TimedWriter            writer=null;
 
 
@@ -451,7 +451,7 @@ public class Link implements Runnable {
 	boolean      stop_hb=false;
 	long         last_hb=System.currentTimeMillis();
 	boolean      missed_hb=false;
-	TimedWriter  writer=new TimedWriter();
+	final TimedWriter  writer=new TimedWriter();
 
 
 

@@ -1,4 +1,4 @@
-// $Id: MERGE.java,v 1.5 2004/07/05 14:17:15 belaban Exp $
+// $Id: MERGE.java,v 1.6 2004/09/23 16:29:41 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -30,7 +30,7 @@ public class MERGE extends Protocol implements Runnable {
     Vector members=new Vector();
     Address local_addr=null;
     String group_addr=null;
-    String groupname=null;
+    final String groupname=null;
     Thread hello_thread=null;       // thread that periodically mcasts HELLO messages
     long timeout=5000;            // timeout between mcasting of HELLO messages
 
