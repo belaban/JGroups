@@ -4,6 +4,8 @@ import java.net.ServerSocket;
 import java.net.DatagramSocket;
 import java.net.MulticastSocket;
 import java.util.List;
+import java.util.HashMap;
+import java.util.ArrayList;
 
 
 
@@ -33,6 +35,8 @@ public class UdpTester {
     DatagramSocket send_sock;
     int num_members;
 
+    /** List<Address> . Contains member addresses */
+    List members=new ArrayList();
 
     public UdpTester(MulticastSocket recv_sock, DatagramSocket send_sock, boolean snd, int num_msgs,
                      int msg_size, int num_members, int ns, long log_interval) {
@@ -47,9 +51,19 @@ public class UdpTester {
     }
 
     public void initialize() {
+
+        waitUntilAllMembersHaveJoined();
+
         new ReceiverThread(recv_sock, num_msgs, msg_size, num_senders, log_interval).start();
         if(sender) {
             new SenderThread(send_sock, num_msgs, msg_size, log_interval).start();
         }
     }
+
+    void waitUntilAllMembersHaveJoined() {
+
+    }
+
+
+
 }
