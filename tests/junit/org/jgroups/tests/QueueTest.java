@@ -1,4 +1,4 @@
-// $Id: QueueTest.java,v 1.7 2003/09/24 18:15:52 belaban Exp $
+// $Id: QueueTest.java,v 1.8 2003/09/24 22:59:06 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -267,96 +267,96 @@ public class QueueTest extends TestCase {
     }
 
 
-    public void testWaitUntilEmpty() {
-        try {
-            queue.add("one");
-            queue.add("two");
-            queue.add("three");
-
-            new Thread() {
-                public void run() {
-                    try {
-                        sleep(1000);
-                        queue.remove();
-                        queue.remove();
-                        queue.remove();
-                    }
-                    catch(Exception e) {
-                    }
-                }
-            }.start();
-
-            queue.waitUntilEmpty(0);
-            assertEquals(queue.size(), 0);
-        }
-        catch(Exception e) {
-            e.printStackTrace();
-            fail(e.toString());
-        }
-    }
-
-    public void testWaitUntilEmpty2() {
-        try {
-            queue.add("one");
-            queue.add("two");
-            queue.add("three");
-
-            new Thread() {
-                public void run() {
-                    try {
-                        sleep(1000);
-                        queue.remove();
-                        queue.remove();
-                    }
-                    catch(Exception e) {
-                    }
-                }
-            }.start();
-
-            queue.waitUntilEmpty(3000);
-            fail("shouldn't get here; we should have caught a TimeoutException");
-        }
-        catch(TimeoutException timeout) {
-            assertTrue(true);
-        }
-        catch(Exception e) {
-            e.printStackTrace();
-            fail(e.toString());
-        }
-    }
-
-
-    public void testWaitUntilQueueClosed() {
-         try {
-            queue.add("one");
-            queue.add("two");
-            queue.add("three");
-
-            new Thread() {
-                public void run() {
-                    try {
-                        sleep(1000);
-                        queue.close(false);
-                    }
-                    catch(Exception e) {
-                    }
-                }
-            }.start();
-
-            queue.waitUntilEmpty(0);
-            fail("shouldn't get here; we should have caught a QueueClosedException");
-        }
-        catch(TimeoutException timeout) {
-            fail("we should not have gottem here");
-        }
-         catch(QueueClosedException ex2) {
-             assertTrue(true);
-         }
-        catch(Exception e) {
-             e.printStackTrace();
-             fail();
-        }
-    }
+//    public void testWaitUntilEmpty() {
+//        try {
+//            queue.add("one");
+//            queue.add("two");
+//            queue.add("three");
+//
+//            new Thread() {
+//                public void run() {
+//                    try {
+//                        sleep(1000);
+//                        queue.remove();
+//                        queue.remove();
+//                        queue.remove();
+//                    }
+//                    catch(Exception e) {
+//                    }
+//                }
+//            }.start();
+//
+//            queue.waitUntilEmpty(0);
+//            assertEquals(queue.size(), 0);
+//        }
+//        catch(Exception e) {
+//            e.printStackTrace();
+//            fail(e.toString());
+//        }
+//    }
+//
+//    public void testWaitUntilEmpty2() {
+//        try {
+//            queue.add("one");
+//            queue.add("two");
+//            queue.add("three");
+//
+//            new Thread() {
+//                public void run() {
+//                    try {
+//                        sleep(1000);
+//                        queue.remove();
+//                        queue.remove();
+//                    }
+//                    catch(Exception e) {
+//                    }
+//                }
+//            }.start();
+//
+//            queue.waitUntilEmpty(3000);
+//            fail("shouldn't get here; we should have caught a TimeoutException");
+//        }
+//        catch(TimeoutException timeout) {
+//            assertTrue(true);
+//        }
+//        catch(Exception e) {
+//            e.printStackTrace();
+//            fail(e.toString());
+//        }
+//    }
+//
+//
+//    public void testWaitUntilQueueClosed() {
+//         try {
+//            queue.add("one");
+//            queue.add("two");
+//            queue.add("three");
+//
+//            new Thread() {
+//                public void run() {
+//                    try {
+//                        sleep(1000);
+//                        queue.close(false);
+//                    }
+//                    catch(Exception e) {
+//                    }
+//                }
+//            }.start();
+//
+//            queue.waitUntilEmpty(0);
+//            fail("shouldn't get here; we should have caught a QueueClosedException");
+//        }
+//        catch(TimeoutException timeout) {
+//            fail("we should not have gottem here");
+//        }
+//         catch(QueueClosedException ex2) {
+//             assertTrue(true);
+//         }
+//        catch(Exception e) {
+//             e.printStackTrace();
+//             fail();
+//        }
+//    }
 
 
     /** Multiple threads call remove(), one threads then adds an element. Only 1 thread should actually terminate
