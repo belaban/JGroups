@@ -1,0 +1,7 @@
+build.properties
+configure.cache
+Makefile.include
+.project
+.classpath
+classes
+dist

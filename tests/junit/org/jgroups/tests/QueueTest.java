@@ -1,0 +1,481 @@
+// $Id: QueueTest.java,v 1.1 2003/09/09 01:24:13 belaban Exp $
+
+package org.jgroups.tests;
+
+
+import junit.framework.*;
+import org.jgroups.util.*;
+
+
+public class QueueTest extends TestCase {
+    private Queue queue=null;
+
+    public QueueTest(String Name_) {
+        super(Name_);
+    }
+
+    public void setUp() {
+        queue=new Queue();
+    }
+
+
+    public void tearDown() {
+        if(queue != null) {
+            queue.reset();
+            queue=null;
+        }
+    }
+
+
+    public void testQueue() {
+        try {
+            queue.add("Q1");
+            queue.add("Q2");
+            queue.add("Q3");
+
+            assertEquals("Q1", queue.peek());
+            assertEquals("Q1", queue.remove());
+
+            assertEquals("Q2", queue.peek());
+            assertEquals("Q2", queue.remove());
+
+            queue.addAtHead("Q4");
+            queue.add("Q5");
+            assertEquals("Q4", queue.peek());
+            assertEquals("Q4", queue.remove());
+
+            queue.close(true);
+
+            try {
+                queue.add("Q6");
+                assertTrue(false);
+            }
+            catch(org.jgroups.util.QueueClosedException qc) {
+                assertTrue(true);
+            }
+
+            int size=queue.size();
+            queue.removeElement("Q5");
+            assertTrue((size - 1) == queue.size());
+
+            assertEquals("Q3", queue.peek());
+            assertEquals("Q3", queue.remove());
+            assertTrue(queue.closed());
+            System.out.println("Everything is ok");
+        }
+        catch(Exception x) {
+            System.out.println(x);
+            assertTrue(false);
+        }
+    }
+
+
+    public void testLargeInsertion() {
+        String element="MyElement";
+        long start, stop;
+
+        try {
+            System.out.println("Inserting 100000 elements");
+            start=System.currentTimeMillis();
+            for(int i=0; i < 100000; i++)
+                queue.add(element);
+            stop=System.currentTimeMillis();
+            System.out.println("Took " + (stop - start) + " msecs");
+
+            System.out.println("Removing 100000 elements");
+            start=System.currentTimeMillis();
+            while(queue.size() > 0)
+                queue.remove();
+            stop=System.currentTimeMillis();
+            System.out.println("Took " + (stop - start) + " msecs");
+        }
+        catch(Exception ex) {
+            System.err.println(ex);
+            assertTrue(false);
+        }
+    }
+
+
+    public void testEmptyQueue() {
+        assertNull(queue.getFirst());
+        assertNull(queue.getLast());
+        assertEquals(queue.getFirst(), queue.getLast()); // both are null; they're equal
+    }
+
+    public void testInsertionAndRemoval() throws Exception {
+        String s1="Q1", s2="Q2";
+
+        queue.add(s1);
+        assertTrue(queue.getFirst() != null);
+        assertTrue(queue.getLast() != null);
+        assertEquals(queue.getFirst(), queue.getLast());
+
+        queue.add(s2);
+        assertTrue(queue.getFirst() != queue.getLast());
+
+        Object o1=queue.peek();
+        Object o2=queue.getFirst();
+
+        System.out.println("o1=" + o1 + ", o2=" + o2 + ", o1 == o2=" + o1 == o2 + ", o1.equals(o2)=" + o1.equals(o2));
+
+        assertEquals(queue.peek(), queue.getFirst());
+        queue.remove();
+
+        assertTrue(queue.size() == 1);
+        assertEquals(queue.getFirst(), queue.getLast());
+        queue.remove();
+
+        assertTrue(queue.size() == 0);
+        assertTrue(queue.getFirst() == null);
+        assertTrue(queue.getLast() == null);
+    }
+
+
+    public void testRemoveElementNoElement() {
+        String s1="Q1";
+
+        try {
+            queue.removeElement(s1);
+            assertTrue(queue.closed() == false);
+            assertTrue(queue.size() == 0);
+        }
+        catch(QueueClosedException ex) {
+            fail(ex.toString());
+        }
+    }
+
+
+    public void testRemoveElementOneElement() {
+        String s1="Q1";
+
+        try {
+            queue.add(s1);
+            queue.removeElement(s1);
+            assertTrue(queue.size() == 0);
+            assertTrue(queue.getFirst() == null);
+            assertTrue(queue.getLast() == null);
+        }
+        catch(QueueClosedException ex) {
+            fail(ex.toString());
+        }
+    }
+
+    public void testRemoveElementTwoElementsFirstFound() {
+        String s1="Q1", s2="Q2";
+
+        try {
+            queue.add(s1);
+            queue.add(s2);
+            queue.removeElement(s1);
+            assertTrue(queue.size() == 1);
+            assertEquals(queue.getFirst(), s2);
+            assertEquals(queue.getLast(), s2);
+            assertEquals(queue.getFirst(), queue.getLast());
+        }
+        catch(QueueClosedException ex) {
+            fail(ex.toString());
+        }
+    }
+
+    public void testRemoveElementTwoElementsSecondFound() {
+        String s1="Q1", s2="Q2";
+
+        try {
+            queue.add(s1);
+            queue.add(s2);
+            queue.removeElement(s2);
+            assertTrue(queue.size() == 1);
+            assertEquals(queue.getFirst(), s1);
+            assertEquals(queue.getLast(), s1);
+            assertEquals(queue.getFirst(), queue.getLast());
+        }
+        catch(QueueClosedException ex) {
+            fail(ex.toString());
+        }
+    }
+
+    public void testRemoveElementThreeElementsFirstFound() {
+        String s1="Q1", s2="Q2", s3="Q3";
+
+        try {
+            queue.add(s1);
+            queue.add(s2);
+            queue.add(s3);
+            queue.removeElement(s1);
+            assertTrue(queue.size() == 2);
+            assertEquals(queue.getFirst(), s2);
+            assertEquals(queue.getLast(), s3);
+        }
+        catch(QueueClosedException ex) {
+            fail(ex.toString());
+        }
+    }
+
+    public void testRemoveElementThreeElementsSecondFound() {
+        String s1="Q1", s2="Q2", s3="Q3";
+
+        try {
+            queue.add(s1);
+            queue.add(s2);
+            queue.add(s3);
+            queue.removeElement(s2);
+            assertTrue(queue.size() == 2);
+            assertEquals(queue.getFirst(), s1);
+            assertEquals(queue.getLast(), s3);
+        }
+        catch(QueueClosedException ex) {
+            fail(ex.toString());
+        }
+    }
+
+    public void testRemoveElementThreeElementsThirdFound() {
+        String s1="Q1", s2="Q2", s3="Q3";
+
+        try {
+            queue.add(s1);
+            queue.add(s2);
+            queue.add(s3);
+            queue.removeElement(s3);
+            assertTrue(queue.size() == 2);
+            assertEquals(queue.getFirst(), s1);
+            assertEquals(queue.getLast(), s2);
+        }
+        catch(QueueClosedException ex) {
+            fail(ex.toString());
+        }
+    }
+
+
+    public void testRemoveAndClose() {
+        try {
+
+            new Thread() {
+                public void run() {
+                    Util.sleep(1000);
+                    queue.close(true); // close gracefully
+                }
+            }.start();
+
+            queue.remove();
+            fail("we should not be able to remove an object from a closed queue");
+        }
+        catch(QueueClosedException ex) {
+            assertTrue(ex instanceof QueueClosedException); // of course, stupid comparison...
+        }
+    }
+
+
+    /** Multiple threads call remove(), one threads then adds an element. Only 1 thread should actually terminate
+     * (the one that has the element) */
+    public void testBarrier() {
+        RemoveOneItem[] removers=new RemoveOneItem[10];
+        int num_dead=0;
+
+        for(int i=0; i < removers.length; i++) {
+            removers[i]=new RemoveOneItem(i);
+            removers[i].start();
+        }
+
+        Util.sleep(1000);
+
+        System.out.println("-- adding element 99");
+        try {
+            queue.add(new Long(99));
+        }
+        catch(Exception ex) {
+            System.err.println(ex);
+        }
+
+        Util.sleep(5000);
+        System.out.println("-- adding element 100");
+        try {
+            queue.add(new Long(100));
+        }
+        catch(Exception ex) {
+            System.err.println(ex);
+        }
+
+        Util.sleep(1000);
+
+        for(int i=0; i < removers.length; i++) {
+            System.out.println("remover #" + i + " is " + (removers[i].isAlive() ? "alive" : "terminated"));
+            if(!removers[i].isAlive()) {
+                num_dead++;
+            }
+        }
+
+        assertEquals(num_dead, 2);
+    }
+
+
+    /** Has multiple threads add(), remove() and peek() elements to/from the queue */
+    public void testConcurrentAccess() {
+        final int NUM_THREADS=10;
+        final int INTERVAL=20000;
+
+        Writer[] writers=new Writer[NUM_THREADS];
+        Reader[] readers=new Reader[NUM_THREADS];
+        int[] writes=new int[NUM_THREADS];
+        int[] reads=new int[NUM_THREADS];
+        long total_reads=0, total_writes=0;
+
+
+        for(int i=0; i < writers.length; i++) {
+            readers[i]=new Reader(i, reads);
+            readers[i].start();
+            writers[i]=new Writer(i, writes);
+            writers[i].start();
+        }
+
+        Util.sleep(INTERVAL);
+
+        System.out.println("current queue size=" + queue.size());
+
+        for(int i=0; i < writers.length; i++) {
+            writers[i].stopThread();
+        }
+
+        for(int i=0; i < readers.length; i++) {
+            readers[i].stopThread();
+        }
+
+        queue.close(false); // will cause all threads still blocking on peek() to return
+
+        System.out.println("current queue size=" + queue.size());
+
+        for(int i=0; i < writers.length; i++) {
+            try {
+                writers[i].join(300);
+                readers[i].join(300);
+            }
+            catch(Exception ex) {
+                System.err.println(ex);
+            }
+        }
+
+
+        for(int i=0; i < writes.length; i++) {
+            System.out.println("Thread #" + i + ": " + writes[i] + " writes, " + reads[i] + " reads");
+            total_writes+=writes[i];
+            total_reads+=reads[i];
+        }
+        System.out.println("total writes=" + total_writes + ", total_reads=" + total_reads +
+                ", diff=" + Math.abs(total_writes - total_reads));
+    }
+
+
+    class RemoveOneItem extends Thread {
+        Long retval=null;
+        int rank=0;
+
+
+        RemoveOneItem(int rank) {
+            super("RemoveOneItem thread #" + rank);
+            this.rank=rank;
+            setDaemon(true);
+        }
+
+        public void run() {
+            try {
+                retval=(Long)queue.remove();
+                System.out.println("Thread #" + rank + " removed element (" + retval + ")");
+            }
+            catch(QueueClosedException closed) {
+                System.err.println("Thread #" + rank + ": queue was closed");
+            }
+        }
+
+        Long getRetval() {
+            return retval;
+        }
+    }
+
+
+    class Writer extends Thread {
+        int rank=0;
+        int num_writes=0;
+        boolean running=true;
+        int[] writes=null;
+
+        Writer(int i, int[] writes) {
+            super("WriterThread");
+            rank=i;
+            this.writes=writes;
+            setDaemon(true);
+        }
+
+
+        public void run() {
+            while(running) {
+                try {
+                    queue.add(new Long(System.currentTimeMillis()));
+                    num_writes++;
+                }
+                catch(QueueClosedException closed) {
+                    running=false;
+                }
+                catch(Throwable t) {
+                    System.err.println("QueueTest.Writer.run(): exception=" + t);
+                }
+            }
+            writes[rank]=num_writes;
+        }
+
+        void stopThread() {
+            running=false;
+        }
+    }
+
+
+    class Reader extends Thread {
+        int rank;
+        int num_reads=0;
+        int[] reads=null;
+        boolean running=true;
+
+
+        Reader(int i, int[] reads) {
+            super("ReaderThread");
+            rank=i;
+            this.reads=reads;
+            setDaemon(true);
+        }
+
+
+        public void run() {
+            Long el;
+
+            while(running) {
+                try {
+                    el=(Long)queue.remove();
+                    if(el == null) { // @remove
+                        System.out.println("QueueTest.Reader.run(): peek() returned null element. " +
+                                "queue.size()=" + queue.size() + ", queue.closed()=" + queue.closed());
+                    }
+                    assertNotNull(el);
+                    num_reads++;
+                }
+                catch(QueueClosedException closed) {
+                    running=false;
+                }
+                catch(Throwable t) {
+                    System.err.println("QueueTest.Reader.run(): exception=" + t);
+                }
+            }
+            reads[rank]=num_reads;
+        }
+
+
+        void stopThread() {
+            running=false;
+        }
+
+    }
+
+
+    public static void main(String[] args) {
+        String[] testCaseName={QueueTest.class.getName()};
+        junit.textui.TestRunner.main(testCaseName);
+    }
+
+}

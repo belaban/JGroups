@@ -1,0 +1,1647 @@
+
+
+			     History List
+			     ============
+
+Revision: $Id: history.txt,v 1.1 2003/09/09 01:24:04 belaban Exp $
+
+[For current version, see file Version.java (or invoke 'java JGroups.Version')]
+
+
+bba         = Bela Ban, bba@cs.cornell.edu
+bela        = Bela Ban, bela@nms.fnc.fujitsu.com
+i-scream    = Gianluca Collot, gianlucac@tin.it
+igeorg      = John Georgiadis, i.georgiadis@doc.ic.ac.uk
+jmenard     = Jim Menard (jimm@io.com)
+fhanik      = Filip Hanik (filip@filip.net)
+vlada       = Vladimir Blagojevic (vladimir@cs.yorku.ca)
+rrokytskyy  = Roman Rokytskyy (rrokytskyy@acm.org)
+akbollu     = Ananda Bollu (akbollu@users.sf.net)
+whizkid_bay = Mandar Shinde (whizkid_bay@users.sf.net)
+ovidiuf     = Ovidiu Feodorov (ovidiuf@users.sf.net)
+romuald     = Romuald du Song
+
+
+
+Version 2.2
+-----------
+
+- JavaGroups was renamed to JGroups. Package is now org.jgroups. The
+  final 2.1.1 version was tagged with the JG_FINAL_SEPT_8_2003 tag.
+  (bela Sept 8 2003)
+
+
+Version 2.1.1
+-------------
+
+- Added MERGEFAST protocol: really simple implementation of a merge protocol which allows for faster
+  merging. Coordinators attach info saying "I'm the coord", when other coords (this means we have a
+  partition) see it, a merge protocol is initiated right away
+  (bela Aug 25 2003)
+
+- Added additional_info handling for TCP (already present for UDP,
+  added in 2.0.6)
+  (bela Aug 4 2003)
+
+- Applied patches sent by Alfonso to replicated building blocks (only
+  send mcast when more than 1 member, else apply change directly
+  (bela Aug 1 2003)
+
+- Added adapttcp TCP-based tests
+  (bela July 25 2003)
+
+- Added properties override to JChannel: use -Dforce.properties=file:/myprops.xml to force a given
+  protocol stack spec to be used
+  (bela July 24 2003) 
+
+- Eliminated unneeded message copying in NakReceiverWindow.remove() when inserting delivered
+  message into delivered_msgs
+  (bela July 23 2003)
+
+- Fixed bug #775120 (channel not connected on first view)
+  (bela July 21 2003)
+
+- Applied patch (submitted by Darren Hobbs) for incorrect voting to
+  ClientGmsImpl (both pbcast and regular branch)
+  (bela July 15 2003)
+
+- Added performance tests created by Milan Prica (prica@deei.units.it) under
+  org.jgroups.tests.adapt
+  (bela July 12 2003)
+
+- Created
+  (bela July 12 2003)
+
+
+
+
+Version 2.1.0
+-------------
+
+- Created 2.1 distribution (CVS tag: JG_2_1)
+  (bela July 5 2003)
+
+- Added timeout latency value to FD, fixes annoying (but not incorrect) "missing first heartbeat"
+  problem
+  (bela on behalf of Bas Gooren June 27 2003)
+
+- Fixed bind_port problem in UDP
+  (bela on behalf of Bas Gooren June 27 2003)
+
+- Fixed deadlock (bug is #761804). Changes in RequestCorrelator.
+  (bela June 27 2003)
+
+- Change to pbcast.STABLE: max_bytes property allows for more aggressive message garbage collection.
+  It keeps track of the number of bytes received from everyone. When max_bytes is exceeded, a STABLE
+  message is multicast. This can be used in *addition* to, or instead of desired_avg_gossip.
+  (bela June 26 2003)
+
+- Moved pbcast.STABLE on top of UNICAST/NAKACK. The reason is that STABLE should be reliable (message
+  retransmission). STABLE now assumes NAKACK is *below* rather than above it. This required changes to
+  all default protocol spec XML files, plus hard-coded properties in demo programs.
+  (bela June 26 2003)
+
+- Created
+  (bela June 26 2003)
+
+
+Version 2.0.8
+-------------
+
+- First version of FC (flow control) protocol based on credit system. PerfTest works (no OutOfMemory exceptions),
+  but it needs to be faster
+  (bela June 25 2003)
+
+- On JChannel.open() a new ProtocolStack is created, previously the existing one was reused. This
+  caused multiple timers to be created on shun-reconnect
+  (bela June 12 2003)
+
+- CloserThread would not terminate in Draw demo. Fixed by running mainLoop() in separate thread
+  (bela June 12 2003)
+
+- On shun-reconnect, the ProtocolStack's timer was not restarted (start() was not called), therefore
+  FD would not restart its heartbeat. This fixes bug #753327.
+  (bela June 12 2003)
+
+- Added new building block: DistributedQueue. Added unit and stress tests as well.
+  (romuald June 4 2003)
+
+- Added diagnostics interface to query all members in a subnet using the same IP multicast address and
+  port (UDP). Use org.jgroups.tests.Probe to execute
+  (bela June 3 2003)
+
+- Fixed CONNECT_OK bug in TOTAL_TOKEN
+  (bela June 2 2003)
+
+- Added PerfTest
+  (bela May 27 2003)
+
+- FD: fixed problem when correct member was suspected, but didn't
+  receive VERIFY_SUSPECT ack. Caused that member not to be pinged
+  anymore. If the member crashed later on, the crash would not be
+  detected.
+  (bela May 16 2003)
+
+- JChannel: fixed bug in shun-reconnect sequence: channel_name was nulled,
+  therefore reconnect created a unicast channel. Now CloserThread
+  remembers the old channel_name and uses it to reconnect.
+  (bela May 15 2003)
+
+- Fixed constructors of ChannelException so that ChannelException.getMessage()
+  returns non-null value
+  (bela April 17 2003)
+
+- Added exceptions to 2 of the 4 constructors of DistributedHashtable
+  (bela April 17 2003)
+
+- Added up_thread_prio and down_thread_prio to Protocol. This allows users to set
+  thread priority for each thread (up,down) in a protocol.
+  (bela April 15 2003)
+
+- Added versioning to TCP. In addition to the cookie, we now also send the version. If the
+  cookie doesn't match we discard the message. If the versions don't match, we log a
+  warning message
+  (bela April 6 2003)
+
+- Added versioning to UDP. Message with different versions will be flagged (warning), but
+  not discarded. This change changes the wire format of message, so that previous versions
+  will not work with this version
+  (bela April 4 2003)
+
+
+Version 2.0.7
+-------------
+
+- Added serialVersionUID to MethodCall. Reason is that jikes and javac did not generate
+  the same serialVersionUID, causing problems between JGroups instances not compiled
+  with the same compiler. Currently MethodCall is the only instance where this problem
+  occurred. However, I didn't do exhaustive tests on this, there are probably more
+  instances. Since most users use the same codebase, this should not be a problem though.
+  (bela March 30 2003)
+
+- Added way of defining method via (a) class types (Class[] array) or
+  (b) signature (String[])
+- Modified RpcDispatcher and RpcProtocol to provide 2 new methods for each
+- Added RpcDispatcherSpeedTest
+  (bela March 30 2003)
+
+- Removed mcast_bind_addr again: I had thought 0.0.0.0 listens on *all* available
+  interfaces, but this is not true. The semantics are that the ANY address (0.0.0.0)
+  means that the first available interface is bound to.
+  We could have multiple mcast sockets, each on a different interface, joining the
+  same group though; this is possible.
+  (bela March 28 2003)
+
+- Added mcast_bind_addr parameter to UDP, by default multicast socket will
+  now listen on all interfaces (0.0.0.0 'any' address)
+- Send socket in UDP now doesn't take a bind_addr argument any longer;
+  by default the IP code will dynamically choose the interface based on the
+  destination address
+  (bela March 27 2003)
+
+- Fixed bug in connect() - disconnect() - connect() sequence. Only
+  occurred when reconnecting to a different channel name. Fixed by
+  resetting all channel state (JChanel.init()).
+  (bela March 21 2003)
+
+- Modified code for TCP/UDP: when a channel name is null, an outgoing
+  message will not have a header.
+  (bela March 20 2003)
+
+- Fixed bug which caused join() to fail (null address) on
+  Channel.close(), Channel.open(), Channel.connect() sequence.
+  (bela March 18 2003)
+
+- Added unicast capability for channels. The connect() method can now have a
+  null channel name, which will *not* invoke the JOIN protocol.
+- Added org.jgroups.tests.UnicastChannelTest
+  (bela March 16 2003)
+
+- Uncommented code in UDP.createSockets() which caused binding to all
+  interfaces (bind_addr == null). This caused incorrect addresses
+  (e.g. 0.0.0.0:1234), which were not identical across machines.
+  (bela March 13 2003)
+
+- Added patch by Roland Kurman. If a protocol stack has only 1
+  protocol, then the JChannel.connect() method will fail as the
+  connect_mutex will be notified before connect_mutex.wait(). Added
+  some vars to check for this case. Dito for disconnect().
+  (bela March 13 2003)
+
+- Added BSH protocol. Allows processing of Java code sent from a remote member.
+  Executes any Java code and sends back the result.
+  (bela March 8 2003)
+
+- Added beanshell (www.beanshell.org) JAR file
+  (bela March 8 2003)
+
+- Added optional ENCRYPT protocol (works with JDK1.4) using a 3rd
+  party provider. Jar and protocol file with ".xml" being added
+  on 03/06/2003.
+  (whizkid_bay Mandar Shinde)
+
+- Removed synchronized from RequestCorrelator.removeEntry(). Not
+  needed, and caused bug #690606
+  (bela Feb 28 2003)
+
+- Removed synchronized from GroupRequest.execute() (not needed as we
+  synchronized further down the code anyway)
+  (bela Feb 28 2003)
+
+- Replaced print statements with Trace calls in some of the WAN support
+  classes. Modified log4j Trace wrapper to report also the module the log
+  was generated for.
+  (ovidiuf Feb 19 2003)
+
+- Fixed a bug in TUNNEL that caused the clients and the Router to
+  deadlock under high-volume traffic.
+  (ovidiuf Feb 05 2003)
+
+- A custom name/path for the magic number file can be specified using
+  the property "org.jgroups.conf.magicNumberFile". Default is
+  "jg-magic-map.xml".
+  (ovidiuf Jan 30 2003)
+
+- Added contentsSet() and contentsCleared() callback to
+  DistributedHashtable Notification interface
+  (bela Jan 30 2003)
+
+- pbcast.NAKACK will not remove header when handling retransmitted message.
+  Otherwise further retransmit requests would have failed
+  (bela Jan 29 2003)
+
+- Removed unused casts
+  (bela Jan 28 2003)
+
+
+
+
+
+
+
+Version 2.0.6
+-------------
+
+- Added FLOW_CONTROL protocol to throttle sender when receivers are
+  lagging behind.
+  (Ananda Jan 20 2003)
+
+- Added ChannelClosedException and ChannelNotConnectedException to
+  Channel.getState() and Channel.getStates()
+  (bela Jan 20 2003)
+
+- Various fixes related to the connect-disconnect-connect sequence:
+  TUNNEL sends a null local address up the stack when disconnected,
+  GossipClient provides a new timer and also cleans up the groups map
+  when stopped, pbcast.NACKACK cleans up the NakReceiverWindows when
+  disconnected and resets the seqno.
+  (ovidiuf Jan 16 2003)
+
+- Added capability to stuff additional data into an IpAddress. Use the CONFIG event to
+  do this *after* channel creation but *before* connecting.
+  IpAddress.getAdditionalData()/setAdditionalData() can be used to manage that data.
+  This is useful e.g. when we want logical addresses rather than IpAddresses
+  (bela Jan 14 2003)
+
+- Updated concurrent.jar to version 1.3.2
+  (bela Jan 14 2003)
+
+- UDP: when multicasting a message, if loopback=true, we loopback a
+  copy directly up the stack (but still multicast it). Once we then
+  receive our own multicast, we discard it. This is supposed to solve
+  some problems with Windows media sensing and disabling of interfaces
+  (bela Jan 9 2003)
+
+- TCPPING: automatically add self to initial_hosts lists if omitted
+  (bela Dec 26 2002)
+
+- Fixed bug in UNICAST/FRAG (causing merge protocol to fail
+  sometimes): whenever we initiate a merge, we have to send a unicast
+  message to a member not currently in the group. If we receive a view
+  or get a retransmit() before we get the new view, the members will
+  remove each other's connection table entry, and thus unicast
+  messages to the other side will fail.
+  We now use Util.determineLeftMembers() to correctly determine the
+  left members between 2 views, and remove only those.
+  (bela Dec 23 2002)
+
+- Channel.connect() will now throw an exception if the protocol stack
+  couldn't be initialized correctly (e.g. local address is null). Will
+  wait for LOCAL_ADDR_TIMEOUT ms until local_addr is non-null (can be
+  overridden by setting system property "local_addr.timeout").
+  (bela Dec 23 2002)
+
+- Implemented RpcDispatcher.callRemoteMethods() correctly: destination
+  list is now correctly observed (used to be ignored before)
+  (bela Dec 15 2002)
+
+- Added persistence manager (org.jgroups.persistence)
+  (whizkid_bay Dec 11 2002)
+
+- Replaced START/START_OK events with start()
+  Replaced STOP/STOP_OK and CLEANUP/CLEANUP_OK events with stop()
+  (see description of Protocol.java for details)
+  (bela Dec 10 2002)
+
+
+
+
+
+Version 2.0.5
+-------------
+
+- Added Proxy1_4 to org.jgroups.util
+  (bela Dec 5 2002)
+
+- Added concurrent.jar to lib directory
+  (bela Dec 4 2002)
+
+- Made (almost) all threads daemon threads
+  (bela Dec 2 2002)
+
+- Added first version of TransactionalHashtable (no functionality yet)
+  (bela Nov 24 2002)
+
+- Added ReplicationManager, ReplicationReceiver and Xid to
+  org.jgroups.blocks. This is the building block for transactional
+  cache
+  (bela Nov 20 2002)
+
+- Changed signature of state transfer in Channel (returnState()) and
+  MessageListener (getState(), setState()) from Object to
+  byte[]. Reason: classloader issues, some clients need to do the
+  serialization themselves (e.g. in different classloaders)
+  (bela Nov 15 2002)
+
+
+
+
+Version 2.0.4
+-------------
+
+
+- Fixed problem with client joining and immediately calling
+  getState(): now pbcast.GMS immediately sends a TMP_VIEW so correct
+  digest will be returned to client. This only happened when client's
+  GET_STATE request reached coordinator *before* coord received its
+  own VIEW_CHANGE multicast
+  (bela Oct 28 2002)
+
+- DistributedHashtable: moved MethodCall creation from remote method
+  invocation (once/call !) to instance level (once/instance)
+  (bela Oct 17 2002)
+
+- Made TOTAL.Header public (needed by externalization)
+  (bela Oct 15 2002)
+
+- Made serialization of UdpHeader more efficient
+  (bela Oct 11 2002)
+
+- Moved connection reaper from Connection to ConnectionTable
+  (bela Oct 10 2002)
+
+- Added log4j-1.2.6.jar
+  (bela Sept 24 2002)
+
+- Version 2.0.4 created
+  (bela Sept 21 2002)
+
+
+
+
+Version 2.0.3
+-------------
+
+- Version 2.0.3 released
+  (bela Sept 21 2002)
+
+- Fixed bug in Queue which caused dangling tail on removeElement()
+  (bela Sept 20 2002)
+
+- Added adapter from Trace to log4j ($JG_ROOT/log4j)
+  (bela Sept 17 2002)
+
+- Fixed problem with hangs in RpcDispatcher.callRemoteMethods(): seems
+  that Scheduler's thread pool of 10 was maxed out, causing hangs to
+  to missing responses. Increased thread pool to 128.
+  (bela Sept 16 2002)
+
+- Added connection reaping in ConnectionTable/TCP. Use of properties
+  reaper_interval and conn_expire_time determines the reap times.
+  (bela Sept 16 2002)
+
+- Removed SUSPECT events from TCP when ConnectionTable closes
+  connection. Added FD to tcp.xml instead
+  (bela Sept 15 2002)
+
+- Made MessageDispatcher ride on top of PullPushAdapter in addition to
+  Channel
+  (bela Sept 13 2002)
+
+- Version 2.0.3 created Aug 27 2002
+  (bela Aug 27 2002)
+
+- Upgraded Xerces jars from 2.0.0 to 2.1.0
+  (bela Aug 31 2002)
+
+
+
+Version 2.0.2
+-------------
+
+- Version 2.0.2 released Aug 26 2002
+  (bela Aug 26 2002)
+
+- Fixed bug in AckMcastSenderWindow/NAKACK: whenever we did a
+  rebroadcastMessages(), and one of the members crashed in the
+  meantime, the call waited forever. This was especially the case when
+  we received a SUSPECT *before* the waitUntilAcksReceived() was
+  called. Fix: we maintain a bounded list of suspects and - when there
+  is a retransmit request to a member who is in that list - we remove
+  that member from the retransmission table, causing
+  waitUntilAcksReceived() to return. Additionally, one could set
+  rebroadcast_timeout, so that waitUntilAcksReceived() always returns
+  after some bounded time
+  (bela Aug 22 2002)
+
+- Fixed bug in SMACK (retransmission to dead member did not stop) and
+  reduced number of JGroups-related threads from 9 to 4 in
+  smack.xml.
+  (bela Aug 22 2002)
+
+- Fixed ClassCastException bug in PERF
+  (bela Aug 22 2002)
+
+- Added SMACK, FD_SIMPLE and smack.xml. SMACK (= Simple Multicast ACK
+  protocol) allows for membership-less reliable (positive)
+  acknowledgment-based multicasting
+  (bela Aug 21 2002)
+
+- Added VotingAdapter, TwoPhaseVotingAdapter as simple distributed
+  agreement building blocks; LockManager interface and DistributedLockManager
+  that uses TwoPhaseVotingAdapter to acquire and release locks.
+  (rrokytskyy Aug 18 2002)
+
+- Modified GroupRequest to use Transport instead of
+  RequestCorrelator. Added test program GroupRequestPull
+  (bela Aug 16 2002)
+
+- Fixed bug in FD: num_tries was incremented twice in the same loop
+  (bela Aug 15 2002)
+
+- Fixed UDP.sendDummyPacket()
+  (bela Aug 15 2002)
+
+- Added capability to register multiple MessageListeners with
+  PullPushAdapter
+  (bela Aug 13 2002)
+
+- Added org.jgroups.tests.McastDiscovery1_4
+  (bela Aug 1 2002)
+
+- Added disable_initial_coord property to both GMS and pbcast.GMS:
+  when set to true, new members will not become coordinators on empty
+  initial membership, but rather retry fetching the membership. Is set
+  to false by default
+  (bela Aug 1 2002)
+
+
+
+
+Version 2.0.1
+-------------
+
+- Added unit tests to build.xml and fixed all unit test cases
+  ( bela July 19 2002)
+
+- Fixed bug in FD which caused no SHUN message to be sent
+  (bela June 25)
+
+- AckSenderWindow now is able to send messages itself, used by sliding
+  window protocol (if enabled)
+  (bela June 4 2002)
+
+- Removed Trace from TimeScheduler (caused significant delays in
+  task execution times)
+  (bela June 3 2002)
+
+- Added sliding window to AckSenderWindow (used in UNICAST)
+  (bela June 1 2002)
+
+- Replaced retransmission thread in AckSenderWindow with Retransmitter
+  (also used by NakReceiverWindow)
+  (bela May 29 2002)
+
+- AckReceiverWindow and AckSenderWindow: replaced TreeSets with
+  HasMaps. More efficient insertion of and access to elements
+  (bela May 28 2002)
+
+- New version of UnicastTest: measures performance of sending unicast
+  messages from a sender to a receiver
+  (bela May 26 2002)
+
+- References of messages are now stored instead of copies (see
+  protocols/DESIGN for details)
+  (bela May 26 2002)
+
+- Added AUTOCONF protocol: automatically configure network buffer
+  and fragmentation sizes
+  (bela May 14 2002)
+
+- Added handling of null values to Marshaller
+  (bela May 3 2002)
+
+- Added bare-bones.xml for protocol stack consisting only of UDP and UNICAST
+  (bela May 2 2002)
+
+- Added use_packet_handler property to UDP
+  (bela April 26 2002)
+
+- Converted headers from Stack to HashMap
+  (bela March 31 2002)
+
+- Modifications to xmit algorithm in pbcast.NAKACK: large messages are
+  now avoided
+  (bela March 20 2002)
+
+- Added JMS protocol and jms.jar (required)
+  (rrokytskyy March 20 2002)
+
+- Removed buggy loopback code from UNICAST and moved (correct) code to
+  UDP. If 'loopback' is true in UDP, messages sent to self are not put
+  on the network, but redirected up the stack immediately.
+  (bela Feb 27 2002)
+
+- Added new version of JUnit JAR file. Replaced all occurrences of
+  assert() with assertTrue(). 'assert' is a keyword in JDK 1.4 and
+  cannot be used any longer.
+  (bela Feb 13 2001)
+
+
+Version 2.0
+-----------
+
+- Added ReplicatedTree and ReplicatedTreeDemo
+  (bela Feb 10 2002)
+
+- Added SpeedTest
+  (bela Feb 2002)
+
+- Modified UDP to allow connect() followed by disconnect().
+  (bela Dec 23 2001)
+
+- Added BLOCK_SEND and UNBLOCK_SEND events: JChannel.send() will block
+  after BLOCK_SEND and unblock after UNBLOCK_SEND event. Used by flow
+  control protocols
+  (bela Dec 18 2001)
+
+- Fixed bug in Scheduler which caused the 491327 bug (hang)
+  (bela Dec 14 2001)
+
+- Fixed bug in pbcast.NAKACK which caused large state transfers to
+  fail
+  (bela Dec 13 2001)
+
+- Checked initial version of JGroups 2.0 into the CVS
+  (bela Dec 12 2001)
+
+- Removed Timer and TimerTask (supported from JDK 1.3)
+  (bela Dec 7 2001)
+
+- Moved to new directory structure
+- Adoption of SUN naming conventions (e.g. lowercase package names,
+  method names starting with lowercase letter etc)
+  (bela Dec 4 2001)
+
+
+
+Version 1.0.1
+-------------
+
+- Added CAUSAL protocol
+  (vlada Nov 16 2001)
+
+- Added DeadlockTest
+  (igeorg Nov 15 2001)
+
+
+
+
+
+Version 1.0
+-----------
+
+- Updated some of the demos
+  (bela Nov 1 2001)
+
+- Fixed bug in pbcast.NAKACK: seqnos are not reset to 0 on
+  SetDigest. This caused a sender to start at 0 after a SetDigest(),
+  e.g. sender was at 10 and got a digest. Its next 10 messages would
+  be discarded (already seen)
+  (bela Nov 1 2001)
+
+- FD_SOCK: fixed bug where lost SUSPECT can screw up membership. Now
+  SUSPECT messages are transmitted reliably (retransmission if
+  lost). Also removed Thread.interrupt() on thread that reads from
+  InputStream (did not work correctly on some platforms, e.g. Windows
+  and Linux JDK 1.3.1)
+  (bela Oct 30 2001)
+
+- Modified Draw demo: background is now correctly repainted (using
+  double-buffering)
+  (bela Oct 30 2001)
+
+- Added magic cookie for connection sends/receives in
+  ConnectionTable. Telnetting to the same port as the one the CT
+  listens on will not have an effect, telnet will be closed by CT
+  (bela Oct 26 2001)
+
+- Removed potential deadlock between synchronized Send() and Receive()
+  in ConnectionTable
+  (bela Oct 26 2001)
+
+- Fixed bug in ConnectionTable. Caused connection termination by
+  Windows peers not to be detected.
+  (bela Oct 26 2001)
+
+- Preliminary version of merge protocol to
+  pbcast.GMS/pbcast.CoordGmsImpl. Used with MERGE2 protocol.
+  (bela Oct 25 2001)
+
+- Fixed properties for Draw demo (see todo.lst)
+  (bela Oct 24 2001)
+
+- Added -no_channel flag to Draw demo. If set, Draw doesn't use a
+  channel. Can be used to see whether the drawing works, independent
+  of JGroups.
+  (bela Oct 22 2001)
+
+- Replaced {ViewId,Vector} in pbcast.GMS with View
+  (bela Oct 22 2001)
+
+- Ported Draw to Swing. Still has a redraw problem, because we don't
+  call super.paintComponent() to preserve points. Possible solution:
+  keep all pixels in an array, update the array on reception of
+  DrawCommand and just draw the array in paintComponent()
+  (bela Oct 17 2001)
+
+- Added MERGE2 protocol. To be used in conjunction with pbcast/GMS
+  (bela Oct 17 2001)
+
+- Fixed bug in JGroups.JavaStack.Protocols.pbcast.NakAckHeader
+  which caused externalization to be incorrect
+  (bela Oct 12 2001)
+
+- Fixed bug in FD_SOCK under Linux JDK 1.3.1 (used to work under JDK
+  1.2.2): pinger thread could not be interrupted using
+  Thread.interrupt(). Now (only if Linux) the ping socker is closed to
+  interrupt the thread. Test whether Thread.interrupt() works to
+  interrupt thread during InputStream.read() is
+  JGroups.Tests.InterruptTest.
+  Addition: this bug is known by SUN (4344135) and currently occurs
+  only in the Linux JDKs 1.3.0 - 1.3.1. Should be fixed soon. Once
+  this is done, we can revert to interrupt() only. This is better
+  because it doesn't cause a SUSPECT event to be generated from
+  closing the peer socket. This event will be discarded by
+  VERIFY_SUSPECT, but it is still additional work. Also, if
+  VERIFY_SUSPECT is missing we are in trouble.
+  (bela Oct 10 2001)
+
+- Removed is_linux from UDP.java
+  (bela Oct 10 2001)
+
+- Added GossipServer, GossipClient. There used to be a GossipServer up
+  to version 0.9.4, but was subsequently merged with JRouter into
+  Router. The reason for putting it back is that we just want
+  gossiping functionality, not gossiping and routing functionality.
+  (bela Oct 4 2001)
+
+- Modified Common.Trace. Added a separate STDOUT/STDERR object for
+  each level. Previously we had one singleton STDOUT and STDERR
+  object. This caused multiple traces with different levels to
+  overwrite each other's levels, e.g.
+     default_output=WARN STDOUT
+     trace0=Foo        DEBUG STDOUT
+  would cause either WARN or DEBUG to be printed, but not both.
+  (bela Sept 27 2001)
+
+- Removed MessageProtocol.MessageProtocolHeader. Demux for msg/rpc traffic is
+  done now whether RequestCorrelator.Header is present in the msg.
+  (igeorg Aug 10 2001)
+
+- Modified pbcast.STABLE. Now stable task terminates after certain
+  idle time (see max_gossip_runs)
+  (bela Aug 3 2001)
+
+- Added SIZE layer, Measures the size of a message and prints it.
+  (bela June 15 2001)
+
+- Added Tests/Ping.java. Discovers initial members on any group
+  (bela June 12 2001)
+
+- Removed initial_mbrs_timeout from GMS. Now, we wait until
+  FIND_INITIAL_MBRS returns (needs PING)
+  (bela June 12 2001)
+
+- Added FD_SOCK protocol
+  (bela May 28 2001)
+
+- Modified ConnectionTable to use 1 TCP connection instead of 2
+  between peers
+  (bela May 14 2001)
+
+- Modified FD to use TimeScheduler instead of own thread
+  (bela May 11 2001)
+
+- Integrated changes made by igeorg to AckMcastSenderWindow and
+  NakReceiverWindow. Modified pbcast.NAKACK to provide TimeScheduler
+  to *Window classes
+  (bela/igeorg May 9 2001)
+
+- Added FLOWCONTROL layer
+  (i-scream May 9 2001)
+
+- Removed ProtocolStack.Timer (use ProtocolStack.TimeScheduler)
+  (bela May 8 2001)
+
+- Removed SortedList: replaced with java.util.TreeSet
+  (affected classes: AckSenderWindow and AckReceiverWindow)
+  (bela May 8 2001)
+
+
+
+Version 0.9.9.9.1
+-----------------
+
+- Fixed severe bug in NAKACK
+  (bela May 11 2001)
+
+
+Version 0.9.9.9
+---------------
+
+- Changed if(trace) to if(Trace.trace)
+  (bela May 4 2001)
+
+- Added setting of receive and send buffer sizes for sockets in
+  UDP. This has an effect on FRAG (see DESIGN for explanation)
+  (bela April 24 2001)
+
+- Made Address and Header Externalizable (changes to all subclasses of Header)
+  (bela April 17 2001)
+
+- Moved TOTAL.java --> TOTAL_OLD.java and TOTAL_JOHN.java --> TOTAL.java
+- Added ./Tests/FragTest: uses ProtocolTester to test FRAG
+  (bela April 13 2001)
+
+- Added bind_addr and bind_port properties to UDP
+  (bela April 6 2001)
+
+- Modified NotificationBus: uses ucast to coordinator to fetch state
+  instead of mcasting and then processing responses from each member
+  (bela April 5 2001)
+
+- Moved NotificationInfo --> NotificationBus.Info
+  (bela April 5 2001)
+
+- Reduced traffic generated by FD_PID. A new member used to mcast its
+  query for PIDs and every member replied with its add:pid. Now, a new
+  member asks the coordinator for the cache, updates its own cache and
+  then mcasts its addr:pid, so other members can update their caches.
+  (bela April 5 2001)
+
+- Fixed ClientGmsImpl.DetermineCoord(): now a majority is needed to
+  determine the coordinator from the responses. This would join a new
+  member to the majority group in case of a split group (e.g. caused
+  by a network partition)
+  (bela April 4 2001)
+
+- Added fix for "Last Message Dropped" bug in pbcast/STABLE and
+  pbcast/NAKACK (see pbcast/DESIGN for details)
+  (bela April 3 2001)
+
+- Added Tests/DigestTest
+  (bela April 3 2001)
+
+- Added SetTrace() to Protocol. Allows a developer to dynamically turn
+  tracing on/off in a running protocol stack
+  (bela March 30 2001)
+
+- Removed Util.ShortName(). IpAddress now by default prints short
+  form. More efficient and avoids a lot of string creation.
+  (bela March 29 2001)
+
+- Modified Protocol.java: no the up_thread=<boolean> and
+  down_thread=<boolean> can turn the up/down thread handler on/off
+  (bela March 27 2001)
+
+- Added pbcast/STABLE.java. Slight modification of regular STABLE
+  protocol, makes it more efficient for local groups
+  (bela March 26 2001)
+
+- Added JavaStack/ProtocolTester.java
+  (bela March 23 2001)
+
+- Added pbcast/NAKACK protocol. This is similar to the regular NAKACK,
+  but doesn't include FLUSH with resetting of sequence numbers. Upon
+  joining, a new member will get the highest seqnos of all members
+  (from the coordinator) and set its NakReceiverWindows accordingly.
+  (bela March 23 2001)
+
+- Modified pbcast GMS protocols: removed RpcProtocol. All GMS
+  protocols now extend Protocol instead of RpcProtocol. This should
+  make parallel startups of members faster
+  (bela March 20 2001)
+
+- Added ANT based build system
+  (fhanik March 20 2001)
+
+- Modified FD_PID (fixed bug in membership adjustment when most
+  members die)
+  (bela March 15 2001)
+
+- Added Trace.init(): read tracing properties from file
+  (bela March 9 2001)
+
+- Added FD_PID: uses process IDs to monitor for process
+  failure. For purely local groups.
+
+
+
+
+
+Version 0.9.9.8
+---------------
+
+- Added FD_PID protocol. Failure detection based on process ids. Works
+  only for local groups (all members are on the same host), and only
+  on /proc based systems (e.g. Linux, Solaris)
+  (bela March 2 2001)
+
+- Fixed bug in PBCAST where singleton members did not garbage-collect
+  their messages
+  (bela Feb 15 2001)
+
+- Added bounded buffer to PBCAST: now PBCAST-related messages (like
+  gossips, etc (not multicast msgs !)) will be discarded if buffer is
+  full. This is not a problem since gossips in later rounds can make
+  up for the loss of previous gossips.
+
+- Added simple FD protocol in ./pbcast. Requires PBCAST
+  (bela Feb 14 2001)
+
+- Fixed problems where multiple members (including coordinator) crash
+  simultaneously (fixed in ./Protocols/ParticipantGmsImpl.java and
+  ./Protocols/pbcast/ParticipantGmsImpl.java)
+- Added probabilistic failure detection protocol (FD_PROB.java)
+- Added VERIFY_SUSPECT protocol. Verifies SUSPECT messages generated
+  by the FD layer before passing it on to the GMS layer. Does this by
+  attempting to contact suspected member. If attempt is successful,
+  event is discarded, otherwise (a timeout occurs), event is passed up
+  the stack.
+  (bela Feb 13 2001)
+
+- Added new Header class: all headers have to extend this class and
+  implement Size(). Replaced all occurrences of AddHeader(),
+  PeekHeader() and RemoveHeader().
+- Added additional Send() method to Channel, JChannel and EnsChannel
+- Changed addresses: now we have an Address interface and the old
+  JGroups.JavaStack.Address is now IpAddress
+  (bela Feb 9 2001)
+
+- Added Trace module in ./Common
+  (jmenard Feb 9 2001)
+
+- Added unit testing using JInit (./Tests)
+  (bela Feb 8 2001)
+
+- Added FD_SHUN protocol. Failure detection with shunning of members
+  that are pinging but not in group
+  (bela Feb 8 2001)
+
+- Fixed bug which prevented UNICAST to work over TCP
+  (bela Feb 7 2001)
+
+- Added merging capability to GMS (not yet to pbcast.GMS)
+- Added ViewID control to FD
+- Correct a bug on STABLE
+- GMS now reverts to Client on leave
+- Removed interface JGroups.Comparable, substituted with java.lang.Comparable
+  (i-scream Feb 6 2001)
+
+
+
+
+
+
+Version 0.9.9.7
+---------------
+
+- TOTAL protocol added (TOTAL_JOHN)
+  (John Georgiadis Feb 7 2001)
+
+- Changes for partition-aware stack. Added simple merging protocol
+  (Gianluca Collot Feb 7 2001)
+
+- Suspected members now leave a group voluntarily. Re-join may be
+  automated by setting option Channel.AUTO_RECONNECT and possibly
+  AUTO_GETSTATE.
+
+- Removed Header, new headers are just serializable objects that will
+  be attached to a Message. This does not require code changes, but
+  existing code using Header must be rewritten (tiny change). If a
+  header implements interface Sizeable, FRAG will be able to figure
+  out exactly how many bytes a message is (needed to decide whether to
+  fragment or not). If Sizeable is not supported, a (preconfigured)
+  estimated size will be taken.
+
+
+
+
+
+Version 0.9.9.6
+---------------
+
+- Modified UDP and TCP to give performance numbers for PERF
+  (Bela Feb 5 2001)
+
+- Added PERF protocol (including PerfHeader): measure the performance
+  of messages separately fro each protocol layer. Just add PERF on top
+  of an existing stack (topmost protocol) and set trace=true.
+- Fixed bugs in NakReceiverWindow (caused PERF to lose some of the
+  performance numbers)
+
+- Added LOOPBACK protocol. Can be used as bottom protocol. Simply
+  swaps sender and receiver address and sends message back up the
+  stack.
+
+- Implemented exit and reconnect mechanism (pbcast/GMS, FD and
+  JChannel). Modified FD to shun members from whom we receive a ping,
+  but which are not members of the group anymore. This allows e.g. to
+  CTRL-Z a member and later, after member was excluded, do a 'fg'. The
+  member will reconnect to the group
+  (bela Jan 31 2001)
+
+- Added Open() to Channel: allows to reuse the same channel (re-connection)
+  (bela Jan 30 2000)
+
+- Renamed ConnectionPool to ConnectionTable
+
+- TCP: don't send messages with dst == local_addr, but redirect to
+  local queue
+
+- NotificationBus: accept local messages
+
+
+
+
+
+Version 0.9.9.5
+---------------
+
+- Added ./Demos/PartitionerTest, ./Demos/PartitionerTestFrame
+- Added PARTITIONER protocol
+  (Gianluca Collot <gianlucac@tin.it> Dec 12 2000)
+
+
+Version 0.9.9.4
+---------------
+
+- Repackaged all demos: they are now in the JavaGroups.Demos package
+- Removed deadlock detection in pbcast.GMS (not needed, as there are
+  no receursive synchronous calls)
+- Fixed bug in ReusableThread: now threads are released correctly
+- Converted Thread.stop() in all files
+- Fixed bug in Scheduler.java: added interrupt() to Stop(). We cannot
+  just use queue.Close(), because the sched_thread might be in a
+  different portion of the code (namely
+  current_task.thread.wait()). Therefore we have to interrupt it as
+  well to make sure it actually goes on to check its state (and
+  whether it should terminate)
+  (bela Dec 10 2000)
+
+
+Version 0.9.9.3
+---------------
+
+- Added pbcast.GMS: GMS protocol without FLUSH
+- Added pbcast.PBCAST protocol, implements Bimodal Multicast (Probabilistic Broadcast)
+- Added STATE_TRANSFER protocol for PBCAST
+  (bela Nov 29 2000)
+
+- FD.java: removed FdHeaders from regular messages
+
+
+Version 0.9.9.2
+---------------
+
+- Removed iBus
+  (bela Nov 27 2000)
+
+
+Version 0.9.9.1
+---------------
+
+- Added DistributedTree building block
+  (bela Sept 12 2000)
+
+- Added DistributedTreeDemo
+  (bela Sept 12 2000)
+
+
+Version 0.9.9
+-------------
+
+- Added LogicalLink, Link and WANPIPE classes. Theses can be used
+  as bottom layer to have a TCP-based interconnect between 2
+  machines. LogicalLink provides a logical WAN pipe, bundling multiple
+  physical links into one. As long as 1 physical link is up, the
+  logical link is up as well.
+  (bela June 29 2000)
+
+- Fixed bug in TCP/ConnectionTable: connections to failed members were
+  still in the connection table, causing further requests to new
+  incarnations on the same address to fail. Fix is two-fold: first
+  'double-writes' are used to detect when peers have closed their side
+  of the connection and second, before we write to a peer, we check
+  whether it is in the group. If not, we close the socket to it and
+  re-open it. This is double-dutch, but I want to be on the safe
+  side.
+  (bela July 3 2000)
+
+- Link/LogicalLink work now.
+  (bela July 7 2000)
+
+- Added Debugger (./Debug). Provided hooks in Protocol.java to
+  interact with Debugger.
+  (bela July 22 2000)
+
+- Modified Link: added interface for missing heartbeats and
+  re-detecting them. Parameterized timeout and timeout_interval for
+  each Link: AddLink() of LogicalLink. Also made initial socket
+  connection *timed*: if an interface (local or remote machine) is
+  down, we won't hang, but just continue, mark the interface as down
+  and periodically try to create a connection to it.
+  (bela July 25 2000)
+
+
+
+Version 0.9.8
+-------------
+
+- Fixed memory leak in ConnectionPool. Replaced
+  readObject()/writeObject() on socket by write(byte)/read(byte[]).
+
+
+Version 0.9.7
+-------------
+
+- Added support for TCP as protocol (files TCP.java and TCPPING.java
+  in .JavaStack/Protocols directory).
+  (bela June 16 2000)
+
+- Added class ConnectionPool (./JavaStack directory). Takes care of
+  establishing and tearing down TCP connections on demand.
+  (bela June 16 2000)
+
+
+
+Version 0.9.6
+-------------
+
+- Modified some file to compile under JDK 1.2.2 (name collision with
+  List)
+  (bba Feb 9 2000)
+
+
+
+Version 0.9.5
+-------------
+
+- Modified tunneling (files TUNNEL, PING, Router, RouterStub):
+  GossipServer and JRouter are now merged into one:
+  Router. GossipClient was replaced by RouterStub. Both PING and
+  TUNNEL can now access the Router on the same port. Removed files
+  JRouter, GossipClient.
+  (bba Dec 10 1999)
+
+- Fixed bug in Router: when a client reconnects under the same addr,
+  but a different socket, we need to use the new address to send out
+  messages (but the client still stays registered under its old
+  address) (bba Dec 12 1999)
+
+- Moved UdpHeader class out of UDP.java (will also be used by Router)
+  (bba Dec 16 1999)
+
+
+
+Version 0.9.4
+-------------
+
+- UNICAST: view change cannot remove all non-members: it may be the
+  case that 2 new members P and Q want to join the group, P is
+  admitted and Q has sent its JOIN request (causing a unicast
+  connection to be created in UNICAST). Now the view change for P is
+  sent, this removes the connections for those processes that are not
+  members in the view (Q isn't yet official member). Therefore
+  connections must be removed upon reception of SUSPECT rather than
+  VIEW_CHANGE.
+  (bba Dec 8 1999)
+
+- Modified UNICAST: retransmit thread (AckSender window) has to be
+  killed when STOP event is received. (bba Dec 8 1999)
+
+
+
+
+Version 0.9.3
+-------------
+
+- New version of STABLE, based on GRPCs. Makes use of existing seqno
+  information in NAKACK (using event GET_MSGS_RECEIVED)
+  (bba Nov 19 1999)
+
+- Renamed RpcGMS -> GMS
+
+- Added SortedList (bba Nov 23 1999)
+
+- Fixed bug in AckSenderWindow(): addition of new message to empty
+  window did not check seqno, nor wake up retransmission thread
+  (bba Nov 29 1999)
+
+- Replaced SortedList.AddAscending(): more efficient version
+  (bba Nov 29 1999)
+
+- Modified AckSenderWindow (uses SortedList now)
+  (bba Nov 29 1999)
+
+- Modified demo apps: UNICAST layer has to be *above*
+  NAKACK. Otherwise, NAKs and ACKs of the NAKACK layer are reliable
+  too (causing way to many msgs, e.g. acking of ACKs themselves) !
+  (bba Nov 30 1999)
+
+- Removed PT2PT protocol layer, Pt2ptFsm, Pt2ptHeader: replaced by
+  UNICAST layer (bba Nov 30 1999)
+
+- Set deadlock detection default to true (in RequestCorrelator)
+  (bba Dec 1 1999)
+
+- Resending of unstable messages in NAKACK (REBROADCAST_MSGS): now an
+  additional header (WRAPPED_MSG) is added which contains the same
+  seqno as the original message, but also a field 'sender' to which
+  the ACK has to be sent. This is so because the original sender of
+  the message may be different from the coordinator who re-broadcasts
+  the message. If ACKs were not sent to the re-broadcaster but
+  instead to the original sender (who may have crashed), the
+  coordinator would wait indefinitely for all ACKs.
+  (bba Dec 2 1999)
+
+- FLUSH protocol: when soliciting unstable message, so far only the
+  highest seqnos for received message were returned. Now, each sender
+  returns the highest seqno it sent, which may be higher than
+  received. This ensures that no messages are missing when
+  re-broadcasting the message digest as part of the FLUSH.
+  (bba Dec 3 1999)
+
+
+
+
+
+
+
+Version 0.9.2
+-------------
+
+- Modified STABLE's defaults: gossip has to be sent much less often;
+  now gossip is sent every 100 msgs or 10 secs (which ever comes first).
+
+- Modifications in FLUSH/NAKACK/RpcGMS: the flush protocol now does
+  not return all unstable messages (as determined by the STABLE
+  protocol), but just those that are determined by consensus (fewer
+  messages have to be re-broadcast). The advantage is that STABLE does
+  not need to emit STABLE events frequently. See file FLUSH.java for details.
+  (bba Nov 17 1999)
+
+
+Version 0.9.1
+-------------
+ (bba Nov 13 1999)
+- Removed several superfluous fields from Message (e.g. id, rsp_id, oneway)
+- Modified FRAG.java (depended on Message.GetId())
+- Modified FragmentBuffer/DefragmentBuffer in Util.java
+
+
+Version 0.9
+-----------
+
+- Adapted demos (bba Nov 12 1999)
+- Removed the following classes:
+    - Dispatcher
+    - ChannelEntry
+    - MethodInvoker
+    - RemoteMethodCall
+    - LazyEvaluator
+    - RepeatedUnicast
+    - SyncCall
+    - MessageCorrelator
+    - Command, AndCommand, OrCommand
+    - Conf
+    - SlidingWindow
+    - Subject
+    - Observer
+    - Timer
+    - MNAK, GMS, GmsImpl
+
+  Therefore this version will break existing code that is based on
+  these classes ! Either use a previous version, or rewrite the code
+  using the new classes (e.g. RpcDispatcher for Dispatcher)
+
+- Added ChannelListener (bba Nov 5 1999)
+
+
+
+
+Version 0.8.6
+-------------
+
+- Modified LEAVE protocol: leaving member has to wait until it has
+  received all messages of the current view before it may
+  leave. Otherwise it may receive fewer messages in its last view than
+  the other members, which would violate virtual synchrony.
+
+
+
+Version 0.8.5
+-------------
+
+- Increased priority of drawing (receiver) thread in demo programs
+  ./Demo/Draw.java, ./Demo/DrawIpMcast.java and
+  ./Demo/DrawIpMcastX.java. The drawing thread seemed to starve on
+  heavy drawing.
+
+- Replaced implementation of Queue: the old version was based on
+  Vector, which scale badly when used as FIFO queues; removal/addition
+  of element causes all remaining elements to shift. New version uses
+  linked list.
+
+- Implemented interface Externalizable in Message.java, Header.java:
+  huge performance improvement ! Header: in addition to the byte rep,
+  we also store object directly (caching). Thus, Message.PeekHeader()
+  does not always have to reconstruct an object from the byte rep !
+  (bba Sep 3 1999)
+
+- Implemented List and Stack: faster versions of their respective
+  java.util.* companions (not based on Vector).
+
+- Address.Compare(): now uses hashCode() between InetAddresses
+  instead of string form -> performance improvement
+
+- Modified NakAckWindow: replaced Vectors with Lists
+
+
+
+
+
+Version 0.8.4
+-------------
+
+- Modified NAKACK layer: GET_STABLE_MSGS not needed, STABLE layer sends
+  stability msgs periodically anyway
+  (bba Aug 13 1999)
+
+
+
+Version 0.8.3 Aug 13 1999 (bba)
+-------------------------------
+- Added MessageDispatcher: equivalent of MessageProtocol for
+  applications. This required changes to Channel/JChannel (UpHandler)
+
+- Added RpcDispatcher: equivalent of RpcProtocol for applications.
+
+
+Version 0.8.2 Aug 10 1999 (bba)
+-------------------------------
+
+- Modified GroupRequest: not only suspect messages can cause an RMC to
+  terminate, but also view changes (e.g. when an RMC is initiated
+  after a suspect event has been received, but before the view change
+  has been seen. Otherwise this would block forever).
+
+
+
+
+Version 0.8.1 July 05 1999 (bba)
+--------------------------------
+
+- Added VIEW_ENFORCER: drops all messages until the new member is
+  joined. Then acts as pass-through.
+
+
+
+
+Version 0.8.0 July 02 1999 (bba)
+--------------------------------
+
+- Modified View/ViewId: View now contains ViewdId, moved ViewId to
+  main directory
+
+
+
+
+Version 0.7.6 June 25 1999 (bba)
+--------------------------------
+
+- Added PIGGYBACK layer: combines multiple messages into a single
+  larger one
+- Modified STATE_TRANSFER layer: now target(s) of ST can be given
+  (modifications also in Channel, JChannel).
+
+
+Version 0.7.5 June 18 1999 (bba)
+--------------------------------
+
+- Work on RpcGMS and FLUSH layers
+- Added BLOCK processing to FLUSH
+
+
+
+Version 0.7.4 June 17 1999 (bba)
+--------------------------------
+
+- Modified Channel/JChannel to be able to receive Events (applications may
+  already send Events): this enables building blocks to communicate with
+  protocol layers via Events.
+
+- Modified NAKACK: ACK scheme independent from NAK, e.g. numbering of messages
+
+
+
+
+Version 0.7.3 June 14 1999 (bba)
+-------------------------------
+
+- First draft of FLUSH protocol
+- Added FD_RAND protocol layer: based on polling of randomly selected members
+
+
+
+
+Version 0.7.2 June 9 1999 (bba)
+-------------------------------
+
+- Modified NakReceiverWindow: now ranges (e.g. [4-8]) in
+  retransmissions are detected, this avoids having to send several
+  retr msgs. Instead just 1 msg is sent for each range.
+
+- Added AckMcastSenderWindow: used for lossless delivery to group
+  members in NAKACK (ACKer)
+
+
+
+
+Version 0.7.1 June 8 1999 (bba)
+-------------------------------
+
+- Modified several files to remove warnings from Jikes compiler
+  (pedantic flag activated)
+
+
+
+Version 0.7.0 May 27 1999 (bba)
+-------------------------------
+
+- Added total order protocol (TOTAL.java). Written by Manish Sambhu
+  (mms21@cornell.edu)
+
+
+
+Version 0.6.9 May 27 1999 (bba)
+-------------------------------
+
+- Created NAKACK protocol. NAK-based scheme that can be switched to
+  using ACKs on the fly (and back again). Uses 2 classes to do so.
+
+- Created NakReceiverWindow out of SlidingWindow (will be removed
+  soon), thread is now created only when needed (ther might be many
+  NakReceiverWindow instances !). Also, retransmitter thread does not
+  check age of message any more, just presence or absence.
+
+
+
+Version 0.6.8 May 20 1999 (bba)
+------------------------------
+
+- Modifications in RpcGMS: simpler join algorithm (client side /
+  coordinator side)
+
+
+
+Version 0.6.7 May 18 1999 (bba)
+------------------------------
+
+- Modified MethodLookupClos: better handling of primitive types
+- Renamed subdirectory 'Tests' -> 'Demos' and 'tests' -> 'Tests'
+
+
+
+Version 0.6.6 Apr 15 1999 (bba)
+------------------------------
+
+- Added classes Scheduler, ReusableThread, ThreadPool
+- Modified RequestCorrelator to use Scheduler. Now, RequestCorrelator
+  can be set to prioritize requests that would cause a deadlock.
+- Added DEADLOCK layer. Uses RequestCorrelator with deadlock detection
+  to enable 'recursive synchronous group RPCs'.
+
+
+
+Version 0.6.5 Apr 13 1999 (bba)
+------------------------------
+
+- Added requirements checking. Added 4 methods RequiredUpServices(),
+  RequiredDownServices(), ProvidedUpServices() and
+  ProvidedDownServices() to Protocol.java. Configurator now checks for
+  each protocol layer whether all its requirements on other layers are met.
+
+
+
+Version 0.6.4 Apr 12 1999 (bba)
+------------------------------
+
+- Modified MembershipListener: added methods for getting/setting state
+- Modified PullPushAdapter: dito
+- Added JGroups/Tests/TotalOrderPull.java demoing
+  PullPushAdapter-based state transfer
+
+
+Version 0.6.3 Apr 9 1999 (bba)
+------------------------------
+
+- Added DELAY protocol. Will delay all outgoing or incoming messages
+  by n milliseconds, where n can be determined by the user
+
+
+Version 0.6.2 Apr 9 1999 (bba)
+------------------------------
+
+- Bug fix in GossipServer
+- Changes to GossipClient: will only register when both local address
+  and group address are known
+
+
+
+Version 0.6.1 Apr 1 1999 (bba)
+------------------------------
+
+- Added state transfer interface to Channel; Channels stay
+  backwards-compatible to existing applications
+- Added protocol STATE_TRANSFER
+- Updated documentation: STATE_TRANSFER, Channel interface
+
+
+Version 0.6.0 Mar 12 1999 (bba)
+-------------------------------
+
+- Added MessageProtocol and RpcProtocol (subclasses of
+  Protocol). These can be used when peer communication between the
+  same layers in different stacks is required, e.g. for GMS. Both
+  subclasses implement synchronous group messages/method calls.
+
+- Created new GMS layer: RpcGMS, RpcCoordGmsImpl,
+  RpcParticipantGmsImpl and RpcClientGmsImpl. Uses state pattern
+  (client, coord, participant). Also makes use of RpcProtocol.
+
+- Modified PING: removed merge functionality. Added merge
+  functionality to separate layer (MERGE).
+
+- Created initial (simplistic) version of MERGE protocol. Only
+  discovers out-of-group members, and sends up MERGE event. MERGE is
+  not yet handled by RpcGMS.
+
+
+
+Version 0.5.9 Feb 26 1999 (bba)
+-------------------------------
+
+- Modified SUSPECT handling in GMS: when FD suspects a member, it
+  mcasts a SUSPECT message to all members. At each member, this will
+  generate a SUSPECT message, which is sent up the stack, starting
+  from the FD layer. The GMS layer then checks whether the coordinator
+  itself is suspected. If this is the case, the members are sorted and
+  a new coordinator is chosen deterministically by each member. The
+  new coordinator then mcasts a new view. If the coordinator itself is
+  not suspected, it removes the faulty member from its local view and
+  installs a new view. The modified algorithms removes 1 round of
+  multicasting plus a redundant check on who the coordinator is.
+
+
+
+Version 0.5.8 Feb 5 1999 (bba)
+------------------------------
+
+- Changed Ctor, Close, Connect and Disconnect in JChannel (only
+  implementation): when disconnecting, a channel is not supposed to
+  receive any more messages (this was the case). Also, a process has
+  to acquire a new local address when re-joining (this was not the
+  case).
+
+
+
+Version 0.5.7 Feb 1 1999 (bba)
+------------------------------
+
+- Added protocol UNI: uniform failure-atomic group mcast
+- Added protocol PING: get initial members and periodical sending of
+  i-am-alive message (used to overcome partitions)
+- Changed GMS/GmsImpl to make use of PING
+
+
+
+
+Version 0.5.6 Jan 19 1999 (bba)
+-------------------------------
+
+- Added ./Algorithms/GroupRequest, ./Algorithms/AndCommand
+- Added RequestCorrelator
+- Moved JavaStack/Event.java to ./Event.java. Internal channel
+  implementations use now Event instead of QueueItem (code reduction)
+
+
+
+
+Version 0.5.5 Jan 14 1999 (bba)
+-------------------------------
+
+- Renamed ./algorithms to ./Algorithms
+
+
+
+Version 0.5.4 Jan 13 1999 (bba)
+-------------------------------
+
+- Back to square 1: dropped unicast mode altogether, essentially back
+  to version 0.5.2 !
+
+
+
+Version 0.5.3 Jan 4 1999 (bba)
+-------------------------------
+
+- Changed unicast interface. Renamed Connect() to Join() and
+  Disconnect() to Leave().
+- A channel is now operational for unicast messages after the
+  Channel() constructor has been called. Only when Join() is called
+  will it be able to send/receive group messages.
+- The changes to the interfaces/classes require application programs
+  usingt version 0.5.2 to be modified and recompiled.
+
+
+
+Version 0.5.2 Dec 29 1998 (bba)
+-------------------------------
+
+- Modifications in the event sequence when creating a channel and when
+  connecting to it (START, STARYT_OK, CONNECT, CONNECT_OK, DISCONNECT,
+  DISCONNECT_OK, STOP, STOP_OK)
+- Got rid of LowLevelCommunication interface
+- Local address is set by SET_LOCAL_ADDRESS (sent up by lowest layer)
+- Peer address is set by CONNECT(peer_addr)
+
+
+
+Version 0.5.1 Dec 22 1998 (bba)
+--------------------------------
+
+- Fairly extensive changes to the Channel interface: changed
+  ChannelFactory, Connect() and Receive(). Receive() now returns
+  Objects rather than Message. These might be Messages, Views or
+  Blocks. Channel is now pure pull-oriented. Removed Cast() and
+  several Send() methods.
+
+
+
+Version 0.5 Dec 21 1998 (bba)
+-----------------------------
+
+- Added new protocol PT2PT: TCP-like reliable point to point connection
+- Changed Channel interface: separation of channel creation, Connect(),
+  removal of Destroy() -> existing programs will need to be modified
+  to use the new classes
+
+- The changes to the interfaces/classes require application programs
+  written for version 0.4 to be modified and recompiled.
+
+
+
+Version 0.4 Dec 10 1998 (bba)
+-----------------------------
+
+- Added several new protocols (MACK, MNAK)
+- Fixed IP MCAST bug (UDP.java)
+- Fixed gossip bug (UDP.java)
+
+
+Version 0.3 Oct 1998
+--------------------
+
+- First version (0.3) released (bba)

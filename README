@@ -1,0 +1,84 @@
+// $Id: README,v 1.1 2003/09/09 01:24:04 belaban Exp $
+
+
+
+       JavaGroups - A Framework for Group Communication in Java
+       ========================================================
+
+			    March 3, 1998
+
+			       Bela Ban
+			   4114 Upson Hall
+			  Cornell University
+			   Ithaca, NY 14853
+			  bba@cs.cornell.edu
+		       bela@nms.fnc.fujitsu.com
+
+
+JavaGroups is a Java package for reliable group communication. It
+consists of 3 parts: (1) a socket-like API for application
+development, (2) a protocol stack, which implements reliable
+communication, and (3) a set of building blocks, which give the
+application/protocol programmer high-level abstractions
+(e.g. DistributedHashtable, derived from java.util.Hashtable, which is
+similar to Linda/JavaSpaces).
+
+The API (a channel) looks like a socket: there a methods for joining
+and leaving groups, sending and receiving messages to/from members,
+getting the shared group state, and registering for notifications when
+a member joins, or an existing member leaves or crashes.
+
+The protocol stack is a linked list of protocols, through which each
+message has to be passed. Each protocol implements an Up() and Down()
+method, and may modify, reorder, encrypt, fragment/unfragment, drop a
+message, or pass it up/down unchanged. The protocol stack is created
+according to a specification given when a channel is created. New
+protocols can be plugged into the stack easily.
+
+Building blocks hide the channel and provide a higher
+abstraction. Example: DistributedHashtable is a subclass of
+java.util.Hashtable and overrides all methods that change the
+hashtable (clear, put, remove). Those methods are invoked on all
+hashtables in the same group simultaneously, so that all hashtables
+have the same state. A new hashtable uses a state transfer protocol to
+initially obtain the shared group state from an existing member. This
+enables replication of data structures across process boundaries.
+
+
+
+Group communication is important the following situations:
+
+ - A service has to be replicated for availability. As long as at
+   least one of the servers remains operational, the service itself
+   remains operational
+
+ - Service requests have to be balanced between a set of servers
+
+ - A large number of objects have to be managed as one entity (e.g. a
+   management domain)
+
+ - Notification service / push technology: receivers subscribe to a
+   channel, senders send data to the channels, channels distribute
+   data to all receivers subscribed to the channel (see iBus, CastaNet
+   etc.).  Used for example for video distribution, videoconferencing
+	
+	
+JavaGroups deliberately models a rather low-level message-oriented
+middleware (MOM) model. The reason is that we don't want to impose a
+one-size-fits-all model on the programmer, who usually will want to
+extend the model in various (previously unconceived) ways anyway.
+
+Providing low level Java classes allows the programmer to
+extend/replace classes at will, as the granularity of the system is
+finer.
+
+JavaGroups can also be used for the construction of higher level
+toolkits/frameworks. Such frameworks should provide a certain
+transparency, without, however, preventing extensions to be made. The
+principle of creating partly 'opened-up' black boxes is called Open
+Implementation (OI, http://www.parc.xerox.com/spl/projects/oi/) and
+will be applied both to JavaGroups and to a further higher level
+toolkit.
+
+
+

@@ -1,0 +1,83 @@
+<chapter id="channel">
+<chapterinfo>
+<pubdate>$Date: 2003/09/09 01:24:04 $</pubdate>
+<releaseinfo>$Revision: 1.1 $</releaseinfo>
+</chapterinfo>
+
+<title>JChannel</title>
+<para>
+Discission of channel
+</para>
+
+
+
+<sect1 id="ChannelStates">
+<title>States of a channel</title>
+<para>
+</para>
+</sect1>
+
+<sect1>
+<title>Connection to ProtocolStack</title>
+<para>
+</para>
+</sect1>
+
+<sect1>
+<title>Message queues</title>
+<para>
+Pull principle of receiving messages
+</para>
+</sect1>
+
+<sect1>
+<title>Use cases</title>
+<para>
+</para>
+
+  <sect2>
+  <title>Creation of a channel</title>
+  <para>
+  </para>
+  </sect2>
+
+
+  <sect2>
+  <title>Connecting to a channel</title>
+  <para>
+  </para>
+  </sect2>
+
+
+  <sect2>
+  <title>Sending a message</title>
+  <para>
+  </para>
+  </sect2>
+
+
+  <sect2>
+  <title>Receiving a message</title>
+  <para>
+  </para>
+  </sect2>
+
+
+  <sect2>
+  <title>Disconnecting from a channel</title>
+  <para>
+  </para>
+  </sect2>
+
+
+  <sect2>
+  <title>Closing a channel</title>
+  <para>
+  </para>
+  </sect2>
+
+</sect1>
+
+
+
+</chapter>

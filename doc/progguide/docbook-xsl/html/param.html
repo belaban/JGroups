@@ -1,0 +1,7037 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<meta name="generator" content="HTML Tidy, see www.w3.org">
+<meta http-equiv="Content-Type" content=
+"text/html; charset=ISO-8859-1">
+<title>HTML Parameter Reference</title>
+<meta name="generator" content="DocBook XSL Stylesheets V0.00+">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084"
+alink="#0000FF">
+<div class="book">
+<div class="titlepage">
+<div>
+<h1 class="title"><a name="d0e3"></a>HTML Parameter Reference</h1>
+</div>
+
+<div>
+<h3 class="author">Norman Walsh</h3>
+</div>
+
+<div>
+<p class="releaseinfo">$Id: param.xweb,v 1.7 2001/11/06 02:26:59
+bobstayton Exp $</p>
+</div>
+
+<div>
+<p class="copyright">Copyright © 1999, 2000, 2001 Norman Walsh</p>
+</div>
+
+<hr>
+</div>
+
+<div class="toc">
+<p><b>Table of Contents</b></p>
+
+<dl>
+<dt><a href="#d0e23">Introduction</a></dt>
+
+<dt>I. <a href="#d0e70">Admonitions</a></dt>
+
+<dd>
+<dl>
+<dt><a href=
+"#admon.graphics.extension">admon.graphics.extension</a> -
+Extension for admonition graphics</dt>
+
+<dt><a href="#admon.graphics.path">admon.graphics.path</a> - Path
+to admonition graphics</dt>
+
+<dt><a href="#admon.graphics">admon.graphics</a> - Use graphics in
+admonitions?</dt>
+
+<dt><a href="#admon.style">admon.style</a> - CSS style attributes
+for admonitions</dt>
+</dl>
+</dd>
+
+<dt>II. <a href="#d0e152">Callouts</a></dt>
+
+<dd>
+<dl>
+<dt><a href="#callout.defaultcolumn">callout.defaultcolumn</a> -
+Indicates what column callouts appear in by default</dt>
+
+<dt><a href=
+"#callout.graphics.extension">callout.graphics.extension</a> -
+Extension for callout graphics</dt>
+
+<dt><a href=
+"#callout.graphics.number.limit">callout.graphics.number.limit</a>
+- Number of the largest callout graphic</dt>
+
+<dt><a href="#callout.graphics.path">callout.graphics.path</a> -
+Path to callout graphics</dt>
+
+<dt><a href="#callout.graphics">callout.graphics</a> - Use graphics
+for callouts?</dt>
+
+<dt><a href="#callout.list.table">callout.list.table</a> - Present
+callout lists using a table?</dt>
+
+<dt><a href="#callout.unicode.font">callout.unicode.font</a> -
+Specify a font for Unicode glyphs</dt>
+
+<dt><a href=
+"#callout.unicode.number.limit">callout.unicode.number.limit</a> -
+Number of the largest callout graphic</dt>
+
+<dt><a href=
+"#callout.unicode.start.character">callout.unicode.start.character</a>
+- First Unicode character to use, decimal value.</dt>
+
+<dt><a href="#callout.unicode">callout.unicode</a> - Use Unicode
+characters rather than images for callouts.</dt>
+
+<dt><a href="#callouts.extension">callouts.extension</a> - Enable
+the callout extension</dt>
+</dl>
+</dd>
+
+<dt>III. <a href="#d0e407">EBNF</a></dt>
+
+<dd>
+<dl>
+<dt><a href="#ebnf.table.bgcolor">ebnf.table.bgcolor</a> -
+Background color for EBNF tables</dt>
+
+<dt><a href="#ebnf.table.border">ebnf.table.border</a> - Selects
+border on EBNF tables</dt>
+</dl>
+</dd>
+
+<dt>IV. <a href="#d0e453">ToC/LoT/Index Generation</a></dt>
+
+<dd>
+<dl>
+<dt><a href="#annotate.toc">annotate.toc</a> - Annotate the Table
+of Contents?</dt>
+
+<dt><a href="#autotoc.label.separator">autotoc.label.separator</a>
+- Separator between labels and titles in the ToC</dt>
+
+<dt><a href="#generate.appendix.toc">generate.appendix.toc</a> -
+Specify if a table of contents is required for an appendix</dt>
+
+<dt><a href="#generate.article.toc">generate.article.toc</a> -
+Specify if a toc is wanted for an article.</dt>
+
+<dt><a href="#generate.book.toc">generate.book.toc</a> - Do you
+want a table of contents in the book?</dt>
+
+<dt><a href="#generate.chapter.toc">generate.chapter.toc</a> - Do
+you want a table of contents for chapters?</dt>
+
+<dt><a href="#generate.component.toc">generate.component.toc</a> -
+Should TOCs be genereated in components (Chapters, Appendixes,
+etc.)?</dt>
+
+<dt><a href="#generate.division.toc">generate.division.toc</a> -
+Should TOCs be genereated in divisions (Books, Parts, etc.)?</dt>
+
+<dt><a href="#generate.part.toc">generate.part.toc</a> - Do you
+want an index for each part?</dt>
+
+<dt><a href="#generate.preface.toc">generate.preface.toc</a> - Do
+you want a table of contents for the preface?</dt>
+
+<dt><a href="#generate.qandadiv.toc">generate.qandadiv.toc</a> - Is
+a Table of Contents created for QandADivs?</dt>
+
+<dt><a href="#generate.qandaset.toc">generate.qandaset.toc</a> - Is
+a Table of Contents created for QandASets?</dt>
+
+<dt><a href="#generate.reference.toc">generate.reference.toc</a> -
+Do you want a list of references?</dt>
+
+<dt><a href="#generate.section.toc">generate.section.toc</a> -
+Generate TOCs inside Sections?</dt>
+
+<dt><a href="#generate.set.toc">generate.set.toc</a> - Do you want
+a table of contents in each set?</dt>
+
+<dt><a href=
+"#generate.section.toc.level">generate.section.toc.level</a> -
+Control depth of TOC generation in sections</dt>
+
+<dt><a href="#generate.index">generate.index</a> - Do you want an
+index?</dt>
+
+<dt><a href="#toc.list.type">toc.list.type</a> - Type of HTML list
+element to use for Tables of Contents</dt>
+
+<dt><a href="#toc.section.depth">toc.section.depth</a> - How deep
+should recursive sections appear in the TOC?</dt>
+
+<dt><a href="#process.source.toc">process.source.toc</a> -
+FIXME:</dt>
+
+<dt><a href=
+"#process.empty.source.toc">process.empty.source.toc</a> -
+FIXME:</dt>
+
+<dt><a href="#bridgehead.in.toc">bridgehead.in.toc</a> - Should
+bridgehead elements appear in the TOC?</dt>
+</dl>
+</dd>
+
+<dt>V. <a href="#d0e909">Extensions</a></dt>
+
+<dd>
+<dl>
+<dt><a href="#saxon.callouts">saxon.callouts</a> - Enable the
+callout extension</dt>
+
+<dt><a href="#saxon.linenumbering">saxon.linenumbering</a> - Enable
+the line numbering extension</dt>
+
+<dt><a href="#saxon.tablecolumns">saxon.tablecolumns</a> - Enable
+the table columns extension function</dt>
+
+<dt><a href="#linenumbering.everyNth">linenumbering.everyNth</a> -
+Indicate which lines should be numbered</dt>
+
+<dt><a href="#linenumbering.extension">linenumbering.extension</a>
+- Enable the line numbering extension</dt>
+
+<dt><a href="#linenumbering.separator">linenumbering.separator</a>
+- Specify a separator between line numbers and lines</dt>
+
+<dt><a href="#linenumbering.width">linenumbering.width</a> -
+Indicates the width of line numbers</dt>
+
+<dt><a href="#tablecolumns.extension">tablecolumns.extension</a> -
+Enable the table columns extension function</dt>
+
+<dt><a href="#textinsert.extension">textinsert.extension</a> -
+Enable the textinsert extension element</dt>
+
+<dt><a href="#use.extensions">use.extensions</a> - Enable
+extensions</dt>
+</dl>
+</dd>
+
+<dt>VI. <a href="#d0e1111">Automatic labelling</a></dt>
+
+<dd>
+<dl>
+<dt><a href="#chapter.autolabel">chapter.autolabel</a> - Are
+chapters automatically enumerated?</dt>
+
+<dt><a href="#appendix.autolabel">appendix.autolabel</a> - Are
+Appendixes automatically enumerated?</dt>
+
+<dt><a href="#part.autolabel">part.autolabel</a> - Are parts and
+references enumerated?</dt>
+
+<dt><a href="#preface.autolabel">preface.autolabel</a> - Are
+prefaces enumerated?</dt>
+
+<dt><a href="#qandadiv.autolabel">qandadiv.autolabel</a> - Are
+divisions in QAndASets enumerated?</dt>
+
+<dt><a href="#section.autolabel">section.autolabel</a> - Are
+sections enumerated?</dt>
+
+<dt><a href=
+"#section.label.includes.component.label">section.label.includes.component.label</a>
+- Do section labels include the component label?</dt>
+
+<dt><a href="#label.from.part">label.from.part</a> - Renumber
+chapters in each part?</dt>
+</dl>
+</dd>
+
+<dt>VII. <a href="#d0e1282">HTML</a></dt>
+
+<dd>
+<dl>
+<dt><a href="#html.base">html.base</a> - An HTML base URI</dt>
+
+<dt><a href="#html.stylesheet.type">html.stylesheet.type</a> - The
+type of the stylesheet used in the generated HTML</dt>
+
+<dt><a href="#html.stylesheet">html.stylesheet</a> - Name of the
+stylesheet to use in the generated HTML</dt>
+
+<dt><a href="#use.id.as.filename">use.id.as.filename</a> - Use ID
+value of chunk elements as the filename?</dt>
+
+<dt><a href="#using.chunker">using.chunker</a> - Will the output be
+chunked?</dt>
+
+<dt><a href="#css.decoration">css.decoration</a> - Enable CSS
+decoration of elements</dt>
+
+<dt><a href="#spacing.paras">spacing.paras</a> - Insert additional
+&lt;p&gt; elements for spacing?</dt>
+
+<dt><a href=
+"#emphasis.propagates.style">emphasis.propagates.style</a> - Pass
+emphasis role attribute through to HTML?</dt>
+
+<dt><a href="#phrase.propagates.style">phrase.propagates.style</a>
+- Pass phrase role attribute through to HTML?</dt>
+
+<dt><a href="#stylesheet.result.type">stylesheet.result.type</a> -
+Identifies the output format of this stylesheet</dt>
+
+<dt><a href="#html.longdesc">html.longdesc</a> - Should longdesc
+URIs be created?</dt>
+
+<dt><a href="#html.longdesc.link">html.longdesc.link</a> - Should a
+link to the longdesc be included in the HTML?</dt>
+</dl>
+</dd>
+
+<dt>VIII. <a href="#d0e1573">XSLT Processing</a></dt>
+
+<dd>
+<dl>
+<dt><a href="#use.id.function">use.id.function</a> - Use the XPath
+id() function to find link targets?</dt>
+
+<dt><a href="#rootid">rootid</a> - Specify the root element to
+format</dt>
+
+<dt><a href="#suppress.navigation">suppress.navigation</a> -
+Disable header and footer navigation</dt>
+</dl>
+</dd>
+
+<dt>IX. <a href="#d0e1649">Meta/*Info</a></dt>
+
+<dd>
+<dl>
+<dt><a href="#inherit.keywords">inherit.keywords</a> - Inherit
+keywords from ancestor elements?</dt>
+
+<dt><a href="#make.single.year.ranges">make.single.year.ranges</a>
+- Print single-year ranges (e.g., 1998-1999)</dt>
+
+<dt><a href="#make.year.ranges">make.year.ranges</a> - Collate
+copyright years into ranges?</dt>
+
+<dt><a href=
+"#author.othername.in.middle">author.othername.in.middle</a> - Is
+othername in author a middle name?</dt>
+
+<dt><a href=
+"#generate.legalnotice.link">generate.legalnotice.link</a> -
+TBD</dt>
+</dl>
+</dd>
+
+<dt>X. <a href="#d0e1777">Reference Pages</a></dt>
+
+<dd>
+<dl>
+<dt><a href="#funcsynopsis.decoration">funcsynopsis.decoration</a>
+- Decorate elements of a FuncSynopsis?</dt>
+
+<dt><a href="#funcsynopsis.style">funcsynopsis.style</a> - What
+style of 'FuncSynopsis' should be generated?</dt>
+
+<dt><a href="#function.parens">function.parens</a> - Generate
+parens after a function?</dt>
+
+<dt><a href="#refentry.generate.name">refentry.generate.name</a> -
+Output NAME header before 'RefName'(s)?</dt>
+
+<dt><a href="#refentry.xref.manvolnum">refentry.xref.manvolnum</a>
+- Output manvolnum as part of refentry cross-reference?</dt>
+
+<dt><a href="#citerefentry.link">citerefentry.link</a> - Generate
+URL links when cross-referencing RefEntrys?</dt>
+
+<dt><a href="#refentry.separator">refentry.separator</a> - Generate
+a separator between consecutive RefEntry elements?</dt>
+</dl>
+</dd>
+
+<dt>XI. <a href="#d0e1947">Tables</a></dt>
+
+<dd>
+<dl>
+<dt><a href="#default.table.width">default.table.width</a> - The
+default width of tables</dt>
+
+<dt><a href="#nominal.table.width">nominal.table.width</a> - The
+(absolute) nominal width of tables</dt>
+
+<dt><a href="#table.borders.with.css">table.borders.with.css</a> -
+Use CSS to specify table, row, and cell borders?</dt>
+
+<dt><a href="#table.border.style">table.border.style</a> -</dt>
+
+<dt><a href="#table.border.thickness">table.border.thickness</a>
+-</dt>
+
+<dt><a href="#table.border.color">table.border.color</a> -</dt>
+</dl>
+</dd>
+
+<dt>XII. <a href="#d0e2058">QAndASet</a></dt>
+
+<dd>
+<dl>
+<dt><a href="#qanda.defaultlabel">qanda.defaultlabel</a> - Sets the
+default for defaultlabel on QandASet.</dt>
+
+<dt><a href=
+"#qanda.inherit.numeration">qanda.inherit.numeration</a> - Does
+enumeration of QandASet components inherit the numeration of parent
+elements?</dt>
+</dl>
+</dd>
+
+<dt>XIII. <a href="#d0e2099">Linking</a></dt>
+
+<dd>
+<dl>
+<dt><a href="#link.mailto.url">link.mailto.url</a> - Mailto URL for
+the LINK REL=made HTML HEAD element</dt>
+
+<dt><a href="#ulink.target">ulink.target</a> - The HTML anchor
+target for ULinks</dt>
+
+<dt><a href="#olink.fragid">olink.fragid</a> - Names the fragment
+identifier portion of an OLink resolver query</dt>
+
+<dt><a href="#olink.outline.ext">olink.outline.ext</a> - The
+extension of OLink outline files</dt>
+
+<dt><a href="#olink.pubid">olink.pubid</a> - Names the public
+identifier portion of an OLink resolver query</dt>
+
+<dt><a href="#olink.sysid">olink.sysid</a> - Names the system
+identifier portion of an OLink resolver query</dt>
+
+<dt><a href="#olink.resolver">olink.resolver</a> - The root name of
+the OLink resolver (usually a script)</dt>
+</dl>
+</dd>
+
+<dt>XIV. <a href="#d0e2249">Bibliography</a></dt>
+
+<dd>
+<dl>
+<dt><a href=
+"#biblioentry.item.separator">biblioentry.item.separator</a> - Text
+to separate bibliography entries</dt>
+
+<dt><a href="#bibliography.collection">bibliography.collection</a>
+- Name of the bibliography collection file</dt>
+</dl>
+</dd>
+
+<dt>XV. <a href="#d0e2290">Miscellaneous</a></dt>
+
+<dd>
+<dl>
+<dt><a href=
+"#graphic.default.extension">graphic.default.extension</a> -
+Default extension for graphic filenames</dt>
+
+<dt><a href="#formal.procedures">formal.procedures</a> - Selects
+formal or informal procedures</dt>
+
+<dt><a href=
+"#runinhead.default.title.end.punct">runinhead.default.title.end.punct</a>
+- Default punctuation character on a run-in-head</dt>
+
+<dt><a href=
+"#runinhead.title.end.punct">runinhead.title.end.punct</a> -
+Characters that count as punctuation on a run-in-head</dt>
+
+<dt><a href="#show.comments">show.comments</a> - Display comment
+elements?</dt>
+
+<dt><a href="#show.revisionflag">show.revisionflag</a> - Enable
+decoration of elements that have a revisionflag</dt>
+
+<dt><a href="#shade.verbatim">shade.verbatim</a> - Should verbatim
+environments be shaded?</dt>
+
+<dt><a href="#shade.verbatim.style">shade.verbatim.style</a> -
+Properties that specify the style of shaded verbatim listings</dt>
+</dl>
+</dd>
+
+<dt>XVI. <a href="#d0e2478">Chunking</a></dt>
+
+<dd>
+<dl>
+<dt><a href="#html.ext">html.ext</a> - Identifies the extension of
+generated HTML files</dt>
+
+<dt><a href="#root.filename">root.filename</a> - Identifies the
+name of the root HTML file when chunking</dt>
+
+<dt><a href="#base.dir">base.dir</a> - The base directory of
+chunks</dt>
+
+<dt><a href="#chunk.sections">chunk.sections</a> - Should top-level
+sections be chunks in their own right?</dt>
+
+<dt><a href="#chunk.first.sections">chunk.first.sections</a> -
+Chunk the first top-level section?</dt>
+
+<dt><a href=
+"#saxon.character.representation">saxon.character.representation</a>
+- Saxon character representation used in generated HTML pages</dt>
+
+<dt><a href="#default.encoding">default.encoding</a> - Encoding
+used in generated HTML pages</dt>
+
+<dt><a href="#chunk.datafile">chunk.datafile</a> - Name of the
+temporary file used to hold chunking data</dt>
+
+<dt><a href="#navig.graphics">navig.graphics</a> - Use graphics in
+navigational headers and footers?</dt>
+
+<dt><a href=
+"#navig.graphics.extension">navig.graphics.extension</a> -
+Extension for navigational graphics</dt>
+
+<dt><a href="#navig.graphics.path">navig.graphics.path</a> - Path
+to navigational graphics</dt>
+
+<dt><a href="#navig.showtitles">navig.showtitles</a> - Display
+titles in HTML headers and footers?</dt>
+</dl>
+</dd>
+
+<dt>XVII. <a href="#d0e2724">HTML Help</a></dt>
+
+<dd>
+<dl>
+<dt><a href="#htmlhelp.encoding">htmlhelp.encoding</a> - Character
+encoding to use in files for HTML Help compiler.</dt>
+
+<dt><a href="#htmlhelp.autolabel">htmlhelp.autolabel</a> - Should
+tree-like ToC use autonumbering feature?</dt>
+
+<dt><a href="#htmlhelp.chm">htmlhelp.chm</a> - Filename of output
+HTML Help file.</dt>
+
+<dt><a href="#htmlhelp.hhp">htmlhelp.hhp</a> - Filename of project
+file.</dt>
+
+<dt><a href="#htmlhelp.hhc">htmlhelp.hhc</a> - Filename of TOC
+file.</dt>
+
+<dt><a href="#htmlhelp.hhp.tail">htmlhelp.hhp.tail</a> - Additional
+content for project file.</dt>
+
+<dt><a href=
+"#htmlhelp.enumerate.images">htmlhelp.enumerate.images</a> - Should
+be paths to all used images added to project file?</dt>
+</dl>
+</dd>
+
+<dt>A. <a href="#d0e2860">The Stylesheet</a></dt>
+</dl>
+</div>
+
+<div class="preface">
+<div class="titlepage">
+<div>
+<h2 class="title"><a name="d0e23"></a>Introduction</h2>
+</div>
+</div>
+
+<p>This is technical reference documentation for the DocBook XSL
+Stylesheets; it documents (some of) the parameters, templates, and
+other elements of the stylesheets.</p>
+
+<p>This reference describes each of the HTML Stylesheet parameters.
+These are the &#8220;easily customizable&#8221; parts of the
+stylesheet. If you want to specify an alternate value for one or
+more of these parameters, you can do so in a &#8220;driver&#8221;
+stylesheet.</p>
+
+<p>For example, if you want to change the <tt>html.stylesheet</tt>
+to <tt>reference.css</tt>, you might create a driver stylesheet
+like this:</p>
+
+<pre class="programlisting">
+&lt;xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                version='1.0'&gt;
+
+  &lt;xsl:import href="http://docbook.sourceforge.net/release/xsl/snapshot/html/docbook.xsl"/&gt;
+
+  &lt;xsl:param name="html.stylesheet"&gt;reference.css&lt;/xsl:param&gt;
+
+&lt;/xsl:stylesheet&gt;
+</pre>
+
+<p>Naturally, you have to change the <tt class=
+"sgmltag-attribute">href</tt> attribute on
+<tt>&lt;xsl:import&gt;</tt> to point to <tt>docbook.xsl</tt> on
+your system. (Or <tt>chunk.xsl</tt>, if you're using chunking.)</p>
+
+<p>This is not intended to be &#8220;user&#8221; documentation. It
+is provided for developers writing customization layers for the
+stylesheets, and for anyone who's interested in &#8220;how it
+works&#8221;.</p>
+
+<p>Although I am trying to be thorough, this documentation is known
+to be incomplete. Don't forget to read the source, too :-)</p>
+</div>
+
+<div class="reference"><a name="d0e70"></a>
+<div class="titlepage">
+<div>
+<h1 class="title"><a name="d0e70"></a>Admonitions</h1>
+</div>
+
+<hr>
+</div>
+
+<div class="toc">
+<p><b>Table of Contents</b></p>
+
+<dl>
+<dt><a href=
+"#admon.graphics.extension">admon.graphics.extension</a> -
+Extension for admonition graphics</dt>
+
+<dt><a href="#admon.graphics.path">admon.graphics.path</a> - Path
+to admonition graphics</dt>
+
+<dt><a href="#admon.graphics">admon.graphics</a> - Use graphics in
+admonitions?</dt>
+
+<dt><a href="#admon.style">admon.style</a> - CSS style attributes
+for admonitions</dt>
+</dl>
+</div>
+
+<div class="refentry"><a name="admon.graphics.extension"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>admon.graphics.extension &#8212; Extension for admonition
+graphics</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="admon.graphics.extension.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§1</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="admon.graphics.extension"
+           select="'.png'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>Sets the extension to use on admonition graphics.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="admon.graphics.path"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>admon.graphics.path &#8212; Path to admonition graphics</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="admon.graphics.path.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§2</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="admon.graphics.path"&gt;images/&lt;/xsl:param&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>Sets the path, probably relative to the directory where the HTML
+files are created, to the admonition graphics.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="admon.graphics"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>admon.graphics &#8212; Use graphics in admonitions?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="admon.graphics.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§3</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="admon.graphics"
+           select="0"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If true (non-zero), admonitions are presented in an alternate
+style that uses a graphic. Default graphics are provided in the
+distribution.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="admon.style"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>admon.style &#8212; CSS style attributes for admonitions</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="admon.style.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§4</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="admon.style"&gt;
+  &lt;xsl:text&gt;margin-left: 0.5in; margin-right: 0.5in;&lt;/xsl:text&gt;
+&lt;/xsl:param&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>Specifies the value of the <tt class=
+"sgmltag-attribute">STYLE</tt> attribute that should be added to
+admonitions.</p>
+</div>
+</div>
+</div>
+
+<div class="reference"><a name="d0e152"></a>
+<div class="titlepage">
+<div>
+<h1 class="title"><a name="d0e152"></a>Callouts</h1>
+</div>
+
+<hr>
+</div>
+
+<div class="toc">
+<p><b>Table of Contents</b></p>
+
+<dl>
+<dt><a href="#callout.defaultcolumn">callout.defaultcolumn</a> -
+Indicates what column callouts appear in by default</dt>
+
+<dt><a href=
+"#callout.graphics.extension">callout.graphics.extension</a> -
+Extension for callout graphics</dt>
+
+<dt><a href=
+"#callout.graphics.number.limit">callout.graphics.number.limit</a>
+- Number of the largest callout graphic</dt>
+
+<dt><a href="#callout.graphics.path">callout.graphics.path</a> -
+Path to callout graphics</dt>
+
+<dt><a href="#callout.graphics">callout.graphics</a> - Use graphics
+for callouts?</dt>
+
+<dt><a href="#callout.list.table">callout.list.table</a> - Present
+callout lists using a table?</dt>
+
+<dt><a href="#callout.unicode.font">callout.unicode.font</a> -
+Specify a font for Unicode glyphs</dt>
+
+<dt><a href=
+"#callout.unicode.number.limit">callout.unicode.number.limit</a> -
+Number of the largest callout graphic</dt>
+
+<dt><a href=
+"#callout.unicode.start.character">callout.unicode.start.character</a>
+- First Unicode character to use, decimal value.</dt>
+
+<dt><a href="#callout.unicode">callout.unicode</a> - Use Unicode
+characters rather than images for callouts.</dt>
+
+<dt><a href="#callouts.extension">callouts.extension</a> - Enable
+the callout extension</dt>
+</dl>
+</div>
+
+<div class="refentry"><a name="callout.defaultcolumn"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>callout.defaultcolumn &#8212; Indicates what column callouts
+appear in by default</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="callout.defaultcolumn.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§5</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="callout.defaultcolumn"
+           select="'60'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If a callout does not identify a column (for example, if it uses
+the <tt>linerange</tt> <tt class="sgmltag-attribute">unit</tt>), it
+will appear in the default column.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="callout.graphics.extension"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>callout.graphics.extension &#8212; Extension for callout
+graphics</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="callout.graphics.extension.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§6</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="callout.graphics.extension"
+           select="'.png'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>Sets the extension to use on callout graphics.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="callout.graphics.number.limit"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>callout.graphics.number.limit &#8212; Number of the largest
+callout graphic</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="callout.graphics.number.limit.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§7</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="callout.graphics.number.limit"
+           select="'10'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If <i><tt>callout.graphics</tt></i> is non-zero, graphics are
+used to represent callout numbers. The value of
+<i><tt>callout.graphics.number.limit</tt></i> is the largest number
+for which a graphic exists. If the callout number exceeds this
+limit, the default presentation "(nnn)" will always be used.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="callout.graphics.path"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>callout.graphics.path &#8212; Path to callout graphics</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="callout.graphics.path.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§8</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="callout.graphics.path"
+           select="'images/callouts/'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>Sets the path, probably relative to the directory where the HTML
+files are created, to the callout graphics.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="callout.graphics"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>callout.graphics &#8212; Use graphics for callouts?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="callout.graphics.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§9</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="callout.graphics"
+           select="'1'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If non-zero, callouts are presented with graphics (e.g.,
+reverse-video circled numbers instead of "(1)", "(2)", etc.).
+Default graphics are provided in the distribution.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="callout.list.table"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>callout.list.table &#8212; Present callout lists using a
+table?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="callout.list.table.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§10</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="callout.list.table"
+           select="'1'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>The default presentation of <tt class=
+"sgmltag-element">CalloutList</tt>s uses an HTML <tt class=
+"sgmltag-element">DL</tt>. Some browsers don't align DLs very well
+if <i><tt>callout.graphics</tt></i> are used. With this option
+turned on, <tt class="sgmltag-element">CalloutList</tt>s are
+presented in an HTML <tt class="sgmltag-element">TABLE</tt>, which
+usually results in better alignment of the callout number with the
+callout description.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="callout.unicode.font"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>callout.unicode.font &#8212; Specify a font for Unicode
+glyphs</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="callout.unicode.font.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§11</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="callout.unicode.font"
+           select="'ZapfDingbats'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>The name of the font to specify around Unicode callout glyphs.
+If set to the empty string, no font change will occur.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="callout.unicode.number.limit"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>callout.unicode.number.limit &#8212; Number of the largest
+callout graphic</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="callout.unicode.number.limit.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§12</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="callout.unicode.number.limit"
+           select="'10'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If <i><tt>callout.graphics</tt></i> is non-zero, graphics are
+used to represent callout numbers. The value of
+<i><tt>callout.graphics.number.limit</tt></i> is the largest number
+for which a graphic exists. If the callout number exceeds this
+limit, the default presentation "(nnn)" will always be used.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="callout.unicode.start.character"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>callout.unicode.start.character &#8212; First Unicode character
+to use, decimal value.</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="callout.unicode.start.character.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§13</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="callout.unicode.start.character"
+           select="10102"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If <i><tt>callout.graphics</tt></i> is non-zero, graphics are
+used to represent callout numbers. The value of
+<i><tt>callout.graphics.number.limit</tt></i> is the largest number
+for which a graphic exists. If the callout number exceeds this
+limit, the default presentation "(nnn)" will always be used.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="callout.unicode"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>callout.unicode &#8212; Use Unicode characters rather than
+images for callouts.</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="callout.unicode.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§14</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="callout.unicode"
+           select="0"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>The stylesheets can use either an image of the numbers one to
+ten, or the single Unicode character which represents the numeral,
+in white on a black background. Use this to select the Unicode
+character option.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="callouts.extension"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>callouts.extension &#8212; Enable the callout extension</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="callouts.extension.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§15</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="callouts.extension"
+           select="'1'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>The callouts extension processes <tt class=
+"sgmltag-element">areaset</tt> elements in <tt class=
+"sgmltag-element">ProgramListingCO</tt> and other text-based
+callout elements.</p>
+</div>
+</div>
+</div>
+
+<div class="reference"><a name="d0e407"></a>
+<div class="titlepage">
+<div>
+<h1 class="title"><a name="d0e407"></a>EBNF</h1>
+</div>
+
+<hr>
+</div>
+
+<div class="toc">
+<p><b>Table of Contents</b></p>
+
+<dl>
+<dt><a href="#ebnf.table.bgcolor">ebnf.table.bgcolor</a> -
+Background color for EBNF tables</dt>
+
+<dt><a href="#ebnf.table.border">ebnf.table.border</a> - Selects
+border on EBNF tables</dt>
+</dl>
+</div>
+
+<div class="refentry"><a name="ebnf.table.bgcolor"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>ebnf.table.bgcolor &#8212; Background color for EBNF tables</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="ebnf.table.bgcolor.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§16</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="ebnf.table.bgcolor"
+           select="'#F5DCB3'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>Sets the background color for EBNF tables. No <tt class=
+"sgmltag-element">bgcolor</tt> attribute is output if
+<tt>ebnf.table.bgcolor</tt> is set to the null string. The default
+value matches the value used in recent online versions of the W3C's
+XML Spec productions.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="ebnf.table.border"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>ebnf.table.border &#8212; Selects border on EBNF tables</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="ebnf.table.border.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§17</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="ebnf.table.border"
+           select="1"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>Selects the border on EBNF tables. If non-zero, the tables have
+borders, otherwise they don't.</p>
+</div>
+</div>
+</div>
+
+<div class="reference"><a name="d0e453"></a>
+<div class="titlepage">
+<div>
+<h1 class="title"><a name="d0e453"></a>ToC/LoT/Index
+Generation</h1>
+</div>
+
+<hr>
+</div>
+
+<div class="toc">
+<p><b>Table of Contents</b></p>
+
+<dl>
+<dt><a href="#annotate.toc">annotate.toc</a> - Annotate the Table
+of Contents?</dt>
+
+<dt><a href="#autotoc.label.separator">autotoc.label.separator</a>
+- Separator between labels and titles in the ToC</dt>
+
+<dt><a href="#generate.appendix.toc">generate.appendix.toc</a> -
+Specify if a table of contents is required for an appendix</dt>
+
+<dt><a href="#generate.article.toc">generate.article.toc</a> -
+Specify if a toc is wanted for an article.</dt>
+
+<dt><a href="#generate.book.toc">generate.book.toc</a> - Do you
+want a table of contents in the book?</dt>
+
+<dt><a href="#generate.chapter.toc">generate.chapter.toc</a> - Do
+you want a table of contents for chapters?</dt>
+
+<dt><a href="#generate.component.toc">generate.component.toc</a> -
+Should TOCs be genereated in components (Chapters, Appendixes,
+etc.)?</dt>
+
+<dt><a href="#generate.division.toc">generate.division.toc</a> -
+Should TOCs be genereated in divisions (Books, Parts, etc.)?</dt>
+
+<dt><a href="#generate.part.toc">generate.part.toc</a> - Do you
+want an index for each part?</dt>
+
+<dt><a href="#generate.preface.toc">generate.preface.toc</a> - Do
+you want a table of contents for the preface?</dt>
+
+<dt><a href="#generate.qandadiv.toc">generate.qandadiv.toc</a> - Is
+a Table of Contents created for QandADivs?</dt>
+
+<dt><a href="#generate.qandaset.toc">generate.qandaset.toc</a> - Is
+a Table of Contents created for QandASets?</dt>
+
+<dt><a href="#generate.reference.toc">generate.reference.toc</a> -
+Do you want a list of references?</dt>
+
+<dt><a href="#generate.section.toc">generate.section.toc</a> -
+Generate TOCs inside Sections?</dt>
+
+<dt><a href="#generate.set.toc">generate.set.toc</a> - Do you want
+a table of contents in each set?</dt>
+
+<dt><a href=
+"#generate.section.toc.level">generate.section.toc.level</a> -
+Control depth of TOC generation in sections</dt>
+
+<dt><a href="#generate.index">generate.index</a> - Do you want an
+index?</dt>
+
+<dt><a href="#toc.list.type">toc.list.type</a> - Type of HTML list
+element to use for Tables of Contents</dt>
+
+<dt><a href="#toc.section.depth">toc.section.depth</a> - How deep
+should recursive sections appear in the TOC?</dt>
+
+<dt><a href="#process.source.toc">process.source.toc</a> -
+FIXME:</dt>
+
+<dt><a href=
+"#process.empty.source.toc">process.empty.source.toc</a> -
+FIXME:</dt>
+
+<dt><a href="#bridgehead.in.toc">bridgehead.in.toc</a> - Should
+bridgehead elements appear in the TOC?</dt>
+</dl>
+</div>
+
+<div class="refentry"><a name="annotate.toc"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>annotate.toc &#8212; Annotate the Table of Contents?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="annotate.toc.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§18</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="annotate.toc"
+           select="1"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If true, TOCs will be annotated. At present, this just means
+that the <tt class="sgmltag-element">RefPurpose</tt> of <tt class=
+"sgmltag-element">RefEntry</tt> TOC entries will be displayed.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="autotoc.label.separator"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>autotoc.label.separator &#8212; Separator between labels and
+titles in the ToC</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="autotoc.label.separator.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§19</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="autotoc.label.separator"
+           select="'. '"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>String to use to seperate labels and title in a table of
+contents.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="generate.appendix.toc"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>generate.appendix.toc &#8212; Specify if a table of contents is
+required for an appendix</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="generate.appendix.toc.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§20</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="generate.appendix.toc"
+           select="1"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>Specify whether you want a table of contents in each
+appendix.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="generate.article.toc"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>generate.article.toc &#8212; Specify if a toc is wanted for an
+article.</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="generate.article.toc.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§21</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="generate.article.toc"
+           select="1"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>Specify whether a table of contents is required for an
+article.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="generate.book.toc"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>generate.book.toc &#8212; Do you want a table of contents in the
+book?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="generate.book.toc.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§22</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="generate.book.toc"
+           select="1"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>Specify if a table of contents is required in the book.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="generate.chapter.toc"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>generate.chapter.toc &#8212; Do you want a table of contents for
+chapters?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="generate.chapter.toc.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§23</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="generate.chapter.toc"
+           select="1"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>Specify if a table of contents should be generated for each
+chapter.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="generate.component.toc"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>generate.component.toc &#8212; Should TOCs be genereated in
+components (Chapters, Appendixes, etc.)?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="generate.component.toc.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§24</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="generate.component.toc"
+           select="1"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If true (non-zero), they are.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="generate.division.toc"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>generate.division.toc &#8212; Should TOCs be genereated in
+divisions (Books, Parts, etc.)?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="generate.division.toc.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§25</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="generate.division.toc"
+           select="1"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If true (non-zero), they are.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="generate.part.toc"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>generate.part.toc &#8212; Do you want an index for each
+part?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="generate.part.toc.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§26</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="generate.part.toc"
+           select="1"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>Specify if an index should be generated for each part.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="generate.preface.toc"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>generate.preface.toc &#8212; Do you want a table of contents for
+the preface?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="generate.preface.toc.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§27</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="generate.preface.toc"
+           select="1"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>Specify if a table of contents should be generated for the
+preface</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="generate.qandadiv.toc"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>generate.qandadiv.toc &#8212; Is a Table of Contents created for
+QandADivs?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="generate.qandadiv.toc.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§28</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="generate.qandadiv.toc"&gt;0&lt;/xsl:param&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If true (non-zero), a ToC is constructed for QandADivs.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="generate.qandaset.toc"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>generate.qandaset.toc &#8212; Is a Table of Contents created for
+QandASets?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="generate.qandaset.toc.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§29</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="generate.qandaset.toc"&gt;1&lt;/xsl:param&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If true (non-zero), a ToC is constructed for QandASets.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="generate.reference.toc"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>generate.reference.toc &#8212; Do you want a list of
+references?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="generate.reference.toc.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§30</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="generate.reference.toc"
+           select="1"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>Specify if a list of references should be generated, similar to
+a table of contents, but for all <tt class=
+"sgmltag-element">reference</tt> elements.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="generate.section.toc"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>generate.section.toc &#8212; Generate TOCs inside Sections?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="generate.section.toc.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§31</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="generate.section.toc"
+           select="1"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If non-zero, a Table of Contents will be generated inside
+section elements. Note that
+<i><tt>generate.section.toc.level</tt></i> may suppress some
+section TOCs.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="generate.set.toc"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>generate.set.toc &#8212; Do you want a table of contents in each
+set?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="generate.set.toc.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§32</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="generate.set.toc"
+           select="1"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>Specify if a table of contents is required in each set.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="generate.section.toc.level"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>generate.section.toc.level &#8212; Control depth of TOC
+generation in sections</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="generate.section.toc.level.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§33</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="generate.section.toc.level"
+           select="0"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>The <i><tt>generate.section.toc.level</tt></i> parameter
+controls the depth of section in which TOCs will be generated. Note
+that this is related to, but not the same as
+<i><tt>toc.section.depth</tt></i>, which controls the depth to
+which TOC entries will be generated in a given TOC.</p>
+
+<p>If, for example, <i><tt>generate.section.toc.level</tt></i> is
+<tt>3</tt>, TOCs will be generated in first, second, and third
+level sections, but not in fourth level sections.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="generate.index"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>generate.index &#8212; Do you want an index?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="generate.index.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§34</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="generate.index"
+           select="1"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>Specify if an index should be generated.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="toc.list.type"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>toc.list.type &#8212; Type of HTML list element to use for
+Tables of Contents</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="toc.list.type.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§35</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="toc.list.type"&gt;dl&lt;/xsl:param&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>When an automatically generated Table of Contents (or List of
+Titles) is produced, this HTML element will be used to make the
+list.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="toc.section.depth"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>toc.section.depth &#8212; How deep should recursive <tt class=
+"sgmltag-element">section</tt>s appear in the TOC?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="toc.section.depth.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§36</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="toc.section.depth"&gt;2&lt;/xsl:param&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>Specifies the depth to which recursive sections should appear in
+the TOC.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="process.source.toc"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>process.source.toc &#8212; FIXME:</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="process.source.toc.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§37</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="process.source.toc"
+           select="0"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>FIXME:</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="process.empty.source.toc"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>process.empty.source.toc &#8212; FIXME:</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="process.empty.source.toc.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§38</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="process.empty.source.toc"
+           select="0"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>FIXME:</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="bridgehead.in.toc"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>bridgehead.in.toc &#8212; Should bridgehead elements appear in
+the TOC?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="bridgehead.in.toc.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§39</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="bridgehead.in.toc"
+           select="0"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If non-zero, bridgeheads appear in the TOC. Note that this
+option is not fully supported and may be removed in a future
+version of the stylesheets.</p>
+</div>
+</div>
+</div>
+
+<div class="reference"><a name="d0e909"></a>
+<div class="titlepage">
+<div>
+<h1 class="title"><a name="d0e909"></a>Extensions</h1>
+</div>
+
+<hr>
+</div>
+
+<div class="toc">
+<p><b>Table of Contents</b></p>
+
+<dl>
+<dt><a href="#saxon.callouts">saxon.callouts</a> - Enable the
+callout extension</dt>
+
+<dt><a href="#saxon.linenumbering">saxon.linenumbering</a> - Enable
+the line numbering extension</dt>
+
+<dt><a href="#saxon.tablecolumns">saxon.tablecolumns</a> - Enable
+the table columns extension function</dt>
+
+<dt><a href="#linenumbering.everyNth">linenumbering.everyNth</a> -
+Indicate which lines should be numbered</dt>
+
+<dt><a href="#linenumbering.extension">linenumbering.extension</a>
+- Enable the line numbering extension</dt>
+
+<dt><a href="#linenumbering.separator">linenumbering.separator</a>
+- Specify a separator between line numbers and lines</dt>
+
+<dt><a href="#linenumbering.width">linenumbering.width</a> -
+Indicates the width of line numbers</dt>
+
+<dt><a href="#tablecolumns.extension">tablecolumns.extension</a> -
+Enable the table columns extension function</dt>
+
+<dt><a href="#textinsert.extension">textinsert.extension</a> -
+Enable the textinsert extension element</dt>
+
+<dt><a href="#use.extensions">use.extensions</a> - Enable
+extensions</dt>
+</dl>
+</div>
+
+<div class="refentry"><a name="saxon.callouts"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>saxon.callouts &#8212; Enable the callout extension</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="saxon.callouts.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§40</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="saxon.callouts"
+           select="'1'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>The callouts extension processes <tt class=
+"sgmltag-element">areaset</tt> elements in <tt class=
+"sgmltag-element">ProgramListingCO</tt> and other text-based
+callout elements.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="saxon.linenumbering"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>saxon.linenumbering &#8212; Enable the line numbering
+extension</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="saxon.linenumbering.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§41</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="saxon.linenumbering"
+           select="'1'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If true, verbatim environments (elements that have the
+format='linespecific' notation attribute: address, literallayout,
+programlisting, screen, synopsis) that specify line numbering will
+have, surprise, line numbers.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="saxon.tablecolumns"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>saxon.tablecolumns &#8212; Enable the table columns extension
+function</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="saxon.tablecolumns.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§42</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="saxon.tablecolumns"
+           select="'1'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>The table columns extension function adjusts the widths of table
+columns in the HTML result to more accurately reflect the
+specifications in the CALS table.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="linenumbering.everyNth"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>linenumbering.everyNth &#8212; Indicate which lines should be
+numbered</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="linenumbering.everyNth.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§43</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="linenumbering.everyNth"
+           select="'5'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If line numbering is enabled, everyNth line will be
+numbered.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="linenumbering.extension"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>linenumbering.extension &#8212; Enable the line numbering
+extension</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="linenumbering.extension.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§44</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="linenumbering.extension"
+           select="'1'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If true, verbatim environments (elements that have the
+format='linespecific' notation attribute: address, literallayout,
+programlisting, screen, synopsis) that specify line numbering will
+have, surprise, line numbers.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="linenumbering.separator"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>linenumbering.separator &#8212; Specify a separator between line
+numbers and lines</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="linenumbering.separator.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§45</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="linenumbering.separator"
+           select="' '"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>The separator is inserted between line numbers and lines in the
+verbatim environment.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="linenumbering.width"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>linenumbering.width &#8212; Indicates the width of line
+numbers</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="linenumbering.width.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§46</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="linenumbering.width"
+           select="'3'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If line numbering is enabled, line numbers will appear right
+justified in a field "width" characters wide.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="tablecolumns.extension"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>tablecolumns.extension &#8212; Enable the table columns
+extension function</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="tablecolumns.extension.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§47</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="tablecolumns.extension"
+           select="'1'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>The table columns extension function adjusts the widths of table
+columns in the HTML result to more accurately reflect the
+specifications in the CALS table.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="textinsert.extension"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>textinsert.extension &#8212; Enable the textinsert extension
+element</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="textinsert.extension.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§48</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="textinsert.extension"
+           select="'1'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>The textinsert extension element inserts the contents of a a
+file into the result tree (as text).</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="use.extensions"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>use.extensions &#8212; Enable extensions</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="use.extensions.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§49</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="use.extensions"
+           select="'0'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If non-zero, extensions may be used. Each extension is further
+controlled by its own parameter. But if
+<i><tt>use.extensions</tt></i> is zero, no extensions will be
+used.</p>
+</div>
+</div>
+</div>
+
+<div class="reference"><a name="d0e1111"></a>
+<div class="titlepage">
+<div>
+<h1 class="title"><a name="d0e1111"></a>Automatic labelling</h1>
+</div>
+
+<hr>
+</div>
+
+<div class="toc">
+<p><b>Table of Contents</b></p>
+
+<dl>
+<dt><a href="#chapter.autolabel">chapter.autolabel</a> - Are
+chapters automatically enumerated?</dt>
+
+<dt><a href="#appendix.autolabel">appendix.autolabel</a> - Are
+Appendixes automatically enumerated?</dt>
+
+<dt><a href="#part.autolabel">part.autolabel</a> - Are parts and
+references enumerated?</dt>
+
+<dt><a href="#preface.autolabel">preface.autolabel</a> - Are
+prefaces enumerated?</dt>
+
+<dt><a href="#qandadiv.autolabel">qandadiv.autolabel</a> - Are
+divisions in QAndASets enumerated?</dt>
+
+<dt><a href="#section.autolabel">section.autolabel</a> - Are
+sections enumerated?</dt>
+
+<dt><a href=
+"#section.label.includes.component.label">section.label.includes.component.label</a>
+- Do section labels include the component label?</dt>
+
+<dt><a href="#label.from.part">label.from.part</a> - Renumber
+chapters in each part?</dt>
+</dl>
+</div>
+
+<div class="refentry"><a name="chapter.autolabel"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>chapter.autolabel &#8212; Are chapters automatically
+enumerated?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="chapter.autolabel.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§50</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="chapter.autolabel"
+           select="1"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If true (non-zero), unlabeled chapters will be enumerated.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="appendix.autolabel"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>appendix.autolabel &#8212; Are Appendixes automatically
+enumerated?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="appendix.autolabel.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§51</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="appendix.autolabel"
+           select="1"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If true (non-zero), unlabeled appendixes will be enumerated.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="part.autolabel"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>part.autolabel &#8212; Are parts and references enumerated?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="part.autolabel.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§52</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="part.autolabel"
+           select="1"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If true (non-zero), unlabeled parts and references will be
+enumerated.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="preface.autolabel"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>preface.autolabel &#8212; Are prefaces enumerated?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="preface.autolabel.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§53</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="preface.autolabel"
+           select="0"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If true (non-zero), unlabeled prefaces will be enumerated.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="qandadiv.autolabel"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>qandadiv.autolabel &#8212; Are divisions in QAndASets
+enumerated?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="qandadiv.autolabel.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§54</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="qandadiv.autolabel"
+           select="1"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If true (non-zero), unlabeled qandadivs will be enumerated.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="section.autolabel"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>section.autolabel &#8212; Are sections enumerated?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="section.autolabel.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§55</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="section.autolabel"
+           select="0"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If true (non-zero), unlabeled sections will be enumerated.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="section.label.includes.component.label"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>section.label.includes.component.label &#8212; Do section labels
+include the component label?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="section.label.includes.component.label.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§56</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="section.label.includes.component.label"
+           select="0"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If true (non-zero), section labels are prefixed with the label
+of the component that contains them.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="label.from.part"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>label.from.part &#8212; Renumber chapters in each part?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="label.from.part.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§57</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="label.from.part"
+           select="'0'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If <i><tt>label.from.part</tt></i> is non-zero, components (<tt
+class="sgmltag-element">chapter</tt>s, <tt class=
+"sgmltag-element">appendixe</tt>s, etc.) will be numbered from 1 in
+each <tt class="sgmltag-element">part</tt>. Otherwise, they will be
+numbered monotonically throughout each <tt class=
+"sgmltag-element">book</tt>.</p>
+</div>
+</div>
+</div>
+
+<div class="reference"><a name="d0e1282"></a>
+<div class="titlepage">
+<div>
+<h1 class="title"><a name="d0e1282"></a>HTML</h1>
+</div>
+
+<hr>
+</div>
+
+<div class="toc">
+<p><b>Table of Contents</b></p>
+
+<dl>
+<dt><a href="#html.base">html.base</a> - An HTML base URI</dt>
+
+<dt><a href="#html.stylesheet.type">html.stylesheet.type</a> - The
+type of the stylesheet used in the generated HTML</dt>
+
+<dt><a href="#html.stylesheet">html.stylesheet</a> - Name of the
+stylesheet to use in the generated HTML</dt>
+
+<dt><a href="#use.id.as.filename">use.id.as.filename</a> - Use ID
+value of chunk elements as the filename?</dt>
+
+<dt><a href="#using.chunker">using.chunker</a> - Will the output be
+chunked?</dt>
+
+<dt><a href="#css.decoration">css.decoration</a> - Enable CSS
+decoration of elements</dt>
+
+<dt><a href="#spacing.paras">spacing.paras</a> - Insert additional
+&lt;p&gt; elements for spacing?</dt>
+
+<dt><a href=
+"#emphasis.propagates.style">emphasis.propagates.style</a> - Pass
+emphasis role attribute through to HTML?</dt>
+
+<dt><a href="#phrase.propagates.style">phrase.propagates.style</a>
+- Pass phrase role attribute through to HTML?</dt>
+
+<dt><a href="#stylesheet.result.type">stylesheet.result.type</a> -
+Identifies the output format of this stylesheet</dt>
+
+<dt><a href="#html.longdesc">html.longdesc</a> - Should longdesc
+URIs be created?</dt>
+
+<dt><a href="#html.longdesc.link">html.longdesc.link</a> - Should a
+link to the longdesc be included in the HTML?</dt>
+</dl>
+</div>
+
+<div class="refentry"><a name="html.base"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>html.base &#8212; An HTML base URI</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="html.base.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§58</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="html.base"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If html.base is set, it is used for the <tt class=
+"sgmltag-element">BASE</tt> element in the <tt class=
+"sgmltag-element">HEAD</tt> of the HTML documents. This is useful
+for dynamically served HTML where the base URI needs to be
+shifted.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="html.stylesheet.type"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>html.stylesheet.type &#8212; The type of the stylesheet used in
+the generated HTML</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="html.stylesheet.type.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§59</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="html.stylesheet.type"&gt;text/css&lt;/xsl:param&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>The type of the stylesheet to place in the HTML <tt class=
+"sgmltag-element">link</tt> tag.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="html.stylesheet"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>html.stylesheet &#8212; Name of the stylesheet to use in the
+generated HTML</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="html.stylesheet.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§60</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="html.stylesheet"
+           select="''"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>The name of the stylesheet to place in the HTML <tt class=
+"sgmltag-element">LINK</tt> tag, or the empty string to suppress
+the stylesheet <tt class="sgmltag-element">LINK</tt>.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="use.id.as.filename"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>use.id.as.filename &#8212; Use ID value of chunk elements as the
+filename?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="use.id.as.filename.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§61</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="use.id.as.filename"
+           select="'0'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If <i><tt>use.id.as.filename</tt></i> is non-zero, the filename
+of chunk elements that have IDs will be derived from the ID
+value.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="using.chunker"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>using.chunker &#8212; Will the output be chunked?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="using.chunker.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§62</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="using.chunker"
+           select="0"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>In addition to providing chunking, the chunker can cleanup a
+number of XML to HTML issues. If the chunker is not being used, the
+stylesheets try to avoid producing results that will not appear
+properly in browsers.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="css.decoration"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>css.decoration &#8212; Enable CSS decoration of elements</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="css.decoration.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§63</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="css.decoration"&gt;1&lt;/xsl:param&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If <tt>css.decoration</tt> is turned on, then HTML elements
+produced by the stylesheet may be decorated with STYLE attributes.
+For example, the LI tags produced for list items may include a
+fragment of CSS in the STYLE attribute which sets the CSS property
+"list-style-type".</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="spacing.paras"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>spacing.paras &#8212; Insert additional &lt;p&gt; elements for
+spacing?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="spacing.paras.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§64</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="spacing.paras"
+           select="'0'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>When non-zero, additional, empty paragraphs are inserted in
+several contexts (for example, around informal figures), to create
+a more pleasing visual appearance in many browsers.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="emphasis.propagates.style"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>emphasis.propagates.style &#8212; Pass emphasis role attribute
+through to HTML?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="emphasis.propagates.style.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§65</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="emphasis.propagates.style"
+           select="1"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If true, the role attribute of <tt class=
+"sgmltag-element">emphasis</tt> elements will be passed through to
+the HTML as a class attribute on a <tt class=
+"sgmltag-element">span</tt> that surrounds the emphasis.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="phrase.propagates.style"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>phrase.propagates.style &#8212; Pass phrase role attribute
+through to HTML?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="phrase.propagates.style.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§66</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="phrase.propagates.style"
+           select="1"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If true, the role attribute of <tt class=
+"sgmltag-element">phrase</tt> elements will be passed through to
+the HTML as a class attribute on a <tt class=
+"sgmltag-element">span</tt> that surrounds the phrase.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="stylesheet.result.type"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>stylesheet.result.type &#8212; Identifies the output format of
+this stylesheet</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="stylesheet.result.type.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§67</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="stylesheet.result.type"
+           select="'html'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>The Saxon extension functions need to know if the output format
+is HTML ('html') or XSL Formatting Objects ('fo'). This variable
+answers that question. Valid settings are 'html' or 'fo'.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="html.longdesc"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>html.longdesc &#8212; Should longdesc URIs be created?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="html.longdesc.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§68</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="html.longdesc"
+           select="1"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If non-zero, HTML files will be created for the <tt class=
+"sgmltag-attribute">longdesc</tt> attribute. These files are
+created from the <tt class="sgmltag-element">textobject</tt>s in
+<tt class="sgmltag-element">mediaobject</tt>s and <tt class=
+"sgmltag-element">inlinemediaobject</tt>.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="html.longdesc.link"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>html.longdesc.link &#8212; Should a link to the longdesc be
+included in the HTML?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="html.longdesc.link.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§69</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="html.longdesc.link"
+           select="$html.longdesc"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If non-zero, links will be created to the HTML files created for
+the <tt class="sgmltag-attribute">longdesc</tt> attribute. It makes
+no sense to turn enable this option without also enabling the
+<i><tt>$html.longdesc</tt></i> parameter.</p>
+
+<p>The <tt>longdesc.link</tt> named template is called to construct
+the link.</p>
+</div>
+</div>
+</div>
+
+<div class="reference"><a name="d0e1573"></a>
+<div class="titlepage">
+<div>
+<h1 class="title"><a name="d0e1573"></a>XSLT Processing</h1>
+</div>
+
+<hr>
+</div>
+
+<div class="toc">
+<p><b>Table of Contents</b></p>
+
+<dl>
+<dt><a href="#use.id.function">use.id.function</a> - Use the XPath
+id() function to find link targets?</dt>
+
+<dt><a href="#rootid">rootid</a> - Specify the root element to
+format</dt>
+
+<dt><a href="#suppress.navigation">suppress.navigation</a> -
+Disable header and footer navigation</dt>
+</dl>
+</div>
+
+<div class="refentry"><a name="use.id.function"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>use.id.function &#8212; Use the XPath id() function to find link
+targets?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="use.id.function.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§70</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="use.id.function"
+           select="'1'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If 1, the stylesheets use the <tt>id()</tt> function to find the
+targets of cross reference elements. This is more efficient, but
+only works if your XSLT processor implements the <tt>id()</tt>
+function, naturally.</p>
+
+<p>THIS PARAMETER IS NOT SUPPORTED. IT IS ALWAYS ASSUMED TO BE 1.
+SEE xref.xsl IF YOU NEED TO TURN IT OFF.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="rootid"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>rootid &#8212; Specify the root element to format</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="rootid.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§71</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="rootid"
+           select="''"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If <i><tt>rootid</tt></i> is specified, it must be the value of
+an ID that occurs in the document being formatted. The entire
+document will be loaded and parsed, but formatting will begin at
+the element identified, rather than at the root. For example, this
+allows you to process only chapter 4 of a book.</p>
+
+<p>Because the entire document is available to the processor,
+automatic numbering, cross references, and other dependencies are
+correctly resolved.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="suppress.navigation"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>suppress.navigation &#8212; Disable header and footer
+navigation</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="suppress.navigation.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§72</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="suppress.navigation"&gt;0&lt;/xsl:param&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If <tt>suppress.navigation</tt> is turned on, header and footer
+navigation will be suppressed.</p>
+</div>
+</div>
+</div>
+
+<div class="reference"><a name="d0e1649"></a>
+<div class="titlepage">
+<div>
+<h1 class="title"><a name="d0e1649"></a>Meta/*Info</h1>
+</div>
+
+<hr>
+</div>
+
+<div class="toc">
+<p><b>Table of Contents</b></p>
+
+<dl>
+<dt><a href="#inherit.keywords">inherit.keywords</a> - Inherit
+keywords from ancestor elements?</dt>
+
+<dt><a href="#make.single.year.ranges">make.single.year.ranges</a>
+- Print single-year ranges (e.g., 1998-1999)</dt>
+
+<dt><a href="#make.year.ranges">make.year.ranges</a> - Collate
+copyright years into ranges?</dt>
+
+<dt><a href=
+"#author.othername.in.middle">author.othername.in.middle</a> - Is
+othername in author a middle name?</dt>
+
+<dt><a href=
+"#generate.legalnotice.link">generate.legalnotice.link</a> -
+TBD</dt>
+</dl>
+</div>
+
+<div class="refentry"><a name="inherit.keywords"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>inherit.keywords &#8212; Inherit keywords from ancestor
+elements?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="inherit.keywords.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§73</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="inherit.keywords"
+           select="'1'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If <i><tt>inherit.keywords</tt></i> is non-zero, the keyword <tt
+class="sgmltag-element">META</tt> for each HTML <tt class=
+"sgmltag-element">HEAD</tt> element will include all of the
+keywords from ancestral elements. Otherwise, only the keywords from
+the current section will be used.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="make.single.year.ranges"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>make.single.year.ranges &#8212; Print single-year ranges (e.g.,
+1998-1999)</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="make.single.year.ranges.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§74</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="make.single.year.ranges"
+           select="0"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If non-zero, year ranges that span a single year will be printed
+in range notation (1998-1999) instead of discrete notation (1998,
+1999).</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="make.year.ranges"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>make.year.ranges &#8212; Collate copyright years into
+ranges?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="make.year.ranges.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§75</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="make.year.ranges"
+           select="0"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If non-zero, copyright years will be collated into ranges.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="author.othername.in.middle"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>author.othername.in.middle &#8212; Is <tt class=
+"sgmltag-element">othername</tt> in <tt class=
+"sgmltag-element">author</tt> a middle name?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="author.othername.in.middle.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§76</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="author.othername.in.middle"
+           select="1"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If true (non-zero), the <tt class=
+"sgmltag-element">othername</tt> of an <tt class=
+"sgmltag-element">author</tt> appears between the <tt class=
+"sgmltag-element">firstname</tt> and <tt class=
+"sgmltag-element">surname</tt>. Otherwise, <tt class=
+"sgmltag-element">othername</tt> is suppressed.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="generate.legalnotice.link"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>generate.legalnotice.link &#8212; TBD</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="generate.legalnotice.link.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§77</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="generate.legalnotice.link"
+           select="0"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>TBD</p>
+</div>
+</div>
+</div>
+
+<div class="reference"><a name="d0e1777"></a>
+<div class="titlepage">
+<div>
+<h1 class="title"><a name="d0e1777"></a>Reference Pages</h1>
+</div>
+
+<hr>
+</div>
+
+<div class="toc">
+<p><b>Table of Contents</b></p>
+
+<dl>
+<dt><a href="#funcsynopsis.decoration">funcsynopsis.decoration</a>
+- Decorate elements of a FuncSynopsis?</dt>
+
+<dt><a href="#funcsynopsis.style">funcsynopsis.style</a> - What
+style of 'FuncSynopsis' should be generated?</dt>
+
+<dt><a href="#function.parens">function.parens</a> - Generate
+parens after a function?</dt>
+
+<dt><a href="#refentry.generate.name">refentry.generate.name</a> -
+Output NAME header before 'RefName'(s)?</dt>
+
+<dt><a href="#refentry.xref.manvolnum">refentry.xref.manvolnum</a>
+- Output manvolnum as part of refentry cross-reference?</dt>
+
+<dt><a href="#citerefentry.link">citerefentry.link</a> - Generate
+URL links when cross-referencing RefEntrys?</dt>
+
+<dt><a href="#refentry.separator">refentry.separator</a> - Generate
+a separator between consecutive RefEntry elements?</dt>
+</dl>
+</div>
+
+<div class="refentry"><a name="funcsynopsis.decoration"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>funcsynopsis.decoration &#8212; Decorate elements of a
+FuncSynopsis?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="funcsynopsis.decoration.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§78</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="funcsynopsis.decoration"
+           select="1"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If true (non-zero), elements of the FuncSynopsis will be
+decorated (e.g. bold or italic). The decoration is controlled by
+functions that can be redefined in a customization layer.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="funcsynopsis.style"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>funcsynopsis.style &#8212; What style of 'FuncSynopsis' should
+be generated?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="funcsynopsis.style.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§79</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="funcsynopsis.style"&gt;kr&lt;/xsl:param&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If <tt>funcsynopsis.style</tt> is <tt>ansi</tt>, ANSI-style
+function synopses are generated for a <tt class=
+"sgmltag-element">funcsynopsis</tt>, otherwise K&amp;R-style
+function synopses are generated.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="function.parens"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>function.parens &#8212; Generate parens after a function?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="function.parens.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§80</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="function.parens"&gt;0&lt;/xsl:param&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If not 0, the formatting of a <tt class=
+"sgmltag-starttag">&lt;function&gt;</tt> element will include
+generated parenthesis.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="refentry.generate.name"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>refentry.generate.name &#8212; Output NAME header before
+'RefName'(s)?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="refentry.generate.name.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§81</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="refentry.generate.name"
+           select="1"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If true (non-zero), a "NAME" section title is output before the
+list of 'RefName's.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="refentry.xref.manvolnum"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>refentry.xref.manvolnum &#8212; Output <tt class=
+"sgmltag-element">manvolnum</tt> as part of <tt class=
+"sgmltag-element">refentry</tt> cross-reference?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="refentry.xref.manvolnum.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§82</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="refentry.xref.manvolnum"
+           select="1"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>if true (non-zero), the <tt class=
+"sgmltag-element">manvolnum</tt> is used when cross-referencing <tt
+class="sgmltag-element">refentry</tt>s, either with <tt class=
+"sgmltag-element">xref</tt> or <tt class=
+"sgmltag-element">citerefentry</tt>.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="citerefentry.link"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>citerefentry.link &#8212; Generate URL links when
+cross-referencing RefEntrys?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="citerefentry.link.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§83</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="citerefentry.link"
+           select="'0'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If true, a web link will be generated, presumably to an online
+man-&gt;HTML gateway. The text of the link is generated by the
+generate.citerefentry.link template.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="refentry.separator"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>refentry.separator &#8212; Generate a separator between
+consecutive RefEntry elements?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="refentry.separator.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§84</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="refentry.separator"
+           select="'1'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If true, a separator will be generated between consecutive
+reference pages.</p>
+</div>
+</div>
+</div>
+
+<div class="reference"><a name="d0e1947"></a>
+<div class="titlepage">
+<div>
+<h1 class="title"><a name="d0e1947"></a>Tables</h1>
+</div>
+
+<hr>
+</div>
+
+<div class="toc">
+<p><b>Table of Contents</b></p>
+
+<dl>
+<dt><a href="#default.table.width">default.table.width</a> - The
+default width of tables</dt>
+
+<dt><a href="#nominal.table.width">nominal.table.width</a> - The
+(absolute) nominal width of tables</dt>
+
+<dt><a href="#table.borders.with.css">table.borders.with.css</a> -
+Use CSS to specify table, row, and cell borders?</dt>
+
+<dt><a href="#table.border.style">table.border.style</a> -</dt>
+
+<dt><a href="#table.border.thickness">table.border.thickness</a>
+-</dt>
+
+<dt><a href="#table.border.color">table.border.color</a> -</dt>
+</dl>
+</div>
+
+<div class="refentry"><a name="default.table.width"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>default.table.width &#8212; The default width of tables</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="default.table.width.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§85</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="default.table.width"
+           select="''"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If specified, this value will be used for the WIDTH attribute on
+tables that do not specify an alternate width (with the dbhtml
+processing instruction).</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="nominal.table.width"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>nominal.table.width &#8212; The (absolute) nominal width of
+tables</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="nominal.table.width.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§86</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="nominal.table.width"
+           select="'6in'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>In order to convert CALS column widths into HTML column widths,
+it is sometimes necessary to have an absolute table width to use
+for conversion of mixed absolute and relative widths. This value
+must be an absolute length (not a percentag).</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="table.borders.with.css"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>table.borders.with.css &#8212; Use CSS to specify table, row,
+and cell borders?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="table.borders.with.css.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§87</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="table.borders.with.css"
+           select="0"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If true (non-zero), CSS will be used to draw table borders.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="table.border.style"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>table.border.style &#8212;</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="table.border.style.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§88</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="table.border.style"
+           select="'solid'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>FIXME:</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="table.border.thickness"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>table.border.thickness &#8212;</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="table.border.thickness.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§89</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="table.border.thickness"
+           select="'0.5pt'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>FIXME:</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="table.border.color"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>table.border.color &#8212;</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="table.border.color.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§90</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="table.border.color"
+           select="'black'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>FIXME:</p>
+</div>
+</div>
+</div>
+
+<div class="reference"><a name="d0e2058"></a>
+<div class="titlepage">
+<div>
+<h1 class="title"><a name="d0e2058"></a>QAndASet</h1>
+</div>
+
+<hr>
+</div>
+
+<div class="toc">
+<p><b>Table of Contents</b></p>
+
+<dl>
+<dt><a href="#qanda.defaultlabel">qanda.defaultlabel</a> - Sets the
+default for defaultlabel on QandASet.</dt>
+
+<dt><a href=
+"#qanda.inherit.numeration">qanda.inherit.numeration</a> - Does
+enumeration of QandASet components inherit the numeration of parent
+elements?</dt>
+</dl>
+</div>
+
+<div class="refentry"><a name="qanda.defaultlabel"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>qanda.defaultlabel &#8212; Sets the default for defaultlabel on
+QandASet.</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="qanda.defaultlabel.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§91</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="qanda.defaultlabel"&gt;number&lt;/xsl:param&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If no defaultlabel attribute is specified on a QandASet, this
+value is used. It must be one of the legal values for the
+defaultlabel attribute.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="qanda.inherit.numeration"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>qanda.inherit.numeration &#8212; Does enumeration of QandASet
+components inherit the numeration of parent elements?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="qanda.inherit.numeration.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§92</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="qanda.inherit.numeration"
+           select="1"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If true (non-zero), numbered QandADiv elements and Questions and
+Answers inherit the numeration of the ancestors of the
+QandASet.</p>
+</div>
+</div>
+</div>
+
+<div class="reference"><a name="d0e2099"></a>
+<div class="titlepage">
+<div>
+<h1 class="title"><a name="d0e2099"></a>Linking</h1>
+</div>
+
+<hr>
+</div>
+
+<div class="toc">
+<p><b>Table of Contents</b></p>
+
+<dl>
+<dt><a href="#link.mailto.url">link.mailto.url</a> - Mailto URL for
+the LINK REL=made HTML HEAD element</dt>
+
+<dt><a href="#ulink.target">ulink.target</a> - The HTML anchor
+target for ULinks</dt>
+
+<dt><a href="#olink.fragid">olink.fragid</a> - Names the fragment
+identifier portion of an OLink resolver query</dt>
+
+<dt><a href="#olink.outline.ext">olink.outline.ext</a> - The
+extension of OLink outline files</dt>
+
+<dt><a href="#olink.pubid">olink.pubid</a> - Names the public
+identifier portion of an OLink resolver query</dt>
+
+<dt><a href="#olink.sysid">olink.sysid</a> - Names the system
+identifier portion of an OLink resolver query</dt>
+
+<dt><a href="#olink.resolver">olink.resolver</a> - The root name of
+the OLink resolver (usually a script)</dt>
+</dl>
+</div>
+
+<div class="refentry"><a name="link.mailto.url"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>link.mailto.url &#8212; Mailto URL for the LINK REL=made HTML
+HEAD element</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="link.mailto.url.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§93</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="link.mailto.url"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If not the empty string, this address will be used for the
+REL=made <tt class="sgmltag-element">LINK</tt> element in the HTML
+<tt class="sgmltag-element">HEAD</tt>.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="ulink.target"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>ulink.target &#8212; The HTML anchor target for ULinks</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="ulink.target.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§94</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="ulink.target"
+           select="'_top'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If <i><tt>ulink.target</tt></i> is set, its value will be used
+for the <tt class="sgmltag-attribute">target</tt> attribute on
+anchors generated for <tt class="sgmltag-element">ulink</tt>s.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="olink.fragid"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>olink.fragid &#8212; Names the fragment identifier portion of an
+OLink resolver query</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="olink.fragid.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§95</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="olink.fragid"
+           select="'fragid='"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>FIXME:</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="olink.outline.ext"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>olink.outline.ext &#8212; The extension of OLink outline
+files</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="olink.outline.ext.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§96</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="olink.outline.ext"
+           select="'.olink'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>FIXME:</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="olink.pubid"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>olink.pubid &#8212; Names the public identifier portion of an
+OLink resolver query</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="olink.pubid.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§97</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="olink.pubid"
+           select="'pubid='"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>FIXME:</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="olink.sysid"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>olink.sysid &#8212; Names the system identifier portion of an
+OLink resolver query</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="olink.sysid.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§98</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="olink.sysid"
+           select="'sysid='"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>FIXME:</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="olink.resolver"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>olink.resolver &#8212; The root name of the OLink resolver
+(usually a script)</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="olink.resolver.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§99</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="olink.resolver"
+           select="'/cgi-bin/olink'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>FIXME:</p>
+</div>
+</div>
+</div>
+
+<div class="reference"><a name="d0e2249"></a>
+<div class="titlepage">
+<div>
+<h1 class="title"><a name="d0e2249"></a>Bibliography</h1>
+</div>
+
+<hr>
+</div>
+
+<div class="toc">
+<p><b>Table of Contents</b></p>
+
+<dl>
+<dt><a href=
+"#biblioentry.item.separator">biblioentry.item.separator</a> - Text
+to separate bibliography entries</dt>
+
+<dt><a href="#bibliography.collection">bibliography.collection</a>
+- Name of the bibliography collection file</dt>
+</dl>
+</div>
+
+<div class="refentry"><a name="biblioentry.item.separator"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>biblioentry.item.separator &#8212; Text to separate bibliography
+entries</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="biblioentry.item.separator.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§100</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="biblioentry.item.separator"&gt;. &lt;/xsl:param&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>Text to separate bibliography entries</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="bibliography.collection"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>bibliography.collection &#8212; Name of the bibliography
+collection file</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="bibliography.collection.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§101</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="bibliography.collection"
+           select="'http://docbook.sourceforge.net/release/bibliography/bibliography.xml'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>Tired of copying bibliography entries from one document to
+another? Now you can maintain a central bibliography and let the
+stylesheets do the copying for you. This parameter identifies the
+file (by URI reference) that contains your complete bibliography
+collection.</p>
+</div>
+</div>
+</div>
+
+<div class="reference"><a name="d0e2290"></a>
+<div class="titlepage">
+<div>
+<h1 class="title"><a name="d0e2290"></a>Miscellaneous</h1>
+</div>
+
+<hr>
+</div>
+
+<div class="toc">
+<p><b>Table of Contents</b></p>
+
+<dl>
+<dt><a href=
+"#graphic.default.extension">graphic.default.extension</a> -
+Default extension for graphic filenames</dt>
+
+<dt><a href="#formal.procedures">formal.procedures</a> - Selects
+formal or informal procedures</dt>
+
+<dt><a href=
+"#runinhead.default.title.end.punct">runinhead.default.title.end.punct</a>
+- Default punctuation character on a run-in-head</dt>
+
+<dt><a href=
+"#runinhead.title.end.punct">runinhead.title.end.punct</a> -
+Characters that count as punctuation on a run-in-head</dt>
+
+<dt><a href="#show.comments">show.comments</a> - Display comment
+elements?</dt>
+
+<dt><a href="#show.revisionflag">show.revisionflag</a> - Enable
+decoration of elements that have a revisionflag</dt>
+
+<dt><a href="#shade.verbatim">shade.verbatim</a> - Should verbatim
+environments be shaded?</dt>
+
+<dt><a href="#shade.verbatim.style">shade.verbatim.style</a> -
+Properties that specify the style of shaded verbatim listings</dt>
+</dl>
+</div>
+
+<div class="refentry"><a name="graphic.default.extension"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>graphic.default.extension &#8212; Default extension for graphic
+filenames</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="graphic.default.extension.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§102</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="graphic.default.extension"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If a <tt class="sgmltag-element">graphic</tt> or <tt class=
+"sgmltag-element">mediaobject</tt> includes a reference to a
+filename that does not include an extension, and the <tt class=
+"sgmltag-attribute">format</tt> attribute is <span class=
+"emphasis"><i>unspecified</i></span>, the default extension will be
+used.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="formal.procedures"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>formal.procedures &#8212; Selects formal or informal
+procedures</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="formal.procedures.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§103</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="formal.procedures"
+           select="1"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>Formal procedures are numbered and always hav a title.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="runinhead.default.title.end.punct"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>runinhead.default.title.end.punct &#8212; Default punctuation
+character on a run-in-head</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="runinhead.default.title.end.punct.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§104</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="runinhead.default.title.end.punct"
+           select="'.'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>FIXME:</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="runinhead.title.end.punct"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>runinhead.title.end.punct &#8212; Characters that count as
+punctuation on a run-in-head</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="runinhead.title.end.punct.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§105</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="runinhead.title.end.punct"
+           select="'.!?:'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>FIXME:</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="show.comments"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>show.comments &#8212; Display <tt class=
+"sgmltag-element">comment</tt> elements?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="show.comments.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§106</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="show.comments"&gt;1&lt;/xsl:param&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If true (non-zero), comments will be displayed, otherwise they
+are suppressed. Comments here refers to the <tt class=
+"sgmltag-element">comment</tt> element, which will be renamed <tt
+class="sgmltag-element">remark</tt> in DocBook V4.0, not XML
+comments (&lt;-- like this --&gt;) which are unavailable.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="show.revisionflag"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>show.revisionflag &#8212; Enable decoration of elements that
+have a revisionflag</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="show.revisionflag.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§107</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="show.revisionflag"&gt;0&lt;/xsl:param&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If <tt>show.revisionflag</tt> is turned on, then the stylesheets
+may produce additional markup designed to allow a CSS stylesheet to
+highlight elements that have specific revisionflag settings.</p>
+
+<p>The markup inserted will be usually be either a &lt;span&gt; or
+&lt;div&gt; with an appropriate <tt>class</tt> attribute. (The
+value of the class attribute will be the same as the value of the
+revisionflag attribute). In some contexts, for example tables,
+where extra markup would be structurally illegal, the class
+attribute will be added to the appropriate container element.</p>
+
+<p>In general, the stylesheets only test for revisionflag in
+contexts where an importing stylesheet would have to redefine whole
+templates. Most of the revisionflag processing is expected to be
+done by another stylesheet, for example
+<tt>changebars.xsl</tt>.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="shade.verbatim"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>shade.verbatim &#8212; Should verbatim environments be
+shaded?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="shade.verbatim.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§108</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="shade.verbatim"
+           select="0"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>FIXME:</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="shade.verbatim.style"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>shade.verbatim.style &#8212; Properties that specify the style
+of shaded verbatim listings</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="shade.verbatim.style.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§109</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:attribute-set name="shade.verbatim.style"&gt;
+  &lt;xsl:attribute name="border"&gt;0&lt;/xsl:attribute&gt;
+  &lt;xsl:attribute name="bgcolor"&gt;#E0E0E0&lt;/xsl:attribute&gt;
+&lt;/xsl:attribute-set&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>FIXME:</p>
+</div>
+</div>
+</div>
+
+<div class="reference"><a name="d0e2478"></a>
+<div class="titlepage">
+<div>
+<h1 class="title"><a name="d0e2478"></a>Chunking</h1>
+</div>
+
+<hr>
+</div>
+
+<div class="toc">
+<p><b>Table of Contents</b></p>
+
+<dl>
+<dt><a href="#html.ext">html.ext</a> - Identifies the extension of
+generated HTML files</dt>
+
+<dt><a href="#root.filename">root.filename</a> - Identifies the
+name of the root HTML file when chunking</dt>
+
+<dt><a href="#base.dir">base.dir</a> - The base directory of
+chunks</dt>
+
+<dt><a href="#chunk.sections">chunk.sections</a> - Should top-level
+sections be chunks in their own right?</dt>
+
+<dt><a href="#chunk.first.sections">chunk.first.sections</a> -
+Chunk the first top-level section?</dt>
+
+<dt><a href=
+"#saxon.character.representation">saxon.character.representation</a>
+- Saxon character representation used in generated HTML pages</dt>
+
+<dt><a href="#default.encoding">default.encoding</a> - Encoding
+used in generated HTML pages</dt>
+
+<dt><a href="#chunk.datafile">chunk.datafile</a> - Name of the
+temporary file used to hold chunking data</dt>
+
+<dt><a href="#navig.graphics">navig.graphics</a> - Use graphics in
+navigational headers and footers?</dt>
+
+<dt><a href=
+"#navig.graphics.extension">navig.graphics.extension</a> -
+Extension for navigational graphics</dt>
+
+<dt><a href="#navig.graphics.path">navig.graphics.path</a> - Path
+to navigational graphics</dt>
+
+<dt><a href="#navig.showtitles">navig.showtitles</a> - Display
+titles in HTML headers and footers?</dt>
+</dl>
+</div>
+
+<div class="refentry"><a name="html.ext"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>html.ext &#8212; Identifies the extension of generated HTML
+files</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="html.ext.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§110</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="html.ext"
+           select="'.html'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>The extension identified by <i><tt>html.ext</tt></i> will be
+used as the filename extension for chunks created by this
+stylesheet.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="root.filename"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>root.filename &#8212; Identifies the name of the root HTML file
+when chunking</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="root.filename.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§111</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="root.filename"
+           select="'index'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>The <i><tt>root.filename</tt></i> is the base filename for the
+chunk created for the root of each document processed.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="base.dir"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>base.dir &#8212; The base directory of chunks</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="base.dir.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§112</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="base.dir"
+           select="''"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If specified, the <tt>base.dir</tt> identifies the output
+directory for chunks. (If not specified, the output directory is
+system dependent.)</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="chunk.sections"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>chunk.sections &#8212; Should top-level sections be chunks in
+their own right?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="chunk.sections.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§113</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="chunk.sections"
+           select="'1'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If non-zero, chunks will be created for top-level <tt class=
+"sgmltag-element">sect1</tt> and <tt class=
+"sgmltag-element">section</tt> elements in each component.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="chunk.first.sections"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>chunk.first.sections &#8212; Chunk the first top-level
+section?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="chunk.first.sections.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§114</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="chunk.first.sections"
+           select="'0'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If non-zero, a chunk will be created for the first top-level <tt
+class="sgmltag-element">sect1</tt> or <tt class=
+"sgmltag-element">section</tt> elements in each component.
+Otherwise, that section will be part of the chunk for its
+parent.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="saxon.character.representation"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>saxon.character.representation &#8212; Saxon character
+representation used in generated HTML pages</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="saxon.character.representation.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§115</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="saxon.character.representation"
+           select="'entity;decimal'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>This character representation is used in files generated by
+chunking stylesheet. If you want to suppress entity references for
+characters with direct representation in default.encoding, set this
+parameter to value <tt>native</tt>.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="default.encoding"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>default.encoding &#8212; Encoding used in generated HTML
+pages</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="default.encoding.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§116</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="default.encoding"
+           select="'ISO-8859-1'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>This encoding is used in files generated by chunking stylesheet.
+Currently only Saxon is able to change output encoding.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="chunk.datafile"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>chunk.datafile &#8212; Name of the temporary file used to hold
+chunking data</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="chunk.datafile.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§117</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="chunk.datafile"
+           select="'.chunks'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>Chunking is now a two-step process. The
+<i><tt>chunk.datafile</tt></i> is the name of the file used to hold
+the chunking data.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="navig.graphics"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>navig.graphics &#8212; Use graphics in navigational headers and
+footers?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="navig.graphics.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§118</b></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="navig.graphics"
+           select="0"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If true (non-zero), the navigational headers and footers in
+chunked HTML are presented in an alternate style that uses
+graphical icons for Next, Previous, Up, and Home. Default graphics
+are provided in the distribution.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="navig.graphics.extension"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>navig.graphics.extension &#8212; Extension for navigational
+graphics</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="navig.graphics.extension.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§119</b></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="navig.graphics.extension"
+           select="'.gif'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>Sets the filename extension to use on navigational graphics used
+in the headers and footers of chunked HTML.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="navig.graphics.path"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>navig.graphics.path &#8212; Path to navigational graphics</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="navig.graphics.path.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§120</b></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="navig.graphics.path"&gt;images/&lt;/xsl:param&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>Sets the path, probably relative to the directory where the HTML
+files are created, to the navigational graphics used in the headers
+and footers of chunked HTML.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="navig.showtitles"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>navig.showtitles &#8212; Display titles in HTML headers and
+footers?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="navig.showtitles.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§121</b></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="navig.showtitles"&gt;1&lt;/xsl:param&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If true (non-zero), the headers and footers of chunked HTML
+display the titles of the next and previous chunks, along with the
+words 'Next' and 'Previous' (or the equivalent graphical icons if
+navig.graphics is true). If false (zero), then only the words
+'Next' and 'Previous' (or the icons) are displayed.</p>
+</div>
+</div>
+</div>
+
+<div class="reference"><a name="d0e2724"></a>
+<div class="titlepage">
+<div>
+<h1 class="title"><a name="d0e2724"></a>HTML Help</h1>
+</div>
+
+<hr>
+</div>
+
+<div class="toc">
+<p><b>Table of Contents</b></p>
+
+<dl>
+<dt><a href="#htmlhelp.encoding">htmlhelp.encoding</a> - Character
+encoding to use in files for HTML Help compiler.</dt>
+
+<dt><a href="#htmlhelp.autolabel">htmlhelp.autolabel</a> - Should
+tree-like ToC use autonumbering feature?</dt>
+
+<dt><a href="#htmlhelp.chm">htmlhelp.chm</a> - Filename of output
+HTML Help file.</dt>
+
+<dt><a href="#htmlhelp.hhp">htmlhelp.hhp</a> - Filename of project
+file.</dt>
+
+<dt><a href="#htmlhelp.hhc">htmlhelp.hhc</a> - Filename of TOC
+file.</dt>
+
+<dt><a href="#htmlhelp.hhp.tail">htmlhelp.hhp.tail</a> - Additional
+content for project file.</dt>
+
+<dt><a href=
+"#htmlhelp.enumerate.images">htmlhelp.enumerate.images</a> - Should
+be paths to all used images added to project file?</dt>
+</dl>
+</div>
+
+<div class="refentry"><a name="htmlhelp.encoding"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>htmlhelp.encoding &#8212; Character encoding to use in files for
+HTML Help compiler.</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="htmlhelp.encoding.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§122</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="htmlhelp.encoding"
+           select="'iso-8859-1'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>HTML Help Compiler is not UTF-8 aware, so you should always use
+apropriate single-byte encoding here.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="htmlhelp.autolabel"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>htmlhelp.autolabel &#8212; Should tree-like ToC use
+autonumbering feature?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="htmlhelp.autolabel.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§123</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="htmlhelp.autolabel"
+           select="0"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If you want to include chapter and section numbers into ToC in
+the left panel, set this parameter to 1.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="htmlhelp.chm"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>htmlhelp.chm &#8212; Filename of output HTML Help file.</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="htmlhelp.chm.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§124</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="htmlhelp.chm"
+           select="'htmlhelp.chm'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>Change this parameter if you want different name of result CHM
+file than htmlhelp.chm.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="htmlhelp.hhp"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>htmlhelp.hhp &#8212; Filename of project file.</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="htmlhelp.hhp.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§125</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="htmlhelp.hhp"
+           select="'htmlhelp.hhp'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>Change this parameter if you want different name of project file
+than htmlhelp.hhp.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="htmlhelp.hhc"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>htmlhelp.hhc &#8212; Filename of TOC file.</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="htmlhelp.hhc.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§126</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="htmlhelp.hhc"
+           select="'toc.hhc'"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>Change this parameter if you want different name of TOC file
+than toc.hhc.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="htmlhelp.hhp.tail"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>htmlhelp.hhp.tail &#8212; Additional content for project
+file.</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="htmlhelp.hhp.tail.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§127</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="htmlhelp.hhp.tail"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>If you want to include some additional parameters into project
+file, store appropriate part of project file into this
+parameter.</p>
+</div>
+</div>
+
+<div class="refentry">
+<div class="refentry.separator">
+<hr>
+</div>
+
+<a name="htmlhelp.enumerate.images"></a>
+<div class="refnamediv">
+<h2>Name</h2>
+
+<p>htmlhelp.enumerate.images &#8212; Should be paths to all used
+images added to project file?</p>
+</div>
+
+<div class="refsynopsisdiv">
+<h2>Synopsis</h2>
+
+<a name="htmlhelp.enumerate.images.frag"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§128</b>: <a href="#top">§129</a></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;xsl:param name="htmlhelp.enumerate.images"
+           select="0"/&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<div class="refsect1">
+<h2>Description</h2>
+
+<p>You should turn on this flag, if you insert images into your
+documents as external binary entities or if you are using absolute
+path in image names.</p>
+</div>
+</div>
+</div>
+
+<div class="appendix">
+<div class="titlepage">
+<div>
+<h2 class="title"><a name="d0e2860"></a>Appendix A. The
+Stylesheet</h2>
+</div>
+</div>
+
+<p>The <tt>param.xsl</tt> stylesheet is just a wrapper around all
+these parameters.</p>
+
+<a name="top"></a>
+<table border="1" width="100%">
+<tr>
+<td>
+<p><b>§129</b></p>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre class="src:fragment">
+&lt;!-- This file is generated from param.xweb; do not edit this file! --&gt;
+
+&lt;xsl:stylesheet exclude-result-prefixes="src"
+                version="1.0"&gt;
+
+&lt;!-- ********************************************************************
+     $Id: param.html,v 1.1 2003/09/09 01:24:06 belaban Exp $
+     ********************************************************************
+
+     This file is part of the XSL DocBook Stylesheet distribution.
+     See ../README or http://nwalsh.com/docbook/xsl/ for copyright
+     and other information.
+
+     ******************************************************************** --&gt;
+
+<a href="#admon.graphics.frag" title=
+""><i>§3. admon.graphics</i></a>
+<a href="#admon.graphics.extension.frag" title=
+""><i>§1. admon.graphics.extension</i></a>
+<a href="#admon.graphics.path.frag" title=
+""><i>§2. admon.graphics.path</i></a>
+<a href="#admon.style.frag" title=""><i>§4. admon.style</i></a>
+<a href="#annotate.toc.frag" title=""><i>§18. annotate.toc</i></a>
+<a href="#appendix.autolabel.frag" title=
+""><i>§51. appendix.autolabel</i></a>
+<a href="#author.othername.in.middle.frag" title=
+""><i>§76. author.othername.in.middle</i></a>
+<a href="#autotoc.label.separator.frag" title=
+""><i>§19. autotoc.label.separator</i></a>
+<a href="#base.dir.frag" title=""><i>§112. base.dir</i></a>
+<a href="#biblioentry.item.separator.frag" title=
+""><i>§100. biblioentry.item.separator</i></a>
+<a href="#bibliography.collection.frag" title=
+""><i>§101. bibliography.collection</i></a>
+<a href="#bridgehead.in.toc.frag" title=
+""><i>§39. bridgehead.in.toc</i></a>
+<a href="#callout.defaultcolumn.frag" title=
+""><i>§5. callout.defaultcolumn</i></a>
+<a href="#callout.graphics.frag" title=
+""><i>§9. callout.graphics</i></a>
+<a href="#callout.graphics.extension.frag" title=
+""><i>§6. callout.graphics.extension</i></a>
+<a href="#callout.graphics.number.limit.frag" title=
+""><i>§7. callout.graphics.number.limit</i></a>
+<a href="#callout.graphics.path.frag" title=
+""><i>§8. callout.graphics.path</i></a>
+<a href="#callout.list.table.frag" title=
+""><i>§10. callout.list.table</i></a>
+<a href="#callout.unicode.frag" title=
+""><i>§14. callout.unicode</i></a>
+<a href="#callout.unicode.font.frag" title=
+""><i>§11. callout.unicode.font</i></a>
+<a href="#callout.unicode.number.limit.frag" title=
+""><i>§12. callout.unicode.number.limit</i></a>
+<a href="#callout.unicode.start.character.frag" title=
+""><i>§13. callout.unicode.start.character</i></a>
+<a href="#callouts.extension.frag" title=
+""><i>§15. callouts.extension</i></a>
+<a href="#chapter.autolabel.frag" title=
+""><i>§50. chapter.autolabel</i></a>
+<a href="#chunk.datafile.frag" title=
+""><i>§117. chunk.datafile</i></a>
+<a href="#chunk.first.sections.frag" title=
+""><i>§114. chunk.first.sections</i></a>
+<a href="#chunk.sections.frag" title=
+""><i>§113. chunk.sections</i></a>
+<a href="#citerefentry.link.frag" title=
+""><i>§83. citerefentry.link</i></a>
+<a href="#css.decoration.frag" title=
+""><i>§63. css.decoration</i></a>
+<a href="#default.encoding.frag" title=
+""><i>§116. default.encoding</i></a>
+<a href="#default.table.width.frag" title=
+""><i>§85. default.table.width</i></a>
+<a href="#ebnf.table.bgcolor.frag" title=
+""><i>§16. ebnf.table.bgcolor</i></a>
+<a href="#ebnf.table.border.frag" title=
+""><i>§17. ebnf.table.border</i></a>
+<a href="#emphasis.propagates.style.frag" title=
+""><i>§65. emphasis.propagates.style</i></a>
+<a href="#formal.procedures.frag" title=
+""><i>§103. formal.procedures</i></a>
+<a href="#funcsynopsis.decoration.frag" title=
+""><i>§78. funcsynopsis.decoration</i></a>
+<a href="#funcsynopsis.style.frag" title=
+""><i>§79. funcsynopsis.style</i></a>
+<a href="#function.parens.frag" title=
+""><i>§80. function.parens</i></a>
+<a href="#generate.appendix.toc.frag" title=
+""><i>§20. generate.appendix.toc</i></a>
+<a href="#generate.article.toc.frag" title=
+""><i>§21. generate.article.toc</i></a>
+<a href="#generate.book.toc.frag" title=
+""><i>§22. generate.book.toc</i></a>
+<a href="#generate.chapter.toc.frag" title=
+""><i>§23. generate.chapter.toc</i></a>
+<a href="#generate.component.toc.frag" title=
+""><i>§24. generate.component.toc</i></a>
+<a href="#generate.division.toc.frag" title=
+""><i>§25. generate.division.toc</i></a>
+<a href="#generate.index.frag" title=
+""><i>§34. generate.index</i></a>
+<a href="#generate.legalnotice.link.frag" title=
+""><i>§77. generate.legalnotice.link</i></a>
+<a href="#generate.part.toc.frag" title=
+""><i>§26. generate.part.toc</i></a>
+<a href="#generate.preface.toc.frag" title=
+""><i>§27. generate.preface.toc</i></a>
+<a href="#generate.qandadiv.toc.frag" title=
+""><i>§28. generate.qandadiv.toc</i></a>
+<a href="#generate.qandaset.toc.frag" title=
+""><i>§29. generate.qandaset.toc</i></a>
+<a href="#generate.reference.toc.frag" title=
+""><i>§30. generate.reference.toc</i></a>
+<a href="#generate.section.toc.frag" title=
+""><i>§31. generate.section.toc</i></a>
+<a href="#generate.section.toc.level.frag" title=
+""><i>§33. generate.section.toc.level</i></a>
+<a href="#generate.set.toc.frag" title=
+""><i>§32. generate.set.toc</i></a>
+<a href="#graphic.default.extension.frag" title=
+""><i>§102. graphic.default.extension</i></a>
+<a href="#html.base.frag" title=""><i>§58. html.base</i></a>
+<a href="#html.ext.frag" title=""><i>§110. html.ext</i></a>
+<a href="#html.longdesc.frag" title=
+""><i>§68. html.longdesc</i></a>
+<a href="#html.longdesc.link.frag" title=
+""><i>§69. html.longdesc.link</i></a>
+<a href="#html.stylesheet.frag" title=
+""><i>§60. html.stylesheet</i></a>
+<a href="#html.stylesheet.type.frag" title=
+""><i>§59. html.stylesheet.type</i></a>
+<a href="#inherit.keywords.frag" title=
+""><i>§73. inherit.keywords</i></a>
+<a href="#label.from.part.frag" title=
+""><i>§57. label.from.part</i></a>
+<a href="#linenumbering.everyNth.frag" title=
+""><i>§43. linenumbering.everyNth</i></a>
+<a href="#linenumbering.extension.frag" title=
+""><i>§44. linenumbering.extension</i></a>
+<a href="#linenumbering.separator.frag" title=
+""><i>§45. linenumbering.separator</i></a>
+<a href="#linenumbering.width.frag" title=
+""><i>§46. linenumbering.width</i></a>
+<a href="#link.mailto.url.frag" title=
+""><i>§93. link.mailto.url</i></a>
+<a href="#make.single.year.ranges.frag" title=
+""><i>§74. make.single.year.ranges</i></a>
+<a href="#make.year.ranges.frag" title=
+""><i>§75. make.year.ranges</i></a>
+<a href="#nominal.table.width.frag" title=
+""><i>§86. nominal.table.width</i></a>
+<a href="#olink.fragid.frag" title=""><i>§95. olink.fragid</i></a>
+<a href="#olink.outline.ext.frag" title=
+""><i>§96. olink.outline.ext</i></a>
+<a href="#olink.pubid.frag" title=""><i>§97. olink.pubid</i></a>
+<a href="#olink.resolver.frag" title=
+""><i>§99. olink.resolver</i></a>
+<a href="#olink.sysid.frag" title=""><i>§98. olink.sysid</i></a>
+<a href="#part.autolabel.frag" title=
+""><i>§52. part.autolabel</i></a>
+<a href="#phrase.propagates.style.frag" title=
+""><i>§66. phrase.propagates.style</i></a>
+<a href="#preface.autolabel.frag" title=
+""><i>§53. preface.autolabel</i></a>
+<a href="#process.empty.source.toc.frag" title=
+""><i>§38. process.empty.source.toc</i></a>
+<a href="#process.source.toc.frag" title=
+""><i>§37. process.source.toc</i></a>
+<a href="#qanda.defaultlabel.frag" title=
+""><i>§91. qanda.defaultlabel</i></a>
+<a href="#qanda.inherit.numeration.frag" title=
+""><i>§92. qanda.inherit.numeration</i></a>
+<a href="#qandadiv.autolabel.frag" title=
+""><i>§54. qandadiv.autolabel</i></a>
+<a href="#refentry.generate.name.frag" title=
+""><i>§81. refentry.generate.name</i></a>
+<a href="#refentry.separator.frag" title=
+""><i>§84. refentry.separator</i></a>
+<a href="#refentry.xref.manvolnum.frag" title=
+""><i>§82. refentry.xref.manvolnum</i></a>
+<a href="#root.filename.frag" title=
+""><i>§111. root.filename</i></a>
+<a href="#rootid.frag" title=""><i>§71. rootid</i></a>
+<a href="#runinhead.default.title.end.punct.frag" title=
+""><i>§104. runinhead.default.title.end.punct</i></a>
+<a href="#runinhead.title.end.punct.frag" title=
+""><i>§105. runinhead.title.end.punct</i></a>
+<a href="#saxon.callouts.frag" title=
+""><i>§40. saxon.callouts</i></a>
+<a href="#saxon.character.representation.frag" title=
+""><i>§115. saxon.character.representation</i></a>
+<a href="#saxon.linenumbering.frag" title=
+""><i>§41. saxon.linenumbering</i></a>
+<a href="#saxon.tablecolumns.frag" title=
+""><i>§42. saxon.tablecolumns</i></a>
+<a href="#section.autolabel.frag" title=
+""><i>§55. section.autolabel</i></a>
+<a href="#section.label.includes.component.label.frag" title=
+""><i>§56. section.label.includes.component.label</i></a>
+<a href="#shade.verbatim.frag" title=
+""><i>§108. shade.verbatim</i></a>
+<a href="#shade.verbatim.style.frag" title=
+""><i>§109. shade.verbatim.style</i></a>
+<a href="#show.comments.frag" title=
+""><i>§106. show.comments</i></a>
+<a href="#show.revisionflag.frag" title=
+""><i>§107. show.revisionflag</i></a>
+<a href="#spacing.paras.frag" title=
+""><i>§64. spacing.paras</i></a>
+<a href="#stylesheet.result.type.frag" title=
+""><i>§67. stylesheet.result.type</i></a>
+<a href="#suppress.navigation.frag" title=
+""><i>§72. suppress.navigation</i></a>
+<a href="#tablecolumns.extension.frag" title=
+""><i>§47. tablecolumns.extension</i></a>
+<a href="#textinsert.extension.frag" title=
+""><i>§48. textinsert.extension</i></a>
+<a href="#toc.list.type.frag" title=
+""><i>§35. toc.list.type</i></a>
+<a href="#toc.section.depth.frag" title=
+""><i>§36. toc.section.depth</i></a>
+<a href="#ulink.target.frag" title=""><i>§94. ulink.target</i></a>
+<a href="#use.extensions.frag" title=
+""><i>§49. use.extensions</i></a>
+<a href="#use.id.as.filename.frag" title=
+""><i>§61. use.id.as.filename</i></a>
+<a href="#use.id.function.frag" title=
+""><i>§70. use.id.function</i></a>
+<a href="#using.chunker.frag" title=
+""><i>§62. using.chunker</i></a>
+<a href="#table.borders.with.css.frag" title=
+""><i>§87. table.borders.with.css</i></a>
+<a href="#table.border.thickness.frag" title=
+""><i>§89. table.border.thickness</i></a>
+<a href="#table.border.style.frag" title=
+""><i>§88. table.border.style</i></a>
+<a href="#table.border.color.frag" title=
+""><i>§90. table.border.color</i></a>
+<a href="#htmlhelp.encoding.frag" title=
+""><i>§122. htmlhelp.encoding</i></a>
+<a href="#htmlhelp.autolabel.frag" title=
+""><i>§123. htmlhelp.autolabel</i></a>
+<a href="#htmlhelp.chm.frag" title=""><i>§124. htmlhelp.chm</i></a>
+<a href="#htmlhelp.hhp.frag" title=""><i>§125. htmlhelp.hhp</i></a>
+<a href="#htmlhelp.hhc.frag" title=""><i>§126. htmlhelp.hhc</i></a>
+<a href="#htmlhelp.hhp.tail.frag" title=
+""><i>§127. htmlhelp.hhp.tail</i></a>
+<a href="#htmlhelp.enumerate.images.frag" title=
+""><i>§128. htmlhelp.enumerate.images</i></a>
+&lt;/xsl:stylesheet&gt;
+</pre>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</body>
+</html>
+

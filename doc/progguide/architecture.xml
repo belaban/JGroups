@@ -1,0 +1,85 @@
+<chapter id="architecture">
+<chapterinfo>
+<pubdate>$Date: 2003/09/09 01:24:04 $</pubdate>
+<releaseinfo>$Revision: 1.1 $</releaseinfo>
+</chapterinfo>
+
+<title>Architecture</title>
+<para>
+Discussion of architecture
+</para>
+
+
+
+<sect1 id="Channel">
+<title>Channel</title>
+<para>
+Overview of channel. The architecture is shown below:
+
+<figure>
+<title>Architecture of JGroups</title>
+<graphic fileref="Message.png"/>
+</figure>
+
+</para>
+
+  <sect2>
+  <title>Address</title>
+  <para>
+  Discussion of Address, IpAddress etc
+  </para>
+  </sect2>
+
+  <sect2>
+  <title>Message</title>
+  <para>
+  Discussion of Message
+  </para>
+  </sect2>
+
+  <sect2>
+  <title>Header</title>
+  <para>
+  Discussion of Header
+  </para>
+  </sect2>
+
+  <sect2>
+  <title>Event</title>
+  <para>
+  Discussion of Event
+  </para>
+  </sect2>
+
+  <sect2>
+  <title>View</title>
+  <para>
+  Discussion of View
+  </para>
+  </sect2>
+
+  <sect2>
+  <title>ViewId</title>
+  <para>
+  Discussion of ViewId
+  </para>
+  </sect2>
+
+</sect1>
+
+<sect1 id="OverviewProtocolStack">
+<title>Protocol Stack</title>
+<para>
+Discussion of protocol stack and relation to channel
+</para>
+</sect1>
+
+<sect1 id="OverviewBuildingBlocks">
+<title>Building Blocks</title>
+<para>
+Discussion of building blocks
+</para>
+</sect1>
+
+
+</chapter>

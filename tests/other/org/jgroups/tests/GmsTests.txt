@@ -1,0 +1,146 @@
+$Id: GmsTests.txt,v 1.1 2003/09/09 01:24:13 belaban Exp $
+
+
+     Manual tests for the Group Membership Service (GMS) Protocol
+     ------------------------------------------------------------
+
+
+Hopefully these tests can be automated some time in the
+future. Currently it takes too much time to write automatic tests. The
+tests should be executed before releasing a new tarball of JGroups.
+
+All the tests use the JGroups/Demos/Draw program.
+
+'Leave' means exit the demo program gracefully, ie. through
+"Leave&Exit".
+'Kill' means just kill the process id
+
+
+
+Test 1
+------
+
+- Start A, B
+- Leave B
+  --> B should leave and window should disappear
+  --> A should show 1 member
+
+
+Test 2
+------
+
+- Test 1
+- Repeatedly start B and then leave B
+  --> A should always show the correct mbrship
+
+
+Test 3
+------
+
+- Start A, B
+- Kill B
+  --> B should be suspected
+  --> A should show 1 member
+
+
+Test 4
+------
+
+- Test 3
+- Repeatedly start B and kill B
+  --> A should always show the correct mbrship
+
+
+
+Test 5
+------
+
+- Start A, B
+- Leave A
+  --> A should leave and window should disappear
+  --> B should be new coordinator
+  --> B should show 1 member
+
+
+Test 6
+------
+
+- Start A, B
+- Kill A
+  --> A should be suspected
+  --> B should become new coordinator
+  --> B should show 1 member
+
+
+Test 7
+------
+
+- Start A, B, C, D
+- Kill B and C
+  --> A and D should show 2 members
+
+
+Test 8
+------
+
+- Start A, B, C, D
+- Kill A, B, C simultaneously
+  --> D should become new coordinator
+  --> D should show 1 member
+
+
+Test 9
+------
+
+- Start A, B
+- Kill B and immediately restart B
+  --> Both A and B should show 2 members
+
+
+Test 10
+-------
+
+- Start A and B
+- Kill A (coordinator) and immediately restart A
+  --> B should become new coordinator
+  --> Both A and B should show 2 members
+  --> The new A may try to join the old one (if still around). This
+      could result in a Join() timeout until the new coordinator has
+      been determined
+
+
+
+Test 11
+-------
+
+- Start A
+- Leave A
+  --> A should leave in a short time (no hangs)
+
+
+
+Test 12
+-------
+
+- Start A, B, C
+- Kill A and simultaneously leave C
+- C should block until B becomes coordinator (and shows mbrship=2)
+- B then leaves C and shows mbrship=1
+
+
+Test 13
+-------
+
+- Start 20 instances
+- Mbrship should be 20
+- Kill and leave members randomly
+- Last member should show mbrship=1
+
+
+Test 14
+-------
+
+- Start A, B
+- Shun A (CTRL-Z and then fg)
+- When B has rejoined the group, kill A
+- The view needs to be {B} now

@@ -1,0 +1,58 @@
+<chapter id="protstack">
+<chapterinfo>
+<pubdate>$Date: 2003/09/09 01:24:04 $</pubdate>
+<releaseinfo>$Revision: 1.1 $</releaseinfo>
+</chapterinfo>
+
+<title>Protocol Stack</title>
+
+<sect1>
+<title>Architecture</title>
+<para>
+Setup and teardown of ProtocolStack (creation, connect(),
+disconnect(), close())
+</para>
+</sect1>
+
+
+<sect1>
+<title>Protocol</title>
+<para>
+</para>
+
+  <sect2>
+  <title>MessageProtocol</title>
+  <para>
+  </para>
+  </sect2>
+
+  <sect2>
+  <title>RpcProtocol</title>
+  <para>
+  </para>
+  </sect2>
+
+</sect1>
+
+
+<sect1>
+<title>Configurator</title>
+<para>
+</para>
+
+  <sect2>
+  <title>PlainConfigurator</title>
+  <para>
+  </para>
+  </sect2>
+
+  <sect2>
+  <title>UrlConfigurator</title>
+  <para>
+  </para>
+  </sect2>
+
+</sect1>
+
+
+</chapter>
