@@ -1,4 +1,4 @@
-// $Id: ViewTest.java,v 1.2 2004/03/30 06:47:31 belaban Exp $
+// $Id: ViewTest.java,v 1.3 2004/10/07 15:45:41 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -8,20 +8,20 @@ import org.jgroups.View;
 import org.jgroups.ViewId;
 import org.jgroups.stack.IpAddress;
 
+import java.util.Vector;
 
 
-public class ViewTest extends TestCase
-{
+public class ViewTest extends TestCase {
     IpAddress a, b, c, d, e, f, g, h, i, j, k;
     View view;
+    Vector members;
+    
 
-    public ViewTest(String Name_)
-    {
+    public ViewTest(String Name_) {
         super(Name_);
-    } //public ViewTest(String Name_)
+    }
 
-    public void setUp()
-    {
+    public void setUp() {
         a=new IpAddress("localhost", 5555);
         b=new IpAddress("localhost", 5555);
         c=b;
@@ -31,8 +31,8 @@ public class ViewTest extends TestCase
         g=new IpAddress("www.ibm.com", 8080);
         h=new IpAddress("224.0.0.1", 5555);
         i=new IpAddress("224.0.0.2", 5555);
-        ViewId id = new ViewId( a , 34 );
-        java.util.Vector members = new java.util.Vector();
+        ViewId id=new ViewId(a, 34);
+        members=new java.util.Vector();
         members.addElement(a);
         members.addElement(b);
         members.addElement(d);
@@ -40,44 +40,54 @@ public class ViewTest extends TestCase
         members.addElement(f);
         members.addElement(g);
         members.addElement(h);
-        view = new View(id, members);
+        view=new View(id, members);
 
     }
 
-    public void testContainsMember()
-    {
-        assertTrue("Member should be in view",view.containsMember(a));
-        assertTrue("Member should be in view",view.containsMember(b));
-        assertTrue("Member should be in view",view.containsMember(c));
-        assertTrue("Member should be in view",view.containsMember(d));
-        assertTrue("Member should be in view",view.containsMember(e));
-        assertTrue("Member should be in view",view.containsMember(f));
-        assertTrue("Member should not be in view",!view.containsMember(i));
+    public void testContainsMember() {
+        assertTrue("Member should be in view", view.containsMember(a));
+        assertTrue("Member should be in view", view.containsMember(b));
+        assertTrue("Member should be in view", view.containsMember(c));
+        assertTrue("Member should be in view", view.containsMember(d));
+        assertTrue("Member should be in view", view.containsMember(e));
+        assertTrue("Member should be in view", view.containsMember(f));
+        assertTrue("Member should not be in view", !view.containsMember(i));
     }
 
-    public void testEqualsCreator()
-    {
-        assertTrue( "Creator should be a:", view.getCreator().equals(a));
-        assertTrue( "Creator should not be d", !view.getCreator().equals(d));
+    public void testEqualsCreator() {
+        assertTrue("Creator should be a:", view.getCreator().equals(a));
+        assertTrue("Creator should not be d", !view.getCreator().equals(d));
     }
 
-    public void tearDown()
-    {
-        a = null;
-        b = null;
-        c = null;
-        d = null;
-        e = null;
-        f = null;
-        g = null;
-        h = null;
-        i = null;
-        view = null;
+    public void testEquals() {
+        assertEquals(view, view);
     }
 
-    public static void main(String[] args)
-    {
-        String[] testCaseName = {ViewTest.class.getName()};
+    public void testEquals2() {
+        View v1=new View(new ViewId(a, 12345), (Vector)members.clone());
+        View v2=new View(a, 12345, (Vector)members.clone());
+        assertEquals(v1, v2);
+        View v3=new View(a, 12543, (Vector)members.clone());
+        assertFalse(v1.equals(v3));
+        v2.getMembers().add(f);
+        assertFalse(v1.equals(v2));
+    }
+
+    public void tearDown() {
+        a=null;
+        b=null;
+        c=null;
+        d=null;
+        e=null;
+        f=null;
+        g=null;
+        h=null;
+        i=null;
+        view=null;
+    }
+
+    public static void main(String[] args) {
+        String[] testCaseName={ViewTest.class.getName()};
         junit.textui.TestRunner.main(testCaseName);
     } //public static void main(String[] args)
 
