@@ -1,0 +1,39 @@
+// $Id: AddressTranslation.txt,v 1.1 2005/01/07 10:01:05 belaban Exp $
+
+On multi-homed systems, the identity of a member is bound to a NIC (either chosen by the OS, or by the
+user through bind_addr): Address. When a message is sent, the msg contains this address as the sender's
+address. Responses go to the same address.
+
+However, if that NIC breaks, and the sender's OS chooses a different NIC for the datagram packets, the
+receiver will still send the response back to the old address (the identity of the sender cannot
+change).
+
+If we set the sender's address in any Message on *reception* of the message, we would be able to send
+the response back to a valid NIC in the above case. However, this means the *identity* of the sender
+changes, which JGroups cannot handle.
+
+SOLUTION I: we could introduce a logical address, which contains the physical address of the NIC
+through which it was sent. Problem: a lot of code would have to change.
+
+SOLUTION II: we maintain, in each transport, a table of sender's address as defined in the Message, and
+physical address of the {Datagram,Multicast}Packet received. Whenever we send a unicast message, we get
+the destination address from this table through a lookup in which dest_msg.dest_addr is the key.
+
+We need to reap the table every now and then to purge old addresses, we could use view changes to do
+so.
+
+Example for SOLUTION II:
+- Member P: address=1.2.3.4:5555
+- P's box has 2 NICs: 1.2.3.4 and 5.6.7.8
+- Receiver R receives a message from P: P.src_addr=1.2.3.4:5555, datagram's address is 1234:5555
+- R doesn't add an entry to the translation table, because the addresses are the same
+- R sends a response: it looks up 1.2.3.4:5555 (dst) in the translation table
+- There is no entry, therefore R sends the response to 1.2.3.4:5555
+- P's NIC 1.2.3.4 is unplugged
+- P sends a message through NIC 5.6.7.8
+- R receives a message M.src_addr=1.2.3.4:5555, datagram's address is 5.6.7.8:5555
+- R adds an entry to its translation table: 1.2.3.4:5555 --> 5.6.7.8:5555
+- R sends a response to 1.2.3.4:5555, since there is an entry for 1.2.3.4:5555, it uses 5.6.7.8:5555 
+  as the destination address of the datagram packet
+
+SOLUTION II allows us to reuse the existing code, but provides for changing underlying IP addresses.
