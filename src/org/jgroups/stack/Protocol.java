@@ -1,4 +1,4 @@
-// $Id: Protocol.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+// $Id: Protocol.java,v 1.2 2003/11/28 19:55:09 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -370,14 +370,14 @@ public abstract class Protocol {
             }
             catch(Exception ex) {
             }
-            if(up_handler.isAlive()) {
+            if(up_handler != null && up_handler.isAlive()) {
                 up_handler.interrupt();  // still alive ? let's just kill it without mercy...
                 try {
                     up_handler.join(THREAD_JOIN_TIMEOUT);
                 }
                 catch(Exception ex) {
                 }
-                if(up_handler.isAlive())
+                if(up_handler != null && up_handler.isAlive())
                     Trace.error("Protocol.stopInternal()", "up_handler thread for " + getName() +
                                                            " was interrupted (in order to be terminated), but is still alive");
             }
@@ -391,14 +391,14 @@ public abstract class Protocol {
             }
             catch(Exception ex) {
             }
-            if(down_handler.isAlive()) {
+            if(down_handler != null && down_handler.isAlive()) {
                 down_handler.interrupt(); // still alive ? let's just kill it without mercy...
                 try {
                     down_handler.join(THREAD_JOIN_TIMEOUT);
                 }
                 catch(Exception ex) {
                 }
-                if(down_handler.isAlive())
+                if(down_handler != null && down_handler.isAlive())
                     Trace.error("Protocol.stopInternal()", "down_handler thread for " + getName() +
                                                            " was interrupted (in order to be terminated), but is is still alive");
             }
