@@ -1,4 +1,4 @@
-// $Id: QueueTest.java,v 1.4 2003/09/20 01:05:41 belaban Exp $
+// $Id: QueueTest.java,v 1.5 2003/09/20 01:16:15 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -477,8 +477,48 @@ public class QueueTest extends TestCase {
 		assertEquals(num_dead, 10);
 
 		queue.close(false); // will cause all threads still blocking on peek() to return
-
 	}
+
+
+    /**
+     * Times how long it takes to add and remove 1000000 elements concurrently (1 reader, 1 writer)
+     */
+    public void testConcurrentAddRemove() {
+        final long   NUM=1000000;
+        long         num_received=0;
+        Object       ret;
+        long         start, stop;
+
+        start=System.currentTimeMillis();
+
+        new Thread() {
+            public void run() {
+                for(int i=0; i < NUM; i++) {
+                    try {
+                        queue.add(new Object());
+                    }
+                    catch(QueueClosedException e) {
+                    }
+                }
+            }
+        }.start();
+
+        while(num_received < NUM) {
+            try {
+                ret=queue.remove();
+                if(ret != null)
+                    num_received++;
+            }
+            catch(QueueClosedException e) {
+                e.printStackTrace();
+                fail();
+            }
+        }
+        assertEquals(NUM, num_received);
+        stop=System.currentTimeMillis();
+        System.out.println("time to add/remove " + NUM + " elements: " + (stop-start));
+    }
+
 
 
     /** Has multiple threads add(), remove() and peek() elements to/from the queue */
