@@ -1,4 +1,4 @@
-// $Id: ProtocolStack.java,v 1.9 2004/03/30 06:47:27 belaban Exp $
+// $Id: ProtocolStack.java,v 1.10 2004/04/23 01:39:04 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -278,7 +278,7 @@ public class ProtocolStack extends Protocol implements Transport {
         down(new Event(Event.ACK));
         ack_promise.getResult(0);
         stop=System.currentTimeMillis();
-        if(log.isInfoEnabled()) log.info("flushing took " + (stop-start) + " msecs");
+        if(log.isDebugEnabled()) log.debug("flushing took " + (stop-start) + " msecs");
     }
 
 
@@ -330,7 +330,7 @@ public class ProtocolStack extends Protocol implements Transport {
         if(top_prot != null)
             top_prot.receiveDownEvent(evt);
         else
-            if(log.isErrorEnabled()) log.error("no down protocol available !");
+            log.error("no down protocol available !");
     }
 
 

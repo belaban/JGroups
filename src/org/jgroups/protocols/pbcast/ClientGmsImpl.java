@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.6 2004/04/22 23:50:16 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.7 2004/04/23 01:39:03 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -21,7 +21,7 @@ import java.util.Vector;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.6 $
+ * @version $Revision: 1.7 $
  */
 public class ClientGmsImpl extends GmsImpl {
     Vector  initial_mbrs=new Vector();
@@ -59,13 +59,13 @@ public class ClientGmsImpl extends GmsImpl {
             if(log.isDebugEnabled()) log.debug("initial_mbrs are " + initial_mbrs);
             if(initial_mbrs.size() == 0) {
                 if(gms.disable_initial_coord) {
-                    if(log.isInfoEnabled())
-                        log.info("received an initial membership of 0, but cannot become coordinator (disable_initial_coord=" +
+                    if(log.isDebugEnabled())
+                        log.debug("received an initial membership of 0, but cannot become coordinator (disable_initial_coord=" +
                                 gms.disable_initial_coord + "), will retry fetching the initial membership");
                     continue;
                 }
-                if(log.isInfoEnabled())
-                    log.info("no initial members discovered: creating group as first member");
+                if(log.isDebugEnabled())
+                    log.debug("no initial members discovered: creating group as first member");
                 becomeSingletonMember(mbr);
                 return;
             }
@@ -78,7 +78,7 @@ public class ClientGmsImpl extends GmsImpl {
             }
 
             try {
-                if(log.isInfoEnabled()) log.info("sending handleJoin(" + mbr + ") to " + coord);
+                if(log.isDebugEnabled()) log.debug("sending handleJoin(" + mbr + ") to " + coord);
                 sendJoinMessage(coord, mbr);
                 rsp=(JoinRsp)join_promise.getResult(gms.join_timeout);
 
@@ -90,7 +90,7 @@ public class ClientGmsImpl extends GmsImpl {
                     tmp_digest=rsp.getDigest();
                     if(tmp_digest != null) {
                         tmp_digest.incrementHighSeqno(coord); 	// see DESIGN for an explanantion
-                        if(log.isInfoEnabled()) log.info("digest is " + tmp_digest);
+                        if(log.isDebugEnabled()) log.debug("digest is " + tmp_digest);
                         gms.setDigest(tmp_digest);
                     }
                     else
@@ -115,7 +115,7 @@ public class ClientGmsImpl extends GmsImpl {
                 }
             }
             catch(Exception e) {
-                if(log.isInfoEnabled()) log.info("exception=" + e.toString() + ", retrying");
+                if(log.isDebugEnabled()) log.debug("exception=" + e.toString() + ", retrying");
             }
 
             Util.sleep(gms.join_retry_timeout);
@@ -174,7 +174,7 @@ public class ClientGmsImpl extends GmsImpl {
      */
     private boolean installView(View new_view) {
         Vector mems=new_view.getMembers();
-         if(log.isInfoEnabled()) log.info("new_view=" + new_view);
+         if(log.isDebugEnabled()) log.debug("new_view=" + new_view);
         if(gms.local_addr == null || mems == null || !mems.contains(gms.local_addr)) {
             if(log.isErrorEnabled()) log.error("I (" + gms.local_addr +
                                                        ") am not member of " + mems + ", will not install view");
@@ -299,7 +299,7 @@ public class ClientGmsImpl extends GmsImpl {
             if(votes.size() > 1)
                 if(log.isWarnEnabled()) log.warn("there was more than 1 candidate for coordinator: " + votes);
             else
-                if(log.isInfoEnabled()) log.info("election results: " + votes);
+                if(log.isDebugEnabled()) log.debug("election results: " + votes);
         }
 
 
@@ -336,9 +336,8 @@ public class ClientGmsImpl extends GmsImpl {
 
         gms.passUp(new Event(Event.BECOME_SERVER));
         gms.passDown(new Event(Event.BECOME_SERVER));
-
-            if(log.isInfoEnabled()) log.info("created group (first member). My view is " + gms.view_id +
-                       ", impl is " + gms.getImpl().getClass().getName());
+        if(log.isDebugEnabled()) log.debug("created group (first member). My view is " + gms.view_id +
+                ", impl is " + gms.getImpl().getClass().getName());
     }
 
 

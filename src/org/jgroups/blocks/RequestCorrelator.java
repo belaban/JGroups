@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.6 2004/03/30 06:47:12 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.7 2004/04/23 01:39:02 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -366,8 +366,7 @@ public class RequestCorrelator {
         ArrayList    copy;
 
         if(mbr == null) return;
-
-            if(log.isDebugEnabled()) log.debug("suspect=" + mbr);
+        if(log.isDebugEnabled()) log.debug("suspect=" + mbr);
 
         // copy so we don't run into bug #761804 - Bela June 27 2003
         synchronized(requests) {
@@ -437,15 +436,13 @@ public class RequestCorrelator {
         // request (was addressed to other members)
         dests=hdr.dest_mbrs;
         if(dests != null && local_addr != null && !dests.contains(local_addr)) {
-
-                if(log.isInfoEnabled()) log.info("discarded request from " + msg.getSrc() +
-                           " as we are not part of destination list (local_addr=" + local_addr +
-                           ", hdr=" + hdr + ")");
+            if(log.isDebugEnabled()) log.debug("discarded request from " + msg.getSrc() +
+                    " as we are not part of destination list (local_addr=" + local_addr +
+                    ", hdr=" + hdr + ")");
             return false;
         }
 
-
-            if(log.isDebugEnabled()) log.debug("header is " + hdr);
+        if(log.isTraceEnabled()) log.trace("header is " + hdr);
 
         // [Header.REQ]:
         // i. If there is no request handler, discard
@@ -459,8 +456,7 @@ public class RequestCorrelator {
         switch(hdr.type) {
         case Header.REQ:
             if(request_handler == null) {
-                if(log.isWarnEnabled()) log.warn("there is no " +
-                           "request handler installed to deliver request !");
+                if(log.isWarnEnabled()) log.warn("there is no request handler installed to deliver request !");
                 return(false);
             }
 
@@ -572,10 +568,9 @@ public class RequestCorrelator {
         // ID as the request and the name of the sender request correlator
         hdr    = (Header)req.removeHeader(name);
 
-
-            if(log.isDebugEnabled()) log.debug("calling request handler (" +
-                    (request_handler != null? request_handler.getClass().getName() : "null") +
-                    ") with request " + hdr.id);
+        if(log.isTraceEnabled()) log.trace("calling request handler (" +
+                (request_handler != null? request_handler.getClass().getName() : "null") +
+                ") with request " + hdr.id);
 
         try {
             retval = request_handler.handle(req);
@@ -613,9 +608,8 @@ public class RequestCorrelator {
             rsp.setBuffer(rsp_buf);
         rsp_hdr=new Header(Header.RSP, hdr.id, false, name);
         rsp.putHeader(name, rsp_hdr);
-
-            if(log.isDebugEnabled()) log.debug("sending rsp for " +
-                    rsp_hdr.id + " to " + rsp.getDest());
+        if(log.isTraceEnabled()) log.trace("sending rsp for " +
+                rsp_hdr.id + " to " + rsp.getDest());
 
         try {
             if(transport instanceof Protocol)

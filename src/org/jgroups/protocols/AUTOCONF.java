@@ -1,4 +1,4 @@
-// $Id: AUTOCONF.java,v 1.5 2004/03/30 06:47:20 belaban Exp $
+// $Id: AUTOCONF.java,v 1.6 2004/04/23 01:39:03 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -40,8 +40,7 @@ public class AUTOCONF extends Protocol {
 
     public void init() throws Exception {
         senseNetworkConfiguration();
-
-            if(log.isInfoEnabled()) log.info("configuration is\n" + config);
+        if(log.isDebugEnabled()) log.debug("configuration is\n" + config);
     }
 
     public void start() throws Exception {
@@ -163,7 +162,7 @@ public class AUTOCONF extends Protocol {
 
         /** Reduce the frag_size a bit to prevent packets that are too large (see bug #854887) */
         lower-=frag_overhead;
-         if(log.isInfoEnabled()) log.info("frag_size=" + lower);
+         if(log.isDebugEnabled()) log.debug("frag_size=" + lower);
         return lower;
     }
 

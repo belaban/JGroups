@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.9 2004/04/16 05:38:42 belaban Exp $
+// $Id: GMS.java,v 1.10 2004/04/23 01:39:03 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -88,7 +88,7 @@ public class GMS extends Protocol {
     public void setImpl(GmsImpl new_impl) {
         synchronized(impl_mutex) {
             impl=new_impl;
-             if(log.isInfoEnabled()) log.info("changed role to " + new_impl.getClass().getName());
+             if(log.isDebugEnabled()) log.debug("changed role to " + new_impl.getClass().getName());
         }
     }
 
@@ -127,7 +127,7 @@ public class GMS extends Protocol {
         }
         tmp.leaving=false;
         setImpl(tmp);
-         if(log.isInfoEnabled()) log.info(local_addr + " became coordinator");
+         if(log.isDebugEnabled()) log.debug(local_addr + " became coordinator");
     }
 
 
@@ -140,7 +140,7 @@ public class GMS extends Protocol {
         }
         tmp.leaving=false;
         setImpl(tmp);
-         if(log.isInfoEnabled()) log.info(local_addr + " became participant");
+         if(log.isDebugEnabled()) log.debug(local_addr + " became participant");
     }
 
     public void becomeClient() {
@@ -152,7 +152,7 @@ public class GMS extends Protocol {
         }
         tmp.initial_mbrs.removeAllElements();
         setImpl(tmp);
-         if(log.isInfoEnabled()) log.info(local_addr + " became client");
+         if(log.isDebugEnabled()) log.debug(local_addr + " became client");
     }
 
 
@@ -275,7 +275,7 @@ public class GMS extends Protocol {
         Message view_change_msg;
         GmsHeader hdr;
 
-        if(log.isInfoEnabled()) log.info("mcasting view {" + new_view + "} (" + new_view.size() + " mbrs)\n");
+        if(log.isDebugEnabled()) log.debug("mcasting view {" + new_view + "} (" + new_view.size() + " mbrs)\n");
         view_change_msg=new Message(); // bcast to all members
         hdr=new GmsHeader(GmsHeader.VIEW, new_view);
         hdr.digest=digest;
@@ -304,7 +304,7 @@ public class GMS extends Protocol {
         ViewId vid=new_view.getVid();
         Vector mbrs=new_view.getMembers();
 
-         if(log.isInfoEnabled()) log.info("[local_addr=" + local_addr + "] view is " + new_view);
+         if(log.isDebugEnabled()) log.debug("[local_addr=" + local_addr + "] view is " + new_view);
 
         // Discards view with id lower than our own. Will be installed without check if first view
         if(view_id != null) {
@@ -501,8 +501,7 @@ public class GMS extends Protocol {
                         impl.handleJoinResponse(hdr.join_rsp);
                         break;
                     case GmsHeader.LEAVE_REQ:
-                        if(log.isInfoEnabled()) log.info("received LEAVE_REQ " + hdr + " from " + msg.getSrc());
-
+                        if(log.isDebugEnabled()) log.debug("received LEAVE_REQ " + hdr + " from " + msg.getSrc());
                         if(hdr.mbr == null) {
                             if(log.isErrorEnabled()) log.error("LEAVE_REQ's mbr field is null");
                             return;

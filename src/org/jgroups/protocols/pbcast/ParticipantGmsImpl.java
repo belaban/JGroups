@@ -1,4 +1,4 @@
-// $Id: ParticipantGmsImpl.java,v 1.4 2004/03/30 06:47:18 belaban Exp $
+// $Id: ParticipantGmsImpl.java,v 1.5 2004/04/23 01:39:03 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -49,7 +49,7 @@ public class ParticipantGmsImpl extends GmsImpl {
                 return;
             }
 
-            if(log.isInfoEnabled()) log.info("sending LEAVE request to " + coord);
+            if(log.isDebugEnabled()) log.debug("sending LEAVE request to " + coord);
             sendLeaveMessage(coord, mbr);
             synchronized(leave_promise) {
                 result=leave_promise.getResult(gms.leave_timeout);
@@ -108,7 +108,7 @@ public class ParticipantGmsImpl extends GmsImpl {
      */
     public void handleViewChange(View new_view, Digest digest) {
         Vector mbrs=new_view.getMembers();
-         if(log.isInfoEnabled()) log.info("view=" + new_view);
+         if(log.isDebugEnabled()) log.debug("view=" + new_view);
         suspected_mbrs.removeAllElements();
         if(leaving && !mbrs.contains(gms.local_addr)) { // received a view in which I'm not member: ignore
             return;
@@ -123,16 +123,12 @@ public class ParticipantGmsImpl extends GmsImpl {
         if(mbr == null) return;
         if(!suspected_mbrs.contains(mbr))
             suspected_mbrs.addElement(mbr);
-
-
-
-            if(log.isInfoEnabled()) log.info("suspected mbr=" + mbr +
-                                                             ", suspected_mbrs=" + suspected_mbrs);
+        
+        if(log.isDebugEnabled()) log.debug("suspected mbr=" + mbr + ", suspected_mbrs=" + suspected_mbrs);
 
         if(wouldIBeCoordinator()) {
-
-                if(log.isInfoEnabled()) log.info("suspected mbr=" + mbr + "), members are " +
-                                                                 gms.members + ", coord=" + gms.local_addr + ": I'm the new coord !");
+            if(log.isDebugEnabled()) log.debug("suspected mbr=" + mbr + "), members are " +
+                    gms.members + ", coord=" + gms.local_addr + ": I'm the new coord !");
 
             suspects=(Vector)suspected_mbrs.clone();
             suspected_mbrs.removeAllElements();

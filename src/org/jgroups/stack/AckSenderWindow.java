@@ -1,4 +1,4 @@
-// $Id: AckSenderWindow.java,v 1.2 2004/03/30 06:47:27 belaban Exp $
+// $Id: AckSenderWindow.java,v 1.3 2004/04/23 01:39:04 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -94,7 +94,7 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
         }
 
 
-            if(log.isInfoEnabled()) log.info("window_size=" + this.window_size +
+            if(log.isDebugEnabled()) log.debug("window_size=" + this.window_size +
                     ", min_threshold=" + this.min_threshold);
         use_sliding_window = true;
     }
@@ -139,7 +139,7 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
                         queueing = true;
                         addToQueue(seqno, msg);
 
-                            if(log.isInfoEnabled()) log.info("window_size (" + window_size + ") was exceeded, " +
+                            if(log.isTraceEnabled()) log.trace("window_size (" + window_size + ") was exceeded, " +
                                     "starting to queue messages until window size falls under " + min_threshold);
                     } else {
                         addMessage(seqno, tmp, msg);
@@ -167,7 +167,7 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
             if (use_sliding_window && queueing) {
                 if (msgs.size() < min_threshold) { // we fell below threshold, now we can resume adding msgs
 
-                        if(log.isInfoEnabled()) log.info("number of messages in table fell " +
+                        if(log.isTraceEnabled()) log.trace("number of messages in table fell " +
                                 "under min_threshold (" + min_threshold + "): adding " +
                                 msg_queue.size() + " messages on queue");
 
@@ -181,13 +181,13 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
 
                     if (msgs.size() + 1 > window_size) {
 
-                            if(log.isInfoEnabled()) log.info("exceded window_size (" + window_size +
+                            if(log.isTraceEnabled()) log.trace("exceeded window_size (" + window_size +
                                     ") again, will still queue");
                         return; // still queueuing
                     } else
                         queueing = false; // allows add() to add messages again
 
-                        if(log.isInfoEnabled()) log.info("set queueing to false (table size=" + msgs.size() + ")");
+                        if(log.isTraceEnabled()) log.trace("set queueing to false (table size=" + msgs.size() + ")");
                 }
             }
         }
@@ -264,7 +264,7 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
 
         public void retransmit(long seqno, Message msg) {
 
-                if(log.isInfoEnabled()) log.info("seqno=" + seqno);
+                if(log.isDebugEnabled()) log.debug("seqno=" + seqno);
 
             curr_time = System.currentTimeMillis();
         }

@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.13 2004/04/22 23:49:28 belaban Exp $
+// $Id: NAKACK.java,v 1.14 2004/04/23 01:39:03 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -244,7 +244,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
 
             case Event.CONFIG:
                 passDown(evt);
-                if(log.isInfoEnabled()) log.info("received CONFIG event: " + evt.getArg());
+                if(log.isDebugEnabled()) log.debug("received CONFIG event: " + evt.getArg());
                 handleConfigEvent((HashMap)evt.getArg());
                 return;
 
@@ -311,7 +311,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
 
             case Event.CONFIG:
                 passUp(evt);
-                if(log.isInfoEnabled()) log.info("received CONFIG event: " + evt.getArg());
+                if(log.isDebugEnabled()) log.debug("received CONFIG event: " + evt.getArg());
                 handleConfigEvent((HashMap)evt.getArg());
                 return;
 
@@ -515,8 +515,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
             size+=len;
             if(size >= max_xmit_size) {
                 // size has reached max_xmit_size. go ahead and send message (excluding the current message)
-                if(log.isDebugEnabled())
-                    log.debug("xmitting msgs [" + marker + "-" + (i - 1) + "] to " + dest);
+                if(log.isTraceEnabled())
+                    log.trace("xmitting msgs [" + marker + "-" + (i - 1) + "] to " + dest);
                 sendXmitRsp(dest, (LinkedList)list.clone(), marker, i - 1);
                 marker=i;
                 list.clear();
@@ -534,8 +534,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
         }
 
         if(list.size() > 0) {
-            if(log.isDebugEnabled())
-                log.debug("xmitting msgs [" + marker + "-" + last_seqno + "] to " + dest);
+            if(log.isTraceEnabled())
+                log.trace("xmitting msgs [" + marker + "-" + last_seqno + "] to " + dest);
             sendXmitRsp(dest, (LinkedList)list.clone(), marker, last_seqno);
         }
     }
@@ -623,8 +623,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
             if(!members.contains(sender)) {
                 win=(NakReceiverWindow)received_msgs.get(sender);
                 win.reset();
-                if(log.isInfoEnabled())
-                    log.info("removing " + sender + " from received_msgs (not member anymore)");
+                if(log.isDebugEnabled())
+                    log.debug("removing " + sender + " from received_msgs (not member anymore)");
                 received_msgs.remove(sender);
             }
         }
@@ -797,8 +797,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
         long ret=0;
 
         if(sender == null) {
-
-                if(log.isErrorEnabled()) log.error("sender is null");
+            if(log.isErrorEnabled()) log.error("sender is null");
             return ret;
         }
         if(sender.equals(local_addr))
@@ -833,8 +832,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
             return;
         }
 
-        if(log.isInfoEnabled())
-            log.info("received digest " + d);
+        if(log.isDebugEnabled())
+            log.debug("received digest " + d);
 
         for(int i=0; i < d.size(); i++) {
             sender=d.senderAt(i);
@@ -863,12 +862,12 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
             if(seqno < 0)
                 continue;
 
-             if(log.isInfoEnabled()) log.info("deleting stable msgs < " + sender + "#" + seqno);
+             if(log.isDebugEnabled()) log.debug("deleting stable msgs < " + sender + "#" + seqno);
 
             // garbage collect from sent_msgs if sender was myself
             if(sender.equals(local_addr)) {
-                if(log.isInfoEnabled())
-                    log.info("removing [" + deleted_up_to + " - " + seqno + "] from sent_msgs");
+                if(log.isDebugEnabled())
+                    log.debug("removing [" + deleted_up_to + " - " + seqno + "] from sent_msgs");
                 for(long j=deleted_up_to; j <= seqno; j++)
                     sent_msgs.remove(new Long(j));
                 deleted_up_to=seqno;
@@ -894,8 +893,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
         NakAckHeader hdr;
         Message retransmit_msg=new Message(sender, null, null);
 
-        if(log.isInfoEnabled()) log.info("sending XMIT_REQ ([" + first_seqno +
-                ", " + last_seqno + "]) to " + sender);
+        if(log.isDebugEnabled())
+            log.debug("sending XMIT_REQ ([" + first_seqno + ", " + last_seqno + "]) to " + sender);
         //
           //  if(log.isDebugEnabled()) log.debug("TRACE.special()", "XMIT: " + first_seqno + " - " + last_seqno + ", sender=" + sender);
 
@@ -977,7 +976,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
         if(map == null) return;
         if(map.containsKey("frag_size")) {
             max_xmit_size=((Integer)map.get("frag_size")).intValue();
-             if(log.isInfoEnabled()) log.info("max_xmit_size=" + max_xmit_size);
+            if(log.isInfoEnabled()) log.info("max_xmit_size=" + max_xmit_size);
         }
     }
 
