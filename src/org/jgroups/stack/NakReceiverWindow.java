@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindow.java,v 1.10 2004/05/10 22:27:55 belaban Exp $
+// $Id: NakReceiverWindow.java,v 1.11 2004/06/25 00:27:41 belaban Exp $
 
 
 package org.jgroups.stack;
@@ -79,6 +79,15 @@ public class NakReceiverWindow {
      moved from received_msgs to delivered_msgs. Message garbage colection will gradually remove elements in this map */
     private TreeMap delivered_msgs=new TreeMap();
 
+    /**
+     * Messages that have been received in order are sent up the stack (= delivered to the application). Delivered
+     * messages are removed from NakReceiverWindow.received_msgs and moved to NakReceiverWindow.delivered_msgs, where
+     * they are later garbage collected (by STABLE). Since we do retransmits only from sent messages, never
+     * received or delivered messages, we can turn the moving to delivered_msgs off, so we don't keep the message
+     * around, and don't need to wait for garbage collection to remove them.
+     */
+    private boolean discard_delivered_msgs=false;
+
     /** if not set, no retransmitter thread will be started. Useful if
      * protocols do their own retransmission (e.g PBCAST) */
     private Retransmitter retransmitter=null;
@@ -138,6 +147,10 @@ public class NakReceiverWindow {
             retransmitter.setRetransmitTimeouts(timeouts);
     }
 
+
+    public void setDiscardDeliveredMessages(boolean flag) {
+        this.discard_delivered_msgs=flag;
+    }
 
     /**
      * Adds a message according to its sequence number (ordered).
@@ -228,7 +241,9 @@ public class NakReceiverWindow {
                 retval=(Message)received_msgs.get(key);
                 if(retval != null) {
                     received_msgs.remove(key);       // move from received_msgs to ...
-                    delivered_msgs.put(key, retval); // delivered_msgs
+                    if(discard_delivered_msgs == false) {
+                        delivered_msgs.put(key, retval); // delivered_msgs
+                    }
                     head++;
                 }
             }
