@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.43 2004/09/23 16:29:42 belaban Exp $
+// $Id: UDP.java,v 1.44 2004/09/23 22:30:49 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -686,6 +686,8 @@ public class UDP extends Protocol implements Runnable {
         try {
             // skip the first n bytes (default: 4), this is the version info
             inp_stream=new ByteArrayInputStream(data, VERSION_LENGTH, data.length - VERSION_LENGTH);
+            // inp=new ObjectInputStream(new BufferedInputStream(inp_stream));
+            // BufferedInputStream above makes no diff
             inp=new ObjectInputStream(inp_stream);
             if(enable_bundling) {
                 l=new List();
@@ -845,16 +847,14 @@ public class UDP extends Protocol implements Runnable {
 
     byte[] messageToBuffer(Message msg) throws Exception {
         ObjectOutputStream   out;
-        // BufferedOutputStream bos;
 
         out_stream.reset();
-        //bos=new BufferedOutputStream(out_stream);
         out_stream.write(Version.version_id, 0, Version.version_id.length); // write the version
-        // bos.write(Version.version_id, 0, Version.version_id.length); // write the version
-        out=new ObjectOutputStream(out_stream);
-        // out=new ObjectOutputStream(bos);
+        // out=new ObjectOutputStream(new BufferedOutputStream(out_stream));
+        // BufferedOutputStream makes no difference
+        out=new ObjectOutputStream(new BufferedOutputStream(out_stream));
         msg.writeExternal(out);
-        out.flush(); // needed if out buffers its output to out_stream
+        out.close(); // needed if out buffers its output to out_stream
         return out_stream.toByteArray();
     }
 
@@ -1428,7 +1428,6 @@ public class UDP extends Protocol implements Runnable {
      */
     class OutgoingPacketHandler implements Runnable {
         Thread             t=null;
-        ObjectOutputStream out;
         byte[]             buf;
         DatagramPacket     packet;
         IpAddress          dest;
