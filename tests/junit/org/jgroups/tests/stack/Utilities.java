@@ -1,4 +1,4 @@
-// $Id: Utilities.java,v 1.1 2003/10/15 20:14:57 ovidiuf Exp $
+// $Id: Utilities.java,v 1.2 2003/10/29 16:02:45 ovidiuf Exp $
 
 package org.jgroups.tests.stack;
 
@@ -17,10 +17,12 @@ import org.jgroups.stack.GossipServer;
  * @since 2.2.1
  *
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.2 $
  **/
 public class Utilities {
 
+
+    private static GossipRouter gossipRouter = null;
 
     public static int startGossipRouter() throws Exception {
         return startGossipRouter(GossipRouter.EXPIRY_TIME,
@@ -45,19 +47,26 @@ public class Utilities {
                                   final long routingClientReplyTimeout) 
         throws Exception {
 
+        if (gossipRouter!=null) {
+            throw new Exception("GossipRouter already started");
+        }
+
 	final int routerPort = getFreePort();
 	Thread routerThread = new Thread(new Runnable() {
 		public void run() {	
 		    try {
-			new GossipRouter(routerPort, null, expiryTime,
-                                   gossipRequestTimeout, 
-                                   routingClientReplyTimeout).start();
+                        gossipRouter = 
+                            new GossipRouter(routerPort, null, expiryTime,
+                                             gossipRequestTimeout, 
+                                             routingClientReplyTimeout);
+                        gossipRouter.start();
 		    }
 		    catch(Exception e) {
                         String msg = 
                             "Failed to start the router on port "+routerPort;
 			System.err.println(msg);
 			e.printStackTrace();
+                        gossipRouter = null;
 		    }
 		}});
 	routerThread.start();
@@ -142,7 +151,13 @@ public class Utilities {
     }
 
 
-    public static void stopGossipRouter(int routerPort) throws Exception {
+    public static void stopGossipRouter() throws Exception {
+        
+        if (gossipRouter==null) {
+            throw new Exception("There's no GossipRouter running");
+        }
+        gossipRouter.stop();
+        gossipRouter=null;
     }
 
 

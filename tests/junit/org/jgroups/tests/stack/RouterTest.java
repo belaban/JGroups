@@ -1,4 +1,4 @@
-// $Id: RouterTest.java,v 1.1 2003/10/15 20:14:57 ovidiuf Exp $
+// $Id: RouterTest.java,v 1.2 2003/10/29 16:02:45 ovidiuf Exp $
 
 package org.jgroups.tests.stack;
 
@@ -29,7 +29,7 @@ import org.jgroups.util.Util;
  * @since 2.2.1
  *
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.2 $
  **/
 public class RouterTest extends TestCase {
 
@@ -48,14 +48,13 @@ public class RouterTest extends TestCase {
 
     public void tearDown() throws Exception {
 	super.tearDown();
-        Utilities.stopGossipRouter(routerPort);
+        Utilities.stopGossipRouter();
     }
 
     /**
      * Sends a GossipRouter.GET request to a router with an empty routing table.
      **/
     public void testEmptyGET() throws Exception {
-
         int len;
         byte[] buffer;
 
@@ -87,47 +86,6 @@ public class RouterTest extends TestCase {
         s.close();
     }
 
-
-//     /**
-//      * Tests the situation when a routing client is lazy to send its 
-//      * request type and group identification. In this situation, the server
-//      * should close connection after timeout.
-//      **/
-//     public void testLazyClient() throws Exception {
-        
-//         Trace.info("RouterTest", "running testLazyClient()");
-
-//         int len;
-//         byte[] buffer;
-
-//         Socket s = new Socket("localhost", routerPort);
-//         DataInputStream dis = new DataInputStream(s.getInputStream());
-//         DataOutputStream dos = new DataOutputStream(s.getOutputStream());
-
-//         // read the IpAddress sent by GossipRouter
-//         len = dis.readInt();
-//         buffer = new byte[len];
-//         dis.readFully(buffer, 0, len);
-//         IpAddress localAddr = (IpAddress)Util.objectFromByteBuffer(buffer);
-//         assertEquals(localAddr.getIpAddress(), s.getLocalAddress());
-//         assertEquals(localAddr.getPort(), s.getLocalPort());
-
-//         // send GET request later than GossipRouter's routingClientReplyTimeout
-//         Thread.currentThread().
-//             sleep(GossipRouter.ROUTING_CLIENT_REPLY_TIMEOUT+500);
-
-//         try {
-//             dos.writeInt(GossipRouter.GET);
-//             fail("Write should have failed");
-//         }
-//         catch(Exception e) {
-//             assertTrue(e instanceof SocketException);
-//         }
-
-//         dis.close();
-//         dos.close();
-//         s.close();
-//     }
 
     
     /**
