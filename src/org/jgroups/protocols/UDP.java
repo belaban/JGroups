@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.16 2004/02/27 20:56:14 belaban Exp $
+// $Id: UDP.java,v 1.17 2004/02/27 21:10:41 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -1388,7 +1388,7 @@ public class UDP extends Protocol implements Runnable {
 
 
             // ****************** profiling ******************
-            if(num_msgs == 0) {
+/*            if(num_msgs == 0) {
                 start=System.currentTimeMillis();
                 num_msgs++;
             }
@@ -1405,7 +1405,7 @@ public class UDP extends Protocol implements Runnable {
             }
             else {
                 num_msgs++;
-            }
+            }*/
             // ****************** profiling ******************
 
             len=msg.size(); // todo: use msg.getLength() instead of msg.getSize()
@@ -1455,19 +1455,17 @@ public class UDP extends Protocol implements Runnable {
                 if(msgs.size() == 0)
                     return;
 
-                if(Trace.trace)
-                    Trace.info("UDP.BundlingOutgoingPacketHandler.bundleAndSend()", "sending msgs to " + msgs.keySet());
                 for(Iterator it=msgs.entrySet().iterator(); it.hasNext();) {
                     entry=(Map.Entry)it.next();
                     dest=(IpAddress)entry.getKey();
                     addr=dest.getIpAddress();
                     port=dest.getPort();
                     l=(List)entry.getValue();
-                    out_stream.reset();
-                    //bos=new BufferedOutputStream(out_stream);
-                    out_stream.write(Version.version_id, 0, Version.version_id.length); // write the version
-                    // bos.write(Version.version_id, 0, Version.version_id.length); // write the version
                     try {
+                        out_stream.reset();
+                        // BufferedOutputStream bos=new BufferedOutputStream(out_stream);
+                        out_stream.write(Version.version_id, 0, Version.version_id.length); // write the version
+                        //bos.write(Version.version_id, 0, Version.version_id.length); // write the version
                         out=new ObjectOutputStream(out_stream);
                         // out=new ObjectOutputStream(bos);
                         l.writeExternal(out);
