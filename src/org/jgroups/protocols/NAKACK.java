@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.5 2004/04/05 01:41:16 belaban Exp $
+// $Id: NAKACK.java,v 1.6 2004/04/23 17:32:54 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -406,15 +406,16 @@ public class NAKACK extends Protocol {
                     if(log.isErrorEnabled()) log.error("message m2 is null");
                     continue;
                 }
-                if(h1.seqno == h2.seqno && m1.getSrc().equals(m2.getSrc())) {
+                if(h1.seqno == h2.seqno && m1.getSrc() != null && m2.getSrc() != null &&
+                        m1.getSrc().equals(m2.getSrc())) {
                     present=true;
                 }
             }
-            if(!present) final_v.addElement(m1);
+            if(!present)
+                final_v.addElement(m1);
         }
 
-
-            if(log.isWarnEnabled()) log.warn("rebroadcasting " + final_v.size() + " messages");
+        if(log.isWarnEnabled()) log.warn("rebroadcasting " + final_v.size() + " messages");
 
         /* Now re-broadcast messages using original NakAckHeader (same seqnos, same sender !) */
         for(int i=0; i < final_v.size(); i++) {
