@@ -2,9 +2,9 @@ package org.jgroups.tests.adaptudp;
 
 import org.apache.log4j.Logger;
 
-import java.io.DataInputStream;
 import java.io.BufferedInputStream;
-import java.net.ServerSocket;
+import java.io.DataInputStream;
+import java.net.MulticastSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +29,7 @@ public class ReceiverThread extends Thread {
     long    beginning=0, ending=0, elapsed_time, last_dump;
     long    log_interval=1000;
     boolean gnuplot_output=Boolean.getBoolean("gnuplot_output");
-    ServerSocket srv_sock;
+    MulticastSocket recv_sock;
     List    receivers=new ArrayList();
     Object  signal=new Object();
     Object  counter_mutex=new Object();
@@ -37,12 +37,12 @@ public class ReceiverThread extends Thread {
     boolean started=false;
 
 
-    public ReceiverThread(ServerSocket srv_sock, int num_msgs, int ms, int ns, long log_interval) {
+    public ReceiverThread(MulticastSocket recv_sock, int num_msgs, int ms, int ns, long log_interval) {
         msg_size=ms;
         num_senders=ns;
         expected_msgs=num_msgs * num_senders;
         this.log_interval=log_interval;
-        this.srv_sock=srv_sock;
+        this.recv_sock=recv_sock;
     }
 
 
@@ -74,7 +74,7 @@ public class ReceiverThread extends Thread {
 
 
         // accept connections and start 1 Receiver per connection
-        Thread acceptor=new Thread() {
+/*        Thread acceptor=new Thread() {
             public void run() {
                 while(true) {
                     try {
@@ -92,7 +92,7 @@ public class ReceiverThread extends Thread {
             }
         };
         acceptor.setDaemon(true);
-        acceptor.start();
+        acceptor.start();*/
 
         // wait for all messages
         synchronized(signal) {

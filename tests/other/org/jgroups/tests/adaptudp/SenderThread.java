@@ -29,11 +29,10 @@ public class SenderThread extends Thread {
 
 
 
-    public SenderThread(DatagramSocket send_sock, List nodes, int num_msgs, int ms, long log_interval) {
+    public SenderThread(DatagramSocket send_sock, int num_msgs, int ms, long log_interval) {
         this.num_msgs=num_msgs;
         msg_size=ms;
         this.log_interval=log_interval;
-        this.nodes=nodes;
         this.send_sock=send_sock;
     }
 

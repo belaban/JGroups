@@ -7,10 +7,9 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.net.MulticastSocket;
 import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.MulticastSocket;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
@@ -44,8 +43,6 @@ public class Test {
 
         MulticastSocket recv_sock;
         DatagramSocket  send_sock;
-
-        List nodes=new ArrayList(); // list of cluster nodes (InetAddresses)
 
         for(int i=0; i < args.length; i++) {
             if(args[i].equals("-sender")) {
@@ -91,11 +88,6 @@ public class Test {
                     log_interval=Long.parseLong(line.substring(line.indexOf('=') + 1,
                             line.indexOf(';')));
                 }
-                else if(line.startsWith("CLUSTER=")) {
-                    nodes=parseCommaDelimitedList(line.substring(line.indexOf('=') + 1,
-                            line.indexOf(';')).trim());
-
-                }
                 else if(line.startsWith("GNUPLOT_OUTPUT=")) {
                     // only parse if not yet set by -Dgnuplot_output=true option (overrides file)
                     if(System.getProperty("gnuplot_output") == null) {
@@ -126,7 +118,7 @@ public class Test {
 
             new UdpTester(recv_sock, send_sock, sender, num_msgs,
                     msg_size, grpMembers, num_senders,
-                    log_interval, recv_sock, nodes).initialize();
+                    log_interval).initialize();
         }
         catch(FileNotFoundException notFound) {
             System.err.println("File not found.\n" + notFound);
