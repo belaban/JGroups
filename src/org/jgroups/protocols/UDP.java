@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.51 2004/10/13 16:03:05 belaban Exp $
+// $Id: UDP.java,v 1.52 2004/10/14 07:47:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -681,7 +681,7 @@ public class UDP extends Protocol implements Runnable {
             if(enable_bundling) {
                 // l=new List();
                 // l.readExternal(inp);
-                l=bufferToList(inp);
+                l=bufferToList(inp, dest, sender, port);
                 for(Enumeration en=l.elements(); en.hasMoreElements();) {
                     msg=(Message)en.nextElement();
                     try {
@@ -695,23 +695,7 @@ public class UDP extends Protocol implements Runnable {
             else {
                 // msg=new Message();
                 // msg.readExternal(inp);
-                msg=bufferToMessage(inp);
-
-                // set the source address if not set
-                IpAddress src_addr=(IpAddress)msg.getSrc();
-                if(src_addr == null) {
-                    try {msg.setSrc(new IpAddress(sender, port));} catch(Throwable t) {}
-                }
-                else {
-                    if(src_addr.getIpAddress() == null) {
-                        try {msg.setSrc(new IpAddress(sender, src_addr.getPort()));} catch(Throwable t) {}
-                    }
-                }
-
-                // set the destination address
-                if(msg.getDest() == null && dest != null)
-                    msg.setDest(dest);
-
+                msg=bufferToMessage(inp, dest, sender, port);
                 handleMessage(msg);
             }
         }
@@ -822,26 +806,13 @@ public class UDP extends Protocol implements Runnable {
 
     /** Internal method to serialize and send a message. This method is not reentrant */
     void send(Message msg) throws Exception {
+        Buffer     buf;
         IpAddress  dest=(IpAddress)msg.getDest(); // guaranteed to be non-null
         IpAddress  src=(IpAddress)msg.getSrc();
-        Buffer buf;
-
-        if(!dest.isMulticastAddress()) { // unicast
-            msg.setDest(null);
-            msg.setSrc(null);
-        }
-        else {  // multicast
-            msg.setDest(null);
-            IpAddress src_addr=(IpAddress)msg.getSrc();
-            if(src_addr != null)
-                msg.setSrc(new IpAddress(src_addr.getPort(), false));
-        }
-
-        buf=messageToBuffer(msg);
-        msg.setDest(dest);
-        msg.setSrc(src);
+        buf=messageToBuffer(msg, dest, src);
         doSend(buf, dest.getIpAddress(), dest.getPort());
     }
+
 
 
     void doSend(Buffer buf, InetAddress dest, int port) throws IOException {
@@ -877,27 +848,72 @@ public class UDP extends Protocol implements Runnable {
     }
 
 
-    Buffer messageToBuffer(Message msg) throws IOException {
+    Buffer messageToBuffer(Message msg, IpAddress dest, IpAddress src) throws IOException {
         Buffer retval=null;
         out_stream.reset();
         out_stream.write(Version.version_id, 0, Version.version_id.length); // write the version
         DataOutputStream out=new DataOutputStream(out_stream);
+
+        nullAddresses(msg, dest, src);
         msg.writeTo(out);
+        revertAddresses(msg, dest, src);
+
         out.close(); // flushes contents to out_stream
         retval=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
         return retval;
     }
 
 
-    Message bufferToMessage(DataInputStream instream) throws IOException, IllegalAccessException, InstantiationException {
-        Message retval=new Message();
-        retval.readFrom(instream);
-        return retval;
+    void nullAddresses(Message msg, IpAddress dest, IpAddress src) {
+        if(!dest.isMulticastAddress()) { // unicast
+            msg.setDest(null);
+            msg.setSrc(null);
+        }
+        else {  // multicast
+            msg.setDest(null);
+            if(src != null)
+                msg.setSrc(new IpAddress(src.getPort(), false));
+        }
+    }
+
+    void revertAddresses(Message msg, IpAddress dest, IpAddress src) {
+        msg.setDest(dest);
+        msg.setSrc(src);
     }
 
 
-    Buffer listToBuffer(List l) throws IOException {
+
+
+    Message bufferToMessage(DataInputStream instream, IpAddress dest, InetAddress sender, int port)
+            throws IOException, IllegalAccessException, InstantiationException {
+        Message msg=new Message();
+        msg.readFrom(instream);
+        setAddresses(msg, dest, sender, port);
+        return msg;
+    }
+
+
+    void setAddresses(Message msg, IpAddress dest, InetAddress sender, int port) {
+        // set the source address if not set
+        IpAddress src_addr=(IpAddress)msg.getSrc();
+        if(src_addr == null) {
+            try {msg.setSrc(new IpAddress(sender, port));} catch(Throwable t) {}
+        }
+        else {
+            if(src_addr.getIpAddress() == null) {
+                try {msg.setSrc(new IpAddress(sender, src_addr.getPort()));} catch(Throwable t) {}
+            }
+        }
+
+        // set the destination address
+        if(msg.getDest() == null && dest != null)
+            msg.setDest(dest);
+
+    }
+
+    Buffer listToBuffer(List l, IpAddress dest) throws IOException {
         Buffer retval=null;
+        IpAddress src;
         Message msg;
         int len=l != null? l.size() : 0;
         DataOutputStream out=null;
@@ -907,7 +923,10 @@ public class UDP extends Protocol implements Runnable {
         out.writeInt(len);
         for(Enumeration en=l.elements(); en.hasMoreElements();) {
             msg=(Message)en.nextElement();
+            src=(IpAddress)msg.getSrc();
+            nullAddresses(msg, dest, src);
             msg.writeTo(out);
+            revertAddresses(msg, dest, src);
         }
         out.close(); // flush contents to outstream
         retval=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
@@ -915,7 +934,8 @@ public class UDP extends Protocol implements Runnable {
     }
 
 
-    List bufferToList(DataInputStream instream) throws IOException, IllegalAccessException, InstantiationException {
+    List bufferToList(DataInputStream instream, IpAddress dest, InetAddress sender, int port)
+            throws IOException, IllegalAccessException, InstantiationException {
         List l=new List();
         DataInputStream dis=null;
         int len;
@@ -926,6 +946,7 @@ public class UDP extends Protocol implements Runnable {
             for(int i=0; i < len; i++) {
                 msg=new Message();
                 msg.readFrom(instream);
+                setAddresses(msg, dest, sender, port);
                 l.add(msg);
             }
             return l;
@@ -1635,6 +1656,8 @@ public class UDP extends Protocol implements Runnable {
                 if(task == null || task.cancelled()) {
                     task=new MyTask();
                     timer.add(task);
+                    if(log.isTraceEnabled())
+                        log.trace("started bundling task");
                 }
             }
         }
@@ -1644,6 +1667,8 @@ public class UDP extends Protocol implements Runnable {
                 if(task != null) {
                     task.cancel();
                     task=null;
+                    if(log.isTraceEnabled())
+                        log.trace("stopped bundling task");
                 }
             }
         }
@@ -1665,6 +1690,8 @@ public class UDP extends Protocol implements Runnable {
                         "message size (" + len + ") is greater than UDP fragmentation size. " +
                         "Set the fragmentation/bundle size in FRAG and UDP correctly");
 
+            if(log.isTraceEnabled())
+                log.trace("accumulated bytes: " + total_bytes);
             if(total_bytes + len >= max_bundle_size) {
                 if(log.isTraceEnabled()) log.trace("sending " + total_bytes + " bytes");
                 bundleAndSend(); // send all pending message and clear table
@@ -1693,7 +1720,7 @@ public class UDP extends Protocol implements Runnable {
             int            port;
             List           l;
 
-            if(log.isTraceEnabled()) log.trace("\nsending msgs:\n" + dumpMessages(msgs));
+            if(log.isTraceEnabled()) log.trace("sending msgs: " + dumpMessages(msgs));
             synchronized(msgs) {
                 // stopTimer();
                 if(msgs.size() == 0)
@@ -1706,7 +1733,7 @@ public class UDP extends Protocol implements Runnable {
                     port=dst.getPort();
                     l=(List)entry.getValue();
                     try {
-                        buffer=listToBuffer(l);
+                        buffer=listToBuffer(l, dst);
                         doSend(buffer, addr, port);
                     }
                     catch(IOException e) {
