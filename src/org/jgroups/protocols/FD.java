@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.12 2004/10/07 13:27:20 belaban Exp $
+// $Id: FD.java,v 1.13 2004/10/08 13:26:56 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -7,10 +7,10 @@ import org.jgroups.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Marshaller;
 import org.jgroups.util.TimeScheduler;
+import org.jgroups.util.Streamable;
+import org.jgroups.util.Util;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.*;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Properties;
@@ -35,7 +35,7 @@ import java.util.Vector;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Revision: 1.12 $
+ * @version $Revision: 1.13 $
  */
 public class FD extends Protocol {
     Address               ping_dest=null;
@@ -330,22 +330,23 @@ public class FD extends Protocol {
     }
 
 
-    public static class FdHeader extends Header {
-        static final int HEARTBEAT=0;
-        static final int HEARTBEAT_ACK=1;
-        static final int SUSPECT=2;
-        static final int NOT_MEMBER=3;  // received as response by pinged mbr when we are not a member
+    public static class FdHeader extends Header implements Streamable {
+        static final short HEARTBEAT=0;
+        static final short HEARTBEAT_ACK=1;
+        static final short SUSPECT=2;
+        static final short NOT_MEMBER=3;  // received as response by pinged mbr when we are not a member
 
 
-        int type=HEARTBEAT;
-        Vector mbrs=null;
+        short   type=HEARTBEAT;
+        Vector  mbrs=null;
         Address from=null;  // member who detected that suspected_mbr has failed
+
 
 
         public FdHeader() {
         } // used for externalization
 
-        FdHeader(int type) {
+        FdHeader(short type) {
             this.type=type;
         }
 
@@ -366,7 +367,7 @@ public class FD extends Protocol {
         }
 
         public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeInt(type);
+            out.writeShort(type);
             if(mbrs == null)
                 out.writeBoolean(false);
             else {
@@ -381,7 +382,7 @@ public class FD extends Protocol {
         }
 
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            type=in.readInt();
+            type=in.readShort();
             boolean mbrs_not_null=in.readBoolean();
             if(mbrs_not_null) {
                 int len=in.readInt();
@@ -392,6 +393,32 @@ public class FD extends Protocol {
                 }
             }
             from=(Address)Marshaller.read(in);
+        }
+
+        public void writeTo(DataOutputStream out) throws IOException {
+            out.writeShort(type);
+            out.writeInt(mbrs != null? mbrs.size() : 0);
+            if(mbrs != null) {
+                for(Iterator it=mbrs.iterator(); it.hasNext();) {
+                    Address address=(Address)it.next();
+                    Util.writeAddress(address, out);
+                }
+            }
+            Util.writeAddress(from, out);
+        }
+
+        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+            type=in.readShort();
+            int size=in.readInt();
+            if(size > 0) {
+                if(mbrs == null)
+                    mbrs=new Vector();
+                for(int i=0; i < size; i++) {
+                    Address addr=Util.readAddress(in);
+                    mbrs.add(addr);
+                }
+            }
+            from=Util.readAddress(in);
         }
 
     }
