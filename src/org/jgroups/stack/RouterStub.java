@@ -1,4 +1,4 @@
-// $Id: RouterStub.java,v 1.8 2004/09/23 16:29:53 belaban Exp $
+// $Id: RouterStub.java,v 1.9 2004/10/07 10:10:38 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -44,6 +44,10 @@ public class RouterStub {
     }
 
 
+    public boolean isConnected() {
+        return connected;
+    }
+
     /**
      * Establishes a connection to the router. The router will send my address (its peer address) back
      * as an Address, which is subsequently returned to the caller. The reason for not using
@@ -51,7 +55,7 @@ public class RouterStub {
      * with certain security managers (e.g if this code runs in an applet). Also, some network
      * address translation (NAT) (e.g IP Masquerading) may return the wrong address.
      */
-    public Address connect() throws Exception {
+    public synchronized Address connect() throws Exception {
         Address ret=null;
         int len=0;
         byte[] buf;
@@ -71,6 +75,8 @@ public class RouterStub {
         }
         catch(Exception e) {
             connected=false;
+            if(sock != null)
+                sock.close();
             throw e;
         }
 
@@ -87,7 +93,7 @@ public class RouterStub {
 
 
     /** Closes the socket and the input and output streams associated with it */
-    public void disconnect() {
+    public synchronized void disconnect() {
         if(output != null) {
             try {
                 output.close();
@@ -129,18 +135,18 @@ public class RouterStub {
         byte[] buf=null;
 
         if(sock == null || output == null || input == null) {
-            if(log.isErrorEnabled()) log.error(".register(): No connection to router (groupname=" + groupname + ')');
+            if(log.isErrorEnabled()) log.error("no connection to router (groupname=" + groupname + ')');
             connected=false;
             return false;
         }
 
         if(groupname == null || groupname.length() == 0) {
-            if(log.isErrorEnabled()) log.error("register(): groupname is null");
+            if(log.isErrorEnabled()) log.error("groupname is null");
             return false;
         }
 
         if(local_addr == null) {
-            if(log.isErrorEnabled()) log.error("register(): local_addr is null");
+            if(log.isErrorEnabled()) log.error("local_addr is null");
             return false;
         }
 
@@ -153,7 +159,7 @@ public class RouterStub {
             output.flush();
         }
         catch(Exception e) {
-            if(log.isErrorEnabled()) log.error("register(): "+Util.getStackTrace(e));
+            if(log.isErrorEnabled()) log.error("failure: " + Util.getStackTrace(e));
             connected=false;
             return false;
         }
@@ -176,7 +182,7 @@ public class RouterStub {
 
 
         if(groupname == null || groupname.length() == 0) {
-            if(log.isErrorEnabled()) log.error("get(): groupname is null");
+            if(log.isErrorEnabled()) log.error("groupname is null");
             return null;
         }
 
@@ -204,7 +210,7 @@ public class RouterStub {
             ret=(List)Util.objectFromByteBuffer(buf);
         }
         catch(Exception e) {
-            if(log.isErrorEnabled()) log.error("get(): exception=" + e);
+            if(log.isErrorEnabled()) log.error("exception=" + e);
         }
         finally {
             try {
@@ -235,13 +241,13 @@ public class RouterStub {
         Object dst_addr=null;
 
         if(sock == null || output == null || input == null) {
-            if(log.isErrorEnabled()) log.error("send(): No connection to router (groupname=" + groupname + ')');
+            if(log.isErrorEnabled()) log.error("no connection to router (groupname=" + groupname + ')');
             connected=false;
             return false;
         }
 
         if(msg == null) {
-            if(log.isErrorEnabled()) log.error("send(): Message is null");
+            if(log.isErrorEnabled()) log.error("message is null");
             return false;
         }
 
@@ -265,7 +271,7 @@ public class RouterStub {
             output.write(msg_buf, 0, msg_buf.length);
         }
         catch(Exception e) {
-            if(log.isErrorEnabled()) log.error("send(): "+Util.getStackTrace(e));
+            if(log.isErrorEnabled()) log.error("failure: " + Util.getStackTrace(e));
             connected=false;
             return false;
         }
@@ -281,7 +287,7 @@ public class RouterStub {
         int len;
 
         if(sock == null || output == null || input == null) {
-            if(log.isErrorEnabled()) log.error("receive(): No connection to router");
+            if(log.isErrorEnabled()) log.error("no connection to router");
             connected=false;
             return null;
         }
@@ -298,7 +304,7 @@ public class RouterStub {
         }
         catch(Exception e) {
             if (connected) {
-                if(log.isErrorEnabled()) log.error("receive(): "+Util.getStackTrace(e));
+                if(log.isErrorEnabled()) log.error("failure: "+Util.getStackTrace(e));
             }
             connected=false;
             return null;
@@ -310,30 +316,35 @@ public class RouterStub {
 
 
     /** Tries to establish connection to router. Tries until router is up again. */
-    public synchronized boolean reconnect() {
+    public boolean reconnect(int max_attempts) {
         Address new_addr=null;
+        int num_atttempts=0;
 
         if(connected) return false;
-
         disconnect();
         reconnect=true;
-        while(reconnect) {
+        while(reconnect && (num_atttempts++ < max_attempts || max_attempts == -1)) {
             try {
                 if((new_addr=connect()) != null)
                     break;
             }
             catch(Exception ex) {
-                if(log.isWarnEnabled()) log.warn("reconnect(): exception is " + ex);
+                if(log.isWarnEnabled()) log.warn("exception is " + ex);
             }
-            Util.sleep(RECONNECT_TIMEOUT);
+            if(max_attempts == -1)
+                Util.sleep(RECONNECT_TIMEOUT);
         }
         if(new_addr == null) {
             return false;
         }
-        if(log.isWarnEnabled()) log.warn("reconnect(): Client reconnected, new addess is " + new_addr);
+        if(log.isWarnEnabled()) log.warn("client reconnected, new address is " + new_addr);
         return true;
     }
 
+
+     public boolean reconnect() {
+         return reconnect(-1);
+     }
 
     public static void main(String[] args) {
         if(args.length != 2) {
