@@ -1,4 +1,4 @@
-// $Id: DistributedQueueConcurrencyTest.java,v 1.2 2003/10/20 14:38:57 rds13 Exp $
+// $Id: DistributedQueueConcurrencyTest.java,v 1.3 2003/11/21 15:47:47 rds13 Exp $
 
 package org.jgroups.blocks;
 
@@ -21,9 +21,10 @@ public class DistributedQueueConcurrencyTest extends TestCase implements ICounte
 {
     protected static int items = 0;
 
-    final int NUM_CLIENTS = 10;
+    final int NUM_CLIENTS = 5;
     final int NUM_ITEMS = 10;
     final int REPEAT_TEST= 1;
+    final int STATE_TRANSFER_TIMEOUT = 4000;
 
     static Logger logger = Logger.getLogger(DistributedQueueConcurrencyTest.class.getName());
     String props;
@@ -80,12 +81,12 @@ public class DistributedQueueConcurrencyTest extends TestCase implements ICounte
 
         Trace.init();
 
-        queue1 = new DistributedQueue("concurency", null, props, 5000);
+        queue1 = new DistributedQueue("concurency", null, props, STATE_TRANSFER_TIMEOUT);
 
         // give some time for the channel to become a coordinator
 		Util.sleep(1000);
 
-        queue2 = new DistributedQueue("concurency", null, props, 5000);
+        queue2 = new DistributedQueue("concurency", null, props, STATE_TRANSFER_TIMEOUT);
 		Util.sleep(1000);
 
     }
@@ -94,6 +95,7 @@ public class DistributedQueueConcurrencyTest extends TestCase implements ICounte
     {
         queue1.stop();
         queue2.stop();
+		Util.sleep(1000);
     }
 
 	public synchronized int increment()
@@ -127,7 +129,7 @@ public class DistributedQueueConcurrencyTest extends TestCase implements ICounte
 
 		Util.sleep(10000);
 
-        queue3 = new DistributedQueue("concurency", null, props, 5000);
+        queue3 = new DistributedQueue("concurency", null, props, STATE_TRANSFER_TIMEOUT);
 
         DistributedQueuePutTask t3 = new DistributedQueuePutTask("Queue3", queue3, 1, 0);
         Thread rTask3 = new Thread(t3);
@@ -190,7 +192,7 @@ public class DistributedQueueConcurrencyTest extends TestCase implements ICounte
 
         Util.sleep(10000);
 
-        queue3 = new DistributedQueue("concurency", null, props, 5000);
+        queue3 = new DistributedQueue("concurency", null, props, STATE_TRANSFER_TIMEOUT);
         DistributedQueuePutTask t3 = new DistributedQueuePutTask("Queue3", queue3, NUM_ITEMS, 10000);
         Thread rTask3 = new Thread(t3);
 
@@ -245,7 +247,7 @@ public class DistributedQueueConcurrencyTest extends TestCase implements ICounte
 		Vector queues = new Vector();
 		for (int i = 0; i < NUM_CLIENTS; i++)
 		{
-			queue = new DistributedQueue("crashme", null, props, 5000);
+			queue = new DistributedQueue("crashme", null, props, STATE_TRANSFER_TIMEOUT);
 			// give some time for the channel to become a coordinator
 			Util.sleep(1000);
 			queues.add(queue);
@@ -259,11 +261,11 @@ public class DistributedQueueConcurrencyTest extends TestCase implements ICounte
 			vTask.add(t);
 			Thread task = new Thread(t);
 			task.start();
+			Util.sleep(1000);
 		}
 
-		Util.sleep(20000);
 
-		queuePut = new DistributedQueue("crashme", null, props, 5000);
+		queuePut = new DistributedQueue("crashme", null, props, STATE_TRANSFER_TIMEOUT);
 		Util.sleep(1000);
 
 		DistributedQueuePutTask putTask = new DistributedQueuePutTask("PutQueue", queuePut, NUM_ITEMS, 200);
