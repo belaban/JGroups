@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.90 2004/07/28 22:46:53 belaban Exp $
+Revision: $Id: history.txt,v 1.91 2004/07/28 22:53:01 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -27,6 +27,9 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
 Version 2.2.6
 -------------
+
+- MessageDispatcher: m_upProcessingThread now terminates correctly on stop() (bug#: 998920)
+  (bela July 29 2004)
 
 - Added logic to ClientGmsImpl to abort join() when leave() or stop() is called before join() returned
   (bela July 29 2004)
