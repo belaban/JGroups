@@ -1,4 +1,4 @@
-// $Id: View.java,v 1.1 2003/09/09 01:24:08 belaban Exp $
+// $Id: View.java,v 1.2 2003/12/18 01:27:50 belaban Exp $
 
 package org.jgroups;
 
@@ -134,8 +134,8 @@ public class View implements Externalizable, Cloneable
      */
     public Object clone()
     {
-	ViewId vid2=vid != null? (ViewId)vid.clone() : null;
-	Vector members2=members != null? (Vector)members.clone() : null;
+        ViewId vid2=vid != null? (ViewId)vid.clone() : null;
+        Vector members2=members != null? (Vector)members.clone() : null;
         return new View(vid2, members2);
     }
 
