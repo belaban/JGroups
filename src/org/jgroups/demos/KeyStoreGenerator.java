@@ -1,4 +1,4 @@
-//$Id: KeyStoreGenerator.java,v 1.1 2004/08/07 13:54:04 steview Exp $
+//$Id: KeyStoreGenerator.java,v 1.2 2005/01/07 15:15:26 steview Exp $
 
 package org.jgroups.demos;
 
@@ -45,7 +45,7 @@ public class KeyStoreGenerator {
         
 		 while (i < args.length && args[i].startsWith("-")) {
             arg = args[i++];
-
+            System.out.println("Found arg of " + arg);
             if (arg.equalsIgnoreCase("--alg")){
             	if (i<args.length){
             		symAlg = args[i++];
@@ -60,10 +60,12 @@ public class KeyStoreGenerator {
             		System.out.println("No Size supplied using default of "+keySize);
             	}
             }else if (arg.equalsIgnoreCase("--storeName")){
+                
             	if (i<args.length){
-            		keyStoreName = args[i++];
+            	    String temp = args[i++];
+            		keyStoreName = temp;
             	}else{
-            		System.out.println("No Size supplied using default of "+keyStoreName);
+            		System.out.println("No keystore supplied using default of "+keyStoreName);
             	}
             }
             else if (arg.equalsIgnoreCase("--storePass")){
