@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindow.java,v 1.8 2004/05/05 17:38:48 belaban Exp $
+// $Id: NakReceiverWindow.java,v 1.9 2004/05/06 16:38:12 belaban Exp $
 
 
 package org.jgroups.stack;
@@ -11,7 +11,8 @@ import org.jgroups.util.List;
 import org.jgroups.util.RWLock;
 import org.jgroups.util.TimeScheduler;
 
-import java.util.Enumeration;
+import java.util.*;
+
 
 
 /**
@@ -48,39 +49,7 @@ import java.util.Enumeration;
 public class NakReceiverWindow {
 
 
-    /** Maintains association between seqno and message */
-    private static class Entry {
-        private long seqno=0;
-        private Message msg=null;
 
-        public Entry() {
-            seqno=0;
-            msg=null;
-        }
-
-        public Entry(long seqno, Message msg) {
-            this.seqno=seqno;
-            this.msg=msg;
-        }
-
-        public Entry copy() {
-            Entry retval=new Entry();
-            retval.seqno=seqno;
-            if(msg != null) retval.msg=msg.copy();
-            return retval;
-        }
-
-
-        public String toString() {
-            StringBuffer ret=new StringBuffer();
-            ret.append(seqno);
-            if(msg == null)
-                ret.append("-");
-            else
-                ret.append("+");
-            return ret.toString();
-        }
-    }
 
 //    HashMap xmits=new HashMap(); // Long (seqno)/ XmitEntry
 //
@@ -103,12 +72,12 @@ public class NakReceiverWindow {
     /** highest deliverable (or delivered) seqno so far */
     private long   highest_seen=0;
 
-    /** List<Entry>. Received (but not yet delivered) msgs. */
-    private List   received_msgs=new List();
+    /** TreeMap<Long,Message>. Maintains messages keyed by sequence numbers */
+    private TreeMap received_msgs=new TreeMap();
 
-    /** List<Entry>. Delivered (= seen by all members) messages. A remove() method causes a message to be moved from
-     received_msgs to delivered_msgs. Message garbage colection will gradually remove elements in this list  */
-    private List   delivered_msgs=new List();
+    /** TreeMap<Long,Message>. Delivered (= seen by all members) messages. A remove() method causes a message to be
+     moved from received_msgs to delivered_msgs. Message garbage colection will gradually remove elements in this map */
+    private TreeMap delivered_msgs=new TreeMap();
 
     /** if not set, no retransmitter thread will be started. Useful if
      * protocols do their own retransmission (e.g PBCAST) */
@@ -184,7 +153,6 @@ public class NakReceiverWindow {
      * (default case).
      */
     public void add(long seqno, Message msg) {
-        Entry current=null;
         long old_tail;
 
         lock.writeLock();
@@ -198,7 +166,7 @@ public class NakReceiverWindow {
 
             // add at end (regular expected msg)
             if(seqno == tail) {
-                received_msgs.add(new Entry(seqno, msg));
+                received_msgs.put(new Long(seqno), msg);
                 tail++;
             }
             // gap detected
@@ -207,12 +175,12 @@ public class NakReceiverWindow {
             // iii. tell retransmitter to retrieve missing msgs
             else if(seqno > tail) {
                 for(long i=tail; i < seqno; i++) {
-                    received_msgs.add(new Entry(i, null));
+                    received_msgs.put(new Long(i), null);
                     // XmitEntry xmit_entry=new XmitEntry();
                     //xmits.put(new Long(i), xmit_entry);
                     tail++;
                 }
-                received_msgs.add(new Entry(seqno, msg));
+                received_msgs.put(new Long(seqno), msg);
                 tail=seqno + 1;
                 if(retransmitter != null) {
                     retransmitter.add(old_tail, seqno - 1);
@@ -222,25 +190,18 @@ public class NakReceiverWindow {
             else if(seqno < tail) {
                 if(log.isTraceEnabled())
                     log.trace("added missing msg " + msg.getSrc() + "#" + seqno);
-                for(Enumeration en=received_msgs.elements(); en.hasMoreElements();) {
-                    current=(Entry)en.nextElement();
-                    // overwrite any previous message (e.g. added by down()) and
-                    // remove seqno from retransmitter
-                    if(seqno == current.seqno) {
 
-                        // only set message if not yet received (bela July 23 2003)
-                        if(current.msg == null) {
-                            current.msg=msg;
+                Object val=received_msgs.get(new Long(seqno));
+                if(val == null) {
+                    // only set message if not yet received (bela July 23 2003)
+                    received_msgs.put(new Long(seqno), msg);
 
-                            //XmitEntry xmit_entry=(XmitEntry)xmits.get(new Long(seqno));
-                            //if(xmit_entry != null)
-                              //  xmit_entry.received=System.currentTimeMillis();
-                            //long xmit_diff=xmit_entry == null? -1 : xmit_entry.received - xmit_entry.created;
-                            //NAKACK.addXmitResponse(msg.getSrc(), seqno);
-                            if(retransmitter != null) retransmitter.remove(seqno);
-                        }
-                        break;
-                    }
+                    //XmitEntry xmit_entry=(XmitEntry)xmits.get(new Long(seqno));
+                    //if(xmit_entry != null)
+                    //  xmit_entry.received=System.currentTimeMillis();
+                    //long xmit_diff=xmit_entry == null? -1 : xmit_entry.received - xmit_entry.created;
+                    //NAKACK.addXmitResponse(msg.getSrc(), seqno);
+                    if(retransmitter != null) retransmitter.remove(seqno);
                 }
             }
             updateLowestSeen();
@@ -253,25 +214,23 @@ public class NakReceiverWindow {
 
 
     /**
-     * Find the entry with seqno <code>head</code>. If e.msg is != null ->
-     * return it and increment <code>head</code>, else return null.
-     * <p>
-     * This method essentially shrinks the size of the sliding window by one
+     * Returns the first entry (with the lowest seqno) from the received_msgs map if its associated message is not
+     * null, otherwise returns null. The entry is then added to delivered_msgs
      */
     public Message remove() {
-        Entry e;
         Message retval=null;
+        Object key;
 
         lock.writeLock();
         try {
-            e=(Entry)received_msgs.peekAtHead();
-            if((e != null) && (e.msg != null)) {
-                retval=e.msg;
-                received_msgs.removeFromHead();
-                // delivered_msgs.add(e.copy());
-                // changed by bela July 23 2003: no need for a copy
-                delivered_msgs.add(new Entry(e.seqno, e.msg));
-                head++;
+            if(received_msgs.size() > 0) {
+                key=received_msgs.firstKey();
+                retval=(Message)received_msgs.get(key);
+                if(retval != null) {
+                    received_msgs.remove(key);       // move from received_msgs to ...
+                    delivered_msgs.put(key, retval); // delivered_msgs
+                    head++;
+                }
             }
             return retval;
         }
@@ -287,23 +246,14 @@ public class NakReceiverWindow {
      * (all messages are ordered on seqnos).
      */
     public void stable(long seqno) {
-        Entry e;
-
         lock.writeLock();
         try {
-            while((e=(Entry)delivered_msgs.peekAtHead()) != null) {
-                if(e.seqno > seqno)
-                    break;
-                else {
-                    delivered_msgs.removeFromHead();
-                    lowest_seen=e.seqno;
-                }
-            }
-            // _updateLowestSeen();
-
-            // Not needed because we only *remove*, never *add* msgs (bela April 19 2004).
-            // We save the cost of a liner iteration through msgs
-            // updateHighestSeen();
+            // we need to remove all seqnos *including* seqno: because headMap() *excludes* seqno, we
+            // simply increment it, so we have to correct behavior
+            SortedMap m=delivered_msgs.headMap(new Long(seqno +1));
+            if(m.size() > 0)
+                lowest_seen=Math.max(lowest_seen, ((Long)m.lastKey()).longValue());
+            m.clear(); // removes entries from delivered_msgs
         }
         finally {
             lock.writeUnlock();
@@ -394,15 +344,14 @@ public class NakReceiverWindow {
     /**
      * Find all messages between 'low' and 'high' (including 'low' and
      * 'high') that have a null msg.
-     * Return them as a list of integers
+     * Return them as a list of longs
      *
-     * @return List A list of integers, sorted in ascending order.
+     * @return List<Long>. A list of seqnos, sorted in ascending order.
      * E.g. [1, 4, 7, 8]
      */
     public List getMissingMessages(long low, long high) {
         List retval=new List();
-        Entry entry;
-        long my_high;
+        // long my_high;
 
         if(low > high) {
             if(log.isErrorEnabled()) log.error("invalid range: low (" + low +
@@ -413,25 +362,21 @@ public class NakReceiverWindow {
         lock.readLock();
         try {
 
-            my_high=Math.max(head - 1, 0);
-            // check only received messages, because delivered messages *must*
-            // have a non-null msg
-            for(Enumeration e=received_msgs.elements(); e.hasMoreElements();) {
-                entry=(Entry)e.nextElement();
-                if((entry.seqno >= low) && (entry.seqno <= high) &&
-                        (entry.msg == null))
-                    retval.add(new Long(entry.seqno));
+            // my_high=Math.max(head - 1, 0);
+            // check only received messages, because delivered messages *must* have a non-null msg
+            SortedMap m=received_msgs.subMap(new Long(low), new Long(high+1));
+            for(Iterator it=m.keySet().iterator(); it.hasNext();) {
+                retval.add(it.next());
             }
 
-            if(received_msgs.size() > 0) {
-                entry=(Entry)received_msgs.peek();
-                if(entry != null) my_high=entry.seqno;
-            }
-            for(long i=my_high + 1; i <= high; i++)
-                retval.add(new Long(i));
+//            if(received_msgs.size() > 0) {
+//                entry=(Entry)received_msgs.peek();
+//                if(entry != null) my_high=entry.seqno;
+//            }
+//            for(long i=my_high + 1; i <= high; i++)
+//                retval.add(new Long(i));
 
-            return (retval.size() == 0 ? null : retval);
-
+            return retval;
         }
         finally {
             lock.readUnlock();
@@ -461,25 +406,24 @@ public class NakReceiverWindow {
      * Return messages that are higher than <code>seqno</code> (excluding
      * <code>seqno</code>). Check both received <em>and</em> delivered
      * messages.
+     * @return List<Message>. All messages that have a seqno greater than <code>seqno</code>
      */
     public List getMessagesHigherThan(long seqno) {
         List retval=new List();
-        Entry entry;
 
         lock.readLock();
         try {
-
             // check received messages
-            for(Enumeration e=received_msgs.elements(); e.hasMoreElements();) {
-                entry=(Entry)e.nextElement();
-                if(entry.seqno > seqno) retval.add(entry.msg);
+            SortedMap m=received_msgs.tailMap(new Long(seqno+1));
+            for(Iterator it=m.values().iterator(); it.hasNext();) {
+                retval.add((it.next()));
             }
 
-            // check delivered messages (messages retrieved via remove(), not
-            // *stable* messages !)
-            for(Enumeration e=delivered_msgs.elements(); e.hasMoreElements();) {
-                entry=(Entry)e.nextElement();
-                if(entry.seqno > seqno && entry.msg != null) retval.add(entry.msg.copy());
+            // we retrieve all msgs whose seqno is strictly greater than seqno (tailMap() *includes* seqno,
+            // but we need to exclude seqno, that's why we increment it
+            m=delivered_msgs.tailMap(new Long(seqno +1));
+            for(Iterator it=m.values().iterator(); it.hasNext();) {
+                retval.add(((Message)it.next()).copy());
             }
             return (retval);
 
@@ -493,29 +437,24 @@ public class NakReceiverWindow {
     /**
      * Return all messages m for which the following holds:
      * m > lower && m <= upper (excluding lower, including upper). Check both
-     * <code>msgs</code> and <code>delivered_msgs</code>.
+     * <code>received_msgs</code> and <code>delivered_msgs</code>.
      */
     public List getMessagesInRange(long lower, long upper) {
         List retval=new List();
-        Entry entry;
 
         lock.readLock();
         try {
-
             // check received messages
-            for(Enumeration e=received_msgs.elements(); e.hasMoreElements();) {
-                entry=(Entry)e.nextElement();
-                if((entry.seqno > lower) && (entry.seqno <= upper))
-                    retval.add(entry.msg);
+            SortedMap m=received_msgs.subMap(new Long(lower +1), new Long(upper +1));
+            for(Iterator it=m.values().iterator(); it.hasNext();) {
+                retval.add(it.next());
             }
-            // check delivered messages (messages retrieved via remove(), not
-            // *stable* messages !)
-            for(Enumeration e=delivered_msgs.elements(); e.hasMoreElements();) {
-                entry=(Entry)e.nextElement();
-                if(entry.seqno > lower && entry.seqno <= upper && entry.msg != null)
-                    retval.add(entry.msg.copy());
+
+            m=delivered_msgs.subMap(new Long(lower +1), new Long(upper +1));
+            for(Iterator it=m.values().iterator(); it.hasNext();) {
+                retval.add(((Message)it.next()).copy());
             }
-            return (retval.size() == 0 ? null : retval);
+            return retval;
 
         }
         finally {
@@ -528,10 +467,11 @@ public class NakReceiverWindow {
      * Return a list of all messages for which there is a seqno in
      * <code>missing_msgs</code>. The seqnos of the argument list are
      * supposed to be in ascending order
+     * @param missing_msgs A List<Long> of seqnos
+     * @return List<Message>
      */
     public List getMessagesInList(List missing_msgs) {
         List ret=new List();
-        Entry entry;
 
         if(missing_msgs == null) {
             if(log.isErrorEnabled()) log.error("argument list is null");
@@ -540,22 +480,18 @@ public class NakReceiverWindow {
 
         lock.readLock();
         try {
-
-            for(Enumeration e=delivered_msgs.elements(); e.hasMoreElements();) {
-                entry=(Entry)e.nextElement();
-                if(missing_msgs.contains(new Long(entry.seqno)) &&
-                        (entry.msg != null))
-                    ret.add(entry.msg.copy());
+            Long seqno;
+            Message msg;
+            for(Enumeration en=missing_msgs.elements(); en.hasMoreElements();) {
+                seqno=(Long)en.nextElement();
+                msg=(Message)delivered_msgs.get(seqno);
+                if(msg != null)
+                    ret.add(msg.copy());
+                msg=(Message)received_msgs.get(seqno);
+                if(msg != null)
+                    ret.add(msg.copy());
             }
-            for(Enumeration e=received_msgs.elements(); e.hasMoreElements();) {
-                entry=(Entry)e.nextElement();
-                if(missing_msgs.contains(new Long(entry.seqno)) &&
-                        (entry.msg != null))
-                    ret.add(entry.msg.copy());
-            }
-
-            return (ret);
-
+            return ret;
         }
         finally {
             lock.readUnlock();
@@ -589,37 +525,44 @@ public class NakReceiverWindow {
     }
 
 
+    /**
+     * Prints delivered_msgs. Requires read lock present.
+     * @return
+     */
     String printDeliveredMessages() {
         StringBuffer sb=new StringBuffer();
-        Entry min, max;
-        min=(Entry)delivered_msgs.peekAtHead();
-        max=(Entry)delivered_msgs.peek();
+        Long min=null, max=null;
+
+        if(delivered_msgs.size() > 0) {
+            try {min=(Long)delivered_msgs.firstKey();} catch(NoSuchElementException ex) {}
+            try {max=(Long)delivered_msgs.lastKey();}  catch(NoSuchElementException ex) {}
+        }
         sb.append("[").append(min).append(" - ").append(max).append("]");
         return sb.toString();
     }
 
 
+    /**
+     * Prints received_msgs. Requires read lock to be present
+     * @return
+     */
     String printReceivedMessages() {
         StringBuffer sb=new StringBuffer();
         sb.append("[");
-        lock.readLock();
-        try {
-            if(received_msgs.size() > 0) {
-                Entry first, last, entry;
-                first=(Entry)received_msgs.peekAtHead();
-                last=(Entry)received_msgs.peek();
-                sb.append(first).append(" - ").append(last);
-                int non_received=0;
-                for(Enumeration en=received_msgs.elements(); en.hasMoreElements();) {
-                    entry=(Entry)en.nextElement();
-                    if(entry.msg == null)
-                        non_received++;
-                }
-                sb.append(" (size=").append(received_msgs.size()).append(", missing=").append(non_received).append(")");
+        if(received_msgs.size() > 0) {
+            Long first=null, last=null;
+            try {first=(Long)received_msgs.firstKey();} catch(NoSuchElementException ex) {}
+            try {last=(Long)received_msgs.lastKey();}   catch(NoSuchElementException ex) {}
+            sb.append(first).append(" - ").append(last);
+            int non_received=0;
+            Map.Entry entry;
+
+            for(Iterator it=received_msgs.entrySet().iterator(); it.hasNext();) {
+                entry=(Map.Entry)it.next();
+                if(entry.getValue() == null)
+                    non_received++;
             }
-        }
-        finally {
-            lock.readUnlock();
+            sb.append(" (size=").append(received_msgs.size()).append(", missing=").append(non_received).append(")");
         }
         sb.append("]");
         return sb.toString();
@@ -633,7 +576,7 @@ public class NakReceiverWindow {
      * to the lowest seqno of received messages.
      */
     private void updateLowestSeen() {
-        Entry entry=null;
+        Long  lowest_seqno=null;
 
         // If both delivered and received messages are empty, let the highest
         // seen seqno be the one *before* the one which is expected to be
@@ -650,15 +593,25 @@ public class NakReceiverWindow {
         */
 
         // The lowest seqno is the first seqno of the delivered messages
-        entry=(Entry)delivered_msgs.peekAtHead();
-        if(entry != null)
-            lowest_seen=entry.seqno;
+        if(delivered_msgs.size() > 0) {
+            try {
+                lowest_seqno=(Long)delivered_msgs.firstKey();
+                if(lowest_seqno != null)
+                    lowest_seen=lowest_seqno.longValue();
+            }
+            catch(NoSuchElementException ex) {
+            }
+        }
         // If no elements in delivered messages (e.g. due to message garbage collection), use the received messages
         else {
-            if(received_msgs.size() != 0) {
-                entry=(Entry)received_msgs.peekAtHead();
-                if((entry != null) && (entry.msg != null))
-                    lowest_seen=entry.seqno;
+            if(received_msgs.size() > 0) {
+                try {
+                    lowest_seqno=(Long)received_msgs.firstKey();
+                    if(received_msgs.get(lowest_seqno) != null) { // only set lowest_seen if we *have* a msg
+                        lowest_seen=lowest_seqno.longValue();
+                    }
+                }
+                catch(NoSuchElementException ex) {}
             }
         }
     }
@@ -670,8 +623,8 @@ public class NakReceiverWindow {
      * message to be expected is always seqno).
      */
     private void updateHighestSeen() {
-        long ret=0;
-        Entry entry=null;
+        long      ret=0;
+        Map.Entry entry=null;
 
         // If both delivered and received messages are empty, let the highest
         // seen seqno be the one *before* the one which is expected to be
@@ -687,19 +640,26 @@ public class NakReceiverWindow {
         // The highest seqno is the last of the delivered messages, to start with,
         // or again the one before the first seqno expected (if no delivered
         // msgs). Then iterate through the received messages, and find the highest seqno *before* a gap
-        entry=(Entry)delivered_msgs.peek();
-        if(entry != null)
-            ret=entry.seqno;
-        else
+        Long highest_seqno=null;
+        if(delivered_msgs.size() > 0) {
+            try {
+                highest_seqno=(Long)delivered_msgs.lastKey();
+                ret=highest_seqno.longValue();
+            }
+            catch(NoSuchElementException ex) {
+            }
+        }
+        else {
             ret=Math.max(head - 1, 0);
+        }
 
         // Now check the received msgs head to tail. if there is an entry
         // with a non-null msg, increment ret until we find an entry with
         // a null msg
-        for(Enumeration e=received_msgs.elements(); e.hasMoreElements();) {
-            entry=(Entry)e.nextElement();
-            if(entry.msg != null)
-                ret=entry.seqno;
+        for(Iterator it=received_msgs.entrySet().iterator(); it.hasNext();) {
+            entry=(Map.Entry)it.next();
+            if(entry.getValue() != null)
+                ret=((Long)entry.getKey()).longValue();
             else
                 break;
         }
@@ -708,16 +668,15 @@ public class NakReceiverWindow {
 
 
     /**
-     * Reset the Nak window. Should be called from within a writeLock()
-     * context.
+     * Reset the Nak window. Should be called from within a writeLock() context.
      * <p>
      * i. Delete all received entries<br>
      * ii. Delete alll delivered entries<br>
      * iii. Reset all indices (head, tail, etc.)<br>
      */
     private void _reset() {
-        received_msgs.removeAll();
-        delivered_msgs.removeAll();
+        received_msgs.clear();
+        delivered_msgs.clear();
         head=0;
         tail=0;
         lowest_seen=0;
