@@ -4,6 +4,7 @@ import java.util.LinkedList;
 
 import EDU.oswego.cs.dl.util.concurrent.LinkedQueue;
 import EDU.oswego.cs.dl.util.concurrent.WaitFreeQueue;
+import org.jgroups.util.Queue;
 
 /**
  *
@@ -12,12 +13,10 @@ import EDU.oswego.cs.dl.util.concurrent.WaitFreeQueue;
  * Time: 2:14:32 PM
  */
 public class QueueTest2 {
-    // Queue q=new Queue();
+    Queue q=new Queue();
     // MyQueue q=new MyQueue();
-
     // MyLinkedQueue q=new MyLinkedQueue();
-
-    MyWaitFreeQueue q=new MyWaitFreeQueue();
+    // MyWaitFreeQueue q=new MyWaitFreeQueue();
 
     long  start, stop;
     long  NUM=1000 * 1000;
