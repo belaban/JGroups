@@ -89,25 +89,25 @@ public class Test implements Receiver {
         StringBuffer sb=new StringBuffer();
 
         sb.append("\n\n----------------------- TEST -----------------------\n");
-        sb.append("Date: ").append(new Date()).append("\n");
+        sb.append("Date: ").append(new Date()).append('\n');
         sb.append("Run by: ").append(System.getProperty("user.name")).append("\n\n");
         sb.append("Properties: ").append(printProperties()).append("\n-------------------------\n\n");
 
         for(Iterator it=this.config.entrySet().iterator(); it.hasNext();) {
             Map.Entry entry=(Map.Entry)it.next();
-            sb.append(entry.getKey()).append(":\t").append(entry.getValue()).append("\n");
+            sb.append(entry.getKey()).append(":\t").append(entry.getValue()).append('\n');
         }
-        sb.append("\n");
-        System.out.println("Configuration is: " + sb.toString());
+        sb.append('\n');
+        System.out.println("Configuration is: " + sb);
 
         log.info(sb.toString());
 
         props=this.config.getProperty("props");
         num_members=Integer.parseInt(this.config.getProperty("num_members"));
-        sender=new Boolean(this.config.getProperty("sender")).booleanValue();
+        sender=Boolean.valueOf(this.config.getProperty("sender")).booleanValue();
         msg_size=Long.parseLong(this.config.getProperty("msg_size"));
         String tmp2=this.config.getProperty("gnuplot_output", "false");
-        if(new Boolean(tmp2).booleanValue())
+        if(Boolean.valueOf(tmp2).booleanValue())
             this.gnuplot_output=true;
         tmp2=this.config.getProperty("log_interval");
         if(tmp2 != null)
@@ -140,7 +140,7 @@ public class Test implements Receiver {
         Properties p=System.getProperties();
         for(Iterator it=p.entrySet().iterator(); it.hasNext();) {
             Map.Entry entry=(Map.Entry)it.next();
-            sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
+            sb.append(entry.getKey()).append(": ").append(entry.getValue()).append('\n');
         }
         return sb.toString();
     }
@@ -348,7 +348,7 @@ public class Test implements Receiver {
             map=(HashMap)entry.getValue();
             sb.append("-- results from ").append(member).append(":\n");
             dump(map, sb);
-            sb.append("\n");
+            sb.append('\n');
         }
         System.out.println(sb.toString());
         if(log.isInfoEnabled()) log.info(sb.toString());
@@ -378,28 +378,28 @@ public class Test implements Receiver {
             combined.num_msgs_expected+=mi.num_msgs_expected;
             combined.num_msgs_received+=mi.num_msgs_received;
             combined.total_bytes_received+=mi.total_bytes_received;
-            sb.append("sender: ").append(sender).append(": ").append(mi).append("\n");
+            sb.append("sender: ").append(sender).append(": ").append(mi).append('\n');
         }
-        sb.append("\ncombined: ").append(combined).append("\n");
+        sb.append("\ncombined: ").append(combined).append('\n');
     }
 
 
     String dumpStats(long received_msgs) {
         StringBuffer sb=new StringBuffer();
         if(gnuplot_output)
-            sb.append(received_msgs).append(" ");
+            sb.append(received_msgs).append(' ');
         else
             sb.append("\nmsgs_received=").append(received_msgs);
 
         if(gnuplot_output)
-            sb.append(Runtime.getRuntime().freeMemory() / 1000.0).append(" ");
+            sb.append(Runtime.getRuntime().freeMemory() / 1000.0).append(' ');
         else
             sb.append(", free_mem=").append(Runtime.getRuntime().freeMemory() / 1000.0);
 
         if(gnuplot_output)
-            sb.append(Runtime.getRuntime().totalMemory() / 1000.0).append(" ");
+            sb.append(Runtime.getRuntime().totalMemory() / 1000.0).append(' ');
         else
-            sb.append(", total_mem=").append(Runtime.getRuntime().totalMemory() / 1000.0).append("\n");
+            sb.append(", total_mem=").append(Runtime.getRuntime().totalMemory() / 1000.0).append('\n');
 
         dumpThroughput(sb, received_msgs);
         return sb.toString();
@@ -416,19 +416,19 @@ public class Test implements Receiver {
 
         tmp=(1000 * received_msgs) / (current - start);
         if(gnuplot_output)
-            sb.append(tmp).append(" ");
+            sb.append(tmp).append(' ');
         else
             sb.append("total_msgs_sec=").append(tmp).append(" [msgs/sec]");
 
         tmp=(received_msgs * msg_size) / (current - start);
         if(gnuplot_output)
-            sb.append(tmp).append(" ");
+            sb.append(tmp).append(' ');
         else
             sb.append("\ntotal_throughput=").append(tmp).append(" [KB/sec]");
 
         tmp=(1000 * log_interval) / (current - last_dump);
         if(gnuplot_output)
-            sb.append(tmp).append(" ");
+            sb.append(tmp).append(' ');
         else {
             sb.append("\nrolling_msgs_sec (last ").append(log_interval).append(" msgs)=");
             sb.append(tmp).append(" [msgs/sec]");
@@ -436,7 +436,7 @@ public class Test implements Receiver {
 
         tmp=(log_interval * msg_size) / (current - last_dump);
         if(gnuplot_output)
-            sb.append(tmp).append(" ");
+            sb.append(tmp).append(' ');
         else {
             sb.append("\nrolling_throughput (last ").append(log_interval).append(" msgs)=");
             sb.append(tmp).append(" [KB/sec]\n");
@@ -475,22 +475,22 @@ public class Test implements Receiver {
         Test t=null;
 
         for(int i=0; i < args.length; i++) {
-            if(args[i].equals("-sender")) {
+            if("-sender".equals(args[i])) {
                 config.put("sender", "true");
                 sender=true;
                 continue;
             }
-            if(args[i].equals("-receiver")) {
+            if("-receiver".equals(args[i])) {
                 config.put("sender", "false");
                 sender=false;
                 continue;
             }
-            if(args[i].equals("-config")) {
+            if("-config".equals(args[i])) {
                 String config_file=args[++i];
                 config.put("config", config_file);
                 continue;
             }
-            if(args[i].equals("-props")) {
+            if("-props".equals(args[i])) {
                 String props=args[++i];
                 config.put("props", props);
                 continue;

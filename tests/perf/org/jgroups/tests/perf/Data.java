@@ -10,7 +10,7 @@ import java.util.HashMap;
  * Data sent around between members
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: Data.java,v 1.4 2004/03/30 06:47:37 belaban Exp $
+ * @version $Id: Data.java,v 1.5 2004/07/05 06:18:36 belaban Exp $
  */
 public class Data implements Externalizable {
     final static int DISCOVERY_REQ = 1;
@@ -107,7 +107,7 @@ public class Data implements Externalizable {
 
     public String toString() {
         StringBuffer sb=new StringBuffer();
-        sb.append("[");
+        sb.append('[');
         switch(type) {
             case DISCOVERY_REQ: sb.append("DISCOVERY_REQ"); break;
             case DISCOVERY_RSP: sb.append("DISCOVERY_RSP"); break;

@@ -1,4 +1,4 @@
-// $Id: NetworkUtilization.java,v 1.2 2004/01/05 19:17:36 belaban Exp $
+// $Id: NetworkUtilization.java,v 1.3 2004/07/05 06:18:58 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -73,7 +73,7 @@ public class NetworkUtilization {
             mcast_sock=new MulticastSocket(mcast_port);
             // sock.setLoopbackMode(true); // disable reception of own mcasts
             mcast_sock.joinGroup(mcast_addr);
-            System.out.println("-- joined group " + mcast_addr + ":" + mcast_port + ", waiting for packets\n" +
+            System.out.println("-- joined group " + mcast_addr + ':' + mcast_port + ", waiting for packets\n" +
                     "(press ctrl-c to kill)");
             while(true) {
                 p.setData(buf);
@@ -104,15 +104,15 @@ public class NetworkUtilization {
         int     packet_size=10;
 
         for(int i=0; i < args.length; i++) {
-            if(args[i].equals("-help")) {
+            if("-help".equals(args[i])) {
                 help();
                 return;
             }
-            if(args[i].equals("-sender")) {
+            if("-sender".equals(args[i])) {
                 sender=true;
                 continue;
             }
-            if(args[i].equals("-size")) {
+            if("-size".equals(args[i])) {
                 packet_size=Integer.parseInt(args[++i]);
                 continue;
             }

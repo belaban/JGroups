@@ -14,7 +14,7 @@ import java.util.*;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: TcpTransport.java,v 1.2 2004/03/30 06:47:36 belaban Exp $
+ * @version $Id: TcpTransport.java,v 1.3 2004/07/05 06:18:11 belaban Exp $
  */
 public class TcpTransport implements Transport {
     Receiver         receiver=null;
@@ -130,7 +130,7 @@ public class TcpTransport implements Transport {
                          connections[i]=new Connection(addr);
                      }
                      catch(ConnectException connect_ex) {
-                         System.err.println("Failed to connect to " + addr + ":" + srv_port);
+                         System.err.println("Failed to connect to " + addr + ':' + srv_port);
                          throw connect_ex;
                      }
                      catch(Exception all_others) {
@@ -164,7 +164,7 @@ public class TcpTransport implements Transport {
              StringBuffer sb=new StringBuffer();
              for(Iterator it=nodes.iterator(); it.hasNext();) {
                  InetAddress inetAddress=(InetAddress)it.next();
-                 sb.append(inetAddress).append(" ");
+                 sb.append(inetAddress).append(' ');
              }
              return sb.toString();
          }
