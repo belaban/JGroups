@@ -1,10 +1,9 @@
-// $Id: CoordGmsImpl.java,v 1.12 2004/09/07 19:34:38 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.13 2004/09/08 09:17:17 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
 
 import org.jgroups.*;
-import org.jgroups.util.Promise;
 
 import java.io.Serializable;
 import java.util.Iterator;
@@ -20,7 +19,6 @@ import java.util.Vector;
  */
 public class CoordGmsImpl extends GmsImpl {
     boolean      merging=false;
-    Promise      leave_promise=null;
     MergeTask    merge_task=new MergeTask();
     Vector       merge_rsps=new Vector(11);
     // for MERGE_REQ/MERGE_RSP correlation, contains MergeData elements
@@ -40,15 +38,8 @@ public class CoordGmsImpl extends GmsImpl {
             if(log.isErrorEnabled()) log.error("member's address is null !");
             return;
         }
-
-        if(leave_promise == null)
-            leave_promise=new Promise();
-        else
-            leave_promise.reset();
-
         if(mbr.equals(gms.local_addr))
             leaving=true;
-
         handleLeave(mbr, false); // regular leave
     }
 
@@ -57,7 +48,7 @@ public class CoordGmsImpl extends GmsImpl {
     }
 
     public void handleLeaveResponse() {
-        wrongMethod("handleLeaveResponse");
+        ; // safely ignore this
     }
 
     public void suspect(Address mbr) {
@@ -305,18 +296,15 @@ public class CoordGmsImpl extends GmsImpl {
      */
     public void handleViewChange(View new_view, Digest digest) {
         Vector mbrs=new_view.getMembers();
-         {
+        if(log.isDebugEnabled()) {
             if(digest != null)
-                if(log.isDebugEnabled()) log.debug("view=" + new_view + ", digest=" + digest);
+                log.debug("view=" + new_view + ", digest=" + digest);
             else
-                if(log.isDebugEnabled()) log.debug("view=" + new_view);
+                log.debug("view=" + new_view);
         }
-        if(leaving && !mbrs.contains(gms.local_addr)) {
-            if(leave_promise != null) {
-                leave_promise.setResult(Boolean.TRUE);
-            }
+
+        if(leaving && !mbrs.contains(gms.local_addr))
             return;
-        }
         gms.installView(new_view, digest);
     }
 
