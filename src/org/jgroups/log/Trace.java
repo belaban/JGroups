@@ -1,4 +1,4 @@
-// $Id: Trace.java,v 1.1 2003/09/09 01:24:09 belaban Exp $
+// $Id: Trace.java,v 1.2 2004/01/16 05:50:01 belaban Exp $
 
 package org.jgroups.log;
 
@@ -239,33 +239,39 @@ public class Trace {
      * Won't complain if not found.
      */
     public static void init() {
-	String home_dir=System.getProperty("user.home");
-	if(home_dir == null) {
-	    System.err.println("Trace.init(): user's home directory (\"user.home\") was not set");
-	}
-	else {
-	    home_dir=home_dir + FILE_SEPARATOR + "jgroups.properties";
-	    try {
-		init(home_dir);
-		return;
-	    }
-	    catch(Exception ex) {
-		System.err.println("Trace.init() " + ex);
-	    }
-	}
+        String home_dir=System.getProperty("user.home");
+        if(home_dir == null) {
+            System.err.println("Trace.init(): user's home directory (\"user.home\") was not set");
+        }
+        else {
+            home_dir=home_dir + FILE_SEPARATOR + "jgroups.properties";
+            try {
+                init(home_dir);
+                return;
+            }
+            catch(FileNotFoundException not_found) {
+                ;
+            }
+            catch(Exception ex) {
+                System.err.println("Trace.init(): " + ex);
+            }
+        }
 
-	try {	//first try to load from classpath
-	    java.io.InputStream in = Trace.class.getResourceAsStream("/jgroups.properties");
-	    if(in != null) {
-		init(in);
-		// System.out.println("Initialized trace properties from class path!");
-		return;
-	    }
-	}
-	catch(Exception x) {
-	    x.printStackTrace();
-	    System.err.println("Trace.init() " + x);
-	}
+        try {	//first try to load from classpath
+            InputStream in=Trace.class.getResourceAsStream("/jgroups.properties");
+            if(in != null) {
+                init(in);
+                if(Trace.trace)
+                    Trace.info("Trace.init()", "initialized trace from jgroups.properties on classpath");
+                return;
+            }
+        }
+        catch(Exception x) {
+            x.printStackTrace();
+            System.err.println("Trace.init() " + x);
+        }
+        System.err.println("Trace.init(): jgroups.properties not found (homedir or classpath); " +
+                "tracing will not be available");
     }
 
 
