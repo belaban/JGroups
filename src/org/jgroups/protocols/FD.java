@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.7 2004/04/27 17:06:30 belaban Exp $
+// $Id: FD.java,v 1.8 2004/04/27 17:47:15 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -35,7 +35,7 @@ import java.util.Vector;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Revision: 1.7 $
+ * @version $Revision: 1.8 $
  */
 public class FD extends Protocol {
     Address         ping_dest=null;
@@ -429,17 +429,17 @@ public class FD extends Protocol {
             //    received, then broadcast a SUSPECT message. Will be handled by coordinator, which may install
             //    a new view
             not_heard_from=System.currentTimeMillis() - last_ack;
-            if(log.isTraceEnabled()) // +++ remove
-                log.trace("not heard from " + ping_dest + " for " + not_heard_from + " ms");
             // quick & dirty fix: increase timeout by 500msecs to allow for latency (bela June 27 2003)
             if(not_heard_from > timeout + 500) { // no heartbeat ack for more than timeout msecs
                 if(num_tries >= max_tries) {
                     if(log.isDebugEnabled())
                         log.debug("[" + local_addr + "]: received no heartbeat ack from " + ping_dest +
-                                " for " + num_tries + 1 + " times, suspecting it");
+                                " for " + (num_tries +1) + " times (" + ((num_tries+1) * timeout) +
+                                " milliseconds), suspecting it");
                     // broadcast a SUSPECT message to all members - loop until
                     // unsuspect or view change is received
                     bcast_task.addSuspectedMember(ping_dest);
+                    num_tries=0;
                 }
                 else {
                     if(log.isDebugEnabled())
@@ -513,19 +513,15 @@ public class FD extends Protocol {
          * Removes all elements from suspected_mbrs that are <em>not</em> in the new membership
          */
         void adjustSuspectedMembers(Vector new_mbrship) {
-            Address suspected_mbr;
-
             if(new_mbrship == null || new_mbrship.size() == 0) return;
+            StringBuffer sb=new StringBuffer();
             synchronized(suspected_mbrs) {
-                for(Iterator it=suspected_mbrs.iterator(); it.hasNext();) {
-                    suspected_mbr=(Address)it.next();
-                    if(!new_mbrship.contains(suspected_mbr)) {
-                        it.remove();
-                        if(log.isDebugEnabled()) log.debug("removed " + suspected_mbr + " (size=" + suspected_mbrs.size() + ")");
-                    }
-                }
+                sb.append("suspected_mbrs: ").append(suspected_mbrs);
+                suspected_mbrs.retainAll(new_mbrship);
                 if(suspected_mbrs.size() == 0)
                     stopped=true;
+                sb.append(", after adjustment: ").append(suspected_mbrs).append(", stopped: ").append(stopped);
+                log.debug(sb.toString());
             }
         }
 
@@ -544,9 +540,6 @@ public class FD extends Protocol {
             Message suspect_msg;
             FD.FdHeader hdr;
 
-            if(log.isDebugEnabled())
-                log.debug("broadcasting SUSPECT message [suspected_mbrs=" + suspected_mbrs + "] to group");
-
             synchronized(suspected_mbrs) {
                 if(suspected_mbrs.size() == 0) {
                     stopped=true;
@@ -560,6 +553,8 @@ public class FD extends Protocol {
             }
             suspect_msg=new Message();       // mcast SUSPECT to all members
             suspect_msg.putHeader(getName(), hdr);
+            if(log.isDebugEnabled())
+                log.debug("broadcasting SUSPECT message [suspected_mbrs=" + suspected_mbrs + "] to group");
             passDown(new Event(Event.MSG, suspect_msg));
             if(log.isDebugEnabled()) log.debug("task done");
         }
