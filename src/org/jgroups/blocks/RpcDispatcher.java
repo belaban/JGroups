@@ -1,4 +1,4 @@
-// $Id: RpcDispatcher.java,v 1.11 2004/05/13 06:16:07 belaban Exp $
+// $Id: RpcDispatcher.java,v 1.12 2004/05/15 00:37:43 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -19,7 +19,6 @@ import java.util.Vector;
  * @author Bela Ban
  */
 public class RpcDispatcher extends MessageDispatcher implements ChannelListener {
-    MethodLookup         method_lookup=new MethodLookupJava();
     protected Object     server_obj=null;
     protected Marshaller marshaller=null;
 
@@ -71,12 +70,6 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
 
 
     public String getName() {return "RpcDispatcher";}
-
-    public MethodLookup getMethodLookup() {return method_lookup;}
-
-    public void setMethodLookup(MethodLookup method_lookup) {
-        this.method_lookup=method_lookup;
-    }
 
     public void       setMarshaller(Marshaller m) {this.marshaller=m;}
 
@@ -223,10 +216,10 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         try {
             if(log.isTraceEnabled())
                 log.trace("[sender=" + req.getSrc() + "], method_call: " + method_call);
-            return method_call.invoke(server_obj, method_lookup);
+            return method_call.invoke(server_obj);
         }
         catch(Throwable x) {
-            log.error(Util.getStackTrace(x));
+            log.error("failed invoking method", x);
             return x;
         }
     }
