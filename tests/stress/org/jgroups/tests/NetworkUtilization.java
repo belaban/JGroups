@@ -1,11 +1,10 @@
-// $Id: NetworkUtilization.java,v 1.1 2004/01/05 18:04:24 belaban Exp $
+// $Id: NetworkUtilization.java,v 1.2 2004/01/05 19:17:36 belaban Exp $
 
 package org.jgroups.tests;
 
-import java.net.MulticastSocket;
-import java.net.InetAddress;
-import java.net.DatagramSocket;
-import java.net.DatagramPacket;
+import org.jgroups.util.Util;
+
+import java.net.*;
 
 /**
  * @author Bela Ban
@@ -16,7 +15,8 @@ public class NetworkUtilization {
     int mcast_port=7500;
     long start, stop;
     long num_received=0;
-    final int NUM_BYTES=1;
+    int received_packet_size=0;
+    MulticastSocket mcast_sock=null;
 
 
     class MyTimer extends Thread {
@@ -25,10 +25,19 @@ public class NetworkUtilization {
         }
 
         public void run() {
+
+            if(mcast_sock != null)
+                mcast_sock.close();
+
             long stop=System.currentTimeMillis();
             long diff=stop-start;
-            System.out.println("-- took " + diff/1000.0 + " secs to receive " + num_received + " msgs (" +
-                    (num_received / (diff/1000.0)) + " msgs/sec)");
+            double secs=diff/1000.0;
+            double num_kb_received=num_received * received_packet_size / 1000.0;
+
+            Util.sleep(200);
+            System.out.println("** took " + secs + " secs to receive " + num_received + " msgs (" +
+                    (num_received / secs) + " msgs/sec)\n" +
+                    "** throughput: " + num_kb_received / secs + " KB/sec");
         }
     }
 
@@ -41,14 +50,14 @@ public class NetworkUtilization {
         return buf;
     }
 
-    public void start(boolean sender) throws Exception {
+    public void start(boolean sender, int packet_size) throws Exception {
         this.sender=sender;
 
         mcast_addr=InetAddress.getByName("228.8.8.8");
 
         if(sender) {
             DatagramSocket sock=new DatagramSocket();
-            byte[] buf=createBuffer(NUM_BYTES);
+            byte[] buf=createBuffer(packet_size);
 
             System.out.println("-- starting to send packets");
             while(true) {
@@ -58,22 +67,31 @@ public class NetworkUtilization {
         }
         else {
             Runtime.getRuntime().addShutdownHook(new MyTimer());
-            byte[] buf=new byte[1024];
+            byte[] buf=new byte[1000000];
             boolean first=true;
             DatagramPacket p=new DatagramPacket(buf, buf.length);
-            MulticastSocket sock=new MulticastSocket(mcast_port);
-            //sock.setLoopbackMode(true); // disable reception of own mcasts
-            sock.joinGroup(mcast_addr);
-            System.out.println("-- joined group " + mcast_addr + ":" + mcast_port + ", waiting for packets");
+            mcast_sock=new MulticastSocket(mcast_port);
+            // sock.setLoopbackMode(true); // disable reception of own mcasts
+            mcast_sock.joinGroup(mcast_addr);
+            System.out.println("-- joined group " + mcast_addr + ":" + mcast_port + ", waiting for packets\n" +
+                    "(press ctrl-c to kill)");
             while(true) {
                 p.setData(buf);
-                sock.receive(p);
+                try {
+                    mcast_sock.receive(p);
+                }
+                catch(SocketException ex) {
+                    break;
+                }
                 if(first) {
                     first=false;
                     start=System.currentTimeMillis();
+                    received_packet_size=p.getLength();
                 }
                 num_received++;
-                System.out.println("-- received " + p.getLength() + " bytes from " + p.getAddress() + ":" + p.getPort());
+                //System.out.println("-- received " + p.getLength() + " bytes from " + p.getAddress() + ":" + p.getPort());
+                if(num_received % 1000 == 0)
+                    System.out.println(num_received);
             }
         }
 
@@ -83,6 +101,7 @@ public class NetworkUtilization {
 
     public static void main(String[] args) {
         boolean sender=false;
+        int     packet_size=10;
 
         for(int i=0; i < args.length; i++) {
             if(args[i].equals("-help")) {
@@ -93,12 +112,16 @@ public class NetworkUtilization {
                 sender=true;
                 continue;
             }
+            if(args[i].equals("-size")) {
+                packet_size=Integer.parseInt(args[++i]);
+                continue;
+            }
             help();
             return;
         }
 
         try {
-            new NetworkUtilization().start(sender);
+            new NetworkUtilization().start(sender, packet_size);
         }
         catch(Exception e) {
             e.printStackTrace();
@@ -106,7 +129,7 @@ public class NetworkUtilization {
     }
 
     static void help() {
-        System.out.println("NetworkUtilization [-help] [-sender]");
+        System.out.println("NetworkUtilization [-help] [-sender] [-size <packet size in bytes>]");
     }
 
 
