@@ -1,4 +1,4 @@
-$Id: todo.lst,v 1.12 2004/09/15 09:38:50 belaban Exp $
+$Id: todo.lst,v 1.13 2004/10/06 08:16:58 belaban Exp $
 
 
 
@@ -18,7 +18,9 @@ $Id: todo.lst,v 1.12 2004/09/15 09:38:50 belaban Exp $
   - Expose statistics (e.g. retransmission counter, flow control
     stats), maybe use AOP to do so
 
-- Discovery doesn't work when working over a disabled (e.g. WiFi) interface			      
+- Discovery doesn't work when working over a disabled (e.g. WiFi) interface
+
+- FD_SOCK problem on multi-homed systems
 
 - Add list of joined, crashed and left members to View
 
