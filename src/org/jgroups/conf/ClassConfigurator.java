@@ -1,4 +1,4 @@
-// $Id: ClassConfigurator.java,v 1.4 2004/07/05 05:43:51 belaban Exp $
+// $Id: ClassConfigurator.java,v 1.5 2004/07/30 04:43:29 jiwils Exp $
 
 package org.jgroups.conf;
 
@@ -78,7 +78,7 @@ public class ClassConfigurator {
             }
         }
         catch(Throwable x) {
-            if(log.isErrorEnabled()) log.error(ConfiguratorFactory.JAR_MISSING_ERROR + "\nstack trace:\n" + Util.print(x));
+            if(log.isErrorEnabled()) log.error(ConfiguratorFactory.JAXP_MISSING_ERROR_MSG + "\nstack trace:\n" + Util.print(x));
         }
     }
 
