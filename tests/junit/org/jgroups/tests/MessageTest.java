@@ -1,4 +1,4 @@
-// $Id: MessageTest.java,v 1.6 2004/02/26 01:56:59 belaban Exp $
+// $Id: MessageTest.java,v 1.7 2004/02/26 18:15:08 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -37,12 +37,12 @@ public class MessageTest extends TestCase {
     public void testBufferSize() throws Exception {
         m1=new Message(null, null, "bela");
         assertNotNull(m1.getBuffer());
-        assertEquals(m1.getBuffer().length, m1.getBufferSize());
+        assertEquals(m1.getBuffer().length, m1.getLength());
         byte[] new_buf={'m', 'i', 'c', 'h', 'e', 'l', 'l', 'e'};
         m1.setBuffer(new_buf);
         assertNotNull(m1.getBuffer());
-        assertEquals(new_buf.length, m1.getBufferSize());
-        assertEquals(m1.getBuffer().length, m1.getBufferSize());
+        assertEquals(new_buf.length, m1.getLength());
+        assertEquals(m1.getBuffer().length, m1.getLength());
     }
 
     public void testBufferOffset() throws Exception {
@@ -52,11 +52,11 @@ public class MessageTest extends TestCase {
 
         byte[] b1, b2;
 
-        b1=new byte[m1.getBufferSize()];
-        System.arraycopy(m1.getBuffer(), m1.getOffset(), b1, 0, m1.getBufferSize());
+        b1=new byte[m1.getLength()];
+        System.arraycopy(m1.getRawBuffer(), m1.getOffset(), b1, 0, m1.getLength());
 
-        b2=new byte[m2.getBufferSize()];
-        System.arraycopy(m2.getBuffer(), m2.getOffset(), b2, 0, m2.getBufferSize());
+        b2=new byte[m2.getLength()];
+        System.arraycopy(m2.getRawBuffer(), m2.getOffset(), b2, 0, m2.getLength());
 
         assertEquals(4, b1.length);
         assertEquals(3, b2.length);
@@ -105,7 +105,7 @@ public class MessageTest extends TestCase {
         Message m3, m4;
 
         m3=(Message)in.readObject();
-        assertEquals(4, m3.getBufferSize());
+        assertEquals(4, m3.getLength());
         assertEquals(4, m3.getBuffer().length);
         assertEquals(0, m3.getOffset());
 
@@ -118,7 +118,7 @@ public class MessageTest extends TestCase {
         input=new ByteArrayInputStream(tmp);
         in=new ObjectInputStream(input);
         m4=(Message)in.readObject();
-        assertEquals(3, m4.getBufferSize());
+        assertEquals(3, m4.getLength());
         assertEquals(3, m4.getBuffer().length);
         assertEquals(0, m4.getOffset());
     }
@@ -128,7 +128,7 @@ public class MessageTest extends TestCase {
         String s1="Bela Ban";
         m1=new Message(null, null, s1);
         assertEquals(0, m1.getOffset());
-        assertEquals(m1.getBuffer().length, m1.getBufferSize());
+        assertEquals(m1.getBuffer().length, m1.getLength());
         String s2=(String)m1.getObject();
         assertEquals(s2, s1);
     }
@@ -137,7 +137,7 @@ public class MessageTest extends TestCase {
         m1=new Message(null, null, "Bela Ban");
         m1.reset();
         assertEquals(0, m1.getOffset());
-        assertEquals(0, m1.getBufferSize());
+        assertEquals(0, m1.getLength());
         assertNull(m1.getBuffer());
     }
 
@@ -145,7 +145,7 @@ public class MessageTest extends TestCase {
         m1=new Message(null, null, "Bela Ban");
         m2=m1.copy();
         assertEquals(m1.getOffset(), m2.getOffset());
-        assertEquals(m1.getBufferSize(), m2.getBufferSize());
+        assertEquals(m1.getLength(), m2.getLength());
     }
 
 
@@ -159,11 +159,11 @@ public class MessageTest extends TestCase {
         m4=m2.copy();
 
         assertEquals(0, m3.getOffset());
-        assertEquals(4, m3.getBufferSize());
+        assertEquals(4, m3.getLength());
         assertEquals(4, m3.getBuffer().length);
 
         assertEquals(0, m4.getOffset());
-        assertEquals(3, m4.getBufferSize());
+        assertEquals(3, m4.getLength());
         assertEquals(3, m4.getBuffer().length);
     }
 
