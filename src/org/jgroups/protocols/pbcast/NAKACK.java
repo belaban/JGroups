@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.6 2004/02/02 20:14:43 belaban Exp $
+// $Id: NAKACK.java,v 1.7 2004/02/26 19:20:30 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -500,9 +500,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
      * @param first_seqno The first sequence number to be retransmitted (<= last_seqno)
      * @param last_seqno The last sequence number to be retransmitted (>= first_seqno) */
     void handleXmitReq(Address dest, long first_seqno, long last_seqno) {
-        Message m, tmp;
+        Message    m, tmp;
         LinkedList list;
-        long size=0, marker=first_seqno;
+        long       size=0, marker=first_seqno, len;
 
         if(Trace.debug)
             Trace.debug("NAKACK.handleXmitReq()", "received xmit request for " +
@@ -521,7 +521,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
                                                       "seqno=" + i + " not found in sent_msgs ! sent_msgs=" + printSentMsgs());
                 continue;
             }
-            size+=m.size();
+            len=m.size();
+            size+=len;
             if(size >= max_xmit_size) {
                 // size has reached max_xmit_size. go ahead and send message (excluding the current message)
                 if(Trace.trace)
@@ -531,7 +532,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
                 list.clear();
                 // fixed Dec 15 2003 (bela, patch from Joel Dice (dicej)), see explanantion under
                 // bug report #854887
-                size=m.size();
+                size=len;
             }
             if(Trace.copy)
                 tmp=m.copy();

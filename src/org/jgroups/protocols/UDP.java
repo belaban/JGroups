@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.14 2004/02/25 20:51:22 belaban Exp $
+// $Id: UDP.java,v 1.15 2004/02/26 19:18:30 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -1407,7 +1407,7 @@ public class UDP extends Protocol implements Runnable {
                 bundleAndSend();
             }
 
-            l.add(msg);
+            l.add(msg, (int)len);
             if(!timer_running) // first message to be bundled
                 startTimer();
         }
@@ -1493,8 +1493,8 @@ public class UDP extends Protocol implements Runnable {
         long  total_size=0;
         List  l=new List();
 
-        void add(Message msg) {
-            total_size+=msg.size();
+        void add(Message msg, int len) {
+            total_size+=len;
             l.add(msg);
         }
 
