@@ -1,4 +1,4 @@
-// $Id: ConfiguratorFactory.java,v 1.10 2004/08/04 10:35:20 belaban Exp $
+// $Id: ConfiguratorFactory.java,v 1.11 2004/08/04 14:15:32 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -286,12 +286,9 @@ public class ConfiguratorFactory {
             }
         }
 
-        if(input == null)
-            log.info("properties are neither a URL nor a file");
-        else {
+        if(input != null) {
             return XmlConfigurator.getInstance(input);
         }
-
 
         if(properties instanceof Element) {
             return XmlConfigurator.getInstance((Element)properties);
