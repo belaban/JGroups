@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.80 2004/06/12 23:43:59 belaban Exp $
+Revision: $Id: history.txt,v 1.81 2004/06/25 00:01:58 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -28,6 +28,10 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
 Version 2.2.5
 -------------
+
+- Changed UDP: multicast messages are now sent via mcast_send_sock and received via mcast_recv_sock. This has
+  to better performance when sending/receiving a lot of mcast msgs
+  (bela June 24 2004)
 
 - Multicast messages now use the mcast_sock
   (bela June 12 2004)

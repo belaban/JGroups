@@ -1,4 +1,4 @@
-$Id: todo.lst,v 1.7 2004/03/10 05:57:48 belaban Exp $
+$Id: todo.lst,v 1.8 2004/06/25 00:06:34 belaban Exp $
 
 
 
@@ -6,8 +6,16 @@ $Id: todo.lst,v 1.7 2004/03/10 05:57:48 belaban Exp $
 			      Todo List
 			      ---------
 
-- UDP and bundling: error "ERROR 21:15:21,660 [UDP.IncomingPacketHandler thread] - message
-  does not have a UDP header". Only occurs with fc.xml and bundling enabled.
+- FC: on a fast network, we can still run out of memory because received_msgs/delivered_msgs becomes very big.
+  Instead of basing FC on the speed of the network, we should also take the number of messages processed
+  (a.k.a delivered_msgs/received_msgs) into account, and only send credits when that number falls below a
+  certain threshold. First: look at the number of received/delivered msgs in the perf test !
+
+- Performance tests:
+  - Fix TcpTransport: doesn't currently work (connection exception)
+                    : make TcpTransport runnable on single machine (define different ports)
+  - Test m-m mode (everyone sends to everyone) with 4 nodes
+  - Expose statistics (e.g. retransmission counter, flow control stats)
 
 - Discovery doesn't work when working over a disabled (e.g. WiFi) interface			      
 
@@ -225,6 +233,11 @@ $Id: todo.lst,v 1.7 2004/03/10 05:57:48 belaban Exp $
 
 				 Done
 				 ----
+
+
+- April 2004 (bela)
+  UDP and bundling: error "ERROR 21:15:21,660 [UDP.IncomingPacketHandler thread] - message
+  does not have a UDP header". Only occurs with fc.xml and bundling enabled.
 
 - 2003 (bela)
   ConnectionPool: garbage collect sockets over which no activity
