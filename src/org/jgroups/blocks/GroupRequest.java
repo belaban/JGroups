@@ -1,4 +1,4 @@
-// $Id: GroupRequest.java,v 1.10 2004/09/23 16:29:11 belaban Exp $
+// $Id: GroupRequest.java,v 1.11 2005/01/13 01:06:53 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -39,7 +39,7 @@ import java.util.Vector;
  * to do so.<p>
  * <b>Requirements</b>: lossless delivery, e.g. acknowledgment-based message confirmation.
  * @author Bela Ban
- * @version $Revision: 1.10 $
+ * @version $Revision: 1.11 $
  */
 public class GroupRequest implements RspCollector, Command {
     /** return only first response */
@@ -390,6 +390,9 @@ public class GroupRequest implements RspCollector, Command {
         ret.append("\nresponses: ");
         for(int i=0; i < responses.length; i++)
             ret.append(responses[i] + " ");
+        ret.append("\nreceived: ");
+        for(int i=0; i < received.length; i++)
+            ret.append(receivedToString(received[i]) + " ");
         if(suspects.size() > 0)
             ret.append("\nsuspects: " + suspects);
         ret.append("\nrequest_msg: " + request_msg);
@@ -576,18 +579,21 @@ public class GroupRequest implements RspCollector, Command {
         return retval;
     }
 
-    void printReceived() {
-        for(int i=0; i < received.length; i++) {
-            System.out.println(
-                    membership[i]
-                    + ": "
-                    + (received[i] == NOT_RECEIVED
-                       ? "NOT_RECEIVED"
-                       : received[i] == RECEIVED
-                         ? "RECEIVED"
-                         : "SUSPECTED"));
-        }
-    }
+
+
+   private String receivedToString(int r) {
+       switch(r) {
+       case RECEIVED:
+           return "RECEIVED";
+       case NOT_RECEIVED:
+           return "NOR_RECEIVED";
+       case SUSPECTED:
+           return "SUSPECTED";
+       default:
+           return "n/a";
+       }
+   }
+
 
     /**
      * Adjusts the 'received' array in the following way:
