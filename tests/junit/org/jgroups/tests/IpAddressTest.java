@@ -1,4 +1,4 @@
-// $Id: IpAddressTest.java,v 1.6 2004/10/05 16:19:27 belaban Exp $
+// $Id: IpAddressTest.java,v 1.7 2004/10/06 08:44:31 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -12,6 +12,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 
 public class IpAddressTest extends TestCase {
@@ -39,8 +41,13 @@ public class IpAddressTest extends TestCase {
         
     }
 
- 
-    public void testEquality() throws Exception {        
+
+    public void testUnknownAddress() throws UnknownHostException {
+        IpAddress addr=new IpAddress("idontknow.com", 55);
+        assertEquals(addr.getIpAddress(), InetAddress.getLocalHost());
+    }
+
+    public void testEquality() throws Exception {
         assertTrue(a.equals(b));
         assertTrue(c.equals(b));
         assertTrue(a.equals(e));
@@ -96,7 +103,7 @@ public class IpAddressTest extends TestCase {
         byte[]                buf=null;
         ByteArrayInputStream  bis=null;
         ObjectInputStream     ois;
-        IpAddress             a2, b2, c2, d2, e2, f2, g2, h2;
+        IpAddress             a2, b2;
         
         a.setAdditionalData(null);
         b.setAdditionalData("Bela Ban".getBytes());
