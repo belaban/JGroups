@@ -1,4 +1,4 @@
-// $Id: Channel.java,v 1.1 2003/09/09 01:24:07 belaban Exp $
+// $Id: Channel.java,v 1.2 2003/11/21 17:51:59 belaban Exp $
 
 package org.jgroups;
 
@@ -245,14 +245,15 @@ public abstract class Channel implements Transport {
     abstract public Object peek(long timeout) throws ChannelNotConnectedException, ChannelClosedException, TimeoutException;
 
 
-    /** Gets the current view. This does <em>not</em> retrieve a new view, use
-     <code>Receive</code> to do so. The view may only be available after a successful
-     <code>Connect</code>. The result of calling this method on an unconnected channel
+    /**
+     * Gets the current view. This does <em>not</em> retrieve a new view, use
+     <code>receive()</code> to do so. The view may only be available after a successful
+     <code>connect()</code>. The result of calling this method on an unconnected channel
      is implementation defined (may return null). Calling it on a channel that is not
      enabled to receive view events (via <code>setOpt</code>) returns
      <code>null</code>. Calling this method on a closed channel returns a null view.
-
-     @return The current view.  */
+     @return The current view.  
+     */
     abstract public View getView();
 
 
