@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.13 2004/04/08 14:46:26 yaron-r Exp $ -->
+<!-- $Id: build.xml,v 1.14 2004/05/02 15:35:35 belaban Exp $ -->
 
 <project name="JGroups" default="compile-1.4" basedir=".">
     <description>
@@ -295,16 +295,17 @@
         </junit>
     </target>
 
-    <target name="upload"
-        description="FTP jgroups-all.jar to host defined in build.properties">
-        <ftp server="${ftp.servername}"
-            userid="${ftp.userid}"
-            password="${ftp.password}"
-            remotedir="${ftp.remotedir}"
-            verbose="true">
-            <fileset dir="${dist.dir}" includes="jgroups-all.jar"/>
-        </ftp>
-    </target>
+
+<!--    <target name="upload"-->
+<!--        description="FTP jgroups-all.jar to host defined in build.properties">-->
+<!--        <ftp server="${ftp.servername}"-->
+<!--            userid="${ftp.userid}"-->
+<!--            password="${ftp.password}"-->
+<!--            remotedir="${ftp.remotedir}"-->
+<!--            verbose="true">-->
+<!--            <fileset dir="${dist.dir}" includes="jgroups-all.jar"/>-->
+<!--        </ftp>-->
+<!--    </target>-->
 
 
     <target name="unittests-xml" depends="compile">
