@@ -14,7 +14,7 @@ import java.util.HashMap;
 /**
  * Uses magic numbers for class descriptors
  * @author Bela Ban
- * @version $Id: MagicObjectInputStream.java,v 1.1 2004/09/24 09:00:30 belaban Exp $
+ * @version $Id: MagicObjectInputStream.java,v 1.2 2004/09/24 09:53:43 belaban Exp $
  */
 public class MagicObjectInputStream extends ContextObjectInputStream {
     static ClassConfigurator conf=null;
@@ -45,8 +45,8 @@ public class MagicObjectInputStream extends ContextObjectInputStream {
         retval=conf.getObjectStreamClassFromMagicNumber(magic_num);
         if(retval == null)
             throw new ClassNotFoundException("failed fetching class descriptor for magic number " + magic_num);
-        if(log.isTraceEnabled())
-            log.trace("reading descriptor (from " + magic_num + "): " + retval.getName());
+        //if(log.isTraceEnabled())
+            //log.trace("reading descriptor (from " + magic_num + "): " + retval.getName());
         return retval;
     }
 }

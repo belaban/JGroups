@@ -2,16 +2,18 @@ package org.jgroups.util;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.ChannelException;
+import org.jgroups.conf.ClassConfigurator;
 
-import java.io.*;
-import java.util.HashMap;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.io.ObjectStreamClass;
+import java.io.OutputStream;
 
 /**
  * Uses magic numbers for class descriptors
  * @author Bela Ban
- * @version $Id: MagicObjectOutputStream.java,v 1.1 2004/09/24 09:00:30 belaban Exp $
+ * @version $Id: MagicObjectOutputStream.java,v 1.2 2004/09/24 09:53:29 belaban Exp $
  */
 public class MagicObjectOutputStream extends ObjectOutputStream {
     static ClassConfigurator conf=null;
@@ -41,13 +43,13 @@ public class MagicObjectOutputStream extends ObjectOutputStream {
         magic_num=conf.getMagicNumberFromObjectStreamClass(desc);
         super.writeInt(magic_num);
         if(magic_num == -1) {
-            if(log.isTraceEnabled())
-                log.trace("could not find magic number for " + desc.getName() + ": writing full class descriptor");
+            if(log.isWarnEnabled())
+                log.warn("could not find magic number for " + desc.getName() + ": writing full class descriptor");
             super.writeClassDescriptor(desc);
         }
         else {
-            if(log.isTraceEnabled())
-                log.trace("writing descriptor (num=" + magic_num + "): " + desc.getName());
+            //if(log.isTraceEnabled())
+               // log.trace("writing descriptor (num=" + magic_num + "): " + desc.getName());
         }
     }
 }
