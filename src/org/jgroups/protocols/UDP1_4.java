@@ -31,13 +31,24 @@ import java.util.*;
  * the unicast routing caches should ensure that unicasts are only sent via 1 interface in almost all cases.
  * 
  * @author Bela Ban Oct 2003
- * @version $Id: UDP1_4.java,v 1.5 2003/12/23 02:09:27 belaban Exp $
+ * @version $Id: UDP1_4.java,v 1.6 2003/12/24 02:25:09 belaban Exp $
  */
 public class UDP1_4 extends Protocol implements Runnable {
 
     final String name="UDP1_4";
 
-    
+
+    /////////////////////////// new fields ///////////////////////
+    /** Maintains a list of Connectors, one for each interface we're listening on */
+    ConnectorTable ct=null;
+
+    /** A List<String> of bind addresses, we create 1 Connector for each interface */
+    List bind_addrs=null;
+
+    //////////////////////////////////////////////////////////////
+
+
+
     /** Socket used for <em>sending</em> unicast datagram packets */
     // DatagramSocket  send_sock=null;
 
@@ -309,6 +320,7 @@ public class UDP1_4 extends Protocol implements Runnable {
      */
     public boolean setProperties(Properties props) {
         String str, tmp;
+        List exclude_list=null;
 
         tmp=System.getProperty("UDP.bind_addr");
         if(tmp != null)
@@ -323,6 +335,31 @@ public class UDP1_4 extends Protocol implements Runnable {
                 return false;
             }
             props.remove("bind_addr");
+        }
+
+        str=props.getProperty("bind_addrs");
+        if(str != null) {
+            str=str.trim();
+            if(str.toLowerCase().equals("all")) {
+                try {
+                    bind_addrs=ConnectorTable.determineAllBindInterfaces();
+                }
+                catch(SocketException e) {
+                    e.printStackTrace();
+                    bind_addrs=null;
+                }
+            }
+            else {
+                bind_addrs=Util.parseCommaDelimitedStrings(str);
+            }
+            props.remove("bind_addrs");
+        }
+
+        str=props.getProperty("bind_addrs_exclude");
+        if(str != null) {
+            str=str.trim();
+            exclude_list=Util.parseCommaDelimitedStrings(str);
+            props.remove("bind_addrs_exclude");
         }
 
         str=props.getProperty("bind_port");
@@ -401,6 +438,31 @@ public class UDP1_4 extends Protocol implements Runnable {
         if(str != null) {
             use_packet_handler=new Boolean(str).booleanValue();
             props.remove("use_packet_handler");
+        }
+
+
+        // handling of bind_addrs
+        if(bind_addrs == null)
+            bind_addrs=new ArrayList();
+        if(bind_addrs.size() == 0) {
+            try {
+                String default_bind_addr=ConnectorTable.determineDefaultBindInterface();
+                bind_addrs.add(default_bind_addr);
+            }
+            catch(SocketException ex) {
+                Trace.error("UDP1_4.setProperties()", "failed determining the default bind interface: " + ex);
+            }
+        }
+        if(exclude_list != null) {
+            bind_addrs.removeAll(exclude_list);
+        }
+        if(bind_addrs.size() == 0) {
+            Trace.error("UDP1_4.setProperties()", "no valid bind interface found, unable to listen for network traffic");
+            return false;
+        }
+        else {
+            if(Trace.trace)
+                Trace.info("UDP1_4.setProperties()", "bind interfaces are " + bind_addrs);
         }
 
         if(props.size() > 0) {
@@ -1560,6 +1622,19 @@ public class UDP1_4 extends Protocol implements Runnable {
                 }
             }
             return null;
+        }
+
+        public static List determineAllBindInterfaces() throws SocketException {
+            List ret=new ArrayList();
+            for(Enumeration en=NetworkInterface.getNetworkInterfaces(); en.hasMoreElements();) {
+                NetworkInterface ni=(NetworkInterface)en.nextElement();
+                for(Enumeration en2=ni.getInetAddresses(); en2.hasMoreElements();) {
+                    InetAddress bind_addr=(InetAddress)en2.nextElement();
+                    ret.add(bind_addr.getHostAddress());
+                }
+            }
+
+            return ret;
         }
     }
 
