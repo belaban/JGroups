@@ -1,4 +1,4 @@
-// $Id: IpAddressTest.java,v 1.7 2004/10/06 08:44:31 belaban Exp $
+// $Id: IpAddressTest.java,v 1.8 2005/01/01 08:16:20 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -26,7 +26,8 @@ public class IpAddressTest extends TestCase {
     }
 
 
-    public void setUp() {
+    public void setUp() throws Exception {
+        super.setUp();
         a=new IpAddress("localhost", 5555);
         b=new IpAddress("localhost", 5555);
         c=b;
@@ -37,9 +38,6 @@ public class IpAddressTest extends TestCase {
         h=new IpAddress("224.0.0.1", 5555);
     }
 
-    public void tearDown() {
-        
-    }
 
 
     public void testUnknownAddress() throws UnknownHostException {
