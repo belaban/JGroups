@@ -1,4 +1,4 @@
-// $Id: IpAddress.java,v 1.2 2003/12/01 01:40:55 belaban Exp $
+// $Id: IpAddress.java,v 1.3 2004/01/21 22:49:32 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -286,11 +286,14 @@ public class IpAddress implements Address {
     protected static InetAddress getIpAddress(byte[] addr) {
         try {
             HashKey key = new HashKey(addr);
-            InetAddress result = (InetAddress)sAddrCache.get(key);
-            
-            if(result == null) {
-                result = java.net.InetAddress.getByName(addressToString(addr));
-                sAddrCache.put(key,result);
+            InetAddress result;
+
+            synchronized(sAddrCache) {
+                result=(InetAddress)sAddrCache.get(key);
+                if(result == null) {
+                    result = java.net.InetAddress.getByName(addressToString(addr));
+                    sAddrCache.put(key,result);
+                }
             }
             return result;
         }
