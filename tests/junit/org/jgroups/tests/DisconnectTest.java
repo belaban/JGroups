@@ -1,4 +1,4 @@
-// $Id: DisconnectTest.java,v 1.5 2004/04/01 04:08:44 belaban Exp $
+// $Id: DisconnectTest.java,v 1.6 2004/04/28 18:44:16 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -31,7 +31,7 @@ import java.net.Socket;
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
  * @author Bela Ban belaban@yahoo.com
- * @version $Revision: 1.5 $
+ * @version $Revision: 1.6 $
  **/
 public class DisconnectTest extends TestCase {
 
@@ -97,81 +97,6 @@ public class DisconnectTest extends TestCase {
 
 
 
-    /**
-     * Tests connect-disconnect-connect sequence for a group with one member
-     * (using TUNNEL).
-     **/
-    public void testDisconnectConnectOne_TUNNEL() throws Exception {
-
-        String props=getTUNNELProps(startRouter(), startGossipServer());
-
-        channel=new JChannel(props);
-        channel.connect("testgroup1");
-        channel.disconnect();
-        channel.connect("testgroup2");
-        View view=channel.getView();
-        assertEquals(1, view.size());
-        assertTrue(view.containsMember(channel.getLocalAddress()));
-    }
-
-
-    /**
-     * Tests connect-disconnect-connect sequence for a group with two members
-     * (using TUNNEL).
-     **/
-    public void testDisconnectConnectTwo_TUNNEL() throws Exception {
-
-        String props=getTUNNELProps(startRouter(), startGossipServer());
-
-        JChannel coordinator=new JChannel(props);
-        coordinator.connect("testgroup");
-
-        channel=new JChannel(props);
-        channel.connect("testgroup1");
-        channel.disconnect();
-        channel.connect("testgroup");
-        View view=channel.getView();
-        assertEquals(2, view.size());
-        assertTrue(view.containsMember(channel.getLocalAddress()));
-        assertTrue(view.containsMember(coordinator.getLocalAddress()));
-
-        coordinator.close();
-    }
-
-
-    /**
-     * Tests connect-disconnect-connect-send sequence for a group with two
-     * members, using TUNNEL. Test case introduced before fixing pbcast.NAKACK
-     * bug, which used to leave pbcast.NAKACK in a broken state after
-     * DISCONNECT. Because of this problem, the channel couldn't be used to
-     * multicast messages.
-     **/
-    public void testDisconnectConnectSendTwo_TUNNEL() throws Exception {
-
-        String props=getTUNNELProps(startRouter(), startGossipServer());
-
-        final Promise msgPromise=new Promise();
-        JChannel coordinator=new JChannel(props);
-        coordinator.connect("testgroup");
-        PullPushAdapter ppa=
-                new PullPushAdapter(coordinator,
-                                    new PromisedMessageListener(msgPromise));
-        ppa.start();
-
-        channel=new JChannel(props);
-        channel.connect("testgroup1");
-        channel.disconnect();
-        channel.connect("testgroup");
-
-        channel.send(new Message(null, null, "payload"));
-
-        Message msg=(Message)msgPromise.getResult(20000);
-        assertTrue(msg != null);
-        assertEquals("payload", msg.getObject());
-
-        ppa.stop();
-        coordinator.close();
-    }
 
 
     /**
@@ -244,6 +169,83 @@ public class DisconnectTest extends TestCase {
         ppa.stop();
         coordinator.close();
     }
+
+
+    /**
+      * Tests connect-disconnect-connect sequence for a group with one member
+      * (using TUNNEL).
+      **/
+     public void testDisconnectConnectOne_TUNNEL() throws Exception {
+
+         String props=getTUNNELProps(startRouter(), startGossipServer());
+
+         channel=new JChannel(props);
+         channel.connect("testgroup1");
+         channel.disconnect();
+         channel.connect("testgroup2");
+         View view=channel.getView();
+         assertEquals(1, view.size());
+         assertTrue(view.containsMember(channel.getLocalAddress()));
+     }
+
+
+     /**
+      * Tests connect-disconnect-connect sequence for a group with two members
+      * (using TUNNEL).
+      **/
+     public void testDisconnectConnectTwo_TUNNEL() throws Exception {
+
+         String props=getTUNNELProps(startRouter(), startGossipServer());
+
+         JChannel coordinator=new JChannel(props);
+         coordinator.connect("testgroup");
+
+         channel=new JChannel(props);
+         channel.connect("testgroup1");
+         channel.disconnect();
+         channel.connect("testgroup");
+         View view=channel.getView();
+         assertEquals(2, view.size());
+         assertTrue(view.containsMember(channel.getLocalAddress()));
+         assertTrue(view.containsMember(coordinator.getLocalAddress()));
+
+         coordinator.close();
+     }
+
+
+     /**
+      * Tests connect-disconnect-connect-send sequence for a group with two
+      * members, using TUNNEL. Test case introduced before fixing pbcast.NAKACK
+      * bug, which used to leave pbcast.NAKACK in a broken state after
+      * DISCONNECT. Because of this problem, the channel couldn't be used to
+      * multicast messages.
+      **/
+     public void testDisconnectConnectSendTwo_TUNNEL() throws Exception {
+
+         String props=getTUNNELProps(startRouter(), startGossipServer());
+
+         final Promise msgPromise=new Promise();
+         JChannel coordinator=new JChannel(props);
+         coordinator.connect("testgroup");
+         PullPushAdapter ppa=
+                 new PullPushAdapter(coordinator,
+                                     new PromisedMessageListener(msgPromise));
+         ppa.start();
+
+         channel=new JChannel(props);
+         channel.connect("testgroup1");
+         channel.disconnect();
+         channel.connect("testgroup");
+
+         channel.send(new Message(null, null, "payload"));
+
+         Message msg=(Message)msgPromise.getResult(20000);
+         assertTrue(msg != null);
+         assertEquals("payload", msg.getObject());
+
+         ppa.stop();
+         coordinator.close();
+     }
 
 
     public static Test suite() {
