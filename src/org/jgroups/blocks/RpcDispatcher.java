@@ -1,4 +1,4 @@
-// $Id: RpcDispatcher.java,v 1.5 2004/03/10 01:04:59 belaban Exp $
+// $Id: RpcDispatcher.java,v 1.6 2004/03/10 02:07:23 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -158,6 +158,7 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
     public RspList callRemoteMethods(Vector dests, MethodCall method_call, int mode, long timeout) {
         byte[]   buf=null;
         Message  msg=null;
+        RspList  retval=null;
 
         if(Trace.trace)
             Trace.debug("RpcDispatcher.callRemoteMethods()", "dests=" + dests +
@@ -172,7 +173,10 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         }
 
         msg=new Message(null, null, buf);
-        return super.castMessage(dests, msg, mode, timeout);
+        retval=super.castMessage(dests, msg, mode, timeout);
+        if(Trace.trace)
+            Trace.debug("RpcDispatcher.callRemoteMethods()", "responses: " + retval);
+        return retval;
     }
 
 
@@ -269,6 +273,7 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
             throws TimeoutException, SuspectedException {
         byte[]   buf=null;
         Message  msg=null;
+        Object   retval=null;
 
         if(Trace.trace)
             Trace.debug("RpcDispatcher.callRemoteMethod()", "dest=" + dest +
@@ -283,7 +288,10 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         }
 
         msg=new Message(dest, null, buf);
-        return super.sendMessage(msg, mode, timeout);
+        retval=super.sendMessage(msg, mode, timeout);
+        if(Trace.trace)
+            Trace.debug("RpcDispatcher.callRemoteMethod()", "retval: " + retval);
+        return retval;
     }
 
 

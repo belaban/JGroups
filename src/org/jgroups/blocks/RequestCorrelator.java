@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.3 2004/02/20 21:43:46 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.4 2004/03/10 02:07:23 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -360,6 +360,8 @@ public class RequestCorrelator {
         ArrayList    copy;
 
         if(mbr == null) return;
+        if(Trace.trace)
+            Trace.debug("RequestCorrelator.receiveSuspect()", "suspect=" + mbr);
 
         // copy so we don't run into bug #761804 - Bela June 27 2003
         synchronized(requests) {
@@ -420,9 +422,8 @@ public class RequestCorrelator {
 
         hdr=(Header)msg.getHeader(name);
         if(hdr.name == null || !hdr.name.equals(name)) {
-            Trace.debug("RequestCorrelator.receiveMessage()", "name of request " +
-                        "correlator header (" + hdr.name + ") is different from ours (" +
-                        name + "). Msg not accepted, passed up");
+            Trace.debug("RequestCorrelator.receiveMessage()", "name of request correlator header (" +
+                    hdr.name + ") is different from ours (" + name + "). Msg not accepted, passed up");
             return(true);
         }
 
@@ -436,6 +437,9 @@ public class RequestCorrelator {
                            ", hdr=" + hdr + ")");
             return false;
         }
+
+        if(Trace.trace)
+            Trace.debug("RequestCorrelator.receiveMessage()", "header is " + hdr);
 
         // [Header.REQ]:
         // i. If there is no request handler, discard
@@ -560,6 +564,11 @@ public class RequestCorrelator {
         // ID as the request and the name of the sender request correlator
         hdr    = (Header)req.removeHeader(name);
 
+        if(Trace.trace)
+            Trace.debug("RequestCorrelator.handleRequest()", "calling request handler (" +
+                    (request_handler != null? request_handler.getClass().getName() : "null") +
+                    ") with request " + hdr.id);
+
         try {
             retval = request_handler.handle(req);
         }
@@ -596,6 +605,9 @@ public class RequestCorrelator {
             rsp.setBuffer(rsp_buf);
         rsp_hdr=new Header(Header.RSP, hdr.id, false, name);
         rsp.putHeader(name, rsp_hdr);
+        if(Trace.trace)
+            Trace.debug("RequestCorrelator.handleRequest()", "sending rsp for " +
+                    rsp_hdr.id + " to " + rsp.getDest());
 
         try {
             if(transport instanceof Protocol)
@@ -605,7 +617,7 @@ public class RequestCorrelator {
             else
                 Trace.error("RequestCorrelator.handleRequest()", "transport object has to be either a " +
                             "Transport or a Protocol, however it is a " + transport.getClass());
-        } 
+        }
         catch(Throwable e) {
             Trace.error("RequestCorrelator.handleRequest", throwableToString(e));
         }
