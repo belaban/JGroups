@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.27 2004/01/03 02:08:56 belaban Exp $
+Revision: $Id: history.txt,v 1.28 2004/01/07 00:31:19 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java JGroups.Version')]
 
@@ -27,6 +27,10 @@ romuald     = Romuald du Song
 
 Version 2.2.1
 -------------
+
+- Removed send_sock from UDP and streamlined sending. Now there is only 1 socket for sending unicast and multicast
+  messages and for receiving unicast messages, and 1 socket for receiving multicast messages
+  (bela Jan 6 2004)
 
 - Added use_outgoing_packet_handler to UDP. If enabled, all outgoing packets will be handled by a separate thread.
   This results in great perf gains for multicasts sent to self
