@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.39 2004/08/30 09:26:12 belaban Exp $
+// $Id: UDP.java,v 1.40 2004/09/09 19:57:02 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -1278,11 +1278,19 @@ public class UDP extends Protocol implements Runnable {
                     }
 
                     if(Version.compareTo(data) == false) {
-                        if(log.isWarnEnabled()) log.warn("packet from " + packet.getAddress() + ':' + packet.getPort() +
-                                   " has different version (" +
-                                   Version.printVersionId(data, Version.version_id.length) +
-                                   ") from ours (" + Version.printVersionId(Version.version_id) +
-                                   "). This may cause problems");
+                        if(log.isWarnEnabled()) {
+                            StringBuffer sb=new StringBuffer();
+                            sb.append("packet from ").append(packet.getAddress()).append(':').append(packet.getPort());
+                            sb.append(" has different version (").append(Version.printVersionId(data, Version.version_id.length));
+                            sb.append(") from ours (").append(Version.printVersionId(Version.version_id)).append("). ");
+                            if(discard_incompatible_packets)
+                                sb.append("Packet is discarded");
+                            else
+                                sb.append("This may cause problems");
+                            log.warn(sb.toString());
+                        }
+                        if(discard_incompatible_packets)
+                            continue;
                     }
 
                     if(use_incoming_packet_handler) {
