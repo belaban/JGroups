@@ -1,4 +1,4 @@
-// $Id: GossipRouter.java,v 1.9 2004/12/13 15:30:06 belaban Exp $
+// $Id: GossipRouter.java,v 1.10 2005/02/05 23:56:33 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -521,9 +521,7 @@ public class GossipRouter {
      **/
     private GossipData processGossip(GossipData gossip) {
 
-         {
-            if(log.isDebugEnabled()) log.debug("gossip is "+gossip);
-        }
+        if(log.isTraceEnabled()) log.trace("gossip is "+gossip);
 
         if (gossip==null) {
             if(log.isWarnEnabled()) log.warn("null gossip request");
@@ -617,9 +615,7 @@ public class GossipRouter {
         String key=null;
         List val;
 
-         {
-            if(log.isDebugEnabled()) log.debug("running sweep");
-        }
+        if(log.isTraceEnabled()) log.trace("running sweep");
 
         synchronized(gossipTable) {
             for(Iterator i=gossipTable.keySet().iterator(); i.hasNext();) {
@@ -631,9 +627,8 @@ public class GossipRouter {
                         diff=currentTime - ae.timestamp;
                         if(diff > expiryTime) {
                             j.remove();
-
-                               if(log.isInfoEnabled()) log.info("Removed member " + ae +
-                                       " from group " + key + '(' + diff + " msecs old)");
+                            if(log.isTraceEnabled())
+                                log.trace("Removed member " + ae + " from group " + key + '(' + diff + " msecs old)");
                             num_entries_removed++;
                         }
                     }
@@ -642,7 +637,7 @@ public class GossipRouter {
         }
         
         if(num_entries_removed > 0) {
-            if(log.isInfoEnabled()) log.info("done (removed " + num_entries_removed + " entries)");
+            if(log.isTraceEnabled()) log.trace("done (removed " + num_entries_removed + " entries)");
         }
     }
 
@@ -1028,7 +1023,7 @@ public class GossipRouter {
         }
 
         void finish() {
-            if(log.isDebugEnabled()) log.debug("terminating the SocketThread for "+sock);
+            if(log.isTraceEnabled()) log.trace("terminating the SocketThread for "+sock);
             active = false;
         }
 
@@ -1062,9 +1057,9 @@ public class GossipRouter {
                     route(dst_addr, gname, buf, addr);
                 }
                 catch(EOFException io_ex) {
-                    if(log.isInfoEnabled())
-                        log.info("client " +sock.getInetAddress().getHostName() + ':' + sock.getPort() +
-                                 " closed connection; removing it from routing table");
+                    if(log.isTraceEnabled())
+                        log.trace("client " +sock.getInetAddress().getHostName() + ':' + sock.getPort() +
+                                  " closed connection; removing it from routing table");
                     removeEntry(sock); // will close socket
                     return;
                 }
