@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.6 2004/07/05 14:17:16 belaban Exp $
+// $Id: TUNNEL.java,v 1.7 2004/07/13 01:44:35 ovidiuf Exp $
 
 
 package org.jgroups.protocols;
@@ -91,8 +91,9 @@ public class TUNNEL extends Protocol implements Runnable {
             props.remove("router_port");
         }
 
-
-            if(log.isInfoEnabled()) log.info("router_host=" + router_host + ";router_port=" + router_port);
+        if(log.isDebugEnabled()) {
+            log.debug("router_host=" + router_host + ";router_port=" + router_port);
+        }
 
         if(router_host == null || router_port == 0) {
             if(log.isErrorEnabled()) log.error("both router_host and router_port have to be set !");
@@ -119,7 +120,9 @@ public class TUNNEL extends Protocol implements Runnable {
         Message      msg;
         TunnelHeader hdr;
 
-         if(log.isInfoEnabled()) log.info("event is " + evt);
+        if(log.isDebugEnabled()) {
+            log.debug(evt.toString());
+        }
 
         if(evt.getType() != Event.MSG) {
             handleDownEvent(evt);
@@ -202,7 +205,9 @@ public class TUNNEL extends Protocol implements Runnable {
     public void handleIncomingMessage(Message msg) {
         TunnelHeader hdr=(TunnelHeader)msg.removeHeader(getName());
 
-         if(log.isInfoEnabled()) log.info("received msg " + msg);
+         if(log.isDebugEnabled()) {
+             log.debug("received message " + msg);
+         }
 
 
         /* Discard all messages destined for a channel with a different name */
@@ -239,8 +244,9 @@ public class TUNNEL extends Protocol implements Runnable {
 
             case Event.CONNECT:
                 channel_name=(String)evt.getArg();
-                if(stub == null)
+                if(stub == null) {
                     if(log.isErrorEnabled()) log.error("CONNECT:  router stub is null!");
+                }
                 else {
                     stub.register(channel_name);
                 }
