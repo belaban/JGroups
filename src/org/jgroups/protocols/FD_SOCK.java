@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.11 2004/09/13 20:47:16 belaban Exp $
+// $Id: FD_SOCK.java,v 1.12 2004/09/14 13:02:44 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -9,10 +9,7 @@ import org.jgroups.util.Promise;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.InetAddress;
@@ -66,6 +63,8 @@ public class FD_SOCK extends Protocol implements Runnable {
     TimeScheduler timer=null;
     BroadcastTask bcast_task=new BroadcastTask();    // to transmit SUSPECT message (until view change)
     boolean       regular_sock_close=false;          // used by interruptPingerThread() when new ping_dest is computed
+    private static final int NORMAL_TEMINATION=9;
+    private static final int ABNORMAL_TEMINATION=-1;
 
 
     public String getName() {
@@ -253,8 +252,8 @@ public class FD_SOCK extends Protocol implements Runnable {
                 srv_sock=Util.createServerSocket(srv_sock_bind_addr, start_port); // grab a random unused port above 10000
                 srv_sock_addr=new IpAddress(srv_sock.getLocalPort());
                 startServerSocket();
-                if(pinger_thread == null)
-                    startPingerThread();
+                //if(pinger_thread == null)
+                  //  startPingerThread();
                 break;
 
             case Event.VIEW_CHANGE:
@@ -353,6 +352,7 @@ public class FD_SOCK extends Protocol implements Runnable {
             }
 
             if(!setupPingSocket(ping_addr)) {
+                // covers use cases #7 and #8 in GmsTests.txt
                 if(log.isDebugEnabled()) log.debug("could not create socket to " + ping_dest + "; suspecting " + ping_dest);
                 broadcastSuspectMessage(ping_dest);
                 pingable_mbrs.removeElement(ping_dest);
@@ -364,8 +364,19 @@ public class FD_SOCK extends Protocol implements Runnable {
             // at this point ping_input must be non-null, otherwise setupPingSocket() would have thrown an exception
             try {
                 if(ping_input != null) {
-                    if(ping_input.read() == -1) // waits until the socket is closed
-                        handleSocketClose(null);
+                    int c=ping_input.read();
+                    switch(c) {
+                        case NORMAL_TEMINATION:
+                            if(log.isDebugEnabled())
+                                log.debug("peer closed socket normally");
+                            pinger_thread=null;
+                            break;
+                        case ABNORMAL_TEMINATION:
+                            handleSocketClose(null);
+                            break;
+                        default:
+                            break;
+                    }
                 }
             }
             catch(IOException ex) {  // we got here when the peer closed the socket --> suspect peer and then continue
@@ -388,7 +399,6 @@ public class FD_SOCK extends Protocol implements Runnable {
     void handleSocketClose(Exception ex) {
         teardownPingSocket();     // make sure we have no leftovers
         if(!regular_sock_close) { // only suspect if socket was not closed regularly (by interruptPingerThread())
-
             if(log.isDebugEnabled())
                 log.debug("peer " + ping_dest + " closed socket (" + (ex != null ? ex.getClass().getName() : "eof") + ')');
             broadcastSuspectMessage(ping_dest);
@@ -759,9 +769,11 @@ public class FD_SOCK extends Protocol implements Runnable {
      * as the ring nature of the FD_SOCK protocol always has only 1 client connect to its right-hand-side neighbor.
      */
     private class ServerSocketHandler implements Runnable {
-        Thread handler=null;
-        Socket client_sock=null;
+        Thread acceptor=null;
         InputStream in=null;
+        /** List<ClientConnectionHandler> */
+        List clients=new ArrayList();
+
 
 
         ServerSocketHandler() {
@@ -769,62 +781,119 @@ public class FD_SOCK extends Protocol implements Runnable {
         }
 
         void start() {
-            if(handler == null) {
-                handler=new Thread(this, "ServerSocketHandler thread");
-                handler.setDaemon(true);
-                handler.start();
+            if(acceptor == null) {
+                acceptor=new Thread(this, "ServerSocket acceptor thread");
+                acceptor.setDaemon(true);
+                acceptor.start();
             }
         }
 
 
         void stop() {
-            if(handler != null && handler.isAlive()) {
+            if(acceptor != null && acceptor.isAlive()) {
                 try {
                     srv_sock.close(); // this will terminate thread, peer will receive SocketException (socket close)
                 }
                 catch(Exception ex) {
                 }
             }
-            handler=null;
+            synchronized(clients) {
+                for(Iterator it=clients.iterator(); it.hasNext();) {
+                    ClientConnectionHandler handler=(ClientConnectionHandler)it.next();
+                    handler.stopThread();
+                }
+                clients.clear();
+            }
+            acceptor=null;
         }
 
 
         /** Only accepts 1 client connection at a time (saving threads) */
         public void run() {
-
-            while(handler != null && srv_sock != null) {
+            Socket client_sock=null;
+            while(acceptor != null && srv_sock != null) {
                 try {
                     if(log.isTraceEnabled()) // +++ remove
                         log.trace("waiting for client connections on port " + srv_sock.getLocalPort());
                     client_sock=srv_sock.accept();
                     if(log.isTraceEnabled()) // +++ remove
-                        log.trace("accepted connection from " +
-                                client_sock.getInetAddress() + ':' + client_sock.getPort());
-                    in=client_sock.getInputStream();
-                    try {
-                        while((in.read()) != -1) {
-                        }
+                        log.trace("accepted connection from " + client_sock.getInetAddress() + ':' + client_sock.getPort());
+                    ClientConnectionHandler client_conn_handler=new ClientConnectionHandler(client_sock, clients);
+                    synchronized(clients) {
+                        clients.add(client_conn_handler);
                     }
-                    catch(IOException io_ex1) {
-                    }
-                    finally {
-                        if(client_sock != null) {
-                            try {
-                                client_sock.close();
-                            }
-                            catch(Exception ex) {
-                            }
-                            client_sock=null;
-                        }
-                    }
+                    client_conn_handler.start();
                 }
                 catch(IOException io_ex2) {
                     break;
                 }
             }
-            handler=null;
+            acceptor=null;
+        }
+    }
+
+
+
+    /** Handles a client connection; multiple client can connect at the same time */
+    private class ClientConnectionHandler extends Thread {
+        Socket      client_sock=null;
+        InputStream in;
+        Object mutex=new Object();
+        List clients=null;
+
+        ClientConnectionHandler(Socket client_sock, List clients) {
+            setName("ClientConnectionHandler");
+            setDaemon(true);
+            this.client_sock=client_sock;
+            this.clients=clients;
         }
 
+        void stopThread() {
+            synchronized(mutex) {
+                if(client_sock != null) {
+                    try {
+                        OutputStream out=client_sock.getOutputStream();
+                        out.write(NORMAL_TEMINATION);
+                    }
+                    catch(Throwable t) {
+                    }
+                }
+            }
+            closeClientSocket();
+        }
+
+        void closeClientSocket() {
+            synchronized(mutex) {
+                if(client_sock != null) {
+                    try {
+                        client_sock.close();
+                    }
+                    catch(Exception ex) {
+                    }
+                    client_sock=null;
+                }
+            }
+        }
+
+        public void run() {
+            try {
+                synchronized(mutex) {
+                    if(client_sock == null)
+                        return;
+                    in=client_sock.getInputStream();
+                }
+                while((in.read()) != -1) {
+                }
+            }
+            catch(IOException io_ex1) {
+            }
+            finally {
+                closeClientSocket();
+                synchronized(clients) {
+                    clients.remove(this);
+                }
+            }
+        }
     }
 
 
