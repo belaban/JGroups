@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.55 2004/12/28 16:02:04 belaban Exp $
+// $Id: UDP.java,v 1.56 2005/01/07 10:36:23 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -167,6 +167,12 @@ public class UDP extends Protocol implements Runnable {
     /** Used by BundlingOutgoingPacketHandler */
     TimeScheduler timer=null;
 
+    /** HashMap<Address, Address>. Keys=senders, values=destinations. For each incoming message M with sender S, adds
+     * an entry with key=S and value= sender's IP address and port.
+     */
+    HashMap addr_translation_table=new HashMap();
+
+    boolean use_addr_translation=false;
 
     /** The name of this protocol */
     static final String    name="UDP";
@@ -538,6 +544,12 @@ public class UDP extends Protocol implements Runnable {
         if(str != null) {
             enable_bundling=Boolean.valueOf(str).booleanValue();
             props.remove("enable_bundling");
+        }
+
+        str=props.getProperty("use_addr_translation");
+        if(str != null) {
+            use_addr_translation=Boolean.valueOf(str).booleanValue();
+            props.remove("use_addr_translation");
         }
 
         if(props.size() > 0) {
