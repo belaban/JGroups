@@ -1,4 +1,4 @@
-// $Id: Membership.java,v 1.1 2003/09/09 01:24:08 belaban Exp $
+// $Id: Membership.java,v 1.2 2003/11/21 20:00:08 belaban Exp $
 
 package org.jgroups;
 
@@ -74,7 +74,7 @@ public class Membership implements Cloneable {
     /**
      * Adds a list of members to this membership
      * @param v - a vector containing Address objects
-     * @see Add
+     * @see #add
      * @exception ClassCastException if v contains objects that don't implement the Address interface
      */
     public synchronized void add(Vector v)
@@ -259,7 +259,7 @@ public class Membership implements Cloneable {
      * Returns the component at the specified index
      * @param index - 0..size()-1
      * @exception ArrayIndexOutOfBoundsException - if the index is negative or not less than the current size of this Membership object.
-     * @see java.util.Vector.elementAt
+     * @see java.util.Vector#elementAt
      */
 
     public synchronized Object elementAt(int index)
