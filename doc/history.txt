@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.21 2003/12/12 18:10:17 belaban Exp $
+Revision: $Id: history.txt,v 1.22 2003/12/12 18:51:08 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java JGroups.Version')]
 
@@ -28,6 +28,10 @@ romuald     = Romuald du Song
 Version 2.2.1
 -------------
 
+- Added scripts for pinging all members given an mcast address and port (probe), and
+  for determining the fragmentation size (frag_size).
+  (bela Dec 12 2003)
+
 - Fixed bug #854887. When AUTOCONF determines the correct
   fragmentation size (e.g. 65507 on my WinXP laptop),
   fragments are cut down to 65507 bytes max.
@@ -40,8 +44,6 @@ Version 2.2.1
   frag size, so we have enough space. The buffer is always more or less
   constant, as headers or serialization is constant too.
   (bela Dec 12 2003)
-
-
 
 - Added initial_hosts support for PING (copied from TCPPING)
   (bela Dec 11 2003)
