@@ -38,7 +38,6 @@ public class Test {
         int msg_size=500;
 
         int num_senders=1;
-        String props=null;
         long   log_interval=1000;
 
 
@@ -90,10 +89,6 @@ public class Test {
                 else if(line.startsWith("LOG_INTERVAL=")) {
                     log_interval=Long.parseLong(line.substring(line.indexOf('=') + 1,
                             line.indexOf(';')));
-                }
-                else if(line.startsWith("PROPS=")) {
-                    props=line.substring(line.indexOf('=') + 1,
-                            line.indexOf(';')).trim();
                 }
                 else if(line.startsWith("CLUSTER=")) {
                     nodes=parseCommaDelimitedList(line.substring(line.indexOf('=') + 1,
