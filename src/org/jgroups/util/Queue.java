@@ -1,4 +1,4 @@
-// $Id: Queue.java,v 1.18 2004/11/11 09:19:03 belaban Exp $
+// $Id: Queue.java,v 1.19 2004/12/06 15:15:35 belaban Exp $
 
 package org.jgroups.util;
 
@@ -316,6 +316,7 @@ public class Queue {
                 /*the head element matched we will remove it*/
                 head=el.next;
                 el.next=null;
+                el.obj=null;
                 /*check if we only had one object left
                  *at this time the queue becomes empty
                  *this will set the tail=head=null
@@ -332,8 +333,10 @@ public class Queue {
                     tmp_el=el.next;
                     if(tmp_el == tail) // if it is the last element, move tail one to the left (bela Sept 20 2002)
                         tail=el;
+                    el.next.obj=null;
                     el.next=el.next.next;  // point to the el past the next one. can be null.
                     tmp_el.next=null;
+                    tmp_el.obj=null;
                     decrementSize();
                     break;
                 }
@@ -491,6 +494,7 @@ public class Queue {
      */
     private Object removeInternal() {
         Element retval;
+        Object obj;
 
         /*if the head is null, the queue is empty*/
         if(head == null)
@@ -508,7 +512,9 @@ public class Queue {
         }
 
         retval.next=null;
-        return retval.obj;
+        obj=retval.obj;
+        retval.obj=null;
+        return obj;
     }
 
 
