@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.46 2004/09/24 13:34:09 belaban Exp $
+// $Id: UDP.java,v 1.47 2004/09/26 11:14:58 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -101,7 +101,7 @@ public class UDP extends Protocol implements Runnable {
     final Vector    members=new Vector(11);
 
     /** Pre-allocated byte stream. Used for serializing datagram packets. Will grow as needed */
-    final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
+    final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(512);
 
     /** Send buffer size of the multicast datagram socket */
     int             mcast_send_buf_size=32000;
@@ -583,31 +583,6 @@ public class UDP extends Protocol implements Runnable {
             return;
         }
 
-
-
-
-        // ****************** profiling ******************
-        /*if(num_msgs == 0) {
-            start=System.currentTimeMillis();
-            num_msgs++;
-        }
-        else if(num_msgs >= 1000) {
-            stop=System.currentTimeMillis();
-
-            long total_time=stop-start;
-            double msgs_per_msec=num_msgs / (double)total_time;
-
-
-                if(log.isInfoEnabled()) log.info("UDP.down.profile()",
-                        "total_time=" + total_time + ", msgs/ms=" + msgs_per_msec);
-            num_msgs=0;
-        }
-        else {
-            num_msgs++;
-        }*/
-        // ****************** profiling ******************
-
-
         msg=(Message)evt.getArg();
 
         if(group_addr != null) {
@@ -821,14 +796,15 @@ public class UDP extends Protocol implements Runnable {
     /** Internal method to serialize and send a message. This method is not reentrant */
     void send(Message msg) throws Exception {
         IpAddress  dest=(IpAddress)msg.getDest();
-        byte[]     buf=messageToBuffer(msg);
+        Buffer buf=objectToBuffer(msg);
         doSend(buf, dest.getIpAddress(), dest.getPort());
     }
 
-    void doSend(byte[] data, InetAddress dest, int port) throws IOException {
+    void doSend(Buffer buf, InetAddress dest, int port) throws IOException {
         DatagramPacket       packet;
-        packet=new DatagramPacket(data, data.length, dest, port);
 
+        // packet=new DatagramPacket(data, data.length, dest, port);
+        packet=new DatagramPacket(buf.getBuf(), buf.getOffset(), buf.getLength(), dest, port);
         if(dest.isMulticastAddress() && mcast_send_sock != null) { // mcast_recv_sock might be null if ip_mcast is false
             mcast_send_sock.send(packet);
         }
@@ -857,16 +833,16 @@ public class UDP extends Protocol implements Runnable {
     }
 
 
-    byte[] messageToBuffer(Message msg) throws Exception {
+    Buffer objectToBuffer(Externalizable obj) throws IOException {
         ObjectOutputStream   out;
 
         out_stream.reset();
         out_stream.write(Version.version_id, 0, Version.version_id.length); // write the version
         // out=new ObjectOutputStream(new BufferedOutputStream(out_stream));
-        out=new MagicObjectOutputStream(new BufferedOutputStream(out_stream));
-        msg.writeExternal(out);
-        out.close(); // needed if out buffers its output to out_stream
-        return out_stream.toByteArray();
+        out=new MagicObjectOutputStream(out_stream);
+        obj.writeExternal(out);
+        out.close(); // needed to flush if out buffers its output to out_stream
+        return new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
     }
 
     /**
@@ -1572,10 +1548,9 @@ public class UDP extends Protocol implements Runnable {
         void bundleAndSend() {
             Map.Entry            entry;
             IpAddress            dst;
-            ObjectOutputStream   outstream;
+            Buffer           buffer;
             InetAddress          addr;
             int                  port;
-            byte[]               data;
             List                 l;
 
             if(log.isDebugEnabled()) log.debug("\nsending msgs:\n" + dumpMessages(msgs));
@@ -1592,17 +1567,8 @@ public class UDP extends Protocol implements Runnable {
                     port=dst.getPort();
                     l=(List)entry.getValue();
                     try {
-                        out_stream.reset();
-                        // BufferedOutputStream bos=new BufferedOutputStream(out_stream);
-                        out_stream.write(Version.version_id, 0, Version.version_id.length); // write the version
-                        //bos.write(Version.version_id, 0, Version.version_id.length); // write the version
-
-                        // outstream=new ObjectOutputStream(new BufferedOutputStream(out_stream));
-                        outstream=new MagicObjectOutputStream(new BufferedOutputStream(out_stream));
-                        l.writeExternal(outstream);
-                        outstream.close(); // needed if out buffers its output to out_stream
-                        data=out_stream.toByteArray();
-                        doSend(data, addr, port);
+                        buffer=objectToBuffer(l);
+                        doSend(buffer, addr, port);
                     }
                     catch(IOException e) {
                         if(log.isErrorEnabled()) log.error("exception sending msg (to dest=" + dst + "): " + e);
