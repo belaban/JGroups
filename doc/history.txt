@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.47 2004/03/09 03:57:08 belaban Exp $
+Revision: $Id: history.txt,v 1.48 2004/03/09 04:05:50 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java JGroups.Version')]
 
@@ -27,8 +27,12 @@ romuald     = Romuald du Song
 Version 2.2.2
 -------------
 
+- Fixed state transfer for DistributedHashtable (should do it the same way for Channel.getState())
+  (bela March 8 2004)
+
 - Created new version
   (bela March 8 2004)
+
 
 
 
