@@ -28,7 +28,6 @@ else
 fi
 
 
-
 if [ -n "$JAVA_HOME" ]; then
     if [ -f "$JAVA_HOME/lib/tools.jar" ]; then
         if [ $cygwin = "true" ]; then
