@@ -1,4 +1,4 @@
-// $Id: FLUSH.java,v 1.5 2004/07/05 14:17:15 belaban Exp $
+// $Id: FLUSH.java,v 1.6 2004/07/26 10:52:31 belaban Exp $
 
 
 
@@ -132,7 +132,7 @@ public class FLUSH extends RpcProtocol {
 
 	/* Call the handleFlush() method of all existing members. The highest seqnos seen by the coord
 	   is the argument */
-	 if(log.isInfoEnabled()) log.info("calling HandleFlush(" + dests + ')');
+	 if(log.isInfoEnabled()) log.info("calling handleFlush(" + dests + ')');
 	passDown(new Event(Event.SWITCH_OUT_OF_BAND)); // we need out-of-band control for FLUSH ...
 	MethodCall call = new MethodCall("handleFlush", new Object[] {dests, highest_delivered_msgs.clone()}, 
 		new String[] {Vector.class.getName(), long[].class.getName()});

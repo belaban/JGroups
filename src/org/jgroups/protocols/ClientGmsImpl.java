@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.5 2004/07/05 14:17:15 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.6 2004/07/26 10:52:31 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -25,7 +25,7 @@ import java.util.Vector;
  * tell the client what its initial membership is.
  * 
  * @author Bela Ban
- * @version $Revision: 1.5 $
+ * @version $Revision: 1.6 $
  */
 public class ClientGmsImpl extends GmsImpl {
     Vector initial_mbrs=new Vector(7);
@@ -99,7 +99,7 @@ public class ClientGmsImpl extends GmsImpl {
             synchronized(view_installation_mutex) {
                 try {
                      if(log.isInfoEnabled()) log.info("sending handleJoin() to " + coord);
-                    MethodCall call=new MethodCall("handleJoin", new Object[]{mbr}, new String[]{Address.class.getName()});
+                    MethodCall call=new MethodCall("handleJoin", new Object[]{mbr}, new Class[]{Address.class});
                     gms.callRemoteMethod(coord, call, GroupRequest.GET_NONE, 0);
                     view_installation_mutex.wait(gms.join_timeout);  // wait for view -> handleView()
                 }

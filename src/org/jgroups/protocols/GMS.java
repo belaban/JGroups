@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.6 2004/07/05 14:17:15 belaban Exp $
+// $Id: GMS.java,v 1.7 2004/07/26 10:52:31 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -325,12 +325,11 @@ public class GMS extends RpcProtocol implements Runnable {
         new_view=getNextView(new_mbrs, old_mbrs, suspected_mbrs);
         new_vid=new_view.getVid();
 
-
-            if(log.isInfoEnabled()) log.info("flush_dest: " + flush_dest +
-                    "\n\tview_dest: " + view_dest + "\n\tnew_view: " + new_view + '\n');
+        if(log.isInfoEnabled()) log.info("FLUSH phase, flush_dest: " + flush_dest +
+                                         "\n\tview_dest: " + view_dest + "\n\tnew_view: " + new_view + '\n');
         flush(flush_dest, suspected_mbrs);
-
-
+        if(log.isInfoEnabled())
+            log.info("FLUSH phase done");
 
         /* VIEW protocol. Send to current mbrs + new_mbrs + old_mbrs - suspected_mbrs.  Since
            suspected members were removed from view_dest during the previous FLUSH round(s), we
