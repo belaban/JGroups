@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.105 2004/08/31 16:31:54 belaban Exp $
+Revision: $Id: history.txt,v 1.106 2004/09/02 14:45:55 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -27,6 +27,9 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
 Version 2.2.7
 -------------
+
+- Added automatic reconnect feature for PullPushAdapter on shun-reconnect sequence
+  (bela Sept 2 2004)
 
 - Fixed incorrect determination of coordinator/participant after a merge where new coordinator was *not*
   the one who executed the MERGE. Suggested by yaronr
