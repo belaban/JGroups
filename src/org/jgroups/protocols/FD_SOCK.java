@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.17 2004/10/08 12:46:58 belaban Exp $
+// $Id: FD_SOCK.java,v 1.18 2004/10/08 13:19:17 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -694,14 +694,14 @@ public class FD_SOCK extends Protocol implements Runnable {
 
 
     public static class FdHeader extends Header implements Streamable {
-        static final int SUSPECT=10;
-        static final int WHO_HAS_SOCK=11;
-        static final int I_HAVE_SOCK=12;
-        static final int GET_CACHE=13; // sent by joining member to coordinator
-        static final int GET_CACHE_RSP=14; // sent by coordinator to joining member in response to GET_CACHE
+        static final short SUSPECT=10;
+        static final short WHO_HAS_SOCK=11;
+        static final short I_HAVE_SOCK=12;
+        static final short GET_CACHE=13; // sent by joining member to coordinator
+        static final short GET_CACHE_RSP=14; // sent by coordinator to joining member in response to GET_CACHE
 
 
-        int       type=SUSPECT;
+        short     type=SUSPECT;
         Address   mbr=null;           // set on WHO_HAS_SOCK (requested mbr), I_HAVE_SOCK
         IpAddress sock_addr;          // set on I_HAVE_SOCK
 
@@ -713,7 +713,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         public FdHeader() {
         } // used for externalization
 
-        public FdHeader(int type) {
+        public FdHeader(short type) {
             this.type=type;
         }
 
@@ -751,7 +751,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         }
 
         public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeInt(type);
+            out.writeShort(type);
             out.writeObject(mbr);
             out.writeObject(sock_addr);
             out.writeObject(cachedAddrs);
@@ -760,7 +760,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
 
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            type=in.readInt();
+            type=in.readShort();
             mbr=(Address) in.readObject();
             sock_addr=(IpAddress) in.readObject();
             cachedAddrs=(Hashtable) in.readObject();
@@ -769,7 +769,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
         public void writeTo(DataOutputStream out) throws IOException {
             int size;
-            out.writeInt(type);
+            out.writeShort(type);
             Util.writeAddress(mbr, out);
             Util.writeStreamable(sock_addr, out);
             size=cachedAddrs != null? cachedAddrs.size() : 0;
@@ -795,7 +795,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
             int size;
-            type=in.readInt();
+            type=in.readShort();
             mbr=Util.readAddress(in);
             sock_addr=(IpAddress)Util.readStreamable(IpAddress.class, in);
             size=in.readInt();
