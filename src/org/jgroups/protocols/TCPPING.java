@@ -1,4 +1,4 @@
-// $Id: TCPPING.java,v 1.4 2003/12/24 01:40:31 belaban Exp $
+// $Id: TCPPING.java,v 1.5 2004/01/18 15:11:08 tsorgie Exp $
 
 package org.jgroups.protocols;
 
@@ -12,10 +12,13 @@ import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.List;
 
+import java.net.InetAddress;
 import java.util.Enumeration;
 import java.util.Properties;
 import java.util.StringTokenizer;
 import java.util.Vector;
+import java.util.HashSet;
+import java.util.Set;
 
 
 /**
@@ -31,12 +34,13 @@ import java.util.Vector;
  */
 public class TCPPING extends Protocol {
     Vector    members=new Vector(), initial_members=new Vector();
+    Set members_set=new HashSet(); //copy of the members vector for fast random access    
     Address   local_addr=null;
     String    group_addr=null;
     String    groupname=null;
     long      timeout=3000;
     long      num_initial_members=2;
-    int       port_range=5;        // number of ports to be probed for initial membership
+    int       port_range=1;        // number of ports to be probed for initial membership
     List      initial_hosts=null;  // hosts to be contacted for the initial membership
     boolean   is_server=false;
 
@@ -65,6 +69,9 @@ public class TCPPING extends Protocol {
         str=props.getProperty("port_range");           // if member cannot be contacted on base port,
         if(str != null) {                              // how many times can we increment the port
             port_range=new Integer(str).intValue();
+            if (port_range < 1) {
+               port_range = 1;    
+            }
             props.remove("port_range");
         }
 
@@ -141,15 +148,24 @@ public class TCPPING extends Protocol {
 
             case Event.SET_LOCAL_ADDRESS:
                 passUp(evt);
-                local_addr=(Address) evt.getArg();
-
+                local_addr=(Address)evt.getArg();
                 // Add own address to initial_hosts if not present: we must always be able to ping ourself !
                 if(initial_hosts != null && local_addr != null) {
-                    if(!initial_hosts.contains(local_addr)) {
-                        initial_hosts.add(local_addr);
-                        Trace.info("TCPPING.up()", "[SET_LOCAL_ADDRESS]: adding my own address (" + local_addr +
-                                ") to initial_hosts; initial_hosts=" + initial_hosts);
-                    }
+                   List hlist;
+                   boolean inInitialHosts = false;
+                   for(Enumeration en=initial_hosts.elements(); en.hasMoreElements() && !inInitialHosts;) {
+                      hlist=(List)en.nextElement();
+                      if (hlist.contains(local_addr)) {
+                         inInitialHosts = true;
+                      }                   
+                   }
+                   if (!inInitialHosts) {
+                      hlist = new List();
+                      hlist.add(local_addr);
+                      initial_hosts.add(hlist);
+                      Trace.info("TCPPING.up()", "[SET_LOCAL_ADDRESS]: adding my own address (" + local_addr +
+                              ") to initial_hosts; initial_hosts=" + initial_hosts);
+                   }
                 }
                 break;
 
@@ -163,31 +179,48 @@ public class TCPPING extends Protocol {
     public void down(Event evt) {
         Message msg;
         PingHeader hdr;
-        IpAddress h;
         long time_to_wait, start_time;
 
         switch(evt.getType()) {
 
             case Event.FIND_INITIAL_MBRS:   // sent by GMS layer, pass up a GET_MBRS_OK event
-
                 initial_members.removeAllElements();
 
-                // 1. Mcast GET_MBRS_REQ message
-                hdr=new PingHeader(PingHeader.GET_MBRS_REQ, null);
+                IpAddress h;
+                List hlist;
                 msg=new Message(null, null, null);
-                msg.putHeader(getName(), hdr);
+                msg.putHeader(getName(), new PingHeader(PingHeader.GET_MBRS_REQ, null));
 
-                for(Enumeration en=initial_hosts.elements(); en.hasMoreElements();) {
-                    h=(IpAddress) en.nextElement();
-                    for(int i=h.getPort(); i < h.getPort() + port_range; i++) { // send to next ports too
-                        msg.setDest(new IpAddress(h.getIpAddress(), i));
-                        if(Trace.trace)
-                            Trace.info("TCPPING.down()", "[FIND_INITIAL_MBRS] sending PING request to " +
-                                                         msg.getDest());
-                        passDown(new Event(Event.MSG, msg.copy()));
+                synchronized(members) {
+                    int numMembers=members.size();
+                    int numMemberInitialHosts = 0;
+                    Address coord=numMembers > 0 ? (Address)members.firstElement() : local_addr;                                
+                    for(Enumeration en=initial_hosts.elements(); en.hasMoreElements();) {
+                        hlist=(List)en.nextElement();
+                        boolean isMember = false;
+
+                        for(Enumeration hen=hlist.elements(); hen.hasMoreElements() && !isMember && numMemberInitialHosts < numMembers;) {
+                            h=(IpAddress)hen.nextElement();
+                            if (members_set.contains(h)) {
+                                //update the initial_members list for this already connected member
+                                initial_members.add(new PingRsp(h, coord));
+                                isMember = true;
+                                numMemberInitialHosts++;
+                                if(Trace.trace) {
+                                    Trace.info("TCPPING.down()", "[FIND_INITIAL_MBRS] " + h + " is already a member");
+                                }
+                            } 
+                        }
+                        for(Enumeration hen=hlist.elements(); hen.hasMoreElements() && !isMember;) {
+                            h=(IpAddress)hen.nextElement();
+                            msg.setDest(h);
+                            if(Trace.trace) {
+                                Trace.info("TCPPING.down()", "[FIND_INITIAL_MBRS] sending PING request to " + msg.getDest());
+                            }
+                            passDown(new Event(Event.MSG, msg.copy()));
+                        }
                     }
                 }
-
 
                 // 2. Wait 'timeout' ms or until 'num_initial_members' have been retrieved
                 synchronized(initial_members) {
@@ -213,11 +246,12 @@ public class TCPPING extends Protocol {
             case Event.TMP_VIEW:
             case Event.VIEW_CHANGE:
                 Vector tmp;
-                if((tmp=((View) evt.getArg()).getMembers()) != null) {
+                if((tmp=((View)evt.getArg()).getMembers()) != null) {
                     synchronized(members) {
-                        members.removeAllElements();
-                        for(int i=0; i < tmp.size(); i++)
-                            members.addElement(tmp.elementAt(i));
+                        members.clear();
+                        members.addAll(tmp);
+                        members_set.clear();
+                        members_set.addAll(tmp);
                     }
                 }
                 passDown(evt);
@@ -254,7 +288,6 @@ public class TCPPING extends Protocol {
      */
     private List createInitialHosts(String l) {
         List tmp=new List();
-        IpAddress h;
         StringTokenizer tok=new StringTokenizer(l, ",");
         String t;
 
@@ -263,8 +296,11 @@ public class TCPPING extends Protocol {
                 t=tok.nextToken();
                 String host=t.substring(0, t.indexOf('['));
                 int port=new Integer(t.substring(t.indexOf('[') + 1, t.indexOf(']'))).intValue();
-                h=new IpAddress(host, port);
-                tmp.add(h);
+                List hosts = new List();
+                for(int i=port; i < port + port_range; i++) {
+                   hosts.add(new IpAddress(host, i));
+                }
+                tmp.add(hosts);
             }
             catch(NumberFormatException e) {
                 Trace.error("TCPPING.createInitialHosts()", "exeption is " + e);

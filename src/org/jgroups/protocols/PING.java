@@ -1,4 +1,4 @@
-// $Id: PING.java,v 1.7 2003/12/22 17:37:58 belaban Exp $
+// $Id: PING.java,v 1.8 2004/01/18 15:11:08 tsorgie Exp $
 
 package org.jgroups.protocols;
 
@@ -15,6 +15,8 @@ import java.util.Enumeration;
 import java.util.Properties;
 import java.util.StringTokenizer;
 import java.util.Vector;
+import java.util.HashSet;
+import java.util.Set;
 
 
 /**
@@ -34,6 +36,7 @@ import java.util.Vector;
  */
 public class PING extends Protocol {
     Vector members=new Vector(), initial_members=new Vector();
+    Set members_set=new HashSet(); //copy of the members vector for fast random access    
     Address local_addr=null;
     String group_addr=null;
     long timeout=3000;
@@ -43,9 +46,8 @@ public class PING extends Protocol {
     long gossip_refresh=20000; // time in msecs after which the entry in GossipServer will be refreshed
     GossipClient client;
     boolean is_server=false;
-    int       port_range=5;        // number of ports to be probed for initial membership
+    int       port_range=1;        // number of ports to be probed for initial membership
     List initial_hosts=null;  // hosts to be contacted for the initial membership
-
 
     public String getName() {
         return "PING";
@@ -115,16 +117,19 @@ public class PING extends Protocol {
             }
         }
 
+        str=props.getProperty("port_range");           // if member cannot be contacted on base port,
+        if(str != null) {                              // how many times can we increment the port
+            port_range=new Integer(str).intValue();
+            if (port_range < 1) {
+               port_range = 1;    
+            }
+            props.remove("port_range");
+        }
+
         str=props.getProperty("initial_hosts");
         if(str != null) {
             props.remove("initial_hosts");
             initial_hosts=createInitialHosts(str);
-        }
-
-        str=props.getProperty("port_range");           // if member cannot be contacted on base port,
-        if(str != null) {                              // how many times can we increment the port
-            port_range=new Integer(str).intValue();
-            props.remove("port_range");
         }
 
         if(props.size() > 0) {
@@ -235,6 +240,24 @@ public class PING extends Protocol {
             case Event.SET_LOCAL_ADDRESS:
                 passUp(evt);
                 local_addr=(Address)evt.getArg();
+                // Add own address to initial_hosts if not present: we must always be able to ping ourself !
+                if(initial_hosts != null && local_addr != null) {
+                   List hlist;
+                   boolean inInitialHosts = false;
+                   for(Enumeration en=initial_hosts.elements(); en.hasMoreElements() && !inInitialHosts;) {
+                      hlist=(List)en.nextElement();
+                      if (hlist.contains(local_addr)) {
+                         inInitialHosts = true;
+                      }                   
+                   }
+                   if (!inInitialHosts) {
+                      hlist = new List();
+                      hlist.add(local_addr);
+                      initial_hosts.add(hlist);
+                      Trace.info("PING.up()", "[SET_LOCAL_ADDRESS]: adding my own address (" + local_addr +
+                              ") to initial_hosts; initial_hosts=" + initial_hosts);
+                   }
+                }
                 break;
 
             default:
@@ -286,23 +309,42 @@ public class PING extends Protocol {
                 else {
                     if(initial_hosts != null && initial_hosts.size() > 0) {
                         IpAddress h;
+                        List hlist;
                         msg=new Message(null, null, null);
                         msg.putHeader(getName(), new PingHeader(PingHeader.GET_MBRS_REQ, null));
 
-                        for(Enumeration en=initial_hosts.elements(); en.hasMoreElements();) {
-                            h=(IpAddress)en.nextElement();
+                        synchronized(members) {
+                            int numMembers=members.size();
+                            int numMemberInitialHosts = 0;
+                            Address coord=numMembers > 0 ? (Address)members.firstElement() : local_addr;                                
+                            for(Enumeration en=initial_hosts.elements(); en.hasMoreElements();) {
+                                hlist=(List)en.nextElement();
+                                boolean isMember = false;
 
-                            for(int i=h.getPort(); i < h.getPort() + port_range; i++) { // send to next ports too
-                                msg.setDest(new IpAddress(h.getIpAddress(), i));
-                                if(Trace.trace)
-                                    Trace.info("PING.down()", "[FIND_INITIAL_MBRS] sending PING request to " +
-                                            msg.getDest());
-                                passDown(new Event(Event.MSG, msg.copy()));
+                                for(Enumeration hen=hlist.elements(); hen.hasMoreElements() && !isMember && numMemberInitialHosts < numMembers;) {
+                                    h=(IpAddress)hen.nextElement();
+                                    if (members_set.contains(h)) {
+                                        //update the initial_members list for this already connected member
+                                        initial_members.add(new PingRsp(h, coord));
+                                        isMember = true;
+                                        numMemberInitialHosts++;
+                                        if(Trace.trace) {
+                                            Trace.info("PING.down()", "[FIND_INITIAL_MBRS] " + h + " is already a member");
+                                        }
+                                    } 
+                                }
+                                for(Enumeration hen=hlist.elements(); hen.hasMoreElements() && !isMember;) {
+                                    h=(IpAddress)hen.nextElement();
+                                    msg.setDest(h);
+                                    if(Trace.trace) {
+                                        Trace.info("PING.down()", "[FIND_INITIAL_MBRS] sending PING request to " + msg.getDest());
+                                    }
+                                    passDown(new Event(Event.MSG, msg.copy()));
+                                }
                             }
                         }
                     }
                     else {
-
                         // 1. Mcast GET_MBRS_REQ message
                         if(Trace.trace) Trace.info("PING.down()", "FIND_INITIAL_MBRS");
                         hdr=new PingHeader(PingHeader.GET_MBRS_REQ, null);
@@ -348,6 +390,8 @@ public class PING extends Protocol {
                     synchronized(members) {
                         members.clear();
                         members.addAll(tmp);
+                        members_set.clear();
+                        members_set.addAll(tmp);
                     }
                 }
                 passDown(evt);
@@ -401,21 +445,22 @@ public class PING extends Protocol {
         List tmp=new List();
         StringTokenizer tok=new StringTokenizer(l, ",");
         String t;
-        IpAddress h;
 
         while(tok.hasMoreTokens()) {
             try {
                 t=tok.nextToken();
                 String host=t.substring(0, t.indexOf('['));
                 int port=new Integer(t.substring(t.indexOf('[') + 1, t.indexOf(']'))).intValue();
-                h=new IpAddress(host, port);
-                tmp.add(h);
+                List hosts = new List();
+                for(int i=port; i < port + port_range; i++) {
+                   hosts.add(new IpAddress(host, i));
+                }
+                tmp.add(hosts);
             }
             catch(NumberFormatException e) {
                 Trace.error("PING.createInitialHosts()", "exeption is " + e);
             }
         }
-
         return tmp;
     }
 
