@@ -1,4 +1,4 @@
-// $Id: RouterStub.java,v 1.2 2003/10/15 20:19:58 ovidiuf Exp $
+// $Id: RouterStub.java,v 1.3 2003/10/29 16:03:44 ovidiuf Exp $
 
 package org.jgroups.stack;
 
@@ -124,18 +124,18 @@ public class RouterStub {
         byte[] buf=null;
 
         if(sock == null || output == null || input == null) {
-            Trace.error("RouterStub.register()", "No connection to router (groupname=" + groupname + ")");
+            Trace.error("RouterStub", ".register(): No connection to router (groupname=" + groupname + ")");
             connected=false;
             return false;
         }
 
         if(groupname == null || groupname.length() == 0) {
-            Trace.error("RouterStub.register()", "groupname is null");
+            Trace.error("RouterStub", "register(): groupname is null");
             return false;
         }
 
         if(local_addr == null) {
-            Trace.error("RouterStub.register()", "local_addr is null");
+            Trace.error("RouterStub", "register(): local_addr is null");
             return false;
         }
 
@@ -148,7 +148,7 @@ public class RouterStub {
             output.flush();
         }
         catch(Exception e) {
-            Trace.error("RouterStub.register()", Trace.getStackTrace(e));
+            Trace.error("RouterStub", "register(): "+Trace.getStackTrace(e));
             connected=false;
             return false;
         }
@@ -171,7 +171,7 @@ public class RouterStub {
 
 
         if(groupname == null || groupname.length() == 0) {
-            Trace.error("RouterStub.get()", "groupname is null");
+            Trace.error("RouterStub", "get(): groupname is null");
             return null;
         }
 
@@ -199,7 +199,7 @@ public class RouterStub {
             ret=(List)Util.objectFromByteBuffer(buf);
         }
         catch(Exception e) {
-            Trace.error("RouterStub.get()", "exception=" + e);
+            Trace.error("RouterStub", "get(): exception=" + e);
         }
         finally {
             try {
@@ -230,13 +230,13 @@ public class RouterStub {
         Object dst_addr=null;
 
         if(sock == null || output == null || input == null) {
-            Trace.error("RouterStub.send()", "No connection to router (groupname=" + groupname + ")");
+            Trace.error("RouterStub", "send(): No connection to router (groupname=" + groupname + ")");
             connected=false;
             return false;
         }
 
         if(msg == null) {
-            Trace.error("RouterStub.send()", "Message is null");
+            Trace.error("RouterStub", "send(): Message is null");
             return false;
         }
 
@@ -260,7 +260,7 @@ public class RouterStub {
             output.write(msg_buf, 0, msg_buf.length);
         }
         catch(Exception e) {
-            Trace.error("RouterStub.send()", Trace.getStackTrace(e));
+            Trace.error("RouterStub", "send(): "+Trace.getStackTrace(e));
             connected=false;
             return false;
         }
@@ -276,7 +276,7 @@ public class RouterStub {
         int len;
 
         if(sock == null || output == null || input == null) {
-            Trace.error("RouterStub.receive()", "No connection to router");
+            Trace.error("RouterStub", "receive(): No connection to router");
             connected=false;
             return null;
         }
@@ -293,10 +293,14 @@ public class RouterStub {
         }
         catch(Exception e) {
             if (connected) {
-                Trace.error("RouterStub.receive()", Trace.getStackTrace(e));                
+                Trace.error("RouterStub", "receive(): "+Trace.getStackTrace(e));                
             }
             connected=false;
             return null;
+        }
+
+        if (Trace.debug) {
+            Trace.debug("RouterStub", "received "+ret);
         }
         return ret;
     }
@@ -316,14 +320,14 @@ public class RouterStub {
                     break;
             }
             catch(Exception ex) {
-                Trace.warn("RouterStub.reconnect()", "exception is " + ex);
+                Trace.warn("RouterStub", "reconnect(): exception is " + ex);
             }
             Util.sleep(RECONNECT_TIMEOUT);
         }
         if(new_addr == null) {
             return false;
         }
-        Trace.warn("RouterStub.reconnect()", "Client reconnected, new addess is " + new_addr);
+        Trace.warn("RouterStub", "reconnect(): Client reconnected, new addess is " + new_addr);
         return true;
     }
 
