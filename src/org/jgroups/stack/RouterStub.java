@@ -1,4 +1,4 @@
-// $Id: RouterStub.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+// $Id: RouterStub.java,v 1.2 2003/10/15 20:19:58 ovidiuf Exp $
 
 package org.jgroups.stack;
 
@@ -23,7 +23,7 @@ public class RouterStub {
     DataInputStream input=null;             // input stream associated with sock
     Address local_addr=null;        // addr of group mbr. Once assigned, remains the same
     final long RECONNECT_TIMEOUT=5000; // msecs to wait until next connection retry attempt
-    boolean connected=false;
+    private volatile boolean connected=false;
 
     private volatile boolean reconnect=false;   // controls reconnect() loop
 
@@ -282,8 +282,9 @@ public class RouterStub {
         }
         try {
             len=input.readInt();
-            if(len == 0)
+            if(len == 0) {
                 ret=null;
+            }
             else {
                 buf=new byte[len];
                 input.readFully(buf, 0, len);
@@ -291,8 +292,10 @@ public class RouterStub {
             }
         }
         catch(Exception e) {
+            if (connected) {
+                Trace.error("RouterStub.receive()", Trace.getStackTrace(e));                
+            }
             connected=false;
-            Trace.error("RouterStub.receive()", Trace.getStackTrace(e));
             return null;
         }
         return ret;
