@@ -1,4 +1,4 @@
-// $Id: ParticipantGmsImpl.java,v 1.1 2003/09/09 01:24:10 belaban Exp $
+// $Id: ParticipantGmsImpl.java,v 1.2 2003/09/24 23:20:47 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -62,7 +62,7 @@ public class ParticipantGmsImpl extends GmsImpl {
                     try {
                         if(Trace.trace)
                             Trace.info("Participant.leave()", "sending LEAVE request to " + coord);
-                        MethodCall call = new MethodCall("handleLeave", new Object[] {mbr, new Boolean(false)}, 
+                        MethodCall call = new MethodCall("handleLeave", new Object[] {mbr, Boolean.FALSE}, 
                             new String[] {Address.class.getName(), boolean.class.getName()});
                         gms.callRemoteMethod(coord, call, GroupRequest.GET_NONE, 0);  // asynchronous
                     }

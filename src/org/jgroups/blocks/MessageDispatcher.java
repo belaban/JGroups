@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.1 2003/09/09 01:24:08 belaban Exp $
+// $Id: MessageDispatcher.java,v 1.2 2003/09/24 23:20:46 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -43,7 +43,7 @@ public class MessageDispatcher implements RequestHandler {
         prot_adapter=new ProtocolAdapter();
         if(channel != null) {
             local_addr=channel.getLocalAddress();
-            channel.setOpt(Channel.GET_STATE_EVENTS, new Boolean(true));
+            channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
         }
         setMessageListener(l);
         setMembershipListener(l2);
@@ -59,7 +59,7 @@ public class MessageDispatcher implements RequestHandler {
         prot_adapter=new ProtocolAdapter();
         if(channel != null) {
             local_addr=channel.getLocalAddress();
-            channel.setOpt(Channel.GET_STATE_EVENTS, new Boolean(true));
+            channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
         }
         setMessageListener(l);
         setMembershipListener(l2);
@@ -112,7 +112,7 @@ public class MessageDispatcher implements RequestHandler {
             adapter.registerListener(id, handler);
 
         if((tp=adapter.getTransport()) instanceof Channel) {
-            ((Channel)tp).setOpt(Channel.GET_STATE_EVENTS, new Boolean(true));
+            ((Channel)tp).setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
             local_addr=((Channel)tp).getLocalAddress();
         }
 
@@ -152,7 +152,7 @@ public class MessageDispatcher implements RequestHandler {
             adapter.registerListener(id, handler);
 
         if((tp=adapter.getTransport()) instanceof Channel) {
-            ((Channel)tp).setOpt(Channel.GET_STATE_EVENTS, new Boolean(true));
+            ((Channel)tp).setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
             local_addr=((Channel)tp).getLocalAddress(); // fixed bug #800774
         }
 
@@ -269,7 +269,7 @@ public class MessageDispatcher implements RequestHandler {
                 tmp=(Channel)adapter.getTransport();
         }
 
-        if(tmp != null && tmp.getOpt(Channel.LOCAL).equals(new Boolean(false))) {
+        if(tmp != null && tmp.getOpt(Channel.LOCAL).equals(Boolean.FALSE)) {
             if(local_addr == null)
                 local_addr=tmp.getLocalAddress();
             if(local_addr != null && real_dests != null)
@@ -330,7 +330,7 @@ public class MessageDispatcher implements RequestHandler {
                 tmp=(Channel)adapter.getTransport();
         }
 
-        if(tmp != null && tmp.getOpt(Channel.LOCAL).equals(new Boolean(false))) {
+        if(tmp != null && tmp.getOpt(Channel.LOCAL).equals(Boolean.FALSE)) {
             if(local_addr == null)
                 local_addr=tmp.getLocalAddress();
             if(local_addr != null)

@@ -1,4 +1,4 @@
-// $Id: AckMcastSenderWindow.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+// $Id: AckMcastSenderWindow.java,v 1.2 2003/09/24 23:20:48 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -31,7 +31,7 @@ import org.jgroups.log.Trace;
  *
  * @author Bela Ban June 9 1999
  * @author John Georgiadis May 8 2001
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.2 $
  */
 public class AckMcastSenderWindow {
     /**
@@ -89,7 +89,7 @@ public class AckMcastSenderWindow {
 	    this.seqno = seqno;
 	    this.msg   = msg;
 	    for (int i = 0; i < dests.size(); i++)
-		senders.put(dests.elementAt(i), new Boolean(false));
+		senders.put(dests.elementAt(i), Boolean.FALSE);
 	}
 
 	boolean allReceived() {
@@ -320,7 +320,7 @@ public class AckMcastSenderWindow {
 		if (received == null || received.booleanValue()) return;
 			
 		// If not yet received
-		entry.senders.put(sender, new Boolean(true));
+		entry.senders.put(sender, Boolean.TRUE);
 		entry.num_received++;
 		if (!entry.allReceived()) return;
 	    }

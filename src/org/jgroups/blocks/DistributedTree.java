@@ -1,4 +1,4 @@
-// $Id: DistributedTree.java,v 1.1 2003/09/09 01:24:08 belaban Exp $
+// $Id: DistributedTree.java,v 1.2 2003/09/24 23:20:46 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -94,7 +94,7 @@ public class DistributedTree implements MessageListener, MembershipListener, Clo
         channel=new JChannel(channel_properties);
         disp=new RpcDispatcher(channel, this, this, this);
         channel.connect(groupname);
-        channel.setOpt(Channel.GET_STATE_EVENTS, new Boolean(true));
+        channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
         boolean rc=channel.getState(null, timeout);
         if(rc) {
             Trace.info("DistributedTree.start()", "state was retrieved successfully");

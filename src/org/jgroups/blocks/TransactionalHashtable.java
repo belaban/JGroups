@@ -1,4 +1,4 @@
-// $Id: TransactionalHashtable.java,v 1.2 2003/09/11 18:05:07 belaban Exp $
+// $Id: TransactionalHashtable.java,v 1.3 2003/09/24 23:20:46 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -1192,7 +1192,7 @@ public class TransactionalHashtable extends HashMap implements ReplicationReceiv
 
         Trace.init();
         channel=new JChannel(properties);
-        channel.setOpt(Channel.GET_STATE_EVENTS, new Boolean(true));
+        channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
         channel.connect(groupname);
         repl_mgr=new ReplicationManager(channel, this, null, this);
 

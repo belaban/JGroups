@@ -1,4 +1,4 @@
-// $Id: Draw2Channels.java,v 1.1 2003/09/09 01:24:09 belaban Exp $
+// $Id: Draw2Channels.java,v 1.2 2003/09/24 23:20:47 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -201,7 +201,7 @@ public class Draw2Channels implements ActionListener {
 		control_channel.connect(control_groupname);	
 		System.out.println("Creating data channel");
 		data_channel=new JChannel(data_props);
-		// data_channel.SetOpt(Channel.VIEW, new Boolean(false));
+		// data_channel.SetOpt(Channel.VIEW, Boolean.FALSE);
 		System.out.println("Connecting data channel");
 		data_channel.connect(data_groupname);
 	    }

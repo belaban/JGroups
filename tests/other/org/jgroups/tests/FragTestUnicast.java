@@ -1,4 +1,4 @@
-// $Id: FragTestUnicast.java,v 1.1 2003/09/09 01:24:13 belaban Exp $
+// $Id: FragTestUnicast.java,v 1.2 2003/09/24 23:26:06 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -71,7 +71,7 @@ public class FragTestUnicast {
 
 	Trace.init();
 	channel=new JChannel(props);
-	// if(mode == 1) channel.setOpt(Channel.LOCAL, new Boolean(false));
+	// if(mode == 1) channel.setOpt(Channel.LOCAL, Boolean.FALSE);
 	channel.connect(groupname);
 	local_addr=channel.getLocalAddress();
 

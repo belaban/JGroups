@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.4 2003/09/23 00:42:46 belaban Exp $
+Revision: $Id: history.txt,v 1.5 2003/09/24 23:23:47 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java JGroups.Version')]
 
@@ -25,6 +25,9 @@ romuald     = Romuald du Song
 
 Version 2.2
 -----------
+
+- Added flushEvents() to ProtocolStack
+  (bela Sept 24 2003)
 
 - New JUnit test case AddDataTest to test setAdditionalData() in IpAddress
   (bela Sept 22 2003)

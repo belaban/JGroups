@@ -1,4 +1,4 @@
-// $Id: QuoteClient.java,v 1.1 2003/09/09 01:24:09 belaban Exp $
+// $Id: QuoteClient.java,v 1.2 2003/09/24 23:20:47 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -56,7 +56,7 @@ public class QuoteClient extends Frame implements WindowListener, ActionListener
         super();
         try {
             channel=new JChannel(props);
-            channel.setOpt(Channel.LOCAL, new Boolean(false));
+            channel.setOpt(Channel.LOCAL, Boolean.FALSE);
             disp=new RpcDispatcher(channel, null, this, this);
             channel.connect(channel_name);
         }

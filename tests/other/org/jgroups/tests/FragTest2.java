@@ -1,4 +1,4 @@
-// $Id: FragTest2.java,v 1.1 2003/09/09 01:24:13 belaban Exp $
+// $Id: FragTest2.java,v 1.2 2003/09/24 23:25:37 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -62,7 +62,7 @@ public class FragTest2 {
     public void start() throws Exception {
 	Trace.init();
 	channel=new JChannel(props);
-	if(mode == 1) channel.setOpt(Channel.LOCAL, new Boolean(false));
+	if(mode == 1) channel.setOpt(Channel.LOCAL, Boolean.FALSE);
 	channel.connect(groupname);
 
 	if(mode == 1) {
