@@ -1,4 +1,4 @@
-// $Id: Queue.java,v 1.4 2003/09/22 22:25:30 belaban Exp $
+// $Id: Queue.java,v 1.5 2003/09/23 00:22:28 belaban Exp $
 
 package org.jgroups.util;
 
@@ -32,6 +32,9 @@ public class Queue {
 
     /* Lock object for synchronization. Is notified when element is added */
     Object  add_mutex=new Object();
+
+    /** Lock object for syncing on removes. It is notified when an object is removed */
+    Object  remove_mutex=new Object();
 
     /*the number of end markers that have been added*/
     int     num_markers=0;
@@ -149,7 +152,6 @@ public class Queue {
             }
             /*wake up all the threads that are waiting for the lock to be released*/
             add_mutex.notifyAll();
-            // add_mutex.notify();
         }
     }
 
@@ -194,7 +196,6 @@ public class Queue {
             }
             /*wake up all the threads that are waiting for the lock to be released*/
             add_mutex.notifyAll();
-            // add_mutex.notify();
         }
     }
 
@@ -227,7 +228,7 @@ public class Queue {
                 throw new QueueClosedException();
 
             /*remove the head from the queue, if we make it to this point, retval should not be null !*/
-            retval=removeInternal();
+            retval=removeInternal(); // notifies remove_mutex
             if(retval == null)
                 Trace.error("Queue.remove()", "element was null, should never be the case");
         }
@@ -329,7 +330,12 @@ public class Queue {
                 if(size == 1)
                     tail=head;  // null
                 decrementSize();
-                /*and end the operation, it was successful*/
+
+                if(size == 0) {
+                    synchronized(remove_mutex) {
+                        remove_mutex.notifyAll();
+                    }
+                }
                 return;
             }
 
@@ -342,6 +348,11 @@ public class Queue {
                     el.next=el.next.next;  // point to the el past the next one. can be null.
                     tmp_el.next=null;
                     decrementSize();
+                    if(size == 0) {
+                        synchronized(remove_mutex) {
+                            remove_mutex.notifyAll();
+                        }
+                    }
                     break;
                 }
                 el=el.next;
@@ -460,13 +471,11 @@ public class Queue {
 
         synchronized(add_mutex) {
             closed=true;
-            try {
-                add_mutex.notifyAll();
-                // add_mutex.notify();
-            }
-            catch(Exception e) {
-                Trace.error("Queue.close()", "exception=" + e);
-            }
+            add_mutex.notifyAll();
+        }
+
+        synchronized(remove_mutex) {
+            remove_mutex.notifyAll();
         }
     }
 
@@ -485,6 +494,10 @@ public class Queue {
             head=null;
             tail=null;
             closed=false;
+        }
+
+        synchronized(remove_mutex) {
+            remove_mutex.notifyAll();
         }
     }
 
@@ -543,11 +556,11 @@ public class Queue {
         // wait on remove_lock. Use util.concurrent locks
         // TODO: compare lock-based impl vs. synchronized-based impl (speed for large insertions)
 
-        synchronized(add_mutex) {
+        synchronized(remove_mutex) {
             if(timeout == 0) {
                 while(size > 0 && closed == false) {
                     try {
-                        add_mutex.wait(1);
+                        remove_mutex.wait(0);
                     }
                     catch(InterruptedException e) {
                         ;
@@ -558,7 +571,7 @@ public class Queue {
                 long start_time=System.currentTimeMillis();
                 while(time_to_wait > 0 && size > 0 && closed == false) {
                     try {
-                        add_mutex.wait(time_to_wait);
+                        remove_mutex.wait(time_to_wait);
                     }
                     catch(InterruptedException ex) {
 
@@ -595,6 +608,11 @@ public class Queue {
             tail=null;
 
         decrementSize();
+        if(size == 0) {
+            synchronized(remove_mutex) {
+                remove_mutex.notifyAll();
+            }
+        }
 
         if(head != null && head.obj == endMarker) {
             closed=true;
