@@ -1,4 +1,4 @@
-// $Id: DistributedHashtable.java,v 1.13 2004/07/30 08:31:14 rds13 Exp $
+// $Id: DistributedHashtable.java,v 1.14 2004/09/15 09:32:27 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -35,7 +35,7 @@ import java.util.*;
  * initial state (using the state exchange funclet <code>StateExchangeFunclet</code>.
  * @author Bela Ban
  * @author <a href="mailto:aolias@yahoo.com">Alfonso Olias-Sanz</a>
- * @version $Id: DistributedHashtable.java,v 1.13 2004/07/30 08:31:14 rds13 Exp $
+ * @version $Id: DistributedHashtable.java,v 1.14 2004/09/15 09:32:27 belaban Exp $
  */
 public class DistributedHashtable extends Hashtable implements MessageListener, MembershipListener, Cloneable {
 
@@ -50,17 +50,17 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
     }
 
 
-    private transient Channel            channel;
-    private transient RpcDispatcher  disp=null;
+    private transient Channel               channel;
+    protected transient RpcDispatcher       disp=null;
     private transient String                groupname=null;
-    private transient Vector               notifs=new Vector();  // to be notified when mbrship changes
-    private transient Vector               members=new Vector(); // keeps track of all DHTs
+    private transient Vector                notifs=new Vector();  // to be notified when mbrship changes
+    private transient Vector                members=new Vector(); // keeps track of all DHTs
     private transient Class[]               put_signature=null;
     private transient Class[]               putAll_signature=null;
     private transient Class[]               clear_signature=null;
     private transient Class[]               remove_signature=null;
-    private transient boolean           persistent=false; // whether to use PersistenceManager to save state
-    private transient PersistenceManager persistence_mgr=null;
+    private transient boolean               persistent=false; // whether to use PersistenceManager to save state
+    private transient PersistenceManager    persistence_mgr=null;
 
 	/** Determines when the updates have to be sent across the network, avoids sending unnecessary
      * messages when there are no member in the group */
