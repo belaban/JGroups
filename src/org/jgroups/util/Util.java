@@ -1,12 +1,10 @@
-// $Id: Util.java,v 1.20 2004/10/05 16:14:09 belaban Exp $
+// $Id: Util.java,v 1.21 2004/10/07 15:05:42 belaban Exp $
 
 package org.jgroups.util;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Message;
+import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.stack.IpAddress;
 
@@ -142,6 +140,68 @@ public class Util {
         return addr;
     }
 
+
+    public static void writeStreamable(Streamable obj, DataOutputStream out) throws IOException {
+        int magic_number;
+        String classname;
+
+        if(obj == null) {
+            out.write(0);
+            return;
+        }
+
+        try {
+            out.write(1);
+            magic_number=ClassConfigurator.getInstance(false).getMagicNumber(obj.getClass());
+            // write the magic number or the class name
+            if(magic_number == -1) {
+                out.write(0);
+                classname=obj.getClass().getName();
+                out.writeUTF(classname);
+            }
+            else {
+                out.write(1);
+                out.writeInt(magic_number);
+            }
+
+            // write the contents
+            obj.writeTo(out);
+        }
+        catch(ChannelException e) {
+            throw new IOException("failed writing object of type " + obj.getClass() + " to stream: " + e.toString());
+        }
+    }
+
+
+
+    public static Streamable readStreamable(DataInputStream in) throws IOException {
+        Streamable retval=null;
+        int b=in.read();
+        if(b == 0)
+            return null;
+
+        int use_magic_number=in.read(), magic_number;
+        String classname;
+        Class clazz;
+
+        try {
+            if(use_magic_number == 1) {
+                magic_number=in.readInt();
+                clazz=ClassConfigurator.getInstance(false).get(magic_number);
+            }
+            else {
+                classname=in.readUTF();
+                clazz=ClassConfigurator.getInstance(false).get(classname);
+            }
+
+            retval=(Streamable)clazz.newInstance();
+            retval.readFrom(in);
+            return retval;
+        }
+        catch(Exception ex) {
+            throw new IOException("failed reading object: " + ex.toString());
+        }
+    }
 
 
     public static void writeString(String s, DataOutputStream out) throws IOException {
@@ -963,6 +1023,7 @@ public class Util {
         System.out.println("Check for Solaris: " + checkForSolaris());
         System.out.println("Check for Windows: " + checkForWindows());
     }
+
 
 
 }
