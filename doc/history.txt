@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.16 2003/11/22 00:44:10 belaban Exp $
+Revision: $Id: history.txt,v 1.17 2003/12/06 01:22:10 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java JGroups.Version')]
 
@@ -27,6 +27,12 @@ romuald     = Romuald du Song
 
 Version 2.2.1
 -------------
+
+- ProtocolStack.startStack() and stopStack() now use START/START_OK and STOP/STOP_OK pairs (again). Protocol will
+  handle these events internally. This prevents subtle timing problems, e.g. a CONFIG event being passed by
+  start() invocations on the protocols.
+  Fixes bug #854855
+  (bela Dec 5 2003)
 
 - Fixed bug in pbcast.GMS which incorrectly generated view when many members left at exactly the same time.
   Bug was reproduced in ConnectStressTest. We may have to revisit huge concurrent JOINs later (30 work fine in
