@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.19 2004/05/11 14:43:47 belaban Exp $
+// $Id: MessageDispatcher.java,v 1.20 2004/05/13 06:16:26 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -34,7 +34,7 @@ public class MessageDispatcher implements RequestHandler {
     protected TransportAdapter transport_adapter=null;
     protected Vector members=new Vector();
     protected Address local_addr=null;
-    protected boolean deadlock_detection=true;
+    protected boolean deadlock_detection=false;
     protected PullPushAdapter adapter=null;
     protected Serializable id=null;
     protected Log log=LogFactory.getLog(getClass());

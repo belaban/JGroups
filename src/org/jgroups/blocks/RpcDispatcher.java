@@ -1,4 +1,4 @@
-// $Id: RpcDispatcher.java,v 1.10 2004/05/02 06:18:17 belaban Exp $
+// $Id: RpcDispatcher.java,v 1.11 2004/05/13 06:16:07 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -19,7 +19,7 @@ import java.util.Vector;
  * @author Bela Ban
  */
 public class RpcDispatcher extends MessageDispatcher implements ChannelListener {
-    MethodLookup         method_lookup=new MethodLookupClos();
+    MethodLookup         method_lookup=new MethodLookupJava();
     protected Object     server_obj=null;
     protected Marshaller marshaller=null;
 
@@ -99,49 +99,6 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
 
 
 
-    /**
-     * @deprecated use callRemoteMethods(Vector,MethodCall, int, long);
-     * @see #callRemoteMethod(Address,MethodCall, int, long)
-     */
-    
-    public RspList callRemoteMethods(Vector dests, String method_name, int mode, long timeout) {
-        MethodCall method_call=new MethodCall(method_name);
-        return callRemoteMethods(dests, method_call, mode, timeout);
-    }
-
-
-    /**
-     * @deprecated use callRemoteMethods(Vector,MethodCall, int, long);
-     * @see #callRemoteMethod(Address,MethodCall, int, long)
-     */
-    public RspList callRemoteMethods(Vector dests, String method_name, Object arg1, 
-                                     int mode, long timeout) {
-        MethodCall method_call=new MethodCall(method_name, arg1);
-        return callRemoteMethods(dests, method_call, mode, timeout);
-    }
-
-
-    /**
-     * @deprecated use callRemoteMethods(Vector,MethodCall, int, long);
-     * @see #callRemoteMethod(Address,MethodCall, int, long)
-     */
-    public RspList callRemoteMethods(Vector dests, String method_name, Object arg1, Object arg2, 
-                                     int mode, long timeout) {
-        MethodCall method_call=new MethodCall(method_name, arg1, arg2);
-        return callRemoteMethods(dests, method_call, mode, timeout);
-    }
-
-
-    /**
-     * @deprecated use callRemoteMethods(Vector,MethodCall, int, long);
-     * @see #callRemoteMethod(Address,MethodCall, int, long)
-     */
-    public RspList callRemoteMethods(Vector dests, String method_name, Object arg1, Object arg2,
-                                     Object arg3, int mode, long timeout) {
-        MethodCall method_call=new MethodCall(method_name, arg1, arg2, arg3);
-        return callRemoteMethods(dests, method_call, mode, timeout);
-    }
-
 
     public RspList callRemoteMethods(Vector dests, String method_name, Object[] args,
                                      Class[] types, int mode, long timeout) {
@@ -187,78 +144,6 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
 
 
 
-
-
-    /**
-     * Calls the remote methods in a number of receivers and returns the results asynchronously via
-     * the RspCollector interface.
-     * @param dests The destination membership. All members if null
-     * @param req_id The request id. Used to match requests and responses. has to be unique for this process
-     * @param method_call The method to be called
-     * @param coll The RspCollector to be called when a message arrives
-     */
-//    public void callRemoteMethods(Vector dests, long req_id, MethodCall method_call, RspCollector coll) {
-//        byte[]   buf=null;
-//        Message  msg=null;
-//
-//        try {
-//            buf=marshaller != null? marshaller.objectToByteBuffer(method_call) : Util.objectToByteBuffer(method_call);
-//        }
-//        catch(Exception e) {
-//            if(log.isErrorEnabled()) log.error("RpcProtocol.callRemoteMethods()", "exception=" + e);
-//            return;
-//        }
-//
-//        msg=new Message(null, null, buf);
-//        super.castMessage(dests, req_id, msg, coll);
-//    }
-
-
-
-
-
-    /**
-     * @deprecated use callRemoteMethod(Address,MethodCall, int, long);
-     * @see #callRemoteMethod(Address,MethodCall, int, long)
-     */
-    public Object callRemoteMethod(Address dest, String method_name, int mode, long timeout) 
-        throws TimeoutException, SuspectedException {
-        MethodCall method_call=new MethodCall(method_name);
-        return callRemoteMethod(dest, method_call, mode, timeout);
-    }
-
-
-    /**
-     * @deprecated use callRemoteMethod(Address,MethodCall, int, long);
-     * @see #callRemoteMethod(Address,MethodCall, int, long)
-     */
-    public Object callRemoteMethod(Address dest, String method_name, Object arg1, int mode, long timeout) 
-        throws TimeoutException, SuspectedException {
-        MethodCall method_call=new MethodCall(method_name, arg1);
-        return callRemoteMethod(dest, method_call, mode, timeout);
-    }
-
-    
-    /**
-     * @deprecated use callRemoteMethod(Address,MethodCall, int, long);
-     * @see #callRemoteMethod(Address,MethodCall, int, long)
-     */
-    public Object callRemoteMethod(Address dest, String method_name, Object arg1, Object arg2, 
-                                int mode, long timeout) throws TimeoutException, SuspectedException {
-        MethodCall method_call=new MethodCall(method_name, arg1, arg2);
-        return callRemoteMethod(dest, method_call, mode, timeout);
-    }
-
-
-    /**
-     * @deprecated use callRemoteMethod(Address,MethodCall, int, long);
-     * @see #callRemoteMethod(Address,MethodCall, int, long)
-     */
-    public Object callRemoteMethod(Address dest, String method_name, Object arg1, Object arg2, 
-                                   Object arg3, int mode, long timeout) throws TimeoutException, SuspectedException {
-        MethodCall method_call=new MethodCall(method_name, arg1, arg2, arg3);
-        return callRemoteMethod(dest, method_call, mode, timeout);
-    }
 
 
     public Object callRemoteMethod(Address dest, String method_name, Object[] args,
