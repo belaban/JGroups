@@ -9,7 +9,7 @@ import org.jgroups.util.Util;
  * Tests the "NAKACK retransmit message lost" problem. Start 2 members, then a third one, and you should never see
  * the problem with messages than cannot be retransmitted because they were already garbage-collected.
  * @author Bela Ban Apr 4, 2004
- * @version $Id: NAKACKTest.java,v 1.1 2004/04/05 03:57:14 belaban Exp $
+ * @version $Id: NAKACKTest.java,v 1.2 2004/04/08 04:59:04 belaban Exp $
  */
 public class NAKACKTest {
     Channel ch;
@@ -70,7 +70,7 @@ public class NAKACKTest {
                 msg=new Message(null, null, new Long(i++));
                 ch.send(msg);
             }
-            Util.sleep(1);
+            //Util.sleep(1);
         }
     }
 

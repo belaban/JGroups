@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.3 2004/03/30 06:47:18 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.4 2004/04/08 04:58:48 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -96,9 +96,8 @@ public class STATE_TRANSFER extends Protocol {
                     }
 
                     digest=(Digest)evt.getArg();
-
-                        if(log.isInfoEnabled()) log.info("GET_DIGEST_STATE_OK: digest is " +
-                                digest + "\npassUp(GET_APPLSTATE)");
+                    if(log.isInfoEnabled()) log.info("GET_DIGEST_STATE_OK: digest is " +
+                            digest + "\npassUp(GET_APPLSTATE)");
                     passUp(new Event(Event.GET_APPLSTATE));
                 }
                 return;

@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.10 2004/04/05 03:57:27 belaban Exp $
+// $Id: NAKACK.java,v 1.11 2004/04/08 04:59:04 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -446,14 +446,12 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
         Address sender;
 
         if(msg == null || hdr == null) {
-
-                if(log.isErrorEnabled()) log.error("msg or header is null");
+            if(log.isErrorEnabled()) log.error("msg or header is null");
             return;
         }
         sender=msg.getSrc();
         if(sender == null) {
-
-                if(log.isErrorEnabled()) log.error("sender of message is null");
+            if(log.isErrorEnabled()) log.error("sender of message is null");
             return;
         }
 
@@ -469,8 +467,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
         if(win == null) {  // discard message if there is no entry for sender
             if(leaving)
                 return;
-
-                if(log.isWarnEnabled()) log.warn("[" + local_addr + "] discarded message from non-member " + sender);
+            if(log.isWarnEnabled()) log.warn("[" + local_addr + "] discarded message from non-member " + sender);
             return;
         }
         win.add(hdr.seqno, msg);  // add in order, then remove and pass up as many msgs as possible
@@ -481,7 +478,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
 
             passUp(new Event(Event.MSG, msg_to_deliver));
         }
-         //System.out.println("-- win is: " + win);
     }
 
 
