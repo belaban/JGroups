@@ -1,4 +1,4 @@
-// $Id: TOTAL.java,v 1.8 2005/03/12 12:20:57 belaban Exp $
+// $Id: TOTAL.java,v 1.9 2005/03/23 07:55:38 wenbo Exp $
 package org.jgroups.protocols;
 
 
@@ -7,6 +7,7 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.View;
+import org.jgroups.stack.AckSenderWindow;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.RWLock;
 import org.jgroups.util.TimeScheduler;
@@ -161,11 +162,25 @@ public class TOTAL extends Protocol {
 	}
 
 
+	/**
+	 * The retransmission listener - It is called by the
+	 * <code>AckSenderWindow</code> when a retransmission should occur
+	 */
+	private class Command implements AckSenderWindow.RetransmitCommand {
+		public Command() {}
+		public void retransmit(long seqNo, Message msg) {
+			_retransmitBcastRequest(seqNo);
+		}
+	}
+
 
 	/** Protocol name */
 	private static final String PROT_NAME = "TOTAL";
 	/** Property names */
 	private static final String TRACE_PROP = "trace";
+
+	/** Average time between broadcast request retransmissions */
+	private final long[] AVG_RETRANSMIT_INTERVAL = new long[]{1000,2000,3000,4000};
 
 	/** Null value for the IDs */
 	private static final long NULL_ID = -1;
@@ -224,6 +239,8 @@ public class TOTAL extends Protocol {
 	 * seqID -> Received broadcast msg
 	 */
 	private SortedMap upTbl;
+	/** Retranmitter for pending broadcast requests */
+	private AckSenderWindow retransmitter;
 
 
 	/**
@@ -384,7 +401,7 @@ public class TOTAL extends Protocol {
 		reqTbl.put(new Long(id), msg);
 		}
 		_transmitBcastRequest(id);
-		//retransmitter.add(id, msg);
+		retransmitter.add(id, msg);
 	}
 
 
@@ -410,7 +427,7 @@ public class TOTAL extends Protocol {
 
 		synchronized(reqTbl) {
 		if (!reqTbl.containsKey(new Long(seqID))) {
-			//retransmitter.ack(seqID);
+			retransmitter.ack(seqID);
 			return;
 		}
 		}
@@ -518,20 +535,39 @@ public class TOTAL extends Protocol {
 		}
 
 		if (msg != null) {
-			//retransmitter.ack(header.localSeqID);
+			retransmitter.ack(header.localSequenceID);
 			id = header.localSequenceID;
-msg.putHeader(getName(), new Header(Header.BCAST, id, header.sequenceID));
-
-         passDown(new Event(Event.MSG, msg));
 		} else {
 			if(log.isInfoEnabled()) log.info("Bcast reply to " +
 				   "non-existent BCAST_REQ[" + header.localSequenceID +
 				   "], Sending NULL bcast");
-         //id  = NULL_ID;
-         //msg = new Message(null, addr, new byte[0]);
+			id  = NULL_ID;
+			msg = new Message(null, addr, new byte[0]);
 		}
+		msg.putHeader(getName(), new Header(Header.BCAST, id, header.sequenceID));
+
+		passDown(new Event(Event.MSG, msg));
 	}
 
+
+	/**
+	 * Resend the bcast request with the given localSeqID
+	 *
+	 * @param seqID the local sequence id of the
+	 */
+	private void _retransmitBcastRequest(long seqID) {
+		// *** Get a shared lock
+		try { stateLock.readLock(); try {
+
+		if(log.isInfoEnabled()) log.info("Retransmit BCAST_REQ[" + seqID + ']');
+		_transmitBcastRequest(seqID);
+
+		// ** Revoke the shared lock
+		} finally { stateLock.readUnlock(); }
+		} catch(RWLock.IntException ex) {
+		if(log.isErrorEnabled()) log.error(ex.getMessage());
+		}
+	}
 
 
 	/* Up event handlers
@@ -776,7 +812,7 @@ msg.putHeader(getName(), new Header(Header.BCAST, id, header.sequenceID));
             
             reqTbl       = new TreeMap();
             upTbl        = new TreeMap();
-            //retransmitter = new AckSenderWindow(new Command(), AVG_RETRANSMIT_INTERVAL);
+            retransmitter = new AckSenderWindow(new Command(), AVG_RETRANSMIT_INTERVAL);
 	}
     
 
@@ -795,7 +831,7 @@ msg.putHeader(getName(), new Header(Header.BCAST, id, header.sequenceID));
             stateLock.writeLock(); 
             try {
                 state = NULL_STATE;
-                //retransmitter.reset();
+                retransmitter.reset();
                 reqTbl.clear();
                 upTbl.clear();
                 addr = null;
