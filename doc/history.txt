@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.14 2003/11/21 08:58:54 belaban Exp $
+Revision: $Id: history.txt,v 1.15 2003/11/22 00:42:22 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java JGroups.Version')]
 
@@ -27,6 +27,10 @@ romuald     = Romuald du Song
 
 Version 2.2.1
 -------------
+
+- Fixed bug in pbcast.GMS which incorrectly generated view when many members left at exactly the same time.
+  Bug was reproduced in ConnectStressTest
+  (bela Nov 20 2003)
 
 - Added ConnectStressTest unit test
   (bela Nov 20 2003)
