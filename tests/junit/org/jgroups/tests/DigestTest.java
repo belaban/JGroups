@@ -1,4 +1,4 @@
-// $Id: DigestTest.java,v 1.3 2004/04/28 17:41:10 belaban Exp $
+// $Id: DigestTest.java,v 1.4 2004/10/08 12:09:29 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -8,6 +8,8 @@ import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.jgroups.protocols.pbcast.Digest;
 import org.jgroups.stack.IpAddress;
+
+import java.io.*;
 
 
 public class DigestTest extends TestCase {
@@ -195,6 +197,20 @@ public class DigestTest extends TestCase {
         d2.add(a1, 4, 500, 501);
         d2.add(a2, 25, 26, 26);
         assertFalse(d.sameSenders(d2));
+    }
+
+
+    public void testStreamable() throws IOException, IllegalAccessException, InstantiationException {
+        ByteArrayOutputStream outstream=new ByteArrayOutputStream();
+        DataOutputStream dos=new DataOutputStream(outstream);
+        d.writeTo(dos);
+        dos.close();
+        byte[] buf=outstream.toByteArray();
+        ByteArrayInputStream instream=new ByteArrayInputStream(buf);
+        DataInputStream dis=new DataInputStream(instream);
+        Digest tmp=new Digest();
+        tmp.readFrom(dis);
+        assertEquals(d, tmp);
     }
 
 
