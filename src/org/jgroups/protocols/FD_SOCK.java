@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.15 2004/10/06 08:09:25 belaban Exp $
+// $Id: FD_SOCK.java,v 1.16 2004/10/06 08:27:58 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -256,7 +256,7 @@ public class FD_SOCK extends Protocol implements Runnable {
             case Event.CONNECT:
                 passDown(evt);
                 srv_sock=Util.createServerSocket(srv_sock_bind_addr, start_port); // grab a random unused port above 10000
-                srv_sock_addr=new IpAddress(srv_sock.getLocalPort());
+                srv_sock_addr=new IpAddress(srv_sock_bind_addr, srv_sock.getLocalPort());
                 startServerSocket();
                 //if(pinger_thread == null)
                   //  startPingerThread();
