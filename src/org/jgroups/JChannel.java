@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.24 2004/08/20 07:10:39 belaban Exp $
+// $Id: JChannel.java,v 1.25 2004/08/29 19:35:03 belaban Exp $
 
 package org.jgroups;
 
@@ -30,7 +30,7 @@ import java.util.Vector;
  * protocol stack
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.24 $
+ * @version $Revision: 1.25 $
  */
 public class JChannel extends Channel {
 
@@ -761,15 +761,20 @@ public class JChannel extends Channel {
     public Object getOpt(int option) {
         switch(option) {
             case VIEW:
-                return Boolean.valueOf(receive_views);
+//                return Boolean.valueOf(receive_views);
+            	return receive_views ? Boolean.TRUE : Boolean.FALSE;
             case BLOCK:
-                return Boolean.valueOf(receive_blocks);
+//                return Boolean.valueOf(receive_blocks);
+            	return receive_blocks ? Boolean.TRUE : Boolean.FALSE;
             case SUSPECT:
-                return Boolean.valueOf(receive_suspects);
+//                return Boolean.valueOf(receive_suspects);
+            	return receive_suspects ? Boolean.TRUE : Boolean.FALSE;
             case GET_STATE_EVENTS:
-                return Boolean.valueOf(receive_get_states);
+//                return Boolean.valueOf(receive_get_states);
+            	return receive_get_states ? Boolean.TRUE : Boolean.FALSE;
             case LOCAL:
-                return Boolean.valueOf(receive_local_msgs);
+//                return Boolean.valueOf(receive_local_msgs);
+            	return receive_local_msgs ? Boolean.TRUE : Boolean.FALSE;
             default:
                 if(log.isErrorEnabled()) log.error("option " + Channel.option2String(option) + " not known");
                 return null;
