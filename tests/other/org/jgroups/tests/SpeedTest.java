@@ -1,4 +1,4 @@
-// $Id: SpeedTest.java,v 1.6 2004/01/02 20:39:14 belaban Exp $
+// $Id: SpeedTest.java,v 1.7 2004/01/02 22:32:11 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -331,7 +331,7 @@ public class SpeedTest {
 
                     number=((Integer)Util.objectFromByteBuffer(msg_data)).intValue();
                     matrix[number][1]=1;
-                    // System.out.println("#set " + number);
+                    // System.out.println("-- received " + number);
                     num_received++;
                     if(num_received % 100 == 0)
                         System.out.println("received " + num_received + " packets");
