@@ -1,4 +1,4 @@
-// $Id: ReplicatedTree.java,v 1.4 2004/03/30 06:47:12 belaban Exp $
+// $Id: ReplicatedTree.java,v 1.5 2004/06/25 01:10:12 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -181,7 +181,7 @@ public class ReplicatedTree implements Runnable, Cloneable, MessageListener, Mem
      * Adds a new node to the tree and sets its data. If the node doesn not yet exist, it will be created.
      * Also, parent nodes will be created if not existent. If the node already has data, then the new data
      * will override the old one. If the node already existed, a nodeModified() notification will be generated.
-     * Otherwise a nodeAdded() motification will be emitted.
+     * Otherwise a nodeCreated() motification will be emitted.
      * @param fqn The fully qualified name of the new node
      * @param data The new data. May be null if no data should be set in the node.
      */
@@ -218,7 +218,7 @@ public class ReplicatedTree implements Runnable, Cloneable, MessageListener, Mem
     /**
      * Adds a key and value to a given node. If the node doesn't exist, it will be created. If the node
      * already existed, a nodeModified() notification will be generated. Otherwise a
-     * nodeAdded() motification will be emitted.
+     * nodeCreated() motification will be emitted.
      * @param fqn The fully qualified name of the node
      * @param key The key
      * @param value The value

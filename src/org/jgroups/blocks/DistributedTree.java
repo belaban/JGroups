@@ -1,4 +1,4 @@
-// $Id: DistributedTree.java,v 1.4 2004/03/30 06:47:12 belaban Exp $
+// $Id: DistributedTree.java,v 1.5 2004/06/25 01:08:00 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -547,7 +547,7 @@ public class DistributedTree implements MessageListener, MembershipListener, Clo
         if(curr.children != null) {
             for(int i=0; i < curr.children.size(); i++) {
                 n=(Node)curr.children.elementAt(i);
-                System.out.println("*** nodeAdded(): tmp_fqn is " + tmp_fqn);
+                System.out.println("*** nodeCreated(): tmp_fqn is " + tmp_fqn);
                 notifyNodeAdded(tmp_fqn, n.element);
                 notifyAllNodesCreated(n, tmp_fqn + "/" + n.name);
             }
