@@ -1,4 +1,4 @@
-// $Id: RpcDispatcherTest.java,v 1.6 2004/09/06 15:40:48 belaban Exp $
+// $Id: RpcDispatcherTest.java,v 1.7 2004/09/06 15:43:38 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -35,13 +35,13 @@ public class RpcDispatcherTest {
     }
 
 
-    public void start(int num) throws Exception {
+    public void start(int num, long interval) throws Exception {
         channel=new JChannel(props);
         disp=new RpcDispatcher(channel, null, null, this);
         channel.connect("RpcDispatcherTestGroup");
 
         for(int i=0; i < num; i++) {
-            Util.sleep(100);
+            Util.sleep(interval);
             rsp_list=disp.callRemoteMethods(null, "print", new Object[]{new Integer(i)},
                     new Class[]{int.class}, GroupRequest.GET_ALL, 0);
             System.out.println("Responses: " + rsp_list);
@@ -58,13 +58,29 @@ public class RpcDispatcherTest {
 
     public static void main(String[] args) {
         int num=10;
-        if(args.length > 0)
-            num=Integer.parseInt(args[0]);
+        long interval=1000;
+        for(int i=0; i < args.length; i++) {
+            if(args[i].equals("-num")) {
+                num=Integer.parseInt(args[++i]);
+                continue;
+            }
+            if(args[i].equals("-interval")) {
+                interval=Long.parseLong(args[++i]);
+                continue;
+            }
+            help();
+            return;
+        }
+
         try {
-            new RpcDispatcherTest().start(num);
+            new RpcDispatcherTest().start(num, interval);
         }
         catch(Exception e) {
             System.err.println(e);
         }
+    }
+
+    private static void help() {
+        System.out.println("RpcDispatcherTest [-help] [-num <number of msgs>] [-interval <sleep in ms between calls>]");
     }
 }
