@@ -41,10 +41,10 @@ to using it and setting it up correctly.
     string, the first property becomes the bottom-most layer, the second one will be
     placed on the first, etc: the stack is created from the bottom to the top, as the
     string is parsed from left to right. Each property has to be the name of a Java
-    class that resides in the {\tt org.javagroups.stack.protocols}
+    class that resides in the {\tt org.jgroups.stack.protocols}
     package\footnote{This package may change in the future.}. Note that only the base
     name has to be given, not the fully specified class name ({\tt UDP} instead of
-    {\tt orh.javagroups.stack.protocols.UDP}).
+    {\tt orh.jgroups.stack.protocols.UDP}).
 
     Each layer may have 0 or more arguments, which are specified as a list of
     name/value pairs in parentheses directly after the property. In the example
@@ -69,7 +69,7 @@ to using it and setting it up correctly.
     mcast address {\tt 228.10.9.8.} and port {\tt 5678} rather than the default IP
     multicast address and port. The only other argument instructs {\tt FD} to output
     debug information while executing. Property {\tt UDP} refers to a class {\tt
-    org.javagroups.stack.protocols.UDP}, which is subsequently loaded and an instance
+    org.jgroups.stack.protocols.UDP}, which is subsequently loaded and an instance
     of which is created as protocol layer. If any of these classes are not found, an
     exception will be thrown and the construction of the stack will be aborted.
 
@@ -103,7 +103,7 @@ to using it and setting it up correctly.
   including a fragmentation layer, but no retransmission layer (losing packets is
   preferred to costly retransmission).
 
-  The {\tt Draw2Channels} demo program (in the {\tt org.javagroups.demos} package)
+  The {\tt Draw2Channels} demo program (in the {\tt org.jgroups.demos} package)
   demonstrates how to use two different channels.
 
 
@@ -220,7 +220,7 @@ to using it and setting it up correctly.
 
       Before any members are started the GossipServer has to be started, e.g.
 
-      {\tt java org.javagroups.stack.GossipServer -port 5555}.
+      {\tt java org.jgroups.stack.GossipServer -port 5555}.
 
       This starts the GossipServer on the local host on port 5555. The GossipServer
       is essentially a lookup service for groups and members. It is a process that
@@ -460,7 +460,7 @@ to using it and setting it up correctly.
       \item Start the GossipServer:
         \begin{small}
 	\begin{verbatim}
-        start org.javagroups.stack.GossipServer -port 12002
+        start org.jgroups.stack.GossipServer -port 12002
       \end{verbatim}
       \end{small}
 
@@ -468,7 +468,7 @@ to using it and setting it up correctly.
       \item Start Router:
         \begin{small}
 	\begin{verbatim}
-        java org.javagroups.stack.Router -port 12001
+        java org.jgroups.stack.Router -port 12001
       \end{verbatim}
       \end{small}
 

@@ -10,7 +10,7 @@ the JavaGroups toolkit described here is the same. For the most up-to-date
 information refer to the Javadoc-generated documentation in the {\tt
 doc/javadoc} directory
 
-All of the classes discussed below reside in the {\tt org.javagroups} package unless
+All of the classes discussed below reside in the {\tt org.jgroups} package unless
 otherwise mentioned.
 
 
@@ -18,7 +18,7 @@ otherwise mentioned.
 
   \section{Utility classes}
 
-  The org.javagroups.util.Util class contains a collection of useful functionality
+  The org.jgroups.util.Util class contains a collection of useful functionality
   which cannot be assigned to any particular other package.
 
 
@@ -121,7 +121,7 @@ otherwise mentioned.
     Oftentimes the only method containing any functionality will be {\tt
     viewAccepted()} which notifies the receiver that a new member has joined the
     group or that an existing member has left or crashed. The {\tt suspect()}
-    callback is invoked by JavaGroups whenever a member if suspected of having
+    callback is invoked by JGroups whenever a member if suspected of having
     crashed, but not yet excluded\footnote{It could be that the member is suspected
     falsely, in which case the next view would still contain the suspected member
     (there is currently no {\tt unsuspect()} method}. The {\tt block} method is
@@ -161,7 +161,7 @@ otherwise mentioned.
   Each member of a group has an address, which uniquely identifies the member. The
   interface for such an address is Address, which requires concrete implementations
   to provide methods for comparison and sorting of addresses, and for determination
-  whether the address is a multicast address. JavaGroups addresses have to implement
+  whether the address is a multicast address. JGroups addresses have to implement
   the following interface:
 
   \begin{small}
@@ -182,7 +182,7 @@ otherwise mentioned.
 
   In JChannel, it is the IP address of the host on which the stack is running and
   the port on which the stack is receiving incoming messages; it is represented by
-  the concrete class {\tt org.javagroups.stack.IpAddress}. Instances of this class
+  the concrete class {\tt org.jgroups.stack.IpAddress}. Instances of this class
   are only used {\em within} the JChannel protocol stack; {\em users of a channel see
   addresses (of any kind) only as Addresses}. Since an address uniquely
   identifies a channel, and therefore a group member, it can be used to send
@@ -404,9 +404,9 @@ otherwise mentioned.
     string, the first property becomes the bottom-most layer, the second one will be
     placed on the first, etc: the stack is created from the bottom to the top, as the
     string is parsed from left to right. Each property has to be the name of a Java
-    class that resides in the {\tt org.javagroups.stack.protocols} package. Note that
+    class that resides in the {\tt org.jgroups.stack.protocols} package. Note that
     only the base name has to be given, not the fully specified class name ({\tt UDP}
-    instead of {\tt org.javagroups.stack.protocols.UDP}).
+    instead of {\tt org.jgroups.stack.protocols.UDP}).
 
     Each layer may have zero or more arguments, which are specified as a list of
     name/value pairs in parentheses directly after the property. In the example
@@ -414,7 +414,7 @@ otherwise mentioned.
     none. When a layer is created these properties (if there are any) will be set in
     a protocol, thus configuring the protocol stack according to the channel creator.
 
-    As an example the property string below instructs JavaGroups to create a
+    As an example the property string below instructs JGroups to create a
     JChannel with protocols {\tt UDP}, {\tt PING}, {\tt FD} and {\tt GMS}:
 
 
@@ -427,7 +427,7 @@ otherwise mentioned.
     The {\tt UDP} protocol layer is at the bottom of the stack, and it should use
     mcast address {\tt 228.10.9.8.} and port {\tt 5678} rather than the default IP
     multicast address and port. Property {\tt UDP} refers to a class {\tt
-    org.javagroups.stack.protocols.UDP}, which is subsequently loaded and an instance
+    org.jgroups.stack.protocols.UDP}, which is subsequently loaded and an instance
     of which is created as protocol layer. If any of these classes are not found, an
     exception will be thrown and the construction of the stack will be aborted.
 
