@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.12 2004/07/28 08:14:15 belaban Exp $
+// $Id: Message.java,v 1.13 2004/08/06 08:05:19 belaban Exp $
 
 package org.jgroups;
 
@@ -6,7 +6,6 @@ package org.jgroups;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.util.Marshaller;
-import org.jgroups.util.ContextObjectInputStream;
 
 import java.io.*;
 import java.util.HashMap;
@@ -216,8 +215,8 @@ public class Message implements Externalizable {
         if(buf == null) return null;
         try {
             ByteArrayInputStream in_stream=new ByteArrayInputStream(buf, offset, length);
-            // ObjectInputStream in=new ObjectInputStream(in_stream);
-            ObjectInputStream in=new ContextObjectInputStream(in_stream);
+            ObjectInputStream in=new ObjectInputStream(in_stream);
+            // ObjectInputStream in=new ContextObjectInputStream(in_stream);
             return in.readObject();
         }
         catch(Exception ex) {
