@@ -1,9 +1,10 @@
-// $Id: ConfiguratorFactory.java,v 1.1 2003/09/09 01:24:08 belaban Exp $
+// $Id: ConfiguratorFactory.java,v 1.2 2003/09/11 17:52:57 belaban Exp $
 
 package org.jgroups.conf;
 
 import java.net.URL;
 import java.io.IOException;
+import java.io.InputStream;
 
 import org.w3c.dom.Element;
 
@@ -26,6 +27,7 @@ public class ConfiguratorFactory
     "JAXP Error: XML Parsing libraries are not in your classpath. Make sure you have JAXP compatible "+
     "libraries in your classpath. JGroups include the Apache Xerces 2.0 parser, the two libraries: "+
     "xercesxmlapi and xercesimpl can be found in the <JG_ROOT>/lib directory.";
+
     protected ConfiguratorFactory()
     {
     }
@@ -39,56 +41,52 @@ public class ConfiguratorFactory
      * @return a ProtocolStackConfigurator containing the stack configuration
      * @exception IOException if it fails to parse the XML content
      * @exception IOException if the URL is invalid or a the content can not be reached
-     * @exception ClassNotFoundException if the JAXP parser libraries are not found in the classpath
      */
-    public static ProtocolStackConfigurator getStackConfigurator(Object properties)
-        throws IOException
-    {
-       
-        
-        //if the properties is a url then it will be set to this object
-        URL connectionURL = null;
-        boolean isURL = false;
-        
-        //check if it is a java.net.URL object
-        if ( properties instanceof URL )
-        {
-            connectionURL = (URL)properties;
-            isURL = true;
+    public static ProtocolStackConfigurator getStackConfigurator(Object properties) throws IOException {
+
+        // Is it a URL ?
+        if(properties instanceof URL) {
+            return getXmlConfigurator((URL)properties);
         }
-        //if it is a string, then it could be a plain string or a url
-        else if ( properties instanceof String )
-        {
-            try
-            {
-                connectionURL = new URL((String)properties);
-                //if the string is not a url then we will never get here
-                isURL = true;
+
+        // if it is a string, then it could be a plain string or a url
+        if(properties instanceof String) {
+            try {
+                return getXmlConfigurator(new URL((String)properties));
             }
-            catch (Exception ignore){}
-        }
-	else if(properties instanceof Element) {
-	    return XmlConfigurator.getInstance((Element)properties);
-	}
-        else
-        {
-            throw new java.io.IOException("Protocol stack properties have to be a java.net.URL or a string.");
-        }
-        
-        if ( isURL )
-        {
-             try
-            {
-                //quick check to see if we have the JAXP libraries in the classpath
-                XmlConfigurator.class.getName();
-            } catch ( java.lang.NoClassDefFoundError x )
-            {
-                throw new java.lang.NoClassDefFoundError(JAR_MISSING_ERROR);
+            catch(Exception ignore) {
+                // if we get here this means we don't have a URL
             }
-            return XmlConfigurator.getInstance(connectionURL);
+
+            // another try - maybe it is a resource, e.g. default.xml
+            if(((String)properties).endsWith("xml")) {
+                try {
+                    ClassLoader classLoader=Thread.currentThread().getContextClassLoader();
+                    InputStream in=classLoader.getResourceAsStream((String)properties);
+                    if(in != null)
+                        return XmlConfigurator.getInstance(in);
+                }
+                catch(Throwable ignore) {
+                }
+            }
         }
-        else
-            return new PlainConfigurator((String)properties);
-         
+
+        if(properties instanceof Element) {
+            return XmlConfigurator.getInstance((Element)properties);
+        }
+
+        return new PlainConfigurator((String)properties);
+    }
+
+
+    static XmlConfigurator getXmlConfigurator(URL url) throws IOException {
+        try {
+            //quick check to see if we have the JAXP libraries in the classpath
+            XmlConfigurator.class.getName();
+        }
+        catch(java.lang.NoClassDefFoundError x) {
+            throw new java.lang.NoClassDefFoundError(JAR_MISSING_ERROR);
+        }
+        return XmlConfigurator.getInstance(url);
     }
 }
