@@ -3,10 +3,9 @@
 # Runs a single test class from command line, circumventing ant altogether. Useful for
 # quick debugging.
 
-TESTCLASS=org.jgroups.blocks.MethodCallTest
+TESTCLASS=org.jgroups.tests.stack.RouterTest
 
 reldir=`dirname $0`
-
 
 # OS specific support (must be 'true' or 'false').
 cygwin=false;
@@ -22,6 +21,18 @@ else
     SEP=":"
 fi
 
+while [ "$1" != "" ]; do
+    if [ "$1" = "-debug" ]; then
+        if [ $cygwin = false ]; then
+            JAVA_OPTS="-Xdebug -Xnoagent -Djava.compiler=NONE -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=12348"
+        else
+            JAVA_OPTS="-Xdebug -Xnoagent -Djava.compiler=NONE -Xrunjdwp:transport=dt_shmem,server=y,suspend=y,address=jgroups"
+        fi
+    fi
+    shift
+done
+
+
 CLASSPATH="$reldir/../classes${SEP}\
 $reldir/../conf${SEP}\
 $reldir/../lib/junit.jar${SEP}\
@@ -35,4 +46,4 @@ $reldir/../lib/commons-logging.jar"
 #fi
 
 #echo $CLASSPATH
-java -cp $CLASSPATH junit.textui.TestRunner $TESTCLASS
+java $JAVA_OPTS -cp $CLASSPATH junit.textui.TestRunner $TESTCLASS
