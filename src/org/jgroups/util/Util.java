@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.14 2004/08/25 12:04:18 belaban Exp $
+// $Id: Util.java,v 1.15 2004/09/10 10:02:08 belaban Exp $
 
 package org.jgroups.util;
 
@@ -691,6 +691,26 @@ public class Util {
         }
         return ret;
     }
+
+    public static ServerSocket createServerSocket(InetAddress bind_addr, int start_port) {
+        ServerSocket ret=null;
+
+        while(true) {
+            try {
+                ret=new ServerSocket(start_port, 50, bind_addr);
+            }
+            catch(BindException bind_ex) {
+                start_port++;
+                continue;
+            }
+            catch(IOException io_ex) {
+                if(log.isErrorEnabled()) log.error("exception is " + io_ex);
+            }
+            break;
+        }
+        return ret;
+    }
+
 
 
     /**
