@@ -1,4 +1,4 @@
-// $Id: ThreadPool.java,v 1.2 2003/12/11 07:12:24 belaban Exp $
+// $Id: ThreadPool.java,v 1.3 2003/12/11 07:17:36 belaban Exp $
 
 package org.jgroups.util;
 
@@ -32,7 +32,7 @@ public class ThreadPool {
             available_threads[i]=true;
         }
         if(Trace.trace)
-            Trace.info("ThreadPool()", "created a pool of " + MAX_NUM + " threads");
+            Trace.info("ThreadPool.ThreadPool()", "created a pool of " + MAX_NUM + " threads");
     }
 
 
