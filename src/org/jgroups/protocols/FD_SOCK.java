@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.8 2004/09/10 10:10:15 belaban Exp $
+// $Id: FD_SOCK.java,v 1.9 2004/09/13 10:33:23 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -57,7 +57,10 @@ public class FD_SOCK extends Protocol implements Runnable {
     InputStream   ping_input=null;                   // input stream of the socket to the member we monitor
     Thread        pinger_thread=null;                // listens on ping_sock, suspects member if socket is closed
     Hashtable     cache=new Hashtable(11);           // keys=Addresses, vals=IpAddresses (socket:port)
-    int           start_port=49152;                  // start port for server socket (uses first available port)
+
+    /** Start port for server socket (uses first available port starting at start_port). A value of 0 (default)
+     * picks a random port */
+    int           start_port=0;
     Promise       ping_addr_promise=new Promise();   // to fetch the ping_addr for ping_dest
     Object        sock_mutex=new Object();           // for access to ping_sock, ping_input
     TimeScheduler timer=null;
