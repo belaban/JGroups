@@ -1,4 +1,4 @@
-// $Id: ReplicatedTreeDemo.java,v 1.4 2004/07/05 05:45:31 belaban Exp $
+// $Id: ReplicatedTreeDemo.java,v 1.5 2004/09/22 10:34:10 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -53,8 +53,8 @@ public class ReplicatedTreeDemo {
         JPopupMenu operationsPopup=null;
         JMenuBar menubar=null;
         static String SEP=ReplicatedTree.SEPARATOR;
-        private final int KEY_COL_WIDTH=20;
-        private final int VAL_COL_WIDTH=300;
+        private static final int KEY_COL_WIDTH=20;
+        private static final int VAL_COL_WIDTH=300;
 
 
         public ReplicatedTreeView(ReplicatedTree tree, Object title) throws Exception {

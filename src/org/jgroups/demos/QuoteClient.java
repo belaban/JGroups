@@ -1,4 +1,4 @@
-// $Id: QuoteClient.java,v 1.4 2004/07/05 05:45:31 belaban Exp $
+// $Id: QuoteClient.java,v 1.5 2004/09/22 10:34:10 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -29,7 +29,7 @@ import java.util.Hashtable;
  */
 public class QuoteClient extends Frame implements WindowListener, ActionListener,
         MembershipListener {
-    final String channel_name="Quotes";
+    static final String channel_name="Quotes";
     RpcDispatcher disp;
     Channel channel;
     Button get=new Button("Get"), set=new Button("Set");

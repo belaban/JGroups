@@ -1,4 +1,4 @@
-// $Id: Configurator.java,v 1.6 2004/08/12 15:43:11 belaban Exp $
+// $Id: Configurator.java,v 1.7 2004/09/22 10:34:14 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -486,7 +486,7 @@ public class Configurator {
         private String protocol_name=null;
         private String properties_str=null;
         private Properties properties=new Properties();
-        private final String protocol_prefix="org.jgroups.protocols";
+        private static final String protocol_prefix="org.jgroups.protocols";
 
 
         /**

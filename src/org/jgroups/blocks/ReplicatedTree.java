@@ -1,4 +1,4 @@
-// $Id: ReplicatedTree.java,v 1.6 2004/07/05 05:41:45 belaban Exp $
+// $Id: ReplicatedTree.java,v 1.7 2004/09/22 10:34:08 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -22,7 +22,7 @@ import java.util.*;
  * @author Bela Ban Jan 17 2002
  * @author <a href="mailto:aolias@yahoo.com">Alfonso Olias-Sanz</a>
  */
-public class ReplicatedTree implements Runnable, Cloneable, MessageListener, MembershipListener {
+public class ReplicatedTree implements Runnable, MessageListener, MembershipListener {
     public static final String SEPARATOR="/";
     final static int INDENT=4;
     Node root=new Node(SEPARATOR, SEPARATOR, null, null);
@@ -59,7 +59,7 @@ public class ReplicatedTree implements Runnable, Cloneable, MessageListener, Mem
 
 	/** Determines when the updates have to be sent across the network, avoids sending unnecessary
      * messages when there are no member in the group */
-	private transient boolean send_message = false;
+	private boolean send_message = false;
 
 
 

@@ -1,4 +1,4 @@
-// $Id: QuoteServer.java,v 1.3 2004/07/05 05:45:31 belaban Exp $
+// $Id: QuoteServer.java,v 1.4 2004/09/22 10:34:10 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -34,7 +34,7 @@ public class QuoteServer implements MembershipListener, MessageListener {
     Hashtable stocks=new Hashtable();
     Channel channel;
     RpcDispatcher disp;
-    final String channel_name="Quotes";
+    static final String channel_name="Quotes";
     int num_members=1;
     //String          props="UDP:PING:FD:STABLE:NAKACK:UNICAST:FRAG:FLUSH:GMS:"+
     //                  "VIEW_ENFORCER:STATE_TRANSFER:QUEUE";

@@ -1,4 +1,4 @@
-// $Id: FLUSH.java,v 1.6 2004/07/26 10:52:31 belaban Exp $
+// $Id: FLUSH.java,v 1.7 2004/09/22 10:34:11 belaban Exp $
 
 
 
@@ -313,7 +313,7 @@ public class FLUSH extends RpcProtocol {
 	case Event.GET_MSG_DIGEST_OK:
 	    synchronized(digest_mutex) {
 		digest=(Digest)evt.getArg();
-		digest_mutex.notify();
+		digest_mutex.notifyAll();
 	    }
 	    return false;  // don't pass further up
 
@@ -322,14 +322,14 @@ public class FLUSH extends RpcProtocol {
 	    if(tmp != null)
             System.arraycopy(tmp, 0, highest_delivered_msgs, 0, tmp.length);
 	    synchronized(highest_delivered_mutex) {
-		highest_delivered_mutex.notify();
+		highest_delivered_mutex.notifyAll();
 	    }
 	    return false; // don't pass up any further !
 
 	case Event.GET_MSGS_OK:
 	    synchronized(get_msgs_mutex) {
 		get_msgs=(List)evt.getArg();
-		get_msgs_mutex.notify();
+		get_msgs_mutex.notifyAll();
 	    }
 	    break;
 
@@ -402,7 +402,7 @@ public class FLUSH extends RpcProtocol {
 	    }
 
 	    synchronized(block_mutex) {
-		block_mutex.notify();
+		block_mutex.notifyAll();
 	    }
 	    return;
 	}

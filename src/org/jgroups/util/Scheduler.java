@@ -1,4 +1,4 @@
-// $Id: Scheduler.java,v 1.10 2004/08/12 14:08:12 belaban Exp $
+// $Id: Scheduler.java,v 1.11 2004/09/22 10:34:15 belaban Exp $
 
 package org.jgroups.util;
 
@@ -37,8 +37,8 @@ public class Scheduler implements Runnable {
     /** max number of threads, will only be allocated when needed */
     int                NUM_THREADS=128;
 
-    final int          WAIT_FOR_THREAD_AVAILABILITY=3000;
-    final int          THREAD_JOIN_TIMEOUT=1000;
+    static final int          WAIT_FOR_THREAD_AVAILABILITY=3000;
+    static final int          THREAD_JOIN_TIMEOUT=1000;
 
 
 
@@ -48,7 +48,7 @@ public class Scheduler implements Runnable {
     public Scheduler() {
     	// PropertyPermission not granted if running in an untrusted environment with JNLP.
         try {
-            this.NUM_THREADS=new Integer(System.getProperty("scheduler.max.threads","128")).intValue();
+            this.NUM_THREADS=Integer.parseInt(System.getProperty("scheduler.max.threads", "128"));
         }
         catch (SecurityException ex){
           //The default value specified above is used.

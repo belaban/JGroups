@@ -1,4 +1,4 @@
-// $Id: IpAddress.java,v 1.9 2004/09/15 17:41:00 belaban Exp $
+// $Id: IpAddress.java,v 1.10 2004/09/22 10:34:14 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -27,8 +27,8 @@ public class IpAddress implements Address {
     protected static final HashMap  sAddrCache=new HashMap();
     protected static final Log log=LogFactory.getLog(IpAddress.class);
 
-    static transient boolean resolve_dns=true;//Boolean.valueOf(System.getProperty("resolve.dns", "true")).booleanValue();
-    static final transient  char[] digits = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'};
+    static boolean resolve_dns=true;//Boolean.valueOf(System.getProperty("resolve.dns", "true")).booleanValue();
+    static final  char[] digits = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'};
 
 
     static {

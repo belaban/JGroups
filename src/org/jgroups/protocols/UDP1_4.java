@@ -32,12 +32,12 @@ import java.util.*;
  * the unicast routing caches should ensure that unicasts are only sent via 1 interface in almost all cases.
  * 
  * @author Bela Ban Oct 2003
- * @version $Id: UDP1_4.java,v 1.18 2004/07/05 14:17:16 belaban Exp $
+ * @version $Id: UDP1_4.java,v 1.19 2004/09/22 10:34:12 belaban Exp $
  * todo: sending of dummy packets
  */
 public class UDP1_4 extends Protocol implements  Receiver {
 
-    final String name="UDP1_4";
+    static final String name="UDP1_4";
 
     /** Maintains a list of Connectors, one for each interface we're listening on */
     ConnectorTable ct=null;
@@ -138,7 +138,7 @@ public class UDP1_4 extends Protocol implements  Receiver {
     /** Number of bytes to allocate to receive a packet. Needs to be set to be higher than frag_size
      * (handle CONFIG event)
      */
-    final int DEFAULT_RECEIVE_BUFFER_SIZE=120000;  // todo: make settable and/or use CONFIG event
+    static final int DEFAULT_RECEIVE_BUFFER_SIZE=120000;  // todo: make settable and/or use CONFIG event
 
 
 

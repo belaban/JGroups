@@ -1,4 +1,4 @@
-// $Id: PING.java,v 1.15 2004/07/05 14:17:15 belaban Exp $
+// $Id: PING.java,v 1.16 2004/09/22 10:34:11 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -220,7 +220,7 @@ public class PING extends Protocol {
                             if(log.isTraceEnabled())
                                 log.trace("received FIND_INITAL_MBRS_RSP, rsp=" + rsp);
                             initial_members.addElement(rsp);
-                            initial_members.notify();
+                            initial_members.notifyAll();
                         }
                         return;
 

@@ -1,4 +1,4 @@
-// $Id: TCPGOSSIP.java,v 1.7 2004/08/04 09:59:34 belaban Exp $
+// $Id: TCPGOSSIP.java,v 1.8 2004/09/22 10:34:11 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -154,7 +154,7 @@ public class TCPGOSSIP extends Protocol {
                 rsp=(PingRsp)hdr.arg;
                 synchronized(initial_members) {
                     initial_members.addElement(rsp);
-                    initial_members.notify();
+                    initial_members.notifyAll();
                 }
                 return;
 

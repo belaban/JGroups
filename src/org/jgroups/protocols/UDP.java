@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.41 2004/09/13 14:27:42 belaban Exp $
+// $Id: UDP.java,v 1.42 2004/09/22 10:34:11 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -169,7 +169,7 @@ public class UDP extends Protocol implements Runnable {
 
 
     /** The name of this protocol */
-    final String    name="UDP";
+    static final String    name="UDP";
 
 
     final int VERSION_LENGTH=Version.getLength();

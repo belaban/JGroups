@@ -17,7 +17,7 @@ import java.util.Vector;
 public class MERGEFAST extends Protocol {
     Address       local_addr=null;
     boolean       is_coord=false;
-    final String  name="MERGEFAST";
+    static final String  name="MERGEFAST";
 
     public String getName() {
         return name;

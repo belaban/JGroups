@@ -1,4 +1,4 @@
-// $Id: ReplicatedHashtable.java,v 1.5 2004/03/30 06:47:12 belaban Exp $
+// $Id: ReplicatedHashtable.java,v 1.6 2004/09/22 10:34:08 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -30,7 +30,7 @@ import java.util.*;
  * @author <a href="mailto:aolias@yahoo.com">Alfonso Olias-Sanz</a>
  * todo: implement putAll() [similar to DistributedHashtable]
  */
-public class ReplicatedHashtable extends Hashtable implements MessageListener, MembershipListener, Cloneable {
+public class ReplicatedHashtable extends Hashtable implements MessageListener, MembershipListener {
 
     public interface Notification {
         void entrySet(Object key, Object value);

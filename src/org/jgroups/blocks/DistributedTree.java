@@ -1,4 +1,4 @@
-// $Id: DistributedTree.java,v 1.7 2004/09/21 13:49:43 belaban Exp $
+// $Id: DistributedTree.java,v 1.8 2004/09/22 10:34:08 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -44,7 +44,7 @@ public class DistributedTree implements MessageListener, MembershipListener {
 
 	/** Determines when the updates have to be sent across the network, avoids sending unnecessary
      * messages when there are no member in the group */
-	private transient boolean send_message = false;
+	private boolean send_message = false;
 
     protected static Log log=LogFactory.getLog(DistributedTree.class);
 

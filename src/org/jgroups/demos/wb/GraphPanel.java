@@ -1,4 +1,4 @@
-// $Id: GraphPanel.java,v 1.1 2003/09/09 01:24:09 belaban Exp $
+// $Id: GraphPanel.java,v 1.2 2004/09/22 10:34:09 belaban Exp $
 
 
 package org.jgroups.demos.wb;
@@ -26,8 +26,8 @@ public class GraphPanel extends Panel implements MouseListener, MouseMotionListe
     Image          offscreen;
     Dimension      offscreensize;
     Graphics       offgraphics;
-    final Color    fixedColor = Color.red;
-    final Color    selectColor = Color.pink;
+    static final Color    fixedColor = Color.red;
+    static final Color    selectColor = Color.pink;
     final Color    nodeColor = new Color(250, 220, 100);
     final Font     default_font=new Font("Helvetica",Font.PLAIN,12);
 

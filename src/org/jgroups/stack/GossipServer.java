@@ -1,4 +1,4 @@
-// $Id: GossipServer.java,v 1.5 2004/07/05 14:17:32 belaban Exp $
+// $Id: GossipServer.java,v 1.6 2004/09/22 10:34:14 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -65,13 +65,13 @@ public class GossipServer {
         ObjectInputStream input;
         ObjectOutputStream output=null;
         GossipData gossip_req, gossip_rsp;
+        boolean looping=true;
 
-        while(true) {
+        while(looping) {
             try {
                 sock=srv_sock.accept();
-
-                    if(log.isInfoEnabled()) log.info("accepted connection from " + sock.getInetAddress() +
-                                                     ':' + sock.getPort());
+                if(log.isInfoEnabled()) log.info("accepted connection from " + sock.getInetAddress() +
+                                                 ':' + sock.getPort());
                 sock.setSoLinger(true, 500);
                 input=new ObjectInputStream(sock.getInputStream());
                 gossip_req=(GossipData) input.readObject();
@@ -84,6 +84,7 @@ public class GossipServer {
                 }
                 input.close();
                 sock.close();
+                looping=false;
             }
             catch(Exception ex) {
                 if(log.isErrorEnabled()) log.error("exception=" + ex);

@@ -1,4 +1,4 @@
-//$Id: TotalTokenDemo.java,v 1.6 2004/08/03 12:49:50 belaban Exp $
+//$Id: TotalTokenDemo.java,v 1.7 2004/09/22 10:34:10 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -37,7 +37,7 @@ import java.util.Vector;
  *
  *@author Vladimir Blagojevic vladimir@cs.yorku.ca
  *@author Ivan Bilenjkij  ivan@ibossa.com
- *@version $Revision: 1.6 $
+ *@version $Revision: 1.7 $
  *
  *@see org.jgroups.protocols.TOTAL_TOKEN
  *
@@ -337,8 +337,8 @@ public class TotalTokenDemo extends JFrame implements Runnable
     class ControlPanel extends JPanel
     {
 
-        private final String DISCONNECT = "Disconnect";
-        private final String CONNECT = "Connect";
+        private static final String DISCONNECT = "Disconnect";
+        private static final String CONNECT = "Connect";
         JTextField numMessagesInLastView,throughput,viewNumber,messageSize,state;
         JButton transmit,connectButton;
 

@@ -1,4 +1,4 @@
-// $Id: Whiteboard.java,v 1.2 2004/07/05 05:44:56 belaban Exp $
+// $Id: Whiteboard.java,v 1.3 2004/09/22 10:34:09 belaban Exp $
 
 package org.jgroups.demos.wb;
 
@@ -28,7 +28,7 @@ public class Whiteboard extends Applet implements ActionListener, MessageListene
     private Label                  mbr_label;
     private final Font             default_font=new Font("Helvetica",Font.PLAIN,12);
     private String                 props=null;
-    public final String            groupname="WbGrp";
+    public static final String            groupname="WbGrp";
     private boolean                application=false;
 
 

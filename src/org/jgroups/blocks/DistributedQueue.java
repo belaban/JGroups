@@ -1,4 +1,4 @@
-// $Id: DistributedQueue.java,v 1.12 2004/07/30 08:30:47 rds13 Exp $
+// $Id: DistributedQueue.java,v 1.13 2004/09/22 10:34:08 belaban Exp $
 package org.jgroups.blocks;
 
 import org.apache.log4j.Logger;
@@ -23,7 +23,7 @@ import java.util.*;
  * order on all replicas.
  * @author Romuald du Song
  */
-public class DistributedQueue implements MessageListener, MembershipListener, Cloneable
+public class DistributedQueue implements MessageListener, MembershipListener
 {
     public interface Notification
     {
@@ -43,18 +43,18 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
 
     /*lock object for synchronization*/
     protected Object mutex = new Object();
-    protected transient boolean stopped = false; // whether to we are stopped !
+    protected boolean stopped = false; // whether to we are stopped !
     protected LinkedList internalQueue;
-    protected transient Channel channel;
-    protected transient RpcDispatcher disp = null;
-    protected transient String groupname = null;
-    protected transient Vector notifs = new Vector(); // to be notified when mbrship changes
-    protected transient Vector members = new Vector(); // keeps track of all DHTs
-    private transient Class[] add_signature = null;
-    private transient Class[] addAtHead_signature = null;
-    private transient Class[] addAll_signature = null;
-    private transient Class[] reset_signature = null;
-    private transient Class[] remove_signature = null;
+    protected Channel channel;
+    protected RpcDispatcher disp = null;
+    protected String groupname = null;
+    protected Vector notifs = new Vector(); // to be notified when mbrship changes
+    protected Vector members = new Vector(); // keeps track of all DHTs
+    private Class[] add_signature = null;
+    private Class[] addAtHead_signature = null;
+    private Class[] addAll_signature = null;
+    private Class[] reset_signature = null;
+    private Class[] remove_signature = null;
     
     /**
      * Creates a DistributedQueue

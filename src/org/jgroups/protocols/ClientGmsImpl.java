@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.6 2004/07/26 10:52:31 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.7 2004/09/22 10:34:11 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -25,7 +25,7 @@ import java.util.Vector;
  * tell the client what its initial membership is.
  * 
  * @author Bela Ban
- * @version $Revision: 1.6 $
+ * @version $Revision: 1.7 $
  */
 public class ClientGmsImpl extends GmsImpl {
     Vector initial_mbrs=new Vector(7);
@@ -159,7 +159,7 @@ public class ClientGmsImpl extends GmsImpl {
         if(gms.local_addr != null && mems != null && mems.contains(gms.local_addr)) {
             synchronized(view_installation_mutex) {  // wait until JOIN is sent (above)
                 joined=true;
-                view_installation_mutex.notify();
+                view_installation_mutex.notifyAll();
                 gms.installView(new_view, mems);
                 gms.becomeParticipant();
                 gms.passUp(new Event(Event.BECOME_SERVER));
@@ -203,7 +203,7 @@ public class ClientGmsImpl extends GmsImpl {
                     if(tmp != null && tmp.size() > 0)
                         for(int i=0; i < tmp.size(); i++)
                             initial_mbrs.addElement(tmp.elementAt(i));
-                    initial_mbrs.notify();
+                    initial_mbrs.notifyAll();
                 }
                 return false;  // don't pass up the stack
         }

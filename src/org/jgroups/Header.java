@@ -1,4 +1,4 @@
-// $Id: Header.java,v 1.4 2004/07/05 14:17:36 belaban Exp $
+// $Id: Header.java,v 1.5 2004/09/22 10:34:16 belaban Exp $
 
 package org.jgroups;
 
@@ -9,7 +9,7 @@ import java.io.Externalizable;
  Abstract base class for all headers to be added to a Message.
  @author Bela Ban, bela@nms.fnc.fujitsu.com
  */
-public abstract class Header implements Externalizable, Cloneable {
+public abstract class Header implements Externalizable {
     public static final long HDR_OVERHEAD=255; // estimated size of a header (used to estimate the size of the entire msg)
 
 

@@ -1,4 +1,4 @@
-// $Id: Promise.java,v 1.6 2004/09/16 15:04:25 belaban Exp $
+// $Id: Promise.java,v 1.7 2004/09/22 10:34:15 belaban Exp $
 
 package org.jgroups.util;
 
@@ -15,9 +15,6 @@ public class Promise {
     boolean hasResult=false;
 
 
-
-
-
     /**
      * Blocks until a result is available, or timeout milliseconds have elapsed
      * @param timeout
@@ -25,36 +22,53 @@ public class Promise {
      * @throws TimeoutException. If a timeout occurred (implies that timeout > 0)
      */
     public Object getResultWithTimeout(long timeout) throws TimeoutException {
+        synchronized(this) {
+            try {
+                return _getResultWithTimeout(timeout);
+            }
+            finally {
+                notifyAll();
+            }
+        }
+    }
+
+
+    /**
+     * Blocks until a result is available, or timeout milliseconds have elapsed. Needs to be called with
+     * a lock held on 'this'
+     * @param timeout
+     * @return An object
+     * @throws TimeoutException. If a timeout occurred (implies that timeout > 0)
+     */
+    private Object _getResultWithTimeout(long timeout) throws TimeoutException {
         Object  ret=null;
         long    time_to_wait=timeout, start;
         boolean timeout_occurred=false;
 
-        synchronized(this) {
-            start=System.currentTimeMillis();
-            while(hasResult == false) {
-                if(timeout <= 0) {
-                    doWait();
+        start=System.currentTimeMillis();
+        while(hasResult == false) {
+            if(timeout <= 0) {
+                doWait();
+            }
+            else {
+                if(time_to_wait <= 0) {
+                    timeout_occurred=true;
+                    break; // terminate the while loop
                 }
                 else {
-                    if(time_to_wait <= 0) {
-                        timeout_occurred=true;
-                        break; // terminate the while loop
-                    }
-                    else {
-                        doWait(time_to_wait);
-                        time_to_wait-=System.currentTimeMillis()-start;
-                    }
+                    doWait(time_to_wait);
+                    time_to_wait-=System.currentTimeMillis()-start;
                 }
             }
-
-            ret=result;
-            result=null;
-            hasResult=false;
-            if(timeout_occurred)
-                throw new TimeoutException();
-            else
-                return ret;
         }
+
+        ret=result;
+        result=null;
+        hasResult=false;
+        if(timeout_occurred)
+            throw new TimeoutException();
+        else
+            return ret;
     }
 
     public Object getResult() {

@@ -1,4 +1,4 @@
-// $Id: TotalOrder.java,v 1.5 2004/07/05 05:45:31 belaban Exp $
+// $Id: TotalOrder.java,v 1.6 2004/09/22 10:34:10 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -44,8 +44,8 @@ public class TotalOrder extends Frame {
     long           timeout=0;
     int            field_size=0;
     int            num_fields=0;
-    final int      x_offset=30;
-    final int      y_offset=40;
+    static final int      x_offset=30;
+    static final int      y_offset=40;
 
 
 
@@ -484,7 +484,7 @@ class MyCanvas extends Canvas {
     Image         off_image=null;
     Graphics      off_graphics=null;
     final Font    def_font2=new Font("Helvetica", Font.PLAIN, 12);
-    final Color   checksum_col=Color.blue;
+    static final Color   checksum_col=Color.blue;
     int           checksum=0;
 
 
@@ -582,8 +582,7 @@ class MyCanvas extends Canvas {
 
 	synchronized(array) {
 	    for(int i=0; i < num_fields; i++)
-		for(int j=0; j < num_fields; j++)
-		    retval[i][j]=array[i][j];
+            System.arraycopy(array[i], 0, retval[i], 0, num_fields);
 	    return retval;
 	}
     }

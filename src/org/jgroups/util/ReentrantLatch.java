@@ -42,7 +42,7 @@ public final class ReentrantLatch {
     public synchronized void unlock() {
         if (locked) {
             locked = false;
-            notify();
+            notifyAll();
         }
     }
 
