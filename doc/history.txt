@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.57 2004/04/16 15:22:43 belaban Exp $
+Revision: $Id: history.txt,v 1.58 2004/04/23 00:14:56 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -25,6 +25,9 @@ romuald     = Romuald du Song
 
 Version 2.2.3
 -------------
+
+- Fixed NAKACK retransmission bug (#938584)
+  (bela April 22 2004)
 
 - Minor change in Scheduler: replaced sched_thread.interrupt() with throwing of exception
   (bela April 15 2004)
