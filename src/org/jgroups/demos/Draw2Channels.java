@@ -1,21 +1,20 @@
-// $Id: Draw2Channels.java,v 1.2 2003/09/24 23:20:47 belaban Exp $
+// $Id: Draw2Channels.java,v 1.3 2003/12/26 17:21:59 belaban Exp $
 
 
 package org.jgroups.demos;
 
 
+import org.jgroups.*;
+import org.jgroups.Event;
+import org.jgroups.log.Trace;
+import org.jgroups.util.Util;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.ObjectOutputStream;
 import java.util.Random;
-import org.jgroups.*;
-import org.jgroups.Event;
-import org.jgroups.log.Trace;
-import org.jgroups.util.*;
 
 
 
@@ -27,9 +26,6 @@ import org.jgroups.util.*;
  */
 public class Draw2Channels implements ActionListener {
     private ByteArrayOutputStream  out=new ByteArrayOutputStream();
-    private DataOutputStream       outstream;
-    private DataInputStream        instream;
-    private String                 groupname="Draw2ChannelsGroupDemo";
     private String                 control_groupname="Draw2ChannelsGroup-Control";
     private String                 data_groupname="Draw2ChannelsGroup-Data";
     private Channel                control_channel=null;
@@ -45,7 +41,6 @@ public class Draw2Channels implements ActionListener {
     private JButton                clear_button, leave_button;
     private Random                 random=new Random(System.currentTimeMillis());
     private final Font             default_font=new Font("Helvetica",Font.PLAIN,12);
-    private int                    red=0, green=0, blue=0;
     private Color                  draw_color=selectColor(), background_color=Color.white;
     boolean                        no_channel=false;
 
@@ -69,7 +64,6 @@ public class Draw2Channels implements ActionListener {
 
    public static void main(String[] args) {
 	Draw2Channels    draw=null;
-	String           arg;
 	String           control_props=null, data_props=null;
 	boolean          no_channel=false;
 
@@ -508,7 +502,6 @@ public class Draw2Channels implements ActionListener {
     class ControlReceiver extends Thread {
 	public void run() {
 	    Object    tmp;
-	    Message   msg=null;
 
 	    while(true) {
 		try {
@@ -548,7 +541,6 @@ public class Draw2Channels implements ActionListener {
 	public void run() {
 	    Object      tmp;
 	    Message     msg=null;
-	    int         my_x=10, my_y=10, r=0, g=0, b=0;
 	    DrawCommand comm;
 
 	    while(true) {
