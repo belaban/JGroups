@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.2 2003/11/21 07:57:19 belaban Exp $
+// $Id: GMS.java,v 1.3 2003/11/21 09:06:13 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -285,43 +285,42 @@ public class GMS extends Protocol {
         ViewId vid=new_view.getVid();
         Vector mbrs=new_view.getMembers();
 
-        synchronized(members) {                  // serialize access to views
-            ltime=Math.max(vid.getId(), ltime);  // compute Lamport logical time
+        if(Trace.trace) Trace.info("GMS.installView()", "[local_addr=" + local_addr + "] view is " + new_view);
 
-            /* Check for self-inclusion: if I'm not part of the new membership, I just discard it.
-               This ensures that messages sent in view V1 are only received by members of V1 */
-            if(checkSelfInclusion(mbrs) == false) {
-                if(Trace.trace)
-                    Trace.warn("GMS.installView()", "checkSelfInclusion() failed, " + local_addr +
-                                                    " is not a member of view " + mbrs + "; discarding view");
-
-                // only shun if this member was previously part of the group. avoids problem where multiple
-                // members (e.g. X,Y,Z) join {A,B} concurrently, X is joined first, and Y and Z get view
-                // {A,B,X}, which would cause Y and Z to be shunned as they are not part of the membership
-                // bela Nov 20 2003
-                if(shun && local_addr != null && prev_members.contains(local_addr)) {
-                    if(Trace.trace)
-                        Trace.warn("GMS.installView()", "I (" + local_addr +
-                                                        ") am being shunned, will leave and rejoin group. " +
-                                                        "prev_members are " + prev_members);
-                    passUp(new Event(Event.EXIT));
-                }
+        // Discards view with id lower than our own. Will be installed without check if first view
+        if(view_id != null) {
+            rc=vid.compareTo(view_id);
+            if(rc <= 0) {
+                Trace.error("GMS.installView()", "received view <= current view;" +
+                                                 " discarding it ! (current vid: " + view_id + ", new vid: " + vid + ")");
                 return;
             }
+        }
 
+        ltime=Math.max(vid.getId(), ltime);  // compute Lamport logical time
 
-            // Discards view with id lower than our own. Will be installed without check if first view
-            if(view_id != null) {
-                rc=vid.compareTo(view_id);
-                if(rc <= 0) {
-                    Trace.error("GMS.installView()", "received view <= current view;" +
-                                                     " discarding it ! (current vid: " + view_id + ", new vid: " + vid + ")");
-                    return;
-                }
+        /* Check for self-inclusion: if I'm not part of the new membership, I just discard it.
+        This ensures that messages sent in view V1 are only received by members of V1 */
+        if(checkSelfInclusion(mbrs) == false) {
+            if(Trace.trace)
+                Trace.warn("GMS.installView()", "checkSelfInclusion() failed, " + local_addr +
+                                                " is not a member of view " + new_view + "; discarding view");
+
+            // only shun if this member was previously part of the group. avoids problem where multiple
+            // members (e.g. X,Y,Z) join {A,B} concurrently, X is joined first, and Y and Z get view
+            // {A,B,X}, which would cause Y and Z to be shunned as they are not part of the membership
+            // bela Nov 20 2003
+            if(shun && local_addr != null && prev_members.contains(local_addr)) {
+                if(Trace.trace)
+                    Trace.warn("GMS.installView()", "I (" + local_addr +
+                                                    ") am being shunned, will leave and rejoin group. " +
+                                                    "prev_members are " + prev_members);
+                passUp(new Event(Event.EXIT));
             }
+            return;
+        }
 
-            if(Trace.trace) Trace.info("GMS.installView()", "view is " + new_view);
-
+        synchronized(members) {   // serialize access to views
             // assign new_view to view_id
             view_id=vid.copy();
 
