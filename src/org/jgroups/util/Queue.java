@@ -1,4 +1,4 @@
-// $Id: Queue.java,v 1.16 2004/09/23 16:29:56 belaban Exp $
+// $Id: Queue.java,v 1.17 2004/11/11 09:16:01 belaban Exp $
 
 package org.jgroups.util;
 
@@ -21,22 +21,22 @@ import org.jgroups.TimeoutException;
 public class Queue {
 
     /*head and the tail of the list so that we can easily add and remove objects*/
-    Element head=null, tail=null;
+    private Element head=null, tail=null;
 
     /*flag to determine the state of the queue*/
-    boolean closed=false;
+    private boolean closed=false;
 
     /*current size of the queue*/
-    int     size=0;
+    private int     size=0;
 
     /* Lock object for synchronization. Is notified when element is added */
-    final Object  mutex=new Object();
+    private final Object  mutex=new Object();
 
     /** Lock object for syncing on removes. It is notified when an object is removed */
     // Object  remove_mutex=new Object();
 
     /*the number of end markers that have been added*/
-    int     num_markers=0;
+    private int     num_markers=0;
 
     /**
      * if the queue closes during the runtime
@@ -90,14 +90,18 @@ public class Queue {
      * Returns the first element. Returns null if no elements are available.
      */
     public Object getFirst() {
-        return head != null? head.obj : null;
+        synchronized(mutex) {
+            return head != null? head.obj : null;
+        }
     }
 
     /**
      * Returns the last element. Returns null if no elements are available.
      */
     public Object getLast() {
-        return tail != null? tail.obj : null;
+        synchronized(mutex) {
+            return tail != null? tail.obj : null;
+        }
     }
 
 
@@ -108,7 +112,9 @@ public class Queue {
      * @return true if the queue has been closed
      */
     public boolean closed() {
-        return closed;
+        synchronized(mutex) {
+            return closed;
+        }
     }
 
     /**
@@ -123,14 +129,15 @@ public class Queue {
             if(log.isErrorEnabled()) log.error("argument must not be null");
             return;
         }
-        if(closed)
-            throw new QueueClosedException();
-        if(this.num_markers > 0)
-            throw new QueueClosedException("Queue.add(): queue has been closed. You can not add more elements. " +
-                                           "Waiting for removal of remaining elements.");
 
         /*lock the queue from other threads*/
         synchronized(mutex) {
+           if(closed)
+              throw new QueueClosedException();
+           if(this.num_markers > 0)
+              throw new QueueClosedException("Queue.add(): queue has been closed. You can not add more elements. " +
+                                             "Waiting for removal of remaining elements.");
+
             /*create a new linked list element*/
             Element el=new Element(obj);
             /*check the first element*/
@@ -171,14 +178,15 @@ public class Queue {
             if(log.isErrorEnabled()) log.error("argument must not be null");
             return;
         }
-        if(closed)
-            throw new QueueClosedException();
-        if(this.num_markers > 0)
-            throw new QueueClosedException("Queue.addAtHead(): queue has been closed. You can not add more elements. " +
-                                           "Waiting for removal of remaining elements.");
 
         /*lock the queue from other threads*/
         synchronized(mutex) {
+           if(closed)
+              throw new QueueClosedException();
+           if(this.num_markers > 0)
+              throw new QueueClosedException("Queue.addAtHead(): queue has been closed. You can not add more elements. " +
+                                             "Waiting for removal of remaining elements.");
+
             Element el=new Element(obj);
             /*check the head element in the list*/
             if(head == null) {
@@ -208,7 +216,7 @@ public class Queue {
      */
     public Object remove() throws QueueClosedException {
         /*initialize the return value*/
-        Object retval=null;
+        Object retval;
         /*lock the queue*/
         synchronized(mutex) {
             /*wait as long as the queue is empty. return when an element is present or queue is closed*/
@@ -253,25 +261,22 @@ public class Queue {
      * @return the first object in the queue
      */
     public Object remove(long timeout) throws QueueClosedException, TimeoutException {
-        Object retval=null;
+        Object retval;
 
-        /*lock the queue*/
         synchronized(mutex) {
-
-            /*check to see if the queue is closed*/
             if(closed)
                 throw new QueueClosedException();
 
             /*if the queue size is zero, we want to wait until a new object is added*/
             if(size == 0) {
                 try {
-                    /*release the add_mutex lock and wait no more than timeout ms*/
+                    /*release the mutex lock and wait no more than timeout ms*/
                     mutex.wait(timeout);
                 }
                 catch(InterruptedException ex) {
                 }
             }
-            /*we either timed out, or got notified by the add_mutex lock object*/
+            /*we either timed out, or got notified by the mutex lock object*/
 
             /*get the next value*/
             retval=removeInternal();
@@ -302,11 +307,8 @@ public class Queue {
             return;
         }
 
-        /*lock the queue*/
         synchronized(mutex) {
-
-            /*check to see if the queue is closed*/
-            if(closed)
+            if(closed) /*check to see if the queue is closed*/
                 throw new QueueClosedException();
 
             el=head;
@@ -326,12 +328,6 @@ public class Queue {
                 if(size == 1)
                     tail=head;  // null
                 decrementSize();
-
-//                if(size == 0) {
-//                    synchronized(remove_mutex) {
-//                        remove_mutex.notifyAll();
-//                    }
-//                }
                 return;
             }
 
@@ -344,11 +340,6 @@ public class Queue {
                     el.next=el.next.next;  // point to the el past the next one. can be null.
                     tmp_el.next=null;
                     decrementSize();
-//                    if(size == 0) {
-//                        synchronized(remove_mutex) {
-//                            remove_mutex.notifyAll();
-//                        }
-//                    }
                     break;
                 }
                 el=el.next;
@@ -364,7 +355,7 @@ public class Queue {
      * @return the first object on the queue
      */
     public Object peek() throws QueueClosedException {
-        Object retval=null;
+        Object retval;
 
         synchronized(mutex) {
             while(size == 0) {
@@ -386,7 +377,7 @@ public class Queue {
             if(retval == null) {
                 // print some diagnostics
                 if(log.isErrorEnabled()) log.error("retval is null: head=" + head + ", tail=" + tail + ", size()=" + size() +
-                                            ", num_markers=" + num_markers + ", closed()=" + closed());
+                                            ", num_markers=" + num_markers + ", closed=" + closed);
             }
         }
 
@@ -407,9 +398,8 @@ public class Queue {
      *        before it times out
      * @return the first object on the queue
      */
-
     public Object peek(long timeout) throws QueueClosedException, TimeoutException {
-        Object retval=null;
+        Object retval;
 
         synchronized(mutex) {
             if(size == 0) {
@@ -446,24 +436,19 @@ public class Queue {
      pending messages before closing the queue.
      */
     public void close(boolean flush_entries) {
-        if(flush_entries) {
-            try {
-                add(endMarker); // add an end-of-entries marker to the end of the queue
-                num_markers++;
-            }
-            catch(QueueClosedException closed_ex) {
-            }
-            return;
-        }
-
         synchronized(mutex) {
+            if(flush_entries) {
+                try {
+                    add(endMarker); // add an end-of-entries marker to the end of the queue
+                    num_markers++;
+                }
+                catch(QueueClosedException closed_ex) {
+                }
+                return;
+            }
             closed=true;
             mutex.notifyAll();
         }
-
-//        synchronized(remove_mutex) {
-//            remove_mutex.notifyAll();
-//        }
     }
 
 
@@ -472,21 +457,16 @@ public class Queue {
      * This operation removes all the objects in the queue and marks the queue open
      */
     public void reset() {
-        num_markers=0;
-        if(!closed)
-            close(false);
-
         synchronized(mutex) {
+           num_markers=0;
+           if(!closed)
+              close(false);
             size=0;
             head=null;
             tail=null;
             closed=false;
             mutex.notifyAll();
         }
-
-//        synchronized(remove_mutex) {
-//            remove_mutex.notifyAll();
-//        }
     }
 
 
@@ -494,7 +474,9 @@ public class Queue {
      * returns the number of objects that are currently in the queue
      */
     public int size() {
-        return size - num_markers;
+        synchronized(mutex) {
+            return size - num_markers;
+        }
     }
 
     /**
@@ -505,54 +487,12 @@ public class Queue {
     }
 
 
-
-    /**
-     * Blocks until the queue has no elements left. If the queue is empty, the call will return
-     * immediately
-     * @param timeout Call returns if timeout has elapsed (number of milliseconds). 0 means to wait forever
-     * @throws QueueClosedException Thrown if queue has been closed
-     * @throws TimeoutException Thrown if timeout has elapsed
-     */
-    /*public void waitUntilEmpty(long timeout) throws QueueClosedException, TimeoutException {
-        long time_to_wait=timeout;
-
-        synchronized(remove_mutex) {
-            if(timeout == 0) {
-                while(size > 0 && closed == false) {
-                    try {
-                        remove_mutex.wait(0);
-                    }
-                    catch(InterruptedException e) {
-                        ;
-                    }
-                }
-            }
-            else {
-                long start_time=System.currentTimeMillis();
-                while(time_to_wait > 0 && size > 0 && closed == false) {
-                    try {
-                        remove_mutex.wait(time_to_wait);
-                    }
-                    catch(InterruptedException ex) {
-
-                    }
-                    time_to_wait-=(System.currentTimeMillis() - start_time);
-                }
-                if(size > 0)
-                    throw new TimeoutException("queue has " + size + " elements");
-            }
-            if(closed)
-                throw new QueueClosedException();
-        }
-    }
-*/
-
     /* ------------------------------------- Private Methods ----------------------------------- */
 
 
     /**
      * Removes the first element. Returns null if no elements in queue.
-     * Always called with add_mutex locked (we don't have to lock add_mutex ourselves)
+     * Always called with mutex locked (we don't have to lock mutex ourselves)
      */
     private Object removeInternal() {
         Element retval;
@@ -568,12 +508,6 @@ public class Queue {
             tail=null;
 
         decrementSize();
-//        if(size == 0) {
-//            synchronized(remove_mutex) {
-//                remove_mutex.notifyAll();
-//            }
-//        }
-
         if(head != null && head.obj == endMarker) {
             closed=true;
         }
@@ -583,6 +517,7 @@ public class Queue {
     }
 
 
+    /** Doesn't need to be synchronized; is always called from synchronized methods */
     void decrementSize() {
         size--;
         if(size < 0)
