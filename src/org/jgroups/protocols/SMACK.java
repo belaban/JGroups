@@ -1,4 +1,4 @@
-// $Id: SMACK.java,v 1.1 2003/09/09 01:24:10 belaban Exp $
+// $Id: SMACK.java,v 1.2 2003/12/11 02:39:59 ovidiuf Exp $
 
 package org.jgroups.protocols;
 
@@ -46,7 +46,7 @@ import org.jgroups.log.Trace;
  * </ul>
  * Advantage of this protocol: no group membership necessary, fast.
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.2 $
  * todo: initial mcast to announce new member (for view change)
  * todo: fix membershop bug: start a, b, kill b, restart b: b will be suspected by a
  */
@@ -240,15 +240,19 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
                 break;
 
             case Event.CONNECT:
-                passUp(new Event(Event.CONNECT_OK));
+                //passUp(new Event(Event.CONNECT_OK));
 
-                sender_win=new AckMcastSenderWindow(this, timeout);
+                // Do not send JOIN_ANOUNCEMENT here, don't know yet if the transport is OK.
+                // Send it later when handling CONNECT_OK from below
 
-                // send join announcement
-                Message join_msg=new Message();
-                join_msg.putHeader(name, new SmackHeader(SmackHeader.JOIN_ANNOUNCEMENT, -1));
-                passDown(new Event(Event.MSG, join_msg));
-                return;
+//                 sender_win=new AckMcastSenderWindow(this, timeout);
+//                 // send join announcement
+//                 Message join_msg=new Message();
+//                 join_msg.putHeader(name, new SmackHeader(SmackHeader.JOIN_ANNOUNCEMENT, -1));
+//                 passDown(new Event(Event.MSG, join_msg));
+//                 return;
+
+                break;
 
 
 // add a header with the current sequence number and increment seqno
