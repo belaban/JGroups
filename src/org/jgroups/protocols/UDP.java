@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.56 2005/01/07 10:36:23 belaban Exp $
+// $Id: UDP.java,v 1.57 2005/01/28 15:43:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -780,8 +780,12 @@ public class UDP extends Protocol implements Runnable {
     }
 
 
-    /** Send a message to the address specified in dest */
     void sendUdpMessage(Message msg) throws Exception {
+        sendUdpMessage(msg, false);
+    }
+
+    /** Send a message to the address specified in dest */
+    void sendUdpMessage(Message msg, boolean copyForOutgoingQueue) throws Exception {
         IpAddress           dest;
         Message             copy;
         Event               evt;
@@ -813,7 +817,10 @@ public class UDP extends Protocol implements Runnable {
         }
 
         if(use_outgoing_packet_handler) {
-            outgoing_queue.add(msg);
+            if(copyForOutgoingQueue)
+                outgoing_queue.add(msg.copy());
+            else
+                outgoing_queue.add(msg);
             return;
         }
 
@@ -856,7 +863,8 @@ public class UDP extends Protocol implements Runnable {
             msg.setDest(dest);
 
             try {
-                sendUdpMessage(msg);
+                sendUdpMessage(msg,
+                               true); // copy for outgoing queue if outgoing queue handler is enabled
             }
             catch(Exception e) {
                 if(log.isDebugEnabled()) log.debug("exception=" + e);
