@@ -1,4 +1,4 @@
-// $Id: PING.java,v 1.13 2004/05/05 17:39:45 belaban Exp $
+// $Id: PING.java,v 1.14 2004/07/05 05:51:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -29,8 +29,8 @@ import java.util.*;
  * property: gossip_port - if you are using GOSSIP then this defines the port of the GossipServer, default is null
  */
 public class PING extends Protocol {
-    Vector members=new Vector(), initial_members=new Vector();
-    Set members_set=new HashSet(); //copy of the members vector for fast random access    
+    Vector members=new Vector(11), initial_members=new Vector(11);
+    Set members_set=new HashSet(11); //copy of the members vector for fast random access
     Address local_addr=null;
     String group_addr=null;
     long timeout=3000;
@@ -49,7 +49,7 @@ public class PING extends Protocol {
 
 
     public Vector providedUpServices() {
-        Vector ret=new Vector();
+        Vector ret=new Vector(1);
         ret.addElement(new Integer(Event.FIND_INITIAL_MBRS));
         return ret;
     }
@@ -72,7 +72,7 @@ public class PING extends Protocol {
         super.setProperties(props);
         str=props.getProperty("timeout");              // max time to wait for initial members
         if(str != null) {
-            timeout=new Long(str).longValue();
+            timeout=Long.parseLong(str);
             if(timeout <= 0)
                 if(log.isErrorEnabled()) log.error("timeout must be > 0");
             props.remove("timeout");
@@ -80,7 +80,7 @@ public class PING extends Protocol {
 
         str=props.getProperty("num_initial_members");  // wait for at most n members
         if(str != null) {
-            num_initial_members=new Integer(str).intValue();
+            num_initial_members=Integer.parseInt(str);
             props.remove("num_initial_members");
         }
 
@@ -92,13 +92,13 @@ public class PING extends Protocol {
 
         str=props.getProperty("gossip_port");
         if(str != null) {
-            gossip_port=new Integer(str).intValue();
+            gossip_port=Integer.parseInt(str);
             props.remove("gossip_port");
         }
 
         str=props.getProperty("gossip_refresh");
         if(str != null) {
-            gossip_refresh=new Long(str).longValue();
+            gossip_refresh=Long.parseLong(str);
             props.remove("gossip_refresh");
         }
 
@@ -114,7 +114,7 @@ public class PING extends Protocol {
 
         str=props.getProperty("port_range");           // if member cannot be contacted on base port,
         if(str != null) {                              // how many times can we increment the port
-            port_range=new Integer(str).intValue();
+            port_range=Integer.parseInt(str);
             if (port_range < 1) {
                port_range = 1;    
             }
@@ -135,7 +135,7 @@ public class PING extends Protocol {
                     sb.append(", ");
                 }
             }
-            if(log.isErrorEnabled()) log.error("The following properties are not recognized: " + sb.toString());
+            if(log.isErrorEnabled()) log.error("The following properties are not recognized: " + sb);
             return false;
         }
         return true;
@@ -225,7 +225,7 @@ public class PING extends Protocol {
                         return;
 
                     default:
-                        if(log.isWarnEnabled()) log.warn("got PING header with unknown type (" + hdr.type + ")");
+                        if(log.isWarnEnabled()) log.warn("got PING header with unknown type (" + hdr.type + ')');
                         return;
                 }
 
@@ -453,7 +453,7 @@ public class PING extends Protocol {
             try {
                 t=tok.nextToken();
                 String host=t.substring(0, t.indexOf('['));
-                int port=new Integer(t.substring(t.indexOf('[') + 1, t.indexOf(']'))).intValue();
+                int port=Integer.parseInt(t.substring(t.indexOf('[') + 1, t.indexOf(']')));
                 List hosts = new List();
                 for(int i=port; i < port + port_range; i++) {
                    hosts.add(new IpAddress(host, i));

@@ -1,4 +1,4 @@
-// $Id: Hot_Error.java,v 1.1 2003/09/09 01:24:09 belaban Exp $
+// $Id: Hot_Error.java,v 1.2 2004/07/05 05:48:44 belaban Exp $
 
 package org.jgroups.ensemble;
 
@@ -12,7 +12,7 @@ public class Hot_Error {
     }
 
     public String toString() {
-	return new String("Hot_Error: " + val + ": " + msg);
+	return "Hot_Error: " + val + ": " + msg;
     }
 
 }

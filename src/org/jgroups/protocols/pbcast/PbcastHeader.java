@@ -1,4 +1,4 @@
-// $Id: PbcastHeader.java,v 1.2 2004/03/30 06:47:18 belaban Exp $
+// $Id: PbcastHeader.java,v 1.3 2004/07/05 05:49:41 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -62,7 +62,7 @@ public class PbcastHeader extends Header {
 	StringBuffer sb=new StringBuffer();
 	sb.append("[PBCAST(" + type2String(type) + "), seqno=" + seqno);
 	if(gossip != null) sb.append(", gossip=" + gossip);
-	sb.append("]");
+	sb.append(']');
 	return sb.toString();
     }
 

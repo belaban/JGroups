@@ -1,4 +1,4 @@
-// $Id: WANPIPE.java,v 1.3 2004/04/23 19:36:13 belaban Exp $
+// $Id: WANPIPE.java,v 1.4 2004/07/05 05:51:25 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -45,7 +45,7 @@ public class WANPIPE extends Protocol implements LogicalLink.Receiver {
 
 
     public String toString() {
-	return "Protocol WANPIPE(local address: " + local_addr + ")";
+	return "Protocol WANPIPE(local address: " + local_addr + ')';
     }
 
 
@@ -253,7 +253,7 @@ public class WANPIPE extends Protocol implements LogicalLink.Receiver {
 		return false;
 	    }
 	    info.local_addr=src.substring(0, index);
-	    info.local_port=new Integer(src.substring(index+1, src.length())).intValue();
+	    info.local_port=Integer.parseInt(src.substring(index + 1, src.length()));
 
 	    index=dst.indexOf('@');
 	    if(index == -1) {
@@ -261,7 +261,7 @@ public class WANPIPE extends Protocol implements LogicalLink.Receiver {
 		return false;
 	    }
 	    info.remote_addr=dst.substring(0, index);
-	    info.remote_port=new Integer(dst.substring(index+1, dst.length())).intValue();
+	    info.remote_port=Integer.parseInt(dst.substring(index + 1, dst.length()));
 
 	    links.add(info);
 	}
@@ -406,7 +406,7 @@ public class WANPIPE extends Protocol implements LogicalLink.Receiver {
 	}
 	
 	public String toString() {
-	    return "[WanPipe: group_addr=" + group_addr + "]";
+	    return "[WanPipe: group_addr=" + group_addr + ']';
 	}
 	
 	public void writeExternal(ObjectOutput out) throws IOException {

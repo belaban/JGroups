@@ -83,7 +83,7 @@ public class MERGEFAST extends Protocol {
 
     // todo: avoid sending up too many MERGE events
     void sendUpMerge(Address[] addresses) {
-        Vector v=new Vector();
+        Vector v=new Vector(11);
         for(int i=0; i < addresses.length; i++) {
             Address addr=addresses[i];
             v.add(addr);

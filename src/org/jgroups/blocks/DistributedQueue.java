@@ -1,4 +1,4 @@
-// $Id: DistributedQueue.java,v 1.10 2004/05/15 00:19:28 belaban Exp $
+// $Id: DistributedQueue.java,v 1.11 2004/07/05 05:41:45 belaban Exp $
 package org.jgroups.blocks;
 
 import org.apache.log4j.Logger;
@@ -68,7 +68,7 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
     {
         if (logger.isDebugEnabled())
         {
-            logger.debug("DistributedQueue(" + groupname + "," + properties + "," + state_timeout);
+            logger.debug("DistributedQueue(" + groupname + ',' + properties + ',' + state_timeout);
         }
 
         this.groupname = groupname;
@@ -302,7 +302,7 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
         }
          catch (Exception e)
         {
-            logger.error("DistributedQueue.reset(" + groupname + ")", e);
+            logger.error("DistributedQueue.reset(" + groupname + ')', e);
         }
     }
 
@@ -441,7 +441,7 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
     {
         if (logger.isDebugEnabled())
         {
-            logger.debug(groupname + "@" + getLocalAddress() + " _add(" + value + ")");
+            logger.debug(groupname + '@' + getLocalAddress() + " _add(" + value + ')');
         }
 
         /*lock the queue from other threads*/
@@ -476,7 +476,7 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
     {
         if (logger.isDebugEnabled())
         {
-            logger.debug(groupname + "@" + getLocalAddress() + " _reset()");
+            logger.debug(groupname + '@' + getLocalAddress() + " _reset()");
         }
 
         _private_reset();
@@ -514,7 +514,7 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
 
             if (logger.isDebugEnabled())
             {
-                logger.debug(groupname + "@" + getLocalAddress() + "_remove(" + retval + ")");
+                logger.debug(groupname + '@' + getLocalAddress() + "_remove(" + retval + ')');
             }
 
             for (int i = 0; i < notifs.size(); i++)
@@ -522,7 +522,7 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
         }
          catch (NoSuchElementException e)
         {
-            logger.debug(groupname + "@" + getLocalAddress() + "_remove(): nothing to remove");
+            logger.debug(groupname + '@' + getLocalAddress() + "_remove(): nothing to remove");
         }
 
         return retval;
@@ -532,7 +532,7 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
     {
         if (logger.isDebugEnabled())
         {
-            logger.debug(groupname + "@" + getLocalAddress() + " _addAll(" + c + ")");
+            logger.debug(groupname + '@' + getLocalAddress() + " _addAll(" + c + ')');
         }
 
         /*lock the queue from other threads*/

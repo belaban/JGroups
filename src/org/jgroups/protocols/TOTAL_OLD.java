@@ -1,4 +1,4 @@
-// $Id: TOTAL_OLD.java,v 1.3 2004/04/23 19:36:13 belaban Exp $
+// $Id: TOTAL_OLD.java,v 1.4 2004/07/05 05:51:25 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -73,7 +73,7 @@ class SavedMessages {
 		    index++;
 		}
 	    } catch ( java.lang.ClassCastException e ) {
-		System.err.println( "Error: (TOTAL_OLD) SavedMessages.insertMessage() - ClassCastException: could not cast element of \"messages\" to an Entry (index " + index + ")" );
+		System.err.println( "Error: (TOTAL_OLD) SavedMessages.insertMessage() - ClassCastException: could not cast element of \"messages\" to an Entry (index " + index + ')' );
 		return;
 	    }
 
@@ -105,7 +105,7 @@ class SavedMessages {
 		    index++;
 		}
 	    } catch ( java.lang.ClassCastException e ) {
-		System.err.println( "Error: (TOTAL_OLD) SavedMessages.getMessage() - ClassCastException: could not cast element of \"messages\" to an Entry (index " + index + ")" );
+		System.err.println( "Error: (TOTAL_OLD) SavedMessages.getMessage() - ClassCastException: could not cast element of \"messages\" to an Entry (index " + index + ')' );
 		return null;
 	    }
 	    // determine if we found the specified sequence
@@ -122,7 +122,7 @@ class SavedMessages {
 
 		    return ret_val;
 		} else {
-		    System.err.println( "Error: (TOTAL_OLD) SavedMessages.getMessage() - could not cast element of \"messages\" to an Entry (index " + index + ")" );
+		    System.err.println( "Error: (TOTAL_OLD) SavedMessages.getMessage() - could not cast element of \"messages\" to an Entry (index " + index + ')' );
 		    return null;
 		} // if ( temp_obj instanceof Entry )
 	    } else {
@@ -410,7 +410,7 @@ class MessageAcks {
 			ret_val = this_seq;
 		    }
 		} else {
-		    System.err.println( "Error: (TOTAL_OLD) MessageAcks.getLowestSeqAck() - could not cast element of \"acks\" to an Entry (index=" + i + ")" );
+		    System.err.println( "Error: (TOTAL_OLD) MessageAcks.getLowestSeqAck() - could not cast element of \"acks\" to an Entry (index=" + i + ')' );
 		    return -1;
 		}
 	    }
@@ -717,7 +717,7 @@ public class TOTAL_OLD extends Protocol {
 	if ( lowest_seq_stored < next_seq_id ) {
 	    // it is bad to have messages stored that have a lower sequence id than what
 	    //   we are expecting
-	    System.err.println( "Error: TOTAL_OLD.passUpMessages() - next expected sequence id (" + next_seq_id + ") is greater than the sequence id of a stored message (" + lowest_seq_stored + ")" );
+	    System.err.println( "Error: TOTAL_OLD.passUpMessages() - next expected sequence id (" + next_seq_id + ") is greater than the sequence id of a stored message (" + lowest_seq_stored + ')' );
 	    return 0;
 	} else if ( next_seq_id == lowest_seq_stored ) {
 	    // we can pass this first message up the Protocol Stack
@@ -1154,7 +1154,7 @@ if ( num_passed > 1 )
 		break;
 
 	    default:
-		type = "UNKNOWN TYPE (" + total_header_type + ")";
+		type = "UNKNOWN TYPE (" + total_header_type + ')';
 		break;
 	    }
 

@@ -1,4 +1,4 @@
-// $Id: ReplicationData.java,v 1.2 2004/03/30 06:47:12 belaban Exp $
+// $Id: ReplicationData.java,v 1.3 2004/07/05 05:41:45 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -74,7 +74,7 @@ public class ReplicationData implements Externalizable {
         case ROLLBACK:
             break;
         }
-        sb.append("]");
+        sb.append(']');
         return sb.toString();
     }
 

@@ -1,4 +1,4 @@
-// $Id: NakAckHeader.java,v 1.3 2004/03/30 06:47:18 belaban Exp $
+// $Id: NakAckHeader.java,v 1.4 2004/07/05 05:49:41 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -97,7 +97,7 @@ public class NakAckHeader extends Header {
         StringBuffer ret=new StringBuffer();
         ret.append("[NAKACK: ").append(type2Str(type)).append(", seqno=").append(seqno);
         ret.append(", range=").append(range);
-        ret.append("]");
+        ret.append(']');
         return ret.toString();
     }
 

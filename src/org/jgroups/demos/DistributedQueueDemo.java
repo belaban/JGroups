@@ -1,4 +1,4 @@
-// $Id: DistributedQueueDemo.java,v 1.4 2004/03/30 06:47:16 belaban Exp $
+// $Id: DistributedQueueDemo.java,v 1.5 2004/07/05 05:45:31 belaban Exp $
 package org.jgroups.demos;
 
 import org.jgroups.ChannelException;
@@ -196,7 +196,7 @@ public class DistributedQueueDemo extends Frame implements WindowListener, Actio
                     return;
                 }
 
-                showMsg("Adding value " + value_name + ":");
+                showMsg("Adding value " + value_name + ':');
                 h.add(value_name);
             }
             else if (command == "All")
@@ -274,13 +274,13 @@ public class DistributedQueueDemo extends Frame implements WindowListener, Actio
             {
                 arg = args[i];
 
-                if (arg.equals("-trace"))
+                if ("-trace".equals(arg))
                 {
                     trace = true;
                     continue;
                 }
 
-                if (args[i].equals("-groupname"))
+                if ("-groupname".equals(args[i]))
                 {
                     groupname = args[++i];
                     continue;

@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.8 2004/05/18 01:18:50 belaban Exp $
+// $Id: TCP.java,v 1.9 2004/07/05 05:51:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -40,7 +40,7 @@ public class TCP extends Protocol implements ConnectionTable.Receiver, Connectio
     private String          group_addr=null;
     private InetAddress     bind_addr=null;  // local IP address to bind srv sock to (m-homed systems)
     private int             start_port=7800; // find first available port starting at this port
-    private Vector          members=new Vector();
+    private Vector          members=new Vector(11);
     private long            reaper_interval=0;  // time in msecs between connection reaps
     private long            conn_expire_time=0; // max time a conn can be idle before being reaped
     boolean                 loopback=false;     // loops back msgs to self if true
@@ -66,7 +66,7 @@ public class TCP extends Protocol implements ConnectionTable.Receiver, Connectio
     }
 
     public String toString() {
-        return "Protocol TCP(local address: " + local_addr + ")";
+        return "Protocol TCP(local address: " + local_addr + ')';
     }
 
     public String getName() {
@@ -235,7 +235,7 @@ public class TCP extends Protocol implements ConnectionTable.Receiver, Connectio
         super.setProperties(props);
         str=props.getProperty("start_port");
         if(str != null) {
-            start_port=new Integer(str).intValue();
+            start_port=Integer.parseInt(str);
             props.remove("start_port");
         }
 
@@ -277,13 +277,13 @@ public class TCP extends Protocol implements ConnectionTable.Receiver, Connectio
 
         str=props.getProperty("loopback");
         if(str != null) {
-            loopback=new Boolean(str).booleanValue();
+            loopback=Boolean.valueOf(str).booleanValue();
             props.remove("loopback");
         }
 
         str=props.getProperty("skip_suspected_members");
         if(str != null) {
-            skip_suspected_members=new Boolean(str).booleanValue();
+            skip_suspected_members=Boolean.valueOf(str).booleanValue();
             props.remove("skip_suspected_members");
         }
 

@@ -1,4 +1,4 @@
-// $Id: CAUSAL.java,v 1.4 2004/03/30 06:47:20 belaban Exp $
+// $Id: CAUSAL.java,v 1.5 2004/07/05 05:51:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -62,7 +62,7 @@ import java.util.Vector;
  *    for every k:1...n VT(pj)[k] == max(VT(mi)[k],VT(pj)[k])
  *</p>
  *  @author Vladimir Blagojevic vladimir@cs.yorku.ca
- *  @version $Revision: 1.4 $
+ *  @version $Revision: 1.5 $
  *
  **/
 
@@ -132,7 +132,7 @@ public class CAUSAL extends Protocol
 
       public String toString()
       {
-         return "[CAUSALHEADER:" + t + "]";
+         return "[CAUSALHEADER:" + t + ']';
       }
    }
 

@@ -1,4 +1,4 @@
-// $Id: ReplicatedTreeDemo.java,v 1.3 2004/03/30 06:47:16 belaban Exp $
+// $Id: ReplicatedTreeDemo.java,v 1.4 2004/07/05 05:45:31 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -588,7 +588,7 @@ public class ReplicatedTreeDemo {
                 StringBuffer sb=new StringBuffer();
 
                 for(int i=0; i < indent; i++)
-                    sb.append(" ");
+                    sb.append(' ');
                 if(!isRoot()) {
                     if(name == null)
                         sb.append("/<unnamed>");
@@ -596,7 +596,7 @@ public class ReplicatedTreeDemo {
                         sb.append(ReplicatedTreeView.SEP + name);
                     }
                 }
-                sb.append("\n");
+                sb.append('\n');
                 if(getChildCount() > 0) {
                     if(isRoot())
                         indent=0;
@@ -640,11 +640,11 @@ public class ReplicatedTreeDemo {
 
 
         for(int i=0; i < args.length; i++) {
-            if(args[i].equals("-props")) {
+            if("-props".equals(args[i])) {
                 props=args[++i];
                 continue;
             }
-            if(args[i].equals("-start_directory")) {
+            if("-start_directory".equals(args[i])) {
                 start_directory=args[++i];
                 continue;
             }
@@ -693,7 +693,7 @@ public class ReplicatedTreeDemo {
             String[] children=file.list();
             if(children != null && children.length > 0) {
                 for(int i=0; i < children.length; i++)
-                    populateTree(tree, dir + "/" + children[i]);
+                    populateTree(tree, dir + '/' + children[i]);
             }
         }
     }

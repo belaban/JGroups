@@ -1,4 +1,4 @@
-// $Id: FC.java,v 1.10 2004/05/11 00:14:52 belaban Exp $
+// $Id: FC.java,v 1.11 2004/07/05 05:51:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -18,7 +18,7 @@ import java.util.*;
  * Note that this protocol must be located towards the top of the stack, or all down_threads from JChannel to this
  * protocol must be set to false ! This is in order to block JChannel.send()/JChannel.down().
  * @author Bela Ban
- * @version $Revision: 1.10 $
+ * @version $Revision: 1.11 $
  */
 public class FC extends Protocol {
 
@@ -27,19 +27,19 @@ public class FC extends Protocol {
 
     /** HashMap<Address,Long>: keys are members, values are credits left. For each send, the
      * number of credits is decremented by the message size */
-    HashMap sent=new HashMap();
+    HashMap sent=new HashMap(11);
 
     /** HashMap<Address,Long>: keys are members, values are credits left (in bytes).
      * For each receive, the credits for the sender are decremented by the size of the received message.
      * When the credits are 0, we refill and send a CREDIT message to the sender. Sender blocks until CREDIT
      * is received after reaching <tt>min_credits</tt> credits. */
-    HashMap received=new HashMap();
+    HashMap received=new HashMap(11);
 
     /** We cache the membership */
-    Vector members=new Vector();
+    Vector members=new Vector(11);
 
     /** List of members from whom we expect credits */
-    List creditors=new ArrayList();
+    List creditors=new ArrayList(11);
 
     /** Max number of bytes to send per receiver until an ack must
      * be received before continuing sending */
@@ -83,7 +83,7 @@ public class FC extends Protocol {
 
         str=props.getProperty("min_threshold");
         if(str != null) {
-            min_threshold=new Double(str).doubleValue();
+            min_threshold=Double.parseDouble(str);
             props.remove("min_threshold");
         }
 
@@ -361,7 +361,7 @@ public class FC extends Protocol {
             else {
                 if(log.isTraceEnabled()) log.trace("insufficient credit for " + mbr +
                         ": credits left=" + credits_left + ", credits required=" + credits_required +
-                        " (min_credits=" + min_credits + ")");
+                        " (min_credits=" + min_credits + ')');
                 return false;
             }
         }
@@ -458,7 +458,7 @@ public class FC extends Protocol {
         StringBuffer sb=new StringBuffer();
         for(Iterator it=sent.entrySet().iterator(); it.hasNext();) {
             Map.Entry entry=(Map.Entry)it.next();
-            sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
+            sb.append(entry.getKey()).append(": ").append(entry.getValue()).append('\n');
         }
         return sb.toString();
     }
@@ -468,15 +468,15 @@ public class FC extends Protocol {
         StringBuffer sb=new StringBuffer();
         for(Iterator it=tmp.entrySet().iterator(); it.hasNext();) {
             Map.Entry entry=(Map.Entry)it.next();
-            sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
+            sb.append(entry.getKey()).append(": ").append(entry.getValue()).append('\n');
         }
         return sb.toString();
     }
 
     String dumpMessages() {
         StringBuffer sb=new StringBuffer();
-        sb.append("sent:\n").append(sent).append("\n");
-        sb.append("received:\n").append(received).append("\n");
+        sb.append("sent:\n").append(sent).append('\n');
+        sb.append("received:\n").append(received).append('\n');
         return sb.toString();
     }
 

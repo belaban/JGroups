@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.3 2004/04/23 19:36:13 belaban Exp $
+// $Id: STABLE.java,v 1.4 2004/07/05 05:51:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -63,7 +63,7 @@ public class STABLE extends RpcProtocol {
 
     private Address local_addr=null;
     private ViewId vid=null;
-    private Vector mbrs=new Vector();
+    private Vector mbrs=new Vector(11);
 
     /** gossip round */
     private long round=1;
@@ -117,7 +117,7 @@ public class STABLE extends RpcProtocol {
      * above
      */
     public Vector requiredUpServices() {
-        Vector retval=new Vector();
+        Vector retval=new Vector(1);
         retval.addElement(new Integer(Event.GET_MSGS_RECEIVED));
         return retval;
     }
@@ -149,13 +149,13 @@ public class STABLE extends RpcProtocol {
         super.setProperties(props);
         str=props.getProperty("subset");
         if(str != null) {
-            subset=new Float(str).floatValue();
+            subset=Float.parseFloat(str);
             props.remove("subset");
         }
 
         str=props.getProperty("max_msgs");
         if(str != null) {
-            num_msgs=max_msgs=new Integer(str).intValue();
+            num_msgs=max_msgs=Integer.parseInt(str);
             if(max_msgs <= 1) {
                 if(log.isFatalEnabled()) log.fatal("value for 'max_msgs' must be greater than 1 !");
                 return false;
@@ -165,13 +165,13 @@ public class STABLE extends RpcProtocol {
 
         str=props.getProperty("max_wait_time");
         if(str != null) {
-            max_wait_time=new Long(str).longValue();
+            max_wait_time=Long.parseLong(str);
             props.remove("max_wait_time");
         }
 
         str=props.getProperty("highest_seqnos_timeout");
         if(str != null) {
-            highest_seqnos_timeout=new Long(str).longValue();
+            highest_seqnos_timeout=Long.parseLong(str);
             props.remove("highest_seqnos_timeout");
         }
 
@@ -324,7 +324,7 @@ public class STABLE extends RpcProtocol {
         synchronized(this) {
 
                 if(log.isInfoEnabled()) log.info("sender=" + sender + ", round=" + gossip_round + ", vector=" +
-                        Util.array2String(stability_vector) + ")");
+                        Util.array2String(stability_vector) + ')');
             if(vid == null || view_id == null || !vid.equals(view_id)) {
 
                     if(log.isInfoEnabled()) log.info("view ID s are different (" + vid + " != " + view_id +
@@ -671,11 +671,10 @@ public class STABLE extends RpcProtocol {
                         if(log.isInfoEnabled()) log.info("GET_MSGS_RECEIVED: array of highest " +
                                 "seqnos seen so far (received from NAKACK layer) " +
                                 "has a different length (" + new_seqnos.length +
-                                ") from 'seqnos' array (" + seqnos.length + ")");
+                                ") from 'seqnos' array (" + seqnos.length + ')');
                     return (true);
                 }
-                for(int i=0; i < seqnos.length; i++)
-                    seqnos[i]=new_seqnos[i];
+                System.arraycopy(new_seqnos, 0, seqnos, 0, seqnos.length);
             }
 
         }

@@ -1,4 +1,4 @@
-// $Id: BSH.java,v 1.6 2004/04/23 19:36:12 belaban Exp $
+// $Id: BSH.java,v 1.7 2004/07/05 05:51:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -94,7 +94,7 @@ public class BSH extends Protocol {
                         return;
                     default:
                         if(log.isErrorEnabled()) log.error("header type was not REQ as expected" +
-                                    " (was " + type + ")");
+                                    " (was " + type + ')');
                         return;
                 }
             }

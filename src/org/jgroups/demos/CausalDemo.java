@@ -1,4 +1,4 @@
-// $Id: CausalDemo.java,v 1.2 2004/03/30 06:47:16 belaban Exp $
+// $Id: CausalDemo.java,v 1.3 2004/07/05 05:45:31 belaban Exp $
 package org.jgroups.demos;
 
 import org.jgroups.*;
@@ -109,13 +109,13 @@ public class CausalDemo implements Runnable
                msg = (Message) obj;
                cm = (CausalMessage) msg.getObject();
                Vector members = channel.getView().getMembers();
-               String receivedLetter = new String(cm.message);
+               String receivedLetter = cm.message;
 
-               if(receivedLetter.equals("Z"))
+               if("Z".equals(receivedLetter))
                {
                   channel.send(new Message(null, null, new CausalMessage("done", null)));
                }
-               if(receivedLetter.equals("done"))
+               if("done".equals(receivedLetter))
                {
                   if(++doneCount >= members.size())
                   {
@@ -166,11 +166,11 @@ public class CausalDemo implements Runnable
       boolean    start=false;
 
       for(int i=0; i < args.length; i++) {
-	  if(args[i].equals("-help")) {
+	  if("-help".equals(args[i])) {
 	      System.out.println("CausalDemo [-help] [-start]");
 	      return;
 	  }
-	  if(args[i].equals("-start")) {
+	  if("-start".equals(args[i])) {
 	      start=true;
 	      continue;
 	  }
@@ -204,7 +204,7 @@ class CausalMessage implements Serializable
 
    public String toString()
    {
-      return "CausalMessage[" + message + "=" + message + "member=" + member + "]";
+      return "CausalMessage[" + message + '=' + message + "member=" + member + ']';
    }
 
 }

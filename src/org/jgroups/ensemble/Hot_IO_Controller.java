@@ -1,4 +1,4 @@
-// $Id: Hot_IO_Controller.java,v 1.1 2003/09/09 01:24:09 belaban Exp $
+// $Id: Hot_IO_Controller.java,v 1.2 2004/07/05 05:48:44 belaban Exp $
 
 package org.jgroups.ensemble;
 
@@ -340,7 +340,7 @@ class Hot_IO_Controller {
 		}
 		if ((tmpInt ^ HOT_MAGIC) != checksum) {
 		    Hot_Ensemble.panic("read_checksum: " + (tmpInt^HOT_MAGIC) + 
-					" (expected " + checksum + ")");
+					" (expected " + checksum + ')');
 		}
 	    } catch (Exception e) {
 		r_error = 1;
@@ -371,8 +371,8 @@ class Hot_IO_Controller {
 		System.out.println("");
 	    }
 
-            Hot_Ensemble.trace("Bytes::" + (int)pBytes[0] + " " + 
-		(int)pBytes[1] + " " + (int)pBytes[2] + " " + (int)pBytes[3]);
+            Hot_Ensemble.trace("Bytes::" + (int)pBytes[0] + ' ' +
+		(int)pBytes[1] + ' ' + (int)pBytes[2] + ' ' + (int)pBytes[3]);
 
 
 // 	    int tmpInt = (int)pBytes[0];

@@ -1,4 +1,4 @@
-// $Id: ParticipantGmsImpl.java,v 1.5 2004/04/23 01:39:03 belaban Exp $
+// $Id: ParticipantGmsImpl.java,v 1.6 2004/07/05 05:49:41 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -13,7 +13,7 @@ import java.util.Vector;
 
 public class ParticipantGmsImpl extends GmsImpl {
     boolean    leaving=false;
-    Vector     suspected_mbrs=new Vector();
+    Vector     suspected_mbrs=new Vector(11);
     Promise    leave_promise=new Promise();
 
 

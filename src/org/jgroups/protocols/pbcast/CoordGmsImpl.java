@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.7 2004/04/23 01:39:03 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.8 2004/07/05 05:49:41 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -23,7 +23,7 @@ public class CoordGmsImpl extends GmsImpl {
     boolean      leaving=false;
     Promise      leave_promise=null;
     MergeTask    merge_task=new MergeTask();
-    Vector       merge_rsps=new Vector();
+    Vector       merge_rsps=new Vector(11);
     // for MERGE_REQ/MERGE_RSP correlation, contains MergeData elements
     Serializable merge_id=null;
 
@@ -183,7 +183,7 @@ public class CoordGmsImpl extends GmsImpl {
                     + this.merge_id
                     + ") is different from merge_id ("
                     + merge_id
-                    + ")");
+                    + ')');
             return;
         }
 
@@ -216,7 +216,7 @@ public class CoordGmsImpl extends GmsImpl {
                 && this.merge_id != null
                 && this.merge_id.equals(merge_id)) {
 
-                if(log.isDebugEnabled()) log.debug("merge was cancelled (merge_id=" + merge_id + ")");
+                if(log.isDebugEnabled()) log.debug("merge was cancelled (merge_id=" + merge_id + ')');
             this.merge_id=null;
             merging=false;
         }
@@ -227,7 +227,7 @@ public class CoordGmsImpl extends GmsImpl {
      * Returns both in the form of a JoinRsp
      */
     public synchronized JoinRsp handleJoin(Address mbr) {
-        Vector new_mbrs=new Vector();
+        Vector new_mbrs=new Vector(1);
         View v=null;
         Digest d, tmp;
 
@@ -267,7 +267,7 @@ public class CoordGmsImpl extends GmsImpl {
      this member crashed and therefore is forced to leave, otherwise it is leaving voluntarily.
      */
     public synchronized void handleLeave(Address mbr, boolean suspected) {
-        Vector v=new Vector();
+        Vector v=new Vector(1);
         // contains either leaving mbrs or suspected mbrs
 
 
@@ -426,7 +426,7 @@ public class CoordGmsImpl extends GmsImpl {
         int num_mbrs=0;
         Digest new_digest=null;
         Address new_coord;
-        Vector subgroups=new Vector();
+        Vector subgroups=new Vector(11);
         // contains a list of Views, each View is a subgroup
 
         for(int i=0; i < v.size(); i++) {

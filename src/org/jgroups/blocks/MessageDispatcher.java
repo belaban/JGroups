@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.20 2004/05/13 06:16:26 belaban Exp $
+// $Id: MessageDispatcher.java,v 1.21 2004/07/05 05:41:45 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -253,10 +253,6 @@ public class MessageDispatcher implements RequestHandler {
 
     public void setConcurrentProcessing(boolean flag) {
         this.concurrent_processing=flag;
-    }
-
-    public void finalize() {
-        stop();
     }
 
 
@@ -605,7 +601,7 @@ public class MessageDispatcher implements RequestHandler {
                             tmp_state=msg_listener.getState();
                         }
                         catch(Throwable t) {
-                            log.error("failed getting state from message listener (" + msg_listener + ")", t);
+                            log.error("failed getting state from message listener (" + msg_listener + ')', t);
                         }
                     }
                     channel.returnState(tmp_state);

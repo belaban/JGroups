@@ -1,4 +1,4 @@
-// $Id: DrawRepl.java,v 1.2 2004/03/30 06:47:16 belaban Exp $
+// $Id: DrawRepl.java,v 1.3 2004/07/05 05:45:31 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -330,9 +330,9 @@ public class DrawRepl implements MouseMotionListener, WindowListener, ActionList
 
     public void actionPerformed(ActionEvent e) {
 	String command=e.getActionCommand();
-	if(command.equals("Clear"))
+	if("Clear".equals(command))
 	    clearPanel();
-	else if(command.equals("Exit")) {
+	else if("Exit".equals(command)) {
 	    mainFrame.setVisible(false);
 	    System.exit(0);
 	}

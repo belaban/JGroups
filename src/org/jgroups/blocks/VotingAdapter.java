@@ -231,7 +231,7 @@ public class VotingAdapter implements MessageListener, MembershipListener {
 
             // ...but we do not handle byzantine faults
             throw new ChannelException("Node " + response.getSender() +
-				       " generated fault (class " + faultClass + ")");
+				       " generated fault (class " + faultClass + ')');
         }
 
         // what if we received the response from faulty node?

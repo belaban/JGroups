@@ -1,4 +1,4 @@
-// $Id: TOTAL.java,v 1.4 2004/03/30 06:47:21 belaban Exp $
+// $Id: TOTAL.java,v 1.5 2004/07/05 05:51:25 belaban Exp $
 package org.jgroups.protocols;
 
 
@@ -136,7 +136,7 @@ public class TOTAL extends Protocol {
 			buffer.append(", type=" + typeName);
 			buffer.append(", " + "localID=" + localSeqID);
 			buffer.append(", " + "seqID=" + seqID);
-			buffer.append("]");
+			buffer.append(']');
 
 			return(buffer.toString());
 		}
@@ -250,7 +250,7 @@ public class TOTAL extends Protocol {
 		addr == null? "<null>" :
 			((addr instanceof org.jgroups.stack.IpAddress)?
 			(((org.jgroups.stack.IpAddress)addr).getIpAddress(
-			).getHostAddress() + ":" +
+			).getHostAddress() + ':' +
 			((org.jgroups.stack.IpAddress)addr).getPort()) :
 			addr.toString())
 		);
@@ -559,7 +559,7 @@ public class TOTAL extends Protocol {
 		// *** Get a shared lock
 		try { stateLock.readLock(); try {
 
-		if(log.isInfoEnabled()) log.info("Retransmit BCAST_REQ[" + seqID + "]");
+		if(log.isInfoEnabled()) log.info("Retransmit BCAST_REQ[" + seqID + ']');
 		_transmitBcastRequest(seqID);
 
 		// ** Revoke the shared lock

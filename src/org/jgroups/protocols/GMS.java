@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.4 2004/04/23 19:36:13 belaban Exp $
+// $Id: GMS.java,v 1.5 2004/07/05 05:51:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -269,7 +269,7 @@ public class GMS extends RpcProtocol implements Runnable {
         if(rebroadcast_unstable_msgs && rebroadcast_msgs.size() > 0) {
 
                 if(log.isInfoEnabled()) log.info("re-broadcasting unstable messages (" +
-                        rebroadcast_msgs.size() + ")");
+                        rebroadcast_msgs.size() + ')');
             // NAKACK layer will rebroadcast the msgs (using the same seqnos assigned earlier)
             synchronized(rebroadcast_mutex) {
                 passDown(new Event(Event.REBROADCAST_MSGS, rebroadcast_msgs));
@@ -327,7 +327,7 @@ public class GMS extends RpcProtocol implements Runnable {
 
 
             if(log.isInfoEnabled()) log.info("flush_dest: " + flush_dest +
-                    "\n\tview_dest: " + view_dest + "\n\tnew_view: " + new_view + "\n");
+                    "\n\tview_dest: " + view_dest + "\n\tnew_view: " + new_view + '\n');
         flush(flush_dest, suspected_mbrs);
 
 
@@ -342,7 +342,7 @@ public class GMS extends RpcProtocol implements Runnable {
         Event view_event=new Event(Event.TMP_VIEW, tmp_view); // so the VIEW msg is sent to the correct mbrs
         passDown(view_event); // needed e.g. by failure detector or UDP
 
-         if(log.isInfoEnabled()) log.info("mcasting view {" + new_vid + ", " + view_dest + "}");
+         if(log.isInfoEnabled()) log.info("mcasting view {" + new_vid + ", " + view_dest + '}');
         passDown(new Event(Event.SWITCH_NAK_ACK));  // use ACK scheme for view bcast
         Object[] args=new Object[]{new_vid, new_view.getMembers() /* these are the mbrs in the new view */};
         MethodCall call=new MethodCall("handleViewChange", args, new String[]{ViewId.class.getName(), Vector.class.getName()});
@@ -364,13 +364,12 @@ public class GMS extends RpcProtocol implements Runnable {
 
         synchronized(view_mutex) {                    // serialize access to views
             ltime=Math.max(new_view.getId(), ltime);  // compute Lamport logical time
-             if(log.isInfoEnabled()) log.info("received view change, vid=" + new_view);
+            if(log.isInfoEnabled()) log.info("received view change, vid=" + new_view);
 
             /* Check for self-inclusion: if I'm not part of the new membership, I just discard it.
                This ensures that messages sent in view V1 are only received by members of V1 */
             if(checkSelfInclusion(mbrs) == false) {
-
-                    if(log.isWarnEnabled()) log.warn("I'm not member of " + mbrs + ", discarding");
+                if(log.isWarnEnabled()) log.warn("I'm not member of " + mbrs + ", discarding");
                 return;
             }
 
@@ -394,7 +393,7 @@ public class GMS extends RpcProtocol implements Runnable {
                     if(rc <= 0) {  // don't accept view id lower than our own
                          {
                             if(log.isWarnEnabled()) log.warn("received view <= current view; discarding it ! " +
-                                    "(view_id: " + view_id + ", new_view: " + new_view + ")");
+                                    "(view_id: " + view_id + ", new_view: " + new_view + ')');
                         }
                         return;
                     }
@@ -549,7 +548,7 @@ public class GMS extends RpcProtocol implements Runnable {
         if(up_protocol == null)
             return false;
         prot_name=up_protocol.getName();
-        if(prot_name != null && prot_name.equals("VIEW_ENFORCER"))
+        if(prot_name != null && "VIEW_ENFORCER".equals(prot_name))
             return true;
         return checkForViewEnforcer(up_protocol.getUpProtocol());
     }
@@ -671,55 +670,55 @@ public class GMS extends RpcProtocol implements Runnable {
         super.setProperties(props);
         str=props.getProperty("join_timeout");           // time to wait for JOIN
         if(str != null) {
-            join_timeout=new Long(str).longValue();
+            join_timeout=Long.parseLong(str);
             props.remove("join_timeout");
         }
 
         str=props.getProperty("print_local_addr");
         if(str != null) {
-            print_local_addr=new Boolean(str).booleanValue();
+            print_local_addr=Boolean.valueOf(str).booleanValue();
             props.remove("print_local_addr");
         }
 
         str=props.getProperty("view_change_timeout");    // time to wait for VIEW_CHANGE
         if(str != null) {
-            view_change_timeout=new Long(str).longValue();
+            view_change_timeout=Long.parseLong(str);
             props.remove("view_change_timeout");
         }
 
         str=props.getProperty("join_retry_timeout");     // time to wait between JOINs
         if(str != null) {
-            join_retry_timeout=new Long(str).longValue();
+            join_retry_timeout=Long.parseLong(str);
             props.remove("join_retry_timeout");
         }
 
         str=props.getProperty("leave_timeout");           // time to wait until coord responds to LEAVE req.
         if(str != null) {
-            leave_timeout=new Long(str).longValue();
+            leave_timeout=Long.parseLong(str);
             props.remove("leave_timeout");
         }
 
         str=props.getProperty("flush_timeout");           // time to wait until FLUSH completes (0=forever)
         if(str != null) {
-            flush_timeout=new Long(str).longValue();
+            flush_timeout=Long.parseLong(str);
             props.remove("flush_timeout");
         }
 
         str=props.getProperty("rebroadcast_unstable_msgs");  // bcast unstable msgs (recvd from FLUSH)
         if(str != null) {
-            rebroadcast_unstable_msgs=new Boolean(str).booleanValue();
+            rebroadcast_unstable_msgs=Boolean.valueOf(str).booleanValue();
             props.remove("rebroadcast_unstable_msgs");
         }
 
         str=props.getProperty("rebroadcast_timeout");     // time to wait until REBROADCAST_MSGS completes
         if(str != null) {
-            rebroadcast_timeout=new Long(str).longValue();
+            rebroadcast_timeout=Long.parseLong(str);
             props.remove("rebroadcast_timeout");
         }
 
         str=props.getProperty("disable_initial_coord");  // allow initial mbr to become coord or not
         if(str != null) {
-            disable_initial_coord=new Boolean(str).booleanValue();
+            disable_initial_coord=Boolean.valueOf(str).booleanValue();
             props.remove("disable_initial_coord");
         }
 

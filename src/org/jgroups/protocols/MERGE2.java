@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.4 2004/04/23 19:36:13 belaban Exp $
+// $Id: MERGE2.java,v 1.5 2004/07/05 05:51:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -61,13 +61,13 @@ public class MERGE2 extends Protocol {
         super.setProperties(props);
         str=props.getProperty("min_interval");
         if(str != null) {
-            min_interval=new Long(str).longValue();
+            min_interval=Long.parseLong(str);
             props.remove("min_interval");
         }
 
         str=props.getProperty("max_interval");
         if(str != null) {
-            max_interval=new Long(str).longValue();
+            max_interval=Long.parseLong(str);
             props.remove("max_interval");
         }
 
@@ -90,7 +90,7 @@ public class MERGE2 extends Protocol {
 
 
     public Vector requiredDownServices() {
-        Vector retval=new Vector();
+        Vector retval=new Vector(1);
         retval.addElement(new Integer(Event.FIND_INITIAL_MBRS));
         return retval;
     }
@@ -272,7 +272,7 @@ public class MERGE2 extends Protocol {
          *         membership, and more than 1 for multiple coordinators
          */
         Vector findMultipleCoordinators(Vector initial_mbrs) {
-            Vector ret=new Vector();
+            Vector ret=new Vector(11);
             PingRsp rsp;
             Address coord;
 

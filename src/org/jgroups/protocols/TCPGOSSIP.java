@@ -1,4 +1,4 @@
-// $Id: TCPGOSSIP.java,v 1.4 2004/05/18 01:31:29 belaban Exp $
+// $Id: TCPGOSSIP.java,v 1.5 2004/07/05 05:51:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -60,19 +60,19 @@ public class TCPGOSSIP extends Protocol {
         super.setProperties(props);
         str=props.getProperty("timeout");              // max time to wait for initial members
         if(str != null) {
-            timeout=new Long(str).longValue();
+            timeout=Long.parseLong(str);
             props.remove("timeout");
         }
 
         str=props.getProperty("num_initial_members");  // wait for at most n members
         if(str != null) {
-            num_initial_members=new Integer(str).intValue();
+            num_initial_members=Integer.parseInt(str);
             props.remove("num_initial_members");
         }
 
         str=props.getProperty("gossip_refresh_rate");  // wait for at most n members
         if(str != null) {
-            gossip_refresh_rate=new Integer(str).intValue();
+            gossip_refresh_rate=Integer.parseInt(str);
             props.remove("gossip_refresh_rate");
         }
 
@@ -147,7 +147,7 @@ public class TCPGOSSIP extends Protocol {
                         return;
 
                     default:
-                        if(log.isWarnEnabled()) log.warn("got TCPGOSSIP header with unknown type (" + hdr.type + ")");
+                        if(log.isWarnEnabled()) log.warn("got TCPGOSSIP header with unknown type (" + hdr.type + ')');
                         return;
                 }
 
@@ -291,7 +291,7 @@ public class TCPGOSSIP extends Protocol {
             try {
                 t=tok.nextToken();
                 host=t.substring(0, t.indexOf('['));
-                port=new Integer(t.substring(t.indexOf('[') + 1, t.indexOf(']'))).intValue();
+                port=Integer.parseInt(t.substring(t.indexOf('[') + 1, t.indexOf(']')));
                 addr=new IpAddress(host, port);
                 tmp.addElement(addr);
             }

@@ -1,4 +1,4 @@
-// $Id: DISCARD.java,v 1.3 2004/04/23 19:36:12 belaban Exp $
+// $Id: DISCARD.java,v 1.4 2004/07/05 05:51:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -43,21 +43,21 @@ public class DISCARD extends Protocol
       str = props.getProperty("up");
       if (str != null)
       {
-         up = new Double(str).doubleValue();
+         up = Double.parseDouble(str);
          props.remove("up");
       }
 
       str = props.getProperty("down");
       if (str != null)
       {
-         down = new Double(str).doubleValue();
+         down = Double.parseDouble(str);
          props.remove("down");
       }
 
       str = props.getProperty("excludeitself");
       if (str != null)
       {
-         excludeItself = new Boolean(str).booleanValue();
+         excludeItself = Boolean.valueOf(str).booleanValue();
          props.remove("excludeitself");
       }
 

@@ -4,7 +4,7 @@
 // replacing SecretKey with SecretKey
 
 
-// $Id: ENCRYPT1_4.java,v 1.3 2004/04/23 19:36:12 belaban Exp $
+// $Id: ENCRYPT1_4.java,v 1.4 2004/07/05 05:51:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -108,7 +108,7 @@ public static class EncryptHeader extends org.jgroups.Header {
         // asymmetric key length
         str=props.getProperty("asymInit");
         if(str != null) {
-            asymInit=new Integer(str).intValue();
+            asymInit=Integer.parseInt(str);
             props.remove("asymInit");
 
 		if(log.isInfoEnabled()) log.info("Asym algo bits used is " + asymInit);
@@ -117,7 +117,7 @@ public static class EncryptHeader extends org.jgroups.Header {
         // symmetric key length
         str=props.getProperty("symInit");
         if(str != null) {
-            symInit=new Integer(str).intValue();
+            symInit=Integer.parseInt(str);
             props.remove("symInit");
 
 		if(log.isInfoEnabled()) log.info("Sym algo bits used is " + symInit);
@@ -126,7 +126,7 @@ public static class EncryptHeader extends org.jgroups.Header {
         // asymmetric algorithm name
         str=props.getProperty("asymAlgorithm");
         if(str != null) {
-            asymAlgorithm=new String(str).toString();
+            asymAlgorithm=str;
             props.remove("asymAlgorithm");
 
 		if(log.isInfoEnabled()) log.info("Asym algo used is " + asymAlgorithm);
@@ -135,7 +135,7 @@ public static class EncryptHeader extends org.jgroups.Header {
         // symmetric algorithm name
         str=props.getProperty("symAlgorithm");
         if(str != null) {
-            symAlgorithm=new String(str).toString();
+            symAlgorithm=str;
             props.remove("symAlgorithm");
 
 		if(log.isInfoEnabled()) log.info("Sym algo used is " + symAlgorithm);
@@ -253,7 +253,7 @@ public static class EncryptHeader extends org.jgroups.Header {
                 //hdr = (EncryptHeader)msg.removeHeader();
                 hdr=(EncryptHeader) obj;
 
-		    if(log.isInfoEnabled()) log.info("Header received " + hdr + ":" + hdr.type);
+		    if(log.isInfoEnabled()) log.info("Header received " + hdr + ':' + hdr.type);
                 switch(hdr.type) {
                     // key request from client and send server's public key to client
                     case EncryptHeader.KEY_REQUEST:
@@ -393,7 +393,7 @@ public static class EncryptHeader extends org.jgroups.Header {
         boolean leave=false;
 
 
-	    if(log.isInfoEnabled()) log.info("down:evt is " + evt + ":" + evt.getType());
+	    if(log.isInfoEnabled()) log.info("down:evt is " + evt + ':' + evt.getType());
 
         switch(evt.getType()) {
 	    

@@ -1,4 +1,4 @@
-// $Id: FD_SIMPLE.java,v 1.3 2004/04/23 19:36:13 belaban Exp $
+// $Id: FD_SIMPLE.java,v 1.4 2004/07/05 05:51:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -23,7 +23,7 @@ import java.util.Vector;
  * suspected. When a message or a heartbeat are received, the counter is reset to 0.
  *
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.3 $
+ * @version $Revision: 1.4 $
  */
 public class FD_SIMPLE extends Protocol {
     Address local_addr=null;
@@ -51,13 +51,13 @@ public class FD_SIMPLE extends Protocol {
         super.setProperties(props);
         str=props.getProperty("timeout");
         if(str != null) {
-            timeout=new Long(str).longValue();
+            timeout=Long.parseLong(str);
             props.remove("timeout");
         }
 
         str=props.getProperty("interval");
         if(str != null) {
-            interval=new Long(str).longValue();
+            interval=Long.parseLong(str);
             props.remove("interval");
         }
 
@@ -235,7 +235,7 @@ public class FD_SIMPLE extends Protocol {
 
         for(Iterator it=counters.keySet().iterator(); it.hasNext();) {
             key=(Address)it.next();
-            sb.append(key).append(": ").append(counters.get(key)).append("\n");
+            sb.append(key).append(": ").append(counters.get(key)).append('\n');
         }
         return sb.toString();
     }

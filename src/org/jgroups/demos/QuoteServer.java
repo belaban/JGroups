@@ -1,4 +1,4 @@
-// $Id: QuoteServer.java,v 1.2 2003/09/24 23:20:47 belaban Exp $
+// $Id: QuoteServer.java,v 1.3 2004/07/05 05:45:31 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -60,7 +60,7 @@ public class QuoteServer implements MembershipListener, MessageListener {
     }
 
     public void viewAccepted(View new_view) {
-        System.out.println("Accepted view (" + new_view.size() + new_view.getMembers() + ")");
+        System.out.println("Accepted view (" + new_view.size() + new_view.getMembers() + ')');
     }
 
     public void suspect(Address suspected_mbr) {

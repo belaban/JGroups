@@ -1,4 +1,4 @@
-// $Id: MagicNumberReader.java,v 1.3 2004/05/25 02:00:33 belaban Exp $
+// $Id: MagicNumberReader.java,v 1.4 2004/07/05 05:43:51 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -47,7 +47,7 @@ public class MagicNumberReader {
             		if(log.isInfoEnabled()) log.info("Could not read " + mMagicNumberFile +" as Resource from the CLASSPATH, will try to read it from file.");
             		stream = new FileInputStream(mMagicNumberFile);
             		if(stream != null &&log.isInfoEnabled() )
-            			log.info("Magic number File found at '" + mMagicNumberFile+"'" );
+            			log.info("Magic number File found at '" + mMagicNumberFile+'\'' );
             	}catch(FileNotFoundException fnfe){
             		if(log.isWarnEnabled()) log.warn("Failed reading - '" +
                             mMagicNumberFile + "' is not found, got error '"+fnfe.getLocalizedMessage()+"'. Please make sure it is in the CLASSPATH or in the Specified location. Will " +

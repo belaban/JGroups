@@ -1,4 +1,4 @@
-// $Id: FD_PID.java,v 1.3 2004/04/23 19:36:13 belaban Exp $
+// $Id: FD_PID.java,v 1.4 2004/07/05 05:51:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -67,19 +67,19 @@ public class FD_PID extends Protocol {
         super.setProperties(props);
         str=props.getProperty("timeout");
         if(str != null) {
-            timeout=new Long(str).longValue();
+            timeout=Long.parseLong(str);
             props.remove("timeout");
         }
 
         str=props.getProperty("get_pids_timeout");
         if(str != null) {
-            get_pids_timeout=new Long(str).longValue();
+            get_pids_timeout=Long.parseLong(str);
             props.remove("get_pids_timeout");
         }
 
         str=props.getProperty("num_tries");
         if(str != null) {
-            num_tries=new Integer(str).intValue();
+            num_tries=Integer.parseInt(str);
             props.remove("num_tries");
         }
 
@@ -375,7 +375,7 @@ public class FD_PID extends Protocol {
 
         if(log.isInfoEnabled())
             log.info("suspecting " + suspected_mbr +
-                    " (own address is " + local_addr + ")");
+                    " (own address is " + local_addr + ')');
 
         hdr=new FdHeader(FdHeader.SUSPECT);
         hdr.mbr=suspected_mbr;
@@ -514,7 +514,7 @@ public class FD_PID extends Protocol {
                 case GET_PIDS_RSP:
                     return "GET_PIDS_RSP";
                 default:
-                    return "unknown type (" + type + ")";
+                    return "unknown type (" + type + ')';
             }
         }
 
@@ -584,7 +584,7 @@ public class FD_PID extends Protocol {
 
                     if(log.isInfoEnabled())
                         log.info("found PID for " +
-                                ping_dest + " in cache (pid=" + ping_pid + ")");
+                                ping_dest + " in cache (pid=" + ping_pid + ')');
                 }
                 else {
 

@@ -1,4 +1,4 @@
-// $Id: UdpHeader.java,v 1.2 2004/05/14 00:15:22 belaban Exp $
+// $Id: UdpHeader.java,v 1.3 2004/07/05 05:51:25 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -23,7 +23,7 @@ public class UdpHeader extends Header {
     }
 
     public String toString() {
-        return "[UDP:group_addr=" + group_addr + "]";
+        return "[UDP:group_addr=" + group_addr + ']';
     }
 
 

@@ -1,4 +1,4 @@
-// $Id: XmlValidator.java,v 1.2 2004/03/30 06:47:14 belaban Exp $
+// $Id: XmlValidator.java,v 1.3 2004/07/05 05:43:51 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -37,7 +37,7 @@ public class XmlValidator
         mPrintXml = printXml;
     }
     
-    protected InputStream getInputStream(String url)
+    protected static InputStream getInputStream(String url)
         throws java.io.IOException
     {
         URL inurl = new URL(url);
@@ -111,25 +111,25 @@ public class XmlValidator
         public void warning(SAXParseException exception)
              throws SAXException
         {
-            mErrors.append("\n").append(count++).append(". WARNING: ");
+            mErrors.append('\n').append(count++).append(". WARNING: ");
             mErrors.append(Util.getStackTrace(exception));
-            mErrors.append("\n");
+            mErrors.append('\n');
         }
         
         public void error(SAXParseException exception)
              throws SAXException
         {
-            mErrors.append("\n").append(count++).append(". ERROR: ");
+            mErrors.append('\n').append(count++).append(". ERROR: ");
             mErrors.append(Util.getStackTrace(exception));
-            mErrors.append("\n");
+            mErrors.append('\n');
         }
         
         public void fatalError(SAXParseException exception)
              throws SAXException
         {
-            mErrors.append("\n").append(count++).append(". FATAL ERROR: ");
+            mErrors.append('\n').append(count++).append(". FATAL ERROR: ");
             mErrors.append(Util.getStackTrace(exception));
-            mErrors.append("\n");
+            mErrors.append('\n');
         }
         
         public String getErrorString()

@@ -1,4 +1,4 @@
-// $Id: QuoteClient.java,v 1.3 2004/03/30 06:47:16 belaban Exp $
+// $Id: QuoteClient.java,v 1.4 2004/07/05 05:45:31 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -150,7 +150,7 @@ public class QuoteClient extends Frame implements WindowListener, ActionListener
                     showMsg("Stock name is empty !");
                     return;
                 }
-                showMsg("Looking up value for " + stock_name + ":");
+                showMsg("Looking up value for " + stock_name + ':');
                 rsp_list=disp.callRemoteMethods(null, "getQuote", new Object[]{stock_name},
                                                 new String[]{String.class.getName()},
                                                 GroupRequest.GET_FIRST, 10000);

@@ -1,4 +1,4 @@
-// $Id: WANPING.java,v 1.3 2004/04/23 19:36:13 belaban Exp $
+// $Id: WANPING.java,v 1.4 2004/07/05 05:51:25 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -47,19 +47,19 @@ public class WANPING extends Protocol {
 
 	str=props.getProperty("timeout");              // max time to wait for initial members
 	if(str != null) {
-	    timeout=new Long(str).longValue();
+	    timeout=Long.parseLong(str);
 	    props.remove("timeout");
 	}
 
 	str=props.getProperty("port_range");           // if member cannot be contacted on base port,
 	if(str != null) {                              // how many times can we increment the port
-	    port_range=new Integer(str).intValue();
+	    port_range=Integer.parseInt(str);
 	    props.remove("port_range");
 	}
 
 	str=props.getProperty("num_initial_members");  // wait for at most n members
 	if(str != null) {
-	    num_initial_members=new Integer(str).intValue();
+	    num_initial_members=Integer.parseInt(str);
 	    props.remove("num_initial_members");
 	}
 
@@ -137,7 +137,7 @@ public class WANPING extends Protocol {
 
 	    default:
 		System.err.println("WANPING.up(): got WANPING header with unknown type (" + 
-				   hdr.type + ")");
+				   hdr.type + ')');
 		return;
 	    }
 	    

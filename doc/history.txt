@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.84 2004/06/26 01:57:14 belaban Exp $
+Revision: $Id: history.txt,v 1.85 2004/07/05 05:41:25 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -22,6 +22,14 @@ ovidiuf     = Ovidiu Feodorov (ovidiuf@users.sf.net)
 romuald     = Romuald du Song
 yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
+
+
+
+Version 2.2.6
+-------------
+
+- Ran code through Intellij inspector, changed various things (e.g. redundant code etc).
+  (bela July 4 2004)
 
 
 

@@ -1,4 +1,4 @@
-// $Id: DistributedTree.java,v 1.5 2004/06/25 01:08:00 belaban Exp $
+// $Id: DistributedTree.java,v 1.6 2004/07/05 05:41:45 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -90,7 +90,7 @@ public class DistributedTree implements MessageListener, MembershipListener, Clo
         throws ChannelException {
         channel = (Channel)adapter.getTransport();
         disp=new RpcDispatcher(adapter, id, this, this, this);
-        channel.setOpt(Channel.GET_STATE_EVENTS, new Boolean(true));
+        channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.valueOf(true));
         boolean rc = channel.getState(null, 8000);
         if(rc) {
             if(log.isInfoEnabled()) log.info("state was retrieved successfully");
@@ -330,7 +330,7 @@ public class DistributedTree implements MessageListener, MembershipListener, Clo
 
         while(tok.hasMoreTokens()) {
             child_name=tok.nextToken();
-            tmp_fqn=tmp_fqn + "/" + child_name;
+            tmp_fqn=tmp_fqn + '/' + child_name;
             n=curr.findChild(child_name);
             if(n == null) {
                 n=new Node(child_name, null);
@@ -505,7 +505,7 @@ public class DistributedTree implements MessageListener, MembershipListener, Clo
         String child_name;
 
         if(fqn == null || root == null) return null;
-        if(fqn.equals("/") || fqn.equals(""))
+        if("/".equals(fqn) || "".equals(fqn))
             return root;
 
         tok=new StringTokenizer(fqn, "/");
@@ -549,7 +549,7 @@ public class DistributedTree implements MessageListener, MembershipListener, Clo
                 n=(Node)curr.children.elementAt(i);
                 System.out.println("*** nodeCreated(): tmp_fqn is " + tmp_fqn);
                 notifyNodeAdded(tmp_fqn, n.element);
-                notifyAllNodesCreated(n, tmp_fqn + "/" + n.name);
+                notifyAllNodesCreated(n, tmp_fqn + '/' + n.name);
             }
         }
     }
@@ -642,19 +642,19 @@ public class DistributedTree implements MessageListener, MembershipListener, Clo
 
         String print(int indent) {
             StringBuffer sb=new StringBuffer();
-            boolean is_root=name != null && name.equals("/");
+            boolean is_root=name != null && "/".equals(name);
 
             for(int i=0; i < indent; i++)
-                sb.append(" ");
+                sb.append(' ');
             if(!is_root) {
                 if(name == null)
                     sb.append("/<unnamed>");
                 else {
-                    sb.append("/" + name);
+                    sb.append('/' + name);
                     // if(element != null) sb.append(" --> " + element);
                 }
             }
-            sb.append("\n");
+            sb.append('\n');
             if(children != null) {
                 if(is_root)
                     indent=0;
@@ -669,9 +669,9 @@ public class DistributedTree implements MessageListener, MembershipListener, Clo
 
         public String toString() {
             if(element != null)
-                return "[name: " + name + ", element: " + element + "]";
+                return "[name: " + name + ", element: " + element + ']';
             else
-                return "[name: " + name + "]";
+                return "[name: " + name + ']';
         }
 
     }

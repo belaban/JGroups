@@ -1,4 +1,4 @@
-// $Id: TotalOrder.java,v 1.4 2004/03/30 06:47:16 belaban Exp $
+// $Id: TotalOrder.java,v 1.5 2004/07/05 05:45:31 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -394,24 +394,24 @@ public class TotalOrder extends Frame {
 
 	for(int i=0; i < args.length; i++) {
 	    arg=args[i];
-	    if(arg.equals("-timeout")) {
-		timeout=new Long(args[++i]).longValue();
+	    if("-timeout".equals(arg)) {
+		timeout=Long.parseLong(args[++i]);
 		continue;
 	    }
-	    if(arg.equals("-num_fields")) {
-		num_fields=new Integer(args[++i]).intValue();
+	    if("-num_fields".equals(arg)) {
+		num_fields=Integer.parseInt(args[++i]);
 		continue;
 	    }
-	    if(arg.equals("-field_size")) {
-		field_size=new Integer(args[++i]).intValue();
+	    if("-field_size".equals(arg)) {
+		field_size=Integer.parseInt(args[++i]);
 		continue;
 	    }
-	    if(arg.equals("-help")) {
+	    if("-help".equals(arg)) {
 		System.out.println("\nTotalOrder [-timeout <value>] [-num_fields <value>] "+
 				   "[-field_size <value>] [-props <properties (can be URL)>]\n");
 		return;
 	    }
-	    if(arg.equals("-props")) {
+	    if("-props".equals(arg)) {
 		props=args[++i];
 		continue;
 	    }
@@ -465,7 +465,7 @@ class TotOrderRequest implements java.io.Serializable {
     }
 
     public String toString() {
-	return "[" + x + "," + y + ": " + type2Str(type) + "(" + val + ")]";
+	return "[" + x + ',' + y + ": " + type2Str(type) + '(' + val + ")]";
     }
 }
 
@@ -606,8 +606,7 @@ class MyCanvas extends Canvas {
 		clear();
 
 		for(int i=0; i < num_fields; i++)
-		    for(int j=0; j < num_fields; j++)
-			array[i][j]=new_array[i][j];
+            System.arraycopy(new_array[i], 0, array[i], 0, num_fields);
 		checksum=checksum();
 		repaint();
 	    }

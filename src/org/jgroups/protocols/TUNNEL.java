@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.4 2004/04/23 19:36:13 belaban Exp $
+// $Id: TUNNEL.java,v 1.5 2004/07/05 05:51:25 belaban Exp $
 
 
 package org.jgroups.protocols;
@@ -47,7 +47,7 @@ public class TUNNEL extends Protocol implements Runnable {
 
 
     public String toString() {
-        return "Protocol TUNNEL(local_addr=" + local_addr + ")";
+        return "Protocol TUNNEL(local_addr=" + local_addr + ')';
     }
 
 
@@ -81,13 +81,13 @@ public class TUNNEL extends Protocol implements Runnable {
         super.setProperties(props);
         str=props.getProperty("router_host");
         if(str != null) {
-            router_host=new String(str);
+            router_host=str;
             props.remove("router_host");
         }
 
         str=props.getProperty("router_port");
         if(str != null) {
-            router_port=new Integer(str).intValue();
+            router_port=Integer.parseInt(str);
             props.remove("router_port");
         }
 
@@ -107,7 +107,7 @@ public class TUNNEL extends Protocol implements Runnable {
                     sb.append(", ");
                 }
             }
-            if(log.isErrorEnabled()) log.error("The following properties are not recognized: " + sb.toString());
+            if(log.isErrorEnabled()) log.error("The following properties are not recognized: " + sb);
             return false;
         }
         return true;

@@ -1,4 +1,4 @@
-//$Id: TotalTokenDemo.java,v 1.4 2004/03/30 06:47:16 belaban Exp $
+//$Id: TotalTokenDemo.java,v 1.5 2004/07/05 05:45:31 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -37,7 +37,7 @@ import java.util.Vector;
  *
  *@author Vladimir Blagojevic vladimir@cs.yorku.ca
  *@author Ivan Bilenjkij  ivan@ibossa.com
- *@version $Revision: 1.4 $
+ *@version $Revision: 1.5 $
  *
  *@see org.jgroups.protocols.TOTAL_TOKEN
  *
@@ -525,12 +525,12 @@ public class TotalTokenDemo extends JFrame implements Runnable
 
         for (int i = 0; i < args.length; i++)
         {
-            if (args[i].equals("-help"))
+            if ("-help".equals(args[i]))
             {
                 help();
                 return;
             }
-            if (args[i].equals("-props"))
+            if ("-props".equals(args[i]))
             {
                 props = args[++i];
                 continue;

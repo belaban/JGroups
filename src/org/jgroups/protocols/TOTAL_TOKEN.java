@@ -1,4 +1,4 @@
-//$Id: TOTAL_TOKEN.java,v 1.5 2004/04/23 19:36:13 belaban Exp $
+//$Id: TOTAL_TOKEN.java,v 1.6 2004/07/05 05:51:25 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -49,7 +49,7 @@ import java.util.*;
  *
  *
  *@author Vladimir Blagojevic vladimir@cs.yorku.ca
- *@version $Revision: 1.5 $
+ *@version $Revision: 1.6 $
  *
  *@see org.jgroups.protocols.ring.RingNodeFlowControl
  *@see org.jgroups.protocols.ring.RingNode
@@ -131,7 +131,7 @@ public class TOTAL_TOKEN extends RpcProtocol
 
       public String toString()
       {
-         return "[TotalTokenHeader=" + seq + "]";
+         return "[TotalTokenHeader=" + seq + ']';
       }
    }
 

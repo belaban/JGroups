@@ -156,7 +156,7 @@ public class PersistenceFactory
     {
         Properties props=readProps(propPath);
         String persist = props.getProperty(persistProp);
-        if (persist.equals("DB"))
+        if ("DB".equals(persist))
             return true;
         return false;
     }
@@ -172,7 +172,7 @@ public class PersistenceFactory
     {
         Properties props=readProps(filePath);
         String persist = props.getProperty(persistProp);
-        if (persist.equals("DB"))
+        if ("DB".equals(persist))
             return true;
         return false;
     }

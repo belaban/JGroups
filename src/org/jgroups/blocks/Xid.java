@@ -1,4 +1,4 @@
-// $Id: Xid.java,v 1.2 2004/03/30 06:47:12 belaban Exp $
+// $Id: Xid.java,v 1.3 2004/07/05 05:41:45 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -27,7 +27,7 @@ import java.io.ObjectOutput;
  * JTA counterpart.</em>
  * @
  * @author  <a href="mailto:belaban@yahoo.com">Bela Ban</a>.
- * @version $Revision: 1.2 $
+ * @version $Revision: 1.3 $
  *
  * <p><b>Revisions:</b>
  *
@@ -132,7 +132,7 @@ public class Xid implements Externalizable {
 
     public String toString() {
         StringBuffer sb=new StringBuffer();
-        sb.append("<").append(creator).append(">:").append(id);
+        sb.append('<').append(creator).append(">:").append(id);
         return sb.toString();
     }
 

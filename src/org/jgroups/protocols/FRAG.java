@@ -1,4 +1,4 @@
-// $Id: FRAG.java,v 1.9 2004/06/23 15:57:04 belaban Exp $
+// $Id: FRAG.java,v 1.10 2004/07/05 05:51:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -45,7 +45,7 @@ import java.util.Vector;
  *
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.9 2004/06/23 15:57:04 belaban Exp $
+ * @version $Id: FRAG.java,v 1.10 2004/07/05 05:51:24 belaban Exp $
  */
 public class FRAG extends Protocol {
     private int frag_size=8192;  // conservative value
@@ -57,7 +57,7 @@ public class FRAG extends Protocol {
     private int curr_id=1;
     private Address local_addr=null;
     private ByteArrayOutputStream bos=new ByteArrayOutputStream(frag_size);  // to serialize messages to be fragmented
-    private Vector members=new Vector();
+    private Vector members=new Vector(11);
 
 
     public String getName() {
@@ -74,7 +74,7 @@ public class FRAG extends Protocol {
         super.setProperties(props);
         str=props.getProperty("frag_size");
         if(str != null) {
-            frag_size=new Integer(str).intValue();
+            frag_size=Integer.parseInt(str);
             props.remove("frag_size");
         }
 
@@ -107,7 +107,7 @@ public class FRAG extends Protocol {
                 long size=msg.size();
                 if(size > frag_size) {
                     if(log.isTraceEnabled())
-                        log.trace("message size is " + size + ", will fragment (frag_size == " + frag_size + ")");
+                        log.trace("message size is " + size + ", will fragment (frag_size == " + frag_size + ')');
                     fragment(msg);  // Fragment and pass down
                     return;
                 }
@@ -215,7 +215,7 @@ public class FRAG extends Protocol {
 
             if(log.isTraceEnabled())
                 log.trace("fragmenting packet to " + (dest != null ? dest.toString() : "<all members>") +
-                        " (size=" + buffer.length + ") into " + num_frags + " fragment(s) [frag_size=" + frag_size + "]");
+                        " (size=" + buffer.length + ") into " + num_frags + " fragment(s) [frag_size=" + frag_size + ']');
 
             for(int i=0; i < num_frags; i++) {
                 frag_msg=new Message(dest, src, fragments[i]);
@@ -305,7 +305,7 @@ public class FRAG extends Protocol {
         }
 
         public String toString() {
-            return "[FRAG: id=" + id + ", frag_id=" + frag_id + ", num_frags=" + num_frags + "]";
+            return "[FRAG: id=" + id + ", frag_id=" + frag_id + ", num_frags=" + num_frags + ']';
         }
 
         public void writeExternal(ObjectOutput out) throws IOException {
@@ -519,7 +519,7 @@ public class FRAG extends Protocol {
              */
             public String toString() {
                 StringBuffer ret=new StringBuffer();
-                ret.append("[tot_frags=" + tot_frags + ", number_of_frags_recvd=" + number_of_frags_recvd + "]");
+                ret.append("[tot_frags=" + tot_frags + ", number_of_frags_recvd=" + number_of_frags_recvd + ']');
                 return ret.toString();
             }
 

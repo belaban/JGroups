@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.12 2004/05/04 17:36:42 belaban Exp $
+// $Id: STABLE.java,v 1.13 2004/07/05 05:49:41 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -105,32 +105,32 @@ public class STABLE extends Protocol {
 
         str=props.getProperty("desired_avg_gossip");
         if(str != null) {
-            desired_avg_gossip=new Long(str).longValue();
+            desired_avg_gossip=Long.parseLong(str);
             props.remove("desired_avg_gossip");
         }
 
         str=props.getProperty("stability_delay");
         if(str != null) {
-            stability_delay=new Long(str).longValue();
+            stability_delay=Long.parseLong(str);
             props.remove("stability_delay");
         }
 
         str=props.getProperty("max_gossip_runs");
         if(str != null) {
-            max_gossip_runs=new Integer(str).intValue();
+            max_gossip_runs=Integer.parseInt(str);
             num_gossip_runs=max_gossip_runs;
             props.remove("max_gossip_runs");
         }
 
         str=props.getProperty("max_bytes");
         if(str != null) {
-            max_bytes=new Long(str).longValue();
+            max_bytes=Long.parseLong(str);
             props.remove("max_bytes");
         }
 
         str=props.getProperty("max_suspend_time");
         if(str != null) {
-            max_suspend_time=new Long(str).longValue();
+            max_suspend_time=Long.parseLong(str);
             props.remove("max_suspend_time");
         }
 
@@ -427,7 +427,7 @@ public class STABLE extends Protocol {
         if(d != null && d.size() > 0) {
             if(log.isDebugEnabled())
                 log.debug("mcasting digest " + d +
-                        " (num_gossip_runs=" + num_gossip_runs + ", max_gossip_runs=" + max_gossip_runs + ")");
+                        " (num_gossip_runs=" + num_gossip_runs + ", max_gossip_runs=" + max_gossip_runs + ')');
             if(suspended) {
                 if(log.isTraceEnabled())
                     log.trace("will not send STABLE message as suspended=" + suspended);
@@ -505,7 +505,7 @@ public class STABLE extends Protocol {
         synchronized(stability_mutex) {
             if(stability_task != null) {
                 if(log.isDebugEnabled()) log.debug("cancelling stability task (running=" +
-                        !stability_task.cancelled() + ")");
+                        !stability_task.cancelled() + ')');
                 stability_task.stop();
                 stability_task=null;
             }
@@ -537,7 +537,7 @@ public class STABLE extends Protocol {
                     sb.append(", ");
                 else
                     first=false;
-                sb.append(d.senderAt(i) + "#" + d.highSeqnoAt(i) + " (" + d.highSeqnoSeenAt(i) + ")");
+                sb.append(d.senderAt(i) + "#" + d.highSeqnoAt(i) + " (" + d.highSeqnoSeenAt(i) + ')');
             }
         }
         return sb.toString();
@@ -582,7 +582,7 @@ public class STABLE extends Protocol {
 
         public String toString() {
             StringBuffer sb=new StringBuffer();
-            sb.append("[");
+            sb.append('[');
             sb.append(type2String(type));
             sb.append("]: digest is ");
             sb.append(digest);
@@ -647,7 +647,7 @@ public class STABLE extends Protocol {
             num_gossip_runs--;
             if(num_gossip_runs <= 0) {
                 if(log.isDebugEnabled()) log.debug("stable task terminating (num_gossip_runs=" +
-                        num_gossip_runs + ", max_gossip_runs=" + max_gossip_runs + ")");
+                        num_gossip_runs + ", max_gossip_runs=" + max_gossip_runs + ')');
                 stop();
             }
         }

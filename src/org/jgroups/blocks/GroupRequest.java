@@ -1,4 +1,4 @@
-// $Id: GroupRequest.java,v 1.6 2004/05/05 16:15:13 belaban Exp $
+// $Id: GroupRequest.java,v 1.7 2004/07/05 05:41:45 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -39,7 +39,7 @@ import java.util.Vector;
  * to do so.<p>
  * <b>Requirements</b>: lossless delivery, e.g. acknowledgment-based message confirmation.
  * @author Bela Ban
- * @version $Revision: 1.6 $
+ * @version $Revision: 1.7 $
  */
 public class GroupRequest implements RspCollector, Command {
     /** return only first response */
@@ -382,7 +382,7 @@ public class GroupRequest implements RspCollector, Command {
     public String toString() {
         StringBuffer ret=new StringBuffer();
         ret.append("[GroupRequest:\n");
-        ret.append("req_id=").append(req_id).append("\n");
+        ret.append("req_id=").append(req_id).append('\n');
         ret.append("members: ");
         for(int i=0; i < membership.length; i++)
             ret.append(membership[i] + " ");
@@ -453,7 +453,7 @@ public class GroupRequest implements RspCollector, Command {
         }
 
         try {
-           if(log.isTraceEnabled()) log.trace("sending request (id=" + req_id + ")");
+           if(log.isTraceEnabled()) log.trace("sending request (id=" + req_id + ')');
             if(corr != null) {
                 java.util.List tmp=members != null? members : null;
                 corr.sendRequest(req_id, tmp, request_msg, rsp_mode == GET_NONE? null : this);

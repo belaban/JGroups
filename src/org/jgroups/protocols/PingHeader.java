@@ -1,4 +1,4 @@
-// $Id: PingHeader.java,v 1.3 2004/04/21 23:07:06 belaban Exp $
+// $Id: PingHeader.java,v 1.4 2004/07/05 05:51:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -29,7 +29,7 @@ public class PingHeader extends Header {
     }
 
     public String toString() {
-        return "[PING: type=" + type2Str(type) + ", arg=" + arg + "]";
+        return "[PING: type=" + type2Str(type) + ", arg=" + arg + ']';
     }
 
     String type2Str(int t) {

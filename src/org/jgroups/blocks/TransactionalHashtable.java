@@ -1,4 +1,4 @@
-// $Id: TransactionalHashtable.java,v 1.4 2004/03/30 06:47:12 belaban Exp $
+// $Id: TransactionalHashtable.java,v 1.5 2004/07/05 05:41:45 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -1301,7 +1301,7 @@ public class TransactionalHashtable extends HashMap implements ReplicationReceiv
 
         for(Iterator it=m.entrySet().iterator(); it.hasNext();) {
             entry=(Map.Entry)it.next();
-            sb.append(entry.getKey()).append(" --> ").append(entry.getValue()).append("\n");
+            sb.append(entry.getKey()).append(" --> ").append(entry.getValue()).append('\n');
         }
         return sb.toString();
     }

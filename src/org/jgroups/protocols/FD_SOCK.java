@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.4 2004/04/23 19:36:13 belaban Exp $
+// $Id: FD_SOCK.java,v 1.5 2004/07/05 05:51:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -38,9 +38,9 @@ public class FD_SOCK extends Protocol implements Runnable {
     long          get_cache_retry_timeout=500;       // msecs to wait until we retry getting the cache from coord
     long          suspect_msg_interval=5000;         // (BroadcastTask): mcast SUSPECT every 5000 msecs
     int           num_tries=3;                       // attempts coord is solicited for socket cache until we give up
-    Vector        members=new Vector();              // list of group members (updated on VIEW_CHANGE)
+    Vector        members=new Vector(11);            // list of group members (updated on VIEW_CHANGE)
     boolean       srv_sock_sent=false;               // has own socket been broadcast yet ?
-    Vector        pingable_mbrs=new Vector();        // mbrs from which we select ping_dest. may be subset of 'members'
+    Vector        pingable_mbrs=new Vector(11);      // mbrs from which we select ping_dest. may be subset of 'members'
     Promise       get_cache_promise=new Promise();   // used for rendezvous on GET_CACHE and GET_CACHE_RSP
     boolean       got_cache_from_coord=false;        // was cache already fetched ?
     Address       local_addr=null;                   // our own address
@@ -51,7 +51,7 @@ public class FD_SOCK extends Protocol implements Runnable {
     Socket        ping_sock=null;                    // socket to the member we monitor
     InputStream   ping_input=null;                   // input stream of the socket to the member we monitor
     Thread        pinger_thread=null;                // listens on ping_sock, suspects member if socket is closed
-    Hashtable     cache=new Hashtable();             // keys=Addresses, vals=IpAddresses (socket:port)
+    Hashtable     cache=new Hashtable(11);           // keys=Addresses, vals=IpAddresses (socket:port)
     int           start_port=10000;                  // start port for server socket (uses first available port)
     Promise       ping_addr_promise=new Promise();   // to fetch the ping_addr for ping_dest
     Object        sock_mutex=new Object();           // for access to ping_sock, ping_input
@@ -71,25 +71,25 @@ public class FD_SOCK extends Protocol implements Runnable {
         super.setProperties(props);
         str=props.getProperty("get_cache_timeout");
         if(str != null) {
-            get_cache_timeout=new Long(str).longValue();
+            get_cache_timeout=Long.parseLong(str);
             props.remove("get_cache_timeout");
         }
 
         str=props.getProperty("suspect_msg_interval");
         if(str != null) {
-            suspect_msg_interval=new Long(str).longValue();
+            suspect_msg_interval=Long.parseLong(str);
             props.remove("suspect_msg_interval");
         }
 
         str=props.getProperty("num_tries");
         if(str != null) {
-            num_tries=new Integer(str).intValue();
+            num_tries=Integer.parseInt(str);
             props.remove("num_tries");
         }
 
         str=props.getProperty("start_port");
         if(str != null) {
-            start_port=new Integer(str).intValue();
+            start_port=Integer.parseInt(str);
             props.remove("start_port");
         }
 
@@ -184,7 +184,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                         // if(!cache.containsKey(hdr.mbr))
                         cache.put(hdr.mbr, hdr.sock_addr); // update the cache
                         if(log.isDebugEnabled()) log.debug("i-have-sock: " + hdr.mbr + " --> " +
-                                hdr.sock_addr + " (cache is " + cache + ")");
+                                hdr.sock_addr + " (cache is " + cache + ')');
 
                         if(ping_dest != null && hdr.mbr.equals(ping_dest))
                             ping_addr_promise.setResult(hdr.sock_addr);
@@ -270,12 +270,10 @@ public class FD_SOCK extends Protocol implements Runnable {
                     }
 
                     // 3. Remove all entries in 'cache' which are not in the new membership
-                    if(members != null) {
-                        for(Enumeration e=cache.keys(); e.hasMoreElements();) {
-                            mbr=(Address) e.nextElement();
-                            if(!members.contains(mbr))
-                                cache.remove(mbr);
-                        }
+                    for(Enumeration e=cache.keys(); e.hasMoreElements();) {
+                        mbr=(Address) e.nextElement();
+                        if(!members.contains(mbr))
+                            cache.remove(mbr);
                     }
 
                     if(members.size() > 1) {
@@ -373,7 +371,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         if(!regular_sock_close) { // only suspect if socket was not closed regularly (by interruptPingerThread())
 
             if(log.isDebugEnabled()) log.debug("peer " + ping_dest +
-                    " closed socket (" + (ex != null ? ex.getClass().getName() : "eof") + ")");
+                    " closed socket (" + (ex != null ? ex.getClass().getName() : "eof") + ')');
             broadcastSuspectMessage(ping_dest);
             pingable_mbrs.removeElement(ping_dest);
         }
@@ -532,13 +530,12 @@ public class FD_SOCK extends Protocol implements Runnable {
 
         if(suspected_mbr == null) return;
 
-
         if(log.isDebugEnabled()) log.debug("suspecting " + suspected_mbr +
-                " (own address is " + local_addr + ")");
+                " (own address is " + local_addr + ')');
 
         // 1. Send a SUSPECT message right away; the broadcast task will take some time to send it (sleeps first)
         hdr=new FdHeader(FdHeader.SUSPECT);
-        hdr.mbrs=new Vector();
+        hdr.mbrs=new Vector(1);
         hdr.mbrs.addElement(suspected_mbr);
         suspect_msg=new Message();
         suspect_msg.putHeader(getName(), hdr);
@@ -712,7 +709,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                 case GET_CACHE_RSP:
                     return "GET_CACHE_RSP";
                 default:
-                    return "unknown type (" + type + ")";
+                    return "unknown type (" + type + ')';
             }
         }
 
@@ -785,7 +782,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                     client_sock=srv_sock.accept();
                     if(log.isTraceEnabled()) // +++ remove
                         log.trace("accepted connection from " +
-                                client_sock.getInetAddress() + ":" + client_sock.getPort());
+                                client_sock.getInetAddress() + ':' + client_sock.getPort());
                     in=client_sock.getInputStream();
                     try {
                         while((in.read()) != -1) {
@@ -821,7 +818,7 @@ public class FD_SOCK extends Protocol implements Runnable {
      * any longer. Then the task terminates.
      */
     private class BroadcastTask implements TimeScheduler.Task {
-        Vector suspected_mbrs=new Vector();
+        Vector suspected_mbrs=new Vector(7);
         boolean stopped=false;
 
 
@@ -833,7 +830,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                 if(!suspected_mbrs.contains(mbr)) {
                     suspected_mbrs.addElement(mbr);
 
-                    if(log.isDebugEnabled()) log.debug("mbr=" + mbr + " (size=" + suspected_mbrs.size() + ")");
+                    if(log.isDebugEnabled()) log.debug("mbr=" + mbr + " (size=" + suspected_mbrs.size() + ')');
                 }
                 if(stopped && suspected_mbrs.size() > 0) {
                     stopped=false;
@@ -875,7 +872,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                     if(!new_mbrship.contains(suspected_mbr)) {
                         it.remove();
 
-                        if(log.isDebugEnabled()) log.debug("removed " + suspected_mbr + " (size=" + suspected_mbrs.size() + ")");
+                        if(log.isDebugEnabled()) log.debug("removed " + suspected_mbr + " (size=" + suspected_mbrs.size() + ')');
                     }
                 }
                 if(suspected_mbrs.size() == 0)

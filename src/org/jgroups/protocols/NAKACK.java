@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.7 2004/04/23 19:36:13 belaban Exp $
+// $Id: NAKACK.java,v 1.8 2004/07/05 05:51:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -112,7 +112,7 @@ public class NAKACK extends Protocol {
 
 
     public Vector providedUpServices() {
-        Vector retval=new Vector();
+        Vector retval=new Vector(3);
         retval.addElement(new Integer(Event.GET_MSGS_RECEIVED));
         retval.addElement(new Integer(Event.GET_MSG_DIGEST));
         retval.addElement(new Integer(Event.GET_MSGS));
@@ -121,7 +121,7 @@ public class NAKACK extends Protocol {
 
 
     public Vector providedDownServices() {
-        Vector retval=new Vector();
+        Vector retval=new Vector(1);
         retval.addElement(new Integer(Event.GET_MSGS_RECEIVED));
         return retval;
     }
@@ -141,7 +141,7 @@ public class NAKACK extends Protocol {
 
             case Event.SUSPECT:
 
-                    if(log.isInfoEnabled()) log.info("received SUSPECT event (suspected member=" + evt.getArg() + ")");
+                    if(log.isInfoEnabled()) log.info("received SUSPECT event (suspected member=" + evt.getArg() + ')');
                 naker.suspect((Address)evt.getArg());
                 out_of_bander.suspect((Address)evt.getArg());
                 break;
@@ -222,7 +222,7 @@ public class NAKACK extends Protocol {
                                 rc=hdr.vid.compareTo(vid);
                                 if(rc > 0) {           // message is sent in next view -> store !
 
-                                        if(log.isInfoEnabled()) log.info("message's vid (" + hdr.vid + "#" + hdr.seqno +
+                                        if(log.isInfoEnabled()) log.info("message's vid (" + hdr.vid + '#' + hdr.seqno +
                                                 ") is bigger than current vid: (" + vid + ") message is queued !");
                                     msg.putHeader(getName(), hdr);  // put header back on as we removed it above
                                     queued_msgs.add(msg);
@@ -324,7 +324,7 @@ public class NAKACK extends Protocol {
 
             case Event.TMP_VIEW:
                 Vector mbrs=((View)evt.getArg()).getMembers();
-                members=mbrs != null? (Vector)mbrs.clone() : new Vector();
+                members=mbrs != null? (Vector)mbrs.clone() : new Vector(11);
                 break;
 
             case Event.VIEW_CHANGE:
@@ -382,11 +382,12 @@ public class NAKACK extends Protocol {
      * Rebroadcasts the messages given as arguments
      */
     void rebroadcastMsgs(Vector v) {
-        Vector final_v=new Vector();
+        Vector final_v;
         Message m1, m2;
         NakAckHeader h1, h2;
 
         if(v == null) return;
+        final_v=new Vector(v.size());
 
         // weed out duplicates
         /** todo Check!!!!! */
@@ -641,8 +642,7 @@ public class NAKACK extends Protocol {
                 return null;
             }
 
-            for(int i=0; i < digest.highest_seqnos.length; i++)
-                digest.highest_seqnos[i]=highest_seqnos[i];
+            System.arraycopy(highest_seqnos, 0, digest.highest_seqnos, 0, digest.highest_seqnos.length);
 
             for(int i=0; i < highest_seqnos.length; i++) {
                 sender=(Address)members.elementAt(i);
@@ -737,7 +737,7 @@ public class NAKACK extends Protocol {
             seqno=seqnos[index];
 
                 if(log.isInfoEnabled()) log.info("deleting stable messages [" +
-                        deleted_up_to + " - " + seqno + "]");
+                        deleted_up_to + " - " + seqno + ']');
 
             // delete sent messages that are stable (kept for retransmission requests from receivers)
             synchronized(sent_msgs) {
@@ -838,7 +838,7 @@ public class NAKACK extends Protocol {
                 received_msgs.put(sender, win);
             }
 
-             if(log.isInfoEnabled()) log.info("received <" + sender + "#" + id + ">");
+             if(log.isInfoEnabled()) log.info("received <" + sender + '#' + id + '>');
 
             win.add(id, msg);  // add in order, then remove and pass up as many msgs as possible
             while(true) {
@@ -855,7 +855,7 @@ public class NAKACK extends Protocol {
 
         void receiveAck(long id, Address sender) {
 
-                if(log.isInfoEnabled()) log.info("received ack <-- ACK <" + sender + "#" + id + ">");
+                if(log.isInfoEnabled()) log.info("received ack <-- ACK <" + sender + '#' + id + '>');
             sender_win.ack(id, sender);
         }
 
@@ -979,7 +979,7 @@ public class NAKACK extends Protocol {
             for(Enumeration e=received_msgs.keys(); e.hasMoreElements();) {
                 Address key=(Address)e.nextElement();
                 NakReceiverWindow w=(NakReceiverWindow)received_msgs.get(key);
-                ret.append("\n" + w.toString());
+                ret.append('\n' + w.toString());
             }
 
             ret.append("\nsender_win: " + sender_win.toString());
@@ -1025,13 +1025,13 @@ public class NAKACK extends Protocol {
             ack_msg.putHeader(getName(), hdr);
 
 
-             if(log.isInfoEnabled()) log.info("received <" + sender + "#" + id + ">\n");
+             if(log.isInfoEnabled()) log.info("received <" + sender + '#' + id + ">\n");
 
             if(receiver_win.add(sender, id))         // not received previously
                 passUp(new Event(Event.MSG, msg));
 
             passDown(new Event(Event.MSG, ack_msg));  // send ACK
-             if(log.isInfoEnabled()) log.info("sending ack <" + sender + "#" + id + ">\n");
+             if(log.isInfoEnabled()) log.info("sending ack <" + sender + '#' + id + ">\n");
 
             if(stable_msgs != null)
                 receiver_win.remove(sender, stable_msgs);
@@ -1039,7 +1039,7 @@ public class NAKACK extends Protocol {
 
 
         void receiveAck(long id, Address sender) {
-             if(log.isInfoEnabled()) log.info("received ack <" + sender + "#" + id + ">");
+             if(log.isInfoEnabled()) log.info("received ack <" + sender + '#' + id + '>');
             sender_win.ack(id, sender);
         }
 

@@ -1,4 +1,4 @@
-// $Id: TCPPING.java,v 1.8 2004/05/18 01:27:04 belaban Exp $
+// $Id: TCPPING.java,v 1.9 2004/07/05 05:51:25 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -56,13 +56,13 @@ public class TCPPING extends Protocol {
         super.setProperties(props);
         str=props.getProperty("timeout");              // max time to wait for initial members
         if(str != null) {
-            timeout=new Long(str).longValue();
+            timeout=Long.parseLong(str);
             props.remove("timeout");
         }
 
         str=props.getProperty("port_range");           // if member cannot be contacted on base port,
         if(str != null) {                              // how many times can we increment the port
-            port_range=new Integer(str).intValue();
+            port_range=Integer.parseInt(str);
             if (port_range < 1) {
                port_range = 1;    
             }
@@ -71,7 +71,7 @@ public class TCPPING extends Protocol {
 
         str=props.getProperty("num_initial_members");  // wait for at most n members
         if(str != null) {
-            num_initial_members=new Integer(str).intValue();
+            num_initial_members=Integer.parseInt(str);
             props.remove("num_initial_members");
         }
 
@@ -135,7 +135,7 @@ public class TCPPING extends Protocol {
                         return;
 
                     default:
-                        if(log.isWarnEnabled()) log.warn("got TCPPING header with unknown type (" + hdr.type + ")");
+                        if(log.isWarnEnabled()) log.warn("got TCPPING header with unknown type (" + hdr.type + ')');
                         return;
                 }
 
@@ -284,7 +284,7 @@ public class TCPPING extends Protocol {
             try {
                 t=tok.nextToken();
                 String host=t.substring(0, t.indexOf('['));
-                int port=new Integer(t.substring(t.indexOf('[') + 1, t.indexOf(']'))).intValue();
+                int port=Integer.parseInt(t.substring(t.indexOf('[') + 1, t.indexOf(']')));
                 List hosts = new List();
                 for(int i=port; i < port + port_range; i++) {
                    hosts.add(new IpAddress(host, i));

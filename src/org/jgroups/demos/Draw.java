@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.4 2004/03/30 06:47:16 belaban Exp $
+// $Id: Draw.java,v 1.5 2004/07/05 05:45:31 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -70,19 +70,19 @@ public class Draw implements ActionListener, ChannelListener {
         boolean          no_channel=false;
 
         for(int i=0; i < args.length; i++) {
-            if(args[i].equals("-help")) {
+            if("-help".equals(args[i])) {
                 help();
                 return;
             }
-            if(args[i].equals("-debug")) {
+            if("-debug".equals(args[i])) {
                 debug=true;
                 continue;
             }
-            if(args[i].equals("-props")) {
+            if("-props".equals(args[i])) {
                 props=args[++i];
                 continue;
             }
-            if(args[i].equals("-no_channel")) {
+            if("-no_channel".equals(args[i])) {
                 no_channel=true;
                 continue;
             }
@@ -306,14 +306,14 @@ public class Draw implements ActionListener, ChannelListener {
 
     public void actionPerformed(ActionEvent e) {
         String     command=e.getActionCommand();
-        if(command.equals("Clear")) {
+        if("Clear".equals(command)) {
             if(no_channel) {
                 clearPanel();
                 return;
             }
             sendClearPanelMsg();
         }
-        else if(command.equals("Leave & Exit")) {
+        else if("Leave & Exit".equals(command)) {
             if(!no_channel) {
                 try {
                     channel.close();
