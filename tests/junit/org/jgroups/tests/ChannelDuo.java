@@ -1,4 +1,4 @@
-// $Id: ChannelTrioTest.java,v 1.1 2003/09/26 15:10:38 rds13 Exp $
+// $Id: ChannelDuo.java,v 1.1 2003/11/24 16:34:20 rds13 Exp $
 
 package org.jgroups.tests;
 
@@ -16,83 +16,92 @@ import org.jgroups.View;
 import org.jgroups.util.Util;
 
 /*
- * This time we will use 3 channels. Why ?
- * We want to check synchronization with two readers,
- * and one writer.
+ * Tests operations on two Channel instance with various threads reading/writing :
+ * - one writer, n readers with or without timeout
+ * - one reader, n writers
  * @author rds13
  */
-public class ChannelTrioTest extends TestCase
+public class ChannelDuo extends TestCase
 {
+    final static boolean DEBUG = false;
     private Channel channel1 = null;
     private Channel channel2 = null;
-    private Channel channel3 = null;
 
-    static Logger logger = Logger.getLogger(ChannelTrioTest.class);
+    static Logger logger = Logger.getLogger(ChannelDuo.class);
     String channelName = "ChannelLog4jTest";
+    String protocol = null;
 
-    public ChannelTrioTest(String Name_)
+    public ChannelDuo(String Name_)
     {
         super(Name_);
     }
 
+    public String getProtocol()
+    {
+        return protocol;
+    }
+    
+    public void setProtocol(String proto)
+    {
+        protocol = proto;
+    }
+
     public void setUp()
     {
+        try
+        {
+            channel1 = new JChannel(null);
+            channel1.connect(channelName);
+        }
+        catch (ChannelException e)
+        {
+            logger.error("Channel init problem", e);
+        }
     }
 
     public void tearDown()
     {
+        if (channel1 != null)
+        {
+            channel1.close();
+            channel1 = null;
+        }
     }
 
     public void testLargeInsertion()
     {
         long start, stop;
         int nitems = 10000;
-        logger.info("start testLargeInsertion");
+        logger.debug("Starting testLargeInsertion");
 
         try
         {
             logger.info("Inserting " + nitems + " elements");
-
-            channel1 = new JChannel(null);
-            channel1.connect(channelName);
-            ReadItems rthread1 = new ReadItems(channel1, 0, nitems);
-            rthread1.start();
+            ReadItems mythread = new ReadItems(channel1, 0, nitems);
+            mythread.start();
 
             channel2 = new JChannel(null);
             channel2.connect(channelName);
-            ReadItems rthread2 = new ReadItems(channel2, 0, nitems);
-            rthread2.start();
 
-            channel3 = new JChannel(null);
-            channel3.connect(channelName);
             start = System.currentTimeMillis();
             for (int i = 0; i < nitems; i++)
-                channel3.send(new Message(null, null, new String("Msg #" + i).getBytes()));
-
-            rthread1.join();
-            rthread2.join();
-
+                channel2.send(new Message(null, null, new String("Msg #" + i).getBytes()));
+            mythread.join();
             stop = System.currentTimeMillis();
             logger.info("Took " + (stop - start) + " msecs");
 
-			assertEquals(nitems, rthread1.getNum_items());
-			assertEquals(nitems, rthread2.getNum_items());
-            assertFalse(rthread1.isAlive());
-            assertFalse(rthread2.isAlive());
+            assertEquals(nitems, mythread.getNum_items());
+            assertFalse(mythread.isAlive());
 
-            channel1.close();
-            channel1 = null;
             channel2.close();
             channel2 = null;
-            channel3.close();
-            channel3 = null;
         }
         catch (Exception ex)
         {
             logger.error("Problem", ex);
             assertTrue(false);
         }
-        logger.info("end testLargeInsertion");
+        logger.debug("end testLargeInsertion");
     }
 
     /** 
@@ -104,32 +113,20 @@ public class ChannelTrioTest extends TestCase
     {
         logger.info("start testBarrierWithTimeOut");
 
-        RemoveOneItemWithTimeout[] removersGroupOne = new RemoveOneItemWithTimeout[10];
-        RemoveOneItemWithTimeout[] removersGroupTwo = new RemoveOneItemWithTimeout[10];
+        RemoveOneItemWithTimeout[] removers = new RemoveOneItemWithTimeout[10];
         int num_dead = 0;
         long timeout = 200;
 
+        for (int i = 0; i < removers.length; i++)
+        {
+            removers[i] = new RemoveOneItemWithTimeout(channel1, i, timeout);
+            removers[i].start();
+        }
+
         try
         {
-
-            channel1 = new JChannel(null);
-            channel1.connect(channelName);
-            for (int i = 0; i < removersGroupOne.length; i++)
-            {
-                removersGroupOne[i] = new RemoveOneItemWithTimeout(channel1, i, timeout);
-                removersGroupOne[i].start();
-            }
-
             channel2 = new JChannel(null);
             channel2.connect(channelName);
-            for (int i = 0; i < removersGroupTwo.length; i++)
-            {
-                removersGroupTwo[i] = new RemoveOneItemWithTimeout(channel2, i, timeout);
-                removersGroupTwo[i].start();
-            }
-
-            channel3 = new JChannel(null);
-            channel3.connect(channelName);
         }
         catch (Exception e)
         {
@@ -141,7 +138,7 @@ public class ChannelTrioTest extends TestCase
         logger.info("-- adding element 99");
         try
         {
-            channel3.send(null, null, new Long(99));
+            channel2.send(null, null, new Long(99));
         }
         catch (Exception ex)
         {
@@ -152,7 +149,7 @@ public class ChannelTrioTest extends TestCase
         logger.info("-- adding element 100");
         try
         {
-            channel3.send(null, null, new Long(100));
+            channel2.send(null, null, new Long(100));
         }
         catch (Exception ex)
         {
@@ -161,39 +158,28 @@ public class ChannelTrioTest extends TestCase
 
         Util.sleep(1000);
 
-        num_dead = 0;
-        for (int i = 0; i < removersGroupOne.length; i++)
+        for (int i = 0; i < removers.length; i++)
         {
-            logger.info("removersGroupOne #" + i + " is " + (removersGroupOne[i].isAlive() ? "alive" : "terminated"));
-            if (!removersGroupOne[i].isAlive())
+            logger.info("remover #" + i + " is " + (removers[i].isAlive() ? "alive" : "terminated"));
+            if (!removers[i].isAlive())
             {
                 num_dead++;
             }
         }
-        int num_deadTwo = 0;
-        for (int i = 0; i < removersGroupTwo.length; i++)
-        {
-            logger.info("removersGroupTwo #" + i + " is " + (removersGroupTwo[i].isAlive() ? "alive" : "terminated"));
-            if (!removersGroupTwo[i].isAlive())
-            {
-                num_deadTwo++;
-            }
-        }
 
         assertEquals(2, num_dead);
-		assertEquals(2, num_deadTwo);
 
         // Testing handling of disconnect by reader threads
         channel1.disconnect();
         // channel1.close();
         Util.sleep(2000);
 
-        for (int i = 0; i < removersGroupOne.length; i++)
+        for (int i = 0; i < removers.length; i++)
         {
             try
             {
-                logger.debug("Waiting for remover Group One # " + i + " to join");
-                removersGroupOne[i].join();
+                logger.debug("Waiting for thread " + i + " to join");
+                removers[i].join();
             }
             catch (InterruptedException e)
             {
@@ -202,74 +188,113 @@ public class ChannelTrioTest extends TestCase
         }
 
         num_dead = 0;
-        for (int i = 0; i < removersGroupOne.length; i++)
+        for (int i = 0; i < removers.length; i++)
         {
-            logger.info("remover Group One #" + i + " is " + (removersGroupOne[i].isAlive() ? "alive" : "terminated"));
-            if (!removersGroupOne[i].isAlive())
+            logger.info("remover #" + i + " is " + (removers[i].isAlive() ? "alive" : "terminated"));
+            if (!removers[i].isAlive())
             {
                 num_dead++;
             }
         }
-        assertEquals(removersGroupOne.length, num_dead);
+        assertEquals(removers.length, num_dead);
 
-		Util.sleep(2000);
-		num_dead = 0;
-		logger.info("though Group One stopped, Group Two shall continue");
-		// though Group One stopped, Group Two shall continue
-		for (int i = 0; i < removersGroupTwo.length; i++)
-		{
-			logger.info("removersGroupTwo #" + i + " is " + (removersGroupTwo[i].isAlive() ? "alive" : "terminated"));
-			if (!removersGroupTwo[i].isAlive())
-			{
-				num_dead++;
-			}
-		}
-		assertEquals("Readers thread from Group Two stop that should'nt", 2, num_dead);
-
-        logger.info("-- adding element 101");
-        try
+        // help garbage collecting
+        for (int i = 0; i < removers.length; i++)
         {
-            channel3.send(null, null, new Long(101));
+            removers[i] = null;
         }
-        catch (Exception ex)
-        {
-            logger.error("Problem", ex);
-        }
-        Util.sleep(5000);
-        logger.info("-- adding element 102");
-        try
-        {
-            channel3.send(null, null, new Long(102));
-        }
-        catch (Exception ex)
-        {
-            logger.error("Problem", ex);
-        }
-		Util.sleep(5000);
-
-        num_dead = 0;
-		logger.info("Checking only 4 Group Two threads should have stop");
-        for (int i = 0; i < removersGroupTwo.length; i++)
-        {
-            logger.info("removersGroupTwo #" + i + " is " + (removersGroupTwo[i].isAlive() ? "alive" : "terminated"));
-            if (!removersGroupTwo[i].isAlive())
-            {
-                num_dead++;
-            }
-        }
-        assertEquals(2, num_dead - num_deadTwo);
 
         channel2.close();
         channel2 = null;
 
-        Util.sleep(2000);
+        logger.info("end testBarrierWithTimeOut");
+    }
 
-        for (int i = 0; i < removersGroupTwo.length; i++)
+    /** 
+     * Multiple threads add one element, one thread read them all.
+     */
+    public void testMultipleWriterOneReader()
+    {
+        logger.info("start testMultipleWriterOneReader");
+        AddOneItem[] adders = new AddOneItem[10];
+        int num_dead = 0;
+        int num_items = 0;
+        int items = 200;
+
+        try
+        {
+            channel2 = new JChannel(null);
+            channel2.connect(channelName);
+        }
+        catch (Exception e)
+        {
+            logger.error("Problem", e);
+        }
+
+        Util.sleep(1000);
+
+        for (int i = 0; i < adders.length; i++)
+        {
+            adders[i] = new AddOneItem(channel1, i, items);
+            adders[i].start();
+        }
+
+        Object obj;
+        Message msg;
+        while (num_items < (adders.length * items))
+        {
+
+            try
+            {
+                obj = channel2.receive(0); // no timeout
+                if (obj instanceof View)
+                    logger.info("--> NEW VIEW: " + obj);
+                else if (obj instanceof Message)
+                {
+                    msg = (Message) obj;
+                    num_items++;
+                    logger.debug("Received " + msg.getObject());
+                }
+                else
+                {
+                    logger.error("Unexpected object type " + obj.getClass());
+                }
+            }
+            catch (ChannelNotConnectedException conn)
+            {
+                logger.error("Problem", conn);
+                assertTrue(false);
+                break;
+            }
+            catch (TimeoutException e)
+            {
+                logger.error("Main thread timed out but should'nt had...", e);
+                assertTrue(false);
+                break;
+            }
+            catch (Exception e)
+            {
+                logger.error("Problem", e);
+                break;
+            }
+
+        }
+        assertEquals(adders.length * items, num_items);
+
+        Util.sleep(1000);
+
+        for (int i = 0; i < adders.length; i++)
         {
             try
             {
-                logger.debug("Waiting for removersGroupTwo " + i + " to join");
-                removersGroupTwo[i].join();
+                logger.debug("Waiting for thread " + i + " to join");
+                adders[i].join();
+                logger.info("adder #" + i + " is " + (adders[i].isAlive() ? "alive" : "terminated"));
+                if (!adders[i].isAlive())
+                {
+                    num_dead++;
+                }
+                adders[i] = null;
             }
             catch (InterruptedException e)
             {
@@ -277,20 +302,10 @@ public class ChannelTrioTest extends TestCase
             }
         }
 
-        num_dead = 0;
-        for (int i = 0; i < removersGroupTwo.length; i++)
-        {
-            logger.info("removersGroupTwo #" + i + " is " + (removersGroupTwo[i].isAlive() ? "alive" : "terminated"));
-            if (!removersGroupTwo[i].isAlive())
-            {
-                num_dead++;
-            }
-        }
-        assertEquals(removersGroupTwo.length, num_dead);
-
-        channel3.close();
-
-        logger.info("end testBarrierWithTimeOut");
+        assertEquals(adders.length, num_dead);
+        channel2.close();
+        channel2 = null;
+        logger.info("end testMultipleWriterOneReader");
     }
 
     /** 
@@ -303,23 +318,13 @@ public class ChannelTrioTest extends TestCase
     {
         logger.info("start testBarrier");
 
-        ReadItems[] removersGroupOne = new ReadItems[10];
-        ReadItems[] removersGroupTwo = new ReadItems[10];
+        ReadItems[] removers = new ReadItems[10];
         int num_dead = 0;
 
-        try
+        for (int i = 0; i < removers.length; i++)
         {
-            channel1 = new JChannel(null);
-            channel1.connect(channelName);
-        }
-        catch (Exception ex)
-        {
-            logger.error("Problem", ex);
-        }
-        for (int i = 0; i < removersGroupOne.length; i++)
-        {
-            removersGroupOne[i] = new ReadItems(channel1, i, 1);
-            removersGroupOne[i].start();
+            removers[i] = new ReadItems(channel1, i, 1);
+            removers[i].start();
         }
 
         try
@@ -331,39 +336,13 @@ public class ChannelTrioTest extends TestCase
         {
             logger.error("Problem", ex);
         }
+
         Util.sleep(1000);
 
-        logger.info("-- adding Msg #1");
+        logger.info("-- adding element 99");
         try
         {
-            channel2.send(new Message(null, null, new String("Msg #1").getBytes()));
-        }
-        catch (Exception ex)
-        {
-            logger.error("Problem", ex);
-        }
-		Util.sleep(1000);
-
-        try
-        {
-            channel3 = new JChannel(null);
-            channel3.connect(channelName);
-        }
-        catch (Exception ex)
-        {
-            logger.error("Problem", ex);
-        }
-        Util.sleep(5000);
-        for (int i = 0; i < removersGroupTwo.length; i++)
-        {
-            removersGroupTwo[i] = new ReadItems(channel3, i, 1);
-            removersGroupTwo[i].start();
-        }
-
-        logger.info("-- adding Msg #2");
-        try
-        {
-            channel2.send(new Message(null, null, new String("Msg #2").getBytes()));
+            channel2.send(null, null, new String("99").getBytes());
         }
         catch (Exception ex)
         {
@@ -371,59 +350,36 @@ public class ChannelTrioTest extends TestCase
         }
 
         Util.sleep(5000);
-
-        num_dead = 0;
-        for (int i = 0; i < removersGroupOne.length; i++)
+        logger.info("-- adding element 100");
+        try
         {
-            logger.info("removersGroupOne #" + i + " is " + (removersGroupOne[i].isAlive() ? "alive" : "terminated"));
-            if (!removersGroupOne[i].isAlive())
+            channel2.send(null, null, new String("100").getBytes());
+        }
+        catch (Exception ex)
+        {
+            logger.error("Problem", ex);
+        }
+
+        Util.sleep(2000);
+
+        for (int i = 0; i < removers.length; i++)
+        {
+            logger.info("remover #" + i + " is " + (removers[i].isAlive() ? "alive" : "terminated"));
+            if (!removers[i].isAlive())
             {
                 num_dead++;
             }
         }
-        int num_deadTwo = 0;
-        for (int i = 0; i < removersGroupTwo.length; i++)
-        {
-            logger.info("removersGroupTwo #" + i + " is " + (removersGroupTwo[i].isAlive() ? "alive" : "terminated"));
-            if (!removersGroupTwo[i].isAlive())
-            {
-                num_deadTwo++;
-            }
-        }
 
-		assertEquals(2, num_dead);
-		assertEquals(1, num_deadTwo);
-
-        try
-        {
-            logger.info("-- adding Msg #3");
-            channel2.send(new Message(null, null, new String("Msg #3").getBytes()));
-            logger.info("-- adding Msg #4");
-            channel2.send(new Message(null, null, new String("Msg #4").getBytes()));
-        }
-        catch (Exception ex)
-        {
-            logger.error("Problem", ex);
-        }
-        Util.sleep(2000);
-
-		num_dead = 0;
-		for (int i = 0; i < removersGroupOne.length; i++)
-		{
-			logger.info("removersGroupOne #" + i + " is " + (removersGroupOne[i].isAlive() ? "alive" : "terminated"));
-			if (!removersGroupOne[i].isAlive())
-			{
-				num_dead++;
-			}
-		}
-		assertEquals(4, num_dead);
+        assertEquals(2, num_dead);
 
         channel1.close();
-        for (int i = 0; i < removersGroupOne.length; i++)
+
+        for (int i = 0; i < removers.length; i++)
         {
             try
             {
-                removersGroupOne[i].join(1000);
+                removers[i].join(1000);
             }
             catch (InterruptedException e)
             {
@@ -432,57 +388,18 @@ public class ChannelTrioTest extends TestCase
         }
 
         num_dead = 0;
-        for (int i = 0; i < removersGroupOne.length; i++)
+        for (int i = 0; i < removers.length; i++)
         {
-            logger.info("remover #" + i + " is " + (removersGroupOne[i].isAlive() ? "alive" : "terminated"));
-            if (!removersGroupOne[i].isAlive())
+            logger.info("remover #" + i + " is " + (removers[i].isAlive() ? "alive" : "terminated"));
+            if (!removers[i].isAlive())
             {
                 num_dead++;
             }
         }
-        assertEquals(removersGroupOne.length, num_dead);
-
-        num_dead = 0;
-        // check no more threads dead in group two
-        for (int i = 0; i < removersGroupTwo.length; i++)
-        {
-            logger.info("remover #" + i + " is " + (removersGroupTwo[i].isAlive() ? "alive" : "terminated"));
-            if (!removersGroupTwo[i].isAlive())
-            {
-                num_dead++;
-            }
-        }
-        assertEquals(num_deadTwo+2, num_dead);
+        assertEquals(removers.length, num_dead);
 
         channel2.close();
         channel2 = null;
-        channel3.close();
-        channel3 = null;
-
-        for (int i = 0; i < removersGroupTwo.length; i++)
-        {
-            try
-            {
-                removersGroupTwo[i].join(1000);
-            }
-            catch (InterruptedException e)
-            {
-                logger.error("Thread joining() interrupted", e);
-            }
-        }
-
-        num_dead = 0;
-        // check no more threads dead in group two
-        for (int i = 0; i < removersGroupTwo.length; i++)
-        {
-            logger.info("remover Group Two #" + i + " is " + (removersGroupTwo[i].isAlive() ? "alive" : "terminated"));
-            if (!removersGroupTwo[i].isAlive())
-            {
-                num_dead++;
-            }
-        }
-        assertEquals(removersGroupTwo.length, num_dead);
-
         logger.info("stop testBarrier");
     }
 
@@ -496,56 +413,38 @@ public class ChannelTrioTest extends TestCase
         int nReaders = 10;
 
         Writer[] adders = new Writer[nWriters];
-        Reader[] readersOne = new Reader[nReaders];
-        Reader[] readersTwo = new Reader[nReaders];
+        Reader[] readers = new Reader[nReaders];
         int num_dead = 0;
         int num_items = 0;
         int[] writes = new int[nWriters];
-        int[] readsOne = new int[nReaders];
-        int[] readsTwo = new int[nReaders];
+        int[] reads = new int[nReaders];
 
         try
         {
             channel2 = new JChannel(null);
             channel2.connect(channelName);
-            channel1 = new JChannel(null);
-            channel1.connect(channelName);
         }
         catch (Exception e)
         {
             logger.error("Problem", e);
         }
 
-        for (int i = 0; i < readersOne.length; i++)
+        for (int i = 0; i < readers.length; i++)
         {
-            readersOne[i] = new Reader(channel1, i, readsOne);
-            readersOne[i].start();
-        }
-        for (int i = 0; i < readersTwo.length; i++)
-        {
-            readersTwo[i] = new Reader(channel2, i, readsTwo);
-            readersTwo[i].start();
+            readers[i] = new Reader(channel2, i, reads);
+            readers[i].start();
         }
 
         Util.sleep(2000);
 
-        try
-        {
-            channel3 = new JChannel(null);
-            channel3.connect(channelName);
-        }
-        catch (Exception e)
-        {
-            logger.error("Problem", e);
-        }
         for (int i = 0; i < adders.length; i++)
         {
-            adders[i] = new Writer(channel3, i, writes);
+            adders[i] = new Writer(channel1, i, writes);
             adders[i].start();
         }
 
         // give writers time to write !
-        Util.sleep(15000);
+        Util.sleep(10000);
 
         // stop all writers
         for (int i = 0; i < adders.length; i++)
@@ -576,7 +475,6 @@ public class ChannelTrioTest extends TestCase
         Util.sleep(10000);
 
         channel2.close();
-        channel1.close();
 
         // give time to readers to catch ChannelClosedException
         boolean allStopped = true;
@@ -584,44 +482,18 @@ public class ChannelTrioTest extends TestCase
         {
             allStopped = true;
             Util.sleep(2000);
-            for (int i = 0; i < readersOne.length; i++)
+            for (int i = 0; i < readers.length; i++)
             {
                 try
                 {
-                    logger.debug("Waiting for ReaderGroupOne thread " + i + " to join");
-                    readersOne[i].join(1000);
-                    if (readersOne[i].isAlive())
+                    logger.debug("Waiting for Reader thread " + i + " to join");
+                    readers[i].join(1000);
+                    if (readers[i].isAlive())
                     {
                         allStopped = false;
-                        logger.info("reader One #" + i + " " + readsOne[i] + " read items");
+                        logger.info("reader #" + i + " " + reads[i] + " read items");
                     }
-                    logger.info("reader One #" + i + " is " + (readersOne[i].isAlive() ? "alive" : "terminated"));
-                }
-                catch (InterruptedException e)
-                {
-                    logger.error("Thread joining() interrupted", e);
-                }
-            }
-        }
-        while (!allStopped);
-
-        allStopped = true;
-        do
-        {
-            allStopped = true;
-            Util.sleep(2000);
-            for (int i = 0; i < readersTwo.length; i++)
-            {
-                try
-                {
-                    logger.debug("Waiting for ReaderGroupTwo thread " + i + " to join");
-                    readersTwo[i].join(1000);
-                    if (readersTwo[i].isAlive())
-                    {
-                        allStopped = false;
-                        logger.info("reader Two #" + i + " " + readsTwo[i] + " read items");
-                    }
-                    logger.info("reader Two #" + i + " is " + (readersTwo[i].isAlive() ? "alive" : "terminated"));
+                    logger.info("reader #" + i + " is " + (readers[i].isAlive() ? "alive" : "terminated"));
                 }
                 catch (InterruptedException e)
                 {
@@ -638,22 +510,17 @@ public class ChannelTrioTest extends TestCase
         }
 
         int total_reads = 0;
-        for (int i = 0; i < readsOne.length; i++)
+        for (int i = 0; i < reads.length; i++)
         {
-            total_reads += readsOne[i];
-        }
-        for (int i = 0; i < readsTwo.length; i++)
-        {
-            total_reads += readsTwo[i];
+            total_reads += reads[i];
         }
         logger.info("Total writes:" + total_writes);
         logger.info("Total reads:" + total_reads);
 
-        assertEquals(2*total_writes, total_reads);
+        assertEquals(total_writes, total_reads);
 
-        channel1.close();
         channel2.close();
-        channel3.close();
+        channel2 = null;
         logger.info("end testMultipleWriterMultipleReader");
     }
 
@@ -869,7 +736,8 @@ public class ChannelTrioTest extends TestCase
                 }
                 catch (ChannelNotConnectedException conn)
                 {
-                    logger.error("Thread #" + rank + " problem", conn);
+                    if (DEBUG)
+                        logger.error("Thread #" + rank + " problem", conn);
                     finished = true;
                 }
                 catch (TimeoutException e)
@@ -990,7 +858,8 @@ public class ChannelTrioTest extends TestCase
                 }
                 catch (ChannelClosedException e)
                 {
-                    logger.error("Reader thread #" + rank + ": channel closed", e);
+                    if (DEBUG)
+                        logger.error("Reader thread #" + rank + ": channel closed", e);
                     running = false;
                 }
                 catch (Exception e)
@@ -1010,7 +879,7 @@ public class ChannelTrioTest extends TestCase
 
     public static void main(String[] args)
     {
-        String[] testCaseName = { ChannelTrioTest.class.getName()};
+        String[] testCaseName = { ChannelDuo.class.getName()};
         junit.textui.TestRunner.main(testCaseName);
     }
 

@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.4 2003/11/21 15:48:25 rds13 Exp $ -->
+<!-- $Id: build.xml,v 1.5 2003/11/24 16:34:19 rds13 Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -23,7 +23,8 @@
     <property name="docbook.dir" value="${pg.dir}/docbook-xsl"/>
     <property name="build.compiler.emacs" value="true"/>
     <property name="javadoc.packages" value="org.jgroups.*"/>
-    <property name="unittest.timeout" value="180000"/>
+    <property name="unittest.timeout.low" value="120000"/>
+    <property name="unittest.timeout.high" value="280000"/>
 
 
     <path id="jg.classpath">
@@ -312,52 +313,26 @@
     <target name="unittests"
         depends="compile"
         description="Runs all unit tests in tests/junit and prints results to stdout">
-        <junit printsummary="yes" timeout="${unittest.timeout}" fork="yes">
+        <junit printsummary="yes" timeout="${unittest.timeout.low}" fork="yes">
             <classpath refid="jg.classpath"/>
             <formatter type="brief" usefile="false"/>
             <batchtest todir="${root.dir}/tmp">
                 <fileset dir="${junit.dir}"
-                    includes="**/*Test.java"/>
+                    includes="**/*Test.java"
+                    excludes="**/Channel*Test.java,**/DistributedQueueConcurrencyTest.java"/>
+            </batchtest>
+        </junit>
+        <junit printsummary="yes" timeout="${unittest.timeout.high}" fork="yes">
+            <classpath refid="jg.classpath"/>
+            <formatter type="brief" usefile="false"/>
+            <test todir="${root.dir}/tmp" name="org.jgroups.blocks.DistributedQueueConcurrencyTest">
+            </test>
+            <batchtest todir="${root.dir}/tmp">
+                <fileset dir="${junit.dir}"
+                    includes="**/Channel*Test.java"/>
             </batchtest>
         </junit>
     </target>
-
-    <target name="multiprotocol-tests">
-		<antcall target="protocol-test">
-			<param name="protocol.url" value="file:conf/default.xml"/>
-		</antcall>
-		<antcall target="protocol-test">
-			<param name="protocol.url" value="file:conf/default-minimalthreads.xml"/>
-		</antcall>
-		<antcall target="protocol-test">
-			<param name="protocol.url" value="file:conf/state_transfer.xml"/>
-		</antcall>
-		<antcall target="protocol-test">
-			<param name="protocol.url" value="file:conf/total-token.xml"/>
-		</antcall>
-		<antcall target="protocol-test">
-			<param name="protocol.url" value="file:conf/vsync.xml"/>
-		</antcall>
-		<antcall target="protocol-test">
-			<param name="protocol.url" value="file:conf/fc.xml"/>
-		</antcall>
-		<antcall target="protocol-test">
-			<param name="protocol.url" value="file:conf/flow_control.xml"/>
-		</antcall>
-    </target>
-
-    <target name="protocol-test"
-        depends="compile"
-        description="Runs a particular test in tests/junit with a specific protocol and prints results to stdout">
-        <junit printsummary="yes" timeout="${unittest.timeout}" fork="yes">
-            <classpath refid="jg.classpath"/>
-            <formatter type="brief" usefile="false"/>
-             <jvmarg value="-Dforce.properties=${protocol.url}"/>
-            <test todir="${root.dir}/tmp" name="org.jgroups.tests.ChannelTrioTest">
-            </test>
-        </junit>
-    </target>
-
 
     <target name="upload"
         description="FTP jgroups-all.jar to host defined in build.properties">
@@ -374,13 +349,25 @@
     <target name="unittests-xml" depends="compile">
         <delete dir="${root.dir}/tmp/tests-results"/>
         <mkdir dir="${root.dir}/tmp/tests-results"/>
-        <junit printsummary="yes" timeout="${unittest.timeout}" fork="yes">
+        <junit printsummary="yes" timeout="${unittest.timeout.low}" fork="yes">
             <jvmarg value="-Dtests.tmp.dir=${root.dir}/tmp"/>
             <classpath refid="jg.classpath"/>
             <formatter type="xml" usefile="true"/>
             <batchtest todir="${root.dir}/tmp/tests-results">
                 <fileset dir="${junit.dir}"
-                    includes="**/*Test.java"/>
+                    includes="**/*Test.java"
+                    excludes="**/Channel*Test.java,**/DistributedQueueConcurrencyTest.java"/>
+            </batchtest>
+        </junit>
+        <junit printsummary="yes" timeout="${unittest.timeout.high}" fork="yes">
+            <jvmarg value="-Dtests.tmp.dir=${root.dir}/tmp"/>
+            <classpath refid="jg.classpath"/>
+            <formatter type="xml" usefile="true"/>
+            <test todir="${root.dir}/tmp/tests-results" name="org.jgroups.blocks.DistributedQueueConcurrencyTest">
+            </test>
+            <batchtest todir="${root.dir}/tmp/tests-results">
+                <fileset dir="${junit.dir}"
+                    includes="**/Channel*Test.java"/>
             </batchtest>
         </junit>
     </target>
@@ -400,7 +387,7 @@
         <delete dir="${root.dir}/tmp/html"/>
         <mkdir dir="${root.dir}/tmp/html"/>
         <junitreport todir="${root.dir}/tmp/html">
-            <fileset dir="${root.dir}/tmp/tests-results" includes="TEST*.xml" excludes="*TestSuites*"/>
+            <fileset dir="${root.dir}/tmp/tests-results" includes="**/TEST-*.xml"/>
             <report todir="${root.dir}/tmp/html"/>
         </junitreport>
         <echo message="********************************************************************"/>
