@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.132 2004/10/08 16:58:34 belaban Exp $
+Revision: $Id: history.txt,v 1.133 2004/11/01 14:02:59 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -27,6 +27,10 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
 Version 2.2.8
 -------------
+
+- MethodCall: changed Class.getMethod() to Class.getDeclaredMethod(). This allows for invocation of non-public
+  methods, e.g. private methods from within the same class, or package-private methods from within the same package
+  (bela Nov 1 2004)
 
 - Added leading byte for Message to indicate which fields are null and non-null. Saves 5 bytes/msg
   (bela Oct 8 2004)
