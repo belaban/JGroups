@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.103 2004/08/18 07:16:45 belaban Exp $
+Revision: $Id: history.txt,v 1.104 2004/08/30 09:32:53 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -27,6 +27,10 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
 Version 2.2.7
 -------------
+
+- Removed checks for self-delivery in FC: flow control needs to apply also for messages sent
+  from X to itself
+  (bela Aug 30 2004)
 
 - Added discard_incompatibe_packets to UDP (suggested by Noronha, Vijay" <Noronha@Synygy.com>)
   (bela Aug 17 2004)
