@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.49 2004/03/10 02:07:22 belaban Exp $
+Revision: $Id: history.txt,v 1.50 2004/03/16 18:00:47 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java JGroups.Version')]
 
@@ -26,6 +26,9 @@ romuald     = Romuald du Song
 
 Version 2.2.2
 -------------
+
+- MessageDispatcher: handling SET_LOCAL_ADDRESS, cache local_addr correctly (suggested by Yaron Rosenbaum)
+  (bela March 16 2004)
 
 - Added more trace information to RpcDispatcher, MessageDispatcher, RequestCorrelator and GroupRequest
   (bela March 9 2004)
