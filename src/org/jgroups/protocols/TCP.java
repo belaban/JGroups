@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.11 2004/08/12 14:08:10 belaban Exp $
+// $Id: TCP.java,v 1.12 2004/09/02 14:32:55 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -84,7 +84,7 @@ public class TCP extends Protocol implements ConnectionTable.Receiver, Connectio
 
 
     public void start() throws Exception {
-        ct = getConnectionTable(reaper_interval,conn_expire_time,bind_addr,start_port);
+        ct=getConnectionTable(reaper_interval,conn_expire_time,bind_addr,start_port);
         ct.addConnectionListener(this);
         ct.setReceiveBufferSize(recv_buf_size);
         ct.setSendBufferSize(send_buf_size);
@@ -104,26 +104,24 @@ public class TCP extends Protocol implements ConnectionTable.Receiver, Connectio
     * Sub classes overrides this method to initialize a different version of
     * ConnectionTable.
     */
-    protected ConnectionTable getConnectionTable(long ri, long cet,
-									   InetAddress b_addr,int s_port) throws Exception
-	{
-		ConnectionTable cTable = null;
-    	if(ri == 0 && cet == 0) {
-            cTable=new ConnectionTable(this, b_addr, start_port);
-        }
-        else {
-            if(ri == 0) {
-                ri=5000;
-                if(log.isWarnEnabled()) log.warn("reaper_interval was 0, set it to " + ri);
-            }
-            if(cet == 0) {
-                cet=1000 * 60 * 5;
-                if(log.isWarnEnabled()) log.warn("conn_expire_time was 0, set it to " + cet);
-            }
-            cTable=new ConnectionTable(this, b_addr, s_port, ri, cet);
-        }
-    	return cTable;
-	}
+   protected ConnectionTable getConnectionTable(long ri, long cet, InetAddress b_addr, int s_port) throws Exception {
+       ConnectionTable cTable=null;
+       if(ri == 0 && cet == 0) {
+           cTable=new ConnectionTable(this, b_addr, start_port);
+       }
+       else {
+           if(ri == 0) {
+               ri=5000;
+               if(log.isWarnEnabled()) log.warn("reaper_interval was 0, set it to " + ri);
+           }
+           if(cet == 0) {
+               cet=1000 * 60 * 5;
+               if(log.isWarnEnabled()) log.warn("conn_expire_time was 0, set it to " + cet);
+           }
+           cTable=new ConnectionTable(this, b_addr, s_port, ri, cet);
+       }
+       return cTable;
+   }
 
     public void stop() {
         ct.stop();
