@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.67 2004/05/02 05:37:18 belaban Exp $
+Revision: $Id: history.txt,v 1.68 2004/05/02 08:24:30 yaron-r Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -20,12 +20,39 @@ akbollu     = Ananda Bollu (akbollu@users.sf.net)
 whizkid_bay = Mandar Shinde (whizkid_bay@users.sf.net)
 ovidiuf     = Ovidiu Feodorov (ovidiuf@users.sf.net)
 romuald     = Romuald du Song
+yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
+
+
 
 
 
 
 Version 2.2.4
 -------------
+- Solved bug #943709
+  (yaronr April 28 2004)  
+
+- Added class org.jgroups.util.ReentrantLatch
+  (yaronr April 28 2004)
+
+- Solved bug# 939253
+  Updated MessageDispatcher.java (MessageDispatcher + ProtocolAdaptor).
+  (yaronr April 28 2004)
+
+- Optimization in RpcDispatcher: before marshalling the args and handing the call over to the superclass, we
+  make sure the destination list is not empty: if empty we return immediately.
+  (bela May 1 2004)
+
+- Fixed bugs #943480 and #938584. STABLE handles SUSPEND_STABLE and RESUME_STABLE events, and STATE_TRANSFER
+  sends SUSPEND_STABLE before fetching the state and RESUME_STABLE after receiving the state, to prevent
+  message garbage collection from going on during a state transfer
+  (bela April 28 2004)
+
+- Fixed bug #943881 (patch by Chris Wampler)
+  (bela April 28 2004)
+
+- Fixed bug #938584 (NAKACK.retransmit problem)
+  (bela April 27 2004)
 
 - Optimization in RpcDispatcher: before marshalling the args and handing the call over to the superclass, we
   make sure the destination list is not empty: if empty we return immediately.
