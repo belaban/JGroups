@@ -1,4 +1,4 @@
-// $Id: Queue.java,v 1.20 2005/02/18 01:20:56 ovidiuf Exp $
+// $Id: Queue.java,v 1.21 2005/02/18 08:16:33 belaban Exp $
 
 package org.jgroups.util;
 
@@ -6,13 +6,8 @@ package org.jgroups.util;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.TimeoutException;
-import org.jgroups.Event;
-import org.jgroups.Message;
-import org.jgroups.protocols.FD;
-import org.jgroups.protocols.PingHeader;
 
-import java.util.Map;
-import java.util.Iterator;
+import java.util.LinkedList;
 
 
 
@@ -474,6 +469,22 @@ public class Queue {
         }
     }
 
+    /**
+     * Returns all the elements of the queue
+     * @return A copy of the queue
+     */
+    public LinkedList values() {
+        LinkedList retval=new LinkedList();
+        synchronized(mutex) {
+            Element el=head;
+            while(el != null) {
+                retval.add(el.obj);
+                el=el.next;
+            }
+        }
+        return retval;
+    }
+
 
     /**
      * returns the number of objects that are currently in the queue
@@ -491,89 +502,6 @@ public class Queue {
         return "Queue (" + size() + ") messages";
     }
 
-
-    /**
-     * Debugging method used to dump the content of a protocol queue in a condensed form. Useful
-     * to follow the evolution of the queue's content in time.
-     */ 
-    public String dump()
-    {
-        StringBuffer sb = new StringBuffer();
-        synchronized(mutex) {
-            Element e = head;
-            if (e == null)
-            {
-                sb.append("empty");
-            }
-            else
-            {
-                while(e != null)
-                {
-                    Object o = e.obj;
-                    String s = null;
-                    if (o instanceof Event)
-                    {
-                        Event event = (Event)o;
-                        int type = event.getType();
-                        s = Event.type2String(type);
-
-                        if (type == Event.MSG)
-                        {
-                            s += "[";
-                            Message m = (Message)event.getArg();
-                            Map headers = m.getHeaders();
-                            for(Iterator i = headers.keySet().iterator(); i.hasNext();)
-                            {
-                                Object headerKey = i.next();
-                                Object value = headers.get(headerKey);
-                                String headerToString = null;
-                                if (value instanceof FD.FdHeader)
-                                {
-                                    headerToString = value.toString();
-                                }
-                                else if (value instanceof PingHeader)
-                                {
-                                    headerToString =  headerKey + "-";
-                                    if (((PingHeader)value).type == PingHeader.GET_MBRS_REQ)
-                                    {
-                                        headerToString += "GMREQ";
-                                    }
-                                    else if (((PingHeader)value).type == PingHeader.GET_MBRS_RSP)
-                                    {
-                                        headerToString += "GMRSP";
-                                    }
-                                    else
-                                    {
-                                        headerToString += "UNKNOWN";
-                                    }
-                                }
-                                else
-                                {
-                                    headerToString =
-                                    headerKey + "-" + (value == null ? "null" : value.toString());
-
-                                }
-                                s += headerToString;
-
-                                if (i.hasNext())
-                                {
-                                    s += ",";
-                                }
-                            }
-                            s += "]";
-                        }
-                    }
-                    else
-                    {
-                        s = o.toString();
-                    }
-                    sb.append(s).append(" ");
-                    e = e.next;
-                }
-            }
-        }
-        return sb.toString();
-    }
 
 
 
