@@ -72,6 +72,11 @@ public class VotingAdapter implements MessageListener, MembershipListener {
         rpcDispatcher = new RpcDispatcher(channel, this, this, this);
     }
 
+    public VotingAdapter(PullPushAdapter adapter, Serializable id) {
+        rpcDispatcher = new RpcDispatcher(adapter, id, this, this, this);
+    }
+
+
     /**
      * Performs actual voting on the VoteChannel using the JGroups
      * facilities for communication.
