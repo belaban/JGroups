@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.17 2004/10/04 20:35:40 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.18 2005/01/07 11:17:23 belaban Exp $ -->
 
 <project name="JGroups" default="compile-1.4" basedir=".">
     <description>
@@ -21,6 +21,7 @@
     <property name="javadoc.dir" value="${dist.dir}/javadoc"/>
     <property name="conf.dir" value="${root.dir}/conf"/>
     <property name="pg.dir" value="${doc.dir}/progguide"/>
+	<property name="keystore.dir" value="${root.dir}/keystore"/>
     <property name="docbook.dir" value="${pg.dir}/docbook-xsl"/>
     <property name="build.compiler.emacs" value="true"/>
     <property name="javadoc.packages" value="org.jgroups.*"/>
@@ -31,6 +32,7 @@
     <path id="jg.classpath">
         <pathelement location="${compile.dir}"/>
         <pathelement location="${conf.dir}"/>
+    	<pathelement location="${keystore.dir}"/>
         <fileset dir="${lib.dir}">
             <include name="*.jar"/>
         </fileset>
@@ -271,15 +273,13 @@
 
     <!-- clean up directories -->
     <target name="cleanall"
-        description="Removes all class files and the ./dist
-    directory plus the Makefile generated files">
+        description="Removes all class files and the ./dist directory">
         <delete dir="${compile.dir}"/>
         <delete dir="${dist.dir}"/>
+    	<delete dir="${keystore.dir}" failonerror="false"/>
         <delete>
             <fileset dir="${root.dir}" defaultexcludes="no">
                 <include name="**/*~"/>
-                <include name="Makefile.include"/>
-                <include name="configure.cache"/>
             </fileset>
         </delete>
     </target>
@@ -306,9 +306,20 @@
         <java classname="org.jgroups.Version" classpathref="jg.classpath"/>
     </target>
 
-
+	<target name="makeKeystore"
+		depends="compile"
+		description="Generates an appropraite temporary keystore file for the unit tests and the JVM in use">
+		<mkdir dir="${keystore.dir}"/>
+		<java classname="org.jgroups.demos.KeyStoreGenerator" fork="true">
+			<arg value="--storeName"/>
+			<arg value="keystore/defaultStore.keystore"/>
+			<classpath refid="jg.classpath"/>			   
+		</java>
+	</target>
+	
+	
     <target name="unittests"
-        depends="compile"
+        depends="compile, makeKeystore"    	
         description="Runs all unit tests in tests/junit and prints results to stdout">
         <junit printsummary="yes" timeout="${unittest.timeout.low}" fork="yes">
             <classpath refid="jg.classpath"/>
@@ -318,6 +329,7 @@
                     includes="**/*Test.java"/>
             </batchtest>
         </junit>
+    	<delete dir="${keystore.dir}" failonerror="false"/>
     </target>
 
 
@@ -333,7 +345,7 @@
 <!--    </target>-->
 
 
-    <target name="unittests-xml" depends="compile">
+    <target name="unittests-xml" depends="compile, makeKeystore">
         <delete dir="${root.dir}/tmp/tests-results"/>
         <mkdir dir="${root.dir}/tmp/tests-results"/>
         <junit printsummary="yes" timeout="${unittest.timeout.low}" fork="yes">
