@@ -1,4 +1,4 @@
-// $Id: LogicalAddress.java,v 1.3 2003/12/24 00:05:14 belaban Exp $
+// $Id: LogicalAddress.java,v 1.4 2003/12/27 02:01:11 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.net.InetAddress;
+import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -30,10 +31,18 @@ import java.util.List;
  * @author Bela Ban, Dec 23 2003
  */
 public class LogicalAddress implements Address {
-    protected static int count=1;
-    protected String host=null;
-    protected long   timestamp=0;
-    protected int    id=0;
+    protected static   int count=1;
+    protected String   host=null;
+    protected long     timestamp=0;
+    protected int      id=0;
+    protected boolean  multicast_addr=false;
+
+    /** Address of the primary physical address. This is set to the sender when a message is received.
+     * If this field is set, we will send unicast messages only to this address, not to all addresses listed
+     * in physical_addrs; this reduces the number of msgs we have to send.<br/>
+     * Note that this field is not shipped across the wire.
+     */
+    SocketAddress primary_physical_addr=null;
 
     /** List<SocketAddress> of physical addresses */
     protected ArrayList physical_addrs=null;
@@ -92,6 +101,14 @@ public class LogicalAddress implements Address {
         return id;
     }
 
+    public SocketAddress getPrimaryPhysicalAddress() {
+        return primary_physical_addr;
+    }
+
+    public void setPrimaryPhysicalAddress(SocketAddress primary_physical_addr) {
+        this.primary_physical_addr=primary_physical_addr;
+    }
+
     /**
      * Returns a <em>copy</em> of the list of physical addresses. Reason for the copy is that the list is not supposed
      * to be modified (should be immutable).
@@ -142,7 +159,7 @@ public class LogicalAddress implements Address {
      *            from being compared to this Object.
      */
     public int compareTo(Object o) {
-        int   h1, h2, rc;
+        int   rc;
 
         if ((o == null) || !(o instanceof LogicalAddress))
             throw new ClassCastException("LogicalAddress.compareTo(): comparison between different classes");
@@ -244,6 +261,7 @@ public class LogicalAddress implements Address {
         ret.timestamp=timestamp;
         ret.id=id;
         ret.additional_data=additional_data;
+        ret.primary_physical_addr=primary_physical_addr;
         return ret;
     }
 
