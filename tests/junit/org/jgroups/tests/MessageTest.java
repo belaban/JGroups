@@ -1,4 +1,4 @@
-// $Id: MessageTest.java,v 1.2 2004/02/25 21:07:51 belaban Exp $
+// $Id: MessageTest.java,v 1.3 2004/02/25 21:10:02 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -182,6 +182,21 @@ public class MessageTest extends TestCase {
         r=(Range)retval.get(0);
         assertEquals(0, r.low);
         assertEquals(10, r.high);
+    }
+
+    public void testComputeFragOffsets4() {
+        Range r;
+        byte[] buf={0,1,2,3,4,5,6,7,8,9};
+        java.util.List retval=Util.computeFragOffsets(buf, 5);
+        System.out.println("list is " + retval);
+        assertEquals(2, retval.size());
+        r=(Range)retval.get(0);
+        assertEquals(0, r.low);
+        assertEquals(5, r.high);
+
+        r=(Range)retval.get(1);
+        assertEquals(5, r.low);
+        assertEquals(5, r.high);
     }
 
     public static Test suite() {
