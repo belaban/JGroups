@@ -1,4 +1,4 @@
-// $Id: LogicalAddress.java,v 1.5 2003/12/27 02:28:00 belaban Exp $
+// $Id: LogicalAddress.java,v 1.6 2003/12/31 12:59:55 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -287,11 +287,15 @@ public class LogicalAddress implements Address {
     }
 
     public Object clone() throws CloneNotSupportedException {
-        LogicalAddress ret=new LogicalAddress(host, physical_addrs);
+        LogicalAddress ret=new LogicalAddress();
+        ret.host=host;
         ret.timestamp=timestamp;
         ret.id=id;
+        ret.multicast_addr=multicast_addr;
         ret.additional_data=additional_data;
         ret.primary_physical_addr=primary_physical_addr;
+        if(physical_addrs != null)
+            ret.physical_addrs=(ArrayList)physical_addrs.clone();
         return ret;
     }
 
