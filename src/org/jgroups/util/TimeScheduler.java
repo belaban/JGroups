@@ -1,4 +1,4 @@
-// $Id: TimeScheduler.java,v 1.3 2004/04/05 01:41:16 belaban Exp $
+// $Id: TimeScheduler.java,v 1.4 2004/04/28 18:26:24 belaban Exp $
 
 package org.jgroups.util;
 
@@ -158,6 +158,10 @@ public class TimeScheduler {
 
         public void add(IntTask t) {
             set.add(t);
+        }
+
+        public void remove(IntTask t) {
+            set.remove(t);
         }
 
         public IntTask getFirst() {
