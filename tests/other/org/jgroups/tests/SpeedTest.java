@@ -1,4 +1,4 @@
-// $Id: SpeedTest.java,v 1.8 2004/01/03 02:08:59 belaban Exp $
+// $Id: SpeedTest.java,v 1.9 2004/01/06 00:48:50 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -189,7 +189,7 @@ public class SpeedTest {
                     packet=new DatagramPacket(buf, buf.length, group_addr, group_port);
                     sock.send(packet);
                 }
-                if(i % 100 == 0)
+                if(i % 1000 == 0)
                     System.out.println("-- sent " + i);
 
                 matrix[i][0]=1;
@@ -327,7 +327,7 @@ public class SpeedTest {
                     matrix[number][1]=1;
                     // System.out.println("-- received " + number);
                     num_received++;
-                    if(num_received % 100 == 0)
+                    if(num_received % 1000 == 0)
                         System.out.println("received " + num_received + " packets");
                     if(num_received >= num_msgs)
                         break;
