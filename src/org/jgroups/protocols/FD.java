@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.6 2004/04/23 19:36:12 belaban Exp $
+// $Id: FD.java,v 1.7 2004/04/27 17:06:30 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -35,7 +35,7 @@ import java.util.Vector;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Revision: 1.6 $
+ * @version $Revision: 1.7 $
  */
 public class FD extends Protocol {
     Address         ping_dest=null;
@@ -422,8 +422,7 @@ public class FD extends Protocol {
             hb_req=new Message(ping_dest, null, null);
             hb_req.putHeader(getName(), new FdHeader(FdHeader.HEARTBEAT));  // send heartbeat request
             if(log.isDebugEnabled())
-                log.debug("sending are-you-alive msg to " + ping_dest +
-                        " (own address=" + local_addr + ")");
+                log.debug("sending are-you-alive msg to " + ping_dest + " (own address=" + local_addr + ")");
             passDown(new Event(Event.MSG, hb_req));
 
             // 2. If the time of the last heartbeat is > timeout and max_tries heartbeat messages have not been
