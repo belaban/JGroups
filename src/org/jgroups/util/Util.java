@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.2 2003/12/24 01:45:19 belaban Exp $
+// $Id: Util.java,v 1.3 2004/02/25 20:46:23 belaban Exp $
 
 package org.jgroups.util;
 
@@ -620,7 +620,6 @@ public class Util {
 
 
     public static String shortName(String hostname) {
-        String host;
         int index;
         StringBuffer sb=new StringBuffer();
 
