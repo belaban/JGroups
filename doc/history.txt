@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.8 2003/10/18 15:57:01 belaban Exp $
+Revision: $Id: history.txt,v 1.9 2003/10/18 16:48:08 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java JGroups.Version')]
 
@@ -23,18 +23,21 @@ romuald     = Romuald du Song
 
 
 
-
-
-- Added GossipRouter. It is based on the Router code and it is able to answer 
-  Gossip requests too. Can completely replace Router/GossipClient. It is
-  backward compatible, clients shouldn't be aware of change. 
-  (ovidiuf Oct 15 2003)
-
-Version 2.2
------------
+Version 2.2.1
+-------------
 
 - Added compression protocol (COMPRESS) and example stack (compress.xml)
   (bela Oct 17 2003)
+
+- Added GossipRouter. It is based on the Router code and it is able to answer
+  Gossip requests too. Can completely replace Router/GossipClient. It is
+  backward compatible, clients shouldn't be aware of change.
+  (ovidiuf Oct 15 2003)
+
+
+
+Version 2.2
+-----------
 
 - JChannel.close(): queue will not be reset until re-opened
   (bela Sept 25 2003)
