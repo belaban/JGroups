@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.23 2004/07/28 22:59:18 belaban Exp $
+// $Id: MessageDispatcher.java,v 1.24 2004/07/29 09:08:51 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -38,7 +38,7 @@ public class MessageDispatcher implements RequestHandler {
     protected PullPushAdapter adapter=null;
     protected Serializable id=null;
     protected Log log=LogFactory.getLog(getClass());
-    protected boolean running=false;
+
 
     /**
      * Process items on the queue concurrently (RequestCorrelator). The default is to wait until the processing of an
@@ -258,7 +258,6 @@ public class MessageDispatcher implements RequestHandler {
 
 
     public void start() {
-        running=true;
         if(corr == null) {
             if(transport_adapter != null) {
                 corr=new RequestCorrelator("MessageDispatcher", transport_adapter,
@@ -274,16 +273,15 @@ public class MessageDispatcher implements RequestHandler {
             Vector tmp_mbrs=channel.getView() != null ? channel.getView().getMembers() : null;
             setMembers(tmp_mbrs);
         }
-        if(null != prot_adapter) { //null if called from the constructor that uses PullPushAdapter
+        if(null != prot_adapter) { // null if called from the constructor that uses PullPushAdapter
             prot_adapter.resume();
         }
     }
 
 
     public void stop() {
-        running=false;
         if(null != prot_adapter) {
-            prot_adapter.pause();
+            prot_adapter.suspend();
         }
         if(corr != null) {
             corr.stop();
@@ -560,6 +558,8 @@ public class MessageDispatcher implements RequestHandler {
 
     class ProtocolAdapter extends Protocol implements UpHandler {
 
+        protected boolean running=false;
+
         /* ------------------------- Protocol Interface --------------------------- */
 
         public String getName() {
@@ -670,7 +670,7 @@ public class MessageDispatcher implements RequestHandler {
             m_upProcessingThread=new Thread(new Runnable() {
                 public void run() {
                     Event event=null;
-                    while(true) {
+                    while(running) {
                         try {
                             event=(Event) m_upQueue.take();
                             m_upLatch.passThrough();
@@ -687,11 +687,13 @@ public class MessageDispatcher implements RequestHandler {
             m_upProcessingThread.start();
         }
 
-        public void pause() {
+        void suspend() {
+            running=false;
             m_upLatch.lock();
         }
 
-        public synchronized void resume() {
+        synchronized void resume() {
+            running=true;
             if(m_upProcessingThread == null) {
                 startProcessingThreads();
             }
@@ -714,10 +716,11 @@ public class MessageDispatcher implements RequestHandler {
             if(null != corr) {
                 corr.receive(evt);
             }
-            else
+            else {
                 if(log.isErrorEnabled()) { //Something is seriously wrong, correlator should not be null since latch is not locked!
                     log.error("correlator is null, but latch is not locked! Event ignored.");
                 }
+            }
         }
 
         public void down(Event evt) {
