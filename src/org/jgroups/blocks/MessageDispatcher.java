@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.25 2004/08/01 07:15:56 belaban Exp $
+// $Id: MessageDispatcher.java,v 1.26 2004/08/04 10:36:43 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -557,8 +557,11 @@ public class MessageDispatcher implements RequestHandler {
 
 
     class ProtocolAdapter extends Protocol implements UpHandler {
+        private Thread m_upProcessingThread=null;
+        private EDU.oswego.cs.dl.util.concurrent.Channel m_upQueue=new LinkedQueue();
+        private ReentrantLatch m_upLatch=new ReentrantLatch(false);
 
-        protected volatile boolean running=false;
+
 
         /* ------------------------- Protocol Interface --------------------------- */
 
@@ -662,17 +665,33 @@ public class MessageDispatcher implements RequestHandler {
             down(evt);
         }
 
-        private Thread m_upProcessingThread=null;
-        private EDU.oswego.cs.dl.util.concurrent.Channel m_upQueue=new LinkedQueue();
-        private ReentrantLatch m_upLatch=new ReentrantLatch(false);
 
-        private void startProcessingThreads() {
+
+        synchronized void suspend() {
+            m_upLatch.lock();
+            if(m_upProcessingThread != null) {
+                Thread t=m_upProcessingThread;
+                m_upProcessingThread=null;
+                t.interrupt();
+            }
+        }
+
+        synchronized void resume() {
+            if(m_upProcessingThread == null) {
+                startProcessingThread();
+            }
+            m_upLatch.unlock();
+            m_upProcessingThread.interrupt();
+        }
+
+
+        private void startProcessingThread() {
             m_upProcessingThread=new Thread(new Runnable() {
                 public void run() {
                     Event event=null;
-                    while(running) {
+                    while(Thread.currentThread() == m_upProcessingThread) {
                         try {
-                            event=(Event) m_upQueue.take();
+                            event=(Event)m_upQueue.take();
                             m_upLatch.passThrough();
                             handleUp(event);
                         }
@@ -687,23 +706,6 @@ public class MessageDispatcher implements RequestHandler {
             m_upProcessingThread.start();
         }
 
-        void suspend() {
-            running=false;
-            m_upLatch.lock();
-            if (m_upProcessingThread != null) {
-                m_upProcessingThread.interrupt();
-                m_upProcessingThread = null;
-            }
-        }
-
-        synchronized void resume() {
-            running=true;
-            if(m_upProcessingThread == null) {
-                startProcessingThreads();
-            }
-            m_upLatch.unlock();
-            m_upProcessingThread.interrupt();
-        }
 
         /**
          * Called by channel (we registered before) when event is received. This is the UpHandler interface.
