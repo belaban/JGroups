@@ -1,9 +1,10 @@
-// $Id: JChannel.java,v 1.21 2004/07/15 19:52:27 belaban Exp $
+// $Id: JChannel.java,v 1.22 2004/07/30 04:42:53 jiwils Exp $
 
 package org.jgroups;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
 import org.jgroups.conf.ConfiguratorFactory;
 import org.jgroups.conf.ProtocolStackConfigurator;
 import org.jgroups.stack.ProtocolStack;
@@ -12,7 +13,13 @@ import org.jgroups.util.Queue;
 import org.jgroups.util.QueueClosedException;
 import org.jgroups.util.Util;
 
+import org.w3c.dom.Element;
+
+import java.io.File;
 import java.io.Serializable;
+
+import java.net.URL;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Vector;
@@ -23,12 +30,15 @@ import java.util.Vector;
  * protocol stack
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.21 $
+ * @version $Revision: 1.22 $
  */
 public class JChannel extends Channel {
 
-    /*the default protocol stack*/
-    private String props="UDP(mcast_addr=228.1.2.3;mcast_port=45566;ip_ttl=32):" +
+    /**
+     * The default protocol stack used by the default constructor.
+     */
+    public static final String DEFAULT_PROTOCOL_STACK=
+            "UDP(mcast_addr=228.1.2.3;mcast_port=45566;ip_ttl=32):" +
             "PING(timeout=3000;num_initial_members=6):" +
             "FD(timeout=3000):" +
             "VERIFY_SUSPECT(timeout=1500):" +
@@ -40,6 +50,9 @@ public class JChannel extends Channel {
             "shun=true;print_local_addr=true)";
 
     final String FORCE_PROPS="force.properties";
+
+    /* the protocol stack configuration string */
+    private String props;
 
     /*the address of this JChannel instance*/
     private Address local_addr=null;
@@ -106,14 +119,103 @@ public class JChannel extends Channel {
 
     protected Log log=LogFactory.getLog(getClass());
 
-
-
     /**
-     * initializes the JChannel with its default settings and
-     * default protocol stack
+     * Constructs a <code>JChannel</code> instance with the protocol stack
+     * specified by the <code>DEFAULT_PROTOCOL_STACK</code> member.
+     *
+     * @throws ChannelException if problems occur during the initialization of
+     *                          the protocol stack.
      */
     public JChannel() throws ChannelException {
-        this(null);
+        this(DEFAULT_PROTOCOL_STACK);
+    }
+
+    /**
+     * Constructs a <code>JChannel</code> instance with the protocol stack
+     * configuration contained by the specified file.
+     *
+     * @param properties a file containing a JGroups XML protocol stack
+     *                   configuration.
+     *
+     * @throws ChannelException if problems occur during the configuration or
+     *                          initialization of the protocol stack.
+     */
+    public JChannel(File properties) throws ChannelException {
+        this(ConfiguratorFactory.getStackConfigurator(properties));
+    }
+
+    /**
+     * Constructs a <code>JChannel</code> instance with the protocol stack
+     * configuration contained by the specified XML element.
+     *
+     * @param properties a XML element containing a JGroups XML protocol stack
+     *                   configuration.
+     *
+     * @throws ChannelException if problems occur during the configuration or
+     *                          initialization of the protocol stack.
+     */
+    public JChannel(Element properties) throws ChannelException {
+        this(ConfiguratorFactory.getStackConfigurator(properties));
+    }
+
+    /**
+     * Constructs a <code>JChannel</code> instance with the protocol stack
+     * configuration indicated by the specified URL.
+     *
+     * @param properties a URL pointing to a JGroups XML protocol stack
+     *                   configuration.
+     *
+     * @throws ChannelException if problems occur during the configuration or
+     *                          initialization of the protocol stack.
+     */
+    public JChannel(URL properties) throws ChannelException {
+        this(ConfiguratorFactory.getStackConfigurator(properties));
+    }
+
+    /**
+     * Constructs a <code>JChannel</code> instance with the protocol stack
+     * configuration based upon the specified properties parameter.
+     *
+     * @param properties an old style property string, a string representing a
+     *                   system resource containing a JGroups XML configuration,
+     *                   a string representing a URL pointing to a JGroups XML
+     *                   XML configuration, or a string representing a file name
+     *                   that contains a JGroups XML configuration.
+     *
+     * @throws ChannelException if problems occur during the configuration and
+     *                          initialization of the protocol stack.
+     */
+    public JChannel(String properties) throws ChannelException {
+        this(ConfiguratorFactory.getStackConfigurator(properties));
+    }
+
+    /**
+     * Constructs a <code>JChannel</code> instance with the protocol stack
+     * configuration contained by the protocol stack configurator parameter.
+     * <p>
+     * All of the public constructors of this class eventually delegate to this
+     * method.
+     *
+     * @param configurator a protocol stack configurator containing a JGroups
+     *                     protocol stack configuration.
+     *
+     * @throws ChannelException if problems occur during the initialization of
+     *                          the protocol stack.
+     */
+    protected JChannel(ProtocolStackConfigurator configurator)
+    throws ChannelException {
+        props = configurator.getProtocolStackString();
+
+        /*create the new protocol stack*/
+        prot_stack=new ProtocolStack(this, props);
+
+        /* Setup protocol stack (create layers, queues between them */
+        try {
+            prot_stack.setup();
+        }
+        catch(Throwable e) {
+            throw new ChannelException("unable to setup the protocol stack", e);
+        }
     }
 
     /**
@@ -127,24 +229,21 @@ public class JChannel extends Channel {
      *                   In case of the parameter being a url, the JChannel will try to load the xml from there.
      *                   In case properties is a org.w3c.dom.Element, the ConfiguratorFactory will parse the
      *                   DOM tree with the element as its root element.
+     * @deprecated Use the constructors with specific parameter types instead.
      */
     public JChannel(Object properties) throws ChannelException {
-        String tmp_props;
-        if((tmp_props=System.getProperty(FORCE_PROPS)) != null) {
-            if(log.isInfoEnabled()) log.info("properties override: " + tmp_props);
-            properties=tmp_props;
+        if (properties == null) {
+            properties = DEFAULT_PROTOCOL_STACK;
         }
 
-        if(properties != null) {
-            try {
-                ProtocolStackConfigurator c=ConfiguratorFactory.getStackConfigurator(properties);
-                props=c.getProtocolStackString();
-            }
-            catch(Exception x) {
-                String strace=Util.getStackTrace(x);
-                if(log.isErrorEnabled()) log.error(strace);
-                throw new ChannelException("unable to load protocol stack: {" + x.getMessage() + ';' + strace + '}');
-            }
+        try {
+            ProtocolStackConfigurator c=ConfiguratorFactory.getStackConfigurator(properties);
+            props=c.getProtocolStackString();
+        }
+        catch(Exception x) {
+            String strace=Util.getStackTrace(x);
+            if(log.isErrorEnabled()) log.error(strace);
+            throw new ChannelException("unable to load protocol stack: {" + x.getMessage() + ';' + strace + '}');
         }
 
         /*create the new protocol stack*/
