@@ -1,4 +1,4 @@
-// $Id: WanPipeAddress.java,v 1.3 2004/10/04 20:43:31 belaban Exp $
+// $Id: WanPipeAddress.java,v 1.4 2004/10/05 15:46:18 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -78,13 +78,6 @@ public class WanPipeAddress implements Address {
         logical_name=(String)in.readObject();
     }
 
-    public void writeTo(ByteArrayOutputStream outstream) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    public void readFrom(ByteArrayInputStream instream) throws IOException {
-        throw new UnsupportedOperationException();
-    }
 
 
     public static void main(String args[]) {
@@ -104,10 +97,18 @@ public class WanPipeAddress implements Address {
 
 
     public void writeTo(DataOutputStream outstream) throws IOException {
-        outstream.writeUTF(logical_name);
+        if(logical_name != null) {
+            outstream.write(1);
+            outstream.writeUTF(logical_name);
+        }
+        else {
+            outstream.write(0);
+        }
     }
 
     public void readFrom(DataInputStream instream) throws IOException, IllegalAccessException, InstantiationException {
-        logical_name=instream.readUTF();
+        int b=instream.read();
+        if(b == 1) 
+            logical_name=instream.readUTF();
     }
 }
