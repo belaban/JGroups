@@ -47,6 +47,10 @@ public class Test {
                 config=args[++i];
                 continue;
             }
+            if(args[i].equals("-props")) {
+                props=args[++i];
+                continue;
+            }
             help();
             return;
         }
@@ -79,8 +83,13 @@ public class Test {
                             line.indexOf(';')));
                 }
                 else if(line.startsWith("PROPS=")) {
-                    props=line.substring(line.indexOf('=') + 1,
-                            line.indexOf(';')).trim();
+                    if(props == null) {
+                        props=line.substring(line.indexOf('=') + 1,
+                                line.indexOf(';')).trim();
+                    }
+                    else {
+                        System.out.println("-- properties " + props + " given on command line override file properies");
+                    }
                 }
                 else if(line.startsWith("GNUPLOT_OUTPUT=")) {
                     // only parse if not yet set by -Dgnuplot_output=true option (overrides file)
@@ -117,6 +126,6 @@ public class Test {
     }
 
     static void help() {
-        System.out.println("Test [-help] ([-sender] | [-receiver]) [-config <config file>]");
+        System.out.println("Test [-help] ([-sender] | [-receiver]) [-config <config file>] [-props <stack config>]");
     }
 }
