@@ -1,5 +1,5 @@
 
-# $Id: RULES,v 1.5 2004/04/05 13:08:22 belaban Exp $
+# $Id: RULES,v 1.6 2004/06/30 17:12:49 belaban Exp $
 
 		  Rules developers should adhere to
 		  ---------------------------------
@@ -30,9 +30,7 @@
   (e.g. from Microsoft's proprietary JDK implementation)
 
 - There are NO restrictions with respect to programming style. Just be
-  coherent. SUN advocates use of fooBar() method style, I'm currently
-  still using FooBar() but may move to the proposed style and convert
-  my old code (only when I have nothing better to do)
+  coherent. SUN advocates use of fooBar() method style.
 
 - If you modify a file 'owned' by someone else, try to adhere to
   his/her style. Don't try to impose your style on that
