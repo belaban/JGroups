@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.10 2004/10/04 20:43:30 belaban Exp $
+// $Id: ConnectionTable.java,v 1.11 2004/10/08 10:00:15 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -30,24 +30,24 @@ import java.util.*;
  */
 public class ConnectionTable implements Runnable {
     final Hashtable     conns=new Hashtable();       // keys: Addresses (peer address), values: Connection
-    Receiver      receiver=null;
-    ServerSocket  srv_sock=null;
-    InetAddress   bind_addr=null;
-    Address       local_addr=null;             // bind_addr + port of srv_sock
-    int           srv_port=7800;
-    Thread        acceptor=null;               // continuously calls srv_sock.accept()
-    static final int     backlog=20;           // 20 conn requests are queued by ServerSocket (addtl will be discarded)
-    int           recv_buf_size=120000;
-    int           send_buf_size=60000;
+    Receiver            receiver=null;
+    ServerSocket        srv_sock=null;
+    InetAddress         bind_addr=null;
+    Address             local_addr=null;             // bind_addr + port of srv_sock
+    int                 srv_port=7800;
+    Thread              acceptor=null;               // continuously calls srv_sock.accept()
+    static final int    backlog=20;           // 20 conn requests are queued by ServerSocket (addtl will be discarded)
+    int                 recv_buf_size=120000;
+    int                 send_buf_size=60000;
     final Vector        conn_listeners=new Vector(); // listeners to be notified when a conn is established/torn down
     final Object        recv_mutex=new Object();     // to serialize simultaneous access to receive() from multiple Connections
-    Reaper        reaper=null;                 // closes conns that have been idle for more than n secs
-    long          reaper_interval=60000;       // reap unused conns once a minute
-    long          conn_expire_time=300000;     // connections can be idle for 5 minutes before they are reaped
-    boolean       use_reaper=false;            // by default we don't reap idle conns
-    ThreadGroup   thread_group=null;
+    Reaper              reaper=null;                 // closes conns that have been idle for more than n secs
+    long                reaper_interval=60000;       // reap unused conns once a minute
+    long                conn_expire_time=300000;     // connections can be idle for 5 minutes before they are reaped
+    boolean             use_reaper=false;            // by default we don't reap idle conns
+    ThreadGroup         thread_group=null;
     protected final Log log=LogFactory.getLog(getClass());
-    final byte[]  cookie={'b', 'e', 'l', 'a'};
+    final byte[]        cookie={'b', 'e', 'l', 'a'};
 
 
     /** Used for message reception */
@@ -210,9 +210,8 @@ public class ConnectionTable implements Runnable {
             conn.send(msg);
         }
         catch(Throwable ex) {
-
-                if(log.isInfoEnabled()) log.info("sending message to " + dest + " failed (ex=" +
-                                                     ex.getClass().getName() + "); removing from connection table");
+            if(log.isInfoEnabled()) log.info("sending message to " + dest + " failed (ex=" +
+                                             ex.getClass().getName() + "); removing from connection table");
             remove(dest);
         }
     }
@@ -248,7 +247,7 @@ public class ConnectionTable implements Runnable {
                 // conns.put(dest, conn);
                 addConnection(dest, conn);
                 conn.init();
-                 if(log.isInfoEnabled()) log.info("created socket to " + dest);
+                if(log.isInfoEnabled()) log.info("created socket to " + dest);
             }
             return conn;
         }
@@ -328,8 +327,7 @@ public class ConnectionTable implements Runnable {
                 }
                 conns.remove(addr);
             }
-
-                if(log.isInfoEnabled()) log.info("addr=" + addr + ", connections are " + toString());
+            if(log.isInfoEnabled()) log.info("addr=" + addr + ", connections are " + toString());
         }
     }
 
@@ -471,7 +469,6 @@ public class ConnectionTable implements Runnable {
         Address          peer_addr=null;           // address of the 'other end' of the connection
         final Object     send_mutex=new Object();  // serialize sends
         long             last_access=System.currentTimeMillis(); // last time a message was sent or received
-        // final byte[]     cookie={(byte)'b', (byte)'e', (byte)'l', (byte)'a'};
 
 
         Connection(Socket s, Address peer_addr) {
@@ -497,14 +494,11 @@ public class ConnectionTable implements Runnable {
         }
 
         void updateLastAccessed() {
-            //
-            ///if(log.isInfoEnabled()) log.info("ConnectionTable.Connection.updateLastAccessed()", "connections are " + conns);
             last_access=System.currentTimeMillis();
         }
 
         void init() {
-
-                if(log.isInfoEnabled()) log.info("connection was created to " + peer_addr);
+            if(log.isInfoEnabled()) log.info("connection was created to " + peer_addr);
             if(handler == null) {
                 // Roland Kurmann 4/7/2003, put in thread_group
                 handler=new Thread(thread_group, this, "ConnectionTable.Connection.HandlerThread");
@@ -527,9 +521,8 @@ public class ConnectionTable implements Runnable {
                     updateLastAccessed();
                 }
                 catch(IOException io_ex) {
-
-                        if(log.isWarnEnabled()) log.warn("peer closed connection, " +
-                                                                        "trying to re-establish connection and re-send msg.");
+                    if(log.isWarnEnabled()) log.warn("peer closed connection, " +
+                                                     "trying to re-establish connection and re-send msg.");
                     try {
                         doSend(msg);
                         updateLastAccessed();
@@ -568,7 +561,6 @@ public class ConnectionTable implements Runnable {
                     return;
                 }
 
-
                 // we're using 'double-writes', sending the buffer to the destination in 2 pieces. this would
                 // ensure that, if the peer closed the connection while we were idle, we would get an exception.
                 // this won't happen if we use a single write (see Stevens, ch. 5.13).
@@ -579,9 +571,8 @@ public class ConnectionTable implements Runnable {
                 }
             }
             catch(Exception ex) {
-
-                    if(log.isErrorEnabled()) log.error("to " + dst_addr + ", exception is " + ex + ", stack trace:\n" +
-                                Util.printStackTrace(ex));
+                if(log.isErrorEnabled()) log.error("to " + dst_addr + ", exception is " + ex + ", stack trace:\n" +
+                                                   Util.printStackTrace(ex));
                 remove(dst_addr);
                 throw ex;
             }
@@ -675,8 +666,7 @@ public class ConnectionTable implements Runnable {
 
         boolean matchCookie(byte[] input) {
             if(input == null || input.length < cookie.length) return false;
-
-                if(log.isInfoEnabled()) log.info("input_cookie is " + printCookie(input));
+            if(log.isInfoEnabled()) log.info("input_cookie is " + printCookie(input));
             for(int i=0; i < cookie.length; i++)
                 if(cookie[i] != input[i]) return false;
             return true;
@@ -822,10 +812,9 @@ public class ConnectionTable implements Runnable {
             Map.Entry entry;
             long curr_time;
 
-
-                if(log.isInfoEnabled()) log.info("connection reaper thread was started. Number of connections=" +
-                                                           conns.size() + ", reaper_interval=" + reaper_interval + ", conn_expire_time=" +
-                                                           conn_expire_time);
+            if(log.isInfoEnabled()) log.info("connection reaper thread was started. Number of connections=" +
+                                             conns.size() + ", reaper_interval=" + reaper_interval + ", conn_expire_time=" +
+                                             conn_expire_time);
 
             while(conns.size() > 0 && t != null) {
                 // first sleep
@@ -835,24 +824,20 @@ public class ConnectionTable implements Runnable {
                     for(Iterator it=conns.entrySet().iterator(); it.hasNext();) {
                         entry=(Map.Entry)it.next();
                         value=(Connection)entry.getValue();
-
-                            if(log.isInfoEnabled()) log.info("connection is " +
-                                                                       ((curr_time - value.last_access) / 1000) + " seconds old (curr-time=" +
-                                                                       curr_time + ", last_access=" + value.last_access + ')');
+                        if(log.isInfoEnabled()) log.info("connection is " +
+                                                         ((curr_time - value.last_access) / 1000) + " seconds old (curr-time=" +
+                                                         curr_time + ", last_access=" + value.last_access + ')');
                         if(value.last_access + conn_expire_time < curr_time) {
-
-                                if(log.isInfoEnabled()) log.info("connection " + value +
-                                                                           " has been idle for too long (conn_expire_time=" + conn_expire_time +
-                                                                           "), will be removed");
-
+                            if(log.isInfoEnabled()) log.info("connection " + value +
+                                                             " has been idle for too long (conn_expire_time=" + conn_expire_time +
+                                                             "), will be removed");
                             value.destroy();
                             it.remove();
                         }
                     }
                 }
             }
-
-                if(log.isInfoEnabled()) log.info("reaper terminated");
+            if(log.isInfoEnabled()) log.info("reaper terminated");
             t=null;
         }
     }
