@@ -1,4 +1,4 @@
-// $Id: DistributedQueue.java,v 1.2 2003/09/24 23:20:46 belaban Exp $
+// $Id: DistributedQueue.java,v 1.3 2003/10/15 16:14:10 rds13 Exp $
 
 package org.jgroups.blocks;
 
@@ -37,628 +37,630 @@ import org.jgroups.util.Util;
  */
 public class DistributedQueue implements MessageListener, MembershipListener, Cloneable
 {
-	static Logger logger = Logger.getLogger(DistributedQueue.class.getName());
+    static Logger logger = Logger.getLogger(DistributedQueue.class.getName());
+    private long internal_timeout = 10000; // 10 seconds to wait for a response
 
-	/*lock object for synchronization*/
-	Object mutex = new Object();
+    /*lock object for synchronization*/
+    Object mutex = new Object();
 
-	private transient boolean stopped = false; // whether to we are stopped !
+    private transient boolean stopped = false; // whether to we are stopped !
 
-	private LinkedList internalQueue;
-	public interface Notification
-	{
-		void entryAdd(Object value);
-		void entryRemoved(Object key);
-		void viewChange(Vector new_mbrs, Vector old_mbrs);
-		void contentsCleared();
-		void contentsSet(Collection new_entries);
-	}
+    private LinkedList internalQueue;
+    public interface Notification
+    {
+        void entryAdd(Object value);
+        void entryRemoved(Object key);
+        void viewChange(Vector new_mbrs, Vector old_mbrs);
+        void contentsCleared();
+        void contentsSet(Collection new_entries);
+    }
 
-	private transient Channel channel;
-	private transient RpcDispatcher disp = null;
-	private transient String groupname = null;
-	private transient Vector notifs = new Vector(); // to be notified when mbrship changes
-	private transient Vector members = new Vector(); // keeps track of all DHTs
-	private transient MethodCall add_method = null;
-	private transient MethodCall addAtHead_method = null;
-	private transient MethodCall addAll_method = null;
-	private transient MethodCall reset_method = null;
-	private transient MethodCall remove_method = null;
-	private transient MethodCall getFirst_method = null;
-	private transient MethodCall getLast_method = null;
+    private transient Channel channel;
+    private transient RpcDispatcher disp = null;
+    private transient String groupname = null;
+    private transient Vector notifs = new Vector(); // to be notified when mbrship changes
+    private transient Vector members = new Vector(); // keeps track of all DHTs
+    private transient MethodCall add_method = null;
+    private transient MethodCall addAtHead_method = null;
+    private transient MethodCall addAll_method = null;
+    private transient MethodCall reset_method = null;
+    private transient MethodCall remove_method = null;
+    private transient MethodCall getFirst_method = null;
+    private transient MethodCall getLast_method = null;
 
-	/**
-	 * Creates a DistributedQueue
-	 * @param groupname The name of the group to join
-	 * @param factory The ChannelFactory which will be used to create a channel
-	 * @param properties The property string to be used to define the channel
-	 * @param state_timeout The time to wait until state is retrieved in milliseconds. A value of 0 means wait forever.
-	 */
-	public DistributedQueue(String groupname, ChannelFactory factory, String properties, long state_timeout)
-	{
-		this.groupname = groupname;
-		try
-		{
-			initMethods();
-			internalQueue = new LinkedList();
-			channel = factory != null ? factory.createChannel(properties) : new JChannel(properties);
-			disp = new RpcDispatcher(channel, this, this, this);
-			disp.setDeadlockDetection(false); // To ensure strict FIFO MethodCall
-			channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
-			channel.connect(groupname);
-			start(state_timeout);
-		}
-		catch (Exception e)
-		{
-			logger.error("DistributedQueue.DistributedQueue()", e);
-		}
-	}
+    /**
+     * Creates a DistributedQueue
+     * @param groupname The name of the group to join
+     * @param factory The ChannelFactory which will be used to create a channel
+     * @param properties The property string to be used to define the channel
+     * @param state_timeout The time to wait until state is retrieved in milliseconds. A value of 0 means wait forever.
+     */
+    public DistributedQueue(String groupname, ChannelFactory factory, String properties, long state_timeout)
+    {
+        if (logger.isDebugEnabled())
+            logger.debug("DistributedQueue(" + groupname + "," + properties + "," + state_timeout);
+        this.groupname = groupname;
+        try
+        {
+            initMethods();
+            internalQueue = new LinkedList();
+            channel = factory != null ? factory.createChannel(properties) : new JChannel(properties);
+            disp = new RpcDispatcher(channel, this, this, this);
+            disp.setDeadlockDetection(false); // To ensure strict FIFO MethodCall
+            channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
+            channel.connect(groupname);
+            start(state_timeout);
+        }
+        catch (Exception e)
+        {
+            logger.error("DistributedQueue.DistributedQueue()", e);
+        }
+    }
 
-	public DistributedQueue(JChannel channel) throws ChannelNotConnectedException, ChannelClosedException
-	{
-		this.groupname = channel.getChannelName();
-		this.channel = channel;
-		init();
-	}
+    public DistributedQueue(JChannel channel) throws ChannelNotConnectedException, ChannelClosedException
+    {
+        this.groupname = channel.getChannelName();
+        this.channel = channel;
+        init();
+    }
 
-	protected void init() throws ChannelClosedException, ChannelNotConnectedException
-	{
-		initMethods();
-		internalQueue = new LinkedList();
-		channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
-		disp = new RpcDispatcher(channel, this, this, this);
-		disp.setDeadlockDetection(false); // To ensure strict FIFO MethodCall
+    protected void init() throws ChannelClosedException, ChannelNotConnectedException
+    {
+        initMethods();
+        internalQueue = new LinkedList();
+        channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
+        disp = new RpcDispatcher(channel, this, this, this);
+        disp.setDeadlockDetection(false); // To ensure strict FIFO MethodCall
 
-		// Changed by bela (jan 20 2003): sart() has to be called by user (only when providing
-		// own channel). First, Channel.connect() has to be called, then start().
-		// start(state_timeout);
-	}
+        // Changed by bela (jan 20 2003): sart() has to be called by user (only when providing
+        // own channel). First, Channel.connect() has to be called, then start().
+        // start(state_timeout);
+    }
 
-	public void start(long state_timeout) throws ChannelClosedException, ChannelNotConnectedException
-	{
-		boolean rc;
-		logger.debug("DistributedQueue.initState(" + groupname + "): starting state retrieval");
+    public void start(long state_timeout) throws ChannelClosedException, ChannelNotConnectedException
+    {
+        boolean rc;
+        logger.debug("DistributedQueue.initState(" + groupname + "): starting state retrieval");
 
-		rc = channel.getState(null, state_timeout);
-		if (rc)
-			logger.info("DistributedQueue.initState(" + groupname + "): state was retrieved successfully");
-		else
-		{
-			logger.info("DistributedQueue.initState(" + groupname + "): state could not be retrieved (first member)");
-		}
-	}
+        rc = channel.getState(null, state_timeout);
+        if (rc)
+            logger.info("DistributedQueue.initState(" + groupname + "): state was retrieved successfully");
+        else
+        {
+            logger.info("DistributedQueue.initState(" + groupname + "): state could not be retrieved (first member)");
+        }
+    }
 
-	public Address getLocalAddress()
-	{
-		return channel != null ? channel.getLocalAddress() : null;
-	}
-	public Channel getChannel()
-	{
-		return channel;
-	}
+    public Address getLocalAddress()
+    {
+        return channel != null ? channel.getLocalAddress() : null;
+    }
+    public Channel getChannel()
+    {
+        return channel;
+    }
 
-	public void addNotifier(Notification n)
-	{
-		if (!notifs.contains(n))
-			notifs.addElement(n);
-	}
+    public void addNotifier(Notification n)
+    {
+        if (!notifs.contains(n))
+            notifs.addElement(n);
+    }
 
-	public void stop()
-	{
-		if (disp != null)
-		{
-			disp.stop();
-			disp = null;
-		}
-		if (channel != null)
-		{
-			channel.close();
-			channel = null;
-		}
-		stopped = true;
-	}
+    public void stop()
+    {
+        /*lock the queue from other threads*/
+        synchronized (mutex)
+        {
+            internalQueue.clear();
 
+            if (disp != null)
+            {
+                disp.stop();
+                disp = null;
+            }
+            if (channel != null)
+            {
+                channel.close();
+                channel = null;
+            }
+            stopped = true;
+        }
+    }
 
-	/**
-	 * Add the speficied element at the bottom of the queue
-	 * @param value
-	 */
-	public void add(Object value)
-	{
-		try
-		{
-			Object retval = null;
-			add_method.setArg(0, value);
-			RspList rsp = disp.callRemoteMethods(null, add_method, GroupRequest.GET_ALL, 0);
-			Vector results = rsp.getResults();
-			if (results.size() > 0)
-			{
-				retval = results.elementAt(0);
-				if (logger.isDebugEnabled())
-					checkResult(rsp, retval);
-			}
-		}
-		catch (Exception e)
-		{
-			logger.error("Unable to add value " + value, e);
-		}
-		return;
-	}
+    /**
+     * Add the speficied element at the bottom of the queue
+     * @param value
+     */
+    public void add(Object value)
+    {
+        try
+        {
+            Object retval = null;
+            add_method.setArg(0, value);
+            RspList rsp = disp.callRemoteMethods(null, add_method, GroupRequest.GET_ALL, 0);
+            Vector results = rsp.getResults();
+            if (results.size() > 0)
+            {
+                retval = results.elementAt(0);
+                if (logger.isDebugEnabled())
+                    checkResult(rsp, retval);
+            }
+        }
+        catch (Exception e)
+        {
+            logger.error("Unable to add value " + value, e);
+        }
+        return;
+    }
 
-	/**
-	 * Add the speficied element at the top of the queue
-	 * @param value
-	 */
-	public void addAtHead(Object value)
-	{
-		try
-		{
-			addAtHead_method.setArg(0, value);
-			disp.callRemoteMethods(null, addAtHead_method, GroupRequest.GET_ALL, 0);
-		}
-		catch (Exception e)
-		{
-			logger.error("Unable to addAtHead value " + value, e);
-		}
-		return;
-	}
+    /**
+     * Add the speficied element at the top of the queue
+     * @param value
+     */
+    public void addAtHead(Object value)
+    {
+        try
+        {
+            addAtHead_method.setArg(0, value);
+            disp.callRemoteMethods(null, addAtHead_method, GroupRequest.GET_ALL, 0);
+        }
+        catch (Exception e)
+        {
+            logger.error("Unable to addAtHead value " + value, e);
+        }
+        return;
+    }
 
-	/**
-	 * Add the speficied collection to the top of the queue.
-	 * Elements are added in the order that they are returned by the specified
+    /**
+     * Add the speficied collection to the top of the queue.
+     * Elements are added in the order that they are returned by the specified
      * collection's iterator.
-	 * @param values
-	 */
-	public void addAll(Collection values)
-	{
-		try
-		{
-			addAll_method.setArg(0, values);
-			disp.callRemoteMethods(null, addAll_method, GroupRequest.GET_ALL, 0);
-		}
-		catch (Exception e)
-		{
-			logger.error("Unable to addAll value: " + values, e);
-		}
-		return;
-	}
+     * @param values
+     */
+    public void addAll(Collection values)
+    {
+        try
+        {
+            addAll_method.setArg(0, values);
+            disp.callRemoteMethods(null, addAll_method, GroupRequest.GET_ALL, 0);
+        }
+        catch (Exception e)
+        {
+            logger.error("Unable to addAll value: " + values, e);
+        }
+        return;
+    }
 
-	public Vector getContents()
-	{
-		Vector result = new Vector();
-		int i = 0;
-		for (Iterator e = internalQueue.iterator(); e.hasNext();)
-			result.add(e.next());
-		return result;
-	}
+    public Vector getContents()
+    {
+        Vector result = new Vector();
+        int i = 0;
+        for (Iterator e = internalQueue.iterator(); e.hasNext();)
+            result.add(e.next());
+        return result;
+    }
 
-	public int size()
-	{
-		return internalQueue.size();
-	}
+    public int size()
+    {
+        return internalQueue.size();
+    }
 
-	/**
-	  * returns the first object on the queue, without removing it.
-	  * If the queue is empty this object blocks until the first queue object has
-	  * been added
-	  * @return the first object on the queue
-	  */
-	public Object peek()
-	{
-		Object retval = null;
-		try
-		{
-			retval = internalQueue.getFirst();
-		}
-		catch (NoSuchElementException e)
-		{
-		}
-		return retval;
-	}
+    /**
+      * returns the first object on the queue, without removing it.
+      * If the queue is empty this object blocks until the first queue object has
+      * been added
+      * @return the first object on the queue
+      */
+    public Object peek()
+    {
+        Object retval = null;
+        try
+        {
+            retval = internalQueue.getFirst();
+        }
+        catch (NoSuchElementException e)
+        {
+        }
+        return retval;
+    }
 
-	public void reset()
-	{
-		try
-		{
-			disp.callRemoteMethods(null, reset_method, GroupRequest.GET_ALL, 0);
-		}
-		catch (Exception e)
-		{
-			logger.error("DistributedQueue.reset(" + groupname + ")", e);
-		}
-	}
+    public void reset()
+    {
+        try
+        {
+            disp.callRemoteMethods(null, reset_method, GroupRequest.GET_ALL, 0);
+        }
+        catch (Exception e)
+        {
+            logger.error("DistributedQueue.reset(" + groupname + ")", e);
+        }
+    }
 
-	protected void checkResult(RspList rsp, Object retval)
-	{
-		if (logger.isDebugEnabled())
-			logger.debug("Value updated from " + groupname + " :" + retval);
-		Vector results = rsp.getResults();
-		for (int i = 0; i < results.size(); i++)
-		{
-			Object data = results.elementAt(i);
-			if (!data.equals(retval))
-			{
-				logger.error("Reference value differs from returned value " + retval + " != " + data);
-			}
-		}
-	}
+    protected void checkResult(RspList rsp, Object retval)
+    {
+        if (logger.isDebugEnabled())
+            logger.debug("Value updated from " + groupname + " :" + retval);
+        Vector results = rsp.getResults();
+        for (int i = 0; i < results.size(); i++)
+        {
+            Object data = results.elementAt(i);
+            if (!data.equals(retval))
+            {
+                logger.error("Reference value differs from returned value " + retval + " != " + data);
+            }
+        }
+    }
 
-	public Object remove()
-	{
-		Object retval = null;
-		if (internalQueue.size() > 0)
-		{
-			RspList rsp = disp.callRemoteMethods(null, remove_method, GroupRequest.GET_ALL, 0);
-			Vector results = rsp.getResults();
-			if (results.size() > 0)
-			{
-				retval = results.elementAt(0);
-				if (logger.isDebugEnabled())
-					checkResult(rsp, retval);
-			}
-		}
-		return retval;
-	}
+    /**
+     * Try to return the first objet in the queue.It does not wait for an object.
+     * @return the first object in the queue or null if none were found.
+     */
+    public Object remove()
+    {
+        Object retval = null;
+        RspList rsp = disp.callRemoteMethods(null, remove_method, GroupRequest.GET_ALL, internal_timeout);
+        Vector results = rsp.getResults();
+        if (results.size() > 0)
+        {
+            retval = results.elementAt(0);
+            if (logger.isDebugEnabled())
+                checkResult(rsp, retval);
+        }
+        return retval;
+    }
 
-	public Object remove(long timeout)
-	{
-		Object retval = null;
-		if (internalQueue.size() > 0)
-		{
-			RspList rsp = disp.callRemoteMethods(null, remove_method, GroupRequest.GET_ALL, 0);
-			Vector results = rsp.getResults();
-			if (results.size() > 0)
-			{
-				retval = results.elementAt(0);
-				if (logger.isDebugEnabled())
-					checkResult(rsp, retval);
-			}
-		}
-		else
-		{
-			long t = System.currentTimeMillis();
-			if (timeout == 0)
-			{
-				while (retval == null)
-				{
-					try
-					{
-						Thread.sleep(100);
-					}
-					catch (InterruptedException e1)
-					{
-					}
+    /**
+     * @param timeout The time to wait until an entry is retrieved in milliseconds. A value of 0 means wait forever.
+     * @return the first object in the queue or null if none were found
+     */
+    public Object remove(long timeout)
+    {
+        Object retval = null;
+        long start = System.currentTimeMillis();
 
-					if (!stopped)
-					{
-						RspList rsp = disp.callRemoteMethods(null, remove_method, GroupRequest.GET_ALL, 0);
-						Vector results = rsp.getResults();
-						if (results.size() > 0)
-						{
-							retval = results.elementAt(0);
-							if (logger.isDebugEnabled())
-								checkResult(rsp, retval);
-						}
-					}
-				}
-			}
-			else
-			{
+        if (timeout <= 0)
+        {
+            while (!stopped && (retval == null))
+            {
+                RspList rsp = disp.callRemoteMethods(null, remove_method, GroupRequest.GET_ALL, internal_timeout);
+                Vector results = rsp.getResults();
+                if (results.size() > 0)
+                {
+                    retval = results.elementAt(0);
+                    if (logger.isDebugEnabled())
+                        checkResult(rsp, retval);
+                }
+                if (retval == null)
+                    try
+                    {
+                        synchronized (mutex)
+                        {
+                            mutex.wait();
+                        }
+                    }
+                    catch (InterruptedException e)
+                    {
+                    }
+            }
+        }
+        else
+        {
 
-				long interval = timeout / 10;
-				while (((System.currentTimeMillis() - t) < timeout) && (retval == null))
-				{
-					try
-					{
-						Thread.sleep(interval);
-					}
-					catch (InterruptedException e1)
-					{
-					}
+            while ((System.currentTimeMillis() - start) < timeout && !stopped && (retval == null))
+            {
+                RspList rsp = disp.callRemoteMethods(null, remove_method, GroupRequest.GET_ALL, internal_timeout);
+                Vector results = rsp.getResults();
+                if (results.size() > 0)
+                {
+                    retval = results.elementAt(0);
+                    if (logger.isDebugEnabled())
+                        checkResult(rsp, retval);
+                }
+                if (retval == null)
+                    try
+                    {
+                        long delay = timeout - (System.currentTimeMillis() - start);
+                        synchronized (mutex)
+                        {
+                            if (delay > 0)
+                                mutex.wait(delay);
+                        }
+                    }
+                    catch (InterruptedException e)
+                    {
+                    }
+            }
+        }
 
-					if (!stopped)
-					{
-						RspList rsp = disp.callRemoteMethods(null, remove_method, GroupRequest.GET_ALL, 0);
-						Vector results = rsp.getResults();
-						if (results.size() > 0)
-						{
-							retval = results.elementAt(0);
-							if (logger.isDebugEnabled())
-								checkResult(rsp, retval);
-						}
-					}
-				}
-			}
-		}
-		return retval;
-	}
+        return retval;
+    }
 
-	
-	public String toString()
-	{
-		return internalQueue.toString();
-	}
+    public String toString()
+    {
+        return internalQueue.toString();
+    }
 
-	/*------------------------ Callbacks -----------------------*/
+    /*------------------------ Callbacks -----------------------*/
 
-	public void _add(Object value)
-	{
-		if (logger.isDebugEnabled())
-			logger.debug(groupname+"@"+getLocalAddress() + " _add(" + value + ")");
+    public void _add(Object value)
+    {
+        if (logger.isDebugEnabled())
+            logger.debug(groupname + "@" + getLocalAddress() + " _add(" + value + ")");
 
-		/*lock the queue from other threads*/
-		synchronized (mutex)
-		{
-			internalQueue.add(value);
+        /*lock the queue from other threads*/
+        synchronized (mutex)
+        {
+            internalQueue.add(value);
 
-			/*wake up all the threads that are waiting for the lock to be released*/
-			mutex.notifyAll();
-		}
+            /*wake up all the threads that are waiting for the lock to be released*/
+            mutex.notifyAll();
+        }
 
-		for (int i = 0; i < notifs.size(); i++)
-			 ((Notification) notifs.elementAt(i)).entryAdd(value);
-	}
+        for (int i = 0; i < notifs.size(); i++)
+             ((Notification) notifs.elementAt(i)).entryAdd(value);
+    }
 
-	public void _addAtHead(Object value)
-	{
-		/*lock the queue from other threads*/
-		synchronized (mutex)
-		{
-			internalQueue.addFirst(value);
+    public void _addAtHead(Object value)
+    {
+        /*lock the queue from other threads*/
+        synchronized (mutex)
+        {
+            internalQueue.addFirst(value);
 
-			/*wake up all the threads that are waiting for the lock to be released*/
-			mutex.notifyAll();
-		}
+            /*wake up all the threads that are waiting for the lock to be released*/
+            mutex.notifyAll();
+        }
 
-		for (int i = 0; i < notifs.size(); i++)
-			 ((Notification) notifs.elementAt(i)).entryAdd(value);
-	}
+        for (int i = 0; i < notifs.size(); i++)
+             ((Notification) notifs.elementAt(i)).entryAdd(value);
+    }
 
-	public void _reset()
-	{
-		if (logger.isDebugEnabled())
-			logger.debug(groupname+"@"+getLocalAddress() + " _reset()");
-			
-		_private_reset();
-		for(int i=0; i < notifs.size(); i++)
-			((Notification)notifs.elementAt(i)).contentsCleared();
-	}
+    public void _reset()
+    {
+        if (logger.isDebugEnabled())
+            logger.debug(groupname + "@" + getLocalAddress() + " _reset()");
 
-	protected void _private_reset()
-	{
-		/*lock the queue from other threads*/
-		synchronized (mutex)
-		{
-			internalQueue.clear();
+        _private_reset();
+        for (int i = 0; i < notifs.size(); i++)
+             ((Notification) notifs.elementAt(i)).contentsCleared();
+    }
 
-			/*wake up all the threads that are waiting for the lock to be released*/
-			mutex.notifyAll();
-		}
-	}
+    protected void _private_reset()
+    {
+        /*lock the queue from other threads*/
+        synchronized (mutex)
+        {
+            internalQueue.clear();
 
-	public Object _remove()
-	{
-		Object retval = null;
-		try
-		{
+            /*wake up all the threads that are waiting for the lock to be released*/
+            mutex.notifyAll();
+        }
+    }
 
-			/*lock the queue from other threads*/
-			synchronized (mutex)
-			{
-				retval = internalQueue.removeFirst();
+    public Object _remove()
+    {
+        Object retval = null;
+        try
+        {
 
-				/*wake up all the threads that are waiting for the lock to be released*/
-				mutex.notifyAll();
-			}
+            /*lock the queue from other threads*/
+            synchronized (mutex)
+            {
+                retval = internalQueue.removeFirst();
 
-			if (logger.isDebugEnabled())
-				logger.debug(groupname+"@"+getLocalAddress() + "_remove(" + retval + ")");
-			for (int i = 0; i < notifs.size(); i++)
-				 ((Notification) notifs.elementAt(i)).entryRemoved(retval);
-		}
-		catch (NoSuchElementException e)
-		{
-			logger.debug(groupname+"@"+getLocalAddress() + "_remove(): nothing to remove");
-		}
-		return retval;
-	}
-	
-	public void _addAll(Collection c) {
+                /*wake up all the threads that are waiting for the lock to be released*/
+                mutex.notifyAll();
+            }
 
-		if (logger.isDebugEnabled())
-			logger.debug(groupname+"@"+getLocalAddress() + " _addAll(" + c + ")");
+            if (logger.isDebugEnabled())
+                logger.debug(groupname + "@" + getLocalAddress() + "_remove(" + retval + ")");
+            for (int i = 0; i < notifs.size(); i++)
+                 ((Notification) notifs.elementAt(i)).entryRemoved(retval);
+        }
+        catch (NoSuchElementException e)
+        {
+            logger.debug(groupname + "@" + getLocalAddress() + "_remove(): nothing to remove");
+        }
+        return retval;
+    }
 
-		/*lock the queue from other threads*/
-		synchronized (mutex)
-		{
-			internalQueue.addAll(c);
+    public void _addAll(Collection c)
+    {
 
-			/*wake up all the threads that are waiting for the lock to be released*/
-			mutex.notifyAll();
-		}
+        if (logger.isDebugEnabled())
+            logger.debug(groupname + "@" + getLocalAddress() + " _addAll(" + c + ")");
 
-		for (int i = 0; i < notifs.size(); i++)
-			 ((Notification) notifs.elementAt(i)).contentsSet(c);
-	}
+        /*lock the queue from other threads*/
+        synchronized (mutex)
+        {
+            internalQueue.addAll(c);
 
-	/*----------------------------------------------------------*/
+            /*wake up all the threads that are waiting for the lock to be released*/
+            mutex.notifyAll();
+        }
 
-	/*-------------------- State Exchange ----------------------*/
+        for (int i = 0; i < notifs.size(); i++)
+             ((Notification) notifs.elementAt(i)).contentsSet(c);
+    }
 
-	public void receive(Message msg)
-	{
-	}
+    /*----------------------------------------------------------*/
 
-	public byte[] getState()
-	{
-		Object key, val;
-		Vector copy = (Vector) getContents().clone();
+    /*-------------------- State Exchange ----------------------*/
 
-		try
-		{
-			return Util.objectToByteBuffer(copy);
-		}
-		catch (Throwable ex)
-		{
-			logger.error("DistributedQueue.getState(): exception marshalling state.", ex);
-			return null;
-		}
-	}
+    public void receive(Message msg)
+    {
+    }
 
-	public void setState(byte[] new_state)
-	{
-		Vector new_copy;
-		Object value;
+    public byte[] getState()
+    {
+        Object key, val;
+        Vector copy = (Vector) getContents().clone();
 
-		try
-		{
-			new_copy = (Vector) Util.objectFromByteBuffer(new_state);
-			if (new_copy == null)
-				return;
-		}
-		catch (Throwable ex)
-		{
-			logger.error("DistributedQueue.setState(): exception unmarshalling state.", ex);
-			return;
-		}
+        try
+        {
+            return Util.objectToByteBuffer(copy);
+        }
+        catch (Throwable ex)
+        {
+            logger.error("DistributedQueue.getState(): exception marshalling state.", ex);
+            return null;
+        }
+    }
 
-		_private_reset(); // remove all elements      
-		_addAll(new_copy);  
-	}
+    public void setState(byte[] new_state)
+    {
+        Vector new_copy;
+        Object value;
 
-	/*------------------- Membership Changes ----------------------*/
+        try
+        {
+            new_copy = (Vector) Util.objectFromByteBuffer(new_state);
+            if (new_copy == null)
+                return;
+        }
+        catch (Throwable ex)
+        {
+            logger.error("DistributedQueue.setState(): exception unmarshalling state.", ex);
+            return;
+        }
 
-	public void viewAccepted(View new_view)
-	{
-		Vector new_mbrs = new_view.getMembers();
+        _private_reset(); // remove all elements      
+        _addAll(new_copy);
+    }
 
-		if (new_mbrs != null)
-		{
-			sendViewChangeNotifications(new_mbrs, members); // notifies observers (joined, left)
-			members.removeAllElements();
-			for (int i = 0; i < new_mbrs.size(); i++)
-				members.addElement(new_mbrs.elementAt(i));
-		}
-	}
+    /*------------------- Membership Changes ----------------------*/
 
-	/** Called when a member is suspected */
-	public void suspect(Address suspected_mbr)
-	{
-		;
-	}
+    public void viewAccepted(View new_view)
+    {
+        Vector new_mbrs = new_view.getMembers();
 
-	/** Block sending and receiving of messages until ViewAccepted is called */
-	public void block()
-	{
-	}
+        if (new_mbrs != null)
+        {
+            sendViewChangeNotifications(new_mbrs, members); // notifies observers (joined, left)
+            members.removeAllElements();
+            for (int i = 0; i < new_mbrs.size(); i++)
+                members.addElement(new_mbrs.elementAt(i));
+        }
+    }
 
-	void sendViewChangeNotifications(Vector new_mbrs, Vector old_mbrs)
-	{
-		Vector joined, left;
-		Object mbr;
-		Notification n;
+    /** Called when a member is suspected */
+    public void suspect(Address suspected_mbr)
+    {
+        ;
+    }
 
-		if (notifs.size() == 0 || old_mbrs == null || new_mbrs == null || old_mbrs.size() == 0 || new_mbrs.size() == 0)
-			return;
+    /** Block sending and receiving of messages until ViewAccepted is called */
+    public void block()
+    {
+    }
 
-		// 1. Compute set of members that joined: all that are in new_mbrs, but not in old_mbrs
-		joined = new Vector();
-		for (int i = 0; i < new_mbrs.size(); i++)
-		{
-			mbr = new_mbrs.elementAt(i);
-			if (!old_mbrs.contains(mbr))
-				joined.addElement(mbr);
-		}
+    void sendViewChangeNotifications(Vector new_mbrs, Vector old_mbrs)
+    {
+        Vector joined, left;
+        Object mbr;
+        Notification n;
 
-		// 2. Compute set of members that left: all that were in old_mbrs, but not in new_mbrs
-		left = new Vector();
-		for (int i = 0; i < old_mbrs.size(); i++)
-		{
-			mbr = old_mbrs.elementAt(i);
-			if (!new_mbrs.contains(mbr))
-			{
-				left.addElement(mbr);
-			}
-		}
+        if (notifs.size() == 0 || old_mbrs == null || new_mbrs == null || old_mbrs.size() == 0 || new_mbrs.size() == 0)
+            return;
 
-		for (int i = 0; i < notifs.size(); i++)
-		{
-			n = (Notification) notifs.elementAt(i);
-			n.viewChange(joined, left);
-		}
-	}
+        // 1. Compute set of members that joined: all that are in new_mbrs, but not in old_mbrs
+        joined = new Vector();
+        for (int i = 0; i < new_mbrs.size(); i++)
+        {
+            mbr = new_mbrs.elementAt(i);
+            if (!old_mbrs.contains(mbr))
+                joined.addElement(mbr);
+        }
 
-	void initMethods()
-	{
-		try
-		{
-			if (add_method == null)
-			{
-				add_method = new MethodCall(getClass().getMethod("_add", new Class[] { Object.class }));
-				add_method.setNumArgs(1); // we always have 1 args
-			}
+        // 2. Compute set of members that left: all that were in old_mbrs, but not in new_mbrs
+        left = new Vector();
+        for (int i = 0; i < old_mbrs.size(); i++)
+        {
+            mbr = old_mbrs.elementAt(i);
+            if (!new_mbrs.contains(mbr))
+            {
+                left.addElement(mbr);
+            }
+        }
 
-			if (addAtHead_method == null)
-			{
-				addAtHead_method = new MethodCall(getClass().getMethod("_addAtHead", new Class[] { Object.class }));
-				addAtHead_method.setNumArgs(1); // we always have 1 args
-			}
+        for (int i = 0; i < notifs.size(); i++)
+        {
+            n = (Notification) notifs.elementAt(i);
+            n.viewChange(joined, left);
+        }
+    }
 
-			if (addAll_method == null)
-			{
-				addAll_method = new MethodCall(getClass().getMethod("_addAll", new Class[] { Collection.class }));
-				addAll_method.setNumArgs(1); // we always have 1 args
-			}
+    void initMethods()
+    {
+        try
+        {
+            if (add_method == null)
+            {
+                add_method = new MethodCall(getClass().getMethod("_add", new Class[] { Object.class }));
+                add_method.setNumArgs(1); // we always have 1 args
+            }
 
-			if (reset_method == null)
-				reset_method = new MethodCall(getClass().getMethod("_reset", new Class[0]));
+            if (addAtHead_method == null)
+            {
+                addAtHead_method = new MethodCall(getClass().getMethod("_addAtHead", new Class[] { Object.class }));
+                addAtHead_method.setNumArgs(1); // we always have 1 args
+            }
 
-			if (remove_method == null)
-			{
-				remove_method = new MethodCall(getClass().getMethod("_remove", new Class[0]));
-			}
-		}
-		catch (Throwable ex)
-		{
-			logger.error("DistributedQueue.initMethods()", ex);
-		}
-	}
+            if (addAll_method == null)
+            {
+                addAll_method = new MethodCall(getClass().getMethod("_addAll", new Class[] { Collection.class }));
+                addAll_method.setNumArgs(1); // we always have 1 args
+            }
 
-	public static void main(String[] args)
-	{
-		try
-		{
-			// The setup here is kind of weird:
-			// 1. Create a channel
-			// 2. Create a DistributedQueue (on the channel)
-			// 3. Connect the channel (so the HT gets a VIEW_CHANGE)
-			// 4. Start the HT
-			//
-			// A simpler setup is
-			// DistributedQueue ht = new DistributedQueue("demo", null, 
-			//         "file://c:/JGroups-2.0/conf/total-token.xml", 5000);
+            if (reset_method == null)
+                reset_method = new MethodCall(getClass().getMethod("_reset", new Class[0]));
 
-			JChannel c = new JChannel("file:/c:/JGroups-2.0/conf/conf/total-token.xml");
-			c.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
-			DistributedQueue ht = new DistributedQueue(c);
-			c.connect("demo");
-			ht.start(5000);
+            if (remove_method == null)
+            {
+                remove_method = new MethodCall(getClass().getMethod("_remove", new Class[0]));
+            }
+        }
+        catch (Throwable ex)
+        {
+            logger.error("DistributedQueue.initMethods()", ex);
+        }
+    }
 
-			ht.add("name");
-			ht.add("Michelle Ban");
-			Object old_key = ht.remove();
-			System.out.println("old key was " + old_key);
-			old_key = ht.remove();
-			System.out.println("old value was " + old_key);
+    public static void main(String[] args)
+    {
+        try
+        {
+            // The setup here is kind of weird:
+            // 1. Create a channel
+            // 2. Create a DistributedQueue (on the channel)
+            // 3. Connect the channel (so the HT gets a VIEW_CHANGE)
+            // 4. Start the HT
+            //
+            // A simpler setup is
+            // DistributedQueue ht = new DistributedQueue("demo", null, 
+            //         "file://c:/JGroups-2.0/conf/total-token.xml", 5000);
 
-			ht.add("name 'Michelle Ban'");
+            JChannel c = new JChannel("file:/c:/JGroups-2.0/conf/conf/total-token.xml");
+            c.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
+            DistributedQueue ht = new DistributedQueue(c);
+            c.connect("demo");
+            ht.start(5000);
 
-			System.out.println("queue is " + ht);
-		}
-		catch (Throwable t)
-		{
-			t.printStackTrace();
-		}
-	}
+            ht.add("name");
+            ht.add("Michelle Ban");
+            Object old_key = ht.remove();
+            System.out.println("old key was " + old_key);
+            old_key = ht.remove();
+            System.out.println("old value was " + old_key);
+
+            ht.add("name 'Michelle Ban'");
+
+            System.out.println("queue is " + ht);
+        }
+        catch (Throwable t)
+        {
+            t.printStackTrace();
+        }
+    }
 
 }
