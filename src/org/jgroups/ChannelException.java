@@ -1,4 +1,4 @@
-// $Id: ChannelException.java,v 1.3 2004/07/31 20:53:58 jiwils Exp $
+// $Id: ChannelException.java,v 1.4 2004/08/04 14:26:34 belaban Exp $
 
 package org.jgroups;
 
@@ -15,25 +15,22 @@ public class ChannelException extends Exception {
     // Class-level implementation.
     private static final boolean IS_JAVA_13;
 
-    static
-    {
+    static {
         // Check to see if we are in a 1.3 VM.  If so, we need to change how
         // we print stack traces.
-        String javaSpecVersion =
-            System.getProperty("java.specification.version");
+        String javaSpecVersion=
+                System.getProperty("java.specification.version");
 
-        StringTokenizer tokenizer = new StringTokenizer(javaSpecVersion, ".");
+        StringTokenizer tokenizer=new StringTokenizer(javaSpecVersion, ".");
 
-        int majorVersion = Integer.parseInt((String) tokenizer.nextToken());
-        int minorVersion = Integer.parseInt((String) tokenizer.nextToken());
+        int majorVersion=Integer.parseInt(tokenizer.nextToken());
+        int minorVersion=Integer.parseInt(tokenizer.nextToken());
 
-        if (majorVersion == 1 && minorVersion == 3)
-        {
-            IS_JAVA_13 = true;
+        if(majorVersion == 1 && minorVersion == 3) {
+            IS_JAVA_13=true;
         }
-        else
-        {
-            IS_JAVA_13 = false;
+        else {
+            IS_JAVA_13=false;
         }
     }
 

@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.95 2004/08/04 14:19:34 belaban Exp $
+Revision: $Id: history.txt,v 1.96 2004/08/04 14:25:35 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -28,7 +28,7 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 Version 2.2.6
 -------------
 
-- Fixed upProcessingThread in MessageDispatcher: using org.jgroups.util.Queue now
+- Fixed upProcessingThread in MessageDispatcher: using org.jgroups.util.Queue now (bug#: 998920)
   (bela Aug 4 2004)
 
 - Fixed incorrect start()/stop() sequence of GossipClient in TCPGOSSIP
@@ -47,7 +47,7 @@ Version 2.2.6
 - Channel: protected access/empty constructors were removed
   (jiwils July 29 2004)
 
-- JChannel: added 5 type-specific constructors for JChannel; depricated the JChannel(Object)
+- JChannel: added 5 type-specific constructors for JChannel; deprecated the JChannel(Object)
   constructor - this means JChannel(null) construction is not supported; use JChannel() instead
   (jiwils July 29 2004)
   
