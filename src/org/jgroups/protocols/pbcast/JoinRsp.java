@@ -1,4 +1,4 @@
-// $Id: JoinRsp.java,v 1.4 2004/10/08 12:19:10 belaban Exp $
+// $Id: JoinRsp.java,v 1.5 2004/10/08 13:04:37 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -16,6 +16,10 @@ import java.io.DataInputStream;
 public class JoinRsp implements Serializable, Streamable {
     View view=null;
     Digest digest=null;
+
+    public JoinRsp() {
+
+    }
 
     public JoinRsp(View v, Digest d) {
         view=v;
