@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.109 2004/09/06 12:19:04 belaban Exp $
+Revision: $Id: history.txt,v 1.110 2004/09/08 07:46:29 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -27,6 +27,9 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
 Version 2.2.7
 -------------
+
+- Created distribution (CVS tag = JG_2_2_7)
+  (bela Sept 8 2004)
 
 - Re-implemented Membership.sort (using Collections.sort())
   (bela Sept 6 2004)
