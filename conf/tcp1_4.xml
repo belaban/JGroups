@@ -1,0 +1,87 @@
+	<protocol-stack name="Definition of a TCP-based protocol stack" version="1.0.0">
+		<protocol>
+			<protocol-name>TCP Protocol</protocol-name>
+			<description>Sends and receives messages using TCP1_4</description>
+			<class-name>org.jgroups.protocols.TCP1_4</class-name>
+			<protocol-params>
+				<protocol-param name="start_port" value="7800"/>
+				<protocol-param name="bind_addr"  value="localhost"/>
+                                <protocol-param name="loopback"   value="true"/>
+			</protocol-params>
+		</protocol>
+		<protocol>
+			<protocol-name>TCP Ping Protocol</protocol-name>
+			<description>Find the initial membership</description>
+			<class-name>org.jgroups.protocols.TCPPING</class-name>
+			<protocol-params>
+				<protocol-param name="initial_hosts" value="localhost[7800]"/>
+				<protocol-param name="port_range" value="3"/>
+				<protocol-param name="timeout" value="3000"/>
+				<protocol-param name="num_initial_members" value="3"/>
+			</protocol-params>
+		</protocol>
+		<protocol>
+			<protocol-name>Failure Detection Socket</protocol-name>
+			<description>Failure detection based on sockets</description>
+			<class-name>org.jgroups.protocols.FD</class-name>
+			<protocol-params>
+				<protocol-param name="timeout" value="2000"/>
+				<protocol-param name="max_tries" value="4"/>
+			</protocol-params>
+		</protocol>
+		<protocol>
+			<protocol-name>Verify Suspect</protocol-name>
+			<description>Double-checks that a suspected member is really dead</description>
+			<class-name>org.jgroups.protocols.VERIFY_SUSPECT</class-name>
+			<protocol-params>
+				<protocol-param name="timeout" value="1500"/>
+				<protocol-param name="up_thread" value="false"/>
+				<protocol-param name="down_thread" value="false"/>
+			</protocol-params>
+		</protocol>
+		<protocol>
+			<protocol-name>Reliable mcast message transission</protocol-name>
+			<description>Uses a negative acknowledgement protocol for retransmissions</description>
+			<class-name>org.jgroups.protocols.pbcast.NAKACK</class-name>
+			<protocol-params>
+				<protocol-param name="gc_lag" value="100"/>
+				<protocol-param name="retransmit_timeout" value="600,1200,2400,4800"/>
+			</protocol-params>
+		</protocol>
+        <protocol>
+            <protocol-name>Stable protocol</protocol-name>
+            <description>Distributed message garbage collection protocol. Deletes messages
+                seen by all group members</description>
+            <class-name>org.jgroups.protocols.pbcast.STABLE</class-name>
+            <protocol-params>
+                <!-- Periodically sends STABLE messages around. 0 disables this -->
+                <protocol-param name="desired_avg_gossip" value="20000"/>
+
+                <!--
+                Max number of bytes received from anyone until a STABLE message is sent. Use either this or
+                desired_avg_gossip, but not both ! 0 disables it.
+                -->
+                <protocol-param name="max_bytes" value="0"/>
+                <!--
+                Range (number of milliseconds) that we wait until sending a STABILITY message. This prevents
+                STABILITY multicast storms. If max_bytes is used, this should be set to a low value (> 0 though !).
+                -->
+                <protocol-param name="stability_delay" value="1000"/>
+                <protocol-param name="up_thread" value="false"/>
+                <protocol-param name="down_thread" value="false"/>
+            </protocol-params>
+        </protocol>
+		<protocol>
+			<protocol-name>PB Cast Group Membership Protocol</protocol-name>
+			<description>Maintains the member ship view</description>
+			<class-name>org.jgroups.protocols.pbcast.GMS</class-name>
+			<protocol-params>
+				<protocol-param name="join_timeout" value="5000"/>
+				<protocol-param name="join_retry_timeout" value="2000"/>
+				<protocol-param name="shun" value="true"/>
+				<protocol-param name="print_local_addr" value="true"/>
+			</protocol-params>
+		</protocol>
+	</protocol-stack>
+	
+
