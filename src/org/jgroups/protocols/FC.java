@@ -1,4 +1,4 @@
-// $Id: FC.java,v 1.9 2004/04/23 19:36:12 belaban Exp $
+// $Id: FC.java,v 1.10 2004/05/11 00:14:52 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -18,7 +18,7 @@ import java.util.*;
  * Note that this protocol must be located towards the top of the stack, or all down_threads from JChannel to this
  * protocol must be set to false ! This is in order to block JChannel.send()/JChannel.down().
  * @author Bela Ban
- * @version $Revision: 1.9 $
+ * @version $Revision: 1.10 $
  */
 public class FC extends Protocol {
 
@@ -159,10 +159,9 @@ public class FC extends Protocol {
         long  new_credits;
 
         new_credits=num_credits + getCredits(sent, src);
-
-            if(log.isInfoEnabled()) log.info("received " + num_credits + " credits from " +
-                    src + ", old credit was " + sent.get(src) + ", new credits are " +
-                    new_credits + ". Creditors are\n" + printCreditors());
+        if(log.isTraceEnabled())
+            log.trace("received " + num_credits + " credits from " + src + ", old credit was " + sent.get(src) +
+                    ", new credits are " + new_credits + ". Creditors are\n" + printCreditors());
 
         //System.out.println("** received credit for " + src + ": " + num_credits +
           //      ", creditors:\n" + printCreditors());
@@ -194,13 +193,12 @@ public class FC extends Protocol {
         if(src.equals(local_addr))
             return;
 
-        if(log.isInfoEnabled()) log.info("credit for " + src + " is " + received.get(src));
+        if(log.isTraceEnabled()) log.trace("credit for " + src + " is " + received.get(src));
 
         if(decrementCredit(received, src, size) == false) {
             // not enough credits left
             new_credits=max_credits - getCredits(received, src);
-
-                if(log.isInfoEnabled()) log.info("sending " + new_credits + " credits to " + src);
+            if(log.isTraceEnabled()) log.trace("sending " + new_credits + " credits to " + src);
             sendCredit(src, new_credits);
             replenishCredits(received, src, new_credits);
         }
@@ -228,7 +226,7 @@ public class FC extends Protocol {
      */
     boolean handleDownMessage(Message msg) {
         if(blocking) {
-            if(log.isInfoEnabled()) log.info("blocking message to " + msg.getDest());
+            if(log.isTraceEnabled()) log.trace("blocking message to " + msg.getDest());
             while(blocking) {
                 try {this.wait(MAX_BLOCK_TIME);} catch(InterruptedException e) {}
             }
@@ -238,15 +236,15 @@ public class FC extends Protocol {
             blocking=true;
 
             while(blocking) {
-                if(log.isInfoEnabled()) log.info("blocking " + MAX_BLOCK_TIME +
+                if(log.isTraceEnabled()) log.trace("blocking " + MAX_BLOCK_TIME +
                         " msecs. Creditors are\n" + printCreditors());
                 try {this.wait(MAX_BLOCK_TIME);}
                 catch(Throwable e) {e.printStackTrace();}
                 if(decrMessage(msg) == true)
                     return true;
                 else {
-                    if(log.isInfoEnabled())
-                        log.info("insufficient credits to send message, creditors=\n" + printCreditors());
+                    if(log.isTraceEnabled())
+                        log.trace("insufficient credits to send message, creditors=\n" + printCreditors());
                 }
             }
         }
@@ -276,7 +274,7 @@ public class FC extends Protocol {
             if(dest.equals(local_addr))
                 return true;
 
-            if(log.isInfoEnabled()) log.info("credit for " + dest + " is " + sent.get(dest));
+            if(log.isTraceEnabled()) log.trace("credit for " + dest + " is " + sent.get(dest));
             if(sufficientCredit(sent, dest, size)) {
                 decrementCredit(sent, dest, size);
             }
@@ -291,7 +289,7 @@ public class FC extends Protocol {
                 if(dest.equals(local_addr))
                     continue;
 
-                if(log.isInfoEnabled()) log.info("credit for " + dest + " is " + sent.get(dest));
+                if(log.isTraceEnabled()) log.trace("credit for " + dest + " is " + sent.get(dest));
                 if(sufficientCredit(sent, dest, size) == false) {
                     addCreditor(dest);
                     success=false;
@@ -313,8 +311,7 @@ public class FC extends Protocol {
 
     /** If message queueing is enabled, sends queued messages and unlocks sender (if successful) */
     void unblockSender() {
-
-            if(log.isInfoEnabled()) log.info("setting blocking=false");
+        if(log.isTraceEnabled()) log.trace("setting blocking=false");
         blocking=false;
         this.notifyAll();
     }
@@ -362,7 +359,7 @@ public class FC extends Protocol {
                 return true;
             }
             else {
-                if(log.isInfoEnabled()) log.info("insufficient credit for " + mbr +
+                if(log.isTraceEnabled()) log.trace("insufficient credit for " + mbr +
                         ": credits left=" + credits_left + ", credits required=" + credits_required +
                         " (min_credits=" + min_credits + ")");
                 return false;
@@ -395,7 +392,7 @@ public class FC extends Protocol {
                 return true;
             }
             else {
-                if(log.isInfoEnabled()) log.info("not enough credits left for " +
+                if(log.isTraceEnabled()) log.trace("not enough credits left for " +
                         dest + ": left=" + credits_left + ", required=" + credits_required);
                 return false;
             }
@@ -410,9 +407,7 @@ public class FC extends Protocol {
         Address addr;
         if(mbrs == null) return;
 
-
-            if(log.isInfoEnabled()) log.info("new membership: " + mbrs);
-
+        if(log.isTraceEnabled()) log.trace("new membership: " + mbrs);
         members.clear();
         members.addAll(mbrs);
 
@@ -452,7 +447,7 @@ public class FC extends Protocol {
                 it.remove();
         }
 
-            if(log.isInfoEnabled()) log.info("creditors are\n" + printCreditors());
+        if(log.isTraceEnabled()) log.trace("creditors are\n" + printCreditors());
         if(creditors.size() == 0 && blocking)
             unblockSender();
     }
