@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.32 2004/01/16 16:47:49 belaban Exp $
+Revision: $Id: history.txt,v 1.33 2004/01/18 15:15:00 tsorgie Exp $
 
 [For current version, see file Version.java (or invoke 'java JGroups.Version')]
 
@@ -27,6 +27,18 @@ romuald     = Romuald du Song
 
 Version 2.2.1
 -------------
+
+- Added network optimization to PING and TCPPING for FIND_INITIAL_MBRS event when initial hosts is used,
+  rather than send to all, skip send for initial members already in the view
+  (thomas sorgie, Jan 17, 2004)
+
+- Changed default port_range from 5 to 1, auto port escalation is a nice feature, but it is wasteful and 
+  should be off by default
+  (thomas sorgie, Jan 17, 2004)
+
+- Removed unused checkForResult() from util.Promise which has misleading results when result is null, replaced
+  with hasResult() which returns a boolean indicating whether a result if available
+  (thomas sorgie, Jan 17, 2004)
 
 - Removed exceptions from getObject()/setObject() again, replaced with
   IllegalArgumentException
