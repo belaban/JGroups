@@ -1,4 +1,4 @@
-$Id: todo.lst,v 1.16 2004/10/07 09:14:51 belaban Exp $
+$Id: todo.lst,v 1.17 2004/11/15 08:04:54 belaban Exp $
 
 
 
@@ -10,6 +10,11 @@ $Id: todo.lst,v 1.16 2004/10/07 09:14:51 belaban Exp $
   Instead of basing FC on the speed of the network, we should also take the number of messages processed
   (a.k.a delivered_msgs/received_msgs) into account, and only send credits when that number falls below a
   certain threshold. First: look at the number of received/delivered msgs in the perf test !
+  --> Look into memory-based FC: criteria for sending credits are
+      - available free memory
+      - outstanding retransmission requests (sender sends with each message number of messages sent,
+        receiver keeps track of how many messages received, if diff is > threshold --> pause)
+      - [optional] latency
 
 - Performance tests:
   - Fix TcpTransport: doesn't currently work (connection exception)
