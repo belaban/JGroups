@@ -1,4 +1,4 @@
-// $Id: PING.java,v 1.22 2005/01/12 01:36:54 belaban Exp $
+// $Id: PING.java,v 1.23 2005/03/30 22:14:52 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -57,8 +57,6 @@ public class PING extends Discovery {
      */
     public boolean setProperties(Properties props) {
         String str;
-
-
 
         str=props.getProperty("gossip_host");
         if(str != null) {
@@ -222,9 +220,13 @@ public class PING extends Discovery {
                 hdr=new PingHeader(PingHeader.GET_MBRS_REQ, null);
                 msg=new Message(null, null, null);  // mcast msg
                 msg.putHeader(getName(), hdr);
-                passDown(new Event(Event.MSG, msg));
+                sendMcastDiscoveryRequest(msg);
             }
         }
+    }
+
+    void sendMcastDiscoveryRequest(Message discovery_request) {
+        passDown(new Event(Event.MSG, discovery_request));
     }
 
     /* -------------------------- Private methods ---------------------------- */
