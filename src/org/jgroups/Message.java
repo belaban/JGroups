@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.1 2003/09/09 01:24:08 belaban Exp $
+// $Id: Message.java,v 1.2 2003/10/15 20:21:43 ovidiuf Exp $
 
 package org.jgroups;
 
@@ -206,6 +206,19 @@ public class Message implements Externalizable {
 
         if(headers != null && headers.size() > 0)
             ret.append(" (" + headers.size() + " headers)");
+
+//         {
+//             ret.append(" (");
+//             for(Iterator i=headers.keySet().iterator(); i.hasNext();) {
+//                 Object key = i.next();
+//                 Object value = headers.get(key);
+//                 ret.append(key+"="+value);
+//                 if (i.hasNext()) {
+//                     ret.append(" ");
+//                 }
+//             }
+//             ret.append(")");
+//         }
 
         ret.append(", size = ");
         if(buf != null && buf.length > 0)

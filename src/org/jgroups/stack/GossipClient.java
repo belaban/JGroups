@@ -1,4 +1,4 @@
-// $Id: GossipClient.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+// $Id: GossipClient.java,v 1.2 2003/10/15 20:21:44 ovidiuf Exp $
 
 package org.jgroups.stack;
 
@@ -154,6 +154,8 @@ public class GossipClient {
                 sock=new Socket(entry.getIpAddress(), entry.getPort());
                 out=new ObjectOutputStream(sock.getOutputStream());
                 gossip_req=new GossipData(GossipData.REGISTER_REQ, group, mbr, null);
+                // must send GossipData as fast as possible, otherwise the
+                // request might be rejected
                 out.writeObject(gossip_req);
                 out.flush();
                 sock.close();
@@ -190,6 +192,8 @@ public class GossipClient {
                 out=new ObjectOutputStream(sock.getOutputStream());
 
                 gossip_req=new GossipData(GossipData.GET_REQ, group, null, null);
+                // must send GossipData as fast as possible, otherwise the
+                // request might be rejected
                 out.writeObject(gossip_req);
                 out.flush();
 
