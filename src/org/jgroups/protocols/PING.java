@@ -1,4 +1,4 @@
-// $Id: PING.java,v 1.1 2003/09/09 01:24:10 belaban Exp $
+// $Id: PING.java,v 1.2 2003/11/21 19:45:51 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -125,6 +125,7 @@ public class PING extends Protocol {
 
     public void stop() {
         is_server=false;
+        // System.out.println("### PING.stop(): is_server=" + is_server);
         // ovidiu, Dec 10 2002
         if(client != null) {
             client.stop();
@@ -174,14 +175,21 @@ public class PING extends Protocol {
                 switch(hdr.type) {
 
                     case PingHeader.GET_MBRS_REQ:   // return Rsp(local_addr, coord)
+
+                        // System.out.println("### GET_MBRS__REQ (local_addr=" + local_addr + "): is_server=" + is_server);
                         if(!is_server) {
                             return;
                         }
                         synchronized(members) {
                             coord=members.size() > 0 ? (Address)members.firstElement() : local_addr;
                         }
+
+                        PingRsp ping_rsp=new PingRsp(local_addr, coord);
+
+                        // System.out.println("ping_rsp=" + ping_rsp + ", sent back to " + msg.getSrc());
+
                         rsp_msg=new Message(msg.getSrc(), null, null);
-                        rsp_hdr=new PingHeader(PingHeader.GET_MBRS_RSP, new PingRsp(local_addr, coord));
+                        rsp_hdr=new PingHeader(PingHeader.GET_MBRS_RSP, ping_rsp);
                         rsp_msg.putHeader(getName(), rsp_hdr);
                         if(Trace.trace) Trace.info("PING.up()", "received GET_MBRS_REQ from " + msg.getSrc() + ", returning " + rsp_hdr);
                         passDown(new Event(Event.MSG, rsp_msg));
@@ -307,6 +315,7 @@ public class PING extends Protocol {
             case Event.BECOME_SERVER: // called after client has joined and is fully working group member
                 passDown(evt);
                 is_server=true;
+                // System.out.println("## down(BECOME_SERVER): is_server=" + is_server);
                 break;
 
             case Event.CONNECT:

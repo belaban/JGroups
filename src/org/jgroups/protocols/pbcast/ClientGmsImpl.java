@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.1 2003/09/09 01:24:11 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.2 2003/11/21 19:45:41 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -22,7 +22,7 @@ import java.util.Vector;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.2 $
  */
 public class ClientGmsImpl extends GmsImpl {
     Vector initial_mbrs=new Vector();
@@ -106,8 +106,9 @@ public class ClientGmsImpl extends GmsImpl {
 
                     // 2. Install view
                     if(Trace.trace)
-                        Trace.debug("ClientGmsImpl.join()", "[" + gms.local_addr +
-                                                            "]: JoinRsp=" + rsp.getView() + " [size=" + rsp.getView().size() + "]\n\n");
+                        Trace.debug("ClientGmsImpl.join()",
+                                    "[" + gms.local_addr + "]: JoinRsp=" + rsp.getView() +
+                                    " [size=" + rsp.getView().size() + "]\n\n");
 
                     if(rsp.getView() != null) {
                         if(!installView(rsp.getView())) {
