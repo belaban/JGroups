@@ -13,7 +13,7 @@ import java.util.Properties;
  * Uses its own IP multicast socket to send and receive discovery requests/responses. Can be used in
  * conjuntion with a non-UDP transport, e.g. TCP.
  * @author Bela Ban
- * @version $Id: MPING.java,v 1.2 2005/03/30 22:43:24 belaban Exp $
+ * @version $Id: MPING.java,v 1.3 2005/03/31 08:31:47 belaban Exp $
  */
 public class MPING extends PING implements Runnable {
     MulticastSocket mcast_sock=null;
@@ -132,6 +132,8 @@ public class MPING extends PING implements Runnable {
         DatagramPacket   packet;
 
         try {
+            if(msg.getSrc() == null)
+                msg.setSrc(local_addr);
             out_stream.reset();
             DataOutputStream out=new DataOutputStream(out_stream);
             msg.writeTo(out);
@@ -144,9 +146,6 @@ public class MPING extends PING implements Runnable {
             log.error("failed sending discovery request", ex);
         }
     }
-
-
-
 
 
 
@@ -163,8 +162,8 @@ public class MPING extends PING implements Runnable {
             try {
                 mcast_sock.receive(packet);
                 len=packet.getLength();
-                if(log.isTraceEnabled())
-                    log.trace("received " + len + " bytes from " + packet.getAddress() + ":" + packet.getPort());
+                //if(log.isTraceEnabled())
+                  //  log.trace("received " + len + " bytes from " + packet.getAddress() + ":" + packet.getPort());
                 data=packet.getData();
                 inp_stream=new ByteArrayInputStream(data, 0, data.length);
                 inp=new DataInputStream(inp_stream);
