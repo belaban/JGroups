@@ -1,5 +1,8 @@
 package org.jgroups.util;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import java.io.IOException;
 import java.io.ObjectStreamClass;
 import java.io.InputStream;
@@ -10,9 +13,10 @@ import java.util.HashMap;
  * ObjectInputStream which sets a contact classloader for reading bytes into objects. Copied from
  * MarshalledValueInputStream of JBoss
  * @author Bela Ban
- * @version $Id: ContextObjectInputStream.java,v 1.3 2004/09/23 16:29:56 belaban Exp $
+ * @version $Id: ContextObjectInputStream.java,v 1.4 2004/09/24 09:00:30 belaban Exp $
  */
 public class ContextObjectInputStream extends ObjectInputStream {
+
 
     /**
      * A class wide cache of proxy classes populated by resolveProxyClass
