@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.38 2004/08/24 09:26:45 belaban Exp $
+// $Id: UDP.java,v 1.39 2004/08/30 09:26:12 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -915,6 +915,7 @@ public class UDP extends Protocol implements Runnable {
             mcast_send_sock.setTimeToLive(ip_ttl);
             if(bind_addr != null)
                 mcast_send_sock.setInterface(bind_addr);
+            // mcast_send_sock.setTrafficClass(0x08); // high throughput; should investigate when baseline is JDK 1.4
         }
 
         setBufferSizes();
