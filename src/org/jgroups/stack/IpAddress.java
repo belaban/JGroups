@@ -1,4 +1,4 @@
-// $Id: IpAddress.java,v 1.4 2004/03/30 06:47:27 belaban Exp $
+// $Id: IpAddress.java,v 1.5 2004/06/09 15:32:31 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -26,6 +26,8 @@ public class IpAddress implements Address {
     private byte[] additional_data=null;
     protected static HashMap  sAddrCache=new HashMap();
     protected static Log log=LogFactory.getLog(IpAddress.class);
+
+    static transient boolean resolve_dns=new Boolean(System.getProperty("resolve.dns", "true")).booleanValue();
 
     static final transient  char[] digits = {
         '0', '1', '2', '3', '4', '5',   
@@ -156,8 +158,14 @@ public class IpAddress implements Address {
         else {
             if(ip_addr.isMulticastAddress())
                 sb.append(ip_addr.getHostAddress());
-            else
-                appendShortName(ip_addr.getHostName(), sb);
+            else {
+                String host_name=null;
+                if(resolve_dns)
+                    host_name=ip_addr.getHostName();
+                else
+                    host_name=ip_addr.getHostAddress();
+                appendShortName(host_name, sb);
+            }
         }
         sb.append(":" + port);
         if(additional_data != null)
