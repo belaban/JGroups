@@ -1,4 +1,4 @@
-// $Id: Protocol.java,v 1.13 2004/04/21 22:51:10 belaban Exp $
+// $Id: Protocol.java,v 1.14 2004/04/23 19:14:47 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -157,7 +157,7 @@ class DownHandler extends Thread {
  * constructor !</b>
  */
 public abstract class Protocol {
-    protected Properties       props=null;
+    protected Properties       props=new Properties();
     protected Protocol         up_prot=null, down_prot=null;
     protected ProtocolStack    stack=null;
     protected Queue            up_queue=new Queue(), down_queue=new Queue();
@@ -179,7 +179,7 @@ public abstract class Protocol {
      * </pre>
      */
     public boolean setProperties(Properties props) {
-        this.props=props;
+        this.props.putAll(props);
         return true;
     }
 
@@ -189,7 +189,7 @@ public abstract class Protocol {
      */
     public boolean setPropertiesInternal(Properties props) {
         String str;
-        this.props=(Properties)props.clone();
+        this.props.putAll(props);
 
         str=props.getProperty("down_thread");
         if(str != null) {
