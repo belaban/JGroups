@@ -136,7 +136,7 @@
       <!-- TO_DO: synchronize these values with the ones declared as defaults
                   in GossipRouter.
       -->
-      <attribute name="Port">5015</attribute>
+      <attribute name="Port">12000</attribute>
       <attribute name="ExpiryTime">30000</attribute>
       <attribute name="GossipRequestTimeout">1000</attribute>
       <attribute name="RoutingClientReplyTimeout">120000</attribute>
