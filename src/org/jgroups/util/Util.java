@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.19 2004/10/05 16:04:20 belaban Exp $
+// $Id: Util.java,v 1.20 2004/10/05 16:14:09 belaban Exp $
 
 package org.jgroups.util;
 
@@ -154,7 +154,6 @@ public class Util {
         }
     }
 
-
     public static String readString(DataInputStream in) throws IOException {
         int b=in.read();
         if(b == 1)
@@ -162,6 +161,27 @@ public class Util {
         return null;
     }
 
+    public static void writeByteBuffer(byte[] buf, DataOutputStream out) throws IOException {
+        if(buf != null) {
+            out.write(1);
+            out.writeInt(buf.length);
+            out.write(buf, 0, buf.length);
+        }
+        else {
+            out.write(0);
+        }
+    }
+
+    public static byte[] readByteBuffer(DataInputStream in) throws IOException {
+        int b=in.read();
+        if(b == 1) {
+            b=in.readInt();
+            byte[] buf=new byte[b];
+            in.read(buf, 0, buf.length);
+            return buf;
+        }
+        return null;
+    }
 
     /** Sleep for timeout msecs. Returns when timeout has elapsed or thread was interrupted */
     public static void sleep(long timeout) {
