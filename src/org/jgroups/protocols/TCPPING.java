@@ -1,4 +1,4 @@
-// $Id: TCPPING.java,v 1.19 2005/01/12 01:36:54 belaban Exp $
+// $Id: TCPPING.java,v 1.20 2005/02/03 23:43:03 ovidiuf Exp $
 
 package org.jgroups.protocols;
 
@@ -12,14 +12,21 @@ import java.util.*;
 
 
 /**
- * The TCPPING protocol layer retrieves the initial membership (used by the GMS when started
- * by sending event FIND_INITIAL_MBRS down the stack). We do this by mcasting TCPPING
- * requests to an IP MCAST address (or, if gossiping is enabled, by contacting the router).
- * The responses should allow us to determine the coordinator whom we have to contact,
- * e.g. in case we want to join the group.  When we are a server (after having received the
- * BECOME_SERVER event), we'll respond to TCPPING requests with a TCPPING response.<p> The
- * FIND_INITIAL_MBRS event will eventually be answered with a FIND_INITIAL_MBRS_OK event up
+ * The TCPPING protocol layer retrieves the initial membership in answer to the GMS's
+ * FIND_INITIAL_MBRS event. The initial membership is retrieved by directly contacting other group
+ * members, sending point-to-point mebership requests. The responses should allow us to determine
+ * the coordinator whom we have to contact in case we want to join the group. When we are a server
+ * (after having received the BECOME_SERVER event), we'll respond to TCPPING requests with a TCPPING
+ * response.
+ * <p>
+ * The FIND_INITIAL_MBRS event will eventually be answered with a FIND_INITIAL_MBRS_OK event up
  * the stack.
+ * <p>
+ * The TCPPING protocol requires a static conifiguration, which assumes that you to know in advance
+ * where to find other members of your group. For dynamic discovery, use the PING protocol, which
+ * uses multicast discovery, or the TCPGOSSIP protocol, which contacts a Gossip Router to acquire
+ * the initial membership.
+ *
  * @author Bela Ban
  */
 public class TCPPING extends Discovery {
