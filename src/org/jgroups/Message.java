@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.6 2004/02/26 01:57:19 belaban Exp $
+// $Id: Message.java,v 1.7 2004/02/26 19:15:01 belaban Exp $
 
 package org.jgroups;
 
@@ -123,13 +123,29 @@ public class Message implements Externalizable {
     }
 
     /**
-     * Returns the payload (byte buffer). Note that this buffer should not be modified as we do not
-     * copy the buffer on copy() or clone(): the buffer of the copied message is simply a reference to
+     * Returns a <em>reference</em> to the payload (byte buffer). Note that this buffer should not be modified as
+     * we do not copy the buffer on copy() or clone(): the buffer of the copied message is simply a reference to
      * the old buffer.<br/>
-     * If offset and length are used: we return the <em>entire</em> buffer, not a subset.
+     * Even if offset and length are used: we return the <em>entire</em> buffer, not a subset.
+     */
+    public byte[] getRawBuffer() {
+        return buf;
+    }
+
+    /**
+     * Returns a copy of the buffer if offset and length are used, otherwise a reference
+     * @return
      */
     public byte[] getBuffer() {
-        return buf;
+        if(buf == null)
+            return null;
+        if(offset == 0 && length == buf.length)
+            return buf;
+        else {
+            byte[] retval=new byte[length];
+            System.arraycopy(buf, offset, retval, 0, length);
+            return retval;
+        }
     }
 
     public void setBuffer(byte[] b) {
@@ -164,10 +180,12 @@ public class Message implements Externalizable {
         }
     }
 
+    /** Returns the offset into the buffer at which the data starts */
     public int getOffset() {
         return offset;
     }
 
+    /** Returns the number of bytes in the buffer */
     public int getLength() {
         return length;
     }
@@ -366,10 +384,6 @@ public class Message implements Externalizable {
             }
         }
         return retval;
-    }
-
-    public int getBufferSize() {
-        return length;
     }
 
 

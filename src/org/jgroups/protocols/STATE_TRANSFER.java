@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.3 2004/01/08 02:39:56 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.4 2004/02/26 19:15:00 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -246,7 +246,7 @@ public class STATE_TRANSFER extends Protocol implements RequestHandler {
         StateTransferRequest req;
 
         try {
-            req=(StateTransferRequest)Util.objectFromByteBuffer(msg.getBuffer());
+            req=(StateTransferRequest)msg.getObject();
 
             switch(req.getType()) {
                 case StateTransferRequest.MAKE_COPY:

@@ -1,4 +1,4 @@
-// $Id: PRINTMETHODS.java,v 1.1 2003/09/09 01:24:10 belaban Exp $
+// $Id: PRINTMETHODS.java,v 1.2 2004/02/26 19:15:00 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -23,10 +23,9 @@ public class PRINTMETHODS extends Protocol {
 
 	if(evt.getType() == Event.MSG) {
 	    msg=(Message)evt.getArg();
-	    buf=msg.getBuffer();
-	    if(buf != null) {
+	    if(msg.getLength() > 0) {
 		try {
-		    obj=Util.objectFromByteBuffer(buf);
+		    obj=msg.getObject();
 		    if(obj != null && obj instanceof MethodCall)
 			System.out.println("--> PRINTMETHODS: received " + obj);
 		}

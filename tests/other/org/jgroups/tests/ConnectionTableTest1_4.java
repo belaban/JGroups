@@ -1,9 +1,10 @@
-// $Id: ConnectionTableTest1_4.java,v 1.1 2003/12/21 03:50:47 akbollu Exp $
+// $Id: ConnectionTableTest1_4.java,v 1.2 2004/02/26 19:14:15 belaban Exp $
 
 package org.jgroups.tests;
 
 import org.jgroups.Address;
 import org.jgroups.Message;
+import org.jgroups.stack.IpAddress;
 import org.jgroups.blocks.ConnectionTable1_4;
 
 import java.io.BufferedReader;
@@ -17,7 +18,7 @@ public class ConnectionTableTest1_4 implements ConnectionTable1_4.Receiver, Conn
 
 
     public void receive(Message m) {
-        String s=new String(m.getBuffer());
+        String s=(String)m.getObject();
         System.out.println("<-- " + s + " (from " + m.getSrc() + ")");
     }
 
@@ -60,7 +61,7 @@ public class ConnectionTableTest1_4 implements ConnectionTable1_4.Receiver, Conn
                     System.out.println(ct);
                     continue;
                 }
-                msg=new Message(new org.jgroups.stack.IpAddress(dst_host, dst_port), null, line.getBytes());
+                msg=new Message(new IpAddress(dst_host, dst_port), null, line);
                 ct.send(msg);
             }
             catch(Exception e) {

@@ -1,4 +1,4 @@
-// $Id: GetStateTest.java,v 1.2 2003/09/24 23:25:53 belaban Exp $
+// $Id: GetStateTest.java,v 1.3 2004/02/26 19:14:15 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -92,7 +92,7 @@ public class GetStateTest implements Runnable {
 		    int     in;
 
 		    try {
-			index=(Integer)Util.objectFromByteBuffer(m.getBuffer());
+			index=(Integer)m.getObject();
 			in=index.intValue();
 			
 			if(state != null) {

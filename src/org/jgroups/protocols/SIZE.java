@@ -1,4 +1,4 @@
-// $Id: SIZE.java,v 1.4 2003/12/27 00:17:10 belaban Exp $
+// $Id: SIZE.java,v 1.5 2004/02/26 19:15:00 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -72,15 +72,13 @@ public class SIZE extends Protocol {
     public void up(Event evt) {
         Message msg;
         int payload_size=0, serialized_size;
-        byte[] buf;
 
         switch(evt.getType()) {
 
             case Event.MSG:
                 msg=(Message)evt.getArg();
                 if(Trace.trace) {
-                    if((buf=msg.getBuffer()) != null) {
-                        payload_size=buf.length;
+                    if((payload_size=msg.getLength()) > 0) {
                         serialized_size=sizeOf(msg);
                         if(serialized_size > min_size) {
                             Trace.info("SIZE.up()", "size of message is " + serialized_size +
@@ -108,8 +106,7 @@ public class SIZE extends Protocol {
             case Event.MSG:
                 msg=(Message)evt.getArg();
                 if(Trace.trace) {
-                    if((buf=msg.getBuffer()) != null) {
-                        payload_size=buf.length;
+                    if((payload_size=msg.getLength()) > 0) {
                         serialized_size=sizeOf(msg);
                         if(serialized_size > min_size) {
                             Trace.info("SIZE.down()", "size of message is " + serialized_size +

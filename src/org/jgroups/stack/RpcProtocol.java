@@ -1,4 +1,4 @@
-// $Id: RpcProtocol.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+// $Id: RpcProtocol.java,v 1.2 2004/02/26 19:15:01 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -226,13 +226,13 @@ public class RpcProtocol extends MessageProtocol {
         Object     body=null;
         MethodCall method_call;
 
-        if(req == null || req.getBuffer() == null) {
+        if(req == null || req.getLength() == 0) {
             Trace.error("RpcProtocol.handle()", "message or message buffer is null");
             return null;
         }
 
         try {
-            body=Util.objectFromByteBuffer(req.getBuffer());
+            body=req.getObject();
         }
         catch(Exception e) {
             Trace.error("RpcProtocol.handle()", "exception=" + e);

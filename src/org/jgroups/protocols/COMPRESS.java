@@ -19,7 +19,7 @@ import java.io.ObjectInput;
  * Compresses the payload of a message. Goal is to reduce the number of messages sent across the wire.
  * Should ideally be layered somewhere above a fragmentation protocol (e.g. FRAG).
  * @author Bela Ban
- * @version $Id: COMPRESS.java,v 1.1 2003/10/18 08:14:27 belaban Exp $
+ * @version $Id: COMPRESS.java,v 1.2 2004/02/26 19:15:00 belaban Exp $
  */
 public class COMPRESS extends Protocol {
 
@@ -85,18 +85,17 @@ public class COMPRESS extends Protocol {
             Message msg=(Message)evt.getArg();
             CompressHeader hdr=(CompressHeader)msg.removeHeader(name);
             if(hdr != null) {
-                byte[] compressed_payload=msg.getBuffer();
+                byte[] compressed_payload=msg.getRawBuffer();
                 if(compressed_payload != null) {
                     int original_size=hdr.original_size;
                     byte[] uncompressed_payload=new byte[original_size];
                     inflater.reset();
-                    inflater.setInput(compressed_payload);
+                    inflater.setInput(compressed_payload, msg.getOffset(), msg.getLength());
                     try {
                         inflater.inflate(uncompressed_payload);
                         if(Trace.trace)
-                            Trace.info("COMPRESS.up()",
-                                       "uncompressed " + compressed_payload.length + " bytes to " +
-                                       original_size + " bytes");
+                            Trace.info("COMPRESS.up()", "uncompressed " + compressed_payload.length + " bytes to " +
+                                    original_size + " bytes");
                         msg.setBuffer(uncompressed_payload);
                     }
                     catch(DataFormatException e) {
@@ -112,30 +111,30 @@ public class COMPRESS extends Protocol {
 
     /**
      * We compress the payload if it is larger than <code>min_size</code>. In this case we add a header containing
-     * the original size before compression. Otherwise we add no header.
+     * the original size before compression. Otherwise we add no header.<br/>
+     * Note that we compress either the entire buffer (if offset/length are not used), or a subset (if offset/length
+     * are used)
      * @param evt
      */
     public void down(Event evt) {
         if(evt.getType() == Event.MSG) {
             Message msg=(Message)evt.getArg();
-            byte[] payload=msg.getBuffer();
-            if(payload != null) {
-                int size=payload.length;
-                if(size >= min_size) {
-                    byte[] compressed_payload=new byte[size];
-                    deflater.reset();
-                    deflater.setInput(payload);
-                    deflater.finish();
-                    deflater.deflate(compressed_payload);
-                    int compressed_size=deflater.getTotalOut();
-                    byte[] new_payload=new byte[compressed_size];
-                    System.arraycopy(compressed_payload, 0, new_payload, 0, compressed_size);
-                    msg.setBuffer(new_payload);
-                    msg.putHeader(name, new CompressHeader(size));
-                    if(Trace.trace)
-                        Trace.info("COMPRESS.down()", "compressed payload from " + size + " bytes to " +
-                                                    compressed_size + " bytes");
-                }
+            int length=msg.getLength(); // takes offset/length (if set) into account
+            if(length >= min_size) {
+                byte[] payload=msg.getRawBuffer(); // here we get the ref so we can avoid copying
+                byte[] compressed_payload=new byte[length];
+                deflater.reset();
+                deflater.setInput(payload, msg.getOffset(), length);
+                deflater.finish();
+                deflater.deflate(compressed_payload);
+                int compressed_size=deflater.getTotalOut();
+                byte[] new_payload=new byte[compressed_size];
+                System.arraycopy(compressed_payload, 0, new_payload, 0, compressed_size);
+                msg.setBuffer(new_payload);
+                msg.putHeader(name, new CompressHeader(length));
+                if(Trace.trace)
+                    Trace.info("COMPRESS.down()", "compressed payload from " + length + " bytes to " +
+                            compressed_size + " bytes");
             }
         }
         passDown(evt);

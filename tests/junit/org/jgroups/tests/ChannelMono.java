@@ -1,4 +1,4 @@
-// $Id: ChannelMono.java,v 1.1 2003/11/24 16:34:20 rds13 Exp $
+// $Id: ChannelMono.java,v 1.2 2004/02/26 19:14:14 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -506,7 +506,7 @@ public class ChannelMono extends TestCase
                         num_items++;
                         if (num_items >= max)
                             looping = false;
-                        logger.debug("Thread #" + rank + " received :" + new String(msg.getBuffer()));
+                        logger.debug("Thread #" + rank + " received :" + msg.getObject());
                     }
                 }
                 catch (ChannelNotConnectedException conn)

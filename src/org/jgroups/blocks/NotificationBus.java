@@ -1,4 +1,4 @@
-// $Id: NotificationBus.java,v 1.3 2004/01/16 16:47:50 belaban Exp $
+// $Id: NotificationBus.java,v 1.4 2004/02/26 19:14:59 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -246,12 +246,11 @@ public class NotificationBus implements MessageListener, MembershipListener {
     /* -------------------------------- Interface MessageListener -------------------------------- */
     public void receive(Message msg) {
         Info info=null;
-        byte[] data;
         Object obj;
 
-        if(msg == null || (data=msg.getBuffer()) == null) return;
+        if(msg == null || msg.getLength() == 0) return;
         try {
-            obj=Util.objectFromByteBuffer(data);
+            obj=msg.getObject();
             if(!(obj instanceof Info)) {
                 if(Trace.trace)
                     Trace.error("NotificationBus.receive()", "expected an instance of Info (received " +

@@ -1,4 +1,4 @@
-// $Id: FC.java,v 1.5 2004/02/26 16:36:34 belaban Exp $
+// $Id: FC.java,v 1.6 2004/02/26 19:15:00 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -19,7 +19,7 @@ import java.io.ObjectInput;
  * Note that this protocol must be located towards the top of the stack, or all down_threads from JChannel to this
  * protocol must be set to false ! This is in order to block JChannel.send()/JChannel.down().
  * @author Bela Ban
- * @version $Revision: 1.5 $
+ * @version $Revision: 1.6 $
  */
 public class FC extends Protocol {
 
@@ -183,7 +183,7 @@ public class FC extends Protocol {
 
     void handleUpMessage(Message msg) {
         Address src=msg.getSrc();
-        long    size=msg.getBuffer() != null? msg.getBufferSize() : 24;
+        long    size=Math.max(24, msg.getLength());
         long    new_credits;
 
         if(src == null) {
@@ -275,7 +275,7 @@ public class FC extends Protocol {
             return false;
         }
         dest=msg.getDest();
-        size=msg.getBuffer() != null? msg.getBufferSize() : 24;
+        size=Math.max(24, msg.getLength());
         if(dest != null && !dest.isMulticastAddress()) { // unicast destination
             if(dest.equals(local_addr))
                 return true;

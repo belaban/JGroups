@@ -1,4 +1,4 @@
-// $Id: Draw2Channels.java,v 1.3 2003/12/26 17:21:59 belaban Exp $
+// $Id: Draw2Channels.java,v 1.4 2004/02/26 19:15:00 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -568,7 +568,7 @@ public class Draw2Channels implements ActionListener {
 		    msg=(Message)tmp;
 		    comm=null;
 
-		    Object obj=Util.objectFromByteBuffer(msg.getBuffer());
+		    Object obj=msg.getObject();
 		    if(obj instanceof DrawCommand)
 			comm=(DrawCommand)obj;
 		    else if(obj instanceof Message) {

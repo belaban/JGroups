@@ -1,4 +1,4 @@
-// $Id: FRAG2.java,v 1.2 2004/02/26 16:38:05 belaban Exp $
+// $Id: FRAG2.java,v 1.3 2004/02/26 19:15:00 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -26,7 +26,7 @@ import java.util.*;
  * size addition for headers and src and dest address is minimal when the transport finally has to serialize the
  * message, so we add a constant (1000 bytes).
  * @author Bela Ban
- * @version $Id: FRAG2.java,v 1.2 2004/02/26 16:38:05 belaban Exp $
+ * @version $Id: FRAG2.java,v 1.3 2004/02/26 19:15:00 belaban Exp $
  */
 public class FRAG2 extends Protocol {
 
@@ -99,7 +99,7 @@ public class FRAG2 extends Protocol {
 
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
-                long size=msg.getBufferSize();
+                long size=msg.getLength();
                 if(size > frag_size) {
                     if(Trace.trace) {
                         StringBuffer sb=new StringBuffer("message's buffer size is ");
@@ -504,14 +504,14 @@ public class FRAG2 extends Protocol {
 
                 for(int i=0; i < fragments.length; i++) {
                     fragment=fragments[i];
-                    combined_length+=fragment.getBufferSize();
+                    combined_length+=fragment.getLength();
                 }
 
                 combined_buffer=new byte[combined_length];
                 for(int i=0; i < fragments.length; i++) {
                     fragment=fragments[i];
                     tmp=fragment.getBuffer();
-                    length=fragment.getBufferSize();
+                    length=fragment.getLength();
                     offset=fragment.getOffset();
                     System.arraycopy(tmp, offset, combined_buffer, index, length);
                     index+=length;

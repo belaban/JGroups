@@ -1,4 +1,4 @@
-// $Id: TotalOrder.java,v 1.2 2003/09/24 23:20:47 belaban Exp $
+// $Id: TotalOrder.java,v 1.3 2004/02/26 19:15:00 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -118,7 +118,7 @@ public class TotalOrder extends Frame {
 			try {
 			    msg=(Message)o;
 
-			    Object tmp=Util.objectFromByteBuffer(msg.getBuffer());
+			    Object tmp=msg.getObject();
 
 			    if(!(tmp instanceof TotOrderRequest)) {
 				System.err.println("tmp is " + tmp.getClass() + ": " + tmp);

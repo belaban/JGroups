@@ -1,4 +1,4 @@
-// $Id: ChannelTest.java,v 1.1 2003/09/09 01:24:13 belaban Exp $
+// $Id: ChannelTest.java,v 1.2 2004/02/26 19:14:15 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -23,7 +23,7 @@ public class ChannelTest implements Runnable {
         mythread.start();
         for(int i=0; i < 30; i++) {
             System.out.println("Casting msg #" + i);
-            channel.send(new Message(null, null, new String("Msg #" + i).getBytes()));
+            channel.send(new Message(null, null, "Msg #" + i));
             Thread.sleep(1000);
         }
         channel.disconnect();
@@ -44,7 +44,7 @@ public class ChannelTest implements Runnable {
                     System.out.println("--> NEW VIEW: " + obj);
                 else if(obj instanceof Message) {
                     msg=(Message)obj;
-                    System.out.println("Received " + new String(msg.getBuffer()));
+                    System.out.println("Received " + msg.getObject());
                 }
             }
             catch(ChannelNotConnectedException conn) {
