@@ -1,4 +1,4 @@
-// $Id: ProtocolStack.java,v 1.6 2003/12/06 01:24:21 belaban Exp $
+// $Id: ProtocolStack.java,v 1.7 2003/12/26 23:51:20 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -219,7 +219,7 @@ public class ProtocolStack extends Protocol implements Transport {
             if(start_result instanceof Exception)
                 throw (Exception)start_result;
             else
-                throw new Exception("ProtocolStack.start(): exception is ", (Throwable)start_result);
+                throw new Exception("ProtocolStack.start(): exception is " + (Throwable)start_result);
         }
 
         stopped=false;
