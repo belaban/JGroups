@@ -1,4 +1,4 @@
-// $Id: UtilTest.java,v 1.2 2004/10/07 15:05:13 belaban Exp $
+// $Id: UtilTest.java,v 1.3 2004/10/07 15:45:57 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -7,11 +7,14 @@ import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.jgroups.Message;
 import org.jgroups.ChannelException;
+import org.jgroups.ViewId;
+import org.jgroups.View;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.util.Util;
 
 import java.io.*;
+import java.util.Vector;
 
 
 
@@ -42,16 +45,65 @@ public class UtilTest extends TestCase {
 
     public void testWriteStreamable() throws IOException, IllegalAccessException, InstantiationException {
         Message m=new Message(null, null, "Hello");
+        ViewId vid=new ViewId(null, 12345);
+        ViewId vid2=new ViewId(new IpAddress("127.0.0.1", 5555), 35623);
         ByteArrayOutputStream outstream=new ByteArrayOutputStream();
         DataOutputStream dos=new DataOutputStream(outstream);
         Util.writeStreamable(m, dos);
+        Util.writeStreamable(vid, dos);
+        Util.writeStreamable(vid2, dos);
         dos.close();
         byte[] buf=outstream.toByteArray();
         ByteArrayInputStream instream=new ByteArrayInputStream(buf);
         DataInputStream dis=new DataInputStream(instream);
         Message m2=(Message)Util.readStreamable(dis);
+        ViewId v3=(ViewId)Util.readStreamable(dis);
+        ViewId v4=(ViewId)Util.readStreamable(dis);
         assertNotNull(m2.getBuffer());
         assertEquals(m.getLength(), m2.getLength());
+        assertNotNull(v3);
+        assertEquals(vid, v3);
+        assertNotNull(v4);
+        assertEquals(vid2, v4);
+    }
+
+    public void testWriteViewIdWithNullCoordinator() throws IOException, IllegalAccessException, InstantiationException {
+        ViewId vid=new ViewId(null, 12345);
+        ByteArrayOutputStream outstream=new ByteArrayOutputStream();
+        DataOutputStream dos=new DataOutputStream(outstream);
+        Util.writeStreamable(vid, dos);
+        dos.close();
+        byte[] buf=outstream.toByteArray();
+        ByteArrayInputStream instream=new ByteArrayInputStream(buf);
+        DataInputStream dis=new DataInputStream(instream);
+        ViewId v4=(ViewId)Util.readStreamable(dis);
+        assertEquals(vid, v4);
+    }
+
+
+    public void testWriteView() throws IOException, IllegalAccessException, InstantiationException {
+        ViewId vid=new ViewId(null, 12345);
+        Vector members=new Vector();
+        View v;
+        IpAddress a1=new IpAddress("localhost", 1234);
+        IpAddress a2=new IpAddress("127.0.0.1", 4444);
+        IpAddress a3=new IpAddress("thishostdoesnexist", 6666);
+        IpAddress a4=new IpAddress("www.google.com", 7777);
+        members.add(a1);
+        members.add(a2);
+        members.add(a3);
+        members.add(a4);
+        v=new View(vid, members);
+
+        ByteArrayOutputStream outstream=new ByteArrayOutputStream();
+        DataOutputStream dos=new DataOutputStream(outstream);
+        Util.writeStreamable(v, dos);
+        dos.close();
+        byte[] buf=outstream.toByteArray();
+        ByteArrayInputStream instream=new ByteArrayInputStream(buf);
+        DataInputStream dis=new DataInputStream(instream);
+        View v2=(View)Util.readStreamable(dis);
+        assertEquals(v, v2);
     }
 
 
@@ -92,6 +144,18 @@ public class UtilTest extends TestCase {
         assertEquals(a2, Util.readAddress(dis));
         assertEquals(a3, Util.readAddress(dis));
         assertEquals(a4, Util.readAddress(dis));
+    }
+
+    public void writeNullAddress() throws IOException, IllegalAccessException, InstantiationException {
+        IpAddress a1=null;
+        ByteArrayOutputStream outstream=new ByteArrayOutputStream();
+        DataOutputStream dos=new DataOutputStream(outstream);
+        Util.writeAddress(a1, dos);
+        dos.close();
+        byte[] buf=outstream.toByteArray();
+        ByteArrayInputStream instream=new ByteArrayInputStream(buf);
+        DataInputStream dis=new DataInputStream(instream);
+        assertNull(Util.readAddress(dis));
     }
 
 
