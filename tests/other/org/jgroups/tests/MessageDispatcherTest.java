@@ -1,4 +1,4 @@
-// $Id: MessageDispatcherTest.java,v 1.3 2003/12/11 06:44:14 belaban Exp $
+// $Id: MessageDispatcherTest.java,v 1.4 2003/12/11 06:58:18 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -27,7 +27,8 @@ public class MessageDispatcherTest implements RequestHandler {
     public void start() throws Exception {
         channel=new JChannel(props);
         //channel.setOpt(Channel.LOCAL, Boolean.FALSE);
-        disp=new MessageDispatcher(channel, null, null, this);
+        // disp=new MessageDispatcher(channel, null, null, this);
+        disp=new MessageDispatcher(channel, null, null, this, false, false);
         channel.connect("MessageDispatcherTestGroup");
 
         for(int i=0; i < 10; i++) {
