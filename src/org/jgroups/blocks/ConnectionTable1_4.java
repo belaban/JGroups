@@ -1,4 +1,4 @@
-// $Id: ConnectionTable1_4.java,v 1.2 2003/12/21 03:47:56 akbollu Exp $
+// $Id: ConnectionTable1_4.java,v 1.3 2003/12/21 03:54:56 akbollu Exp $
 
 package org.jgroups.blocks;
 
@@ -270,8 +270,7 @@ public class ConnectionTable1_4 implements Runnable {
                 srv_sock=null;
                 tmp.close();
             }
-            catch(Exception e) {
-            	e.printStackTrace();
+            catch(Exception e) {            	
             }
         }
 
@@ -302,8 +301,7 @@ public class ConnectionTable1_4 implements Runnable {
                 try {
                     conn.destroy();  // won't do anything if already destroyed
                 }
-                catch(Exception e) {
-                	e.printStackTrace();
+                catch(Exception e) {                	
                 }
                 conns.remove(addr);
             }
@@ -554,7 +552,6 @@ public class ConnectionTable1_4 implements Runnable {
         	}
         	catch(Exception ex)
         	{
-        		ex.printStackTrace();
         	}
         	
         	try
@@ -565,7 +562,6 @@ public class ConnectionTable1_4 implements Runnable {
 			}
 			catch (IOException e)
 			{
-				e.printStackTrace();
 			}
             if(Trace.trace)
                 Trace.info("ConnectionTable1_4.Connection.init()", "connection was created to " + peer_addr);
@@ -594,16 +590,13 @@ public class ConnectionTable1_4 implements Runnable {
                     }
                     catch(IOException io_ex2) {
                         if(Trace.trace) Trace.error("ConnectionTable1_4.Connection.send()", "2nd attempt to send data failed too");
-						io_ex2.printStackTrace();
                     }
                     catch(Exception ex2) {
                         if(Trace.trace) Trace.error("ConnectionTable1_4.Connection.send()", "exception is " + ex2);
-                        ex2.printStackTrace();
                     }
                 }
                 catch(Exception ex) {
-                    if(Trace.trace) Trace.error("ConnectionTable1_4.Connection.send()", "exception is " + ex);
-                    ex.printStackTrace();
+                    if(Trace.trace) Trace.error("ConnectionTable1_4.Connection.send()", "exception is " + ex);                  
                 }
             }
         }
@@ -644,8 +637,7 @@ public class ConnectionTable1_4 implements Runnable {
                 if(Trace.trace)
                     Trace.error("ConnectionTable1_4.Connection.doSend()",
                                 "to " + dst_addr + ", exception is " + ex + ", stack trace:\n" +
-                                Util.printStackTrace(ex));
-                ex.printStackTrace();
+                                Util.printStackTrace(ex));                
                 remove(dst_addr);
                 throw ex;
             }
@@ -783,8 +775,7 @@ public class ConnectionTable1_4 implements Runnable {
                 try {
                     sock_ch.close();
                 }
-                catch(Exception e) {
-                	e.printStackTrace();
+                catch(Exception e) {                	
                 }
                 sock=null;
             }
