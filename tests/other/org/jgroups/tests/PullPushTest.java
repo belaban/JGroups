@@ -1,14 +1,15 @@
-// $Id: PullPushTest.java,v 1.1 2003/09/09 01:24:13 belaban Exp $
+// $Id: PullPushTest.java,v 1.2 2003/11/27 21:45:57 belaban Exp $
 
 
 package org.jgroups.tests;
 
 
-import org.jgroups.*;
-import org.jgroups.blocks.*;
+import org.jgroups.Channel;
+import org.jgroups.JChannel;
+import org.jgroups.Message;
+import org.jgroups.MessageListener;
+import org.jgroups.blocks.PullPushAdapter;
 import org.jgroups.log.Trace;
-
-
 
 
 /**
@@ -18,47 +19,47 @@ import org.jgroups.log.Trace;
  * @author Bela Ban
  */
 public class PullPushTest implements MessageListener {
-    private Channel          channel;
-    private PullPushAdapter  adapter;
+    private Channel channel;
+    private PullPushAdapter adapter;
 
     public void receive(Message msg) {
-	System.out.println("Received msg: " + msg);
+        System.out.println("Received msg: " + msg);
     }
 
     public byte[] getState() {  // only called if channel option GET_STATE_EVENTS is set to true
-	return null;
+        return null;
     }
 
     public void setState(byte[] state) {
-	
+
     }
 
 
     public void start() throws Exception {
-	Trace.init();
-	channel=new JChannel();
-	channel.connect("PullPushTest");
-	adapter=new PullPushAdapter(channel);
-	adapter.setListener(this);
-	
-	for(int i=0; i < 10; i++) {
-	    System.out.println("Sending msg #" + i);
-	    adapter.send(new Message(null, null, new String("Hello world").getBytes()));
-	    Thread.sleep(1000);
-	}
-	channel.close();
-	System.exit(0);
+        Trace.init();
+        channel=new JChannel();
+        channel.connect("PullPushTest");
+        adapter=new PullPushAdapter(channel);
+        adapter.setListener(this);
+
+        for(int i=0; i < 10; i++) {
+            System.out.println("Sending msg #" + i);
+            adapter.send(new Message(null, null, new String("Hello world").getBytes()));
+            Thread.sleep(1000);
+        }
+
+        channel.close();
     }
 
 
     public static void main(String args[]) {
-	PullPushTest t=new PullPushTest();
-	try {
-	    t.start();
-	}
-	catch(Exception e) {
-	    System.err.println(e);
-	}
+        PullPushTest t=new PullPushTest();
+        try {
+            t.start();
+        }
+        catch(Exception e) {
+            System.err.println(e);
+        }
     }
 
 }
