@@ -1,4 +1,4 @@
-// $Id: DistributedHashtable.java,v 1.3 2003/11/27 21:20:24 belaban Exp $
+// $Id: DistributedHashtable.java,v 1.4 2003/11/29 01:04:49 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -140,7 +140,6 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
      */
     public DistributedHashtable(PullPushAdapter adapter, Serializable id, long state_timeout)
         throws ChannelNotConnectedException, ChannelClosedException {
-        this.groupname=groupname;
         initMethods();
         this.channel = (Channel)adapter.getTransport();
         disp=new RpcDispatcher(adapter, id, this, this, this);
@@ -240,8 +239,7 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
 	 * @return the previous value of the specified key in this hashtable, or null if it did not have one
 	 */
     public Object put(Object key, Object value) {
-        Object prev_val=null;
-        prev_val=get(key);
+        Object prev_val=get(key);
 
         //Changes done by <aos>
         //if true, propagate action to the group
@@ -319,8 +317,7 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
 	 * @return the value to which the key had been mapped in this hashtable, or null if the key did not have a mapping.
 	 */
 	public Object remove(Object key) {
-		Object retval = null;
-		retval = get(key);
+		Object retval = get(key);
 
 		//Changes done by <aos>
         //if true, propagate action to the group
