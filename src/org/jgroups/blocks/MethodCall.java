@@ -19,7 +19,7 @@ import java.lang.reflect.Method;
  * It includes the name of the method (case sensitive) and a list of arguments.
  * A method call is serializable and can be passed over the wire.
  * @author Bela Ban
- * @version $Revision: 1.9 $
+ * @version $Revision: 1.10 $
  */
 public class MethodCall implements Externalizable {
 
@@ -247,10 +247,12 @@ public class MethodCall implements Externalizable {
             StringBuffer sb=new StringBuffer();
             sb.append("found no method called ").append(method_name).append(" in class ");
             sb.append(cl.getName()).append(" with (");
-            for(int i=0; i < args.length; i++) {
-                if(i > 0)
-                    sb.append(", ");
-                sb.append((args[i] != null)? args[i].getClass().getName() : "null");
+            if(args != null) {
+                for(int i=0; i < args.length; i++) {
+                    if(i > 0)
+                        sb.append(", ");
+                    sb.append((args[i] != null)? args[i].getClass().getName() : "null");
+                }
             }
             sb.append(") formal parameters");
             log.error(sb.toString());
@@ -304,30 +306,34 @@ public class MethodCall implements Externalizable {
         StringBuffer ret=new StringBuffer();
         boolean first=true;
         ret.append(method_name).append('(');
-        for(int i=0; i < args.length; i++) {
-            if(first) {
-                first=false;
+        if(args != null) {
+            for(int i=0; i < args.length; i++) {
+                if(first) {
+                    first=false;
+                }
+                else {
+                    ret.append(", ");
+                }
+                ret.append(args[i]);
             }
-            else {
-                ret.append(", ");
-            }
-            ret.append(args[i]);
         }
         ret.append(')');
         return ret.toString();
     }
 
     public String toStringDetails() {
-         StringBuffer ret=new StringBuffer();
-         ret.append("MethodCall (name=" + method_name);
-         ret.append(", number of args=" + args.length + ')');
-         ret.append("\nArgs:");
-         for(int i=0; i < args.length; i++) {
-             ret.append("\n[" + args[i] + " (" +
-                        (args[i] != null? args[i].getClass().getName() : "null") + ")]");
-         }
-         return ret.toString();
-     }
+        StringBuffer ret=new StringBuffer();
+        ret.append("MethodCall (name=" + method_name);
+        ret.append(", number of args=" + (args != null? args.length : 0) + ')');
+        if(args != null) {
+            ret.append("\nArgs:");
+            for(int i=0; i < args.length; i++) {
+                ret.append("\n[" + args[i] + " (" +
+                           (args[i] != null? args[i].getClass().getName() : "null") + ")]");
+            }
+        }
+        return ret.toString();
+    }
 
 
     public void writeExternal(ObjectOutput out) throws IOException {

@@ -1,4 +1,4 @@
-// $Id: MethodCallTest.java,v 1.7 2004/07/05 14:15:04 belaban Exp $
+// $Id: MethodCallTest.java,v 1.8 2004/08/10 14:08:54 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -80,6 +80,17 @@ public class MethodCallTest extends TestCase {
         }
     }
 
+    public void testWithNull() {
+        try {
+            MethodCall mc=new MethodCall("foobar", null, (Class[])null);
+            System.out.println("mc: " + mc);
+            mc.invoke(this);
+        }
+        catch(Throwable t) {
+            fail(t.toString());
+        }
+    }
+
     public void testOldWithNull() {
         try {
             MethodCall mc=new MethodCall("bar", new Object[]{new String[]{"one", "two", "three"}, null});
@@ -119,6 +130,9 @@ public class MethodCallTest extends TestCase {
             fail(t.toString());
         }
     }
+
+
+
 
     public void testMethod() {
         Method m;
