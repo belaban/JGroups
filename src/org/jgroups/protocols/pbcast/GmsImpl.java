@@ -1,4 +1,4 @@
-// $Id: GmsImpl.java,v 1.5 2004/09/23 16:29:38 belaban Exp $
+// $Id: GmsImpl.java,v 1.6 2004/10/05 15:30:06 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -39,6 +39,7 @@ public abstract class GmsImpl {
     public abstract void      handleLeave(Address mbr, boolean suspected);
     public abstract void      handleViewChange(View new_view, Digest digest);
     public abstract void      handleSuspect(Address mbr);
+    public          void      handleExit() {;}
 
     public boolean            handleUpEvent(Event evt) {return true;}
     public boolean            handleDownEvent(Event evt) {return true;}

@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.21 2004/09/23 16:29:38 belaban Exp $
+// $Id: GMS.java,v 1.22 2004/10/05 15:30:06 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -344,6 +344,8 @@ public class GMS extends Protocol {
                 if(log.isWarnEnabled())
                     log.warn("I (" + local_addr + ") am being shunned, will leave and " +
                             "rejoin group (prev_members are " + prev_members + ')');
+                if(impl != null)
+                    impl.handleExit();
                 passUp(new Event(Event.EXIT));
             }
             return;

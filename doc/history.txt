@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.125 2004/10/04 20:51:03 belaban Exp $
+Revision: $Id: history.txt,v 1.126 2004/10/05 15:30:05 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -27,6 +27,9 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
 Version 2.2.8
 -------------
+
+- Fix for hanging merge when coordinator/participant crashes or shuns-and-reconnects during merge
+  (bela Oct 5 2004)
 
 - Removed object serialization almost entirely; replaced it with Streamable. Changed Message, IpAddress and some
   Header subclasses (not yet all) to support Streamable. UDP now uses Streamable both for Message and Message lists
