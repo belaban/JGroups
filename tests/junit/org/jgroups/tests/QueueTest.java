@@ -1,9 +1,11 @@
-// $Id: QueueTest.java,v 1.1 2003/09/09 01:24:13 belaban Exp $
+// $Id: QueueTest.java,v 1.2 2003/09/18 09:12:15 rds13 Exp $
 
 package org.jgroups.tests;
 
 
 import junit.framework.*;
+
+import org.jgroups.TimeoutException;
 import org.jgroups.util.*;
 
 
@@ -307,6 +309,118 @@ public class QueueTest extends TestCase {
         assertEquals(num_dead, 2);
     }
 
+	/** Multiple threads call remove(), one threads then adds an element. Only 1 thread should actually terminate
+	 * (the one that has the element) */
+	public void testBarrierWithTimeOut()
+	{
+		RemoveOneItemWithTimeout[] removers = new RemoveOneItemWithTimeout[10];
+		int num_dead = 0;
+
+		for (int i = 0; i < removers.length; i++)
+		{
+			removers[i] = new RemoveOneItemWithTimeout(i, 1000);
+			removers[i].start();
+		}
+
+		Util.sleep(5000);
+
+		System.out.println("-- adding element 99");
+		try
+		{
+			queue.add(new Long(99));
+		}
+		catch (Exception ex)
+		{
+			System.err.println(ex);
+		}
+
+		Util.sleep(5000);
+		System.out.println("-- adding element 100");
+		try
+		{
+			queue.add(new Long(100));
+		}
+		catch (Exception ex)
+		{
+			System.err.println(ex);
+		}
+
+		Util.sleep(1000);
+
+		for (int i = 0; i < removers.length; i++)
+		{
+			System.out.println("remover #" + i + " is " + (removers[i].isAlive() ? "alive" : "terminated"));
+			if (!removers[i].isAlive())
+			{
+				num_dead++;
+			}
+		}
+
+		assertEquals(num_dead, 2);
+
+		queue.close(false); // will cause all threads still blocking on peek() to return
+
+		Util.sleep(2000);
+
+		num_dead = 0;
+		for (int i = 0; i < removers.length; i++)
+		{
+			System.out.println("remover #" + i + " is " + (removers[i].isAlive() ? "alive" : "terminated"));
+			if (!removers[i].isAlive())
+			{
+				num_dead++;
+			}
+		}
+		assertEquals(num_dead, 10);
+
+	}
+
+
+	/** Multiple threads add one element, one thread read them all.
+	 * (the one that has the element) */
+	public void testMultipleWriterOneReader()
+	{
+		AddOneItem[] adders = new AddOneItem[10];
+		int num_dead = 0;
+		int num_items = 0;
+		int items = 1000;
+
+		for (int i = 0; i < adders.length; i++)
+		{
+			adders[i] = new AddOneItem(i, items);
+			adders[i].start();
+		}
+
+		while (num_items < (adders.length*items))
+		{
+			try
+			{
+				Long retval = (Long) queue.remove();
+				num_items++;
+			}
+			catch (Exception ex)
+			{
+				System.err.println(ex);
+			}
+		}
+
+		Util.sleep(1000);
+
+		for (int i = 0; i < adders.length; i++)
+		{
+			System.out.println("adder #" + i + " is " + (adders[i].isAlive() ? "alive" : "terminated"));
+			if (!adders[i].isAlive())
+			{
+				num_dead++;
+			}
+		}
+
+		assertEquals(num_dead, 10);
+
+		queue.close(false); // will cause all threads still blocking on peek() to return
+
+	}
+
 
     /** Has multiple threads add(), remove() and peek() elements to/from the queue */
     public void testConcurrentAccess() {
@@ -363,6 +477,38 @@ public class QueueTest extends TestCase {
                 ", diff=" + Math.abs(total_writes - total_reads));
     }
 
+	class AddOneItem extends Thread
+	{
+		Long retval = null;
+		int rank = 0;
+		int iteration = 0;
+
+		AddOneItem(int rank, int iteration)
+		{
+			super("AddOneItem thread #" + rank);
+			this.rank = rank;
+			this.iteration = iteration;
+			setDaemon(true);
+		}
+
+		public void run()
+		{
+			try
+			{
+				for (int i = 0; i < iteration; i++)
+				{
+					queue.add(new Long(rank));
+					Util.sleepRandom(200);
+					System.out.println("Thread #" + rank + " added element (" + rank + ")");
+				}
+			}
+			catch (QueueClosedException closed)
+			{
+				System.err.println("Thread #" + rank + ": queue was closed");
+			}
+		}
+
+	}
 
     class RemoveOneItem extends Thread {
         Long retval=null;
@@ -389,6 +535,49 @@ public class QueueTest extends TestCase {
             return retval;
         }
     }
+    
+	class RemoveOneItemWithTimeout extends Thread
+	{
+		Long retval = null;
+		int rank = 0;
+		long timeout = 0;
+
+		RemoveOneItemWithTimeout(int rank, long timeout)
+		{
+			super("RemoveOneItem thread #" + rank);
+			this.rank = rank;
+			setDaemon(true);
+		}
+
+		public void run()
+		{
+			boolean finished = false;
+			while (!finished)
+			{
+				try
+				{
+					retval = (Long) queue.remove(timeout);
+					System.out.println("Thread #" + rank + " removed element (" + retval + ")");
+					finished = true;
+				}
+				catch (QueueClosedException closed)
+				{
+					System.err.println("Thread #" + rank + ": queue was closed");
+					finished = true;
+				}
+				catch (TimeoutException e)
+				{
+				}
+			}
+		}
+
+		Long getRetval()
+		{
+			return retval;
+		}
+	}
+
+
 
 
     class Writer extends Thread {
