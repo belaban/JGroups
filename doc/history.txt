@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.124 2004/09/26 11:17:27 belaban Exp $
+Revision: $Id: history.txt,v 1.125 2004/10/04 20:51:03 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -27,6 +27,11 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
 Version 2.2.8
 -------------
+
+- Removed object serialization almost entirely; replaced it with Streamable. Changed Message, IpAddress and some
+  Header subclasses (not yet all) to support Streamable. UDP now uses Streamable both for Message and Message lists
+  (used in bundling). Rough performance increase ca 30% (size of serialized data ca. 30% smaller to).
+  (bela Oct 4 2004)
 
 - UDP: removed 1 copy operation per sent message by using ExposedByteArrayOutputStream rather than ByteArrayOutputStream.
   ByteArrayOutputStream.toByteArray() copies the buffer, ExposedByteArrayOutputStream.getRawBuffer() returns a
