@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.4 2004/03/10 02:07:23 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.5 2004/03/16 17:56:12 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -488,7 +488,9 @@ public class RequestCorrelator {
         return(false);
     }
 
-
+    public Address getLocalAddress() {
+        return local_addr;
+    }
 
     public void setLocalAddress(Address local_addr) {
         this.local_addr=local_addr;
