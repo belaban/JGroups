@@ -1,10 +1,12 @@
-$Id: todo.lst,v 1.19 2004/12/07 18:09:17 belaban Exp $
+$Id: todo.lst,v 1.20 2004/12/24 14:15:37 belaban Exp $
 
 
 
 
 			      Todo List
 			      ---------
+
+- 2.2.8: UDP/TCP doesn't work with 127.0.0.1 (works with 2.2.7)
 
 - Make TUNNEL/GossipRouter use Streamable, plus GossipRouter should use a ConnectionTable
 
