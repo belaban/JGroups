@@ -1,4 +1,4 @@
-// $Id: Configurator.java,v 1.5 2004/07/05 14:17:32 belaban Exp $
+// $Id: Configurator.java,v 1.6 2004/08/12 15:43:11 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -554,6 +554,12 @@ public class Configurator {
             // complex classloaders environments
             // FH: The context class loader doesn't work in Tomcat
             ClassLoader loader=Thread.currentThread().getContextClassLoader();
+            // When invoked from C++ getContextClassLoader returns null
+            // see http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4489399
+            //so:
+            if(loader == null){
+            	loader = ClassLoader.getSystemClassLoader();
+            }
             try {
                 String defaultProtocolName=protocol_prefix + '.' + protocol_name;
                 Class clazz=null;
