@@ -1,4 +1,4 @@
-// $Id: Queue.java,v 1.8 2003/09/24 18:37:20 belaban Exp $
+// $Id: Queue.java,v 1.9 2003/09/24 22:50:38 belaban Exp $
 
 package org.jgroups.util;
 
@@ -34,7 +34,7 @@ public class Queue {
     Object  add_mutex=new Object();
 
     /** Lock object for syncing on removes. It is notified when an object is removed */
-    Object  remove_mutex=new Object();
+    // Object  remove_mutex=new Object();
 
     /*the number of end markers that have been added*/
     int     num_markers=0;
@@ -227,7 +227,7 @@ public class Queue {
                 throw new QueueClosedException();
 
             /*remove the head from the queue, if we make it to this point, retval should not be null !*/
-            retval=removeInternal(); // notifies remove_mutex
+            retval=removeInternal();
             if(retval == null)
                 Trace.error("Queue.remove()", "element was null, should never be the case");
         }
@@ -330,11 +330,11 @@ public class Queue {
                     tail=head;  // null
                 decrementSize();
 
-                if(size == 0) {
-                    synchronized(remove_mutex) {
-                        remove_mutex.notifyAll();
-                    }
-                }
+//                if(size == 0) {
+//                    synchronized(remove_mutex) {
+//                        remove_mutex.notifyAll();
+//                    }
+//                }
                 return;
             }
 
@@ -347,11 +347,11 @@ public class Queue {
                     el.next=el.next.next;  // point to the el past the next one. can be null.
                     tmp_el.next=null;
                     decrementSize();
-                    if(size == 0) {
-                        synchronized(remove_mutex) {
-                            remove_mutex.notifyAll();
-                        }
-                    }
+//                    if(size == 0) {
+//                        synchronized(remove_mutex) {
+//                            remove_mutex.notifyAll();
+//                        }
+//                    }
                     break;
                 }
                 el=el.next;
@@ -473,9 +473,9 @@ public class Queue {
             add_mutex.notifyAll();
         }
 
-        synchronized(remove_mutex) {
-            remove_mutex.notifyAll();
-        }
+//        synchronized(remove_mutex) {
+//            remove_mutex.notifyAll();
+//        }
     }
 
 
@@ -496,9 +496,9 @@ public class Queue {
             add_mutex.notifyAll();
         }
 
-        synchronized(remove_mutex) {
-            remove_mutex.notifyAll();
-        }
+//        synchronized(remove_mutex) {
+//            remove_mutex.notifyAll();
+//        }
     }
 
 
@@ -549,7 +549,7 @@ public class Queue {
      * @throws QueueClosedException Thrown if queue has been closed
      * @throws TimeoutException Thrown if timeout has elapsed
      */
-    public void waitUntilEmpty(long timeout) throws QueueClosedException, TimeoutException {
+    /*public void waitUntilEmpty(long timeout) throws QueueClosedException, TimeoutException {
         long time_to_wait=timeout;
 
         synchronized(remove_mutex) {
@@ -581,7 +581,7 @@ public class Queue {
                 throw new QueueClosedException();
         }
     }
-
+*/
 
     /* ------------------------------------- Private Methods ----------------------------------- */
 
@@ -604,11 +604,11 @@ public class Queue {
             tail=null;
 
         decrementSize();
-        if(size == 0) {
-            synchronized(remove_mutex) {
-                remove_mutex.notifyAll();
-            }
-        }
+//        if(size == 0) {
+//            synchronized(remove_mutex) {
+//                remove_mutex.notifyAll();
+//            }
+//        }
 
         if(head != null && head.obj == endMarker) {
             closed=true;
