@@ -1,7 +1,8 @@
 package org.jgroups.tests.perf;
 
-import org.apache.log4j.Logger;
 import org.jgroups.util.Util;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -33,7 +34,7 @@ public class Test implements Receiver {
 
     int             num_members=0;
 
-    Logger          log=Logger.getLogger(this.getClass());
+    Log             log=LogFactory.getLog(getClass());
 
     boolean         all_received=false;
 
@@ -93,7 +94,7 @@ public class Test implements Receiver {
         }
         sb.append("\n");
         System.out.println("Configuration is: " + sb.toString());
-        Logger.getLogger(Test.class).info("main(): " + sb.toString());
+        log.info("main(): " + sb.toString());
 
         props=this.config.getProperty("props");
         num_members=Integer.parseInt(this.config.getProperty("num_members"));
