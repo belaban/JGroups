@@ -1,4 +1,4 @@
-// $Id: GroupRequest.java,v 1.1 2003/09/09 01:24:08 belaban Exp $
+// $Id: GroupRequest.java,v 1.1.1.1 2003/09/09 01:24:08 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -39,7 +39,7 @@ import org.jgroups.util.Util;
  * to do so.<p>
  * <b>Requirements</b>: lossless delivery, e.g. acknowledgment-based message confirmation.
  * @author Bela Ban
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.1.1.1 $
  */
 public class GroupRequest implements RspCollector, Command {
     /** return only first response */

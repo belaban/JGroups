@@ -10,7 +10,7 @@ import java.net.DatagramSocket;
 /**
  * Discovers all UDP-based members running on a certain mcast address
  * @author Bela Ban
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.1.1.1 $
  * Date: Jun 2, 2003
  * Time: 4:35:29 PM
  */

@@ -1,4 +1,4 @@
-// $Id: McastSenderTest1_4.java,v 1.1 2003/09/09 01:24:13 belaban Exp $
+// $Id: McastSenderTest1_4.java,v 1.1.1.1 2003/09/09 01:24:13 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -16,7 +16,7 @@ import java.net.MulticastSocket;
    Same as McastSenderTest, but uses all available interfaces (including loopback) to send the packets
    @see McastReceiverTest
    @author Bela Ban
-   @version $Revision: 1.1 $
+   @version $Revision: 1.1.1.1 $
  */
 public class McastSenderTest1_4 {
 

@@ -1,4 +1,4 @@
-// $Id: CAUSAL.java,v 1.1 2003/09/09 01:24:09 belaban Exp $
+// $Id: CAUSAL.java,v 1.1.1.1 2003/09/09 01:24:09 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -62,7 +62,7 @@ import org.jgroups.log.Trace;
  *    for every k:1...n VT(pj)[k] == max(VT(mi)[k],VT(pj)[k])
  *</p>
  *  @author Vladimir Blagojevic vladimir@cs.yorku.ca
- *  @version $Revision: 1.1 $
+ *  @version $Revision: 1.1.1.1 $
  *
  **/
 

@@ -1,4 +1,4 @@
-//$Id: TotalTokenDemo.java,v 1.1 2003/09/09 01:24:09 belaban Exp $
+//$Id: TotalTokenDemo.java,v 1.1.1.1 2003/09/09 01:24:09 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -38,7 +38,7 @@ import org.jgroups.util.Util;
  *
  *@author Vladimir Blagojevic vladimir@cs.yorku.ca
  *@author Ivan Bilenjkij  ivan@ibossa.com
- *@version $Revision: 1.1 $
+ *@version $Revision: 1.1.1.1 $
  *
  *@see org.jgroups.protocols.TOTAL_TOKEN
  *

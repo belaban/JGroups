@@ -1,4 +1,4 @@
-// $Id: FC.java,v 1.1 2003/09/09 01:24:09 belaban Exp $
+// $Id: FC.java,v 1.1.1.1 2003/09/09 01:24:09 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -18,7 +18,7 @@ import java.io.ObjectInput;
  * the receiver sends more credits to the sender. Works for both unicast and multicast messages.<br>
  * TODO: finer-grained synchronization (currently coarse-grained on down() and up()).
  * @author Bela Ban
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.1.1.1 $
  */
 public class FC extends Protocol {
 

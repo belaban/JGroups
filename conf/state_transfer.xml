@@ -1,4 +1,4 @@
-	<!-- $Id: state_transfer.xml,v 1.1 2003/09/09 01:24:04 belaban Exp $   -->
+	<!-- $Id: state_transfer.xml,v 1.1.1.1 2003/09/09 01:24:04 belaban Exp $   -->
 	<protocol-stack name="Protocol stack to be used for testing
 	transferring of state" version="1.0.0">
 		<description>JGroups State Transfer Protocol Stack</description>

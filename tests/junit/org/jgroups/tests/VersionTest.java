@@ -5,7 +5,7 @@ import org.jgroups.Version;
 
 /**
  * @author Bela Ban April 4 2003
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.1.1.1 $
  */
 public class VersionTest extends TestCase {
     byte[] version1={'0', '2', '0', '7'};

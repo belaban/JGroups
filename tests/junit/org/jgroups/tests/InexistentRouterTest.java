@@ -1,4 +1,4 @@
-// $Id: InexistentRouterTest.java,v 1.1 2003/09/09 01:24:13 belaban Exp $
+// $Id: InexistentRouterTest.java,v 1.1.1.1 2003/09/09 01:24:13 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -20,7 +20,7 @@ import org.jgroups.log.Trace;
  * only.
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.1.1.1 $
  **/
 public class InexistentRouterTest extends TestCase {
     private int SERVER_SOCKET_TIMEOUT = 20000;

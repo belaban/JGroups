@@ -1,4 +1,4 @@
-// $Id: SMACK.java,v 1.1 2003/09/09 01:24:10 belaban Exp $
+// $Id: SMACK.java,v 1.1.1.1 2003/09/09 01:24:10 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -46,7 +46,7 @@ import org.jgroups.log.Trace;
  * </ul>
  * Advantage of this protocol: no group membership necessary, fast.
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.1.1.1 $
  * todo: initial mcast to announce new member (for view change)
  * todo: fix membershop bug: start a, b, kill b, restart b: b will be suspected by a
  */

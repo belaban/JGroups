@@ -4,7 +4,7 @@
 // replacing SecretKey with SecretKey
 
 
-// $Id: ENCRYPT1_4.java,v 1.1 2003/09/09 01:24:09 belaban Exp $
+// $Id: ENCRYPT1_4.java,v 1.1.1.1 2003/09/09 01:24:09 belaban Exp $
 
 package org.jgroups.protocols;
 

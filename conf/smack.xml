@@ -1,5 +1,5 @@
 
-	<protocol-stack name="Simple Multicast ACK Protocol Stack" version="$Revision: 1.1 $">
+	<protocol-stack name="Simple Multicast ACK Protocol Stack" version="$Revision: 1.1.1.1 $">
 		<description>
 		Stack based on SMACK and minimal threads. SMACK is a
 		simple reliable multicast transport based on positive

@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.1 2003/09/09 01:24:04 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.1.1.1 2003/09/09 01:24:04 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>

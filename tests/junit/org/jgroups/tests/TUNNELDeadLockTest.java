@@ -1,4 +1,4 @@
-// $Id: TUNNELDeadLockTest.java,v 1.1 2003/09/09 01:24:13 belaban Exp $
+// $Id: TUNNELDeadLockTest.java,v 1.1.1.1 2003/09/09 01:24:13 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -23,7 +23,7 @@ import org.jgroups.TimeoutException;
  * @see TUNNELDeadLockTest#testStress
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.1.1.1 $
  **/
 public class TUNNELDeadLockTest extends TestCase {
 

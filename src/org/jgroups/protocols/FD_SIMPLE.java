@@ -1,4 +1,4 @@
-// $Id: FD_SIMPLE.java,v 1.1 2003/09/09 01:24:10 belaban Exp $
+// $Id: FD_SIMPLE.java,v 1.1.1.1 2003/09/09 01:24:10 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -23,7 +23,7 @@ import org.jgroups.log.Trace;
  * associated with that member will be incremented. If the counter exceeds max_missed_hbs, that member will be
  * suspected. When a message or a heartbeat are received, the counter is reset to 0.
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.1.1.1 $
  */
 public class FD_SIMPLE extends Protocol {
     Address       local_addr=null;

@@ -1,4 +1,4 @@
-// $Id: FD_PROB.java,v 1.1 2003/09/09 01:24:10 belaban Exp $
+// $Id: FD_PROB.java,v 1.1.1.1 2003/09/09 01:24:10 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -27,7 +27,7 @@ import org.jgroups.log.Trace;
  * for timeout seconds, Q will be suspected.<p>
  * This protocol can be used both with a PBCAST *and* regular stacks.
  * @author Bela Ban 1999
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.1.1.1 $
  */
 public class FD_PROB extends Protocol implements Runnable {
     Address local_addr=null;

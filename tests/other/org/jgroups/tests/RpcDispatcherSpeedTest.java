@@ -22,7 +22,7 @@ import java.lang.reflect.Method;
 /**
  * Interactive test for measuring group RPCs using different invocation techniques.
  * @author Bela Ban
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.1.1.1 $
  */
 public class RpcDispatcherSpeedTest implements MembershipListener {
     Channel             channel;

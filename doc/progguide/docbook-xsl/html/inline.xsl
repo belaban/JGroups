@@ -5,7 +5,7 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: inline.xsl,v 1.1 2003/09/09 01:24:06 belaban Exp $
+     $Id: inline.xsl,v 1.1.1.1 2003/09/09 01:24:06 belaban Exp $
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.

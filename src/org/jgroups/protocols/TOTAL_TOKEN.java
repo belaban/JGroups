@@ -1,4 +1,4 @@
-//$Id: TOTAL_TOKEN.java,v 1.1 2003/09/09 01:24:10 belaban Exp $
+//$Id: TOTAL_TOKEN.java,v 1.1.1.1 2003/09/09 01:24:10 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -53,7 +53,7 @@ import org.jgroups.util.Util;
  *
  *
  *@author Vladimir Blagojevic vladimir@cs.yorku.ca
- *@version $Revision: 1.1 $
+ *@version $Revision: 1.1.1.1 $
  *
  *@see org.jgroups.protocols.ring.RingNodeFlowControl
  *@see org.jgroups.protocols.ring.RingNode

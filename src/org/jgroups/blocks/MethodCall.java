@@ -16,7 +16,7 @@ import org.jgroups.log.Trace;
  * It includes the name of the method (case sensitive) and a list of arguments.
  * A method call is serializable and can be passed over the wire.
  * @author Bela Ban
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.1.1.1 $
  */
 public class MethodCall implements Externalizable {
 

@@ -1,4 +1,4 @@
-// $Id: Retransmitter.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+// $Id: Retransmitter.java,v 1.1.1.1 2003/09/09 01:24:12 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -25,7 +25,7 @@ import java.util.ListIterator;
  *
  * @author John Giorgiadis
  * @author Bela Ban
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.1.1.1 $
  */
 public class Retransmitter {
 
