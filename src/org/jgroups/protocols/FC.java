@@ -1,4 +1,4 @@
-// $Id: FC.java,v 1.7 2004/03/30 06:47:21 belaban Exp $
+// $Id: FC.java,v 1.8 2004/04/21 23:07:03 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -18,7 +18,7 @@ import java.util.*;
  * Note that this protocol must be located towards the top of the stack, or all down_threads from JChannel to this
  * protocol must be set to false ! This is in order to block JChannel.send()/JChannel.down().
  * @author Bela Ban
- * @version $Revision: 1.7 $
+ * @version $Revision: 1.8 $
  */
 public class FC extends Protocol {
 
@@ -193,8 +193,7 @@ public class FC extends Protocol {
         if(src.equals(local_addr))
             return;
 
-
-            if(log.isInfoEnabled()) log.info("credit for " + src + " is " + received.get(src));
+        if(log.isInfoEnabled()) log.info("credit for " + src + " is " + received.get(src));
 
         if(decrementCredit(received, src, size) == false) {
             // not enough credits left
@@ -228,8 +227,7 @@ public class FC extends Protocol {
      */
     boolean handleDownMessage(Message msg) {
         if(blocking) {
-
-                if(log.isInfoEnabled()) log.info("blocking message to " + msg.getDest());
+            if(log.isInfoEnabled()) log.info("blocking message to " + msg.getDest());
             while(blocking) {
                 try {this.wait(MAX_BLOCK_TIME);} catch(InterruptedException e) {}
             }
@@ -239,16 +237,15 @@ public class FC extends Protocol {
             blocking=true;
 
             while(blocking) {
-
-                    if(log.isInfoEnabled()) log.info("blocking " + MAX_BLOCK_TIME +
-                            " msecs. Creditors are\n" + printCreditors());
+                if(log.isInfoEnabled()) log.info("blocking " + MAX_BLOCK_TIME +
+                        " msecs. Creditors are\n" + printCreditors());
                 try {this.wait(MAX_BLOCK_TIME);}
                 catch(Throwable e) {e.printStackTrace();}
                 if(decrMessage(msg) == true)
                     return true;
                 else {
-
-                        if(log.isInfoEnabled()) log.info("insufficient credits to send message, creditors=\n" + printCreditors());
+                    if(log.isInfoEnabled())
+                        log.info("insufficient credits to send message, creditors=\n" + printCreditors());
                 }
             }
         }
@@ -278,7 +275,7 @@ public class FC extends Protocol {
             if(dest.equals(local_addr))
                 return true;
 
-                if(log.isInfoEnabled()) log.info("credit for " + dest + " is " + sent.get(dest));
+            if(log.isInfoEnabled()) log.info("credit for " + dest + " is " + sent.get(dest));
             if(sufficientCredit(sent, dest, size)) {
                 decrementCredit(sent, dest, size);
             }
@@ -293,7 +290,7 @@ public class FC extends Protocol {
                 if(dest.equals(local_addr))
                     continue;
 
-                    if(log.isInfoEnabled()) log.info("credit for " + dest + " is " + sent.get(dest));
+                if(log.isInfoEnabled()) log.info("credit for " + dest + " is " + sent.get(dest));
                 if(sufficientCredit(sent, dest, size) == false) {
                     addCreditor(dest);
                     success=false;
@@ -364,10 +361,9 @@ public class FC extends Protocol {
                 return true;
             }
             else {
-
-                    if(log.isInfoEnabled()) log.info("insufficient credit for " + mbr +
-                            ": credits left=" + credits_left + ", credits required=" + credits_required +
-                            " (min_credits=" + min_credits + ")");
+                if(log.isInfoEnabled()) log.info("insufficient credit for " + mbr +
+                        ": credits left=" + credits_left + ", credits required=" + credits_required +
+                        " (min_credits=" + min_credits + ")");
                 return false;
             }
         }
