@@ -1,4 +1,4 @@
-// $Id: TOTAL.java,v 1.2 2003/12/04 13:33:53 igeorg Exp $
+// $Id: TOTAL.java,v 1.3 2003/12/05 19:31:28 belaban Exp $
 package org.jgroups.protocols;
 
 
@@ -173,8 +173,7 @@ public class TOTAL extends Protocol {
 	private static final String PROT_NAME = "TOTAL";
 	/** Property names */
 	private static final String TRACE_PROP = "trace";
-	/** Minimum time between broadcast request retransmissions */
-	private long MIN_RETRANSMIT_INTERVAL = 500;
+
 	/** Average time between broadcast request retransmissions */
 	private long[] AVG_RETRANSMIT_INTERVAL = new long[]{1000,2000,3000,4000};
 
@@ -328,9 +327,8 @@ public class TOTAL extends Protocol {
 	 */
 	private void _replayBcast() {
 		Iterator it;
-		Message  msg, reqMsg;
+		Message  msg;
 		Header   header;
-		long     seqID;
 
 		// i. Remove all undelivered bcasts sent by this member and place them
 		// again in the pending bcast req queue
@@ -390,7 +388,6 @@ public class TOTAL extends Protocol {
 	 * @param id the local sequence ID to use
 	 */
 	private void _sendBcastRequest(Message msg, long id) {
-		Message reqMsg;
 
 		// i. Store away the message while waiting for the sequencer's reply
 		// ii. Send a bcast request immediatelly and also schedule a
@@ -576,10 +573,9 @@ public class TOTAL extends Protocol {
 	/**
 	 * Prepare for a VIEW_CHANGE: switch to flushing state
 	 *
-	 * @param event the BLOCK event
 	 * @return true if the event is to be forwarded further up
 	 */
-	private boolean _upBlock(Event event) {
+	private boolean _upBlock() {
 		// *** Get an exclusive lock
 		try { stateLock.writeLock(); try {
 
@@ -730,10 +726,9 @@ public class TOTAL extends Protocol {
 	 * Blocking confirmed - No messages should come from above until a
 	 * VIEW_CHANGE event is received. Switch to blocking state.
 	 *
-	 * @param event the BLOCK_OK event
 	 * @return true if event should travel further down
 	 */
-	private boolean _downBlockOk(Event event) {
+	private boolean _downBlockOk() {
 		// *** Get an exclusive lock
 		try { stateLock.writeLock(); try {
 
@@ -802,9 +797,6 @@ public class TOTAL extends Protocol {
 
 	/**
 	 * Prepare this layer to receive messages from above
-	 *
-	 * @param event the START event
-	 * @return true if event should be forwarded further up
 	 */
 	public void start() throws Exception {
             TimeScheduler timer;
@@ -859,7 +851,7 @@ public class TOTAL extends Protocol {
 	private void _up(Event event) {
 		switch(event.getType()) {
 		case Event.BLOCK:
-			if (!_upBlock(event)) return;
+			if (!_upBlock()) return;
 			break;
 		case Event.MSG:
 			if (!_upMsg(event)) return;
@@ -885,7 +877,7 @@ public class TOTAL extends Protocol {
 	private void _down(Event event) {
 		switch(event.getType()) {
 		case Event.BLOCK_OK:
-			if (!_downBlockOk(event)) return;
+			if (!_downBlockOk()) return;
 			break;
 		case Event.MSG:
 			if (!_downMsg(event)) return;
