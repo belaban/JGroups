@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.15 2004/04/28 04:48:45 belaban Exp $
+// $Id: JChannel.java,v 1.16 2004/04/28 18:31:55 belaban Exp $
 
 package org.jgroups;
 
@@ -23,7 +23,7 @@ import java.util.Vector;
  * protocol stack
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.15 $
+ * @version $Revision: 1.16 $
  */
 public class JChannel extends Channel {
 
@@ -767,8 +767,13 @@ public class JChannel extends Channel {
 
                 // crude solution to bug #775120: if we get our first view *before* the CONNECT_OK,
                 // we simply set the state to connected
-                if(connected == false)
+                if(connected == false) {
                     connected=true;
+                    synchronized(connect_mutex) { // bug fix contributed by Chris Wampler (bug #943881)
+                        connect_ok_event_received=true;
+                        connect_mutex.notify();
+                    }
+                }
 
                 // unblock queueing of messages due to previous BLOCK event:
                 down(new Event(Event.STOP_QUEUEING));
