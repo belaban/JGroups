@@ -1,4 +1,4 @@
-// $Id: AckSenderWindow.java,v 1.9 2005/01/28 09:33:29 belaban Exp $
+// $Id: AckSenderWindow.java,v 1.10 2005/01/28 12:19:52 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -26,7 +26,7 @@ import java.util.HashMap;
 public class AckSenderWindow implements Retransmitter.RetransmitCommand {
     RetransmitCommand   retransmit_command = null;   // called to request XMIT of msg
     final HashMap       msgs = new HashMap();        // keys: seqnos (Long), values: Messages
-    long[]              interval = new long[]{1000, 2000, 3000, 4000};
+    long[]              interval = new long[]{400,800,1200,1600};
     final Retransmitter retransmitter = new Retransmitter(null, this);
     final Queue         msg_queue = new Queue(); // for storing messages if msgs is full
     int                 window_size = -1;   // the max size of msgs, when exceeded messages will be queued
@@ -35,7 +35,7 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
     int                 min_threshold = -1;
     boolean             use_sliding_window = false, queueing = false;
     Protocol            transport = null; // used to send messages
-    protected static    final Log log=LogFactory.getLog(AckSenderWindow.class);
+    static    final Log log=LogFactory.getLog(AckSenderWindow.class);
 
 
     public interface RetransmitCommand {
@@ -93,9 +93,8 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
             if(log.isWarnEnabled()) log.warn("min_threshold is <= 0, setting it to " + this.min_threshold);
         }
 
-
-            if(log.isDebugEnabled()) log.debug("window_size=" + this.window_size +
-                    ", min_threshold=" + this.min_threshold);
+        if(log.isTraceEnabled())
+            log.trace("window_size=" + this.window_size + ", min_threshold=" + this.min_threshold);
         use_sliding_window = true;
     }
 
@@ -124,10 +123,6 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
         synchronized(msgs) {
             if(msgs.containsKey(tmp))
                 return;
-
-            //System.out.println("### add: " + seqno + "(msg size=" + msgs.size() +
-            //	       ", queue size=" + msg_queue.size() +
-            //	       "). tstamp=" + System.currentTimeMillis() + ")"); // <remove>
 
             if(!use_sliding_window) {
                 addMessage(seqno, tmp, msg);
