@@ -1,4 +1,4 @@
-// $Id: TCPPING.java,v 1.13 2004/09/23 16:29:42 belaban Exp $
+// $Id: TCPPING.java,v 1.14 2004/10/05 06:19:20 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -9,7 +9,6 @@ import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.List;
 
 import java.util.*;
 
@@ -130,7 +129,7 @@ public class TCPPING extends Protocol {
                         return;
 
                     case PingHeader.GET_MBRS_RSP:   // add response to vector and notify waiting thread
-                        rsp=(PingRsp) hdr.arg;
+                        rsp=hdr.arg;
                         synchronized(initial_members) {
                             initial_members.addElement(rsp);
                             initial_members.notifyAll();
@@ -177,8 +176,9 @@ public class TCPPING extends Protocol {
                 synchronized(members) {
                     for(Iterator it=initial_hosts.iterator(); it.hasNext();) {
                         Address addr=(Address)it.next();
-                        if(members.contains(addr))
-                            continue;
+                        if(members.contains(addr)) {
+                           ; // continue; // changed as suggested by Mark Kopec (merge didn't work on Solaris)
+                        }
                         msg.setDest(addr);
                         if(log.isTraceEnabled()) log.trace("[FIND_INITIAL_MBRS] sending PING request to " + msg.getDest());
                         passDown(new Event(Event.MSG, msg.copy()));
