@@ -1,4 +1,4 @@
-// $Id: DisconnectTest.java,v 1.4 2004/03/30 06:47:31 belaban Exp $
+// $Id: DisconnectTest.java,v 1.5 2004/04/01 04:08:44 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -30,7 +30,8 @@ import java.net.Socket;
  * stack configurations.
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
- * @version $Revision: 1.4 $
+ * @author Bela Ban belaban@yahoo.com
+ * @version $Revision: 1.5 $
  **/
 public class DisconnectTest extends TestCase {
 
