@@ -1,4 +1,4 @@
-// $Id: ClassConfigurator.java,v 1.8 2004/09/23 22:31:22 belaban Exp $
+// $Id: ClassConfigurator.java,v 1.9 2004/09/24 09:02:48 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
+import java.io.ObjectStreamClass;
 
 /**
  * This class will be replaced with the class that read info
@@ -33,6 +34,13 @@ public class ClassConfigurator {
     //this is where we store magic numbers
     private final Map classMap=new HashMap(); // key=Class, value=magic number
     private final Map magicMap=new TreeMap(); // key=magic number, value=Class
+
+    /** Map<Integer,ObjectStreamClass> */
+    private final Map streamMapId=new TreeMap();
+
+    /** Map<ObjectStreamClass, Integer> */
+    private final Map streamMapClass=new HashMap();
+
     protected final Log log=LogFactory.getLog(getClass());
 
 
@@ -58,12 +66,16 @@ public class ClassConfigurator {
             catch (SecurityException ex){
             }
 
+            ObjectStreamClass objStreamClass;
             ClassMap[] mapping=reader.readMagicNumberMapping();
             if(mapping != null) {
                 for(int i=0; i < mapping.length; i++) {
                     Integer m=new Integer(mapping[i].getMagicNumber());
                     try {
                         Class clazz=mapping[i].getClassForMap();
+                        objStreamClass=ObjectStreamClass.lookup(clazz);
+                        if(objStreamClass == null)
+                            throw new ChannelException("ObjectStreamClass for " + clazz + " not found");
                         if(magicMap.containsKey(m)) {
                             throw new ChannelException("magic key " + m + " (" + clazz.getName() + ')' +
                                                        " is already in map; please make sure that " +
@@ -72,6 +84,9 @@ public class ClassConfigurator {
                         else {
                             magicMap.put(m, clazz);
                             classMap.put(clazz, m);
+
+                            streamMapId.put(m, objStreamClass);
+                            streamMapClass.put(objStreamClass, m);
                         }
                     }
                     catch(ClassNotFoundException cnf) {
@@ -139,6 +154,20 @@ public class ClassConfigurator {
             return -1;
         else
             return i.intValue();
+    }
+
+    public int getMagicNumberFromObjectStreamClass(ObjectStreamClass objStream) {
+        Integer i=(Integer)streamMapClass.get(objStream);
+        if(i == null)
+            return -1;
+        else
+            return i.intValue();
+    }
+
+    public ObjectStreamClass getObjectStreamClassFromMagicNumber(int magic_number) {
+        ObjectStreamClass retval=null;
+        retval=(ObjectStreamClass)streamMapId.get(new Integer(magic_number));
+        return retval;
     }
 
 
