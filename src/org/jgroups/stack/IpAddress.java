@@ -1,11 +1,10 @@
-// $Id: IpAddress.java,v 1.13 2004/10/06 08:45:12 belaban Exp $
+// $Id: IpAddress.java,v 1.14 2004/10/06 08:50:43 belaban Exp $
 
 package org.jgroups.stack;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
-import org.jgroups.util.Util;
 
 import java.io.*;
 import java.net.InetAddress;
