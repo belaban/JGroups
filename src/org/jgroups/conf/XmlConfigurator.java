@@ -1,4 +1,4 @@
-// $Id: XmlConfigurator.java,v 1.8 2004/07/14 22:04:11 belaban Exp $
+// $Id: XmlConfigurator.java,v 1.9 2004/07/16 14:26:35 jiwils Exp $
 
 package org.jgroups.conf;
 
@@ -242,54 +242,12 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
             DocumentBuilder builder=factory.newDocumentBuilder();
             builder.setEntityResolver(new ClassPathEntityResolver());
             Document document=builder.parse(stream);
-            NodeList roots=document.getChildNodes();
-            Node root=null;
 
-            for(int i =0; i < roots.getLength(); i++) {
-                root=roots.item(i);
-                if(root.getNodeType() != Node.ELEMENT_NODE)
-                    continue;
-            }
-
-            String root_name=root.getNodeName();
-            if(!"config".equals(root_name.trim().toLowerCase())) {
-                log.fatal("XML protocol stack configuration does not start with a '<config>' element; " +
-                        "maybe the XML configuration needs to be converted to the new format ?\n" +
-                        "use 'java org.jgroups.conf.XmlConfigurator <old XML file> -new_format' to do so");
-                throw new IOException("invalid XML configuration");
-            }
-
-            NodeList prots=root.getChildNodes();
-            for(int i=0; i < prots.getLength(); i++) {
-                Node node = prots.item(i);
-                if( node.getNodeType() != Node.ELEMENT_NODE )
-                    continue;
-
-                Element tag = (Element) node;
-                String protocol = tag.getTagName();
-                // System.out.println("protocol: " + protocol);
-                LinkedList tmp=new LinkedList();
-
-                NamedNodeMap attrs = tag.getAttributes();
-                int attrLength = attrs.getLength();
-                for(int a = 0; a < attrLength; a ++) {
-                    Attr attr = (Attr) attrs.item(a);
-                    String name = attr.getName();
-                    String value = attr.getValue();
-                    // System.out.println("    name=" + name + ", value=" + value);
-                    tmp.add(new ProtocolParameter(name, value));
-                }
-                ProtocolParameter[] params=new ProtocolParameter[tmp.size()];
-                for(int j=0; j < tmp.size(); j++)
-                    params[j]=(ProtocolParameter)tmp.get(j);
-                ProtocolData data=new ProtocolData(protocol, "bla", "" + protocol, params);
-                prot_data.add(data);
-            }
-
-            ProtocolData[] data=new ProtocolData[(prot_data.size())];
-            for(int k=0; k < prot_data.size(); k++)
-                data[k]=(ProtocolData)prot_data.get(k);
-            configurator=new XmlConfigurator("bla", data);
+            // The root element of the document should be the "config" element,
+            // but the parser(Element) method checks this so a check is not
+            // needed here.
+            Element configElement = document.getDocumentElement();
+            return parse(configElement);
         }
         catch(Exception x) {
             if(x instanceof java.io.IOException)
@@ -301,7 +259,6 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
                 throw new java.io.IOException(x.getMessage());
             }
         }
-        return configurator;
     }
 
 
@@ -395,14 +352,14 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
              * 2. description
              * 3. class-name
              * 4. protocol-params
-             * 
-             * If we are overriding we should have  
+             *
+             * If we are overriding we should have
              * 1. protocol-name
              * 2. protocol-params
              */
-            
-            // 
-            
+
+            //
+
             String name=null;
             String clazzname=null;
             String desc=null;
@@ -443,7 +400,7 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
                 String error=Util.getStackTrace(x);
                 if(log.isErrorEnabled()) log.error(error);
                 throw new java.io.IOException(x.getMessage());
-            }//end if           
+            }//end if
         }//catch
     }
 
@@ -475,7 +432,7 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
                 String error=Util.getStackTrace(x);
                 if(log.isErrorEnabled()) log.error(error);
                 throw new java.io.IOException(x.getMessage());
-            }//end if           
+            }//end if
         }//catch
     }
 
