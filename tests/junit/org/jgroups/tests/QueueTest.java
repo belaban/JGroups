@@ -1,4 +1,4 @@
-// $Id: QueueTest.java,v 1.8 2003/09/24 22:59:06 belaban Exp $
+// $Id: QueueTest.java,v 1.9 2003/09/25 19:08:07 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -630,7 +630,7 @@ public class QueueTest extends TestCase {
 				for (int i = 0; i < iteration; i++)
 				{
 					queue.add(new Long(rank));
-					Util.sleepRandom(200);
+					// Util.sleepRandom(1);
 					// System.out.println("Thread #" + rank + " added element (" + rank + ")");
 				}
 			}
