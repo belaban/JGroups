@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.9 2004/05/17 18:28:54 belaban Exp $
+// $Id: Util.java,v 1.10 2004/05/19 00:32:32 belaban Exp $
 
 package org.jgroups.util;
 
@@ -210,8 +210,6 @@ public class Util {
 
     /** Tries to read an object from the message's buffer and prints it */
     public static String printMessage(Message msg) {
-        Object obj;
-
         if(msg == null)
             return "";
         if(msg.getLength() == 0)
@@ -768,6 +766,20 @@ public class Util {
         catch(IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public static String memStats(boolean gc) {
+        StringBuffer sb=new StringBuffer();
+        Runtime rt=Runtime.getRuntime();
+        if(gc)
+            rt.gc();
+        long free_mem, total_mem, used_mem;
+        free_mem=rt.freeMemory();
+        total_mem=rt.totalMemory();
+        used_mem=total_mem - free_mem;
+        sb.append("Free mem: ").append(free_mem).append("\nUsed mem: ").append(used_mem);
+        sb.append("\nTotal mem: ").append(total_mem);
+        return sb.toString();
     }
 
 
