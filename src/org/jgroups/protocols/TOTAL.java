@@ -1,4 +1,4 @@
-// $Id: TOTAL.java,v 1.7 2004/09/23 16:29:42 belaban Exp $
+// $Id: TOTAL.java,v 1.8 2005/03/12 12:20:57 belaban Exp $
 package org.jgroups.protocols;
 
 
@@ -7,7 +7,6 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.View;
-import org.jgroups.stack.AckSenderWindow;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.RWLock;
 import org.jgroups.util.TimeScheduler;
@@ -86,9 +85,9 @@ public class TOTAL extends Protocol {
 		 * The ID used by the message source to match replies from the
 		 * sequencer
 		 */
-		public long localSeqID;
+		public long localSequenceID;
 		/** The ID imposing the total order of messages */
-		public long seqID;
+		public long sequenceID;
 
 		/**
 		 * used for externalization
@@ -114,8 +113,8 @@ public class TOTAL extends Protocol {
 				this.type = NULL_TYPE;
 				throw new IllegalArgumentException("type");
 			}
-			this.localSeqID = localSeqID;
-			this.seqID      = seqID;
+			this.localSequenceID = localSeqID;
+			this.sequenceID      = seqID;
 		}
 
 		/**
@@ -134,8 +133,8 @@ public class TOTAL extends Protocol {
 			default: typeName = ""; break;
 			}
 			buffer.append(", type=" + typeName);
-			buffer.append(", " + "localID=" + localSeqID);
-			buffer.append(", " + "seqID=" + seqID);
+			buffer.append(", " + "localID=" + localSequenceID);
+			buffer.append(", " + "seqID=" + sequenceID);
 			buffer.append(']');
 
 			return(buffer.toString());
@@ -146,8 +145,8 @@ public class TOTAL extends Protocol {
 		 */
 		public void writeExternal(ObjectOutput out) throws IOException {
 		out.writeInt(type);
-		out.writeLong(localSeqID);
-		out.writeLong(seqID);
+		out.writeLong(localSequenceID);
+		out.writeLong(sequenceID);
 	    }
 
 		/**
@@ -156,31 +155,17 @@ public class TOTAL extends Protocol {
 	    public void readExternal(ObjectInput in) throws IOException,
 			ClassNotFoundException {
 		type=in.readInt();
-		localSeqID=in.readLong();
-		seqID=in.readLong();
+		localSequenceID=in.readLong();
+		sequenceID=in.readLong();
 	    }
 	}
 
-
-	/**
-	 * The retransmission listener - It is called by the
-	 * <code>AckSenderWindow</code> when a retransmission should occur
-	 */
-	private class Command implements AckSenderWindow.RetransmitCommand {
-		public Command() {}
-		public void retransmit(long seqNo, Message msg) {
-			_retransmitBcastRequest(seqNo);
-		}
-	}
 
 
 	/** Protocol name */
 	private static final String PROT_NAME = "TOTAL";
 	/** Property names */
 	private static final String TRACE_PROP = "trace";
-
-	/** Average time between broadcast request retransmissions */
-	private final long[] AVG_RETRANSMIT_INTERVAL = new long[]{1000,2000,3000,4000};
 
 	/** Null value for the IDs */
 	private static final long NULL_ID = -1;
@@ -239,8 +224,6 @@ public class TOTAL extends Protocol {
 	 * seqID -> Received broadcast msg
 	 */
 	private SortedMap upTbl;
-	/** Retranmitter for pending broadcast requests */
-	private AckSenderWindow retransmitter;
 
 
 	/**
@@ -319,7 +302,7 @@ public class TOTAL extends Protocol {
 		synchronized(upTbl) {
 		while((msg = (Message)upTbl.remove(new Long(seqID+1))) != null) {
 			header = (Header)msg.removeHeader(getName());
-			if (header.localSeqID != NULL_ID) passUp(new Event(Event.MSG, msg));
+			if (header.localSequenceID != NULL_ID) passUp(new Event(Event.MSG, msg));
 			++seqID;
 		}
 		} // synchronized(upTbl)
@@ -347,13 +330,13 @@ public class TOTAL extends Protocol {
 			if (!msg.getSrc().equals(addr)) {
 			    if(log.isInfoEnabled()) log.info("During replay: " +
 				       "discarding BCAST[" +
-				       ((TOTAL.Header)msg.getHeader(getName())).seqID +
+				       ((TOTAL.Header)msg.getHeader(getName())).sequenceID +
 				       "] from " + _addrToString(msg.getSrc()));
 			    continue;
 			}
 			header = (Header)msg.removeHeader(getName());
-			if (header.localSeqID == NULL_ID) continue;
-			_sendBcastRequest(msg, header.localSeqID);
+			if (header.localSequenceID == NULL_ID) continue;
+			_sendBcastRequest(msg, header.localSequenceID);
 		}
 		} // synchronized(upTbl)
 	}
@@ -401,7 +384,7 @@ public class TOTAL extends Protocol {
 		reqTbl.put(new Long(id), msg);
 		}
 		_transmitBcastRequest(id);
-		retransmitter.add(id, msg);
+		//retransmitter.add(id, msg);
 	}
 
 
@@ -427,7 +410,7 @@ public class TOTAL extends Protocol {
 
 		synchronized(reqTbl) {
 		if (!reqTbl.containsKey(new Long(seqID))) {
-			retransmitter.ack(seqID);
+			//retransmitter.ack(seqID);
 			return;
 		}
 		}
@@ -464,9 +447,9 @@ public class TOTAL extends Protocol {
 		// ii. Deliver as many messages as possible
 
 		synchronized(upTbl) {
-		if (header.seqID <= seqID)
+		if (header.sequenceID <= seqID)
 			return;
-		upTbl.put(new Long(header.seqID), msg);
+		upTbl.put(new Long(header.sequenceID), msg);
 		}
 
 		_deliverBcast();
@@ -498,7 +481,7 @@ public class TOTAL extends Protocol {
 		header = (Header)msg.getHeader(getName());
 		++sequencerSeqID;
 		repMsg = new Message(msg.getSrc(), addr, new byte[0]);
-		repMsg.putHeader(getName(), new Header(Header.REP, header.localSeqID,
+		repMsg.putHeader(getName(), new Header(Header.REP, header.localSequenceID,
 			sequencerSeqID));
 
 		passDown(new Event(Event.MSG, repMsg));
@@ -531,43 +514,24 @@ public class TOTAL extends Protocol {
 		}
 
 		synchronized(reqTbl) {
-		msg = (Message)reqTbl.remove(new Long(header.localSeqID));
+		msg = (Message)reqTbl.remove(new Long(header.localSequenceID));
 		}
 
 		if (msg != null) {
-			retransmitter.ack(header.localSeqID);
-			id = header.localSeqID;
+			//retransmitter.ack(header.localSeqID);
+			id = header.localSequenceID;
+msg.putHeader(getName(), new Header(Header.BCAST, id, header.sequenceID));
+
+         passDown(new Event(Event.MSG, msg));
 		} else {
 			if(log.isInfoEnabled()) log.info("Bcast reply to " +
-				   "non-existent BCAST_REQ[" + header.localSeqID +
+				   "non-existent BCAST_REQ[" + header.localSequenceID +
 				   "], Sending NULL bcast");
-			id  = NULL_ID;
-			msg = new Message(null, addr, new byte[0]);
-		}
-		msg.putHeader(getName(), new Header(Header.BCAST, id, header.seqID));
-
-		passDown(new Event(Event.MSG, msg));
-	}
-
-
-	/**
-	 * Resend the bcast request with the given localSeqID
-	 *
-	 * @param seqID the local sequence id of the
-	 */
-	private void _retransmitBcastRequest(long seqID) {
-		// *** Get a shared lock
-		try { stateLock.readLock(); try {
-
-		if(log.isInfoEnabled()) log.info("Retransmit BCAST_REQ[" + seqID + ']');
-		_transmitBcastRequest(seqID);
-
-		// ** Revoke the shared lock
-		} finally { stateLock.readUnlock(); }
-		} catch(RWLock.IntException ex) {
-		if(log.isErrorEnabled()) log.error(ex.getMessage());
+         //id  = NULL_ID;
+         //msg = new Message(null, addr, new byte[0]);
 		}
 	}
+
 
 
 	/* Up event handlers
@@ -812,7 +776,7 @@ public class TOTAL extends Protocol {
             
             reqTbl       = new TreeMap();
             upTbl        = new TreeMap();
-            retransmitter = new AckSenderWindow(new Command(), AVG_RETRANSMIT_INTERVAL);
+            //retransmitter = new AckSenderWindow(new Command(), AVG_RETRANSMIT_INTERVAL);
 	}
     
 
@@ -831,7 +795,7 @@ public class TOTAL extends Protocol {
             stateLock.writeLock(); 
             try {
                 state = NULL_STATE;
-                retransmitter.reset();
+                //retransmitter.reset();
                 reqTbl.clear();
                 upTbl.clear();
                 addr = null;
