@@ -1,4 +1,4 @@
-// $Id: QueueTest.java,v 1.6 2003/09/23 00:24:25 belaban Exp $
+// $Id: QueueTest.java,v 1.7 2003/09/24 18:15:52 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -631,7 +631,7 @@ public class QueueTest extends TestCase {
 				{
 					queue.add(new Long(rank));
 					Util.sleepRandom(200);
-					System.out.println("Thread #" + rank + " added element (" + rank + ")");
+					// System.out.println("Thread #" + rank + " added element (" + rank + ")");
 				}
 			}
 			catch (QueueClosedException closed)
@@ -656,7 +656,7 @@ public class QueueTest extends TestCase {
         public void run() {
             try {
                 retval=(Long)queue.remove();
-                System.out.println("Thread #" + rank + " removed element (" + retval + ")");
+                // System.out.println("Thread #" + rank + " removed element (" + retval + ")");
             }
             catch(QueueClosedException closed) {
                 System.err.println("Thread #" + rank + ": queue was closed");
@@ -690,7 +690,7 @@ public class QueueTest extends TestCase {
 				try
 				{
 					retval = (Long) queue.remove(timeout);
-					System.out.println("Thread #" + rank + " removed element (" + retval + ")");
+					// System.out.println("Thread #" + rank + " removed element (" + retval + ")");
 					finished = true;
 				}
 				catch (QueueClosedException closed)
