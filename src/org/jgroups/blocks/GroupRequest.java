@@ -1,4 +1,4 @@
-// $Id: GroupRequest.java,v 1.5 2004/03/30 06:47:12 belaban Exp $
+// $Id: GroupRequest.java,v 1.6 2004/05/05 16:15:13 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -39,7 +39,7 @@ import java.util.Vector;
  * to do so.<p>
  * <b>Requirements</b>: lossless delivery, e.g. acknowledgment-based message confirmation.
  * @author Bela Ban
- * @version $Revision: 1.5 $
+ * @version $Revision: 1.6 $
  */
 public class GroupRequest implements RspCollector, Command {
     /** return only first response */
@@ -136,13 +136,8 @@ public class GroupRequest implements RspCollector, Command {
      @param timeout Time to wait for responses (ms). A value of <= 0 means wait indefinitely
      (e.g. if a suspicion service is available; timeouts are not needed).
      */
-    public GroupRequest(
-            Message m,
-            RequestCorrelator corr,
-            Vector members,
-            int rsp_mode,
-            long timeout,
-            int expected_mbrs) {
+    public GroupRequest(Message m, RequestCorrelator corr, Vector members, int rsp_mode,
+                        long timeout, int expected_mbrs) {
         this(m, corr, members, rsp_mode);
         if(timeout > 0)
             this.timeout=timeout;
@@ -163,17 +158,12 @@ public class GroupRequest implements RspCollector, Command {
      * @param timeout Time to wait for responses (ms). A value of <= 0 means wait indefinitely
      *                       (e.g. if a suspicion service is available; timeouts are not needed).
      */
-    public GroupRequest(
-            Message m,
-            Transport transport,
-            Vector members,
-            int rsp_mode,
-            long timeout,
-            int expected_mbrs) {
-        this(m, transport, members, rsp_mode);
-        if(timeout > 0)
-            this.timeout=timeout;
-        this.expected_mbrs=expected_mbrs;
+    public GroupRequest(Message m, Transport transport, Vector members,
+                        int rsp_mode, long timeout, int expected_mbrs) {
+       this(m, transport, members, rsp_mode);
+       if(timeout > 0)
+          this.timeout=timeout;
+       this.expected_mbrs=expected_mbrs;
     }
 
 
@@ -213,8 +203,7 @@ public class GroupRequest implements RspCollector, Command {
     }
 
 
-    public void reset(Message m, final Vector members, int rsp_mode,
-                      long timeout, int expected_rsps) {
+    public void reset(Message m, final Vector members, int rsp_mode, long timeout, int expected_rsps) {
         synchronized(rsp_mutex) {
             reset(m, rsp_mode, timeout);
             reset(members);
@@ -288,9 +277,8 @@ public class GroupRequest implements RspCollector, Command {
                     if(received[i] == NOT_RECEIVED) {
                         responses[i]=val;
                         received[i]=RECEIVED;
-
-                            if(log.isDebugEnabled()) log.debug("received response for request " +
-                                    req_id + ", sender=" + sender + ", val=" + val);
+                       if(log.isTraceEnabled())
+                          log.trace("received response for request " + req_id + ", sender=" + sender + ", val=" + val);
                         rsp_mutex.notifyAll(); // wakes up execute()
                         break;
                     }
@@ -465,8 +453,7 @@ public class GroupRequest implements RspCollector, Command {
         }
 
         try {
-
-                if(log.isDebugEnabled()) log.debug("sending request (id=" + req_id + ")");
+           if(log.isTraceEnabled()) log.trace("sending request (id=" + req_id + ")");
             if(corr != null) {
                 java.util.List tmp=members != null? members : null;
                 corr.sendRequest(req_id, tmp, request_msg, rsp_mode == GET_NONE? null : this);
@@ -476,7 +463,7 @@ public class GroupRequest implements RspCollector, Command {
             }
         }
         catch(Throwable e) {
-            if(log.isErrorEnabled()) log.error("exception=" + e);
+            log.error("exception=" + e);
             if(corr != null)
                 corr.done(req_id);
             return false;
@@ -488,8 +475,7 @@ public class GroupRequest implements RspCollector, Command {
                 if(getResponses()) {
                     if(corr != null)
                         corr.done(req_id);
-
-                        if(log.isDebugEnabled()) log.debug("received all responses: " + toString());
+                   if(log.isTraceEnabled()) log.trace("received all responses: " + toString());
                     return true;
                 }
                 try {
@@ -505,8 +491,7 @@ public class GroupRequest implements RspCollector, Command {
                 if(getResponses()) {
                     if(corr != null)
                         corr.done(req_id);
-
-                        if(log.isDebugEnabled()) log.debug("received all responses: " + toString());
+                   if(log.isTraceEnabled()) log.trace("received all responses: " + toString());
                     return true;
                 }
                 timeout=timeout - (System.currentTimeMillis() - start_time);
