@@ -6,7 +6,7 @@
 
 <config>
     <TUNNEL router_port="12001" router_host="localhost"/>
-    <PING timeout="3000" gossip_refresh="10000" num_initial_members="3" gossip_host="localhost" gossip_port="12002"/>
+    <PING timeout="3000" gossip_refresh="10000" num_initial_members="3" gossip_host="localhost" gossip_port="12001"/>
     <MERGE2 max_interval="10000" min_interval="5000"/>
     <FD timeout="3000"/>
     <VERIFY_SUSPECT timeout="1500" down_thread="false" up_thread="false"/>
