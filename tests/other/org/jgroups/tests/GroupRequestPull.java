@@ -1,4 +1,4 @@
-// $Id: GroupRequestPull.java,v 1.4 2004/03/30 06:47:34 belaban Exp $
+// $Id: GroupRequestPull.java,v 1.5 2004/07/05 06:10:43 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -171,7 +171,7 @@ public class GroupRequestPull implements MessageListener, MembershipListener, Tr
 	String props=null;
 
 	for(int i=0; i < args.length; i++) {
-	    if(args[i].equals("-props")) {
+	    if("-props".equals(args[i])) {
 		props=args[++i];
 		continue;
 	    }

@@ -80,7 +80,7 @@ public class HammerListener implements ChannelListener, MembershipListener {
     }
 
     public void viewAccepted(View new_view) {
-        System.out.println("Accepted view (" + new_view.size() + new_view.getMembers() + ")");
+        System.out.println("Accepted view (" + new_view.size() + new_view.getMembers() + ')');
     }
 
     public void suspect(Address suspected_mbr) {

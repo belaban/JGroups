@@ -1,4 +1,4 @@
-// $Id: UnicastTest2.java,v 1.3 2004/03/30 06:47:34 belaban Exp $
+// $Id: UnicastTest2.java,v 1.4 2004/07/05 06:10:46 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -105,13 +105,13 @@ public class UnicastTest2 implements Runnable {
 		    }
 		    else {
 			if(info.msgno -1 != myinfo.msgno) {
-			    System.err.println("UnicastTest2.start(): received msg " + info.sender + ":" +
+			    System.err.println("UnicastTest2.start(): received msg " + info.sender + ':' +
 					       info.msgno + ", but last received was " +
-					       myinfo.sender + ":" + myinfo.msgno);
+					       myinfo.sender + ':' + myinfo.msgno);
 			}
 			else {
-			    System.out.println("UnicastTest2.start(): OK received " + info.sender + ":" + 
-					       info.msgno + ", prev seqno=" + myinfo.sender + ":" + myinfo.msgno);
+			    System.out.println("UnicastTest2.start(): OK received " + info.sender + ':' +
+					       info.msgno + ", prev seqno=" + myinfo.sender + ':' + myinfo.msgno);
 			    myinfo.msgno++;
 			}
 		    }
@@ -216,7 +216,7 @@ public class UnicastTest2 implements Runnable {
 	
 	
 	public String toString() {
-	    return "#" + msgno + " (sender=" + sender + ")";
+	    return "#" + msgno + " (sender=" + sender + ')';
 	}
     }
 

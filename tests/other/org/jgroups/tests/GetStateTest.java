@@ -1,4 +1,4 @@
-// $Id: GetStateTest.java,v 1.4 2004/03/30 06:47:34 belaban Exp $
+// $Id: GetStateTest.java,v 1.5 2004/07/05 06:10:43 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -128,7 +128,7 @@ public class GetStateTest implements Runnable {
 	StringBuffer ret=new StringBuffer();
 	if(vec != null)
 	    for(int i=0; i < vec.length; i++)
-		ret.append("state[" + i + "]: " + vec[i] + "\n");
+		ret.append("state[" + i + "]: " + vec[i] + '\n');
 	return ret.toString();
     }
 

@@ -1,4 +1,4 @@
-// $Id: McastSenderTest1_4.java,v 1.2 2004/03/30 06:47:34 belaban Exp $
+// $Id: McastSenderTest1_4.java,v 1.3 2004/07/05 06:10:44 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -13,7 +13,7 @@ import java.util.Vector;
    Same as McastSenderTest, but uses all available interfaces (including loopback) to send the packets
    @see McastReceiverTest
    @author Bela Ban
-   @version $Revision: 1.2 $
+   @version $Revision: 1.3 $
  */
 public class McastSenderTest1_4 {
 
@@ -35,27 +35,27 @@ public class McastSenderTest1_4 {
 	try {
 	    for(int i=0; i < args.length; i++) {
 		tmp=args[i];
-		if(tmp.equals("-help")) {
+		if("-help".equals(tmp)) {
 		    help();
 		    return;
 		}
-		if(tmp.equals("-bind_addr")) {
+		if("-bind_addr".equals(tmp)) {
 		    bind_addr=InetAddress.getByName(args[++i]);
 		    continue;
 		}
-		if(tmp.equals("-mcast_addr")) {
+		if("-mcast_addr".equals(tmp)) {
 		    mcast_addr=InetAddress.getByName(args[++i]);
 		    continue;
 		}
-		if(tmp.equals("-ttl")) {
+		if("-ttl".equals(tmp)) {
 		    ttl=Integer.parseInt(args[++i]);
 		    continue;
 		}
-		if(tmp.equals("-port")) {
+		if("-port".equals(tmp)) {
 		    port=Integer.parseInt(args[++i]);
 		    continue;
 		}
-		if(tmp.equals("-use_all_interfaces")) {
+		if("-use_all_interfaces".equals(tmp)) {
 		    use_all_interfaces=true;
 		    continue;
 		}
@@ -112,7 +112,7 @@ public class McastSenderTest1_4 {
 	    for(int i=0; i < sockets.length; i++) {
 		sock=sockets[i];
 		if(sock == null) continue;
-		System.out.println("Socket #" + (i+1) + "=" + sock.getLocalAddress() + ":" + sock.getLocalPort() + 
+		System.out.println("Socket #" + (i+1) + '=' + sock.getLocalAddress() + ':' + sock.getLocalPort() +
 				   ", ttl=" + sock.getTimeToLive() + ", bind interface=" + sock.getInterface());
 	    }
 	    
@@ -188,7 +188,7 @@ public class McastSenderTest1_4 {
 		    packet=new DatagramPacket(buf, buf.length);
 		    sock.receive(packet);
 		    System.out.println("<< Received packet from " + 
-				       packet.getAddress().getHostAddress() + ":" +
+				       packet.getAddress().getHostAddress() + ':' +
 				       packet.getPort() + ": " + new String(packet.getData()));
 		}
 		catch(Exception e) {

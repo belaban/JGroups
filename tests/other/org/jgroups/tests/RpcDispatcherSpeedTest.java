@@ -17,7 +17,7 @@ import java.lang.reflect.Method;
 /**
  * Interactive test for measuring group RPCs using different invocation techniques.
  * @author Bela Ban
- * @version $Revision: 1.5 $
+ * @version $Revision: 1.6 $
  */
 public class RpcDispatcherSpeedTest implements MembershipListener {
     Channel             channel;
@@ -214,27 +214,27 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
         int                    mode=OLD;
 
         for(int i=0; i < args.length; i++) {
-            if(args[i].equals("-props")) {
+            if("-props".equals(args[i])) {
                 props=args[++i];
                 continue;
             }
-            if(args[i].equals("-server")) {
+            if("-server".equals(args[i])) {
                 server=true;
                 continue;
             }
-            if(args[i].equals("-num")) {
+            if("-num".equals(args[i])) {
                 num=Integer.parseInt(args[++i]);
                 continue;
             }
-            if(args[i].equals("-mode")) {
+            if("-mode".equals(args[i])) {
                 String m=args[++i].toLowerCase().trim();
-                if(m.equals("old"))
+                if("old".equals(m))
                     mode=OLD;
-                else if(m.equals("method"))
+                else if("method".equals(m))
                     mode=METHOD;
-                else if(m.equals("types"))
+                else if("types".equals(m))
                     mode=TYPES;
-                else if(m.equals("signature"))
+                else if("signature".equals(m))
                     mode=SIGNATURE;
                 else {
                     System.err.println("mode " + m + " is invalid");

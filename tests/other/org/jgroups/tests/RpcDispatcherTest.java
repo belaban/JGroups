@@ -1,4 +1,4 @@
-// $Id: RpcDispatcherTest.java,v 1.3 2004/05/13 06:12:35 belaban Exp $
+// $Id: RpcDispatcherTest.java,v 1.4 2004/07/05 06:10:45 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -30,7 +30,7 @@ public class RpcDispatcherTest {
 
 
     public int print(int number) throws Exception {
-        System.out.println("print(" + number + ")");
+        System.out.println("print(" + number + ')');
         return number * 2;
     }
 

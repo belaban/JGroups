@@ -137,21 +137,21 @@ public class ContinousThroughputTest {
                     msg=(Message)received;
                     payload=(String)msg.getObject();
                     System.out.println(payload);
-                    if(payload.equalsIgnoreCase("stop")) {
+                    if("stop".equalsIgnoreCase(payload)) {
                         done=true;
                     }
-                    if(payload.equalsIgnoreCase("pingpong")) {
+                    if("pingpong".equalsIgnoreCase(payload)) {
                         n=((Long)((Message)channel.receive(0)).getObject()).longValue();
                         i=((Integer)((Message)channel.receive(0)).getObject()).intValue();
                         log("Starting pingpong test. Rounds: " + n + " Bursts: " + i);
                         pingpongTest(n, i, false);
                     }
-                    if(payload.equalsIgnoreCase("cping")) {
+                    if("cping".equalsIgnoreCase(payload)) {
 //	    i = ((Integer) ((Message) channel.receive(0)).getObject()).intValue();
                         log("Starting cping test. Bursts: " + 1);
                         cpingTest(1, true);
                     }
-                    if(payload.equalsIgnoreCase("sweep")) {
+                    if("sweep".equalsIgnoreCase(payload)) {
                         n=((Long)((Message)channel.receive(0)).getObject()).longValue();
                         i=((Integer)((Message)channel.receive(0)).getObject()).intValue();
                         log("Starting sweep test. Rounds: " + n + " initial burst: " + i);
@@ -200,10 +200,10 @@ public class ContinousThroughputTest {
         try {
             while(!done) {
                 input=reader.readLine();
-                if(input.equalsIgnoreCase("stop")) {
+                if("stop".equalsIgnoreCase(input)) {
                     done=true;
                 }
-                if(input.equalsIgnoreCase("pingpong")) {
+                if("pingpong".equalsIgnoreCase(input)) {
                     number=askNumber(reader, "How many rounds?");
                     burstlength=askNumber(reader, "Length of bursts?");
                     channel.send(new Message(null, null, input));
@@ -212,13 +212,13 @@ public class ContinousThroughputTest {
                     continue;
 
                 }
-                if(input.equalsIgnoreCase("cping")) {
+                if("cping".equalsIgnoreCase(input)) {
 //	       burstlength = askNumber( reader,"Length of bursts?");
                     channel.send(new Message(null, null, input));
 //	       channel.send(new Message(null,null,new Integer(burstlength)));
                     continue;
                 }
-                if(input.equalsIgnoreCase("sweep")) {
+                if("sweep".equalsIgnoreCase(input)) {
                     number=askNumber(reader, "Number of tests");
                     burstlength=askNumber(reader, "Initial length of bursts?");
                     channel.send(new Message(null, null, input));

@@ -1,4 +1,4 @@
-// $Id: McastReceiverTest.java,v 1.2 2004/02/10 12:52:31 belaban Exp $
+// $Id: McastReceiverTest.java,v 1.3 2004/07/05 06:10:44 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -18,7 +18,7 @@ import java.net.MulticastSocket;
  test whether IPMCAST works between different subnets.
  @see McastSenderTest
  @author Bela Ban
- @version $Revision: 1.2 $
+ @version $Revision: 1.3 $
  */
 public class McastReceiverTest {
 
@@ -34,19 +34,19 @@ public class McastReceiverTest {
         try {
             for(int i=0; i < args.length; i++) {
                 tmp=args[i];
-                if(tmp.equals("-help")) {
+                if("-help".equals(tmp)) {
                     help();
                     return;
                 }
-                if(tmp.equals("-bind_addr")) {
+                if("-bind_addr".equals(tmp)) {
                     bind_addr=InetAddress.getByName(args[++i]);
                     continue;
                 }
-                if(tmp.equals("-mcast_addr")) {
+                if("-mcast_addr".equals(tmp)) {
                     mcast_addr=InetAddress.getByName(args[++i]);
                     continue;
                 }
-                if(tmp.equals("-port")) {
+                if("-port".equals(tmp)) {
                     port=Integer.parseInt(args[++i]);
                     continue;
                 }
@@ -67,7 +67,7 @@ public class McastReceiverTest {
             if(bind_addr != null)
                 sock.setInterface(bind_addr);
             sock.joinGroup(mcast_addr);
-            System.out.println("Socket=" + sock.getLocalAddress() + ":" + sock.getLocalPort() + ", bind interface=" +
+            System.out.println("Socket=" + sock.getLocalAddress() + ':' + sock.getLocalPort() + ", bind interface=" +
                                sock.getInterface());
 
             while(true) {
@@ -76,7 +76,7 @@ public class McastReceiverTest {
                 sock.receive(packet);
                 recv_buf=packet.getData();
                 System.out.println(new String(recv_buf) + " [sender=" + packet.getAddress().getHostAddress() +
-                                   ":" + packet.getPort() + "]");
+                                   ':' + packet.getPort() + ']');
                 byte[] buf2="Hello from Bela".getBytes();
                 DatagramPacket rsp=new DatagramPacket(buf2, buf2.length, packet.getAddress(), packet.getPort());
                 sock.send(rsp);

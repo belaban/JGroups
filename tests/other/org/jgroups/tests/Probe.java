@@ -10,7 +10,7 @@ import java.net.MulticastSocket;
 /**
  * Discovers all UDP-based members running on a certain mcast address
  * @author Bela Ban
- * @version $Revision: 1.3 $
+ * @version $Revision: 1.4 $
  * Date: Jun 2, 2003
  * Time: 4:35:29 PM
  */
@@ -33,7 +33,7 @@ public class Probe {
         byte[] probe_buf=new byte[]{'d', 'i', 'a', 'g'};
         DatagramPacket probe=new DatagramPacket(probe_buf, 0, probe_buf.length, addr, port);
         sock.send(probe);
-        System.out.println("\n-- send probe on " + addr + ":" + port + "\n");
+        System.out.println("\n-- send probe on " + addr + ':' + port + '\n');
         int i=0;
 
         new Thread() {
@@ -67,19 +67,19 @@ public class Probe {
 
         try {
             for(int i=0; i < args.length; i++) {
-                if(args[i].equals("-addr")) {
+                if("-addr".equals(args[i])) {
                     addr=InetAddress.getByName(args[++i]);
                     continue;
                 }
-                if(args[i].equals("-port")) {
+                if("-port".equals(args[i])) {
                     port=Integer.parseInt(args[++i]);
                     continue;
                 }
-                if(args[i].equals("-ttl")) {
+                if("-ttl".equals(args[i])) {
                     ttl=Integer.parseInt(args[++i]);
                     continue;
                 }
-                if(args[i].equals("-timeout")) {
+                if("-timeout".equals(args[i])) {
                     timeout=Long.parseLong(args[++i]);
                     continue;
                 }

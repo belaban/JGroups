@@ -1,4 +1,4 @@
-// $Id: MessageDispatcherTestAsync.java,v 1.6 2004/03/30 06:47:34 belaban Exp $
+// $Id: MessageDispatcherTestAsync.java,v 1.7 2004/07/05 06:10:44 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -51,7 +51,7 @@ public class MessageDispatcherTestAsync implements RequestHandler {
 
         public void receiveResponse(Message msg) {
             Object tmp=msg.getObject();
-            System.out.println("** received response " + tmp + " [sender=" + msg.getSrc() + "]");
+            System.out.println("** received response " + tmp + " [sender=" + msg.getSrc() + ']');
         }
 
         public void suspect(Address mbr) {
@@ -123,8 +123,8 @@ public class MessageDispatcherTestAsync implements RequestHandler {
 
     public Object handle(Message msg) {
         Object tmp=msg.getObject();
-        System.out.println("** handle(" + tmp + ")");
-        return new String(tmp + ": success");
+        System.out.println("** handle(" + tmp + ')');
+        return tmp + ": success";
     }
 
 
@@ -134,15 +134,15 @@ public class MessageDispatcherTestAsync implements RequestHandler {
         boolean debug=false, cummulative=false;
 
         for(int i=0; i < args.length; i++) {
-            if(args[i].equals("-help")) {
+            if("-help".equals(args[i])) {
                 help();
                 return;
             }
-            if(args[i].equals("-debug")) {
+            if("-debug".equals(args[i])) {
                 debug=true;
                 continue;
             }
-            if(args[i].equals("-cummulative")) {
+            if("-cummulative".equals(args[i])) {
                 cummulative=true;
                 continue;
             }

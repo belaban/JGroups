@@ -1,4 +1,4 @@
-// $Id: PullPushTest.java,v 1.3 2004/03/30 06:47:34 belaban Exp $
+// $Id: PullPushTest.java,v 1.4 2004/07/05 06:10:45 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -43,7 +43,7 @@ public class PullPushTest implements MessageListener {
 
         for(int i=0; i < 10; i++) {
             System.out.println("Sending msg #" + i);
-            adapter.send(new Message(null, null, new String("Hello world").getBytes()));
+            adapter.send(new Message(null, null, "Hello world".getBytes()));
             Thread.sleep(1000);
         }
 

@@ -8,7 +8,7 @@ import org.jgroups.protocols.PERF_TP;
 /**
  * Test of PERF_TP. Requirement: transport needs to be PERF_TP
  * @author Bela Ban Feb 24, 2004
- * @version $Id: PerfTpTest.java,v 1.2 2004/03/30 06:47:34 belaban Exp $
+ * @version $Id: PerfTpTest.java,v 1.3 2004/07/05 06:10:45 belaban Exp $
  */
 public class PerfTpTest {
     JChannel ch=null;
@@ -20,15 +20,15 @@ public class PerfTpTest {
         int    size=1000; // bytes
 
         for(int i=0; i < args.length; i++) {
-            if(args[i].equals("-props")){
+            if("-props".equals(args[i])){
                 props=args[++i];
                 continue;
             }
-            if(args[i].equals("-num")) {
+            if("-num".equals(args[i])) {
                 num_msgs=Integer.parseInt(args[++i]);
                 continue;
             }
-            if(args[i].equals("-size")) {
+            if("-size".equals(args[i])) {
                 size=Integer.parseInt(args[++i]);
                 continue;
             }

@@ -24,7 +24,7 @@ public class QueueTest2 {
 
     void start(Queueable q, String msg) throws Exception {
         this.q=q;
-        System.out.println("-- starting test with " + q.getClass() + " (" + msg + ")");
+        System.out.println("-- starting test with " + q.getClass() + " (" + msg + ')');
         start=System.currentTimeMillis();
         Adder adder=new Adder();
         Remover remover=new Remover();

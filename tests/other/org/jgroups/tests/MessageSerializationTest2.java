@@ -8,7 +8,7 @@ import java.io.*;
 
 /**
  * @author Bela Ban Feb 12, 2004
- * @version $Id: MessageSerializationTest2.java,v 1.2 2004/03/30 06:47:34 belaban Exp $
+ * @version $Id: MessageSerializationTest2.java,v 1.3 2004/07/05 06:10:44 belaban Exp $
  */
 public class MessageSerializationTest2 {
 
@@ -71,7 +71,7 @@ public class MessageSerializationTest2 {
         msgs_per_sec=msgs_read / (total/1000.0);
         time_per_msg=total / (double)msgs_read;
         System.out.println("\n-- total time for reading " + msgs_read +
-                " msgs = " + total + "ms \n(" + msgs_per_sec + " msgs/sec, time_per_msg=" + time_per_msg + ")");
+                " msgs = " + total + "ms \n(" + msgs_per_sec + " msgs/sec, time_per_msg=" + time_per_msg + ')');
 
     }
 

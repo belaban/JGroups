@@ -1,4 +1,4 @@
-// $Id: QueueSpeedTest.java,v 1.3 2004/07/03 23:41:32 belaban Exp $
+// $Id: QueueSpeedTest.java,v 1.4 2004/07/05 06:10:45 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -92,7 +92,7 @@ public class QueueSpeedTest {
         int num_elements=1000000;
 
         for(int i=0; i < args.length; i++) {
-            if(args[i].equals("-num_elements")) {
+            if("-num_elements".equals(args[i])) {
                 num_elements=Integer.parseInt(args[++i]);
                 continue;
             }

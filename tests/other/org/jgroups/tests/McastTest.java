@@ -1,4 +1,4 @@
-// $Id: McastTest.java,v 1.1 2003/09/09 01:24:13 belaban Exp $
+// $Id: McastTest.java,v 1.2 2004/07/05 06:10:44 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -12,7 +12,7 @@ import java.util.StringTokenizer;
 
 /**
    @author Bela Ban
-   @version $Revision: 1.1 $
+   @version $Revision: 1.2 $
  */
 public class McastTest {
 
@@ -28,15 +28,15 @@ public class McastTest {
 	
 	for(int i=0; i < args.length; i++) {
 	    val=args[i];
-	    if(val.equals("-help")) {
+	    if("-help".equals(val)) {
 		help();
 		return;
 	    }
-	    if(val.equals("-sender")) {
+	    if("-sender".equals(val)) {
 		receiver=false;
 		continue;
 	    }
-	    if(val.equals("-receiver")) {
+	    if("-receiver".equals(val)) {
 		receiver=true;
 		try {
 		    addr=InetAddress.getByName(args[++i]);
@@ -56,13 +56,13 @@ public class McastTest {
 	try {
 	    if(receiver) {
 		sock=new DatagramSocket(port, addr);
-		System.out.println("Socket=" + sock.getLocalAddress() + ":" + sock.getLocalPort());
+		System.out.println("Socket=" + sock.getLocalAddress() + ':' + sock.getLocalPort());
 		System.out.println("starting as receiver");
 		receiverLoop(sock);
 	    }
 	    else {
 		sock=new DatagramSocket();
-		System.out.println("Socket=" + sock.getLocalAddress() + ":" + sock.getLocalPort());
+		System.out.println("Socket=" + sock.getLocalAddress() + ':' + sock.getLocalPort());
 		System.out.println("starting as sender");
 		senderLoop(sock);
 	    }
@@ -84,7 +84,7 @@ public class McastTest {
 	    try {
 		sock.receive(packet);
 		System.out.println("Receive packet from " + packet.getAddress().getHostAddress() +
-				   ":" + packet.getPort() + ": " + new String(packet.getData()));
+                           ':' + packet.getPort() + ": " + new String(packet.getData()));
 	    }
 	    catch(Exception e) {
 		System.err.println(e);
@@ -123,7 +123,7 @@ public class McastTest {
 		sb=new StringBuffer();
 		while(tok.hasMoreTokens()) {
 		    tmp=tok.nextToken();
-		    sb.append(tmp + " ");
+		    sb.append(tmp + ' ');
 		}
 		buf=sb.toString();
 		System.out.println("sending " + buf);

@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindowStressTest.java,v 1.4 2004/03/01 17:16:09 belaban Exp $
+// $Id: NakReceiverWindowStressTest.java,v 1.5 2004/07/05 06:10:45 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -85,7 +85,7 @@ public class NakReceiverWindowStressTest implements Retransmitter.RetransmitComm
         i=((Long)msg.getObject()).longValue();
         if(prev_value + 1 != i) {
             System.err.println("** processMessage(): removed seqno (" + i + ") is not 1 greater than " +
-                    "previous value (" + prev_value + ")");
+                    "previous value (" + prev_value + ')');
             System.exit(0);
         }
         prev_value++;
@@ -124,19 +124,19 @@ public class NakReceiverWindowStressTest implements Retransmitter.RetransmitComm
 
 
         for(int i=0; i < args.length; i++) {
-            if(args[i].equals("-help")) {
+            if("-help".equals(args[i])) {
                 help();
                 return;
             }
-            if(args[i].equals("-num_msgs")) {
-                num_msgs=new Integer(args[++i]).intValue();
+            if("-num_msgs".equals(args[i])) {
+                num_msgs=Integer.parseInt(args[++i]);
                 continue;
             }
-            if(args[i].equals("-discard")) {
-                discard_prob=new Double(args[++i]).doubleValue();
+            if("-discard".equals(args[i])) {
+                discard_prob=Double.parseDouble(args[++i]);
                 continue;
             }
-            if(args[i].equals("-trace")) {
+            if("-trace".equals(args[i])) {
                 trace=true;
                 continue;
             }
