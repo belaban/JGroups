@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.16 2004/08/31 16:56:57 belaban Exp $
+// $Id: GMS.java,v 1.17 2004/09/03 12:28:04 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -87,8 +87,10 @@ public class GMS extends Protocol {
     public void setImpl(GmsImpl new_impl) {
         synchronized(impl_mutex) {
             impl=new_impl;
-            if(log.isDebugEnabled())
-                log.debug(local_addr + ": changed role to " + new_impl.getClass().getName());
+            if(log.isDebugEnabled()) {
+                String msg=(local_addr != null? local_addr.toString()+" " : "") + "changed role to " + new_impl.getClass().getName();
+                log.debug(msg);
+            }
         }
     }
 
@@ -127,7 +129,6 @@ public class GMS extends Protocol {
         }
         tmp.leaving=false;
         setImpl(tmp);
-         if(log.isDebugEnabled()) log.debug(local_addr + " became coordinator");
     }
 
 
@@ -140,7 +141,6 @@ public class GMS extends Protocol {
         }
         tmp.leaving=false;
         setImpl(tmp);
-         if(log.isDebugEnabled()) log.debug(local_addr + " became participant");
     }
 
     public void becomeClient() {
@@ -152,7 +152,6 @@ public class GMS extends Protocol {
         }
         tmp.initial_mbrs.removeAllElements();
         setImpl(tmp);
-        if(log.isDebugEnabled()) log.debug(local_addr + " became client");
     }
 
 
@@ -174,7 +173,7 @@ public class GMS extends Protocol {
 
         synchronized(members) {
             if(view_id == null) {
-                if(log.isErrorEnabled()) log.error("view_id is null");
+                log.error("view_id is null");
                 return null; // this should *never* happen !
             }
             vid=Math.max(view_id.getId(), ltime) + 1;
@@ -508,7 +507,7 @@ public class GMS extends Protocol {
                             if(log.isErrorEnabled()) log.error("LEAVE_REQ's mbr field is null");
                             return;
                         }
-                        sendLeaveResponse(hdr.mbr);
+                        // sendLeaveResponse(hdr.mbr);
                         impl.handleLeave(hdr.mbr, false);
                         break;
                     case GmsHeader.LEAVE_RSP:
@@ -742,12 +741,7 @@ public class GMS extends Protocol {
     }
 
 
-    void sendLeaveResponse(Address mbr) {
-        Message msg=new Message(mbr, null, null);
-        GmsHeader hdr=new GmsHeader(GmsHeader.LEAVE_RSP);
-        msg.putHeader(getName(), hdr);
-        passDown(new Event(Event.MSG, msg));
-    }
+
 
     /* --------------------------- End of Private Methods ------------------------------- */
 

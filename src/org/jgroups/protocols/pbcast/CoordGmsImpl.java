@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.9 2004/07/28 22:46:59 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.10 2004/09/03 12:28:04 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -268,19 +268,35 @@ public class CoordGmsImpl extends GmsImpl {
     public synchronized void handleLeave(Address mbr, boolean suspected) {
         Vector v=new Vector(1);
         // contains either leaving mbrs or suspected mbrs
-
-
-            if(log.isDebugEnabled()) log.debug("mbr=" + mbr);
+        if(log.isDebugEnabled()) log.debug("mbr=" + mbr);
         if(!gms.members.contains(mbr)) {
-
-                if(log.isErrorEnabled()) log.error("mbr " + mbr + " is not a member !");
+            if(log.isErrorEnabled()) log.error("mbr " + mbr + " is not a member !");
             return;
         }
+
+        if(gms.view_id == null) {
+            // we're probably not the coord anymore (we just left ourselves), let someone else do it
+            // (client will retry when it doesn't get a response
+            if(log.isDebugEnabled())
+                log.debug("gms.view_id is null, I'm not the coordinator anymore (leaving=" + leaving +
+                          "); the new coordinator will handle the leave request");
+            return;
+        }
+
+        sendLeaveResponse(mbr); // send an ack to the leaving member
+
         v.addElement(mbr);
         if(suspected)
             gms.castViewChange(null, null, v);
         else
             gms.castViewChange(null, v, null);
+    }
+
+    void sendLeaveResponse(Address mbr) {
+        Message msg=new Message(mbr, null, null);
+        GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.LEAVE_RSP);
+        msg.putHeader(gms.getName(), hdr);
+        gms.passDown(new Event(Event.MSG, msg));
     }
 
     /**

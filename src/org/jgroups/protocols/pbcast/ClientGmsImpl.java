@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.10 2004/07/28 22:46:58 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.11 2004/09/03 12:28:04 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -21,7 +21,7 @@ import java.util.Vector;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.10 $
+ * @version $Revision: 1.11 $
  */
 public class ClientGmsImpl extends GmsImpl {
     Vector  initial_mbrs=new Vector(11);
@@ -164,9 +164,8 @@ public class ClientGmsImpl extends GmsImpl {
      * Does nothing. Discards all views while still client.
      */
     public synchronized void handleViewChange(View new_view, Digest digest) {
-
-            if(log.isDebugEnabled()) log.debug("view " + new_view.getMembers() +
-                                                            " is discarded as we are not a participant");
+        if(log.isDebugEnabled()) log.debug("view " + new_view.getMembers() +
+                                           " is discarded as we are not a participant");
     }
 
 
@@ -334,7 +333,7 @@ public class ClientGmsImpl extends GmsImpl {
         view_id=new ViewId(mbr);       // create singleton view with mbr as only member
         mbrs.addElement(mbr);
         gms.installView(new View(view_id, mbrs));
-        gms.becomeCoordinator();
+        gms.becomeCoordinator(); // not really necessary - installView() should do it
 
         gms.passUp(new Event(Event.BECOME_SERVER));
         gms.passDown(new Event(Event.BECOME_SERVER));

@@ -1,4 +1,4 @@
-// $Id: GmsImpl.java,v 1.3 2004/07/28 22:46:59 belaban Exp $
+// $Id: GmsImpl.java,v 1.4 2004/09/03 12:28:04 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -51,8 +51,8 @@ public abstract class GmsImpl {
 
 
     protected void wrongMethod(String method_name) {
-	if(log.isErrorEnabled()) log.error(method_name +
-		    "() should not be invoked on an instance of " + getClass().getName());
+        if(log.isErrorEnabled())
+            log.error(method_name + "() should not be invoked on an instance of " + getClass().getName());
     }
 
 
@@ -63,12 +63,12 @@ public abstract class GmsImpl {
        are the primary partition.
      */
     protected boolean iWouldBeCoordinator(Vector new_mbrs) {
-	Membership tmp_mbrs=gms.members.copy();
-	tmp_mbrs.merge(new_mbrs, null);
-	tmp_mbrs.sort();
-	if(tmp_mbrs.size() <= 0 || gms.local_addr == null)
-	    return false;
-	return gms.local_addr.equals(tmp_mbrs.elementAt(0));
+        Membership tmp_mbrs=gms.members.copy();
+        tmp_mbrs.merge(new_mbrs, null);
+        tmp_mbrs.sort();
+        if(tmp_mbrs.size() <= 0 || gms.local_addr == null)
+            return false;
+        return gms.local_addr.equals(tmp_mbrs.elementAt(0));
     }
 
 }
