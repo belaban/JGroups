@@ -1,15 +1,15 @@
-package org.jgroups.tests.adaptudp;
+package org.jgroups.tests.adaptjms;
 
 import org.apache.log4j.Logger;
 import org.jgroups.log.Trace;
 
+import javax.jms.*;
+import javax.naming.InitialContext;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.MulticastSocket;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
@@ -39,10 +39,13 @@ public class Test {
 
         int num_senders=1;
         long   log_interval=1000;
-
-
-        MulticastSocket recv_sock;
-        DatagramSocket  send_sock;
+        ConnectionFactory factory;
+        InitialContext ctx;
+        TopicConnection conn;
+        TopicSession session;
+        TopicPublisher pub;
+        Topic topic;
+        String topic_name="PerfTopic";
 
         for(int i=0; i < args.length; i++) {
             if(args[i].equals("-sender")) {
@@ -111,12 +114,13 @@ public class Test {
             System.out.println(s);
             Logger.getLogger(Test.class).info("main(): " + s);
 
-            recv_sock=new MulticastSocket(mcast_port);
-            recv_sock.joinGroup(InetAddress.getByName(mcast_addr));
-
-            send_sock=new DatagramSocket();
-
-            new UdpTester(recv_sock, send_sock, sender, num_msgs,
+            ctx=new InitialContext();
+            factory=(ConnectionFactory)ctx.lookup("JmsXA");
+            conn=((TopicConnectionFactory)factory).createTopicConnection();
+            session=conn.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
+            topic=(Topic)ctx.lookup(topic_name);
+            pub=session.createPublisher(topic);
+            new JmsTester(conn, session, topic, pub, sender, num_msgs,
                     msg_size, grpMembers, num_senders,
                     log_interval).initialize();
         }

@@ -1,8 +1,9 @@
-package org.jgroups.tests.adaptudp;
+package org.jgroups.tests.adaptjms;
 
 import org.apache.log4j.Logger;
 import org.jgroups.util.Util;
 
+import javax.jms.*;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -22,41 +23,40 @@ public class SenderThread extends Thread {
     long log_interval=1000;
     boolean gnuplot_output=Boolean.getBoolean("gnuplot_output");
     List nodes;
-    DatagramSocket send_sock;
+    TopicPublisher pub;
+    TopicSession session;
+    Topic topic;
 
 
-
-    public SenderThread(DatagramSocket send_sock, int num_msgs, int ms, long log_interval) {
+    public SenderThread(TopicSession session, TopicPublisher pub, Topic topic, int num_msgs, int ms, long log_interval) {
         this.num_msgs=num_msgs;
         msg_size=ms;
         this.log_interval=log_interval;
-        this.send_sock=send_sock;
+        this.session=session;
+        this.pub=pub;
+        this.topic=topic;
     }
 
     public void run() {
         long total_msgs=0;
         Request req;
-        byte[] buf;
-        DatagramPacket p;
-        InetAddress mcast_addr;
+        ObjectMessage msg;
 
         System.out.println("Sender thread started...");
 
         try {
-            mcast_addr=InetAddress.getByName(Test.mcast_addr);
-
-            byte[] msg=new byte[msg_size];
+            byte[] m=new byte[msg_size];
             for(int h=0; h < msg_size; h++) {
-                msg[h]=(byte)h;
+                m[h]=(byte)h;
             }
 
             System.out.println("Everyone joined, ready to begin test...\n");
 
             for(int i=0; i < num_msgs; i++) {
-                req=new Request(Request.DATA, msg);
-                buf=Util.objectToByteBuffer(req);
-                p=new DatagramPacket(buf, buf.length, mcast_addr, Test.mcast_port);
-                send_sock.send(p);
+                req=new Request(Request.DATA, m);
+                msg=session.createObjectMessage(req);
+                pub.publish(topic, msg);
+
                 total_msgs++;
                 if(total_msgs % 1000 == 0) {
                     System.out.println("++ sent " + total_msgs);
