@@ -1,4 +1,4 @@
-// $Id: DeadlockTest.java,v 1.2 2004/03/30 06:47:34 belaban Exp $
+// $Id: DeadlockTest.java,v 1.3 2004/05/13 06:09:10 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -37,18 +37,7 @@ public class DeadlockTest {
 	// .......................................................................
 
 	private String name = "JG";
-	private String stack = "UDP" +
-		":PING(num_initial_members=2;timeout=3000)" +
-		":FD" +
-		":STABLE" +
-		":NAKACK" +
-		":UNICAST" +
-		":FRAG" +
-		":FLUSH" +
-		":GMS" +
-		":VIEW_ENFORCER" +
-		":STATE_TRANSFER" +
-		":QUEUE";
+	private String stack = null; // default stack config
 	private JChannel channel;
 	private RpcDispatcher disp;
 
@@ -56,13 +45,11 @@ public class DeadlockTest {
 	private void _in_rpc_1() {
 		System.out.println("In rpc_1()");
 		cast_call("rpc_2", new Object[]{});
-		//channel.disconnect();
 		System.out.println("Exiting rpc_1()");
 	}
 
 	private void _in_rpc_2() {
 		System.out.println("In rpc_2()");
-		//channel.disconnect();
 		System.out.println("Exiting rpc_2()");
 	}
 
