@@ -1,4 +1,4 @@
-// $Id: DistributedHashtable.java,v 1.17 2004/10/04 20:19:07 belaban Exp $
+// $Id: DistributedHashtable.java,v 1.18 2005/02/19 13:23:34 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -35,7 +35,8 @@ import java.util.*;
  * initial state (using the state exchange funclet <code>StateExchangeFunclet</code>.
  * @author Bela Ban
  * @author <a href="mailto:aolias@yahoo.com">Alfonso Olias-Sanz</a>
- * @version $Id: DistributedHashtable.java,v 1.17 2004/10/04 20:19:07 belaban Exp $
+ * @version $Id: DistributedHashtable.java,v 1.18 2005/02/19 13:23:34 belaban Exp $
+ * @deprecated This class is unsupported; use JBossCache instead: http://www.jboss.com/products/jbosscache
  */
 public class DistributedHashtable extends Hashtable implements MessageListener, MembershipListener {
 

@@ -1,4 +1,4 @@
-// $Id: ReplicatedHashtable.java,v 1.8 2005/01/23 17:44:45 belaban Exp $
+// $Id: ReplicatedHashtable.java,v 1.9 2005/02/19 13:23:34 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -29,6 +29,7 @@ import java.util.*;
  * @author Bela Ban
  * @author <a href="mailto:aolias@yahoo.com">Alfonso Olias-Sanz</a>
  * todo: implement putAll() [similar to DistributedHashtable]
+ * @deprecated This class is unsupported; use JBossCache instead: http://www.jboss.com/products/jbosscache
  */
 public class ReplicatedHashtable extends Hashtable implements MessageListener, MembershipListener {
 

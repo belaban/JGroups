@@ -1,4 +1,4 @@
-// $Id: DistributedTree.java,v 1.11 2004/12/07 12:10:04 belaban Exp $
+// $Id: DistributedTree.java,v 1.12 2005/02/19 13:23:34 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -20,6 +20,7 @@ import java.util.Vector;
  * members reliably and in the same order.
  * @author Bela Ban
  * @author <a href="mailto:aolias@yahoo.com">Alfonso Olias-Sanz</a>
+ * @deprecated This class is unsupported; use JBossCache instead: http://www.jboss.com/products/jbosscache
  */
 public class DistributedTree implements MessageListener, MembershipListener {
     Node root=null;
