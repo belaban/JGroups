@@ -1,4 +1,4 @@
-// $Id: RpcDispatcherTest.java,v 1.2 2004/03/30 06:47:34 belaban Exp $
+// $Id: RpcDispatcherTest.java,v 1.3 2004/05/13 06:12:35 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -12,7 +12,6 @@ import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
 
 
-
 /**
  * Example for RpcDispatcher (see also MessageDispatcher). A remote method (print()) is group-invoked
  * periodically. The method is defined in each instance and is invoked whenever a remote method call
@@ -20,54 +19,49 @@ import org.jgroups.util.Util;
  * has to define the public methods, and the caller uses one of the callRemoteMethods() methods to
  * invoke a remote method. CallRemoteMethods uses the core reflection API to lookup and dispatch
  * methods.
+ *
  * @author Bela Ban
  */
 public class RpcDispatcherTest {
-    Channel            channel;
-    RpcDispatcher      disp;
-    RspList            rsp_list;
-    String             props="UDP:PING:FD:STABLE:NAKACK:UNICAST:FRAG:FLUSH:GMS:VIEW_ENFORCER:QUEUE";
-    
-
-
-
+    Channel channel;
+    RpcDispatcher disp;
+    RspList rsp_list;
+    String props=null;
 
 
     public int print(int number) throws Exception {
-	System.out.println("print(" + number + ")");
-	return number * 2;
+        System.out.println("print(" + number + ")");
+        return number * 2;
     }
 
 
     public void start() throws Exception {
-	channel=new JChannel(props);
-	disp=new RpcDispatcher(channel, null, null, this);
-	channel.connect("RpcDispatcherTestGroup");
+        channel=new JChannel(props);
+        disp=new RpcDispatcher(channel, null, null, this);
+        channel.connect("RpcDispatcherTestGroup");
 
-	for(int i=0; i < 10; i++) {
-	    Util.sleep(100);
-	    rsp_list=disp.callRemoteMethods(null, "print", new Integer(i), GroupRequest.GET_ALL, 0);
-	    System.out.println("Responses: " +rsp_list);
-	}
-	System.out.println("Closing channel");
-	channel.close();
-	System.out.println("Closing channel: -- done");
+        for(int i=0; i < 10; i++) {
+            Util.sleep(100);
+            rsp_list=disp.callRemoteMethods(null, "print", new Object[]{new Integer(i)},
+                    new Class[]{int.class}, GroupRequest.GET_ALL, 0);
+            System.out.println("Responses: " + rsp_list);
+        }
+        System.out.println("Closing channel");
+        channel.close();
+        System.out.println("Closing channel: -- done");
 
-	System.out.println("Stopping dispatcher");
-	disp.stop();
-	System.out.println("Stopping dispatcher: -- done");
+        System.out.println("Stopping dispatcher");
+        disp.stop();
+        System.out.println("Stopping dispatcher: -- done");
     }
 
 
-
-
-
     public static void main(String[] args) {
-	try {
-	    new RpcDispatcherTest().start();
-	}
-	catch(Exception e) {
-	    System.err.println(e);
-	}
+        try {
+            new RpcDispatcherTest().start();
+        }
+        catch(Exception e) {
+            System.err.println(e);
+        }
     }
 }

@@ -1,4 +1,4 @@
-// $Id: RpcDispatcherStressTest.java,v 1.3 2004/03/30 06:47:34 belaban Exp $
+// $Id: RpcDispatcherStressTest.java,v 1.4 2004/05/13 06:13:51 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -120,7 +120,8 @@ public class RpcDispatcherStressTest implements MembershipListener {
         public void run() {
             while(running) {
                 System.out.print(rank + "- ");
-                disp.callRemoteMethods(null, "print", new Integer(num_calls), GroupRequest.GET_ALL, 0);
+                disp.callRemoteMethods(null, "print", new Object[]{new Integer(num_calls)},
+                        new Class[]{int.class}, GroupRequest.GET_ALL, 0);
                 num_calls++;
                 System.out.print(rank + "+ ");
                 Util.sleep(interval);
