@@ -1,4 +1,4 @@
-$Id: todo.lst,v 1.10 2004/07/27 19:28:37 belaban Exp $
+$Id: todo.lst,v 1.11 2004/09/09 19:24:02 belaban Exp $
 
 
 
@@ -30,6 +30,8 @@ $Id: todo.lst,v 1.10 2004/07/27 19:28:37 belaban Exp $
 
 - TCPPING: make generic, e.g. STATIC_PING. Can apply to UDP transport
   as well.
+
+- Add pinging over socket established by FD_SOCK
 
 - RpcDispatcherSpeedTest is very slow when using tcp.xml
 
