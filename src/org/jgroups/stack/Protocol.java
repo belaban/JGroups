@@ -1,4 +1,4 @@
-// $Id: Protocol.java,v 1.8 2004/02/15 18:34:11 belaban Exp $
+// $Id: Protocol.java,v 1.9 2004/03/17 16:24:36 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -28,6 +28,7 @@ class UpHandler extends Thread {
             setName("UpHandler (" + handler.getName() + ")");
         else
             setName("UpHandler");
+        setDaemon(true);
     }
 
 
@@ -82,6 +83,7 @@ class DownHandler extends Thread {
             setName("DownHandler (" + handler.getName() + ")");
         else
             setName("DownHandler");
+        setDaemon(true);
     }
 
 
@@ -356,8 +358,7 @@ public abstract class Protocol {
                         down_handler.setPriority(down_thread_prio);
                     }
                     catch(Throwable t) {
-                        Trace.error("Protocol.startDownHandler()",
-                                    "priority " + down_thread_prio +
+                        Trace.error("Protocol.startDownHandler()", "priority " + down_thread_prio +
                                     " could not be set for thread: " + Trace.getStackTrace(t));
                     }
                 }
