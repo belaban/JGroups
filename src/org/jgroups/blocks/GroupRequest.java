@@ -1,4 +1,4 @@
-// $Id: GroupRequest.java,v 1.7 2004/07/05 05:41:45 belaban Exp $
+// $Id: GroupRequest.java,v 1.8 2004/09/05 04:54:22 ovidiuf Exp $
 
 package org.jgroups.blocks;
 
@@ -39,7 +39,7 @@ import java.util.Vector;
  * to do so.<p>
  * <b>Requirements</b>: lossless delivery, e.g. acknowledgment-based message confirmation.
  * @author Bela Ban
- * @version $Revision: 1.7 $
+ * @version $Revision: 1.8 $
  */
 public class GroupRequest implements RspCollector, Command {
     /** return only first response */
@@ -351,6 +351,7 @@ public class GroupRequest implements RspCollector, Command {
         }
     }
 
+
     /* -------------------- End of Interface RspCollector ----------------------------------- */
 
 
@@ -464,8 +465,9 @@ public class GroupRequest implements RspCollector, Command {
         }
         catch(Throwable e) {
             log.error("exception=" + e);
-            if(corr != null)
+            if(corr != null) {
                 corr.done(req_id);
+            }
             return false;
         }
 
@@ -473,9 +475,12 @@ public class GroupRequest implements RspCollector, Command {
             while(true) { /* Wait for responses: */
                 adjustMembership(); // may not be necessary, just to make sure...
                 if(getResponses()) {
-                    if(corr != null)
+                    if(corr != null) {
                         corr.done(req_id);
-                   if(log.isTraceEnabled()) log.trace("received all responses: " + toString());
+                    }
+                    if(log.isTraceEnabled()) {
+                        log.trace("received all responses: " + toString());
+                    }
                     return true;
                 }
                 try {
@@ -500,11 +505,13 @@ public class GroupRequest implements RspCollector, Command {
                         rsp_mutex.wait(timeout);
                     }
                     catch(Exception e) {
+                        //e.printStackTrace();
                     }
                 }
             }
-            if(corr != null)
+            if(corr != null) {
                 corr.done(req_id);
+            }
             return false;
         }
     }
@@ -540,11 +547,13 @@ public class GroupRequest implements RspCollector, Command {
                     rsp_mode=GET_ALL;
                     return getResponses();
                 }
-                if(num_received >= expected_mbrs)
+                if(num_received >= expected_mbrs) {
                     return true;
+                }
                 if(num_received + num_not_received < expected_mbrs) {
-                    if(num_received + num_suspected >= expected_mbrs)
+                    if(num_received + num_suspected >= expected_mbrs) {
                         return true;
+                    }
                     return false;
                 }
                 return false;
