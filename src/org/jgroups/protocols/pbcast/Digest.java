@@ -1,4 +1,4 @@
-// $Id: Digest.java,v 1.6 2004/07/05 05:49:41 belaban Exp $
+// $Id: Digest.java,v 1.7 2004/09/15 17:40:58 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -31,7 +31,7 @@ public class Digest implements Externalizable {
     long[]    high_seqnos=null;      // highest seqnos seen so far *that are deliverable*, initially 0
     long[]    high_seqnos_seen=null; // highest seqnos seen so far (not necessarily deliverable), initially -1
     int       index=0;               // current index of where next member is added
-    protected static Log log=LogFactory.getLog(Digest.class);
+    protected static final Log log=LogFactory.getLog(Digest.class);
 
 
     public Digest() {

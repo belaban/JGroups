@@ -1,4 +1,4 @@
-// $Id: Protocol.java,v 1.18 2004/07/05 14:17:33 belaban Exp $
+// $Id: Protocol.java,v 1.19 2004/09/15 17:41:00 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -166,10 +166,10 @@ public abstract class Protocol {
     protected DownHandler      down_handler=null;
     protected int              down_thread_prio=-1;
     protected ProtocolObserver observer=null; // hook for debugger
-    private final long         THREAD_JOIN_TIMEOUT=1000;
+    private final static long  THREAD_JOIN_TIMEOUT=1000;
     protected boolean          down_thread=true;  // determines whether the down_handler thread should be started
     protected boolean          up_thread=true;    // determines whether the up_handler thread should be started
-    protected Log              log=LogFactory.getLog(this.getClass());
+    protected final Log        log=LogFactory.getLog(this.getClass());
 
 
     /**

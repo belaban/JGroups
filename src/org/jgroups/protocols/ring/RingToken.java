@@ -1,4 +1,4 @@
-//$Id: RingToken.java,v 1.4 2004/07/05 14:17:14 belaban Exp $
+//$Id: RingToken.java,v 1.5 2004/09/15 17:40:59 belaban Exp $
 
 package org.jgroups.protocols.ring;
 
@@ -15,8 +15,8 @@ import java.util.TreeSet;
 public class RingToken implements Externalizable
 {
 
-   public static int OPERATIONAL = 0;
-   public static int RECOVERY = 1;
+   public static final int OPERATIONAL = 0;
+   public static final int RECOVERY = 1;
 
    private int type = -1;
    private long tokenSeq;

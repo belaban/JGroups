@@ -1,4 +1,4 @@
-// $Id: IpAddress.java,v 1.8 2004/08/12 14:08:11 belaban Exp $
+// $Id: IpAddress.java,v 1.9 2004/09/15 17:41:00 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -24,8 +24,8 @@ public class IpAddress implements Address {
     private InetAddress       ip_addr=null;
     private int               port=0;
     private byte[] additional_data=null;
-    protected static HashMap  sAddrCache=new HashMap();
-    protected static Log log=LogFactory.getLog(IpAddress.class);
+    protected static final HashMap  sAddrCache=new HashMap();
+    protected static final Log log=LogFactory.getLog(IpAddress.class);
 
     static transient boolean resolve_dns=true;//Boolean.valueOf(System.getProperty("resolve.dns", "true")).booleanValue();
     static final transient  char[] digits = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'};
@@ -194,9 +194,8 @@ public class IpAddress implements Address {
      * @param sb The string buffer to which the result is to be appended
      */
     private void appendShortName(String hostname, StringBuffer sb) {
-        int  index=hostname.indexOf('.');
-
         if(hostname == null) return;
+        int  index=hostname.indexOf('.');
         if(index > 0 && !Character.isDigit(hostname.charAt(0)))
             sb.append(hostname.substring(0, index));
         else

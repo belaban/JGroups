@@ -1,4 +1,4 @@
-// $Id: MagicNumberReader.java,v 1.4 2004/07/05 05:43:51 belaban Exp $
+// $Id: MagicNumberReader.java,v 1.5 2004/09/15 17:40:57 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -28,7 +28,7 @@ public class MagicNumberReader {
 
     public String mMagicNumberFile=MAGIC_NUMBER_FILE;
 
-    protected static Log log=LogFactory.getLog(MagicNumberReader.class);
+    protected static final Log log=LogFactory.getLog(MagicNumberReader.class);
 
     public void setFilename(String file) {
         mMagicNumberFile=file;

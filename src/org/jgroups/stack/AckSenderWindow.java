@@ -1,4 +1,4 @@
-// $Id: AckSenderWindow.java,v 1.6 2004/07/05 14:17:32 belaban Exp $
+// $Id: AckSenderWindow.java,v 1.7 2004/09/15 17:41:00 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -35,7 +35,7 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
     int               min_threshold = -1;
     boolean           use_sliding_window = false, queueing = false;
     Protocol          transport = null; // used to send messages
-    protected static Log log=LogFactory.getLog(AckSenderWindow.class);
+    protected static final Log log=LogFactory.getLog(AckSenderWindow.class);
 
 
     public interface RetransmitCommand {

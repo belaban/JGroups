@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindow.java,v 1.13 2004/07/05 14:17:33 belaban Exp $
+// $Id: NakReceiverWindow.java,v 1.14 2004/09/15 17:41:00 belaban Exp $
 
 
 package org.jgroups.stack;
@@ -92,7 +92,7 @@ public class NakReceiverWindow {
      * protocols do their own retransmission (e.g PBCAST) */
     private Retransmitter retransmitter=null;
 
-    protected static Log log=LogFactory.getLog(NakReceiverWindow.class);
+    protected static final Log log=LogFactory.getLog(NakReceiverWindow.class);
 
 
     /**

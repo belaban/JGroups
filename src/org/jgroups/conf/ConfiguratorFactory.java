@@ -1,4 +1,4 @@
-// $Id: ConfiguratorFactory.java,v 1.12 2004/08/12 14:08:10 belaban Exp $
+// $Id: ConfiguratorFactory.java,v 1.13 2004/09/15 17:40:57 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -182,7 +182,7 @@ public class ConfiguratorFactory {
      *                   that contains a JGroups XML configuration.
      */
     public static ProtocolStackConfigurator getStackConfigurator(String properties) throws ChannelException {
-        if (propertiesOverride != null && propertiesOverride != properties) {
+        if (propertiesOverride != null) {
             properties = propertiesOverride;
         }
 

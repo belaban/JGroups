@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.14 2004/08/29 19:32:45 belaban Exp $
+// $Id: Message.java,v 1.15 2004/09/15 17:41:03 belaban Exp $
 
 package org.jgroups;
 
@@ -38,7 +38,7 @@ public class Message implements Externalizable {
 
     protected HashMap headers=null;
 
-    protected static Log log=LogFactory.getLog(Message.class);
+    protected static final Log log=LogFactory.getLog(Message.class);
 
     static final long ADDRESS_OVERHEAD=200; // estimated size of Address (src and dest)
     static final long serialVersionUID=-1137364035832847034L;

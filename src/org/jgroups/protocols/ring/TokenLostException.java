@@ -1,4 +1,4 @@
-//$Id: TokenLostException.java,v 1.2 2004/03/30 06:47:20 belaban Exp $
+//$Id: TokenLostException.java,v 1.3 2004/09/15 17:40:59 belaban Exp $
 
 package org.jgroups.protocols.ring;
 
@@ -9,9 +9,9 @@ import java.io.InterruptedIOException;
 public class TokenLostException extends InterruptedIOException
 {
 
-   public static int UNDEFINED = 0;
-   public static int WHILE_RECEIVING = 1;
-   public static int WHILE_SENDING =2;
+   public static final int UNDEFINED = 0;
+   public static final int WHILE_RECEIVING = 1;
+   public static final int WHILE_SENDING =2;
 
    protected Address failedNode;
    protected Throwable cause;

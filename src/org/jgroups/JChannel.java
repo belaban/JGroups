@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.25 2004/08/29 19:35:03 belaban Exp $
+// $Id: JChannel.java,v 1.26 2004/09/15 17:41:03 belaban Exp $
 
 package org.jgroups;
 
@@ -30,7 +30,7 @@ import java.util.Vector;
  * protocol stack
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.25 $
+ * @version $Revision: 1.26 $
  */
 public class JChannel extends Channel {
 
@@ -49,7 +49,7 @@ public class JChannel extends Channel {
             "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
             "shun=true;print_local_addr=true)";
 
-    final String FORCE_PROPS="force.properties";
+    static final String FORCE_PROPS="force.properties";
 
     /* the protocol stack configuration string */
     private String props;

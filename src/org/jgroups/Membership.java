@@ -1,4 +1,4 @@
-// $Id: Membership.java,v 1.4 2004/09/06 12:18:27 belaban Exp $
+// $Id: Membership.java,v 1.5 2004/09/15 17:41:03 belaban Exp $
 
 package org.jgroups;
 
@@ -19,7 +19,7 @@ public class Membership implements Cloneable {
     /* private vector to hold all the addresses */
     private Vector members=null;
 
-    protected static Log log=LogFactory.getLog(Membership.class);
+    protected static final Log log=LogFactory.getLog(Membership.class);
 
     /**
      * Public constructor

@@ -1,4 +1,4 @@
-// $Id: Queue.java,v 1.14 2004/09/15 16:21:11 belaban Exp $
+// $Id: Queue.java,v 1.15 2004/09/15 17:41:02 belaban Exp $
 
 package org.jgroups.util;
 
@@ -56,7 +56,7 @@ public class Queue {
      * reference to the next element in the list.
      * if Element.next is null, then this element is the tail of the list.
      */
-    class Element {
+    static class Element {
         /*the actual value stored in the queue*/
         Object  obj=null;
         /*pointer to the next item in the (queue) linked list*/
@@ -218,9 +218,6 @@ public class Queue {
                 try {
                     mutex.wait();
                 }
-                catch(IllegalMonitorStateException ex) {
-                    throw ex;
-                }
                 catch(InterruptedException ex) {
                 }
             }
@@ -270,12 +267,6 @@ public class Queue {
                 try {
                     /*release the add_mutex lock and wait no more than timeout ms*/
                     mutex.wait(timeout);
-                }
-                catch(IllegalMonitorStateException ex) {
-                    throw ex;
-                }
-                catch(IllegalArgumentException ex2) {
-                    throw ex2;
                 }
                 catch(InterruptedException ex) {
                 }
@@ -382,9 +373,6 @@ public class Queue {
                 try {
                     mutex.wait();
                 }
-                catch(IllegalMonitorStateException ex) {
-                    throw ex;
-                }
                 catch(InterruptedException ex) {
                 }
             }
@@ -429,12 +417,6 @@ public class Queue {
                     throw new QueueClosedException();
                 try {
                     mutex.wait(timeout);
-                }
-                catch(IllegalMonitorStateException ex) {
-                    throw ex;
-                }
-                catch(IllegalArgumentException ex2) {
-                    throw ex2;
                 }
                 catch(InterruptedException ex) {
                 }

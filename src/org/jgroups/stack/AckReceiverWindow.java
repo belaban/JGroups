@@ -1,4 +1,4 @@
-// $Id: AckReceiverWindow.java,v 1.6 2004/07/05 14:17:32 belaban Exp $
+// $Id: AckReceiverWindow.java,v 1.7 2004/09/15 17:41:00 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -23,7 +23,7 @@ import java.util.HashMap;
 public class AckReceiverWindow {
     long initial_seqno=0, next_to_remove=0;
     HashMap msgs=new HashMap();  // keys: seqnos (Long), values: Messages
-    static Log log=LogFactory.getLog(AckReceiverWindow.class);
+    static final Log log=LogFactory.getLog(AckReceiverWindow.class);
 
 
     public AckReceiverWindow(long initial_seqno) {

@@ -1,4 +1,4 @@
-// $Id: AckMcastSenderWindow.java,v 1.5 2004/07/05 14:17:32 belaban Exp $
+// $Id: AckMcastSenderWindow.java,v 1.6 2004/09/15 17:41:00 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -33,7 +33,7 @@ import java.util.*;
  *
  * @author Bela Ban June 9 1999
  * @author John Georgiadis May 8 2001
- * @version $Revision: 1.5 $
+ * @version $Revision: 1.6 $
  */
 public class AckMcastSenderWindow {
     /**
@@ -121,7 +121,7 @@ public class AckMcastSenderWindow {
     /** Default retransmit thread suspend timeout (ms) */
     private static final long SUSPEND_TIMEOUT = 2000;
 
-    protected static Log log=LogFactory.getLog(AckMcastSenderWindow.class);
+    protected static final Log log=LogFactory.getLog(AckMcastSenderWindow.class);
 
 
     // Msg tables related

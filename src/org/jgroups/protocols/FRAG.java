@@ -1,4 +1,4 @@
-// $Id: FRAG.java,v 1.11 2004/07/05 14:17:15 belaban Exp $
+// $Id: FRAG.java,v 1.12 2004/09/15 17:40:59 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -45,7 +45,7 @@ import java.util.Vector;
  *
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.11 2004/07/05 14:17:15 belaban Exp $
+ * @version $Id: FRAG.java,v 1.12 2004/09/15 17:40:59 belaban Exp $
  */
 public class FRAG extends Protocol {
     private int frag_size=8192;  // conservative value
@@ -333,7 +333,7 @@ public class FRAG extends Protocol {
      * table and clean up the memory of the receiver.
      * We do not have to do the same for the sender, since the sender doesn't keep a fragmentation table
      */
-    class FragmentationList {
+    static class FragmentationList {
         /* initialize the hashtable to hold all the fragmentation
          * tables
          * 11 is the best growth capacity to start with
@@ -433,7 +433,7 @@ public class FRAG extends Protocol {
      * The fragmentation holds a an array of byte arrays for a unique sender
      * The first dimension of the array is the order of the fragmentation, in case the arrive out of order
      */
-    class FragmentationTable {
+    static class FragmentationTable {
         private Address sender;
         /* the hashtable that holds the fragmentation entries for this sender*/
         private Hashtable h=new Hashtable(11);  // keys: frag_ids, vals: Entrys
@@ -450,7 +450,7 @@ public class FRAG extends Protocol {
          * once all the byte buffer entries have been filled
          * the fragmentation is considered complete.
          */
-        class Entry {
+        static class Entry {
             //the total number of fragment in this message
             int tot_frags=0;
             // each fragment is a byte buffer
