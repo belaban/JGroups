@@ -1,4 +1,4 @@
-$Id: todo.lst,v 1.6 2004/03/10 05:10:24 belaban Exp $
+$Id: todo.lst,v 1.7 2004/03/10 05:57:48 belaban Exp $
 
 
 
@@ -7,7 +7,7 @@ $Id: todo.lst,v 1.6 2004/03/10 05:10:24 belaban Exp $
 			      ---------
 
 - UDP and bundling: error "ERROR 21:15:21,660 [UDP.IncomingPacketHandler thread] - message
-  does not have a UDP header"
+  does not have a UDP header". Only occurs with fc.xml and bundling enabled.
 
 - Discovery doesn't work when working over a disabled (e.g. WiFi) interface			      
 
