@@ -13,7 +13,7 @@ import java.util.Map;
 /**
  *
  * @author Bela Ban
- * @version $Id: AddDataTest.java,v 1.1 2003/09/23 00:41:13 belaban Exp $
+ * @version $Id: AddDataTest.java,v 1.2 2003/09/24 23:20:24 belaban Exp $
  */
 public class AddDataTest extends TestCase {
 
@@ -28,6 +28,7 @@ public class AddDataTest extends TestCase {
             Map m=new HashMap();
             m.put("additional_data", new byte[]{'b', 'e', 'l', 'a'});
             c.down(new Event(Event.CONFIG, m));
+            c.getProtocolStack().flushEvents();
             c.connect("bla");
             IpAddress addr=(IpAddress)c.getLocalAddress();
             System.out.println("address is " + addr);
