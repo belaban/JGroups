@@ -1,11 +1,11 @@
-// $Id: ViewId.java,v 1.6 2004/09/23 16:30:00 belaban Exp $
+// $Id: ViewId.java,v 1.7 2004/10/07 14:28:03 belaban Exp $
 
 package org.jgroups;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import org.jgroups.util.Streamable;
+import org.jgroups.util.Util;
+
+import java.io.*;
 
 
 /**
@@ -13,7 +13,7 @@ import java.io.ObjectOutput;
  * Ordering between views is important for example in a virtual synchrony protocol where
  * all views seen by a member have to be ordered.
  */
-public class ViewId implements Externalizable, Comparable, Cloneable {
+public class ViewId implements Externalizable, Comparable, Cloneable, Streamable {
     Address coord_addr=null;   // Address of the issuer of this view
     long id=0;              // Lamport time of the view
 
@@ -129,6 +129,16 @@ public class ViewId implements Externalizable, Comparable, Cloneable {
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         coord_addr=(Address)in.readObject();
         id=in.readLong();
+    }
+
+    public void writeTo(DataOutputStream out) throws IOException {
+        Util.writeAddress(coord_addr, out);
+        out.writeLong(id);
+    }
+
+    public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        coord_addr=Util.readAddress(in);
+        id=in.readInt();
     }
 
 }

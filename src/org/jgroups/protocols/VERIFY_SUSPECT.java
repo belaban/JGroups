@@ -1,4 +1,4 @@
-// $Id: VERIFY_SUSPECT.java,v 1.8 2004/09/23 16:29:43 belaban Exp $
+// $Id: VERIFY_SUSPECT.java,v 1.9 2004/10/07 14:25:55 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -8,10 +8,9 @@ import org.jgroups.Header;
 import org.jgroups.Message;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
+import org.jgroups.util.Streamable;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.*;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Properties;
@@ -222,7 +221,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
 
 
 
-    public static class VerifyHeader extends Header {
+    public static class VerifyHeader extends Header implements Streamable {
         static final int ARE_YOU_DEAD=1;  // 'from' is sender of verify msg
         static final int I_AM_NOT_DEAD=2;  // 'from' is suspected member
 
@@ -263,6 +262,16 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             type=in.readInt();
             from=(Address)in.readObject();
+        }
+
+        public void writeTo(DataOutputStream out) throws IOException {
+            out.writeInt(type);
+            Util.writeAddress(from, out);
+        }
+
+        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+            type=in.readInt();
+            from=Util.readAddress(in);
         }
 
     }
