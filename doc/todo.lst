@@ -1,4 +1,4 @@
-$Id: todo.lst,v 1.8 2004/06/25 00:06:34 belaban Exp $
+$Id: todo.lst,v 1.9 2004/06/26 00:55:56 belaban Exp $
 
 
 
@@ -15,7 +15,8 @@ $Id: todo.lst,v 1.8 2004/06/25 00:06:34 belaban Exp $
   - Fix TcpTransport: doesn't currently work (connection exception)
                     : make TcpTransport runnable on single machine (define different ports)
   - Test m-m mode (everyone sends to everyone) with 4 nodes
-  - Expose statistics (e.g. retransmission counter, flow control stats)
+  - Expose statistics (e.g. retransmission counter, flow control
+    stats), maybe use AOP to do so
 
 - Discovery doesn't work when working over a disabled (e.g. WiFi) interface			      
 
