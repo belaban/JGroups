@@ -1,4 +1,4 @@
-// $Id: FC.java,v 1.13 2004/08/30 09:31:40 belaban Exp $
+// $Id: FC.java,v 1.14 2004/09/22 10:34:11 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -18,7 +18,7 @@ import java.util.*;
  * Note that this protocol must be located towards the top of the stack, or all down_threads from JChannel to this
  * protocol must be set to false ! This is in order to block JChannel.send()/JChannel.down().
  * @author Bela Ban
- * @version $Revision: 1.13 $
+ * @version $Revision: 1.14 $
  */
 public class FC extends Protocol {
 
@@ -60,7 +60,7 @@ public class FC extends Protocol {
      * credits have been received. If value is 0 we will wait forever. */
     long MAX_BLOCK_TIME=10000;
 
-    final String name="FC";
+    static final String name="FC";
 
 
 
@@ -500,6 +500,7 @@ public class FC extends Protocol {
         public long size() {
             return 24;
         }
+
 
         public void writeExternal(ObjectOutput out) throws IOException {
             out.writeInt(type);

@@ -1,4 +1,4 @@
-// $Id: RouterStub.java,v 1.6 2004/07/05 14:17:33 belaban Exp $
+// $Id: RouterStub.java,v 1.7 2004/09/22 10:34:14 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -25,7 +25,7 @@ public class RouterStub {
     DataOutputStream output=null;            // output stream associated with sock
     DataInputStream input=null;             // input stream associated with sock
     Address local_addr=null;        // addr of group mbr. Once assigned, remains the same
-    final long RECONNECT_TIMEOUT=5000; // msecs to wait until next connection retry attempt
+    static final long RECONNECT_TIMEOUT=5000; // msecs to wait until next connection retry attempt
     private volatile boolean connected=false;
 
     private volatile boolean reconnect=false;   // controls reconnect() loop

@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.26 2004/07/05 05:49:41 belaban Exp $
+// $Id: NAKACK.java,v 1.27 2004/09/22 10:34:11 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -68,7 +68,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
 
     boolean leaving=false;
     TimeScheduler timer=null;
-    final String name="NAKACK";
+    static final String name="NAKACK";
 
 
 //    public static final HashMap xmit_stats=new HashMap(); // sender - HashMap(seqno - XmitStat)

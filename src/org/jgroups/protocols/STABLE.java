@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.5 2004/07/05 14:17:15 belaban Exp $
+// $Id: STABLE.java,v 1.6 2004/09/22 10:34:11 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -680,7 +680,7 @@ public class STABLE extends RpcProtocol {
         }
         finally {
             synchronized(highest_seqnos_mutex) {
-                highest_seqnos_mutex.notify();
+                highest_seqnos_mutex.notifyAll();
             }
         }
 

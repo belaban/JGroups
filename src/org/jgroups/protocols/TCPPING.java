@@ -1,4 +1,4 @@
-// $Id: TCPPING.java,v 1.11 2004/09/04 21:09:29 belaban Exp $
+// $Id: TCPPING.java,v 1.12 2004/09/22 10:34:11 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -132,7 +132,7 @@ public class TCPPING extends Protocol {
                         rsp=(PingRsp) hdr.arg;
                         synchronized(initial_members) {
                             initial_members.addElement(rsp);
-                            initial_members.notify();
+                            initial_members.notifyAll();
                         }
                         return;
 

@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.2 2004/07/31 22:18:02 jiwils Exp $
+// $Id: JChannelFactory.java,v 1.3 2004/09/22 10:34:16 belaban Exp $
 
 package org.jgroups;
 
@@ -106,7 +106,7 @@ public class JChannelFactory implements ChannelFactory {
      *             construction of an instance of this factory.
      */
     public Channel createChannel(Object properties) throws ChannelException {
-        return new JChannel((Object) properties);
+        return new JChannel(properties);
     }
 
     /**

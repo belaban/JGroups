@@ -1,4 +1,4 @@
-// $Id: ParticipantGmsImpl.java,v 1.5 2004/07/05 14:17:15 belaban Exp $
+// $Id: ParticipantGmsImpl.java,v 1.6 2004/09/22 10:34:11 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -125,7 +125,7 @@ public class ParticipantGmsImpl extends GmsImpl {
             else {
                 synchronized(leave_mutex) {
                     received_final_view=true;
-                    leave_mutex.notify();
+                    leave_mutex.notifyAll();
                 }
             }
             return;

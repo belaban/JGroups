@@ -1,4 +1,4 @@
-// $Id: BSH.java,v 1.9 2004/07/23 02:28:01 belaban Exp $
+// $Id: BSH.java,v 1.10 2004/09/22 10:34:11 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -30,7 +30,7 @@ import java.io.Serializable;
  * @author Bela Ban
  */
 public class BSH extends Protocol {
-    final String name="BSH";
+    static final String name="BSH";
     Interpreter interpreter=null;
 
     public BSH() {

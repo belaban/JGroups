@@ -1,4 +1,4 @@
-// $Id: WANPING.java,v 1.5 2004/07/05 14:17:16 belaban Exp $
+// $Id: WANPING.java,v 1.6 2004/09/22 10:34:12 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -131,7 +131,7 @@ public class WANPING extends Protocol {
 		rsp=(PingRsp)hdr.arg;
 		synchronized(initial_members) {
 		    initial_members.addElement(rsp);
-		    initial_members.notify();
+		    initial_members.notifyAll();
 		}
 		return;
 

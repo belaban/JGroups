@@ -1,4 +1,4 @@
-// $Id: PullPushAdapter.java,v 1.7 2004/09/02 14:45:24 belaban Exp $
+// $Id: PullPushAdapter.java,v 1.8 2004/09/22 10:34:08 belaban Exp $
 
 package org.jgroups.blocks;
 

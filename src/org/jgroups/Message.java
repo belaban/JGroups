@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.15 2004/09/15 17:41:03 belaban Exp $
+// $Id: Message.java,v 1.16 2004/09/22 10:34:16 belaban Exp $
 
 package org.jgroups;
 
@@ -316,7 +316,7 @@ public class Message implements Externalizable {
 
 
     public String toString() {
-        StringBuffer ret=new StringBuffer();
+        StringBuffer ret=new StringBuffer(51);
         ret.append("[dst: ");
         if(dest_addr == null)
             ret.append("<null>");

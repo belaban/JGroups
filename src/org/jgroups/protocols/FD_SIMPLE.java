@@ -1,4 +1,4 @@
-// $Id: FD_SIMPLE.java,v 1.5 2004/07/05 14:17:15 belaban Exp $
+// $Id: FD_SIMPLE.java,v 1.6 2004/09/22 10:34:11 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -23,7 +23,7 @@ import java.util.Vector;
  * suspected. When a message or a heartbeat are received, the counter is reset to 0.
  *
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.5 $
+ * @version $Revision: 1.6 $
  */
 public class FD_SIMPLE extends Protocol {
     Address local_addr=null;
@@ -34,7 +34,7 @@ public class FD_SIMPLE extends Protocol {
     Vector members=new Vector();
     HashMap counters=new HashMap();   // keys=Addresses, vals=Integer (count)
     int max_missed_hbs=5;         // max number of missed responses until a member is suspected
-    final String name="FD_SIMPLE";
+    static final String name="FD_SIMPLE";
 
 
     public String getName() {

@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.9 2004/09/15 16:21:11 belaban Exp $
+// $Id: GMS.java,v 1.10 2004/09/22 10:34:11 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -47,9 +47,9 @@ public class GMS extends RpcProtocol implements Runnable {
     private boolean print_local_addr=true;
     boolean disable_initial_coord=false; // can the member become a coord on startup or not ?
     private Hashtable impls=new Hashtable();
-    final String CLIENT="Client";
-    final String COORD="Coordinator";
-    final String PART="Participant";
+    static final String CLIENT="Client";
+    static final String COORD="Coordinator";
+    static final String PART="Participant";
 
 
     public GMS() {
@@ -605,13 +605,13 @@ public class GMS extends RpcProtocol implements Runnable {
             case Event.FLUSH_OK:
                 synchronized(flush_mutex) {
                     flush_rsp=(FlushRsp)evt.getArg();
-                    flush_mutex.notify();
+                    flush_mutex.notifyAll();
                 }
                 return false;                        // don't pass up
 
             case Event.REBROADCAST_MSGS_OK:
                 synchronized(rebroadcast_mutex) {
-                    rebroadcast_mutex.notify();
+                    rebroadcast_mutex.notifyAll();
                 }
                 return false;                        // don't pass up
         }

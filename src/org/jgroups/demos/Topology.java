@@ -1,4 +1,4 @@
-// $Id: Topology.java,v 1.2 2004/03/30 06:47:16 belaban Exp $
+// $Id: Topology.java,v 1.3 2004/09/22 10:34:10 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -32,11 +32,11 @@ public class Topology extends Frame implements WindowListener, MembershipListene
     private FontMetrics fm;
     private Color node_color=new Color(250, 220, 100);
     private boolean coordinator=false;
-    private final int NormalStyle=0;
-    private final int CheckStyle=1;
+    private static final int NormalStyle=0;
+    private static final int CheckStyle=1;
     private Channel channel;
     private Object my_addr=null;
-    private final String channel_name="FD-Heartbeat";
+    private static final String channel_name="FD-Heartbeat";
 
 
     public Topology() {

@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.8 2004/07/05 14:17:15 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.9 2004/09/22 10:34:11 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -231,7 +231,7 @@ public class STATE_TRANSFER extends Protocol implements RequestHandler {
             case Event.GET_APPLSTATE_OK:
                 synchronized(state_xfer_mutex) {
                     cached_state=(byte[])evt.getArg();
-                    state_xfer_mutex.notify();
+                    state_xfer_mutex.notifyAll();
                 }
                 return;                 // don't pass down any further !
 

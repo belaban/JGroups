@@ -1,4 +1,4 @@
-// $Id: DistributedHashtableDemo.java,v 1.4 2004/07/05 05:45:31 belaban Exp $
+// $Id: DistributedHashtableDemo.java,v 1.5 2004/09/22 10:34:10 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -32,7 +32,7 @@ import java.util.Vector;
  */
 public class DistributedHashtableDemo extends Frame implements WindowListener, ActionListener,
                                           DistributedHashtable.Notification {
-    final String          groupname="HashDemo";
+    static final String          groupname="HashDemo";
     DistributedHashtable  h=null;
     JButton               get=new JButton("Get"), set=new JButton("Set");
     JButton               quit=new JButton("Quit"), get_all=new JButton("All");

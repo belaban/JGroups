@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.7 2004/09/02 14:30:45 belaban Exp $
+// $Id: ConnectionTable.java,v 1.8 2004/09/22 10:34:08 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -36,7 +36,7 @@ public class ConnectionTable implements Runnable {
     Address       local_addr=null;             // bind_addr + port of srv_sock
     int           srv_port=7800;
     Thread        acceptor=null;               // continuously calls srv_sock.accept()
-    final int     backlog=20;                  // 20 conn requests are queued by ServerSocket (addtl will be discarded)
+    static final int     backlog=20;           // 20 conn requests are queued by ServerSocket (addtl will be discarded)
     int           recv_buf_size=120000;
     int           send_buf_size=60000;
     Vector        conn_listeners=new Vector(); // listeners to be notified when a conn is established/torn down

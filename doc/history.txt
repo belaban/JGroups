@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.119 2004/09/21 14:13:18 belaban Exp $
+Revision: $Id: history.txt,v 1.120 2004/09/22 10:34:07 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -27,6 +27,12 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
 Version 2.2.8
 -------------
+
+- Various fixes for findbugs and IntelliJ's Inspector
+  (bela Sept 22 2004)
+
+- Added CondVar and CondVarTest
+  (bela Sept 22 2004)
 
 - Removed Ensemble
   (bela Sept 21 2004)

@@ -1,6 +1,6 @@
 
 
-// $Id: ENCRYPT.java,v 1.2 2004/09/15 16:21:11 belaban Exp $
+// $Id: ENCRYPT.java,v 1.3 2004/09/22 10:34:11 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -294,7 +294,7 @@ public class ENCRYPT extends Protocol {
 		str = props.getProperty("asym_init");
 		if (str != null)
 		{
-			asymInit = new Integer(str).intValue();
+			asymInit = Integer.parseInt(str);
 			props.remove("asym_init");
 
 			if (log.isInfoEnabled())
@@ -305,7 +305,7 @@ public class ENCRYPT extends Protocol {
 		str = props.getProperty("sym_init");
 		if (str != null)
 		{
-			symInit = new Integer(str).intValue();
+			symInit = Integer.parseInt(str);
 			props.remove("sym_init");
 
 			if (log.isInfoEnabled())

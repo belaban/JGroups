@@ -1,4 +1,4 @@
-// $Id: AckMcastSenderWindow.java,v 1.6 2004/09/15 17:41:00 belaban Exp $
+// $Id: AckMcastSenderWindow.java,v 1.7 2004/09/22 10:34:14 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -33,7 +33,7 @@ import java.util.*;
  *
  * @author Bela Ban June 9 1999
  * @author John Georgiadis May 8 2001
- * @version $Revision: 1.6 $
+ * @version $Revision: 1.7 $
  */
 public class AckMcastSenderWindow {
     /**
@@ -335,7 +335,7 @@ public class AckMcastSenderWindow {
 		stable_msgs.add(new Long(seqno));
 	    }
 	    // wake up waitUntilAllAcksReceived() method
-	    msgs.notify();
+	    msgs.notifyAll();
 	}
     }
     
@@ -368,7 +368,7 @@ public class AckMcastSenderWindow {
 		    stable_msgs.add(key);
 		}
 		// wake up waitUntilAllAcksReceived() method
-		msgs.notify();
+		msgs.notifyAll();
 	    }
 	}
     }
@@ -538,7 +538,7 @@ public class AckMcastSenderWindow {
 	    }
 	    msgs.clear();
 	    // wake up waitUntilAllAcksReceived() method
-	    msgs.notify();
+	    msgs.notifyAll();
 	}
     }
 
@@ -558,7 +558,7 @@ public class AckMcastSenderWindow {
 		entry.cancel();
 	    }
 	    msgs.clear();
-	    msgs.notify();
+	    msgs.notifyAll();
 	}
     }
 

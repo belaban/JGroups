@@ -1,4 +1,4 @@
-// $Id: ViewId.java,v 1.4 2004/07/05 14:17:36 belaban Exp $
+// $Id: ViewId.java,v 1.5 2004/09/22 10:34:16 belaban Exp $
 
 package org.jgroups;
 

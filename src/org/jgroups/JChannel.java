@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.27 2004/09/16 13:54:34 belaban Exp $
+// $Id: JChannel.java,v 1.28 2004/09/22 10:34:16 belaban Exp $
 
 package org.jgroups;
 
@@ -25,13 +25,16 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Vector;
 
+import EDU.oswego.cs.dl.util.concurrent.SynchronizedBoolean;
+import EDU.oswego.cs.dl.util.concurrent.WaitableBoolean;
+
 /**
  * JChannel is a pure Java implementation of Channel
  * When a JChannel object is instantiated it automatically sets up the
  * protocol stack
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.27 $
+ * @version $Revision: 1.28 $
  */
 public class JChannel extends Channel {
 
@@ -69,14 +72,19 @@ public class JChannel extends Channel {
     /** Thread responsible for closing a channel and potentially reconnecting to it (e.g. when shunned) */
     protected CloserThread closer=null;
 
-    /*lock objects*/
-    private final Object  local_addr_mutex=new Object();
-    private final Object  connect_mutex=new Object();
-    private boolean	      connect_ok_event_received=false;
-    private final Object  disconnect_mutex=new Object();
-    private boolean       disconnect_ok_event_received=false;
-    private Promise       state_promise=new Promise();
-    private final Object  flow_control_mutex=new Object();
+    /** To wait until a local address has been assigned */
+    private final Promise local_addr_promise=new Promise();
+
+    /** To wait until we have connected successfully */
+    private final Promise connect_promise=new Promise();
+
+    /** To wait until we have been disconnected from the channel */
+    private final Promise disconnect_promise=new Promise();
+
+    private final Promise state_promise=new Promise();
+
+    // private final Promise flow_control_promise=new Promise();
+    // private final Object  flow_control_mutex=new Object();
 
     /** wait until we have a non-null local_addr */
     private long LOCAL_ADDR_TIMEOUT=30000; //=Long.parseLong(System.getProperty("local_addr.timeout", "30000"));
@@ -100,7 +108,11 @@ public class JChannel extends Channel {
     private boolean auto_getstate=false;
     /*channel connected flag*/
     private boolean connected=false;
-    private boolean block_sending=false;  // block send()/down() if true (unlocked by UNBLOCK_SEND event)
+
+    /** block send()/down() if true (unlocked by UNBLOCK_SEND event) */
+    private final WaitableBoolean block_sending=new WaitableBoolean(false);
+
+
     /*channel closed flag*/
     private boolean closed=false;      // close() has been called, channel is unusable
 
@@ -197,8 +209,7 @@ public class JChannel extends Channel {
      * @throws ChannelException if problems occur during the initialization of
      *                          the protocol stack.
      */
-    protected JChannel(ProtocolStackConfigurator configurator)
-    throws ChannelException {
+    protected JChannel(ProtocolStackConfigurator configurator) throws ChannelException {
         props = configurator.getProtocolStackString();
 
         /*create the new protocol stack*/
@@ -323,8 +334,7 @@ public class JChannel extends Channel {
             throw new ChannelException(e.toString());
         }
 
-        /* try to get LOCAL_ADDR_TIMEOUT. Catch SecurityException thrown if called
-         * in an untrusted environment (e.g. using JNLP) */
+        /* try to get LOCAL_ADDR_TIMEOUT. Catch SecurityException if called in an untrusted environment (e.g. using JNLP) */
         try {
             LOCAL_ADDR_TIMEOUT=Long.parseLong(System.getProperty("local_addr.timeout","30000"));
         }
@@ -333,22 +343,9 @@ public class JChannel extends Channel {
         }
 
 		/* Wait LOCAL_ADDR_TIMEOUT milliseconds for local_addr to have a non-null value (set by SET_LOCAL_ADDRESS) */
-        synchronized(local_addr_mutex) {
-            long wait_time=LOCAL_ADDR_TIMEOUT, start=System.currentTimeMillis();
-            while(local_addr == null && wait_time > 0) {
-                try {
-                    local_addr_mutex.wait(wait_time);
-                }
-                catch(InterruptedException ex) {
-                    ;
-                }
-                wait_time-=System.currentTimeMillis() - start;
-            }
-        }
-
-        // ProtocolStack.start() must have given us a valid local address; if not we won't be able to continue
+        local_addr=(Address)local_addr_promise.getResult(LOCAL_ADDR_TIMEOUT);
         if(local_addr == null) {
-            log.fatal("local_addr == null; cannot connect");
+            log.fatal("local_addr is null; cannot connect");
             throw new ChannelException("local_addr is null");
         }
 
@@ -361,20 +358,10 @@ public class JChannel extends Channel {
 
         // only connect if we are not a unicast channel
         if(channel_name != null) {
-
-            /* Wait for notification that the channel has been connected to the group */
-            synchronized(connect_mutex) {             // wait for CONNECT_OK event
-                Event connect_event=new Event(Event.CONNECT, channel_name);
-                connect_ok_event_received=false; // added patch by Roland Kurman (see history.txt)
-                down(connect_event);
-
-                try {
-                    while(!connect_ok_event_received)
-                        connect_mutex.wait();
-                }
-                catch(Exception e) {
-                }
-            }
+            connect_promise.reset();
+            Event connect_event=new Event(Event.CONNECT, channel_name);
+            down(connect_event);
+            connect_promise.getResult();  // waits forever until connected (or channel is closed)
         }
 
         /*notify any channel listeners*/
@@ -407,18 +394,9 @@ public class JChannel extends Channel {
                 *  DISCONNECT_OK has been received, or until timeout has elapsed.
                 */
                 Event disconnect_event=new Event(Event.DISCONNECT, local_addr);
-
-                synchronized(disconnect_mutex) {
-                    try {
-                        disconnect_ok_event_received=false;
-                        down(disconnect_event);   // DISCONNECT is handled by each layer
-                        while(!disconnect_ok_event_received)
-                            disconnect_mutex.wait();  // wait for DISCONNECT_OK event
-                    }
-                    catch(Exception e) {
-                        if(log.isErrorEnabled()) log.error("exception: " + e);
-                    }
-                }
+                disconnect_promise.reset();
+                down(disconnect_event);   // DISCONNECT is handled by each layer
+                disconnect_promise.getResult(); // wait for DISCONNECT_OK
             }
 
             // Just in case we use the QUEUE protocol and it is still blocked...
@@ -870,10 +848,7 @@ public class JChannel extends Channel {
                 // we simply set the state to connected
                 if(connected == false) {
                     connected=true;
-                    synchronized(connect_mutex) { // bug fix contributed by Chris Wampler (bug #943881)
-                        connect_ok_event_received=true;
-                        connect_mutex.notify();
-                    }
+                    connect_promise.setResult(Boolean.TRUE);
                 }
 
                 // unblock queueing of messages due to previous BLOCK event:
@@ -916,17 +891,11 @@ public class JChannel extends Channel {
                 break;
 
             case Event.CONNECT_OK:
-                synchronized(connect_mutex) {
-                    connect_ok_event_received=true;
-                    connect_mutex.notify();
-                }
+                connect_promise.setResult(Boolean.TRUE);
                 break;
 
             case Event.DISCONNECT_OK:
-                synchronized(disconnect_mutex) {
-                    disconnect_ok_event_received=true;
-                    disconnect_mutex.notifyAll();
-                }
+                disconnect_promise.setResult(Boolean.TRUE);
                 break;
 
             case Event.GET_STATE_OK:
@@ -939,10 +908,7 @@ public class JChannel extends Channel {
                 break;
 
             case Event.SET_LOCAL_ADDRESS:
-                synchronized(local_addr_mutex) {
-                    local_addr=(Address)evt.getArg();
-                    local_addr_mutex.notifyAll();
-                }
+                local_addr_promise.setResult(evt.getArg());
                 break;
 
             case Event.EXIT:
@@ -950,19 +916,14 @@ public class JChannel extends Channel {
                 return;  // no need to pass event up; already done in handleExit()
 
             case Event.BLOCK_SEND:
-                synchronized(flow_control_mutex) {
-                     if(log.isInfoEnabled()) log.info("received BLOCK_SEND");
-                    block_sending=true;
-                    flow_control_mutex.notifyAll();
-                }
+                if(log.isInfoEnabled()) log.info("received BLOCK_SEND");
+                block_sending.set(true);
                 break;
 
             case Event.UNBLOCK_SEND:
-                synchronized(flow_control_mutex) {
-                     if(log.isInfoEnabled()) log.info("received UNBLOCK_SEND");
-                    block_sending=false;
-                    flow_control_mutex.notifyAll();
-                }
+                if(log.isInfoEnabled()) log.info("received UNBLOCK_SEND");
+                block_sending.set(false);
+                // flow_control_promise.setResult(Boolean.TRUE);
                 break;
 
             default:
@@ -996,17 +957,28 @@ public class JChannel extends Channel {
         if(evt == null) return;
 
         // only block for messages; all other events are passed through
-        if(block_sending && evt.getType() == Event.MSG) {
-            synchronized(flow_control_mutex) {
-                while(block_sending)
-                    try {
-                        if(log.isInfoEnabled()) log.info("down() blocks because block_sending == true");
-                        flow_control_mutex.wait();
-                    }
-                    catch(Exception ex) {
-                    }
-            }
+        // we use double-checked locking; it is okay to 'lose' one or more messages because block_sending changes
+        // to true after an initial false value
+
+
+        if(evt.getType() == Event.MSG) {
+
+            Runnable r=new Runnable() {
+              public void run() {
+                  block_sending.whenFalse(null);
+              }
+            };
+
+            block_sending.whenTrue(r);
+
         }
+
+
+//        if(block_sending.get() && evt.getType() == Event.MSG) {
+//            if(log.isInfoEnabled()) log.info("down() blocks because block_sending == true");
+//            flow_control_promise.getResult();
+//
+//        }
 
         // handle setting of additional data (kludge, will be removed soon)
         if(evt.getType() == Event.CONFIG) {
@@ -1071,10 +1043,11 @@ public class JChannel extends Channel {
         //if(mq != null && mq.closed())
           //  mq.reset();
 
-        connect_ok_event_received=false;
-        disconnect_ok_event_received=false;
+        connect_promise.reset();
+        disconnect_promise.reset();
         connected=false;
-        block_sending=false;  // block send()/down() if true (unlocked by UNBLOCK_SEND event)
+        block_sending.set(false);
+        // flow_control_promise.reset();
     }
 
 

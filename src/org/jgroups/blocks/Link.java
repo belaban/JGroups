@@ -1,4 +1,4 @@
-// $Id: Link.java,v 1.3 2004/07/05 05:41:45 belaban Exp $
+// $Id: Link.java,v 1.4 2004/09/22 10:34:08 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -43,7 +43,7 @@ public class Link implements Runnable {
     Thread                 receiver_thread=null;
     long                   receiver_thread_join_timeout=2000;
     Receiver               receiver=null;
-    final int              HB_PACKET=-99;
+    static final int              HB_PACKET=-99;
     Heartbeat              hb=null;
     long                   timeout=10000;  // if no heartbeat was received for timeout msecs, assume peer is dead
     long                   hb_interval=3000;        // send a heartbeat every n msecs
