@@ -1,4 +1,4 @@
-//$Id: TotalTokenDemo.java,v 1.5 2004/07/05 05:45:31 belaban Exp $
+//$Id: TotalTokenDemo.java,v 1.6 2004/08/03 12:49:50 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -37,7 +37,7 @@ import java.util.Vector;
  *
  *@author Vladimir Blagojevic vladimir@cs.yorku.ca
  *@author Ivan Bilenjkij  ivan@ibossa.com
- *@version $Revision: 1.5 $
+ *@version $Revision: 1.6 $
  *
  *@see org.jgroups.protocols.TOTAL_TOKEN
  *
@@ -57,11 +57,10 @@ public class TotalTokenDemo extends JFrame implements Runnable
     private ControlPanel control;
     private int mSize = 1024;
     private volatile boolean transmitting = false;
-    private int lastViewCount = 0;
-    private Object channelProperties;
+    private String channelProperties;
     private Dimension preffered;
 
-    public TotalTokenDemo(Object props)
+    public TotalTokenDemo(String props)
     {
         super();
         tabbedPane = new JTabbedPane();
@@ -122,8 +121,6 @@ public class TotalTokenDemo extends JFrame implements Runnable
     }
     public void run()
     {
-        Object obj;
-        Message msg;
         Random r = new Random();
 
         while (true)
@@ -133,7 +130,7 @@ public class TotalTokenDemo extends JFrame implements Runnable
             {
                 if (transmitting)
                 {
-                    channel.send(new Message(null, null, new TotalPayload(r.nextInt(255), new byte[mSize])));
+                    channel.send(new Message(null, null, new TotalPayload(r.nextInt(255))));
                 }
                 else
                 {
@@ -296,12 +293,10 @@ public class TotalTokenDemo extends JFrame implements Runnable
     public static class TotalPayload implements Serializable
     {
         private int seqRandom;
-        private byte[] ballast;
 
-        public TotalPayload(int random, byte[] extraPayload)
+        public TotalPayload(int random)
         {
             seqRandom = random;
-            ballast = extraPayload;
         }
 
         public int getRandomSequence()
@@ -517,11 +512,7 @@ public class TotalTokenDemo extends JFrame implements Runnable
 
     public static void main(String args[])
     {
-        String arg;
         String props = null;
-        boolean debug = false;
-        boolean no_channel = false;
-        String url = null;
 
         for (int i = 0; i < args.length; i++)
         {
