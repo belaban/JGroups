@@ -1,0 +1,35 @@
+# This file contains the necessary parameters for running the JGroups
+#  performance tests.
+
+
+# Class implementing the Transport interface
+transport=org.jgroups.tests.perf.transports.JGroupsTransport
+
+# Number of messages a sender is supposed to multicast
+num_msgs=10000
+
+# Message size in bytes.
+msg_size=1000
+
+
+# Expected number of group members.
+num_members=2
+
+# Number of senders in the group. Min 1, max num_members.
+num_senders=1
+
+# dump stats every n msgs
+log_interval=1000
+
+# Needs to either contain the full property string, or an URL pointing to a valid
+# location (needs to be changed)
+props=file:c:\\default.xml
+
+# dump throughput data in column format, easy to read for gnuplot
+gnuplot_output=false
+
+# only used by TCP Transport
+cluster=192.168.0.3,192.168.0.10
+
+# JNDI name of topic (only used by JMS transport)
+topic=topic/testTopic
