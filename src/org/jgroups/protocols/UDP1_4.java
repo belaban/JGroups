@@ -31,7 +31,7 @@ import java.util.*;
  * the unicast routing caches should ensure that unicasts are only sent via 1 interface in almost all cases.
  * 
  * @author Bela Ban Oct 2003
- * @version $Id: UDP1_4.java,v 1.3 2003/12/19 18:29:38 belaban Exp $
+ * @version $Id: UDP1_4.java,v 1.4 2003/12/20 20:32:35 belaban Exp $
  */
 public class UDP1_4 extends Protocol implements Runnable {
 
@@ -1137,6 +1137,9 @@ public class UDP1_4 extends Protocol implements Runnable {
         }
     }
 
+
+
+
     /**
      * Manages a multicast and unicast socket on a given interface (NIC). The multicast socket is used
      * to listen for incoming multicast packets, the unicast socket is used to (1) listen for incoming
@@ -1347,17 +1350,39 @@ public class UDP1_4 extends Protocol implements Runnable {
 
 
     /** Manages a bunch of Connectors */
-    public static class ConnectorTable implements Receiver {
+    public static class ConnectorTable implements Receiver, Runnable {
+
+        Thread t=null;
+
+        /** Socket to receive multicast packets. Will be bound to n interfaces */
+        MulticastSocket mcast_sock=null;
+
+        /** The multicast address and port on which mcast_sock will listen */
+        SocketAddress mcast_addr=null;
+
+        /** A List<String> of bind interfaces to bind to */
+        List bind_addrs=null;
+
         Receiver receiver=null;
+
+        /** Buffer for incoming packets */
+        byte[] receive_buffer=null;
 
         /** HashMap<Address,Connector>. Keys are ucast_sock addresses, values Connectors */
         HashMap connectors=new HashMap();
 
 
-
-        public ConnectorTable(Receiver receiver) {
+        public ConnectorTable(String mcast_addr, int mcast_port, List bind_addrs,
+                              int receive_buffer_size, Receiver receiver) throws IOException {
             this.receiver=receiver;
+            this.mcast_addr=new InetSocketAddress(mcast_addr, mcast_port);
+            this.bind_addrs=bind_addrs;
+            this.receive_buffer=new byte[receive_buffer_size];
+            mcast_sock=new MulticastSocket(mcast_port);
+
+
         }
+
 
         public Receiver getReceiver() {
             return receiver;
@@ -1385,6 +1410,18 @@ public class UDP1_4 extends Protocol implements Runnable {
             }
         }
 
+        public void run() {
+            // receive mcast packets on any interface of the list of interfaces we're listening on
+        }
+
+        /** Adds the given interface address to the list of interfaces on which the receiver mcast
+         * socket has to listen. Calling this method twice on the same interface will throw an exception
+         * @param bind_addr
+         * @throws IOException
+         */
+        public void listenOnInterface(String bind_addr) throws IOException {
+
+        }
 
         /** Sends a packet. If the destination is a multicast address, call send() on all connectors.
          * If destination is not null, send the message using <em>any</em> Connector: if we send a unicast
@@ -1508,8 +1545,7 @@ public class UDP1_4 extends Protocol implements Runnable {
 
     public static void main(String[] args) {
         MyReceiver r=new MyReceiver();
-        ConnectorTable ct=new ConnectorTable(r);
-        r.setConnectorTable(ct);
+        ConnectorTable ct;
         String mcast_group="230.1.2.3";
         int    mcast_port=7500;
         String line;
@@ -1518,13 +1554,22 @@ public class UDP1_4 extends Protocol implements Runnable {
         byte[]   send_buf;
         int      receive_buffer_size=65000;
 
+        try {
+            ct=new ConnectorTable(mcast_group, mcast_port, null, receive_buffer_size, r);
+            r.setConnectorTable(ct);
+        }
+        catch(IOException e) {
+            e.printStackTrace();
+            return;
+        }
+
+
         for(int i=0; i < args.length; i++) {
             if(args[i].equals("-help")) {
                 help();
                 continue;
             }
             if(args[i].equals("-bind_addrs")) {
-
                 while(++i < args.length && !args[i].trim().startsWith("-")) {
                     try {
                         ct.addConnector(args[i], mcast_group, mcast_port, 0, 0, receive_buffer_size);
@@ -1547,7 +1592,6 @@ public class UDP1_4 extends Protocol implements Runnable {
                 if(line.startsWith("quit") || line.startsWith("exit"))
                     break;
                 send_buf=line.getBytes();
-                // packet=new DatagramPacket(send_buf, send_buf.length, InetAddress.getByName(mcast_group), mcast_port);
                 packet=new DatagramPacket(send_buf, send_buf.length, InetAddress.getByName(mcast_group), mcast_port);
                 ct.send(packet);
             }
