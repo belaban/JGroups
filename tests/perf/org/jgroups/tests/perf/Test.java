@@ -347,8 +347,8 @@ public class Test implements Receiver {
         Object     sender;
         MemberInfo mi;
         MemberInfo combined=new MemberInfo(0);
-        combined.start=System.currentTimeMillis();
-        combined.stop=System.currentTimeMillis();
+        combined.start = Long.MAX_VALUE;
+        combined.stop = Long.MIN_VALUE;
 
         for(Iterator it2=map.entrySet().iterator(); it2.hasNext();) {
             entry=(Map.Entry)it2.next();
