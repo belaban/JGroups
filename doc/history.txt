@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.25 2003/12/22 17:15:10 belaban Exp $
+Revision: $Id: history.txt,v 1.26 2003/12/27 00:20:45 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java JGroups.Version')]
 
@@ -27,6 +27,9 @@ romuald     = Romuald du Song
 
 Version 2.2.1
 -------------
+
+- Added min_size property to SIZE
+  (bela Dec 26 2003)
 
 - Replaced HostInfo with IpAddress in PING/TCPPING
   (bela Dec 22 2003)
