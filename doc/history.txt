@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.44 2004/02/26 01:56:36 belaban Exp $
+Revision: $Id: history.txt,v 1.45 2004/02/27 01:38:17 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java JGroups.Version')]
 
@@ -29,11 +29,13 @@ Version 2.2.1
 -------------
 
 - Added first version of new fragmentation protocol (FRAG2). Main 2 advantages over FRAG: doesn not serialize message
-  and does not copy message (deferred until the message hits the transport)
+  and does not copy message (deferred until the message hits the transport). FRAG2 is about 3 times faster than FRAG.
   (bela Feb 25 2004)
 
 - Added offset and length fields to Message, plus a new constructor and a new setBuffer() method. This allows for
-  multiple messages to share a common byte buffer (avoiding unnecessary copying)
+  multiple messages to share a common byte buffer (avoiding unnecessary copying). The semantics of Message.getBuffer()
+  have changed: previously it returned a reference to the buffer, now it returns either a reference (offset/length
+  are not used) or a copy (offset/length are used). If you want the previous semantics, use Message.getRawBuffer().
   (bela Feb 25 2004)
 
 - Changes to log4j.Trace: we now use the fully qualified classname and methodname of the caller, e.g.
