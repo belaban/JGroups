@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.28 2004/01/07 00:31:19 belaban Exp $
+Revision: $Id: history.txt,v 1.29 2004/01/08 18:09:54 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java JGroups.Version')]
 
@@ -27,6 +27,9 @@ romuald     = Romuald du Song
 
 Version 2.2.1
 -------------
+
+- Fixed failed merging when all up/down threads are disabled (default-minimalthreads.xml)
+  (bela Jan 8 2004)
 
 - Removed send_sock from UDP and streamlined sending. Now there is only 1 socket for sending unicast and multicast
   messages and for receiving unicast messages, and 1 socket for receiving multicast messages
