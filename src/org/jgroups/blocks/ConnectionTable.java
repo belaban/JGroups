@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.6 2004/07/05 05:41:45 belaban Exp $
+// $Id: ConnectionTable.java,v 1.7 2004/09/02 14:30:45 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -263,10 +263,7 @@ public class ConnectionTable implements Runnable {
         else
             local_addr=new IpAddress(srv_sock.getLocalPort());
 
-         {
-            if(log.isInfoEnabled()) log.info("server socket created " +
-                                                  "on " + local_addr);
-        }
+        if(log.isInfoEnabled()) log.info("server socket created on " + local_addr);
 
         //Roland Kurmann 4/7/2003, build new thread group
         thread_group = new ThreadGroup(Thread.currentThread().getThreadGroup(), "ConnectionTableGroup");
@@ -350,8 +347,7 @@ public class ConnectionTable implements Runnable {
         while(srv_sock != null) {
             try {
                 client_sock=srv_sock.accept();
-
-                    if(log.isInfoEnabled()) log.info("accepted connection, client_sock=" + client_sock);
+                if(log.isInfoEnabled()) log.info("accepted connection, client_sock=" + client_sock);
 
                 // create new thread and add to conn table
                 conn=new Connection(client_sock, null); // will call receive(msg)
@@ -363,11 +359,9 @@ public class ConnectionTable implements Runnable {
 
                 synchronized(conns) {
                     if(conns.contains(peer_addr)) {
-
-                            if(log.isWarnEnabled()) log.warn(peer_addr +
-                                                                " is already there, will terminate connection");
+                        if(log.isWarnEnabled()) log.warn(peer_addr + " is already there, will terminate connection");
                         conn.destroy();
-                        return;
+                        continue; // return; // we cannot terminate the thread (bela Sept 2 2004)
                     }
                     // conns.put(peer_addr, conn);
                     addConnection(peer_addr, conn);
@@ -375,15 +369,21 @@ public class ConnectionTable implements Runnable {
                 notifyConnectionOpened(peer_addr);
                 conn.init(); // starts handler thread on this socket
             }
+            catch(SocketTimeoutException timeout_ex) {
+                if(srv_sock == null)
+                    break;  // socket was closed, therefore stop
+            }
             catch(SocketException sock_ex) {
-                 if(log.isInfoEnabled()) log.info("exception is " + sock_ex);
+                if(log.isInfoEnabled()) log.info("exception is " + sock_ex);
                 if(conn != null)
                     conn.destroy();
                 if(srv_sock == null)
                     break;  // socket was closed, therefore stop
             }
             catch(Throwable ex) {
-                 if(log.isWarnEnabled()) log.warn("exception is " + ex);
+                if(log.isWarnEnabled()) log.warn("exception is " + ex);
+                if(srv_sock == null)
+                    break;  // socket was closed, therefore stop
             }
         }
     }
@@ -423,7 +423,7 @@ public class ConnectionTable implements Runnable {
 
 
     /** Finds first available port starting at start_port and returns server socket. Sets srv_port */
-    ServerSocket createServerSocket(int start_port) throws Exception {
+    protected ServerSocket createServerSocket(int start_port) throws Exception {
         ServerSocket ret=null;
 
         while(true) {
