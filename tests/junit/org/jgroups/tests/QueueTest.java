@@ -1,4 +1,4 @@
-// $Id: QueueTest.java,v 1.3 2003/09/19 18:20:37 belaban Exp $
+// $Id: QueueTest.java,v 1.4 2003/09/20 01:05:41 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -286,7 +286,7 @@ public class QueueTest extends TestCase {
                 }
             }.start();
 
-            queue.waitUntilEmpty(5000);
+            queue.waitUntilEmpty(0);
             assertEquals(queue.size(), 0);
         }
         catch(Exception e) {
@@ -594,7 +594,7 @@ public class QueueTest extends TestCase {
             return retval;
         }
     }
-    
+
 	class RemoveOneItemWithTimeout extends Thread
 	{
 		Long retval = null;
