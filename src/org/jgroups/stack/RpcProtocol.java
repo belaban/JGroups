@@ -1,4 +1,4 @@
-// $Id: RpcProtocol.java,v 1.3 2004/03/30 06:47:27 belaban Exp $
+// $Id: RpcProtocol.java,v 1.4 2004/05/13 05:44:32 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -6,7 +6,7 @@ package org.jgroups.stack;
 import org.jgroups.*;
 import org.jgroups.blocks.MethodCall;
 import org.jgroups.blocks.MethodLookup;
-import org.jgroups.blocks.MethodLookupClos;
+import org.jgroups.blocks.MethodLookupJava;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
 
@@ -20,78 +20,13 @@ import java.util.Vector;
  * @author Bela Ban
  */
 public class RpcProtocol extends MessageProtocol {
-    MethodLookup method_lookup=new MethodLookupClos();
+    MethodLookup method_lookup=new MethodLookupJava();
 
 
     public String getName() {
         return "RpcProtocol";
     }
 
-
-    /**
-     * @deprecated this method results in an invalid method call if the argument is null
-     * @see #callRemoteMethods(Vector,MethodCall,int,long)
-     */
-
-    public RspList callRemoteMethods(Vector dests, String method_name, int mode, long timeout) {
-        MethodCall method_call=new MethodCall(method_name);
-        return callRemoteMethods(dests, method_call, mode, timeout);
-    }
-
-    /**
-     * @deprecated this method results in an invalid method call if the argument is null
-     * @see #callRemoteMethods(Vector,MethodCall,int,long)
-     */
-
-    public RspList callRemoteMethods(Vector dests, String method_name, Object arg1,
-                                     int mode, long timeout) {
-        MethodCall method_call=new MethodCall(method_name, arg1);
-        return callRemoteMethods(dests, method_call, mode, timeout);
-    }
-
-    /**
-     * @deprecated this method results in an invalid method call if the argument is null
-     * @see #callRemoteMethods(Vector,MethodCall,int,long)
-     */
-
-    public RspList callRemoteMethods(Vector dests, String method_name, Object arg1, Object arg2,
-                                     int mode, long timeout) {
-        MethodCall method_call=new MethodCall(method_name, arg1, arg2);
-        return callRemoteMethods(dests, method_call, mode, timeout);
-    }
-
-    /**
-     * @deprecated this method results in an invalid method call if the argument is null
-     * @see #callRemoteMethods(Vector,MethodCall,int,long)
-     */
-
-    public RspList callRemoteMethods(Vector dests, String method_name, Object arg1, Object arg2,
-                                     Object arg3, int mode, long timeout) {
-        MethodCall method_call=new MethodCall(method_name, arg1, arg2, arg3);
-        return callRemoteMethods(dests, method_call, mode, timeout);
-    }
-
-    /**
-     * @deprecated this method results in an invalid method call if the argument is null
-     * @see #callRemoteMethods(Vector,MethodCall,int,long)
-     */
-
-    public RspList callRemoteMethods(Vector dests, String method_name, Object arg1, Object arg2,
-                                     Object arg3, Object arg4, int mode, long timeout) {
-        MethodCall method_call=new MethodCall(method_name, arg1, arg2, arg3, arg4);
-        return callRemoteMethods(dests, method_call, mode, timeout);
-    }
-
-    /**
-     * @deprecated this method results in an invalid method call if the argument is null
-     * @see #callRemoteMethods(Vector,MethodCall,int,long)
-     */
-
-    public RspList callRemoteMethods(Vector dests, String method_name, Object arg1, Object arg2,
-                                     Object arg3, Object arg4, Object arg5, int mode, long timeout) {
-        MethodCall method_call=new MethodCall(method_name, arg1, arg2, arg3, arg4, arg5);
-        return callRemoteMethods(dests, method_call, mode, timeout);
-    }
 
 
     public RspList callRemoteMethods(Vector dests, String method_name, Object[] args,
@@ -126,61 +61,7 @@ public class RpcProtocol extends MessageProtocol {
 
     public Object callRemoteMethod(Address dest, String method_name, int mode, long timeout)
             throws TimeoutException, SuspectedException {
-        MethodCall method_call=new MethodCall(method_name);
-        return callRemoteMethod(dest, method_call, mode, timeout);
-    }
-
-
-    /**
-     * @deprecated this method results in an invalid method call if the argument is null
-     * @see #callRemoteMethod(Address,MethodCall,int,long)
-     */
-    public Object callRemoteMethod(Address dest, String method_name, Object arg1, int mode, long timeout)
-            throws TimeoutException, SuspectedException {
-        MethodCall method_call=new MethodCall(method_name, arg1);
-        return callRemoteMethod(dest, method_call, mode, timeout);
-    }
-
-
-    /**
-     * @deprecated this method results in an invalid method call if the argument is null
-     * @see #callRemoteMethod(Address,MethodCall,int,long)
-     */
-    public Object callRemoteMethod(Address dest, String method_name, Object arg1, Object arg2,
-                                   int mode, long timeout) throws TimeoutException, SuspectedException {
-        MethodCall method_call=new MethodCall(method_name, arg1, arg2);
-        return callRemoteMethod(dest, method_call, mode, timeout);
-    }
-
-
-    /**
-     * @deprecated this method results in an invalid method call if the argument is null
-     * @see #callRemoteMethod(Address,MethodCall,int,long)
-     */
-    public Object callRemoteMethod(Address dest, String method_name, Object arg1, Object arg2,
-                                   Object arg3, int mode, long timeout) throws TimeoutException, SuspectedException {
-        MethodCall method_call=new MethodCall(method_name, arg1, arg2, arg3);
-        return callRemoteMethod(dest, method_call, mode, timeout);
-    }
-
-    /**
-     * @deprecated this method results in an invalid method call if the argument is null
-     * @see #callRemoteMethod(Address,MethodCall,int,long)
-     */
-    public Object callRemoteMethod(Address dest, String method_name, Object arg1, Object arg2, Object arg3,
-                                   Object arg4, int mode, long timeout) throws TimeoutException, SuspectedException {
-        MethodCall method_call=new MethodCall(method_name, arg1, arg2, arg3, arg4);
-        return callRemoteMethod(dest, method_call, mode, timeout);
-    }
-
-    /**
-     * @deprecated this method results in an invalid method call if the argument is null
-     * @see #callRemoteMethod(Address,MethodCall,int,long)
-     */
-    public Object callRemoteMethod(Address dest, String method_name, Object arg1, Object arg2, Object arg3,
-                                   Object arg4, Object arg5, int mode, long timeout) throws TimeoutException, SuspectedException {
-        MethodCall method_call=new MethodCall(method_name, arg1, arg2, arg3, arg4, arg5);
-        return callRemoteMethod(dest, method_call, mode, timeout);
+        return callRemoteMethod(dest, method_name, new Object[]{}, new Class[]{}, mode, timeout);
     }
 
 
