@@ -1,4 +1,4 @@
-// $Id: ConfiguratorFactory.java,v 1.6 2004/07/15 19:52:17 belaban Exp $
+// $Id: ConfiguratorFactory.java,v 1.7 2004/07/16 14:27:34 jiwils Exp $
 
 package org.jgroups.conf;
 
@@ -8,6 +8,7 @@ import org.apache.commons.logging.LogFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.net.URL;
 
@@ -75,12 +76,34 @@ public class ConfiguratorFactory {
                 catch(Throwable ignore) {
                 }
             }
+
+            // try a regular file name
+            //
+            // This code was moved from the parent block (below) because of the
+            // possibility of causing a ClassCastException.
+
+            if(input == null) {
+                try {
+                    input=new FileInputStream((String)properties);
+                }
+                catch(Throwable t) {
+                }
+            }
         }
 
         // try a regular file
-        if(input == null) {
+        // if(input == null) {
+        //     try {
+        //         input=new FileInputStream((String)properties);
+        //     }
+        //     catch(Throwable t) {
+        //     }
+        // }
+
+        // try a regular file
+        if(input == null && properties instanceof File) {
             try {
-                input=new FileInputStream((String)properties);
+                input=new FileInputStream((File)properties);
             }
             catch(Throwable t) {
             }
@@ -91,6 +114,7 @@ public class ConfiguratorFactory {
         else {
             return XmlConfigurator.getInstance(input);
         }
+
 
         if(properties instanceof Element) {
             return XmlConfigurator.getInstance((Element)properties);
