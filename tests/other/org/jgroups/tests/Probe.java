@@ -10,7 +10,7 @@ import java.net.MulticastSocket;
 /**
  * Discovers all UDP-based members running on a certain mcast address
  * @author Bela Ban
- * @version $Revision: 1.5 $
+ * @version $Revision: 1.6 $
  * Date: Jun 2, 2003
  * Time: 4:35:29 PM
  */
@@ -23,16 +23,18 @@ public class Probe {
 
     }
 
-    public void start(InetAddress addr, int port, int ttl, final long timeout) throws Exception {
+    public void start(InetAddress addr, InetAddress bind_addr, int port, int ttl, final long timeout) throws Exception {
         mcast_sock=new MulticastSocket(port);
         mcast_sock.setTimeToLive(ttl);
+        if(bind_addr != null)
+            mcast_sock.setInterface(bind_addr);
         mcast_sock.joinGroup(addr);
 
         sock=new DatagramSocket();
 
         byte[] probe_buf=new byte[]{'d', 'i', 'a', 'g'};
         DatagramPacket probe=new DatagramPacket(probe_buf, 0, probe_buf.length, addr, port);
-        sock.send(probe);
+        mcast_sock.send(probe);
         System.out.println("\n-- send probe on " + addr + ':' + port + '\n');
         int i=0;
 
@@ -60,7 +62,7 @@ public class Probe {
 
 
     public static void main(String[] args) {
-        InetAddress addr=null;
+        InetAddress addr=null, bind_addr=null;
         int         port=0;
         int         ttl=32;
         long        timeout=10000;
@@ -69,6 +71,10 @@ public class Probe {
             for(int i=0; i < args.length; i++) {
                 if("-addr".equals(args[i])) {
                     addr=InetAddress.getByName(args[++i]);
+                    continue;
+                }
+                if("-bind_addr".equals(args[i])) {
+                    bind_addr=InetAddress.getByName(args[++i]);
                     continue;
                 }
                 if("-port".equals(args[i])) {
@@ -88,7 +94,7 @@ public class Probe {
                 return;
             }
             Probe p=new Probe();
-            p.start(addr, port, ttl, timeout);
+            p.start(addr, bind_addr, port, ttl, timeout);
         }
         catch(Throwable t) {
             t.printStackTrace();
@@ -96,6 +102,6 @@ public class Probe {
     }
 
     static void help() {
-        System.out.println("Probe [-help] [-addr <addr>] [-port <port>] [-ttl <ttl>] [-timeout <timeout>]");
+        System.out.println("Probe [-help] [-addr <addr>] [-bind_addr <addr>] [-port <port>] [-ttl <ttl>] [-timeout <timeout>]");
     }
 }
