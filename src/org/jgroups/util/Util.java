@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.18 2004/10/04 20:43:35 belaban Exp $
+// $Id: Util.java,v 1.19 2004/10/05 16:04:20 belaban Exp $
 
 package org.jgroups.util;
 
@@ -142,6 +142,25 @@ public class Util {
         return addr;
     }
 
+
+
+    public static void writeString(String s, DataOutputStream out) throws IOException {
+        if(s != null) {
+            out.write(1);
+            out.writeUTF(s);
+        }
+        else {
+            out.write(0);
+        }
+    }
+
+
+    public static String readString(DataInputStream in) throws IOException {
+        int b=in.read();
+        if(b == 1)
+            return in.readUTF();
+        return null;
+    }
 
 
     /** Sleep for timeout msecs. Returns when timeout has elapsed or thread was interrupted */
