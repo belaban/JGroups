@@ -1,4 +1,4 @@
-// $Id: XmlConfigurator.java,v 1.9 2004/07/16 14:26:35 jiwils Exp $
+// $Id: XmlConfigurator.java,v 1.10 2004/07/20 03:33:24 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -226,11 +226,6 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
 
 
     protected static XmlConfigurator parse(InputStream stream) throws java.io.IOException {
-        XmlConfigurator configurator=null;
-        /** LinkedList<ProtocolData> */
-        LinkedList prot_data=new LinkedList();
-
-
         /**
          * CAUTION: crappy code ahead ! I (bela) am not an XML expert, so the code below is pretty amateurish...
          * But it seems to work, and it is executed only on startup, so no perf loss on the critical path.
