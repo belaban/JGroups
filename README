@@ -1,8 +1,8 @@
-// $Id: README,v 1.1 2003/09/09 01:24:04 belaban Exp $
+// $Id: README,v 1.2 2003/12/12 02:03:20 belaban Exp $
 
 
 
-       JavaGroups - A Framework for Group Communication in Java
+       JGroups - A Framework for Group Communication in Java
        ========================================================
 
 			    March 3, 1998
@@ -15,7 +15,7 @@
 		       bela@nms.fnc.fujitsu.com
 
 
-JavaGroups is a Java package for reliable group communication. It
+JGroups is a Java package for reliable group communication. It
 consists of 3 parts: (1) a socket-like API for application
 development, (2) a protocol stack, which implements reliable
 communication, and (3) a set of building blocks, which give the
@@ -63,7 +63,7 @@ Group communication is important the following situations:
    etc.).  Used for example for video distribution, videoconferencing
 	
 	
-JavaGroups deliberately models a rather low-level message-oriented
+JGroups deliberately models a rather low-level message-oriented
 middleware (MOM) model. The reason is that we don't want to impose a
 one-size-fits-all model on the programmer, who usually will want to
 extend the model in various (previously unconceived) ways anyway.
@@ -72,12 +72,12 @@ Providing low level Java classes allows the programmer to
 extend/replace classes at will, as the granularity of the system is
 finer.
 
-JavaGroups can also be used for the construction of higher level
+JGroups can also be used for the construction of higher level
 toolkits/frameworks. Such frameworks should provide a certain
 transparency, without, however, preventing extensions to be made. The
 principle of creating partly 'opened-up' black boxes is called Open
 Implementation (OI, http://www.parc.xerox.com/spl/projects/oi/) and
-will be applied both to JavaGroups and to a further higher level
+will be applied both to JGroups and to a further higher level
 toolkit.
 
 
