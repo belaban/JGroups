@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.110 2004/09/08 07:46:29 belaban Exp $
+Revision: $Id: history.txt,v 1.111 2004/09/08 09:17:45 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -28,6 +28,7 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 Version 2.2.7
 -------------
 
+- Created distribution (CVS tag = JG_2_2_7_final)
 - Created distribution (CVS tag = JG_2_2_7)
   (bela Sept 8 2004)
 
