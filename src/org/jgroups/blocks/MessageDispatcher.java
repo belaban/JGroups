@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.21 2004/07/05 05:41:45 belaban Exp $
+// $Id: MessageDispatcher.java,v 1.22 2004/07/28 22:51:31 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -38,6 +38,7 @@ public class MessageDispatcher implements RequestHandler {
     protected PullPushAdapter adapter=null;
     protected Serializable id=null;
     protected Log log=LogFactory.getLog(getClass());
+    protected boolean running=false;
 
     /**
      * Process items on the queue concurrently (RequestCorrelator). The default is to wait until the processing of an
@@ -257,6 +258,7 @@ public class MessageDispatcher implements RequestHandler {
 
 
     public void start() {
+        running=true;
         if(corr == null) {
             if(transport_adapter != null) {
                 corr=new RequestCorrelator("MessageDispatcher", transport_adapter,
@@ -279,6 +281,7 @@ public class MessageDispatcher implements RequestHandler {
 
 
     public void stop() {
+        running=false;
         if(null != prot_adapter) {
             prot_adapter.pause();
         }
@@ -667,7 +670,7 @@ public class MessageDispatcher implements RequestHandler {
             m_upProcessingThread=new Thread(new Runnable() {
                 public void run() {
                     Event event=null;
-                    while(true) {
+                    while(running) {
                         try {
                             event=(Event) m_upQueue.take();
                             m_upLatch.passThrough();
