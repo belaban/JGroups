@@ -1,7 +1,8 @@
-// $Id: DistributedQueue.java,v 1.14 2004/09/23 16:29:11 belaban Exp $
+// $Id: DistributedQueue.java,v 1.15 2005/02/25 07:06:07 belaban Exp $
 package org.jgroups.blocks;
 
-import org.apache.log4j.Logger;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
@@ -23,7 +24,7 @@ import java.util.*;
  * order on all replicas.
  * @author Romuald du Song
  */
-public class DistributedQueue implements MessageListener, MembershipListener
+public class DistributedQueue implements MessageListener, MembershipListener, Cloneable
 {
     public interface Notification
     {
@@ -38,23 +39,23 @@ public class DistributedQueue implements MessageListener, MembershipListener
         void contentsSet(Collection new_entries);
     }
 
-    static final Logger logger = Logger.getLogger(DistributedQueue.class.getName());
-    private final long internal_timeout = 10000; // 10 seconds to wait for a response
+    protected Log logger = LogFactory.getLog(getClass());
+    private long internal_timeout = 10000; // 10 seconds to wait for a response
 
     /*lock object for synchronization*/
-    protected final Object mutex = new Object();
-    protected boolean stopped = false; // whether to we are stopped !
+    protected Object mutex = new Object();
+    protected transient boolean stopped = false; // whether to we are stopped !
     protected LinkedList internalQueue;
-    protected Channel channel;
-    protected RpcDispatcher disp = null;
-    protected String groupname = null;
-    protected final Vector notifs = new Vector(); // to be notified when mbrship changes
-    protected final Vector members = new Vector(); // keeps track of all DHTs
-    private Class[] add_signature = null;
-    private Class[] addAtHead_signature = null;
-    private Class[] addAll_signature = null;
-    private Class[] reset_signature = null;
-    private Class[] remove_signature = null;
+    protected transient Channel channel;
+    protected transient RpcDispatcher disp = null;
+    protected transient String groupname = null;
+    protected transient Vector notifs = new Vector(); // to be notified when mbrship changes
+    protected transient Vector members = new Vector(); // keeps track of all DHTs
+    private transient Class[] add_signature = null;
+    private transient Class[] addAtHead_signature = null;
+    private transient Class[] addAll_signature = null;
+    private transient Class[] reset_signature = null;
+    private transient Class[] remove_signature = null;
     
     /**
      * Creates a DistributedQueue
