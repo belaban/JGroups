@@ -1,4 +1,4 @@
-// $Id: Scheduler.java,v 1.2 2003/12/11 06:39:02 belaban Exp $
+// $Id: Scheduler.java,v 1.3 2003/12/11 07:13:40 belaban Exp $
 
 package org.jgroups.util;
 
@@ -31,7 +31,9 @@ public class Scheduler implements Runnable {
      * guaranteed. Set this to true only if you know what you're doing ! */
     boolean            concurrent_processing=false;
 
-    int                NUM_THREADS=128; // max number, will only be allocated when needed
+    /** max number of threads, will only be allocated when needed */
+    int                NUM_THREADS=new Integer(System.getProperty("scheduler.max.threads", "128")).intValue();
+
     final int          WAIT_FOR_THREAD_AVAILABILITY=3000;
     final int          THREAD_JOIN_TIMEOUT=1000;
 
