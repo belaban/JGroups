@@ -1,4 +1,4 @@
-// $Id: QueueTest.java,v 1.2 2003/09/18 09:12:15 rds13 Exp $
+// $Id: QueueTest.java,v 1.3 2003/09/19 18:20:37 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -263,6 +263,65 @@ public class QueueTest extends TestCase {
         }
         catch(QueueClosedException ex) {
             assertTrue(ex instanceof QueueClosedException); // of course, stupid comparison...
+        }
+    }
+
+
+    public void testWaitUntilEmpty() {
+        try {
+            queue.add("one");
+            queue.add("two");
+            queue.add("three");
+
+            new Thread() {
+                public void run() {
+                    try {
+                        sleep(1000);
+                        queue.remove();
+                        queue.remove();
+                        queue.remove();
+                    }
+                    catch(Exception e) {
+                    }
+                }
+            }.start();
+
+            queue.waitUntilEmpty(5000);
+            assertEquals(queue.size(), 0);
+        }
+        catch(Exception e) {
+            e.printStackTrace();
+            fail(e.toString());
+        }
+    }
+
+    public void testWaitUntilEmpty2() {
+        try {
+            queue.add("one");
+            queue.add("two");
+            queue.add("three");
+
+            new Thread() {
+                public void run() {
+                    try {
+                        sleep(1000);
+                        queue.remove();
+                        queue.remove();
+                    }
+                    catch(Exception e) {
+                    }
+                }
+            }.start();
+
+            queue.waitUntilEmpty(3000);
+            fail("shouldn't get here; we should have caught a TimeoutException");
+        }
+        catch(TimeoutException timeout) {
+            assertTrue(true);
+        }
+        catch(Exception e) {
+            e.printStackTrace();
+            fail(e.toString());
         }
     }
 
