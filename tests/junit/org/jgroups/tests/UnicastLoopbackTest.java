@@ -6,7 +6,7 @@ import org.jgroups.*;
 /**
  * Tests unicasts to self (loopback of transport protocol)
  * @author Bela Ban Dec 31 2003
- * @version $Id: UnicastLoopbackTest.java,v 1.6 2005/01/28 21:45:04 belaban Exp $
+ * @version $Id: UnicastLoopbackTest.java,v 1.7 2005/01/28 22:08:07 belaban Exp $
  */
 public class UnicastLoopbackTest extends TestCase {
     JChannel channel=null;
@@ -36,6 +36,12 @@ public class UnicastLoopbackTest extends TestCase {
         Address local_addr=channel.getLocalAddress();
         for(int i=1; i <= NUM; i++) {
             channel.send(new Message(local_addr, null, new Integer(i)));
+//            try {
+//                Thread.sleep(1);
+//            }
+//            catch(InterruptedException e) {
+//                e.printStackTrace();
+//            }
             if(i % 100 == 0)
                 System.out.println("-- sent " + i);
         }
