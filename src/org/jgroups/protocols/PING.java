@@ -1,4 +1,4 @@
-// $Id: PING.java,v 1.10 2004/03/30 06:47:21 belaban Exp $
+// $Id: PING.java,v 1.11 2004/04/23 00:37:03 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -210,7 +210,8 @@ public class PING extends Protocol {
                         rsp_msg=new Message(msg.getSrc(), null, null);
                         rsp_hdr=new PingHeader(PingHeader.GET_MBRS_RSP, ping_rsp);
                         rsp_msg.putHeader(getName(), rsp_hdr);
-                         if(log.isInfoEnabled()) log.info("received GET_MBRS_REQ from " + msg.getSrc() + ", returning " + rsp_hdr);
+                         if(log.isTraceEnabled())
+                             log.trace("received GET_MBRS_REQ from " + msg.getSrc() + ", returning " + rsp_hdr);
                         passDown(new Event(Event.MSG, rsp_msg));
                         return;
 
@@ -218,8 +219,8 @@ public class PING extends Protocol {
                         rsp=(PingRsp)hdr.arg;
 
                         synchronized(initial_members) {
-
-                                if(log.isInfoEnabled()) log.info("received FIND_INITAL_MBRS_RSP, rsp=" + rsp);
+                            if(log.isTraceEnabled())
+                                log.trace("received FIND_INITAL_MBRS_RSP, rsp=" + rsp);
                             initial_members.addElement(rsp);
                             initial_members.notify();
                         }
@@ -244,12 +245,13 @@ public class PING extends Protocol {
                          inInitialHosts = true;
                       }                   
                    }
-                   if (!inInitialHosts) {
-                      hlist = new List();
-                      hlist.add(local_addr);
-                      initial_hosts.add(hlist);
-                      if(log.isInfoEnabled()) log.info("[SET_LOCAL_ADDRESS]: adding my own address (" + local_addr +
-                              ") to initial_hosts; initial_hosts=" + initial_hosts);
+                    if (!inInitialHosts) {
+                        hlist = new List();
+                        hlist.add(local_addr);
+                        initial_hosts.add(hlist);
+                        if(log.isDebugEnabled())
+                            log.debug("[SET_LOCAL_ADDRESS]: adding my own address (" + local_addr +
+                                    ") to initial_hosts; initial_hosts=" + initial_hosts);
                    }
                 }
                 break;
@@ -333,17 +335,15 @@ public class PING extends Protocol {
                                         initial_members.add(new PingRsp(h, coord));
                                         isMember = true;
                                         numMemberInitialHosts++;
-                                         {
-                                            if(log.isInfoEnabled()) log.info("[FIND_INITIAL_MBRS] " + h + " is already a member");
-                                        }
-                                    } 
+                                        if(log.isDebugEnabled())
+                                            log.debug("[FIND_INITIAL_MBRS] " + h + " is already a member");
+                                    }
                                 }
                                 for(Enumeration hen=hlist.elements(); hen.hasMoreElements() && !isMember;) {
                                     h=(IpAddress)hen.nextElement();
                                     msg.setDest(h);
-                                     {
-                                        if(log.isInfoEnabled()) log.info("[FIND_INITIAL_MBRS] sending PING request to " + msg.getDest());
-                                    }
+                                    if(log.isTraceEnabled())
+                                        log.trace("[FIND_INITIAL_MBRS] sending PING request to " + msg.getDest());
                                     passDown(new Event(Event.MSG, msg.copy()));
                                 }
                             }
@@ -351,7 +351,7 @@ public class PING extends Protocol {
                     }
                     else {
                         // 1. Mcast GET_MBRS_REQ message
-                         if(log.isInfoEnabled()) log.info("FIND_INITIAL_MBRS");
+                        if(log.isTraceEnabled()) log.trace("FIND_INITIAL_MBRS");
                         hdr=new PingHeader(PingHeader.GET_MBRS_REQ, null);
                         msg=new Message(null, null, null);  // mcast msg
                         msg.putHeader(getName(), hdr);
@@ -367,7 +367,6 @@ public class PING extends Protocol {
                     time_to_wait=timeout;
 
                     while(initial_members.size() < num_initial_members && time_to_wait > 0) {
-
                         if(log.isTraceEnabled()) // +++ remove
                             log.trace("waiting for initial members: time_to_wait=" + time_to_wait +
                                     ", got " + initial_members.size() + " rsps");
@@ -383,7 +382,8 @@ public class PING extends Protocol {
 
                 // 3. Send response
 
-                    if(log.isInfoEnabled()) log.info("initial mbrs are " + initial_members);
+                if(log.isDebugEnabled())
+                    log.debug("initial mbrs are " + initial_members);
                 passUp(new Event(Event.FIND_INITIAL_MBRS_OK, initial_members));
                 break;
 
