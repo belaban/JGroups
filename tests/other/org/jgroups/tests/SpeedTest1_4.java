@@ -1,6 +1,6 @@
 package org.jgroups.tests;
 
-// $Id: SpeedTest1_4.java,v 1.1 2004/01/02 17:39:28 belaban Exp $
+// $Id: SpeedTest1_4.java,v 1.2 2004/01/02 18:09:12 belaban Exp $
 
 
 import org.jgroups.Channel;
@@ -37,7 +37,7 @@ public class SpeedTest1_4 {
 
     public static void main(String[] args) {
         MulticastSocket sock=null;
-        Receiver receiver;
+        Receiver receiver=null;
         int num_msgs=1000;
         byte[] buf;
         DatagramPacket packet;
@@ -162,6 +162,18 @@ public class SpeedTest1_4 {
                     debugger=new Debugger(channel, cummulative);
                     debugger.start();
                 }
+
+                class Closer extends Thread {
+                    Channel ch;
+                    Closer(Channel ch) {
+                        this.ch=ch;
+                    }
+                    public void run() {
+                        if(ch != null)
+                            ch.close();
+                    }
+                }
+                Runtime.getRuntime().addShutdownHook(new Closer(channel));
             }
             else {
                 group_addr=InetAddress.getByName("224.0.0.36");
@@ -347,6 +359,7 @@ public class SpeedTest1_4 {
             msgs_per_sec=(num_received / (total_time / 1000.0));
             System.out.println("\n** Sending and receiving " + num_received + " took " +
                     total_time + " msecs (" + msgs_per_sec + " msgs/sec) **");
+            System.exit(1);
         }
     }
 

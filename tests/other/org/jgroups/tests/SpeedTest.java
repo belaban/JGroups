@@ -1,4 +1,4 @@
-// $Id: SpeedTest.java,v 1.4 2004/01/01 01:33:12 belaban Exp $
+// $Id: SpeedTest.java,v 1.5 2004/01/02 18:09:05 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -160,6 +160,18 @@ public class SpeedTest {
                     debugger=new Debugger(channel, cummulative);
                     debugger.start();
                 }
+
+                class Closer extends Thread {
+                    Channel ch;
+                    Closer(Channel ch) {
+                        this.ch=ch;
+                    }
+                    public void run() {
+                        if(ch != null)
+                            ch.close();
+                    }
+                }
+                Runtime.getRuntime().addShutdownHook(new Closer(channel));
             }
             else {
                 group_addr=InetAddress.getByName("224.0.0.36");
@@ -335,6 +347,7 @@ public class SpeedTest {
             msgs_per_sec=(num_received / (total_time / 1000.0));
             System.out.println("\n** Sending and receiving " + num_received + " took " +
                     total_time + " msecs (" + msgs_per_sec + " msgs/sec) **");
+            System.exit(1);
         }
     }
 
