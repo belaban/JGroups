@@ -1,4 +1,4 @@
-// $Id: MethodCallTest.java,v 1.1 2004/05/15 00:36:47 belaban Exp $
+// $Id: MethodCallTest.java,v 1.2 2004/05/17 17:05:53 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -32,7 +32,15 @@ public class MethodCallTest extends TestCase {
     }
 
 
-
+    public void testOld() {
+        try {
+            MethodCall mc=new MethodCall("foo", new Object[]{new Integer(22), "Bela"});
+            assertEquals(mc.invoke(this), Boolean.TRUE);
+        }
+        catch(Throwable t) {
+            fail(t.toString());
+        }
+    }
 
     public void testMethod() {
         Method m;
