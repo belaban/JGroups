@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.8 2004/03/30 06:47:18 belaban Exp $
+// $Id: GMS.java,v 1.9 2004/04/16 05:38:42 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -179,13 +179,11 @@ public class GMS extends Protocol {
             }
             vid=Math.max(view_id.getId(), ltime) + 1;
             ltime=vid;
-
-
-                if(log.isDebugEnabled()) log.debug("VID=" + vid + ", current members=" +
-                                                 Util.printMembers(members.getMembers()) +
-                                                 ", new_mbrs=" + Util.printMembers(new_mbrs) +
-                                                 ", old_mbrs=" + Util.printMembers(old_mbrs) + ", suspected_mbrs=" +
-                                                 Util.printMembers(suspected_mbrs));
+            if(log.isDebugEnabled()) log.debug("VID=" + vid + ", current members=" +
+                    Util.printMembers(members.getMembers()) +
+                    ", new_mbrs=" + Util.printMembers(new_mbrs) +
+                    ", old_mbrs=" + Util.printMembers(old_mbrs) + ", suspected_mbrs=" +
+                    Util.printMembers(suspected_mbrs));
 
             tmp_mbrs=tmp_members.copy();  // always operate on the temporary membership
             tmp_mbrs.remove(suspected_mbrs);
@@ -222,8 +220,7 @@ public class GMS extends Protocol {
                 }
             }
 
-
-                if(log.isDebugEnabled()) log.debug("new view is " + v);
+            if(log.isDebugEnabled()) log.debug("new view is " + v);
             return v;
         }
     }
@@ -278,8 +275,7 @@ public class GMS extends Protocol {
         Message view_change_msg;
         GmsHeader hdr;
 
-
-            if(log.isInfoEnabled()) log.info("mcasting view {" + new_view + "} (" + new_view.size() + " mbrs)\n");
+        if(log.isInfoEnabled()) log.info("mcasting view {" + new_view + "} (" + new_view.size() + " mbrs)\n");
         view_change_msg=new Message(); // bcast to all members
         hdr=new GmsHeader(GmsHeader.VIEW, new_view);
         hdr.digest=digest;
@@ -314,8 +310,9 @@ public class GMS extends Protocol {
         if(view_id != null) {
             rc=vid.compareTo(view_id);
             if(rc <= 0) {
-                if(log.isErrorEnabled()) log.error("[" + local_addr + "] received view <= current view;" +
-                                                 " discarding it (current vid: " + view_id + ", new vid: " + vid + ")");
+                if(log.isErrorEnabled())
+                    log.error("[" + local_addr + "] received view <= current view;" +
+                            " discarding it (current vid: " + view_id + ", new vid: " + vid + ")");
                 return;
             }
         }
@@ -325,19 +322,17 @@ public class GMS extends Protocol {
         /* Check for self-inclusion: if I'm not part of the new membership, I just discard it.
         This ensures that messages sent in view V1 are only received by members of V1 */
         if(checkSelfInclusion(mbrs) == false) {
-
-                if(log.isWarnEnabled()) log.warn("checkSelfInclusion() failed, " + local_addr +
-                                                " is not a member of view " + new_view + "; discarding view");
+            if(log.isWarnEnabled()) log.warn("checkSelfInclusion() failed, " + local_addr +
+                    " is not a member of view " + new_view + "; discarding view");
 
             // only shun if this member was previously part of the group. avoids problem where multiple
             // members (e.g. X,Y,Z) join {A,B} concurrently, X is joined first, and Y and Z get view
             // {A,B,X}, which would cause Y and Z to be shunned as they are not part of the membership
             // bela Nov 20 2003
             if(shun && local_addr != null && prev_members.contains(local_addr)) {
-
-                    if(log.isWarnEnabled()) log.warn("I (" + local_addr +
-                                                    ") am being shunned, will leave and rejoin group. " +
-                                                    "prev_members are " + prev_members);
+                if(log.isWarnEnabled())
+                    log.warn("I (" + local_addr + ") am being shunned, will leave and " +
+                            "rejoin group (prev_members are " + prev_members + ")");
                 passUp(new Event(Event.EXIT));
             }
             return;
@@ -506,12 +501,10 @@ public class GMS extends Protocol {
                         impl.handleJoinResponse(hdr.join_rsp);
                         break;
                     case GmsHeader.LEAVE_REQ:
-
-                            if(log.isInfoEnabled()) log.info("received LEAVE_REQ " + hdr + " from " + msg.getSrc());
+                        if(log.isInfoEnabled()) log.info("received LEAVE_REQ " + hdr + " from " + msg.getSrc());
 
                         if(hdr.mbr == null) {
-
-                                if(log.isErrorEnabled()) log.error("LEAVE_REQ's mbr field is null");
+                            if(log.isErrorEnabled()) log.error("LEAVE_REQ's mbr field is null");
                             return;
                         }
                         sendLeaveResponse(hdr.mbr);
@@ -716,19 +709,18 @@ public class GMS extends Protocol {
         GmsHeader hdr;
 
         if(mbr == null) {
-
-                if(log.isErrorEnabled()) log.error("mbr is null");
+            if(log.isErrorEnabled()) log.error("mbr is null");
             return;
         }
 
-
-            if(log.isDebugEnabled()) log.debug("mbr=" + mbr);
+        if(log.isDebugEnabled()) log.debug("mbr=" + mbr);
 
         // 1. Get the new view and digest
         join_rsp=impl.handleJoin(mbr);
         if(join_rsp == null)
-            if(log.isErrorEnabled()) log.error(impl.getClass().toString() + ".handleJoin(" + mbr +
-                                                   ") returned null: will not be able to multicast new view");
+            if(log.isErrorEnabled())
+                log.error(impl.getClass().toString() + ".handleJoin(" + mbr +
+                        ") returned null: will not be able to multicast new view");
 
         // 2. Send down a local TMP_VIEW event. This is needed by certain layers (e.g. NAKACK) to compute correct digest
         //    in case client's next request (e.g. getState()) reaches us *before* our own view change multicast.
