@@ -1,4 +1,4 @@
-// $Id: ReplicatedHashtable.java,v 1.1 2003/09/09 01:24:08 belaban Exp $
+// $Id: ReplicatedHashtable.java,v 1.2 2003/09/24 23:20:46 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -89,7 +89,7 @@ public class ReplicatedHashtable extends Hashtable implements MessageListener, M
             channel.connect(groupname);
             adapter=new PullPushAdapter(channel, this, this);
             adapter.setListener(this);
-            channel.setOpt(Channel.GET_STATE_EVENTS, new Boolean(true));
+            channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
             boolean rc=channel.getState(null, state_timeout);
             if(rc)
                 Trace.info("ReplicatedHashtable.ReplicatedHashtable()", "state was retrieved successfully");
@@ -132,7 +132,7 @@ public class ReplicatedHashtable extends Hashtable implements MessageListener, M
         this.adapter.setListener(this);
         if(l != null)
             addStateTransferListener(l);
-        this.channel.setOpt(Channel.GET_STATE_EVENTS, new Boolean(true));
+        this.channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
         boolean rc=channel.getState(null, state_timeout);
         if(rc)
             Trace.info("ReplicatedHashtable.ReplicatedHashtable()", "state was retrieved successfully");

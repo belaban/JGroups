@@ -1,4 +1,4 @@
-// $Id: Gossip.java,v 1.1 2003/09/09 01:24:09 belaban Exp $
+// $Id: Gossip.java,v 1.2 2003/09/24 23:20:47 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -50,7 +50,7 @@ public class Gossip implements Runnable, WindowListener, ActionListener, Channel
         Trace.init();
         channel=new JChannel(props);
         channel.setChannelListener(this);
-        channel.setOpt(Channel.AUTO_RECONNECT, new Boolean(true));
+        channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
         traffic_interval=traffic;
         if(traffic_interval > 0) {
             gen=new TrafficGenerator();

@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.1 2003/09/09 01:24:10 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.2 2003/09/24 23:20:47 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -82,7 +82,7 @@ public class STATE_TRANSFER extends Protocol implements RequestHandler {
 
 
     public void init() throws Exception {
-	map.put("state_transfer", new Boolean(true));
+	map.put("state_transfer", Boolean.TRUE);
 	map.put("protocol_class", getClass().getName());
 
     }

@@ -1,4 +1,4 @@
-// $Id: Chat.java,v 1.1 2003/09/09 01:24:09 belaban Exp $
+// $Id: Chat.java,v 1.2 2003/09/24 23:20:47 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -104,7 +104,7 @@ public class Chat implements MouseListener, WindowListener, MessageListener, Mem
 
         try {
             channel=new JChannel(props);
-            channel.setOpt(Channel.AUTO_RECONNECT, new Boolean(true));
+            channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
             System.out.println("Connecting to " + group_name);
             channel.connect(group_name);
             ad=new PullPushAdapter(channel, this, this);

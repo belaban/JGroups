@@ -1,4 +1,4 @@
-// $Id: MessageDispatcherTestAsync.java,v 1.1 2003/09/09 01:24:13 belaban Exp $
+// $Id: MessageDispatcherTestAsync.java,v 1.2 2003/09/24 23:26:20 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -75,7 +75,7 @@ public class MessageDispatcherTestAsync implements RequestHandler {
 	    debugger=new Debugger((JChannel)channel, cummulative);
 	    debugger.start();
 	}
-	//channel.setOpt(Channel.LOCAL, new Boolean(false));
+	//channel.setOpt(Channel.LOCAL, Boolean.FALSE);
 	disp=new MessageDispatcher(channel, null, null, this);
 	channel.connect("MessageDispatcherTestAsyncGroup");
     }

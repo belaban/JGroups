@@ -1,4 +1,4 @@
-// $Id: ViewDemo.java,v 1.1 2003/09/09 01:24:09 belaban Exp $
+// $Id: ViewDemo.java,v 1.2 2003/09/24 23:20:47 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -44,7 +44,7 @@ public class ViewDemo implements MembershipListener {
 	Trace.init();
 	channel=new JChannel(props);
 	channel.connect("ViewDemo");
-	channel.setOpt(Channel.VIEW, new Boolean(true));
+	channel.setOpt(Channel.VIEW, Boolean.TRUE);
 	adapter=new PullPushAdapter(channel, this);
 
 	while(true) {

@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.1 2003/09/09 01:24:11 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.2 2003/09/24 23:20:47 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -306,7 +306,7 @@ public class CoordGmsImpl extends GmsImpl {
         }
         if(leaving && !mbrs.contains(gms.local_addr)) {
             if(leave_promise != null) {
-                leave_promise.setResult(new Boolean(true));
+                leave_promise.setResult(Boolean.TRUE);
             }
             return;
         }

@@ -1,4 +1,4 @@
-// $Id: ParticipantGmsImpl.java,v 1.1 2003/09/09 01:24:11 belaban Exp $
+// $Id: ParticipantGmsImpl.java,v 1.2 2003/09/24 23:20:47 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -77,7 +77,7 @@ public class ParticipantGmsImpl extends GmsImpl {
 	    return;
 	}
 	synchronized(leave_promise) {
-	    leave_promise.setResult(new Boolean(true));  // unblocks thread waiting in leave()
+	    leave_promise.setResult(Boolean.TRUE);  // unblocks thread waiting in leave()
 	}
     }
 

@@ -1,4 +1,4 @@
-// $Id: DistributedHashtable.java,v 1.1 2003/09/09 01:24:08 belaban Exp $
+// $Id: DistributedHashtable.java,v 1.2 2003/09/24 23:20:46 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -83,7 +83,7 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
         initMethods();
         channel=factory != null ? factory.createChannel(properties) : new JChannel(properties);
         disp=new RpcDispatcher(channel, this, this, this);
-        channel.setOpt(Channel.GET_STATE_EVENTS, new Boolean(true));
+        channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
         channel.connect(groupname);
         start(state_timeout);
     }
@@ -106,7 +106,7 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
         initMethods();
         channel=factory != null ? factory.createChannel(properties) : new JChannel(properties);
         disp=new RpcDispatcher(channel, this, this, this);
-        channel.setOpt(Channel.GET_STATE_EVENTS, new Boolean(true));
+        channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
         channel.connect(groupname);
         start(state_timeout);
     }
@@ -130,7 +130,7 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
 
     protected void init(long state_timeout) throws ChannelClosedException, ChannelNotConnectedException {
         initMethods();
-        channel.setOpt(Channel.GET_STATE_EVENTS, new Boolean(true));
+        channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
         disp = new RpcDispatcher(channel, this, this, this);
 
         // Changed by bela (jan 20 2003): start() has to be called by user (only when providing
@@ -575,7 +575,7 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
             //         "file://c:/JGroups-2.0/conf/state_transfer.xml", 5000);
 
             JChannel c = new JChannel("file:/c:/JGroups-2.0/conf/state_transfer.xml");
-            c.setOpt(Channel.GET_STATE_EVENTS, new Boolean(true));
+            c.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
             DistributedHashtable ht = new DistributedHashtable(c, false, 5000);
             c.connect("demo");
             ht.start(5000);

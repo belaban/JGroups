@@ -1,4 +1,4 @@
-// $Id: LargeState.java,v 1.1 2003/09/09 01:24:13 belaban Exp $
+// $Id: LargeState.java,v 1.2 2003/09/24 23:26:01 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -34,7 +34,7 @@ public class LargeState {
     
     public void start(boolean provider, long size, String props) throws Exception {
 	channel=new JChannel(props);
-	channel.setOpt(Channel.GET_STATE_EVENTS, new Boolean(true));
+	channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
 	channel.connect("TestChannel");
 
 	if(provider) {

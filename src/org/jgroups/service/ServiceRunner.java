@@ -76,7 +76,7 @@ public class ServiceRunner {
 	
 	String serviceChannelStack = res.getString(SERVICE_CHANNEL_STACK);
 	final JChannel svcChannel = new JChannel(serviceChannelStack);
-	svcChannel.setOpt(Channel.GET_STATE_EVENTS, new Boolean(true));
+	svcChannel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
 	
 	String clientChannelStack = res.getString(CLIENT_CHANNEL_STACK);
         

@@ -1,4 +1,4 @@
-// $Id: MethodLookupClos.java,v 1.1 2003/09/09 01:24:08 belaban Exp $
+// $Id: MethodLookupClos.java,v 1.2 2003/09/24 23:20:46 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -11,14 +11,14 @@ import java.util.Vector;
 
 public class MethodLookupClos implements MethodLookup {
 
-    static Class boolean_type=new Boolean(true).getClass();
-    static Class char_type=new Character('0').getClass();
-    static Class byte_type=new Byte((byte)0).getClass();
-    static Class short_type=new Short((short)0).getClass();
-    static Class int_type=new Integer(0).getClass();
-    static Class long_type=new Long(0).getClass();
-    static Class float_type=new Float(0).getClass();
-    static Class double_type=new Double(0).getClass();
+    static Class boolean_type=Boolean.class;
+    static Class char_type=Character.class;
+    static Class byte_type=Byte.class;
+    static Class short_type=Short.class;
+    static Class int_type=Integer.class;
+    static Class long_type=Long.class;
+    static Class float_type=Float.class;
+    static Class double_type=Double.class;
 
 
     public Method findMethod(Class target_class, String method_name, Vector args) throws Exception {
