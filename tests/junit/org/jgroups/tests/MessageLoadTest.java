@@ -24,7 +24,7 @@ import java.util.Vector;
  * <li><code>-debug</code> - pop-up protocol debugger;
  * <li><code>-cummulative</code> - debugger shows cummulative messages.
  * </ul>
- * $Id: MessageLoadTest.java,v 1.6 2004/07/05 14:15:04 belaban Exp $
+ * $Id: MessageLoadTest.java,v 1.7 2005/01/05 14:38:18 belaban Exp $
  */
 public class MessageLoadTest extends TestCase {
 
@@ -42,7 +42,7 @@ public class MessageLoadTest extends TestCase {
 
     /** Protocol for UDP mode. */
     public static final String NETWORK_TRANSPORT=
-            "UDP(mcast_addr=224.0.0.35;mcast_port=45566;ip_ttl=1;" +
+            "UDP(mcast_addr=224.0.0.35;mcast_port=45566;ip_ttl=8;" +
             "mcast_send_buf_size=150000;mcast_recv_buf_size=80000;down_thread=false):";
 
     /** Protocol for loopback mode. */
@@ -51,13 +51,13 @@ public class MessageLoadTest extends TestCase {
 
     /** Generic part of protocol. */
     public static final String JAVAGROUPS_STACK=
-            "PING(timeout=500;num_initial_members=1;down_thread=false;up_thread=false):" +
+            "PING(timeout=3000;num_ping_requests=3;num_initial_members=2;down_thread=false;up_thread=false):" +
             "FD(down_thread=false;up_thread=false):" +
             "VERIFY_SUSPECT(timeout=1500;down_thread=false;up_thread=false):" +
             "pbcast.NAKACK(gc_lag=50;retransmit_timeout=300,600,1200,2400,4800;down_thread=false):" +
             "pbcast.STABLE(desired_avg_gossip=200;down_thread=false;up_thread=false):" +
             "FRAG(frag_size=4096):" +
-            //"UNICAST(timeout=5000):" +
+            "UNICAST(timeout=5000):" +
             "pbcast.GMS(join_timeout=5000;join_retry_timeout=1000;" +
             "shun=false;print_local_addr=false;down_thread=true;up_thread=true)";
     //"SPEED_LIMIT(down_queue_limit=10):" +
@@ -109,12 +109,16 @@ public class MessageLoadTest extends TestCase {
      * stack debuggers if such option was selected at startup.
      */
     protected void setUp() throws Exception {
+        super.setUp();
         printSelectedOptions();
 
-        channel1=new JChannel(getProtocolStack());
+        String props=getProtocolStack();
+        System.out.println("Props:\n" + props);
+
+        channel1=new JChannel(props);
         System.out.print("Connecting to channel...");
         channel1.connect("LOAD_TEST");
-        System.out.println("connected.");
+        System.out.println("channel1 connected, view is " + channel1.getView());
 
         adapter1=new PullPushAdapter(channel1);
 
@@ -133,7 +137,7 @@ public class MessageLoadTest extends TestCase {
         if(!LOOPBACK) {
             channel2=new JChannel(getProtocolStack());
             channel2.connect("LOAD_TEST");
-
+            System.out.println("channel2 connected, view is " + channel2.getView());
 
             adapter2=new PullPushAdapter(channel2);
 
@@ -155,6 +159,7 @@ public class MessageLoadTest extends TestCase {
      * Tears down test case. This method closes all opened channels.
      */
     protected void tearDown() throws Exception {
+        super.tearDown();
         if(!LOOPBACK) {
             adapter2.stop();
             channel2.close();
@@ -197,7 +202,6 @@ public class MessageLoadTest extends TestCase {
                     System.in.read();
                 }
                 catch(java.io.IOException ioex) {
-// do nothing
                 }
             }
 
@@ -210,7 +214,6 @@ public class MessageLoadTest extends TestCase {
                 }
 
                 public void setState(byte[] state) {
-// do nothing...
                 }
 
                 public void receive(Message jgMessage) {
@@ -230,8 +233,7 @@ public class MessageLoadTest extends TestCase {
 
                     }
                     else if(message instanceof Long) {
-                        Long travelTime=new Long(
-                                System.currentTimeMillis() - ((Long)message).longValue());
+                        Long travelTime=new Long(System.currentTimeMillis() - ((Long)message).longValue());
 
                         if(!started)
                             tooQuickMessages.add(message);
@@ -270,10 +272,7 @@ public class MessageLoadTest extends TestCase {
                     System.out.println("sent " + i + " messages.");
 
                 if(SLEEP_BETWEEN_SENDING)
-//try {Thread.sleep(SLEEP_TIME);} catch (InterruptedException ex) {}
                     org.jgroups.util.Util.sleep(1, true);
-//Thread.yield();
-
             }
 
             Message stopJgMessage=new Message();
