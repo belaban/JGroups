@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.35 2005/01/10 11:25:18 belaban Exp $
+// $Id: MessageDispatcher.java,v 1.36 2005/01/20 01:58:32 ovidiuf Exp $
 
 package org.jgroups.blocks;
 
@@ -289,6 +289,13 @@ public class MessageDispatcher implements RequestHandler {
         msg_listener=l;
     }
 
+    /**
+     * Gives access to the currently configured MessageListener. Returns null if there is no
+     * configured MessageListener.
+     */
+    public MessageListener getMessageListener() {
+        return msg_listener;
+    }
 
     public void setMembershipListener(MembershipListener l) {
         membership_listener=l;
