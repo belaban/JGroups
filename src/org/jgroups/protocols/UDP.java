@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.8 2004/01/07 00:29:21 belaban Exp $
+// $Id: UDP.java,v 1.9 2004/01/07 01:33:48 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -435,6 +435,14 @@ public class UDP extends Protocol implements Runnable {
         return true;
     }
 
+
+
+    /**
+     * DON'T REMOVE ! This prevents the down-handler thread to be created.
+     */
+    public void startDownHandler() {
+        ;
+    }
 
     /**
      * DON'T REMOVE ! This prevents the up-handler thread to be created, which essentially is superfluous:
