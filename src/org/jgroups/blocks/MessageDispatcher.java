@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.29 2004/08/05 07:55:07 belaban Exp $
+// $Id: MessageDispatcher.java,v 1.30 2004/09/02 14:00:40 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -243,7 +243,8 @@ public class MessageDispatcher implements RequestHandler {
 
     public void setDeadlockDetection(boolean flag) {
         deadlock_detection=flag;
-        corr.setDeadlockDetection(flag);
+        if(corr != null)
+            corr.setDeadlockDetection(flag);
     }
 
     public void setConcurrentProcessing(boolean flag) {
@@ -635,10 +636,10 @@ public class MessageDispatcher implements RequestHandler {
                         membership_listener.viewAccepted(v);
                     }
                     break;
-//
-//                case Event.SET_LOCAL_ADDRESS:
-//                    local_addr=(Address)evt.getArg();
-//                    break;
+
+                case Event.SET_LOCAL_ADDRESS:
+                    local_addr=(Address)evt.getArg();
+                    break;
 
                 case Event.SUSPECT:
                     if(membership_listener != null) {
@@ -717,7 +718,7 @@ public class MessageDispatcher implements RequestHandler {
         }
 
         private void handleUp(Event evt) {
-            if(null != corr) {
+            if(corr != null) {
                 corr.receive(evt);
             }
             else {
