@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.28 2004/06/12 15:57:16 belaban Exp $
+// $Id: UDP.java,v 1.29 2004/06/25 00:00:37 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -45,8 +45,11 @@ public class UDP extends Protocol implements Runnable {
      * The address of this socket will be our local address (<tt>local_addr</tt>) */
     DatagramSocket  sock=null;
 
-    /** IP multicast socket for <em>receiving</em> and <em>sending</em> of multicast packets */
-    MulticastSocket mcast_sock=null;
+    /** IP multicast socket for <em>receiving</em> multicast packets */
+    MulticastSocket mcast_recv_sock=null;
+
+    /** IP multicast socket for <em>sending</em> multicast packets */
+    MulticastSocket mcast_send_sock=null;
 
     /** The address (host and port) of this member */
     IpAddress       local_addr=null;
@@ -193,10 +196,10 @@ public class UDP extends Protocol implements Runnable {
         // moved out of loop to avoid excessive object creations (bela March 8 2001)
         packet=new DatagramPacket(receive_buf, receive_buf.length);
 
-        while(mcast_receiver != null && mcast_sock != null) {
+        while(mcast_receiver != null && mcast_recv_sock != null) {
             try {
                 packet.setData(receive_buf, 0, receive_buf.length);
-                mcast_sock.receive(packet);
+                mcast_recv_sock.receive(packet);
                 len=packet.getLength();
                 data=packet.getData();
                 if(len == 1 && data[0] == 0) {
@@ -771,8 +774,8 @@ public class UDP extends Protocol implements Runnable {
         DatagramPacket       packet;
         packet=new DatagramPacket(data, data.length, dest, port);
 
-        if(dest.isMulticastAddress() && mcast_sock != null) { // mcast_sock might be null if ip_mcast is false
-            mcast_sock.send(packet);
+        if(dest.isMulticastAddress() && mcast_send_sock != null) { // mcast_recv_sock might be null if ip_mcast is false
+            mcast_send_sock.send(packet);
         }
         else {
             if(sock != null)
@@ -877,13 +880,20 @@ public class UDP extends Protocol implements Runnable {
 
         // 3. Create socket for receiving IP multicast packets
         if(ip_mcast) {
-            mcast_sock=new MulticastSocket(mcast_port);
-            mcast_sock.setTimeToLive(ip_ttl);
+            // 3a. Create mcast receiver socket
+            mcast_recv_sock=new MulticastSocket(mcast_port);
+            mcast_recv_sock.setTimeToLive(ip_ttl);
             if(bind_addr != null)
-                mcast_sock.setInterface(bind_addr);
+                mcast_recv_sock.setInterface(bind_addr);
             tmp_addr=InetAddress.getByName(mcast_addr_name);
             mcast_addr=new IpAddress(tmp_addr, mcast_port);
-            mcast_sock.joinGroup(tmp_addr);
+            mcast_recv_sock.joinGroup(tmp_addr);
+
+            // 3b. Create mcast sender socket
+            mcast_send_sock=new MulticastSocket();
+            mcast_send_sock.setTimeToLive(ip_ttl);
+            if(bind_addr != null)
+                mcast_send_sock.setInterface(bind_addr);
         }
 
         setBufferSizes();
@@ -899,17 +909,24 @@ public class UDP extends Protocol implements Runnable {
         sb.append(", ttl=").append(ip_ttl);
 
         if(sock != null) {
-            sb.append("\nsocket: bound to ");
+            sb.append("\nsock: bound to ");
             sb.append(sock.getLocalAddress().getHostAddress()).append(":").append(sock.getLocalPort());
             sb.append(", receive buffer size=").append(sock.getReceiveBufferSize());
             sb.append(", send buffer size=").append(sock.getSendBufferSize());
         }
 
-        if(mcast_sock != null) {
-            sb.append("\nmulticast socket: bound to ");
-            sb.append(mcast_sock.getInterface().getHostAddress()).append(":").append(mcast_sock.getLocalPort());
-            sb.append(", send buffer size=").append(mcast_sock.getSendBufferSize());
-            sb.append(", receive buffer size=").append(mcast_sock.getReceiveBufferSize());
+        if(mcast_recv_sock != null) {
+            sb.append("\nmcast_recv_sock: bound to ");
+            sb.append(mcast_recv_sock.getInterface().getHostAddress()).append(":").append(mcast_recv_sock.getLocalPort());
+            sb.append(", send buffer size=").append(mcast_recv_sock.getSendBufferSize());
+            sb.append(", receive buffer size=").append(mcast_recv_sock.getReceiveBufferSize());
+        }
+
+         if(mcast_send_sock != null) {
+            sb.append("\nmcast_send_sock: bound to ");
+            sb.append(mcast_send_sock.getInterface().getHostAddress()).append(":").append(mcast_send_sock.getLocalPort());
+            sb.append(", send buffer size=").append(mcast_send_sock.getSendBufferSize());
+            sb.append(", receive buffer size=").append(mcast_send_sock.getReceiveBufferSize());
         }
         return sb.toString();
     }
@@ -929,24 +946,40 @@ public class UDP extends Protocol implements Runnable {
             catch(Throwable ex) {
                 if(log.isWarnEnabled()) log.warn("failed setting ucast_recv_buf_size in sock: " + ex);
             }
-
         }
 
-        if(mcast_sock != null) {
+        if(mcast_recv_sock != null) {
             try {
-                mcast_sock.setSendBufferSize(mcast_send_buf_size);
+                mcast_recv_sock.setSendBufferSize(mcast_send_buf_size);
             }
             catch(Throwable ex) {
-                if(log.isWarnEnabled()) log.warn("failed setting mcast_send_buf_size in mcast_sock: " + ex);
+                if(log.isWarnEnabled()) log.warn("failed setting mcast_send_buf_size in mcast_recv_sock: " + ex);
             }
 
             try {
-                mcast_sock.setReceiveBufferSize(mcast_recv_buf_size);
+                mcast_recv_sock.setReceiveBufferSize(mcast_recv_buf_size);
             }
             catch(Throwable ex) {
-                if(log.isWarnEnabled()) log.warn("failed setting mcast_recv_buf_size in mcast_sock: " + ex);
+                if(log.isWarnEnabled()) log.warn("failed setting mcast_recv_buf_size in mcast_recv_sock: " + ex);
             }
         }
+
+        if(mcast_send_sock != null) {
+            try {
+                mcast_send_sock.setSendBufferSize(mcast_send_buf_size);
+            }
+            catch(Throwable ex) {
+                if(log.isWarnEnabled()) log.warn("failed setting mcast_send_buf_size in mcast_send_sock: " + ex);
+            }
+
+            try {
+                mcast_send_sock.setReceiveBufferSize(mcast_recv_buf_size);
+            }
+            catch(Throwable ex) {
+                if(log.isWarnEnabled()) log.warn("failed setting mcast_recv_buf_size in mcast_send_sock: " + ex);
+            }
+        }
+
     }
 
 
@@ -963,21 +996,27 @@ public class UDP extends Protocol implements Runnable {
 
 
     void closeMulticastSocket() {
-        if(mcast_sock != null) {
+        if(mcast_recv_sock != null) {
             try {
                 if(mcast_addr != null) {
                     // by sending a dummy packet the thread will be awakened
                     sendDummyPacket(mcast_addr.getIpAddress(), mcast_addr.getPort());
                     Util.sleep(300);
-                    mcast_sock.leaveGroup(mcast_addr.getIpAddress());
+                    mcast_recv_sock.leaveGroup(mcast_addr.getIpAddress());
                 }
-                mcast_sock.close(); // this will cause the mcast receiver thread to break out of its loop
-                mcast_sock=null;
-                 if(log.isDebugEnabled()) log.debug("multicast socket closed");
+                mcast_recv_sock.close(); // this will cause the mcast receiver thread to break out of its loop
+                mcast_recv_sock=null;
+                 if(log.isDebugEnabled()) log.debug("multicast receive socket closed");
             }
             catch(IOException ex) {
             }
             mcast_addr=null;
+        }
+
+        if(mcast_send_sock != null) {
+            mcast_send_sock.close(); // this will cause the mcast receiver thread to break out of its loop
+            mcast_send_sock=null;
+            if(log.isDebugEnabled()) log.debug("multicast send socket closed");
         }
     }
 
