@@ -1,4 +1,4 @@
-// $Id: RpcDispatcherBlocking.java,v 1.5 2004/07/05 14:15:11 belaban Exp $
+// $Id: RpcDispatcherBlocking.java,v 1.6 2004/07/30 04:44:52 jiwils Exp $
 
 package org.jgroups.tests;
 
@@ -69,7 +69,7 @@ public class RpcDispatcherBlocking implements MembershipListener {
         int     c;
         RspList rsps;
 
-        channel=new JChannel(null); // default props
+        channel=new JChannel(); // default props
 	disp=new RpcDispatcher(channel, null, this, this);
 	channel.connect("rpc-test");
         
