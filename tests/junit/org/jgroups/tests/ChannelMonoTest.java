@@ -1,4 +1,4 @@
-// $Id: ChannelMonoTest.java,v 1.1 2003/09/18 09:52:56 rds13 Exp $
+// $Id: ChannelMonoTest.java,v 1.2 2003/09/19 16:17:12 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -71,7 +71,9 @@ public class ChannelMonoTest extends TestCase
 			stop = System.currentTimeMillis();
 			logger.info("Took " + (stop - start) + " msecs");
 
-			Util.sleep(2000);
+
+            mythread.join();
+
 			assertEquals(nitems, mythread.getNum_items());
 			assertFalse(mythread.isAlive());
 
