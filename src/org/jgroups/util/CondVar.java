@@ -8,29 +8,41 @@ import org.jgroups.TimeoutException;
  * matches the expected result, or a timeout occurs. First version used WaitableBoolean from util.concurrent, but
  * that class would not allow for timeouts.
  * @author Bela Ban
- * @version $Id: CondVar.java,v 1.1 2004/09/22 10:32:26 belaban Exp $
+ * @version $Id: CondVar.java,v 1.2 2004/09/23 10:00:10 belaban Exp $
  */
 public class CondVar {
     Object cond;
-    String name;
+    final String name;
+    final Object lock;
 
     public CondVar(String name, Object cond) {
         this.name=name;
         this.cond=cond;
+        lock=this;
+    }
+
+    public CondVar(String name, Object cond, Object lock) {
+        this.name=name;
+        this.cond=cond;
+        this.lock=lock;
     }
 
     public Object get() {
-        synchronized(this) {
+        synchronized(lock) {
             return cond;
         }
     }
 
     /** Sets the result */
     public void set(Object result) {
-        synchronized(this) {
+        synchronized(lock) {
             cond=result;
-            notifyAll();
+            lock.notifyAll();
         }
+    }
+
+    public Object getLock() {
+        return lock;
     }
 
 
@@ -42,10 +54,35 @@ public class CondVar {
      * @throws TimeoutException Thrown if the result still doesn't match the condition after timeout
      * milliseconds have elapsed
      */
-    public void waitUntil(Object result, long timeout) throws TimeoutException {
+    public void waitUntilWithTimeout(Object result, long timeout) throws TimeoutException {
+        _waitUntilWithTimeout(result, timeout);
+    }
+
+    /**
+     * Waits until the condition matches the expected result. Returns immediately if they match, otherwise waits
+     * for timeout milliseconds or until the results match. This method doesn't throw a TimeoutException
+     * @param result The result, needs to match the condition (using equals()).
+     * @param timeout Number of milliseconds to wait. A value of <= 0 means to wait forever
+     */
+    public void waitUntil(Object result, long timeout) {
+        try {
+            _waitUntilWithTimeout(result, timeout);
+        }
+        catch(TimeoutException e) {
+
+        }
+    }
+
+    public void waitUntil(Object result) {
+        try {waitUntilWithTimeout(result, 0);} catch(TimeoutException e) {}
+    }
+
+
+
+    private void _waitUntilWithTimeout(Object result, long timeout) throws TimeoutException {
         long    time_to_wait=timeout, start;
         boolean timeout_occurred=false;
-        synchronized(this) {
+        synchronized(lock) {
             if(result == null && cond == null) return;
 
             start=System.currentTimeMillis();
@@ -70,26 +107,22 @@ public class CondVar {
     }
 
 
+
+
+    void doWait() {
+        try {lock.wait();} catch(InterruptedException e) {}
+    }
+
+    void doWait(long timeout) {
+        try {lock.wait(timeout);} catch(InterruptedException e) {}
+    }
+
     private boolean match(Object o1, Object o2) {
         if(o1 != null)
             return o1.equals(o2);
         else
             return o2.equals(o1);
     }
-
-
-    public void waitUntil(Object result) {
-        try {waitUntil(result, 0);} catch(TimeoutException e) {}
-    }
-
-    void doWait() {
-        try {wait();} catch(InterruptedException e) {}
-    }
-
-    void doWait(long timeout) {
-        try {wait(timeout);} catch(InterruptedException e) {}
-    }
-
 
     public String toString() {
         return name + "=" + cond;
