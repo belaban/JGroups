@@ -1,4 +1,4 @@
-// $Id: Protocol.java,v 1.20 2004/09/23 16:29:53 belaban Exp $
+// $Id: Protocol.java,v 1.21 2005/01/01 08:09:37 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -157,11 +157,11 @@ class DownHandler extends Thread {
  * constructor !</b>
  */
 public abstract class Protocol {
-    protected final Properties       props=new Properties();
+    protected final Properties props=new Properties();
     protected Protocol         up_prot=null, down_prot=null;
     protected ProtocolStack    stack=null;
-    protected final Queue            up_queue=new Queue();
-    protected final Queue down_queue=new Queue();
+    protected final Queue      up_queue=new Queue();
+    protected final Queue      down_queue=new Queue();
     protected UpHandler        up_handler=null;
     protected int              up_thread_prio=-1;
     protected DownHandler      down_handler=null;
