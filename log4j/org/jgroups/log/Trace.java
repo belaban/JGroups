@@ -1,4 +1,4 @@
-// $Id: Trace.java,v 1.3 2004/02/24 15:56:33 belaban Exp $
+// $Id: Trace.java,v 1.4 2004/02/24 17:08:54 belaban Exp $
 
 package org.jgroups.log;
 
@@ -341,52 +341,75 @@ public class Trace {
             Logger.getLogger(identifier + "." + module).log(jgToLog4jLevel(level), message);
     }
 
-    /** Helper method. Will call Trace.println(module, Trace.DEBUG, module) */
+    /** Helper method. Will call Trace.println(module, Trace.DEBUG, message) */
     public static void debug(String module, String message) {
+        module=getCallersFrame(); // we ignore the module parameter passed to us by caller
         if(identifier == null)
             Logger.getLogger(module).debug(message);
         else
             Logger.getLogger(identifier + "." + module).debug(message);
     }
 
-    /** Helper method. Will call Trace.println(module, Trace.TEST, module) */
+    /** Helper method. Will call Trace.println(module, Trace.TEST, message) */
     public static void test(String module, String message) {
+        module=getCallersFrame(); // we ignore the module parameter passed to us by caller
         if(identifier == null)
             Logger.getLogger(module).debug(message);
         else
             Logger.getLogger(identifier + "." + module).debug(message);
     }
 
-    /** Helper method. Will call Trace.println(module, Trace.INFO, module) */
+    /** Helper method. Will call Trace.println(module, Trace.INFO, message) */
     public static void info(String module, String message) {
-        if(identifier == null)
+        module=getCallersFrame(); // we ignore the module parameter passed to us by caller
+        if(identifier == null) {
             Logger.getLogger(module).info(message);
-        else
+        }
+        else {
             Logger.getLogger(identifier + "." + module).info(message);
+        }
     }
 
-    /** Helper method. Will call Trace.println(module, Trace.WARN, module) */
+    /** Helper method. Will call Trace.println(module, Trace.WARN, message) */
     public static void warn(String module, String message) {
+        module=getCallersFrame(); // we ignore the module parameter passed to us by caller
         if(identifier == null)
             Logger.getLogger(module).warn(message);
         else
             Logger.getLogger(identifier + "." + module).warn(message);
     }
 
-    /** Helper method. Will call Trace.println(module, Trace.ERROR, module) */
+    /** Helper method. Will call Trace.println(module, Trace.ERROR, message) */
     public static void error(String module, String message) {
+        module=getCallersFrame(); // we ignore the module parameter passed to us by caller
         if(identifier == null)
             Logger.getLogger(module).error(message);
         else
             Logger.getLogger(identifier + "." + module).error(message);
     }
 
-    /** Helper method. Will call Trace.println(module, Trace.FATAL, module) */
+    /** Helper method. Will call Trace.println(module, Trace.FATAL, message) */
     public static void fatal(String module, String message) {
+        module=getCallersFrame(); // we ignore the module parameter passed to us by caller
         if(identifier == null)
             Logger.getLogger(module).fatal(message);
         else
             Logger.getLogger(identifier + "." + module).fatal(message);
+    }
+
+
+    /**
+     * Returns the fully qualified classname and method of the caller's stack frame, e.g.
+     * "org.jgroups.protocols.PING.down". Note that this method requires JDK 1.4 and higher.
+     * @return Caller's frame
+     */
+    static String getCallersFrame() {
+        Throwable t=new Throwable();
+        StackTraceElement[] dump=t.getStackTrace();
+        StackTraceElement el=dump[2];
+        StringBuffer sb=new StringBuffer();
+        sb.append(el.getClassName()).append(".").append(el.getMethodName());
+        return sb.toString();
     }
 
 
