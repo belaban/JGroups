@@ -21,13 +21,11 @@ import java.util.List;
 
  */
 public class ReceiverThread extends Thread {
-    private long msgs_burst;
-    private long num_bursts;
     private int msg_size;
     private int num_senders;
+    private long expected_msgs;
     Logger  log=Logger.getLogger(this.getClass());
     long    counter=1;
-    long    expected_msgs=msgs_burst * num_bursts * num_senders;
     long    beginning=0, ending=0, elapsed_time, last_dump;
     long    log_interval=1000;
     boolean gnuplot_output=Boolean.getBoolean("gnuplot_output");
@@ -39,12 +37,10 @@ public class ReceiverThread extends Thread {
     boolean started=false;
 
 
-    public ReceiverThread(ServerSocket srv_sock, long mb, int nb, int ms, int ns, long log_interval) {
-        msgs_burst=mb;
-        num_bursts=nb;
+    public ReceiverThread(ServerSocket srv_sock, int num_msgs, int ms, int ns, long log_interval) {
         msg_size=ms;
         num_senders=ns;
-        expected_msgs=msgs_burst * num_bursts * num_senders;
+        expected_msgs=num_msgs * num_senders;
         this.log_interval=log_interval;
         this.srv_sock=srv_sock;
     }

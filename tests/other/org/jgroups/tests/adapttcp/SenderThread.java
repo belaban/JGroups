@@ -18,10 +18,7 @@ import java.util.List;
 
  */
 public class SenderThread extends Thread {
-
-    private long msgs_burst;
-    private long sleep_msec;
-    private int num_bursts;
+    private int num_msgs;
     private int msg_size;
     Logger  log=Logger.getLogger(this.getClass());
     long log_interval=1000;
@@ -30,10 +27,8 @@ public class SenderThread extends Thread {
 
 
 
-    public SenderThread(List nodes, long mb, long st, int nb, int ms, long log_interval) {
-        msgs_burst=mb;
-        sleep_msec=st;
-        num_bursts=nb;
+    public SenderThread(List nodes, int num_msgs, int ms, long log_interval) {
+        this.num_msgs=num_msgs;
         msg_size=ms;
         this.log_interval=log_interval;
         this.nodes=nodes;
@@ -42,7 +37,6 @@ public class SenderThread extends Thread {
     public void run() {
         long total_msgs=0;
         ConnectionTable ct=null;
-
 
         System.out.println("Sender thread started...");
 
@@ -65,19 +59,16 @@ public class SenderThread extends Thread {
             System.out.println("Everyone joined, ready to begin test...\n" +
                     "cluster: " + ct.toString());
 
-            for(int i=0; i < num_bursts; i++) {
-                for(int j=0; j < msgs_burst; j++) {
-                    ct.writeMessage(msg);
-                    total_msgs++;
-                    if(total_msgs % 1000 == 0) {
-                        System.out.println("++ sent " + total_msgs);
-                    }
-                    if(total_msgs % log_interval == 0) {
-                        if(gnuplot_output == false)
-                            log.info(dumpStats(total_msgs));
-                    }
+            for(int i=0; i < num_msgs; i++) {
+                ct.writeMessage(msg);
+                total_msgs++;
+                if(total_msgs % 1000 == 0) {
+                    System.out.println("++ sent " + total_msgs);
                 }
-                sleep(sleep_msec);
+                if(total_msgs % log_interval == 0) {
+                    if(gnuplot_output == false)
+                        log.info(dumpStats(total_msgs));
+                }
             }
             System.out.println("Sent all bursts. Sender terminates.\n");
         }
