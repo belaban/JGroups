@@ -1,4 +1,4 @@
-// $Id: ConnectStressTest.java,v 1.6 2003/11/22 00:42:38 belaban Exp $
+// $Id: ConnectStressTest.java,v 1.7 2003/11/22 01:12:52 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -12,11 +12,13 @@ import org.jgroups.View;
 import org.jgroups.util.Util;
 import org.jgroups.log.Trace;
 
+import java.util.Vector;
+
 
 /**
  * Creates 1 channel, then creates NUM channels, all try to join the same channel concurrently.
  * @author Bela Ban Nov 20 2003
- * @version $Id: ConnectStressTest.java,v 1.6 2003/11/22 00:42:38 belaban Exp $
+ * @version $Id: ConnectStressTest.java,v 1.7 2003/11/22 01:12:52 belaban Exp $
  */
 public class ConnectStressTest extends TestCase {
     static CyclicBarrier  start_connecting=null;
@@ -109,10 +111,14 @@ public class ConnectStressTest extends TestCase {
 
         int num_members=0;
         for(int i=0; i < 10; i++) {
-            num_members=channel.getView().getMembers().size();
-            System.out.println("*--* number of members connected: " + num_members + ", (expected: 1)");
-            if(num_members == 1)
-                break;
+            View v=channel.getView();
+            Vector mbrs=v != null? v.getMembers() : null;
+            if(mbrs != null) {
+                num_members=mbrs.size();
+                System.out.println("*--* number of members connected: " + num_members + ", (expected: 1)");
+                if(num_members == 1)
+                    break;
+            }
             Util.sleep(500);
         }
         assertEquals(1, num_members);
