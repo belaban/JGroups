@@ -1,4 +1,4 @@
-// $Id: MERGE3.java,v 1.1 2004/09/15 13:32:07 belaban Exp $
+// $Id: MERGE3.java,v 1.2 2004/09/15 13:48:27 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -133,19 +133,7 @@ public class MERGE3 extends Protocol {
                         }
 
                         if(announcements.size() > 1 && is_coord) {
-                            if(use_separate_thread) {
-                                Thread merge_notifier=new Thread() {
-                                    public void run() {
-                                        processAnnouncements();
-                                    }
-                                };
-                                merge_notifier.setDaemon(true);
-                                merge_notifier.setName("merge notifier thread");
-                                merge_notifier.start();
-                            }
-                            else {
-                                processAnnouncements();
-                            }
+                            processAnnouncements();
                         }
                     }
                 }
@@ -243,7 +231,19 @@ public class MERGE3 extends Protocol {
             if(coords.size() > 1) {
                 if(log.isDebugEnabled())
                     log.debug("passing up MERGE event, coords=" + coords);
-                passUp(new Event(Event.MERGE, coords));
+                final Event evt=new Event(Event.MERGE, coords);
+                if(use_separate_thread) {
+                    Thread merge_notifier=new Thread() {
+                        public void run() {
+                            passUp(evt);
+                        }
+                    };
+                    merge_notifier.setDaemon(true);
+                    merge_notifier.setName("merge notifier thread");
+                }
+                else {
+                    passUp(evt);
+                }
             }
             announcements.clear();
         }
