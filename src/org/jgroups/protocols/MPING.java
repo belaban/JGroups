@@ -1,17 +1,19 @@
 package org.jgroups.protocols;
 
 import org.jgroups.Message;
+import org.jgroups.Event;
+import org.jgroups.util.Buffer;
+import org.jgroups.util.ExposedByteArrayOutputStream;
 
+import java.io.*;
+import java.net.*;
 import java.util.Properties;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.net.MulticastSocket;
 
 /**
  * Uses its own IP multicast socket to send and receive discovery requests/responses. Can be used in
  * conjuntion with a non-UDP transport, e.g. TCP.
  * @author Bela Ban
- * @version $Id: MPING.java,v 1.1 2005/03/30 22:15:29 belaban Exp $
+ * @version $Id: MPING.java,v 1.2 2005/03/30 22:43:24 belaban Exp $
  */
 public class MPING extends PING implements Runnable {
     MulticastSocket mcast_sock=null;
@@ -20,7 +22,15 @@ public class MPING extends PING implements Runnable {
     int            ip_ttl=16;
     InetAddress    mcast_addr=null;
     int            mcast_port=0;
+    /** Pre-allocated byte stream. Used for serializing datagram packets. Will grow as needed */
+    final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(512);
+    byte           receive_buf[]=new byte[65535];
     static final String IGNORE_BIND_ADDRESS_PROPERTY="ignore.bind.address";
+
+
+    public String getName() {
+        return "MPING";
+    }
 
 
     public boolean setProperties(Properties props) {
@@ -117,15 +127,68 @@ public class MPING extends PING implements Runnable {
         super.stop();
     }
 
-    void sendMcastDiscoveryRequest(Message discovery_request) {
-        // todo: marshal msg into buffer, create datagram, send it
+    void sendMcastDiscoveryRequest(Message msg) {
+        Buffer           buf;
+        DatagramPacket   packet;
+
+        try {
+            out_stream.reset();
+            DataOutputStream out=new DataOutputStream(out_stream);
+            msg.writeTo(out);
+            out.close(); // flushes contents to out_stream
+            buf=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
+            packet=new DatagramPacket(buf.getBuf(), buf.getOffset(), buf.getLength(), mcast_addr, mcast_port);
+            mcast_sock.send(packet);
+        }
+        catch(IOException ex) {
+            log.error("failed sending discovery request", ex);
+        }
     }
 
+
+
+
+
+
     public void run() {
+        DatagramPacket       packet=new DatagramPacket(receive_buf, receive_buf.length);
+        int                  len;
+        byte[]               data;
+        ByteArrayInputStream inp_stream=null;
+        DataInputStream      inp=null;
+        Message              msg=null;
+
         while(mcast_sock != null && receiver != null && Thread.currentThread().equals(receiver)) {
-            // todo: receive datagram, convert to Message, pass up the stack
+            packet.setData(receive_buf, 0, receive_buf.length);
+            try {
+                mcast_sock.receive(packet);
+                len=packet.getLength();
+                if(log.isTraceEnabled())
+                    log.trace("received " + len + " bytes from " + packet.getAddress() + ":" + packet.getPort());
+                data=packet.getData();
+                inp_stream=new ByteArrayInputStream(data, 0, data.length);
+                inp=new DataInputStream(inp_stream);
+                msg=new Message();
+                msg.readFrom(inp);
+                up(new Event(Event.MSG, msg));
+            }
+            catch(SocketException socketEx) {
+                break;
+            }
+            catch(Exception ex) {
+                log.error("failed receiving packet", ex);
+            }
+            finally {
+                closeInputStream(inp);
+                closeInputStream(inp_stream);
+            }
         }
         if(log.isTraceEnabled())
             log.trace("receiver thread terminated");
+    }
+
+    private void closeInputStream(InputStream inp) {
+        if(inp != null)
+            try {inp.close();} catch(IOException e) {}
     }
 }
