@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindow.java,v 1.7 2004/05/04 20:58:02 belaban Exp $
+// $Id: NakReceiverWindow.java,v 1.8 2004/05/05 17:38:48 belaban Exp $
 
 
 package org.jgroups.stack;
@@ -578,7 +578,7 @@ public class NakReceiverWindow {
         StringBuffer sb=new StringBuffer();
         lock.readLock();
         try {
-            sb.append("received_msgs: " + received_msgs);
+            sb.append("received_msgs: " + printReceivedMessages());
             sb.append(", delivered_msgs: " + printDeliveredMessages());
         }
         finally {
@@ -598,6 +598,32 @@ public class NakReceiverWindow {
         return sb.toString();
     }
 
+
+    String printReceivedMessages() {
+        StringBuffer sb=new StringBuffer();
+        sb.append("[");
+        lock.readLock();
+        try {
+            if(received_msgs.size() > 0) {
+                Entry first, last, entry;
+                first=(Entry)received_msgs.peekAtHead();
+                last=(Entry)received_msgs.peek();
+                sb.append(first).append(" - ").append(last);
+                int non_received=0;
+                for(Enumeration en=received_msgs.elements(); en.hasMoreElements();) {
+                    entry=(Entry)en.nextElement();
+                    if(entry.msg == null)
+                        non_received++;
+                }
+                sb.append(" (size=").append(received_msgs.size()).append(", missing=").append(non_received).append(")");
+            }
+        }
+        finally {
+            lock.readUnlock();
+        }
+        sb.append("]");
+        return sb.toString();
+    }
 
     /* ------------------------------- Private Methods -------------------------------------- */
 
