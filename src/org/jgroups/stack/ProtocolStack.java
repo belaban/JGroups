@@ -1,4 +1,4 @@
-// $Id: ProtocolStack.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+// $Id: ProtocolStack.java,v 1.2 2003/09/20 01:33:23 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -203,9 +203,22 @@ public class ProtocolStack extends Protocol implements Transport {
 
         timer.start();
 
+        long start=0, stop;
+
         synchronized(mutex) {
             for(int i=0; i < prots.size(); i++) {
                 p=(Protocol)prots.elementAt(i);
+
+                // flush events out of the queue, e.g. Event.CONFIG
+                try {
+                    start=System.currentTimeMillis();
+                    p.getDownQueue().waitUntilEmpty(50); // todo: replace with 0 timeout
+                }
+                catch(Exception ex) {}
+                finally {
+                    stop=System.currentTimeMillis();
+                }
+                System.out.println("time for " + p.getName() + ": " + (stop-start) + " msecs");
                 p.start();
             }
             stopped=false;

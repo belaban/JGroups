@@ -1,4 +1,4 @@
-// $Id: Queue.java,v 1.2 2003/09/19 18:20:53 belaban Exp $
+// $Id: Queue.java,v 1.3 2003/09/20 01:32:45 belaban Exp $
 
 package org.jgroups.util;
 
@@ -30,8 +30,8 @@ public class Queue {
     /*current size of the queue*/
     int     size=0;
 
-    /*lock object for synchronization*/
-    Object  mutex=new Object();
+    /* Lock object for synchronization. Is notified when element is added */
+    Object  add_mutex=new Object();
 
     /*the number of end markers that have been added*/
     int     num_markers=0;
@@ -126,7 +126,7 @@ public class Queue {
                                            "Waiting for removal of remaining elements.");
 
         /*lock the queue from other threads*/
-        synchronized(mutex) {
+        synchronized(add_mutex) {
             /*create a new linked list element*/
             Element el=new Element(obj);
             /*check the first element*/
@@ -148,8 +148,8 @@ public class Queue {
                 size++;
             }
             /*wake up all the threads that are waiting for the lock to be released*/
-            mutex.notifyAll();
-            // mutex.notify();
+            add_mutex.notifyAll();
+            // add_mutex.notify();
         }
     }
 
@@ -175,7 +175,7 @@ public class Queue {
                                            "Waiting for removal of remaining elements.");
 
         /*lock the queue from other threads*/
-        synchronized(mutex) {
+        synchronized(add_mutex) {
             Element el=new Element(obj);
             /*check the head element in the list*/
             if(head == null) {
@@ -193,8 +193,8 @@ public class Queue {
                 size++;
             }
             /*wake up all the threads that are waiting for the lock to be released*/
-            mutex.notifyAll();
-            // mutex.notify();
+            add_mutex.notifyAll();
+            // add_mutex.notify();
         }
     }
 
@@ -208,13 +208,13 @@ public class Queue {
         /*initialize the return value*/
         Object retval=null;
         /*lock the queue*/
-        synchronized(mutex) {
+        synchronized(add_mutex) {
             /*wait as long as the queue is empty. return when an element is present or queue is closed*/
             while(size == 0) {
                 if(closed)
                     throw new QueueClosedException();
                 try {
-                    mutex.wait();
+                    add_mutex.wait();
                 }
                 catch(IllegalMonitorStateException ex) {
                     throw ex;
@@ -257,14 +257,14 @@ public class Queue {
         Object retval=null;
 
         /*lock the queue*/
-        synchronized(mutex) {
+        synchronized(add_mutex) {
             /*if the queue size is zero, we want to wait until a new object is added*/
             if(size == 0) {
                 if(closed)
                     throw new QueueClosedException();
                 try {
-                    /*release the mutex lock and wait no more than timeout ms*/
-                    mutex.wait(timeout);
+                    /*release the add_mutex lock and wait no more than timeout ms*/
+                    add_mutex.wait(timeout);
                 }
                 catch(IllegalMonitorStateException ex) {
                     throw ex;
@@ -275,7 +275,7 @@ public class Queue {
                 catch(InterruptedException ex) {
                 }
             }
-            /*we either timed out, or got notified by the mutex lock object*/
+            /*we either timed out, or got notified by the add_mutex lock object*/
 
             /*check to see if the object closed*/
             if(closed)
@@ -311,7 +311,7 @@ public class Queue {
         }
 
         /*lock the queue*/
-        synchronized(mutex) {
+        synchronized(add_mutex) {
             el=head;
 
             /*the queue is empty*/
@@ -359,12 +359,12 @@ public class Queue {
     public Object peek() throws QueueClosedException {
         Object retval=null;
 
-        synchronized(mutex) {
+        synchronized(add_mutex) {
             while(size == 0) {
                 if(closed)
                     throw new QueueClosedException();
                 try {
-                    mutex.wait();
+                    add_mutex.wait();
                 }
                 catch(IllegalMonitorStateException ex) {
                     throw ex;
@@ -407,12 +407,12 @@ public class Queue {
     public Object peek(long timeout) throws QueueClosedException, TimeoutException {
         Object retval=null;
 
-        synchronized(mutex) {
+        synchronized(add_mutex) {
             if(size == 0) {
                 if(closed)
                     throw new QueueClosedException();
                 try {
-                    mutex.wait(timeout);
+                    add_mutex.wait(timeout);
                 }
                 catch(IllegalMonitorStateException ex) {
                     throw ex;
@@ -458,11 +458,11 @@ public class Queue {
             return;
         }
 
-        synchronized(mutex) {
+        synchronized(add_mutex) {
             closed=true;
             try {
-                mutex.notifyAll();
-                // mutex.notify();
+                add_mutex.notifyAll();
+                // add_mutex.notify();
             }
             catch(Exception e) {
                 Trace.error("Queue.close()", "exception=" + e);
@@ -480,7 +480,7 @@ public class Queue {
         if(!closed)
             close(false);
 
-        synchronized(mutex) {
+        synchronized(add_mutex) {
             size=0;
             head=null;
             tail=null;
@@ -518,7 +518,7 @@ public class Queue {
         Vector retval=new Vector();
         Element el;
 
-        synchronized(mutex) {
+        synchronized(add_mutex) {
             el=head;
             while(el != null) {
                 retval.addElement(el.obj);
@@ -537,21 +537,39 @@ public class Queue {
      * @throws TimeoutException Thrown if timeout has elapsed
      */
     public void waitUntilEmpty(long timeout) throws QueueClosedException, TimeoutException {
-        synchronized(mutex) {
-            if(closed)
-                throw new QueueClosedException();
-            if(size == 0)
-                return;
-            try {
-                mutex.wait(timeout);
+
+        // TODO: use Locks instead of add_mutex: acquire add_lock, the remove_lock, the release add_lock, and
+        // wait on remove_lock. Use util.concurrent locks
+
+        // TODO: compare lock-based impl vs. synchronized-based impl (speed for large insertions)
+
+        synchronized(add_mutex) {
+            //System.out.println("SIZE: " + size);
+            while(size > 0) {
+                try {
+                    add_mutex.wait(1);
+                }
+                catch(InterruptedException e) {}
             }
-            catch(InterruptedException e) {
-            }
-            if(closed)
-                throw new QueueClosedException();
-            if(size > 0)
-                throw new TimeoutException("queue has " + size + " elements");
         }
+
+//        synchronized(remove_mutex) {
+//            if(closed)
+//                throw new QueueClosedException();
+//            if(size == 0)
+//                return;
+//            try {
+//                remove_mutex.wait(timeout);
+//            }
+//            catch(InterruptedException e) {
+//            }
+//            if(closed)
+//                throw new QueueClosedException();
+//            if(size > 0)
+//                throw new TimeoutException("queue has " + size + " elements");
+//        }
+//
+
     }
 
 
@@ -560,7 +578,7 @@ public class Queue {
 
     /**
      * Removes the first element. Returns null if no elements in queue.
-     * Always called with mutex locked (we don't have to lock mutex ourselves)
+     * Always called with add_mutex locked (we don't have to lock add_mutex ourselves)
      */
     private Object removeInternal() {
         Element retval;
