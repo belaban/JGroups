@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.10 2004/04/28 19:55:54 belaban Exp $
+// $Id: STABLE.java,v 1.11 2004/04/28 20:19:17 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -663,7 +663,7 @@ public class STABLE extends Protocol {
     /**
      * Multicasts a STABILITY message.
      */
-    private static class StabilitySendTask implements TimeScheduler.Task {
+    private class StabilitySendTask implements TimeScheduler.Task {
         Digest   d=null;
         Protocol stable_prot=null;
         boolean  stopped=false;
@@ -694,6 +694,14 @@ public class STABLE extends Protocol {
         public void run() {
             Message msg;
             StableHeader hdr;
+
+            if(suspended) {
+                if(log.isDebugEnabled()) {
+                    log.debug("STABILITY message will not be sent as suspened=" + suspended);
+                }
+                stopped=true;
+                return;
+            }
 
             if(d != null && !stopped) {
                 msg=new Message();
