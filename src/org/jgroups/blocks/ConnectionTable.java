@@ -1,7 +1,8 @@
-// $Id: ConnectionTable.java,v 1.16 2005/03/23 11:01:27 belaban Exp $
+// $Id: ConnectionTable.java,v 1.17 2005/03/24 09:59:38 belaban Exp $
 
 package org.jgroups.blocks;
 
+import EDU.oswego.cs.dl.util.concurrent.LinkedQueue;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
@@ -15,7 +16,10 @@ import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.net.*;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Vector;
 
 
 /**
@@ -493,6 +497,8 @@ public class ConnectionTable implements Runnable {
     }
 
 
+
+
     class Connection implements Runnable {
         Socket           sock=null;                // socket to/from peer (result of srv_sock.accept() or new Socket())
         DataOutputStream out=null;                 // for sending messages
@@ -501,6 +507,56 @@ public class ConnectionTable implements Runnable {
         Address          peer_addr=null;           // address of the 'other end' of the connection
         final Object     send_mutex=new Object();  // serialize sends
         long             last_access=System.currentTimeMillis(); // last time a message was sent or received
+        LinkedQueue      send_queue=new LinkedQueue();
+        Sender           send_queue_handler=new Sender();
+        final long       POLL_TIMEOUT=30000;
+
+
+        class Sender implements Runnable {
+            Thread sender;
+            private boolean running=false;
+
+            void start() {
+                if(sender == null || !sender.isAlive()) {
+                    sender=new Thread(thread_group, this, "Sender");
+                    sender.setDaemon(true);
+                    sender.start();
+                    running=true;
+                    if(log.isTraceEnabled())
+                        log.trace("ConnectionTable.Connection.Sender thread started");
+                }
+            }
+
+            void stop() {
+                if(sender != null) {
+                    sender.interrupt();
+                    sender=null;
+                    running=false;
+                }
+            }
+
+            boolean isRunning() {
+                return running && sender != null;
+            }
+
+            public void run() {
+                Message msg;
+                while(sender != null && sender.equals(Thread.currentThread())) {
+                    try {
+                        msg=(Message)send_queue.poll(POLL_TIMEOUT);
+                        if(msg == null)
+                            break;
+                        _send(msg);
+                    }
+                    catch(InterruptedException e) {
+                        break;
+                    }
+                }
+                running=false;
+                if(log.isTraceEnabled())
+                    log.trace("ConnectionTable.Connection.Sender thread terminated");
+            }
+        }
 
 
         Connection(Socket s, Address peer_addr) {
@@ -531,30 +587,44 @@ public class ConnectionTable implements Runnable {
 
         void init() {
             // if(log.isInfoEnabled()) log.info("connection was created to " + peer_addr);
-            if(handler == null) {
+            if(handler == null || !handler.isAlive()) {
                 // Roland Kurmann 4/7/2003, put in thread_group
                 handler=new Thread(thread_group, this, "ConnectionTable.Connection.HandlerThread");
                 handler.setDaemon(true);
                 handler.start();
+                if(log.isTraceEnabled())
+                    log.trace("ConnectionTable.Connection.HandlerThread started");
             }
         }
 
 
         void destroy() {
             closeSocket(); // should terminate handler as well
+            send_queue_handler.stop();
             handler=null;
         }
 
 
         void send(Message msg) {
+            try {
+                send_queue.put(msg);
+                if(!send_queue_handler.isRunning())
+                    send_queue_handler.start();
+            }
+            catch(InterruptedException e) {
+                log.error("failed adding message to send_queue", e);
+            }
+        }
+
+        private void _send(Message msg) {
             synchronized(send_mutex) {
                 try {
                     doSend(msg);
                     updateLastAccessed();
                 }
                 catch(IOException io_ex) {
-                    if(log.isWarnEnabled()) log.warn("peer closed connection, " +
-                                                     "trying to re-establish connection and re-send msg.");
+                    if(log.isWarnEnabled())
+                        log.warn("peer closed connection, trying to re-establish connection and re-send msg");
                     try {
                         doSend(msg);
                         updateLastAccessed();
@@ -716,7 +786,7 @@ public class ConnectionTable implements Runnable {
             byte[] buf=new byte[256];
             int len=0;
 
-            while(handler != null) {
+            while(handler != null && handler.equals(Thread.currentThread())) {
                 try {
                     if(in == null) {
                         if(log.isErrorEnabled()) log.error("input stream is null !");
@@ -744,10 +814,12 @@ public class ConnectionTable implements Runnable {
                     notifyConnectionClosed(peer_addr);
                     break;
                 }
-                catch(Exception e) {
+                catch(Throwable e) {
                     if(log.isWarnEnabled()) log.warn("exception is " + e);
                 }
             }
+            if(log.isTraceEnabled())
+                log.trace("ConnectionTable.Connection.HandlerThread terminated");
             handler=null;
             closeSocket();
             remove(peer_addr);
