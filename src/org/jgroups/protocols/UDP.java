@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.3 2003/10/15 02:57:59 belaban Exp $
+// $Id: UDP.java,v 1.4 2003/11/21 17:28:28 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -733,6 +733,8 @@ public class UDP extends Protocol implements Runnable {
 			}
         }
 		//ucast_recv_sock=new DatagramSocket(bind_port, bind_addr);
+        if(ucast_recv_sock == null)
+            throw new Exception("UDP.createSocket(): ucast_recv_sock is null");
 
         local_addr=new IpAddress(ucast_recv_sock.getLocalAddress(), ucast_recv_sock.getLocalPort());
         if(additional_data != null)
