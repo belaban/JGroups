@@ -1,4 +1,4 @@
-// $Id: DisconnectTest.java,v 1.7 2005/02/19 11:45:27 ovidiuf Exp $
+// $Id: DisconnectTest.java,v 1.8 2005/02/19 12:34:39 ovidiuf Exp $
 
 package org.jgroups.tests;
 
@@ -21,7 +21,7 @@ import org.jgroups.util.Promise;
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
  * @author Bela Ban belaban@yahoo.com
- * @version $Revision: 1.7 $
+ * @version $Revision: 1.8 $
  **/
 public class DisconnectTest extends TestCase {
 
@@ -187,6 +187,9 @@ public class DisconnectTest extends TestCase {
          channel.connect("testgroup1");
          channel.disconnect();
          channel.connect("testgroup");
+
+         Thread.sleep(1000);
+         
          View view=channel.getView();
          assertEquals(2, view.size());
          assertTrue(view.containsMember(channel.getLocalAddress()));
