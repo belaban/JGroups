@@ -1,4 +1,4 @@
-// $Id: ConfiguratorFactory.java,v 1.4 2004/04/26 18:40:13 belaban Exp $
+// $Id: ConfiguratorFactory.java,v 1.5 2004/05/13 06:39:46 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -8,6 +8,7 @@ import org.apache.commons.logging.LogFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.FileInputStream;
 import java.net.URL;
 
 
@@ -75,6 +76,16 @@ public class ConfiguratorFactory {
                 }
             }
         }
+
+        // try a regular file
+        if(input == null) {
+            try {
+                input=new FileInputStream((String)properties);
+            }
+            catch(Throwable t) {
+            }
+        }
+
 
         if(input == null)
             log.info("properties are neither a URL nor a file");
