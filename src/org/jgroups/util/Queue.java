@@ -1,4 +1,4 @@
-// $Id: Queue.java,v 1.10 2003/09/26 08:38:16 rds13 Exp $
+// $Id: Queue.java,v 1.11 2003/09/26 14:06:14 belaban Exp $
 
 package org.jgroups.util;
 
@@ -18,9 +18,9 @@ import java.util.Vector;
  * list, so that removal of an element at the head does not cause a right-shift of the
  * remaining elements (as in a Vector-based implementation).
  * @author Bela Ban
- * @author Filip Hanik
  */
 public class Queue {
+
     /*head and the tail of the list so that we can easily add and remove objects*/
     Element head=null, tail=null;
 
@@ -56,7 +56,7 @@ public class Queue {
      */
     class Element {
         /*the actual value stored in the queue*/
-        Object obj=null;
+        Object  obj=null;
         /*pointer to the next item in the (queue) linked list*/
         Element next=null;
 
@@ -230,9 +230,6 @@ public class Queue {
             retval=removeInternal();
             if(retval == null)
                 Trace.error("Queue.remove()", "element was null, should never be the case");
-
-            /*wake up all the threads that are waiting for the lock to be released*/
-            add_mutex.notifyAll();
         }
 
         /*
@@ -294,12 +291,9 @@ public class Queue {
                 close(false);
                 throw new QueueClosedException();
             }
-            /*wake up all the threads that are waiting for the lock to be released*/
-            add_mutex.notifyAll();
-
-	    /*at this point we actually did receive a value from the queue, return it*/
+            /*at this point we actually did receive a value from the queue, return it*/
+            return retval;
         }
-	return retval;
     }
 
 
