@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.9 2004/01/07 01:33:48 belaban Exp $
+// $Id: UDP.java,v 1.10 2004/01/08 02:39:56 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -438,13 +438,6 @@ public class UDP extends Protocol implements Runnable {
 
 
     /**
-     * DON'T REMOVE ! This prevents the down-handler thread to be created.
-     */
-    public void startDownHandler() {
-        ;
-    }
-
-    /**
      * DON'T REMOVE ! This prevents the up-handler thread to be created, which essentially is superfluous:
      * messages are received from the network rather than from a layer below.
      */
@@ -682,7 +675,8 @@ public class UDP extends Protocol implements Runnable {
         out.flush(); // needed if out buffers its output to out_stream
         buf=out_stream.toByteArray();
         packet=new DatagramPacket(buf, buf.length, dest.getIpAddress(), dest.getPort());
-        sock.send(packet);
+        if(sock != null)
+            sock.send(packet);
     }
 
 
@@ -1209,7 +1203,7 @@ public class UDP extends Protocol implements Runnable {
                     break;
                 }
                 catch(Throwable t) {
-                    Trace.error("UDP.OutgoingPacketHandler.run()", "exception sending packet: " + t);
+                    Trace.error("UDP.OutgoingPacketHandler.run()", "exception sending packet: " + Util.printStackTrace(t));
                 }
                 msg=null; // let's give the poor garbage collector a hand...
             }

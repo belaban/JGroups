@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.6 2003/11/22 00:35:45 belaban Exp $
+// $Id: GMS.java,v 1.7 2004/01/08 02:39:56 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -460,10 +460,12 @@ public class GMS extends Protocol {
         synchronized(digest_mutex) {
             digest=null;
             passDown(new Event(Event.GET_DIGEST));
-            try {
-                digest_mutex.wait(digest_timeout);
-            }
-            catch(Exception ex) {
+            if(digest == null) {
+                try {
+                    digest_mutex.wait(digest_timeout);
+                }
+                catch(Exception ex) {
+                }
             }
             if(digest != null) {
                 ret=digest;
