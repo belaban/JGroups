@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.31 2004/07/05 14:17:16 belaban Exp $
+// $Id: UDP.java,v 1.32 2004/07/15 21:49:43 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -23,8 +23,8 @@ import java.util.*;
  * (msg.dest != null) will be unicast to a single member. Uses a multicast and
  * a unicast socket.<p>
  * The following properties are being read by the UDP protocol<p>
- * param mcast_addr - the multicast address to use default is 224.0.0.200<br>
- * param mcast_port - (int) the port that the multicast is sent on default is 7500<br>
+ * param mcast_addr - the multicast address to use default is 228.8.8.8<br>
+ * param mcast_port - (int) the port that the multicast is sent on default is 7600<br>
  * param ip_mcast - (boolean) flag whether to use IP multicast - default is true<br>
  * param ip_ttl - Set the default time-to-live for multicast packets sent out on this
  * socket. default is 32<br>
@@ -330,8 +330,8 @@ public class UDP extends Protocol implements Runnable {
     /**
      * Setup the Protocol instance acording to the configuration string
      * The following properties are being read by the UDP protocol
-     * param mcast_addr - the multicast address to use default is 224.0.0.200
-     * param mcast_port - (int) the port that the multicast is sent on default is 7500
+     * param mcast_addr - the multicast address to use default is 228.8.8.8
+     * param mcast_port - (int) the port that the multicast is sent on default is 7600
      * param ip_mcast - (boolean) flag whether to use IP multicast - default is true
      * param ip_ttl - Set the default time-to-live for multicast packets sent out on this socket. default is 32
      * @return true if no other properties are left.
