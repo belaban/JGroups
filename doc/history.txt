@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.5 2003/09/24 23:23:47 belaban Exp $
+Revision: $Id: history.txt,v 1.6 2003/09/25 18:40:52 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java JGroups.Version')]
 
@@ -25,6 +25,9 @@ romuald     = Romuald du Song
 
 Version 2.2
 -----------
+
+- JChannel.close(): queue will not be reset until re-opened
+  (bela Sept 25 2003)
 
 - Added flushEvents() to ProtocolStack
   (bela Sept 24 2003)
