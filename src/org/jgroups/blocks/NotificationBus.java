@@ -1,4 +1,4 @@
-// $Id: NotificationBus.java,v 1.6 2004/07/05 05:41:45 belaban Exp $
+// $Id: NotificationBus.java,v 1.7 2004/08/24 09:31:27 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -31,17 +31,7 @@ public class NotificationBus implements MessageListener, MembershipListener {
     protected Log log=LogFactory.getLog(getClass());
 
 
-    String props="UDP(mcast_addr=228.1.2.3;mcast_port=45566;ip_ttl=0;trace=true):" +
-            "PING(timeout=3000;num_initial_members=6):" +
-            "FD(trace=true;timeout=5000):" +
-            "VERIFY_SUSPECT(trace=false;timeout=1500):" +
-            // "DISCARD(trace=true;down=0.2):" +
-            "pbcast.STABLE(trace=true;desired_avg_gossip=5000):" +
-            "pbcast.NAKACK(trace=true;gc_lag=5;retransmit_timeout=3000):" +
-            "UNICAST(timeout=5000):" +
-            "FRAG:" +
-            "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
-            "trace=true;shun=false;print_local_addr=false)";
+    String props=null;
 
 
     public interface Consumer {
