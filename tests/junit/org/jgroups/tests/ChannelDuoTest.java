@@ -1,4 +1,4 @@
-// $Id: ChannelDuoTest.java,v 1.1 2003/09/24 09:04:38 rds13 Exp $
+// $Id: ChannelDuoTest.java,v 1.2 2003/09/26 10:09:06 rds13 Exp $
 
 package org.jgroups.tests;
 
@@ -49,9 +49,12 @@ public class ChannelDuoTest extends TestCase
 
 	public void tearDown()
 	{
-		channel1.disconnect();
-		channel1.close();
-		channel1 = null;
+		if (channel1 != null)
+		{
+			channel1.disconnect();
+			channel1.close();
+			channel1 = null;
+		}
 	}
 
 	public void testLargeInsertion()
@@ -239,7 +242,7 @@ public class ChannelDuoTest extends TestCase
 				{
 					msg = (Message) obj;
 					num_items++;
-					logger.info("Received " + msg.getObject());
+					logger.debug("Received " + msg.getObject());
 				}
 				else
 				{
@@ -373,6 +376,17 @@ public class ChannelDuoTest extends TestCase
 			}
 		}
 
+		num_dead = 0;
+		for (int i = 0; i < removers.length; i++)
+		{
+			logger.info("remover #" + i + " is " + (removers[i].isAlive() ? "alive" : "terminated"));
+			if (!removers[i].isAlive())
+			{
+				num_dead++;
+			}
+		}
+		assertEquals(removers.length, num_dead);
+
 		channel2.close();
 		channel2 = null;
 		logger.info("stop testBarrier");
@@ -384,8 +398,8 @@ public class ChannelDuoTest extends TestCase
 	public void testMultipleWriterMultipleReader()
 	{
 		logger.info("start testMultipleWriterMultipleReader");
-		int nWriters = 3;
-		int nReaders = 5;
+		int nWriters = 10;
+		int nReaders = 10;
 
 		Writer[] adders = new Writer[nWriters];
 		Reader[] readers = new Reader[nReaders];
@@ -418,19 +432,24 @@ public class ChannelDuoTest extends TestCase
 			adders[i].start();
 		}
 
+		// give writers time to write !
 		Util.sleep(15000);
 
+		// stop all writers
 		for (int i = 0; i < adders.length; i++)
 		{
-				adders[i].stopThread();
+			adders[i].stopThread();
 		}
-		channel1.close();
 
+		// give time to writers to stop
+		Util.sleep(1000);
+
+		// checking all writers are stopped
 		for (int i = 0; i < adders.length; i++)
 		{
 			try
 			{
-				logger.debug("Waiting for thread " + i + " to join");
+				logger.debug("Waiting for Writer thread " + i + " to join");
 				adders[i].join(1000);
 				logger.info("adder #" + i + " is " + (adders[i].isAlive() ? "alive" : "terminated"));
 				adders[i] = null;
@@ -440,29 +459,38 @@ public class ChannelDuoTest extends TestCase
 				logger.error("Thread joining() interrupted", e);
 			}
 		}
-		
+
+		// give time for readers to read back data
 		Util.sleep(10000);
 
-		for (int i = 0; i < readers.length; i++)
-		{
-				readers[i].stopThread();
-		}
 		channel2.close();
 
-		for (int i = 0; i < readers.length; i++)
+		// give time to readers to catch ChannelClosedException
+		boolean allStopped = true;
+		do
 		{
-			try
+			allStopped = true;
+			Util.sleep(2000);
+			for (int i = 0; i < readers.length; i++)
 			{
-				logger.debug("Waiting for thread " + i + " to join");
-				readers[i].join(1000);
-				logger.info("reader #" + i + " is " + (readers[i].isAlive() ? "alive" : "terminated"));
-				readers[i] = null;
-			}
-			catch (InterruptedException e)
-			{
-				logger.error("Thread joining() interrupted", e);
+				try
+				{
+					logger.debug("Waiting for Reader thread " + i + " to join");
+					readers[i].join(1000);
+					if (readers[i].isAlive())
+					{
+						allStopped = false;
+						logger.info("reader #"+i+" "+reads[i]+" read items");
+					}
+					logger.info("reader #" + i + " is " + (readers[i].isAlive() ? "alive" : "terminated"));
+				}
+				catch (InterruptedException e)
+				{
+					logger.error("Thread joining() interrupted", e);
+				}
 			}
 		}
+		while (!allStopped);
 
 		int total_writes = 0;
 		for (int i = 0; i < writes.length; i++)
@@ -479,7 +507,7 @@ public class ChannelDuoTest extends TestCase
 		logger.info("Total reads:" + total_reads);
 
 		assertEquals(total_writes, total_reads);
-		
+
 		channel2.close();
 		channel2 = null;
 		logger.info("end testMultipleWriterMultipleReader");
@@ -733,7 +761,7 @@ public class ChannelDuoTest extends TestCase
 
 		Writer(Channel channel, int i, int[] writes)
 		{
-			super("Writer thread #"+i);
+			super("Writer thread #" + i);
 			rank = i;
 			this.writes = writes;
 			setDaemon(true);
@@ -778,7 +806,7 @@ public class ChannelDuoTest extends TestCase
 
 		Reader(Channel channel, int i, int[] reads)
 		{
-			super("Reader thread #"+i);
+			super("Reader thread #" + i);
 			rank = i;
 			this.reads = reads;
 			setDaemon(true);
@@ -796,29 +824,34 @@ public class ChannelDuoTest extends TestCase
 				{
 					Object obj = channel.receive(0); // no timeout
 					if (obj instanceof View)
-						logger.info("Thread #" + rank + ":--> NEW VIEW: " + obj);
+						logger.info("Reader thread #" + rank + ":--> NEW VIEW: " + obj);
 					else if (obj instanceof Message)
 					{
 						msg = (Message) obj;
 						retval = (Long) msg.getObject();
-						logger.debug("Thread #" + rank + ": received " + retval);
+						logger.debug("Reader thread #" + rank + ": received " + retval);
 						num_reads++;
 						assertNotNull(retval);
 					}
 				}
 				catch (ChannelNotConnectedException conn)
 				{
-					logger.error("Thread #" + rank + ": problem", conn);
+					logger.error("Reader thread #" + rank + ": problem", conn);
 					running = false;
 				}
 				catch (TimeoutException e)
 				{
-					logger.error("Thread #" + rank + ": channel time out but should'nt have...", e);
+					logger.error("Reader thread #" + rank + ": channel time out but should'nt have...", e);
+					running = false;
+				}
+				catch (ChannelClosedException e)
+				{
+					logger.error("Reader thread #" + rank + ": channel closed", e);
 					running = false;
 				}
 				catch (Exception e)
 				{
-					logger.error("Thread #" + rank + ": problem", e);
+					logger.error("Reader thread #" + rank + ": problem", e);
 				}
 			}
 			reads[rank] = num_reads;
