@@ -1,4 +1,4 @@
-$Id: todo.lst,v 1.15 2004/10/07 07:32:54 belaban Exp $
+$Id: todo.lst,v 1.16 2004/10/07 09:14:51 belaban Exp $
 
 
 
@@ -26,6 +26,8 @@ $Id: todo.lst,v 1.15 2004/10/07 07:32:54 belaban Exp $
 
 - TCP: instead of sending to each receiver in turn, use 1 queue/thread per receiver. This prevents
   the server from hanging of a receiver hangs
+
+- Convert TUNNEL, TCP, GossipRouter to Streamable
 
 - Logical IpAddress: use any number of NICs, and fail over between
   NICs, but always have the same logical address
