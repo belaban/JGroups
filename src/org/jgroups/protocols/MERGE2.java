@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.14 2005/03/23 14:51:54 belaban Exp $
+// $Id: MERGE2.java,v 1.15 2005/03/26 22:45:41 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -263,7 +263,7 @@ public class MERGE2 extends Protocol {
                 }
                 else {
                     if(log.isTraceEnabled())
-                        log.trace("didn't find multiple coordinators in " + initial_mbrs + ", skipping merge");
+                        log.trace("didn't find multiple coordinators in " + initial_mbrs + ", no need for merge");
                 }
             }
             if(log.isTraceEnabled())
