@@ -1,4 +1,4 @@
-// $Id: IpAddress.java,v 1.14 2004/10/06 08:50:43 belaban Exp $
+// $Id: IpAddress.java,v 1.15 2004/10/13 16:06:07 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -76,9 +76,15 @@ public class IpAddress implements Address {
     }
 
     public IpAddress(int port) {
-        this.port=port;
-        setAddressToLocalHost();
+        this(port, true);
     }
+
+    public IpAddress(int port, boolean set_default_host) {
+        this.port=port;
+        if(set_default_host)
+            setAddressToLocalHost();
+    }
+
 
 
     public InetAddress  getIpAddress()               {return ip_addr;}
