@@ -1,5 +1,5 @@
 
-# $Id: RULES,v 1.4 2004/01/05 14:54:06 belaban Exp $
+# $Id: RULES,v 1.5 2004/04/05 13:08:22 belaban Exp $
 
 		  Rules developers should adhere to
 		  ---------------------------------
@@ -12,6 +12,9 @@
   multiple developers from incrementing the same version number. With
   minor relases this is usually not a big deal and I'll do it
   immediately.
+
+- Do not modify core functionality (e.g. Protocol, Scheduler, CoordGmsImpl etc)
+  before consulting with one of the project administrators.
 
 - The history file should be updated if someone made a
   modification/contribution. Not every detail, just a short note.
@@ -52,9 +55,10 @@
 
 
 
-Bela Ban (bela@nms.fnc.fujitsu.com)
+Bela Ban (bela@yahoo.com)
 San Jose, March 13 2001
           Dec   11 2002
+          April 5 2004
 
 
 
