@@ -19,7 +19,7 @@ import java.lang.reflect.Method;
  * It includes the name of the method (case sensitive) and a list of arguments.
  * A method call is serializable and can be passed over the wire.
  * @author Bela Ban
- * @version $Revision: 1.5 $
+ * @version $Revision: 1.6 $
  */
 public class MethodCall implements Externalizable {
 
@@ -65,6 +65,7 @@ public class MethodCall implements Externalizable {
     public MethodCall() {
     }
 
+
     public MethodCall(Method method) {
         this(method, null);
     }
@@ -72,6 +73,18 @@ public class MethodCall implements Externalizable {
     public MethodCall(Method method, Object[] arguments) {
         init(method);
         if(arguments != null) args=arguments;
+    }
+
+    /**
+     *
+     * @param method_name
+     * @param args
+     * @deprecated Use one of the constructors that take class types as arguments
+     */
+    public MethodCall(String method_name, Object[] args) {
+        this.method_name=method_name;
+        this.mode=OLD;
+        this.args=args;
     }
 
 
@@ -140,24 +153,41 @@ public class MethodCall implements Externalizable {
 
 
     /**
-     * Returns a method instance for a certain class matching the name and the argument types
-     * @param target_class - the class that you will invoke the method on
-     * in this method, not the actual value.
+     *
+     * @param target_class
+     * @return
+     * @throws Exception
      */
     Method findMethod(Class target_class) throws Exception {
         int     len=args != null? args.length : 0;
-        Class[] formal_parms=new Class[len];
-        Method  retval;
+        Method  m;
 
-        for(int i=0; i < len; i++) {
-            formal_parms[i]=args[i].getClass();
+        Method[] methods=target_class.getMethods();
+        for(int i=0; i < methods.length; i++) {
+            m=methods[i];
+            if(m.getName().equals(method_name)) {
+                if(m.getParameterTypes().length == len)
+                    return m;
+            }
         }
 
-        /* getDeclaredMethod() is a bit faster, but only searches for methods in the current
-        class, not in superclasses */
-        retval=target_class.getMethod(method_name, formal_parms);
-        return retval;
+        return null;
     }
+
+//    Method findMethod(Class target_class) throws Exception {
+//        int     len=args != null? args.length : 0;
+//        Class[] formal_parms=new Class[len];
+//        Method  retval;
+//
+//        for(int i=0; i < len; i++) {
+//            formal_parms[i]=args[i].getClass();
+//        }
+//
+//        /* getDeclaredMethod() is a bit faster, but only searches for methods in the current
+//        class, not in superclasses */
+//        retval=target_class.getMethod(method_name, formal_parms);
+//        return retval;
+//    }
 
 
 
