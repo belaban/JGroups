@@ -18,15 +18,15 @@ public interface PersistenceManager
     /**
      * Save new NV pair as serializable objects or if already exist; store 
      * new state 
-     * @param Serializable;
-     * @param Serializable;
+     * @param key
+     * @param val
      * @exception CannotPersistException; 
      */
     void save(Serializable key, Serializable val) throws CannotPersistException;
 
     /**
      * Remove existing NV from being persisted
-     * @param Serializable; key value
+     * @param key value
      * @return Serializable; gives back the value
      * @exception CannotRemoveException;
      */
@@ -35,7 +35,7 @@ public interface PersistenceManager
 
     /**
      * Use to store a complete map into persistent state
-     * @param Map;
+     * @param map
      * @exception CannotPersistException;
      */
     void saveAll(Map map) throws CannotPersistException;
