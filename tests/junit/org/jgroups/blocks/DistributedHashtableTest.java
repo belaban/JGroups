@@ -1,4 +1,4 @@
-// $Id: DistributedHashtableTest.java,v 1.3 2004/05/02 15:39:36 belaban Exp $
+// $Id: DistributedHashtableTest.java,v 1.4 2004/05/02 15:42:44 belaban Exp $
 package org.jgroups.blocks;
 
 import junit.framework.Test;
@@ -23,7 +23,7 @@ public class DistributedHashtableTest extends TestCase
 	}
 
 	protected DistributedHashtable queue1;
-	protected DistributedHashtable queue2;
+	protected DistributedHashtable queue2;  
 	protected DistributedHashtable queue3;
 
 	public void setUp() throws Exception
