@@ -1,4 +1,4 @@
-// $Id: TimeoutException.java,v 1.1 2003/09/09 01:24:08 belaban Exp $
+// $Id: TimeoutException.java,v 1.2 2005/01/07 22:44:46 ovidiuf Exp $
 
 package org.jgroups;
 
@@ -10,7 +10,7 @@ public class TimeoutException extends Exception {
     List failed_mbrs=null; // members that failed responding
 
     public TimeoutException() {
-        super("TimeoutExeption");
+        super("TimeoutException");
     }
 
     public TimeoutException(String msg) {
@@ -18,7 +18,7 @@ public class TimeoutException extends Exception {
     }
 
     public TimeoutException(List failed_mbrs) {
-        super("TimeoutExeption");
+        super("TimeoutException");
         this.failed_mbrs=failed_mbrs;
     }
 
