@@ -1,4 +1,4 @@
-// $Id: DistributedQueue.java,v 1.8 2004/03/30 06:47:12 belaban Exp $
+// $Id: DistributedQueue.java,v 1.9 2004/04/05 01:41:15 belaban Exp $
 package org.jgroups.blocks;
 
 import org.apache.log4j.Logger;
@@ -152,7 +152,7 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
 
     public void addNotifier(Notification n)
     {
-        if (!notifs.contains(n))
+        if (n != null && !notifs.contains(n))
         {
             notifs.addElement(n);
         }
@@ -627,8 +627,7 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
         Object mbr;
         Notification n;
 
-        if (
-            (notifs.size() == 0) || (old_mbrs == null) || (new_mbrs == null) || (old_mbrs.size() == 0) ||
+        if ((notifs.size() == 0) || (old_mbrs == null) || (new_mbrs == null) || (old_mbrs.size() == 0) ||
                 (new_mbrs.size() == 0))
         {
             return;
