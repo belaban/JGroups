@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.7 2004/09/15 13:43:53 belaban Exp $
+// $Id: MERGE2.java,v 1.8 2004/09/21 13:49:44 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -85,7 +85,7 @@ public class MERGE2 extends Protocol {
 
         str=props.getProperty("use_separate_thread");
         if(str != null) {
-            use_separate_thread=new Boolean(str).booleanValue();
+            use_separate_thread=Boolean.valueOf(str).booleanValue();
             props.remove("use_separate_thread");
         }
 

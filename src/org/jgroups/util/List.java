@@ -1,4 +1,4 @@
-// $Id: List.java,v 1.6 2004/07/05 14:17:35 belaban Exp $
+// $Id: List.java,v 1.7 2004/09/21 13:49:44 belaban Exp $
 
 package org.jgroups.util;
 
@@ -275,9 +275,11 @@ public class List implements Externalizable, Cloneable {
     }
 
 
-    protected Object clone() {
+    protected Object clone() throws CloneNotSupportedException {
+        // calling clone() is superfluous because we don't want a shallow copy
         return copy();
     }
+
 
 
     public void writeExternal(ObjectOutput out) throws IOException {
