@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.27 2004/06/09 15:32:57 belaban Exp $
+// $Id: UDP.java,v 1.28 2004/06/12 15:57:16 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -39,14 +39,13 @@ public class UDP extends Protocol implements Runnable {
 
     /** Socket used for
      * <ol>
-     * <li>sending unicast packets
-     * <li>sending multicast packets and
+     * <li>sending unicast packets and
      * <li>receiving unicast packets
      * </ol>
      * The address of this socket will be our local address (<tt>local_addr</tt>) */
     DatagramSocket  sock=null;
 
-    /** IP multicast socket for <em>receiving</em> multicast packets */
+    /** IP multicast socket for <em>receiving</em> and <em>sending</em> of multicast packets */
     MulticastSocket mcast_sock=null;
 
     /** The address (host and port) of this member */
@@ -254,10 +253,9 @@ public class UDP extends Protocol implements Runnable {
 
     void handleDiagnosticProbe(InetAddress sender, int port) {
         try {
-            byte[]      diag_rsp=getDiagResponse().getBytes();
+            byte[] diag_rsp=getDiagResponse().getBytes();
             DatagramPacket rsp=new DatagramPacket(diag_rsp, 0, diag_rsp.length, sender, port);
-
-                if(log.isDebugEnabled()) log.debug("sending diag response to " + sender + ":" + port);
+            if(log.isDebugEnabled()) log.debug("sending diag response to " + sender + ":" + port);
             sock.send(rsp);
         }
         catch(Throwable t) {
@@ -772,8 +770,14 @@ public class UDP extends Protocol implements Runnable {
     void doSend(byte[] data, InetAddress dest, int port) throws IOException {
         DatagramPacket       packet;
         packet=new DatagramPacket(data, data.length, dest, port);
-        if(sock != null)
-            sock.send(packet);
+
+        if(dest.isMulticastAddress() && mcast_sock != null) { // mcast_sock might be null if ip_mcast is false
+            mcast_sock.send(packet);
+        }
+        else {
+            if(sock != null)
+                sock.send(packet);
+        }
     }
 
 
