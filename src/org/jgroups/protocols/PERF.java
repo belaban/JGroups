@@ -1,4 +1,4 @@
-// $Id: PERF.java,v 1.1 2003/09/09 01:24:10 belaban Exp $
+// $Id: PERF.java,v 1.2 2003/12/03 20:59:28 igeorg Exp $
 
 package org.jgroups.protocols;
 
@@ -26,7 +26,7 @@ import org.jgroups.log.Trace;
  * all trace output to the given file.
  * </ol>
  * @author Bela Ban Oct 2001
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.2 $
  */
 public class PERF extends Protocol {
     boolean              details=false;
@@ -133,7 +133,6 @@ public class PERF extends Protocol {
 	    pname=p.getName();
 	    if(pname != null) {
 		po=new PerfObserver(pname);
-		po.setProtocol(p);
 		p.setObserver(po);
 	    }
 	}
