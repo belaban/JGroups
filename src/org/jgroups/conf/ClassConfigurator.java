@@ -1,4 +1,4 @@
-// $Id: ClassConfigurator.java,v 1.9 2004/09/24 09:02:48 belaban Exp $
+// $Id: ClassConfigurator.java,v 1.10 2004/10/04 20:43:30 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -106,10 +106,11 @@ public class ClassConfigurator {
     }
 
 
-    public static ClassConfigurator getInstance() throws ChannelException {
+    public static ClassConfigurator getInstance(boolean init) throws ChannelException {
         if(instance == null) {
             instance=new ClassConfigurator();
-            instance.init();
+            if(init)
+                instance.init();
         }
         return instance;
     }
@@ -205,7 +206,7 @@ public class ClassConfigurator {
     public static void main(String[] args)
             throws Exception {
 
-        ClassConfigurator test=getInstance();
+        ClassConfigurator test=getInstance(true);
         System.out.println('\n' + test.printMagicMap());
     }
 }

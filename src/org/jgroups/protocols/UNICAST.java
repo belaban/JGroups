@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.10 2004/09/23 16:29:43 belaban Exp $
+// $Id: UNICAST.java,v 1.11 2004/10/04 20:43:31 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -8,10 +8,9 @@ import org.jgroups.stack.AckSenderWindow;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
+import org.jgroups.util.Streamable;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.*;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Properties;
@@ -405,7 +404,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
 
 
-    public static class UnicastHeader extends Header {
+    public static class UnicastHeader extends Header implements Streamable {
         static final int DATA=0;
         static final int DATA_ACK=1;
 	
@@ -443,7 +442,19 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 	
 	
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-	    type=in.readInt();
+            type=in.readInt();
+            seqno=in.readLong();
+            first=in.readBoolean();
+        }
+
+        public void writeTo(DataOutputStream out) throws IOException {
+            out.writeInt(type);
+            out.writeLong(seqno);
+            out.writeBoolean(first);
+        }
+
+        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+            type=in.readInt();
             seqno=in.readLong();
             first=in.readBoolean();
         }

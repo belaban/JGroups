@@ -1,16 +1,13 @@
-// $Id: Range.java,v 1.4 2004/07/05 14:17:35 belaban Exp $
+// $Id: Range.java,v 1.5 2004/10/04 20:43:35 belaban Exp $
 
 package org.jgroups.util;
 
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.*;
 
 
 
-public class Range implements Externalizable {
+public class Range implements Externalizable, Streamable {
     public long low=-1;  // first msg to be retransmitted
     public long high=-1; // last msg to be retransmitted
 
@@ -44,4 +41,13 @@ public class Range implements Externalizable {
     }
 
 
+    public void writeTo(DataOutputStream out) throws IOException {
+        out.writeLong(low);
+        out.writeLong(high);
+    }
+
+    public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        low=in.readLong();
+        high=in.readLong();
+    }
 }

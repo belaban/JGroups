@@ -13,7 +13,7 @@ import java.io.OutputStream;
 /**
  * Uses magic numbers for class descriptors
  * @author Bela Ban
- * @version $Id: MagicObjectOutputStream.java,v 1.3 2004/09/24 13:34:11 belaban Exp $
+ * @version $Id: MagicObjectOutputStream.java,v 1.4 2004/10/04 20:43:35 belaban Exp $
  */
 public class MagicObjectOutputStream extends ObjectOutputStream {
     static ClassConfigurator conf=null;
@@ -24,7 +24,7 @@ public class MagicObjectOutputStream extends ObjectOutputStream {
         super(out);
         if(conf == null) {
             try {
-                conf=ClassConfigurator.getInstance();
+                conf=ClassConfigurator.getInstance(false);
             }
             catch(ChannelException e) {
                 log.error("ClassConfigurator could not be instantiated", e);

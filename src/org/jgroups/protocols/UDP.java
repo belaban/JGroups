@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.47 2004/09/26 11:14:58 belaban Exp $
+// $Id: UDP.java,v 1.48 2004/10/04 20:43:31 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -654,22 +654,24 @@ public class UDP extends Protocol implements Runnable {
      * mcast or unicast socket reads can be concurrent
      */
     void handleIncomingUdpPacket(byte[] data) {
-        ByteArrayInputStream inp_stream;
-        ObjectInputStream    inp=null;
+        ByteArrayInputStream inp_stream=null;
+        DataInputStream      inp=null;
         Message              msg=null;
         List                 l;  // used if bundling is enabled
 
         try {
             // skip the first n bytes (default: 4), this is the version info
             inp_stream=new ByteArrayInputStream(data, VERSION_LENGTH, data.length - VERSION_LENGTH);
+            inp=new DataInputStream(inp_stream);
             // inp=new ObjectInputStream(new BufferedInputStream(inp_stream));
             // BufferedInputStream above makes no diff
 
             // inp=new ObjectInputStream(inp_stream);
-            inp=new MagicObjectInputStream(inp_stream);
+            // inp=new MagicObjectInputStream(inp_stream);
             if(enable_bundling) {
-                l=new List();
-                l.readExternal(inp);
+                // l=new List();
+                // l.readExternal(inp);
+                l=bufferToList(inp);
                 for(Enumeration en=l.elements(); en.hasMoreElements();) {
                     msg=(Message)en.nextElement();
                     try {
@@ -681,8 +683,9 @@ public class UDP extends Protocol implements Runnable {
                 }
             }
             else {
-                msg=new Message();
-                msg.readExternal(inp);
+                // msg=new Message();
+                // msg.readExternal(inp);
+                msg=bufferToMessage(inp);
                 handleMessage(msg);
             }
         }
@@ -690,12 +693,12 @@ public class UDP extends Protocol implements Runnable {
             if(log.isErrorEnabled()) log.error("exception=" + Util.getStackTrace(e));
         }
         finally {
-            if(inp != null)
-                closeInputStream(inp);
+            closeInputStream(inp);
+            closeInputStream(inp_stream);
         }
     }
 
-    void closeInputStream(ObjectInputStream inp) {
+    void closeInputStream(InputStream inp) {
         if(inp != null)
             try {inp.close();} catch(IOException e) {}
     }
@@ -796,7 +799,7 @@ public class UDP extends Protocol implements Runnable {
     /** Internal method to serialize and send a message. This method is not reentrant */
     void send(Message msg) throws Exception {
         IpAddress  dest=(IpAddress)msg.getDest();
-        Buffer buf=objectToBuffer(msg);
+        Buffer buf=messageToBuffer(msg);
         doSend(buf, dest.getIpAddress(), dest.getPort());
     }
 
@@ -833,17 +836,76 @@ public class UDP extends Protocol implements Runnable {
     }
 
 
-    Buffer objectToBuffer(Externalizable obj) throws IOException {
-        ObjectOutputStream   out;
-
+    Buffer messageToBuffer(Message msg) throws IOException {
+        Buffer retval=null;
         out_stream.reset();
         out_stream.write(Version.version_id, 0, Version.version_id.length); // write the version
-        // out=new ObjectOutputStream(new BufferedOutputStream(out_stream));
-        out=new MagicObjectOutputStream(out_stream);
-        obj.writeExternal(out);
-        out.close(); // needed to flush if out buffers its output to out_stream
-        return new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
+        DataOutputStream out=new DataOutputStream(out_stream);
+        msg.writeTo(out);
+        out.close(); // flushes contents to out_stream
+        retval=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
+        return retval;
     }
+
+
+    Message bufferToMessage(DataInputStream instream) throws IOException, IllegalAccessException, InstantiationException {
+        Message retval=new Message();
+        retval.readFrom(instream);
+        return retval;
+    }
+
+
+    Buffer listToBuffer(List l) throws IOException {
+        Buffer retval=null;
+        Message msg;
+        int len=l != null? l.size() : 0;
+        DataOutputStream out=null;
+        out_stream.reset();
+        out_stream.write(Version.version_id, 0, Version.version_id.length); // write the version
+        out=new DataOutputStream(out_stream);
+        out.writeInt(len);
+        for(Enumeration en=l.elements(); en.hasMoreElements();) {
+            msg=(Message)en.nextElement();
+            msg.writeTo(out);
+        }
+        out.close(); // flush contents to outstream
+        retval=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
+        return retval;
+    }
+
+
+    List bufferToList(DataInputStream instream) throws IOException, IllegalAccessException, InstantiationException {
+        List l=new List();
+        DataInputStream dis=null;
+        int len;
+        Message msg;
+
+        try {
+            len=instream.readInt();
+            for(int i=0; i < len; i++) {
+                msg=new Message();
+                msg.readFrom(instream);
+                l.add(msg);
+            }
+            return l;
+        }
+        finally {
+            if(dis != null)
+                dis.close();
+        }
+    }
+
+//    Buffer objectToBuffer(Externalizable obj) throws IOException {
+//        ObjectOutputStream   out;
+//
+//        out_stream.reset();
+//        out_stream.write(Version.version_id, 0, Version.version_id.length); // write the version
+//        // out=new ObjectOutputStream(new BufferedOutputStream(out_stream));
+//        out=new MagicObjectOutputStream(out_stream);
+//        obj.writeExternal(out);
+//        out.close(); // needed to flush if out buffers its output to out_stream
+//        return new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
+//    }
 
     /**
      * Create UDP sender and receiver sockets. Currently there are 2 sockets
@@ -1267,6 +1329,7 @@ public class UDP extends Protocol implements Runnable {
     }
 
 
+
     /* ----------------------------- End of Private Methods ---------------------------------------- */
 
     /* ----------------------------- Inner Classes ---------------------------------------- */
@@ -1567,7 +1630,7 @@ public class UDP extends Protocol implements Runnable {
                     port=dst.getPort();
                     l=(List)entry.getValue();
                     try {
-                        buffer=objectToBuffer(l);
+                        buffer=listToBuffer(l);
                         doSend(buffer, addr, port);
                     }
                     catch(IOException e) {

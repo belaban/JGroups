@@ -1,4 +1,4 @@
-// $Id: ProtocolStack.java,v 1.14 2004/09/23 22:31:23 belaban Exp $
+// $Id: ProtocolStack.java,v 1.15 2004/10/04 20:43:34 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -48,7 +48,7 @@ public class ProtocolStack extends Protocol implements Transport {
     public ProtocolStack(JChannel channel, String setup_string) throws ChannelException {
         this.setup_string=setup_string;
         this.channel=channel;
-        ClassConfigurator.getInstance(); // will create the singleton
+        ClassConfigurator.getInstance(true); // will create the singleton
     }
 
 

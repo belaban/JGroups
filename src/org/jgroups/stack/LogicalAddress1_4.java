@@ -1,12 +1,10 @@
-// $Id: LogicalAddress1_4.java,v 1.3 2004/07/05 14:17:33 belaban Exp $
+// $Id: LogicalAddress1_4.java,v 1.4 2004/10/04 20:43:34 belaban Exp $
 
 package org.jgroups.stack;
 
 import org.jgroups.Address;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.*;
 import java.net.InetAddress;
 import java.net.SocketAddress;
 import java.util.ArrayList;
@@ -286,6 +284,16 @@ public class LogicalAddress1_4 implements Address {
         }
     }
 
+
+
+    public void writeTo(DataOutputStream outstream) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    public void readFrom(DataInputStream instream) throws IOException, IllegalAccessException, InstantiationException {
+        throw new UnsupportedOperationException();
+    }
+
     public Object clone() throws CloneNotSupportedException {
         LogicalAddress1_4 ret=new LogicalAddress1_4();
         ret.host=host;
@@ -307,7 +315,6 @@ public class LogicalAddress1_4 implements Address {
             return null;
         }
     }
-
 
 
 }

@@ -1,18 +1,17 @@
-// $Id: UdpHeader.java,v 1.4 2004/07/05 14:17:16 belaban Exp $
+// $Id: UdpHeader.java,v 1.5 2004/10/04 20:43:31 belaban Exp $
 
 package org.jgroups.protocols;
 
 
 import org.jgroups.Header;
+import org.jgroups.util.Streamable;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-
+import java.io.*;
 
 
 
-public class UdpHeader extends Header {
+
+public class UdpHeader extends Header implements Streamable {
     public String group_addr=null;
 
     public UdpHeader() {
@@ -41,4 +40,11 @@ public class UdpHeader extends Header {
     }
 
 
+    public void writeTo(DataOutputStream out) throws IOException {
+        out.writeUTF(group_addr);
+    }
+
+    public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        group_addr=in.readUTF();
+    }
 }

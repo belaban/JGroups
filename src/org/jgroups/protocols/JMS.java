@@ -1,4 +1,4 @@
-// $Id: JMS.java,v 1.7 2004/09/23 16:29:41 belaban Exp $ 
+// $Id: JMS.java,v 1.8 2004/10/04 20:43:31 belaban Exp $ 
 
 package org.jgroups.protocols;
 
@@ -672,6 +672,16 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
             out.writeBoolean(isMCast);
         }
 
+
+        public void writeTo(DataOutputStream outstream) throws IOException {
+            outstream.writeUTF(address);
+            outstream.writeBoolean(isMCast);
+        }
+
+        public void readFrom(DataInputStream instream) throws IOException, IllegalAccessException, InstantiationException {
+            address=instream.readUTF();
+            isMCast=instream.readBoolean();
+        }
     }
 
 }
