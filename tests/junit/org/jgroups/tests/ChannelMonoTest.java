@@ -1,4 +1,4 @@
-// $Id: ChannelMonoTest.java,v 1.7 2003/09/24 18:31:46 belaban Exp $
+// $Id: ChannelMonoTest.java,v 1.8 2003/09/25 16:47:33 rds13 Exp $
 
 package org.jgroups.tests;
 
@@ -264,7 +264,8 @@ public class ChannelMonoTest extends TestCase
 	 */
 	public void testBarrier()
 	{
-		ReadItems[] removers = new ReadItems[10];
+		final int READER_ITEMS = 10;
+		ReadItems[] removers = new ReadItems[READER_ITEMS];
 		int num_dead = 0;
 
 		for (int i = 0; i < removers.length; i++)
@@ -298,6 +299,7 @@ public class ChannelMonoTest extends TestCase
 
 		Util.sleep(1000);
 
+
 		for (int i = 0; i < removers.length; i++)
 		{
 			logger.info("remover #" + i + " is " + (removers[i].isAlive() ? "alive" : "terminated"));
@@ -309,6 +311,41 @@ public class ChannelMonoTest extends TestCase
 
 		assertEquals(2, num_dead);
 
+		// send all others thread a dummy item to have them quit
+		for (int i = 0; i < removers.length; i++)
+		{
+			if (removers[i].isAlive())
+			{
+				try {
+					channel.send(null, null, new String("Closing Message").getBytes());
+				}
+				catch (Exception ex)
+				{
+					logger.error("Problem", ex);
+				}
+			}
+		}
+
+		Util.sleep(5000);
+		num_dead=0;
+		for (int i = 0; i < removers.length; i++)
+		{
+			try
+            {
+                removers[i].join(1000);
+            }
+            catch (InterruptedException e)
+            {
+				logger.error("Thread joining() interrupted", e);
+            }
+			logger.info("remover #" + i + " is " + (removers[i].isAlive() ? "alive" : "terminated"));
+			if (!removers[i].isAlive())
+			{
+				num_dead++;
+			}
+		}
+		assertEquals(READER_ITEMS, num_dead);
+
 	}
 
 	/** 
@@ -317,8 +354,8 @@ public class ChannelMonoTest extends TestCase
 	public void testMultipleWriterMultipleReader()
 	{
 		logger.info("start testMultipleWriterMultipleReader");
-		int nWriters = 3;
-		int nReaders = 5;
+		int nWriters = 1;
+		int nReaders = 1;
 
 		Writer[] adders = new Writer[nWriters];
 		Reader[] readers = new Reader[nReaders];
@@ -372,7 +409,6 @@ public class ChannelMonoTest extends TestCase
 		// give time for readers to read back data
 		Util.sleep(10000);
 
-		logger.info("Number of messages in channel queue :"+channel.getNumMessages());
 		channel.close();
 
 		// give time to readers to catch ChannelClosedException
@@ -666,7 +702,7 @@ public class ChannelMonoTest extends TestCase
 
 		Writer(Channel channel, int i, int[] writes)
 		{
-			super("WriterThread");
+			super("Writer thread #"+i);
 			rank = i;
 			this.writes = writes;
 			this.channel = channel;
@@ -758,8 +794,8 @@ public class ChannelMonoTest extends TestCase
 				{
 					logger.error("Reader thread #" + rank + ": problem", e);
 				}
+				reads[rank] = num_reads;
 			}
-			reads[rank] = num_reads;
 		}
 
 		void stopThread()
