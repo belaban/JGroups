@@ -176,6 +176,12 @@
         <magic-number>29</magic-number>
     </class>
     <class>
+        <description>Message</description>
+        <class-name>org.jgroups.Message</class-name>
+        <preload>true</preload>
+        <magic-number>30</magic-number>
+    </class>
+    <class>
         <description>Request header to lease service</description>
         <class-name>org.jgroups.service.lease.LeaseRequestHeader</class-name>
         <preload>false</preload>
