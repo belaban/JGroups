@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.9 2004/10/07 10:10:37 belaban Exp $
+// $Id: TUNNEL.java,v 1.10 2005/02/23 13:36:18 belaban Exp $
 
 
 package org.jgroups.protocols;
@@ -12,10 +12,12 @@ import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.RouterStub;
+import org.jgroups.stack.IpAddress;
 
 import java.util.Enumeration;
 import java.util.Properties;
 import java.util.Vector;
+import java.util.HashMap;
 
 
 
@@ -54,6 +56,10 @@ public class TUNNEL extends Protocol implements Runnable {
 
     Reconnector reconnector=null;
     private final Object reconnector_mutex=new Object();
+
+    /** If set it will be added to <tt>local_addr</tt>. Used to implement
+     * for example transport independent addresses */
+    byte[]          additional_data=null;
 
 
     public TUNNEL() {
@@ -294,54 +300,61 @@ public class TUNNEL extends Protocol implements Runnable {
 
         switch(evt.getType()) {
 
-            case Event.TMP_VIEW:
-            case Event.VIEW_CHANGE:
-                synchronized(members) {
-                    members.removeAllElements();
-                    Vector tmpvec=((View)evt.getArg()).getMembers();
-                    for(int i=0; i < tmpvec.size(); i++)
-                        members.addElement(tmpvec.elementAt(i));
-                }
-                break;
+        case Event.TMP_VIEW:
+        case Event.VIEW_CHANGE:
+            synchronized(members) {
+                members.removeAllElements();
+                Vector tmpvec=((View)evt.getArg()).getMembers();
+                for(int i=0; i < tmpvec.size(); i++)
+                    members.addElement(tmpvec.elementAt(i));
+            }
+            break;
 
-            case Event.GET_LOCAL_ADDRESS:   // return local address -> Event(SET_LOCAL_ADDRESS, local)
-                passUp(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
-                break;
+        case Event.GET_LOCAL_ADDRESS:   // return local address -> Event(SET_LOCAL_ADDRESS, local)
+            passUp(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
+            break;
 
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
-                break;
+        case Event.SET_LOCAL_ADDRESS:
+            local_addr=(Address)evt.getArg();
+            if(local_addr instanceof IpAddress && additional_data != null)
+                ((IpAddress)local_addr).setAdditionalData(additional_data);
+            break;
 
-            case Event.CONNECT:
-                channel_name=(String)evt.getArg();
-                if(stub == null) {
-                    if(log.isErrorEnabled()) log.error("CONNECT:  router stub is null!");
-                }
-                else {
-                    stub.register(channel_name);
-                }
+        case Event.CONNECT:
+            channel_name=(String)evt.getArg();
+            if(stub == null) {
+                if(log.isErrorEnabled()) log.error("CONNECT:  router stub is null!");
+            }
+            else {
+                stub.register(channel_name);
+            }
 
-                receiver=new Thread(this, "TUNNEL receiver thread");
-                receiver.setDaemon(true);
-                receiver.start();
+            receiver=new Thread(this, "TUNNEL receiver thread");
+            receiver.setDaemon(true);
+            receiver.start();
 
-                passUp(new Event(Event.CONNECT_OK));
-                break;
+            passUp(new Event(Event.CONNECT_OK));
+            break;
 
-            case Event.DISCONNECT:
-                if(receiver != null) {
-                    receiver=null;
-                    if(stub != null)
-                        stub.disconnect();
-                }
-                teardownTunnel();
-                passUp(new Event(Event.DISCONNECT_OK));
-                passUp(new Event(Event.SET_LOCAL_ADDRESS, null));
-                break;
+        case Event.DISCONNECT:
+            if(receiver != null) {
+                receiver=null;
+                if(stub != null)
+                    stub.disconnect();
+            }
+            teardownTunnel();
+            passUp(new Event(Event.DISCONNECT_OK));
+            passUp(new Event(Event.SET_LOCAL_ADDRESS, null));
+            break;
 
-            case Event.ACK:
-                passUp(new Event(Event.ACK_OK));
-                break;
+        case Event.CONFIG:
+            if(log.isDebugEnabled()) log.debug("received CONFIG event: " + evt.getArg());
+            handleConfigEvent((HashMap)evt.getArg());
+            break;
+
+        case Event.ACK:
+            passUp(new Event(Event.ACK_OK));
+            break;
         }
     }
 
@@ -361,6 +374,12 @@ public class TUNNEL extends Protocol implements Runnable {
                 reconnector=null;
             }
         }
+    }
+
+    void handleConfigEvent(HashMap map) {
+        if(map == null) return;
+        if(map.containsKey("additional_data"))
+            additional_data=(byte[])map.get("additional_data");
     }
 
     /* ------------------------------------------------------------------------------- */
