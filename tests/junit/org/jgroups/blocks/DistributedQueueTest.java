@@ -1,4 +1,4 @@
-// $Id: DistributedQueueTest.java,v 1.5 2004/07/05 14:15:02 belaban Exp $
+// $Id: DistributedQueueTest.java,v 1.6 2004/09/21 14:08:19 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -33,20 +33,6 @@ public class DistributedQueueTest extends TestCase
 	public void setUp() throws Exception
 	{
 
-//		String props =
-//			"UDP(mcast_addr=224.0.0.35;mcast_port=45566;ip_ttl=32;"
-//				+ "mcast_send_buf_size=150000;mcast_recv_buf_size=80000):"
-//				+ "PING(timeout=2000;num_initial_members=5):"
-////				+ "MERGE2(min_interval=5000;max_interval=10000):"
-//				+ "FD_SOCK:"
-//				+ "VERIFY_SUSPECT(timeout=1500):"
-//				+ "UNICAST(timeout=5000):"
-//				+ "FRAG(frag_size=8192;down_thread=false;up_thread=false):"
-//				+ "TOTAL_TOKEN(block_sending=50;unblock_sending=10):"
-//				+ "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;"
-//				+ "shun=false;print_local_addr=true):"
-//				+ "STATE_TRANSFER:"
-//				+ "QUEUE";
         props="UDP(mcast_recv_buf_size=80000;mcast_send_buf_size=150000;mcast_port=45566;" +
                 "mcast_addr=228.8.8.8;ip_ttl=32):" +
                 "PING(timeout=2000;num_initial_members=3):" +
