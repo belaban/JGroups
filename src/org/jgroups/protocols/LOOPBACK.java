@@ -1,4 +1,4 @@
-// $Id: LOOPBACK.java,v 1.5 2004/06/11 06:57:19 belaban Exp $
+// $Id: LOOPBACK.java,v 1.6 2004/06/23 16:06:42 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -7,11 +7,10 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.View;
-import org.jgroups.stack.Protocol;
 import org.jgroups.stack.IpAddress;
+import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 
-import java.util.Properties;
 import java.util.Vector;
 
 
@@ -45,11 +44,14 @@ public class LOOPBACK extends Protocol {
 
 
     public void init() throws Exception {
-        local_addr=new IpAddress("localhost", 10000) { // fake address
-            public String toString() {
-                return "<fake>";
-            }
-        };
+//        local_addr=new IpAddress("localhost", 10000) { // fake address
+//            public String toString() {
+//                return "<fake>";
+//            }
+//        };
+
+          //local_addr=new org.jgroups.stack.IpAddress("localhost", 10000); // fake address
+       local_addr = new LocalIpAddress();
     }
 
     public void start() throws Exception {
@@ -122,7 +124,14 @@ public class LOOPBACK extends Protocol {
 
 
 
-
+    static private class LocalIpAddress extends IpAddress {
+        public LocalIpAddress() {
+            super("localhost", 10000);
+        }
+        public String toString() {
+            return "<myself>";
+        }
+    }
 
 
     /* ------------------------------ Private methods -------------------------------- */
