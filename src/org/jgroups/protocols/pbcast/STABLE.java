@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.8 2004/04/28 18:47:26 belaban Exp $
+// $Id: STABLE.java,v 1.9 2004/04/28 19:18:56 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -66,6 +66,21 @@ public class STABLE extends Protocol {
     /** The total number of bytes received from unicast and multicast messages */
     long                num_bytes_received=0;
 
+    /** When true, don't take part in garbage collection protocol: neither send STABLE messages nor
+     * handle STABILITY messages */
+    boolean             suspended=false;
+
+    /** Max time we should hold off on message garbage collection. This is a second line of defense in case
+     * we get a SUSPEND_STABLE, but forget to send a corresponding RESUME_STABLE (which should never happen !)
+     * The consequence of a missing RESUME_STABLE would be that the group doesn't garbage collect stable
+     * messages anymore, eventually, with a lot of traffic, every member would accumulate messages and run
+     * out of memory !
+     */
+    long                max_suspend_time=600000;
+
+    SuspendTask         suspend_task=null;
+
+
 
     public String getName() {
         return name;
@@ -113,12 +128,38 @@ public class STABLE extends Protocol {
             props.remove("max_bytes");
         }
 
+        str=props.getProperty("max_suspend_time");
+        if(str != null) {
+            max_suspend_time=new Long(str).longValue();
+            props.remove("max_suspend_time");
+        }
+
         if(props.size() > 0) {
             System.err.println("STABLE.setProperties(): these properties are not recognized:");
             props.list(System.out);
             return false;
         }
         return true;
+    }
+
+
+    void suspend() {
+        if(!suspended) {
+            suspended=true;
+            if(suspend_task == null || suspend_task.cancelled()) {
+                suspend_task=new SuspendTask();
+                timer.add(suspend_task);
+            }
+        }
+    }
+
+    void resume() {
+        if(suspended)
+            suspended=false;
+        if(suspend_task != null) {
+            suspend_task.stop();
+            suspend_task=null;
+        }
     }
 
     public void start() throws Exception {
@@ -227,6 +268,15 @@ public class STABLE extends Protocol {
                 heard_from.retainAll(tmp);     // removes all elements from heard_from that are not in new view
                 stopStableTask();
                 break;
+
+            case Event.SUSPEND_STABLE:
+                stopStableTask();
+                suspend();
+                break;
+
+            case Event.RESUME_STABLE:
+                resume();
+                break;
         }
 
         if(desired_avg_gossip > 0) {
@@ -293,6 +343,13 @@ public class STABLE extends Protocol {
 
         if(d == null || sender == null) {
             if(log.isErrorEnabled()) log.error("digest or sender is null");
+            return;
+        }
+
+        if(suspended) {
+            if(log.isDebugEnabled()) {
+                log.debug("STABLE message will not be handled as suspened=" + suspended);
+            }
             return;
         }
 
@@ -424,6 +481,13 @@ public class STABLE extends Protocol {
     void handleStabilityMessage(Digest d) {
         if(d == null) {
             if(log.isErrorEnabled()) log.error("stability vector is null");
+            return;
+        }
+
+        if(suspended) {
+            if(log.isDebugEnabled()) {
+                log.debug("STABILITY message will not be handled as suspened=" + suspended);
+            }
             return;
         }
 
@@ -564,6 +628,10 @@ public class STABLE extends Protocol {
         }
 
         public void run() {
+            if(suspended) {
+                log.debug("stable task will not run as suspended=" + suspended);
+                return;
+            }
             initialize();
             sendStableMessage();
             num_gossip_runs--;
@@ -581,13 +649,10 @@ public class STABLE extends Protocol {
         long getRandom(long range) {
             return (long)((Math.random() * range) % range);
         }
-
-
-
-
-
-
     }
+
+
+
 
 
     /**
@@ -634,8 +699,36 @@ public class STABLE extends Protocol {
             }
             stopped=true; // run only once
         }
+    }
 
 
+    private class SuspendTask implements TimeScheduler.Task {
+        boolean running=true;
+
+        SuspendTask() {
+        }
+
+
+        void stop() {
+            running=false;
+        }
+
+        public boolean cancelled() {
+            return running == false;
+        }
+
+        public long nextInterval() {
+            return max_suspend_time;
+        }
+
+        public void run() {
+            if(suspended) {
+                suspended=false;
+                log.warn("Reset suspended flag to true, this should never happen: " +
+                        "check why RESUME_STABLE has not been received");
+            }
+            stop();
+        }
     }
 
 
