@@ -1,4 +1,4 @@
-// $Id: Utilities.java,v 1.4 2004/07/23 02:29:46 belaban Exp $
+// $Id: Utilities.java,v 1.5 2005/02/19 11:07:59 ovidiuf Exp $
 
 package org.jgroups.tests.stack;
 
@@ -17,7 +17,7 @@ import java.net.Socket;
  * @since 2.2.1
  *
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Revision: 1.4 $
+ * @version $Revision: 1.5 $
  **/
 public class Utilities {
 
@@ -157,6 +157,7 @@ public class Utilities {
             throw new Exception("There's no GossipRouter running");
         }
         gossipRouter.stop();
+        System.out.println("router stopped");        
         gossipRouter=null;
     }
 
