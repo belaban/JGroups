@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.11 2004/09/06 13:48:59 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.12 2004/09/07 19:34:38 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -78,8 +78,7 @@ public class CoordGmsImpl extends GmsImpl {
         Address leader=null;
 
         if(merging) {
-
-                if(log.isWarnEnabled()) log.warn("merge already in progress, discarded MERGE event");
+            if(log.isWarnEnabled()) log.warn("merge already in progress, discarded MERGE event");
             return;
         }
 
@@ -90,7 +89,7 @@ public class CoordGmsImpl extends GmsImpl {
 
         if(other_coords.size() <= 1) {
             if(log.isErrorEnabled()) log.error("number of coordinators found is "
-                        + other_coords.size() + "; will not perform merge");
+                                               + other_coords.size() + "; will not perform merge");
             return;
         }
 
@@ -446,8 +445,7 @@ public class CoordGmsImpl extends GmsImpl {
 
         for(int i=0; i < v.size(); i++) {
             tmp_data=(MergeData)v.elementAt(i);
-
-                if(log.isDebugEnabled()) log.debug("merge data is " + tmp_data);
+            if(log.isDebugEnabled()) log.debug("merge data is " + tmp_data);
             tmp_view=tmp_data.getView();
             if(tmp_view != null) {
                 tmp_vid=tmp_view.getVid();
@@ -469,12 +467,12 @@ public class CoordGmsImpl extends GmsImpl {
             if(log.isErrorEnabled()) log.error("new_coord == null");
             return null;
         }
+        // should be the highest view ID seen up to now plus 1
         new_vid=new ViewId(new_coord, logical_time + 1);
 
         // determine the new view
         new_view=new MergeView(new_vid, new_mbrs.getMembers(), subgroups);
-
-            if(log.isDebugEnabled()) log.debug("new merged view will be " + new_view);
+        if(log.isDebugEnabled()) log.debug("new merged view will be " + new_view);
 
         // determine the new digest
         new_digest=consolidateDigests(v, num_mbrs);
@@ -482,9 +480,7 @@ public class CoordGmsImpl extends GmsImpl {
             if(log.isErrorEnabled()) log.error("digest could not be consolidated");
             return null;
         }
-
-            if(log.isDebugEnabled()) log.debug("consolidated digest=" + new_digest);
-
+        if(log.isDebugEnabled()) log.debug("consolidated digest=" + new_digest);
         ret=new MergeData(gms.local_addr, new_view, new_digest);
         return ret;
     }
