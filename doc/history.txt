@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.71 2004/05/06 16:32:09 belaban Exp $
+Revision: $Id: history.txt,v 1.72 2004/05/11 16:42:51 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -30,6 +30,8 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 Version 2.2.4
 -------------
 
+- Created distribution (CVS tag = JG_2_2_4)
+
 - Updated NakReceiverWindow (used by NAKACK): replaced received_msgs and delivered_msgs (lists) with TreeMaps.
   This removes linear cost for traversals, and makes lookups constant.
   (bela May 6 2004)
@@ -49,21 +51,6 @@ Version 2.2.4
 - Solved bug# 939253
   Updated MessageDispatcher.java (MessageDispatcher + ProtocolAdaptor).
   (yaronr April 28 2004)
-
-- Optimization in RpcDispatcher: before marshalling the args and handing the call over to the superclass, we
-  make sure the destination list is not empty: if empty we return immediately.
-  (bela May 1 2004)
-
-- Fixed bugs #943480 and #938584. STABLE handles SUSPEND_STABLE and RESUME_STABLE events, and STATE_TRANSFER
-  sends SUSPEND_STABLE before fetching the state and RESUME_STABLE after receiving the state, to prevent
-  message garbage collection from going on during a state transfer
-  (bela April 28 2004)
-
-- Fixed bug #943881 (patch by Chris Wampler)
-  (bela April 28 2004)
-
-- Fixed bug #938584 (NAKACK.retransmit problem)
-  (bela April 27 2004)
 
 - Optimization in RpcDispatcher: before marshalling the args and handing the call over to the superclass, we
   make sure the destination list is not empty: if empty we return immediately.
