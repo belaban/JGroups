@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.12 2004/09/05 04:54:21 ovidiuf Exp $
+// $Id: RequestCorrelator.java,v 1.13 2004/09/15 17:40:56 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -86,7 +86,7 @@ public class RequestCorrelator {
 
     protected boolean started=false;
 
-    protected static Log log=LogFactory.getLog(RequestCorrelator.class);
+    protected static final Log log=LogFactory.getLog(RequestCorrelator.class);
 
 
     /**

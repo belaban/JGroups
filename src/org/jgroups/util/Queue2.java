@@ -1,4 +1,4 @@
-// $Id: Queue2.java,v 1.2 2004/03/30 06:47:28 belaban Exp $
+// $Id: Queue2.java,v 1.3 2004/09/15 17:41:02 belaban Exp $
 
 package org.jgroups.util;
 
@@ -458,12 +458,6 @@ public class Queue2 {
                     throw new QueueClosedException();
                 try {
                     mutex.wait(timeout);
-                }
-                catch(IllegalMonitorStateException ex) {
-                    throw ex;
-                }
-                catch(IllegalArgumentException ex2) {
-                    throw ex2;
                 }
                 catch(InterruptedException ex) {
                 }

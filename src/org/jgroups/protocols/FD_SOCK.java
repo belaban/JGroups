@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.12 2004/09/14 13:02:44 belaban Exp $
+// $Id: FD_SOCK.java,v 1.13 2004/09/15 17:40:59 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -770,7 +770,6 @@ public class FD_SOCK extends Protocol implements Runnable {
      */
     private class ServerSocketHandler implements Runnable {
         Thread acceptor=null;
-        InputStream in=null;
         /** List<ClientConnectionHandler> */
         List clients=new ArrayList();
 
@@ -835,7 +834,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
 
     /** Handles a client connection; multiple client can connect at the same time */
-    private class ClientConnectionHandler extends Thread {
+    private static class ClientConnectionHandler extends Thread {
         Socket      client_sock=null;
         InputStream in;
         Object mutex=new Object();

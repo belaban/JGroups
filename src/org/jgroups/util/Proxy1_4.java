@@ -1,4 +1,4 @@
-// $Id: Proxy1_4.java,v 1.5 2004/07/05 14:17:35 belaban Exp $
+// $Id: Proxy1_4.java,v 1.6 2004/09/15 17:41:02 belaban Exp $
 
 package org.jgroups.util;
 
@@ -73,8 +73,8 @@ public class Proxy1_4 {
     String         mapping_file=null; // contains a list of src and dest host:port pairs
     HashMap        mappings=new HashMap(); // keys=MyInetSocketAddr (src), values=MyInetSocketAddr (dest)
     Executor       executor; // maintains a thread pool
-    final int      MAX_THREAD_POOL_SIZE=64; // for processing requests
-    final int      BUFSIZE=1024; // size of data transfer buffer
+    static final int      MAX_THREAD_POOL_SIZE=64; // for processing requests
+    static final int      BUFSIZE=1024; // size of data transfer buffer
 
 
 

@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.19 2004/09/14 13:01:22 belaban Exp $
+// $Id: GMS.java,v 1.20 2004/09/15 17:40:58 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -53,9 +53,9 @@ public class GMS extends Protocol {
     private boolean    shun=true;
     private boolean    print_local_addr=true;
     boolean            disable_initial_coord=false; // can the member become a coord on startup or not ?
-    final String       CLIENT="Client";
-    final String       COORD="Coordinator";
-    final String       PART="Participant";
+    static final String CLIENT="Client";
+    static final String COORD="Coordinator";
+    static final String PART="Participant";
     TimeScheduler      timer=null;
 
     /** Max number of old members to keep in history */

@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.14 2004/09/13 20:48:26 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.15 2004/09/15 17:40:58 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -449,10 +449,10 @@ public class CoordGmsImpl extends GmsImpl {
                     // compute the new view id (max of all vids +1)
                     logical_time=Math.max(logical_time, tmp_vid.getId());
                 }
+                // merge all membership lists into one (prevent duplicates)
+                new_mbrs.add(tmp_view.getMembers());
+                subgroups.addElement(tmp_view.clone());
             }
-            // merge all membership lists into one (prevent duplicates)
-            new_mbrs.add(tmp_view.getMembers());
-            subgroups.addElement(tmp_view.clone());
         }
 
         // the new coordinator is the first member of the consolidated & sorted membership list

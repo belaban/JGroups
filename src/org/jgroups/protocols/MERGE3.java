@@ -1,4 +1,4 @@
-// $Id: MERGE3.java,v 1.2 2004/09/15 13:48:27 belaban Exp $
+// $Id: MERGE3.java,v 1.3 2004/09/15 17:40:59 belaban Exp $
 
 package org.jgroups.protocols;
 

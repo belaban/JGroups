@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.11 2004/07/05 05:49:41 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.12 2004/09/15 17:40:58 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -27,11 +27,6 @@ import java.util.Vector;
 public class STATE_TRANSFER extends Protocol {
     Address  local_addr=null;
     Vector   members=new Vector();
-    Message  m=null;
-    boolean  is_server=false;
-    long     timeout_get_appl_state=5000;
-    long     timeout_return_state=5000;
-    Vector   observers=new Vector();
     long     state_id=1;  // used to differentiate between state transfers (not currently used)
     List     state_requesters=new List(); // requesters of state (usually just 1, could be more)
     Digest   digest=null;
@@ -71,7 +66,6 @@ public class STATE_TRANSFER extends Protocol {
         switch(evt.getType()) {
 
             case Event.BECOME_SERVER:
-                is_server=true;
                 break;
 
             case Event.SET_LOCAL_ADDRESS:
@@ -219,24 +213,7 @@ public class STATE_TRANSFER extends Protocol {
 
 
     public boolean setProperties(Properties props) {
-        String str;
-
         super.setProperties(props);
-        // Milliseconds to wait for application to provide requested state, events are
-        // STATE_TRANSFER up and STATE_TRANSFER_OK down
-        str=props.getProperty("timeout_get_appl_state");
-        if(str != null) {
-            timeout_get_appl_state=Long.parseLong(str);
-            props.remove("timeout_get_appl_state");
-        }
-
-        // Milliseconds to wait for 1 or all members to return its/their state. 0 means wait
-        // forever. States are retrieved using GroupRequest/RequestCorrelator
-        str=props.getProperty("timeout_return_state");
-        if(str != null) {
-            timeout_return_state=Long.parseLong(str);
-            props.remove("timeout_return_state");
-        }
 
         if(props.size() > 0) {
             System.err.println("STATE_TRANSFER.setProperties(): the following " +

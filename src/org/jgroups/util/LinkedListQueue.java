@@ -1,4 +1,4 @@
-// $Id: LinkedListQueue.java,v 1.4 2004/07/05 14:17:35 belaban Exp $
+// $Id: LinkedListQueue.java,v 1.5 2004/09/15 17:41:02 belaban Exp $
 
 package org.jgroups.util;
 
@@ -13,12 +13,12 @@ import java.util.NoSuchElementException;
 import java.util.Vector;
 
 
-
 /**
  * LinkedListQueue implementation based on java.util.Queue. Can be renamed to Queue.java and compiled if someone wants to
  * use this implementation rather than the original Queue. However, a simple insertion and removal of 1 million
  * objects into this queue shoed that it was ca. 15-20% slower than the original queue. We just include it in the
  * JGroups distribution to maybe use it at a later point when it has become faster.
+ *
  * @author Bela Ban
  */
 public class LinkedListQueue {
@@ -26,13 +26,13 @@ public class LinkedListQueue {
     LinkedList l=new LinkedList();
 
     /*flag to determine the state of the Queue*/
-    boolean   closed=false;
+    boolean closed=false;
 
     /*lock object for synchronization*/
-    Object    mutex=new Object();
+    Object mutex=new Object();
 
     /*the number of end markers that have been added*/
-    int       num_markers=0;
+    int num_markers=0;
 
 
     /**
@@ -40,13 +40,12 @@ public class LinkedListQueue {
      * an endMarker object is added to the end of the queue to indicate that
      * the queue will close automatically when the end marker is encountered
      * This allows for a "soft" close.
+     *
      * @see LinkedListQueue#close
      */
     private static final Object endMarker=new Object();
 
     protected static Log log=LogFactory.getLog(LinkedListQueue.class);
-
-
 
 
     /**
@@ -60,6 +59,7 @@ public class LinkedListQueue {
      * returns true if the Queue has been closed
      * however, this method will return false if the queue has been closed
      * using the close(true) method and the last element has yet not been received.
+     *
      * @return true if the queue has been closed
      */
     public boolean closed() {
@@ -71,26 +71,25 @@ public class LinkedListQueue {
      * adds an object to the tail of this queue
      * If the queue has been closed with close(true) no exception will be
      * thrown if the queue has not been flushed yet.
+     *
      * @param obj - the object to be added to the queue
-     * @exception QueueClosed exception if closed() returns true
+     * @throws QueueClosed exception if closed() returns true
      */
     public void add(Object obj) throws QueueClosedException {
         if(closed)
             throw new QueueClosedException();
-        if ( this.num_markers > 0 )
+        if(this.num_markers > 0)
             throw new QueueClosedException("LinkedListQueue.add(): queue has been closed. You can not add more elements. " +
-					   "Waiting for removal of remaining elements.");
+                                           "Waiting for removal of remaining elements.");
 
         /*lock the queue from other threads*/
         synchronized(mutex) {
-	    l.add(obj);
+            l.add(obj);
 
             /*wake up all the threads that are waiting for the lock to be released*/
             mutex.notifyAll();
         }
     }
-
-
 
 
     /**
@@ -98,20 +97,20 @@ public class LinkedListQueue {
      * basically (obj.equals(LinkedListQueue.remove(LinkedListQueue.add(obj)))) returns true
      * If the queue has been closed with close(true) no exception will be
      * thrown if the queue has not been flushed yet.
-     * @param obj - the object to be added to the queue
-     * @exception QueueClosed exception if closed() returns true
      *
+     * @param obj - the object to be added to the queue
+     * @throws QueueClosed exception if closed() returns true
      */
     public void addAtHead(Object obj) throws QueueClosedException {
         if(closed)
             throw new QueueClosedException();
-        if ( this.num_markers > 0 )
+        if(this.num_markers > 0)
             throw new QueueClosedException("LinkedListQueue.addAtHead(): queue has been closed. You can not add more elements. " +
-					   "Waiting for removal of remaining elements.");
+                                           "Waiting for removal of remaining elements.");
 
         /*lock the queue from other threads*/
         synchronized(mutex) {
-	    l.addFirst(obj);
+            l.addFirst(obj);
 
             /*wake up all the threads that are waiting for the lock to be released*/
             mutex.notifyAll();
@@ -119,13 +118,11 @@ public class LinkedListQueue {
     }
 
 
-
-
     /**
      * Removes 1 element from head or <B>blocks</B>
      * until next element has been added
-     * @return the first element to be taken of the queue
      *
+     * @return the first element to be taken of the queue
      */
     public Object remove() throws QueueClosedException {
         Object retval=null;
@@ -139,9 +136,6 @@ public class LinkedListQueue {
                 try {
                     mutex.wait();
                 }
-                catch(IllegalMonitorStateException ex) {
-                    throw ex;
-                }
                 catch(InterruptedException ex) {
                 }
             }
@@ -150,22 +144,22 @@ public class LinkedListQueue {
                 throw new QueueClosedException();
 
             /*remove the head from the queue*/
-	    try {
-		retval=l.removeFirst();
-		if(l.size() == 1 && l.getFirst().equals(endMarker))
-		    closed=true;
-	    }
-	    catch(NoSuchElementException ex) {
-		if(log.isErrorEnabled()) log.error("retval == null, size()=" + l.size());
-		return null;		
-	    }
+            try {
+                retval=l.removeFirst();
+                if(l.size() == 1 && l.getFirst().equals(endMarker))
+                    closed=true;
+            }
+            catch(NoSuchElementException ex) {
+                if(log.isErrorEnabled()) log.error("retval == null, size()=" + l.size());
+                return null;
+            }
 
-	    // we ran into an Endmarker, which means that the queue was closed before
-	    // through close(true)
-	    if(retval == endMarker) {
-		close(false); // mark queue as closed
-		throw new QueueClosedException();
-	    }
+            // we ran into an Endmarker, which means that the queue was closed before
+            // through close(true)
+            if(retval == endMarker) {
+                close(false); // mark queue as closed
+                throw new QueueClosedException();
+            }
         }
 
         /*return the object, should be never null*/
@@ -173,11 +167,11 @@ public class LinkedListQueue {
     }
 
 
-
     /**
      * Removes 1 element from the head.
      * If the queue is empty the operation will wait for timeout ms.
      * if no object is added during the timeout time, a Timout exception is thrown
+     *
      * @param timeout - the number of milli seconds this operation will wait before it times out
      * @return the first object in the queue
      */
@@ -194,12 +188,6 @@ public class LinkedListQueue {
                     /*release the mutex lock and wait no more than timeout ms*/
                     mutex.wait(timeout);
                 }
-                catch(IllegalMonitorStateException ex) {
-                    throw ex;
-                }
-                catch(IllegalArgumentException ex2) {
-                    throw ex2;
-                }
                 catch(InterruptedException ex) {
                 }
             }
@@ -210,15 +198,15 @@ public class LinkedListQueue {
                 throw new QueueClosedException();
 
             /*get the next value*/
-	    try {
-		retval=l.removeFirst();
-		if(l.size() == 1 && l.getFirst().equals(endMarker))
-		    closed=true;
-	    }
-	    catch(NoSuchElementException ex) {
-		/*null result means we timed out*/
-		throw new TimeoutException();
-	    }
+            try {
+                retval=l.removeFirst();
+                if(l.size() == 1 && l.getFirst().equals(endMarker))
+                    closed=true;
+            }
+            catch(NoSuchElementException ex) {
+                /*null result means we timed out*/
+                throw new TimeoutException();
+            }
 	    
             /*if we reached an end marker we are going to close the queue*/
             if(retval == endMarker) {
@@ -234,27 +222,28 @@ public class LinkedListQueue {
     /**
      * removes a specific object from the queue.
      * the object is matched up using the Object.equals method.
-     * @param   obj the actual object to be removed from the queue
+     *
+     * @param obj the actual object to be removed from the queue
      */
     public void removeElement(Object obj) throws QueueClosedException {
-	boolean removed;
+        boolean removed;
 
-	if(obj == null) return;
+        if(obj == null) return;
 	
         /*lock the queue*/
-        synchronized(mutex) {	    
-	    removed=l.remove(obj);
-	    if(!removed)
-		if(log.isWarnEnabled()) log.warn("element " + obj + " was not found in the queue");
+        synchronized(mutex) {
+            removed=l.remove(obj);
+            if(!removed)
+                if(log.isWarnEnabled()) log.warn("element " + obj + " was not found in the queue");
         }
     }
-
 
 
     /**
      * returns the first object on the queue, without removing it.
      * If the queue is empty this object blocks until the first queue object has
      * been added
+     *
      * @return the first object on the queue
      */
     public Object peek() throws QueueClosedException {
@@ -267,9 +256,6 @@ public class LinkedListQueue {
                 try {
                     mutex.wait();
                 }
-                catch(IllegalMonitorStateException ex) {
-                    throw ex;
-                }
                 catch(InterruptedException ex) {
                 }
             }
@@ -277,13 +263,13 @@ public class LinkedListQueue {
             if(closed)
                 throw new QueueClosedException();
 
-	    try {
-		retval=l.getFirst();
-	    }
-	    catch(NoSuchElementException ex) {
-		if(log.isErrorEnabled()) log.error("retval == null, size()=" + l.size());
-		return null;	
-	    }
+            try {
+                retval=l.getFirst();
+            }
+            catch(NoSuchElementException ex) {
+                if(log.isErrorEnabled()) log.error("retval == null, size()=" + l.size());
+                return null;
+            }
         }
 
         if(retval == endMarker) {
@@ -295,14 +281,13 @@ public class LinkedListQueue {
     }
 
 
-
-
     /**
      * returns the first object on the queue, without removing it.
      * If the queue is empty this object blocks until the first queue object has
      * been added or the operation times out
+     *
      * @param timeout how long in milli seconds will this operation wait for an object to be added to the queue
-     *        before it times out
+     *                before it times out
      * @return the first object on the queue
      */
 
@@ -316,12 +301,6 @@ public class LinkedListQueue {
                 try {
                     mutex.wait(timeout);
                 }
-                catch(IllegalMonitorStateException ex) {
-                    throw ex;
-                }
-                catch(IllegalArgumentException ex2) {
-                    throw ex2;
-                }
                 catch(InterruptedException ex) {
                 }
             }
@@ -329,13 +308,13 @@ public class LinkedListQueue {
                 throw new QueueClosedException();
 
 
-	    try {
-		retval=l.getFirst();
-	    }
-	    catch(NoSuchElementException ex) {
-		/*null result means we timed out*/
-		throw new TimeoutException();
-	    }
+            try {
+                retval=l.getFirst();
+            }
+            catch(NoSuchElementException ex) {
+                /*null result means we timed out*/
+                throw new TimeoutException();
+            }
 
             if(retval == endMarker) {
                 close(false);
@@ -346,14 +325,14 @@ public class LinkedListQueue {
     }
 
 
-
     /**
-       Marks the queues as closed. When an <code>add</code> or <code>remove</code> operation is
-       attempted on a closed queue, an exception is thrown.
-       @param flush_entries When true, a end-of-entries marker is added to the end of the queue.
-                            Entries may be added and removed, but when the end-of-entries marker
-                is encountered, the queue is marked as closed. This allows to flush
-                pending messages before closing the queue.
+     * Marks the queues as closed. When an <code>add</code> or <code>remove</code> operation is
+     * attempted on a closed queue, an exception is thrown.
+     *
+     * @param flush_entries When true, a end-of-entries marker is added to the end of the queue.
+     *                      Entries may be added and removed, but when the end-of-entries marker
+     *                      is encountered, the queue is marked as closed. This allows to flush
+     *                      pending messages before closing the queue.
      */
     public void close(boolean flush_entries) {
         if(flush_entries) {
@@ -361,7 +340,8 @@ public class LinkedListQueue {
                 add(endMarker); // add an end-of-entries marker to the end of the queue
                 num_markers++;
             }
-        catch(QueueClosedException closed) {}
+            catch(QueueClosedException closed) {
+            }
             return;
         }
 
@@ -377,7 +357,6 @@ public class LinkedListQueue {
     }
 
 
-
     /**
      * resets the queue.
      * This operation removes all the objects in the queue and marks the queue open
@@ -388,8 +367,8 @@ public class LinkedListQueue {
             close(false);
 
         synchronized(mutex) {
-	    l.clear();
-	    closed=false;
+            l.clear();
+            closed=false;
         }
     }
 
@@ -409,23 +388,19 @@ public class LinkedListQueue {
     }
 
 
-
     /**
      * returns a vector with all the objects currently in the queue
      */
     public Vector getContents() {
-        Vector   retval=new Vector();
+        Vector retval=new Vector();
 
         synchronized(mutex) {
-	    for(Iterator it=l.iterator(); it.hasNext();) {
-		retval.addElement(it.next());
-	    }
+            for(Iterator it=l.iterator(); it.hasNext();) {
+                retval.addElement(it.next());
+            }
         }
         return retval;
     }
-
-
-
 
 
 }
