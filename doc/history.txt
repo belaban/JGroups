@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.115 2004/09/14 13:04:02 belaban Exp $
+Revision: $Id: history.txt,v 1.116 2004/09/15 13:49:04 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -27,6 +27,9 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
 Version 2.2.8
 -------------
+
+- Added MERGE3
+  (bela Sept 15 2004)
 
 - FD_SOCK: added sending message to signal regular termination. Plus, each connection is handled
   on a separate thread
