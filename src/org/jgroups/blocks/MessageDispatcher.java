@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.7 2004/03/10 02:07:23 belaban Exp $
+// $Id: MessageDispatcher.java,v 1.8 2004/03/16 17:50:36 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -53,8 +53,9 @@ public class MessageDispatcher implements RequestHandler {
         }
         setMessageListener(l);
         setMembershipListener(l2);
-        if(channel != null)
+        if(channel != null) {
             channel.setUpHandler(prot_adapter);
+        }
         start();
     }
 
@@ -69,8 +70,9 @@ public class MessageDispatcher implements RequestHandler {
         }
         setMessageListener(l);
         setMembershipListener(l2);
-        if(channel != null)
+        if(channel != null) {
             channel.setUpHandler(prot_adapter);
+        }
         start();
     }
 
@@ -86,8 +88,9 @@ public class MessageDispatcher implements RequestHandler {
         }
         setMessageListener(l);
         setMembershipListener(l2);
-        if(channel != null)
+        if(channel != null) {
             channel.setUpHandler(prot_adapter);
+        }
         start();
     }
 
@@ -484,11 +487,38 @@ public class MessageDispatcher implements RequestHandler {
     }
 
 
+//    public void channelConnected(Channel channel) {
+//        if(channel != null) {
+//            Address new_local_addr=channel.getLocalAddress();
+//            if(new_local_addr != null) {
+//                this.local_addr=new_local_addr;
+//                if(Trace.trace)
+//                    Trace.info("MessageDispatcher.channelConnected()", "new local address is " + this.local_addr);
+//            }
+//        }
+//    }
+//
+//    public void channelDisconnected(Channel channel) {
+//    }
+//
+//    public void channelClosed(Channel channel) {
+//    }
+//
+//    public void channelShunned() {
+//    }
+//
+//    public void channelReconnected(Address addr) {
+//        if(channel != null) {
+//            Address new_local_addr=channel.getLocalAddress();
+//            if(new_local_addr != null) {
+//                this.local_addr=new_local_addr;
+//                if(Trace.trace)
+//                    Trace.info("MessageDispatcher.channelReconnected()", "new local address is " + this.local_addr);
+//            }
+//        }
+//    }
 
 
-
-
-    
     /* ------------------------ RequestHandler Interface ---------------------- */
     public Object handle(Message msg) {
         if(req_handler != null)
@@ -559,20 +589,24 @@ public class MessageDispatcher implements RequestHandler {
                 }
                 break;
 
-            case Event.VIEW_CHANGE:
-                View    v=(View)evt.getArg();
-                Vector  new_mbrs=v.getMembers();
+                case Event.VIEW_CHANGE:
+                    View    v=(View)evt.getArg();
+                    Vector  new_mbrs=v.getMembers();
 
-                if(new_mbrs != null) {
-                    members.removeAllElements();
-                    for(int i=0; i < new_mbrs.size(); i++)
-                        members.addElement(new_mbrs.elementAt(i));
-                }
+                    if(new_mbrs != null) {
+                        members.removeAllElements();
+                        for(int i=0; i < new_mbrs.size(); i++)
+                            members.addElement(new_mbrs.elementAt(i));
+                    }
 
-                if(membership_listener != null)
-                    membership_listener.viewAccepted(v);
-                break;
-            
+                    if(membership_listener != null)
+                        membership_listener.viewAccepted(v);
+                    break;
+
+                case Event.SET_LOCAL_ADDRESS:
+                    local_addr=(Address)evt.getArg();
+                    break;
+
             case Event.SUSPECT:
                 if(membership_listener != null)
                     membership_listener.suspect((Address)evt.getArg());
