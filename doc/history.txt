@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.42 2004/02/25 20:43:59 belaban Exp $
+Revision: $Id: history.txt,v 1.43 2004/02/26 00:20:46 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java JGroups.Version')]
 
@@ -37,7 +37,8 @@ Version 2.2.1
   (bela Feb 24 2004)
 
 - RequestCorrelator: catching exceptions caused by non-serializable return value, return them
-  as exceptions. This fixes bug# 901274.
+  as exceptions. This fixes bug# 901274: group requests would *not* return (not even a null value) if
+  the invoked method threw an exception, causing callers to hang for a timeout. Now the exception is returned.
   (bela Feb 20 2004)
 
 - Added NIO version of ConnectionTable1_4; works with JDK 1.4 or later. 
