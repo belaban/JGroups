@@ -1,4 +1,4 @@
-// $Id: Queue.java,v 1.5 2003/09/23 00:22:28 belaban Exp $
+// $Id: Queue.java,v 1.6 2003/09/23 00:43:16 belaban Exp $
 
 package org.jgroups.util;
 
@@ -551,10 +551,6 @@ public class Queue {
      */
     public void waitUntilEmpty(long timeout) throws QueueClosedException, TimeoutException {
         long time_to_wait=timeout;
-
-        // TODO: use Locks instead of add_mutex: acquire add_lock, the remove_lock, the release add_lock, and
-        // wait on remove_lock. Use util.concurrent locks
-        // TODO: compare lock-based impl vs. synchronized-based impl (speed for large insertions)
 
         synchronized(remove_mutex) {
             if(timeout == 0) {
