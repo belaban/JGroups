@@ -1,4 +1,4 @@
-// $Id: DistributedHashtable.java,v 1.4 2003/11/29 01:04:49 belaban Exp $
+// $Id: DistributedHashtable.java,v 1.5 2003/11/29 01:05:19 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -35,6 +35,7 @@ import org.jgroups.persistence.*;
  * initial state (using the state exchange funclet <code>StateExchangeFunclet</code>.
  * @author Bela Ban
  * @author <a href="mailto:aolias@yahoo.com">Alfonso Olias-Sanz</a>
+ * @version $Id: DistributedHashtable.java,v 1.5 2003/11/29 01:05:19 belaban Exp $
  */
 public class DistributedHashtable extends Hashtable implements MessageListener, MembershipListener, Cloneable {
 
