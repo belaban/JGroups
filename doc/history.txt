@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.34 2004/01/18 21:25:55 belaban Exp $
+Revision: $Id: history.txt,v 1.35 2004/01/21 23:05:34 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java JGroups.Version')]
 
@@ -27,6 +27,12 @@ romuald     = Romuald du Song
 
 Version 2.2.1
 -------------
+
+- Added tcpgossip.xml config file
+  (bela Jan 21 2004)
+
+- Fixed bug in IpAddress: access to address cache is now synchronized (caused ConcurrentAccess ex).
+  (bela Jan 21 2004)
 
 - ConnectionTable: new sockets now use the bind_addr (used to ignore it)
   (bela Jan 18 2004)
