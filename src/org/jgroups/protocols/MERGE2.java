@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.11 2005/01/05 10:39:28 belaban Exp $
+// $Id: MERGE2.java,v 1.12 2005/03/23 14:32:18 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -282,7 +282,10 @@ public class MERGE2 extends Protocol {
         Vector findInitialMembers() {
             find_promise.reset();
             passDown(new Event(Event.FIND_INITIAL_MBRS));
-            return (Vector)find_promise.getResult(0); // wait indefinitely until response is received
+            Vector retval=(Vector)find_promise.getResult(0); // wait indefinitely until response is received
+            if(retval != null && is_coord && local_addr != null && !retval.contains(local_addr))
+                retval.add(local_addr);
+            return retval;
         }
 
 
