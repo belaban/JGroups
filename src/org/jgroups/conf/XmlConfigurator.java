@@ -1,4 +1,4 @@
-// $Id: XmlConfigurator.java,v 1.6 2004/07/14 06:37:34 belaban Exp $
+// $Id: XmlConfigurator.java,v 1.7 2004/07/14 10:22:48 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -105,7 +105,7 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
 
 
     public ProtocolData[] getProtocolStack() {
-        return mProtocolStack.toArray(new ProtocolData[mProtocolStack.size()]);
+        return (ProtocolData[])mProtocolStack.toArray(new ProtocolData[mProtocolStack.size()]);
     }
 
     public String getName() {
