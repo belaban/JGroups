@@ -1,4 +1,4 @@
-// $Id: GossipTest.java,v 1.3 2004/03/30 06:47:30 belaban Exp $
+// $Id: GossipTest.java,v 1.4 2004/07/13 01:45:24 ovidiuf Exp $
 
 package org.jgroups.tests.stack;
 
@@ -25,7 +25,7 @@ import java.util.Vector;
  * USE_ROUTER to false;
  *
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Revision: 1.3 $
+ * @version $Revision: 1.4 $
  * @since 2.2.1
  */
 public class GossipTest extends TestCase {
@@ -102,8 +102,7 @@ public class GossipTest extends TestCase {
         GossipData greq=
                 new GossipData(GossipData.GET_REQ, groupName, null, null);
 
-        Thread.currentThread().
-                sleep(GossipRouter.GOSSIP_REQUEST_TIMEOUT + 500);
+        Thread.sleep(GossipRouter.GOSSIP_REQUEST_TIMEOUT + 500);
 
         oos.writeObject(greq);
         oos.flush();
@@ -166,8 +165,7 @@ public class GossipTest extends TestCase {
         Socket s=new Socket("localhost", port);
         ObjectOutputStream oos=new ObjectOutputStream(s.getOutputStream());
         Address mbr=new IpAddress("localhost", mbrPort);
-        GossipData greq=
-                new GossipData(GossipData.REGISTER_REQ, groupName, mbr, null);
+        GossipData greq = new GossipData(GossipData.REGISTER_REQ, groupName, mbr, null);
         oos.writeObject(greq);
         oos.flush();
         
@@ -243,7 +241,7 @@ public class GossipTest extends TestCase {
         // because the sweep is ran at fixed expiryTime intervals, if
         // an entry was added immediately after a sweep run, it actually 
         // spends almost 2*expiryTime in cache.
-        Thread.currentThread().sleep(2 * expiryTime);
+        Thread.sleep(2 * expiryTime);
 
         // send a second GET after more than EXPIRY_TIME ms
 

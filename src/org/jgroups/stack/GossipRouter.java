@@ -1,4 +1,4 @@
-// $Id: GossipRouter.java,v 1.6 2004/07/05 14:17:32 belaban Exp $
+// $Id: GossipRouter.java,v 1.7 2004/07/13 01:45:25 ovidiuf Exp $
 
 package org.jgroups.stack;
 
@@ -272,6 +272,13 @@ public class GossipRouter {
     // END OF MANAGEMENT INTERFACE
     //
 
+    public static String requestTypeToString(int type) {
+        return
+            type == GET ? "GET" :
+                (type == REGISTER ? "REGISTER" :
+                    (type == DUMP ? "DUMP" :
+                        (type == SHUTDOWN ? "SHUTDOWN" : "UNKNOWN REQUEST: "+type)));
+    }
 
 
     /**
@@ -330,8 +337,9 @@ public class GossipRouter {
 
                                 // it is a gossip request, set the main thread free
                                 waitArea.setResult(GOSSIP_REQUEST);
+
                                 GossipData gresp = processGossip(gossip_req);
-                                if (gresp!=null) {
+                                if (gresp != null) {
                                     ObjectOutputStream oos = new ObjectOutputStream(s.getOutputStream());
                                     oos.writeObject(gresp);
                                     oos.close();
@@ -359,17 +367,18 @@ public class GossipRouter {
                 Object waitResult = waitArea.getResult(gossipRequestTimeout);
                 waitArea.reset();
 
-                if (waitResult!=null) {
+                if (waitResult != null) {
                     // gossip request, let the gossip thread deal with it
                     continue;
                 }
 
                 // timeout, this is a routing request
+
                 peer_addr = new IpAddress(sock.getInetAddress(), sock.getPort());
-                output=new DataOutputStream(sock.getOutputStream());
+                output = new DataOutputStream(sock.getOutputStream());
                 
                 // return the address of the peer so it can set it
-                buf=Util.objectToByteBuffer(peer_addr);
+                buf = Util.objectToByteBuffer(peer_addr);
                 output.writeInt(buf.length);
                 output.write(buf, 0, buf.length);
 
@@ -378,11 +387,11 @@ public class GossipRouter {
                 // that's an error condition we should handle here
                 waitResult = waitArea.getResult(routingClientReplyTimeout);
 
-                if (waitResult==null) {
+                if (waitResult == null) {
                     // timeout
                     throw new Exception("Timeout waiting for router client answer");
                 }
-                else if (waitResult==GOSSIP_REQUEST) {
+                else if (waitResult == GOSSIP_REQUEST) {
                     // lazy gossip client, let it handle its business, it will
                     // fail anyway
                     output.close();
@@ -391,8 +400,17 @@ public class GossipRouter {
 
                 bis.reset();
                 input=new DataInputStream(bis);
+
                 type=input.readInt();
+                if(log.isTraceEnabled()) {
+                    log.trace("request of type "+requestTypeToString(type));
+                }
+
                 gname=input.readUTF();
+
+                if(log.isTraceEnabled()) {
+                    log.trace("routing request for group "+gname);
+                }
 
                 // We can have 2 kinds of messages at this point: GET requests or REGISTER requests.
                 // GET requests are processed right here, REGISTRATION requests cause the spawning of
@@ -434,8 +452,7 @@ public class GossipRouter {
                 }
             }
             catch(Exception e) {
-                if(log.isErrorEnabled()) log.error("failure handling a client connection: " + e);
-		e.printStackTrace();
+                if(log.isErrorEnabled()) log.error("failure handling a client connection: " + e.getMessage(), e);
                 try {
                     sock.close();
                 }
