@@ -31,7 +31,7 @@ import java.util.*;
  * the unicast routing caches should ensure that unicasts are only sent via 1 interface in almost all cases.
  * 
  * @author Bela Ban Oct 2003
- * @version $Id: UDP1_4.java,v 1.9 2004/01/01 01:34:31 belaban Exp $
+ * @version $Id: UDP1_4.java,v 1.10 2004/01/02 20:39:27 belaban Exp $
  * todo: sending of dummy packets
  */
 public class UDP1_4 extends Protocol implements  Receiver {
@@ -701,7 +701,6 @@ public class UDP1_4 extends Protocol implements  Receiver {
                 return; // it is a unicast message to myself, no need to put on the network
         }
 
-
         out_stream.reset();
         out_stream.write(Version.version_id, 0, Version.version_id.length); // write the version
         out=new ObjectOutputStream(out_stream);
@@ -993,8 +992,8 @@ public class UDP1_4 extends Protocol implements  Receiver {
 
 
         /** Sends a message using mcast_sock */
-        public void send(DatagramPacket msg) throws Exception {
-            mcast_sock.send(msg);
+        public void send(DatagramPacket packet) throws Exception {
+            mcast_sock.send(packet);
         }
 
         public void run() {
@@ -1188,6 +1187,7 @@ public class UDP1_4 extends Protocol implements  Receiver {
          */
         public void send(DatagramPacket msg) throws Exception {
             InetAddress dest;
+
             if(msg == null)
                 return;
             dest=msg.getAddress();
@@ -1196,8 +1196,8 @@ public class UDP1_4 extends Protocol implements  Receiver {
 
             if(dest.isMulticastAddress()) {
                 // send to all Connectors
-                for(Iterator it=connectors.iterator(); it.hasNext();) {
-                    ((Connector)it.next()).send(msg);
+                for(int i=0; i < connectors.size(); i++) {
+                    ((Connector)connectors.get(i)).send(msg);
                 }
             }
             else {
