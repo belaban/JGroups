@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.35 2004/08/12 14:08:11 belaban Exp $
+// $Id: UDP.java,v 1.36 2004/08/17 08:08:30 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -111,6 +111,11 @@ public class UDP extends Protocol implements Runnable {
      * media (non)sense */
     boolean         loopback=true;
 
+
+    /** Discard packets with a different version. Usually minor version differences are okay. Setting this property
+     * to true means that we expect the exact same version on all incoming packets */
+    boolean discard_incompatibe_packets=false;
+
     /** Sometimes receivers are overloaded (they have to handle de-serialization etc).
      * Packet handler is a separate thread taking care of de-serialization, receiver
      * thread(s) simply put packet in queue and return immediately. Setting this to
@@ -158,11 +163,6 @@ public class UDP extends Protocol implements Runnable {
 
 
     final int VERSION_LENGTH=Version.getLength();
-
-
-
-    //todo: remove
-    long start, stop, num_msgs=0;
 
 
 
@@ -224,11 +224,19 @@ public class UDP extends Protocol implements Runnable {
                 }
 
                 if(Version.compareTo(data) == false) {
-                    if(log.isWarnEnabled()) log.warn("packet from " + packet.getAddress() + ':' + packet.getPort() +
-                               " has different version (" +
-                               Version.printVersionId(data, Version.version_id.length) +
-                               ") from ours (" + Version.printVersionId(Version.version_id) +
-                               "). This may cause problems");
+                    if(log.isWarnEnabled()) {
+                        StringBuffer sb=new StringBuffer();
+                        sb.append("packet from ").append(packet.getAddress()).append(':').append(packet.getPort());
+                        sb.append(" has different version (").append(Version.printVersionId(data, Version.version_id.length));
+                        sb.append(") from ours (").append(Version.printVersionId(Version.version_id)).append("). ");
+                        if(discard_incompatibe_packets)
+                            sb.append("Packet is discarded");
+                        else
+                            sb.append("This may cause problems");
+                        log.warn(sb.toString());
+                    }
+                    if(discard_incompatibe_packets)
+                        continue;
                 }
 
                 if(use_incoming_packet_handler) {
@@ -436,6 +444,12 @@ public class UDP extends Protocol implements Runnable {
         if(str != null) {
             loopback=Boolean.valueOf(str).booleanValue();
             props.remove("loopback");
+        }
+
+        str=props.getProperty("discard_incompatibe_packets");
+        if(str != null) {
+            discard_incompatibe_packets=Boolean.valueOf(str).booleanValue();
+            props.remove("discard_incompatibe_packets");
         }
 
         // this is deprecated, just left for compatibility (use use_incoming_packet_handler)
