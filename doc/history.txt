@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.70 2004/05/04 01:58:15 belaban Exp $
+Revision: $Id: history.txt,v 1.71 2004/05/06 16:32:09 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -29,6 +29,10 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
 Version 2.2.4
 -------------
+
+- Updated NakReceiverWindow (used by NAKACK): replaced received_msgs and delivered_msgs (lists) with TreeMaps.
+  This removes linear cost for traversals, and makes lookups constant.
+  (bela May 6 2004)
 
 - Changed NAKACK.sent_msgs to use TreeMap (sorted seqnos as keys)
   (bela May 3 2004)
