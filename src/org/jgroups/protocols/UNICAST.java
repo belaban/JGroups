@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.5 2004/04/23 19:36:13 belaban Exp $
+// $Id: UNICAST.java,v 1.6 2004/05/04 23:37:27 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -201,8 +201,10 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 dst = msg.getDest();
 
                 /* only handle unicast messages */
-                if (dst == null || ((Address) dst).isMulticastAddress())
+                if (dst == null || ((Address) dst).isMulticastAddress()) {
+                    msg=null;
                     break;
+                }
 
                 entry = (Entry) connections.get(dst);
                 if (entry == null) {
@@ -227,6 +229,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                     entry.sent_msgs.add(entry.sent_msgs_seqno, msg);         // add *including* UnicastHeader
 
                 entry.sent_msgs_seqno++;
+                msg=null;
                 return; // AckSenderWindow will send message for us
 
             case Event.BECOME_SERVER:
