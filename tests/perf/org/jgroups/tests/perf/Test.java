@@ -40,6 +40,19 @@ public class Test implements Receiver {
     /** HashMap<Object, HashMap>. A hashmap of senders, each value is the 'senders' hashmap */
     HashMap         results=new HashMap();
 
+    /** Dump info in gnuplot format */
+    boolean         gnuplot_output=false;
+
+    /** Log every n msgs received (if gnuplot_output == true) */
+    long            log_interval=1000;
+
+    /** Last time we dumped info */
+    long            last_dump=0;
+
+    long            beginning=0;
+    long            counter=1;
+    long            msg_size=1000;
+
 
 
     public void start(Properties c) throws Exception {
@@ -85,6 +98,27 @@ public class Test implements Receiver {
         props=this.config.getProperty("props");
         num_members=Integer.parseInt(this.config.getProperty("num_members"));
         sender=new Boolean(this.config.getProperty("sender")).booleanValue();
+        msg_size=Long.parseLong(this.config.getProperty("msg_size"));
+        String tmp2=this.config.getProperty("gnuplot_output", "false");
+        if(new Boolean(tmp2).booleanValue())
+            this.gnuplot_output=true;
+        tmp2=this.config.getProperty("log_interval");
+        if(tmp2 != null)
+            log_interval=Long.parseLong(tmp2);
+
+        if(gnuplot_output) {
+            sb=new StringBuffer();
+            sb.append("\n##### msgs_received");
+            sb.append(", free_mem [KB] ");
+            sb.append(", total_mem [KB] ");
+            sb.append(", total_msgs_sec [msgs/sec] ");
+            sb.append(", total_throughput [KB/sec] ");
+            sb.append(", rolling_msgs_sec (last ").append(log_interval).append(" msgs) ");
+            sb.append(" [msgs/sec] ");
+            sb.append(", rolling_throughput (last ").append(log_interval).append(" msgs) ");
+            sb.append(" [KB/sec]\n");
+            log.info(sb.toString());
+        }
 
         String transport_name=this.config.getProperty("transport");
         transport=(Transport)Thread.currentThread().getContextClassLoader().loadClass(transport_name).newInstance();
@@ -138,10 +172,16 @@ public class Test implements Receiver {
                         if(info.start == 0)
                             info.start=System.currentTimeMillis();
                         info.num_msgs_received++;
+                        counter++;
                         info.total_bytes_received+=d.payload.length;
                         if(info.num_msgs_received % 1000 == 0)
                             System.out.println("-- received " + info.num_msgs_received +
                                     " messages from " + sender);
+
+                        if(info.num_msgs_received % log_interval == 0) {
+                            log.info(dumpStats(counter));
+                        }
+
                         if(info.num_msgs_received >= info.num_msgs_expected) {
                             info.done=true;
                             if(info.stop == 0)
@@ -292,6 +332,7 @@ public class Test implements Receiver {
             sb.append("\n");
         }
         System.out.println(sb.toString());
+        log.info(sb.toString());
     }
 
 
@@ -321,6 +362,65 @@ public class Test implements Receiver {
             sb.append("sender: ").append(sender).append(": ").append(mi).append("\n");
         }
         sb.append("\ncombined: ").append(combined).append("\n");
+    }
+
+
+    String dumpStats(long received_msgs) {
+        StringBuffer sb=new StringBuffer();
+        if(gnuplot_output)
+            sb.append(received_msgs).append(" ");
+        else
+            sb.append("\nmsgs_received=").append(received_msgs);
+
+        if(gnuplot_output)
+            sb.append(Runtime.getRuntime().freeMemory() / 1000.0).append(" ");
+        else
+            sb.append(", free_mem=").append(Runtime.getRuntime().freeMemory() / 1000.0);
+
+        if(gnuplot_output)
+            sb.append(Runtime.getRuntime().totalMemory() / 1000.0).append(" ");
+        else
+            sb.append(", total_mem=").append(Runtime.getRuntime().totalMemory() / 1000.0).append("\n");
+
+        dumpThroughput(sb, received_msgs);
+        return sb.toString();
+    }
+
+    void dumpThroughput(StringBuffer sb, long received_msgs) {
+        double tmp;
+        long   current=System.currentTimeMillis();
+
+        if(last_dump == 0 || (current - last_dump) <= 0)
+            return;
+
+        tmp=(1000 * counter) / (current - beginning);
+        if(gnuplot_output)
+            sb.append(tmp).append(" ");
+        else
+            sb.append("total_msgs_sec=").append(tmp).append(" [msgs/sec]");
+
+        tmp=(received_msgs * msg_size) / (current - beginning);
+        if(gnuplot_output)
+            sb.append(tmp).append(" ");
+        else
+            sb.append("\ntotal_throughput=").append(tmp).append(" [KB/sec]");
+
+        tmp=(1000 * log_interval) / (current - last_dump);
+        if(gnuplot_output)
+            sb.append(tmp).append(" ");
+        else {
+            sb.append("\nrolling_msgs_sec (last ").append(log_interval).append(" msgs)=");
+            sb.append(tmp).append(" [msgs/sec]");
+        }
+
+        tmp=(log_interval * msg_size) / (current - last_dump);
+        if(gnuplot_output)
+            sb.append(tmp).append(" ");
+        else {
+            sb.append("\nrolling_throughput (last ").append(log_interval).append(" msgs)=");
+            sb.append(tmp).append(" [KB/sec]\n");
+        }
+        last_dump=current;
     }
 
 
