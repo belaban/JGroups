@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.7 2004/07/26 10:52:31 belaban Exp $
+// $Id: GMS.java,v 1.8 2004/08/31 16:03:30 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -131,6 +131,10 @@ public class GMS extends RpcProtocol implements Runnable {
             tmp.init();
 
         setImpl(tmp);
+    }
+
+      boolean haveCoordinatorRole() {
+        return impl != null && impl instanceof CoordGmsImpl;
     }
 
 
@@ -419,8 +423,12 @@ public class GMS extends RpcProtocol implements Runnable {
             passUp(view_event);
 
             coord=determineCoordinator();
-            if(coord != null && coord.equals(local_addr) && !(coord.equals(new_view.getCoordAddress()))) {
+            if(coord != null && coord.equals(local_addr)) {
                 becomeCoordinator();
+            }
+            else {
+                if(haveCoordinatorRole() && !local_addr.equals(coord))
+                    becomeParticipant();
             }
         }
     }
