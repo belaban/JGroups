@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.6 2003/09/25 18:40:52 belaban Exp $
+Revision: $Id: history.txt,v 1.7 2003/10/15 20:22:50 ovidiuf Exp $
 
 [For current version, see file Version.java (or invoke 'java JGroups.Version')]
 
@@ -22,6 +22,13 @@ ovidiuf     = Ovidiu Feodorov (ovidiuf@users.sf.net)
 romuald     = Romuald du Song
 
 
+
+
+
+- Added GossipRouter. It is based on the Router code and it is able to answer 
+  Gossip requests too. Can completely replace Router/GossipClient. It is
+  backward compatible, clients shouldn't be aware of change. 
+  (ovidiuf Oct 15 2003)
 
 Version 2.2
 -----------
