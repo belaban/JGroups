@@ -8,8 +8,8 @@
   <title>JGroups 2.2.X Installation</title>
   <link rel="STYLESHEET" href="../user.css">
 </head>
-<body text="#000000" bgcolor="#ffffff" link="#0000ee" vlink="#551a8b"
- alink="#ff0000">
+<body alink="#ff0000" bgcolor="#ffffff" link="#0000ee" text="#000000"
+ vlink="#551a8b">
 <comment> </comment>
 <h1> Installation Instructions for JGroups<br>
 </h1>
@@ -50,12 +50,13 @@ The binary version contains<br>
   <li>jgroups-all.jar: the JGroups library including the demos</li>
   <li>CREDITS: list of contributors</li>
   <li>INSTALL.html: this file</li>
-  <li>xercesimpl-2.1.0.jar: the Xerces parser implementation (see <a
- href="http://xml.apache.org"> http://xml.apache.org</a> )</li>
-  <li>xercesxmlapi-2.1.0.jar: the Xerces parser APIs</li>
-  <li>jms.jar: JMS library<br>
+  <li>commons-logging.jar<br>
   </li>
 </ol>
+We no longer ship the Xerces JARs. To run JGroups you have to have an
+XML parser installed on your system. If you use JDK 1.4, you can use
+the parser that is shipped with it.<br>
+<br>
 <br>
 Place the JAR files somewhere in your <b>CLASSPATH</b>, and you're
 ready to start using JGroups. If you already have Xerces installed, or
@@ -148,7 +149,7 @@ following command:
 <pre><b>java org.jgroups.Version</b></pre>
 You should see the following output (more or less) if the class is
 found:
-<pre><br>Version:        2.2<br>CVS:            $Id: INSTALL.html,v 1.2 2003/09/24 23:22:53 belaban Exp $<br>History:        (see doc/history.txt for details)<br><br><br><br></pre>
+<pre><br>Version:        2.2<br>CVS:            $Id: INSTALL.html,v 1.3 2004/06/26 02:06:00 belaban Exp $<br>History:        (see doc/history.txt for details)<br><br><br><br></pre>
 <h3> Running a Demo Program</h3>
 To test whether JGroups works okay on your machine, run
 <pre><b>java org.jgroups.demos.Draw</b></pre>
