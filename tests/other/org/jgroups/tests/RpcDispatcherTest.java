@@ -1,4 +1,4 @@
-// $Id: RpcDispatcherTest.java,v 1.5 2004/07/05 14:15:11 belaban Exp $
+// $Id: RpcDispatcherTest.java,v 1.6 2004/09/06 15:40:48 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -35,12 +35,12 @@ public class RpcDispatcherTest {
     }
 
 
-    public void start() throws Exception {
+    public void start(int num) throws Exception {
         channel=new JChannel(props);
         disp=new RpcDispatcher(channel, null, null, this);
         channel.connect("RpcDispatcherTestGroup");
 
-        for(int i=0; i < 10; i++) {
+        for(int i=0; i < num; i++) {
             Util.sleep(100);
             rsp_list=disp.callRemoteMethods(null, "print", new Object[]{new Integer(i)},
                     new Class[]{int.class}, GroupRequest.GET_ALL, 0);
@@ -57,8 +57,11 @@ public class RpcDispatcherTest {
 
 
     public static void main(String[] args) {
+        int num=10;
+        if(args.length > 0)
+            num=Integer.parseInt(args[0]);
         try {
-            new RpcDispatcherTest().start();
+            new RpcDispatcherTest().start(num);
         }
         catch(Exception e) {
             System.err.println(e);
