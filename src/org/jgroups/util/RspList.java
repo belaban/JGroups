@@ -1,4 +1,4 @@
-// $Id: RspList.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+// $Id: RspList.java,v 1.2 2003/12/11 06:41:40 belaban Exp $
 
 package org.jgroups.util;
 
@@ -152,7 +152,6 @@ public class RspList {
     {
         StringBuffer ret=new StringBuffer();
         Rsp          rsp;
-        Address      sender;
 
         for(int i=0; i < rsps.size(); i++)
         {
