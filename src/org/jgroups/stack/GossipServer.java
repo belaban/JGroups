@@ -1,9 +1,10 @@
-// $Id: GossipServer.java,v 1.2 2003/10/15 20:18:32 ovidiuf Exp $
+// $Id: GossipServer.java,v 1.3 2004/03/30 06:47:27 belaban Exp $
 
 package org.jgroups.stack;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
-import org.jgroups.log.Trace;
 
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -36,6 +37,7 @@ public class GossipServer {
     CacheCleaner cache_cleaner=null;      // task that is periodically invoked to sweep old entries from the cache
     Timer timer=new Timer(true);   // start as daemon thread, so we won't block on it upon termination
     InetAddress bind_address=null;
+    protected Log log=LogFactory.getLog(getClass());
 
 
     public GossipServer(int port) throws Exception {
@@ -67,8 +69,8 @@ public class GossipServer {
         while(true) {
             try {
                 sock=srv_sock.accept();
-                if(Trace.trace)
-                    Trace.info("GossipServer.run()", "accepted connection from " + sock.getInetAddress() +
+
+                    if(log.isInfoEnabled()) log.info("accepted connection from " + sock.getInetAddress() +
                                                      ":" + sock.getPort());
                 sock.setSoLinger(true, 500);
                 input=new ObjectInputStream(sock.getInputStream());
@@ -84,7 +86,7 @@ public class GossipServer {
                 sock.close();
             }
             catch(Exception ex) {
-                Trace.error("GossipServer.run()", "exception=" + ex);
+                if(log.isErrorEnabled()) log.error("exception=" + ex);
                 ex.printStackTrace(); // +++ remove
                 continue;
             }
@@ -103,9 +105,9 @@ public class GossipServer {
         }
         else
             srv_sock=new ServerSocket(port, 20, bind_address);  // backlog of 20 connections
-        if(Trace.trace) {
-            Trace.info("GossipServer.init()", "GossipServer was created at " + new Date());
-            Trace.info("GossipServer.init()", "Listening on port " + port + " bound on address " + bind_address);
+         {
+            if(log.isInfoEnabled()) log.info("GossipServer was created at " + new Date());
+            if(log.isInfoEnabled()) log.info("Listening on port " + port + " bound on address " + bind_address);
         }
         cache_cleaner=new CacheCleaner();
         timer.schedule(cache_cleaner, EXPIRY_TIME, EXPIRY_TIME);
@@ -120,13 +122,13 @@ public class GossipServer {
         Address mbr;
 
         if(gossip == null) return null;
-        if(Trace.trace) Trace.info("GossipServer.processGossip()", gossip.toString());
+         if(log.isInfoEnabled()) log.info(gossip.toString());
         switch(gossip.getType()) {
             case GossipData.REGISTER_REQ:
                 group=gossip.getGroup();
                 mbr=gossip.getMbr();
                 if(group == null || mbr == null) {
-                    Trace.error("GossipServer.processGossip()", "group or member is null, cannot register member");
+                    if(log.isErrorEnabled()) log.error("group or member is null, cannot register member");
                     return null;
                 }
                 return processRegisterRequest(group, mbr);
@@ -134,17 +136,17 @@ public class GossipServer {
             case GossipData.GET_REQ:
                 group=gossip.getGroup();
                 if(group == null) {
-                    Trace.error("GossipServer.processGossip()", "group is null, cannot get membership");
+                    if(log.isErrorEnabled()) log.error("group is null, cannot get membership");
                     return null;
                 }
                 return processGetRequest(group);
 
             case GossipData.GET_RSP:  // should not be received
-                Trace.warn("GossipServer.processGossip()", "received a GET_RSP. Should not be received by server");
+                if(log.isWarnEnabled()) log.warn("received a GET_RSP. Should not be received by server");
                 return null;
 
             default:
-                Trace.warn("GossipServer.processGossip()", "received unkown gossip request (gossip=" + gossip + ")");
+                if(log.isWarnEnabled()) log.warn("received unkown gossip request (gossip=" + gossip + ")");
                 return null;
         }
     }
@@ -161,8 +163,8 @@ public class GossipServer {
         Vector mbrs=getMembers(group);
 
         ret=new GossipData(GossipData.GET_RSP, group, null, mbrs);
-        if(Trace.trace)
-            Trace.info("GossipServer.processGetRequest()", "members are " + mbrs +
+
+            if(log.isInfoEnabled()) log.info("members are " + mbrs +
                                                            ", gossip_rsp=" + ret);
         return ret;
     }
@@ -182,18 +184,18 @@ public class GossipServer {
             mbrs=new Vector();
             mbrs.addElement(new Entry(mbr));
             groups.put(group, mbrs);
-            if(Trace.trace) Trace.info("GossipServer.addMember()", "added " + mbr + " to " + group + " (new group)");
+             if(log.isInfoEnabled()) log.info("added " + mbr + " to " + group + " (new group)");
         }
         else {
             entry=findEntry(mbrs, mbr);
             if(entry == null) {
                 entry=new Entry(mbr);
                 mbrs.addElement(entry);
-                if(Trace.trace) Trace.info("GossipServer.addMember()", "added " + mbr + " to " + group);
+                 if(log.isInfoEnabled()) log.info("added " + mbr + " to " + group);
             }
             else {
                 entry.update();
-                if(Trace.trace) Trace.info("GossipServer.addMember()", "updated entry " + entry);
+                 if(log.isInfoEnabled()) log.info("updated entry " + entry);
             }
         }
     }
@@ -243,8 +245,8 @@ public class GossipServer {
                     diff=current_time - entry.timestamp;
                     if(entry.timestamp + EXPIRY_TIME < current_time) {
                         it.remove();
-                        if(Trace.trace)
-                            Trace.info("GossipServer.sweep()", "removed member " + entry +
+
+                            if(log.isInfoEnabled()) log.info("removed member " + entry +
                                                                " from group " + key + "(" + diff + " msecs old)");
                         num_entries_removed++;
                     }
@@ -252,8 +254,8 @@ public class GossipServer {
             }
         }
 
-        if(Trace.trace && num_entries_removed > 0)
-            Trace.info("GossipServer.sweep()", "done (removed " + num_entries_removed + " entries)");
+        if(num_entries_removed > 0)
+            if(log.isInfoEnabled()) log.info("done (removed " + num_entries_removed + " entries)");
     }
 
 
@@ -331,7 +333,7 @@ public class GossipServer {
         }
 
         try {
-            Trace.init();
+
         }
         catch(Throwable ex) {
             System.err.println("GossipServer.main(): " + ex);

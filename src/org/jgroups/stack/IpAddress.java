@@ -1,15 +1,17 @@
-// $Id: IpAddress.java,v 1.3 2004/01/21 22:49:32 belaban Exp $
+// $Id: IpAddress.java,v 1.4 2004/03/30 06:47:27 belaban Exp $
 
 package org.jgroups.stack;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.jgroups.Address;
+import org.jgroups.util.Util;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.net.InetAddress;
-import java.util.*;
-import org.jgroups.util.Util;
-import org.jgroups.Address;
-import org.jgroups.log.Trace;
+import java.util.HashMap;
 
 
 
@@ -22,9 +24,10 @@ public class IpAddress implements Address {
     private InetAddress       ip_addr=null;
     private int               port=0;
     private byte[] additional_data=null;
-    protected static HashMap  sAddrCache=new HashMap(); 
+    protected static HashMap  sAddrCache=new HashMap();
+    protected static Log log=LogFactory.getLog(IpAddress.class);
 
-    static final transient  char[] digits = {   
+    static final transient  char[] digits = {
         '0', '1', '2', '3', '4', '5',   
         '6', '7', '8', '9'}; 
 
@@ -37,13 +40,13 @@ public class IpAddress implements Address {
             ip_addr=InetAddress.getByName(i);
         }
         catch(Exception e) {
-            Trace.warn("IpAddress.IpAddress()", "failed to get " + i + ":" + p + 
+            if(log.isWarnEnabled()) log.warn("failed to get " + i + ":" + p +
                        ", using \"127.0.0.1\", exception: " + Util.printStackTrace(e));
             try {
                 ip_addr=InetAddress.getByName("127.0.0.1");
             }
             catch(Exception ex) {
-                Trace.warn("IpAddress.IpAddress()", "exception: " + ex);
+                if(log.isWarnEnabled()) log.warn("exception: " + ex);
             }
         }
         port=p;
@@ -63,7 +66,7 @@ public class IpAddress implements Address {
             this.port=port;
         }
         catch(Exception e) {
-            Trace.warn("IpAddress.IpAddress()", "exception: " + e);
+            if(log.isWarnEnabled()) log.warn("exception: " + e);
         }
     }
 
@@ -299,7 +302,7 @@ public class IpAddress implements Address {
         }
         catch (Exception x) {
             x.printStackTrace();
-            Trace.error("IpAddress",x.getMessage());
+            if(log.isErrorEnabled()) log.error(x.getMessage());
         }
         return null;
         

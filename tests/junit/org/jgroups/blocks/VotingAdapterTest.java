@@ -1,9 +1,9 @@
 package org.jgroups.blocks;
 
-import junit.framework.*;
-
-import org.jgroups.*;
-import org.jgroups.log.*;
+import junit.framework.Test;
+import junit.framework.TestCase;
+import junit.framework.TestSuite;
+import org.jgroups.JChannel;
 
 public class VotingAdapterTest extends TestCase {
 
@@ -53,7 +53,7 @@ public class VotingAdapterTest extends TestCase {
 
     public void setUp() throws Exception {
         
-        Trace.init();
+
 
         listener1 = new TestVoteChannelListener(true);
         listener2 = new TestVoteChannelListener(true);

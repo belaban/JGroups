@@ -1,9 +1,10 @@
-// $Id: Retransmitter.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+// $Id: Retransmitter.java,v 1.2 2004/03/30 06:47:27 belaban Exp $
 
 package org.jgroups.stack;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
-import org.jgroups.log.Trace;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 
@@ -25,7 +26,7 @@ import java.util.ListIterator;
  *
  * @author John Giorgiadis
  * @author Bela Ban
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.2 $
  */
 public class Retransmitter {
 
@@ -40,6 +41,7 @@ public class Retransmitter {
     private RetransmitCommand cmd=null;
     private boolean           retransmitter_owned;
     private TimeScheduler     retransmitter=null;
+    protected static Log log=LogFactory.getLog(Retransmitter.class);
 
 
     /** Retransmit command (see Gamma et al.) used to retrieve missing messages */
@@ -170,7 +172,7 @@ public class Retransmitter {
                     retransmitter.stop();
                 }
                 catch(InterruptedException ex) {
-                    Trace.error("Retransmiter.stop()", Util.printStackTrace(ex));
+                    if(log.isErrorEnabled()) log.error(Util.printStackTrace(ex));
                 }
             }
             else {

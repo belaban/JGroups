@@ -11,7 +11,8 @@ package org.jgroups.persistence;
  */
 
 
-import org.jgroups.log.Trace;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import java.io.*;
 import java.sql.*;
@@ -22,6 +23,8 @@ import java.util.*;
  * Class will be utilized
  */
 public class DBPersistenceManager implements PersistenceManager {
+
+    protected Log log=LogFactory.getLog(this.getClass());
 
     /**
      * Default construct
@@ -50,8 +53,7 @@ public class DBPersistenceManager implements PersistenceManager {
             }
         }
         catch(Exception x) {
-            Trace.error("DBPersistenceManager.DBPersistenceManager()",
-                        "failed reading database properties from " + filename + ", exception=" + x);
+            if(log.isErrorEnabled()) log.error("failed reading database properties from " + filename + ", exception=" + x);
         }
 
         // 3. Finally maybe the user specified -Dpersist.properties=/home/user/mypersist.properties
@@ -84,7 +86,7 @@ public class DBPersistenceManager implements PersistenceManager {
      * used to intitiailize complete DB access. THis method will use
      * existing database to create schema (if it doesnt exist) and
      * get PersistenceManager in usable condition
-     * @param InputStream;
+     * @param in
      * @exception Exception;
      */
     protected void init(InputStream in) throws Exception {
@@ -559,8 +561,8 @@ public class DBPersistenceManager implements PersistenceManager {
         try {
             connStr=connStr.trim();
             Connection conn=DriverManager.getConnection(connStr, userName, userPass);
-            if(Trace.trace)
-                Trace.info("DBPersistenceManager.getConnection()", "userName=" + userName +
+
+                if(log.isInfoEnabled()) log.info("userName=" + userName +
                                                                    ", userPass=" + userPass + ", connStr=" + connStr);
             return conn;
         }

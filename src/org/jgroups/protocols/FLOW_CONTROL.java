@@ -1,4 +1,4 @@
-// $Id: FLOW_CONTROL.java,v 1.1 2003/09/09 01:24:10 belaban Exp $
+// $Id: FLOW_CONTROL.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -6,7 +6,6 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.blocks.GroupRequest;
-import org.jgroups.log.Trace;
 import org.jgroups.stack.MessageProtocol;
 import org.jgroups.util.ReusableThread;
 import org.jgroups.util.RspList;
@@ -95,8 +94,8 @@ public class FLOW_CONTROL extends MessageProtocol implements Runnable
 			_msgsSentAfterFCreq++;
 			if( (_msgsSentAfterFCreq>=_fwdMarginSize) && !isBlockState )
 			    {
-				if(Trace.trace)
-				    Trace.info("FLOW_CONTROL.handleDownEvent()","ACTION BLOCK");
+
+				    if(log.isInfoEnabled()) log.info("ACTION BLOCK");
 				System.err.println("0;" +System.currentTimeMillis()+";"+_windowSize);
 				passUp(new Event(Event.BLOCK_SEND));
 				isBlockState = true;
@@ -124,9 +123,8 @@ public class FLOW_CONTROL extends MessageProtocol implements Runnable
 			_rcvdMSGCounter.put(src,fcForSrc);
 		    }
 		fcForSrc.increment(1);
-		if(Trace.trace)
-		    Trace.info("FLOW_CONTROL.handleUpEvent()",
-			       "message ("+fcForSrc.getRcvdMSGCount() +") received from "+src);
+
+		    if(log.isInfoEnabled()) log.info("message ("+fcForSrc.getRcvdMSGCount() +") received from "+src);
 	    }
 	return true;
     }
@@ -142,8 +140,8 @@ public class FLOW_CONTROL extends MessageProtocol implements Runnable
     {
 	Address src = req.getSrc();
 	Long resp = new Long(((FCInfo)_rcvdMSGCounter.get(src)).getRcvdMSGCount());
-	if(Trace.trace)
-	    Trace.info("FLOW_CONTROL.handle()","Reqest came from "+src+" Prepared response "+resp);
+
+	    if(log.isInfoEnabled()) log.info("Reqest came from "+src+" Prepared response "+resp);
 	return resp;
     }
 
@@ -155,8 +153,8 @@ public class FLOW_CONTROL extends MessageProtocol implements Runnable
      */
     public void run()
     {
-	if(Trace.trace)
-	    Trace.info("FLOW_CONTROL.run()", "--- hit the _fwdMargin. Remaining size "+_fwdMarginSize);
+
+	    if(log.isInfoEnabled()) log.info("--- hit the _fwdMargin. Remaining size "+_fwdMarginSize);
 	reqFCInfo();
     }
 
@@ -288,17 +286,17 @@ public class FLOW_CONTROL extends MessageProtocol implements Runnable
 
 	if(isBlockState)
 	    {
-		if(Trace.trace)
-		    Trace.warn("FLOW_CONTROL.reqFCInfo()", "ACTION UNBLOCK");
+
+		    if(log.isWarnEnabled()) log.warn("ACTION UNBLOCK");
 		passUp(new Event(Event.UNBLOCK_SEND));
 		System.err.println("1;" +System.currentTimeMillis()+";"+_windowSize);
 		isBlockState = false;
 	    }
 
-	if(Trace.trace)
+
 	    {
-		Trace.warn("FLOW_CONTROL.reqFCInfo()", "estimatedTimeout = "+_estimatedRTT);
-		Trace.warn("FLOW_CONTROL.reqFCInfo()", "window size = "+_windowSize+ " forward margin size = "+_fwdMarginSize);
+		if(log.isWarnEnabled()) log.warn("estimatedTimeout = "+_estimatedRTT);
+		if(log.isWarnEnabled()) log.warn("window size = "+_windowSize+ " forward margin size = "+_fwdMarginSize);
 	    }
 
 	return rspList;

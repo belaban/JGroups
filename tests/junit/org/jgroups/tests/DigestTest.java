@@ -1,11 +1,13 @@
-// $Id: DigestTest.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+// $Id: DigestTest.java,v 1.2 2004/03/30 06:47:31 belaban Exp $
 
 package org.jgroups.tests;
 
 
-import junit.framework.*;
-import org.jgroups.stack.IpAddress;
+import junit.framework.Test;
+import junit.framework.TestCase;
+import junit.framework.TestSuite;
 import org.jgroups.protocols.pbcast.Digest;
+import org.jgroups.stack.IpAddress;
 
 
 

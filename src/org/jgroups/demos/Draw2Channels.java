@@ -1,4 +1,4 @@
-// $Id: Draw2Channels.java,v 1.4 2004/02/26 19:15:00 belaban Exp $
+// $Id: Draw2Channels.java,v 1.5 2004/03/30 06:47:16 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -6,7 +6,6 @@ package org.jgroups.demos;
 
 import org.jgroups.*;
 import org.jgroups.Event;
-import org.jgroups.log.Trace;
 import org.jgroups.util.Util;
 
 import javax.swing.*;
@@ -49,7 +48,7 @@ public class Draw2Channels implements ActionListener {
 
 
     public Draw2Channels(String control_props, String data_props, boolean no_channel) throws Exception {
-	Trace.init();
+
 	this.control_props=control_props;
 	this.data_props=data_props;
 	this.no_channel=no_channel;

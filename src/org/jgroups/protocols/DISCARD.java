@@ -1,12 +1,14 @@
-// $Id: DISCARD.java,v 1.1 2003/09/09 01:24:09 belaban Exp $
+// $Id: DISCARD.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
 
 package org.jgroups.protocols;
 
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Message;
+import org.jgroups.stack.Protocol;
+
 import java.util.Properties;
 import java.util.Vector;
-import org.jgroups.*;
-import org.jgroups.stack.*;
-import org.jgroups.log.Trace;
 
 
 
@@ -95,11 +97,11 @@ public class DISCARD extends Protocol
             {
                if (excludeItself && msg.getSrc().equals(localAddress))
                {
-                  if (Trace.trace) Trace.info("DISCARD.up()", "excluding itself");
+                   if(log.isInfoEnabled()) log.info("excluding itself");
                }
                else
                {
-                  if (Trace.trace) Trace.info("DISCARD.up()", "dropping message");
+                   if(log.isInfoEnabled()) log.info("dropping message");
                   return;
                }
             }
@@ -133,11 +135,11 @@ public class DISCARD extends Protocol
 
                if (excludeItself && msg.getSrc().equals(localAddress))
                {
-                  if (Trace.trace) Trace.info("DISCARD.down()", "excluding itself");
+                   if(log.isInfoEnabled()) log.info("excluding itself");
                }
                else
                {
-                  if (Trace.trace) Trace.info("DISCARD.down()", "dropping message");
+                   if(log.isInfoEnabled()) log.info("dropping message");
                   return;
                }
             }

@@ -1,4 +1,4 @@
-// $Id: RpcProtocol.java,v 1.2 2004/02/26 19:15:01 belaban Exp $
+// $Id: RpcProtocol.java,v 1.3 2004/03/30 06:47:27 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -7,7 +7,6 @@ import org.jgroups.*;
 import org.jgroups.blocks.MethodCall;
 import org.jgroups.blocks.MethodLookup;
 import org.jgroups.blocks.MethodLookupClos;
-import org.jgroups.log.Trace;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
 
@@ -116,7 +115,7 @@ public class RpcProtocol extends MessageProtocol {
             buf=Util.objectToByteBuffer(method_call);
         }
         catch(Exception e) {
-            Trace.error("RpcProtocol.callRemoteMethods()", "exception=" + e);
+            if(log.isErrorEnabled()) log.error("exception=" + e);
             return null;
         }
 
@@ -209,7 +208,7 @@ public class RpcProtocol extends MessageProtocol {
             buf=Util.objectToByteBuffer(method_call);
         }
         catch(Exception e) {
-            Trace.error("RpcProtocol.callRemoteMethod()", "exception=" + e);
+            if(log.isErrorEnabled()) log.error("exception=" + e);
             return null;
         }
 
@@ -227,7 +226,7 @@ public class RpcProtocol extends MessageProtocol {
         MethodCall method_call;
 
         if(req == null || req.getLength() == 0) {
-            Trace.error("RpcProtocol.handle()", "message or message buffer is null");
+            if(log.isErrorEnabled()) log.error("message or message buffer is null");
             return null;
         }
 
@@ -235,12 +234,12 @@ public class RpcProtocol extends MessageProtocol {
             body=req.getObject();
         }
         catch(Exception e) {
-            Trace.error("RpcProtocol.handle()", "exception=" + e);
+            if(log.isErrorEnabled()) log.error("exception=" + e);
             return e;
         }
 
         if(body == null || !(body instanceof MethodCall)) {
-            Trace.error("RpcProtocol.handle()", "message does not contain a MethodCall object");
+            if(log.isErrorEnabled()) log.error("message does not contain a MethodCall object");
             return null;
         }
 
@@ -249,7 +248,7 @@ public class RpcProtocol extends MessageProtocol {
             return method_call.invoke(this, method_lookup);
         }
         catch(Throwable x) {
-            Trace.error("RpcProtocol.handle()", Trace.getStackTrace(x));
+            if(log.isErrorEnabled()) log.error(Util.getStackTrace(x));
             return x;
         }
     }

@@ -1,12 +1,15 @@
-// $Id: PERF.java,v 1.2 2003/12/03 20:59:28 igeorg Exp $
+// $Id: PERF.java,v 1.3 2004/03/30 06:47:21 belaban Exp $
 
 package org.jgroups.protocols;
 
+import org.jgroups.Event;
+import org.jgroups.Message;
+import org.jgroups.View;
+import org.jgroups.stack.Protocol;
+import org.jgroups.stack.ProtocolObserver;
+
 import java.util.Properties;
 import java.util.Vector;
-import org.jgroups.*;
-import org.jgroups.stack.*;
-import org.jgroups.log.Trace;
 
 
 /**
@@ -26,7 +29,7 @@ import org.jgroups.log.Trace;
  * all trace output to the given file.
  * </ol>
  * @author Bela Ban Oct 2001
- * @version $Revision: 1.2 $
+ * @version $Revision: 1.3 $
  */
 public class PERF extends Protocol {
     boolean              details=false;
@@ -74,8 +77,8 @@ public class PERF extends Protocol {
 	    if(hdr != null) {
 		hdr.setEndTime();
 		hdr.setDone(name, PerfHeader.UP); // we do this here because header is removed, so PassUp won't find it
-		if(Trace.trace)
-		    Trace.info("PERF.up()", hdr.printContents(details, protocols) + "\n---------------------------------\n");
+
+		    if(log.isInfoEnabled()) log.info(hdr.printContents(details, protocols) + "\n---------------------------------\n");
 	    }
 	    break;
 	}

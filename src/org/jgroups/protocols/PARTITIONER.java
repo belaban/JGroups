@@ -1,7 +1,13 @@
-// $Id: PARTITIONER.java,v 1.1 2003/09/09 01:24:10 belaban Exp $
+// $Id: PARTITIONER.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
 
 package org.jgroups.protocols;
 
+
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Header;
+import org.jgroups.Message;
+import org.jgroups.stack.Protocol;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -9,9 +15,6 @@ import java.io.ObjectOutput;
 import java.util.Hashtable;
 import java.util.Properties;
 import java.util.Vector;
-import org.jgroups.*;
-import org.jgroups.stack.*;
-import org.jgroups.log.Trace;
 
 
 
@@ -62,7 +65,7 @@ public class PARTITIONER extends Protocol {
 
         case Event.SET_LOCAL_ADDRESS:
 	    local_addr=(Address) evt.getArg();
-	    if (Trace.trace) Trace.info("PARTITIONER.up()", "local address is " + local_addr);
+	     if(log.isInfoEnabled()) log.info("local address is " + local_addr);
 	    break;
 
         case Event.MSG:
@@ -71,7 +74,7 @@ public class PARTITIONER extends Protocol {
             if (partHead.type == PartitionerHeader.COMMAND) {
 		num = (Integer) partHead.Destinations.get(local_addr);
 		if (num == null) return;
-		if (Trace.trace) Trace.info("PARTITIONER.up()", "new partition = " + num);
+		 if(log.isInfoEnabled()) log.info("new partition = " + num);
 		my_partition =num.intValue();
 		return;
             }
@@ -99,8 +102,7 @@ public class PARTITIONER extends Protocol {
 
         case Event.SET_PARTITIONS:
 	    //Sends a partitioning message
-	    if (Trace.trace) Trace.info("PARTITIONER.down()",
-					"SET_PARTITIONS received, argument " + evt.getArg().toString());
+	     if(log.isInfoEnabled()) log.info("SET_PARTITIONS received, argument " + evt.getArg().toString());
 	    msg = new Message(null,null,null);
 	    partHeader = new PartitionerHeader(PartitionerHeader.COMMAND);
 	    partHeader.Destinations = (Hashtable) evt.getArg();

@@ -1,16 +1,21 @@
-// $Id: TOTAL.java,v 1.3 2003/12/05 19:31:28 belaban Exp $
+// $Id: TOTAL.java,v 1.4 2004/03/30 06:47:21 belaban Exp $
 package org.jgroups.protocols;
 
 
+
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Message;
+import org.jgroups.View;
+import org.jgroups.stack.AckSenderWindow;
+import org.jgroups.stack.Protocol;
+import org.jgroups.util.RWLock;
+import org.jgroups.util.TimeScheduler;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.*;
-import org.jgroups.*;
-import org.jgroups.util.*;
-import org.jgroups.stack.*;
-import org.jgroups.log.Trace;
 
 
 /**
@@ -272,7 +277,7 @@ public class TOTAL extends Protocol {
 		value  = properties.getProperty(TRACE_PROP);
 		if (value != null) properties.remove(TRACE_PROP);
 		if (properties.size() > 0) {
-		    Trace.error("TOTAL.setProperties()", "The following properties are not " +
+		    if(log.isErrorEnabled()) log.error("The following properties are not " +
 				"recognized: " + properties.toString());
 			return(false);
 		}
@@ -335,12 +340,12 @@ public class TOTAL extends Protocol {
 
 		synchronized(upTbl) {
 		if (upTbl.size() > 0)
-			Trace.info("TOTAL", "Replaying undelivered bcasts");
+			if(log.isInfoEnabled()) log.info("Replaying undelivered bcasts");
 
 		it = upTbl.entrySet().iterator(); while(it.hasNext()) {
 			msg = (Message)((Map.Entry)it.next()).getValue(); it.remove();
 			if (!msg.getSrc().equals(addr)) {
-			    Trace.info("TOTAL", "During replay: " +
+			    if(log.isInfoEnabled()) log.info("During replay: " +
 				       "discarding BCAST[" +
 				       ((TOTAL.Header)msg.getHeader(getName())).seqID +
 				       "] from " + _addrToString(msg.getSrc()));
@@ -415,7 +420,7 @@ public class TOTAL extends Protocol {
 		// iv. Create a broadcast request and send it to the sequencer
 
 		if (state == NULL_STATE) {
-			Trace.info("TOTAL", "Transmit BCAST_REQ[" + seqID + "] in NULL_STATE");
+			if(log.isInfoEnabled()) log.info("Transmit BCAST_REQ[" + seqID + "] in NULL_STATE");
 			return;
 		}
 		if (state == BLOCK) return;
@@ -482,12 +487,12 @@ public class TOTAL extends Protocol {
 		// ii. Assign a seqID to the message and send it back to the requestor
 
 		if (!addr.equals(sequencerAddr)) {
-			Trace.error("TOTAL", "Received bcast request " +
+			if(log.isErrorEnabled()) log.error("Received bcast request " +
 				    "but not a sequencer");
 			return;
 		}
 		if (state == BLOCK) {
-			Trace.info("TOTAL", "Blocked, discard bcast req");
+			if(log.isInfoEnabled()) log.info("Blocked, discard bcast req");
 			return;
 		}
 		header = (Header)msg.getHeader(getName());
@@ -521,7 +526,7 @@ public class TOTAL extends Protocol {
 		// - Set the seq ID of the message to the one sent by the sequencer
 
 		if (state == BLOCK) {
-			Trace.info("TOTAL", "Blocked, discard bcast rep");
+			if(log.isInfoEnabled()) log.info("Blocked, discard bcast rep");
 			return;
 		}
 
@@ -533,7 +538,7 @@ public class TOTAL extends Protocol {
 			retransmitter.ack(header.localSeqID);
 			id = header.localSeqID;
 		} else {
-			Trace.info("TOTAL", "Bcast reply to " +
+			if(log.isInfoEnabled()) log.info("Bcast reply to " +
 				   "non-existent BCAST_REQ[" + header.localSeqID +
 				   "], Sending NULL bcast");
 			id  = NULL_ID;
@@ -554,13 +559,13 @@ public class TOTAL extends Protocol {
 		// *** Get a shared lock
 		try { stateLock.readLock(); try {
 
-		Trace.info("TOTAL", "Retransmit BCAST_REQ[" + seqID + "]");
+		if(log.isInfoEnabled()) log.info("Retransmit BCAST_REQ[" + seqID + "]");
 		_transmitBcastRequest(seqID);
 
 		// ** Revoke the shared lock
 		} finally { stateLock.readUnlock(); }
 		} catch(RWLock.IntException ex) {
-		Trace.error("TOTAL", ex.getMessage());
+		if(log.isErrorEnabled()) log.error(ex.getMessage());
 		}
 	}
 
@@ -584,7 +589,7 @@ public class TOTAL extends Protocol {
 		// *** Revoke the exclusive lock
 		} finally { stateLock.writeUnlock(); }
 		} catch(RWLock.IntException ex) {
-		Trace.error("TOTAL", ex.getMessage());
+		if(log.isErrorEnabled()) log.error(ex.getMessage());
 		}
 
 		return(true);
@@ -607,7 +612,7 @@ public class TOTAL extends Protocol {
 
 		// If NULL_STATE, shouldn't receive any msg on the up queue!
 		if (state == NULL_STATE) {
-			Trace.error("TOTAL", "Up msg in NULL_STATE");
+			if(log.isErrorEnabled()) log.error("Up msg in NULL_STATE");
 			return(false);
 		}
 
@@ -619,7 +624,7 @@ public class TOTAL extends Protocol {
 		// (REP) A broadcast reply from the sequencer - Handle specially
 		msg = (Message)event.getArg();
 		if (!((obj = msg.getHeader(getName())) instanceof TOTAL.Header)) {
-			Trace.error("TOTAL", "No TOTAL.Header found");
+			if(log.isErrorEnabled()) log.error("No TOTAL.Header found");
 			return(false);
 		}
 		header = (Header)obj;
@@ -638,14 +643,14 @@ public class TOTAL extends Protocol {
 			_recvBcastReply(header);
 			return(false);
 		default:
-			Trace.error("TOTAL", "Unknown header type");
+			if(log.isErrorEnabled()) log.error("Unknown header type");
 			return(false);
 		}
 
 		// ** Revoke the shared lock
 		} finally { stateLock.readUnlock(); }
 		} catch(RWLock.IntException ex) {
-		Trace.error("TOTAL", ex.getMessage());
+		if(log.isErrorEnabled()) log.error(ex.getMessage());
 		}
 
 		return(true);
@@ -667,7 +672,7 @@ public class TOTAL extends Protocol {
 		// *** Revoke the exclusive lock
 		} finally { stateLock.writeUnlock(); }
 		} catch(RWLock.IntException ex) {
-		Trace.error("TOTAL", ex.getMessage());
+		if(log.isErrorEnabled()) log.error(ex.getMessage());
 		}
 		return(true);
 	}
@@ -700,7 +705,7 @@ public class TOTAL extends Protocol {
 			sequencerSeqID = NULL_ID;
 			if ((oldSequencerAddr == null) ||
 				(!addr.equals(oldSequencerAddr)))
-				Trace.info("TOTAL", "I'm the new sequencer");
+				if(log.isInfoEnabled()) log.info("I'm the new sequencer");
 		}
 		seqID = NULL_ID;
 		_replayBcast();
@@ -708,7 +713,7 @@ public class TOTAL extends Protocol {
 		// *** Revoke the exclusive lock
 		} finally { stateLock.writeUnlock(); }
 		} catch(RWLock.IntException ex) {
-		Trace.error("TOTAL", ex.getMessage());
+		if(log.isErrorEnabled()) log.error(ex.getMessage());
 		}
 
 		return(true);
@@ -737,7 +742,7 @@ public class TOTAL extends Protocol {
 		// *** Revoke the exclusive lock
 		} finally { stateLock.writeUnlock(); }
 		} catch(RWLock.IntException ex) {
-		Trace.error("TOTAL", ex.getMessage());
+		if(log.isErrorEnabled()) log.error(ex.getMessage());
 		}
 
 		return(true);
@@ -766,11 +771,11 @@ public class TOTAL extends Protocol {
 		// i. Discard all msgs, if in NULL_STATE
 		// ii. Discard all msgs, if blocked
 		if (state == NULL_STATE) {
-			Trace.error("TOTAL", "Discard msg in NULL_STATE");
+			if(log.isErrorEnabled()) log.error("Discard msg in NULL_STATE");
 			return(false);
 		}
 		if (state == BLOCK) {
-			Trace.error("TOTAL", "Blocked, discard msg");
+			if(log.isErrorEnabled()) log.error("Blocked, discard msg");
 			return(false);
 		}
 
@@ -786,7 +791,7 @@ public class TOTAL extends Protocol {
 		// ** Revoke the shared lock
 		} finally { stateLock.readUnlock(); }
 		} catch(RWLock.IntException ex) {
-		Trace.error("TOTAL", ex.getMessage());
+		if(log.isErrorEnabled()) log.error(ex.getMessage());
 		}
 
 		return(true);
@@ -838,7 +843,7 @@ public class TOTAL extends Protocol {
             }
         }
         catch(RWLock.IntException ex) {
-            Trace.error("TOTAL.stop()", ex.getMessage());
+            if(log.isErrorEnabled()) log.error(ex.getMessage());
         }
     }
 

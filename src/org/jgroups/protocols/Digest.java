@@ -1,9 +1,11 @@
-// $Id: Digest.java,v 1.1 2003/09/09 01:24:09 belaban Exp $
+// $Id: Digest.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
 
 package org.jgroups.protocols;
 
+import org.jgroups.util.List;
+import org.jgroups.util.Util;
+
 import java.io.Serializable;
-import org.jgroups.util.*;
 
 
 

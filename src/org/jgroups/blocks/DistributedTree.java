@@ -1,22 +1,16 @@
-// $Id: DistributedTree.java,v 1.3 2003/11/27 21:21:45 belaban Exp $
+// $Id: DistributedTree.java,v 1.4 2004/03/30 06:47:12 belaban Exp $
 
 package org.jgroups.blocks;
 
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.jgroups.*;
+import org.jgroups.util.Util;
+
 import java.io.Serializable;
 import java.util.StringTokenizer;
 import java.util.Vector;
-
-import org.jgroups.Address;
-import org.jgroups.Channel;
-import org.jgroups.ChannelException;
-import org.jgroups.JChannel;
-import org.jgroups.MembershipListener;
-import org.jgroups.Message;
-import org.jgroups.MessageListener;
-import org.jgroups.View;
-import org.jgroups.log.Trace;
-import org.jgroups.util.Util;
 
 
 
@@ -51,6 +45,8 @@ public class DistributedTree implements MessageListener, MembershipListener, Clo
 	/** Determines when the updates have to be sent across the network, avoids sending unnecessary
      * messages when there are no member in the group */
 	private transient boolean send_message = false;
+
+    protected static Log log=LogFactory.getLog(DistributedTree.class);
 
 
 
@@ -97,10 +93,10 @@ public class DistributedTree implements MessageListener, MembershipListener, Clo
         channel.setOpt(Channel.GET_STATE_EVENTS, new Boolean(true));
         boolean rc = channel.getState(null, 8000);
         if(rc) {
-            Trace.info("DistributedTree.start()", "state was retrieved successfully");
+            if(log.isInfoEnabled()) log.info("state was retrieved successfully");
         }
         else
-            Trace.info("DistributedTree.start()", "state could not be retrieved (must be first member in group)");
+            if(log.isInfoEnabled()) log.info("state could not be retrieved (must be first member in group)");
     }
 
     public Object getLocalAddress() {
@@ -122,10 +118,10 @@ public class DistributedTree implements MessageListener, MembershipListener, Clo
         channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
         boolean rc=channel.getState(null, timeout);
         if(rc) {
-            Trace.info("DistributedTree.start()", "state was retrieved successfully");
+            if(log.isInfoEnabled()) log.info("state was retrieved successfully");
         }
         else
-            Trace.info("DistributedTree.start()", "state could not be retrieved (must be first member in group)");
+            if(log.isInfoEnabled()) log.info("state could not be retrieved (must be first member in group)");
     }
 
 
@@ -170,7 +166,7 @@ public class DistributedTree implements MessageListener, MembershipListener, Clo
                 disp.callRemoteMethods(null, call, GroupRequest.GET_ALL, 0);
             }
             catch(Exception ex) {
-                Trace.error("DistributedTree.add()", "exception=" + ex);
+                if(log.isErrorEnabled()) log.error("exception=" + ex);
             }
         }
         else {
@@ -188,7 +184,7 @@ public class DistributedTree implements MessageListener, MembershipListener, Clo
                 disp.callRemoteMethods(null, call, GroupRequest.GET_ALL, 0);
             }
             catch(Exception ex) {
-                Trace.error("DistributedTree.add()", "exception=" + ex);
+                if(log.isErrorEnabled()) log.error("exception=" + ex);
             }
         }
         else {
@@ -206,7 +202,7 @@ public class DistributedTree implements MessageListener, MembershipListener, Clo
                 disp.callRemoteMethods(null, call, GroupRequest.GET_ALL, 0);
             }
             catch(Exception ex) {
-                Trace.error("DistributedTree.remove()", "exception=" + ex);
+                if(log.isErrorEnabled()) log.error("exception=" + ex);
             }
         }
         else {
@@ -244,7 +240,7 @@ public class DistributedTree implements MessageListener, MembershipListener, Clo
                 disp.callRemoteMethods(null, call, GroupRequest.GET_ALL, 0);
             }
             catch(Exception ex) {
-                Trace.error("DistributedTree.set()", "exception=" + ex);
+                if(log.isErrorEnabled()) log.error("exception=" + ex);
             }
         }
         else {
@@ -391,7 +387,7 @@ public class DistributedTree implements MessageListener, MembershipListener, Clo
         if(fqn == null || element == null) return;
         n=findNode(fqn);
         if(n == null) {
-            Trace.error("DistributedTree._set()", "node " + fqn + " not found");
+            if(log.isErrorEnabled()) log.error("node " + fqn + " not found");
             return;
         }
         old_el=n.element;
@@ -418,7 +414,7 @@ public class DistributedTree implements MessageListener, MembershipListener, Clo
             return Util.objectToByteBuffer(copy);
         }
         catch(Throwable ex) {
-            Trace.error("DistributedTree.getState()", "exception marshalling state: " + ex);
+            if(log.isErrorEnabled()) log.error("exception marshalling state: " + ex);
             return null;
         }
     }
@@ -430,12 +426,12 @@ public class DistributedTree implements MessageListener, MembershipListener, Clo
             new_state=Util.objectFromByteBuffer(data);
         }
         catch(Throwable ex) {
-            Trace.error("DistributedTree.setState()", "exception unmarshalling state: " + ex);
+            if(log.isErrorEnabled()) log.error("exception unmarshalling state: " + ex);
             return;
         }
         if(new_state == null) return;
         if(!(new_state instanceof Node)) {
-            Trace.error("DistributedTree.setState()", "object is not of type 'Node'");
+            if(log.isErrorEnabled()) log.error("object is not of type 'Node'");
             return;
         }
         root=((Node)new_state).copy();
@@ -544,7 +540,7 @@ public class DistributedTree implements MessageListener, MembershipListener, Clo
 
         if(curr == null) return;
         if(curr.name == null) {
-            Trace.error("DistributedTree.notifyAllNodesCreated()", "curr.name is null");
+            if(log.isErrorEnabled()) log.error("curr.name is null");
             return;
         }
 
@@ -618,7 +614,7 @@ public class DistributedTree implements MessageListener, MembershipListener, Clo
             for(int i=0; i < children.size(); i++) {
                 child=(Node)children.elementAt(i);
                 if(child.name == null) {
-                    Trace.error("Node.findChild()", "child.name is null for " + relative_name);
+                    if(log.isErrorEnabled()) log.error("child.name is null for " + relative_name);
                     continue;
                 }
 

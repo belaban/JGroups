@@ -1,9 +1,8 @@
-// $Id: FRAG.java,v 1.3 2004/02/25 18:55:33 belaban Exp $
+// $Id: FRAG.java,v 1.4 2004/03/30 06:47:21 belaban Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.*;
-import org.jgroups.log.Trace;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 
@@ -45,7 +44,7 @@ import java.util.Vector;
  * </pre>
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.3 2004/02/25 18:55:33 belaban Exp $
+ * @version $Id: FRAG.java,v 1.4 2004/03/30 06:47:21 belaban Exp $
  */
 public class FRAG extends Protocol {
     private int frag_size=8192;  // conservative value
@@ -101,8 +100,8 @@ public class FRAG extends Protocol {
                 Message msg=(Message)evt.getArg();
                 long size=msg.size();
                 if(size > frag_size) {
-                    if(Trace.trace)
-                        Trace.info("FRAG.down()", "message size is " + size + ", will fragment " +
+
+                        if(log.isInfoEnabled()) log.info("message size is " + size + ", will fragment " +
                                 "(frag_size == " + frag_size + ")");
                     fragment(msg);  // Fragment and pass down
                     return;
@@ -126,14 +125,14 @@ public class FRAG extends Protocol {
                     //the new view doesn't contain the sender, he must have left,
                     //hence we will clear all his fragmentation tables
                     fragment_list.remove(mbr);
-                    if(Trace.trace)
-                        Trace.info("FRAG.down()", "[VIEW_CHANGE] removed " + mbr + " from fragmentation table");
+
+                        if(log.isInfoEnabled()) log.info("[VIEW_CHANGE] removed " + mbr + " from fragmentation table");
                 }
                 break;
 
             case Event.CONFIG:
                 passDown(evt);
-                if(Trace.trace) Trace.info("FRAG.down()", "received CONFIG event: " + evt.getArg());
+                 if(log.isInfoEnabled()) log.info("received CONFIG event: " + evt.getArg());
                 handleConfigEvent((HashMap)evt.getArg());
                 return;
         }
@@ -166,7 +165,7 @@ public class FRAG extends Protocol {
 
             case Event.CONFIG:
                 passUp(evt);
-                if(Trace.trace) Trace.info("FRAG.up()", "received CONFIG event: " + evt.getArg());
+                 if(log.isInfoEnabled()) log.info("received CONFIG event: " + evt.getArg());
                 handleConfigEvent((HashMap)evt.getArg());
                 return;
         }
@@ -208,22 +207,22 @@ public class FRAG extends Protocol {
             fragments=Util.fragmentBuffer(buffer, frag_size);
             num_frags=fragments.length;
 
-            if(Trace.trace)
-                Trace.info("FRAG.fragment()", "fragmenting packet to " + (dest != null ? dest.toString() : "<all members>") +
+
+                if(log.isInfoEnabled()) log.info("fragmenting packet to " + (dest != null ? dest.toString() : "<all members>") +
                         " (size=" + buffer.length + ") into " + num_frags + " fragment(s) [frag_size=" + frag_size + "]");
 
             for(int i=0; i < num_frags; i++) {
                 frag_msg=new Message(dest, src, fragments[i]);
                 hdr=new FragHeader(id, i, num_frags);
-                if(Trace.trace)
-                    Trace.debug("FRAG.fragment()", "fragment's header is " + hdr);
+
+                    if(log.isDebugEnabled()) log.debug("fragment's header is " + hdr);
                 frag_msg.putHeader(getName(), hdr);
                 evt=new Event(Event.MSG, frag_msg);
                 passDown(evt);
             }
         }
         catch(Exception e) {
-            Trace.error("FRAG.fragment()", "exception is " + e);
+            if(log.isErrorEnabled()) log.error("exception is " + e);
         }
 
     }
@@ -246,7 +245,7 @@ public class FRAG extends Protocol {
         ObjectInputStream ois;
 
 
-        if(Trace.trace) Trace.debug("FRAG.unfragment()", "[" + local_addr + "] received msg, hdr is " + hdr);
+         if(log.isDebugEnabled()) log.debug("[" + local_addr + "] received msg, hdr is " + hdr);
 
         frag_table=fragment_list.get(sender);
         if(frag_table == null) {
@@ -265,12 +264,12 @@ public class FRAG extends Protocol {
                 ois=new ObjectInputStream(bis);
                 assembled_msg=new Message();
                 assembled_msg.readExternal(ois);
-                if(Trace.trace) Trace.info("FRAG.unfragment()", "assembled_msg is " + assembled_msg);
+                 if(log.isInfoEnabled()) log.info("assembled_msg is " + assembled_msg);
                 assembled_msg.setSrc(sender); // needed ? YES, because fragments have a null src !!
                 passUp(new Event(Event.MSG, assembled_msg));
             }
             catch(Exception e) {
-                Trace.error("FRAG.unfragment()", "exception is " + e);
+                if(log.isErrorEnabled()) log.error("exception is " + e);
             }
         }
     }
@@ -280,8 +279,8 @@ public class FRAG extends Protocol {
         if(map == null) return;
         if(map.containsKey("frag_size")) {
             frag_size=((Integer)map.get("frag_size")).intValue();
-            if(Trace.trace)
-                Trace.info("FRAG.handleConfigEvent()", "setting frag_size=" + frag_size);
+
+                if(log.isInfoEnabled()) log.info("setting frag_size=" + frag_size);
         }
     }
 

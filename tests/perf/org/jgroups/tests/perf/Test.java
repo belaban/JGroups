@@ -1,10 +1,10 @@
 package org.jgroups.tests.perf;
 
 import org.apache.log4j.Logger;
-import org.jgroups.log.Trace;
 import org.jgroups.util.Util;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.util.*;
 
 /**  You start the test by running this class.
@@ -63,7 +63,7 @@ public class Test implements Receiver {
         StringTokenizer st;
         Properties      tmp=new Properties();
 
-        Trace.init();
+
 
         config_file=c.getProperty("config");
 
@@ -117,7 +117,7 @@ public class Test implements Receiver {
             sb.append(" [msgs/sec] ");
             sb.append(", rolling_throughput (last ").append(log_interval).append(" msgs) ");
             sb.append(" [KB/sec]\n");
-            log.info(sb.toString());
+            if(log.isInfoEnabled()) log.info(sb.toString());
         }
 
         String transport_name=this.config.getProperty("transport");
@@ -179,7 +179,7 @@ public class Test implements Receiver {
                                     " messages from " + sender);
 
                         if(info.num_msgs_received % log_interval == 0) {
-                            log.info(dumpStats(counter));
+                            if(log.isInfoEnabled()) log.info(dumpStats(counter));
                         }
 
                         if(info.num_msgs_received >= info.num_msgs_expected) {
@@ -289,7 +289,7 @@ public class Test implements Receiver {
             }
             if(total_msgs % log_interval == 0) {
                 //if(gnuplot_output == false)
-                //  log.info(dumpStats(total_msgs));
+                //  if(log.isInfoEnabled()) log.info(dumpStats(total_msgs));
             }
         }
 
@@ -332,7 +332,7 @@ public class Test implements Receiver {
             sb.append("\n");
         }
         System.out.println(sb.toString());
-        log.info(sb.toString());
+        if(log.isInfoEnabled()) log.info(sb.toString());
     }
 
 

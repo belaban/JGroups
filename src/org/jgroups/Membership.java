@@ -1,10 +1,12 @@
-// $Id: Membership.java,v 1.2 2003/11/21 20:00:08 belaban Exp $
+// $Id: Membership.java,v 1.3 2004/03/30 06:47:29 belaban Exp $
 
 package org.jgroups;
 
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import java.util.Vector;
-import org.jgroups.log.Trace;
 
 
 /**
@@ -17,6 +19,8 @@ import org.jgroups.log.Trace;
 public class Membership implements Cloneable {
     /* private vector to hold all the addresses */
     private Vector members = null;
+
+    protected static Log log=LogFactory.getLog(Membership.class);
 
     /**
      * Public constructor
@@ -204,7 +208,7 @@ public class Membership implements Cloneable {
                 a2=(Address)members.elementAt(i+1);
                 if(a1 == null || a2 == null)
                 {
-                    Trace.error("Membership.sort()", "member's address is null");
+                    if(log.isErrorEnabled()) log.error("member's address is null");
                     continue;
                 }
                 if(a1.compareTo(a2) > 0)

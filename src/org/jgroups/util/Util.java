@@ -1,19 +1,22 @@
-// $Id: Util.java,v 1.7 2004/02/26 19:15:01 belaban Exp $
+// $Id: Util.java,v 1.8 2004/03/30 06:47:28 belaban Exp $
 
 package org.jgroups.util;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Message;
+import org.jgroups.stack.IpAddress;
 
 import java.io.*;
 import java.net.BindException;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.ServerSocket;
+import java.util.ArrayList;
 import java.util.StringTokenizer;
 import java.util.Vector;
-import java.util.ArrayList;
-
-import org.jgroups.*;
-import org.jgroups.log.Trace;
-import org.jgroups.stack.IpAddress;
 
 
 /**
@@ -22,6 +25,8 @@ import org.jgroups.stack.IpAddress;
 public class Util {
     private static Object mutex=new Object();
     private static ByteArrayOutputStream out_stream=new ByteArrayOutputStream(65535);
+
+    protected static Log log=LogFactory.getLog(Util.class);
 
     // constants
     public static final int MAX_PORT=65535; // highest port allocatable
@@ -103,7 +108,7 @@ public class Util {
     /** Sleeps between 1 and timeout milliseconds, chosen randomly. Timeout must be > 1 */
     public static void sleepRandom(long timeout) {
         if(timeout <= 0) {
-            Trace.println("Util.sleepRandom()", Trace.ERROR, "timeout must be > 0 !");
+            log.error("timeout must be > 0 !");
             return;
         }
 
@@ -156,6 +161,10 @@ public class Util {
         PrintWriter p=new PrintWriter(s);
         t.printStackTrace(p);
         return s.toString();
+    }
+
+    public static String getStackTrace(Throwable t) {
+        return printStackTrace(t);
     }
 
     /**
@@ -554,7 +563,7 @@ public class Util {
             return data.length;
         }
         catch(Exception ex) {
-            Trace.error("Util.sizeOf()", "exception=" + ex);
+            if(log.isErrorEnabled()) log.error("exception=" + ex);
             return 0;
         }
     }
@@ -568,7 +577,7 @@ public class Util {
             return data.length;
         }
         catch(Exception ex) {
-            Trace.error("Util.sizeOf()", "exception+" + ex);
+            if(log.isErrorEnabled()) log.error("exception+" + ex);
             return 0;
         }
     }
@@ -581,7 +590,7 @@ public class Util {
 
         if(one == null || two == null) return false;
         if(!(one instanceof IpAddress) || !(two instanceof IpAddress)) {
-            Trace.error("Util.sameHost()", "addresses have to be of type IpAddress to be compared");
+            if(log.isErrorEnabled()) log.error("addresses have to be of type IpAddress to be compared");
             return false;
         }
 
@@ -602,7 +611,7 @@ public class Util {
             new File(fname).delete();
         }
         catch(Exception ex) {
-            Trace.error("Util.removeFile()", "exception=" + ex);
+            if(log.isErrorEnabled()) log.error("exception=" + ex);
         }
     }
 
@@ -677,7 +686,7 @@ public class Util {
                 continue;
             }
             catch(IOException io_ex) {
-                Trace.error("Util.createServerSocket()", "exception is " + io_ex);
+                if(log.isErrorEnabled()) log.error("exception is " + io_ex);
             }
             break;
         }

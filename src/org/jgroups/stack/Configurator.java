@@ -1,10 +1,11 @@
-// $Id: Configurator.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+// $Id: Configurator.java,v 1.2 2004/03/30 06:47:27 belaban Exp $
 
 package org.jgroups.stack;
 
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jgroups.Event;
-import org.jgroups.log.Trace;
 
 import java.util.Properties;
 import java.util.StringTokenizer;
@@ -21,6 +22,8 @@ import java.util.Vector;
  * @author Bela Ban
  */
 public class Configurator {
+
+     protected Log log=LogFactory.getLog(getClass());
 
 
     /**
@@ -604,9 +607,9 @@ public class Configurator {
                 retval.init();
             }
             catch(InstantiationException inst_ex) {
-                Trace.error("Configurator.ProtocolConfiguration.createLayer()", "an instance of " +
-                                                                                protocol_name + " could not be created. Please check that it implements" +
-                                                                                " interface Protocol and that is has a public empty constructor !");
+                if(log.isErrorEnabled()) log.error("an instance of " +
+                        protocol_name + " could not be created. Please check that it implements" +
+                        " interface Protocol and that is has a public empty constructor !");
                 throw inst_ex;
             }
             return retval;

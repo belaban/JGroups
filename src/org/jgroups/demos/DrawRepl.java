@@ -1,7 +1,13 @@
-// $Id: DrawRepl.java,v 1.1 2003/09/09 01:24:09 belaban Exp $
+// $Id: DrawRepl.java,v 1.2 2004/03/30 06:47:16 belaban Exp $
 
 package org.jgroups.demos;
 
+
+import org.jgroups.Channel;
+import org.jgroups.JChannel;
+import org.jgroups.blocks.GroupRequest;
+import org.jgroups.blocks.MethodCall;
+import org.jgroups.blocks.RpcDispatcher;
 
 import java.awt.*;
 import java.awt.event.*;
@@ -11,8 +17,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.util.Hashtable;
 import java.util.Random;
-import org.jgroups.*;
-import org.jgroups.blocks.*;
 
 
 

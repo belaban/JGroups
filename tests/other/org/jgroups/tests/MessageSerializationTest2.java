@@ -1,15 +1,14 @@
 package org.jgroups.tests;
 
 import org.jgroups.Message;
-import org.jgroups.util.List;
 import org.jgroups.stack.IpAddress;
+import org.jgroups.util.List;
 
 import java.io.*;
-import java.util.Iterator;
 
 /**
  * @author Bela Ban Feb 12, 2004
- * @version $Id: MessageSerializationTest2.java,v 1.1 2004/02/25 19:31:17 belaban Exp $
+ * @version $Id: MessageSerializationTest2.java,v 1.2 2004/03/30 06:47:34 belaban Exp $
  */
 public class MessageSerializationTest2 {
 

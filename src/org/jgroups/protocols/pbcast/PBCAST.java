@@ -1,17 +1,22 @@
-// $Id: PBCAST.java,v 1.4 2004/01/16 16:47:50 belaban Exp $
+// $Id: PBCAST.java,v 1.5 2004/03/30 06:47:18 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
-import java.util.Vector;
-import java.util.Enumeration;
-import java.util.Properties;
-import java.util.Hashtable;
-import java.io.IOException;
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Message;
+import org.jgroups.View;
+import org.jgroups.stack.NakReceiverWindow;
+import org.jgroups.stack.Protocol;
+import org.jgroups.util.List;
+import org.jgroups.util.Queue;
+import org.jgroups.util.QueueClosedException;
+import org.jgroups.util.Util;
 
-import org.jgroups.*;
-import org.jgroups.util.*;
-import org.jgroups.stack.*;
-import org.jgroups.log.Trace;
+import java.util.Enumeration;
+import java.util.Hashtable;
+import java.util.Properties;
+import java.util.Vector;
 
 
 /**
@@ -83,8 +88,8 @@ public class PBCAST extends Protocol implements Runnable {
 
                 // discard all multicast messages until we become operational (transition from joiner to member)
                 if(!operational) {
-                    if(Trace.trace)
-                        Trace.info("PBCAST.up()", "event was discarded as I'm not yet operational. Event: " +
+
+                        if(log.isInfoEnabled()) log.info("event was discarded as I'm not yet operational. Event: " +
                                                   Util.printEvent(evt));
                     return;  // don't pass up
                 }
@@ -93,8 +98,8 @@ public class PBCAST extends Protocol implements Runnable {
                     hdr=(PbcastHeader) m.removeHeader(getName());
                 else {
                     sender=m.getSrc();
-                    if(Trace.trace)
-                        Trace.error("PBCAST.up()", "PbcastHeader expected, but received header of type " +
+
+                        if(log.isErrorEnabled()) log.error("PbcastHeader expected, but received header of type " +
                                                    m.getHeader(getName()).getClass().getName() + " from " + sender +
                                                    ". Passing event up unchanged");
                     break;
@@ -113,8 +118,8 @@ public class PBCAST extends Protocol implements Runnable {
                     case PbcastHeader.NOT_MEMBER:
                         try {
                             if(gossip_queue.size() >= max_queue) {
-                                if(Trace.trace)
-                                    Trace.warn("PBCAST.up()", "gossip request " +
+
+                                    if(log.isWarnEnabled()) log.warn("gossip request " +
                                                               PbcastHeader.type2String(hdr.type) + " discarded because " +
                                                               "gossip_queue is full (number of elements=" + gossip_queue.size() + ")");
                                 return;
@@ -122,12 +127,12 @@ public class PBCAST extends Protocol implements Runnable {
                             gossip_queue.add(new GossipEntry(hdr, m.getSrc(), m.getBuffer()));
                         }
                         catch(Exception ex) {
-                            Trace.warn("PBCAST.up()", "exception adding request to gossip_queue, details=" + ex);
+                            if(log.isWarnEnabled()) log.warn("exception adding request to gossip_queue, details=" + ex);
                         }
                         return;
 
                     default:
-                        Trace.error("PBCAST.up()", "type (" + hdr.type + ") of PbcastHeader not known !");
+                        if(log.isErrorEnabled()) log.error("type (" + hdr.type + ") of PbcastHeader not known !");
                         return;
                 }
 
@@ -164,7 +169,7 @@ public class PBCAST extends Protocol implements Runnable {
                     synchronized(digest) {
                         win=(NakReceiverWindow) digest.get(local_addr);
                         if(win == null) {
-                            Trace.info("PBCAST.down()", "NakReceiverWindow for sender " + local_addr +
+                            if(log.isInfoEnabled()) log.info("NakReceiverWindow for sender " + local_addr +
                                                         " not found. Creating new NakReceiverWindow starting at seqno=" + seqno);
                             win=new NakReceiverWindow(local_addr, seqno);
                             digest.put(local_addr, win);
@@ -192,7 +197,7 @@ public class PBCAST extends Protocol implements Runnable {
             case Event.VIEW_CHANGE:
                 v=(View) evt.getArg();
                 if(v == null) {
-                    Trace.error("PBCAST.down(VIEW_CHANGE)", "view is null !");
+                    if(log.isErrorEnabled()) log.error("view is null !");
                     break;
                 }
                 mbrs=v.getMembers();
@@ -228,8 +233,8 @@ public class PBCAST extends Protocol implements Runnable {
 
                 if(dynamic) {
                     gossip_interval=computeGossipInterval(members.size(), desired_avg_gossip);
-                    if(Trace.trace)
-                        Trace.info("PBCAST.down()", "VIEW_CHANGE: gossip_interval=" + gossip_interval);
+
+                        if(log.isInfoEnabled()) log.info("VIEW_CHANGE: gossip_interval=" + gossip_interval);
                     if(gossip_thread != null) {
                         skip_sleep=true;
                         gossip_thread.interrupt(); // wake up and sleep according to the new gossip_interval
@@ -254,8 +259,8 @@ public class PBCAST extends Protocol implements Runnable {
         while(gossip_thread != null) {  // stopGossipThread() sets gossip_thread to null
             if(dynamic) {
                 gossip_interval=computeGossipInterval(members.size(), desired_avg_gossip);
-                if(Trace.trace)
-                    Trace.info("PBCAST.run()", "gossip_interval=" + gossip_interval);
+
+                    if(log.isInfoEnabled()) log.info("gossip_interval=" + gossip_interval);
             }
 
             Util.sleep(gossip_interval);
@@ -350,14 +355,14 @@ public class PBCAST extends Protocol implements Runnable {
         long seqno=hdr.seqno;
 
         if(sender == null) {
-            Trace.error("PBCAST.handleUpMessage()", "sender is null");
+            if(log.isErrorEnabled()) log.error("sender is null");
             return;
         }
 
         synchronized(digest) {
             win=(NakReceiverWindow) digest.get(sender);
             if(win == null) {
-                Trace.warn("PBCAST.handleUpMessage()", "NakReceiverWindow for sender " + sender +
+                if(log.isWarnEnabled()) log.warn("NakReceiverWindow for sender " + sender +
                                                        " not found. Creating new NakReceiverWindow starting at seqno=" + seqno);
                 win=new NakReceiverWindow(sender, seqno);
                 digest.put(sender, win);
@@ -371,8 +376,8 @@ public class PBCAST extends Protocol implements Runnable {
             m.putHeader(getName(), hdr);
             win.add(seqno, m);
 
-            if(Trace.trace)
-                Trace.info("PBCAST.handleUpMessage()", "receiver window for " + sender + " is " + win);
+
+                if(log.isInfoEnabled()) log.info("receiver window for " + sender + " is " + win);
 
             // Try to remove as many message as possible and send them up the stack
             while((tmpmsg=win.remove()) != null) {
@@ -388,8 +393,8 @@ public class PBCAST extends Protocol implements Runnable {
                 if(seqno <= 0) {
                 }
                 else {
-                    if(Trace.trace)
-                        Trace.info("PBCAST.handleUpMessage()", "deleting messages < " +
+
+                        if(log.isInfoEnabled()) log.info("deleting messages < " +
                                                                seqno + " from " + sender);
                     win.stable(seqno);
                 }
@@ -418,7 +423,7 @@ public class PBCAST extends Protocol implements Runnable {
             ret.add(key, lowest_seqno, highest_seqno);
         }
 
-        Trace.info("PBCAST.getDigest()", "digest is " + ret);
+        if(log.isInfoEnabled()) log.info("digest is " + ret);
 
         return ret;
     }
@@ -443,7 +448,7 @@ public class PBCAST extends Protocol implements Runnable {
                 sender=d.senderAt(i);
                 seqno=d.highSeqnoAt(i);
                 if(sender == null) {
-                    Trace.error("PBCAST.setDigest()", "cannot set item because sender is null");
+                    if(log.isErrorEnabled()) log.error("cannot set item because sender is null");
                     continue;
                 }
                 digest.put(sender, new NakReceiverWindow(sender, seqno + 1)); // next to expect, digest had *last* seen !
@@ -542,8 +547,8 @@ public class PBCAST extends Protocol implements Runnable {
             msg=new Message(); // null dest == multicast to all members
             msg.putHeader(getName(), hdr);
 
-            if(Trace.trace)
-                Trace.info("PBCAST.sendGossip()", "(from " + local_addr +
+
+                if(log.isInfoEnabled()) log.info("(from " + local_addr +
                            ") multicasting gossip " + gossip.shortForm() + " to all members");
 
             passDown(new Event(Event.MSG, msg));
@@ -559,8 +564,8 @@ public class PBCAST extends Protocol implements Runnable {
                 msg=new Message(dest, null, null);
                 msg.putHeader(getName(), hdr);
 
-                if(Trace.trace)
-                    Trace.info("PBCAST.sendGossip()", "(from " + local_addr +
+
+                    if(log.isInfoEnabled()) log.info("(from " + local_addr +
                                ") sending gossip " + gossip.shortForm() + " to " + subset_mbrs);
 
                 passDown(new Event(Event.MSG, msg));
@@ -592,20 +597,20 @@ public class PBCAST extends Protocol implements Runnable {
         List missing_msgs; // list of missing messages (for retransmission) (List of Longs)
 
 
-        if(Trace.trace)
-            Trace.info("PBCAST.handleGossip()", "(from " + local_addr +
+
+            if(log.isInfoEnabled()) log.info("(from " + local_addr +
                                                 ") received gossip " + gossip.shortForm() + " from " + gossip.sender);
 
 
         if(gossip == null || gossip.digest == null) {
-            Trace.warn("PBCAST.handleGossip()", "gossip is null or digest is null");
+            if(log.isWarnEnabled()) log.warn("gossip is null or digest is null");
             return;
         }
 
 
         /* 1. If gossip sender is null, we cannot ask it for missing messages anyway, so discard gossip ! */
         if(gossip.sender == null) {
-            Trace.error("PBCAST.handleGossip()", "sender of gossip is null; " +
+            if(log.isErrorEnabled()) log.error("sender of gossip is null; " +
                                                  "don't know where to send XMIT_REQ to. Discarding gossip");
             return;
         }
@@ -615,7 +620,7 @@ public class PBCAST extends Protocol implements Runnable {
            joined member, discard it as well (we can't tell the difference). When the new member will be
            added to the membership, then its gossips will be processed */
         if(!members.contains(gossip.sender)) {
-            Trace.warn("PBCAST.handleGossip()", "sender " + gossip.sender +
+            if(log.isWarnEnabled()) log.warn("sender " + gossip.sender +
                                                 " is not a member. Gossip will not be processed");
             if(shun)
                 shunInvalidGossiper(gossip.sender);
@@ -659,8 +664,8 @@ public class PBCAST extends Protocol implements Runnable {
                 // this specific sender in this digest is probably not a member anymore, new digests
                 // won't contain it. for now, just ignore it. if it is a new member, it will be in the next
                 // gossips
-                if(Trace.trace)
-                    Trace.warn("PBCAST.handleGossip()", "sender " + sender + " not found, skipping...");
+
+                    if(log.isWarnEnabled()) log.warn("sender " + sender + " not found, skipping...");
                 continue;
             }
 
@@ -674,8 +679,8 @@ public class PBCAST extends Protocol implements Runnable {
                 else {
                     missing_msgs=win.getMissingMessages(my_high, their_high);
                     if(missing_msgs != null) {
-                        if(Trace.trace) {
-                            Trace.info("PBCAST.sendXmitReq()", "asking " +
+                         {
+                            if(log.isInfoEnabled()) log.info("asking " +
                                                                gossip.sender + " for retransmission of " +
                                                                sender + ", missing messages: " +
                                                                missing_msgs + "\nwin for " + sender + ":\n" + win + "\n");
@@ -696,8 +701,8 @@ public class PBCAST extends Protocol implements Runnable {
         else {
             hdr=new PbcastHeader(PbcastHeader.XMIT_REQ);
             hdr.xmit_reqs=ht;
-            if(Trace.trace)
-                Trace.info("PBCAST.handleGossip()", "sending XMIT_REQ to " + gossip.sender);
+
+                if(log.isInfoEnabled()) log.info("sending XMIT_REQ to " + gossip.sender);
             msg=new Message(gossip.sender, null, null);
             msg.putHeader(getName(), hdr);
             passDown(new Event(Event.MSG, msg));
@@ -718,8 +723,8 @@ public class PBCAST extends Protocol implements Runnable {
         /* 8. If we make it to this point, re-send to subset of remaining members in 'not_seen' list */
         new_dests=Util.pickSubset(gossip.getNotSeenList(), subset);
 
-        if(Trace.trace)
-            Trace.info("PBCAST.handleGossip()", "(from " + local_addr +
+
+            if(log.isInfoEnabled()) log.info("(from " + local_addr +
                                                 ") forwarding gossip " + gossip.shortForm() + " to " + new_dests);
         gossip.addToSeenList(local_addr);
         for(int i=0; i < new_dests.size(); i++) {
@@ -743,18 +748,18 @@ public class PBCAST extends Protocol implements Runnable {
         Message msg;
 
         if(requester == null) {
-            Trace.error("PBCAST.handleXmitRequest()", "requester is null");
+            if(log.isErrorEnabled()) log.error("requester is null");
             return;
         }
 
-        if(Trace.trace) {
-            Trace.info("PBCAST.handleXmitRequest()", "retransmission requests are " + printXmitReqs(xmit_reqs));
+         {
+            if(log.isInfoEnabled()) log.info("retransmission requests are " + printXmitReqs(xmit_reqs));
         }
         for(Enumeration e=xmit_reqs.keys(); e.hasMoreElements();) {
             sender=(Address) e.nextElement();
             win=(NakReceiverWindow) digest.get(sender);
             if(win == null) {
-                Trace.warn("PBCAST.handleXmitRequest()", "sender " + sender +
+                if(log.isWarnEnabled()) log.warn("sender " + sender +
                                                          " not found in my digest; skipping retransmit request !");
                 continue;
             }
@@ -787,8 +792,8 @@ public class PBCAST extends Protocol implements Runnable {
         for(Enumeration e=xmit_msgs.elements(); e.hasMoreElements();) {
             m=(Message) e.nextElement();
             hdr=(PbcastHeader) m.removeHeader(getName());
-            if(Trace.trace && hdr != null)
-                Trace.info("PBCAST.handleXmitRsp()", "received #" + hdr.seqno + ", type=" +
+            if(hdr != null)
+                if(log.isInfoEnabled()) log.info("received #" + hdr.seqno + ", type=" +
                                                      PbcastHeader.type2String(hdr.type) + ", msg=" + m);
             handleUpMessage(m, hdr);
         }
@@ -825,7 +830,7 @@ public class PBCAST extends Protocol implements Runnable {
             sender=gc.senderAt(i);
             win=(NakReceiverWindow) digest.get(sender);
             if(win == null) {
-                Trace.debug("PBCAST.garbageCollect()", "sender " + sender +
+                if(log.isDebugEnabled()) log.debug("sender " + sender +
                                                        " not found in our message digest, skipping");
                 continue;
             }
@@ -834,8 +839,8 @@ public class PBCAST extends Protocol implements Runnable {
             if(seqno <= 0) {
                 continue;
             }
-            if(Trace.trace)
-                Trace.info("PBCAST.garbageCollect()", "(from " + local_addr +
+
+                if(log.isInfoEnabled()) log.info("(from " + local_addr +
                                                       ") GC: deleting messages < " + seqno + " from " + sender);
             win.stable(seqno);
         }
@@ -853,8 +858,8 @@ public class PBCAST extends Protocol implements Runnable {
         if(invalid_gossipers.containsKey(invalid_gossiper)) {
             num_pings=((Integer) invalid_gossipers.get(invalid_gossiper)).intValue();
             if(num_pings >= max_invalid_gossips) {
-                if(Trace.trace)
-                    Trace.info("PBCAST.shunInvalidGossiper()", "sender " + invalid_gossiper +
+
+                    if(log.isInfoEnabled()) log.info("sender " + invalid_gossiper +
                                                                " is not member of " + members + " ! Telling it to leave group");
                 shun_msg=new Message(invalid_gossiper, null, null);
                 shun_msg.putHeader(getName(), new PbcastHeader(PbcastHeader.NOT_MEMBER));
@@ -950,7 +955,7 @@ public class PBCAST extends Protocol implements Runnable {
                     entry=(GossipEntry) gossip_queue.remove();
                     hdr=entry.hdr;
                     if(hdr == null) {
-                        Trace.error("PBCAST.GossipHandler.run()", "gossip entry has no PbcastHeader");
+                        if(log.isErrorEnabled()) log.error("gossip entry has no PbcastHeader");
                         continue;
                     }
 
@@ -962,7 +967,7 @@ public class PBCAST extends Protocol implements Runnable {
 
                         case PbcastHeader.XMIT_REQ:
                             if(hdr.xmit_reqs == null) {
-                                Trace.warn("PBCAST.GossipHandler.run(MSG.XMIT_REQ)", "request is null !");
+                                if(log.isWarnEnabled()) log.warn("request is null !");
                                 break;
                             }
                             handleXmitRequest(entry.sender, hdr.xmit_reqs);
@@ -971,14 +976,14 @@ public class PBCAST extends Protocol implements Runnable {
                         case PbcastHeader.XMIT_RSP:
                             data=entry.data;
                             if(data == null) {
-                                Trace.warn("PBCAST.GossipHandler.run(XMIT_RSP)", "buffer is null (no xmitted msgs)");
+                                if(log.isWarnEnabled()) log.warn("buffer is null (no xmitted msgs)");
                                 break;
                             }
                             try {
                                 xmit_msgs=(List) Util.objectFromByteBuffer(data);
                             }
                             catch(Exception ex) {
-                                Trace.error("PBCAST.GossipHandler.run(XMIT_RSP)", ex.getMessage());
+                                if(log.isErrorEnabled()) log.error(ex.getMessage());
                                 break;
                             }
                             handleXmitRsp(xmit_msgs);
@@ -986,14 +991,13 @@ public class PBCAST extends Protocol implements Runnable {
 
                         case PbcastHeader.NOT_MEMBER:  // we are shunned
                             if(shun) {
-                                Trace.info("PBCAST.GossipHandler.run(NOT_MEMBER)",
-                                           "I am being shunned. Will leave and re-join");
+                                if(log.isInfoEnabled()) log.info("I am being shunned. Will leave and re-join");
                                 passUp(new Event(Event.EXIT));
                             }
                             break;
 
                         default:
-                            Trace.error("PBCAST.GossipHandler.run(MSG)", "type (" + hdr.type +
+                            if(log.isErrorEnabled()) log.error("type (" + hdr.type +
                                                                          ") of PbcastHeader not known !");
                             return;
                     }

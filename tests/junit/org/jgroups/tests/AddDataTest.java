@@ -1,18 +1,18 @@
 package org.jgroups.tests;
 
 import junit.framework.TestCase;
-import org.jgroups.*;
-import org.jgroups.log.Trace;
+import org.jgroups.ChannelException;
+import org.jgroups.Event;
+import org.jgroups.JChannel;
 import org.jgroups.stack.IpAddress;
 
 import java.util.HashMap;
 import java.util.Map;
-import org.jgroups.util.Util;
 
 /**
  *
  * @author Bela Ban
- * @version $Id: AddDataTest.java,v 1.4 2003/12/15 23:37:16 belaban Exp $
+ * @version $Id: AddDataTest.java,v 1.5 2004/03/30 06:47:31 belaban Exp $
  */
 public class AddDataTest extends TestCase {
 
@@ -32,7 +32,7 @@ public class AddDataTest extends TestCase {
 
     public AddDataTest(String name) {
         super(name);
-        Trace.init();
+
     }
 
 

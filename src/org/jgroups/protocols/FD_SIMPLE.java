@@ -1,6 +1,11 @@
-// $Id: FD_SIMPLE.java,v 1.1 2003/09/09 01:24:10 belaban Exp $
+// $Id: FD_SIMPLE.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
 
 package org.jgroups.protocols;
+
+import org.jgroups.*;
+import org.jgroups.stack.Protocol;
+import org.jgroups.util.Promise;
+import org.jgroups.util.TimeScheduler;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -9,10 +14,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Properties;
 import java.util.Vector;
-import org.jgroups.*;
-import org.jgroups.util.*;
-import org.jgroups.stack.*;
-import org.jgroups.log.Trace;
 
 
 
@@ -23,7 +24,7 @@ import org.jgroups.log.Trace;
  * associated with that member will be incremented. If the counter exceeds max_missed_hbs, that member will be
  * suspected. When a message or a heartbeat are received, the counter is reset to 0.
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.2 $
  */
 public class FD_SIMPLE extends Protocol {
     Address       local_addr=null;
@@ -111,7 +112,7 @@ public class FD_SIMPLE extends Protocol {
 		return; // don't pass up further
 
 	    case FdHeader.I_AM_ALIVE:
-		if(Trace.trace) Trace.info("FD_SIMPLE.up()", "received I_AM_ALIVE response from " + sender);
+		 if(log.isInfoEnabled()) log.info("received I_AM_ALIVE response from " + sender);
 		if(task != null)
 		    task.receivedHeartbeatResponse(sender);
 		if(!counter_reset)
@@ -119,7 +120,7 @@ public class FD_SIMPLE extends Protocol {
 		return;
 
 	    default:
-		Trace.warn("FD_SIMPLE.up()", "FdHeader type " + hdr.type + " not known");
+		if(log.isWarnEnabled()) log.warn("FdHeader type " + hdr.type + " not known");
 		return;
 	    }     
 	}
@@ -147,13 +148,13 @@ public class FD_SIMPLE extends Protocol {
 	    if(new_view.size() > 1) {
 		if(task == null) {
 		    task=new HeartbeatTask();
-		    if(Trace.trace) Trace.info("FD_SIMPLE.down()", "starting heartbeat task");
+		     if(log.isInfoEnabled()) log.info("starting heartbeat task");
 		    timer.add(task, true);
 		}
 	    }
 	    else {
 		if(task != null) {
-		    if(Trace.trace) Trace.info("FD_SIMPLE.down()", "stopping heartbeat task");
+		     if(log.isInfoEnabled()) log.info("stopping heartbeat task");
 		    task.stop(); // will be removed from TimeScheduler
 		    task=null;
 		}
@@ -163,8 +164,8 @@ public class FD_SIMPLE extends Protocol {
 	    for(Iterator it=counters.keySet().iterator(); it.hasNext();) {
 		key=(Address)it.next();
 		if(!members.contains(key)) {
-		    if(Trace.trace)
-			Trace.info("FD_SIMPLE.down()", "removing " + key + " from counters");
+
+			if(log.isInfoEnabled()) log.info("removing " + key + " from counters");
 		    it.remove();
 		}
 	    }
@@ -311,12 +312,11 @@ public class FD_SIMPLE extends Protocol {
 
 	    dest=getHeartbeatDest();
 	    if(dest == null) {
-		Trace.warn("FD_SIMPLE.HeartbeatTask.run()",
-			   "heartbeat destination was null, will not send ARE_YOU_ALIVE message");
+		if(log.isWarnEnabled()) log.warn("heartbeat destination was null, will not send ARE_YOU_ALIVE message");
 		return;
 	    }
-	    if(Trace.trace)
-		Trace.info("FD_SIMPLE.HeartbeatTask.run()", "sending ARE_YOU_ALIVE message to " + dest +
+
+		if(log.isInfoEnabled()) log.info("sending ARE_YOU_ALIVE message to " + dest +
 			   ", counters are\n" + printCounters());
 
 	    promise.reset();
@@ -327,8 +327,8 @@ public class FD_SIMPLE extends Protocol {
 	    promise.getResult(timeout);
 	    num_missed_hbs=incrementCounter(dest);
 	    if(num_missed_hbs >= max_missed_hbs) {
-		if(Trace.trace)
-		    Trace.info("FD_SIMPLE.HeartbeatTask.run()", "missed " + num_missed_hbs + " from " + dest +
+
+		    if(log.isInfoEnabled()) log.info("missed " + num_missed_hbs + " from " + dest +
 			       ", suspecting member");
 		passUp(new Event(Event.SUSPECT, dest));
 	    }

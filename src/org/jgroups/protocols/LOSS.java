@@ -1,12 +1,14 @@
-// $Id: LOSS.java,v 1.1 2003/09/09 01:24:10 belaban Exp $
+// $Id: LOSS.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
 
 package org.jgroups.protocols;
 
+import org.jgroups.Event;
+import org.jgroups.Message;
+import org.jgroups.View;
+import org.jgroups.stack.Protocol;
+import org.jgroups.util.Util;
+
 import java.util.Vector;
-import org.jgroups.*;
-import org.jgroups.util.*;
-import org.jgroups.stack.*;
-import org.jgroups.log.Trace;
 
 
 /**
@@ -87,7 +89,7 @@ public class LOSS extends Protocol {
 		    break;
 		}
 
-		if(Trace.trace) 
+
 		    System.out.println("###### LOSS.down(): dropping msg " + Util.printMessage(msg));
 		
 		return;

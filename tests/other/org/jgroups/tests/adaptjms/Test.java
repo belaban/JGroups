@@ -1,7 +1,6 @@
 package org.jgroups.tests.adaptjms;
 
 import org.apache.log4j.Logger;
-import org.jgroups.log.Trace;
 
 import javax.jms.*;
 import javax.naming.InitialContext;
@@ -64,7 +63,7 @@ public class Test {
             return;
         }
 
-        Trace.init();
+
 
         try {
             fileReader=new BufferedReader(new FileReader(config));

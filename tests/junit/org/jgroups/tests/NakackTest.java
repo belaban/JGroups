@@ -1,14 +1,17 @@
-// $Id: NakackTest.java,v 1.2 2004/02/26 19:14:14 belaban Exp $
+// $Id: NakackTest.java,v 1.3 2004/03/30 06:47:31 belaban Exp $
 
 package org.jgroups.tests;
 
+import junit.framework.Test;
+import junit.framework.TestCase;
+import junit.framework.TestSuite;
+import org.jgroups.*;
+import org.jgroups.debug.ProtocolTester;
+import org.jgroups.stack.IpAddress;
+import org.jgroups.stack.Protocol;
+
 import java.util.Hashtable;
 import java.util.Vector;
-import junit.framework.*;
-import org.jgroups.*;
-import org.jgroups.util.*;
-import org.jgroups.debug.*;
-import org.jgroups.stack.*;
 
 
 
@@ -38,7 +41,7 @@ public class NakackTest extends TestCase {
     public void test0() throws Exception {
 	Object         mutex=new Object();
 	CheckNoGaps    check=new CheckNoGaps(-1, this, mutex);
-	ProtocolTester t=new ProtocolTester("pbcast.NAKACK", check, true);
+	ProtocolTester t=new ProtocolTester("pbcast.NAKACK", check);
 	Address        my_addr=new IpAddress("localhost", 10000);
 	ViewId         vid=new ViewId(my_addr, 322649);
 	Vector         mbrs=new Vector();

@@ -1,16 +1,20 @@
-// $Id: RequestCorrelator.java,v 1.5 2004/03/16 17:56:12 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.6 2004/03/30 06:47:12 belaban Exp $
 
 package org.jgroups.blocks;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
-import org.jgroups.log.Trace;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Scheduler;
 import org.jgroups.util.SchedulerListener;
 import org.jgroups.util.Util;
 
 import java.io.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 
 
 
@@ -75,6 +79,8 @@ public class RequestCorrelator {
      * may destroy the properties of a protocol stack, e.g total or causal order may not be
      * guaranteed. Set this to true only if you know what you're doing ! */
     protected boolean concurrent_processing=false;
+
+    protected static Log log=LogFactory.getLog(RequestCorrelator.class);
 
 
     /**
@@ -229,7 +235,7 @@ public class RequestCorrelator {
         Header hdr;
 
         if(transport == null) {
-            Trace.warn("RequestCorrelator.sendRequest()", "transport is not available !");
+            if(log.isWarnEnabled()) log.warn("transport is not available !");
             return;
         }
 
@@ -245,7 +251,7 @@ public class RequestCorrelator {
         if (coll != null) {
             if(deadlock_detection) {
                 if(local_addr == null) {
-                    Trace.error("RequestCorrelator.sendRequest()", "local address is null !");
+                    if(log.isErrorEnabled()) log.error("local address is null !");
                     return;
                 }
                 java.util.Stack new_call_stack = (call_stack != null?
@@ -263,11 +269,11 @@ public class RequestCorrelator {
             else if(transport instanceof Transport)
                 ((Transport)transport).send(msg);
             else
-                Trace.error("RequestCorrelator.sendRequest()", "transport object has to be either a " +
+                if(log.isErrorEnabled()) log.error("transport object has to be either a " +
                             "Transport or a Protocol, however it is a " + transport.getClass());
         }
         catch(Throwable e) {
-            Trace.warn("RequestCorrelator.sendRequest()", e.toString());
+            if(log.isWarnEnabled()) log.warn(e.toString());
         }
     }
 
@@ -315,7 +321,7 @@ public class RequestCorrelator {
         if(transport instanceof Protocol)
             ((Protocol)transport).passUp(evt);
         else
-            Trace.error("RequestCorrelator.receive()", "we do not pass up messages via Transport");
+            if(log.isErrorEnabled()) log.error("we do not pass up messages via Transport");
     }
 
 
@@ -360,8 +366,8 @@ public class RequestCorrelator {
         ArrayList    copy;
 
         if(mbr == null) return;
-        if(Trace.trace)
-            Trace.debug("RequestCorrelator.receiveSuspect()", "suspect=" + mbr);
+
+            if(log.isDebugEnabled()) log.debug("suspect=" + mbr);
 
         // copy so we don't run into bug #761804 - Bela June 27 2003
         synchronized(requests) {
@@ -422,7 +428,7 @@ public class RequestCorrelator {
 
         hdr=(Header)msg.getHeader(name);
         if(hdr.name == null || !hdr.name.equals(name)) {
-            Trace.debug("RequestCorrelator.receiveMessage()", "name of request correlator header (" +
+            if(log.isDebugEnabled()) log.debug("name of request correlator header (" +
                     hdr.name + ") is different from ours (" + name + "). Msg not accepted, passed up");
             return(true);
         }
@@ -431,15 +437,15 @@ public class RequestCorrelator {
         // request (was addressed to other members)
         dests=hdr.dest_mbrs;
         if(dests != null && local_addr != null && !dests.contains(local_addr)) {
-            if(Trace.trace)
-                Trace.info("RequestCorrelator.receiveMessage()", "discarded request from " + msg.getSrc() +
+
+                if(log.isInfoEnabled()) log.info("discarded request from " + msg.getSrc() +
                            " as we are not part of destination list (local_addr=" + local_addr +
                            ", hdr=" + hdr + ")");
             return false;
         }
 
-        if(Trace.trace)
-            Trace.debug("RequestCorrelator.receiveMessage()", "header is " + hdr);
+
+            if(log.isDebugEnabled()) log.debug("header is " + hdr);
 
         // [Header.REQ]:
         // i. If there is no request handler, discard
@@ -453,7 +459,7 @@ public class RequestCorrelator {
         switch(hdr.type) {
         case Header.REQ:
             if(request_handler == null) {
-                Trace.warn("RequestCorrelator.receiveMessage()", "there is no " +
+                if(log.isWarnEnabled()) log.warn("there is no " +
                            "request handler installed to deliver request !");
                 return(false);
             }
@@ -481,7 +487,7 @@ public class RequestCorrelator {
 
         default:
             msg.removeHeader(name);
-            Trace.error("RequestCorrelator.receiveMessage()", "header's type is neither REQ nor RSP !");
+            if(log.isErrorEnabled()) log.error("header's type is neither REQ nor RSP !");
             break;
         }
 
@@ -509,7 +515,7 @@ public class RequestCorrelator {
             if(!requests.containsKey(id_obj))
                 requests.put(id_obj, entry);
             else
-                Trace.warn("RequestCorrelator.addEntry()", "entry " + entry + " for request-id=" + id + " already present !");
+                if(log.isWarnEnabled()) log.warn("entry " + entry + " for request-id=" + id + " already present !");
         }
     }
 
@@ -566,8 +572,8 @@ public class RequestCorrelator {
         // ID as the request and the name of the sender request correlator
         hdr    = (Header)req.removeHeader(name);
 
-        if(Trace.trace)
-            Trace.debug("RequestCorrelator.handleRequest()", "calling request handler (" +
+
+            if(log.isDebugEnabled()) log.debug("calling request handler (" +
                     (request_handler != null? request_handler.getClass().getName() : "null") +
                     ") with request " + hdr.id);
 
@@ -575,7 +581,7 @@ public class RequestCorrelator {
             retval = request_handler.handle(req);
         }
         catch(Throwable t) {
-            Trace.error("RequestCorrelator.handleRequest()", "error invoking method, exception=" + t.toString());
+            if(log.isErrorEnabled()) log.error("error invoking method, exception=" + t.toString());
             retval=t;
         }
 
@@ -583,7 +589,7 @@ public class RequestCorrelator {
             return;
 
         if (transport == null) {
-            Trace.error("RequestCorrelator.handleRequest()", "failure sending " + "response; no transport available");
+            if(log.isErrorEnabled()) log.error("failure sending " + "response; no transport available");
             return;
         }
 
@@ -596,7 +602,7 @@ public class RequestCorrelator {
                 rsp_buf=Util.objectToByteBuffer(t); // this call shoudl succeed (all exceptions are serializable)
             }
             catch(Throwable tt) {
-                Trace.error("RequestCorrelator.handleRequest()", "failed sending response: " +
+                if(log.isErrorEnabled()) log.error("failed sending response: " +
                         "return value (" + retval + ") is not serializable");
                 return;
             }
@@ -607,8 +613,8 @@ public class RequestCorrelator {
             rsp.setBuffer(rsp_buf);
         rsp_hdr=new Header(Header.RSP, hdr.id, false, name);
         rsp.putHeader(name, rsp_hdr);
-        if(Trace.trace)
-            Trace.debug("RequestCorrelator.handleRequest()", "sending rsp for " +
+
+            if(log.isDebugEnabled()) log.debug("sending rsp for " +
                     rsp_hdr.id + " to " + rsp.getDest());
 
         try {
@@ -617,11 +623,11 @@ public class RequestCorrelator {
             else if(transport instanceof Transport)
                 ((Transport)transport).send(rsp);
             else
-                Trace.error("RequestCorrelator.handleRequest()", "transport object has to be either a " +
+                if(log.isErrorEnabled()) log.error("transport object has to be either a " +
                             "Transport or a Protocol, however it is a " + transport.getClass());
         }
         catch(Throwable e) {
-            Trace.error("RequestCorrelator.handleRequest", throwableToString(e));
+            if(log.isErrorEnabled()) log.error(throwableToString(e));
         }
     }
 

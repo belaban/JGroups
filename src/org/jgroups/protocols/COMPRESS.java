@@ -1,25 +1,24 @@
 package org.jgroups.protocols;
 
-import org.jgroups.stack.Protocol;
 import org.jgroups.Event;
 import org.jgroups.Header;
 import org.jgroups.Message;
+import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
-import org.jgroups.log.Trace;
 
-import java.util.Properties;
-import java.util.zip.Deflater;
-import java.util.zip.Inflater;
-import java.util.zip.DataFormatException;
-import java.io.ObjectOutput;
 import java.io.IOException;
 import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Properties;
+import java.util.zip.DataFormatException;
+import java.util.zip.Deflater;
+import java.util.zip.Inflater;
 
 /**
  * Compresses the payload of a message. Goal is to reduce the number of messages sent across the wire.
  * Should ideally be layered somewhere above a fragmentation protocol (e.g. FRAG).
  * @author Bela Ban
- * @version $Id: COMPRESS.java,v 1.2 2004/02/26 19:15:00 belaban Exp $
+ * @version $Id: COMPRESS.java,v 1.3 2004/03/30 06:47:20 belaban Exp $
  */
 public class COMPRESS extends Protocol {
 
@@ -93,13 +92,13 @@ public class COMPRESS extends Protocol {
                     inflater.setInput(compressed_payload, msg.getOffset(), msg.getLength());
                     try {
                         inflater.inflate(uncompressed_payload);
-                        if(Trace.trace)
-                            Trace.info("COMPRESS.up()", "uncompressed " + compressed_payload.length + " bytes to " +
+
+                            if(log.isInfoEnabled()) log.info("uncompressed " + compressed_payload.length + " bytes to " +
                                     original_size + " bytes");
                         msg.setBuffer(uncompressed_payload);
                     }
                     catch(DataFormatException e) {
-                        Trace.error("COMPRESS.up()", "exception on uncompression: " + Util.printStackTrace(e));
+                        if(log.isErrorEnabled()) log.error("exception on uncompression: " + Util.printStackTrace(e));
                     }
                 }
             }
@@ -132,8 +131,8 @@ public class COMPRESS extends Protocol {
                 System.arraycopy(compressed_payload, 0, new_payload, 0, compressed_size);
                 msg.setBuffer(new_payload);
                 msg.putHeader(name, new CompressHeader(length));
-                if(Trace.trace)
-                    Trace.info("COMPRESS.down()", "compressed payload from " + length + " bytes to " +
+
+                    if(log.isInfoEnabled()) log.info("compressed payload from " + length + " bytes to " +
                             compressed_size + " bytes");
             }
         }

@@ -1,11 +1,15 @@
-// $Id: Xid.java,v 1.1 2003/09/09 01:24:08 belaban Exp $
+// $Id: Xid.java,v 1.2 2004/03/30 06:47:12 belaban Exp $
 
 package org.jgroups.blocks;
 
 
 
-import java.io.*;
 import org.jgroups.Address;
+
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 
 
 
@@ -23,7 +27,7 @@ import org.jgroups.Address;
  * JTA counterpart.</em>
  * @
  * @author  <a href="mailto:belaban@yahoo.com">Bela Ban</a>.
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.2 $
  *
  * <p><b>Revisions:</b>
  *

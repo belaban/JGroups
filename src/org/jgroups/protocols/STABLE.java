@@ -1,16 +1,17 @@
-// $Id: STABLE.java,v 1.1 2003/09/09 01:24:10 belaban Exp $
+// $Id: STABLE.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
 
 package org.jgroups.protocols;
 
 
+import org.jgroups.*;
+import org.jgroups.blocks.GroupRequest;
+import org.jgroups.blocks.MethodCall;
+import org.jgroups.stack.RpcProtocol;
+import org.jgroups.util.TimeScheduler;
+import org.jgroups.util.Util;
+
 import java.util.Properties;
 import java.util.Vector;
-
-import org.jgroups.*;
-import org.jgroups.util.*;
-import org.jgroups.blocks.*;
-import org.jgroups.stack.*;
-import org.jgroups.log.Trace;
 
 
 /**
@@ -155,7 +156,7 @@ public class STABLE extends RpcProtocol {
         if(str != null) {
             num_msgs=max_msgs=new Integer(str).intValue();
             if(max_msgs <= 1) {
-                Trace.fatal("STABLE.setProperties()", "value for 'max_msgs' must be greater than 1 !");
+                if(log.isFatalEnabled()) log.fatal("value for 'max_msgs' must be greater than 1 !");
                 return false;
             }
             props.remove("max_msgs");
@@ -250,31 +251,27 @@ public class STABLE extends RpcProtocol {
         MethodCall call;
 
         synchronized(this) {
-            if(Trace.trace)
-                Trace.info("STABLE.gossip()",
-                        "sender=" + sender + ", round=" + gossip_round + ", seqnos=" +
+
+                if(log.isInfoEnabled()) log.info("sender=" + sender + ", round=" + gossip_round + ", seqnos=" +
                         Util.array2String(gossip_seqnos) + ", heard=" +
                         Util.array2String(heard));
             if(vid == null || view_id == null || !vid.equals(view_id)) {
-                if(Trace.trace)
-                    Trace.info("STABLE.gossip()",
-                            "view ID s are different (" + vid + " != " + view_id +
+
+                    if(log.isInfoEnabled()) log.info("view ID s are different (" + vid + " != " + view_id +
                             "). Discarding gossip received");
                 return;
             }
             if(gossip_round < this.round) {
-                if(Trace.trace)
-                    Trace.info("STABLE.gossip()",
-                            "received a gossip from a previous round (" +
+
+                    if(log.isInfoEnabled()) log.info("received a gossip from a previous round (" +
                             gossip_round + "); my round is " + round +
                             ". Discarding gossip");
                 return;
             }
             if(gossip_seqnos == null || seqnos == null ||
                     seqnos.length != gossip_seqnos.length) {
-                if(Trace.trace)
-                    Trace.warn("STABLE.gossip()",
-                            "size of seqnos and gossip_seqnos are not equal ! " +
+
+                    if(log.isWarnEnabled()) log.warn("size of seqnos and gossip_seqnos are not equal ! " +
                             "Discarding gossip");
                 return;
             }
@@ -290,16 +287,15 @@ public class STABLE extends RpcProtocol {
                 update(sender, gossip_seqnos, heard);
             }
             else if(round < gossip_round) {
-                if(Trace.trace)
-                    Trace.info("STABLE.gossip()",
-                            "received a gossip from a higher round (" +
+
+                    if(log.isInfoEnabled()) log.info("received a gossip from a higher round (" +
                             gossip_round + "); adopting my round (" + round +
                             ") to " + gossip_round);
                 round=gossip_round;
                 set(sender, gossip_seqnos, heard_from);
             }
 
-            if(Trace.trace) Trace.info("STABLE.gossip()", "heard_from=" + Util.array2String(heard_from));
+             if(log.isInfoEnabled()) log.info("heard_from=" + Util.array2String(heard_from));
             if(!heardFromAll())
                 return;
 
@@ -325,14 +321,12 @@ public class STABLE extends RpcProtocol {
         // ii. Send up the stability vector
         // iii. get a fresh copy of the highest deliverable seqnos
         synchronized(this) {
-            if(Trace.trace)
-                Trace.info("STABLE.stability()",
-                        "sender=" + sender + ", round=" + gossip_round + ", vector=" +
+
+                if(log.isInfoEnabled()) log.info("sender=" + sender + ", round=" + gossip_round + ", vector=" +
                         Util.array2String(stability_vector) + ")");
             if(vid == null || view_id == null || !vid.equals(view_id)) {
-                if(Trace.trace)
-                    Trace.info("STABLE.stability()",
-                            "view ID s are different (" + vid + " != " + view_id +
+
+                    if(log.isInfoEnabled()) log.info("view ID s are different (" + vid + " != " + view_id +
                             "). Discarding gossip received");
                 return;
             }
@@ -457,7 +451,7 @@ public class STABLE extends RpcProtocol {
         synchronized(this) {
             index=mbrs.indexOf(sender);
             if(index < 0) {
-                if(Trace.trace) Trace.warn("STABLE.update()", "sender " + sender + " not found in mbrs !");
+                 if(log.isWarnEnabled()) log.warn("sender " + sender + " not found in mbrs !");
                 return;
             }
 
@@ -493,7 +487,7 @@ public class STABLE extends RpcProtocol {
         synchronized(this) {
             index=mbrs.indexOf(sender);
             if(index < 0) {
-                if(Trace.trace) Trace.warn("STABLE.set()", "sender " + sender + " not found in mbrs !");
+                 if(log.isWarnEnabled()) log.warn("sender " + sender + " not found in mbrs !");
                 return;
             }
 
@@ -530,13 +524,12 @@ public class STABLE extends RpcProtocol {
         synchronized(this) {
             gossip_subset=Util.pickSubset(mbrs, subset);
             if(gossip_subset == null || gossip_subset.size() < 1) {
-                if(Trace.trace) Trace.warn("STABLE.sendGossip()", "picked empty subset !");
+                 if(log.isWarnEnabled()) log.warn("picked empty subset !");
                 return;
             }
 
-            if(Trace.trace)
-                Trace.info("STABLE.sendGossip()",
-                        "subset=" + gossip_subset + ", round=" + round + ", seqnos=" +
+
+                if(log.isInfoEnabled()) log.info("subset=" + gossip_subset + ", round=" + round + ", seqnos=" +
                         Util.array2String(seqnos));
 
             params=new Object[]{
@@ -554,7 +547,7 @@ public class STABLE extends RpcProtocol {
                 callRemoteMethod((Address)gossip_subset.get(i), call, GroupRequest.GET_NONE, 0);
             }
             catch(Exception e) {
-                if(Trace.trace) Trace.debug("STABLE.sendGossip()", "exception=" + e);
+                 if(log.isDebugEnabled()) log.debug("exception=" + e);
             }
         }
     }
@@ -573,9 +566,8 @@ public class STABLE extends RpcProtocol {
                 highest_seqnos_mutex.wait(highest_seqnos_timeout);
             }
             catch(InterruptedException e) {
-                if(Trace.trace)
-                    Trace.error("STABLE.getHighestSeqnos()",
-                            "Interrupted while waiting for highest seqnos from NAKACK");
+
+                    if(log.isErrorEnabled()) log.error("Interrupted while waiting for highest seqnos from NAKACK");
             }
         }
     }
@@ -640,7 +632,7 @@ public class STABLE extends RpcProtocol {
         /*
           // Could this ever happen? GMS is always sending non-null value
           if(new_mbrs == null) {
-          /if(Trace.trace) Trace.println(
+          / Trace.println(
           "STABLE.handleDownEvent()", Trace.ERROR,
           "Received VIEW_CHANGE event with null mbrs list");
           break;
@@ -674,9 +666,8 @@ public class STABLE extends RpcProtocol {
                 if(new_seqnos == null)
                     return (true);
                 if(new_seqnos.length != seqnos.length) {
-                    if(Trace.trace)
-                        Trace.info("STABLE.handleDownEvent()",
-                                "GET_MSGS_RECEIVED: array of highest " +
+
+                        if(log.isInfoEnabled()) log.info("GET_MSGS_RECEIVED: array of highest " +
                                 "seqnos seen so far (received from NAKACK layer) " +
                                 "has a different length (" + new_seqnos.length +
                                 ") from 'seqnos' array (" + seqnos.length + ")");

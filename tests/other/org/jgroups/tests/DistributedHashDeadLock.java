@@ -1,10 +1,9 @@
 package org.jgroups.tests;
 
 
-import org.jgroups.blocks.DistributedHashtable;
-import org.jgroups.log.Trace;
-import org.jgroups.util.Util;
 import org.jgroups.ChannelException;
+import org.jgroups.blocks.DistributedHashtable;
+import org.jgroups.util.Util;
 
 
 
@@ -36,7 +35,6 @@ public class DistributedHashDeadLock {
                 "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;shun=false;print_local_addr=true):" +
                 "pbcast.STATE_TRANSFER";
 
-        Trace.init();
 
         DistributedHashtable distHash=new DistributedHashtable("ADMINT", null, props, 20000);
         boolean odd=false;

@@ -1,13 +1,12 @@
 package org.jgroups.tests;
 
-// $Id: SpeedTest1_4.java,v 1.4 2004/01/03 02:08:59 belaban Exp $
+// $Id: SpeedTest1_4.java,v 1.5 2004/03/30 06:47:34 belaban Exp $
 
 
 import org.jgroups.Channel;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.debug.Debugger;
-import org.jgroups.log.Trace;
 import org.jgroups.util.Util;
 
 import java.net.DatagramPacket;
@@ -146,7 +145,7 @@ public class SpeedTest1_4 {
                 "\nnum_msgs = " + num_msgs +
                 "\n");
 
-        Trace.init();
+
 
         try {
             matrix=new int[num_msgs][2];

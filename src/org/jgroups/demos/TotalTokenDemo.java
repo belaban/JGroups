@@ -1,9 +1,8 @@
-//$Id: TotalTokenDemo.java,v 1.3 2004/01/16 16:47:50 belaban Exp $
+//$Id: TotalTokenDemo.java,v 1.4 2004/03/30 06:47:16 belaban Exp $
 
 package org.jgroups.demos;
 
 import org.jgroups.*;
-import org.jgroups.log.Trace;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
@@ -12,7 +11,6 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.Iterator;
 import java.util.Random;
@@ -39,7 +37,7 @@ import java.util.Vector;
  *
  *@author Vladimir Blagojevic vladimir@cs.yorku.ca
  *@author Ivan Bilenjkij  ivan@ibossa.com
- *@version $Revision: 1.3 $
+ *@version $Revision: 1.4 $
  *
  *@see org.jgroups.protocols.TOTAL_TOKEN
  *
@@ -558,7 +556,7 @@ public class TotalTokenDemo extends JFrame implements Runnable
         }
 
 
-        Trace.init();
+
         TotalTokenDemo ttd = new TotalTokenDemo(props);
         //StackPanel not_done_yet = new StackPanel(ttd.getChannel());
         //ttd.addPanel("Debug", not_done_yet);

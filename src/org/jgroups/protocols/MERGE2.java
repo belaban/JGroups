@@ -1,15 +1,17 @@
-// $Id: MERGE2.java,v 1.1 2003/09/09 01:24:10 belaban Exp $
+// $Id: MERGE2.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
 
 package org.jgroups.protocols;
 
 
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.View;
+import org.jgroups.stack.Protocol;
+import org.jgroups.util.Promise;
+import org.jgroups.util.Util;
+
 import java.util.Properties;
 import java.util.Vector;
-
-import org.jgroups.*;
-import org.jgroups.util.*;
-import org.jgroups.stack.*;
-import org.jgroups.log.Trace;
 
 
 
@@ -69,11 +71,11 @@ public class MERGE2 extends Protocol {
         }
 
         if(min_interval <= 0 || max_interval <= 0) {
-            Trace.error("MERGE2.setProperties()", "min_interval and max_interval have to be > 0");
+            if(log.isErrorEnabled()) log.error("min_interval and max_interval have to be > 0");
             return false;
         }
         if(max_interval <= min_interval) {
-            Trace.error("MERGE2.setProperties()", "max_interval has to be greater than min_interval");
+            if(log.isErrorEnabled()) log.error("max_interval has to be greater than min_interval");
             return false;
         }
 
@@ -224,8 +226,8 @@ public class MERGE2 extends Protocol {
             Event evt;
             Vector initial_mbrs;
 
-            if(Trace.trace)
-                Trace.info("MERGE2.FindSubgroups.run()", "merge task started");
+
+                if(log.isInfoEnabled()) log.info("merge task started");
 
             while(thread != null) {
                 interval=computeInterval();
@@ -233,10 +235,10 @@ public class MERGE2 extends Protocol {
                 if(thread == null) break;
                 initial_mbrs=findInitialMembers();
                 if(thread == null) break;
-                if(Trace.trace) Trace.info("MERGE2.FindSubgroups.run()", "initial_mbrs=" + initial_mbrs);
+                 if(log.isInfoEnabled()) log.info("initial_mbrs=" + initial_mbrs);
                 coords=findMultipleCoordinators(initial_mbrs);
                 if(coords != null && coords.size() > 1) {
-                    Trace.info("MERGE2.FindSubgroups.run()", "found multiple coordinators: " +
+                    if(log.isInfoEnabled()) log.info("found multiple coordinators: " +
                                                              coords + "; sending up MERGE event");
                     evt=new Event(Event.MERGE, coords);
                     passUp(evt);

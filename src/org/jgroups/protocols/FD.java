@@ -1,21 +1,20 @@
-// $Id: FD.java,v 1.1 2003/09/09 01:24:10 belaban Exp $
+// $Id: FD.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
 
 package org.jgroups.protocols;
 
+
+import org.jgroups.*;
+import org.jgroups.stack.Protocol;
+import org.jgroups.util.Marshaller;
+import org.jgroups.util.TimeScheduler;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Hashtable;
+import java.util.Iterator;
 import java.util.Properties;
 import java.util.Vector;
-import java.util.Iterator;
-
-import org.jgroups.*;
-import org.jgroups.stack.*;
-import org.jgroups.util.*;
-import org.jgroups.log.Trace;
-import org.jgroups.util.Marshaller;
 
 
 
@@ -36,7 +35,7 @@ import org.jgroups.util.Marshaller;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.2 $
  */
 public class FD extends Protocol {
     Address         ping_dest=null;
@@ -164,8 +163,8 @@ public class FD extends Protocol {
                     if(ping_dest != null && (sender=msg.getSrc()) != null) {
                         if(ping_dest.equals(sender)) {
                             last_ack=System.currentTimeMillis();
-                            if(Trace.debug)
-                                Trace.info("FD.up()", "received msg from " + sender + " (counts as ack)");
+                            if(log.isTraceEnabled())
+                                log.trace("received msg from " + sender + " (counts as ack)");
                             num_tries=0;
                         }
                     }
@@ -194,8 +193,8 @@ public class FD extends Protocol {
                         if(ping_dest != null && ping_dest.equals(hdr.from)) {
                             last_ack=System.currentTimeMillis();
                             num_tries=0;
-                            if(Trace.trace)
-                                Trace.info("FD.up()", "received ack from " + hdr.from);
+
+                                if(log.isInfoEnabled()) log.info("received ack from " + hdr.from);
                         }
                         else {
                             stop();
@@ -205,7 +204,7 @@ public class FD extends Protocol {
                                     startMonitor();
                                 }
                                 catch(Exception ex) {
-                                    Trace.warn("FD.up()", "exception when calling startMonitor(): " + ex);
+                                    if(log.isWarnEnabled()) log.warn("exception when calling startMonitor(): " + ex);
                                 }
                             }
                         }
@@ -213,13 +212,13 @@ public class FD extends Protocol {
 
                     case FdHeader.SUSPECT:
                         if(hdr.mbrs != null) {
-                            if(Trace.trace)
-                                Trace.info("FD.up()", "[SUSPECT] suspect hdr is " + hdr);
+
+                                if(log.isInfoEnabled()) log.info("[SUSPECT] suspect hdr is " + hdr);
 
                             for(int i=0; i < hdr.mbrs.size(); i++) {
                                 Address m=(Address)hdr.mbrs.elementAt(i);
                                 if(local_addr != null && m.equals(local_addr)) {
-                                    Trace.warn("FD.up()", "I was suspected, but will not remove myself from membership " +
+                                    if(log.isWarnEnabled()) log.warn("I was suspected, but will not remove myself from membership " +
                                                           "(waiting for EXIT message)");
                                 }
                                 else {
@@ -234,8 +233,8 @@ public class FD extends Protocol {
 
                     case FdHeader.NOT_MEMBER:
                         if(shun) {
-                            if(Trace.trace)
-                                Trace.info("FD.up()", "[NOT_MEMBER] I'm being shunned; exiting");
+
+                                if(log.isInfoEnabled()) log.info("[NOT_MEMBER] I'm being shunned; exiting");
                             passUp(new Event(Event.EXIT));
                         }
                         break;
@@ -266,7 +265,7 @@ public class FD extends Protocol {
                             startMonitor();
                         }
                         catch(Exception ex) {
-                            Trace.warn("FD.down()", "exception when calling startMonitor(): " + ex);
+                            if(log.isWarnEnabled()) log.warn("exception when calling startMonitor(): " + ex);
                         }
                     }
                 }
@@ -303,7 +302,7 @@ public class FD extends Protocol {
             if(invalid_pingers.containsKey(hb_sender)) {
                 num_pings=((Integer)invalid_pingers.get(hb_sender)).intValue();
                 if(num_pings >= max_tries) {
-                    Trace.info("FD.shunInvalidHeartbeatSender()", "sender " + hb_sender +
+                    if(log.isInfoEnabled()) log.info("sender " + hb_sender +
                                                                   " is not member in " + members + " ! Telling it to leave group");
                     shun_msg=new Message(hb_sender, null, null);
                     shun_msg.putHeader(getName(), new FdHeader(FdHeader.NOT_MEMBER));
@@ -395,21 +394,21 @@ public class FD extends Protocol {
 
         public void stop() {
             started=false;
-            //if(Trace.trace)
-              //  Trace.info("FD.Monitor.stop()", "started=" + started);
+            //
+              //  if(log.isInfoEnabled()) log.info("FD.Monitor.stop()", "started=" + started);
         }
 
 
         public boolean cancelled() {
-            //if(Trace.trace)
-              //  Trace.info("FD.Monitor.cancelled()", "cancelled=" + !started);
+            //
+              //  if(log.isInfoEnabled()) log.info("FD.Monitor.cancelled()", "cancelled=" + !started);
             return !started;
         }
 
 
         public long nextInterval() {
-            //if(Trace.trace)
-              //  Trace.info("FD.Monitor.nextInterval()", "interval=" + timeout);
+            //
+              //  if(log.isInfoEnabled()) log.info("FD.Monitor.nextInterval()", "interval=" + timeout);
             return timeout;
         }
 
@@ -419,7 +418,7 @@ public class FD extends Protocol {
             long    not_heard_from=0; // time in msecs we haven't heard from ping_dest
 
             if(ping_dest == null) {
-                Trace.error("FD.Monitor.run()", "ping_dest is null");
+                if(log.isErrorEnabled()) log.error("ping_dest is null");
                 return;
             }
 
@@ -427,8 +426,8 @@ public class FD extends Protocol {
             // 1. send heartbeat request
             hb_req=new Message(ping_dest, null, null);
             hb_req.putHeader(getName(), new FdHeader(FdHeader.HEARTBEAT));  // send heartbeat request
-            if(Trace.trace)
-                Trace.debug("FD.Monitor.run()", "sending are-you-alive msg to " + ping_dest +
+
+                if(log.isDebugEnabled()) log.debug("sending are-you-alive msg to " + ping_dest +
                         " (own address=" + local_addr + ")");
             passDown(new Event(Event.MSG, hb_req));
 
@@ -436,13 +435,13 @@ public class FD extends Protocol {
             //    received, then broadcast a SUSPECT message. Will be handled by coordinator, which may install
             //    a new view
             not_heard_from=System.currentTimeMillis() - last_ack;
-            if(Trace.debug) // +++ remove
-                Trace.debug("FD.Monitor.run()", "not heard from " + ping_dest + " for " + not_heard_from + " ms");
+            if(log.isTraceEnabled()) // +++ remove
+                log.trace("not heard from " + ping_dest + " for " + not_heard_from + " ms");
             // quick & dirty fix: increase timeout by 500msecs to allow for latency (bela June 27 2003)
             if(not_heard_from > timeout + 500) { // no heartbeat ack for more than timeout msecs
                 if(num_tries >= max_tries) {
-                    if(Trace.trace)
-                        Trace.info("FD.Monitor.run()", "[" + local_addr +
+
+                        if(log.isInfoEnabled()) log.info("[" + local_addr +
                                 "]: received no heartbeat ack from " +
                                 ping_dest + " for " + num_tries+1 + " times, suspecting it");
                     // broadcast a SUSPECT message to all members - loop until
@@ -450,9 +449,8 @@ public class FD extends Protocol {
                     bcast_task.addSuspectedMember(ping_dest);
                 }
                 else {
-                    if(Trace.trace)
-                        Trace.debug("FD.Monitor.run()",
-                                    "heartbeat missing from " + ping_dest +
+
+                        if(log.isDebugEnabled()) log.debug("heartbeat missing from " + ping_dest +
                                     " (number=" + num_tries + ")");
                     num_tries++;
                 }
@@ -488,9 +486,8 @@ public class FD extends Protocol {
             synchronized(suspected_mbrs) {
                 if(!suspected_mbrs.contains(mbr)) {
                     suspected_mbrs.addElement(mbr);
-                    if(Trace.trace)
-                        Trace.info("FD.BroadcastTask.addSuspectedMember()",
-                                   "mbr=" + mbr + " (size=" + suspected_mbrs.size() + ")");
+
+                        if(log.isInfoEnabled()) log.info("mbr=" + mbr + " (size=" + suspected_mbrs.size() + ")");
                 }
                 if(stopped && suspected_mbrs.size() > 0) {
                     stopped=false;
@@ -502,7 +499,7 @@ public class FD extends Protocol {
 
         void removeSuspectedMember(Address suspected_mbr) {
             if(suspected_mbr == null) return;
-            if(Trace.trace) Trace.info("FD.BroadcastTask.removeSuspectedMember()", "member is " + suspected_mbr);
+             if(log.isInfoEnabled()) log.info("member is " + suspected_mbr);
             synchronized(suspected_mbrs) {
                 suspected_mbrs.removeElement(suspected_mbr);
                 if(suspected_mbrs.size() == 0)
@@ -531,9 +528,8 @@ public class FD extends Protocol {
                     suspected_mbr=(Address)it.next();
                     if(!new_mbrship.contains(suspected_mbr)) {
                         it.remove();
-                        if(Trace.trace)
-                            Trace.info("FD.BroadcastTask.adjustSuspectedMembers()",
-                                       "removed " + suspected_mbr + " (size=" + suspected_mbrs.size() + ")");
+
+                            if(log.isInfoEnabled()) log.info("removed " + suspected_mbr + " (size=" + suspected_mbrs.size() + ")");
                     }
                 }
                 if(suspected_mbrs.size() == 0)
@@ -556,15 +552,14 @@ public class FD extends Protocol {
             Message     suspect_msg;
             FD.FdHeader hdr;
 
-            if(Trace.trace)
-                Trace.info("FD.BroadcastTask.run()",
-                           "broadcasting SUSPECT message [suspected_mbrs=" +
+
+                if(log.isInfoEnabled()) log.info("broadcasting SUSPECT message [suspected_mbrs=" +
                            suspected_mbrs + "] to group");
 
             synchronized(suspected_mbrs) {
                 if(suspected_mbrs.size() == 0) {
                     stopped=true;
-                    if(Trace.trace) Trace.info("FD.BroadcastTask.run()", "task done (no suspected members)");
+                     if(log.isInfoEnabled()) log.info("task done (no suspected members)");
                     return;
                 }
 
@@ -575,7 +570,7 @@ public class FD extends Protocol {
             suspect_msg=new Message();       // mcast SUSPECT to all members
             suspect_msg.putHeader(getName(), hdr);
             passDown(new Event(Event.MSG, suspect_msg));
-            if(Trace.trace) Trace.info("FD.BroadcastTask.run()", "task done");
+             if(log.isInfoEnabled()) log.info("task done");
         }
     }
 

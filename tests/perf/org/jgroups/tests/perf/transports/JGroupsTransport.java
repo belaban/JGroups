@@ -1,15 +1,15 @@
 package org.jgroups.tests.perf.transports;
 
+import org.jgroups.*;
 import org.jgroups.tests.perf.Receiver;
 import org.jgroups.tests.perf.Transport;
-import org.jgroups.*;
 
 import java.util.Properties;
 
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: JGroupsTransport.java,v 1.2 2004/01/23 02:19:24 belaban Exp $
+ * @version $Id: JGroupsTransport.java,v 1.3 2004/03/30 06:47:36 belaban Exp $
  */
 public class JGroupsTransport implements Transport, Runnable {
     Properties config=null;

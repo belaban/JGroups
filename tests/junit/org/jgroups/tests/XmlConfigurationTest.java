@@ -1,15 +1,19 @@
 package org.jgroups.tests;
 
-import java.io.InputStream;
 import junit.framework.TestCase;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jgroups.conf.XmlConfigurator;
-import org.jgroups.log.Trace;
+
+import java.io.InputStream;
 
 
 
 public class XmlConfigurationTest extends TestCase
 {
-    
+
+    protected Log log=LogFactory.getLog(getClass());
+
 
     public XmlConfigurationTest(String Name_)
     {
@@ -30,7 +34,7 @@ public class XmlConfigurationTest extends TestCase
         {
 	    InputStream default_config = XmlConfigurator.class.getClassLoader().getResourceAsStream("default.xml");
 	    XmlConfigurator conf = XmlConfigurator.getInstance(default_config);
-            Trace.debug("XmlConfigurationTest",conf.getProtocolStackString());
+            if(log.isDebugEnabled()) log.debug(conf.getProtocolStackString());
             assertTrue("Successfully parsed a valid XML configuration file.",true);
         }
         catch ( Exception x )
@@ -45,7 +49,7 @@ public class XmlConfigurationTest extends TestCase
         try
         {
             XmlConfigurator conf = XmlConfigurator.getInstance(new java.net.URL("http://www.filip.net/jgroups/jgroups-protocol-inherited.xml"));
-            Trace.debug("XmlConfigurationTest",conf.getProtocolStackString());
+            if(log.isDebugEnabled()) log.debug("XmlConfigurationTest",conf.getProtocolStackString());
             assertTrue("Successfully parsed a valid XML configuration file that inherits another one.",true);
         }
         catch ( Exception x )

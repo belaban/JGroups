@@ -1,17 +1,17 @@
-// $Id: UDP.java,v 1.18 2004/02/28 02:42:00 belaban Exp $
+// $Id: UDP.java,v 1.19 2004/03/30 06:47:21 belaban Exp $
 
 package org.jgroups.protocols;
 
 
+import org.jgroups.*;
+import org.jgroups.stack.IpAddress;
+import org.jgroups.stack.Protocol;
+import org.jgroups.util.List;
+import org.jgroups.util.*;
+
 import java.io.*;
 import java.net.*;
 import java.util.*;
-
-import org.jgroups.*;
-import org.jgroups.util.*;
-import org.jgroups.util.List;
-import org.jgroups.stack.*;
-import org.jgroups.log.Trace;
 
 
 
@@ -141,7 +141,7 @@ public class UDP extends Protocol implements Runnable {
 
     /** Maximum number of bytes for messages to be queued until they are sent. This value needs to be smaller
         than the largest UDP datagram packet size */
-    int max_bundle_size=AUTOCONF.senseMaxFragSize();
+    int max_bundle_size=AUTOCONF.senseMaxFragSizeStatic();
 
     /** Max number of milliseconds until queued messages are sent. Messages are sent when max_bundle_size or
      * max_bundle_timeout has been exceeded (whichever occurs faster)
@@ -205,7 +205,7 @@ public class UDP extends Protocol implements Runnable {
                 len=packet.getLength();
                 data=packet.getData();
                 if(len == 1 && data[0] == 0) {
-                    if(Trace.debug) Trace.info("UDP.run()", "received dummy packet");
+                    if(log.isTraceEnabled()) log.trace("received dummy packet");
                     continue;
                 }
 
@@ -216,18 +216,17 @@ public class UDP extends Protocol implements Runnable {
                     }
                 }
 
-                if(Trace.debug)
-                    Trace.info("UDP.receive()", "received (mcast) " + packet.getLength() + " bytes from " +
+                if(log.isTraceEnabled())
+                    log.trace("received (mcast) " + packet.getLength() + " bytes from " +
                                                 packet.getAddress() + ":" + packet.getPort() + " (size=" + len + " bytes)");
                 if(len > receive_buf.length) {
-                    Trace.error("UDP.run()", "size of the received packet (" + len + ") is bigger than " +
+                    if(log.isErrorEnabled()) log.error("size of the received packet (" + len + ") is bigger than " +
                                              "allocated buffer (" + receive_buf.length + "): will not be able to handle packet. " +
                                              "Use the FRAG protocol and make its frag_size lower than " + receive_buf.length);
                 }
 
                 if(Version.compareTo(data) == false) {
-                    Trace.warn("UDP.run()",
-                               "packet from " + packet.getAddress() + ":" + packet.getPort() +
+                    if(log.isWarnEnabled()) log.warn("packet from " + packet.getAddress() + ":" + packet.getPort() +
                                " has different version (" +
                                Version.printVersionId(data, Version.version_id.length) +
                                ") from ours (" + Version.printVersionId(Version.version_id) +
@@ -243,30 +242,30 @@ public class UDP extends Protocol implements Runnable {
                     handleIncomingUdpPacket(data);
             }
             catch(SocketException sock_ex) {
-                if(Trace.trace) Trace.info("UDP.run()", "multicast socket is closed, exception=" + sock_ex);
+                 if(log.isInfoEnabled()) log.info("multicast socket is closed, exception=" + sock_ex);
                 break;
             }
             catch(InterruptedIOException io_ex) { // thread was interrupted
                 ; // go back to top of loop, where we will terminate loop
             }
             catch(Throwable ex) {
-                Trace.error("UDP.run()", "exception=" + ex + ", stack trace=" + Util.printStackTrace(ex));
+                if(log.isErrorEnabled()) log.error("exception=" + ex + ", stack trace=" + Util.printStackTrace(ex));
                 Util.sleep(300); // so we don't get into 100% cpu spinning (should NEVER happen !)
             }
         }
-        if(Trace.trace) Trace.info("UDP.run()", "multicast thread terminated");
+         if(log.isInfoEnabled()) log.info("multicast thread terminated");
     }
 
     void handleDiagnosticProbe(InetAddress sender, int port) {
         try {
             byte[]      diag_rsp=getDiagResponse().getBytes();
             DatagramPacket rsp=new DatagramPacket(diag_rsp, 0, diag_rsp.length, sender, port);
-            if(Trace.trace)
-                Trace.info("UDP.handleDiagnosticProbe()", "sending diag response to " + sender + ":" + port);
+
+                if(log.isInfoEnabled()) log.info("sending diag response to " + sender + ":" + port);
             sock.send(rsp);
         }
         catch(Throwable t) {
-            Trace.error("UDP.handleDiagnosticProbe()", "failed sending diag rsp to " + sender + ":" + port +
+            if(log.isErrorEnabled()) log.error("failed sending diag rsp to " + sender + ":" + port +
                                                        ", exception=" + t);
         }
     }
@@ -316,7 +315,7 @@ public class UDP extends Protocol implements Runnable {
      * Creates the unicast and multicast sockets and starts the unicast and multicast receiver threads
      */
     public void start() throws Exception {
-        if(Trace.trace) Trace.info("UDP.start()", "creating sockets and starting threads");
+         if(log.isInfoEnabled()) log.info("creating sockets and starting threads");
         createSockets();
         passUp(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
         startThreads();
@@ -324,7 +323,7 @@ public class UDP extends Protocol implements Runnable {
 
 
     public void stop() {
-        if(Trace.trace) Trace.info("UDP.stop()", "closing sockets and stopping threads");
+         if(log.isInfoEnabled()) log.info("closing sockets and stopping threads");
         stopThreads();  // will close sockets, closeSockets() is not really needed anymore, but...
         closeSockets(); // ... we'll leave it in there for now (doesn't do anything if already closed)
     }
@@ -355,7 +354,7 @@ public class UDP extends Protocol implements Runnable {
                 bind_addr=InetAddress.getByName(str);
             }
             catch(UnknownHostException unknown) {
-                Trace.fatal("UDP.setProperties()", "(bind_addr): host " + str + " not known");
+                if(log.isFatalEnabled()) log.fatal("(bind_addr): host " + str + " not known");
                 return false;
             }
             props.remove("bind_addr");
@@ -438,8 +437,7 @@ public class UDP extends Protocol implements Runnable {
         if(str != null) {
             use_incoming_packet_handler=new Boolean(str).booleanValue();
             props.remove("use_packet_handler");
-            Trace.warn("UDP.setProperties()",
-                    "'use_packet_handler' is deprecated; use 'use_incoming_packet_handler' instead");
+            if(log.isWarnEnabled()) log.warn("'use_packet_handler' is deprecated; use 'use_incoming_packet_handler' instead");
         }
 
         str=props.getProperty("use_incoming_packet_handler");
@@ -458,12 +456,12 @@ public class UDP extends Protocol implements Runnable {
         if(str != null) {
             int bundle_size=Integer.parseInt(str);
             if(bundle_size > max_bundle_size) {
-                Trace.error("UDP.setProperties()", "max_bundle_size (" + bundle_size +
+                if(log.isErrorEnabled()) log.error("max_bundle_size (" + bundle_size +
                         ") is greater than largest UDP fragmentation size (" + max_bundle_size + ")");
                 return false;
             }
             if(bundle_size <= 0) {
-                Trace.error("UDP.setProperties()", "max_bundle_size (" + bundle_size + ") is <= 0");
+                if(log.isErrorEnabled()) log.error("max_bundle_size (" + bundle_size + ") is <= 0");
                 return false;
             }
             max_bundle_size=bundle_size;
@@ -474,7 +472,7 @@ public class UDP extends Protocol implements Runnable {
         if(str != null) {
             max_bundle_timeout=Long.parseLong(str);
             if(max_bundle_timeout <= 0) {
-                Trace.error("UDP.setProperties()", "max_bundle_timeout of " + max_bundle_timeout + " is invalid");
+                if(log.isErrorEnabled()) log.error("max_bundle_timeout of " + max_bundle_timeout + " is invalid");
                 return false;
             }
             props.remove("max_bundle_timeout");
@@ -494,7 +492,7 @@ public class UDP extends Protocol implements Runnable {
 
         if(enable_bundling) {
             if(use_outgoing_packet_handler == false)
-                Trace.warn("UDP.setProperties()", "enable_bundling is true; setting use_outgoing_packet_handler=true");
+                if(log.isWarnEnabled()) log.warn("enable_bundling is true; setting use_outgoing_packet_handler=true");
             use_outgoing_packet_handler=true;
         }
 
@@ -522,7 +520,7 @@ public class UDP extends Protocol implements Runnable {
 
             case Event.CONFIG:
                 passUp(evt);
-                if(Trace.trace) Trace.info("UDP.up()", "received CONFIG event: " + evt.getArg());
+                 if(log.isInfoEnabled()) log.info("received CONFIG event: " + evt.getArg());
                 handleConfigEvent((HashMap)evt.getArg());
                 return;
         }
@@ -559,8 +557,8 @@ public class UDP extends Protocol implements Runnable {
             long total_time=stop-start;
             double msgs_per_msec=num_msgs / (double)total_time;
 
-            if(Trace.trace)
-                Trace.info("UDP.down.profile()",
+
+                if(log.isInfoEnabled()) log.info("UDP.down.profile()",
                         "total_time=" + total_time + ", msgs/ms=" + msgs_per_msec);
             num_msgs=0;
         }
@@ -587,7 +585,7 @@ public class UDP extends Protocol implements Runnable {
         if(dest_addr == null) { // 'null' means send to all group members
             if(ip_mcast) {
                 if(mcast_addr == null) {
-                    Trace.error("UDP.down()", "dest address of message is null, and " +
+                    if(log.isErrorEnabled()) log.error("dest address of message is null, and " +
                                               "sending to default address fails as mcast_addr is null, too !" +
                                               " Discarding message " + Util.printEvent(evt));
                     return;
@@ -606,7 +604,7 @@ public class UDP extends Protocol implements Runnable {
             sendUdpMessage(msg);
         }
         catch(Exception e) {
-            Trace.error("UDP.down()", "exception=" + e + ", msg=" + msg + ", mcast_addr=" + mcast_addr);
+            if(log.isErrorEnabled()) log.error("exception=" + e + ", msg=" + msg + ", mcast_addr=" + mcast_addr);
         }
     }
 
@@ -659,7 +657,7 @@ public class UDP extends Protocol implements Runnable {
                         handleMessage(msg);
                     }
                     catch(Throwable t) {
-                        Trace.error("UDP.handleIncomingUdpPacket()", "failure: " + t.toString());
+                        if(log.isErrorEnabled()) log.error("failure: " + t.toString());
                     }
                 }
             }
@@ -670,7 +668,7 @@ public class UDP extends Protocol implements Runnable {
             }
         }
         catch(Throwable e) {
-            Trace.error("UDP.handleIncomingUdpPacket()", "exception=" + Trace.getStackTrace(e));
+            if(log.isErrorEnabled()) log.error("exception=" + Util.getStackTrace(e));
         }
     }
 
@@ -685,15 +683,15 @@ public class UDP extends Protocol implements Runnable {
             Address src=msg.getSrc();
 
             if(dst != null && dst.isMulticastAddress() && src != null && local_addr.equals(src)) {
-                if(Trace.debug)
-                    Trace.info("UDP.handleMessage()", "discarded own loopback multicast packet");
+                if(log.isTraceEnabled())
+                    log.trace("discarded own loopback multicast packet");
                 return;
             }
         }
 
         evt=new Event(Event.MSG, msg);
-        if(Trace.debug)
-            Trace.info("UDP.handleMessage()", "message is " + msg + ", headers are " + msg.getHeaders());
+        if(log.isTraceEnabled())
+            log.trace("message is " + msg + ", headers are " + msg.getHeaders());
 
         /* Because Protocol.up() is never called by this bottommost layer, we call up() directly in the observer.
         * This allows e.g. PerfObserver to get the time of reception of a message */
@@ -713,14 +711,14 @@ public class UDP extends Protocol implements Runnable {
             // message is a diagnosis message (special group name DIAG_GROUP)
             if(ch_name != null && group_addr != null && !group_addr.equals(ch_name) &&
                     !ch_name.equals(Util.DIAG_GROUP)) {
-                if(Trace.trace)
-                    Trace.warn("UDP.handleMessage()", "discarded message from different group (" +
+
+                    if(log.isWarnEnabled()) log.warn("discarded message from different group (" +
                             ch_name + "). Sender was " + msg.getSrc());
                 return;
             }
         }
         else {
-            Trace.error("UDP.handleMessage()", "message does not have a UDP header");
+            if(log.isErrorEnabled()) log.error("message does not have a UDP header");
         }
         passUp(evt);
     }
@@ -735,9 +733,8 @@ public class UDP extends Protocol implements Runnable {
         dest=(IpAddress)msg.getDest();  // guaranteed not to be null
         setSourceAddress(msg);
 
-        if(Trace.debug)
-            Trace.debug("UDP.sendUdpMessage()",
-                        "sending message to " + msg.getDest() +
+        if(log.isTraceEnabled())
+            log.trace("sending message to " + msg.getDest() +
                         " (src=" + msg.getSrc() + "), headers are " + msg.getHeaders());
 
         // Don't send if destination is local address. Instead, switch dst and src and put in up_queue.
@@ -754,7 +751,7 @@ public class UDP extends Protocol implements Runnable {
                This allows e.g. PerfObserver to get the time of reception of a message */
             if(observer != null)
                 observer.up(evt, up_queue.size());
-            if(Trace.debug) Trace.info("UDP.sendUdpMessage()", "looped back local message " + copy);
+            if(log.isTraceEnabled()) log.trace("looped back local message " + copy);
             passUp(evt);
             if(!dest.isMulticastAddress())
                 return;
@@ -796,7 +793,7 @@ public class UDP extends Protocol implements Runnable {
                 sendUdpMessage(msg);
             }
             catch(Exception e) {
-                Trace.debug("UDP.sendMultipleUdpMessages()", "exception=" + e);
+                if(log.isDebugEnabled()) log.debug("exception=" + e);
             }
         }
     }
@@ -840,8 +837,8 @@ public class UDP extends Protocol implements Runnable {
         if(bind_addr == null)
             bind_addr=InetAddress.getLocalHost();
 
-        if(bind_addr != null && Trace.trace)
-            Trace.info("UDP.createSockets()", "unicast sockets will use interface " +
+        if(bind_addr != null)
+            if(log.isInfoEnabled()) log.info("unicast sockets will use interface " +
                                               bind_addr.getHostAddress());
 
 
@@ -891,8 +888,8 @@ public class UDP extends Protocol implements Runnable {
 
         setBufferSizes();
 
-        if(Trace.trace)
-            Trace.info("UDP.createSockets()", "socket information:\n" + dumpSocketInfo());
+
+            if(log.isInfoEnabled()) log.info("socket information:\n" + dumpSocketInfo());
     }
 
 
@@ -926,13 +923,13 @@ public class UDP extends Protocol implements Runnable {
                 sock.setSendBufferSize(ucast_send_buf_size);
             }
             catch(Throwable ex) {
-                Trace.warn("UDP.setBufferSizes()", "failed setting ucast_send_buf_size in sock: " + ex);
+                if(log.isWarnEnabled()) log.warn("failed setting ucast_send_buf_size in sock: " + ex);
             }
             try {
                 sock.setReceiveBufferSize(ucast_recv_buf_size);
             }
             catch(Throwable ex) {
-                Trace.warn("UDP.setBufferSizes()", "failed setting ucast_recv_buf_size in sock: " + ex);
+                if(log.isWarnEnabled()) log.warn("failed setting ucast_recv_buf_size in sock: " + ex);
             }
 
         }
@@ -942,14 +939,14 @@ public class UDP extends Protocol implements Runnable {
                 mcast_sock.setSendBufferSize(mcast_send_buf_size);
             }
             catch(Throwable ex) {
-                Trace.warn("UDP.setBufferSizes()", "failed setting mcast_send_buf_size in mcast_sock: " + ex);
+                if(log.isWarnEnabled()) log.warn("failed setting mcast_send_buf_size in mcast_sock: " + ex);
             }
 
             try {
                 mcast_sock.setReceiveBufferSize(mcast_recv_buf_size);
             }
             catch(Throwable ex) {
-                Trace.warn("UDP.setBufferSizes()", "failed setting mcast_recv_buf_size in mcast_sock: " + ex);
+                if(log.isWarnEnabled()) log.warn("failed setting mcast_recv_buf_size in mcast_sock: " + ex);
             }
         }
     }
@@ -978,7 +975,7 @@ public class UDP extends Protocol implements Runnable {
                 }
                 mcast_sock.close(); // this will cause the mcast receiver thread to break out of its loop
                 mcast_sock=null;
-                if(Trace.trace) Trace.info("UDP.closeMulticastSocket()", "multicast socket closed");
+                 if(log.isInfoEnabled()) log.info("multicast socket closed");
             }
             catch(IOException ex) {
             }
@@ -994,7 +991,7 @@ public class UDP extends Protocol implements Runnable {
 
             sock.close();
             sock=null;
-            if(Trace.trace) Trace.info("UDP.closeSocket()", "socket closed");
+             if(log.isInfoEnabled()) log.info("socket closed");
         }
     }
 
@@ -1020,10 +1017,10 @@ public class UDP extends Protocol implements Runnable {
             }
         }
 
-        if(Trace.debug) Trace.info("UDP.sendDummyPacket()", "sending packet to " + dest + ":" + port);
+        if(log.isTraceEnabled()) log.trace("sending packet to " + dest + ":" + port);
 
         if(sock == null || dest == null) {
-            Trace.warn("UDP.sendDummyPacket()", "sock was null or dest was null, cannot send dummy packet");
+            if(log.isWarnEnabled()) log.warn("sock was null or dest was null, cannot send dummy packet");
             return;
         }
         packet=new DatagramPacket(buf, buf.length, dest, port);
@@ -1031,7 +1028,7 @@ public class UDP extends Protocol implements Runnable {
             sock.send(packet);
         }
         catch(Throwable e) {
-            Trace.error("UDP.sendDummyPacket()", "exception sending dummy packet to " + dest + ":" + port + ": " + e);
+            if(log.isErrorEnabled()) log.error("exception sending dummy packet to " + dest + ":" + port + ": " + e);
         }
     }
 
@@ -1044,15 +1041,14 @@ public class UDP extends Protocol implements Runnable {
             //start the listener thread of the ucast_recv_sock
             ucast_receiver=new UcastReceiver();
             ucast_receiver.start();
-            if(Trace.trace) Trace.info("UDP.startThreads()", "created unicast receiver thread");
+             if(log.isInfoEnabled()) log.info("created unicast receiver thread");
         }
 
         if(ip_mcast) {
             if(mcast_receiver != null) {
                 if(mcast_receiver.isAlive()) {
-                    if(Trace.trace)
-                        Trace.info("UDP.createThreads()",
-                                   "did not create new multicastreceiver thread as existing " +
+
+                        if(log.isInfoEnabled()) log.info("did not create new multicastreceiver thread as existing " +
                                    "multicast receiver thread is still running");
                 }
                 else
@@ -1140,7 +1136,7 @@ public class UDP extends Protocol implements Runnable {
                 break;
 
             case Event.CONFIG:
-                if(Trace.trace) Trace.info("UDP.down()", "received CONFIG event: " + evt.getArg());
+                 if(log.isInfoEnabled()) log.info("received CONFIG event: " + evt.getArg());
                 handleConfigEvent((HashMap)evt.getArg());
                 break;
         }
@@ -1211,21 +1207,20 @@ public class UDP extends Protocol implements Runnable {
                     len=packet.getLength();
                     data=packet.getData();
                     if(len == 1 && data[0] == 0) {
-                        if(Trace.debug) Trace.info("UDP.UcastReceiver.run()", "received dummy packet");
+                        if(log.isTraceEnabled()) log.trace("received dummy packet");
                         continue;
                     }
-                    if(Trace.debug)
-                        Trace.info("UDP.UcastReceiver.run()", "received (ucast) " + len + " bytes from " +
+                    if(log.isTraceEnabled())
+                        log.trace("received (ucast) " + len + " bytes from " +
                                 packet.getAddress() + ":" + packet.getPort());
                     if(len > receive_buf.length) {
-                        Trace.error("UDP.UcastReceiver.run()", "size of the received packet (" + len + ") is bigger than " +
+                        if(log.isErrorEnabled()) log.error("size of the received packet (" + len + ") is bigger than " +
                                                                "allocated buffer (" + receive_buf.length + "): will not be able to handle packet. " +
                                                                "Use the FRAG protocol and make its frag_size lower than " + receive_buf.length);
                     }
 
                     if(Version.compareTo(data) == false) {
-                        Trace.warn("UDP.UcastReceiver.run()",
-                                   "packet from " + packet.getAddress() + ":" + packet.getPort() +
+                        if(log.isWarnEnabled()) log.warn("packet from " + packet.getAddress() + ":" + packet.getPort() +
                                    " has different version (" +
                                    Version.printVersionId(data, Version.version_id.length) +
                                    ") from ours (" + Version.printVersionId(Version.version_id) +
@@ -1241,21 +1236,20 @@ public class UDP extends Protocol implements Runnable {
                         handleIncomingUdpPacket(data);
                 }
                 catch(SocketException sock_ex) {
-                    if(Trace.trace)
-                        Trace.info("UDP.UcastReceiver.run()",
-                                   "unicast receiver socket is closed, exception=" + sock_ex);
+
+                        if(log.isInfoEnabled()) log.info("unicast receiver socket is closed, exception=" + sock_ex);
                     break;
                 }
                 catch(InterruptedIOException io_ex) { // thread was interrupted
                     ; // go back to top of loop, where we will terminate loop
                 }
                 catch(Throwable ex) {
-                    Trace.error("UDP.UcastReceiver.run()", "[" + local_addr + "] exception=" + ex +
+                    if(log.isErrorEnabled()) log.error("[" + local_addr + "] exception=" + ex +
                                                            ", stack trace=" + Util.printStackTrace(ex));
                     Util.sleep(300); // so we don't get into 100% cpu spinning (should NEVER happen !)
                 }
             }
-            if(Trace.trace) Trace.info("UDP.UcastReceiver.run()", "unicast receiver thread terminated");
+             if(log.isInfoEnabled()) log.info("unicast receiver thread terminated");
         }
     }
 
@@ -1274,7 +1268,7 @@ public class UDP extends Protocol implements Runnable {
                     data=(byte[])incoming_queue.remove();
                 }
                 catch(QueueClosedException closed_ex) {
-                    if(Trace.trace) Trace.info("UDP.IncomingPacketHandler.run()", "packet_handler thread terminating");
+                     if(log.isInfoEnabled()) log.info("packet_handler thread terminating");
                     break;
                 }
                 handleIncomingUdpPacket(data);
@@ -1319,11 +1313,11 @@ public class UDP extends Protocol implements Runnable {
                     handleMessage(msg);
                 }
                 catch(QueueClosedException closed_ex) {
-                    if(Trace.trace) Trace.info("UDP.OutgoingPacketHandler.run()", "packet_handler thread terminating");
+                     if(log.isInfoEnabled()) log.info("packet_handler thread terminating");
                     break;
                 }
                 catch(Throwable t) {
-                    Trace.error("UDP.OutgoingPacketHandler.run()", "exception sending packet: " + Util.printStackTrace(t));
+                    if(log.isErrorEnabled()) log.error("exception sending packet: " + Util.printStackTrace(t));
                 }
                 msg=null; // let's give the poor garbage collector a hand...
             }
@@ -1416,8 +1410,8 @@ public class UDP extends Protocol implements Runnable {
                         "Set the fragmentation/bundle size in FRAG and UDP correctly");
 
             if(total_bytes + len >= max_bundle_size) {
-                if(Trace.trace) {
-                    Trace.info("UDP.BundlingOutgoingPacketHandler.handleMessage()", "sending " + total_bytes + " bytes");
+                 {
+                    if(log.isInfoEnabled()) log.info("sending " + total_bytes + " bytes");
                 }
                 bundleAndSend(); // send all pending message and clear table
                 total_bytes=0;
@@ -1447,8 +1441,8 @@ public class UDP extends Protocol implements Runnable {
             byte[]               data;
             List                 l;
 
-            if(Trace.trace)
-                Trace.info("UDP.BundlingOutgoingPacketHandler.bundleAndSend()", "\nsending msgs:\n" + dumpMessages(msgs));
+
+                if(log.isInfoEnabled()) log.info("\nsending msgs:\n" + dumpMessages(msgs));
 
             synchronized(msgs) {
                 stopTimer();
@@ -1475,8 +1469,7 @@ public class UDP extends Protocol implements Runnable {
                         doSend(data, addr, port);
                     }
                     catch(IOException e) {
-                        Trace.error("UDP.BundlingOutgoingPacketHandle.bundleAndSend()",
-                                "exception sending msg (to dest=" + dest + "): " + e);
+                        if(log.isErrorEnabled()) log.error("exception sending msg (to dest=" + dest + "): " + e);
                     }
                 }
                 msgs.clear();

@@ -1,9 +1,8 @@
-// $Id: PIGGYBACK.java,v 1.3 2004/02/26 19:15:00 belaban Exp $
+// $Id: PIGGYBACK.java,v 1.4 2004/03/30 06:47:21 belaban Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.*;
-import org.jgroups.log.Trace;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Queue;
 import org.jgroups.util.QueueClosedException;
@@ -89,16 +88,16 @@ public class PIGGYBACK extends Protocol {
                         new_msg.putHeader(getName(), new PiggybackHeader());
                         new_msg.setBuffer(Util.objectToByteBuffer(msgs));
                         passDown(new Event(Event.MSG, new_msg));
-                        if(Trace.trace)
-                            Trace.info("PIGGYBACK.run()", "combined " + msgs.size() +
+
+                            if(log.isInfoEnabled()) log.info("combined " + msgs.size() +
                                     " messages of a total size of " + current_size + " bytes");
                     }
                     catch(Exception e) {
-                        Trace.warn("PIGGYBACK.run()", "exception is " + e);
+                        if(log.isWarnEnabled()) log.warn("exception is " + e);
                     }
                 }
                 catch(QueueClosedException closed) {
-                    if(Trace.trace) Trace.info("PIGGYBACK.run()", "packer stopped as queue is closed");
+                     if(log.isInfoEnabled()) log.info("packer stopped as queue is closed");
                     break;
                 }
             }
@@ -168,12 +167,12 @@ public class PIGGYBACK extends Protocol {
                 msg.removeHeader(getName());
                 try {
                     messages=(Vector)msg.getObject();
-                    if(Trace.trace) Trace.info("PIGGYBACK.up()", "unpacking " + messages.size() + " messages");
+                     if(log.isInfoEnabled()) log.info("unpacking " + messages.size() + " messages");
                     for(int i=0; i < messages.size(); i++)
                         passUp(new Event(Event.MSG, messages.elementAt(i)));
                 }
                 catch(Exception e) {
-                    Trace.warn("PIGGYBACK.up()", "piggyback message does not contain a vector of " +
+                    if(log.isWarnEnabled()) log.warn("piggyback message does not contain a vector of " +
                             "piggybacked messages, discarding message ! Exception is " + e);
                     return;
                 }

@@ -1,10 +1,9 @@
-// $Id: NAKACK.java,v 1.3 2004/01/08 02:39:56 belaban Exp $
+// $Id: NAKACK.java,v 1.4 2004/03/30 06:47:21 belaban Exp $
 
 package org.jgroups.protocols;
 
 
 import org.jgroups.*;
-import org.jgroups.log.Trace;
 import org.jgroups.stack.*;
 import org.jgroups.util.List;
 import org.jgroups.util.TimeScheduler;
@@ -96,7 +95,7 @@ public class NAKACK extends Protocol {
     public void init() throws Exception {
         timer=stack != null? stack.timer : null;
         if(timer == null)
-            Trace.error("NAKACK.init()", "timer is null");
+            if(log.isErrorEnabled()) log.error("timer is null");
         naker=new NAKer();
         out_of_bander=new OutOfBander();
     }
@@ -141,8 +140,8 @@ public class NAKACK extends Protocol {
         switch(evt.getType()) {
 
             case Event.SUSPECT:
-                if(Trace.trace)
-                    Trace.info("NAKACK.up()", "received SUSPECT event (suspected member=" + evt.getArg() + ")");
+
+                    if(log.isInfoEnabled()) log.info("received SUSPECT event (suspected member=" + evt.getArg() + ")");
                 naker.suspect((Address)evt.getArg());
                 out_of_bander.suspect((Address)evt.getArg());
                 break;
@@ -170,7 +169,7 @@ public class NAKACK extends Protocol {
                         Message ack_msg=new Message(hdr.sender, null, null);
                         NakAckHeader h=new NakAckHeader(NakAckHeader.NAK_ACK_RSP, hdr.seqno, null);
                         if(hdr.sender == null)
-                            Trace.warn("NAKACK.up()", "WRAPPED: header's 'sender' field is null; " +
+                            if(log.isWarnEnabled()) log.warn("WRAPPED: header's 'sender' field is null; " +
                                     "cannot send ACK !");
                         ack_msg.putHeader(getName(), h);
                         passDown(new Event(Event.MSG, ack_msg));
@@ -210,28 +209,28 @@ public class NAKACK extends Protocol {
                                 Address my_addr=vid.getCoordAddress(), other_addr=hdr.vid.getCoordAddress();
 
                                 if(my_addr == null || other_addr == null) {
-                                    Trace.warn("NAKACK.up()", "my vid or message's vid does not contain " +
+                                    if(log.isWarnEnabled()) log.warn("my vid or message's vid does not contain " +
                                             "a coordinator; discarding message !");
                                     return;
                                 }
                                 if(!my_addr.equals(other_addr)) {
-                                    Trace.warn("NAKACK.up()", "creator of own vid (" + my_addr + ")is different from " +
+                                    if(log.isWarnEnabled()) log.warn("creator of own vid (" + my_addr + ")is different from " +
                                             "creator of message's vid (" + other_addr + "); discarding message !");
                                     return;
                                 }
 
                                 rc=hdr.vid.compareTo(vid);
                                 if(rc > 0) {           // message is sent in next view -> store !
-                                    if(Trace.trace)
-                                        Trace.info("NAKACK.up()", "message's vid (" + hdr.vid + "#" + hdr.seqno +
+
+                                        if(log.isInfoEnabled()) log.info("message's vid (" + hdr.vid + "#" + hdr.seqno +
                                                 ") is bigger than current vid: (" + vid + ") message is queued !");
                                     msg.putHeader(getName(), hdr);  // put header back on as we removed it above
                                     queued_msgs.add(msg);
                                     return;
                                 }
                                 if(rc < 0) {      // message sent in prev. view -> discard !
-                                    if(Trace.trace)
-                                        Trace.warn("NAKACK.up()", "message's vid (" + hdr.vid + ") is smaller than " +
+
+                                        if(log.isWarnEnabled()) log.warn("message's vid (" + hdr.vid + ") is smaller than " +
                                                 "current vid (" + vid + "): message <" + msg.getSrc() + ":#" +
                                                 hdr.seqno + "> is discarded ! Hdr is " + hdr);
                                     return;
@@ -262,7 +261,7 @@ public class NAKACK extends Protocol {
                             return;
 
                         default:
-                            Trace.error("NAKACK.up()", "NakAck header type " + hdr.type + " not known !");
+                            if(log.isErrorEnabled()) log.error("NakAck header type " + hdr.type + " not known !");
                             break;
                     }
                 } //end synchronized
@@ -281,8 +280,8 @@ public class NAKACK extends Protocol {
     public void down(Event evt) {
         Message msg;
 
-        if(Trace.debug)
-            Trace.debug("NAKACK.down()", "queued_msgs has " + queued_msgs.size() + " messages " +
+        if(log.isTraceEnabled())
+            log.trace("queued_msgs has " + queued_msgs.size() + " messages " +
                     "\n\nnaker:\n" + naker.dumpContents() + "\n\nout_of_bander: " +
                     out_of_bander.dumpContents() + "\n-----------------------------\n");
 
@@ -396,7 +395,7 @@ public class NAKACK extends Protocol {
             m1=(Message)v.elementAt(i);
             h1=m1 != null? (NakAckHeader)m1.getHeader(getName()) : null;
             if(m1 == null || h1 == null) { // +++ remove
-                Trace.error("NAKACK.rebroadcastMsgs()", "message is null");
+                if(log.isErrorEnabled()) log.error("message is null");
                 continue;
             }
 
@@ -404,7 +403,7 @@ public class NAKACK extends Protocol {
                 m2=(Message)final_v.elementAt(j);
                 h2=m2 != null? (NakAckHeader)m2.getHeader(getName()) : null;
                 if(m2 == null || h2 == null) { // +++ remove
-                    Trace.error("NAKACK.rebroadcastMsgs()", "message m2 is null");
+                    if(log.isErrorEnabled()) log.error("message m2 is null");
                     continue;
                 }
                 if(h1.seqno == h2.seqno && m1.getSrc().equals(m2.getSrc())) {
@@ -414,8 +413,8 @@ public class NAKACK extends Protocol {
             if(!present) final_v.addElement(m1);
         }
 
-        if(Trace.trace)
-            Trace.warn("NAKACK.rebroadcastMsgs()", "rebroadcasting " + final_v.size() + " messages");
+
+            if(log.isWarnEnabled()) log.warn("rebroadcasting " + final_v.size() + " messages");
 
         /* Now re-broadcast messages using original NakAckHeader (same seqnos, same sender !) */
         for(int i=0; i < final_v.size(); i++) {
@@ -524,8 +523,8 @@ public class NAKACK extends Protocol {
                     long prevSeqno=seqno - 1;
 
                     if(prevSeqno == last_xmitted_seqno) {
-                        if(Trace.trace)
-                            Trace.info("NAKACK.NAKer.run()", "prevSeqno=" + prevSeqno + ", last_xmitted_seqno=" +
+
+                            if(log.isInfoEnabled()) log.info("prevSeqno=" + prevSeqno + ", last_xmitted_seqno=" +
                                     last_xmitted_seqno + ", num_times=" + num_times);
                         if(--num_times <= 0)
                             return;
@@ -536,8 +535,8 @@ public class NAKACK extends Protocol {
                     }
 
                     if((prevSeqno >= 0) && (prevSeqno > deleted_up_to)) {
-                        if(Trace.trace)
-                            Trace.info("NAKACK.NAKer.run()", "retransmitting last message " + prevSeqno);
+
+                            if(log.isInfoEnabled()) log.info("retransmitting last message " + prevSeqno);
                         retransmit(null, prevSeqno, prevSeqno);
                     }
                 }
@@ -550,7 +549,7 @@ public class NAKACK extends Protocol {
             if(timer != null)
                 timer.add(last_msg_xmitter, true); // fixed-rate scheduling
             else
-                Trace.error("NAKACK.NAKer.NAKer()", "timer is null");
+                if(log.isErrorEnabled()) log.error("timer is null");
         }
 
 
@@ -628,16 +627,14 @@ public class NAKACK extends Protocol {
             long highest_seqno_sent=-1, highest_seqno_received=-1;
 
             if(digest == null) {
-                if(Trace.trace)
-                    Trace.warn("NAKACK.NAKer.computeMessageDigest()",
-                            "highest_seqnos is null, cannot compute digest !");
+
+                    if(log.isWarnEnabled()) log.warn("highest_seqnos is null, cannot compute digest !");
                 return null;
             }
 
             if(highest_seqnos.length != members.size()) {
-                if(Trace.trace)
-                    Trace.warn("NAKACK.NAKer.computeMessageDigest()",
-                            "the mbrship size and the size " +
+
+                    if(log.isWarnEnabled()) log.warn("the mbrship size and the size " +
                             "of the highest_seqnos array are not equal, cannot compute digest !");
                 return null;
             }
@@ -662,8 +659,8 @@ public class NAKACK extends Protocol {
 
             own_index=members.indexOf(local_addr);
             if(own_index == -1) {
-                if(Trace.trace)
-                    Trace.warn("NAKACK.computeMessageDigest()", "no own address in highest_seqnos");
+
+                    if(log.isWarnEnabled()) log.warn("no own address in highest_seqnos");
                 return digest;
             }
             highest_seqno_received=digest.highest_seqnos[own_index];
@@ -725,19 +722,19 @@ public class NAKACK extends Protocol {
             Address sender;
 
             if(members == null || local_addr == null) {
-                if(Trace.trace) Trace.warn("NAKACK.NAKer.stable()", "members or local_addr are null !");
+                 if(log.isWarnEnabled()) log.warn("members or local_addr are null !");
                 return;
             }
             index=members.indexOf(local_addr);
 
             if(index < 0) {
-                if(Trace.trace)
-                    Trace.warn("NAKACK.NAKer.stable()", "member " + local_addr + " not found in " + members);
+
+                    if(log.isWarnEnabled()) log.warn("member " + local_addr + " not found in " + members);
                 return;
             }
             seqno=seqnos[index];
-            if(Trace.trace)
-                Trace.info("NAKACK.stable()", "deleting stable messages [" +
+
+                if(log.isInfoEnabled()) log.info("deleting stable messages [" +
                         deleted_up_to + " - " + seqno + "]");
 
             // delete sent messages that are stable (kept for retransmission requests from receivers)
@@ -772,7 +769,7 @@ public class NAKACK extends Protocol {
             else
                 msg.putHeader(getName(), new NakAckHeader(NakAckHeader.NAK_MSG, id, vid_copy));
 
-            if(Trace.trace) Trace.info("NAKACK.NAKer.send()", "sending msg #" + id);
+             if(log.isInfoEnabled()) log.info("sending msg #" + id);
 
             sent_msgs.put(new Long(id), msg.copy());
             passDown(new Event(Event.MSG, msg));
@@ -818,7 +815,7 @@ public class NAKACK extends Protocol {
             wrapped_hdr.sender=local_addr;
             copy.putHeader(WRAPPED_MSG_KEY, wrapped_hdr);
             sender_win.add(id, copy.copy(), (Vector)members.clone());
-            if(Trace.trace) Trace.info("NAKACK.NAKer.resend()", "resending " + copy.getHeader(getName()));
+             if(log.isInfoEnabled()) log.info("resending " + copy.getHeader(getName()));
             passDown(new Event(Event.MSG, copy));
         }
 
@@ -839,7 +836,7 @@ public class NAKACK extends Protocol {
                 received_msgs.put(sender, win);
             }
 
-            if(Trace.trace) Trace.info("NAKACK.NAKer.receive()", "received <" + sender + "#" + id + ">");
+             if(log.isInfoEnabled()) log.info("received <" + sender + "#" + id + ">");
 
             win.add(id, msg);  // add in order, then remove and pass up as many msgs as possible
             while(true) {
@@ -855,9 +852,8 @@ public class NAKACK extends Protocol {
 
 
         void receiveAck(long id, Address sender) {
-            if(Trace.trace)
-                Trace.info("NAKACK.NAKer.receiveAck()",
-                        "received ack <-- ACK <" + sender + "#" + id + ">");
+
+                if(log.isInfoEnabled()) log.info("received ack <-- ACK <" + sender + "#" + id + ">");
             sender_win.ack(id, sender);
         }
 
@@ -868,18 +864,16 @@ public class NAKACK extends Protocol {
          * a copy, so does not need to be copied again.
          */
         public void retransmit(long seqno, Message msg, Address dest) {
-            if(Trace.trace)
-                Trace.info("NAKACK.NAKer.retransmit()",
-                        "retransmitting message " + seqno + " to " + dest +
+
+                if(log.isInfoEnabled()) log.info("retransmitting message " + seqno + " to " + dest +
                         ", header is " + msg.getHeader(getName()));
 
             // check whether dest is member of group. If not, discard retransmission message and
             // also remove it from sender_win (AckMcastSenderWindow)
             if(members != null) {
                 if(!members.contains(dest)) {
-                    if(Trace.trace)
-                        Trace.info("NAKACK.NAKer.retransmit()",
-                                "retransmitting " + seqno + ") to " + dest + ": " + dest +
+
+                        if(log.isInfoEnabled()) log.info("retransmitting " + seqno + ") to " + dest + ": " + dest +
                                 " is not a member; discarding retransmission and removing " +
                                 dest + " from sender_win");
                     sender_win.remove(dest);
@@ -898,9 +892,8 @@ public class NAKACK extends Protocol {
          * to originator of msg
          */
         public void retransmit(long first_seqno, long last_seqno, Address sender) {
-            if(Trace.trace)
-                Trace.info("NAKACK.NAKer.retransmit()",
-                        "retransmit([" + first_seqno + ", " + last_seqno +
+
+                if(log.isInfoEnabled()) log.info("retransmit([" + first_seqno + ", " + last_seqno +
                         "]) to " + sender + ", vid=" + vid);
 
             NakAckHeader hdr=new NakAckHeader(NakAckHeader.RETRANSMIT_MSG, first_seqno, (ViewId)vid.clone()); /** todo Not necessary to clone vid */
@@ -919,7 +912,7 @@ public class NAKACK extends Protocol {
             for(long i=first_seqno; i <= last_seqno; i++) {
                 m=(Message)sent_msgs.get(new Long(i));
                 if(m == null) {
-                    Trace.warn("NAKACK.NAKer.retransmit()", "(to " + dest + "): message with " + "seqno=" + i + " not found !");
+                    if(log.isWarnEnabled()) log.warn("(to " + dest + "): message with " + "seqno=" + i + " not found !");
                     continue;
                 }
 
@@ -930,7 +923,7 @@ public class NAKACK extends Protocol {
                     passDown(new Event(Event.MSG, retr_msg));
                 }
                 catch(Exception e) {
-                    Trace.debug("NAKACK.NAKer.retransmit()", "exception is " + e);
+                    if(log.isDebugEnabled()) log.debug("exception is " + e);
                 }
             }
         }
@@ -1008,7 +1001,7 @@ public class NAKACK extends Protocol {
             Vector stable_msgs=sender_win.getStableMessages();
             NakAckHeader hdr;
 
-            if(Trace.trace) Trace.info("NAKACK.OutOfBander.send()", "sending msg #=" + id);
+             if(log.isInfoEnabled()) log.info("sending msg #=" + id);
 
             hdr=new NakAckHeader(NakAckHeader.OUT_OF_BAND_MSG, id, null);
             hdr.stable_msgs=stable_msgs;
@@ -1030,13 +1023,13 @@ public class NAKACK extends Protocol {
             ack_msg.putHeader(getName(), hdr);
 
 
-            if(Trace.trace) Trace.info("NAKACK.OutOfBander.receive()", "received <" + sender + "#" + id + ">\n");
+             if(log.isInfoEnabled()) log.info("received <" + sender + "#" + id + ">\n");
 
             if(receiver_win.add(sender, id))         // not received previously
                 passUp(new Event(Event.MSG, msg));
 
             passDown(new Event(Event.MSG, ack_msg));  // send ACK
-            if(Trace.trace) Trace.info("NAKACKER.OutOfBander.receive()", "sending ack <" + sender + "#" + id + ">\n");
+             if(log.isInfoEnabled()) log.info("sending ack <" + sender + "#" + id + ">\n");
 
             if(stable_msgs != null)
                 receiver_win.remove(sender, stable_msgs);
@@ -1044,7 +1037,7 @@ public class NAKACK extends Protocol {
 
 
         void receiveAck(long id, Address sender) {
-            if(Trace.trace) Trace.info("NAKACK.OutOfBander.receiveAck()", "received ack <" + sender + "#" + id + ">");
+             if(log.isInfoEnabled()) log.info("received ack <" + sender + "#" + id + ">");
             sender_win.ack(id, sender);
         }
 
@@ -1055,7 +1048,7 @@ public class NAKACK extends Protocol {
          * no header needs to be added ! The message is retransmitted as <em>unicast</em> !
          */
         public void retransmit(long seqno, Message msg, Address dest) {
-            if(Trace.trace) Trace.info("NAKACK.OutOfBander.retransmit()", "dest=" + dest + ", msg #" + seqno);
+             if(log.isInfoEnabled()) log.info("dest=" + dest + ", msg #" + seqno);
             msg.setDest(dest);
             passDown(new Event(Event.MSG, msg));
         }

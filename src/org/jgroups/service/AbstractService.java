@@ -1,10 +1,11 @@
 package org.jgroups.service;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
-import org.jgroups.blocks.*;
-import org.jgroups.log.Trace;
+import org.jgroups.blocks.PullPushAdapter;
 
-import java.util.*;
+import java.util.LinkedList;
 
 /**
  * <code>AbstractService</code> is a superclass for all service implementations.
@@ -39,6 +40,9 @@ public abstract class AbstractService implements MembershipListener {
     protected Object threadMonitor = new Object();
     protected boolean runThread;
 
+    protected Log log=LogFactory.getLog(this.getClass());
+
+
     /**
      * Main constructor to create services. It creates instance of service
      * class, registers {@link PullPushAdapter} for inter-service channel and
@@ -62,7 +66,7 @@ public abstract class AbstractService implements MembershipListener {
             serviceChannel.getState(null, 1000);
         }
         catch(Exception ex) {
-            Trace.error("AbstractService.AbstractService()", "exception fetching state: " + ex);
+            if(log.isErrorEnabled()) log.error("exception fetching state: " + ex);
         }
         
 	}

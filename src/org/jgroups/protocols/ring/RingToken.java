@@ -1,6 +1,8 @@
-//$Id: RingToken.java,v 1.1 2003/09/09 01:24:11 belaban Exp $
+//$Id: RingToken.java,v 1.2 2004/03/30 06:47:20 belaban Exp $
 
 package org.jgroups.protocols.ring;
+
+import org.jgroups.Address;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -8,7 +10,6 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.TreeSet;
-import org.jgroups.Address;
 
 
 public class RingToken implements Externalizable

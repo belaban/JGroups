@@ -1,13 +1,13 @@
 
-// $Id: Version.java,v 1.3 2004/03/09 03:56:52 belaban Exp $
+// $Id: Version.java,v 1.4 2004/03/30 06:47:29 belaban Exp $
 
 package org.jgroups;
 
 
 public class Version {
-    public static String version="2.2.2";
-    public static byte[] version_id={'0', '2', '2', '2'};
-    public static String cvs="$Id: Version.java,v 1.3 2004/03/09 03:56:52 belaban Exp $";
+    public static String version="2.2.3";
+    public static byte[] version_id={'0', '2', '2', '3'};
+    public static String cvs="$Id: Version.java,v 1.4 2004/03/30 06:47:29 belaban Exp $";
 
 
     public static void main(String[] args) {

@@ -1,12 +1,11 @@
-// $Id: ViewDemo.java,v 1.2 2003/09/24 23:20:47 belaban Exp $
+// $Id: ViewDemo.java,v 1.3 2004/03/30 06:47:16 belaban Exp $
 
 package org.jgroups.demos;
 
 
 import org.jgroups.*;
-import org.jgroups.blocks.*;
-import org.jgroups.util.*;
-import org.jgroups.log.Trace;
+import org.jgroups.blocks.PullPushAdapter;
+import org.jgroups.util.Util;
 
 
 
@@ -41,7 +40,7 @@ public class ViewDemo implements MembershipListener {
 
 
     public void start(String props) throws Exception {
-	Trace.init();
+
 	channel=new JChannel(props);
 	channel.connect("ViewDemo");
 	channel.setOpt(Channel.VIEW, Boolean.TRUE);

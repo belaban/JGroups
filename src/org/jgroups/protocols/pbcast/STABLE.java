@@ -1,10 +1,9 @@
-// $Id: STABLE.java,v 1.2 2004/02/26 19:15:00 belaban Exp $
+// $Id: STABLE.java,v 1.3 2004/03/30 06:47:18 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
 
 import org.jgroups.*;
-import org.jgroups.log.Trace;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Promise;
 import org.jgroups.util.TimeScheduler;
@@ -146,12 +145,11 @@ public class STABLE extends Protocol {
                 if(max_bytes > 0) {  // message counting is enabled
                     long size=Math.max(msg.getLength(), 24);
                     num_bytes_received+=size;
-                    if(Trace.debug)
-                        Trace.info("STABLE.up()", "received message of " + size +
-                                " bytes, total bytes received=" + num_bytes_received);
+                    if(log.isTraceEnabled())
+                        log.trace("received message of " + size + " bytes, total bytes received=" + num_bytes_received);
                     if(num_bytes_received >= max_bytes) {
-                        if(Trace.trace)
-                            Trace.info("STABLE.up()", "max_bytes has been exceeded (max_bytes=" + max_bytes +
+
+                            if(log.isInfoEnabled()) log.info("max_bytes has been exceeded (max_bytes=" + max_bytes +
                                     ", number of bytes received=" + num_bytes_received + "): sending STABLE message");
 
                         new Thread() {
@@ -176,7 +174,7 @@ public class STABLE extends Protocol {
                         handleStabilityMessage(hdr.digest);
                         break;
                     default:
-                        Trace.error("STABLE.up()", "StableHeader type " + hdr.type + " not known");
+                        if(log.isErrorEnabled()) log.error("StableHeader type " + hdr.type + " not known");
                 }
                 return;  // don't pass STABLE or STABILITY messages up the stack
 
@@ -261,8 +259,8 @@ public class STABLE extends Protocol {
         }
         stable_task=new StableTask();
         timer.add(stable_task, true); // fixed-rate scheduling
-        if(Trace.trace)
-            Trace.info("STABLE.startStableTask()", "stable task started; num_gossip_runs=" + num_gossip_runs +
+
+            if(log.isInfoEnabled()) log.info("stable task started; num_gossip_runs=" + num_gossip_runs +
                     ", max_gossip_runs=" + max_gossip_runs);
     }
 
@@ -289,18 +287,18 @@ public class STABLE extends Protocol {
         long highest_seen_seqno, my_highest_seen_seqno;
 
         if(d == null || sender == null) {
-            if(Trace.trace)
-                Trace.error("STABLE.handleStableGossip()", "digest or sender is null");
+
+                if(log.isErrorEnabled()) log.error("digest or sender is null");
             return;
         }
 
-        if(Trace.trace)
-            Trace.info("STABLE.handleStableGossip()", "received digest " + printStabilityDigest(d) +
+
+            if(log.isInfoEnabled()) log.info("received digest " + printStabilityDigest(d) +
                     " from " + sender);
 
         if(!heard_from.contains(sender)) {  // already received gossip from sender; discard it
-            if(Trace.trace)
-                Trace.info("STABLE.handleStableGossip()", "already received gossip from " + sender);
+
+                if(log.isInfoEnabled()) log.info("already received gossip from " + sender);
             return;
         }
 
@@ -309,8 +307,8 @@ public class STABLE extends Protocol {
             highest_seqno=d.highSeqnoAt(i);
             highest_seen_seqno=d.highSeqnoSeenAt(i);
             if(digest.getIndex(mbr) == -1) {
-                if(Trace.trace)
-                    Trace.info("STABLE.handleStableGossip()", "sender " + mbr + " not found in stability vector");
+
+                    if(log.isInfoEnabled()) log.info("sender " + mbr + " not found in stability vector");
                 continue;
             }
 
@@ -337,8 +335,8 @@ public class STABLE extends Protocol {
 
         heard_from.removeElement(sender);
         if(heard_from.size() == 0) {
-            if(Trace.trace)
-                Trace.info("STABLE.handleStableGossip()", "sending stability msg " + printStabilityDigest(digest));
+
+                if(log.isInfoEnabled()) log.info("sending stability msg " + printStabilityDigest(digest));
             sendStabilityMessage(digest.copy());
             initialize();
         }
@@ -356,8 +354,8 @@ public class STABLE extends Protocol {
 
         d=getDigest();
         if(d != null && d.size() > 0) {
-            if(Trace.trace)
-                Trace.info("STABLE.sendStableMessage()", "mcasting digest " + d +
+
+                if(log.isInfoEnabled()) log.info("mcasting digest " + d +
                         " (num_gossip_runs=" + num_gossip_runs + ", max_gossip_runs=" + max_gossip_runs + ")");
             hdr=new StableHeader(StableHeader.STABLE_GOSSIP, d);
             msg.putHeader(getName(), hdr);
@@ -372,7 +370,7 @@ public class STABLE extends Protocol {
         passDown(new Event(Event.GET_DIGEST_STABLE));
         ret=(Digest)digest_promise.getResult(digest_timeout);
         if(ret == null)
-            Trace.error("STABLE.getDigest()", "digest could not be fetched from below " +
+            if(log.isErrorEnabled()) log.error("digest could not be fetched from below " +
                     "(timeout was " + digest_timeout + " msecs)");
         return ret;
     }
@@ -392,8 +390,8 @@ public class STABLE extends Protocol {
         long delay;
 
         if(timer == null) {
-            if(Trace.trace)
-                Trace.error("STABLE.sendStabilityMessage()", "timer is null, cannot schedule " +
+
+                if(log.isErrorEnabled()) log.error("timer is null, cannot schedule " +
                         "stability message to be sent");
             timer=stack != null ? stack.timer : null;
             return;
@@ -403,8 +401,8 @@ public class STABLE extends Protocol {
         // our random sleep, we will not send the STABILITY msg. this prevents that all mbrs mcast a
         // STABILITY msg at the same time
         delay=Util.random(stability_delay);
-        if(Trace.trace)
-            Trace.info("STABLE.sendStabilityMessage()", "stability_task=" + stability_task +
+
+            if(log.isInfoEnabled()) log.info("stability_task=" + stability_task +
                     ", delay is " + delay);
         synchronized(stability_mutex) {
             if(stability_task != null && !stability_task.cancelled())  // schedule only if not yet running
@@ -417,18 +415,18 @@ public class STABLE extends Protocol {
 
     void handleStabilityMessage(Digest d) {
         if(d == null) {
-            if(Trace.trace)
-                Trace.error("STABLE.handleStabilityMessage()", "stability vector is null");
+
+                if(log.isErrorEnabled()) log.error("stability vector is null");
             return;
         }
 
-        if(Trace.trace)
-            Trace.info("STABLE.handleStabilityMessage()", "stability vector is " + d.printHighSeqnos());
+
+            if(log.isInfoEnabled()) log.info("stability vector is " + d.printHighSeqnos());
 
         synchronized(stability_mutex) {
             if(stability_task != null) {
-                if(Trace.trace)
-                    Trace.info("STABLE.handleStabilityMessage()", "cancelling stability task (running=" +
+
+                    if(log.isInfoEnabled()) log.info("cancelling stability task (running=" +
                             !stability_task.cancelled() + ")");
                 stability_task.stop();
                 stability_task=null;
@@ -554,8 +552,8 @@ public class STABLE extends Protocol {
             sendStableMessage();
             num_gossip_runs--;
             if(num_gossip_runs <= 0) {
-                if(Trace.trace)
-                    Trace.info("STABLE.StableTask.run()", "stable task terminating (num_gossip_runs=" +
+
+                    if(log.isInfoEnabled()) log.info("stable task terminating (num_gossip_runs=" +
                             num_gossip_runs + ", max_gossip_runs=" + max_gossip_runs + ")");
                 stop();
             }

@@ -1,10 +1,15 @@
-// $Id: InterruptTest.java,v 1.1 2003/09/09 01:24:13 belaban Exp $
+// $Id: InterruptTest.java,v 1.2 2004/03/30 06:47:31 belaban Exp $
 
 package org.jgroups.tests;
 
 
-import java.net.*;
-import junit.framework.*;
+import junit.framework.Test;
+import junit.framework.TestCase;
+import junit.framework.TestSuite;
+
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 
 
 

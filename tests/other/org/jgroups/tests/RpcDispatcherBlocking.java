@@ -1,11 +1,12 @@
-// $Id: RpcDispatcherBlocking.java,v 1.1 2003/09/09 01:24:13 belaban Exp $
+// $Id: RpcDispatcherBlocking.java,v 1.2 2004/03/30 06:47:34 belaban Exp $
 
 package org.jgroups.tests;
 
 import org.jgroups.*;
-import org.jgroups.log.*;
-import org.jgroups.blocks.*;
-import org.jgroups.util.*;
+import org.jgroups.blocks.GroupRequest;
+import org.jgroups.blocks.RpcDispatcher;
+import org.jgroups.util.RspList;
+import org.jgroups.util.Util;
 
 
 
@@ -93,7 +94,8 @@ public class RpcDispatcherBlocking implements MembershipListener {
 
 
     RspList sendGroupRpc() throws Exception {
-        return disp.callRemoteMethods(null, "print", new Integer(i++), GroupRequest.GET_ALL, 0);
+        return disp.callRemoteMethods(null, "print", new Object[]{new Integer(i++)}, new Class[] {Integer.class},
+                GroupRequest.GET_ALL, 0);
     }
 
 
@@ -114,7 +116,7 @@ public class RpcDispatcherBlocking implements MembershipListener {
             return;
         }
         
-        Trace.init();
+
 
         try {
             new RpcDispatcherBlocking(props, timeout).start();

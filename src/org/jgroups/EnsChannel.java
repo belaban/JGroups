@@ -1,13 +1,15 @@
-// $Id: EnsChannel.java,v 1.3 2004/01/16 16:47:51 belaban Exp $
+// $Id: EnsChannel.java,v 1.4 2004/03/30 06:47:29 belaban Exp $
 
 package org.jgroups;
 
-import java.io.Serializable;
-import java.util.Vector;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jgroups.ensemble.*;
 import org.jgroups.util.Queue;
 import org.jgroups.util.QueueClosedException;
-import org.jgroups.log.Trace;
+
+import java.io.Serializable;
+import java.util.Vector;
 
 
 
@@ -40,6 +42,8 @@ public class EnsChannel extends Channel implements Hot_Callbacks {
     private boolean             receive_suspects=true;
     private boolean             receive_blocks=false;
     private boolean             receive_local_msgs=true;
+
+    protected Log log=LogFactory.getLog(this.getClass());
 
 
     private void checkConnection() throws ChannelNotConnectedException {
@@ -140,19 +144,19 @@ public class EnsChannel extends Channel implements Hot_Callbacks {
 	options.group_name=channel_name;
 	
 	if(channel_id != null) {
-	    Trace.error("EnsChannel.join()", "already connected to " + channel_name);
+	    if(log.isErrorEnabled()) log.error("already connected to " + channel_name);
 	    return;
 	}
 
 	if(ensemble == null || ens_thread == null) {
-	    Trace.error("EnsChannel.connect()", "Ensemble has not been started");
+	    if(log.isErrorEnabled()) log.error("Ensemble has not been started");
 	    return;
 	}
 
 
 	rc=ensemble.join(options, tmp);
 	if(rc != null) {
-	    Trace.error("EnsChannel.connect()", rc.toString());
+	    if(log.isErrorEnabled()) log.error(rc.toString());
 	    return;
 	}
 	channel_id=tmp[0];
@@ -165,12 +169,12 @@ public class EnsChannel extends Channel implements Hot_Callbacks {
     public void disconnect() {
 	Hot_Error rc;
 	if(channel_id == null) {
-	    Trace.error("EnsChannel.disconnect()", "cannot disconnect as channel id is null");
+	    if(log.isErrorEnabled()) log.error("cannot disconnect as channel id is null");
 	    return;
 	}
 	rc=ensemble.leave(channel_id);	
 	if(rc != null)
-	    Trace.error("EnsChannel.disconnect()", "rc=" + rc);
+	    if(log.isErrorEnabled()) log.error("rc=" + rc);
 	channel_id=null;
 	if(channel_listener != null)
 	    channel_listener.channelDisconnected(this);
@@ -189,7 +193,7 @@ public class EnsChannel extends Channel implements Hot_Callbacks {
 		Thread.sleep(500);
 	    }
 	    catch(Exception e) {
-		Trace.error("EnsChannel.close()", "exception=" + e);
+		if(log.isErrorEnabled()) log.error("exception=" + e);
 	    }
 	    ensemble.destroyOutboard();
 	    ensemble=null;
@@ -197,7 +201,7 @@ public class EnsChannel extends Channel implements Hot_Callbacks {
 		mq.close(false);
 	    }
 	    catch(Exception e) {
-		Trace.error("EnsChannel.close()", "exception=" + e);
+		if(log.isErrorEnabled()) log.error("exception=" + e);
 	    }
 	    mq.reset();
 	    if(channel_listener != null)
@@ -238,7 +242,7 @@ public class EnsChannel extends Channel implements Hot_Callbacks {
 
 	rc=ensemble.cast(channel_id, m, tmp);
 	if(rc != null)
-	    Trace.error("EnsChannel.cast()", "rc=" + rc);
+	    if(log.isErrorEnabled()) log.error("rc=" + rc);
     }
 
 
@@ -252,7 +256,7 @@ public class EnsChannel extends Channel implements Hot_Callbacks {
 	checkClosed();
 
 	if(dest_addr == null) {
-	    Trace.error("EnsChannel.send()", "destination is null");
+	    if(log.isErrorEnabled()) log.error("destination is null");
 	    return;
 	}
 	dest=(Hot_Endpoint)dest_addr;
@@ -260,7 +264,7 @@ public class EnsChannel extends Channel implements Hot_Callbacks {
 
 	rc=ensemble.send(channel_id, dest, m, tmp);
 	if(rc != null)
-	    Trace.error("EnsChannel.send()", "rc=" + rc);
+	    if(log.isErrorEnabled()) log.error("rc=" + rc);
     }
 
 
@@ -281,12 +285,12 @@ public class EnsChannel extends Channel implements Hot_Callbacks {
 	else if(dest instanceof Hot_Endpoint)
 	    rc=ensemble.send(channel_id, (Hot_Endpoint)dest, m, tmp);
 	else {
-	    Trace.error("EnsChannel.send()", "dest address is wrong (" + dest + ")");
+	    if(log.isErrorEnabled()) log.error("dest address is wrong (" + dest + ")");
 	    return;
 	}
 
 	if(rc != null)
-	    Trace.error("EnsChannel.send()", "rc=" + rc);
+	    if(log.isErrorEnabled()) log.error("rc=" + rc);
     }
 
 
@@ -322,7 +326,7 @@ public class EnsChannel extends Channel implements Hot_Callbacks {
 	    case Event.BLOCK:
 		return new BlockEvent();
 	    default:
-		Trace.error("EnsChannel.receive()", "event is neither message nor view nor block");
+		if(log.isErrorEnabled()) log.error("event is neither message nor view nor block");
 		return null;
 	    }
 	}
@@ -330,11 +334,11 @@ public class EnsChannel extends Channel implements Hot_Callbacks {
 	    throw tex;
 	}
 	catch(QueueClosedException queue_closed) {
-	    Trace.error("EnsChannel.receive()", "exception=" + queue_closed);
+	    if(log.isErrorEnabled()) log.error("exception=" + queue_closed);
 	    throw new ChannelNotConnectedException();
 	}
 	catch(Exception e) {
-	    Trace.error("EnsChannel.receive()", "exception=" + e);
+	    if(log.isErrorEnabled()) log.error("exception=" + e);
 	    return null;
 	}
     }
@@ -366,7 +370,7 @@ public class EnsChannel extends Channel implements Hot_Callbacks {
 	    case Event.BLOCK:
 		return new BlockEvent();
 	    default:
-		Trace.error("EnsChannel.peek()", "event is neither message nor view nor block");
+		if(log.isErrorEnabled()) log.error("event is neither message nor view nor block");
 		return null;
 	    }
 	}
@@ -374,11 +378,11 @@ public class EnsChannel extends Channel implements Hot_Callbacks {
 	    throw tex;
 	}
 	catch(QueueClosedException queue_closed) {
-	    Trace.error("EnsChannel.peek()", "exception=" + queue_closed);
+	    if(log.isErrorEnabled()) log.error("exception=" + queue_closed);
 	    throw new ChannelNotConnectedException();
 	}
 	catch(Exception e) {
-	    Trace.error("EnsChannel.peek()", "exception=" + e);
+	    if(log.isErrorEnabled()) log.error("exception=" + e);
 	    return null;
 	}
     }
@@ -401,21 +405,21 @@ public class EnsChannel extends Channel implements Hot_Callbacks {
 	    if(value instanceof Boolean)
 		receive_views=((Boolean)value).booleanValue();
 	    else
-		Trace.error("EnsChannel.setOpt()", "(" + option + ", " + value + "): value has " +
+		if(log.isErrorEnabled()) log.error("(" + option + ", " + value + "): value has " +
 			    "to be Boolean");
 	    break;
 	case SUSPECT:
 	    if(value instanceof Boolean)
 		receive_suspects=((Boolean)value).booleanValue();
 	    else
-		Trace.error("EnsChannel.setOpt()", "(" + option + ", " + value + "): value has " +
+		if(log.isErrorEnabled()) log.error("(" + option + ", " + value + "): value has " +
 			    "to be Boolean");
 	    break;
 	case BLOCK:
 	    if(value instanceof Boolean)
 		receive_blocks=((Boolean)value).booleanValue();
 	    else
-		Trace.error("EnsChannel.setOpt()", "(" + option + ", " + value + "): value has " +
+		if(log.isErrorEnabled()) log.error("(" + option + ", " + value + "): value has " +
 			    "to be Boolean");
 	    if(receive_blocks)
 		receive_views=true;
@@ -425,11 +429,11 @@ public class EnsChannel extends Channel implements Hot_Callbacks {
 	    if(value instanceof Boolean)
 		receive_local_msgs=((Boolean)value).booleanValue();
 	    else
-		Trace.error("EnsChannel.setOpt()", "(" + option + ", " + value + "): value has " +
+		if(log.isErrorEnabled()) log.error("(" + option + ", " + value + "): value has " +
 			    "to be Boolean");
 	    break;
 	default:
-	    Trace.error("EnsChannel.setOpt()", "(" + option + ", " + value + "): option not known");
+	    if(log.isErrorEnabled()) log.error("(" + option + ", " + value + "): option not known");
 	    break;
 	}
     }
@@ -447,7 +451,7 @@ public class EnsChannel extends Channel implements Hot_Callbacks {
 	case LOCAL:
 	    return new Boolean(receive_local_msgs);
 	default:
-	    Trace.error("EnsChannel.getOpt()", "(" + option + "): option not known");
+	    if(log.isErrorEnabled()) log.error("(" + option + "): option not known");
 	    return null;
 	}
     }
@@ -486,7 +490,7 @@ public class EnsChannel extends Channel implements Hot_Callbacks {
 	Message             m=(Message)tmp.getObject();
 
 	if(m == null) {
-	    Trace.warn("EnsChannel.receiveCast()", "received message that is " +
+	    if(log.isWarnEnabled()) log.warn("received message that is " +
 		       "not of type Message. Discarding.");
 	    return;
 	}
@@ -503,7 +507,7 @@ public class EnsChannel extends Channel implements Hot_Callbacks {
 	    mq.add(new Event(Event.MSG, m));
 	}
 	catch(Exception e) {
-	    Trace.error("EnsChannel.receiveCast()", "exception=" + e);
+	    if(log.isErrorEnabled()) log.error("exception=" + e);
 	}
     }
 
@@ -525,7 +529,7 @@ public class EnsChannel extends Channel implements Hot_Callbacks {
 
 	if(my_addr == null && viewState.members != null && viewState.nmembers == 1) {
 	    my_addr=viewState.members[0];
-	    Trace.info("EnsChannel.acceptedView()", "my address is " + my_addr);
+	    if(log.isInfoEnabled()) log.info("my address is " + my_addr);
 	}
 
 	for(int i=0; i < viewState.members.length; i++)
@@ -543,7 +547,7 @@ public class EnsChannel extends Channel implements Hot_Callbacks {
 	    mq.add(new Event(Event.VIEW_CHANGE, v));
 	}
 	catch(Exception e) {
-	    Trace.error("EnsChannel.acceptedView()", "exception=" + e);
+	    if(log.isErrorEnabled()) log.error("exception=" + e);
 	}
     }
 
@@ -559,13 +563,13 @@ public class EnsChannel extends Channel implements Hot_Callbacks {
 	    mq.add(new Event(Event.BLOCK));
 	}
 	catch(Exception e) {
-	    Trace.error("EnsChannel.block()", "exception=" + e);
+	    if(log.isErrorEnabled()) log.error("exception=" + e);
 	}
     }
 
 
     public void exit(Hot_GroupContext gctx, Object env) {
-	Trace.info("EnsChannel.exit()", "received EXIT message !");
+	if(log.isInfoEnabled()) log.info("received EXIT message !");
     }
 
 

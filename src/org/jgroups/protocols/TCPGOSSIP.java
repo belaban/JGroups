@@ -1,9 +1,11 @@
-// $Id: TCPGOSSIP.java,v 1.1 2003/09/09 01:24:10 belaban Exp $
+// $Id: TCPGOSSIP.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
 
 package org.jgroups.protocols;
 
-import org.jgroups.*;
-import org.jgroups.log.Trace;
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Message;
+import org.jgroups.View;
 import org.jgroups.stack.GossipClient;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
@@ -86,7 +88,7 @@ public class TCPGOSSIP extends Protocol {
         }
 
         if(initial_hosts == null || initial_hosts.size() == 0) {
-            Trace.error("TCPGOSSIP.setProperties()", "initial_hosts must contain the address of at least one GossipServer");
+            if(log.isErrorEnabled()) log.error("initial_hosts must contain the address of at least one GossipServer");
             return false;
         }
 
@@ -144,7 +146,7 @@ public class TCPGOSSIP extends Protocol {
                         return;
 
                     default:
-                        Trace.warn("TCPGOSSIP.up()", "got TCPGOSSIP header with unknown type (" + hdr.type + ")");
+                        if(log.isWarnEnabled()) log.warn("got TCPGOSSIP header with unknown type (" + hdr.type + ")");
                         return;
                 }
 
@@ -154,12 +156,12 @@ public class TCPGOSSIP extends Protocol {
                 //passUp(evt);
 
                 if(group_addr == null || local_addr == null) {
-                    Trace.error("TCPGOSSIP.up()", "[CONNECT_OK]: group_addr or local_addr is null. " +
+                    if(log.isErrorEnabled()) log.error("[CONNECT_OK]: group_addr or local_addr is null. " +
                                                   "cannot register with GossipServer(s)");
                 }
                 else {
-                    if(Trace.trace)
-                        Trace.info("TCPGOSSIP.up()", "[CONNECT_OK]: registering " + local_addr +
+
+                        if(log.isInfoEnabled()) log.info("[CONNECT_OK]: registering " + local_addr +
                                                      " under " + group_addr + " with GossipServer");
                     gossip_client.register(group_addr, local_addr);
                 }
@@ -190,17 +192,17 @@ public class TCPGOSSIP extends Protocol {
 
                 initial_members.removeAllElements();
                 if(group_addr == null) {
-                    Trace.error("TCPGOSSIP.down()", "[FIND_INITIAL_MBRS]: group_addr is null, cannot get mbrship");
+                    if(log.isErrorEnabled()) log.error("[FIND_INITIAL_MBRS]: group_addr is null, cannot get mbrship");
                     passUp(new Event(Event.FIND_INITIAL_MBRS_OK, initial_members));
                     break;
                 }
-                if(Trace.trace) Trace.info("TCPGOSSIP.down()", "fetching members from GossipServer(s)");
+                 if(log.isInfoEnabled()) log.info("fetching members from GossipServer(s)");
                 tmp_mbrs=gossip_client.getMembers(group_addr);
                 if(tmp_mbrs == null || tmp_mbrs.size() == 0) {
-                    Trace.error("TCPGOSSIP.down()", "[FIND_INITIAL_MBRS]: gossip client found no members");
+                    if(log.isErrorEnabled()) log.error("[FIND_INITIAL_MBRS]: gossip client found no members");
                     passUp(new Event(Event.FIND_INITIAL_MBRS_OK, initial_members));
                 }
-                if(Trace.trace) Trace.info("TCPGOSSIP.down()", "consolidated mbrs from GossipServer(s) are " + tmp_mbrs);
+                 if(log.isInfoEnabled()) log.info("consolidated mbrs from GossipServer(s) are " + tmp_mbrs);
 
                 // 1. 'Mcast' GET_MBRS_REQ message
                 hdr=new PingHeader(PingHeader.GET_MBRS_REQ, null);
@@ -211,8 +213,8 @@ public class TCPGOSSIP extends Protocol {
                     mbr_addr=(IpAddress) tmp_mbrs.elementAt(i);
                     copy=msg.copy();
                     copy.setDest(mbr_addr);
-                    if(Trace.trace)
-                        Trace.info("TCPGOSSIP.down()", "[FIND_INITIAL_MBRS] sending PING request to " + copy.getDest());
+
+                        if(log.isInfoEnabled()) log.info("[FIND_INITIAL_MBRS] sending PING request to " + copy.getDest());
                     passDown(new Event(Event.MSG, copy));
                 }
 
@@ -232,7 +234,7 @@ public class TCPGOSSIP extends Protocol {
                     }
                 }
 
-                if(Trace.trace) Trace.info("TCPGOSSIP.down()", "[FIND_INITIAL_MBRS] initial members are " + initial_members);
+                 if(log.isInfoEnabled()) log.info("[FIND_INITIAL_MBRS] initial members are " + initial_members);
 
                 // 3. Send response
                 passUp(new Event(Event.FIND_INITIAL_MBRS_OK, initial_members));
@@ -296,7 +298,7 @@ public class TCPGOSSIP extends Protocol {
                 tmp.addElement(addr);
             }
             catch(NumberFormatException e) {
-                Trace.error("TCPGOSSIP.createInitialHosts()", "exeption is " + e);
+                if(log.isErrorEnabled()) log.error("exeption is " + e);
             }
         }
 

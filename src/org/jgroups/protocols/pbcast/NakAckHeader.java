@@ -1,14 +1,14 @@
-// $Id: NakAckHeader.java,v 1.2 2004/02/02 20:14:58 belaban Exp $
+// $Id: NakAckHeader.java,v 1.3 2004/03/30 06:47:18 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
 
+import org.jgroups.Header;
+import org.jgroups.util.Range;
+
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-
-import org.jgroups.*;
-import org.jgroups.util.*;
 
 
 public class NakAckHeader extends Header {

@@ -1,13 +1,13 @@
 package org.jgroups.protocols;
 
-import org.jgroups.stack.Protocol;
 import org.jgroups.*;
+import org.jgroups.stack.Protocol;
 
-import java.util.Properties;
-import java.util.Vector;
-import java.io.ObjectOutput;
 import java.io.IOException;
 import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Properties;
+import java.util.Vector;
 
 /**
  * The coordinator attaches a small header to each (or every nth) message. If another coordinator <em>in the

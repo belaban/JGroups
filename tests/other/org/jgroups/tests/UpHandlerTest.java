@@ -1,11 +1,11 @@
-// $Id: UpHandlerTest.java,v 1.1 2003/09/09 01:24:13 belaban Exp $
+// $Id: UpHandlerTest.java,v 1.2 2004/03/30 06:47:34 belaban Exp $
 
 
 package org.jgroups.tests;
 
 
 import org.jgroups.*;
-import org.jgroups.util.*;
+import org.jgroups.util.Util;
 
 
 

@@ -1,13 +1,16 @@
-// $Id: AckSenderWindowTest.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+// $Id: AckSenderWindowTest.java,v 1.2 2004/03/30 06:47:31 belaban Exp $
 package org.jgroups.tests;
 
 
 
-import java.util.HashMap;
-import junit.framework.*;
-import org.jgroups.*;
-import org.jgroups.stack.*;
+import junit.framework.Test;
+import junit.framework.TestCase;
+import junit.framework.TestSuite;
+import org.jgroups.Message;
+import org.jgroups.stack.AckSenderWindow;
 import org.jgroups.util.Util;
+
+import java.util.HashMap;
 
 
 

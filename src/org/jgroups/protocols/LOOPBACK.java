@@ -1,4 +1,4 @@
-// $Id: LOOPBACK.java,v 1.2 2003/09/24 23:19:48 belaban Exp $
+// $Id: LOOPBACK.java,v 1.3 2004/03/30 06:47:21 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -7,7 +7,6 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.View;
-import org.jgroups.log.Trace;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 
@@ -73,8 +72,8 @@ public class LOOPBACK extends Protocol {
         Message msg, rsp;
         Address dest_addr;
 
-        if(Trace.trace)
-            Trace.info("LOOPBACK.down()", "event is " + evt + ", group_addr=" + group_addr +
+
+            if(log.isInfoEnabled()) log.info("event is " + evt + ", group_addr=" + group_addr +
                                           ", time is " + System.currentTimeMillis() + ", hdrs: " + Util.printEvent(evt));
 
 

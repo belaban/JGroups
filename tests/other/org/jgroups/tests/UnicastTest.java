@@ -1,12 +1,12 @@
-// $Id: UnicastTest.java,v 1.1 2003/09/09 01:24:13 belaban Exp $
+// $Id: UnicastTest.java,v 1.2 2004/03/30 06:47:34 belaban Exp $
 
 package org.jgroups.tests;
 
-import java.io.*;
-import java.util.*;
 import org.jgroups.*;
 import org.jgroups.util.Util;
-import org.jgroups.log.Trace;
+
+import java.io.*;
+import java.util.Vector;
 
 
 
@@ -327,7 +327,7 @@ public class UnicastTest implements Runnable {
 	    }
 	}
 
-	Trace.init();
+
 
 	try {
 	    UnicastTest test=new UnicastTest();

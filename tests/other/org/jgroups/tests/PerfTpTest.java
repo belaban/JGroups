@@ -1,14 +1,14 @@
 package org.jgroups.tests;
 
-import org.jgroups.JChannel;
 import org.jgroups.ChannelException;
+import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.protocols.PERF_TP;
 
 /**
  * Test of PERF_TP. Requirement: transport needs to be PERF_TP
  * @author Bela Ban Feb 24, 2004
- * @version $Id: PerfTpTest.java,v 1.1 2004/02/25 02:38:30 belaban Exp $
+ * @version $Id: PerfTpTest.java,v 1.2 2004/03/30 06:47:34 belaban Exp $
  */
 public class PerfTpTest {
     JChannel ch=null;

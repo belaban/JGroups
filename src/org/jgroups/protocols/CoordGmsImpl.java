@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.2 2004/01/08 02:39:56 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.3 2004/03/30 06:47:20 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -8,7 +8,6 @@ import org.jgroups.View;
 import org.jgroups.ViewId;
 import org.jgroups.blocks.GroupRequest;
 import org.jgroups.blocks.MethodCall;
-import org.jgroups.log.Trace;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -74,18 +73,18 @@ public class CoordGmsImpl extends GmsImpl {
         View new_view=null;
         Address other_coord=other_coords != null? (Address)other_coords.elementAt(0) : null;
 
-        if(Trace.trace) Trace.info("CoordGmsImpl.merge()", "other_coord = " + other_coord);
+         if(log.isInfoEnabled()) log.info("other_coord = " + other_coord);
         try {
             MethodCall call=new MethodCall("handleMerge", new Object[]{gms.view_id, gms.members.getMembers()},
                     new String[]{ViewId.class.getName(), Vector.class.getName()});
             new_view=(View)gms.callRemoteMethod(other_coord, call, GroupRequest.GET_ALL, 0);
         }
         catch(Exception ex) {
-            if(Trace.trace) Trace.error("CoordGmsImpl.merge()", "timed out or was suspected");
+             if(log.isErrorEnabled()) log.error("timed out or was suspected");
             return;
         }
         if(new_view == null) {
-            if(Trace.trace) Trace.warn("CoordGmsImpl.merge()", "received a Merge Denied");
+             if(log.isWarnEnabled()) log.warn("received a Merge Denied");
             gms.passDown(new Event(Event.MERGE_DENIED));
             return; //Merge denied
         }
@@ -96,23 +95,23 @@ public class CoordGmsImpl extends GmsImpl {
                 new String[]{ViewId.class.getName(), Vector.class.getName()});
         gms.callRemoteMethods(gms.members.getMembers(), call, GroupRequest.GET_ALL, 0);
         gms.becomeParticipant();
-        if(Trace.trace) Trace.info("CoordGmsImpl.merge()", "merge done");
+         if(log.isInfoEnabled()) log.info("merge done");
     }
 
 
     public synchronized boolean handleJoin(Address mbr) {
         Vector new_mbrs=new Vector();
 
-        if(Trace.trace)
-            Trace.info("CoordGmsImpl.handleJoin()", "received JOIN request from " + mbr);
+
+            if(log.isInfoEnabled()) log.info("received JOIN request from " + mbr);
 
         if(gms.local_addr.equals(mbr)) {
-            Trace.error("CoordGmsImpl.handleJoin()", "cannot join myself !");
+            if(log.isErrorEnabled()) log.error("cannot join myself !");
             return false;
         }
         if(gms.members.contains(mbr)) {
-            if(Trace.trace)
-                Trace.warn("CoordGmsImpl.handleJoin()", "member " + mbr + " already present !");
+
+                if(log.isWarnEnabled()) log.warn("member " + mbr + " already present !");
             return true;  // already joined
         }
 
@@ -129,7 +128,7 @@ public class CoordGmsImpl extends GmsImpl {
     public synchronized void handleLeave(Address mbr, boolean suspected) {
         Vector v=new Vector();  // contains either leaving mbrs or suspected mbrs
         if(!gms.members.contains(mbr)) {
-            if(Trace.trace) Trace.error("CoordGmsImpl.handleLeave()", "mbr " + mbr + " is not a member !");
+             if(log.isErrorEnabled()) log.error("mbr " + mbr + " is not a member !");
             return;
         }
         v.addElement(mbr);
@@ -143,8 +142,7 @@ public class CoordGmsImpl extends GmsImpl {
     public void handleViewChange(ViewId new_view, Vector mbrs) {
         if(leaving) {
             if(mbrs.contains(gms.local_addr)) {
-                Trace.warn("CoordGmsImpl.handleViewChange()",
-                        "received view in which I'm still a member, cannot quit yet");
+                if(log.isWarnEnabled()) log.warn("received view in which I'm still a member, cannot quit yet");
                 gms.installView(new_view, mbrs);  // +++ modify
             }
             else {
@@ -167,9 +165,8 @@ public class CoordGmsImpl extends GmsImpl {
      * becoming a participant.
      */
     public synchronized View handleMerge(ViewId other_vid, Vector other_mbrs) {
-        if(Trace.trace)
-            Trace.info("CoordGmsImpl.handleMerge()",
-                    "other_vid=" + other_vid + " , other_mbrs=" + other_mbrs);
+
+            if(log.isInfoEnabled()) log.info("other_vid=" + other_vid + " , other_mbrs=" + other_mbrs);
 
         //Check that the views are disjoint otherwire return null (means MERGE_DENIED)
         for(Iterator i=other_mbrs.iterator(); i.hasNext();) {
@@ -200,7 +197,7 @@ public class CoordGmsImpl extends GmsImpl {
 
     public void handleSuspect(Address mbr) {
         if(mbr.equals(gms.local_addr)) {
-            Trace.error("CoordGmsImpl.handleSuspect()", "I am the coord and am suspected: am not quitting !");
+            if(log.isErrorEnabled()) log.error("I am the coord and am suspected: am not quitting !");
             return;
         }
         handleLeave(mbr, true); // irregular leave - forced

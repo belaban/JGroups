@@ -1,11 +1,15 @@
 package org.jgroups.blocks;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
-import org.jgroups.log.*;
-import org.jgroups.util.*;
+import org.jgroups.util.Rsp;
+import org.jgroups.util.RspList;
 
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
 
 /**
  * Voting adapter provides a voting functionality for an application. There 
@@ -53,6 +57,8 @@ public class VotingAdapter implements MessageListener, MembershipListener {
 
     private RpcDispatcher rpcDispatcher;
 
+    protected Log log=LogFactory.getLog(getClass());
+
     private HashSet suspectedNodes = new HashSet();
     private boolean blocked = false;
     private boolean closed;
@@ -76,9 +82,8 @@ public class VotingAdapter implements MessageListener, MembershipListener {
         if (closed)
             throw new ChannelException("Channel was closed.");
             
-        if (Trace.debug)
-            Trace.debug("VotingAdapter.vote()", 
-			"Conducting voting on decree " + decree + ", consensus type " +
+
+            if(log.isDebugEnabled()) log.debug("Conducting voting on decree " + decree + ", consensus type " +
 			getConsensusStr(consensusType) + ", timeout " + timeout);
 
         int mode = GroupRequest.GET_ALL;
@@ -97,17 +102,15 @@ public class VotingAdapter implements MessageListener, MembershipListener {
 
             MethodCall methodCall = new MethodCall(method, new Object[] {decree});
 
-            if (Trace.debug)
-                Trace.debug("VotingAdapter.vote()", 
-			    "Calling remote methods...");
+
+                if(log.isDebugEnabled()) log.debug("Calling remote methods...");
     
             // vote
             RspList responses = rpcDispatcher.callRemoteMethods(
 									 null, methodCall, mode, timeout);
                 
-            if (Trace.debug)
-                Trace.debug("VotingAdapter.vote()", 
-			    "Checking responses.");
+
+                if(log.isDebugEnabled()) log.debug("Checking responses.");
 
 
             return processResponses(responses, consensusType);
@@ -116,8 +119,7 @@ public class VotingAdapter implements MessageListener, MembershipListener {
             
             // UPS!!! How can this happen?!
             
-            Trace.error("VotingAdapter.vote()", 
-			"Could not find method localVote(Object). " + 
+            if(log.isErrorEnabled()) log.error("Could not find method localVote(Object). " +
 			nsmex.toString());
 
             throw new UnsupportedOperationException(
@@ -185,9 +187,8 @@ public class VotingAdapter implements MessageListener, MembershipListener {
 
         if (!response.wasReceived()) {
             
-            if (Trace.debug)
-                Trace.debug("VotingAdapter.checkResponse()", 
-			    "Response from node " + response.getSender() + 
+
+                if(log.isDebugEnabled()) log.debug("Response from node " + response.getSender() +
 			    " was not received.");
             
             // what do we do when one node failed to respond?
@@ -199,9 +200,8 @@ public class VotingAdapter implements MessageListener, MembershipListener {
         /**@todo check what to do here */
         if (response.wasSuspected()) {
             
-            if (Trace.debug)
-                Trace.debug("VotingAdapter.checkResponse()", 
-			    "Node " + response.getSender() + " was suspected.");
+
+                if(log.isDebugEnabled()) log.debug("Node " + response.getSender() + " was suspected.");
             
             // wat do we do when one node is suspected?
             return PROCESS_SKIP ;
@@ -232,8 +232,7 @@ public class VotingAdapter implements MessageListener, MembershipListener {
         // what if we received the response from faulty node?
         if (object instanceof FailureVoteResult) {
             
-            Trace.error("VotingAdapter.checkResponse()", 
-			((FailureVoteResult)object).getReason());
+            if(log.isErrorEnabled()) log.error(((FailureVoteResult)object).getReason());
             
             return PROCESS_BREAK;
         }
@@ -352,8 +351,7 @@ public class VotingAdapter implements MessageListener, MembershipListener {
                 // do nothing here.
             } catch(RuntimeException ex) {
                 
-                Trace.error("VotingAdapter.localVote()", 
-			    ex.toString());
+                if(log.isErrorEnabled()) log.error(ex.toString());
                 
                 // if we are here, then listener 
                 // had thrown a RuntimeException
@@ -361,9 +359,8 @@ public class VotingAdapter implements MessageListener, MembershipListener {
             }
         }
 
-        if (Trace.debug)
-            Trace.debug("VotingAdapter.localVote()", 
-			"Voting on decree " + decree.toString() + " : " + 
+
+            if(log.isDebugEnabled()) log.debug("Voting on decree " + decree.toString() + " : " +
 			voteResult.toString());
 
         return voteResult;

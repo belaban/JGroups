@@ -1,10 +1,11 @@
-// $Id: Router.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+// $Id: Router.java,v 1.2 2004/03/30 06:47:27 belaban Exp $
 
 package org.jgroups.stack;
 
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
-import org.jgroups.log.Trace;
 import org.jgroups.util.List;
 import org.jgroups.util.Util;
 
@@ -44,6 +45,7 @@ public class Router {
     int          port=8080;
     ServerSocket srv_sock=null;
     InetAddress  bind_address;
+    protected Log log=LogFactory.getLog(getClass());
 
     public static final int GET=-10;
     public static final int REGISTER=-11;
@@ -74,9 +76,9 @@ public class Router {
 
         if(bind_address == null) bind_address=srv_sock.getInetAddress();
         d=new Date();
-        if(Trace.trace) {
-            Trace.info("Router.start()", "Router started at " + d);
-            Trace.info("Router.start()", "Listening on port " + port + " bound on address " + bind_address + "\n");
+         {
+            if(log.isInfoEnabled()) log.info("Router started at " + d);
+            if(log.isInfoEnabled()) log.info("Listening on port " + port + " bound on address " + bind_address + "\n");
         }
         d=null;
 
@@ -119,12 +121,12 @@ public class Router {
                         new SocketThread(sock, input).start();
                         break;
                     default:
-                        Trace.error("Router.start()", "request of type " + type + " not recognized");
+                        if(log.isErrorEnabled()) log.error("request of type " + type + " not recognized");
                         continue;
                 }
             }
             catch(Exception e) {
-                Trace.error("Router.start()", "exception=" + e);
+                if(log.isErrorEnabled()) log.error("exception=" + e);
                 continue;
             }
         }
@@ -143,7 +145,7 @@ public class Router {
         AddressEntry entry;
         byte[] buf;
 
-        if(Trace.debug) Trace.debug("Router.processGetRequest()", "groupname=" + groupname + ", result=" + grpmbrs);
+        if(log.isTraceEnabled()) log.trace("groupname=" + groupname + ", result=" + grpmbrs);
 
         if(grpmbrs != null && grpmbrs.size() > 0) {
             ret=new List();
@@ -163,7 +165,7 @@ public class Router {
             }
         }
         catch(Exception e) {
-            Trace.error("Router.processGetRequest()", "exception=" + e);
+            if(log.isErrorEnabled()) log.error("exception=" + e);
         }
         finally {
             try {
@@ -182,7 +184,7 @@ public class Router {
      **/
     void processDumpRequest(Address peerAddress, Socket sock, DataOutputStream output) {
 
-        if(Trace.debug) Trace.debug("Router.processDumpRequest()", "request from " + peerAddress);
+        if(log.isTraceEnabled()) log.trace("request from " + peerAddress);
 
         StringBuffer sb=new StringBuffer();
         synchronized(groups) {
@@ -216,8 +218,7 @@ public class Router {
             output.writeUTF(sb.toString());
         }
         catch(Exception e) {
-            Trace.error("Router.processDumpRequest()",
-                        "Error sending the answer back to the client: " + e);
+            if(log.isErrorEnabled()) log.error("Error sending the answer back to the client: " + e);
         }
         finally {
             try {
@@ -226,15 +227,13 @@ public class Router {
                 }
             }
             catch(Exception e) {
-                Trace.error("Router.processDumpRequest()",
-                            "Error closing the output stream: " + e);
+                if(log.isErrorEnabled()) log.error("Error closing the output stream: " + e);
             }
             try {
                 sock.close();
             }
             catch(Exception e) {
-                Trace.error("Router.processDumpRequest()",
-                            "Error closing the socket: " + e);
+                if(log.isErrorEnabled()) log.error("Error closing the socket: " + e);
             }
         }
     }
@@ -243,7 +242,7 @@ public class Router {
 
         if(dest == null) { // send to all members in group dest.getChannelName()
             if(dest_group == null) {
-                Trace.error("Router.route()", "both dest address and group are null");
+                if(log.isErrorEnabled()) log.error("both dest address and group are null");
                 return;
             }
             else {
@@ -255,7 +254,7 @@ public class Router {
             if(out != null)
                 sendToMember(out, msg);
             else
-                Trace.error("Router.route()", "routing of message to " + dest + " failed; outstream is null !");
+                if(log.isErrorEnabled()) log.error("routing of message to " + dest + " failed; outstream is null !");
         }
     }
 
@@ -267,7 +266,7 @@ public class Router {
         // Util.print("addEntry(" + groupname + ", " + e + ")");
 
         if(groupname == null) {
-            Trace.error("Router.addEntry()", "groupname was null, not added !");
+            if(log.isErrorEnabled()) log.error("groupname was null, not added !");
             return;
         }
 
@@ -408,7 +407,7 @@ public class Router {
             }
         }
         catch(Exception e) {
-            Trace.error("Router.sendToMember()", "exception=" + e);
+            if(log.isErrorEnabled()) log.error("exception=" + e);
             removeEntry(out); // closes socket
         }
     }
@@ -499,7 +498,7 @@ public class Router {
 
                     len=input.readInt();
                     if(len == 0) {
-                        Trace.warn("Router.SocketThread.run()", "received null message");
+                        if(log.isWarnEnabled()) log.warn("received null message");
                         continue;
                     }
                     buf=new byte[len];
@@ -507,15 +506,15 @@ public class Router {
                     route(dst_addr, gname, buf);
                 }
                 catch(IOException io_ex) {
-                    if(Trace.trace)
-                        Trace.info("Router.SocketThread.run()", "client " +
+
+                        if(log.isInfoEnabled()) log.info("client " +
                                                                 sock.getInetAddress().getHostName() + ":" + sock.getPort() +
                                                                 " closed connection; removing it from routing table");
                     removeEntry(sock); // will close socket
                     return;
                 }
                 catch(Exception e) {
-                    Trace.error("Router.SocketThread.run()", "exception=" + e);
+                    if(log.isErrorEnabled()) log.error("exception=" + e);
                     break;
                 }
             }
@@ -548,7 +547,7 @@ public class Router {
 
         }
 
-        Trace.init();
+
 
         try {
             if(address == null) router=new Router(port); else router=new Router(port, address);

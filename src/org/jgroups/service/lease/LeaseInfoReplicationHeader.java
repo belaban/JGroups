@@ -1,8 +1,9 @@
 package org.jgroups.service.lease;
 
 import org.jgroups.Header;
-import java.io.ObjectInput;
+
 import java.io.IOException;
+import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
 public class LeaseInfoReplicationHeader extends Header {

@@ -1,10 +1,10 @@
 package org.jgroups.tests.adapt;
 
+import org.apache.log4j.Logger;
 import org.jgroups.Channel;
 import org.jgroups.ChannelClosedException;
 import org.jgroups.ChannelNotConnectedException;
 import org.jgroups.Message;
-import org.apache.log4j.Logger;
 
 /**  Sender thread: inputs into the system a num_busts bursts
  *    of msgs_burst messages composed of msg_size bytes.
@@ -49,7 +49,7 @@ public class SenderThread extends Thread {
                 }
                 if(total_msgs % log_interval == 0) {
                     if(gnuplot_output == false)
-                        log.info(dumpStats(total_msgs));
+                        if(log.isInfoEnabled()) log.info(dumpStats(total_msgs));
                 }
             }
             System.out.println("Sent all messages. Sender terminates.\n");

@@ -1,6 +1,6 @@
 package org.jgroups.blocks;
 
-import org.jgroups.*;
+import org.jgroups.ChannelException;
 
 /**
  * This adapter introduces simple two-phase voting on a specified decree. All

@@ -1,4 +1,4 @@
-// $Id: MessageSerializationTest.java,v 1.1 2003/09/09 01:24:13 belaban Exp $
+// $Id: MessageSerializationTest.java,v 1.2 2004/03/30 06:47:34 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -11,11 +11,11 @@ package org.jgroups.tests;
  * @version 1.0
  */
 import org.jgroups.Message;
-import org.jgroups.stack.IpAddress;
-import java.net.InetAddress;
-import org.jgroups.protocols.*;
-import org.jgroups.log.Trace;
 import org.jgroups.conf.ClassConfigurator;
+import org.jgroups.protocols.*;
+import org.jgroups.stack.IpAddress;
+
+import java.net.InetAddress;
 
 
 public class MessageSerializationTest {
@@ -44,7 +44,7 @@ public class MessageSerializationTest {
 	}
 	
         
-	Trace.init();
+
 	ClassConfigurator.getInstance();
         long start = System.currentTimeMillis();
         for (int i=0; i < num; i++ ) {

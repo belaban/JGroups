@@ -1,11 +1,12 @@
-// $Id: NakReceiverWindow.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+// $Id: NakReceiverWindow.java,v 1.2 2004/03/30 06:47:27 belaban Exp $
 
 
 package org.jgroups.stack;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.Message;
-import org.jgroups.log.Trace;
 import org.jgroups.util.List;
 import org.jgroups.util.RWLock;
 import org.jgroups.util.TimeScheduler;
@@ -112,6 +113,8 @@ public class NakReceiverWindow {
      * protocols do their own retransmission (e.g PBCAST) */
     private Retransmitter retransmitter=null;
 
+    protected static Log log=LogFactory.getLog(NakReceiverWindow.class);
+
 
     /**
      * Creates a new instance with the given retransmit command
@@ -187,17 +190,16 @@ public class NakReceiverWindow {
         try {
             old_tail=tail;
             if(seqno < head) {
-                if(Trace.debug)
-                    Trace.info("NakReceiverWindow.add()", "seqno " + seqno +
-                                                          " is smaller than " + head + "); discarding message");
+                if(log.isTraceEnabled())
+                    log.trace("seqno " + seqno + " is smaller than " + head + "); discarding message");
                 return;
             }
 
             // add at end (regular expected msg)
             if(seqno == tail) {
 
-                //if(Trace.trace)
-                  //  Trace.debug("TRACE.special()", "ADD_NO_GAP: " + seqno + ", sender=" + msg.getSrc());
+                //
+                  //  if(log.isDebugEnabled()) log.debug("TRACE.special()", "ADD_NO_GAP: " + seqno + ", sender=" + msg.getSrc());
 
                 msgs.add(new Entry(seqno, msg));
                 tail++;
@@ -208,8 +210,8 @@ public class NakReceiverWindow {
             // iii. tell retransmitter to retrieve missing msgs
             else if(seqno > tail) {
 
-                //if(Trace.trace)
-                  //  Trace.debug("TRACE.special()", "ADD_GAP [" + tail + " - " + seqno + "]: " +
+                //
+                  //  if(log.isDebugEnabled()) log.debug("TRACE.special()", "ADD_GAP [" + tail + " - " + seqno + "]: " +
                     //        seqno + ", sender=" + msg.getSrc());
 
                 for(long i=tail; i < seqno; i++) {
@@ -226,8 +228,8 @@ public class NakReceiverWindow {
                 // finally received missing message
             }
             else if(seqno < tail) {
-                if(Trace.debug)
-                    Trace.debug("NakReceiverWindow.add()", "added missing msg " + msg.getSrc() + "#" + seqno);
+                if(log.isTraceEnabled())
+                    log.trace("added missing msg " + msg.getSrc() + "#" + seqno);
                 for(Enumeration en=msgs.elements(); en.hasMoreElements();) {
                     current=(Entry)en.nextElement();
                     // overwrite any previous message (e.g. added by down()) and
@@ -244,8 +246,8 @@ public class NakReceiverWindow {
                             //long xmit_diff=xmit_entry == null? -1 : xmit_entry.received - xmit_entry.created;
                             //NAKACK.addXmitResponse(msg.getSrc(), seqno);
 
-                            //if(Trace.trace)
-                              //  Trace.debug("TRACE.special()", "ADD_MISSING: " + msg.getSrc() + "#" + seqno +
+                            //
+                              //  if(log.isDebugEnabled()) log.debug("TRACE.special()", "ADD_MISSING: " + msg.getSrc() + "#" + seqno +
                                 //        " [xmit_diff=" + xmit_diff + "]");
 
                             if(retransmitter != null) retransmitter.remove(seqno);
@@ -412,8 +414,8 @@ public class NakReceiverWindow {
         long my_high;
 
         if(low > high) {
-            if(Trace.trace)
-                Trace.error("NakReceiverWindow.getMissingMessages()", "invalid range: low (" + low +
+
+                if(log.isErrorEnabled()) log.error("invalid range: low (" + low +
                                                                       ") is higher than high (" + high + ")");
             return null;
         }
@@ -542,8 +544,8 @@ public class NakReceiverWindow {
         Entry entry;
 
         if(missing_msgs == null) {
-            if(Trace.trace)
-                Trace.error("NakReceiverWindow.getMessagesInList()", "argument list is null");
+
+                if(log.isErrorEnabled()) log.error("argument list is null");
             return ret;
         }
 

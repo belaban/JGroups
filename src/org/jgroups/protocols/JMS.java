@@ -1,15 +1,20 @@
-// $Id: JMS.java,v 1.2 2004/01/08 15:51:57 belaban Exp $ 
+// $Id: JMS.java,v 1.3 2004/03/30 06:47:21 belaban Exp $ 
 
 package org.jgroups.protocols;
 
-import java.io.*;
-import java.util.*;
-import org.jgroups.*;
-import org.jgroups.log.Trace;
-import org.jgroups.stack.*;
-import org.jgroups.util.*;
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Message;
+import org.jgroups.View;
+import org.jgroups.stack.Protocol;
+import org.jgroups.util.Util;
 
-import javax.naming.*;
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import java.io.*;
+import java.util.Hashtable;
+import java.util.Properties;
+import java.util.Vector;
 
 /**
  * Implementation of the transport protocol using the Java Message Service (JMS).
@@ -171,7 +176,7 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
         String ttl = props.getProperty(TIME_TO_LIVE);
         
         if (ttl == null) {
-            Trace.error("JMS", "ttl property not found.");
+            if(log.isErrorEnabled()) log.error("ttl property not found.");
             return false;
         }
         
@@ -183,7 +188,7 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
             timeToLive = Long.parseLong(ttl);
             
         } catch(NumberFormatException nfex) {
-            Trace.error("JMS", "ttl property does not contain numeric value.");
+            if(log.isErrorEnabled()) log.error("ttl property does not contain numeric value.");
             
             return false;
         }
@@ -212,8 +217,8 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
             if (groupName == null)
                 return;
             
-            if (Trace.trace)
-                Trace.debug("JMS.onMessage()", "Got message for group [" + 
+
+                if(log.isDebugEnabled()) log.debug("Got message for group [" +
                 groupName + "]" + ", my group is [" + group_addr + "]");
 
             // not our message, ignore it
@@ -247,8 +252,8 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
                     
                 Event evt=new Event(Event.MSG, msg);
 
-                if(Trace.trace) // +++ remove
-                    Trace.debug("JMS.onMessage()", "Message is " + msg + 
+                 // +++ remove
+                    if(log.isDebugEnabled()) log.debug("Message is " + msg +
                         ", headers are " + msg.getHeaders ());
 
                 /* Because Protocol.Up() is never called by this bottommost layer,
@@ -261,14 +266,13 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
             }
         } catch(javax.jms.JMSException ex) {
             ex.printStackTrace();
-            Trace.error("JMS.onMessage()", "JMSException : " + ex.toString());
+            if(log.isErrorEnabled()) log.error("JMSException : " + ex.toString());
         } catch(IOException ioex) {
             ioex.printStackTrace();
-            Trace.error("JMS.onMessage()", "IOException : " + ioex.toString());
+            if(log.isErrorEnabled()) log.error("IOException : " + ioex.toString());
         } catch(ClassNotFoundException cnfex) {
                 cnfex.printStackTrace();
-                Trace.error("JMS.onMessage()", 
-                        "ClassNotFoundException : " + cnfex.toString());
+                if(log.isErrorEnabled()) log.error("ClassNotFoundException : " + cnfex.toString());
         }
     }
 
@@ -315,8 +319,8 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
      * @param evt event to process.
      */
     public void down(Event evt) {
-        if (Trace.trace)
-            Trace.info("JMS.Down()", "event is " + evt + ", group_addr=" + 
+
+            if(log.isInfoEnabled()) log.info("event is " + evt + ", group_addr=" +
                 group_addr + ", time=" + System.currentTimeMillis() + 
                 ", hdrs are " + Util.printEvent(evt));
 
@@ -356,8 +360,8 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
             if (msg.getDest() == null)
                     msg.setDest(mcast_addr);
 
-            if(Trace.trace)
-                    Trace.info("JMS.SendMessage()", "msg is " + msg);
+
+                    if(log.isInfoEnabled()) log.info("msg is " + msg);
 
             // convert the message into byte array.
             out_stream.reset();
@@ -390,9 +394,9 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
             publisher.publish(jmsMessage);
                 
         } catch(javax.jms.JMSException ex) {
-                Trace.error("JMS.onMessage()", "JMSException : " + ex.toString());
+                if(log.isErrorEnabled()) log.error("JMSException : " + ex.toString());
         } catch(IOException ioex) {
-                Trace.error("JMS.onMessage()", "IOException : " + ioex.toString());
+                if(log.isErrorEnabled()) log.error("IOException : " + ioex.toString());
         }
     }
 
@@ -469,8 +473,8 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
      * connection and deregisters itself from the message notification.
      */
     public void stop() {
-        if (Trace.trace)
-            Trace.info("JMS.stop()", "finishing JMS transport layer.");
+
+            if(log.isInfoEnabled()) log.info("finishing JMS transport layer.");
 
         try {
             connection.stop();
@@ -479,7 +483,7 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
             connection.close();
         }
         catch(Throwable ex) {
-            Trace.error("JMS.stop()", "exception is " + ex);
+            if(log.isErrorEnabled()) log.error("exception is " + ex);
         }
     }
     

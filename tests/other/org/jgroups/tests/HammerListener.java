@@ -1,12 +1,7 @@
 package org.jgroups.tests;
 
-import org.jgroups.JChannel;
-import org.jgroups.Channel;
+import org.jgroups.*;
 import org.jgroups.blocks.RpcDispatcher;
-import org.jgroups.MembershipListener;
-import org.jgroups.Address;
-import org.jgroups.View;
-import org.jgroups.ChannelListener;
 /*
  * @author Bob Stevenson - HAMMER
  * @author Ananda Bollu - FLOW_CONTROL

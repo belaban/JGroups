@@ -1,15 +1,17 @@
-// $Id: GroupRequestPull.java,v 1.3 2004/01/16 16:47:52 belaban Exp $
+// $Id: GroupRequestPull.java,v 1.4 2004/03/30 06:47:34 belaban Exp $
 
 package org.jgroups.tests;
 
 
-import java.io.*;
-import java.util.Vector;
 import org.jgroups.*;
-import org.jgroups.util.RspList;
-import org.jgroups.log.Trace;
 import org.jgroups.blocks.GroupRequest;
 import org.jgroups.blocks.PullPushAdapter;
+import org.jgroups.util.RspList;
+
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Vector;
 
 
 
@@ -178,7 +180,7 @@ public class GroupRequestPull implements MessageListener, MembershipListener, Tr
 	}
 
 
-	Trace.init();
+
 
 	try {
 	    new GroupRequestPull(props).start();

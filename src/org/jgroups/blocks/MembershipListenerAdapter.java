@@ -1,8 +1,9 @@
 package org.jgroups.blocks;
 
+import org.jgroups.Address;
 import org.jgroups.MembershipListener;
 import org.jgroups.View;
-import org.jgroups.Address;
+
 import java.util.HashSet;
 
 /**

@@ -1,10 +1,9 @@
-// $Id: SIZE.java,v 1.5 2004/02/26 19:15:00 belaban Exp $
+// $Id: SIZE.java,v 1.6 2004/03/30 06:47:21 belaban Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.Event;
 import org.jgroups.Message;
-import org.jgroups.log.Trace;
 import org.jgroups.stack.Protocol;
 
 import java.io.ByteArrayOutputStream;
@@ -77,14 +76,14 @@ public class SIZE extends Protocol {
 
             case Event.MSG:
                 msg=(Message)evt.getArg();
-                if(Trace.trace) {
+                 {
                     if((payload_size=msg.getLength()) > 0) {
                         serialized_size=sizeOf(msg);
                         if(serialized_size > min_size) {
-                            Trace.info("SIZE.up()", "size of message is " + serialized_size +
+                            if(log.isInfoEnabled()) log.info("size of message is " + serialized_size +
                                     ", " + msg.getHeaders().size() + " headers");
                             if(print_msg)
-                                Trace.info("SIZE.up()", "headers are " + msg.getHeaders() +
+                                if(log.isInfoEnabled()) log.info("headers are " + msg.getHeaders() +
                                         ", payload size=" + payload_size);
                         }
                     }
@@ -105,14 +104,14 @@ public class SIZE extends Protocol {
 
             case Event.MSG:
                 msg=(Message)evt.getArg();
-                if(Trace.trace) {
+                 {
                     if((payload_size=msg.getLength()) > 0) {
                         serialized_size=sizeOf(msg);
                         if(serialized_size > min_size) {
-                            Trace.info("SIZE.down()", "size of message is " + serialized_size +
+                            if(log.isInfoEnabled()) log.info("size of message is " + serialized_size +
                                     ", " + msg.getHeaders().size() + " headers");
                             if(print_msg)
-                                Trace.info("SIZE.up()", "headers are " + msg.getHeaders() +
+                                if(log.isInfoEnabled()) log.info("headers are " + msg.getHeaders() +
                                         ", payload size=" + payload_size);
                         }
                     }

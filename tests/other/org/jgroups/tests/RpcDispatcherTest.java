@@ -1,12 +1,15 @@
-// $Id: RpcDispatcherTest.java,v 1.1 2003/09/09 01:24:13 belaban Exp $
+// $Id: RpcDispatcherTest.java,v 1.2 2004/03/30 06:47:34 belaban Exp $
 
 
 package org.jgroups.tests;
 
 
-import org.jgroups.*;
-import org.jgroups.util.*;
-import org.jgroups.blocks.*;
+import org.jgroups.Channel;
+import org.jgroups.JChannel;
+import org.jgroups.blocks.GroupRequest;
+import org.jgroups.blocks.RpcDispatcher;
+import org.jgroups.util.RspList;
+import org.jgroups.util.Util;
 
 
 

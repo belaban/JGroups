@@ -1,10 +1,11 @@
-// $Id: AckReceiverWindow.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+// $Id: AckReceiverWindow.java,v 1.2 2004/03/30 06:47:27 belaban Exp $
 
 package org.jgroups.stack;
 
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jgroups.Message;
-import org.jgroups.log.Trace;
 
 import java.util.HashMap;
 
@@ -20,8 +21,9 @@ import java.util.HashMap;
  * @author Bela Ban
  */
 public class AckReceiverWindow {
-    long      initial_seqno=0, next_to_remove=0;
-    HashMap   msgs=new HashMap();  // keys: seqnos (Long), values: Messages
+    long       initial_seqno=0, next_to_remove=0;
+    HashMap    msgs=new HashMap();  // keys: seqnos (Long), values: Messages
+    static Log log=LogFactory.getLog(AckReceiverWindow.class);
 
 
     public AckReceiverWindow(long initial_seqno) {
@@ -32,8 +34,8 @@ public class AckReceiverWindow {
 
     public void add(long seqno, Message msg) {
 	if(seqno < next_to_remove) {
-	    if(Trace.trace)
-		Trace.warn("AckReceiverWindow.add()", "discarded msg with seqno=" + seqno +
+
+		if(log.isWarnEnabled()) log.warn("discarded msg with seqno=" + seqno +
 			   " (next msg to receive is " + next_to_remove + ")");
 	    return;
 	}

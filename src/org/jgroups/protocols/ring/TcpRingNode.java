@@ -1,6 +1,16 @@
-//$Id: TcpRingNode.java,v 1.1 2003/09/09 01:24:11 belaban Exp $
+//$Id: TcpRingNode.java,v 1.2 2004/03/30 06:47:20 belaban Exp $
 
 package org.jgroups.protocols.ring;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.jgroups.Address;
+import org.jgroups.SuspectedException;
+import org.jgroups.TimeoutException;
+import org.jgroups.blocks.GroupRequest;
+import org.jgroups.stack.IpAddress;
+import org.jgroups.stack.RpcProtocol;
+import org.jgroups.util.Util;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
@@ -9,14 +19,6 @@ import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Vector;
-import org.jgroups.Address;
-import org.jgroups.SuspectedException;
-import org.jgroups.TimeoutException;
-import org.jgroups.blocks.GroupRequest;
-import org.jgroups.log.Trace;
-import org.jgroups.stack.IpAddress;
-import org.jgroups.stack.RpcProtocol;
-import org.jgroups.util.Util;
 
 
 public class TcpRingNode implements RingNode
@@ -31,6 +33,7 @@ public class TcpRingNode implements RingNode
    boolean failedOnTokenLostException = false;
 
    Object socketMutex = new Object();
+    protected Log log=LogFactory.getLog(this.getClass());
 
    public TcpRingNode(RpcProtocol owner, Address memberAddress)
    {
@@ -135,8 +138,8 @@ public class TcpRingNode implements RingNode
          synchronized (socketMutex)
          {
             nextNode = getNextNode(newMembers);
-            if (Trace.trace)
-               Trace.info("TcpRingNode.reconfigure()", " next node " + nextNode);
+
+               if(log.isInfoEnabled()) log.info(" next node " + nextNode);
 
             try
             {
@@ -144,12 +147,12 @@ public class TcpRingNode implements RingNode
             }
             catch (TimeoutException tim)
             {
-               Trace.error("TcpRingNode.reconfigure()", " timeouted while doing rpc call getTokenReceiverAddress" + tim);
+               if(log.isErrorEnabled()) log.error(" timeouted while doing rpc call getTokenReceiverAddress" + tim);
                tim.printStackTrace();
             }
             catch (SuspectedException sus)
             {
-               Trace.error("TcpRingNode.reconfigure()", " suspected node while doing rpc call getTokenReceiverAddress" + sus);
+               if(log.isErrorEnabled()) log.error(" suspected node while doing rpc call getTokenReceiverAddress" + sus);
                sus.printStackTrace();
             }
             try
@@ -161,7 +164,7 @@ public class TcpRingNode implements RingNode
             }
             catch (IOException ioe)
             {
-               Trace.error("TcpRingNode.reconfigure()", "could not connect to next node " + ioe);
+               if(log.isErrorEnabled()) log.error("could not connect to next node " + ioe);
                ioe.printStackTrace();
             }
          }

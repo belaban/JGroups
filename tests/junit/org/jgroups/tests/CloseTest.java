@@ -1,10 +1,11 @@
-// $Id: CloseTest.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+// $Id: CloseTest.java,v 1.2 2004/03/30 06:47:31 belaban Exp $
 
 package org.jgroups.tests;
 
-import junit.framework.*;
-import org.jgroups.*;
-import org.jgroups.util.*;
+import junit.framework.TestCase;
+import org.jgroups.ChannelClosedException;
+import org.jgroups.JChannel;
+import org.jgroups.util.Util;
 
 
 /**

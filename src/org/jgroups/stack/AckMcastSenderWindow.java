@@ -1,15 +1,17 @@
-// $Id: AckMcastSenderWindow.java,v 1.2 2003/09/24 23:20:48 belaban Exp $
+// $Id: AckMcastSenderWindow.java,v 1.3 2004/03/30 06:47:27 belaban Exp $
 
 package org.jgroups.stack;
 
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.*;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.util.TimeScheduler;
-import org.jgroups.log.Trace;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.*;
 
 
 
@@ -31,7 +33,7 @@ import org.jgroups.log.Trace;
  *
  * @author Bela Ban June 9 1999
  * @author John Georgiadis May 8 2001
- * @version $Revision: 1.2 $
+ * @version $Revision: 1.3 $
  */
 public class AckMcastSenderWindow {
     /**
@@ -119,6 +121,8 @@ public class AckMcastSenderWindow {
     /** Default retransmit thread suspend timeout (ms) */
     private static final long SUSPEND_TIMEOUT = 2000;
 
+    protected static Log log=LogFactory.getLog(AckMcastSenderWindow.class);
+
 
     // Msg tables related
     /** Table of pending msgs: seqno -> Entry */
@@ -174,14 +178,14 @@ public class AckMcastSenderWindow {
 		received = ((Boolean)entry.senders.get(sender)).booleanValue();
 		if (!received) {
 		    if(suspects.contains(sender)) {
-			if(Trace.trace)
-			    Trace.warn("AckMcastSenderWindow._retransmit()", "removing " + sender +
+
+			    if(log.isWarnEnabled()) log.warn("removing " + sender +
 				       " from retransmit list as it is in the suspect list");
 			remove(sender);
 			continue;
 		    }
-		    if(Trace.trace)
-			Trace.info("AckMcastSenderWindow", "--> retransmitting msg #" +
+
+			if(log.isInfoEnabled()) log.info("--> retransmitting msg #" +
 				   entry.seqno + " to " + sender);
 		    cmd.retransmit(entry.seqno, entry.msg.copy(), sender);
 		}
@@ -207,7 +211,7 @@ public class AckMcastSenderWindow {
     private void init(RetransmitCommand cmd, long[] retransmit_intervals,
 		      TimeScheduler sched, boolean sched_owned) {
 	if (cmd == null) {
-	    Trace.error("AckMcastSenderWindow", "command is null. Cannot retransmit " + "messages !");
+	    if(log.isErrorEnabled()) log.error("command is null. Cannot retransmit " + "messages !");
 	    throw new IllegalArgumentException("cmd");
 	}
 
@@ -378,8 +382,8 @@ public class AckMcastSenderWindow {
      * @param suspected The suspected process
      */
     public void suspect(Address suspected) {
-	if(Trace.trace)
-	    Trace.info("AckMcastSenderWindow.suspect()", "suspect is " + suspected);
+
+	    if(log.isInfoEnabled()) log.info("suspect is " + suspected);
 	remove(suspected);
 	suspects.add(suspected);
 	if(suspects.size() >= max_suspects)
@@ -484,7 +488,7 @@ public class AckMcastSenderWindow {
 		    try {
 			msgs.wait(time_to_wait);
 		    } catch(InterruptedException ex) {
-			Trace.warn("AckMcastSenderWindow.waitUntilAllAcksReceived()", ex.toString());
+			if(log.isWarnEnabled()) log.warn(ex.toString());
 		    }
 		}
 	    }
@@ -524,7 +528,7 @@ public class AckMcastSenderWindow {
 		try {
 		    retransmitter.stop();
 		} catch(InterruptedException ex) {
-		    Trace.error("AckMcastSenderWindow.stop()", _toString(ex));
+		    if(log.isErrorEnabled()) log.error(_toString(ex));
 		}
 	    } else {
 		for (Enumeration e = msgs.elements(); e.hasMoreElements();) {

@@ -1,16 +1,16 @@
-//$Id: UdpRingNode.java,v 1.3 2004/01/16 16:47:50 belaban Exp $
+//$Id: UdpRingNode.java,v 1.4 2004/03/30 06:47:20 belaban Exp $
 
 package org.jgroups.protocols.ring;
 
-import java.io.Serializable;
-import java.io.IOException;
-import java.util.Vector;
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.protocols.TOTAL_TOKEN;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.RpcProtocol;
+
+import java.io.Serializable;
+import java.util.Vector;
 
 
 public class UdpRingNode implements RingNode

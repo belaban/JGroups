@@ -1,7 +1,6 @@
 package org.jgroups.tests.adapttcp;
 
 import org.apache.log4j.Logger;
-import org.jgroups.log.Trace;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -59,7 +58,7 @@ public class Test {
             return;
         }
 
-        Trace.init();
+
 
         try {
             fileReader=new BufferedReader(new FileReader(config));

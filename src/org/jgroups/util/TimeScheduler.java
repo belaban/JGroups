@@ -1,14 +1,16 @@
-// $Id: TimeScheduler.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+// $Id: TimeScheduler.java,v 1.2 2004/03/30 06:47:28 belaban Exp $
 
 package org.jgroups.util;
 
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Iterator;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import org.jgroups.log.Trace;
 
 
 
@@ -219,6 +221,9 @@ public class TimeScheduler {
 	/** The task queue ordered according to task's next execution time */
 	private TaskQueue queue;
 
+    protected static Log log=LogFactory.getLog(TimeScheduler.class);
+
+
 
 	/**
 	 * Convert exception stack trace to string
@@ -328,7 +333,7 @@ public class TimeScheduler {
 
 			try { task.run();
 			} catch(Exception ex) {
-			    Trace.println("TimeScheduler", Trace.ERROR, _toString(ex));
+                log.error(_toString(ex));
 			}
 		}
 	}

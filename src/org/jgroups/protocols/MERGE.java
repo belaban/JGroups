@@ -1,20 +1,21 @@
-// $Id: MERGE.java,v 1.1 2003/09/09 01:24:10 belaban Exp $
+// $Id: MERGE.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
 
 package org.jgroups.protocols;
 
 
 
+import org.jgroups.*;
+import org.jgroups.stack.Protocol;
+import org.jgroups.stack.RouterStub;
+import org.jgroups.util.List;
+import org.jgroups.util.Util;
+
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Enumeration;
-// import java.util.List;
 import java.util.Properties;
 import java.util.Vector;
-import org.jgroups.*;
-import org.jgroups.util.*;
-import org.jgroups.stack.*;
-import org.jgroups.log.Trace;
 
 
 
@@ -140,7 +141,7 @@ public class MERGE extends Protocol implements Runnable {
 		    }
 		    //merge only with lower addresses :prevents cycles and ensures that the new coordinator is correct.
 		    if(!contains && sender.compareTo(local_addr) < 0) {
-			if(Trace.trace) Trace.info("MERGE.up()", "membership " + members +
+			 if(log.isInfoEnabled()) log.info("membership " + members +
 						   " does not contain " + sender + "; merging it");
 			tmp=new Vector();
 			tmp.addElement(sender);
@@ -151,7 +152,7 @@ public class MERGE extends Protocol implements Runnable {
 		return;
 
 	    default:
-		Trace.error("MERGE.up()", "got MERGE hdr with unknown type (" + hdr.type + ")");
+		if(log.isErrorEnabled()) log.error("got MERGE hdr with unknown type (" + hdr.type + ")");
 		return;
 	    }
 
@@ -191,23 +192,23 @@ public class MERGE extends Protocol implements Runnable {
 	    merging=false;
 	    members =((View)evt.getArg()).getMembers();
 	    if ((members == null) || (members.size() == 0)) {
-	       Trace.fatal("MERGE.down()", "received VIEW_CHANGE with null or empty vector");
+	       if(log.isFatalEnabled()) log.fatal("received VIEW_CHANGE with null or empty vector");
 	       System.exit(6);
 	    }
 	    if (members.elementAt(0).equals(local_addr)) is_coord = true;
 	    else is_coord = false;
 	    passDown(evt);
 	    if (is_coord) {
-                if (Trace.trace) Trace.info("MERGE.down()", "start sending Hellos");
+                 if(log.isInfoEnabled()) log.info("start sending Hellos");
                 try {
                     start();
                 }
                 catch(Exception ex) {
-                    Trace.warn("MERGE.down()", "exception calling start(): " + ex);
+                    if(log.isWarnEnabled()) log.warn("exception calling start(): " + ex);
                 }
 	    }
 	    else {
-                if (Trace.trace) Trace.info("MERGE.down()", "stop sending Hellos");
+                 if(log.isInfoEnabled()) log.info("stop sending Hellos");
                 stop();
 	    }
 	    break;
@@ -219,7 +220,7 @@ public class MERGE extends Protocol implements Runnable {
                 is_server=true;
             }
             catch(Exception ex) {
-                Trace.warn("MERGE.down()", "exception calling start(): " + ex);
+                if(log.isWarnEnabled()) log.warn("exception calling start(): " + ex);
             }
 	    break;
 
@@ -280,7 +281,7 @@ public class MERGE extends Protocol implements Runnable {
 			mbr=e.nextElement();
 			if(!members.contains(mbr)) {
 
-			    Trace.info("MERGE.run()", "membership " + members +
+			    if(log.isInfoEnabled()) log.info("membership " + members +
 				       " does not contain " + mbr + "; merging it");
 
 			    members_to_merge.addElement(mbr);

@@ -1,4 +1,4 @@
-// $Id: XmlValidator.java,v 1.1 2003/09/09 01:24:09 belaban Exp $
+// $Id: XmlValidator.java,v 1.2 2004/03/30 06:47:14 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -7,8 +7,8 @@ package org.jgroups.conf;
  * @version 1.0
  */
 //Add these lines to import the JAXP APIs you'll be using:
-import org.jgroups.log.Trace;
 import org.jgroups.util.PrintXMLTree;
+import org.jgroups.util.Util;
 import org.w3c.dom.Document;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -112,7 +112,7 @@ public class XmlValidator
              throws SAXException
         {
             mErrors.append("\n").append(count++).append(". WARNING: ");
-            mErrors.append(Trace.getStackTrace(exception));
+            mErrors.append(Util.getStackTrace(exception));
             mErrors.append("\n");
         }
         
@@ -120,7 +120,7 @@ public class XmlValidator
              throws SAXException
         {
             mErrors.append("\n").append(count++).append(". ERROR: ");
-            mErrors.append(Trace.getStackTrace(exception));
+            mErrors.append(Util.getStackTrace(exception));
             mErrors.append("\n");
         }
         
@@ -128,7 +128,7 @@ public class XmlValidator
              throws SAXException
         {
             mErrors.append("\n").append(count++).append(". FATAL ERROR: ");
-            mErrors.append(Trace.getStackTrace(exception));
+            mErrors.append(Util.getStackTrace(exception));
             mErrors.append("\n");
         }
         

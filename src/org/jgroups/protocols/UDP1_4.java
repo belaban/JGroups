@@ -1,9 +1,10 @@
 package org.jgroups.protocols;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
-import org.jgroups.log.Trace;
-import org.jgroups.stack.Protocol;
 import org.jgroups.stack.LogicalAddress;
+import org.jgroups.stack.Protocol;
 import org.jgroups.util.Queue;
 import org.jgroups.util.QueueClosedException;
 import org.jgroups.util.Util;
@@ -31,7 +32,7 @@ import java.util.*;
  * the unicast routing caches should ensure that unicasts are only sent via 1 interface in almost all cases.
  * 
  * @author Bela Ban Oct 2003
- * @version $Id: UDP1_4.java,v 1.13 2004/02/10 05:10:28 belaban Exp $
+ * @version $Id: UDP1_4.java,v 1.14 2004/03/30 06:47:21 belaban Exp $
  * todo: sending of dummy packets
  */
 public class UDP1_4 extends Protocol implements  Receiver {
@@ -129,6 +130,8 @@ public class UDP1_4 extends Protocol implements  Receiver {
      */
     PacketHandler packet_handler=null;
 
+    protected static Log log=LogFactory.getLog(UDP1_4.class);
+
 
     final int VERSION_LENGTH=Version.getLength();
 
@@ -167,11 +170,11 @@ public class UDP1_4 extends Protocol implements  Receiver {
             }
         }
 
-        if(Trace.debug)
-            Trace.info("UDP1_4.receive()", "received " + len + " bytes from " + sender);
+        if(log.isTraceEnabled())
+            log.trace("received " + len + " bytes from " + sender);
 
         if(Version.compareTo(packet.getData()) == false) {
-            Trace.warn("UDP1_4.receive()", "packet from " + sender + " has different version (" +
+            if(log.isWarnEnabled()) log.warn("packet from " + sender + " has different version (" +
                     Version.printVersionId(data, Version.version_id.length) +
                     ") from ours (" + Version.printVersionId(Version.version_id) +
                     "). This may cause problems");
@@ -186,7 +189,7 @@ public class UDP1_4 extends Protocol implements  Receiver {
                 return;
             }
             catch(QueueClosedException e) {
-                Trace.warn("UDP1_4.receive()", "packet queue for packet handler thread is closed");
+                if(log.isWarnEnabled()) log.warn("packet queue for packet handler thread is closed");
                 // pass through to handleIncomingPacket()
             }
         }
@@ -212,7 +215,7 @@ public class UDP1_4 extends Protocol implements  Receiver {
 //                mcast_sock.receive(packet);
 //                len=packet.getLength();
 //                if(len == 1 && packet.getData()[0] == 0) {
-//                    if(Trace.debug) Trace.info("UDP1_4.run()", "received dummy packet");
+//                    if(log.isTraceEnabled()) if(log.isInfoEnabled()) log.info("UDP1_4.run()", "received dummy packet");
 //                    continue;
 //                }
 //
@@ -224,17 +227,17 @@ public class UDP1_4 extends Protocol implements  Receiver {
 //                    }
 //                }
 //
-//                if(Trace.debug)
-//                    Trace.info("UDP1_4.receive()", "received (mcast) " + packet.getLength() + " bytes from " +
+//                if(log.isTraceEnabled())
+//                    if(log.isInfoEnabled()) log.info("UDP1_4.receive()", "received (mcast) " + packet.getLength() + " bytes from " +
 //                            packet.getAddress() + ":" + packet.getPort() + " (size=" + len + " bytes)");
 //                if(len > receive_buf.length) {
-//                    Trace.error("UDP1_4.run()", "size of the received packet (" + len + ") is bigger than " +
+//                    if(log.isErrorEnabled()) log.error("UDP1_4.run()", "size of the received packet (" + len + ") is bigger than " +
 //                            "allocated buffer (" + receive_buf.length + "): will not be able to handle packet. " +
 //                            "Use the FRAG protocol and make its frag_size lower than " + receive_buf.length);
 //                }
 //
 //                if(Version.compareTo(packet.getData()) == false) {
-//                    Trace.warn("UDP1_4.run()",
+//                    if(log.isWarnEnabled()) log.warn("UDP1_4.run()",
 //                            "packet from " + packet.getAddress() + ":" + packet.getPort() +
 //                            " has different version (" +
 //                            Version.printVersionId(packet.getData(), Version.version_id.length) +
@@ -250,27 +253,27 @@ public class UDP1_4 extends Protocol implements  Receiver {
 //                } else
 //                    handleIncomingUdpPacket(packet.getData());
 //            } catch(SocketException sock_ex) {
-//                if(Trace.trace) Trace.info("UDP1_4.run()", "multicast socket is closed, exception=" + sock_ex);
+//                 if(log.isInfoEnabled()) log.info("UDP1_4.run()", "multicast socket is closed, exception=" + sock_ex);
 //                break;
 //            } catch(InterruptedIOException io_ex) { // thread was interrupted
 //                ; // go back to top of loop, where we will terminate loop
 //            } catch(Throwable ex) {
-//                Trace.error("UDP1_4.run()", "exception=" + ex + ", stack trace=" + Util.printStackTrace(ex));
+//                if(log.isErrorEnabled()) log.error("UDP1_4.run()", "exception=" + ex + ", stack trace=" + Util.printStackTrace(ex));
 //                Util.sleep(1000); // so we don't get into 100% cpu spinning (should NEVER happen !)
 //            }
 //        }
-//        if(Trace.trace) Trace.info("UDP1_4.run()", "multicast thread terminated");
+//         if(log.isInfoEnabled()) log.info("UDP1_4.run()", "multicast thread terminated");
 //    }
 
     void handleDiagnosticProbe(SocketAddress sender) {
         try {
             byte[] diag_rsp=getDiagResponse().getBytes();
             DatagramPacket rsp=new DatagramPacket(diag_rsp, 0, diag_rsp.length, sender);
-            if(Trace.trace)
-                Trace.info("UDP1_4.handleDiagnosticProbe()", "sending diag response to " + sender);
+
+                if(log.isInfoEnabled()) log.info("sending diag response to " + sender);
             ct.send(rsp);
         } catch(Throwable t) {
-            Trace.error("UDP1_4.handleDiagnosticProbe()", "failed sending diag rsp to " + sender + ", exception=" + t);
+            if(log.isErrorEnabled()) log.error("failed sending diag rsp to " + sender + ", exception=" + t);
         }
     }
 
@@ -308,7 +311,7 @@ public class UDP1_4 extends Protocol implements  Receiver {
      * Creates the unicast and multicast sockets and starts the unicast and multicast receiver threads
      */
     public void start() throws Exception {
-        if(Trace.trace) Trace.info("UDP1_4.start()", "creating sockets and starting threads");
+         if(log.isInfoEnabled()) log.info("creating sockets and starting threads");
         if(ct == null) {
             ct=new ConnectorTable(mcast_addr, DEFAULT_RECEIVE_BUFFER_SIZE, mcast_recv_buf_size, ip_mcast, this);
 
@@ -338,7 +341,7 @@ public class UDP1_4 extends Protocol implements  Receiver {
 
 
     public void stop() {
-        if(Trace.trace) Trace.info("UDP1_4.stop()", "closing sockets and stopping threads");
+         if(log.isInfoEnabled()) log.info("closing sockets and stopping threads");
         if(packet_handler != null)
             packet_handler.stop();
         if(ct != null) {
@@ -477,19 +480,19 @@ public class UDP1_4 extends Protocol implements  Receiver {
                 bind_addrs.add(default_bind_addr);
             }
             catch(SocketException ex) {
-                Trace.error("UDP1_4.setProperties()", "failed determining the default bind interface: " + ex);
+                if(log.isErrorEnabled()) log.error("failed determining the default bind interface: " + ex);
             }
         }
         if(exclude_list != null) {
             bind_addrs.removeAll(exclude_list);
         }
         if(bind_addrs.size() == 0) {
-            Trace.error("UDP1_4.setProperties()", "no valid bind interface found, unable to listen for network traffic");
+            if(log.isErrorEnabled()) log.error("no valid bind interface found, unable to listen for network traffic");
             return false;
         }
         else {
-            if(Trace.trace)
-                Trace.info("UDP1_4.setProperties()", "bind interfaces are " + bind_addrs);
+
+                if(log.isInfoEnabled()) log.info("bind interfaces are " + bind_addrs);
         }
 
         if(props.size() > 0) {
@@ -521,7 +524,7 @@ public class UDP1_4 extends Protocol implements  Receiver {
 
             case Event.CONFIG:
                 passUp(evt);
-                if(Trace.trace) Trace.info("UDP1_4.up()", "received CONFIG event: " + evt.getArg());
+                 if(log.isInfoEnabled()) log.info("received CONFIG event: " + evt.getArg());
                 handleConfigEvent((HashMap)evt.getArg());
                 return;
         }
@@ -570,7 +573,7 @@ public class UDP1_4 extends Protocol implements  Receiver {
             sendUdpMessage(msg); // either unicast (dest != null) or multicast (dest == null)
         }
         catch(Exception e) {
-            Trace.error("UDP1_4.down()", "exception=" + e + ", msg=" + msg + ", mcast_addr=" + mcast_addr);
+            if(log.isErrorEnabled()) log.error("exception=" + e + ", msg=" + msg + ", mcast_addr=" + mcast_addr);
         }
     }
 
@@ -611,7 +614,7 @@ public class UDP1_4 extends Protocol implements  Receiver {
             dst=msg.getDest();
             src=msg.getSrc();
             if(src == null) {
-                Trace.error("UDP1_4.handleIncomingUdpPacket()", "sender's address is null");
+                if(log.isErrorEnabled()) log.error("sender's address is null");
             }
             else {
                 ((LogicalAddress)src).setPrimaryPhysicalAddress(sender);
@@ -619,8 +622,8 @@ public class UDP1_4 extends Protocol implements  Receiver {
 
             // discard my own multicast loopback copy
             if((dst == null || dst.isMulticastAddress()) && src != null && local_addr.equals(src)) {
-                if(Trace.debug)
-                    Trace.info("UDP1_4.handleIncomingUdpPacket()", "discarded own loopback multicast packet");
+                if(log.isTraceEnabled())
+                    log.trace("discarded own loopback multicast packet");
 
                 // System.out.println("-- discarded " + msg.getObject());
 
@@ -628,9 +631,8 @@ public class UDP1_4 extends Protocol implements  Receiver {
             }
 
             evt=new Event(Event.MSG, msg);
-            if(Trace.debug)
-                Trace.info("UDP1_4.handleIncomingUdpPacket()", "Message is " + msg + ", headers are " +
-                        msg.getHeaders());
+            if(log.isTraceEnabled())
+                log.trace("Message is " + msg + ", headers are " + msg.getHeaders());
 
             /* Because Protocol.up() is never called by this bottommost layer, we call up() directly in the observer.
              * This allows e.g. PerfObserver to get the time of reception of a message */
@@ -639,7 +641,7 @@ public class UDP1_4 extends Protocol implements  Receiver {
 
             hdr=(UdpHeader)msg.removeHeader(name);
         } catch(Throwable e) {
-            Trace.error("UDP1_4.handleIncomingUdpPacket()", "exception=" + Trace.getStackTrace(e));
+            if(log.isErrorEnabled()) log.error("exception=" + Util.getStackTrace(e));
             return;
         }
 
@@ -655,8 +657,8 @@ public class UDP1_4 extends Protocol implements  Receiver {
             // message is a diagnosis message (special group name DIAG_GROUP)
             if(ch_name != null && group_name != null && !group_name.equals(ch_name) &&
                     !ch_name.equals(Util.DIAG_GROUP)) {
-                if(Trace.trace)
-                    Trace.warn("UDP1_4.handleIncomingUdpPacket()", "discarded message from different group (" +
+
+                    if(log.isWarnEnabled()) log.warn("discarded message from different group (" +
                             ch_name + "). Sender was " + msg.getSrc());
                 return;
             }
@@ -684,8 +686,8 @@ public class UDP1_4 extends Protocol implements  Receiver {
             msg.setSrc(src);
         }
 
-        if(Trace.debug)
-            Trace.debug("UDP1_4.sendUdpMessage()", "sending message to " + msg.getDest() +
+        if(log.isTraceEnabled())
+            log.trace("sending message to " + msg.getDest() +
                     " (src=" + msg.getSrc() + "), headers are " + msg.getHeaders());
 
         // Don't send if destination is local address. Instead, switch dst and src and put in up_queue.
@@ -700,7 +702,7 @@ public class UDP1_4 extends Protocol implements  Receiver {
                This allows e.g. PerfObserver to get the time of reception of a message */
             if(observer != null)
                 observer.up(evt, up_queue.size());
-            if(Trace.debug) Trace.info("UDP1_4.sendUdpMessage()", "looped back local message " + copy);
+            if(log.isTraceEnabled()) log.trace("looped back local message " + copy);
 
             // System.out.println("\n-- passing up packet id=" + copy.getObject());
             passUp(evt);
@@ -739,7 +741,7 @@ public class UDP1_4 extends Protocol implements  Receiver {
                 sendUdpMessage(msg);
             }
             catch(Exception e) {
-                Trace.debug("UDP1_4.sendMultipleUdpMessages()", "exception=" + e);
+                if(log.isDebugEnabled()) log.debug("exception=" + e);
             }
         }
     }
@@ -769,17 +771,17 @@ public class UDP1_4 extends Protocol implements  Receiver {
 //            }
 //        }
 //
-//        if(Trace.debug) Trace.info("UDP1_4.sendDummyPacket()", "sending packet to " + dest + ":" + port);
+//        if(log.isTraceEnabled()) if(log.isInfoEnabled()) log.info("UDP1_4.sendDummyPacket()", "sending packet to " + dest + ":" + port);
 //
 //        if(ucast_sock == null || dest == null) {
-//            Trace.warn("UDP1_4.sendDummyPacket()", "send_sock was null or dest was null, cannot send dummy packet");
+//            if(log.isWarnEnabled()) log.warn("UDP1_4.sendDummyPacket()", "send_sock was null or dest was null, cannot send dummy packet");
 //            return;
 //        }
 //        packet=new DatagramPacket(buf, buf.length, dest, port);
 //        try {
 //            ucast_sock.send(packet);
 //        } catch(Throwable e) {
-//            Trace.error("UDP1_4.sendDummyPacket()", "exception sending dummy packet to " +
+//            if(log.isErrorEnabled()) log.error("UDP1_4.sendDummyPacket()", "exception sending dummy packet to " +
 //                    dest + ":" + port + ": " + e);
 //        }
 //    }
@@ -820,7 +822,7 @@ public class UDP1_4 extends Protocol implements  Receiver {
                 break;
 
             case Event.CONFIG:
-                if(Trace.trace) Trace.info("UDP1_4.down()", "received CONFIG event: " + evt.getArg());
+                 if(log.isInfoEnabled()) log.info("received CONFIG event: " + evt.getArg());
                 handleConfigEvent((HashMap)evt.getArg());
                 break;
         }
@@ -893,7 +895,7 @@ public class UDP1_4 extends Protocol implements  Receiver {
                     data=(byte[])arr[0];
                     sender=(SocketAddress)arr[1];
                 } catch(QueueClosedException closed_ex) {
-                    if(Trace.trace) Trace.info("UDP1_4.PacketHandler.run()", "packet_handler thread terminating");
+                     if(log.isInfoEnabled()) log.info("packet_handler thread terminating");
                     break;
                 }
                 handleIncomingUdpPacket(data, sender);
@@ -1023,7 +1025,7 @@ public class UDP1_4 extends Protocol implements  Receiver {
                 throw new Exception("UDP1_4.Connector.start(): connector has been stopped (start() cannot be called)");
 
             if(t != null && t.isAlive()) {
-                Trace.warn("UDP1_4.Connector.start()", "connector thread is already running");
+                if(log.isWarnEnabled()) log.warn("connector thread is already running");
                 return;
             }
             t=new Thread(this, "ConnectorThread for " + local_addr);
@@ -1065,7 +1067,7 @@ public class UDP1_4 extends Protocol implements  Receiver {
                 catch(Throwable t) {
                     if(t == null || mcast_sock == null || mcast_sock.isClosed())
                         break;
-                    Trace.error("UDP1_4.Connector.run()", "[" + local_addr + "] exception=" + t);
+                    if(log.isErrorEnabled()) log.error("[" + local_addr + "] exception=" + t);
                     Util.sleep(300); // so we don't get into 100% cpu spinning (should NEVER happen !)
                 }
             }
@@ -1213,7 +1215,7 @@ public class UDP1_4 extends Protocol implements  Receiver {
                 catch(Throwable t) {
                     if(t == null || mcast_sock == null || mcast_sock.isClosed())
                         break;
-                    Trace.error("UDP1_4.ConnectorTable.run()", "exception=" + t);
+                    if(log.isErrorEnabled()) log.error("exception=" + t);
                     Util.sleep(300); // so we don't get into 100% cpu spinning (should NEVER happen !)
                 }
             }
@@ -1295,7 +1297,7 @@ public class UDP1_4 extends Protocol implements  Receiver {
 
             Connector tmp=findConnector(ni);
             if(tmp != null) {
-                Trace.warn("UDP1_4.ConnectorTable.listenOn()", "connector for interface " + bind_interface +
+                if(log.isWarnEnabled()) log.warn("connector for interface " + bind_interface +
                         " is already present (will be skipped): " + tmp);
                 return;
             }
@@ -1303,8 +1305,8 @@ public class UDP1_4 extends Protocol implements  Receiver {
             // 1. join the group on this interface
             if(mcast_sock != null) {
                 mcast_sock.joinGroup(mcast_addr, ni);
-                if(Trace.trace)
-                    Trace.info("UDP1_4.ConnectorTable.start()", "joining " + mcast_addr + " on interface " + ni);
+
+                    if(log.isInfoEnabled()) log.info("joining " + mcast_addr + " on interface " + ni);
             }
 
             // 2. create a new Connector
@@ -1343,7 +1345,7 @@ public class UDP1_4 extends Protocol implements  Receiver {
             sock.receive(packet);
             len=packet.getLength();
             if(len == 1 && packet.getData()[0] == 0) {
-                if(Trace.debug) Trace.info("UDP1_4.Connector.receivePacket()", "received dummy packet");
+                if(log.isTraceEnabled()) log.trace("received dummy packet");
                 return;
             }
             if(receiver != null)

@@ -1,12 +1,15 @@
-// $Id: VIEW_ENFORCER.java,v 1.1 2003/09/09 01:24:11 belaban Exp $
+// $Id: VIEW_ENFORCER.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
 
 package org.jgroups.protocols;
 
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Message;
+import org.jgroups.View;
+import org.jgroups.stack.Protocol;
+
 import java.util.Properties;
 import java.util.Vector;
-import org.jgroups.*;
-import org.jgroups.stack.*;
-import org.jgroups.log.Trace;
 
 
 
@@ -70,7 +73,7 @@ public class VIEW_ENFORCER extends Protocol {
 
 	case Event.MSG:
 	    if(!is_member) {    // drop message if we are not yet member of the group
-		if(Trace.trace) Trace.info("VIEW_ENFORCER.up()", "dropping message " + evt.getArg());
+		 if(log.isInfoEnabled()) log.info("dropping message " + evt.getArg());
 		return;
 	    }
 	    break;

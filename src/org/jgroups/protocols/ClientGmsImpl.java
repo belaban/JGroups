@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.2 2004/01/08 02:39:56 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.3 2004/03/30 06:47:20 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -9,7 +9,6 @@ import org.jgroups.View;
 import org.jgroups.ViewId;
 import org.jgroups.blocks.GroupRequest;
 import org.jgroups.blocks.MethodCall;
-import org.jgroups.log.Trace;
 import org.jgroups.util.Util;
 
 import java.util.Enumeration;
@@ -26,7 +25,7 @@ import java.util.Vector;
  * tell the client what its initial membership is.
  * 
  * @author Bela Ban
- * @version $Revision: 1.2 $
+ * @version $Revision: 1.3 $
  */
 public class ClientGmsImpl extends GmsImpl {
     Vector initial_mbrs=new Vector();
@@ -64,13 +63,13 @@ public class ClientGmsImpl extends GmsImpl {
         while(!joined) {
             findInitialMembers();
             if(joined) {
-                if(Trace.trace) Trace.info("ClientGmsImpl.join()", "joined successfully");
+                 if(log.isInfoEnabled()) log.info("joined successfully");
                 return;
             }
             if(initial_mbrs.size() == 0) {
                 if(gms.disable_initial_coord) {
-                    if(Trace.trace)
-                        Trace.info("ClientGmsImpl.join()", "received an initial membership of 0, but " +
+
+                        if(log.isInfoEnabled()) log.info("received an initial membership of 0, but " +
                                 "cannot become coordinator (disable_initial_coord=" + gms.disable_initial_coord +
                                 "), will retry fetching the initial membership");
                     continue;
@@ -86,36 +85,36 @@ public class ClientGmsImpl extends GmsImpl {
 
                 gms.passUp(new Event(Event.BECOME_SERVER));
                 gms.passDown(new Event(Event.BECOME_SERVER));
-                if(Trace.trace) Trace.info("ClientGmsImpl.join()", "created group (first member)");
+                 if(log.isInfoEnabled()) log.info("created group (first member)");
                 break;
             }
 
             coord=determineCoord(initial_mbrs);
             if(coord == null) {
-                Trace.warn("ClientGmsImpl.join()", "could not determine coordinator " +
+                if(log.isWarnEnabled()) log.warn("could not determine coordinator " +
                         "from responses " + initial_mbrs);
                 continue;
             }
 
             synchronized(view_installation_mutex) {
                 try {
-                    if(Trace.trace) Trace.info("ClientGmsImpl.join()", "sending handleJoin() to " + coord);
+                     if(log.isInfoEnabled()) log.info("sending handleJoin() to " + coord);
                     MethodCall call=new MethodCall("handleJoin", new Object[]{mbr}, new String[]{Address.class.getName()});
                     gms.callRemoteMethod(coord, call, GroupRequest.GET_NONE, 0);
                     view_installation_mutex.wait(gms.join_timeout);  // wait for view -> handleView()
                 }
                 catch(Exception e) {
-                    Trace.error("ClientGmsImpl.join()", "exception is " + e);
+                    if(log.isErrorEnabled()) log.error("exception is " + e);
                     continue;
                 }
             } // end synchronized
 
             if(joined) {
-                if(Trace.trace) Trace.info("ClientGmsImpl.join()", "joined successfully");
+                 if(log.isInfoEnabled()) log.info("joined successfully");
                 return;  // --> SUCCESS
             }
             else {
-                if(Trace.trace) Trace.info("ClientGmsImpl.join()", "failed, retrying");
+                 if(log.isInfoEnabled()) log.info("failed, retrying");
                 Util.sleep(gms.join_retry_timeout);
             }
 
@@ -170,9 +169,8 @@ public class ClientGmsImpl extends GmsImpl {
                 initial_mbrs.notifyAll();   // this will unblock it
             }
         }
-        else if(Trace.trace)
-            Trace.warn("ClientGmsImpl.handleViewChange()",
-                    "am not member of " + mems + ", will not install view");
+        else
+            if(log.isWarnEnabled()) log.warn("am not member of " + mems + ", will not install view");
     }
 
 
@@ -283,12 +281,11 @@ public class ClientGmsImpl extends GmsImpl {
             }
         }
 
-        if(Trace.trace) {
+         {
             if(votes.size() > 1)
-                Trace.warn("ClientGmsImpl.determineCoord()",
-                        "there was more than 1 candidate for coordinator: " + votes);
+                if(log.isWarnEnabled()) log.warn("there was more than 1 candidate for coordinator: " + votes);
             else
-                Trace.info("ClientGmsImpl.determineCoord()", "election results: " + votes);
+                if(log.isInfoEnabled()) log.info("election results: " + votes);
         }
 	
 

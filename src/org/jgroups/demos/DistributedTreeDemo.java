@@ -1,7 +1,9 @@
-// $Id: DistributedTreeDemo.java,v 1.2 2004/03/01 16:04:52 belaban Exp $
+// $Id: DistributedTreeDemo.java,v 1.3 2004/03/30 06:47:16 belaban Exp $
 
 package org.jgroups.demos;
 
+
+import org.jgroups.blocks.DistributedTree;
 
 import javax.swing.*;
 import javax.swing.event.TableModelEvent;
@@ -20,7 +22,6 @@ import java.util.Enumeration;
 import java.util.Properties;
 import java.util.StringTokenizer;
 import java.util.Vector;
-import org.jgroups.blocks.*;
 
 
 

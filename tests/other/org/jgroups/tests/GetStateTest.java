@@ -1,11 +1,11 @@
-// $Id: GetStateTest.java,v 1.3 2004/02/26 19:14:15 belaban Exp $
+// $Id: GetStateTest.java,v 1.4 2004/03/30 06:47:34 belaban Exp $
 
 
 package org.jgroups.tests;
 
 
 import org.jgroups.*;
-import org.jgroups.util.*;
+import org.jgroups.util.Util;
 
 
 

@@ -1,12 +1,13 @@
 package org.jgroups.blocks;
 
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Vector;
-
-import org.jgroups.log.Trace;
 
 
 
@@ -16,7 +17,7 @@ import org.jgroups.log.Trace;
  * It includes the name of the method (case sensitive) and a list of arguments.
  * A method call is serializable and can be passed over the wire.
  * @author Bela Ban
- * @version $Revision: 1.3 $
+ * @version $Revision: 1.4 $
  */
 public class MethodCall implements Externalizable {
 
@@ -36,6 +37,8 @@ public class MethodCall implements Externalizable {
 
     /** the Method of the call */
     protected Method method=null;
+
+    protected static Log log=LogFactory.getLog(MethodCall.class);
 
     /** which mode to use */
     protected short mode=OLD;
@@ -358,7 +361,7 @@ public class MethodCall implements Externalizable {
 
 
         if(method_name == null || target == null) {
-            Trace.error("MethodCall.invoke()", "method name or target is null");
+            if(log.isErrorEnabled()) log.error("method name or target is null");
             return null;
         }
         cl=target.getClass();
@@ -384,7 +387,7 @@ public class MethodCall implements Externalizable {
                     meth=cl.getMethod(method_name, mytypes);
                     break;
                 default:
-                    Trace.error("MethodCall.invoke()", "mode " + mode + " is invalid");
+                    if(log.isErrorEnabled()) log.error("mode " + mode + " is invalid");
                     break;
             }
 
@@ -392,7 +395,7 @@ public class MethodCall implements Externalizable {
                 retval=meth.invoke(target, args);
             }
             else {
-                Trace.error("MethodCall.invoke()", "method " + method_name + " not found");
+                if(log.isErrorEnabled()) log.error("method " + method_name + " not found");
             }
             return retval;
         }
@@ -418,7 +421,7 @@ public class MethodCall implements Externalizable {
             return no;
         }
         catch(Throwable e) {
-            Trace.error("MethodCall.invoke()", "exception=" + e);
+            if(log.isErrorEnabled()) log.error("exception=" + e);
             return e;
         }
     }
@@ -503,7 +506,7 @@ public class MethodCall implements Externalizable {
                 out.writeObject(signature);
                 break;
             default:
-                Trace.error("MethodCall.readExternal()", "mode " + mode + " is invalid");
+                if(log.isErrorEnabled()) log.error("mode " + mode + " is invalid");
                 break;
         }
     }
@@ -533,7 +536,7 @@ public class MethodCall implements Externalizable {
                 signature=(String[])in.readObject();
                 break;
             default:
-                Trace.error("MethodCall.readExternal()", "mode " + mode + " is invalid");
+                if(log.isErrorEnabled()) log.error("mode " + mode + " is invalid");
                 break;
         }
     }

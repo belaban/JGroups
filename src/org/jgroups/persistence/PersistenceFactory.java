@@ -8,7 +8,8 @@ package org.jgroups.persistence;
  */
 
 
-import org.jgroups.log.Trace;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -18,6 +19,8 @@ import java.util.Properties;
 
 public class PersistenceFactory
 {
+
+    protected Log log=LogFactory.getLog(this.getClass());
 
     /**
      * Default private constructor// does nothing
@@ -100,8 +103,8 @@ public class PersistenceFactory
      */
     private PersistenceManager createManagerDB(String filePath) throws Exception
     {
-        if (Trace.trace)
-            Trace.info("persistence", "Calling db persist from factory: " + filePath);
+
+            if(log.isInfoEnabled()) log.info("Calling db persist from factory: " + filePath);
         if (_manager == null)
             _manager = new DBPersistenceManager(filePath);
         return _manager;
@@ -113,8 +116,8 @@ public class PersistenceFactory
      */
     private PersistenceManager createManagerFile(String filePath)
     {
-        if (Trace.trace)
-            Trace.info("persistence", "Creating file manager: " + filePath);
+
+            if(log.isInfoEnabled()) log.info("Creating file manager: " + filePath);
         Properties props;
 
         try

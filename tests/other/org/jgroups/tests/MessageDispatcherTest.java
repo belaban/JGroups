@@ -1,4 +1,4 @@
-// $Id: MessageDispatcherTest.java,v 1.7 2004/03/01 16:54:12 belaban Exp $
+// $Id: MessageDispatcherTest.java,v 1.8 2004/03/30 06:47:34 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -9,7 +9,6 @@ import org.jgroups.Message;
 import org.jgroups.blocks.GroupRequest;
 import org.jgroups.blocks.MessageDispatcher;
 import org.jgroups.blocks.RequestHandler;
-import org.jgroups.log.Trace;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
 
@@ -92,7 +91,7 @@ public class MessageDispatcherTest implements RequestHandler {
 
 
     public static void main(String[] args) {
-        Trace.init();
+
         try {
             new MessageDispatcherTest().start();
         }

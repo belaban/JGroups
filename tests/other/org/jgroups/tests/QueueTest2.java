@@ -1,12 +1,12 @@
 package org.jgroups.tests;
 
-import java.util.LinkedList;
-
 import EDU.oswego.cs.dl.util.concurrent.LinkedQueue;
 import EDU.oswego.cs.dl.util.concurrent.WaitFreeQueue;
 import org.jgroups.util.Queue;
-import org.jgroups.util.QueueClosedException;
 import org.jgroups.util.Queue2;
+import org.jgroups.util.QueueClosedException;
+
+import java.util.LinkedList;
 
 /**
  *

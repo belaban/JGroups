@@ -1,23 +1,21 @@
 package org.jgroups.tests.perf.transports;
 
 
+import org.jgroups.stack.IpAddress;
 import org.jgroups.tests.perf.Receiver;
 import org.jgroups.tests.perf.Transport;
-import org.jgroups.stack.IpAddress;
-import org.jgroups.log.Trace;
 
-import java.net.MulticastSocket;
-import java.net.InetAddress;
-import java.net.DatagramSocket;
-import java.net.DatagramPacket;
-import java.util.Properties;
-import java.util.HashMap;
 import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.MulticastSocket;
+import java.util.Properties;
 
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: UdpTransport.java,v 1.1 2004/01/24 16:55:05 belaban Exp $
+ * @version $Id: UdpTransport.java,v 1.2 2004/03/30 06:47:36 belaban Exp $
  */
 public class UdpTransport implements Transport {
     Receiver         receiver=null;

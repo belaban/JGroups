@@ -1,4 +1,4 @@
-// $Id: PullPushTest.java,v 1.2 2003/11/27 21:45:57 belaban Exp $
+// $Id: PullPushTest.java,v 1.3 2004/03/30 06:47:34 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -9,7 +9,6 @@ import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.MessageListener;
 import org.jgroups.blocks.PullPushAdapter;
-import org.jgroups.log.Trace;
 
 
 /**
@@ -36,7 +35,7 @@ public class PullPushTest implements MessageListener {
 
 
     public void start() throws Exception {
-        Trace.init();
+
         channel=new JChannel();
         channel.connect("PullPushTest");
         adapter=new PullPushAdapter(channel);

@@ -1,10 +1,11 @@
-// $Id: JChannel.java,v 1.9 2004/02/15 18:34:12 belaban Exp $
+// $Id: JChannel.java,v 1.10 2004/03/30 06:47:29 belaban Exp $
 
 package org.jgroups;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jgroups.conf.ConfiguratorFactory;
 import org.jgroups.conf.ProtocolStackConfigurator;
-import org.jgroups.log.Trace;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.stack.StateTransferInfo;
 import org.jgroups.util.Queue;
@@ -13,8 +14,8 @@ import org.jgroups.util.Util;
 
 import java.io.Serializable;
 import java.util.HashMap;
-import java.util.Vector;
 import java.util.Map;
+import java.util.Vector;
 
 /**
  * JChannel is a pure Java implementation of Channel
@@ -22,7 +23,7 @@ import java.util.Map;
  * protocol stack
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.9 $
+ * @version $Revision: 1.10 $
  */
 public class JChannel extends Channel {
 
@@ -103,6 +104,8 @@ public class JChannel extends Channel {
      */
     private byte[] additional_data=null;
 
+    protected Log log=LogFactory.getLog(getClass());
+
 
     /**
      * initializes the JChannel with its default settings and
@@ -136,7 +139,7 @@ public class JChannel extends Channel {
     public JChannel(Object properties) throws ChannelException {
         String tmp_props;
         if((tmp_props=System.getProperty(FORCE_PROPS)) != null) {
-            if(Trace.trace) Trace.info("JChannel.JChannel()", "properties override: " + tmp_props);
+             if(log.isInfoEnabled()) log.info("properties override: " + tmp_props);
             properties=tmp_props;
         }
 
@@ -146,8 +149,8 @@ public class JChannel extends Channel {
                 props=c.getProtocolStackString();
             }
             catch(Exception x) {
-                String strace=Trace.getStackTrace(x);
-                Trace.error("JChannel.constructor", strace);
+                String strace=Util.getStackTrace(x);
+                if(log.isErrorEnabled()) log.error(strace);
                 throw new ChannelException("JChannel: Unable to load protocol stack: {" + x.getMessage() + ";" + strace + "}");
             }
         }
@@ -215,15 +218,13 @@ public class JChannel extends Channel {
 
         /*if we already are connected, then ignore this*/
         if(connected) {
-            Trace.error("JChannel.connect()", "already connected to " + channel_name);
+            if(log.isErrorEnabled()) log.error("already connected to " + channel_name);
             return;
         }
 
         /*make sure we have a valid channel name*/
         if(channel_name == null) {
-            if(Trace.trace)
-                Trace.info("JChannel.connect()",
-                           "channel_name is null, assuming unicast channel");
+            if(log.isInfoEnabled()) log.info("channel_name is null, assuming unicast channel");
         }
         else
             this.channel_name=channel_name;
@@ -232,7 +233,7 @@ public class JChannel extends Channel {
             prot_stack.startStack(); // calls start() in all protocols, from top to bottom
         }
         catch(Throwable e) {
-            Trace.error("JChannel.connect()", "exception: " + e);
+            if(log.isErrorEnabled()) log.error("exception: " + e);
             throw new ChannelException(e.toString());
         }
 
@@ -252,7 +253,7 @@ public class JChannel extends Channel {
 
         // ProtocolStack.start() must have given us a valid local address; if not we won't be able to continue
         if(local_addr == null) {
-            Trace.fatal("JChannel.connect()", "local_addr == null; cannot connect");
+            log.fatal("local_addr == null; cannot connect");
             throw new ChannelException("local_addr is null");
         }
 
@@ -320,7 +321,7 @@ public class JChannel extends Channel {
                             disconnect_mutex.wait();  // wait for DISCONNECT_OK event
                     }
                     catch(Exception e) {
-                        Trace.error("JChannel.disconnect()", "exception: " + e);
+                        if(log.isErrorEnabled()) log.error("exception: " + e);
                     }
                 }
             }
@@ -333,7 +334,7 @@ public class JChannel extends Channel {
                 prot_stack.stopStack(); // calls stop() in all protocols, from top to bottom
             }
             catch(Exception e) {
-                Trace.error("JChannel.disconnect()", "exception: " + e);
+                if(log.isErrorEnabled()) log.error("exception: " + e);
             }
 
             if(channel_listener != null)
@@ -462,7 +463,7 @@ public class JChannel extends Channel {
             throw t;
         }
         catch(Exception e) {
-            Trace.error("JChannel.receive()", "exception: " + e);
+            if(log.isErrorEnabled()) log.error("exception: " + e);
             return null;
         }
     }
@@ -488,14 +489,14 @@ public class JChannel extends Channel {
             return retval;
         }
         catch(QueueClosedException queue_closed) {
-            Trace.error("JChannel.peek()", "exception: " + queue_closed);
+            if(log.isErrorEnabled()) log.error("exception: " + queue_closed);
             return null;
         }
         catch(TimeoutException t) {
             return null;
         }
         catch(Exception e) {
-            Trace.error("JChannel.peek()", "exception: " + e);
+            if(log.isErrorEnabled()) log.error("exception: " + e);
             return null;
         }
     }
@@ -579,7 +580,7 @@ public class JChannel extends Channel {
      */
     public void setOpt(int option, Object value) {
         if(closed) {
-            Trace.warn("JChannel.setOpt()", "channel is closed; option not set !");
+            if(log.isWarnEnabled()) log.warn("channel is closed; option not set !");
             return;
         }
 
@@ -588,21 +589,21 @@ public class JChannel extends Channel {
                 if(value instanceof Boolean)
                     receive_views=((Boolean)value).booleanValue();
                 else
-                    Trace.error("JChannel.setOpt()", "option " + Channel.option2String(option) +
+                    if(log.isErrorEnabled()) log.error("option " + Channel.option2String(option) +
                                                      " (" + value + "): value has to be Boolean");
                 break;
             case SUSPECT:
                 if(value instanceof Boolean)
                     receive_suspects=((Boolean)value).booleanValue();
                 else
-                    Trace.error("JChannel.setOpt()", "option " + Channel.option2String(option) +
+                    if(log.isErrorEnabled()) log.error("option " + Channel.option2String(option) +
                                                      " (" + value + "): value has to be Boolean");
                 break;
             case BLOCK:
                 if(value instanceof Boolean)
                     receive_blocks=((Boolean)value).booleanValue();
                 else
-                    Trace.error("JChannel.setOpt()", "option " + Channel.option2String(option) +
+                    if(log.isErrorEnabled()) log.error("option " + Channel.option2String(option) +
                                                      " (" + value + "): value has to be Boolean");
                 if(receive_blocks)
                     receive_views=true;
@@ -612,7 +613,7 @@ public class JChannel extends Channel {
                 if(value instanceof Boolean)
                     receive_get_states=((Boolean)value).booleanValue();
                 else
-                    Trace.error("JChannel.setOpt()", "option " + Channel.option2String(option) +
+                    if(log.isErrorEnabled()) log.error("option " + Channel.option2String(option) +
                                                      " (" + value + "): value has to be Boolean");
                 break;
 
@@ -621,7 +622,7 @@ public class JChannel extends Channel {
                 if(value instanceof Boolean)
                     receive_local_msgs=((Boolean)value).booleanValue();
                 else
-                    Trace.error("JChannel.setOpt()", "option " + Channel.option2String(option) +
+                    if(log.isErrorEnabled()) log.error("option " + Channel.option2String(option) +
                                                      " (" + value + "): value has to be Boolean");
                 break;
 
@@ -629,7 +630,7 @@ public class JChannel extends Channel {
                 if(value instanceof Boolean)
                     auto_reconnect=((Boolean)value).booleanValue();
                 else
-                    Trace.error("JChannel.setOpt()", "option " + Channel.option2String(option) +
+                    if(log.isErrorEnabled()) log.error("option " + Channel.option2String(option) +
                                                      " (" + value + "): value has to be Boolean");
                 break;
 
@@ -640,12 +641,12 @@ public class JChannel extends Channel {
                         auto_reconnect=true;
                 }
                 else
-                    Trace.error("JChannel.setOpt()", "option " + Channel.option2String(option) +
+                    if(log.isErrorEnabled()) log.error("option " + Channel.option2String(option) +
                                                      " (" + value + "): value has to be Boolean");
                 break;
 
             default:
-                Trace.error("JChannel.setOpt()", "option " + Channel.option2String(option) + " not known");
+                if(log.isErrorEnabled()) log.error("option " + Channel.option2String(option) + " not known");
                 break;
         }
     }
@@ -670,7 +671,7 @@ public class JChannel extends Channel {
             case LOCAL:
                 return new Boolean(receive_local_msgs);
             default:
-                Trace.error("JChannel.getOpt()", "option " + Channel.option2String(option) + " not known");
+                if(log.isErrorEnabled()) log.error("option " + Channel.option2String(option) + " not known");
                 return null;
         }
     }
@@ -746,7 +747,7 @@ public class JChannel extends Channel {
         /*if the queue is not available, there is no point in
          *processing the message at all*/
         if(mq == null) {
-            Trace.error("JChannel.up()", "message queue is null");
+            if(log.isErrorEnabled()) log.error("message queue is null");
             return;
         }
 
@@ -849,7 +850,7 @@ public class JChannel extends Channel {
 
             case Event.BLOCK_SEND:
                 synchronized(flow_control_mutex) {
-                    if(Trace.trace) Trace.info("JChannel.up()", "received BLOCK_SEND");
+                     if(log.isInfoEnabled()) log.info("received BLOCK_SEND");
                     block_sending=true;
                     flow_control_mutex.notifyAll();
                 }
@@ -857,7 +858,7 @@ public class JChannel extends Channel {
 
             case Event.UNBLOCK_SEND:
                 synchronized(flow_control_mutex) {
-                    if(Trace.trace) Trace.info("JChannel.up()", "received UNBLOCK_SEND");
+                     if(log.isInfoEnabled()) log.info("received UNBLOCK_SEND");
                     block_sending=false;
                     flow_control_mutex.notifyAll();
                 }
@@ -880,7 +881,7 @@ public class JChannel extends Channel {
                 mq.add(evt);
             }
             catch(Exception e) {
-                Trace.error("JChannel.up()", "exception: " + e);
+                if(log.isErrorEnabled()) log.error("exception: " + e);
             }
         }
     }
@@ -898,7 +899,7 @@ public class JChannel extends Channel {
             synchronized(flow_control_mutex) {
                 while(block_sending)
                     try {
-                        if(Trace.trace) Trace.info("JChannel.down()", "down() blocks because block_sending == true");
+                         if(log.isInfoEnabled()) log.info("down() blocks because block_sending == true");
                         flow_control_mutex.wait();
                     }
                     catch(Exception ex) {
@@ -915,7 +916,7 @@ public class JChannel extends Channel {
                 }
             }
             catch(Throwable t) {
-                Trace.error("JChannel.down()", "CONFIG event did not contain a hashmap: " + t);
+                if(log.isErrorEnabled()) log.error("CONFIG event did not contain a hashmap: " + t);
             }
 
         }
@@ -923,7 +924,7 @@ public class JChannel extends Channel {
         if(prot_stack != null)
             prot_stack.down(evt);
         else
-            Trace.error("JChannel.down()", "no protocol stack available");
+            if(log.isErrorEnabled()) log.error("no protocol stack available");
     }
 
 
@@ -1050,7 +1051,7 @@ public class JChannel extends Channel {
         checkClosed();
         checkNotConnected();
         if(!state_transfer_supported)
-            Trace.warn("JChannel._getState()", "fetching state will fail as state transfer is not supported. "
+            if(log.isWarnEnabled()) log.warn("fetching state will fail as state transfer is not supported. "
                        + "Add one of the STATE_TRANSFER protocols to your protocol specification");
         synchronized(get_state_mutex) {
             state=null;
@@ -1101,7 +1102,7 @@ public class JChannel extends Channel {
                     mq.close(false);              // closes and removes all messages
             }
             catch(Exception e) {
-                Trace.error("JChannel._close()", "exception: " + e);
+                if(log.isErrorEnabled()) log.error("exception: " + e);
             }
         }
 
@@ -1111,7 +1112,7 @@ public class JChannel extends Channel {
                 prot_stack.destroy();
             }
             catch(Exception e) {
-                Trace.error("JChannel._close()", "exception: " + e);
+                if(log.isErrorEnabled()) log.error("exception: " + e);
             }
         }
         closed=true;
@@ -1167,7 +1168,7 @@ public class JChannel extends Channel {
                         mq.add(this.evt);
                     }
                     catch(Exception ex) {
-                        Trace.error("JChannel.CloserThread.run()", "exception: " + ex);
+                        if(log.isErrorEnabled()) log.error("exception: " + ex);
                     }
                 }
 
@@ -1182,11 +1183,11 @@ public class JChannel extends Channel {
 
                 if(auto_reconnect) {
                     try {
-                        Trace.info("JChannel.CloserThread.run()", "reconnecting to group " + old_channel_name);
+                        if(log.isInfoEnabled()) log.info("reconnecting to group " + old_channel_name);
                         open();
                          }
                     catch(Exception ex) {
-                        Trace.error("JChannel.CloserThread.run()", "failure reopening channel: " + ex);
+                        if(log.isErrorEnabled()) log.error("failure reopening channel: " + ex);
                         return;
                     }
                     try {
@@ -1201,7 +1202,7 @@ public class JChannel extends Channel {
                             channel_listener.channelReconnected(local_addr);
                     }
                     catch(Exception ex) {
-                        Trace.error("JChannel.CloserThread.run()", "failure reconnecting to channel: " + ex);
+                        if(log.isErrorEnabled()) log.error("failure reconnecting to channel: " + ex);
                         return;
                     }
                 }
@@ -1209,14 +1210,14 @@ public class JChannel extends Channel {
                 if(auto_getstate) {
                     boolean rc=getState(null, GET_STATE_DEFAULT_TIMEOUT);
                     if(rc)
-                        Trace.info("JChannel.CloserThread.run()", "state was retrieved successfully");
+                        if(log.isInfoEnabled()) log.info("state was retrieved successfully");
                     else
-                        Trace.info("JChannel.CloserThread.run()", "state transfer failed");
+                        if(log.isInfoEnabled()) log.info("state transfer failed");
                 }
 
             }
             catch(Exception ex) {
-                Trace.error("JChannel.CloserThread.run()", "exception: " + ex);
+                if(log.isErrorEnabled()) log.error("exception: " + ex);
             }
             finally {
                 closer=null;

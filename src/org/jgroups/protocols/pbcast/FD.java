@@ -1,15 +1,18 @@
-// $Id: FD.java,v 1.1 2003/09/09 01:24:11 belaban Exp $
+// $Id: FD.java,v 1.2 2004/03/30 06:47:18 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
+
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Message;
+import org.jgroups.View;
+import org.jgroups.stack.Protocol;
+import org.jgroups.util.Util;
 
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Properties;
 import java.util.Vector;
-import org.jgroups.*;
-import org.jgroups.util.*;
-import org.jgroups.stack.*;
-import org.jgroups.log.Trace;
 
 
 
@@ -142,7 +145,7 @@ public class FD extends Protocol implements Runnable {
 		timestamp=((Entry)members.get(mbr)).timestamp;
 		diff=System.currentTimeMillis() - timestamp;
 		if(diff >= timeout) {
-		    Trace.info("FD.run()", "suspecting " + mbr);
+		    if(log.isInfoEnabled()) log.info("suspecting " + mbr);
 		    passUp(new Event(Event.SUSPECT, mbr));
 		    if(!suspected_mbrs.contains(mbr))
 			suspected_mbrs.addElement(mbr);
@@ -171,7 +174,7 @@ public class FD extends Protocol implements Runnable {
 	    tmp.interrupt();
 	    try {tmp.join(timeout);} catch(Exception ex) {}
 	    if(tmp.isAlive())
-		Trace.warn("FD.stopChecker()", "interrupted checker thread is still alive !");
+		if(log.isWarnEnabled()) log.warn("interrupted checker thread is still alive !");
 	}
 	checker=null;
     }
@@ -182,7 +185,7 @@ public class FD extends Protocol implements Runnable {
 	long curr_time=0;
 
 	if(mbr == null) {
-	    Trace.debug("FD.updateSender()", "member " + mbr + " not found");
+	    if(log.isDebugEnabled()) log.debug("member " + mbr + " not found");
 	    return;
 	}
 

@@ -1,15 +1,14 @@
-// $Id: FC.java,v 1.6 2004/02/26 19:15:00 belaban Exp $
+// $Id: FC.java,v 1.7 2004/03/30 06:47:21 belaban Exp $
 
 package org.jgroups.protocols;
 
-import org.jgroups.stack.Protocol;
 import org.jgroups.*;
-import org.jgroups.log.Trace;
+import org.jgroups.stack.Protocol;
 
-import java.util.*;
-import java.io.ObjectOutput;
 import java.io.IOException;
 import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.*;
 
 /**
  * Simple flow control protocol based on a credit system. Each sender has a number of credits (bytes
@@ -19,7 +18,7 @@ import java.io.ObjectInput;
  * Note that this protocol must be located towards the top of the stack, or all down_threads from JChannel to this
  * protocol must be set to false ! This is in order to block JChannel.send()/JChannel.down().
  * @author Bela Ban
- * @version $Revision: 1.6 $
+ * @version $Revision: 1.7 $
  */
 public class FC extends Protocol {
 
@@ -159,8 +158,8 @@ public class FC extends Protocol {
         long  new_credits;
 
         new_credits=num_credits + getCredits(sent, src);
-        if(Trace.trace)
-            Trace.info("FC.handleCredit()", "received " + num_credits + " credits from " +
+
+            if(log.isInfoEnabled()) log.info("received " + num_credits + " credits from " +
                     src + ", old credit was " + sent.get(src) + ", new credits are " +
                     new_credits + ". Creditors are\n" + printCreditors());
 
@@ -187,21 +186,21 @@ public class FC extends Protocol {
         long    new_credits;
 
         if(src == null) {
-            Trace.error("FC.handleUpMessage()", "src is null");
+            if(log.isErrorEnabled()) log.error("src is null");
             return;
         }
 
         if(src.equals(local_addr))
             return;
 
-        if(Trace.trace)
-            Trace.info("FC.handleUpMessage()", "credit for " + src + " is " + received.get(src));
+
+            if(log.isInfoEnabled()) log.info("credit for " + src + " is " + received.get(src));
 
         if(decrementCredit(received, src, size) == false) {
             // not enough credits left
             new_credits=max_credits - getCredits(received, src);
-            if(Trace.trace)
-                Trace.info("FC.handleUpMessage()", "sending " + new_credits + " credits to " + src);
+
+                if(log.isInfoEnabled()) log.info("sending " + new_credits + " credits to " + src);
             sendCredit(src, new_credits);
             replenishCredits(received, src, new_credits);
         }
@@ -229,8 +228,8 @@ public class FC extends Protocol {
      */
     boolean handleDownMessage(Message msg) {
         if(blocking) {
-            if(Trace.trace)
-                Trace.info("FC.handleDownMessage()", "blocking message to " + msg.getDest());
+
+                if(log.isInfoEnabled()) log.info("blocking message to " + msg.getDest());
             while(blocking) {
                 try {this.wait(MAX_BLOCK_TIME);} catch(InterruptedException e) {}
             }
@@ -240,17 +239,16 @@ public class FC extends Protocol {
             blocking=true;
 
             while(blocking) {
-                if(Trace.trace)
-                    Trace.info("FC.handleDownMessage()", "blocking " + MAX_BLOCK_TIME +
+
+                    if(log.isInfoEnabled()) log.info("blocking " + MAX_BLOCK_TIME +
                             " msecs. Creditors are\n" + printCreditors());
                 try {this.wait(MAX_BLOCK_TIME);}
                 catch(Throwable e) {e.printStackTrace();}
                 if(decrMessage(msg) == true)
                     return true;
                 else {
-                    if(Trace.trace)
-                        Trace.info("FC.handleDownMessage()",
-                                "insufficient credits to send message, creditors=\n" + printCreditors());
+
+                        if(log.isInfoEnabled()) log.info("insufficient credits to send message, creditors=\n" + printCreditors());
                 }
             }
         }
@@ -271,7 +269,7 @@ public class FC extends Protocol {
         boolean success=true;
 
         if(msg == null) {
-            Trace.error("FC.decrMessage()", "msg is null");
+            if(log.isErrorEnabled()) log.error("msg is null");
             return false;
         }
         dest=msg.getDest();
@@ -279,8 +277,8 @@ public class FC extends Protocol {
         if(dest != null && !dest.isMulticastAddress()) { // unicast destination
             if(dest.equals(local_addr))
                 return true;
-            if(Trace.trace)
-                Trace.info("FC.decrMessage()", "credit for " + dest + " is " + sent.get(dest));
+
+                if(log.isInfoEnabled()) log.info("credit for " + dest + " is " + sent.get(dest));
             if(sufficientCredit(sent, dest, size)) {
                 decrementCredit(sent, dest, size);
             }
@@ -294,8 +292,8 @@ public class FC extends Protocol {
                 dest=(Address)it.next();
                 if(dest.equals(local_addr))
                     continue;
-                if(Trace.trace)
-                    Trace.info("FC.decrMessage()", "credit for " + dest + " is " + sent.get(dest));
+
+                    if(log.isInfoEnabled()) log.info("credit for " + dest + " is " + sent.get(dest));
                 if(sufficientCredit(sent, dest, size) == false) {
                     addCreditor(dest);
                     success=false;
@@ -317,8 +315,8 @@ public class FC extends Protocol {
 
     /** If message queueing is enabled, sends queued messages and unlocks sender (if successful) */
     void unblockSender() {
-        if(Trace.trace)
-            Trace.info("FC.unblockSender()", "setting blocking=false");
+
+            if(log.isInfoEnabled()) log.info("setting blocking=false");
         blocking=false;
         this.notifyAll();
     }
@@ -366,8 +364,8 @@ public class FC extends Protocol {
                 return true;
             }
             else {
-                if(Trace.trace)
-                    Trace.info("FC.checkCredit()", "insufficient credit for " + mbr +
+
+                    if(log.isInfoEnabled()) log.info("insufficient credit for " + mbr +
                             ": credits left=" + credits_left + ", credits required=" + credits_required +
                             " (min_credits=" + min_credits + ")");
                 return false;
@@ -400,7 +398,7 @@ public class FC extends Protocol {
                 return true;
             }
             else {
-                Trace.info("FC.decrementCredit()", "not enough credits left for " +
+                if(log.isInfoEnabled()) log.info("not enough credits left for " +
                         dest + ": left=" + credits_left + ", required=" + credits_required);
                 return false;
             }
@@ -415,8 +413,8 @@ public class FC extends Protocol {
         Address addr;
         if(mbrs == null) return;
 
-        if(Trace.trace)
-            Trace.info("FC.handleViewChange()", "new membership: " + mbrs);
+
+            if(log.isInfoEnabled()) log.info("new membership: " + mbrs);
 
         members.clear();
         members.addAll(mbrs);
@@ -456,8 +454,8 @@ public class FC extends Protocol {
             if(!mbrs.contains(creditor))
                 it.remove();
         }
-        if(Trace.trace)
-            Trace.info("FC.handleViewChange()", "creditors are\n" + printCreditors());
+
+            if(log.isInfoEnabled()) log.info("creditors are\n" + printCreditors());
         if(creditors.size() == 0 && blocking)
             unblockSender();
     }

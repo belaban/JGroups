@@ -1,10 +1,11 @@
-// $Id: StateTransferInfo.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+// $Id: StateTransferInfo.java,v 1.2 2004/03/30 06:47:27 belaban Exp $
 
 package org.jgroups.stack;
 
 
-import java.util.Vector;
 import org.jgroups.Address;
+
+import java.util.Vector;
 
 
 

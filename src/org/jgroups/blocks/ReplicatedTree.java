@@ -1,31 +1,17 @@
-// $Id: ReplicatedTree.java,v 1.3 2004/02/26 19:14:59 belaban Exp $
+// $Id: ReplicatedTree.java,v 1.4 2004/03/30 06:47:12 belaban Exp $
 
 package org.jgroups.blocks;
 
 
-import java.io.Serializable;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.StringTokenizer;
-import java.util.TreeMap;
-import java.util.Vector;
-
-import org.jgroups.Address;
-import org.jgroups.Channel;
-import org.jgroups.ChannelClosedException;
-import org.jgroups.ChannelNotConnectedException;
-import org.jgroups.JChannel;
-import org.jgroups.MembershipListener;
-import org.jgroups.Message;
-import org.jgroups.MessageListener;
-import org.jgroups.View;
-import org.jgroups.log.Trace;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.jgroups.*;
 import org.jgroups.util.Queue;
 import org.jgroups.util.QueueClosedException;
 import org.jgroups.util.Util;
+
+import java.io.Serializable;
+import java.util.*;
 
 
 
@@ -48,6 +34,8 @@ public class ReplicatedTree implements Runnable, Cloneable, MessageListener, Mem
     String groupname="ReplicatedTree-Group";
     Vector members=new Vector();
     long state_fetch_timeout=10000;
+
+    protected Log log=LogFactory.getLog(this.getClass());
 
 
     /** Whether or not to use remote calls. If false, all methods will be invoked directly on this
@@ -137,9 +125,9 @@ public class ReplicatedTree implements Runnable, Cloneable, MessageListener, Mem
     public void fetchState(long timeout) throws ChannelClosedException, ChannelNotConnectedException {
         boolean rc=channel.getState(null, timeout);
         if(rc)
-            Trace.info("ReplicatedTree.fetchState()", "state was retrieved successfully");
+            if(log.isInfoEnabled()) log.info("state was retrieved successfully");
         else
-            Trace.info("ReplicatedTree.fetchState()", "state could not be retrieved (first member)");
+            if(log.isInfoEnabled()) log.info("state could not be retrieved (first member)");
     }
 
 
@@ -165,9 +153,9 @@ public class ReplicatedTree implements Runnable, Cloneable, MessageListener, Mem
         channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
         boolean rc=channel.getState(null, state_fetch_timeout);
         if(rc)
-            Trace.info("ReplicatedTree.init()", "state was retrieved successfully");
+            if(log.isInfoEnabled()) log.info("state was retrieved successfully");
         else
-            Trace.info("ReplicatedTree.init()", "state could not be retrieved (first member)");
+            if(log.isInfoEnabled()) log.info("state could not be retrieved (first member)");
     }
 
 
@@ -207,9 +195,7 @@ public class ReplicatedTree implements Runnable, Cloneable, MessageListener, Mem
 		//if true, propagate action to the group
         if(send_message == true) {
             if(channel == null) {
-                Trace.error(
-                        "ReplicatedTree.put()",
-                        "channel is null, cannot broadcast PUT request");
+                if(log.isErrorEnabled()) log.error("channel is null, cannot broadcast PUT request");
                 return;
             }
             try {
@@ -220,9 +206,7 @@ public class ReplicatedTree implements Runnable, Cloneable, MessageListener, Mem
                                 new Request(Request.PUT, fqn, data)));
             }
             catch(Exception ex) {
-                Trace.error(
-                        "ReplicatedTree.put()",
-                        "failure bcasting PUT request: " + ex);
+                if(log.isErrorEnabled()) log.error("failure bcasting PUT request: " + ex);
             }
         }
         else {
@@ -250,9 +234,7 @@ public class ReplicatedTree implements Runnable, Cloneable, MessageListener, Mem
         if(send_message == true) {
 
             if(channel == null) {
-                Trace.error(
-                        "ReplicatedTree.put()",
-                        "channel is null, cannot broadcast PUT request");
+                if(log.isErrorEnabled()) log.error("channel is null, cannot broadcast PUT request");
                 return;
             }
             try {
@@ -263,9 +245,7 @@ public class ReplicatedTree implements Runnable, Cloneable, MessageListener, Mem
                                 new Request(Request.PUT, fqn, key, value)));
             }
             catch(Exception ex) {
-                Trace.error(
-                        "ReplicatedTree.set()",
-                        "failure bcasting PUT request: " + ex);
+                if(log.isErrorEnabled()) log.error("failure bcasting PUT request: " + ex);
             }
         }
         else {
@@ -287,9 +267,7 @@ public class ReplicatedTree implements Runnable, Cloneable, MessageListener, Mem
 		//if true, propagate action to the group
         if(send_message == true) {
             if(channel == null) {
-                Trace.error(
-                        "ReplicatedTree.remove()",
-                        "channel is null, cannot broadcast REMOVE request");
+                if(log.isErrorEnabled()) log.error("channel is null, cannot broadcast REMOVE request");
                 return;
             }
             try {
@@ -297,9 +275,7 @@ public class ReplicatedTree implements Runnable, Cloneable, MessageListener, Mem
                         new Message(null, null, new Request(Request.REMOVE, fqn)));
             }
             catch(Exception ex) {
-                Trace.error(
-                        "ReplicatedTree.remove()",
-                        "failure bcasting REMOVE request: " + ex);
+                if(log.isErrorEnabled()) log.error("failure bcasting REMOVE request: " + ex);
             }
         }
         else {
@@ -322,9 +298,7 @@ public class ReplicatedTree implements Runnable, Cloneable, MessageListener, Mem
 		//if true, propagate action to the group
         if(send_message == true) {
             if(channel == null) {
-                Trace.error(
-                        "ReplicatedTree.remove()",
-                        "channel is null, cannot broadcast REMOVE request");
+                if(log.isErrorEnabled()) log.error("channel is null, cannot broadcast REMOVE request");
                 return;
             }
             try {
@@ -335,9 +309,7 @@ public class ReplicatedTree implements Runnable, Cloneable, MessageListener, Mem
                                 new Request(Request.REMOVE, fqn, key)));
             }
             catch(Exception ex) {
-                Trace.error(
-                        "ReplicatedTree.remove()",
-                        "failure bcasting REMOVE request: " + ex);
+                if(log.isErrorEnabled()) log.error("failure bcasting REMOVE request: " + ex);
             }
         }
         else {
@@ -575,10 +547,10 @@ public class ReplicatedTree implements Runnable, Cloneable, MessageListener, Mem
             request_queue.add(req);
         }
         catch(QueueClosedException queue_closed_ex) {
-            Trace.error("ReplicatedTree.receive()", "request queue is null");
+            if(log.isErrorEnabled()) log.error("request queue is null");
         }
         catch(Exception ex) {
-            Trace.error("ReplicatedTree.receive()", "failed unmarshalling request: " + ex);
+            if(log.isErrorEnabled()) log.error("failed unmarshalling request: " + ex);
             return;
         }
     }
@@ -589,7 +561,7 @@ public class ReplicatedTree implements Runnable, Cloneable, MessageListener, Mem
             return Util.objectToByteBuffer(root.clone());
         }
         catch(Throwable ex) {
-            Trace.error("ReplicatedTree.getState()", "exception returning cache: " + ex);
+            if(log.isErrorEnabled()) log.error("exception returning cache: " + ex);
             return null;
         }
     }
@@ -600,7 +572,7 @@ public class ReplicatedTree implements Runnable, Cloneable, MessageListener, Mem
         Object obj;
 
         if(new_state == null) {
-            Trace.info("ReplicatedTree.setState()", "new cache is null");
+            if(log.isInfoEnabled()) log.info("new cache is null");
             return;
         }
         try {
@@ -610,7 +582,7 @@ public class ReplicatedTree implements Runnable, Cloneable, MessageListener, Mem
             notifyAllNodesCreated(root);
         }
         catch(Throwable ex) {
-            Trace.error("ReplicatedTree.setState()", "could not set cache: " + ex);
+            if(log.isErrorEnabled()) log.error("could not set cache: " + ex);
         }
     }
 
@@ -683,7 +655,7 @@ public class ReplicatedTree implements Runnable, Cloneable, MessageListener, Mem
                             _remove(fqn);
                         break;
                     default:
-                        Trace.error("ReplicatedTree.run()", "type " + req.type + " unknown");
+                        if(log.isErrorEnabled()) log.error("type " + req.type + " unknown");
                         break;
                 }
             }
@@ -692,7 +664,7 @@ public class ReplicatedTree implements Runnable, Cloneable, MessageListener, Mem
                 break;
             }
             catch(Throwable other_ex) {
-                Trace.warn("ReplicatedTree.run()", "exception processing request: " + other_ex);
+                if(log.isWarnEnabled()) log.warn("exception processing request: " + other_ex);
             }
         }
     }
@@ -1055,7 +1027,7 @@ public class ReplicatedTree implements Runnable, Cloneable, MessageListener, Mem
         // "PERF(details=true)";
 
         try {
-            Trace.init();
+
             tree=new ReplicatedTree(null, props, 10000);
             // tree.setRemoteCalls(false);
             tree.addReplicatedTreeListener(new MyListener());

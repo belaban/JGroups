@@ -1,4 +1,4 @@
-// $Id: ConnectStressTest.java,v 1.7 2003/11/22 01:12:52 belaban Exp $
+// $Id: ConnectStressTest.java,v 1.8 2004/03/30 06:47:31 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -10,7 +10,6 @@ import org.jgroups.ChannelException;
 import org.jgroups.JChannel;
 import org.jgroups.View;
 import org.jgroups.util.Util;
-import org.jgroups.log.Trace;
 
 import java.util.Vector;
 
@@ -18,7 +17,7 @@ import java.util.Vector;
 /**
  * Creates 1 channel, then creates NUM channels, all try to join the same channel concurrently.
  * @author Bela Ban Nov 20 2003
- * @version $Id: ConnectStressTest.java,v 1.7 2003/11/22 01:12:52 belaban Exp $
+ * @version $Id: ConnectStressTest.java,v 1.8 2004/03/30 06:47:31 belaban Exp $
  */
 public class ConnectStressTest extends TestCase {
     static CyclicBarrier  start_connecting=null;
@@ -48,7 +47,7 @@ public class ConnectStressTest extends TestCase {
 
     public ConnectStressTest(String name) {
         super(name);
-        Trace.init();
+
     }
 
 

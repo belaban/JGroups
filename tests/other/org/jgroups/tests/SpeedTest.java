@@ -1,4 +1,4 @@
-// $Id: SpeedTest.java,v 1.10 2004/01/07 01:09:01 belaban Exp $
+// $Id: SpeedTest.java,v 1.11 2004/03/30 06:47:34 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -8,14 +8,13 @@ import org.jgroups.Channel;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.debug.Debugger;
-import org.jgroups.log.Trace;
 import org.jgroups.util.Util;
 
+import java.io.IOException;
 import java.net.DatagramPacket;
+import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
-import java.net.DatagramSocket;
-import java.io.IOException;
 
 
 /**
@@ -148,7 +147,7 @@ public class SpeedTest {
                 "\nnum_msgs = " + num_msgs +
                 "\n");
 
-        Trace.init();
+
 
         try {
             matrix=new int[num_msgs][2];

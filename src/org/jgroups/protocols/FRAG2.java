@@ -1,14 +1,15 @@
-// $Id: FRAG2.java,v 1.4 2004/02/27 01:31:55 belaban Exp $
+// $Id: FRAG2.java,v 1.5 2004/03/30 06:47:21 belaban Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.*;
-import org.jgroups.log.Trace;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.Util;
 import org.jgroups.util.Range;
+import org.jgroups.util.Util;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.*;
 
 
@@ -26,7 +27,7 @@ import java.util.*;
  * size addition for headers and src and dest address is minimal when the transport finally has to serialize the
  * message, so we add a constant (1000 bytes).
  * @author Bela Ban
- * @version $Id: FRAG2.java,v 1.4 2004/02/27 01:31:55 belaban Exp $
+ * @version $Id: FRAG2.java,v 1.5 2004/03/30 06:47:21 belaban Exp $
  */
 public class FRAG2 extends Protocol {
 
@@ -71,12 +72,12 @@ public class FRAG2 extends Protocol {
         int old_frag_size=frag_size;
         frag_size-=overhead;
         if(frag_size <=0) {
-            Trace.error("FRAG2.setProperties()", "frag_size=" + old_frag_size + ", overhead=" + overhead +
+            if(log.isErrorEnabled()) log.error("frag_size=" + old_frag_size + ", overhead=" + overhead +
                     ", new frag_size=" + frag_size + ": new frag_size is invalid");
             return false;
         }
-        if(Trace.trace)
-            Trace.info("FRAG2.setProperties()", "frag_size=" + old_frag_size + ", overhead=" + overhead +
+
+            if(log.isInfoEnabled()) log.info("frag_size=" + old_frag_size + ", overhead=" + overhead +
                     ", new frag_size=" + frag_size);
 
         if(props.size() > 0) {
@@ -101,11 +102,11 @@ public class FRAG2 extends Protocol {
                 Message msg=(Message)evt.getArg();
                 long size=msg.getLength();
                 if(size > frag_size) {
-                    if(Trace.trace) {
+                     {
                         StringBuffer sb=new StringBuffer("message's buffer size is ");
                         sb.append(size).append(", will fragment ").append("(frag_size=");
                         sb.append(frag_size).append(")");
-                        Trace.info("FRAG2.down()", sb.toString());
+                        if(log.isInfoEnabled()) log.info(sb.toString());
                     }
                     fragment(msg);  // Fragment and pass down
                     return;
@@ -129,14 +130,14 @@ public class FRAG2 extends Protocol {
                     //the new view doesn't contain the sender, he must have left,
                     //hence we will clear all his fragmentation tables
                     fragment_list.remove(mbr);
-                    if(Trace.trace)
-                        Trace.info("FRAG2.down()", "[VIEW_CHANGE] removed " + mbr + " from fragmentation table");
+
+                        if(log.isInfoEnabled()) log.info("[VIEW_CHANGE] removed " + mbr + " from fragmentation table");
                 }
                 break;
 
             case Event.CONFIG:
                 passDown(evt);
-                if(Trace.trace) Trace.info("FRAG2.down()", "received CONFIG event: " + evt.getArg());
+                 if(log.isInfoEnabled()) log.info("received CONFIG event: " + evt.getArg());
                 handleConfigEvent((HashMap)evt.getArg());
                 return;
         }
@@ -168,7 +169,7 @@ public class FRAG2 extends Protocol {
 
             case Event.CONFIG:
                 passUp(evt);
-                if(Trace.trace) Trace.info("FRAG2.up()", "received CONFIG event: " + evt.getArg());
+                 if(log.isInfoEnabled()) log.info("received CONFIG event: " + evt.getArg());
                 handleConfigEvent((HashMap)evt.getArg());
                 return;
         }
@@ -205,11 +206,11 @@ public class FRAG2 extends Protocol {
             fragments=Util.computeFragOffsets(buffer, frag_size);
             num_frags=fragments.size();
 
-            if(Trace.trace) {
+             {
                 sb=new StringBuffer("fragmenting packet to ");
                 sb.append((dest != null ? dest.toString() : "<all members>")).append(" (size=").append(buffer.length);
                 sb.append(") into ").append(num_frags).append(" fragment(s) [frag_size=").append(frag_size).append("]");
-                Trace.info("FRAG2.fragment()", sb.toString());
+                if(log.isInfoEnabled()) log.info(sb.toString());
             }
 
             for(int i=0; i < fragments.size(); i++) {
@@ -218,15 +219,15 @@ public class FRAG2 extends Protocol {
                 frag_msg=msg.copy(false); // don't copy the buffer
                 frag_msg.setBuffer(buffer, (int)r.low, (int)r.high);
                 hdr=new FragHeader(id, i, num_frags);
-                if(Trace.trace)
-                    Trace.debug("FRAG2.fragment()", "fragment's header is " + hdr);
+
+                    if(log.isDebugEnabled()) log.debug("fragment's header is " + hdr);
                 frag_msg.putHeader(name, hdr);
                 evt=new Event(Event.MSG, frag_msg);
                 passDown(evt);
             }
         }
         catch(Exception e) {
-            Trace.error("FRAG2.fragment()", "exception is " + e);
+            if(log.isErrorEnabled()) log.error("exception is " + e);
         }
 
     }
@@ -245,7 +246,7 @@ public class FRAG2 extends Protocol {
         Message            assembled_msg;
         FragHeader         hdr=(FragHeader)msg.removeHeader(getName());
 
-        if(Trace.trace) Trace.debug("FRAG2.unfragment()", "[" + local_addr + "] received msg, hdr is " + hdr);
+         if(log.isDebugEnabled()) log.debug("[" + local_addr + "] received msg, hdr is " + hdr);
 
         frag_table=fragment_list.get(sender);
         if(frag_table == null) {
@@ -260,12 +261,12 @@ public class FRAG2 extends Protocol {
         assembled_msg=frag_table.add(hdr.id, hdr.frag_id, hdr.num_frags, msg);
         if(assembled_msg != null) {
             try {
-                if(Trace.trace) Trace.info("FRAG2.unfragment()", "assembled_msg is " + assembled_msg);
+                 if(log.isInfoEnabled()) log.info("assembled_msg is " + assembled_msg);
                 assembled_msg.setSrc(sender); // needed ? YES, because fragments have a null src !!
                 passUp(new Event(Event.MSG, assembled_msg));
             }
             catch(Exception e) {
-                Trace.error("FRAG2.unfragment()", "exception is " + e);
+                if(log.isErrorEnabled()) log.error("exception is " + e);
             }
         }
     }
@@ -275,8 +276,8 @@ public class FRAG2 extends Protocol {
         if(map == null) return;
         if(map.containsKey("frag_size")) {
             frag_size=((Integer)map.get("frag_size")).intValue();
-            if(Trace.trace)
-                Trace.info("FRAG2.handleConfigEvent()", "setting frag_size=" + frag_size);
+
+                if(log.isInfoEnabled()) log.info("setting frag_size=" + frag_size);
         }
     }
 

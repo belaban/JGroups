@@ -1,6 +1,9 @@
-// $Id: CAUSAL.java,v 1.3 2004/01/16 16:47:51 belaban Exp $
+// $Id: CAUSAL.java,v 1.4 2004/03/30 06:47:20 belaban Exp $
 
 package org.jgroups.protocols;
+
+import org.jgroups.*;
+import org.jgroups.stack.Protocol;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -8,9 +11,6 @@ import java.io.ObjectOutput;
 import java.util.LinkedList;
 import java.util.ListIterator;
 import java.util.Vector;
-import org.jgroups.*;
-import org.jgroups.stack.*;
-import org.jgroups.log.Trace;
 
 
 
@@ -62,7 +62,7 @@ import org.jgroups.log.Trace;
  *    for every k:1...n VT(pj)[k] == max(VT(mi)[k],VT(pj)[k])
  *</p>
  *  @author Vladimir Blagojevic vladimir@cs.yorku.ca
- *  @version $Revision: 1.3 $
+ *  @version $Revision: 1.4 $
  *
  **/
 
@@ -233,7 +233,7 @@ public class CAUSAL extends Protocol
 
             if (!((obj = msg.getHeader(getName())) instanceof CausalHeader))
             {
-               Trace.error("CAUSAL", "NO CAUSAL.Header found");
+               if(log.isErrorEnabled()) log.error("NO CAUSAL.Header found");
 	       passUp(evt);
 	       return;
             }

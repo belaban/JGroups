@@ -4,7 +4,7 @@
 // replacing SecretKey with SecretKey
 
 
-// $Id: ENCRYPT1_4.java,v 1.1 2003/09/09 01:24:09 belaban Exp $
+// $Id: ENCRYPT1_4.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -12,7 +12,6 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.View;
-import org.jgroups.log.Trace;
 import org.jgroups.stack.Protocol;
 
 import javax.crypto.Cipher;
@@ -111,8 +110,8 @@ public static class EncryptHeader extends org.jgroups.Header {
         if(str != null) {
             asymInit=new Integer(str).intValue();
             props.remove("asymInit");
-	    if (Trace.trace)
-		Trace.info("ENCRYPT1_4.setProperties()", "Asym algo bits used is " + asymInit);
+
+		if(log.isInfoEnabled()) log.info("Asym algo bits used is " + asymInit);
         }
 
         // symmetric key length
@@ -120,8 +119,8 @@ public static class EncryptHeader extends org.jgroups.Header {
         if(str != null) {
             symInit=new Integer(str).intValue();
             props.remove("symInit");
-	    if (Trace.trace)
-		Trace.info("ENCRYPT1_4.setProperties()", "Sym algo bits used is " + symInit);
+
+		if(log.isInfoEnabled()) log.info("Sym algo bits used is " + symInit);
         }
 
         // asymmetric algorithm name
@@ -129,8 +128,8 @@ public static class EncryptHeader extends org.jgroups.Header {
         if(str != null) {
             asymAlgorithm=new String(str).toString();
             props.remove("asymAlgorithm");
-	    if (Trace.trace)
-		Trace.info("ENCRYPT1_4.setProperties()", "Asym algo used is " + asymAlgorithm);
+
+		if(log.isInfoEnabled()) log.info("Asym algo used is " + asymAlgorithm);
         }
 
         // symmetric algorithm name
@@ -138,12 +137,12 @@ public static class EncryptHeader extends org.jgroups.Header {
         if(str != null) {
             symAlgorithm=new String(str).toString();
             props.remove("symAlgorithm");
-	    if (Trace.trace)
-		Trace.info("ENCRYPT1_4.setProperties()", "Sym algo used is " + symAlgorithm);
+
+		if(log.isInfoEnabled()) log.info("Sym algo used is " + symAlgorithm);
         }
         if(props.size() > 0) {
-	    if (Trace.trace)
-		Trace.error("ENCRYPT1_4.setProperties()", "these properties are not recognized:"+ props);
+
+		if(log.isErrorEnabled()) log.error("these properties are not recognized:"+ props);
             return false;
         }
 
@@ -167,8 +166,8 @@ public static class EncryptHeader extends org.jgroups.Header {
         rsa=Cipher.getInstance(asymAlgorithm);
         cipher=Cipher.getInstance(symAlgorithm);
 
-	if (Trace.trace)
-	    Trace.info("ENCRYPT1_4.init()", " Both asym and sym algo initialized with the single shared key");
+
+	    if(log.isInfoEnabled()) log.info(" Both asym and sym algo initialized with the single shared key");
     }
 
     /** Just remove if you don't need to reset any state */
@@ -180,19 +179,19 @@ public static class EncryptHeader extends org.jgroups.Header {
         Message newMsg;
         EncryptHeader hdr;
 
-	if (Trace.trace)
-	    Trace.info("ENCRYPT1_4.up()", "Event going up is " + evt);
+
+	    if(log.isInfoEnabled()) log.info("Event going up is " + evt);
 
         switch(evt.getType()) {
             case Event.SET_LOCAL_ADDRESS:
-		if (Trace.trace)
-		    Trace.info("ENCRYPT1_4.up()", "Set address call");
+
+		    if(log.isInfoEnabled()) log.info("Set address call");
                 local_addr=(Address)evt.getArg();
                 break;
             case Event.FIND_INITIAL_MBRS_OK:
                 Vector member=(Vector)evt.getArg();
-		if (Trace.trace)
-		    Trace.info("ENCRYPT1_4.up()", "FIND_INIT members call, left members are " + member.size());
+
+		    if(log.isInfoEnabled()) log.info("FIND_INIT members call, left members are " + member.size());
 
 		
 		// this check is required, to prevent keyServer= false when adding itself
@@ -208,28 +207,28 @@ public static class EncryptHeader extends org.jgroups.Header {
 		    {
 			
 			desKey=null;
-			if (Trace.trace)
-			    Trace.debug("ENCRYPT1_4.up()", "This is not keyserver, deskey set to null");
+
+			    if(log.isDebugEnabled()) log.debug("This is not keyserver, deskey set to null");
 			// client send clien's public key to server and request server's public key
 			newMsg=new Message(keyServerAddr, local_addr, Kpair.getPublic().getEncoded());
 			// making changes (MANDAR)
 			newMsg.putHeader(EncryptHeader.KEY, new EncryptHeader(EncryptHeader.KEY_REQUEST));
 			passDown(new Event(Event.MSG, newMsg));
 		    }
-		if (Trace.trace)
-		    Trace.info("ENCRYPT1_4.up()", "Done parsing for encrypt headers, sending upwards" + evt);
+
+		    if(log.isInfoEnabled()) log.info("Done parsing for encrypt headers, sending upwards" + evt);
 		passUp(evt);
                 return;
 
             case Event.MSG:
                 msg=(Message) evt.getArg();
-		if (Trace.trace)
-		    Trace.info("ENCRYPT1_4.up()", "This is a message from peer, not control header" + msg);
+
+		    if(log.isInfoEnabled()) log.info("This is a message from peer, not control header" + msg);
 
                 // making changes (MANDAR)
                 if(msg == null) {
-		    if (Trace.trace)
-			Trace.debug("ENCRYPT1_4.up()", "Null message");
+
+			if(log.isDebugEnabled()) log.debug("Null message");
                     passUp(evt);
                     return;
                 }
@@ -237,13 +236,13 @@ public static class EncryptHeader extends org.jgroups.Header {
                 // making changes (MANDAR)
                 //Object obj=msg.peekHeader();
                 Object obj=msg.removeHeader(EncryptHeader.KEY);
-		if (Trace.trace)
-		    Trace.info("ENCRYPT1_4.up()", "Stripping the required protocol header");
+
+		    if(log.isInfoEnabled()) log.info("Stripping the required protocol header");
 
                 // if not encrypted message, pass up
                 if(obj == null || !(obj instanceof EncryptHeader)) {
-		    if (Trace.trace)
-			Trace.info("ENCRYPT1_4.up()", "Dropping package as ENCRYPT1_4 protocol is not been recognized, msg will not be passed up");
+
+			if(log.isInfoEnabled()) log.info("Dropping package as ENCRYPT1_4 protocol is not been recognized, msg will not be passed up");
 
 		    // BELA comment this out in case U think otherwise
                     //passUp(evt);
@@ -253,34 +252,34 @@ public static class EncryptHeader extends org.jgroups.Header {
                 // making changes (MANDAR)
                 //hdr = (EncryptHeader)msg.removeHeader();
                 hdr=(EncryptHeader) obj;
-		if (Trace.trace)
-		    Trace.info("ENCRYPT1_4.up()", "Header received " + hdr + ":" + hdr.type);
+
+		    if(log.isInfoEnabled()) log.info("Header received " + hdr + ":" + hdr.type);
                 switch(hdr.type) {
                     // key request from client and send server's public key to client
                     case EncryptHeader.KEY_REQUEST:
                         try {
-			    if (Trace.trace)
-				Trace.debug("ENCRYPT1_4.up()", "Request for key");
+
+				if(log.isDebugEnabled()) log.debug("Request for key");
                             // store the this client to notReady list using client's address
                             notReady.addElement(msg.getSrc());
                             // store the client's public key for temporary
                             PublicKey pubKey=generatePubKey(msg.getBuffer());
-			    if (Trace.trace)
-				Trace.debug("ENCRYPT1_4.up()", "Generated requestors public key");
+
+				if(log.isDebugEnabled()) log.debug("Generated requestors public key");
 
                             // send server's publicKey
                             newMsg=new Message(msg.getSrc(), local_addr, Kpair.getPublic().getEncoded());
                             // making changes (MANDAR)
                             newMsg.putHeader(EncryptHeader.KEY, new EncryptHeader(EncryptHeader.SERVER_PUBKEY));
-			    if (Trace.trace)
-				Trace.debug("ENCRYPT1_4.up()", "Encoded servers public key using clients public key, only client can debug it using its private key and sending it back");			    
+
+				if(log.isDebugEnabled()) log.debug("Encoded servers public key using clients public key, only client can debug it using its private key and sending it back");
                             passDown(new Event(Event.MSG, newMsg));
 
 			    // my changes (MANDAR)
 			    rsa.init(Cipher.ENCRYPT_MODE, pubKey);			    
 			    byte[] encryptedKey = rsa.doFinal(desKey.getEncoded());
-			    if (Trace.trace)
-				Trace.debug("ENCRYPT1_4.up()", " Generated encoded key which only client can decode");
+
+				if(log.isDebugEnabled()) log.debug(" Generated encoded key which only client can decode");
 			    
                             // send shared DesKey to client
                             //   1. Decrypt desKey with server's own private Key
@@ -298,8 +297,8 @@ public static class EncryptHeader extends org.jgroups.Header {
                             newMsg=new Message(msg.getSrc(), local_addr, encryptedKey);
                             // making changes (MANDAR)
                             newMsg.putHeader(EncryptHeader.KEY, new EncryptHeader(EncryptHeader.SECRETKEY));
-			    if (Trace.trace)
-				Trace.debug("ENCRYPT1_4.up()", " Sending encoded key to client");
+
+				if(log.isDebugEnabled()) log.debug(" Sending encoded key to client");
                             passDown(new Event(Event.MSG, newMsg));
                         }
                         catch(Exception e) {
@@ -310,13 +309,13 @@ public static class EncryptHeader extends org.jgroups.Header {
                     case EncryptHeader.SECRETKEY_READY:						
                         //server get client's public key and generate the secret key
                         notReady.removeElement(msg.getSrc());
-			if (Trace.trace)
-			    Trace.debug("ENCRYPT1_4.up()", "Removed client " + msg.getSrc() + "from notready list");
+
+			    if(log.isDebugEnabled()) log.debug("Removed client " + msg.getSrc() + "from notready list");
                         return;
                     case EncryptHeader.SERVER_PUBKEY:
                         serverPubKey=generatePubKey(msg.getBuffer());
-			if (Trace.trace)
-			    Trace.debug("ENCRYPT1_4.up()", " Obtained the servers public key");
+
+			    if(log.isDebugEnabled()) log.debug(" Obtained the servers public key");
                         return;
 
                     case EncryptHeader.SECRETKEY:
@@ -326,8 +325,8 @@ public static class EncryptHeader extends org.jgroups.Header {
 			    // my changes (MANDAR)
 			    byte[] encodedKey = rsa.doFinal(msg.getBuffer());
 
-			    if (Trace.trace)
-				Trace.debug("ENCRYPT1_4.up()", "generating encoded key obtained from server-admin");
+
+				if(log.isDebugEnabled()) log.debug("generating encoded key obtained from server-admin");
 			    
 			    /* Piece commented out by MANDAR 
                             byte[] decryptedKey=rsa.doFinal(msg.getBuffer());			    
@@ -338,8 +337,8 @@ public static class EncryptHeader extends org.jgroups.Header {
 
                             // decode secretKey
                             desKey=decodedKey(encodedKey);
-			    if ( (desKey == null) && (Trace.trace) )
-				Trace.error("ENCRYPT1_4.up()", "ohh oh !! DES key is null");
+                            if(desKey == null)
+                                log.error("ohh oh !! DES key is null");
 				    
 
                             // send ready message (MANDAR) null -> ""
@@ -347,8 +346,8 @@ public static class EncryptHeader extends org.jgroups.Header {
                             // making changes (MANDAR)
                             newMsg.putHeader(EncryptHeader.KEY, new EncryptHeader(EncryptHeader.SECRETKEY_READY));
                             passDown(new Event(Event.MSG, newMsg));
-			    if (Trace.trace)
-				Trace.debug("ENCRYPT1_4.up()", "Got the deskey, sending down sec_Ready header");	
+
+				if(log.isDebugEnabled()) log.debug("Got the deskey, sending down sec_Ready header");
                         }
                         catch(Exception e) {
                             e.printStackTrace();
@@ -360,15 +359,15 @@ public static class EncryptHeader extends org.jgroups.Header {
                         break;
                 }
 
-                if ((hdr.type != 0)  && (Trace.trace))
-		    Trace.error("ENCRYPT1_4.up()", "Error , header is not 0");
+                if (hdr.type != 0)
+                    log.error("Error , header is not 0");
 
                 // not have shared key yet
                 // this encrypted message is of no use, drop it
                 if(desKey == null) return;
 
-		if (Trace.trace)
-		    Trace.info("ENCRYPT1_4.up()"," Starting to decypher messages");
+
+		    if(log.isInfoEnabled()) log.info(" Starting to decypher messages");
 
                 // if both the shared key and incoming message are not null
                 // decrypt the message
@@ -383,8 +382,8 @@ public static class EncryptHeader extends org.jgroups.Header {
                 }
                 break;
         }
-	if (Trace.trace)
-	    Trace.info("ENCRYPT1_4.up()", "Passing up event");
+
+	    if(log.isInfoEnabled()) log.info("Passing up event");
         passUp(evt);            // Pass up to the layer above us
     }
 
@@ -393,14 +392,14 @@ public static class EncryptHeader extends org.jgroups.Header {
         Message newMsg;
         boolean leave=false;
 
-	if (Trace.trace)
-	    Trace.info("ENCRYPT1_4.down()", "down:evt is " + evt + ":" + evt.getType());
+
+	    if(log.isInfoEnabled()) log.info("down:evt is " + evt + ":" + evt.getType());
 
         switch(evt.getType()) {
 	    
             case Event.VIEW_CHANGE:
-		if (Trace.trace)
-		    Trace.info("ENCRYPT1_4.down()", "View change call, new member coming in");
+
+		    if(log.isInfoEnabled()) log.info("View change call, new member coming in");
                 Vector new_members=((View)evt.getArg()).getMembers();
 
                 // member size decreases: member leaves, need a new key
@@ -427,8 +426,8 @@ public static class EncryptHeader extends org.jgroups.Header {
 
                         // reset shared key
                         desKey=null;
-			if (Trace.trace)
-			    Trace.info("ENCRYPT1_4.down()", " leave caused deskey to be null ");
+
+			    if(log.isInfoEnabled()) log.info(" leave caused deskey to be null ");
 
                         try {
                             //generate new shared key
@@ -453,16 +452,16 @@ public static class EncryptHeader extends org.jgroups.Header {
                         // making changes (MANDAR)
                         newMsg.putHeader(EncryptHeader.KEY, new EncryptHeader(EncryptHeader.KEY_REQUEST));
                         passDown(new Event(Event.MSG, newMsg));
-			if (Trace.trace)
-			    Trace.debug("ENCRYPT1_4.down()", "Requesting new key to be part of group");
+
+			    if(log.isDebugEnabled()) log.debug("Requesting new key to be part of group");
                     } // end of else
                 }
                 break;
 
             case Event.MSG:
                 msg= (Message) evt.getArg();
-		if (Trace.trace)
-		    Trace.debug("ENCRYPT1_4.down()", "Its a message call " + msg);
+
+		    if(log.isDebugEnabled()) log.debug("Its a message call " + msg);
 		int i;
 		
 		// For Server:
@@ -493,8 +492,8 @@ public static class EncryptHeader extends org.jgroups.Header {
 		if(desKey != null) 
 		    {
 
-			if (Trace.trace)
-			    Trace.info(" ENCRYPT1_4.down()", "DESkey is not null, I know it ");
+
+			    if(log.isInfoEnabled()) log.info("DESkey is not null, I know it ");
 			try 
 			    {
 				// if the message is not empty, encrypt it
@@ -503,15 +502,15 @@ public static class EncryptHeader extends org.jgroups.Header {
 					cipher.init(Cipher.ENCRYPT_MODE, desKey);
 					msg.setBuffer(cipher.doFinal(msg.getBuffer()));
 					msg.putHeader(EncryptHeader.KEY, new EncryptHeader(0));
-					if (Trace.trace)
-					    Trace.info(" ENCRYPT1_4.down()", " have DES key , package sent");
+
+					    if(log.isInfoEnabled()) log.info(" have DES key , package sent");
 				    }
 				else
 				    {
 					msg.setBuffer(null);
 					msg.putHeader(EncryptHeader.KEY, new EncryptHeader(0));
-					if (Trace.trace)
-					    Trace.info(" ENCRYPT1_4.down()"," buffer null, added header");
+
+					    if(log.isInfoEnabled()) log.info(" buffer null, added header");
 				    }
 			    }catch(Exception e) 
 				{
@@ -520,8 +519,8 @@ public static class EncryptHeader extends org.jgroups.Header {
 		    }
 		break;
 	}// check des key..
-	if (Trace.trace)
-	    Trace.info(" ENCRYPT1_4.down()", "Pass Down: " + evt.toString());
+
+	    if(log.isInfoEnabled()) log.info("Pass Down: " + evt.toString());
 	passDown(evt);          // Pass on to the layer below us
     }
 

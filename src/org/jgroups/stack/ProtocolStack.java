@@ -1,4 +1,4 @@
-// $Id: ProtocolStack.java,v 1.8 2003/12/26 23:52:05 belaban Exp $
+// $Id: ProtocolStack.java,v 1.9 2004/03/30 06:47:27 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -7,7 +7,6 @@ import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.Transport;
 import org.jgroups.conf.ClassConfigurator;
-import org.jgroups.log.Trace;
 import org.jgroups.util.Promise;
 import org.jgroups.util.TimeScheduler;
 
@@ -253,38 +252,14 @@ public class ProtocolStack extends Protocol implements Transport {
 
         if(stopped) return;
 
-
         if(stop_promise == null)
             stop_promise=new Promise();
         else
             stop_promise.reset();
 
         down(new Event(Event.STOP));
-        stop_promise.getResult(0);
+        stop_promise.getResult(5000);
         stopped=true;
-
-
-//        synchronized(mutex) {
-//            Protocol p;
-//            Vector   prots=getProtocols(); // from top to bottom
-//            Queue    down_queue;
-//
-//            for(int i=0; i < prots.size(); i++) {
-//                p=(Protocol)prots.elementAt(i);
-//
-//                // 1. Wait until down queue is empty
-//                down_queue=p.getDownQueue();
-//                if(down_queue != null) {
-//                    while(down_queue.size() > 0 && !down_queue.closed()) {
-//                        Util.sleep(100);  // FIXME: use a signal when empty (implement when switching to util.concurrent)
-//                    }
-//                }
-//
-//                // 2. Call stop() on protocol
-//                p.stop();
-//            }
-//            stopped=true;
-//        }
     }
 
     public void stopInternal() {
@@ -303,8 +278,7 @@ public class ProtocolStack extends Protocol implements Transport {
         down(new Event(Event.ACK));
         ack_promise.getResult(0);
         stop=System.currentTimeMillis();
-        if(Trace.trace)
-            Trace.info("ProtocolStack.flushEvents()", "flushing took " + (stop-start) + " msecs");
+        if(log.isInfoEnabled()) log.info("flushing took " + (stop-start) + " msecs");
     }
 
 
@@ -356,7 +330,7 @@ public class ProtocolStack extends Protocol implements Transport {
         if(top_prot != null)
             top_prot.receiveDownEvent(evt);
         else
-            Trace.error("ProtocolStack.down()", "no down protocol available !");
+            if(log.isErrorEnabled()) log.error("no down protocol available !");
     }
 
 

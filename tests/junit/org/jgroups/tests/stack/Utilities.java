@@ -1,15 +1,15 @@
-// $Id: Utilities.java,v 1.2 2003/10/29 16:02:45 ovidiuf Exp $
+// $Id: Utilities.java,v 1.3 2004/03/30 06:47:30 belaban Exp $
 
 package org.jgroups.tests.stack;
 
+import org.jgroups.stack.GossipRouter;
+import org.jgroups.stack.GossipServer;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
-import org.jgroups.log.Trace;
-import org.jgroups.stack.GossipRouter;
-import java.io.ObjectOutputStream;
-import org.jgroups.stack.GossipServer;
 
 /**
  * Utility functions shared by stack tests.
@@ -17,7 +17,7 @@ import org.jgroups.stack.GossipServer;
  * @since 2.2.1
  *
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Revision: 1.2 $
+ * @version $Revision: 1.3 $
  **/
 public class Utilities {
 

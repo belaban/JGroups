@@ -1,11 +1,14 @@
-// $Id: EXAMPLE.java,v 1.1 2003/09/09 01:24:09 belaban Exp $
+// $Id: EXAMPLE.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
 
 package org.jgroups.protocols;
 
+import org.jgroups.Event;
+import org.jgroups.Message;
+import org.jgroups.View;
+import org.jgroups.stack.Protocol;
+
 import java.io.Serializable;
 import java.util.Vector;
-import org.jgroups.*;
-import org.jgroups.stack.*;
 
 
 

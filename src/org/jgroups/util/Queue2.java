@@ -1,16 +1,16 @@
-// $Id: Queue2.java,v 1.1 2003/09/24 18:54:32 belaban Exp $
+// $Id: Queue2.java,v 1.2 2004/03/30 06:47:28 belaban Exp $
 
 package org.jgroups.util;
 
 
+import EDU.oswego.cs.dl.util.concurrent.CondVar;
+import EDU.oswego.cs.dl.util.concurrent.Mutex;
+import EDU.oswego.cs.dl.util.concurrent.Sync;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jgroups.TimeoutException;
-import org.jgroups.log.Trace;
 
 import java.util.Vector;
-
-import EDU.oswego.cs.dl.util.concurrent.Sync;
-import EDU.oswego.cs.dl.util.concurrent.Mutex;
-import EDU.oswego.cs.dl.util.concurrent.CondVar;
 
 
 
@@ -46,6 +46,8 @@ public class Queue2 {
 
     /*the number of end markers that have been added*/
     int     num_markers=0;
+
+    protected static Log log=LogFactory.getLog(Queue2.class);
 
 
     /**
@@ -127,7 +129,7 @@ public class Queue2 {
      */
     public void add(Object obj) throws QueueClosedException {
         if(obj == null) {
-            Trace.error("Queue2.add()", "argument must not be null");
+            if(log.isErrorEnabled()) log.error("argument must not be null");
             return;
         }
         if(closed)
@@ -181,7 +183,7 @@ public class Queue2 {
      */
     public void addAtHead(Object obj) throws QueueClosedException {
         if(obj == null) {
-            Trace.error("Queue2.addAtHead()", "argument must not be null");
+            if(log.isErrorEnabled()) log.error("argument must not be null");
             return;
         }
         if(closed)
@@ -248,7 +250,7 @@ public class Queue2 {
             /*remove the head from the queue, if we make it to this point, retval should not be null !*/
             retval=removeInternal();
             if(retval == null)
-                Trace.error("Queue2.remove()", "element was null, should never be the case");
+                if(log.isErrorEnabled()) log.error("element was null, should never be the case");
         }
         catch(InterruptedException e) {
             ;
@@ -333,7 +335,7 @@ public class Queue2 {
         boolean removed=false;
 
         if(obj == null) {
-            Trace.error("Queue2.removeElement()", "argument must not be null");
+            if(log.isErrorEnabled()) log.error("argument must not be null");
             return;
         }
 
@@ -417,7 +419,7 @@ public class Queue2 {
             // @remove:
             if(retval == null) {
                 // print some diagnostics
-                Trace.error("Queue2.peek()", "retval is null: head=" + head + ", tail=" + tail + ", size()=" + size() +
+                if(log.isErrorEnabled()) log.error("retval is null: head=" + head + ", tail=" + tail + ", size()=" + size() +
                         ", num_markers=" + num_markers + ", closed()=" + closed());
             }
         }
@@ -515,7 +517,7 @@ public class Queue2 {
                 remove_condvar.broadcast();
             }
             catch(Exception e) {
-                Trace.error("Queue2.close()", "exception=" + e);
+                if(log.isErrorEnabled()) log.error("exception=" + e);
             }
         }
         catch(InterruptedException e) {

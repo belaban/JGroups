@@ -1,13 +1,16 @@
-// $Id: TimeSchedulerTest.java,v 1.1 2003/09/09 01:24:13 belaban Exp $
+// $Id: TimeSchedulerTest.java,v 1.2 2004/03/30 06:47:31 belaban Exp $
 package org.jgroups.tests;
 
 
 
-import java.util.HashMap;
-import junit.framework.*;
-import org.jgroups.stack.*;
-import org.jgroups.util.Util;
+import junit.framework.Test;
+import junit.framework.TestCase;
+import junit.framework.TestSuite;
+import org.jgroups.stack.Interval;
 import org.jgroups.util.TimeScheduler;
+import org.jgroups.util.Util;
+
+import java.util.HashMap;
 
 
 

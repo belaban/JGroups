@@ -1,13 +1,13 @@
-// $Id: DistributedQueuePutTask.java,v 1.2 2004/01/09 18:21:38 rds13 Exp $
+// $Id: DistributedQueuePutTask.java,v 1.3 2004/03/30 06:47:30 belaban Exp $
 /*
  * Created on Oct 15, 2003
  *
  */
 package org.jgroups.blocks;
 
-import java.util.Vector;
-
 import org.jgroups.util.Util;
+
+import java.util.Vector;
 
 /**
  * @author Romuald du Song

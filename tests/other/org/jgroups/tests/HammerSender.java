@@ -1,10 +1,11 @@
 package org.jgroups.tests;
 
-import java.io.*;
 import org.jgroups.JChannel;
-import org.jgroups.blocks.RpcDispatcher;
 import org.jgroups.blocks.GroupRequest;
 import org.jgroups.blocks.MethodCall;
+import org.jgroups.blocks.RpcDispatcher;
+
+import java.io.InputStream;
 
 /*
  * @author Bob Stevenson - HAMMER

@@ -1,16 +1,17 @@
-// $Id: Gossip.java,v 1.3 2004/02/26 19:15:00 belaban Exp $
+// $Id: Gossip.java,v 1.4 2004/03/30 06:47:16 belaban Exp $
 
 package org.jgroups.demos;
 
 
 import org.jgroups.*;
-import org.jgroups.log.Trace;
 import org.jgroups.util.Util;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.Random;
 import java.util.Vector;
 
@@ -47,7 +48,7 @@ public class Gossip implements Runnable, WindowListener, ActionListener, Channel
 
 
     public Gossip(String props, long traffic) throws Exception {
-        Trace.init();
+
         channel=new JChannel(props);
         channel.setChannelListener(this);
         channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);

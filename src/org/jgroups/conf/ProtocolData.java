@@ -1,4 +1,4 @@
-// $Id: ProtocolData.java,v 1.1 2003/09/09 01:24:08 belaban Exp $
+// $Id: ProtocolData.java,v 1.2 2004/03/30 06:47:14 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -7,8 +7,8 @@ package org.jgroups.conf;
  * @author Filip Hanik (<a href="mailto:filip@filip.net">filip@filip.net)
  * @version 1.0
  */
-import java.util.Iterator;
 import java.util.HashMap;
+import java.util.Iterator;
 public class ProtocolData
 {
     private HashMap mParameters = new HashMap(); 

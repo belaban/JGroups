@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.2 2004/01/08 02:39:56 belaban Exp $
+// $Id: GMS.java,v 1.3 2004/03/30 06:47:21 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -6,7 +6,6 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.blocks.GroupRequest;
 import org.jgroups.blocks.MethodCall;
-import org.jgroups.log.Trace;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.RpcProtocol;
 import org.jgroups.util.Queue;
@@ -74,7 +73,7 @@ public class GMS extends RpcProtocol implements Runnable {
     public void setImpl(GmsImpl new_impl) {
         synchronized(impl_mutex) {
             impl=new_impl;
-            if(Trace.trace) Trace.info("GMS.setImpl()", "changed role to " + new_impl.getClass().getName());
+             if(log.isInfoEnabled()) log.info("changed role to " + new_impl.getClass().getName());
         }
     }
 
@@ -82,7 +81,7 @@ public class GMS extends RpcProtocol implements Runnable {
     public void start() throws Exception {
         super.start();
         if(checkForViewEnforcer(up_prot) == false) {
-            Trace.warn("GMS.start()", "I need protocol layer " +
+            if(log.isWarnEnabled()) log.warn("I need protocol layer " +
                     "VIEW_ENFORCER above me to discard messages sent to me while I'm " +
                     "not yet a group member ! Otherwise, these messages will be delivered " +
                     "to the application without checking...\n");
@@ -263,13 +262,13 @@ public class GMS extends RpcProtocol implements Runnable {
                 }
             }
         } // while
-        if(Trace.trace) Trace.info("GMS.flush()", "flushing completed.");
+         if(log.isInfoEnabled()) log.info("flushing completed.");
 
 
         // Rebroadcast unstable messages
         if(rebroadcast_unstable_msgs && rebroadcast_msgs.size() > 0) {
-            if(Trace.trace)
-                Trace.info("GMS.flush()", "re-broadcasting unstable messages (" +
+
+                if(log.isInfoEnabled()) log.info("re-broadcasting unstable messages (" +
                         rebroadcast_msgs.size() + ")");
             // NAKACK layer will rebroadcast the msgs (using the same seqnos assigned earlier)
             synchronized(rebroadcast_mutex) {
@@ -280,7 +279,7 @@ public class GMS extends RpcProtocol implements Runnable {
                 catch(Exception e) {
                 }
             }
-            if(Trace.trace) Trace.info("GMS.flush()", "re-broadcasting messages completed");
+             if(log.isInfoEnabled()) log.info("re-broadcasting messages completed");
         }
     }
 
@@ -326,8 +325,8 @@ public class GMS extends RpcProtocol implements Runnable {
         new_view=getNextView(new_mbrs, old_mbrs, suspected_mbrs);
         new_vid=new_view.getVid();
 
-        if(Trace.trace)
-            Trace.info("GMS.castViewChange()", "flush_dest: " + flush_dest +
+
+            if(log.isInfoEnabled()) log.info("flush_dest: " + flush_dest +
                     "\n\tview_dest: " + view_dest + "\n\tnew_view: " + new_view + "\n");
         flush(flush_dest, suspected_mbrs);
 
@@ -343,14 +342,14 @@ public class GMS extends RpcProtocol implements Runnable {
         Event view_event=new Event(Event.TMP_VIEW, tmp_view); // so the VIEW msg is sent to the correct mbrs
         passDown(view_event); // needed e.g. by failure detector or UDP
 
-        if(Trace.trace) Trace.info("GMS.castViewChange()", "mcasting view {" + new_vid + ", " + view_dest + "}");
+         if(log.isInfoEnabled()) log.info("mcasting view {" + new_vid + ", " + view_dest + "}");
         passDown(new Event(Event.SWITCH_NAK_ACK));  // use ACK scheme for view bcast
         Object[] args=new Object[]{new_vid, new_view.getMembers() /* these are the mbrs in the new view */};
         MethodCall call=new MethodCall("handleViewChange", args, new String[]{ViewId.class.getName(), Vector.class.getName()});
         callRemoteMethods(view_dest, // send to all members in 'view_dest'
                 call,
                 GroupRequest.GET_ALL, view_change_timeout);
-        if(Trace.trace) Trace.info("GMS.castViewChange()", "mcasting view completed");
+         if(log.isInfoEnabled()) log.info("mcasting view completed");
         passDown(new Event(Event.SWITCH_NAK));  // back to normal NAKs ...
     }
 
@@ -365,20 +364,20 @@ public class GMS extends RpcProtocol implements Runnable {
 
         synchronized(view_mutex) {                    // serialize access to views
             ltime=Math.max(new_view.getId(), ltime);  // compute Lamport logical time
-            if(Trace.trace) Trace.info("GMS.installView()", "received view change, vid=" + new_view);
+             if(log.isInfoEnabled()) log.info("received view change, vid=" + new_view);
 
             /* Check for self-inclusion: if I'm not part of the new membership, I just discard it.
                This ensures that messages sent in view V1 are only received by members of V1 */
             if(checkSelfInclusion(mbrs) == false) {
-                if(Trace.trace)
-                    Trace.warn("GMS.installView()", "I'm not member of " + mbrs + ", discarding");
+
+                    if(log.isWarnEnabled()) log.warn("I'm not member of " + mbrs + ", discarding");
                 return;
             }
 
 
             if(view_id == null) {
                 if(new_view == null) {
-                    Trace.error("GMS.installView()", "view_id and new_view are null !");
+                    if(log.isErrorEnabled()) log.error("view_id and new_view are null !");
                     return;
                 }
                 else {  // view_id is null, new_view not: just install new_view (we're still a client)
@@ -387,14 +386,14 @@ public class GMS extends RpcProtocol implements Runnable {
             }
             else {
                 if(new_view == null) {  // this should never happen though !
-                    Trace.error("GMS.installView()", "new_view is null !");
+                    if(log.isErrorEnabled()) log.error("new_view is null !");
                     return;
                 }
                 else {  // both view_id and new_view are not null
                     rc=new_view.compareTo(view_id);  // rc should always be a positive number
                     if(rc <= 0) {  // don't accept view id lower than our own
-                        if(Trace.trace) {
-                            Trace.warn("GMS.installView()", "received view <= current view; discarding it ! " +
+                         {
+                            if(log.isWarnEnabled()) log.warn("received view <= current view; discarding it ! " +
                                     "(view_id: " + view_id + ", new_view: " + new_view + ")");
                         }
                         return;
@@ -524,9 +523,10 @@ public class GMS extends RpcProtocol implements Runnable {
 
     public View handleMerge(ViewId other_vid, Vector other_members) {
         synchronized(impl_mutex) {
-            if(Trace.trace) {
+            if(log.isTraceEnabled())
+            {
                 View v=impl.handleMerge(other_vid, other_members);
-                Trace.info("GMS.handleMerge()", "returning view: " + v);
+                if(log.isInfoEnabled()) log.info("returning view: " + v);
                 return v;
             }
             return impl.handleMerge(other_vid, other_members);
@@ -631,7 +631,7 @@ public class GMS extends RpcProtocol implements Runnable {
                     group_addr=(String)evt.getArg();
                 }
                 catch(ClassCastException cce) {
-                    Trace.error("GMS.handleDownEvent(CONNECT)", "group address must " +
+                    if(log.isErrorEnabled()) log.error("group address must " +
                             "be a string (group name) to make sense");
                 }
                 impl.join(local_addr);
@@ -745,7 +745,7 @@ public class GMS extends RpcProtocol implements Runnable {
                         impl.merge((Vector)evt.getArg());
                         break;
                     default:
-                        Trace.error("GMS.run()", "event handler thread encountered event of type " +
+                        if(log.isErrorEnabled()) log.error("event handler thread encountered event of type " +
                                 Event.type2String(evt.getType()) + ": not handled by me !");
                         break;
                 }
@@ -754,7 +754,7 @@ public class GMS extends RpcProtocol implements Runnable {
                 break;
             }
             catch(Exception ex) {
-                Trace.warn("GMS.run()", "exception=" + ex);
+                if(log.isWarnEnabled()) log.warn("exception=" + ex);
             }
         }
     }

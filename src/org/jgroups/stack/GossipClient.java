@@ -1,10 +1,11 @@
-// $Id: GossipClient.java,v 1.2 2003/10/15 20:21:44 ovidiuf Exp $
+// $Id: GossipClient.java,v 1.3 2004/03/30 06:47:27 belaban Exp $
 
 package org.jgroups.stack;
 
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
-import org.jgroups.log.Trace;
 
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -28,6 +29,8 @@ public class GossipClient {
     boolean timer_running=false;
     long EXPIRY_TIME=20000;                    // must be less than in GossipServer
 
+    protected Log log=LogFactory.getLog(this.getClass());
+
 
     /**
      * Creates the GossipClient
@@ -46,7 +49,7 @@ public class GossipClient {
      */
     public GossipClient(Vector gossip_hosts, long expiry) {
         if(gossip_hosts == null) {
-            Trace.error("GossipClient.GossipClient()", "empty set of GossipServers given");
+            if(log.isErrorEnabled()) log.error("empty set of GossipServers given");
             return;
         }
         for(int i=0; i < gossip_hosts.size(); i++)
@@ -83,7 +86,7 @@ public class GossipClient {
         Vector mbrs;
 
         if(group == null || mbr == null) {
-            Trace.error("GossipClient.register()", "group or mbr is null");
+            if(log.isErrorEnabled()) log.error("group or mbr is null");
             return;
         }
         mbrs=(Vector) groups.get(group);
@@ -113,7 +116,7 @@ public class GossipClient {
      */
     public Vector getMembers(String group) {
         if(group == null) {
-            Trace.error("GossipClient.getMembers()", "group is null");
+            if(log.isErrorEnabled()) log.error("group is null");
             return null;
         }
 
@@ -144,12 +147,12 @@ public class GossipClient {
         for(int i=0; i < gossip_servers.size(); i++) {
             entry=(IpAddress) gossip_servers.elementAt(i);
             if(entry.getIpAddress() == null || entry.getPort() == 0) {
-                Trace.error("GossipClient._register()", "entry.host or entry.port is null");
+                if(log.isErrorEnabled()) log.error("entry.host or entry.port is null");
                 continue;
             }
             try {
-                if(Trace.trace)
-                    Trace.info("GossipClient._register()", "REGISTER_REQ --> " +
+
+                    if(log.isInfoEnabled()) log.info("REGISTER_REQ --> " +
                                                            entry.getIpAddress() + ":" + entry.getPort());
                 sock=new Socket(entry.getIpAddress(), entry.getPort());
                 out=new ObjectOutputStream(sock.getOutputStream());
@@ -161,7 +164,7 @@ public class GossipClient {
                 sock.close();
             }
             catch(Exception ex) {
-                Trace.error("GossipClient._register()", "exception connecting to host " + entry + ": " + ex);
+                if(log.isErrorEnabled()) log.error("exception connecting to host " + entry + ": " + ex);
             }
         }
     }
@@ -181,12 +184,12 @@ public class GossipClient {
         for(int i=0; i < gossip_servers.size(); i++) {
             entry=(IpAddress) gossip_servers.elementAt(i);
             if(entry.getIpAddress() == null || entry.getPort() == 0) {
-                Trace.error("GossipClient._getMembers()", "entry.host or entry.port is null");
+                if(log.isErrorEnabled()) log.error("entry.host or entry.port is null");
                 continue;
             }
             try {
-                if(Trace.trace)
-                    Trace.info("GossipClient._getMembers()", "GET_REQ --> " +
+
+                    if(log.isInfoEnabled()) log.info("GET_REQ --> " +
                                                              entry.getIpAddress() + ":" + entry.getPort());
                 sock=new Socket(entry.getIpAddress(), entry.getPort());
                 out=new ObjectOutputStream(sock.getOutputStream());
@@ -211,7 +214,7 @@ public class GossipClient {
                 sock.close();
             }
             catch(Exception ex) {
-                Trace.error("GossipClient._getMembers()", "exception connecting to host " + entry + ": " + ex);
+                if(log.isErrorEnabled()) log.error("exception connecting to host " + entry + ": " + ex);
             }
         }
 
@@ -233,24 +236,23 @@ public class GossipClient {
             Vector mbrs;
             Address mbr;
 
-            if(Trace.trace) Trace.info("GossipClient.Refresher.run()", "refresher task is run");
+             if(log.isInfoEnabled()) log.info("refresher task is run");
             for(Enumeration e=groups.keys(); e.hasMoreElements();) {
                 group=(String) e.nextElement();
                 mbrs=(Vector) groups.get(group);
                 if(mbrs != null) {
                     for(int i=0; i < mbrs.size(); i++) {
                         mbr=(Address) mbrs.elementAt(i);
-                        if(Trace.trace)
-                            Trace.info("GossipClient.Refresher.run()",
-                                       "registering " + group + " : " + mbr);
+
+                            if(log.isInfoEnabled()) log.info("registering " + group + " : " + mbr);
                         register(group, mbr);
                         num_items++;
                     }
                 }
             }
 
-            if(Trace.trace)
-                Trace.info("GossipClient.Refresher.run()", "refresher task done. Registered " + num_items + " items");
+
+                if(log.isInfoEnabled()) log.info("refresher task done. Registered " + num_items + " items");
         }
 
     }
@@ -322,7 +324,7 @@ public class GossipClient {
         }
 
         try {
-            Trace.init();
+
         }
         catch(Throwable ex) {
             System.err.println("GossipClient.main(): error initailizing JGroups Trace: " + ex);

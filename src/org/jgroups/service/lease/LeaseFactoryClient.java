@@ -1,11 +1,12 @@
 package org.jgroups.service.lease;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
-import org.jgroups.blocks.*;
-import org.jgroups.log.Trace;
+import org.jgroups.blocks.PullPushAdapter;
 
-import java.util.*;
-import java.io.*;
+import java.io.Serializable;
+import java.util.HashMap;
 
 /**
  * <code>LeaseFactoryClient</code> is an implementation of {@link LeaseFactory}
@@ -52,7 +53,9 @@ public class LeaseFactoryClient implements LeaseFactory {
     protected HashMap pendingRenewals = new HashMap();
     
     protected HashMap pendingCancels = new HashMap();
-    
+
+    protected Log log=LogFactory.getLog(this.getClass());
+
     /**
      * Create instance of this class for specified client channel with
      * default timeouts.
@@ -200,9 +203,8 @@ public class LeaseFactoryClient implements LeaseFactory {
             
             pendingLeases.put(leaseInfo, leaseMutex);
 	    
-            if (Trace.debug)
-                Trace.debug(NEW_LEASE_METHOD, 
-                    "Added lease info for leaseTarget=" + leaseTarget + 
+
+                if(log.isDebugEnabled()) log.debug("Added lease info for leaseTarget=" + leaseTarget +
                     ", tenant=" + tenant);
 
 	    // wait on mutex until we get response from 
@@ -277,9 +279,8 @@ public class LeaseFactoryClient implements LeaseFactory {
 	    
 	} finally {
             
-            if (Trace.debug)
-                Trace.debug(NEW_LEASE_METHOD, 
-                    "Removing lease info for leaseTarget=" + leaseTarget + 
+
+                if(log.isDebugEnabled()) log.debug("Removing lease info for leaseTarget=" + leaseTarget +
                     ", tenant=" + tenant);
 
             pendingLeases.remove(leaseInfo);
@@ -319,8 +320,7 @@ public class LeaseFactoryClient implements LeaseFactory {
             
             pendingLeases.put(leaseInfo, leaseMutex);
             
-            Trace.debug(RENEW_LEASE_METHOD, 
-                "Added lease info for leaseTarget=" + existingLease.getLeaseTarget() + 
+            if(log.isDebugEnabled()) log.debug("Added lease info for leaseTarget=" + existingLease.getLeaseTarget() +
                 ", tenant=" + existingLease.getTenant());
 
 	    
@@ -391,9 +391,8 @@ public class LeaseFactoryClient implements LeaseFactory {
 	    
 	} finally {
 
-            if (Trace.debug)
-                Trace.debug(RENEW_LEASE_METHOD, 
-                    "Removing lease info for leaseTarget=" + 
+
+                if(log.isDebugEnabled()) log.debug("Removing lease info for leaseTarget=" +
                     existingLease.getLeaseTarget() + ", tenant=" + 
                     existingLease.getTenant());
 
@@ -441,9 +440,8 @@ public class LeaseFactoryClient implements LeaseFactory {
 		(denyHeader != null &&	denyHeader.getType() == DenyResponseHeader.CANCEL_DENIED) ||
 		(leaseHeader != null && leaseHeader.getType() == LeaseResponseHeader.LEASE_CANCELED);
 
-            if (Trace.debug)
-                Trace.debug(LEASE_CLIENT_RECEIVE_METHOD, 
-                    "Received response: type=" + (denyHeader != null ? "deny" : "grant") + 
+
+                if(log.isDebugEnabled()) log.debug("Received response: type=" + (denyHeader != null ? "deny" : "grant") +
                     ", leaseTarget=" + leaseTarget + ", tenant=" + tenant + 
                     ", cancelReply=" + cancelReply);
 
@@ -460,15 +458,13 @@ public class LeaseFactoryClient implements LeaseFactory {
                     
 		    leaseMutex.notifyAll();
                     
-                    if (Trace.debug)
-                        Trace.debug(LEASE_CLIENT_RECEIVE_METHOD, 
-                            "Notified mutex for leaseTarget="+ leaseTarget +
+
+                        if(log.isDebugEnabled()) log.debug("Notified mutex for leaseTarget="+ leaseTarget +
                              ", tenant=" + tenant);
 		}
 	    else {
-                if (Trace.debug)
-                    Trace.debug(LEASE_CLIENT_RECEIVE_METHOD,
-                        "Could not find mutex for leaseTarget=" + leaseTarget +
+
+                    if(log.isDebugEnabled()) log.debug("Could not find mutex for leaseTarget=" + leaseTarget +
                         ", tenant=" + tenant);
                     
 		workingMap.remove(leaseInfo);

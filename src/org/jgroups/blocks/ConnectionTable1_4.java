@@ -1,14 +1,15 @@
-// $Id: ConnectionTable1_4.java,v 1.4 2004/02/19 05:23:59 akbollu Exp $
+// $Id: ConnectionTable1_4.java,v 1.5 2004/03/30 06:47:12 belaban Exp $
 
 package org.jgroups.blocks;
 
+import org.jgroups.Address;
+import org.jgroups.Message;
+import org.jgroups.stack.IpAddress;
+import org.jgroups.util.Util;
+import org.jgroups.util.Util1_4;
+
 import java.io.IOException;
-import java.net.BindException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.SocketException;
+import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -17,13 +18,6 @@ import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Set;
-
-import org.jgroups.Address;
-import org.jgroups.Message;
-import org.jgroups.log.Trace;
-import org.jgroups.stack.IpAddress;
-import org.jgroups.util.Util;
-import org.jgroups.util.Util1_4;
 
 
 /**
@@ -34,60 +28,61 @@ import org.jgroups.util.Util1_4;
  * until the socket is closed by the peer.<br>Sockets/threads with no activity will be killed
  * after some time.<br> Incoming messages from any of the sockets can be received by setting the
  * message listener.
+ *
  * @author Bela Ban
  */
 public class ConnectionTable1_4 extends ConnectionTable implements Runnable {
-    
-	private ServerSocketChannel srv_sock_ch=null;
-	private Selector selector = null;
-	private ArrayList pendingSocksList=null;
- 
-	/**
-	 * @param srv_port
-	 * @throws Exception
-	 */
-	public ConnectionTable1_4(int srv_port) throws Exception
-	{
-		super(srv_port);
-	}
-	/**
-	 * @param srv_port
-	 * @param reaper_interval
-	 * @param conn_expire_time
-	 * @throws Exception
-	 */
-	public ConnectionTable1_4(int srv_port, long reaper_interval,
-							  long conn_expire_time) throws Exception
-	{
-		super(srv_port, reaper_interval, conn_expire_time);
-	}
-	
-	/**
-	 * @param r
-	 * @param bind_addr
-	 * @param srv_port
-	 * @throws Exception
-	 */
-	public ConnectionTable1_4(Receiver r, InetAddress bind_addr, int srv_port)
-	throws Exception
-	{
-		super(r, bind_addr, srv_port);
-	}
-	/**
-	 * @param r
-	 * @param bind_addr
-	 * @param srv_port
-	 * @param reaper_interval
-	 * @param conn_expire_time
-	 * @throws Exception
-	 */
-	public ConnectionTable1_4(Receiver r, InetAddress bind_addr, int srv_port,
-							  long reaper_interval, long conn_expire_time) throws Exception
-	{
-		super(r, bind_addr, srv_port, reaper_interval, conn_expire_time);
-	}
-	
-    /** Try to obtain correct Connection (or create one if not yet existent) */
+
+    private ServerSocketChannel srv_sock_ch=null;
+    private Selector selector=null;
+    private ArrayList pendingSocksList=null;
+
+    /**
+     * @param srv_port
+     * @throws Exception
+     */
+    public ConnectionTable1_4(int srv_port) throws Exception {
+        super(srv_port);
+    }
+
+    /**
+     * @param srv_port
+     * @param reaper_interval
+     * @param conn_expire_time
+     * @throws Exception
+     */
+    public ConnectionTable1_4(int srv_port, long reaper_interval,
+                              long conn_expire_time) throws Exception {
+        super(srv_port, reaper_interval, conn_expire_time);
+    }
+
+    /**
+     * @param r
+     * @param bind_addr
+     * @param srv_port
+     * @throws Exception
+     */
+    public ConnectionTable1_4(Receiver r, InetAddress bind_addr, int srv_port)
+            throws Exception {
+        super(r, bind_addr, srv_port);
+    }
+
+    /**
+     * @param r
+     * @param bind_addr
+     * @param srv_port
+     * @param reaper_interval
+     * @param conn_expire_time
+     * @throws Exception
+     */
+    public ConnectionTable1_4(Receiver r, InetAddress bind_addr, int srv_port,
+                              long reaper_interval, long conn_expire_time) throws Exception {
+        super(r, bind_addr, srv_port, reaper_interval, conn_expire_time);
+    }
+
+    /**
+     * Try to obtain correct Connection (or create one if not yet existent)
+     */
     ConnectionTable.Connection getConnection(Address dest) throws Exception {
         Connection conn=null;
         SocketChannel sock_ch;
@@ -95,11 +90,10 @@ public class ConnectionTable1_4 extends ConnectionTable implements Runnable {
         synchronized(conns) {
             conn=(Connection)conns.get(dest);
             if(conn == null) {
-				InetSocketAddress destAddress =
-					new InetSocketAddress(
-						((IpAddress) dest).getIpAddress(),
-						((IpAddress) dest).getPort());
-				sock_ch = SocketChannel.open(destAddress);
+                InetSocketAddress destAddress=
+                        new InetSocketAddress(((IpAddress)dest).getIpAddress(),
+                                ((IpAddress)dest).getPort());
+                sock_ch=SocketChannel.open(destAddress);
                 conn=new Connection(sock_ch, dest);
                 conn.sendLocalAddress(local_addr);
                 // conns.put(dest, conn);
@@ -107,208 +101,189 @@ public class ConnectionTable1_4 extends ConnectionTable implements Runnable {
                 pendingSocksList.add(conn);
                 selector.wakeup();
                 notifyConnectionOpened(dest);
-                if(Trace.trace) Trace.info("ConnectionTable1_4.getConnection()", "created socket to " + dest);
+                if(log.isInfoEnabled()) log.info("created socket to " + dest);
             }
             return conn;
         }
     }
 
-    /** Closes all open sockets, the server socket and all threads waiting for incoming messages */
+    /**
+     * Closes all open sockets, the server socket and all threads waiting for incoming messages
+     */
     public void stop() {
         if(srv_sock_ch != null) {
-        	try {
-        		ServerSocketChannel temp = srv_sock_ch;
-        		srv_sock_ch=null;
-        		temp.close();
-        	}
-        	catch(Exception ex) {
-        	}
+            try {
+                ServerSocketChannel temp=srv_sock_ch;
+                srv_sock_ch=null;
+                temp.close();
+            }
+            catch(Exception ex) {
+            }
         }
         super.stop();
     }
 
     /**
-	 * Acceptor thread. Continuously accept new connections. Create a new
-	 * thread for each new connection and put it in conns. When the thread
-	 * should stop, it is interrupted by the thread creator.
-	 */
-	public void run()
-	{
-		Socket client_sock;
-		Connection conn = null;
-		Address peer_addr;
+     * Acceptor thread. Continuously accept new connections. Create a new
+     * thread for each new connection and put it in conns. When the thread
+     * should stop, it is interrupted by the thread creator.
+     */
+    public void run() {
+        Socket client_sock;
+        Connection conn=null;
+        Address peer_addr;
 
-		while (srv_sock_ch != null)
-		{
-			try
-			{
-				if (selector.select() > 0)
-				{
-					Set readyKeys = selector.selectedKeys();
-					for (Iterator i = readyKeys.iterator(); i.hasNext();)
-					{
-						SelectionKey key = (SelectionKey) i.next();
-						i.remove();
-						if ((key.readyOps() & SelectionKey.OP_ACCEPT)
-							== SelectionKey.OP_ACCEPT)
-						{
-							ServerSocketChannel readyChannel =
-								(ServerSocketChannel) key.channel();
+        while(srv_sock_ch != null) {
+            try {
+                if(selector.select() > 0) {
+                    Set readyKeys=selector.selectedKeys();
+                    for(Iterator i=readyKeys.iterator(); i.hasNext();) {
+                        SelectionKey key=(SelectionKey)i.next();
+                        i.remove();
+                        if((key.readyOps() & SelectionKey.OP_ACCEPT)
+                                == SelectionKey.OP_ACCEPT) {
+                            ServerSocketChannel readyChannel=
+                                    (ServerSocketChannel)key.channel();
 
-							SocketChannel client_sock_ch=
-								readyChannel.accept();
-							client_sock = client_sock_ch.socket();
-							if (Trace.trace)
-								Trace.info(
-									"ConnectionTable1_4.run()",
-									"accepted connection, client_sock="
-										+ client_sock);
+                            SocketChannel client_sock_ch=
+                                    readyChannel.accept();
+                            client_sock=client_sock_ch.socket();
 
-							conn = new Connection(client_sock_ch, null);
-							// will call receive(msg)
-							// get peer's address
-							peer_addr = conn.readPeerAddress(client_sock);
+                            if(log.isInfoEnabled())
+                                log.info("accepted connection, client_sock="
+                                        + client_sock);
 
-							conn.setPeerAddress(peer_addr);
+                            conn=new Connection(client_sock_ch, null);
+                            // will call receive(msg)
+                            // get peer's address
+                            peer_addr=conn.readPeerAddress(client_sock);
 
-							synchronized (conns)
-							{
-								if (conns.contains(peer_addr))
-								{
-									if (Trace.trace)
-										Trace.warn(
-											"ConnectionTable1_4.run()",
-											peer_addr
-												+ " is already there, will terminate connection");
-									conn.destroy();
-									return;
-								}
-								addConnection(peer_addr, conn);
-							}
-							conn.init();
-							notifyConnectionOpened(peer_addr);
-						}
-						else if (
-							(key.readyOps() & SelectionKey.OP_READ)
-								== SelectionKey.OP_READ)
-						{
-							conn = (Connection) key.attachment();
-							ByteBuffer buff = conn.getNIOMsgReader().readCompleteMsgBuffer();
-							if(buff != null)
-							{
-								receive((Message)Util.objectFromByteBuffer(buff.array()));
-								conn.getNIOMsgReader().reset();
-							}
-						}
-					}
-				}
-				else
-				{
-					/*In addition to the accepted Sockets, we must registe 
-					 * sockets opend by this for OP_READ, because peer may
-					 * use the same socket to sends data using the same socket,
-					 * instead of opening a new connection. We can not register 
-					 * with this selectior from a different thread. set pending
-					 * and wakeup this selector.
-					 */
-					synchronized (conns)
-					{
-						Connection pendingConnection;
-						while( (pendingSocksList.size()>0) && (null != (pendingConnection = (Connection)pendingSocksList.remove(0))) )
-						{
-							pendingConnection.init();
-						}
-					}	
-				}
-			}
-			catch (SocketException sock_ex)
-			{
-				if (Trace.trace)
-					Trace.info(
-						"ConnectionTable1_4.run()",
-						"exception is " + sock_ex);
-				if (conn != null)
-					conn.destroy();
-				if (srv_sock == null)
-					break; // socket was closed, therefore stop
-			}
-			catch (Throwable ex)
-			{
-				if (Trace.trace)
-					Trace.warn(
-						"ConnectionTable1_4.run()",
-						"exception is " + ex);
-			}
-		}
-	}
+                            conn.setPeerAddress(peer_addr);
 
-    /** Finds first available port starting at start_port and returns server socket. Sets srv_port */
+                            synchronized(conns) {
+                                if(conns.contains(peer_addr)) {
+
+                                    if(log.isWarnEnabled())
+                                        log.warn(peer_addr
+                                                + " is already there, will terminate connection");
+                                    conn.destroy();
+                                    return;
+                                }
+                                addConnection(peer_addr, conn);
+                            }
+                            conn.init();
+                            notifyConnectionOpened(peer_addr);
+                        }
+                        else
+                            if(
+                                    (key.readyOps() & SelectionKey.OP_READ)
+                                    == SelectionKey.OP_READ) {
+                                conn=(Connection)key.attachment();
+                                ByteBuffer buff=conn.getNIOMsgReader().readCompleteMsgBuffer();
+                                if(buff != null) {
+                                    receive((Message)Util.objectFromByteBuffer(buff.array()));
+                                    conn.getNIOMsgReader().reset();
+                                }
+                            }
+                    }
+                }
+                else {
+                    /*In addition to the accepted Sockets, we must registe
+                     * sockets opend by this for OP_READ, because peer may
+                     * use the same socket to sends data using the same socket,
+                     * instead of opening a new connection. We can not register
+                     * with this selectior from a different thread. set pending
+                     * and wakeup this selector.
+                     */
+                    synchronized(conns) {
+                        Connection pendingConnection;
+                        while((pendingSocksList.size() > 0) && (null != (pendingConnection=(Connection)pendingSocksList.remove(0)))) {
+                            pendingConnection.init();
+                        }
+                    }
+                }
+            }
+            catch(SocketException sock_ex) {
+                if(log.isInfoEnabled()) log.info("exception is " + sock_ex);
+                if(conn != null)
+                    conn.destroy();
+                if(srv_sock == null)
+                    break; // socket was closed, therefore stop
+            }
+            catch(Throwable ex) {
+
+                if(log.isWarnEnabled()) log.warn("exception is " + ex);
+            }
+        }
+    }
+
+    /**
+     * Finds first available port starting at start_port and returns server socket. Sets srv_port
+     */
     ServerSocket createServerSocket(int start_port) throws Exception {
-    	this.selector = Selector.open();
-        srv_sock_ch = ServerSocketChannel.open();
-		srv_sock_ch.configureBlocking(false);
+        this.selector=Selector.open();
+        srv_sock_ch=ServerSocketChannel.open();
+        srv_sock_ch.configureBlocking(false);
         while(true) {
             try {
                 if(bind_addr == null)
-				srv_sock_ch.socket().bind(new InetSocketAddress(start_port));
+                    srv_sock_ch.socket().bind(new InetSocketAddress(start_port));
                 else
-				srv_sock_ch.socket().bind(new InetSocketAddress( bind_addr,start_port), backlog);
+                    srv_sock_ch.socket().bind(new InetSocketAddress(bind_addr, start_port), backlog);
             }
             catch(BindException bind_ex) {
                 start_port++;
                 continue;
             }
             catch(IOException io_ex) {
-                Trace.error("ConnectionTable1_4.createServerSocket()", "exception is " + io_ex);
+                if(log.isErrorEnabled()) log.error("exception is " + io_ex);
             }
             srv_port=start_port;
             break;
         }
-        pendingSocksList = new ArrayList();
+        pendingSocksList=new ArrayList();
         srv_sock_ch.register(this.selector, SelectionKey.OP_ACCEPT);
-		return srv_sock_ch.socket();
-    }    
+        return srv_sock_ch.socket();
+    }
 
-    class Connection extends ConnectionTable.Connection{
-        private SocketChannel sock_ch = null;
-        private static final int HEADER_SIZE = 4;
-        private static final int DEFAULT_BUFF_SIZE = 256;
-        ByteBuffer		 headerBuffer = ByteBuffer.allocate(HEADER_SIZE);
-        NBMessageForm1_4 	 nioMsgReader = null;
-        
+    class Connection extends ConnectionTable.Connection {
+        private SocketChannel sock_ch=null;
+        private static final int HEADER_SIZE=4;
+        private static final int DEFAULT_BUFF_SIZE=256;
+        ByteBuffer headerBuffer=ByteBuffer.allocate(HEADER_SIZE);
+        NBMessageForm1_4 nioMsgReader=null;
+
         Connection(SocketChannel s, Address peer_addr) {
-        	super(s.socket(),peer_addr);
-        	sock_ch=s;
+            super(s.socket(), peer_addr);
+            sock_ch=s;
         }
 
         void init() {
-        	in = null;
-        	out = null;
-        	try
-			{
-				sock_ch.configureBlocking(false);
-				nioMsgReader = new NBMessageForm1_4(DEFAULT_BUFF_SIZE,sock_ch);
-				sock_ch.register(selector, SelectionKey.OP_READ, this);
-			}
-			catch (IOException e)
-			{
-			}
-            if(Trace.trace)
-                Trace.info("ConnectionTable1_4.Connection.init()", "connection was created to " + peer_addr);
+            in=null;
+            out=null;
+            try {
+                sock_ch.configureBlocking(false);
+                nioMsgReader=new NBMessageForm1_4(DEFAULT_BUFF_SIZE, sock_ch);
+                sock_ch.register(selector, SelectionKey.OP_READ, this);
+            }
+            catch(IOException e) {
+            }
+
+            if(log.isInfoEnabled()) log.info("connection was created to " + peer_addr);
 
         }
 
         void destroy() {
             closeSocket();
-            nioMsgReader = null;
+            nioMsgReader=null;
         }
-        
+
         void doSend(Message msg) throws Exception {
             IpAddress dst_addr=(IpAddress)msg.getDest();
-            byte[]    buffie=null;
+            byte[] buffie=null;
 
             if(dst_addr == null || dst_addr.getIpAddress() == null) {
-                Trace.error("ConnectionTable1_4.Connection.doSend()", "the destination address is null; aborting send");
+                if(log.isErrorEnabled()) log.error("the destination address is null; aborting send");
                 return;
             }
 
@@ -319,41 +294,40 @@ public class ConnectionTable1_4 extends ConnectionTable implements Runnable {
 
                 buffie=Util.objectToByteBuffer(msg);
                 if(buffie.length <= 0) {
-                    Trace.error("ConnectionTable1_4.Connection.doSend()", "buffer.length is 0. Will not send message");
+                    if(log.isErrorEnabled()) log.error("buffer.length is 0. Will not send message");
                     return;
                 }
 
                 headerBuffer.clear();
-				headerBuffer.putInt(buffie.length);
-				headerBuffer.flip();
-				Util1_4.writeFully(headerBuffer,sock_ch);
-				ByteBuffer sendBuffer = ByteBuffer.wrap(buffie);
-				Util1_4.writeFully(sendBuffer, sock_ch);
+                headerBuffer.putInt(buffie.length);
+                headerBuffer.flip();
+                Util1_4.writeFully(headerBuffer, sock_ch);
+                ByteBuffer sendBuffer=ByteBuffer.wrap(buffie);
+                Util1_4.writeFully(sendBuffer, sock_ch);
             }
             catch(Exception ex) {
-                if(Trace.trace)
-                    Trace.error("ConnectionTable1_4.Connection.doSend()",
-                                "to " + dst_addr + ", exception is " + ex + ", stack trace:\n" +
-                                Util.printStackTrace(ex));                
+
+                if(log.isErrorEnabled())
+                    log.error("to " + dst_addr + ", exception is " + ex + ", stack trace:\n" +
+                            Util.printStackTrace(ex));
                 remove(dst_addr);
                 throw ex;
             }
         }
-        
+
         void closeSocket() {
             if(sock != null) {
                 try {
                     sock_ch.close();
                 }
-                catch(Exception e) {                	
+                catch(Exception e) {
                 }
                 sock=null;
             }
         }
-        
-        NBMessageForm1_4 getNIOMsgReader()
-        {
-        	return nioMsgReader;
+
+        NBMessageForm1_4 getNIOMsgReader() {
+            return nioMsgReader;
         }
-    }    
+    }
 }

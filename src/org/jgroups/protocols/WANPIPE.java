@@ -1,21 +1,22 @@
-// $Id: WANPIPE.java,v 1.1 2003/09/09 01:24:11 belaban Exp $
+// $Id: WANPIPE.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
 
 package org.jgroups.protocols;
 
+
+import org.jgroups.*;
+import org.jgroups.blocks.LogicalLink;
+import org.jgroups.stack.Protocol;
+import org.jgroups.util.List;
+import org.jgroups.util.Util;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.net.InetAddress;
-import java.util.Vector;
 import java.util.Enumeration;
 import java.util.Properties;
 import java.util.StringTokenizer;
-import org.jgroups.*;
-import org.jgroups.util.*;
-import org.jgroups.blocks.*;
-import org.jgroups.stack.*;
-import org.jgroups.log.Trace;
+import java.util.Vector;
 
 
 
@@ -145,7 +146,7 @@ public class WANPIPE extends Protocol implements LogicalLink.Receiver {
 	    return;
 	}
 	
-	if(Trace.trace) Trace.info("WANPIPE.receive()", "received msg " + msg);
+	 if(log.isInfoEnabled()) log.info("received msg " + msg);
 	hdr=(WanPipeHeader)msg.removeHeader(getName());
 	
 	/* Discard all messages destined for a channel with a different name */
@@ -155,7 +156,7 @@ public class WANPIPE extends Protocol implements LogicalLink.Receiver {
 	    ch_name=hdr.group_addr;
 
 	if(group_addr == null) {
-	    if(Trace.trace) System.err.println("WANPIPE.receive(): group address in header was null, discarded");
+	     System.err.println("WANPIPE.receive(): group address in header was null, discarded");
 	    return;
 	}
 

@@ -1,13 +1,15 @@
-// $Id: AckMcastReceiverWindow.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+// $Id: AckMcastReceiverWindow.java,v 1.2 2004/03/30 06:47:27 belaban Exp $
 
 package org.jgroups.stack;
 
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.jgroups.Address;
+
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
-import org.jgroups.Address;
-import org.jgroups.log.Trace;
 
 
 
@@ -22,6 +24,8 @@ import org.jgroups.log.Trace;
  */
 public class AckMcastReceiverWindow {
     Hashtable msgs=new Hashtable();  // sender -- Vector (of seqnos)
+
+    protected static Log log=LogFactory.getLog(AckMcastReceiverWindow.class);
 
 
 
@@ -85,8 +89,8 @@ public class AckMcastReceiverWindow {
 
 
     public void suspect(Object sender) {
-	if(Trace.trace)
-	    Trace.info("AckMcastReceiverWindow.suspect()", "suspect is " + sender);
+
+	    if(log.isInfoEnabled()) log.info("suspect is " + sender);
 	msgs.remove(sender);
     }
 

@@ -1,11 +1,12 @@
-// $Id: ProtocolTester.java,v 1.2 2003/12/12 02:22:55 belaban Exp $
+// $Id: ProtocolTester.java,v 1.3 2004/03/30 06:47:15 belaban Exp $
 
 package org.jgroups.debug;
 
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jgroups.Event;
 import org.jgroups.Message;
-import org.jgroups.log.Trace;
 import org.jgroups.stack.Configurator;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
@@ -25,17 +26,16 @@ public class ProtocolTester {
     String props=null;
     Configurator config=null;
 
+    protected Log log=LogFactory.getLog(this.getClass());
 
-    public ProtocolTester(String prot_spec, Protocol harness, boolean trace) throws Exception {
+
+    public ProtocolTester(String prot_spec, Protocol harness) throws Exception {
         if(prot_spec == null || harness == null)
             throw new Exception("ProtocolTester(): prot_spec or harness is null");
 
         props=prot_spec;
         this.harness=harness;
         props="LOOPBACK:" + props; // add a loopback layer at the bottom of the stack
-
-        if(trace)
-            Trace.init();
 
         config=new Configurator();
         top=config.setupProtocolStack(props, null);
@@ -94,19 +94,16 @@ public class ProtocolTester {
         String props;
         ProtocolTester t;
         Harness h;
-        boolean trace=false;
 
         if(args.length < 1 || args.length > 2) {
             System.out.println("ProtocolTester <protocol stack spec> [-trace]");
             return;
         }
         props=args[0];
-        if(args.length == 2 && args[1].equals("-trace"))
-            trace=true;
 
         try {
             h=new Harness();
-            t=new ProtocolTester(props, h, trace);
+            t=new ProtocolTester(props, h);
             System.out.println("protocol specification is " + t.getProtocolSpec());
             h.down(new Event(Event.BECOME_SERVER));
             for(int i=0; i < 5; i++) {

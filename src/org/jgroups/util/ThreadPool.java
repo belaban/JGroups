@@ -1,9 +1,10 @@
-// $Id: ThreadPool.java,v 1.3 2003/12/11 07:17:36 belaban Exp $
+// $Id: ThreadPool.java,v 1.4 2004/03/30 06:47:28 belaban Exp $
 
 package org.jgroups.util;
 
 
-import org.jgroups.log.Trace;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 
 /**
@@ -21,6 +22,8 @@ public class ThreadPool {
     int              current_index=0;   /// next available thread
     ReusableThread[] pool=null;
     boolean[]        available_threads=null;
+    protected static Log log=LogFactory.getLog(ThreadPool.class);
+
 
 
     public ThreadPool(int max_num) {
@@ -31,8 +34,8 @@ public class ThreadPool {
             pool[i]=null;
             available_threads[i]=true;
         }
-        if(Trace.trace)
-            Trace.info("ThreadPool.ThreadPool()", "created a pool of " + MAX_NUM + " threads");
+
+            if(log.isInfoEnabled()) log.info("created a pool of " + MAX_NUM + " threads");
     }
 
 
@@ -50,7 +53,7 @@ public class ThreadPool {
 
             // else create a new thread and add it to the pool
             if(current_index >= MAX_NUM) {
-                Trace.error("ThreadPool.getThread()", "could not create new thread because " +
+                if(log.isErrorEnabled()) log.error("could not create new thread because " +
                         "pool's max size reached (" + MAX_NUM + ") !");
                 return null;
             }
