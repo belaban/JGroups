@@ -1,14 +1,12 @@
-// $Id: TCPGOSSIP.java,v 1.12 2005/01/04 20:44:03 ovidiuf Exp $
+// $Id: TCPGOSSIP.java,v 1.13 2005/01/04 21:22:43 belaban Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
-import org.jgroups.View;
 import org.jgroups.stack.GossipClient;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.stack.Protocol;
 
 import java.util.Properties;
 import java.util.StringTokenizer;
@@ -34,6 +32,8 @@ public class TCPGOSSIP extends Discovery {
     // we need to refresh the registration with the GossipServer(s) periodically,
     // so that our entries are not purged from the cache
     long gossip_refresh_rate=20000;
+
+    final static Vector EMPTY_VECTOR=new Vector();
 
 
     public String getName() {
@@ -102,14 +102,14 @@ public class TCPGOSSIP extends Discovery {
 
         if(group_addr == null) {
             if(log.isErrorEnabled()) log.error("[FIND_INITIAL_MBRS]: group_addr is null, cannot get mbrship");
-            passUp(new Event(Event.FIND_INITIAL_MBRS_OK, new Vector()));
+            passUp(new Event(Event.FIND_INITIAL_MBRS_OK, EMPTY_VECTOR));
             return;
         }
         if(log.isTraceEnabled()) log.trace("fetching members from GossipServer(s)");
         tmp_mbrs=gossip_client.getMembers(group_addr);
         if(tmp_mbrs == null || tmp_mbrs.size() == 0) {
             if(log.isErrorEnabled()) log.error("[FIND_INITIAL_MBRS]: gossip client found no members");
-            passUp(new Event(Event.FIND_INITIAL_MBRS_OK, new Vector()));
+            passUp(new Event(Event.FIND_INITIAL_MBRS_OK, EMPTY_VECTOR));
         }
         if(log.isTraceEnabled()) log.trace("consolidated mbrs from GossipServer(s) are " + tmp_mbrs);
 
