@@ -1,4 +1,4 @@
-// $Id: Deadlock2Test.java,v 1.1 2004/09/05 04:51:54 ovidiuf Exp $
+// $Id: Deadlock2Test.java,v 1.2 2004/11/29 10:23:48 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -6,23 +6,13 @@ import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.jgroups.*;
-import org.jgroups.util.RspList;
-import org.jgroups.blocks.RpcDispatcher;
-import org.jgroups.blocks.MethodCall;
 import org.jgroups.blocks.GroupRequest;
-import org.jgroups.tests.stack.Utilities;
-import org.jgroups.tests.stack.GossipTest;
-import org.jgroups.stack.GossipData;
-import org.jgroups.stack.GossipRouter;
-import org.jgroups.stack.IpAddress;
+import org.jgroups.blocks.MethodCall;
+import org.jgroups.blocks.RpcDispatcher;
+import org.jgroups.util.RspList;
 
-import java.io.EOFException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.StreamCorruptedException;
-import java.net.Socket;
-import java.util.Vector;
 import java.util.Enumeration;
+import java.util.Vector;
 
 /**
  * Test the distributed RPC deadlock detection mechanism, using one or two channels.
@@ -30,12 +20,11 @@ import java.util.Enumeration;
  * @author John Giorgiadis
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
  * *
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.2 $
  */
 public class Deadlock2Test extends TestCase {
 
     private static boolean DEADLOCK_DETECTION = true;
-    private static boolean NO_DEADLOCK_DETECTION = false;
 
     private String name = "Deadlock2Test";
     private ListenerImpl listener;
@@ -68,7 +57,7 @@ public class Deadlock2Test extends TestCase {
     public void testOneChannel() throws Exception {
 
         JChannel channel = new JChannel();
-        ServerObject serverObject = new ServerObject();
+        ServerObject serverObject = new ServerObject("obj1");
         RpcDispatcher rpcDispatcher =
                 new RpcDispatcher(channel, listener, listener, serverObject, DEADLOCK_DETECTION);
         serverObject.setRpcDispatcher(rpcDispatcher);
@@ -78,8 +67,9 @@ public class Deadlock2Test extends TestCase {
 
         // call the nested group method on itself
         MethodCall call = new MethodCall("outerMethod", new Object[0], new Class[0]);
+        log("calling outerMethod() on all members");
         RspList rspList = rpcDispatcher.callRemoteMethods(null, call, GroupRequest.GET_ALL, 0);
-
+        log("results of outerMethod(): " + rspList);
 
         assertEquals(1, rspList.size());
         assertEquals("outerMethod[innerMethod]", rspList.get(localAddress));
@@ -112,21 +102,21 @@ public class Deadlock2Test extends TestCase {
      */
     public void testTwoChannels() throws Exception {
 
-        ServerObject serverObject = null;
+        ServerObject serverObject1, serverObject2 = null;
 
         JChannel channel1 = new JChannel();
-        serverObject = new ServerObject();
+        serverObject1 = new ServerObject("obj1");
         RpcDispatcher rpcDispatcher1 =
-                new RpcDispatcher(channel1, listener, listener, serverObject, DEADLOCK_DETECTION);
-        serverObject.setRpcDispatcher(rpcDispatcher1);
+                new RpcDispatcher(channel1, listener, listener, serverObject1, DEADLOCK_DETECTION);
+        serverObject1.setRpcDispatcher(rpcDispatcher1);
         channel1.connect(name);
         Address localAddress1 = channel1.getLocalAddress();
 
         JChannel channel2 = new JChannel();
-        serverObject = new ServerObject();
+        serverObject2 = new ServerObject("obj2");
         RpcDispatcher rpcDispatcher2 =
-                new RpcDispatcher(channel2, listener, listener, serverObject, DEADLOCK_DETECTION);
-        serverObject.setRpcDispatcher(rpcDispatcher2);
+                new RpcDispatcher(channel2, listener, listener, serverObject2, DEADLOCK_DETECTION);
+        serverObject2.setRpcDispatcher(rpcDispatcher2);
         channel2.connect(name);
         Address localAddress2 = channel2.getLocalAddress();
 
@@ -134,7 +124,9 @@ public class Deadlock2Test extends TestCase {
         MethodCall call = new MethodCall("outerMethod", new Object[0], new Class[0]);
         Vector dests = new Vector();
         dests.add(localAddress2);
+        log("calling outerMethod() on " + dests);
         RspList rspList = rpcDispatcher1.callRemoteMethods(dests, call, GroupRequest.GET_ALL, 0);
+        log("results of outerMethod(): " + rspList);
 
 
         assertEquals(1, rspList.size());
@@ -160,11 +152,17 @@ public class Deadlock2Test extends TestCase {
         System.exit(0);
     }
 
-    //
-    //
-    //
+
+    static void log(String msg) {
+        System.out.println("[" + Thread.currentThread() + "] " + msg);
+    }
 
     public class ServerObject {
+        String myName;
+
+        public ServerObject(String name) {
+            this.myName=name;
+        }
 
         private RpcDispatcher rpcDispatcher;
 
@@ -177,10 +175,11 @@ public class Deadlock2Test extends TestCase {
         }
 
         public String outerMethod() {
-
+            log("outerMethod() received, calling innerMethod() on all members");
             MethodCall call = new MethodCall("innerMethod", new Object[0], new Class[0]);
-            RspList rspList = rpcDispatcher.callRemoteMethods(null, call, GroupRequest.GET_ALL, 0);
+            RspList rspList = rpcDispatcher.callRemoteMethods(null, call, GroupRequest.GET_ALL, 5000);
             Vector results = rspList.getResults();
+            log("results of calling innerMethod(): " + rspList);
             StringBuffer sb = new StringBuffer("outerMethod[");
             for(Enumeration e = results.elements(); e.hasMoreElements(); ) {
                 String s = (String)e.nextElement();
@@ -194,6 +193,7 @@ public class Deadlock2Test extends TestCase {
         }
 
         public String innerMethod() {
+            log("innerMethod() received, returning result");
             return "innerMethod";
         }
 	}
