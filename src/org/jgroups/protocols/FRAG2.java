@@ -1,4 +1,4 @@
-// $Id: FRAG2.java,v 1.1 2004/02/26 01:55:16 belaban Exp $
+// $Id: FRAG2.java,v 1.2 2004/02/26 16:38:05 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -26,7 +26,7 @@ import java.util.*;
  * size addition for headers and src and dest address is minimal when the transport finally has to serialize the
  * message, so we add a constant (1000 bytes).
  * @author Bela Ban
- * @version $Id: FRAG2.java,v 1.1 2004/02/26 01:55:16 belaban Exp $
+ * @version $Id: FRAG2.java,v 1.2 2004/02/26 16:38:05 belaban Exp $
  */
 public class FRAG2 extends Protocol {
 
@@ -340,9 +340,7 @@ public class FRAG2 extends Protocol {
          * @param   table - the fragmentation table of this sender, cannot be null
          * @exception IllegalArgumentException if an entry for this sender already exist
          */
-        public synchronized void add(Address sender,
-                                     FragmentationTable table)
-                throws IllegalArgumentException {
+        public synchronized void add(Address sender, FragmentationTable table) throws IllegalArgumentException {
             FragmentationTable healthCheck=(FragmentationTable)frag_tables.get(sender);
             if(healthCheck == null) {
                 frag_tables.put(sender, table);
