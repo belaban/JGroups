@@ -1,4 +1,4 @@
-// $Id: PBCAST.java,v 1.7 2004/05/05 13:45:12 belaban Exp $
+// $Id: PBCAST.java,v 1.8 2004/05/06 16:32:43 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -679,12 +679,9 @@ public class PBCAST extends Protocol implements Runnable {
                 else {
                     missing_msgs=win.getMissingMessages(my_high, their_high);
                     if(missing_msgs != null) {
-                         {
-                            if(log.isInfoEnabled()) log.info("asking " +
-                                                               gossip.sender + " for retransmission of " +
-                                                               sender + ", missing messages: " +
-                                                               missing_msgs + "\nwin for " + sender + ":\n" + win + "\n");
-                        }
+                        if(log.isInfoEnabled())
+                            log.info("asking " + gossip.sender + " for retransmission of " +
+                                    sender + ", missing messages: " + missing_msgs + "\nwin for " + sender + ":\n" + win + "\n");
                         if(ht == null) ht=new Hashtable();
                         ht.put(sender, missing_msgs);
                     }

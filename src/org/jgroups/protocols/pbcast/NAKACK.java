@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.23 2004/05/05 13:59:35 belaban Exp $
+// $Id: NAKACK.java,v 1.24 2004/05/06 16:33:46 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -350,7 +350,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
 
                     case NakAckHeader.MSG:
                         handleMessage(msg, hdr);
-                        msg=null;
                         return;        // transmitter passes message up for us !
 
                     case NakAckHeader.XMIT_REQ:
@@ -632,6 +631,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
                     m=(Message)it.next();
                     up(new Event(Event.MSG, m));
                 }
+                list.clear();
             }
         }
         catch(Exception ex) {
