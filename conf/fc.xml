@@ -122,7 +122,6 @@
             <protocol-params>
                 <protocol-param name="max_credits" value="2000000"/>
                 <protocol-param name="min_credits" value="52000"/>
-                <protocol-param name="direct_blocking" value="true"/>
                 <protocol-param name="down_thread" value="false"/>
             </protocol-params>
         </protocol>
