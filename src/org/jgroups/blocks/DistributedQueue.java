@@ -1,4 +1,4 @@
-// $Id: DistributedQueue.java,v 1.6 2004/01/05 09:54:07 rds13 Exp $
+// $Id: DistributedQueue.java,v 1.7 2004/01/27 04:55:11 belaban Exp $
 package org.jgroups.blocks;
 
 import java.io.Serializable;
@@ -59,21 +59,19 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
     private long internal_timeout = 10000; // 10 seconds to wait for a response
 
     /*lock object for synchronization*/
-    Object mutex = new Object();
-    private transient boolean stopped = false; // whether to we are stopped !
-    private LinkedList internalQueue;
-    private transient Channel channel;
-    private transient RpcDispatcher disp = null;
-    private transient String groupname = null;
-    private transient Vector notifs = new Vector(); // to be notified when mbrship changes
-    private transient Vector members = new Vector(); // keeps track of all DHTs
+    protected Object mutex = new Object();
+    protected transient boolean stopped = false; // whether to we are stopped !
+    protected LinkedList internalQueue;
+    protected transient Channel channel;
+    protected transient RpcDispatcher disp = null;
+    protected transient String groupname = null;
+    protected transient Vector notifs = new Vector(); // to be notified when mbrship changes
+    protected transient Vector members = new Vector(); // keeps track of all DHTs
     private transient MethodCall add_method = null;
     private transient MethodCall addAtHead_method = null;
     private transient MethodCall addAll_method = null;
     private transient MethodCall reset_method = null;
     private transient MethodCall remove_method = null;
-    private transient MethodCall getFirst_method = null;
-    private transient MethodCall getLast_method = null;
 
     /**
      * Creates a DistributedQueue
@@ -119,7 +117,6 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
       * @param adapter The PullPushAdapter which to use as underlying transport
       * @param id A serializable object (e.g. an Integer) used to discriminate (multiplex/demultiplex) between
       *           requests/responses for different building blocks on top of PullPushAdapter.
-      * @param state_timeout Max number of milliseconds to wait for state to be retrieved
       */
     public DistributedQueue(PullPushAdapter adapter, Serializable id)
     {
@@ -176,6 +173,11 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
         {
             notifs.addElement(n);
         }
+    }
+
+    public void removeNotifier(Notification n)
+    {
+        notifs.removeElement(n);
     }
 
     public void stop()
@@ -276,7 +278,6 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
     public Vector getContents()
     {
         Vector result = new Vector();
-        int i = 0;
 
         for (Iterator e = internalQueue.iterator(); e.hasNext();)
             result.add(e.next());
@@ -572,8 +573,6 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
 
     public byte[] getState()
     {
-        Object key;
-        Object val;
         Vector copy = (Vector)getContents().clone();
 
         try
@@ -591,7 +590,6 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
     public void setState(byte[] new_state)
     {
         Vector new_copy;
-        Object value;
 
         try
         {
