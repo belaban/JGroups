@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.11 2004/04/28 20:19:17 belaban Exp $
+// $Id: STABLE.java,v 1.12 2004/05/04 17:36:42 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -428,6 +428,11 @@ public class STABLE extends Protocol {
             if(log.isDebugEnabled())
                 log.debug("mcasting digest " + d +
                         " (num_gossip_runs=" + num_gossip_runs + ", max_gossip_runs=" + max_gossip_runs + ")");
+            if(suspended) {
+                if(log.isTraceEnabled())
+                    log.trace("will not send STABLE message as suspended=" + suspended);
+                return;
+            }
             hdr=new StableHeader(StableHeader.STABLE_GOSSIP, d);
             msg.putHeader(getName(), hdr);
             passDown(new Event(Event.MSG, msg));
