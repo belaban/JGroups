@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.9 2003/10/18 16:48:08 belaban Exp $
+Revision: $Id: history.txt,v 1.10 2003/10/29 16:07:04 ovidiuf Exp $
 
 [For current version, see file Version.java (or invoke 'java JGroups.Version')]
 
@@ -22,6 +22,12 @@ ovidiuf     = Ovidiu Feodorov (ovidiuf@users.sf.net)
 romuald     = Romuald du Song
 
 
+
+- GossipRouter can be managed as MBean under the JBoss JMX server.
+  To build a dist/jgroups-router.sar service archive, run build.sh jboss-service.
+  The router deploys as 'jgroups:service=GossipRouter' and it can be further
+  managed from http://<your_server>:8080/jmx-console 
+  (ovidiuf Oct 29 2003)
 
 Version 2.2.1
 -------------
