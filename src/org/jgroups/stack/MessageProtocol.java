@@ -1,4 +1,4 @@
-// $Id: MessageProtocol.java,v 1.2 2004/03/30 06:47:27 belaban Exp $
+// $Id: MessageProtocol.java,v 1.3 2004/09/08 07:33:38 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -169,7 +169,7 @@ public abstract class MessageProtocol extends Protocol implements RequestHandler
                     return;
                 }
                 else
-                    if(log.isErrorEnabled()) log.error("Request correlator is null! Event is " + Util.printEvent(evt));
+                    if(log.isWarnEnabled()) log.warn("Request correlator is null, evt=" + Util.printEvent(evt));
 
                 break;
         }
