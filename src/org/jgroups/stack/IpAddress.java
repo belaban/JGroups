@@ -1,4 +1,4 @@
-// $Id: IpAddress.java,v 1.16 2005/01/12 23:44:57 belaban Exp $
+// $Id: IpAddress.java,v 1.17 2005/03/23 14:51:38 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -134,7 +134,8 @@ public class IpAddress implements Address {
       int   h1, h2, rc;
 
       if ((o == null) || !(o instanceof IpAddress))
-          throw new ClassCastException("IpAddress.compareTo(): comparison between different classes");
+          throw new ClassCastException("comparison between different classes: the other object is " +
+                                       (o != null? o.getClass() : o));
       IpAddress other = (IpAddress) o;
       if(ip_addr == null)
           if (other.ip_addr == null) return port < other.port ? -1 : (port > other.port ? 1 : 0);
