@@ -1,4 +1,4 @@
-// $Id: LargeState.java,v 1.2 2003/09/24 23:26:01 belaban Exp $
+// $Id: LargeState.java,v 1.3 2003/12/12 06:24:33 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -96,6 +96,7 @@ public class LargeState {
         String  props="UDP(mcast_addr=224.0.0.35;mcast_port=45566;ip_ttl=32;" +
                 "mcast_send_buf_size=150000;mcast_recv_buf_size=80000;" +
                 "ucast_send_buf_size=80000;ucast_recv_buf_size=150000):" +
+                "AUTOCONF:" +
                 "PING(timeout=2000;num_initial_members=3):" +
                 "MERGE2(min_interval=5000;max_interval=10000):" +
                 "FD_SOCK:" +
