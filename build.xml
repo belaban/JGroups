@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.10 2004/02/26 19:15:23 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.11 2004/03/01 03:35:30 belaban Exp $ -->
 
 <project name="JGroups" default="compile-1.4" basedir=".">
     <description>
@@ -366,6 +366,12 @@
                     excludes="**/Channel*Test.java,**/DistributedQueueConcurrencyTest.java"/>
             </batchtest>
         </junit>
+    </target>
+
+
+       <target name="unittests-stress" depends="compile">
+        <delete dir="${root.dir}/tmp/tests-results"/>
+        <mkdir dir="${root.dir}/tmp/tests-results"/>
         <junit printsummary="yes" timeout="${unittest.timeout.high}" fork="yes">
             <jvmarg value="-Dtests.tmp.dir=${root.dir}/tmp"/>
             <classpath refid="jg.classpath"/>
