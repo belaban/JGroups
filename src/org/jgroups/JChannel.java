@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.16 2004/04/28 18:31:55 belaban Exp $
+// $Id: JChannel.java,v 1.17 2004/06/23 16:01:07 belaban Exp $
 
 package org.jgroups;
 
@@ -23,7 +23,7 @@ import java.util.Vector;
  * protocol stack
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.16 $
+ * @version $Revision: 1.17 $
  */
 public class JChannel extends Channel {
 
@@ -1220,7 +1220,7 @@ public class JChannel extends Channel {
                 if(auto_getstate) {
                     if(log.isInfoEnabled())
                         log.info("fetching the state (auto_getstate=true)");
-                    boolean rc=getState(null, GET_STATE_DEFAULT_TIMEOUT);
+                    boolean rc=JChannel.this.getState(null, GET_STATE_DEFAULT_TIMEOUT);
                     if(rc)
                         if(log.isInfoEnabled()) log.info("state was retrieved successfully");
                     else
