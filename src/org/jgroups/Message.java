@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.19 2004/10/08 13:05:13 belaban Exp $
+// $Id: Message.java,v 1.20 2004/10/08 16:57:37 belaban Exp $
 
 package org.jgroups;
 
@@ -10,6 +10,7 @@ import org.jgroups.util.ContextObjectInputStream;
 import org.jgroups.util.Marshaller;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
+import org.jgroups.stack.IpAddress;
 
 import java.io.*;
 import java.util.HashMap;
@@ -44,8 +45,15 @@ public class Message implements Externalizable, Streamable {
 
     protected static final Log log=LogFactory.getLog(Message.class);
 
-    static final long ADDRESS_OVERHEAD=200; // estimated size of Address (src and dest)
+    static final long ADDRESS_OVERHEAD=22; // estimated size of Address (src and dest)
     static final long serialVersionUID=-1137364035832847034L;
+
+    static final byte DEST_SET=1;
+    static final byte SRC_SET=2;
+    static final byte BUF_SET=4;
+    static final byte HDRS_SET=8;
+    static final byte IPADDR_DEST=16;
+    static final byte IPADDR_SRC=32;
 
     static final HashSet nonStreamableHeaders=new HashSet(); // todo: remove when all headers are streamable
 
@@ -512,66 +520,107 @@ public class Message implements Externalizable, Streamable {
     public void writeTo(DataOutputStream out) throws IOException {
         Map.Entry        entry;
 
-        // 1. dest_addr
-        Util.writeAddress(dest_addr, out);
+        byte leading=0;
+        if(dest_addr != null) {
+            leading+=DEST_SET;
+            if(dest_addr instanceof IpAddress)
+                leading+=IPADDR_DEST;
+        }
+        if(src_addr != null) {
+            leading+=SRC_SET;
+            if(src_addr instanceof IpAddress)
+                leading+=IPADDR_SRC;
+        }
+        if(buf != null)
+            leading+=BUF_SET;
+        if(headers != null && headers.size() > 0)
+            leading+=HDRS_SET;
 
-        // 2. src_addr
-        Util.writeAddress(src_addr, out);
+        // 1. write the leading byte first
+        out.write(leading);
 
-        // 3. buf
-        if(buf == null)
-            out.write(0);
-        else {
-            out.write(1);
+        // 2. dest_addr
+        if(dest_addr != null) {
+            if(dest_addr instanceof IpAddress)
+                dest_addr.writeTo(out);
+            else
+                Util.writeAddress(dest_addr, out);
+        }
+
+        // 3. src_addr
+        if(src_addr != null) {
+            if(src_addr instanceof IpAddress)
+                src_addr.writeTo(out);
+            else
+                Util.writeAddress(src_addr, out);
+        }
+
+        // 4. buf
+        if(buf != null) {
             out.writeInt(length);
             out.write(buf, offset, length);
         }
 
-        // 4. headers
-        if(headers == null || headers.size() == 0) {
-            out.write(0);
-            return;
-        }
-        out.write(1);
-        out.writeInt(headers.size());
-        for(Iterator it=headers.entrySet().iterator(); it.hasNext();) {
-            entry=(Map.Entry)it.next();
-            out.writeUTF((String)entry.getKey());
-            writeHeader((Header)entry.getValue(), out);
+        // 5. headers
+        if(headers != null && headers.size() > 0) {
+            out.writeInt(headers.size());
+            for(Iterator it=headers.entrySet().iterator(); it.hasNext();) {
+                entry=(Map.Entry)it.next();
+                out.writeUTF((String)entry.getKey());
+                writeHeader((Header)entry.getValue(), out);
+            }
         }
     }
 
 
     public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
-        int b;
+        int len, leading;
         String hdr_name;
         Header hdr;
 
+
+        // 1. read the leading byte first
+        leading=in.readByte();
+
         // 1. dest_addr
-        dest_addr=Util.readAddress(in);
+        if((leading & DEST_SET) == DEST_SET) {
+            if((leading & IPADDR_DEST) == IPADDR_DEST) {
+                dest_addr=new IpAddress();
+                dest_addr.readFrom(in);
+            }
+            else {
+                dest_addr=Util.readAddress(in);
+            }
+        }
 
         // 2. src_addr
-        src_addr=Util.readAddress(in);
+        if((leading & SRC_SET) == SRC_SET) {
+            if((leading & IPADDR_SRC) == IPADDR_SRC) {
+                src_addr=new IpAddress();
+                src_addr.readFrom(in);
+            }
+            else {
+                src_addr=Util.readAddress(in);
+            }
+        }
 
         // 3. buf
-        b=in.read();
-        if(b == 1) {
-            b=in.readInt();
-            buf=new byte[b];
-            in.read(buf, 0, b);
-            length=b;
+        if((leading & BUF_SET) == BUF_SET) {
+            len=in.readInt();
+            buf=new byte[len];
+            in.read(buf, 0, len);
+            length=len;
         }
 
         // 4. headers
-        b=in.read();
-        if(b == 0)
-            return;
-        b=in.readInt();
-        headers();
-        for(int i=0; i < b; i++) {
-            hdr_name=in.readUTF();
-            hdr=readHeader(in);
-            headers.put(hdr_name, hdr);
+        if((leading & HDRS_SET) == HDRS_SET) {
+            len=in.readInt();
+            headers();
+            for(int i=0; i < len; i++) {
+                hdr_name=in.readUTF();
+                hdr=readHeader(in);
+                headers.put(hdr_name, hdr);
+            }
         }
     }
 
