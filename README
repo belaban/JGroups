@@ -1,4 +1,4 @@
-// $Id: README,v 1.3 2004/04/08 13:57:05 yaron-r Exp $
+// $Id: README,v 1.4 2005/01/07 11:04:09 belaban Exp $
 
 
 
@@ -12,7 +12,8 @@
 			  Cornell University
 			   Ithaca, NY 14853
 			  bba@cs.cornell.edu
-		       bela@nms.fnc.fujitsu.com
+		   bela@nms.fnc.fujitsu.com
+		       belaban@yahoo.com
 
 
 JGroups is a Java package for reliable group communication. It
