@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.13 2005/02/18 01:18:49 ovidiuf Exp $
+// $Id: ConnectionTable.java,v 1.14 2005/03/17 18:33:44 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -33,10 +33,17 @@ public class ConnectionTable implements Runnable {
     Receiver            receiver=null;
     ServerSocket        srv_sock=null;
     InetAddress         bind_addr=null;
+
+    /**
+     * The address which will be broadcast to the group (the externally visible address which this host should
+     * be contacted on). If external_addr is null, it will default to the same address that the server socket is bound to.
+     */
+    InetAddress		    external_addr=null;
     Address             local_addr=null;             // bind_addr + port of srv_sock
     int                 srv_port=7800;
+    int                 max_port=0;                   // maximum port to bind to (if < srv_port, no limit)
     Thread              acceptor=null;               // continuously calls srv_sock.accept()
-    static final int    backlog=20;           // 20 conn requests are queued by ServerSocket (addtl will be discarded)
+    static final int    backlog=20;                  // 20 conn requests are queued by ServerSocket (addtl will be discarded)
     int                 recv_buf_size=120000;
     int                 send_buf_size=60000;
     final Vector        conn_listeners=new Vector(); // listeners to be notified when a conn is established/torn down
@@ -100,13 +107,20 @@ public class ConnectionTable implements Runnable {
      *                  This is interesting only in multi-homed systems. If bind_addr is null, the
      *	  	        server socket will bind to the first available interface (e.g. /dev/hme0 on
      *                  Solaris or /dev/eth0 on Linux systems).
+     * @param external_addr The address which will be broadcast to the group (the externally visible address
+     *                   which this host should be contacted on). If external_addr is null, it will default to
+     *                   the same address that the server socket is bound to.
      * @param srv_port The port to which the server socket will bind to. If this port is reserved, the next
      *                 free port will be taken (incrementing srv_port).
+     * @param max_port The largest port number that the server socket will be bound to. If max_port < srv_port
+     *                 then there is no limit.
      */
-    public ConnectionTable(Receiver r, InetAddress bind_addr, int srv_port) throws Exception {
+    public ConnectionTable(Receiver r, InetAddress bind_addr, InetAddress external_addr, int srv_port, int max_port) throws Exception {
         setReceiver(r);
         this.bind_addr=bind_addr;
+	    this.external_addr=external_addr;
         this.srv_port=srv_port;
+	    this.max_port=max_port;
         start();
     }
 
@@ -121,17 +135,24 @@ public class ConnectionTable implements Runnable {
      *                  This is interesting only in multi-homed systems. If bind_addr is null, the
      *		        server socket will bind to the first available interface (e.g. /dev/hme0 on
      *		        Solaris or /dev/eth0 on Linux systems).
+     * @param external_addr The address which will be broadcast to the group (the externally visible address
+     *                   which this host should be contacted on). If external_addr is null, it will default to
+     *                   the same address that the server socket is bound to.
      * @param srv_port The port to which the server socket will bind to. If this port is reserved, the next
      *                 free port will be taken (incrementing srv_port).
+     * @param max_port The largest port number that the server socket will be bound to. If max_port < srv_port
+     *                 then there is no limit.
      * @param reaper_interval Number of milliseconds to wait for reaper between attepts to reap idle connections
      * @param conn_expire_time Number of milliseconds a connection can be idle (no traffic sent or received until
      *                         it will be reaped
      */
-    public ConnectionTable(Receiver r, InetAddress bind_addr, int srv_port,
+    public ConnectionTable(Receiver r, InetAddress bind_addr, InetAddress external_addr, int srv_port, int max_port,
                            long reaper_interval, long conn_expire_time) throws Exception {
         setReceiver(r);
         this.bind_addr=bind_addr;
+        this.external_addr=external_addr;
         this.srv_port=srv_port;
+        this.max_port=max_port;
         this.reaper_interval=reaper_interval;
         this.conn_expire_time=conn_expire_time;
         use_reaper=true;
@@ -256,9 +277,11 @@ public class ConnectionTable implements Runnable {
 
 
     public void start() throws Exception {
-        srv_sock=createServerSocket(srv_port);
+        srv_sock=createServerSocket(srv_port, max_port);
 
-        if(bind_addr != null)
+        if (external_addr!=null)
+            local_addr=new IpAddress(external_addr, srv_sock.getLocalPort());
+        else if (bind_addr != null)
             local_addr=new IpAddress(bind_addr, srv_sock.getLocalPort());
         else
             local_addr=new IpAddress(srv_sock.getLocalPort());
@@ -422,8 +445,9 @@ public class ConnectionTable implements Runnable {
     }
 
 
-    /** Finds first available port starting at start_port and returns server socket. Sets srv_port */
-    protected ServerSocket createServerSocket(int start_port) throws Exception {
+    /** Finds first available port starting at start_port and returns server socket.
+      * Will not bind to port >end_port. Sets srv_port */
+    protected ServerSocket createServerSocket(int start_port, int end_port) throws Exception {
         ServerSocket ret=null;
 
         while(true) {
@@ -434,7 +458,8 @@ public class ConnectionTable implements Runnable {
                     ret=new ServerSocket(start_port, backlog, bind_addr);
             }
             catch(BindException bind_ex) {
-                start_port++;
+		if (start_port==end_port) throw new BindException("No available port to bind to");
+		start_port++;
                 continue;
             }
             catch(IOException io_ex) {

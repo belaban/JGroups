@@ -1,4 +1,4 @@
-// $Id: ConnectionTable1_4.java,v 1.7 2004/09/23 16:29:10 belaban Exp $
+// $Id: ConnectionTable1_4.java,v 1.8 2005/03/17 18:33:44 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -59,25 +59,29 @@ public class ConnectionTable1_4 extends ConnectionTable implements Runnable {
     /**
      * @param r
      * @param bind_addr
+     * @param external_addr
      * @param srv_port
+     * @param max_port
      * @throws Exception
      */
-    public ConnectionTable1_4(Receiver r, InetAddress bind_addr, int srv_port)
+    public ConnectionTable1_4(Receiver r, InetAddress bind_addr, InetAddress external_addr, int srv_port, int max_port)
             throws Exception {
-        super(r, bind_addr, srv_port);
+        super(r, bind_addr, external_addr, srv_port, max_port);
     }
 
     /**
      * @param r
      * @param bind_addr
+     * @param external_addr
      * @param srv_port
+     * @param max_port
      * @param reaper_interval
      * @param conn_expire_time
      * @throws Exception
      */
-    public ConnectionTable1_4(Receiver r, InetAddress bind_addr, int srv_port,
+    public ConnectionTable1_4(Receiver r, InetAddress bind_addr, InetAddress external_addr, int srv_port, int max_port,
                               long reaper_interval, long conn_expire_time) throws Exception {
-        super(r, bind_addr, srv_port, reaper_interval, conn_expire_time);
+        super(r, bind_addr, external_addr, srv_port, max_port, reaper_interval, conn_expire_time);
     }
 
     /**
