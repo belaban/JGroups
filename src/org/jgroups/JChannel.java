@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.23 2004/08/12 14:08:13 belaban Exp $
+// $Id: JChannel.java,v 1.24 2004/08/20 07:10:39 belaban Exp $
 
 package org.jgroups;
 
@@ -30,7 +30,7 @@ import java.util.Vector;
  * protocol stack
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.23 $
+ * @version $Revision: 1.24 $
  */
 public class JChannel extends Channel {
 
@@ -219,10 +219,10 @@ public class JChannel extends Channel {
     }
 
     /**
-     * creates a new JChannel with the protocol stack as defined in the properties
+     * Creates a new JChannel with the protocol stack as defined in the properties
      * parameter. an example of this parameter is<BR>
      * "UDP:PING:FD:STABLE:NAKACK:UNICAST:FRAG:FLUSH:GMS:VIEW_ENFORCER:STATE_TRANSFER:QUEUE"<BR>
-     * Another example is http://www.filip.net/jgroups/jgroups-protocol.xml <BR>
+     * Other examples can be found in the ./conf directory<BR>
      * @param properties the protocol stack setup, if null, the default protocol stack will be used
      * @param properties the properties can also be a java.net.URL object or a string that is a URL spec.
      *                   The JChannel will validate any URL object and String object to see if they are a URL.
