@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.30 2004/01/09 00:30:36 belaban Exp $
+Revision: $Id: history.txt,v 1.31 2004/01/16 07:48:30 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java JGroups.Version')]
 
@@ -27,6 +27,10 @@ romuald     = Romuald du Song
 
 Version 2.2.1
 -------------
+
+- Added exception(s) to Message(Address, Address, Serializable), getObject() and
+  setObject()
+  (bela Jan 15 2004)
 
 - Removed direct_blocking from FC; this is now default
   (bela Jan 8 2004)

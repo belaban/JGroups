@@ -1,9 +1,10 @@
-// $Id: NotificationBus.java,v 1.1 2003/09/09 01:24:08 belaban Exp $
+// $Id: NotificationBus.java,v 1.2 2004/01/16 07:45:34 belaban Exp $
 
 package org.jgroups.blocks;
 
 
 import java.io.Serializable;
+import java.io.IOException;
 import java.util.Vector;
 
 import org.jgroups.*;
@@ -205,7 +206,13 @@ public class NotificationBus implements MessageListener, MembershipListener {
 
             if(dst != null) {
                 info=new Info(Info.GET_CACHE_REQ);
-                msg=new Message(dst, null, info);
+                try {
+                    msg=new Message(dst, null, info);
+                }
+                catch(IOException e) {
+                    Trace.error("NotificationBus.getCacheFromMember()", "exception: "+ e);
+                    continue;
+                }
                 channel.down(new Event(Event.MSG, msg));
 
                 start=System.currentTimeMillis();
@@ -377,12 +384,14 @@ public class NotificationBus implements MessageListener, MembershipListener {
         synchronized(cache_mutex) {
             cache=getCache(); // get the cache from the consumer
             info=new Info(Info.GET_CACHE_RSP, cache);
-            msg=new Message(sender, null, info);
-
-            // +++ remove
-            Trace.info("NotificationBus.handleCacheRequest()", "[" + getLocalAddress() + "] returning cache to " + sender);
-
-            channel.down(new Event(Event.MSG, msg));
+            try {
+                msg=new Message(sender, null, info);
+                Trace.info("NotificationBus.handleCacheRequest()", "[" + getLocalAddress() + "] returning cache to " + sender);
+                channel.down(new Event(Event.MSG, msg));
+            }
+            catch(IOException e) {
+                Trace.error("NotificationBus.handleCacheRequest()", "exception: " + e);                
+            }
         }
     }
 

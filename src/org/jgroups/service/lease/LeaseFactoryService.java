@@ -125,23 +125,28 @@ public class LeaseFactoryService extends AbstractService {
     /**
      * Propagate state change to other members.
      */
-    protected void propagateStateChange(int type, LeaseInfo leaseInfo, 
-	Object leaseTarget) 
+    protected void propagateStateChange(int type, LeaseInfo leaseInfo,
+                                        Object leaseTarget)
     {
-	LeaseInfoReplicationHeader header = 
-	    new LeaseInfoReplicationHeader(type, leaseInfo);
-	    
-	Message msg = new Message();
-	msg.putHeader(LeaseInfoReplicationHeader.HEADER_KEY, header);
-	msg.setObject((Serializable)leaseTarget);
+        LeaseInfoReplicationHeader header =
+                new LeaseInfoReplicationHeader(type, leaseInfo);
 
-	try {
-	    serviceChannel.send(msg);
-	} catch(Exception ex) {
-	    ex.printStackTrace();
-	}
+        Message msg = new Message();
+        msg.putHeader(LeaseInfoReplicationHeader.HEADER_KEY, header);
+        try {
+            msg.setObject((Serializable)leaseTarget);
+        }
+        catch(IOException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            serviceChannel.send(msg);
+        } catch(Exception ex) {
+            ex.printStackTrace();
+        }
     }
-    
+
     /**
      * Deny lease request.
      */
@@ -159,9 +164,14 @@ public class LeaseFactoryService extends AbstractService {
 	Message msg = new Message();
 	msg.putHeader(DenyResponseHeader.HEADER_KEY, responseHeader);
 	msg.setDest(requester);
-	msg.setObject((Serializable)leaseTarget);
-	
-	try {
+        try {
+            msg.setObject((Serializable)leaseTarget);
+        }
+        catch(IOException e) {
+            e.printStackTrace();
+        }
+
+        try {
 	    clientChannel.send(msg);
 	} catch(Exception ex) {
 	    ex.printStackTrace();
@@ -382,9 +392,14 @@ public class LeaseFactoryService extends AbstractService {
 	msg.putHeader(LeaseResponseHeader.HEADER_KEY, 
 	    new LeaseResponseHeader(LeaseResponseHeader.LEASE_CANCELED, header.getTenant()));
 	msg.setDest(requester);
-	msg.setObject((Serializable)leaseTarget);
-	
-	try {
+        try {
+            msg.setObject((Serializable)leaseTarget);
+        }
+        catch(IOException e) {
+            e.printStackTrace();
+        }
+
+        try {
 	    clientChannel.send(msg);
 	    
 	    propagateStateChange(
@@ -441,9 +456,19 @@ public class LeaseFactoryService extends AbstractService {
 		return;
 	    }
 
-	    Object leaseTarget = msg.getObject();
+	    Object leaseTarget = null;
 
-	    Address requester = msg.getSrc();
+        try {
+            leaseTarget=msg.getObject();
+        }
+        catch(IOException e) {
+            e.printStackTrace();
+        }
+        catch(ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        Address requester = msg.getSrc();
 	    
 	    // process lease request
 	    switch(leaseRequestHeader.getType()) {
@@ -515,19 +540,31 @@ public class LeaseFactoryService extends AbstractService {
 
 	    if (header == null)
 		return;
-		
-	    switch(header.getType()) {
+
+        Object tmp=null;
+
+        try {
+            tmp=msg.getObject();
+        }
+        catch(IOException e) {
+            e.printStackTrace();
+        }
+        catch(ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        switch(header.getType()) {
 		
 		case LeaseInfo.NEW_LEASE_TYPE :
-		    leases.put(msg.getObject(), header.getLeaseInfo());
+		    leases.put(tmp, header.getLeaseInfo());
 		    break;
 		    
 		case LeaseInfo.RENEW_LEASE_TYPE :
-		    leases.put(msg.getObject(), header.getLeaseInfo());
+		    leases.put(tmp, header.getLeaseInfo());
 		    break;
 		    
 		case LeaseInfo.CANCEL_LEASE_TYPE :
-		    leases.remove(msg.getObject());
+		    leases.remove(tmp);
 		    break;
 		    
 		default :

@@ -1,4 +1,4 @@
-// $Id: GroupRequestPull.java,v 1.1 2003/09/09 01:24:13 belaban Exp $
+// $Id: GroupRequestPull.java,v 1.2 2004/01/16 07:48:16 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -83,32 +83,37 @@ public class GroupRequestPull implements MessageListener, MembershipListener, Tr
     /* --------------------------- Interface MessageListener -------------------------- */
 
     public void receive(Message msg) {
-	MyHeader hdr=(MyHeader)msg.removeHeader(HDRNAME);
-	Message  rsp;
+        MyHeader hdr=(MyHeader)msg.removeHeader(HDRNAME);
+        Message  rsp;
 
-	if(hdr == null) {
-	    System.err.println("GroupRequestPull.receive(): header for " + HDRNAME + " was null");
-	    return;
-	}
-	if(hdr.type == MyHeader.RESPONSE) {
-	    if(group_req != null)
-		group_req.receiveResponse(msg);
-	}
-	else if(hdr.type == MyHeader.REQUEST) {
-	    // System.out.println("-- received REQUEST from " + msg.getSrc());
-	    rsp=new Message(msg.getSrc(), null, null);
-	    rsp.putHeader(HDRNAME, new MyHeader(MyHeader.RESPONSE));
-	    rsp.setObject("Hello from member " + ch.getLocalAddress());
-	    try {
-		adapter.send(rsp);
-	    }
-	    catch(Exception ex) {
-		System.err.println("GroupRequestPull.receive(): failure sending response: " + ex);
-	    }
-	}
-	else {
-	    System.err.println("GroupRequestPull.receive(): header type of " + hdr.type + " not known");
-	}
+        if(hdr == null) {
+            System.err.println("GroupRequestPull.receive(): header for " + HDRNAME + " was null");
+            return;
+        }
+        if(hdr.type == MyHeader.RESPONSE) {
+            if(group_req != null)
+                group_req.receiveResponse(msg);
+        }
+        else if(hdr.type == MyHeader.REQUEST) {
+            // System.out.println("-- received REQUEST from " + msg.getSrc());
+            rsp=new Message(msg.getSrc(), null, null);
+            rsp.putHeader(HDRNAME, new MyHeader(MyHeader.RESPONSE));
+            try {
+                rsp.setObject("Hello from member " + ch.getLocalAddress());
+            }
+            catch(IOException e) {
+                e.printStackTrace();
+            }
+            try {
+                adapter.send(rsp);
+            }
+            catch(Exception ex) {
+                System.err.println("GroupRequestPull.receive(): failure sending response: " + ex);
+            }
+        }
+        else {
+            System.err.println("GroupRequestPull.receive(): header type of " + hdr.type + " not known");
+        }
     }
 
     public byte[] getState() {

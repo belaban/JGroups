@@ -84,87 +84,92 @@ public class LeaseFactoryClient implements LeaseFactory {
      * Cancel existing lease.
      */
     public void cancelLease(Lease existingLease) throws UnknownLeaseException {
-	if (existingLease == null)
-	    throw new UnknownLeaseException(
-		"Existing lease cannot be null.", existingLease);
-		
-	if (existingLease.isExpired())
-	    throw new UnknownLeaseException(
-		"You existing lease has expired. " +
-		"You cannot use this method to obtain new lease.", existingLease);
+        if (existingLease == null)
+            throw new UnknownLeaseException(
+                    "Existing lease cannot be null.", existingLease);
 
-	ClientLeaseInfo leaseInfo = new ClientLeaseInfo(
-	    existingLease.getLeaseTarget(), existingLease.getTenant());
-	
-	if (pendingCancels.keySet().contains(leaseInfo))
-	    throw new UnknownLeaseException("There's pending cancel " +
-		"request for specified lease target and tenant.", 
-		existingLease);
-		
-	try {
-	    // here we create a mutex and associate this mutex with
-	    // lease target and tenant
-	    Object leaseMutex = new Object();
-	    pendingCancels.put(leaseInfo, leaseMutex);
+        if (existingLease.isExpired())
+            throw new UnknownLeaseException(
+                    "You existing lease has expired. " +
+                    "You cannot use this method to obtain new lease.", existingLease);
 
-	    // wait on mutex until we get response from 
-	    // leasing service or timeout	    
-	    try {
-		
-		synchronized(leaseMutex) {
+        ClientLeaseInfo leaseInfo = new ClientLeaseInfo(
+                existingLease.getLeaseTarget(), existingLease.getTenant());
+
+        if (pendingCancels.keySet().contains(leaseInfo))
+            throw new UnknownLeaseException("There's pending cancel " +
+                    "request for specified lease target and tenant.",
+                    existingLease);
+
+        try {
+            // here we create a mutex and associate this mutex with
+            // lease target and tenant
+            Object leaseMutex = new Object();
+            pendingCancels.put(leaseInfo, leaseMutex);
+
+            // wait on mutex until we get response from
+            // leasing service or timeout
+            try {
+
+                synchronized(leaseMutex) {
                     LeaseRequestHeader requestHeader = new LeaseRequestHeader(
-                      LeaseRequestHeader.CANCEL_LEASE_REQUEST, 0, false, 
-                      existingLease.getTenant());
-                    
+                            LeaseRequestHeader.CANCEL_LEASE_REQUEST, 0, false,
+                            existingLease.getTenant());
+
                     Message msg = new Message();
                     msg.putHeader(LeaseRequestHeader.HEADER_KEY, requestHeader);
-                    msg.setObject((Serializable)existingLease.getLeaseTarget());
-                    
+                    try {
+                        msg.setObject((Serializable)existingLease.getLeaseTarget());
+                    }
+                    catch(IOException e) {
+                        e.printStackTrace();
+                    }
+
                     // send message to leasing service
                     clientChannel.send(msg);
 
-		    leaseMutex.wait(leaseTimeout);
-		}
-		
-             } catch(InterruptedException ex) {
-    
-                 throw new UnknownLeaseException(
-                     "Did not get any reply before the thread was interrupted.", 
-                     null);
-    
-             } catch(ChannelNotConnectedException ex) {
-    
-                 throw new UnknownLeaseException(
-                     "Unable to send request, channel is not connected " + 
-                     ex.getMessage(), null);
-    
-             } catch(ChannelClosedException ex) {
-    
-                 throw new UnknownLeaseException(
-                     "Unable to send request, channel is closed " + 
-                     ex.getMessage(), null);
-    
-             }
-	    
-	    // check type of object associated with lease target and tenant
-	    // if we got response from leasing service, it should be Message
-	    // otherwise we were woken up because of timeout, simply return
-	    if (!(pendingCancels.get(leaseInfo) instanceof Message)) 
-		return;
-	    
-	    Message reply = (Message)pendingCancels.get(leaseInfo);
-	    
-	    // try to fetch denial header
-	    DenyResponseHeader denyHeader = (DenyResponseHeader)
-		reply.getHeader(DenyResponseHeader.HEADER_KEY);
-	    
-	    // throw exception if service denied lease request
-	    if (denyHeader != null) 
-		throw new UnknownLeaseException(
-		    denyHeader.getDenialReason(), existingLease);
-	} finally {
-	    pendingCancels.remove(leaseInfo);
-	}
+                    leaseMutex.wait(leaseTimeout);
+                }
+
+            } catch(InterruptedException ex) {
+
+                throw new UnknownLeaseException(
+                        "Did not get any reply before the thread was interrupted.",
+                        null);
+
+            } catch(ChannelNotConnectedException ex) {
+
+                throw new UnknownLeaseException(
+                        "Unable to send request, channel is not connected " +
+                        ex.getMessage(), null);
+
+            } catch(ChannelClosedException ex) {
+
+                throw new UnknownLeaseException(
+                        "Unable to send request, channel is closed " +
+                        ex.getMessage(), null);
+
+            }
+
+            // check type of object associated with lease target and tenant
+            // if we got response from leasing service, it should be Message
+            // otherwise we were woken up because of timeout, simply return
+            if (!(pendingCancels.get(leaseInfo) instanceof Message))
+                return;
+
+            Message reply = (Message)pendingCancels.get(leaseInfo);
+
+            // try to fetch denial header
+            DenyResponseHeader denyHeader = (DenyResponseHeader)
+                    reply.getHeader(DenyResponseHeader.HEADER_KEY);
+
+            // throw exception if service denied lease request
+            if (denyHeader != null)
+                throw new UnknownLeaseException(
+                        denyHeader.getDenialReason(), existingLease);
+        } finally {
+            pendingCancels.remove(leaseInfo);
+        }
     }
 
     /**
@@ -218,7 +223,12 @@ public class LeaseFactoryClient implements LeaseFactory {
 
                         Message msg = new Message();
                         msg.putHeader(LeaseRequestHeader.HEADER_KEY, requestHeader);
-                        msg.setObject((Serializable)leaseTarget);
+                        try {
+                            msg.setObject((Serializable)leaseTarget);
+                        }
+                        catch(IOException e) {
+                            e.printStackTrace();
+                        }
 
                         clientChannel.send(msg);
                         
@@ -260,10 +270,20 @@ public class LeaseFactoryClient implements LeaseFactory {
 		reply.getHeader(DenyResponseHeader.HEADER_KEY);
 	    
 	    // throw exception if service denied lease request
-	    if (denyHeader != null) 
-		throw new LeaseDeniedException(
-		    denyHeader.getDenialReason(), reply.getObject());
-	    
+        if (denyHeader != null) {
+            Object tmp=null;
+            try {
+                tmp=reply.getObject();
+            }
+            catch(IOException e) {
+            }
+            catch(ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+            throw new LeaseDeniedException(
+                    denyHeader.getDenialReason(), tmp);
+        }
+
 	    // extract header containing info about granted lease
 	    LeaseResponseHeader responseHeader = (LeaseResponseHeader)
 		reply.getHeader(LeaseResponseHeader.HEADER_KEY);
@@ -334,7 +354,12 @@ public class LeaseFactoryClient implements LeaseFactory {
                         
                     Message msg = new Message();
                     msg.putHeader(LeaseRequestHeader.HEADER_KEY, requestHeader);
-                    msg.setObject((Serializable)existingLease.getLeaseTarget());
+                    try {
+                        msg.setObject((Serializable)existingLease.getLeaseTarget());
+                    }
+                    catch(IOException e) {
+                        e.printStackTrace();
+                    }
                 
                     // send message to leasing service
                     clientChannel.send(msg);
@@ -430,9 +455,19 @@ public class LeaseFactoryClient implements LeaseFactory {
 	    if (denyHeader == null && leaseHeader == null)
 		return;
 		
-	    Object leaseTarget = msg.getObject();
-	    
-	    Object tenant = denyHeader != null ? 
+	    Object leaseTarget = null;
+
+        try {
+            leaseTarget=msg.getObject();
+        }
+        catch(IOException e) {
+            e.printStackTrace();
+        }
+        catch(ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        Object tenant = denyHeader != null ?
 		denyHeader.getTenant() : leaseHeader.getTenant();
 		
 	    boolean cancelReply = 

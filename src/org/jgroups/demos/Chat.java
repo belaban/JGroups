@@ -1,4 +1,4 @@
-// $Id: Chat.java,v 1.2 2003/09/24 23:20:47 belaban Exp $
+// $Id: Chat.java,v 1.3 2004/01/16 07:45:35 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -201,11 +201,9 @@ public class Chat implements MouseListener, WindowListener, MessageListener, Mem
 
 
     private void handleCast() {
-        Message msg=new Message(null, null, tf.getText());
-
         try {
+            Message msg=new Message(null, null, tf.getText());
             channel.send(msg);
-            // ta.append("Multicasted: " + tf.getText() + "\n");
         }
         catch(Exception e) {
             ta.append("Failed casting: " + e.toString() + "\n");

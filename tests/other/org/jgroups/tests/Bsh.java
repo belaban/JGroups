@@ -1,4 +1,4 @@
-// $Id: Bsh.java,v 1.1 2003/09/09 01:24:13 belaban Exp $
+// $Id: Bsh.java,v 1.2 2004/01/16 07:48:16 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -106,7 +106,17 @@ public class Bsh {
             return null;
 
         if(obj instanceof Message)
-            return ((Message)obj).getObject();
+            try {
+                return ((Message)obj).getObject();
+            }
+            catch(IOException e) {
+                e.printStackTrace();
+                return null;
+            }
+            catch(ClassNotFoundException e) {
+                e.printStackTrace();
+                return null;
+            }
         else
             return obj;
     }

@@ -1,8 +1,9 @@
-// $Id: ReplicatedHashtable.java,v 1.2 2003/09/24 23:20:46 belaban Exp $
+// $Id: ReplicatedHashtable.java,v 1.3 2004/01/16 07:45:34 belaban Exp $
 
 package org.jgroups.blocks;
 
 import java.io.Serializable;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.Hashtable;
@@ -315,11 +316,19 @@ public class ReplicatedHashtable extends Hashtable implements MessageListener, M
     /*-------------------- MessageListener ----------------------*/
 
     public void receive(Message msg) {
-        Request req;
+        Request req=null;
 
         if(msg == null)
             return;
-        req=(Request)msg.getObject();
+        try {
+            req=(Request)msg.getObject();
+        }
+        catch(IOException e) {
+            e.printStackTrace();
+        }
+        catch(ClassNotFoundException e) {
+            e.printStackTrace();
+        }
         if(req == null)
             return;
         switch(req.req_type) {

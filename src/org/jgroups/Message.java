@@ -1,13 +1,15 @@
-// $Id: Message.java,v 1.2 2003/10/15 20:21:43 ovidiuf Exp $
+// $Id: Message.java,v 1.3 2004/01/16 07:45:37 belaban Exp $
 
 package org.jgroups;
 
 
-import java.io.*;
-import java.util.*;
-
-import org.jgroups.util.Marshaller;
 import org.jgroups.log.Trace;
+import org.jgroups.util.Marshaller;
+
+import java.io.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 
 /**
@@ -57,7 +59,7 @@ public class Message implements Externalizable {
      *              has to be serializable </em>! Note that the resulting buffer must not be modified
      *              (e.g. buf[0]=0 is not allowed), since we don't copy the contents on clopy() or clone().
      */
-    public Message(Address dest, Address src, Serializable obj) {
+    public Message(Address dest, Address src, Serializable obj) throws IOException {
         dest_addr=dest;
         src_addr=src;
         setObject(obj);
@@ -101,31 +103,19 @@ public class Message implements Externalizable {
         return headers;
     }
 
-    public void setObject(Serializable obj) {
+    public void setObject(Serializable obj) throws IOException {
         if(obj == null) return;
-        try {
-            ByteArrayOutputStream out_stream=new ByteArrayOutputStream(256);
-            ObjectOutputStream out=new ObjectOutputStream(out_stream);
-            out.writeObject(obj);
-            buf=out_stream.toByteArray();
-        }
-        catch(Exception e) {
-            e.printStackTrace(); // FIXME: remove
-            Trace.error("Message.setObject()", "exception=" + e);
-        }
+        ByteArrayOutputStream out_stream=new ByteArrayOutputStream(256);
+        ObjectOutputStream out=new ObjectOutputStream(out_stream);
+        out.writeObject(obj);
+        buf=out_stream.toByteArray();
     }
 
-    public Object getObject() {
+    public Object getObject() throws IOException, ClassNotFoundException {
         if(buf == null) return null;
-        try {
-            ByteArrayInputStream in_stream=new ByteArrayInputStream(buf);
-            ObjectInputStream in=new ObjectInputStream(in_stream);
-            return in.readObject();
-        }
-        catch(Exception e) {
-            Trace.error("Message.getObject()", "exception=" + e);
-            return null;
-        }
+        ByteArrayInputStream in_stream=new ByteArrayInputStream(buf);
+        ObjectInputStream in=new ObjectInputStream(in_stream);
+        return in.readObject();
     }
 
 

@@ -1,21 +1,22 @@
-//$Id: TotalTokenDemo.java,v 1.1 2003/09/09 01:24:09 belaban Exp $
+//$Id: TotalTokenDemo.java,v 1.2 2004/01/16 07:45:35 belaban Exp $
 
 package org.jgroups.demos;
 
+import org.jgroups.*;
+import org.jgroups.log.Trace;
+import org.jgroups.stack.Protocol;
+import org.jgroups.stack.ProtocolStack;
+import org.jgroups.util.Util;
+
+import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.Vector;
-import javax.swing.*;
-
-import org.jgroups.*;
-import org.jgroups.stack.ProtocolStack;
-import org.jgroups.stack.Protocol;
-import org.jgroups.log.Trace;
-import org.jgroups.util.Util;
 
 
 /**
@@ -38,7 +39,7 @@ import org.jgroups.util.Util;
  *
  *@author Vladimir Blagojevic vladimir@cs.yorku.ca
  *@author Ivan Bilenjkij  ivan@ibossa.com
- *@version $Revision: 1.1 $
+ *@version $Revision: 1.2 $
  *
  *@see org.jgroups.protocols.TOTAL_TOKEN
  *
@@ -243,7 +244,9 @@ public class TotalTokenDemo extends JFrame implements Runnable
                     msg = (Message) tmp;
 
                     measureThrougput(msg.size());
-                    TotalPayload p = (TotalPayload) msg.getObject();
+                    TotalPayload p =null;
+
+                    p=(TotalPayload)msg.getObject();
                     v.addElement(new Integer(p.getRandomSequence()));
                     int size = v.size();
                     if (size % 50 == 0)
@@ -285,6 +288,12 @@ public class TotalTokenDemo extends JFrame implements Runnable
                 }
                 catch (TimeoutException e)
                 {
+                    e.printStackTrace();
+                }
+                catch(IOException e) {
+                    e.printStackTrace();
+                }
+                catch(ClassNotFoundException e) {
                     e.printStackTrace();
                 }
             }

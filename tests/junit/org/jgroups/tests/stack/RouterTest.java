@@ -1,9 +1,10 @@
-// $Id: RouterTest.java,v 1.2 2003/10/29 16:02:45 ovidiuf Exp $
+// $Id: RouterTest.java,v 1.3 2004/01/16 07:48:15 belaban Exp $
 
 package org.jgroups.tests.stack;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.Random;
@@ -29,7 +30,7 @@ import org.jgroups.util.Util;
  * @since 2.2.1
  *
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Revision: 1.2 $
+ * @version $Revision: 1.3 $
  **/
 public class RouterTest extends TestCase {
 
@@ -308,8 +309,13 @@ public class RouterTest extends TestCase {
         new Thread(new Runnable() {
                 public void run() {
                     for(int i=0; i<count; i++) {
-                        Message msg = 
-                            new Message(null, localAddr, new Integer(i));
+                        Message msg = null;
+                        try {
+                            msg=new Message(null, localAddr, new Integer(i));
+                        }
+                        catch(IOException e) {
+                            e.printStackTrace();
+                        }
                         try {
                             byte[] buffer = Util.objectToByteBuffer(msg);
                             dos.writeUTF(groupName); 

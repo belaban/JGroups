@@ -1,4 +1,4 @@
-// $Id: MessageDispatcherTestAsync.java,v 1.2 2003/09/24 23:26:20 belaban Exp $
+// $Id: MessageDispatcherTestAsync.java,v 1.3 2004/01/16 07:48:16 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -9,6 +9,8 @@ import org.jgroups.blocks.*;
 import org.jgroups.util.*;
 import org.jgroups.debug.*;
 import org.jgroups.log.Trace;
+
+import java.io.IOException;
 
 
 
@@ -48,9 +50,13 @@ public class MessageDispatcherTestAsync implements RequestHandler {
     class MyCollector implements RspCollector {
 
 	public void receiveResponse(Message msg) {
-	    System.out.println("** received response " + msg.getObject() + " [sender=" + msg.getSrc() + "]");
-	    
-
+        Object tmp=null;
+        try {
+            tmp=msg.getObject();
+        }
+        catch(Exception e) {
+        }
+        System.out.println("** received response " + tmp + " [sender=" + msg.getSrc() + "]");
 	}
 
 	public void suspect(Address mbr) {
@@ -81,7 +87,7 @@ public class MessageDispatcherTestAsync implements RequestHandler {
     }
 
 
-    public void mcast(int num) {
+    public void mcast(int num) throws IOException {
 	if(!done_submitted) {
 	    System.err.println("Must submit 'done' (press 'd') before mcasting new message");
 	    return;
@@ -121,8 +127,19 @@ public class MessageDispatcherTestAsync implements RequestHandler {
 
 
     public Object handle(Message msg) {
-	System.out.println("** handle(" + msg.getObject() + ")");
-	return new String(msg.getObject() + ": success");
+        Object tmp=null;
+
+        try {
+            tmp=msg.getObject();
+        }
+        catch(IOException e) {
+            e.printStackTrace();
+        }
+        catch(ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        System.out.println("** handle(" + tmp + ")");
+        return new String(tmp + ": success");
     }
 
 
