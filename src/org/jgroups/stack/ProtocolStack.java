@@ -1,21 +1,20 @@
-// $Id: ProtocolStack.java,v 1.7 2003/12/26 23:51:20 belaban Exp $
+// $Id: ProtocolStack.java,v 1.8 2003/12/26 23:52:05 belaban Exp $
 
 package org.jgroups.stack;
+
+import org.jgroups.Event;
+import org.jgroups.JChannel;
+import org.jgroups.Message;
+import org.jgroups.Transport;
+import org.jgroups.conf.ClassConfigurator;
+import org.jgroups.log.Trace;
+import org.jgroups.util.Promise;
+import org.jgroups.util.TimeScheduler;
 
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Vector;
-import org.jgroups.Transport;
-import org.jgroups.Message;
-import org.jgroups.util.TimeScheduler;
-import org.jgroups.JChannel;
-import org.jgroups.Event;
-import org.jgroups.log.Trace;
-import org.jgroups.conf.ClassConfigurator;
-import org.jgroups.util.Queue;
-import org.jgroups.util.Util;
-import org.jgroups.util.Promise;
 
 
 
@@ -219,18 +218,10 @@ public class ProtocolStack extends Protocol implements Transport {
             if(start_result instanceof Exception)
                 throw (Exception)start_result;
             else
-                throw new Exception("ProtocolStack.start(): exception is " + (Throwable)start_result);
+                throw new Exception("ProtocolStack.start(): exception is " + start_result);
         }
 
         stopped=false;
-
-//        synchronized(mutex) {
-//            for(int i=0; i < prots.size(); i++) {
-//                p=(Protocol)prots.elementAt(i);
-//                p.start();
-//            }
-//            stopped=false;
-//        }
     }
 
 
