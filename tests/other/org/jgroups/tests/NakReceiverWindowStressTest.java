@@ -1,37 +1,38 @@
-// $Id: NakReceiverWindowStressTest.java,v 1.3 2004/01/16 16:47:52 belaban Exp $
+// $Id: NakReceiverWindowStressTest.java,v 1.4 2004/03/01 17:16:09 belaban Exp $
 
 package org.jgroups.tests;
 
 
-
-import org.jgroups.*;
-import org.jgroups.stack.*;
+import org.jgroups.Address;
+import org.jgroups.Message;
+import org.jgroups.stack.IpAddress;
+import org.jgroups.stack.NakReceiverWindow;
+import org.jgroups.stack.Retransmitter;
 import org.jgroups.util.Util;
 
 import java.io.IOException;
 
 
-
-
 /**
  * Adds a large number of messages (with gaps to simulate message loss) into NakReceiverWindow. Receives messages
  * on another thread. When the receiver thread has received all messages it prints out the time taken and terminates.
+ *
  * @author Bela Ban
  */
 public class NakReceiverWindowStressTest implements Retransmitter.RetransmitCommand {
     NakReceiverWindow win=null;
-    Address           sender=null;
-    int               num_msgs=1000, prev_value=0;
-    double            discard_prob=0.1; // discard 10% of all insertions
-    long              start, stop;
-    boolean           trace=false;
-    boolean           debug=false;
-    
+    Address sender=null;
+    int num_msgs=1000, prev_value=0;
+    double discard_prob=0.0; // discard 0% of all insertions
+    long start, stop;
+    boolean trace=false;
+    boolean debug=false;
 
-    public NakReceiverWindowStressTest(int num_msgs, double discard_prob, boolean trace, boolean debug) {
-	this.num_msgs=num_msgs;
-	this.discard_prob=discard_prob;
-	this.trace=trace;
+
+    public NakReceiverWindowStressTest(int num_msgs, double discard_prob, boolean trace) {
+        this.num_msgs=num_msgs;
+        this.discard_prob=discard_prob;
+        this.trace=trace;
     }
 
 
@@ -46,11 +47,11 @@ public class NakReceiverWindowStressTest implements Retransmitter.RetransmitComm
 
 
     public void start() throws IOException {
-	System.out.println("num_msgs=" + num_msgs + "\ndiscard_prob=" + discard_prob);
+        System.out.println("num_msgs=" + num_msgs + "\ndiscard_prob=" + discard_prob);
 
-	sender=new IpAddress("localhost", 5555);
-	win=new NakReceiverWindow(sender, this, 1);
-	start=System.currentTimeMillis();
+        sender=new IpAddress("localhost", 5555);
+        win=new NakReceiverWindow(sender, this, 1);
+        start=System.currentTimeMillis();
         sendMessages(num_msgs);
     }
 
@@ -59,13 +60,13 @@ public class NakReceiverWindowStressTest implements Retransmitter.RetransmitComm
         Message msg;
 
         for(long i=1; i <= num_msgs; i++) {
-            if(Util.tossWeightedCoin(discard_prob) && i <= num_msgs) {
+            if(discard_prob > 0 && Util.tossWeightedCoin(discard_prob) && i <= num_msgs) {
                 if(debug) out("-- discarding " + i);
             }
             else {
                 if(debug) out("-- adding " + i);
                 win.add(i, new Message(null, null, new Long(i)));
-                if(trace && i % 100 == 0)
+                if(trace && i % 1000 == 0)
                     System.out.println("-- added " + i);
                 while((msg=win.remove()) != null)
                     processMessage(msg);
@@ -74,10 +75,8 @@ public class NakReceiverWindowStressTest implements Retransmitter.RetransmitComm
         while(true) {
             while((msg=win.remove()) != null)
                 processMessage(msg);
-            Util.sleep(50);
         }
     }
-
 
 
     void processMessage(Message msg) {
@@ -90,12 +89,16 @@ public class NakReceiverWindowStressTest implements Retransmitter.RetransmitComm
             System.exit(0);
         }
         prev_value++;
-        if(trace && i % 100 == 0)
+        if(trace && i % 1000 == 0)
             System.out.println("Removed " + i);
         if(i == num_msgs) {
             stop=System.currentTimeMillis();
+            long total=stop-start;
+            double msgs_per_sec=num_msgs / (total/1000.0);
+            double msgs_per_ms=num_msgs / (double)total;
             System.out.println("Inserting and removing " + num_msgs +
-                    " messages into NakReceiverWindow took " + (stop - start) + "ms");
+                    " messages into NakReceiverWindow took " + total + "ms");
+            System.out.println("Msgs/sec: " + msgs_per_sec + ", msgs/ms: " + msgs_per_ms);
             System.out.println("<enter> to terminate");
             try {
                 System.in.read();
@@ -107,50 +110,40 @@ public class NakReceiverWindowStressTest implements Retransmitter.RetransmitComm
         }
     }
 
-    
-
-
-
 
     void out(String msg) {
-	System.out.println(msg);
+        System.out.println(msg);
     }
 
 
-    
     public static void main(String[] args) {
-	NakReceiverWindowStressTest test;
-	int                         num_msgs=1000;
-	double                      discard_prob=0.1;
-	boolean                     trace=false;
-	boolean                     debug=false;
-
-	
-	for(int i=0; i < args.length; i++) {
-	    if(args[i].equals("-help")) {
-		help();
-		return;
-	    }
-	    if(args[i].equals("-num_msgs")) {
-		num_msgs=new Integer(args[++i]).intValue();
-		continue;
-	    }
-	    if(args[i].equals("-discard")) {
-		discard_prob=new Double(args[++i]).doubleValue();
-		continue;
-	    }
-	    if(args[i].equals("-trace")) {
-		trace=true;
-		continue;
-	    }
-	    if(args[i].equals("-debug")) {
-		debug=true;
-		continue;
-	    }
-	}
+        NakReceiverWindowStressTest test;
+        int num_msgs=1000;
+        double discard_prob=0.0;
+        boolean trace=false;
 
 
-	test=new NakReceiverWindowStressTest(num_msgs, discard_prob, trace, debug);
+        for(int i=0; i < args.length; i++) {
+            if(args[i].equals("-help")) {
+                help();
+                return;
+            }
+            if(args[i].equals("-num_msgs")) {
+                num_msgs=new Integer(args[++i]).intValue();
+                continue;
+            }
+            if(args[i].equals("-discard")) {
+                discard_prob=new Double(args[++i]).doubleValue();
+                continue;
+            }
+            if(args[i].equals("-trace")) {
+                trace=true;
+                continue;
+            }
+        }
+
+
+        test=new NakReceiverWindowStressTest(num_msgs, discard_prob, trace);
         try {
             test.start();
         }
@@ -161,8 +154,8 @@ public class NakReceiverWindowStressTest implements Retransmitter.RetransmitComm
 
 
     static void help() {
-	System.out.println("NakReceiverWindowStressTest [-help] [-num_msgs <number>] [-discard <probability>] " +
-			   "[-trace]");
+        System.out.println("NakReceiverWindowStressTest [-help] [-num_msgs <number>] [-discard <probability>] " +
+                "[-trace]");
     }
-    
+
 }
