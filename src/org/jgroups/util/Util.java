@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.22 2004/10/08 12:07:01 belaban Exp $
+// $Id: Util.java,v 1.23 2004/10/08 12:17:42 belaban Exp $
 
 package org.jgroups.util;
 
@@ -142,6 +142,27 @@ public class Util {
 
 
     public static void writeStreamable(Streamable obj, DataOutputStream out) throws IOException {
+        if(obj == null) {
+            out.write(0);
+            return;
+        }
+        out.write(1);
+        obj.writeTo(out);
+    }
+
+
+    public static Streamable readStreamable(Class clazz, DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        Streamable retval=null;
+        int b=in.read();
+        if(b == 0)
+            return null;
+        retval=(Streamable)clazz.newInstance();
+        retval.readFrom(in);
+        return retval;
+    }
+
+
+    public static void writeGenericStreamable(Streamable obj, DataOutputStream out) throws IOException {
         int magic_number;
         String classname;
 
@@ -174,7 +195,7 @@ public class Util {
 
 
 
-    public static Streamable readStreamable(DataInputStream in) throws IOException {
+    public static Streamable readGenericStreamable(DataInputStream in) throws IOException {
         Streamable retval=null;
         int b=in.read();
         if(b == 0)

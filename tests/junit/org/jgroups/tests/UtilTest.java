@@ -1,4 +1,4 @@
-// $Id: UtilTest.java,v 1.4 2004/10/08 12:07:22 belaban Exp $
+// $Id: UtilTest.java,v 1.5 2004/10/08 12:17:16 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -49,16 +49,16 @@ public class UtilTest extends TestCase {
         ViewId vid2=new ViewId(new IpAddress("127.0.0.1", 5555), 35623);
         ByteArrayOutputStream outstream=new ByteArrayOutputStream();
         DataOutputStream dos=new DataOutputStream(outstream);
-        Util.writeStreamable(m, dos);
-        Util.writeStreamable(vid, dos);
-        Util.writeStreamable(vid2, dos);
+        Util.writeGenericStreamable(m, dos);
+        Util.writeGenericStreamable(vid, dos);
+        Util.writeGenericStreamable(vid2, dos);
         dos.close();
         byte[] buf=outstream.toByteArray();
         ByteArrayInputStream instream=new ByteArrayInputStream(buf);
         DataInputStream dis=new DataInputStream(instream);
-        Message m2=(Message)Util.readStreamable(dis);
-        ViewId v3=(ViewId)Util.readStreamable(dis);
-        ViewId v4=(ViewId)Util.readStreamable(dis);
+        Message m2=(Message)Util.readGenericStreamable(dis);
+        ViewId v3=(ViewId)Util.readGenericStreamable(dis);
+        ViewId v4=(ViewId)Util.readGenericStreamable(dis);
         assertNotNull(m2.getBuffer());
         assertEquals(m.getLength(), m2.getLength());
         assertNotNull(v3);
@@ -71,12 +71,12 @@ public class UtilTest extends TestCase {
         ViewId vid=new ViewId(null, 12345);
         ByteArrayOutputStream outstream=new ByteArrayOutputStream();
         DataOutputStream dos=new DataOutputStream(outstream);
-        Util.writeStreamable(vid, dos);
+        Util.writeGenericStreamable(vid, dos);
         dos.close();
         byte[] buf=outstream.toByteArray();
         ByteArrayInputStream instream=new ByteArrayInputStream(buf);
         DataInputStream dis=new DataInputStream(instream);
-        ViewId v4=(ViewId)Util.readStreamable(dis);
+        ViewId v4=(ViewId)Util.readGenericStreamable(dis);
         assertEquals(vid, v4);
     }
 
@@ -97,12 +97,15 @@ public class UtilTest extends TestCase {
 
         ByteArrayOutputStream outstream=new ByteArrayOutputStream();
         DataOutputStream dos=new DataOutputStream(outstream);
+        Util.writeGenericStreamable(v, dos);
         Util.writeStreamable(v, dos);
         dos.close();
         byte[] buf=outstream.toByteArray();
         ByteArrayInputStream instream=new ByteArrayInputStream(buf);
         DataInputStream dis=new DataInputStream(instream);
-        View v2=(View)Util.readStreamable(dis);
+        View v2=(View)Util.readGenericStreamable(dis);
+        assertEquals(v, v2);
+        v2=(View)Util.readStreamable(View.class, dis);
         assertEquals(v, v2);
     }
 
