@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.5 2004/07/05 05:45:31 belaban Exp $
+// $Id: Draw.java,v 1.6 2004/07/26 10:52:31 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -43,8 +43,7 @@ public class Draw implements ActionListener, ChannelListener {
 
 
 
-    public Draw(String props, boolean debug, boolean no_channel) throws Exception {
-
+    public Draw(String props, boolean debug, boolean cummulative, boolean no_channel) throws Exception {
         this.no_channel=no_channel;
         if(no_channel)
             return;
@@ -64,10 +63,11 @@ public class Draw implements ActionListener, ChannelListener {
 
 
    public static void main(String[] args) {
-        Draw             draw=null;
-        String           props=null;
-        boolean          debug=false;
-        boolean          no_channel=false;
+       Draw             draw=null;
+       String           props=null;
+       boolean          debug=false;
+       boolean          cummulative=false;
+       boolean          no_channel=false;
 
         for(int i=0; i < args.length; i++) {
             if("-help".equals(args[i])) {
@@ -76,6 +76,10 @@ public class Draw implements ActionListener, ChannelListener {
             }
             if("-debug".equals(args[i])) {
                 debug=true;
+                continue;
+            }
+            if("-cummulative".equals(args[i])) {
+                cummulative=true;
                 continue;
             }
             if("-props".equals(args[i])) {
@@ -109,7 +113,7 @@ public class Draw implements ActionListener, ChannelListener {
 
 
         try {
-            draw=new Draw(props, debug, no_channel);
+            draw=new Draw(props, debug, cummulative, no_channel);
             draw.go();
         }
         catch(Throwable e) {
@@ -120,7 +124,7 @@ public class Draw implements ActionListener, ChannelListener {
 
 
     static void help() {
-        System.out.println("\nDraw [-help] [-debug] [-no_channel] [-props <protocol stack definition>]");
+        System.out.println("\nDraw [-help] [-debug] [-cummulative] [-no_channel] [-props <protocol stack definition>]");
         System.out.println("-debug: brings up a visual debugger");
         System.out.println("-no_channel: doesn't use JGroups at all, any drawing will be relected on the " +
                            "whiteboard directly");
@@ -240,7 +244,7 @@ public class Draw implements ActionListener, ChannelListener {
                         System.out.println("*** Draw.run(): obj is " + obj.getClass() +
                                            ", hdrs are" + msg.printObjectHeaders());
                     else
-                        System.out.println("*** Draw.run(): hdrs are" + msg.printObjectHeaders());
+                        System.out.println("*** Draw.run(): hdrs are " + msg.printObjectHeaders());
                     Util.dumpStack(false);
                     continue;
                 }
