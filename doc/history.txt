@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.136 2004/12/31 14:10:37 belaban Exp $
+Revision: $Id: history.txt,v 1.137 2005/01/05 10:40:40 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -27,6 +27,11 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
 Version 2.2.8
 -------------
+
+- Implemented JGRP-15 (Concurrent startup of initial members without merging): when multiple members are started
+  simultaneously, and no other member is running yet, they form singleton groups, and merge after some time.
+  GOAL: elect a coordinator out of all concurrent (client-)members and avoid a merge.
+  (bela Jan 5 2005)
 
 - Fixed JGRP-10 (incorrect computation of wait time in waiting loops)
   (bela Dec 31 2004, on suggestion from Zac Hansen)
