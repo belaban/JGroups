@@ -1,4 +1,4 @@
-// $Id: PullPushAdapter.java,v 1.1 2003/09/09 01:24:08 belaban Exp $
+// $Id: PullPushAdapter.java,v 1.2 2003/11/27 21:45:24 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -199,6 +199,7 @@ public class PullPushAdapter implements Runnable {
                 Trace.warn("PullPushAdapter.run()", "[" + (local_addr == null ? "<null>" : local_addr.toString()) +
                         "] channel not connected, exception is " + conn);
                 Util.sleep(1000);
+                receiver_thread=null;
                 break;
             }
             catch(ChannelClosedException closed_ex) {
@@ -206,6 +207,7 @@ public class PullPushAdapter implements Runnable {
                 Trace.warn("PullPushAdapter.run()", "[" + (local_addr == null ? "<null>" : local_addr.toString()) +
                         "] channel closed, exception is " + closed_ex);
                 Util.sleep(1000);
+                receiver_thread=null;
                 break;
             }
             catch(Throwable e) {
