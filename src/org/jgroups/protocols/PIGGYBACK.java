@@ -1,4 +1,4 @@
-// $Id: PIGGYBACK.java,v 1.4 2004/03/30 06:47:21 belaban Exp $
+// $Id: PIGGYBACK.java,v 1.5 2004/04/23 19:36:13 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -113,7 +113,7 @@ public class PIGGYBACK extends Protocol {
     }
 
 
-    public boolean setProperties(Properties props) {
+    public boolean setProperties(Properties props) {super.setProperties(props);
         String str;
 
         str=props.getProperty("max_wait_time");

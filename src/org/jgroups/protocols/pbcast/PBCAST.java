@@ -1,4 +1,4 @@
-// $Id: PBCAST.java,v 1.5 2004/03/30 06:47:18 belaban Exp $
+// $Id: PBCAST.java,v 1.6 2004/04/23 19:36:12 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -273,7 +273,7 @@ public class PBCAST extends Protocol implements Runnable {
 
 
     /** Setup the Protocol instance acording to the configuration string */
-    public boolean setProperties(Properties props) {
+    public boolean setProperties(Properties props) {super.setProperties(props);
         String str;
 
         str=props.getProperty("dynamic");

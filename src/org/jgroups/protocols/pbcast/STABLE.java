@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.5 2004/04/23 01:39:03 belaban Exp $
+// $Id: STABLE.java,v 1.6 2004/04/23 19:36:12 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -80,6 +80,7 @@ public class STABLE extends Protocol {
     public boolean setProperties(Properties props) {
         String str;
 
+        super.setProperties(props);
         str=props.getProperty("digest_timeout");
         if(str != null) {
             digest_timeout=new Long(str).longValue();

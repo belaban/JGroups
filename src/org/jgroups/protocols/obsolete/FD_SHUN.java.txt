@@ -1,4 +1,4 @@
-// $Id: FD_SHUN.java.txt,v 1.1 2003/09/09 01:24:11 belaban Exp $
+// $Id: FD_SHUN.java.txt,v 1.2 2004/04/23 19:36:11 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -74,7 +74,7 @@ public class FD_SHUN extends Protocol implements Runnable {
     public String  getName() {return "FD_SHUN";}
 
 
-    public boolean setProperties(Properties props) {
+    public boolean setProperties(Properties props) {super.setProperties(props);
 	String     str;
 
 	this.props=props;

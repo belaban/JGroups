@@ -1,4 +1,4 @@
-// $Id: FRAG2.java,v 1.5 2004/03/30 06:47:21 belaban Exp $
+// $Id: FRAG2.java,v 1.6 2004/04/23 19:36:13 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -27,7 +27,7 @@ import java.util.*;
  * size addition for headers and src and dest address is minimal when the transport finally has to serialize the
  * message, so we add a constant (1000 bytes).
  * @author Bela Ban
- * @version $Id: FRAG2.java,v 1.5 2004/03/30 06:47:21 belaban Exp $
+ * @version $Id: FRAG2.java,v 1.6 2004/04/23 19:36:13 belaban Exp $
  */
 public class FRAG2 extends Protocol {
 
@@ -57,6 +57,7 @@ public class FRAG2 extends Protocol {
     public boolean setProperties(Properties props) {
         String str;
 
+        super.setProperties(props);
         str=props.getProperty("frag_size");
         if(str != null) {
             frag_size=new Integer(str).intValue();

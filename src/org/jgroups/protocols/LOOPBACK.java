@@ -1,4 +1,4 @@
-// $Id: LOOPBACK.java,v 1.3 2004/03/30 06:47:21 belaban Exp $
+// $Id: LOOPBACK.java,v 1.4 2004/04/23 19:36:13 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -42,16 +42,6 @@ public class LOOPBACK extends Protocol {
     }
 
 
-    /** Setup the Protocol instance acording to the configuration string */
-    public boolean setProperties(Properties props) {
-
-        if(props.size() > 0) {
-            System.err.println("LOOPBACK.setProperties(): the following properties are not recognized:");
-            props.list(System.out);
-            return false;
-        }
-        return true;
-    }
 
     public void init() throws Exception {
         local_addr=new org.jgroups.stack.IpAddress("localhost", 10000); // fake address

@@ -1,4 +1,4 @@
-// $Id: FC.java,v 1.8 2004/04/21 23:07:03 belaban Exp $
+// $Id: FC.java,v 1.9 2004/04/23 19:36:12 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -18,7 +18,7 @@ import java.util.*;
  * Note that this protocol must be located towards the top of the stack, or all down_threads from JChannel to this
  * protocol must be set to false ! This is in order to block JChannel.send()/JChannel.down().
  * @author Bela Ban
- * @version $Revision: 1.8 $
+ * @version $Revision: 1.9 $
  */
 public class FC extends Protocol {
 
@@ -74,6 +74,7 @@ public class FC extends Protocol {
         String  str;
         boolean min_credits_set=false;
 
+        super.setProperties(props);
         str=props.getProperty("max_credits");
         if(str != null) {
             max_credits=Long.parseLong(str);

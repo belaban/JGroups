@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.10 2004/04/23 01:39:03 belaban Exp $
+// $Id: GMS.java,v 1.11 2004/04/23 19:36:11 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -630,6 +630,7 @@ public class GMS extends Protocol {
     public boolean setProperties(Properties props) {
         String str;
 
+        super.setProperties(props);
         str=props.getProperty("shun");
         if(str != null) {
             shun=new Boolean(str).booleanValue();

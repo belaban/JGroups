@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.2 2004/03/30 06:47:18 belaban Exp $
+// $Id: FD.java,v 1.3 2004/04/23 19:36:11 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -15,8 +15,6 @@ import java.util.Properties;
 import java.util.Vector;
 
 
-
-
 /**
  * Passive failure detection protocol. It assumes a pbcast protocol, which uses rounds of gossiping for
  * reliable message delivery. Gossip protocols typically involve all the members sending gossips in regular
@@ -30,46 +28,52 @@ import java.util.Vector;
  * <li>retransmit request from P
  * <li>retransmit response from P
  * </ul>
+ *
  * @author Bela Ban
  */
 public class FD extends Protocol implements Runnable {
-    Address      local_addr=null;
-    Thread       checker=null;   // checks timestamps for timeout, generates SUSPECT event
-    long         timeout=6000;   // number of millisecs to wait for a member to be suspected
-                                 // (should be higher than the gossip_interval value in PBCAST
-    Hashtable    members=new Hashtable(); // keys=Addresses (members), vals=Entries (timestamp)
-    Vector       suspected_mbrs=new Vector(); // currently suspected members (dynamically updated)
-
+    Address local_addr=null;
+    Thread checker=null;   // checks timestamps for timeout, generates SUSPECT event
+    long timeout=6000;   // number of millisecs to wait for a member to be suspected
+    // (should be higher than the gossip_interval value in PBCAST
+    Hashtable members=new Hashtable(); // keys=Addresses (members), vals=Entries (timestamp)
+    Vector suspected_mbrs=new Vector(); // currently suspected members (dynamically updated)
 
 
     static class Entry {
-	long timestamp;
+        long timestamp;
 
-	Entry(long timestamp) {this.timestamp=timestamp;}
+        Entry(long timestamp) {
+            this.timestamp=timestamp;
+        }
 
-	public String toString() {return new Long(timestamp).toString();}
+        public String toString() {
+            return new Long(timestamp).toString();
+        }
     }
 
 
-
-    public String  getName() {return "FD";}
+    public String getName() {
+        return "FD";
+    }
 
 
     public boolean setProperties(Properties props) {
-	String     str;
+        String str;
 
-	str=props.getProperty("timeout");
-	if(str != null) {
-	    timeout=new Long(str).longValue();
-	    props.remove("timeout");
-	}
+        super.setProperties(props);
+        str=props.getProperty("timeout");
+        if(str != null) {
+            timeout=new Long(str).longValue();
+            props.remove("timeout");
+        }
 
-	if(props.size() > 0) {
-	    System.err.println("FD.setProperties(): the following properties are not recognized:");
-	    props.list(System.out);
-	    return false;
-	}
-	return true;
+        if(props.size() > 0) {
+            System.err.println("FD.setProperties(): the following properties are not recognized:");
+            props.list(System.out);
+            return false;
+        }
+        return true;
     }
 
 
@@ -78,156 +82,154 @@ public class FD extends Protocol implements Runnable {
     }
 
     public void up(Event evt) {
-	Message   msg;
-	Address   sender;
+        Message msg;
+        Address sender;
 
-	switch(evt.getType()) {
+        switch(evt.getType()) {
 
-	case Event.SET_LOCAL_ADDRESS:
-	    local_addr=(Address)evt.getArg();
-	    break;
+            case Event.SET_LOCAL_ADDRESS:
+                local_addr=(Address)evt.getArg();
+                break;
 
-	case Event.MSG:
-	    msg=(Message)evt.getArg();
-	    sender=msg.getSrc();
-	    updateSender(sender);
-	    break;
-	}
+            case Event.MSG:
+                msg=(Message)evt.getArg();
+                sender=msg.getSrc();
+                updateSender(sender);
+                break;
+        }
 
-	passUp(evt);                                        // pass up to the layer above us
+        passUp(evt);                                        // pass up to the layer above us
     }
-
 
 
     public void down(Event evt) {
-	Message msg;
-	View    v;
-	Vector  mbrs;
-	Address mbr;
+        Message msg;
+        View v;
+        Vector mbrs;
+        Address mbr;
 
-	switch(evt.getType()) {
+        switch(evt.getType()) {
 
-	case Event.VIEW_CHANGE:
-	    v=(View)evt.getArg();
-	    mbrs=v.getMembers();
-	    passDown(evt);
-	    for(Enumeration e=members.keys(); e.hasMoreElements();) {
-		mbr=(Address)e.nextElement();
-		if(!mbrs.contains(mbr)) {
-		    members.remove(mbr);
-		    continue;
-		}
-	    }
-	    members.remove(local_addr);
-	    if(members.size() > 0 && checker == null)
-		startChecker();
-	    return;
+            case Event.VIEW_CHANGE:
+                v=(View)evt.getArg();
+                mbrs=v.getMembers();
+                passDown(evt);
+                for(Enumeration e=members.keys(); e.hasMoreElements();) {
+                    mbr=(Address)e.nextElement();
+                    if(!mbrs.contains(mbr)) {
+                        members.remove(mbr);
+                        continue;
+                    }
+                }
+                members.remove(local_addr);
+                if(members.size() > 0 && checker == null)
+                    startChecker();
+                return;
 
-	    // generated by PBCAST, contains list of members a gossip has visited. we can safely reset their counter
-	case Event.HEARD_FROM:
-	    updateSenders((Vector)evt.getArg());
-	    return;  // don't pass down
-	}
+                // generated by PBCAST, contains list of members a gossip has visited. we can safely reset their counter
+            case Event.HEARD_FROM:
+                updateSenders((Vector)evt.getArg());
+                return;  // don't pass down
+        }
 
-	passDown(evt);
+        passDown(evt);
     }
-
-
 
 
     public void run() {
-	Address mbr;
-	long    timestamp, diff;
+        Address mbr;
+        long timestamp, diff;
 
-	while(checker != null && members.size() > 0) {
-	    for(Enumeration e=members.keys(); e.hasMoreElements();) {
-		mbr=(Address)e.nextElement();
-		timestamp=((Entry)members.get(mbr)).timestamp;
-		diff=System.currentTimeMillis() - timestamp;
-		if(diff >= timeout) {
-		    if(log.isInfoEnabled()) log.info("suspecting " + mbr);
-		    passUp(new Event(Event.SUSPECT, mbr));
-		    if(!suspected_mbrs.contains(mbr))
-			suspected_mbrs.addElement(mbr);
-		}
-	    }
-	    Util.sleep(timeout);
-	}
-	checker=null;
+        while(checker != null && members.size() > 0) {
+            for(Enumeration e=members.keys(); e.hasMoreElements();) {
+                mbr=(Address)e.nextElement();
+                timestamp=((Entry)members.get(mbr)).timestamp;
+                diff=System.currentTimeMillis() - timestamp;
+                if(diff >= timeout) {
+                    if(log.isInfoEnabled()) log.info("suspecting " + mbr);
+                    passUp(new Event(Event.SUSPECT, mbr));
+                    if(!suspected_mbrs.contains(mbr))
+                        suspected_mbrs.addElement(mbr);
+                }
+            }
+            Util.sleep(timeout);
+        }
+        checker=null;
     }
-
 
 
     synchronized void startChecker() {
-	if(checker == null) {
-	    checker=new Thread(this, "FD.CheckerThread");
+        if(checker == null) {
+            checker=new Thread(this, "FD.CheckerThread");
             checker.setDaemon(true);
-	    checker.start();
-	}
+            checker.start();
+        }
     }
 
     synchronized void stopChecker() {
-	Thread tmp=null;
-	if(checker != null && checker.isAlive()) {
-	    tmp=checker;
-	    checker=null;
-	    tmp.interrupt();
-	    try {tmp.join(timeout);} catch(Exception ex) {}
-	    if(tmp.isAlive())
-		if(log.isWarnEnabled()) log.warn("interrupted checker thread is still alive !");
-	}
-	checker=null;
+        Thread tmp=null;
+        if(checker != null && checker.isAlive()) {
+            tmp=checker;
+            checker=null;
+            tmp.interrupt();
+            try {
+                tmp.join(timeout);
+            }
+            catch(Exception ex) {
+            }
+            if(tmp.isAlive())
+                if(log.isWarnEnabled()) log.warn("interrupted checker thread is still alive !");
+        }
+        checker=null;
     }
 
 
     void updateSender(Address mbr) {
-	Entry entry;
-	long curr_time=0;
+        Entry entry;
+        long curr_time=0;
 
-	if(mbr == null) {
-	    if(log.isDebugEnabled()) log.debug("member " + mbr + " not found");
-	    return;
-	}
+        if(mbr == null) {
+            if(log.isDebugEnabled()) log.debug("member " + mbr + " not found");
+            return;
+        }
 
-	if(suspected_mbrs.size() > 0 && suspected_mbrs.contains(mbr)) {
-	    passUp(new Event(Event.UNSUSPECT, mbr));
-	    suspected_mbrs.remove(mbr);
-	}
+        if(suspected_mbrs.size() > 0 && suspected_mbrs.contains(mbr)) {
+            passUp(new Event(Event.UNSUSPECT, mbr));
+            suspected_mbrs.remove(mbr);
+        }
 
-	if(mbr.equals(local_addr))
-	   return;
-	entry=(Entry)members.get(mbr);
-	curr_time=System.currentTimeMillis();
-	if(entry != null)
-	    entry.timestamp=curr_time;
-	else
-	    members.put(mbr, new Entry(curr_time));
+        if(mbr.equals(local_addr))
+            return;
+        entry=(Entry)members.get(mbr);
+        curr_time=System.currentTimeMillis();
+        if(entry != null)
+            entry.timestamp=curr_time;
+        else
+            members.put(mbr, new Entry(curr_time));
     }
-
 
 
     void updateSenders(Vector v) {
-	Address mbr;
-	if(v == null) return;
-	for(int i=0; i < v.size(); i++) {
-	    mbr=(Address)v.elementAt(i);
-	    updateSender(mbr);
-	}
+        Address mbr;
+        if(v == null) return;
+        for(int i=0; i < v.size(); i++) {
+            mbr=(Address)v.elementAt(i);
+            updateSender(mbr);
+        }
     }
 
 
-
     String printTimestamps() {
-	StringBuffer sb=new StringBuffer();
-	Address      mbr;
+        StringBuffer sb=new StringBuffer();
+        Address mbr;
 
-	synchronized(members) {
-	    for(Enumeration e=members.keys(); e.hasMoreElements();) {
-		mbr=(Address)e.nextElement();
-		sb.append("\n" + mbr + ": " + (System.currentTimeMillis() - ((Entry)members.get(mbr)).timestamp));
-	    }
-	}
-	return sb.toString();
+        synchronized(members) {
+            for(Enumeration e=members.keys(); e.hasMoreElements();) {
+                mbr=(Address)e.nextElement();
+                sb.append("\n" + mbr + ": " + (System.currentTimeMillis() - ((Entry)members.get(mbr)).timestamp));
+            }
+        }
+        return sb.toString();
     }
 
 

@@ -1,4 +1,4 @@
-// $Id: SIZE.java,v 1.6 2004/03/30 06:47:21 belaban Exp $
+// $Id: SIZE.java,v 1.7 2004/04/23 19:36:13 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -44,7 +44,7 @@ public class SIZE extends Protocol {
     /**
      * Setup the Protocol instance acording to the configuration string
      */
-    public boolean setProperties(Properties props) {
+    public boolean setProperties(Properties props) {super.setProperties(props);
         String str;
 
         str=props.getProperty("print_msg");

@@ -1,4 +1,4 @@
-// $Id: TOTAL_OLD.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
+// $Id: TOTAL_OLD.java,v 1.3 2004/04/23 19:36:13 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -512,18 +512,7 @@ public class TOTAL_OLD extends Protocol {
     }
 
 
-    public boolean setProperties(Properties props) {
-        String     str;
 
-	 System.err.println( "TOTAL_OLD layer - trace is on\n" );
-
-        if(props.size() > 0) {
-            System.err.println("TOTAL_OLD.setProperties(): the following properties are not recognized:");
-            props.list(System.err);
-            return false;
-        }
-        return true;
-    }
 
     public void start() throws Exception {
         // Start work

@@ -1,4 +1,4 @@
-// $Id: FD_PROB.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
+// $Id: FD_PROB.java,v 1.3 2004/04/23 19:36:13 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -26,7 +26,7 @@ import java.util.Vector;
  * for timeout seconds, Q will be suspected.<p>
  * This protocol can be used both with a PBCAST *and* regular stacks.
  * @author Bela Ban 1999
- * @version $Revision: 1.2 $
+ * @version $Revision: 1.3 $
  */
 public class FD_PROB extends Protocol implements Runnable {
     Address local_addr=null;
@@ -47,6 +47,7 @@ public class FD_PROB extends Protocol implements Runnable {
     public boolean setProperties(Properties props) {
         String str;
 
+        super.setProperties(props);
         str=props.getProperty("timeout");
         if(str != null) {
             timeout=new Long(str).longValue();

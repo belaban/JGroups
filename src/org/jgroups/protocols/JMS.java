@@ -1,4 +1,4 @@
-// $Id: JMS.java,v 1.3 2004/03/30 06:47:21 belaban Exp $ 
+// $Id: JMS.java,v 1.4 2004/04/23 19:36:13 belaban Exp $ 
 
 package org.jgroups.protocols;
 
@@ -154,6 +154,7 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
      * 
      */
     public boolean setProperties(Properties props) {
+        super.setProperties(props);
         cfName = props.getProperty(INIT_CONNECTION_FACTORY,
                 DEFAULT_CONNECTION_FACTORY);
 

@@ -34,15 +34,12 @@ public class SHUFFLE extends Protocol implements Runnable {
     public boolean setProperties(Properties props) {
         String     str;
 
-        this.props=props;
-
+        super.setProperties(props);
         str=props.getProperty("name");
         if(str != null) {
             name=str;
             props.remove("name");
         }
-
-
 
         if(props.size() > 0) {
             System.err.println("DUMMY.setProperties(): these properties are not recognized:");

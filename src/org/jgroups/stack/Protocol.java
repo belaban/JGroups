@@ -1,4 +1,4 @@
-// $Id: Protocol.java,v 1.14 2004/04/23 19:14:47 belaban Exp $
+// $Id: Protocol.java,v 1.15 2004/04/23 19:36:17 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -179,7 +179,8 @@ public abstract class Protocol {
      * </pre>
      */
     public boolean setProperties(Properties props) {
-        this.props.putAll(props);
+        if(props != null)
+            this.props.putAll(props);
         return true;
     }
 

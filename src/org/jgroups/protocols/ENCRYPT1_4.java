@@ -4,7 +4,7 @@
 // replacing SecretKey with SecretKey
 
 
-// $Id: ENCRYPT1_4.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
+// $Id: ENCRYPT1_4.java,v 1.3 2004/04/23 19:36:12 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -103,8 +103,8 @@ public static class EncryptHeader extends org.jgroups.Header {
 
     public boolean setProperties(Properties props) {
         String str;
-        this.props=props;
 
+        super.setProperties(props);
         // asymmetric key length
         str=props.getProperty("asymInit");
         if(str != null) {

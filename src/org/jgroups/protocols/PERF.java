@@ -1,4 +1,4 @@
-// $Id: PERF.java,v 1.3 2004/03/30 06:47:21 belaban Exp $
+// $Id: PERF.java,v 1.4 2004/04/23 19:36:13 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -29,7 +29,7 @@ import java.util.Vector;
  * all trace output to the given file.
  * </ol>
  * @author Bela Ban Oct 2001
- * @version $Revision: 1.3 $
+ * @version $Revision: 1.4 $
  */
 public class PERF extends Protocol {
     boolean              details=false;
@@ -42,7 +42,7 @@ public class PERF extends Protocol {
     public String  getName() {return name;}
 
 
-    public boolean setProperties(Properties props) {
+    public boolean setProperties(Properties props) {super.setProperties(props);
 	String     str;
 
 	str=props.getProperty("details");
