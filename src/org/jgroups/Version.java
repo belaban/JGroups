@@ -7,7 +7,7 @@ package org.jgroups;
 public class Version {
     public static String version="2.2.7";
     public static byte[] version_id={'0', '2', '2', '7'};
-    public static String cvs="$Id: Version.java,v 1.12 2004/08/05 07:57:25 belaban Exp $";
+    public static String cvs="$Id: Version.java,v 1.13 2004/08/19 12:37:36 belaban Exp $";
 
     public static void main(String[] args) {
         System.out.println("\nVersion: \t" + version);
@@ -15,6 +15,10 @@ public class Version {
         System.out.println("History: \t(see doc/history.txt for details)\n");
     }
 
+
+    public static String printVersion() {
+        return "JGroups " + version + "[ " + cvs + "]";
+    }
 
     public static String printVersionId(byte[] v, int len) {
         StringBuffer sb=new StringBuffer();
