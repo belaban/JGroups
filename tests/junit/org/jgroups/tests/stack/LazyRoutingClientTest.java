@@ -1,4 +1,4 @@
-// $Id: LazyRoutingClientTest.java,v 1.1 2003/10/15 20:14:57 ovidiuf Exp $
+// $Id: LazyRoutingClientTest.java,v 1.2 2003/10/29 16:02:45 ovidiuf Exp $
 
 package org.jgroups.tests.stack;
 
@@ -29,7 +29,7 @@ import java.io.EOFException;
  * @since 2.2.1
  *
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.2 $
  **/
 public class LazyRoutingClientTest extends TestCase {
 
@@ -52,7 +52,7 @@ public class LazyRoutingClientTest extends TestCase {
 
     public void tearDown() throws Exception {
 	super.tearDown();
-        Utilities.stopGossipRouter(routerPort);
+        Utilities.stopGossipRouter();
     }
 
 

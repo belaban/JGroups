@@ -1,4 +1,4 @@
-// $Id: GossipTest.java,v 1.1 2003/10/15 20:14:57 ovidiuf Exp $
+// $Id: GossipTest.java,v 1.2 2003/10/29 16:02:43 ovidiuf Exp $
 
 package org.jgroups.tests.stack;
 
@@ -27,7 +27,7 @@ import java.io.StreamCorruptedException;
  * @since 2.2.1
  *
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.2 $
  **/
 public class GossipTest extends TestCase {
 
@@ -58,7 +58,7 @@ public class GossipTest extends TestCase {
     public void tearDown() throws Exception {
 	super.tearDown();
         if (USE_ROUTER) {
-            Utilities.stopGossipRouter(port);
+            Utilities.stopGossipRouter();
         }
         else {
             Utilities.stopGossipServer(port);  
