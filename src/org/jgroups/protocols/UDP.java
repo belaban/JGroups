@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.25 2004/05/19 00:12:58 belaban Exp $
+// $Id: UDP.java,v 1.26 2004/06/08 15:50:51 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -341,7 +341,7 @@ public class UDP extends Protocol implements Runnable {
         String str, tmp;
 
         super.setProperties(props);
-        tmp=System.getProperty("UDP.bind_addr");
+        tmp=System.getProperty("bind.address");
         if(tmp != null)
             str=tmp;
         else
