@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.17 2004/04/28 16:01:40 belaban Exp $
+// $Id: NAKACK.java,v 1.18 2004/05/04 01:57:38 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -34,7 +34,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
     Address       local_addr=null;
     Vector        members=new Vector();
     long          seqno=0;                                   // current message sequence number (starts with 0)
-    long          deleted_up_to=0;                           // keeps track of the lowest seqno GC'ed (sent_msgs)
     long          max_xmit_size=8192;                        // max size of a retransmit message (otherwise send multiple)
     int           gc_lag=20;                                 // number of msgs garbage collection lags behind
 
@@ -49,8 +48,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
      */
     Hashtable     received_msgs=new Hashtable();
 
-    /** Hashtable<Long,Message>. Hashmap of messages sent by me (keyed on sequence number) */
-    Hashtable     sent_msgs=new Hashtable();
+    /** TreeMap<Long,Message>. Map of messages sent by me (keyed and sorted on sequence number) */
+    TreeMap       sent_msgs=new TreeMap();
 
     boolean       leaving=false;
     TimeScheduler timer=null;
@@ -426,11 +425,16 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
         long msg_id=getNextSeqno();
         if(log.isTraceEnabled()) log.trace("sending msg #" + msg_id);
         msg.putHeader(name, new NakAckHeader(NakAckHeader.MSG, msg_id));
+        if(log.isTraceEnabled()) { // todo: remove
+            log.trace("sent_msgs: " + printSentMsgs());
+        }
 
-        if(Global.copy)
-            sent_msgs.put(new Long(msg_id), msg.copy());
-        else
-            sent_msgs.put(new Long(msg_id), msg);
+        synchronized(sent_msgs) {
+            if(Global.copy)
+                sent_msgs.put(new Long(msg_id), msg.copy());
+            else
+                sent_msgs.put(new Long(msg_id), msg);
+        }
         passDown(new Event(Event.MSG, msg));
     }
 
@@ -470,6 +474,11 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
             return;
         }
         win.add(hdr.seqno, msg);  // add in order, then remove and pass up as many msgs as possible
+
+        // todo: remove below
+        if(log.isTraceEnabled())
+            log.trace("receiver window for " + sender + " is: " + win);
+
         while((msg_to_deliver=win.remove()) != null) {
 
             // Changed by bela Jan 29 2003: not needed (see above)
@@ -505,7 +514,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
         }
         list=new LinkedList();
         for(long i=first_seqno; i <= last_seqno; i++) {
-            m=(Message)sent_msgs.get(new Long(i));
+            m=(Message)sent_msgs.get(new Long(i)); // no need to synchronized
             if(m == null) {
                 if(log.isErrorEnabled())
                     log.error("(requester=" + dest + ", local_addr=" + this.local_addr + ") message with " +
@@ -863,21 +872,24 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
             if(seqno < 0)
                 continue;
 
-             if(log.isDebugEnabled()) log.debug("deleting stable msgs < " + sender + "#" + seqno);
+            if(log.isDebugEnabled())
+                log.debug("deleting msgs <= " + seqno + " from " + sender);
 
             // garbage collect from sent_msgs if sender was myself
             if(sender.equals(local_addr)) {
-                if(log.isDebugEnabled())
-                    log.debug("removing [" + deleted_up_to + " - " + seqno + "] from sent_msgs");
-                for(long j=deleted_up_to; j <= seqno; j++)
-                    sent_msgs.remove(new Long(j));
-                deleted_up_to=seqno;
+                synchronized(sent_msgs) {
+                    // gets us a subset from [lowest seqno - seqno]
+                    SortedMap stable_keys=sent_msgs.headMap(new Long(seqno));
+                    if(stable_keys != null)
+                        stable_keys.clear(); // this will modify sent_msgs directly
+                }
             }
 
             // delete *delivered* msgs that are stable
             // recv_win=(NakReceiverWindow)received_msgs.get(sender);
-            if(recv_win != null)
+            if(recv_win != null) {
                 recv_win.stable(seqno);  // delete all messages with seqnos <= seqno
+            }
         }
     }
 
@@ -934,7 +946,10 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
         NakReceiverWindow win;
         Address key;
 
-        sent_msgs.clear();
+        synchronized(sent_msgs) {
+            sent_msgs.clear();
+        }
+
         for(Enumeration e=received_msgs.keys(); e.hasMoreElements();) {
             key=(Address)e.nextElement();
             win=(NakReceiverWindow)received_msgs.get(key);
@@ -962,12 +977,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
 
     String printSentMsgs() {
         StringBuffer sb=new StringBuffer();
-        Set s=sent_msgs.keySet(); // set of seqnos (Longs)
-        Long min_seqno=null, max_seqno=null;
-        if(s != null) {
-            min_seqno=(Long)Collections.min(s);
-            max_seqno=(Long)Collections.max(s);
-        }
+        Long min_seqno, max_seqno;
+        min_seqno=sent_msgs.size() > 0? (Long)sent_msgs.firstKey() : new Long(0);
+        max_seqno=sent_msgs.size() > 0? (Long)sent_msgs.lastKey() : new Long(0);
         sb.append("[").append(min_seqno).append(" - ").append(max_seqno).append("]");
         return sb.toString();
     }
