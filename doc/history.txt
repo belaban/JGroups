@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.12 2003/11/21 02:00:02 belaban Exp $
+Revision: $Id: history.txt,v 1.13 2003/11/21 07:32:47 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java JGroups.Version')]
 
@@ -27,6 +27,14 @@ romuald     = Romuald du Song
 
 Version 2.2.1
 -------------
+
+- pbcast.GMS and shunning: only shun if this member was previously part of the group. avoids problem where multiple
+  members (e.g. X,Y,Z) join {A,B} concurrently, X is joined first, and Y and Z get view {A,B,X},
+  which would cause Y and Z to be shunned as they are not part of the membership
+  (bela Nov 20 2003)
+
+- Added BoundedList to org.jgroups.util
+  (bela Nov 20 2003)
 
 - Fixed NullPointerException in CoordGmsImpl (252) caused by null Digest
   (bela Nov 20 2003)
