@@ -10,7 +10,7 @@ import java.net.DatagramSocket;
 /**
  * Discovers all UDP-based members running on a certain mcast address
  * @author Bela Ban
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.2 $
  * Date: Jun 2, 2003
  * Time: 4:35:29 PM
  */
@@ -53,7 +53,8 @@ public class Probe {
                 System.out.println("\n");
                 return;
             }
-            System.out.println("\n#" + ++i + ": " + new String(rsp.getData()));
+            byte[] data=rsp.getData();
+            System.out.println("\n#" + ++i + ": " + new String(data, 0, rsp.getLength()));
         }
     }
 
