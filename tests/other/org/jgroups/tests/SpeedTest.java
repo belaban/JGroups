@@ -1,4 +1,4 @@
-// $Id: SpeedTest.java,v 1.2 2003/12/31 23:37:38 belaban Exp $
+// $Id: SpeedTest.java,v 1.3 2004/01/01 00:09:02 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -295,7 +295,7 @@ public class SpeedTest {
             Message msg;
             byte[] msg_data=null;
             long total_time;
-            long msgs_per_sec=0;
+            double msgs_per_sec=0;
 
             packet=new DatagramPacket(buf, buf.length);
             while(num_received <= num_msgs) {
@@ -331,7 +331,7 @@ public class SpeedTest {
             }
             stop=System.currentTimeMillis();
             total_time=stop - start;
-            msgs_per_sec=(long)(num_received / (float)(total_time / 1000));
+            msgs_per_sec=(num_received / (total_time / 1000.0));
             System.out.println("\n** Sending and receiving " + num_received + " took " +
                     total_time + " msecs (" + msgs_per_sec + " msgs/sec) **");
         }
