@@ -1,8 +1,9 @@
-// $Id: LogicalAddress1_4.java,v 1.4 2004/10/04 20:43:34 belaban Exp $
+// $Id: LogicalAddress1_4.java,v 1.5 2004/10/05 16:19:09 belaban Exp $
 
 package org.jgroups.stack;
 
 import org.jgroups.Address;
+import org.jgroups.util.Util;
 
 import java.io.*;
 import java.net.InetAddress;
@@ -40,7 +41,7 @@ public class LogicalAddress1_4 implements Address {
      * in physical_addrs; this reduces the number of msgs we have to send.<br/>
      * Note that this field is not shipped across the wire.
      */
-    SocketAddress primary_physical_addr=null;
+    transient SocketAddress primary_physical_addr=null;
 
     /** List<SocketAddress> of physical addresses */
     protected ArrayList physical_addrs=null;
@@ -286,12 +287,29 @@ public class LogicalAddress1_4 implements Address {
 
 
 
-    public void writeTo(DataOutputStream outstream) throws IOException {
-        throw new UnsupportedOperationException();
+    public void writeTo(DataOutputStream out) throws IOException {
+        Util.writeString(host, out);
+        out.writeLong(timestamp);
+        out.writeInt(id);
+        out.writeBoolean(multicast_addr);
+        ObjectOutputStream oos=new ObjectOutputStream(out);
+        oos.writeObject(physical_addrs);
+        oos.close();
+        Util.writeByteBuffer(additional_data, out);
     }
 
-    public void readFrom(DataInputStream instream) throws IOException, IllegalAccessException, InstantiationException {
-        throw new UnsupportedOperationException();
+    public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        host=Util.readString(in);
+        timestamp=in.readLong();
+        id=in.readInt();
+        multicast_addr=in.readBoolean();
+        ObjectInputStream ois=new ObjectInputStream(in);
+        try {
+            physical_addrs=(ArrayList)ois.readObject();
+        }
+        catch(ClassNotFoundException e) {
+        }
+        additional_data=Util.readByteBuffer(in);
     }
 
     public Object clone() throws CloneNotSupportedException {
