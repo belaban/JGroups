@@ -1,4 +1,4 @@
-// $Id: SIZE.java,v 1.3 2003/12/27 00:08:35 belaban Exp $
+// $Id: SIZE.java,v 1.4 2003/12/27 00:17:10 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -71,7 +71,7 @@ public class SIZE extends Protocol {
 
     public void up(Event evt) {
         Message msg;
-        int payload_size=0;
+        int payload_size=0, serialized_size;
         byte[] buf;
 
         switch(evt.getType()) {
@@ -79,14 +79,16 @@ public class SIZE extends Protocol {
             case Event.MSG:
                 msg=(Message)evt.getArg();
                 if(Trace.trace) {
-                    if((buf=msg.getBuffer()) != null)
+                    if((buf=msg.getBuffer()) != null) {
                         payload_size=buf.length;
-                    if(payload_size > min_size) {
-                        Trace.info("SIZE.up()", "size of message is " + sizeOf(msg) +
-                                ", " + msg.getHeaders().size() + " headers");
-                        if(print_msg)
-                            Trace.info("SIZE.up()", "headers are " + msg.getHeaders() +
-                                    ", payload size=" + payload_size);
+                        serialized_size=sizeOf(msg);
+                        if(serialized_size > min_size) {
+                            Trace.info("SIZE.up()", "size of message is " + serialized_size +
+                                    ", " + msg.getHeaders().size() + " headers");
+                            if(print_msg)
+                                Trace.info("SIZE.up()", "headers are " + msg.getHeaders() +
+                                        ", payload size=" + payload_size);
+                        }
                     }
                 }
                 break;
@@ -98,7 +100,7 @@ public class SIZE extends Protocol {
 
     public void down(Event evt) {
         Message msg;
-        int payload_size=0;
+        int payload_size=0, serialized_size;
         byte[] buf;
 
         switch(evt.getType()) {
@@ -106,14 +108,16 @@ public class SIZE extends Protocol {
             case Event.MSG:
                 msg=(Message)evt.getArg();
                 if(Trace.trace) {
-                    if((buf=msg.getBuffer()) != null)
+                    if((buf=msg.getBuffer()) != null) {
                         payload_size=buf.length;
-                    if(payload_size > min_size) {
-                        Trace.info("SIZE.down()", "size of message is " + sizeOf(msg) +
-                                ", " + msg.getHeaders().size() + " headers");
-                        if(print_msg)
-                            Trace.info("SIZE.up()", "headers are " + msg.getHeaders() +
-                                    ", payload size=" + payload_size);
+                        serialized_size=sizeOf(msg);
+                        if(serialized_size > min_size) {
+                            Trace.info("SIZE.down()", "size of message is " + serialized_size +
+                                    ", " + msg.getHeaders().size() + " headers");
+                            if(print_msg)
+                                Trace.info("SIZE.up()", "headers are " + msg.getHeaders() +
+                                        ", payload size=" + payload_size);
+                        }
                     }
                 }
                 break;
