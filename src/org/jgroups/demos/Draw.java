@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.9 2005/01/28 14:16:43 belaban Exp $
+// $Id: Draw.java,v 1.10 2005/01/28 14:18:32 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -169,7 +169,7 @@ public class Draw implements ActionListener, ChannelListener {
         setTitle();
         mainFrame.pack();
         mainFrame.setLocation(15, 25);
-        mainFrame.setBounds(new Rectangle(280, 280));
+        mainFrame.setBounds(new Rectangle(250, 250));
         mainFrame.setVisible(true);
         if(!no_channel)
             mainLoop();
@@ -190,7 +190,7 @@ public class Draw implements ActionListener, ChannelListener {
         else {
             if(channel.getLocalAddress() != null)
                 tmp+=channel.getLocalAddress();
-            tmp+=" (" + member_size + ") mbrs";
+            tmp+=" (" + member_size + ")";
             mainFrame.setTitle(tmp);
         }
     }
