@@ -1,14 +1,13 @@
-// $Id: FC.java,v 1.16 2004/09/24 13:34:09 belaban Exp $
+// $Id: FC.java,v 1.17 2004/10/08 13:12:05 belaban Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.util.CondVar;
+import org.jgroups.util.Streamable;
 import org.jgroups.stack.Protocol;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.*;
 import java.util.*;
 
 /**
@@ -19,7 +18,7 @@ import java.util.*;
  * Note that this protocol must be located towards the top of the stack, or all down_threads from JChannel to this
  * protocol must be set to false ! This is in order to block JChannel.send()/JChannel.down().
  * @author Bela Ban
- * @version $Revision: 1.16 $
+ * @version $Revision: 1.17 $
  */
 public class FC extends Protocol {
 
@@ -451,31 +450,39 @@ public class FC extends Protocol {
 //        return sb.toString();
 //    }
 
-    public static class FcHeader extends Header {
-        public static final int REPLENISH = 1;
-        int  type = REPLENISH;
+    public static class FcHeader extends Header implements Streamable {
+        public static final short REPLENISH = 1;
+        short  type = REPLENISH;
 
         public FcHeader() {
 
         }
 
-        public FcHeader(int type) {
+        public FcHeader(short type) {
             this.type=type;
         }
 
 
 
         public long size() {
-            return 24;
+            return 4;
         }
 
 
         public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeInt(type);
+            out.writeShort(type);
         }
 
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            type=in.readInt();
+            type=in.readShort();
+        }
+
+        public void writeTo(DataOutputStream out) throws IOException {
+            out.writeShort(type);
+        }
+
+        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+            type=in.readShort();
         }
 
     }
