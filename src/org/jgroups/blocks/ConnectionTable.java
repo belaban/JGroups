@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.14 2005/03/17 18:33:44 belaban Exp $
+// $Id: ConnectionTable.java,v 1.15 2005/03/23 09:50:07 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -404,11 +404,9 @@ public class ConnectionTable implements Runnable {
                 if(srv_sock == null)
                     break;  // socket was closed, therefore stop
             }
-            finally {
-                if(log.isTraceEnabled())
-                    log.trace(Thread.currentThread().getName() + " terminated");
-            }
         }
+        if(log.isTraceEnabled())
+            log.trace(Thread.currentThread().getName() + " terminated");
     }
 
 
