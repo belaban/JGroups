@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.6 2003/11/28 23:33:03 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.7 2003/12/03 20:29:52 igeorg Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -72,7 +72,7 @@
             <src path="${src.dir}"/>
             <src path="${tests.dir}"/>
             <src path="${junit.dir}"/>
-            <src path="${stress.dir}"
+            <src path="${stress.dir}"/>
         </javac>
     </target>
 
@@ -90,7 +90,7 @@
             <src path="${src.dir}"/>
             <src path="${tests.dir}"/>
             <src path="${junit.dir}"/>
-            <src path="${stress.dir}"
+            <src path="${stress.dir}"/>
         </javac>
     </target>
 
@@ -121,7 +121,7 @@
             <src path="${src.dir}"/>
             <src path="${tests.dir}"/>
             <src path="${junit.dir}"/>
-            <src path="${stress.dir}"
+            <src path="${stress.dir}"/>
         </javac>
     </target>
 
@@ -395,4 +395,6 @@
         </junitreport>
         <echo message="********************************************************************"/>
         <echo message="The unit test report is available in ${root.dir}/tmp/html/index.html"/>
-        <echo message="***********************
+        <echo message="***********************"/>
+    </target>
+</project>
