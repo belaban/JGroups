@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.137 2005/01/05 10:40:40 belaban Exp $
+Revision: $Id: history.txt,v 1.138 2005/01/20 02:06:15 ovidiuf Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -27,6 +27,16 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
 Version 2.2.8
 -------------
+- org.jgroups.util.Rsp: changed the sender's type from Object to Address.
+  (ovidiuf Jan 19 2005)
+
+- Modified the RpcDispatcher's API to allow more than one ChannelListener to be registered
+  to the underlying JChannel.
+  (ovidiuf Jan 19 2005)
+
+- Added MessageDispatcher.getMessageListener() to make possible to multiplex more than one 
+  MessageListeners in top of an already configured MessageDispatcher/RpcDispatcher.
+  (ovidiuf Jan 19 2005)
 
 - Implemented JGRP-15 (Concurrent startup of initial members without merging): when multiple members are started
   simultaneously, and no other member is running yet, they form singleton groups, and merge after some time.
