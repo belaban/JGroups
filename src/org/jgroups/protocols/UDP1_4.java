@@ -3,7 +3,7 @@ package org.jgroups.protocols;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
-import org.jgroups.stack.LogicalAddress;
+import org.jgroups.stack.LogicalAddress1_4;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Queue;
 import org.jgroups.util.QueueClosedException;
@@ -20,19 +20,19 @@ import java.util.*;
  * interfaces). Note that this class only works under JDK 1.4 and higher.<br/>
  * For each of the interfaces listed we create a Listener, which listens on the group multicast address and creates
  * a unicast datagram socket. The address of this member is determined at startup time, and is the host name plus
- * a timestamp (LogicalAddress). It does not change during the lifetime of the process. The LogicalAddress contains
+ * a timestamp (LogicalAddress1_4). It does not change during the lifetime of the process. The LogicalAddress1_4 contains
  * a list of all unicast socket addresses to which we can send back unicast messages. When we send a message, the
  * Listener adds the sender's return address. When we receive a message, we add that address to our routing cache, which
  * contains logical addresses and physical addresses. When we need to send a unicast address, we first check whether
  * the logical address has a physical address associated with it in the cache. If so, we send a message to that address.
- * If not, we send the unicast message to <em>all</em> physical addresses contained in the LogicalAddress.<br/>
+ * If not, we send the unicast message to <em>all</em> physical addresses contained in the LogicalAddress1_4.<br/>
  * UDP1_4 guarantees that - in scenarios with multiple subnets and multi-homed machines - members do see each other.
  * There is some overhead in multicasting the same message on multiple interfaces, and potentially sending a unicast
  * on multiple interfaces as well, but the advantage is that we don't need stuff like bind_addr any longer. Plus,
  * the unicast routing caches should ensure that unicasts are only sent via 1 interface in almost all cases.
  * 
  * @author Bela Ban Oct 2003
- * @version $Id: UDP1_4.java,v 1.15 2004/04/23 19:36:13 belaban Exp $
+ * @version $Id: UDP1_4.java,v 1.16 2004/05/14 16:26:11 belaban Exp $
  * todo: sending of dummy packets
  */
 public class UDP1_4 extends Protocol implements  Receiver {
@@ -52,10 +52,10 @@ public class UDP1_4 extends Protocol implements  Receiver {
     InetSocketAddress mcast_addr=null;
 
     /** The address of this member. Valid for the lifetime of the JVM in which this member runs */
-    LogicalAddress local_addr=new LogicalAddress(null, null);
+    LogicalAddress1_4 local_addr=new LogicalAddress1_4(null, null);
 
     /** Logical address without list of physical addresses */
-    LogicalAddress local_addr_canonical=local_addr.copy();
+    LogicalAddress1_4 local_addr_canonical=local_addr.copy();
 
     /** Pre-allocated byte stream. Used for serializing datagram packets */
     ByteArrayOutputStream out_stream=new ByteArrayOutputStream(65535);
@@ -618,7 +618,7 @@ public class UDP1_4 extends Protocol implements  Receiver {
                 if(log.isErrorEnabled()) log.error("sender's address is null");
             }
             else {
-                ((LogicalAddress)src).setPrimaryPhysicalAddress(sender);
+                ((LogicalAddress1_4)src).setPrimaryPhysicalAddress(sender);
             }
 
             // discard my own multicast loopback copy

@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.6 2004/05/04 23:37:27 belaban Exp $
+// $Id: UNICAST.java,v 1.7 2004/05/14 16:26:12 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -122,15 +122,15 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             return false;
         }
 
-	// Some sanity checks
-	if((window_size > 0 && min_threshold <= 0) || (window_size <= 0 && min_threshold > 0)) {
-	    log.error("window_size and min_threshold have to be both set if one of them is set");
-	    return false;
-	}
-	if(window_size > 0 && min_threshold > 0 && window_size < min_threshold) {
-	    log.error("min_threshold (" + min_threshold + ") has to be less than window_size (" + window_size + ")");
-	    return false;
-	}
+        // Some sanity checks
+        if((window_size > 0 && min_threshold <= 0) || (window_size <= 0 && min_threshold > 0)) {
+            log.error("window_size and min_threshold have to be both set if one of them is set");
+            return false;
+        }
+        if(window_size > 0 && min_threshold > 0 && window_size < min_threshold) {
+            log.error("min_threshold (" + min_threshold + ") has to be less than window_size (" + window_size + ")");
+            return false;
+        }
         return true;
     }
 
@@ -161,7 +161,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                     break;  // pass up
 
                 hdr=(UnicastHeader)msg.removeHeader(getName());
-		if(hdr == null) break;
+                if(hdr == null) break;
                 switch(hdr.type) {
                     case UnicastHeader.DATA:      // received regular message
                         sendAck(src, hdr.seqno);
