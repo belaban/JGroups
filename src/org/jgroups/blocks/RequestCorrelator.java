@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.1 2003/09/09 01:24:08 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.2 2003/12/11 06:37:25 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -70,9 +70,11 @@ public class RequestCorrelator {
      */
     protected CallStackSetter call_stack_setter=new CallStackSetter();
 
-
-
-
+    /** Process items on the queue concurrently (Scehduler). The default is to wait until the processing of an item
+     * has completed before fetching the next item from the queue. Note that setting this to true
+     * may destroy the properties of a protocol stack, e.g total or causal order may not be
+     * guaranteed. Set this to true only if you know what you're doing ! */
+    protected boolean concurrent_processing=false;
 
 
     /**
@@ -96,6 +98,7 @@ public class RequestCorrelator {
         request_handler = handler;
         start();
     }
+
 
     public RequestCorrelator(String name, Object transport, RequestHandler handler, Address local_addr) {
         this.name       = name;
@@ -137,6 +140,16 @@ public class RequestCorrelator {
 
 
     public RequestCorrelator(String name, Object transport,
+                             RequestHandler handler, boolean deadlock_detection, boolean concurrent_processing) {
+        this.deadlock_detection    = deadlock_detection;
+        this.name                  = name;
+        this.transport             = transport;
+        request_handler            = handler;
+        this.concurrent_processing = concurrent_processing;
+        start();
+    }
+
+    public RequestCorrelator(String name, Object transport,
                              RequestHandler handler, boolean deadlock_detection, Address local_addr) {
         this.deadlock_detection = deadlock_detection;
         this.name               = name;
@@ -146,7 +159,16 @@ public class RequestCorrelator {
         start();
     }
 
-
+    public RequestCorrelator(String name, Object transport, RequestHandler handler,
+                             boolean deadlock_detection, Address local_addr, boolean concurrent_processing) {
+        this.deadlock_detection    = deadlock_detection;
+        this.name                  = name;
+        this.transport             = transport;
+        this.local_addr            = local_addr;
+        request_handler            = handler;
+        this.concurrent_processing = concurrent_processing;
+        start();
+    }
 
 
     /**
@@ -167,12 +189,14 @@ public class RequestCorrelator {
     }
 
 
-    /**
-     * ???
-     */
     public void setRequestHandler(RequestHandler handler) {
         request_handler=handler;
         start();
+    }
+
+
+    public void setConcurrentProcessing(boolean concurrent_processing) {
+        this.concurrent_processing=concurrent_processing;
     }
 
 
@@ -302,6 +326,8 @@ public class RequestCorrelator {
             scheduler=new Scheduler();
             if(deadlock_detection && call_stack_setter != null)
                 scheduler.setListener(call_stack_setter);
+            if(concurrent_processing)
+                scheduler.setConcurrentProcessing(concurrent_processing);
             scheduler.start();
         }
     }
