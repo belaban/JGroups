@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.26 2004/09/15 17:41:03 belaban Exp $
+// $Id: JChannel.java,v 1.27 2004/09/16 13:54:34 belaban Exp $
 
 package org.jgroups;
 
@@ -12,6 +12,7 @@ import org.jgroups.stack.StateTransferInfo;
 import org.jgroups.util.Queue;
 import org.jgroups.util.QueueClosedException;
 import org.jgroups.util.Util;
+import org.jgroups.util.Promise;
 
 import org.w3c.dom.Element;
 
@@ -30,7 +31,7 @@ import java.util.Vector;
  * protocol stack
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.26 $
+ * @version $Revision: 1.27 $
  */
 public class JChannel extends Channel {
 
@@ -74,7 +75,7 @@ public class JChannel extends Channel {
     private boolean	      connect_ok_event_received=false;
     private final Object  disconnect_mutex=new Object();
     private boolean       disconnect_ok_event_received=false;
-    private final Object  get_state_mutex=new Object();
+    private Promise       state_promise=new Promise();
     private final Object  flow_control_mutex=new Object();
 
     /** wait until we have a non-null local_addr */
@@ -102,12 +103,6 @@ public class JChannel extends Channel {
     private boolean block_sending=false;  // block send()/down() if true (unlocked by UNBLOCK_SEND event)
     /*channel closed flag*/
     private boolean closed=false;      // close() has been called, channel is unusable
-
-    /*the last state of the application-this is set by the up(Event) operation if the receive_get_states flag is true*/
-    private Object state=null;
-
-    /** Indicates whether the state was retrieved correctly (even a null state if we are the first member) */
-    protected boolean state_received=false;
 
     /** True if a state transfer protocol is available, false otherwise */
     private boolean state_transfer_supported=false; // set by CONFIG event from STATE_TRANSFER protocol
@@ -804,6 +799,7 @@ public class JChannel extends Channel {
      */
     public boolean getState(Address target, long timeout) throws ChannelNotConnectedException, ChannelClosedException {
         StateTransferInfo info=new StateTransferInfo(StateTransferInfo.GET_FROM_SINGLE, target);
+        info.timeout=timeout;
         return _getState(new Event(Event.GET_STATE, info), timeout);
     }
 
@@ -939,12 +935,7 @@ public class JChannel extends Channel {
                 }
                 catch(Exception e) {
                 }
-
-                synchronized(get_state_mutex) {
-                    state=evt.getArg();
-                    state_received=true;
-                    get_state_mutex.notify();
-                }
+                state_promise.setResult(evt.getArg());
                 break;
 
             case Event.SET_LOCAL_ADDRESS:
@@ -1160,33 +1151,19 @@ public class JChannel extends Channel {
     boolean _getState(Event evt, long timeout) throws ChannelNotConnectedException, ChannelClosedException {
         checkClosed();
         checkNotConnected();
-        if(!state_transfer_supported)
-            if(log.isWarnEnabled())
-                log.warn("fetching state will fail as state transfer is not supported. "
-                        + "Add one of the STATE_TRANSFER protocols to your protocol configuration");
-        synchronized(get_state_mutex) {
-            state=null;
-            state_received=false;
-            down(evt);
-
-            // down() might run on *our* thread, so state_received might get changed to true, therefore the check !
-            if(!state_received) {
-                try {
-                    if(timeout <= 0)
-                        get_state_mutex.wait(); // waits until notified by GET_STATE_OK event
-                    else
-                        get_state_mutex.wait(timeout); // waits until notified by GET_STATE_OK event or timeout msecs
-                }
-                catch(Exception e) {
-                    ;
-                }
-            }
-
-            if(state != null) // 'state' set by GET_STATE_OK event
-                return true;
-            else
-                return false;
+        if(!state_transfer_supported) {
+            log.error("fetching state will fail as state transfer is not supported. "
+                      + "Add one of the STATE_TRANSFER protocols to your protocol configuration");
+            return false;
         }
+
+        state_promise.reset();
+        down(evt);
+        byte[] state=(byte[])state_promise.getResult(timeout);
+        if(state != null) // state set by GET_STATE_OK event
+            return true;
+        else
+            return false;
     }
 
 
