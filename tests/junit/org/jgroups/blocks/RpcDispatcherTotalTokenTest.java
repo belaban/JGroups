@@ -1,4 +1,4 @@
-// $Id: RpcDispatcherTest.java,v 1.1 2003/10/20 14:42:19 rds13 Exp $
+// $Id: RpcDispatcherTotalTokenTest.java,v 1.1 2003/10/21 08:31:08 rds13 Exp $
 
 package org.jgroups.blocks;
 
@@ -15,7 +15,7 @@ import org.jgroups.util.Util;
 
 /**
  * This test focus on whether RpcDispatcher is respecting total order.
- * It is based on org.jgroups.tests.RpcDispatcherTest.
+ * It is based on org.jgroups.tests.RpcDispatcherTotalTokenTest.
  * Test for RpcDispatcher (see also MessageDispatcher). A remote method (print()) is group-invoked
  * periodically. The method is defined in each instance and is invoked whenever a remote method call
  * is received. The callee (although in this example, each callee is also a caller (peer principle))
@@ -24,14 +24,14 @@ import org.jgroups.util.Util;
  * methods.
  * @author Romuald du Song
  */
-public class RpcDispatcherTest extends TestCase
+public class RpcDispatcherTotalTokenTest extends TestCase
 {
     String props = null;
 
     final int NUM_ITEMS = 10;
-    static Logger logger = Logger.getLogger(RpcDispatcherTest.class.getName());
+    static Logger logger = Logger.getLogger(RpcDispatcherTotalTokenTest.class.getName());
 
-    public RpcDispatcherTest(String testName)
+    public RpcDispatcherTotalTokenTest(String testName)
     {
         super(testName);
     }
@@ -210,7 +210,7 @@ public class RpcDispatcherTest extends TestCase
 
     public static Test suite()
     {
-        return new TestSuite(RpcDispatcherTest.class);
+        return new TestSuite(RpcDispatcherTotalTokenTest.class);
     }
 
     public static void main(String[] args)
