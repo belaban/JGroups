@@ -1,11 +1,11 @@
-package org.jgroups.tests.adaptudp;
+package org.jgroups.tests.adaptjms;
 
 import java.io.Serializable;
 
 /**
  * @author Bela Ban Jan 11
  * @author 2004
- * @version $Id: Request.java,v 1.1 2004/01/11 17:06:06 belaban Exp $
+ * @version $Id: Request.java,v 1.2 2004/01/16 16:16:45 belaban Exp $
  */
 public class Request implements Serializable {
     final static int DISCOVERY_REQ=1;
