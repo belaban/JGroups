@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.28 2005/03/24 12:34:37 belaban Exp $
+// $Id: Util.java,v 1.29 2005/03/24 14:42:10 belaban Exp $
 
 package org.jgroups.util;
 
@@ -30,6 +30,18 @@ public class Util {
     // constants
     public static final int MAX_PORT=65535; // highest port allocatable
     public static final String DIAG_GROUP="DIAG_GROUP-BELA-322649"; // unique
+    static boolean resolve_dns=false;
+
+    static {
+        /* Trying to get value of resolve_dns. PropertyPermission not granted if
+        * running in an untrusted environment  with JNLP */
+        try {
+            resolve_dns=Boolean.valueOf(System.getProperty("resolve.dns", "false")).booleanValue();
+        }
+        catch (SecurityException ex){
+            resolve_dns=false;
+        }
+    }
 
 
     /**
@@ -964,6 +976,16 @@ public class Util {
             sb.append(hostname.substring(0, index));
         else
             sb.append(hostname);
+        return sb.toString();
+    }
+
+    public static String shortName(InetAddress hostname) {
+        if(hostname == null) return null;
+        StringBuffer sb=new StringBuffer();
+        if(resolve_dns)
+            sb.append(hostname.getHostName());
+        else
+            sb.append(hostname.getHostAddress());
         return sb.toString();
     }
 
