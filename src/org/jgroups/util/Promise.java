@@ -1,4 +1,4 @@
-// $Id: Promise.java,v 1.3 2003/12/22 17:33:05 belaban Exp $
+// $Id: Promise.java,v 1.4 2004/01/18 15:14:06 tsorgie Exp $
 
 package org.jgroups.util;
 
@@ -55,12 +55,11 @@ public class Promise {
 
 
     /**
-     * Checks whether result is available. Does not
-     * block.
+     * Checks whether result is available. Does not block.
      */
-    public Object checkForResult() {
+    public boolean hasResult() {
         synchronized(this) {
-            return result;
+            return hasResult;
         }
     }
 
@@ -90,7 +89,7 @@ public class Promise {
 
 
     public String toString() {
-        return "result=" + result;
+        return "hasResult=" + hasResult + ",result=" + result;
     }
 
 
