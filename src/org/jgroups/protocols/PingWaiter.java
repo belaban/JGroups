@@ -7,11 +7,12 @@ import org.apache.commons.logging.LogFactory;
 
 import java.util.List;
 import java.util.LinkedList;
+import java.util.Vector;
 
 /**
  * Class that waits for n PingRsp'es, or m milliseconds to return the initial membership
  * @author Bela Ban
- * @version $Id: PingWaiter.java,v 1.1 2005/01/01 08:14:08 belaban Exp $
+ * @version $Id: PingWaiter.java,v 1.2 2005/01/04 08:19:41 belaban Exp $
  */
 public class PingWaiter implements Runnable {
     Thread              t=null;
@@ -31,8 +32,8 @@ public class PingWaiter implements Runnable {
 
     public synchronized void start() {
         if(t == null || !t.isAlive()) {
-            clearResponses();
-            t=new Thread("PingWaiter");
+            // clearResponses();
+            t=new Thread(this, "PingWaiter");
             t.setDaemon(true);
             t.start();
         }
@@ -65,8 +66,38 @@ public class PingWaiter implements Runnable {
     public void clearResponses() {
         synchronized(rsps) {
             rsps.clear();
+            rsps.notifyAll();
         }
     }
+
+
+    public List getResponses() {
+        return rsps;
+    }
+
+
+//    public void waitUntil(long timeout, int num_members) {
+//        long start_time, time_to_wait;
+//
+//        synchronized(rsps) {
+//            start_time=System.currentTimeMillis();
+//            time_to_wait=timeout;
+//
+//            while(rsps.size() < num_rsps && time_to_wait > 0 && t != null) {
+//                if(log.isTraceEnabled()) // +++ remove
+//                    log.trace("waiting for initial members: time_to_wait=" + time_to_wait +
+//                              ", got " + rsps.size() + " rsps");
+//
+//                try {
+//                    rsps.wait(time_to_wait);
+//                }
+//                catch(Exception e) {
+//                }
+//                time_to_wait=timeout - (System.currentTimeMillis() - start_time);
+//            }
+//        }
+//    }
+
 
     public void run() {
         long start_time, time_to_wait;
@@ -91,7 +122,7 @@ public class PingWaiter implements Runnable {
                 log.debug("initial mbrs are " + rsps);
             // 3. Send response
             if(parent != null)
-                parent.passUp(new Event(Event.FIND_INITIAL_MBRS_OK, new LinkedList(rsps)));
+                parent.passUp(new Event(Event.FIND_INITIAL_MBRS_OK, new Vector(rsps)));
         }
     }
 }
