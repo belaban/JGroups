@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.79 2004/06/09 15:32:45 belaban Exp $
+Revision: $Id: history.txt,v 1.80 2004/06/12 23:43:59 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -28,6 +28,9 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
 Version 2.2.5
 -------------
+
+- Multicast messages now use the mcast_sock
+  (bela June 12 2004)
 
 - Added system property resolve.dns: if set to false, IpAddresses will not attempt to resolve DNS host names, but
   just print addresses in dotted-decimal format
