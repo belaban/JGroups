@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.65 2004/04/28 18:44:30 belaban Exp $
+Revision: $Id: history.txt,v 1.66 2004/04/28 19:58:54 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -26,6 +26,11 @@ romuald     = Romuald du Song
 
 Version 2.2.4
 -------------
+
+- Fixed bugs #943480 and #938584. STABLE handles SUSPEND_STABLE and RESUME_STABLE events, and STATE_TRANSFER
+  sends SUSPEND_STABLE before fetching the state and RESUME_STABLE after receiving the state, to prevent
+  message garbage collection from going on during a state transfer
+  (bela April 28 2004)
 
 - Fixed bug #943881 (patch by Chris Wampler)
   (bela April 28 2004)
