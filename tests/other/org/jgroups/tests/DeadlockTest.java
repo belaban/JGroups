@@ -1,4 +1,4 @@
-// $Id: DeadlockTest.java,v 1.3 2004/05/13 06:09:10 belaban Exp $
+// $Id: DeadlockTest.java,v 1.4 2004/05/15 00:18:32 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -44,7 +44,7 @@ public class DeadlockTest {
 
 	private void _in_rpc_1() {
 		System.out.println("In rpc_1()");
-		cast_call("rpc_2", new Object[]{});
+		cast_call("rpc_2", new Object[]{}, new Class[]{});
 		System.out.println("Exiting rpc_1()");
 	}
 
@@ -54,10 +54,9 @@ public class DeadlockTest {
 	}
 
 
-	private void cast_call(String method, Object[] args) {
+	private void cast_call(String method, Object[] args, Class[] types) {
 		MethodCall call;
-		call = new MethodCall(method);
-		for (int i = 0; i < args.length; ++i) call.addArg(args[i]);
+		call = new MethodCall(method, args, types);
 		disp.callRemoteMethods(null, call, GroupRequest.GET_ALL, 0);
 	}
 
@@ -81,7 +80,7 @@ public class DeadlockTest {
 		    System.out.println("** Not using deadlock detection -- recursive call will hang !");
 		else
 		    System.out.println("** Using deadlock detection -- recursive call will succeed");
-		cast_call("rpc_1", new Object[]{});
+		cast_call("rpc_1", new Object[]{}, new Class[]{});
 		System.out.println("Out of rpc_1()");
 		channel.disconnect();
 		channel.close();
