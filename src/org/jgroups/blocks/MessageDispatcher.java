@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.17 2004/05/02 16:11:13 yaron-r Exp $
+// $Id: MessageDispatcher.java,v 1.18 2004/05/03 16:16:49 yaron-r Exp $
 
 package org.jgroups.blocks;
 
@@ -279,6 +279,9 @@ public class MessageDispatcher implements RequestHandler {
 
 
     public void stop() {
+        if (null != prot_adapter) {
+            prot_adapter.pause();
+        }
         if (corr != null) {
             corr.stop();
             corr = null;
