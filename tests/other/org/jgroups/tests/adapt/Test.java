@@ -116,7 +116,7 @@ public class Test {
             System.err.println("File not found.\n" + notFound);
         }
         catch(IOException ioError) {
-            System.err.println(ioError);
+            ioError.printStackTrace();
         }
     }
 }
