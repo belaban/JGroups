@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.17 2004/09/03 12:28:04 belaban Exp $
+// $Id: GMS.java,v 1.18 2004/09/13 20:48:26 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -122,12 +122,16 @@ public class GMS extends Protocol {
 
     public void becomeCoordinator() {
         CoordGmsImpl tmp=(CoordGmsImpl)impls.get(COORD);
-
         if(tmp == null) {
             tmp=new CoordGmsImpl(this);
             impls.put(COORD, tmp);
         }
-        tmp.leaving=false;
+        try {
+            tmp.init();
+        }
+        catch(Exception e) {
+            log.error("exception switching to coordinator role", e);
+        }
         setImpl(tmp);
     }
 
@@ -139,18 +143,27 @@ public class GMS extends Protocol {
             tmp=new ParticipantGmsImpl(this);
             impls.put(PART, tmp);
         }
-        tmp.leaving=false;
+        try {
+            tmp.init();
+        }
+        catch(Exception e) {
+            log.error("exception switching to participant", e);
+        }
         setImpl(tmp);
     }
 
     public void becomeClient() {
         ClientGmsImpl tmp=(ClientGmsImpl)impls.get(CLIENT);
-
         if(tmp == null) {
             tmp=new ClientGmsImpl(this);
             impls.put(CLIENT, tmp);
         }
-        tmp.initial_mbrs.removeAllElements();
+        try {
+            tmp.init();
+        }
+        catch(Exception e) {
+            log.error("exception switching to client role", e);
+        }
         setImpl(tmp);
     }
 
@@ -309,8 +322,8 @@ public class GMS extends Protocol {
         if(view_id != null) {
             rc=vid.compareTo(view_id);
             if(rc <= 0) {
-                if(log.isErrorEnabled())
-                    log.error("[" + local_addr + "] received view <= current view;" +
+                if(log.isWarnEnabled())
+                    log.warn("[" + local_addr + "] received view <= current view;" +
                             " discarding it (current vid: " + view_id + ", new vid: " + vid + ')');
                 return;
             }
