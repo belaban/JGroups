@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.5 2003/12/06 01:24:21 belaban Exp $
+// $Id: UDP.java,v 1.6 2003/12/15 23:52:04 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -638,6 +638,7 @@ public class UDP extends Protocol implements Runnable {
         else {                                         // unicast message
             if(send_sock != null) {
                 try {
+                    // System.out.println("packet size is " + packet.getData().length);
                     send_sock.send(packet);
                 }
                 catch(Throwable e) {
