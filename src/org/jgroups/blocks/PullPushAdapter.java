@@ -1,4 +1,4 @@
-// $Id: PullPushAdapter.java,v 1.9 2004/09/23 16:29:11 belaban Exp $
+// $Id: PullPushAdapter.java,v 1.10 2004/09/30 14:47:34 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -132,6 +132,8 @@ public class PullPushAdapter implements Runnable, ChannelListener {
     public void setListener(MessageListener l) {
         listener=l;
     }
+
+
     
     /**
      * sets a listener to messages with a given identifier messages sent with this identifier in there header will be routed to this listener
@@ -170,6 +172,11 @@ public class PullPushAdapter implements Runnable, ChannelListener {
     public void addMembershipListener(MembershipListener l) {
         if(l != null && !membership_listeners.contains(l))
             membership_listeners.add(l);
+    }
+
+    public void removeMembershipListener(MembershipListener l) {
+        if(l != null && membership_listeners.contains(l))
+            membership_listeners.remove(l);
     }
 
 
