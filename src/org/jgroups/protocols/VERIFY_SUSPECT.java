@@ -1,4 +1,4 @@
-// $Id: VERIFY_SUSPECT.java,v 1.3 2004/04/23 19:36:13 belaban Exp $
+// $Id: VERIFY_SUSPECT.java,v 1.4 2004/05/14 00:21:13 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -142,9 +142,8 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
                     curr_time=System.currentTimeMillis();
                     diff=curr_time - val;
                     if(diff >= timeout) {  // haven't been unsuspected, pass up SUSPECT
-
-                            if(log.isInfoEnabled()) log.info("diff=" + diff + ", mbr " + mbr +
-                                                               " is dead (passing up SUSPECT event)");
+                        if(log.isTraceEnabled()) log.trace("diff=" + diff + ", mbr " + mbr +
+                                " is dead (passing up SUSPECT event)");
                         passUp(new Event(Event.SUSPECT, mbr));
                         suspects.remove(mbr);
                         continue;
