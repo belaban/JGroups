@@ -1,4 +1,4 @@
-// $Id: Trace.java,v 1.5 2004/02/24 17:36:12 belaban Exp $
+// $Id: Trace.java,v 1.6 2004/02/24 22:34:51 belaban Exp $
 
 package org.jgroups.log;
 
@@ -411,7 +411,7 @@ public class Trace {
      * "org.jgroups.protocols.PING.down". Note that this method requires JDK 1.4 and higher.
      * @return Caller's frame
      */
-    static String getCallersFrame() {
+    static synchronized String getCallersFrame() {
         Throwable t=new Throwable();
         StackTraceElement[] dump=t.getStackTrace();
         StackTraceElement el=dump[2];
@@ -455,8 +455,7 @@ public class Trace {
      * @param fileName a file or directory name
      * @throws IOException when a <code>FileWriter</code> can not be created
      */
-    public static synchronized void setDefaultOutput(int level, String fileName)
-            throws IOException {
+    public static synchronized void setDefaultOutput(int level, String fileName) throws IOException {
     }
 
     /**
@@ -564,9 +563,7 @@ public class Trace {
      * @throws IOException if an I/O error occurs when creating a socket
      * @see java.net.Socket
      */
-    public static synchronized void setDefaultOutput(int level, InetAddress addr,
-                                                     int port)
-            throws IOException {
+    public static synchronized void setDefaultOutput(int level, InetAddress addr, int port) throws IOException {
     }
 
     /**
