@@ -1,4 +1,4 @@
-// $Id: GossipRouter.java,v 1.10 2005/02/05 23:56:33 belaban Exp $
+// $Id: GossipRouter.java,v 1.11 2005/02/19 10:40:43 ovidiuf Exp $
 
 package org.jgroups.stack;
 
@@ -1041,6 +1041,10 @@ public class GossipRouter {
 
                     // 2. Second is the destination address
                     dst_addr=Util.readAddress(input);
+
+                    if (log.isTraceEnabled()) {
+                        log.trace("group " + gname + ", routing request to " + (dst_addr == null ? "all" : dst_addr.toString()));
+                    }
 
                     // 3. Then the length of the byte buffer representing the message
                     len=input.readInt();
