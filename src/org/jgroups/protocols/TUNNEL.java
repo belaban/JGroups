@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.10 2005/02/23 13:36:18 belaban Exp $
+// $Id: TUNNEL.java,v 1.11 2005/02/23 19:30:04 belaban Exp $
 
 
 package org.jgroups.protocols;
@@ -212,6 +212,8 @@ public class TUNNEL extends Protocol implements Runnable {
         synchronized(stub_mutex) {
             stub=new RouterStub(router_host, router_port);
             local_addr=stub.connect();
+            if(additional_data != null && local_addr instanceof IpAddress)
+                ((IpAddress)local_addr).setAdditionalData(additional_data);
         }
         if(local_addr == null)
             throw new Exception("could not obtain local address !");
