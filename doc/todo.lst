@@ -1,10 +1,13 @@
-$Id: todo.lst,v 1.5 2004/02/10 05:10:27 belaban Exp $
+$Id: todo.lst,v 1.6 2004/03/10 05:10:24 belaban Exp $
 
 
 
 
 			      Todo List
 			      ---------
+
+- UDP and bundling: error "ERROR 21:15:21,660 [UDP.IncomingPacketHandler thread] - message
+  does not have a UDP header"
 
 - Discovery doesn't work when working over a disabled (e.g. WiFi) interface			      
 
