@@ -5,23 +5,14 @@ import org.jgroups.blocks.GroupRequest;
 import org.jgroups.blocks.MethodCall;
 import org.jgroups.blocks.RpcDispatcher;
 
-import java.io.InputStream;
-
 /*
  * @author Bob Stevenson - HAMMER
  * @author Ananda Bollu - FLOW_CONTROL
  */
 public class HammerSender {
-    private String scriptCommand;
-    private int port;
-    private boolean directCommand;
-    private String machineName;
-    private String localFilename;
-    private InputStream localInputStream;
     private static JChannel channel = null;
 
     private static RpcDispatcher disp;
-    private static int count = 0;
 
     private static String props =  "UDP(mcast_addr=228.1.2.3;mcast_port=45566;ip_ttl=64;"+
             "ucast_recv_buf_size=16000;ucast_send_buf_size=16000;" +
@@ -89,7 +80,7 @@ public class HammerSender {
      * executes a command across app-servers
      * @param cmd the command to execute across boxes in an environment
      */
-    public static void executeDistributedCommand(String cmd) {
+    public static void executeDistributedCommand() {
 
         disp.callRemoteMethods(null, printnumMethod, GroupRequest.GET_NONE, 0);
     }

@@ -99,7 +99,7 @@ public class HammerListener implements ChannelListener, MembershipListener {
         startTime = System.currentTimeMillis();
         System.out.println("startTime "+startTime);
         for(int i = 0;i<SEND_COUNT;i++) {
-            HammerSender.executeDistributedCommand ("not used");
+            HammerSender.executeDistributedCommand ();
         }
     }
 
