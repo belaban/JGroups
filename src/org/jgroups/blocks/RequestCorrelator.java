@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.10 2004/07/05 05:41:45 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.11 2004/07/26 10:51:10 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -82,6 +82,9 @@ public class RequestCorrelator {
      * may destroy the properties of a protocol stack, e.g total or causal order may not be
      * guaranteed. Set this to true only if you know what you're doing ! */
     protected boolean concurrent_processing=false;
+
+
+    protected boolean started=false;
 
     protected static Log log=LogFactory.getLog(RequestCorrelator.class);
 
@@ -184,11 +187,20 @@ public class RequestCorrelator {
 
     /**
      * Switch the deadlock detection mechanism on/off
-     *
      * @param flag the deadlock detection flag
      */
     public void setDeadlockDetection(boolean flag) {
-        deadlock_detection=flag;
+        if(deadlock_detection != flag) { // only set it if different
+            deadlock_detection=flag;
+            if(started) {
+                if(deadlock_detection) {
+                    startScheduler();
+                }
+                else {
+                    stopScheduler();
+                }
+            }
+        }
     }
 
 
@@ -326,14 +338,20 @@ public class RequestCorrelator {
      */
     public void start() {
         if(deadlock_detection) {
-            if(scheduler == null) {
-                scheduler=new Scheduler();
-                if(call_stack_setter != null)
-                    scheduler.setListener(call_stack_setter);
-                if(concurrent_processing)
-                    scheduler.setConcurrentProcessing(concurrent_processing);
-                scheduler.start();
-            }
+            startScheduler();
+        }
+        started=true;
+    }
+
+
+    void startScheduler() {
+        if(scheduler == null) {
+            scheduler=new Scheduler();
+            if(call_stack_setter != null)
+                scheduler.setListener(call_stack_setter);
+            if(concurrent_processing)
+                scheduler.setConcurrentProcessing(concurrent_processing);
+            scheduler.start();
         }
     }
 
@@ -341,12 +359,16 @@ public class RequestCorrelator {
     /**
      */
     public void stop() {
+        stopScheduler();
+        started=false;
+    }
+
+    void stopScheduler() {
         if(scheduler != null) {
             scheduler.stop();
             scheduler=null;
         }
     }
-
 
 
     // .......................................................................
@@ -460,15 +482,21 @@ public class RequestCorrelator {
                 }
 
                 if(deadlock_detection) {
+                    if(scheduler == null) {
+                        log.error("deadlock_detection is true, but scheduler is null: this is not supposed to happen" +
+                                  " (discarding request)");
+                        break;
+                    }
+
                     Request req=new Request(msg);
                     stack=hdr.call_stack;
                     if(hdr.rsp_expected && stack != null && local_addr != null) {
                         if(stack.contains(local_addr)) {
-                            if(scheduler != null) scheduler.addPrio(req);
+                            scheduler.addPrio(req);
                             break;
                         }
                     }
-                    if(scheduler != null) {
+                    else {
                         scheduler.add(req);
                         break;
                     }
