@@ -31,7 +31,7 @@ import java.util.*;
  * the unicast routing caches should ensure that unicasts are only sent via 1 interface in almost all cases.
  * 
  * @author Bela Ban Oct 2003
- * @version $Id: UDP1_4.java,v 1.2 2003/12/19 02:25:13 belaban Exp $
+ * @version $Id: UDP1_4.java,v 1.3 2003/12/19 18:29:38 belaban Exp $
  */
 public class UDP1_4 extends Protocol implements Runnable {
 
@@ -1196,8 +1196,13 @@ public class UDP1_4 extends Protocol implements Runnable {
             this.receiver=receiver;
             this.receive_buffer=new byte[receive_buffer_size];
 
-            mcast_sock=createMulticastSocket();
-            mcast_sock.setNetworkInterface(this.bind_interface); // for outgoing multicasts
+            // mcast_sock=createMulticastSocket();
+            mcast_sock=new MulticastSocket(7500);
+            System.out.println("ttl=" + mcast_sock.getTimeToLive());
+
+            // todo: remove
+            // mcast_sock.setNetworkInterface(this.bind_interface); // for outgoing multicasts
+
             this.local_port=mcast_sock.getLocalPort();
             local_addr=new InetSocketAddress(bind_interface, this.local_port);
             System.out.println("-- local_addr=" + local_addr);
@@ -1212,7 +1217,8 @@ public class UDP1_4 extends Protocol implements Runnable {
             }
 
             if(mcast_group != null) {
-                mcast_sock.joinGroup(mcast_group, bind_interface);
+                // mcast_sock.joinGroup(mcast_group, bind_interface);
+                mcast_sock.joinGroup(InetAddress.getByName("230.1.2.3"));
                 System.out.println("joined mcast group " + mcast_group + " on interface " + bind_interface);
             }
 
@@ -1417,7 +1423,7 @@ public class UDP1_4 extends Protocol implements Runnable {
             int index=((int)(Util.random(size))) -1;
             Iterator it=conns.iterator();
             Connector ret=null;
-            for(int i=0; i < index; i++) {
+            for(int i=0; i <= index; i++) {
                 ret=(Connector)it.next();
             }
             return ret;
@@ -1471,9 +1477,17 @@ public class UDP1_4 extends Protocol implements Runnable {
         public void receive(DatagramPacket packet) {
             System.out.println("-- received " + packet.getLength() + " bytes from " + packet.getSocketAddress());
             InetAddress sender=packet.getAddress();
+            byte[] buf=packet.getData();
+            int len=packet.getLength();
+            String tmp=new String(buf, 0, len);
+            if(len > 4) {
+                if(tmp.startsWith("rsp:")) {
+                    System.out.println("-- received respose: \"" + tmp + "\"");
+                    return;
+                }
+            }
 
-
-            byte[] rsp_buf="this is a response".getBytes();
+            byte[] rsp_buf=("rsp: this is a response to " + tmp).getBytes();
             DatagramPacket response=new DatagramPacket(rsp_buf, rsp_buf.length, sender, packet.getPort());
 
             try {
@@ -1498,7 +1512,6 @@ public class UDP1_4 extends Protocol implements Runnable {
         r.setConnectorTable(ct);
         String mcast_group="230.1.2.3";
         int    mcast_port=7500;
-        SocketAddress mcast_group_sa;
         String line;
         BufferedReader  in=null;
         DatagramPacket packet;
@@ -1526,7 +1539,6 @@ public class UDP1_4 extends Protocol implements Runnable {
 
 
         try {
-            mcast_group_sa=new InetSocketAddress(mcast_group, mcast_port);
             ct.start(); // starts all Connectors in turn
             in=new BufferedReader(new InputStreamReader(System.in));
             while(true) {
@@ -1535,7 +1547,8 @@ public class UDP1_4 extends Protocol implements Runnable {
                 if(line.startsWith("quit") || line.startsWith("exit"))
                     break;
                 send_buf=line.getBytes();
-                packet=new DatagramPacket(send_buf, send_buf.length, mcast_group_sa);
+                // packet=new DatagramPacket(send_buf, send_buf.length, InetAddress.getByName(mcast_group), mcast_port);
+                packet=new DatagramPacket(send_buf, send_buf.length, InetAddress.getByName(mcast_group), mcast_port);
                 ct.send(packet);
             }
         }
