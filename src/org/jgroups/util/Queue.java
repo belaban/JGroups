@@ -1,4 +1,4 @@
-// $Id: Queue.java,v 1.7 2003/09/24 13:39:07 belaban Exp $
+// $Id: Queue.java,v 1.8 2003/09/24 18:37:20 belaban Exp $
 
 package org.jgroups.util;
 
@@ -493,6 +493,7 @@ public class Queue {
             head=null;
             tail=null;
             closed=false;
+            add_mutex.notifyAll();
         }
 
         synchronized(remove_mutex) {
