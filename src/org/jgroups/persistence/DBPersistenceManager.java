@@ -172,8 +172,8 @@ public class DBPersistenceManager implements PersistenceManager {
                 conn=null;
                 prepStat=null;
             }
-        }// end of finally..
-    }// end of save
+        }
+    }
 
 
     /**
@@ -201,6 +201,17 @@ public class DBPersistenceManager implements PersistenceManager {
             //trace
             t3.printStackTrace();
             throw new CannotRemoveException(t3, " Error retrieving value for given key");
+        }
+        finally {
+            try {
+                if(prepStat != null) prepStat.close();
+                this.closeConnection(conn);
+            }
+            catch(Throwable t) {
+                // trace
+                conn=null;
+                prepStat=null;
+            }
         }
 
 
@@ -291,6 +302,7 @@ public class DBPersistenceManager implements PersistenceManager {
             //trace here
             throw new CannotRetrieveException(t, "Error happened while querying the database for bulk retrieve, try starting DB manually");
         }
+
 
         //finally
         try {
@@ -567,9 +579,8 @@ public class DBPersistenceManager implements PersistenceManager {
         try {
             connStr=connStr.trim();
             Connection conn=DriverManager.getConnection(connStr, userName, userPass);
-
-                if(log.isInfoEnabled()) log.info("userName=" + userName +
-                                                                   ", userPass=" + userPass + ", connStr=" + connStr);
+            if(log.isInfoEnabled()) log.info("userName=" + userName +
+                                             ", userPass=" + userPass + ", connStr=" + connStr);
             return conn;
         }
         catch(Throwable t) {
@@ -588,8 +599,10 @@ public class DBPersistenceManager implements PersistenceManager {
      */
     private void closeConnection(Connection conn) {
         try {
-            conn.close();
-            conn=null;
+            if(conn != null) {
+                conn.close();
+                conn=null;
+            }
         }
         catch(Throwable t) {
             //trace here
