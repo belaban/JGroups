@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.93 2004/07/31 22:34:30 jiwils Exp $
+Revision: $Id: history.txt,v 1.94 2004/08/04 10:00:27 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -27,6 +27,9 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
 Version 2.2.6
 -------------
+
+- Fixed incorrect start()/stop() sequence of GossipClient in TCPGOSSIP
+  (bela Aug 4 2004)
 
 - ChannelFactory: specified new createChannel() method that assumes protocol stack configuration
   information has already been set on the factory (e.g. at construction)
