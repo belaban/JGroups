@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindow.java,v 1.5 2004/04/22 23:50:16 belaban Exp $
+// $Id: NakReceiverWindow.java,v 1.6 2004/05/04 17:45:49 belaban Exp $
 
 
 package org.jgroups.stack;
@@ -104,10 +104,10 @@ public class NakReceiverWindow {
     private long   highest_seen=0;
 
     /** List<Entry>. Received (but not yet delivered) msgs. */
-    private List   msgs=new List();
+    private List   received_msgs=new List();
 
-    /** List<Entry>. Delivered (= seen by all members) messages. A remove() method causes a message to
-     * be moved from msgs to delivered_msgs. Message garbage colection will gradually remove elements in this list  */
+    /** List<Entry>. Delivered (= seen by all members) messages. A remove() method causes a message to be moved from
+     received_msgs to delivered_msgs. Message garbage colection will gradually remove elements in this list  */
     private List   delivered_msgs=new List();
 
     /** if not set, no retransmitter thread will be started. Useful if
@@ -198,7 +198,7 @@ public class NakReceiverWindow {
 
             // add at end (regular expected msg)
             if(seqno == tail) {
-                msgs.add(new Entry(seqno, msg));
+                received_msgs.add(new Entry(seqno, msg));
                 tail++;
             }
             // gap detected
@@ -207,12 +207,12 @@ public class NakReceiverWindow {
             // iii. tell retransmitter to retrieve missing msgs
             else if(seqno > tail) {
                 for(long i=tail; i < seqno; i++) {
-                    msgs.add(new Entry(i, null));
+                    received_msgs.add(new Entry(i, null));
                     // XmitEntry xmit_entry=new XmitEntry();
                     //xmits.put(new Long(i), xmit_entry);
                     tail++;
                 }
-                msgs.add(new Entry(seqno, msg));
+                received_msgs.add(new Entry(seqno, msg));
                 tail=seqno + 1;
                 if(retransmitter != null) {
                     retransmitter.add(old_tail, seqno - 1);
@@ -222,7 +222,7 @@ public class NakReceiverWindow {
             else if(seqno < tail) {
                 if(log.isTraceEnabled())
                     log.trace("added missing msg " + msg.getSrc() + "#" + seqno);
-                for(Enumeration en=msgs.elements(); en.hasMoreElements();) {
+                for(Enumeration en=received_msgs.elements(); en.hasMoreElements();) {
                     current=(Entry)en.nextElement();
                     // overwrite any previous message (e.g. added by down()) and
                     // remove seqno from retransmitter
@@ -264,10 +264,10 @@ public class NakReceiverWindow {
 
         lock.writeLock();
         try {
-            e=(Entry)msgs.peekAtHead();
+            e=(Entry)received_msgs.peekAtHead();
             if((e != null) && (e.msg != null)) {
                 retval=e.msg;
-                msgs.removeFromHead();
+                received_msgs.removeFromHead();
                 // delivered_msgs.add(e.copy());
                 // changed by bela July 23 2003: no need for a copy
                 delivered_msgs.add(new Entry(e.seqno, e.msg));
@@ -416,15 +416,15 @@ public class NakReceiverWindow {
             my_high=Math.max(head - 1, 0);
             // check only received messages, because delivered messages *must*
             // have a non-null msg
-            for(Enumeration e=msgs.elements(); e.hasMoreElements();) {
+            for(Enumeration e=received_msgs.elements(); e.hasMoreElements();) {
                 entry=(Entry)e.nextElement();
                 if((entry.seqno >= low) && (entry.seqno <= high) &&
                         (entry.msg == null))
                     retval.add(new Long(entry.seqno));
             }
 
-            if(msgs.size() > 0) {
-                entry=(Entry)msgs.peek();
+            if(received_msgs.size() > 0) {
+                entry=(Entry)received_msgs.peek();
                 if(entry != null) my_high=entry.seqno;
             }
             for(long i=my_high + 1; i <= high; i++)
@@ -470,7 +470,7 @@ public class NakReceiverWindow {
         try {
 
             // check received messages
-            for(Enumeration e=msgs.elements(); e.hasMoreElements();) {
+            for(Enumeration e=received_msgs.elements(); e.hasMoreElements();) {
                 entry=(Entry)e.nextElement();
                 if(entry.seqno > seqno) retval.add(entry.msg);
             }
@@ -503,7 +503,7 @@ public class NakReceiverWindow {
         try {
 
             // check received messages
-            for(Enumeration e=msgs.elements(); e.hasMoreElements();) {
+            for(Enumeration e=received_msgs.elements(); e.hasMoreElements();) {
                 entry=(Entry)e.nextElement();
                 if((entry.seqno > lower) && (entry.seqno <= upper))
                     retval.add(entry.msg);
@@ -547,7 +547,7 @@ public class NakReceiverWindow {
                         (entry.msg != null))
                     ret.add(entry.msg.copy());
             }
-            for(Enumeration e=msgs.elements(); e.hasMoreElements();) {
+            for(Enumeration e=received_msgs.elements(); e.hasMoreElements();) {
                 entry=(Entry)e.nextElement();
                 if(missing_msgs.contains(new Long(entry.seqno)) &&
                         (entry.msg != null))
@@ -566,7 +566,7 @@ public class NakReceiverWindow {
     public int size() {
         lock.readLock();
         try {
-            return msgs.size();
+            return received_msgs.size();
         }
         finally {
             lock.readUnlock();
@@ -579,7 +579,7 @@ public class NakReceiverWindow {
         lock.readLock();
         try {
             sb.append("delivered_msgs: " + delivered_msgs);
-            sb.append("\nreceived_msgs: " + msgs);
+            sb.append("\nreceived_msgs: " + received_msgs);
         }
         finally {
             lock.readUnlock();
@@ -620,8 +620,8 @@ public class NakReceiverWindow {
             lowest_seen=entry.seqno;
         // If no elements in delivered messages (e.g. due to message garbage collection), use the received messages
         else {
-            if(msgs.size() != 0) {
-                entry=(Entry)msgs.peekAtHead();
+            if(received_msgs.size() != 0) {
+                entry=(Entry)received_msgs.peekAtHead();
                 if((entry != null) && (entry.msg != null))
                     lowest_seen=entry.seqno;
             }
@@ -661,7 +661,7 @@ public class NakReceiverWindow {
         // Now check the received msgs head to tail. if there is an entry
         // with a non-null msg, increment ret until we find an entry with
         // a null msg
-        for(Enumeration e=msgs.elements(); e.hasMoreElements();) {
+        for(Enumeration e=received_msgs.elements(); e.hasMoreElements();) {
             entry=(Entry)e.nextElement();
             if(entry.msg != null)
                 ret=entry.seqno;
@@ -681,7 +681,7 @@ public class NakReceiverWindow {
      * iii. Reset all indices (head, tail, etc.)<br>
      */
     private void _reset() {
-        msgs.removeAll();
+        received_msgs.removeAll();
         delivered_msgs.removeAll();
         head=0;
         tail=0;
