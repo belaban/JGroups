@@ -5,7 +5,7 @@ import java.net.*;
 /**
  * @author Bela Ban Dec 19
  * @author 2003
- * @version $Id: McastLoopbackTest1_4.java,v 1.1 2003/12/19 21:01:43 belaban Exp $
+ * @version $Id: McastLoopbackTest1_4.java,v 1.2 2003/12/19 21:04:42 belaban Exp $
  */
 public class McastLoopbackTest1_4 {
 
@@ -44,7 +44,7 @@ public class McastLoopbackTest1_4 {
             System.out.println("mcast_sock: local addr=" + mcast_sock.getLocalSocketAddress() +
                     ", interface=" + mcast_sock.getInterface());
 
-            mcast_sock.setInterface(InetAddress.getByName("192.168.0.3"));
+            mcast_sock.setInterface(InetAddress.getByName(args[0]));
             mcast_sock.setNetworkInterface(bind_interface);
             System.out.println("mcast_sock: local addr=" + mcast_sock.getLocalSocketAddress() +
                     ", interface=" + mcast_sock.getInterface());
