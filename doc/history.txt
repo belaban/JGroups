@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.64 2004/04/28 18:32:41 belaban Exp $
+Revision: $Id: history.txt,v 1.65 2004/04/28 18:44:30 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -22,11 +22,16 @@ ovidiuf     = Ovidiu Feodorov (ovidiuf@users.sf.net)
 romuald     = Romuald du Song
 
 
+
+
 Version 2.2.4
 -------------
 
-- Fixed #943881 (patch by Chris Wampler)
+- Fixed bug #943881 (patch by Chris Wampler)
   (bela April 28 2004)
+
+- Fixed bug #938584 (NAKACK.retransmit problem)
+  (bela April 27 2004)
 
 - Changed default format for XML properties to a simpler format (similar to JBoss)
   Modified all XML files in ./conf
@@ -35,6 +40,8 @@ Version 2.2.4
 
 - Created new version
   (bela April 26 2004)
+
+
 
 
 Version 2.2.3
