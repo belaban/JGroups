@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.10 2004/07/05 14:17:15 belaban Exp $
+// $Id: TCP.java,v 1.11 2004/08/12 14:08:10 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -230,7 +230,7 @@ public class TCP extends Protocol implements ConnectionTable.Receiver, Connectio
 
     /** Setup the Protocol instance acording to the configuration string */
     public boolean setProperties(Properties props) {
-        String str;
+        String str, tmp=null;
 
         super.setProperties(props);
         str=props.getProperty("start_port");
@@ -239,7 +239,17 @@ public class TCP extends Protocol implements ConnectionTable.Receiver, Connectio
             props.remove("start_port");
         }
 
-        str=props.getProperty("bind_addr");
+        // PropertyPermission not granted if running in an untrusted environment with JNLP.
+        try {
+            tmp=System.getProperty("bind.address"); // set by JBoss
+        }
+        catch (SecurityException ex){
+        }
+
+        if(tmp != null)
+            str=tmp;
+        else
+            str=props.getProperty("bind_addr");
         if(str != null) {
             try {
                 bind_addr=InetAddress.getByName(str);

@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.34 2004/07/23 02:28:01 belaban Exp $
+// $Id: UDP.java,v 1.35 2004/08/12 14:08:11 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -339,10 +339,18 @@ public class UDP extends Protocol implements Runnable {
      *
      */
     public boolean setProperties(Properties props) {
-        String str, tmp;
+        String str;
+        String tmp = null;
 
         super.setProperties(props);
-        tmp=System.getProperty("bind.address");
+        
+        // PropertyPermission not granted if running in an untrusted environment with JNLP.
+        try {
+            tmp=System.getProperty("bind.address");
+        }
+        catch (SecurityException ex){
+        }
+        
         if(tmp != null)
             str=tmp;
         else
@@ -840,8 +848,7 @@ public class UDP extends Protocol implements Runnable {
             bind_addr=InetAddress.getLocalHost();
 
         if(bind_addr != null)
-            if(log.isInfoEnabled()) log.info("unicast sockets will use interface " +
-                                              bind_addr.getHostAddress());
+            if(log.isInfoEnabled()) log.info("unicast sockets will use interface " + bind_addr.getHostAddress());
 
 
         // 2. Create socket for receiving unicast UDP packets. The address and port

@@ -1,4 +1,4 @@
-// $Id: ClassConfigurator.java,v 1.5 2004/07/30 04:43:29 jiwils Exp $
+// $Id: ClassConfigurator.java,v 1.6 2004/08/12 14:08:10 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -43,10 +43,17 @@ public class ClassConfigurator {
             getClass().getClassLoader().loadClass("javax.xml.parsers.DocumentBuilderFactory");
 
             MagicNumberReader reader=new MagicNumberReader();
-            String mnfile=System.getProperty("org.jgroups.conf.magicNumberFile");
-            if(mnfile != null) {
-                if(log.isDebugEnabled()) log.debug("Using " + mnfile + " as magic number file");
-                reader.setFilename(mnfile);
+            
+            // PropertyPermission not granted if running in an untrusted environment with JNLP.
+            try {
+                String mnfile = System.getProperty("org.jgroups.conf.magicNumberFile");
+                if(mnfile != null) {
+                    if(log.isDebugEnabled()) log.debug("Using " + mnfile + " as magic number file");
+                    reader.setFilename(mnfile);
+                }
+            }
+            catch (SecurityException ex){
+            	
             }
             ClassMap[] mapping=reader.readMagicNumberMapping();
             if(mapping != null) {
