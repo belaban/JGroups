@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.107 2004/09/03 12:28:38 belaban Exp $
+Revision: $Id: history.txt,v 1.108 2004/09/04 21:10:37 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -27,6 +27,9 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
 Version 2.2.7
 -------------
+
+- Fixed & simplified the discovery algorithm in TCPPING
+  (bela Sept 4 2004)
 
 - Fixed NPE in castViewChange() caused by concurrent reception of leave() and handleLeaveRequest() methods
   (bela Sept 3 2004)
