@@ -1,4 +1,4 @@
-// $Id: RpcDispatcher.java,v 1.9 2004/05/02 05:35:16 belaban Exp $
+// $Id: RpcDispatcher.java,v 1.10 2004/05/02 06:18:17 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -161,8 +161,8 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         Message  msg=null;
         RspList  retval=null;
 
-        if(log.isDebugEnabled())
-            log.debug("dests=" + dests + ", method_call=" + method_call + ", mode=" + mode + ", timeout=" + timeout);
+        if(log.isTraceEnabled())
+            log.trace("dests=" + dests + ", method_call=" + method_call + ", mode=" + mode + ", timeout=" + timeout);
 
         if(dests != null && dests.size() == 0) {
             // don't send if dest list is empty
@@ -181,7 +181,7 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
 
         msg=new Message(null, null, buf);
         retval=super.castMessage(dests, msg, mode, timeout);
-        if(log.isDebugEnabled()) log.debug("responses: " + retval);
+        if(log.isTraceEnabled()) log.trace("responses: " + retval);
         return retval;
     }
 
@@ -281,9 +281,8 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         Message  msg=null;
         Object   retval=null;
 
-
-            if(log.isDebugEnabled()) log.debug("dest=" + dest +
-                    ", method_call=" + method_call + ", mode=" + mode + ", timeout=" + timeout);
+        if(log.isTraceEnabled())
+            log.trace("dest=" + dest + ", method_call=" + method_call + ", mode=" + mode + ", timeout=" + timeout);
 
         try {
             buf=marshaller != null? marshaller.objectToByteBuffer(method_call) : Util.objectToByteBuffer(method_call);
@@ -295,8 +294,7 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
 
         msg=new Message(dest, null, buf);
         retval=super.sendMessage(msg, mode, timeout);
-
-            if(log.isDebugEnabled()) log.debug("retval: " + retval);
+        if(log.isTraceEnabled()) log.trace("retval: " + retval);
         return retval;
     }
 
@@ -338,13 +336,12 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         method_call=(MethodCall)body;
 
         try {
-
-                if(log.isDebugEnabled()) log.debug("[sender=" + req.getSrc() + "], method_call: " +
-                        method_call);
+            if(log.isTraceEnabled())
+                log.trace("[sender=" + req.getSrc() + "], method_call: " + method_call);
             return method_call.invoke(server_obj, method_lookup);
         }
         catch(Throwable x) {
-            if(log.isErrorEnabled()) log.error(Util.getStackTrace(x));
+            log.error(Util.getStackTrace(x));
             return x;
         }
     }
