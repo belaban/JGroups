@@ -1,4 +1,4 @@
-// $Id: Queue.java,v 1.3 2003/09/20 01:32:45 belaban Exp $
+// $Id: Queue.java,v 1.4 2003/09/22 22:25:30 belaban Exp $
 
 package org.jgroups.util;
 
@@ -537,39 +537,40 @@ public class Queue {
      * @throws TimeoutException Thrown if timeout has elapsed
      */
     public void waitUntilEmpty(long timeout) throws QueueClosedException, TimeoutException {
+        long time_to_wait=timeout;
 
         // TODO: use Locks instead of add_mutex: acquire add_lock, the remove_lock, the release add_lock, and
         // wait on remove_lock. Use util.concurrent locks
-
         // TODO: compare lock-based impl vs. synchronized-based impl (speed for large insertions)
 
         synchronized(add_mutex) {
-            //System.out.println("SIZE: " + size);
-            while(size > 0) {
-                try {
-                    add_mutex.wait(1);
+            if(timeout == 0) {
+                while(size > 0 && closed == false) {
+                    try {
+                        add_mutex.wait(1);
+                    }
+                    catch(InterruptedException e) {
+                        ;
+                    }
                 }
-                catch(InterruptedException e) {}
             }
+            else {
+                long start_time=System.currentTimeMillis();
+                while(time_to_wait > 0 && size > 0 && closed == false) {
+                    try {
+                        add_mutex.wait(time_to_wait);
+                    }
+                    catch(InterruptedException ex) {
+
+                    }
+                    time_to_wait-=(System.currentTimeMillis() - start_time);
+                }
+                if(size > 0)
+                    throw new TimeoutException("queue has " + size + " elements");
+            }
+            if(closed)
+                throw new QueueClosedException();
         }
-
-//        synchronized(remove_mutex) {
-//            if(closed)
-//                throw new QueueClosedException();
-//            if(size == 0)
-//                return;
-//            try {
-//                remove_mutex.wait(timeout);
-//            }
-//            catch(InterruptedException e) {
-//            }
-//            if(closed)
-//                throw new QueueClosedException();
-//            if(size > 0)
-//                throw new TimeoutException("queue has " + size + " elements");
-//        }
-//
-
     }
 
 
