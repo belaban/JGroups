@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.5 2003/12/15 22:52:32 belaban Exp $
+// $Id: JChannel.java,v 1.6 2003/12/15 23:29:56 belaban Exp $
 
 package org.jgroups;
 
@@ -14,6 +14,7 @@ import org.jgroups.util.Util;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Vector;
+import java.util.Map;
 
 /**
  * JChannel is a pure Java implementation of Channel
@@ -21,7 +22,7 @@ import java.util.Vector;
  * protocol stack
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.5 $
+ * @version $Revision: 1.6 $
  */
 public class JChannel extends Channel {
 
@@ -97,7 +98,10 @@ public class JChannel extends Channel {
     /** True if a state transfer protocol is available, false otherwise */
     private boolean state_transfer_supported=false; // set by CONFIG event from STATE_TRANSFER protocol
 
-
+    /** Used to maintain additional data across channel disconnects/reconnects. This is a kludge and will be remove
+     * as soon as JGroups supports logical addresses
+     */
+    private byte[] additional_data=null;
 
 
     /**
@@ -901,6 +905,21 @@ public class JChannel extends Channel {
                     }
             }
         }
+
+        // handle setting of additional data (kludge, will be removed soon)
+        if(evt.getType() == Event.CONFIG) {
+            try {
+                Map m=(Map)evt.getArg();
+                if(m != null && m.containsKey("additional_data")) {
+                    additional_data=(byte[])m.get("additional_data");
+                }
+            }
+            catch(Throwable t) {
+                Trace.error("JChannel.down()", "CONFIG event did not contain a hashmap: " + t);
+            }
+
+        }
+
         if(prot_stack != null)
             prot_stack.down(evt);
         else
@@ -1160,11 +1179,16 @@ public class JChannel extends Channel {
                     }
                 }
 
-
                 if(auto_reconnect) {
                     try {
                         Trace.info("JChannel.CloserThread.run()", "reconnecting to group " + old_channel_name);
                         open();
+                        if(additional_data != null) {
+                            // set previously set additional data
+                            Map m=new HashMap();
+                            m.put("additional_data", additional_data);
+                            down(new Event(Event.CONFIG, m));
+                        }
                         connect(old_channel_name);
                         if(channel_listener != null)
                             channel_listener.channelReconnected(local_addr);
