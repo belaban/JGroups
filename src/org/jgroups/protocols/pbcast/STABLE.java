@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.7 2004/04/26 18:40:14 belaban Exp $
+// $Id: STABLE.java,v 1.8 2004/04/28 18:47:26 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -52,6 +52,7 @@ public class STABLE extends Protocol {
     StabilitySendTask   stability_task=null;
     Object              stability_mutex=new Object(); // to synchronize on stability_task
     StableTask          stable_task=null;             // bcasts periodic STABLE message (added to timer below)
+    Object              stable_task_mutex=new Object(); // to sync on stable_task
     TimeScheduler       timer=null;                   // to send periodic STABLE msgs (and STABILITY messages)
     int                 max_gossip_runs=3;            // max. number of times the StableTask runs before terminating
     int                 num_gossip_runs=3;            // this number is decremented (max_gossip_runs doesn't change)
@@ -217,20 +218,20 @@ public class STABLE extends Protocol {
     public void down(Event evt) {
         int type=evt.getType();
 
-        if(desired_avg_gossip > 0) {
-            if(type == Event.VIEW_CHANGE || type == Event.MSG)
-                startStableTask(); // only start if not yet running
-        }
-
         switch(evt.getType()) {
-
             case Event.VIEW_CHANGE:
                 View v=(View)evt.getArg();
                 Vector tmp=v.getMembers();
                 mbrs.removeAllElements();
                 mbrs.addAll(tmp);
                 heard_from.retainAll(tmp);     // removes all elements from heard_from that are not in new view
+                stopStableTask();
                 break;
+        }
+
+        if(desired_avg_gossip > 0) {
+            if(type == Event.VIEW_CHANGE || type == Event.MSG)
+                startStableTask(); // only start if not yet running
         }
 
         passDown(evt);
@@ -255,21 +256,24 @@ public class STABLE extends Protocol {
 
     void startStableTask() {
         num_gossip_runs=max_gossip_runs;
-        if(stable_task != null && !stable_task.cancelled()) {
-            return;  // already running
+        synchronized(stable_task_mutex) {
+            if(stable_task != null && !stable_task.cancelled()) {
+                return;  // already running
+            }
+            stable_task=new StableTask();
+            timer.add(stable_task, true); // fixed-rate scheduling
         }
-        stable_task=new StableTask();
-        timer.add(stable_task, true); // fixed-rate scheduling
         if(log.isDebugEnabled())
-            log.debug("stable task started; num_gossip_runs=" + num_gossip_runs +
-                    ", max_gossip_runs=" + max_gossip_runs);
+            log.debug("stable task started; num_gossip_runs=" + num_gossip_runs + ", max_gossip_runs=" + max_gossip_runs);
     }
 
 
     void stopStableTask() {
-        if(stable_task != null) {
-            stable_task.stop();
-            stable_task=null;
+        synchronized(stable_task_mutex) {
+            if(stable_task != null) {
+                stable_task.stop();
+                stable_task=null;
+            }
         }
     }
 
@@ -295,6 +299,17 @@ public class STABLE extends Protocol {
         if(log.isDebugEnabled()) log.debug("received digest " + printStabilityDigest(d) + " from " + sender);
         if(!heard_from.contains(sender)) {  // already received gossip from sender; discard it
             if(log.isDebugEnabled()) log.debug("already received gossip from " + sender);
+            return;
+        }
+
+        // we won't handle the gossip d, if d's members don't match the membership in my own digest,
+        // this is part of the fix for the NAKACK problem (bugs #943480 and #938584)
+        if(!this.digest.sameSenders(d)) {
+            if(log.isDebugEnabled()) {
+                log.debug("received digest from " + sender + " (digest=" + d + ") which does not match my own digest ("+
+                        this.digest + "): ignoring digest and re-initializing own digest");
+            }
+            initialize();
             return;
         }
 
@@ -420,6 +435,17 @@ public class STABLE extends Protocol {
                 stability_task.stop();
                 stability_task=null;
             }
+        }
+
+        // we won't handle the gossip d, if d's members don't match the membership in my own digest,
+        // this is part of the fix for the NAKACK problem (bugs #943480 and #938584)
+        if(!this.digest.sameSenders(d)) {
+            if(log.isDebugEnabled()) {
+                log.debug("received digest (digest=" + d + ") which does not match my own digest ("+
+                        this.digest + "): ignoring digest and re-initializing own digest");
+            }
+            initialize();
+            return;
         }
 
         // pass STABLE event down the stack, so NAKACK can garbage collect old messages
