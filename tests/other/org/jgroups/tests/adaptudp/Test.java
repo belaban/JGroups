@@ -45,7 +45,7 @@ public class Test {
         TopicSession session;
         TopicPublisher pub;
         Topic topic;
-        String topic_name="PerfTopic";
+        String topic_name="topic/testTopic";
 
         for(int i=0; i < args.length; i++) {
             if(args[i].equals("-sender")) {
@@ -91,6 +91,9 @@ public class Test {
                     log_interval=Long.parseLong(line.substring(line.indexOf('=') + 1,
                             line.indexOf(';')));
                 }
+                else if(line.startsWith("TOPIC=")) {
+                   topic_name=new String(line.substring(line.indexOf('=') + 1, line.indexOf(';')));
+                }
                 else if(line.startsWith("GNUPLOT_OUTPUT=")) {
                     // only parse if not yet set by -Dgnuplot_output=true option (overrides file)
                     if(System.getProperty("gnuplot_output") == null) {
@@ -115,7 +118,7 @@ public class Test {
             Logger.getLogger(Test.class).info("main(): " + s);
 
             ctx=new InitialContext();
-            factory=(ConnectionFactory)ctx.lookup("JmsXA");
+            factory=(ConnectionFactory)ctx.lookup("ConnectionFactory");
             conn=((TopicConnectionFactory)factory).createTopicConnection();
             session=conn.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
             topic=(Topic)ctx.lookup(topic_name);
