@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.2 2003/12/12 02:26:23 belaban Exp $
+// $Id: NAKACK.java,v 1.3 2003/12/15 23:45:11 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -509,7 +509,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
                 sendXmitRsp(dest, (LinkedList)list.clone(), marker, i - 1);
                 marker=i;
                 list.clear();
-                size=0;
+                // fixed Dec 15 2003 (bela, patch from Joel Dice (dicej)), see explanantion under
+                // bug report #854887
+                size=m.size();
             }
             if(Trace.copy)
                 tmp=m.copy();
