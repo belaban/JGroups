@@ -1,4 +1,4 @@
-// $Id: MethodCallTest.java,v 1.3 2004/05/19 17:12:18 belaban Exp $
+// $Id: MethodCallTest.java,v 1.4 2004/05/19 17:28:17 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -55,6 +55,9 @@ public class MethodCallTest extends TestCase {
     }
 
 
+    public void foobar() {
+        System.out.println("foobar()");
+    }
 
 
     public void testOld() {
@@ -90,6 +93,16 @@ public class MethodCallTest extends TestCase {
     public void testOldWithNull2() {
         try {
             MethodCall mc=new MethodCall("bar", new Object[]{null, "Bela"});
+            mc.invoke(this);
+        }
+        catch(Throwable t) {
+            fail(t.toString());
+        }
+    }
+
+    public void testOldWithNull3() {
+        try {
+            MethodCall mc=new MethodCall("foobar", null);
             mc.invoke(this);
         }
         catch(Throwable t) {
@@ -160,6 +173,33 @@ public class MethodCallTest extends TestCase {
         }
     }
 
+    public void testTypesWithNullArgument3() {
+        MethodCall mc;
+        mc=new MethodCall("foobar", new Object[]{}, new Class[]{});
+        try {
+            mc.invoke(this);
+        }
+        catch(IllegalArgumentException ex) {
+            assertTrue("this was expected", true);
+        }
+        catch(Throwable t) {
+            fail(t.toString());
+        }
+    }
+
+    public void testTypesWithNullArgument4() {
+        MethodCall mc;
+        mc=new MethodCall("foobar", (Object[])null, (Class[])null);
+        try {
+            mc.invoke(this);
+        }
+        catch(IllegalArgumentException ex) {
+            assertTrue("this was expected", true);
+        }
+        catch(Throwable t) {
+            fail(t.toString());
+        }
+    }
 
     public void testSignature() {
         MethodCall mc;
