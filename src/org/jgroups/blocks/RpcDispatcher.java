@@ -1,4 +1,4 @@
-// $Id: RpcDispatcher.java,v 1.4 2004/02/26 19:14:59 belaban Exp $
+// $Id: RpcDispatcher.java,v 1.5 2004/03/10 01:04:59 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -159,6 +159,10 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         byte[]   buf=null;
         Message  msg=null;
 
+        if(Trace.trace)
+            Trace.debug("RpcDispatcher.callRemoteMethods()", "dests=" + dests +
+                    ", method_call=" + method_call + ", mode=" + mode + ", timeout=" + timeout);
+
         try {
             buf=marshaller != null? marshaller.objectToByteBuffer(method_call) : Util.objectToByteBuffer(method_call);
         }
@@ -266,6 +270,10 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         byte[]   buf=null;
         Message  msg=null;
 
+        if(Trace.trace)
+            Trace.debug("RpcDispatcher.callRemoteMethod()", "dest=" + dest +
+                    ", method_call=" + method_call + ", mode=" + mode + ", timeout=" + timeout);
+
         try {
             buf=marshaller != null? marshaller.objectToByteBuffer(method_call) : Util.objectToByteBuffer(method_call);
         }
@@ -303,7 +311,7 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         try {
             body=marshaller != null? marshaller.objectFromByteBuffer(req.getBuffer()) : req.getObject();
         }
-        catch(Exception e) {
+        catch(Throwable e) {
             Trace.error("RpcDispatcher.handle()", "exception=" + e);
             return e;
         }
@@ -314,7 +322,11 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         }
 
         method_call=(MethodCall)body;
+
         try {
+            if(Trace.trace)
+                Trace.debug("RpcDispatcher.handle()", "[sender=" + req.getSrc() + "], method_call: " +
+                        method_call);
             return method_call.invoke(server_obj, method_lookup);
         }
         catch(Throwable x) {
