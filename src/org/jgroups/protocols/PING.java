@@ -1,4 +1,4 @@
-// $Id: PING.java,v 1.8 2004/01/18 15:11:08 tsorgie Exp $
+// $Id: PING.java,v 1.9 2004/03/01 03:28:46 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -304,6 +304,17 @@ public class PING extends Protocol {
                         passUp(new Event(Event.FIND_INITIAL_MBRS_OK, null));
                         return;
                     }
+
+
+                    if(gossip_rsps != null && gossip_rsps.size() > 0) {
+                        for(int i=0; i < gossip_rsps.size(); i++) {
+                            Address dest=(Address)gossip_rsps.elementAt(i);
+                            msg=new Message(dest, null, null);  // mcast msg
+                            msg.putHeader(getName(), new PingHeader(PingHeader.GET_MBRS_REQ, null));
+                            passDown(new Event(Event.MSG, msg));
+                        }
+                    }
+
                     Util.sleep(500);
                 }
                 else {
