@@ -1,4 +1,4 @@
-// $Id: PING.java,v 1.4 2003/12/22 17:02:03 belaban Exp $
+// $Id: PING.java,v 1.5 2003/12/22 17:09:00 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -285,15 +285,15 @@ public class PING extends Protocol {
                 }
                 else {
                     if(initial_hosts != null && initial_hosts.size() > 0) {
-                        HostInfo h;
+                        IpAddress h;
                         msg=new Message(null, null, null);
                         msg.putHeader(getName(), new PingHeader(PingHeader.GET_MBRS_REQ, null));
 
                         for(Enumeration en=initial_hosts.elements(); en.hasMoreElements();) {
-                            h=(HostInfo) en.nextElement();
+                            h=(IpAddress)en.nextElement();
 
-                            for(int i=h.port; i < h.port + port_range; i++) { // send to next ports too
-                                msg.setDest(new IpAddress(h.host, i));
+                            for(int i=h.getPort(); i < h.getPort() + port_range; i++) { // send to next ports too
+                                msg.setDest(new IpAddress(h.getIpAddress(), i));
                                 if(Trace.trace)
                                     Trace.info("PING.down()", "[FIND_INITIAL_MBRS] sending PING request to " +
                                             msg.getDest());
@@ -396,20 +396,20 @@ public class PING extends Protocol {
     }
 
     /**
-     * Input is "daddy[8880],sindhu[8880],camille[5555]. Return List of HostInfos
+     * Input is "daddy[8880],sindhu[8880],camille[5555]. Return List of IpAddresses
      */
     private List createInitialHosts(String l) {
         List tmp=new List();
-        HostInfo h;
         StringTokenizer tok=new StringTokenizer(l, ",");
         String t;
+        IpAddress h;
 
         while(tok.hasMoreTokens()) {
             try {
                 t=tok.nextToken();
-                h=new HostInfo();
-                h.host=t.substring(0, t.indexOf('['));
-                h.port=new Integer(t.substring(t.indexOf('[') + 1, t.indexOf(']'))).intValue();
+                String host=t.substring(0, t.indexOf('['));
+                int port=new Integer(t.substring(t.indexOf('[') + 1, t.indexOf(']'))).intValue();
+                h=new IpAddress(host, port);
                 tmp.add(h);
             }
             catch(NumberFormatException e) {
@@ -421,34 +421,34 @@ public class PING extends Protocol {
     }
 
 
-    class HostInfo {
-        public String host;
-        public int port;
-
-
-        HostInfo() {
-        }
-
-        HostInfo(String h, int p) {
-            host=h;
-            port=p;
-        }
-
-        public String toString() {
-            return host + ":" + port;
-        }
-
-
-        public boolean equals(Object obj) {
-            if(obj == null || !(obj instanceof PING.HostInfo))
-                return false;
-            if(host == null || ((PING.HostInfo)obj).host == null)
-                return false;
-            return host.equals(((PING.HostInfo)obj).host);
-        }
-
-
-    }
+//    class HostInfo {
+//        public String host;
+//        public int port;
+//
+//
+//        HostInfo() {
+//        }
+//
+//        HostInfo(String h, int p) {
+//            host=h;
+//            port=p;
+//        }
+//
+//        public String toString() {
+//            return host + ":" + port;
+//        }
+//
+//
+//        public boolean equals(Object obj) {
+//            if(obj == null || !(obj instanceof PING.HostInfo))
+//                return false;
+//            if(host == null || ((PING.HostInfo)obj).host == null)
+//                return false;
+//            return host.equals(((PING.HostInfo)obj).host);
+//        }
+//
+//
+//    }
 
 
 }

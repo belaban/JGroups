@@ -1,4 +1,4 @@
-// $Id: TCPPING.java,v 1.1 2003/09/09 01:24:10 belaban Exp $
+// $Id: TCPPING.java,v 1.2 2003/12/22 17:13:57 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -143,18 +143,14 @@ public class TCPPING extends Protocol {
                 passUp(evt);
                 local_addr=(Address) evt.getArg();
 
-// Add own address to initial_hosts if not present: we must always be able to ping
-// ourself !
+                // Add own address to initial_hosts if not present: we must always be able to ping ourself !
                 if(initial_hosts != null && local_addr != null) {
-                    HostInfo h=new HostInfo(((IpAddress) local_addr).getIpAddress().getHostName(),
-                                            ((IpAddress) local_addr).getPort());
-                    if(!initial_hosts.contains(h)) {
-                        initial_hosts.add(h);
-                        Trace.warn("TCPPING.up()", "[SET_LOCAL_ADDRESS]: adding my own address (" + h +
-                                                   ") to initial_hosts; initial_hosts=" + initial_hosts);
+                    if(!initial_hosts.contains(local_addr)) {
+                        initial_hosts.add(local_addr);
+                        Trace.info("TCPPING.up()", "[SET_LOCAL_ADDRESS]: adding my own address (" + local_addr +
+                                ") to initial_hosts; initial_hosts=" + initial_hosts);
                     }
                 }
-
                 break;
 
             default:
@@ -167,8 +163,8 @@ public class TCPPING extends Protocol {
     public void down(Event evt) {
         Message msg;
         PingHeader hdr;
+        IpAddress h;
         long time_to_wait, start_time;
-        HostInfo h;
 
         switch(evt.getType()) {
 
@@ -182,10 +178,9 @@ public class TCPPING extends Protocol {
                 msg.putHeader(getName(), hdr);
 
                 for(Enumeration en=initial_hosts.elements(); en.hasMoreElements();) {
-                    h=(HostInfo) en.nextElement();
-
-                    for(int i=h.port; i < h.port + port_range; i++) { // send to next ports too
-                        msg.setDest(new org.jgroups.stack.IpAddress(h.host, i));
+                    h=(IpAddress) en.nextElement();
+                    for(int i=h.getPort(); i < h.getPort() + port_range; i++) { // send to next ports too
+                        msg.setDest(new IpAddress(h.getIpAddress(), i));
                         if(Trace.trace)
                             Trace.info("TCPPING.down()", "[FIND_INITIAL_MBRS] sending PING request to " +
                                                          msg.getDest());
@@ -265,20 +260,20 @@ public class TCPPING extends Protocol {
 //    }
 
     /**
-     * Input is "daddy[8880],sindhu[8880],camille[5555]. Return List of HostInfos
+     * Input is "daddy[8880],sindhu[8880],camille[5555]. Return List of IpAddresses
      */
     private List createInitialHosts(String l) {
         List tmp=new List();
-        HostInfo h;
+        IpAddress h;
         StringTokenizer tok=new StringTokenizer(l, ",");
         String t;
 
         while(tok.hasMoreTokens()) {
             try {
                 t=tok.nextToken();
-                h=new HostInfo();
-                h.host=t.substring(0, t.indexOf('['));
-                h.port=new Integer(t.substring(t.indexOf('[') + 1, t.indexOf(']'))).intValue();
+                String host=t.substring(0, t.indexOf('['));
+                int port=new Integer(t.substring(t.indexOf('[') + 1, t.indexOf(']'))).intValue();
+                h=new IpAddress(host, port);
                 tmp.add(h);
             }
             catch(NumberFormatException e) {
@@ -289,35 +284,35 @@ public class TCPPING extends Protocol {
         return tmp;
     }
 
-
-    class HostInfo {
-        public String host;
-        public int port;
-
-
-        HostInfo() {
-        }
-
-        HostInfo(String h, int p) {
-            host=h;
-            port=p;
-        }
-
-        public String toString() {
-            return host + ":" + port;
-        }
-
-
-        public boolean equals(Object obj) {
-            if(obj == null || !(obj instanceof HostInfo))
-                return false;
-            if(host == null || ((HostInfo) obj).host == null)
-                return false;
-            return host.equals(((HostInfo) obj).host);
-        }
-
-
-    }
+//
+//    class HostInfo {
+//        public String host;
+//        public int port;
+//
+//
+//        HostInfo() {
+//        }
+//
+//        HostInfo(String h, int p) {
+//            host=h;
+//            port=p;
+//        }
+//
+//        public String toString() {
+//            return host + ":" + port;
+//        }
+//
+//
+//        public boolean equals(Object obj) {
+//            if(obj == null || !(obj instanceof HostInfo))
+//                return false;
+//            if(host == null || ((HostInfo) obj).host == null)
+//                return false;
+//            return host.equals(((HostInfo) obj).host);
+//        }
+//
+//
+//    }
 
 }
 
