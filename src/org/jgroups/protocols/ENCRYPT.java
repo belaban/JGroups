@@ -1,6 +1,6 @@
 
 
-// $Id: ENCRYPT.java,v 1.1 2004/08/07 13:51:08 steview Exp $
+// $Id: ENCRYPT.java,v 1.2 2004/09/15 16:21:11 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -316,7 +316,7 @@ public class ENCRYPT extends Protocol {
 		str = props.getProperty("asym_algorithm");
 		if (str != null)
 		{
-			asymAlgorithm = new String(str).toString();
+			asymAlgorithm = str;
 			props.remove("asym_algorithm");
 
 			if (log.isInfoEnabled())
@@ -327,7 +327,7 @@ public class ENCRYPT extends Protocol {
 		str = props.getProperty("sym_algorithm");
 		if (str != null)
 		{
-			symAlgorithm = new String(str).toString();
+			symAlgorithm = str;
 			props.remove("sym_algorithm");
 
 			if (log.isInfoEnabled())
@@ -338,7 +338,7 @@ public class ENCRYPT extends Protocol {
 		str = props.getProperty("asym_provider");
 		if (str != null)
 		{
-			asymProvider = new String(str).toString();
+			asymProvider = str;
 			props.remove("asym_provider");
 
 			if (log.isInfoEnabled())
@@ -349,7 +349,7 @@ public class ENCRYPT extends Protocol {
 		str = props.getProperty("key_store_name");
 		if (str != null)
 		{
-			keyStoreName = new String(str).toString();
+			keyStoreName = str;
 			props.remove("key_store_name");
 
 			if (log.isInfoEnabled())
@@ -360,7 +360,7 @@ public class ENCRYPT extends Protocol {
 		str = props.getProperty("store_password");
 		if (str != null)
 		{
-			storePassword = new String(str).toString();
+			storePassword = str;
 			props.remove("store_password");
 
 			if (log.isInfoEnabled())
@@ -371,7 +371,7 @@ public class ENCRYPT extends Protocol {
 		str = props.getProperty("key_password");
 		if (str != null)
 		{
-			keyPassword = new String(str).toString();
+			keyPassword = str;
 			props.remove("key_password");
 
 			if (log.isInfoEnabled())
@@ -388,7 +388,7 @@ public class ENCRYPT extends Protocol {
 		str = props.getProperty("alias");
 		if (str != null)
 		{
-			alias = new String(str).toString();
+			alias = str;
 			props.remove("alias");
 
 			if (log.isInfoEnabled())

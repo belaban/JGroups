@@ -1,4 +1,4 @@
-// $Id: Queue.java,v 1.13 2004/03/30 06:47:28 belaban Exp $
+// $Id: Queue.java,v 1.14 2004/09/15 16:21:11 belaban Exp $
 
 package org.jgroups.util;
 
@@ -6,8 +6,6 @@ package org.jgroups.util;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.TimeoutException;
-
-import java.util.Vector;
 
 
 
@@ -32,7 +30,7 @@ public class Queue {
     int     size=0;
 
     /* Lock object for synchronization. Is notified when element is added */
-    Object  mutex=new Object();
+    final Object  mutex=new Object();
 
     /** Lock object for syncing on removes. It is notified when an object is removed */
     // Object  remove_mutex=new Object();
@@ -262,10 +260,13 @@ public class Queue {
 
         /*lock the queue*/
         synchronized(mutex) {
+
+            /*check to see if the queue is closed*/
+            if(closed)
+                throw new QueueClosedException();
+
             /*if the queue size is zero, we want to wait until a new object is added*/
             if(size == 0) {
-                if(closed)
-                    throw new QueueClosedException();
                 try {
                     /*release the add_mutex lock and wait no more than timeout ms*/
                     mutex.wait(timeout);
@@ -280,10 +281,6 @@ public class Queue {
                 }
             }
             /*we either timed out, or got notified by the add_mutex lock object*/
-
-            /*check to see if the object closed*/
-            if(closed)
-                throw new QueueClosedException();
 
             /*get the next value*/
             retval=removeInternal();
@@ -316,6 +313,11 @@ public class Queue {
 
         /*lock the queue*/
         synchronized(mutex) {
+
+            /*check to see if the queue is closed*/
+            if(closed)
+                throw new QueueClosedException();
+
             el=head;
 
             /*the queue is empty*/
@@ -467,7 +469,7 @@ public class Queue {
                 add(endMarker); // add an end-of-entries marker to the end of the queue
                 num_markers++;
             }
-            catch(QueueClosedException closed) {
+            catch(QueueClosedException closed_ex) {
             }
             return;
         }
@@ -520,30 +522,6 @@ public class Queue {
         return "Queue (" + size() + ") messages";
     }
 
-    /**
-     * Dumps internal state @remove
-     */
-    public String debug() {
-        return toString() + ", head=" + head + ", tail=" + tail + ", closed()=" + closed() + ", contents=" + getContents();
-    }
-
-
-    /**
-     * returns a vector with all the objects currently in the queue
-     */
-    public Vector getContents() {
-        Vector retval=new Vector();
-        Element el;
-
-        synchronized(mutex) {
-            el=head;
-            while(el != null) {
-                retval.addElement(el.obj);
-                el=el.next;
-            }
-        }
-        return retval;
-    }
 
 
     /**

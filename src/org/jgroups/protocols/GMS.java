@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.8 2004/08/31 16:03:30 belaban Exp $
+// $Id: GMS.java,v 1.9 2004/09/15 16:21:11 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -25,7 +25,6 @@ import java.util.Vector;
  */
 public class GMS extends RpcProtocol implements Runnable {
     private GmsImpl impl=null;
-    public Properties props=null;
     public Address local_addr=null;
     public String group_addr=null;
     public Membership members=new Membership();
