@@ -1,4 +1,4 @@
-// $Id: Membership.java,v 1.5 2004/09/15 17:41:03 belaban Exp $
+// $Id: Membership.java,v 1.6 2004/09/21 15:38:21 belaban Exp $
 
 package org.jgroups;
 
@@ -8,6 +8,7 @@ import org.apache.commons.logging.LogFactory;
 
 import java.util.Collections;
 import java.util.Vector;
+import java.util.LinkedList;
 
 
 /**
@@ -17,8 +18,7 @@ import java.util.Vector;
  */
 public class Membership implements Cloneable {
     /* private vector to hold all the addresses */
-    private Vector members=null;
-
+    private LinkedList members;
     protected static final Log log=LogFactory.getLog(Membership.class);
 
     /**
@@ -27,7 +27,7 @@ public class Membership implements Cloneable {
      */
     public Membership() {
         // 11 is the optimized value for vector growth
-        members=new Vector(11);
+        members=new LinkedList();
     }
 
 
@@ -41,7 +41,7 @@ public class Membership implements Cloneable {
      */
     public Membership(Vector initial_members) {
         if(initial_members != null)
-            members=(Vector)initial_members.clone();
+            members=new LinkedList(initial_members);
     }
 
 
@@ -55,7 +55,9 @@ public class Membership implements Cloneable {
      */
     public Vector getMembers() {
         /*clone so that this objects members can not be manipulated from the outside*/
-        return (Vector)members.clone();
+        synchronized(members) {
+            return new Vector(members);
+        }
     }
 
 
@@ -64,9 +66,11 @@ public class Membership implements Cloneable {
      * If the member already exist (Address.equals(Object) returns true then the member will
      * not be added to the membership
      */
-    public synchronized void add(Address new_member) {
-        if(new_member != null && !members.contains(new_member)) {
-            members.addElement(new_member);
+    public void add(Address new_member) {
+        synchronized(members) {
+            if(new_member != null && !members.contains(new_member)) {
+                members.add(new_member);
+            }
         }
     }
 
@@ -78,7 +82,7 @@ public class Membership implements Cloneable {
      * @throws ClassCastException if v contains objects that don't implement the Address interface
      * @see #add
      */
-    public synchronized void add(Vector v) {
+    public void add(Vector v) {
         if(v != null) {
             for(int i=0; i < v.size(); i++) {
                 add((Address)v.elementAt(i));
@@ -93,9 +97,11 @@ public class Membership implements Cloneable {
      *
      * @param old_member - the member to be removed
      */
-    public synchronized void remove(Address old_member) {
+    public void remove(Address old_member) {
         if(old_member != null) {
-            members.remove(old_member);
+            synchronized(members) {
+                members.remove(old_member);
+            }
         }
     }
 
@@ -105,9 +111,11 @@ public class Membership implements Cloneable {
      *
      * @param v - a vector containing all the members to be removed
      */
-    public synchronized void remove(Vector v) {
+    public void remove(Vector v) {
         if(v != null) {
-            members.removeAll(v);
+            synchronized(members) {
+                members.removeAll(v);
+            }
         }
     }
 
@@ -115,8 +123,10 @@ public class Membership implements Cloneable {
     /**
      * removes all the members from this membership
      */
-    public synchronized void clear() {
-        members.removeAllElements();
+    public void clear() {
+        synchronized(members) {
+            members.clear();
+        }
     }
 
     /**
@@ -127,7 +137,7 @@ public class Membership implements Cloneable {
      *
      * @param v - a vector containing all the members this membership will contain
      */
-    public synchronized void set(Vector v) {
+    public void set(Vector v) {
         clear();
         if(v != null) {
             add(v);
@@ -143,7 +153,7 @@ public class Membership implements Cloneable {
      *
      * @param m - a membership containing all the members this membership will contain
      */
-    public synchronized void set(Membership m) {
+    public void set(Membership m) {
         clear();
         if(m != null) {
             add(m.getMembers());
@@ -162,7 +172,7 @@ public class Membership implements Cloneable {
      * @param new_mems - a vector containing a list of members (Address) to be added to this membership
      * @param suspects - a vector containing a list of members (Address) to be removed from this membership
      */
-    public synchronized void merge(Vector new_mems, Vector suspects) {
+    public void merge(Vector new_mems, Vector suspects) {
         remove(suspects);
         add(new_mems);
     }
@@ -174,42 +184,22 @@ public class Membership implements Cloneable {
      * @param member
      * @return true if the member belongs to this membership
      */
-    public synchronized boolean contains(Address member) {
+    public boolean contains(Address member) {
         if(member == null) return false;
-        return members.contains(member);
+        synchronized(members) {
+            return members.contains(member);
+        }
     }
 
 
     /* Simple inefficient bubble sort, but not used very often (only when merging) */
-    public synchronized void sort() {
-        Collections.sort(members);
+    public void sort() {
+        synchronized(members) {
+            Collections.sort(members);
+        }
     }
 
-//    {
-//        Address  a1;
-//        Address  a2;
-//        Address  tmp;
-//
-//        for(int j=0; j < members.size(); j++)
-//        {
-//            for(int i=0; i < members.size()-1; i++)
-//            {
-//                a1=(Address)members.elementAt(i);
-//                a2=(Address)members.elementAt(i+1);
-//                if(a1 == null || a2 == null)
-//                {
-//                    if(log.isErrorEnabled()) log.error("member's address is null");
-//                    continue;
-//                }
-//                if(a1.compareTo(a2) > 0)
-//                {
-//                    tmp=a2;
-//                    members.setElementAt(a1, i+1);
-//                    members.setElementAt(tmp, i);
-//                }
-//            }
-//        }
-//    }
+
 
 
     /**
@@ -217,7 +207,7 @@ public class Membership implements Cloneable {
      *
      * @return an exact copy of this membership
      */
-    public synchronized Membership copy() {
+    public Membership copy() {
         return ((Membership)clone());
     }
 
@@ -226,17 +216,18 @@ public class Membership implements Cloneable {
      * @return a clone of this object. The list of members is copied to a new
      *         container
      */
-    public synchronized Object clone() {
+    public Object clone() {
         Membership m;
-
         try {
             m=(Membership)super.clone();
-            m.members=(Vector)members.clone();
-            return (m);
         }
-        catch(CloneNotSupportedException ex) {
-            throw new InternalError();
+        catch(CloneNotSupportedException e) {
+            m=new Membership();
         }
+        synchronized(members) {
+            m.members=(LinkedList)members.clone();
+        }
+        return (m);
     }
 
 
@@ -245,8 +236,10 @@ public class Membership implements Cloneable {
      *
      * @return the number of addresses in this membership
      */
-    public synchronized int size() {
-        return members.size();
+    public int size() {
+        synchronized(members) {
+            return members.size();
+        }
     }
 
     /**
@@ -257,13 +250,17 @@ public class Membership implements Cloneable {
      * @see java.util.Vector#elementAt
      */
 
-    public synchronized Object elementAt(int index) {
-        return members.elementAt(index);
+    public Object elementAt(int index) {
+        synchronized(members) {
+            return members.get(index);
+        }
     }
 
 
-    public synchronized String toString() {
-        return members.toString();
+    public String toString() {
+        synchronized(members) {
+            return members.toString();
+        }
     }
 
 
