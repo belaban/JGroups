@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.18 2004/10/06 18:56:09 belaban Exp $
+// $Id: Message.java,v 1.19 2004/10/08 13:05:13 belaban Exp $
 
 package org.jgroups;
 
@@ -540,8 +540,6 @@ public class Message implements Externalizable, Streamable {
             writeHeader((Header)entry.getValue(), out);
         }
     }
-
-
 
 
     public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {

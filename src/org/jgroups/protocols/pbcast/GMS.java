@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.23 2004/10/08 12:28:30 belaban Exp $
+// $Id: GMS.java,v 1.24 2004/10/08 13:04:24 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -898,7 +898,7 @@ public class GMS extends Protocol {
         public void writeTo(DataOutputStream out) throws IOException {
             out.writeInt(type);
             Util.writeStreamable(view, out);
-            Util.writeStreamable(mbr, out);
+            Util.writeAddress(mbr, out);
             Util.writeStreamable(join_rsp, out);
             Util.writeStreamable(digest, out);
             Util.writeStreamable((Streamable)merge_id, out); // kludge: we know merge_id is a ViewId
@@ -908,7 +908,7 @@ public class GMS extends Protocol {
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
             type=in.readInt();
             view=(View)Util.readStreamable(View.class, in);
-            mbr=(Address)Util.readStreamable(Address.class, in);
+            mbr=Util.readAddress(in);
             join_rsp=(JoinRsp)Util.readStreamable(JoinRsp.class, in);
             digest=(Digest)Util.readStreamable(Digest.class, in);
             merge_id=(Serializable)Util.readStreamable(ViewId.class, in);
