@@ -1,4 +1,4 @@
-// $Id: DistributedQueueReadTask.java,v 1.1 2003/10/15 16:15:10 rds13 Exp $
+// $Id: DistributedQueueReadTask.java,v 1.2 2004/01/09 18:21:38 rds13 Exp $
 /*
  * Created on Oct 15, 2003
  *
@@ -23,7 +23,16 @@ public     class DistributedQueueReadTask implements Runnable
 
 	static Logger logger = Logger.getLogger(DistributedQueueReadTask.class.getName());
 	
-	public DistributedQueueReadTask(String name, DistributedQueue q, ICounter counter, int max, int timeout)
+	/**
+	 * Build a task which read 'max' elements from queue 'q' and increments 'counter'
+	 * when an element is read.
+     * @param name
+     * @param q
+     * @param counter
+     * @param max
+     * @param timeout
+     */
+    public DistributedQueueReadTask(String name, DistributedQueue q, ICounter counter, int max, int timeout)
 	{
 		this.counter = counter;
 		this.queue = q;
