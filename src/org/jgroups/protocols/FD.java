@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.11 2004/09/23 16:29:41 belaban Exp $
+// $Id: FD.java,v 1.12 2004/10/07 13:27:20 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -35,27 +35,28 @@ import java.util.Vector;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Revision: 1.11 $
+ * @version $Revision: 1.12 $
  */
 public class FD extends Protocol {
-    Address         ping_dest=null;
-    Address         local_addr=null;
-    long            timeout=3000;  // number of millisecs to wait for an are-you-alive msg
-    long            last_ack=System.currentTimeMillis();
-    int             num_tries=0;
-    int             max_tries=2;   // number of times to send a are-you-alive msg (tot time= max_tries*timeout)
+    Address               ping_dest=null;
+    Address               local_addr=null;
+    long                  timeout=3000;  // number of millisecs to wait for an are-you-alive msg
+    long                  last_ack=System.currentTimeMillis();
+    int                   num_tries=0;
+    int                   max_tries=2;   // number of times to send a are-you-alive msg (tot time= max_tries*timeout)
     final Vector          members=new Vector(11);
     final Hashtable       invalid_pingers=new Hashtable(7);  // keys=Address, val=Integer (number of pings from suspected mbrs)
 
     /** Members from which we select ping_dest. may be subset of {@link #members} */
     final Vector          pingable_mbrs=new Vector(11);
 
-    boolean         shun=true;
-    TimeScheduler   timer=null;
-    Monitor         monitor=null;  // task that performs the actual monitoring for failure detection
+    boolean               shun=true;
+    TimeScheduler         timer=null;
+    Monitor               monitor=null;  // task that performs the actual monitoring for failure detection
+    private final Object  monitor_mutex=new Object();
 
     /** Transmits SUSPECT message until view change or UNSUSPECT is received */
-    final BroadcastTask   bcast_task=new BroadcastTask();
+    final Broadcaster   bcast_task=new Broadcaster();
 
 
 
@@ -107,10 +108,7 @@ public class FD extends Protocol {
 
 
     public void stop() {
-        if(monitor != null) {
-            monitor.stop();
-            monitor=null;
-        }
+        stopMonitor();
     }
 
 
@@ -133,15 +131,26 @@ public class FD extends Protocol {
     }
 
 
-    void startMonitor() {
-        if(monitor != null && monitor.started == false) {
-            monitor=null;
+    private void startMonitor() {
+        synchronized(monitor_mutex) {
+            if(monitor != null && monitor.started == false) {
+                monitor=null;
+            }
+            if(monitor == null) {
+                monitor=new Monitor();
+                last_ack=System.currentTimeMillis();  // start from scratch
+                timer.add(monitor, true);  // fixed-rate scheduling
+                num_tries=0;
+            }
         }
-        if(monitor == null) {
-            monitor=new Monitor();
-            last_ack=System.currentTimeMillis();  // start from scratch
-            timer.add(monitor, true);  // fixed-rate scheduling
-            num_tries=0;
+    }
+
+    private void stopMonitor() {
+        synchronized(monitor_mutex) {
+            if(monitor != null) {
+                monitor.stop();
+                monitor=null;
+            }
         }
     }
 
@@ -456,15 +465,17 @@ public class FD extends Protocol {
 
     }
 
+
     /**
      * Task that periodically broadcasts a list of suspected members to the group. Goal is not to lose
      * a SUSPECT message: since these are bcast unreliably, they might get dropped. The BroadcastTask makes
      * sure they are retransmitted until a view has been received which doesn't contain the suspected members
      * any longer. Then the task terminates.
      */
-    private class BroadcastTask implements TimeScheduler.Task {
+    private class Broadcaster {
         final Vector suspected_mbrs=new Vector(7);
-        boolean stopped=false;
+        BroadcastTask task=null;
+        private final Object bcast_mutex=new Object();
 
 
         Vector getSuspectedMembers() {
@@ -472,23 +483,45 @@ public class FD extends Protocol {
         }
 
         /**
-         * Adds a suspected member. Starts the task if not yet running
+         * Starts a new task, or - if already running - adds the argument to the running task.
+         * @param suspect
          */
+        private void startBroadcastTask(Address suspect) {
+            synchronized(bcast_mutex) {
+                if(task == null || task.cancelled()) {
+                    task=new BroadcastTask((Vector)suspected_mbrs.clone());
+                    task.addSuspectedMember(suspect);
+                    task.run();      // run immediately the first time
+                    timer.add(task); // then every timeout milliseconds, until cancelled
+                    if(log.isTraceEnabled())
+                        log.trace("BroadcastTask started");
+                }
+                else {
+                    task.addSuspectedMember(suspect);
+                }
+            }
+        }
+
+        private void stopBroadcastTask() {
+            synchronized(bcast_mutex) {
+                if(task != null) {
+                    task.stop();
+                    task=null;
+                }
+            }
+        }
+
+        /** Adds a suspected member. Starts the task if not yet running */
         void addSuspectedMember(Address mbr) {
             if(mbr == null) return;
             if(!members.contains(mbr)) return;
             synchronized(suspected_mbrs) {
                 if(!suspected_mbrs.contains(mbr)) {
                     suspected_mbrs.addElement(mbr);
-                    if(log.isDebugEnabled()) log.debug("mbr=" + mbr + " (size=" + suspected_mbrs.size() + ')');
-                }
-                if(stopped && suspected_mbrs.size() > 0) {
-                    stopped=false;
-                    timer.add(this, true);
+                    startBroadcastTask(mbr);
                 }
             }
         }
-
 
         void removeSuspectedMember(Address suspected_mbr) {
             if(suspected_mbr == null) return;
@@ -496,22 +529,18 @@ public class FD extends Protocol {
             synchronized(suspected_mbrs) {
                 suspected_mbrs.removeElement(suspected_mbr);
                 if(suspected_mbrs.size() == 0)
-                    stopped=true;
+                    stopBroadcastTask();
             }
         }
-
 
         void removeAll() {
             synchronized(suspected_mbrs) {
                 suspected_mbrs.removeAllElements();
-                stopped=true;
+                stopBroadcastTask();
             }
         }
 
-
-        /**
-         * Removes all elements from suspected_mbrs that are <em>not</em> in the new membership
-         */
+        /** Removes all elements from suspected_mbrs that are <em>not</em> in the new membership */
         void adjustSuspectedMembers(Vector new_mbrship) {
             if(new_mbrship == null || new_mbrship.size() == 0) return;
             StringBuffer sb=new StringBuffer();
@@ -519,47 +548,66 @@ public class FD extends Protocol {
                 sb.append("suspected_mbrs: ").append(suspected_mbrs);
                 suspected_mbrs.retainAll(new_mbrship);
                 if(suspected_mbrs.size() == 0)
-                    stopped=true;
-                sb.append(", after adjustment: ").append(suspected_mbrs).append(", stopped: ").append(stopped);
+                    stopBroadcastTask();
+                sb.append(", after adjustment: ").append(suspected_mbrs);
                 log.debug(sb.toString());
             }
         }
+    }
 
+
+    private class BroadcastTask implements TimeScheduler.Task {
+        boolean cancelled=false;
+        private Vector suspected_members=null;
+
+
+        public BroadcastTask(Vector suspected_members) {
+            this.suspected_members=suspected_members;
+        }
+
+        public void stop() {
+            cancelled=true;
+            suspected_members.clear();
+            if(log.isTraceEnabled())
+                log.trace("BroadcastTask stopped");
+        }
 
         public boolean cancelled() {
-            return stopped;
+            return cancelled;
         }
-
 
         public long nextInterval() {
-            return timeout;
+            return FD.this.timeout;
         }
-
 
         public void run() {
             Message suspect_msg;
             FD.FdHeader hdr;
 
-            synchronized(suspected_mbrs) {
-                if(suspected_mbrs.size() == 0) {
-                    stopped=true;
+            synchronized(suspected_members) {
+                if(suspected_members.size() == 0) {
+                    stop();
                     if(log.isDebugEnabled()) log.debug("task done (no suspected members)");
                     return;
                 }
 
                 hdr=new FdHeader(FdHeader.SUSPECT);
-                hdr.mbrs=(Vector)suspected_mbrs.clone();
+                hdr.mbrs=(Vector)suspected_members.clone();
                 hdr.from=local_addr;
             }
             suspect_msg=new Message();       // mcast SUSPECT to all members
             suspect_msg.putHeader(getName(), hdr);
             if(log.isDebugEnabled())
-                log.debug("broadcasting SUSPECT message [suspected_mbrs=" + suspected_mbrs + "] to group");
+                log.debug("broadcasting SUSPECT message [suspected_mbrs=" + suspected_members + "] to group");
             passDown(new Event(Event.MSG, suspect_msg));
             if(log.isDebugEnabled()) log.debug("task done");
         }
+
+        public void addSuspectedMember(Address suspect) {
+            if(suspect != null && !suspected_members.contains(suspect)) {
+                suspected_members.add(suspect);
+            }
+        }
     }
-
-
 
 }
