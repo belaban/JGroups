@@ -1,4 +1,4 @@
-// $Id: TCPPING.java,v 1.16 2004/12/31 14:10:38 belaban Exp $
+// $Id: TCPPING.java,v 1.17 2005/01/03 11:15:53 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -26,18 +26,18 @@ import java.util.*;
  */
 public class TCPPING extends Protocol {
     final Vector    members=new Vector();
-    final Vector initial_members=new Vector();
-    final Set members_set=new HashSet(); //copy of the members vector for fast random access
-    Address   local_addr=null;
-    String    group_addr=null;
+    final Vector    initial_members=new Vector();
+    final Set       members_set=new HashSet(); //copy of the members vector for fast random access
+    Address         local_addr=null;
+    String          group_addr=null;
     final String    groupname=null;
-    long      timeout=3000;
-    long      num_initial_members=2;
-    int       port_range=1;        // number of ports to be probed for initial membership
+    long            timeout=3000;
+    long            num_initial_members=2;
+    int             port_range=1;        // number of ports to be probed for initial membership
 
     /** List<IpAddress> */
-    ArrayList initial_hosts=null;  // hosts to be contacted for the initial membership
-    boolean   is_server=false;
+    ArrayList       initial_hosts=null;  // hosts to be contacted for the initial membership
+    boolean         is_server=false;
 
 
     public String getName() {
@@ -102,87 +102,94 @@ public class TCPPING extends Protocol {
 
         switch(evt.getType()) {
 
-            case Event.MSG:
-                msg=(Message) evt.getArg();
-                obj=msg.getHeader(getName());
-                if(obj == null || !(obj instanceof PingHeader)) {
-                    passUp(evt);
+        case Event.MSG:
+            msg=(Message) evt.getArg();
+            obj=msg.getHeader(getName());
+            if(obj == null || !(obj instanceof PingHeader)) {
+                passUp(evt);
+                return;
+            }
+            hdr=(PingHeader) msg.removeHeader(getName());
+
+            switch(hdr.type) {
+
+            case PingHeader.GET_MBRS_REQ:   // return Rsp(local_addr, coord)
+                if(!is_server) {
                     return;
                 }
-                hdr=(PingHeader) msg.removeHeader(getName());
-
-                switch(hdr.type) {
-
-                    case PingHeader.GET_MBRS_REQ:   // return Rsp(local_addr, coord)
-                        if(!is_server) {
-                            //System.err.println("TCPPING.up(GET_MBRS_REQ): did not return a response " +
-                            //	       "as I'm not a server yet !");
-                            return;
-                        }
-                        synchronized(members) {
-                            coord=members.size() > 0 ? (Address) members.firstElement() : local_addr;
-                        }
-                        rsp_msg=new Message(msg.getSrc(), null, null);
-                        rsp_hdr=new PingHeader(PingHeader.GET_MBRS_RSP, new PingRsp(local_addr, coord));
-                        rsp_msg.putHeader(getName(), rsp_hdr);
-                        passDown(new Event(Event.MSG, rsp_msg));
-                        return;
-
-                    case PingHeader.GET_MBRS_RSP:   // add response to vector and notify waiting thread
-                        rsp=hdr.arg;
-                        synchronized(initial_members) {
-                            initial_members.addElement(rsp);
-                            initial_members.notifyAll();
-                        }
-                        return;
-
-                    default:
-                        if(log.isWarnEnabled()) log.warn("got TCPPING header with unknown type (" + hdr.type + ')');
-                        return;
+                synchronized(members) {
+                    coord=members.size() > 0 ? (Address) members.firstElement() : local_addr;
                 }
+                rsp_msg=new Message(msg.getSrc(), null, null);
+                rsp_hdr=new PingHeader(PingHeader.GET_MBRS_RSP, new PingRsp(local_addr, coord));
+                rsp_msg.putHeader(getName(), rsp_hdr);
+                if(log.isTraceEnabled())
+                    log.trace("[GET_MBRS_REQ] sending response " + rsp_hdr);
+                passDown(new Event(Event.MSG, rsp_msg));
+                return;
 
-
-            case Event.SET_LOCAL_ADDRESS:
-                passUp(evt);
-                local_addr=(Address)evt.getArg();
-                // Add own address to initial_hosts if not present: we must always be able to ping ourself !
-                if(initial_hosts != null && local_addr != null) {
-                    if(!initial_hosts.contains(local_addr)) {
-                        if(log.isDebugEnabled()) log.debug("[SET_LOCAL_ADDRESS]: adding my own address (" + local_addr +
-                                                           ") to initial_hosts; initial_hosts=" + initial_hosts);
-                        initial_hosts.add(local_addr);
-                    }
+            case PingHeader.GET_MBRS_RSP:   // add response to vector and notify waiting thread
+                rsp=hdr.arg;
+                if(log.isTraceEnabled())
+                    log.trace("[GET_MBRS_RSP] received response " + rsp);
+                synchronized(initial_members) {
+                    initial_members.addElement(rsp);
+                    initial_members.notifyAll();
                 }
-                break;
+                return;
 
             default:
-                passUp(evt);            // Pass up to the layer above us
-                break;
+                if(log.isWarnEnabled()) log.warn("got TCPPING header with unknown type (" + hdr.type + ')');
+                return;
+            }
+
+
+        case Event.SET_LOCAL_ADDRESS:
+            passUp(evt);
+            local_addr=(Address)evt.getArg();
+            // Add own address to initial_hosts if not present: we must always be able to ping ourself !
+            if(initial_hosts != null && local_addr != null) {
+                if(!initial_hosts.contains(local_addr)) {
+                    if(log.isDebugEnabled()) log.debug("[SET_LOCAL_ADDRESS]: adding my own address (" + local_addr +
+                                                       ") to initial_hosts; initial_hosts=" + initial_hosts);
+                    initial_hosts.add(local_addr);
+                }
+            }
+            break;
+
+        default:
+            passUp(evt);            // Pass up to the layer above us
+            break;
         }
     }
 
 
     public void down(Event evt) {
         Message msg;
-        long time_to_wait, start_time;
+        long time_to_wait, start_time, total_time;
 
         switch(evt.getType()) {
 
         case Event.FIND_INITIAL_MBRS:   // sent by GMS layer, pass up a GET_MBRS_OK event
-            initial_members.removeAllElements();
+            synchronized(initial_members) {
+                initial_members.removeAllElements();
+            }
             msg=new Message(null, null, null);
             msg.putHeader(getName(), new PingHeader(PingHeader.GET_MBRS_REQ, null));
 
+            Vector tmpMbrs;
             synchronized(members) {
-                for(Iterator it=initial_hosts.iterator(); it.hasNext();) {
-                    Address addr=(Address)it.next();
-                    if(members.contains(addr)) {
-                        ; // continue; // changed as suggested by Mark Kopec
-                    }
-                    msg.setDest(addr);
-                    if(log.isTraceEnabled()) log.trace("[FIND_INITIAL_MBRS] sending PING request to " + msg.getDest());
-                    passDown(new Event(Event.MSG, msg.copy()));
+                tmpMbrs=new Vector(members);
+            }
+
+            for(Iterator it=initial_hosts.iterator(); it.hasNext();) {
+                Address addr=(Address)it.next();
+                if(tmpMbrs.contains(addr)) {
+                    ; // continue; // changed as suggested by Mark Kopec
                 }
+                msg.setDest(addr);
+                if(log.isTraceEnabled()) log.trace("[FIND_INITIAL_MBRS] sending PING request to " + msg.getDest());
+                passDown(new Event(Event.MSG, msg.copy()));
             }
 
             // 2. Wait 'timeout' ms or until 'num_initial_members' have been retrieved
@@ -198,11 +205,13 @@ public class TCPPING extends Protocol {
                     }
                     time_to_wait=timeout - (System.currentTimeMillis() - start_time);
                 }
+                total_time=System.currentTimeMillis() - start_time;
             }
-            if(log.isTraceEnabled()) log.trace("[FIND_INITIAL_MBRS] initial members are " + initial_members);
+            if(log.isTraceEnabled())
+                log.trace("[FIND_INITIAL_MBRS] initial members=" + initial_members + ", waited for " + total_time + "ms");
 
             // 3. Send response
-            passUp(new Event(Event.FIND_INITIAL_MBRS_OK, initial_members));
+            passUp(new Event(Event.FIND_INITIAL_MBRS_OK, new Vector(initial_members)));
             break;
 
         case Event.TMP_VIEW:
