@@ -31,7 +31,7 @@ import java.util.*;
  * the unicast routing caches should ensure that unicasts are only sent via 1 interface in almost all cases.
  * 
  * @author Bela Ban Oct 2003
- * @version $Id: UDP1_4.java,v 1.4 2003/12/20 20:32:35 belaban Exp $
+ * @version $Id: UDP1_4.java,v 1.5 2003/12/23 02:09:27 belaban Exp $
  */
 public class UDP1_4 extends Protocol implements Runnable {
 
@@ -192,7 +192,7 @@ public class UDP1_4 extends Protocol implements Runnable {
                 if(len == 4) {  // received a diagnostics probe
                     byte[] tmp=packet.getData();
                     if(tmp[0] == 'd' && tmp[1] == 'i' && tmp[2] == 'a' && tmp[3] == 'g') {
-                        handleDiagnosticProbe(packet.getAddress(), packet.getPort());
+                        handleDiagnosticProbe(null, null);
                         continue;
                     }
                 }
@@ -235,16 +235,15 @@ public class UDP1_4 extends Protocol implements Runnable {
         if(Trace.trace) Trace.info("UDP.run()", "multicast thread terminated");
     }
 
-    void handleDiagnosticProbe(InetAddress sender, int port) {
+    void handleDiagnosticProbe(SocketAddress sender, DatagramSocket sock) {
         try {
             byte[] diag_rsp=getDiagResponse().getBytes();
-            DatagramPacket rsp=new DatagramPacket(diag_rsp, 0, diag_rsp.length, sender, port);
+            DatagramPacket rsp=new DatagramPacket(diag_rsp, 0, diag_rsp.length, sender);
             if(Trace.trace)
-                Trace.info("UDP.handleDiagnosticProbe()", "sending diag response to " + sender + ":" + port);
-            ucast_sock.send(rsp);
+                Trace.info("UDP.handleDiagnosticProbe()", "sending diag response to " + sender);
+            sock.send(rsp);
         } catch(Throwable t) {
-            Trace.error("UDP.handleDiagnosticProbe()", "failed sending diag rsp to " + sender + ":" + port +
-                    ", exception=" + t);
+            Trace.error("UDP.handleDiagnosticProbe()", "failed sending diag rsp to " + sender + ", exception=" + t);
         }
     }
 
@@ -528,6 +527,10 @@ public class UDP1_4 extends Protocol implements Runnable {
         Message msg=null;
         UdpHeader hdr=null;
         Event evt;
+
+        // todo:
+        // handle 4-byte diag probe 'd' 'i' 'a' 'g'
+        // todo:
 
         try {
             // skip the first n bytes (default: 4), this is the version info
@@ -1194,18 +1197,17 @@ public class UDP1_4 extends Protocol implements Runnable {
             this.mcast_group=new InetSocketAddress(mcast_group,  mcast_port);
             this.local_port=local_port;
             this.port_range=port_range;
-            if(bind_interface == null)
-                this.bind_interface=determineBindInterface();
+            if(bind_interface == null) {
+                String ifstr=ConnectorTable.determineDefaultBindInterface();
+                this.bind_interface=NetworkInterface.getByInetAddress(InetAddress.getByName(ifstr));
+            }
             this.receiver=receiver;
             this.receive_buffer=new byte[receive_buffer_size];
 
-            // mcast_sock=createMulticastSocket();
-            mcast_sock=new MulticastSocket(7500);
+            mcast_sock=createMulticastSocket();
             System.out.println("ttl=" + mcast_sock.getTimeToLive());
 
-            // todo: remove
-            // mcast_sock.setNetworkInterface(this.bind_interface); // for outgoing multicasts
-
+            mcast_sock.setNetworkInterface(this.bind_interface); // for outgoing multicasts
             this.local_port=mcast_sock.getLocalPort();
             local_addr=new InetSocketAddress(bind_interface, this.local_port);
             System.out.println("-- local_addr=" + local_addr);
@@ -1220,8 +1222,7 @@ public class UDP1_4 extends Protocol implements Runnable {
             }
 
             if(mcast_group != null) {
-                // mcast_sock.joinGroup(mcast_group, bind_interface);
-                mcast_sock.joinGroup(InetAddress.getByName("230.1.2.3"));
+                mcast_sock.joinGroup(mcast_group, bind_interface);
                 System.out.println("joined mcast group " + mcast_group + " on interface " + bind_interface);
             }
 
@@ -1256,26 +1257,10 @@ public class UDP1_4 extends Protocol implements Runnable {
 
         public void run() {
             DatagramPacket packet=new DatagramPacket(receive_buffer, receive_buffer.length);
-            int            len;
             while(running) {
                 try {
                     packet.setData(receive_buffer, 0, receive_buffer.length);
-                    mcast_sock.receive(packet);
-                    len=packet.getLength();
-                    if(len == 1 && packet.getData()[0] == 0) {
-                        if(Trace.debug) Trace.info("UDP1_4.Connector.run()", "received dummy packet");
-                        continue;
-                    }
-
-                    if(len == 4) {  // received a diagnostics probe
-                        byte[] tmp=packet.getData();
-                        if(tmp[0] == 'd' && tmp[1] == 'i' && tmp[2] == 'a' && tmp[3] == 'g') {
-                            handleDiagnosticProbe(packet.getAddress(), packet.getPort());
-                            continue;
-                        }
-                    }
-                    if(receiver != null)
-                        receiver.receive(packet);
+                    ConnectorTable.receivePacket(packet, mcast_sock, receiver);
                 }
                 catch(Throwable t) {
                     if(t == null || mcast_sock == null || mcast_sock.isClosed())
@@ -1285,6 +1270,9 @@ public class UDP1_4 extends Protocol implements Runnable {
             running=false;
         }
 
+
+
+
         public String toString() {
             StringBuffer sb=new StringBuffer();
             sb.append("local_addr=").append(local_addr).append(", mcast_group=");
@@ -1293,38 +1281,9 @@ public class UDP1_4 extends Protocol implements Runnable {
         }
 
 
-        void handleDiagnosticProbe(InetAddress sender, int port) {
-            try {
-                byte[] diag_rsp=getDiagResponse().getBytes();
-                DatagramPacket rsp=new DatagramPacket(diag_rsp, 0, diag_rsp.length, sender, port);
-                if(Trace.trace)
-                    Trace.info("UDP.handleDiagnosticProbe()", "sending diag response to " + sender + ":" + port);
-                mcast_sock.send(rsp);
-            } catch(Throwable t) {
-                Trace.error("UDP.handleDiagnosticProbe()", "failed sending diag rsp to " + sender + ":" + port +
-                        ", exception=" + t);
-            }
-        }
-
-        String getDiagResponse() {
-            StringBuffer sb=new StringBuffer();
-            sb.append(local_addr).append(" (").append(local_addr).append(")");
-            sb.append(" [").append(mcast_group).append("]\n");
-            sb.append("Version=").append(Version.version).append(", cvs=\"").append(Version.cvs).append("\"\n");
-            sb.append("bound to ").append(bind_interface).append(":").append(local_port).append("\n");
-    //            sb.append("members: ").append(members).append("\n");
-            return sb.toString();
-        }
 
 
 
-        /**
-         * Get the first non-loopback interface
-         * @return An interface
-         */
-        private NetworkInterface determineBindInterface() {
-            return null;
-        }
 
         private MulticastSocket createMulticastSocket() throws IOException {
             MulticastSocket sock=null;
@@ -1357,8 +1316,11 @@ public class UDP1_4 extends Protocol implements Runnable {
         /** Socket to receive multicast packets. Will be bound to n interfaces */
         MulticastSocket mcast_sock=null;
 
-        /** The multicast address and port on which mcast_sock will listen */
-        SocketAddress mcast_addr=null;
+        /** The multicast address which mcast_sock will join */
+        InetAddress mcast_addr=null;
+
+        /** The port on which to listen for multicast packets */
+        int mcast_port=7500;
 
         /** A List<String> of bind interfaces to bind to */
         List bind_addrs=null;
@@ -1371,16 +1333,21 @@ public class UDP1_4 extends Protocol implements Runnable {
         /** HashMap<Address,Connector>. Keys are ucast_sock addresses, values Connectors */
         HashMap connectors=new HashMap();
 
+        /** The logical address, probably an instance of LogicalAddress */
+        Address local_addr=null;
+
+        boolean running=false;
+
+
+
 
         public ConnectorTable(String mcast_addr, int mcast_port, List bind_addrs,
                               int receive_buffer_size, Receiver receiver) throws IOException {
             this.receiver=receiver;
-            this.mcast_addr=new InetSocketAddress(mcast_addr, mcast_port);
+            this.mcast_addr=InetAddress.getByName(mcast_addr);
+            this.mcast_port=mcast_port;
             this.bind_addrs=bind_addrs;
             this.receive_buffer=new byte[receive_buffer_size];
-            mcast_sock=new MulticastSocket(mcast_port);
-
-
         }
 
 
@@ -1395,12 +1362,43 @@ public class UDP1_4 extends Protocol implements Runnable {
 
         /** Get all interfaces, create one Connector per interface and call start() on it */
         public void start() throws Exception {
+            if(running)
+                return;
+
             Connector tmp;
             for(Iterator it=connectors.values().iterator(); it.hasNext();) {
                 tmp=(Connector)it.next();
                 tmp.start();
             }
+
+            mcast_sock=new MulticastSocket(mcast_port);
+
+            // join mcast_group on all interfaces given
+            if(this.bind_addrs == null)
+                this.bind_addrs=new ArrayList();
+            if(this.bind_addrs.size() == 0) {
+                String default_bind_addr=determineDefaultBindInterface();
+                this.bind_addrs.add(default_bind_addr);
+            }
+
+            SocketAddress mcast_addr_sa=new InetSocketAddress(mcast_addr, mcast_port);
+            for(Iterator it=this.bind_addrs.iterator(); it.hasNext();) {
+                String bind_addr=(String)it.next();
+                NetworkInterface ni=NetworkInterface.getByInetAddress(InetAddress.getByName(bind_addr));
+                if(ni == null)
+                    throw new Exception("UDP1_4.ConnectorTable.start(): no interface found for " + bind_addr);
+                mcast_sock.joinGroup(mcast_addr_sa, ni);
+                if(Trace.trace)
+                    Trace.info("UDP1_4.ConnectorTable.start()", "joining group " + mcast_addr_sa +
+                            " on interface " + ni);
+            }
+
+            t=new Thread(this, "ConnectorTable thread");
+            t.setDaemon(true);
+            t.start();
+            running=true;
         }
+
 
         public void stop() {
             Connector tmp;
@@ -1408,10 +1406,26 @@ public class UDP1_4 extends Protocol implements Runnable {
                 tmp=(Connector)it.next();
                 tmp.stop();
             }
+            connectors.clear();
+            t=null;
+            mcast_sock.close();
+            running=false;
         }
+
 
         public void run() {
             // receive mcast packets on any interface of the list of interfaces we're listening on
+            DatagramPacket p=new DatagramPacket(receive_buffer, receive_buffer.length);
+            while(t != null && mcast_sock != null && !mcast_sock.isClosed()) {
+                p.setData(receive_buffer, 0, receive_buffer.length);
+                try {
+                    receivePacket(p, mcast_sock, this);
+                }
+                catch(Throwable t) {
+                    if(t == null || mcast_sock == null || mcast_sock.isClosed())
+                        break;
+                }
+            }
         }
 
         /** Adds the given interface address to the list of interfaces on which the receiver mcast
@@ -1481,9 +1495,71 @@ public class UDP1_4 extends Protocol implements Runnable {
 
 
         public void receive(DatagramPacket packet) {
+            int len=packet.getLength();
+            if(len == 4) {  // received a diagnostics probe
+                byte[] tmp=packet.getData();
+                if(tmp[0] == 'd' && tmp[1] == 'i' && tmp[2] == 'a' && tmp[3] == 'g') {
+                        handleDiagnosticsProbe(packet.getSocketAddress());
+                    return;
+                }
+            }
             if(receiver != null) {
                 receiver.receive(packet);
             }
+        }
+
+
+        void handleDiagnosticsProbe(SocketAddress sender) {
+            try {
+                byte[] diag_rsp=getDiagResponse().getBytes();
+                DatagramPacket rsp=new DatagramPacket(diag_rsp, 0, diag_rsp.length, sender);
+                if(Trace.trace)
+                    Trace.info("UDP.handleDiagnosticProbe()", "sending diag response to " + sender);
+                send(rsp);
+            } catch(Throwable t) {
+                Trace.error("UDP.handleDiagnosticProbe()", "failed sending rsp to " + sender  + ", exception=" + t);
+            }
+        }
+
+        // todo: add more useful info
+        String getDiagResponse() {
+            StringBuffer sb=new StringBuffer();
+            sb.append(local_addr).append(" (").append(local_addr).append(")");
+            //sb.append(" [").append(mcast_group).append("]\n");
+            sb.append("Version=").append(Version.version).append(", cvs=\"").append(Version.cvs).append("\"\n");
+            sb.append("bound to ").append(bind_addrs).append(":").append("\n");
+    //            sb.append("members: ").append(members).append("\n");
+            return sb.toString();
+        }
+
+
+
+        public static void receivePacket(DatagramPacket packet, DatagramSocket sock, Receiver receiver) throws IOException {
+            int len;
+
+            sock.receive(packet);
+            len=packet.getLength();
+            if(len == 1 && packet.getData()[0] == 0) {
+                if(Trace.debug) Trace.info("UDP1_4.Connector.receivePacket()", "received dummy packet");
+                return;
+            }
+            if(receiver != null)
+                receiver.receive(packet);
+        }
+
+
+        /** Return the first non-loopback interface */
+        public static String determineDefaultBindInterface() throws SocketException {
+            for(Enumeration en=NetworkInterface.getNetworkInterfaces(); en.hasMoreElements();) {
+                NetworkInterface ni=(NetworkInterface)en.nextElement();
+                for(Enumeration en2=ni.getInetAddresses(); en2.hasMoreElements();) {
+                    InetAddress bind_addr=(InetAddress)en2.nextElement();
+                    if(!bind_addr.isLoopbackAddress()) {
+                        return bind_addr.getHostAddress();
+                    }
+                }
+            }
+            return null;
         }
     }
 
@@ -1498,6 +1574,8 @@ public class UDP1_4 extends Protocol implements Runnable {
          */
         void receive(DatagramPacket packet);
     }
+
+
 
 
     public static class MyReceiver implements Receiver {
