@@ -1,4 +1,4 @@
-// $Id: IpAddressTest.java,v 1.5 2004/09/21 13:49:44 belaban Exp $
+// $Id: IpAddressTest.java,v 1.6 2004/10/05 16:19:27 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -109,7 +109,6 @@ public class IpAddressTest extends TestCase {
         ois=new ObjectInputStream(bis);
         a2=(IpAddress)ois.readObject();
         b2=(IpAddress)ois.readObject();
-        
 
         assertTrue(a.equals(a2));
         assertTrue(b.equals(b2));
