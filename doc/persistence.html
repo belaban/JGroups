@@ -1,0 +1,217 @@
+<!DOCTYPE doctype PUBLIC "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+  <title>Persistence for Hashtables</title>
+           
+  <link rel="important stylesheet"
+ href="chrome://messenger/skin/messageBody.css">
+     
+  <meta http-equiv="Content-Type" content="text/html; ">
+     
+  <meta name="GENERATOR"
+ content="Mozilla/4.78 [en] (X11; U; Linux 2.4.8-26mdk i586) [Netscape]">
+</head>
+<body>
+<br>
+                       
+<h1><dt><font size="+4">Persistence</font></dt>
+            </h1>
+<h2>Using Persistence</h2>
+<ul>
+  <li>The package is meant for users who need to maintain the state of their
+Serializable name-value pair sets for better fault tolerance. Using this package
+will improve usability but will affect performance depending on the usage
+of the persist API.</li>
+  <li>The current package will support only 2 known implementations, the
+DB storage way (which is vendor independant) and an ad-hoc (or some open
+source) implementation.</li>
+  <li>The Persistence package assumes&nbsp; that the user will provide appropriate
+properties to initialize and use the storage mechanism.</li>
+</ul>
+<h2>Code Example</h2>
+Code examples make it easy to comprehend the package.
+<p><samp><font face="Courier New, Courier, monospace"><code><br>
+</code></font></samp></p>
+<font face="Courier New, Courier, monospace">import org.jgroups.persistence.*;</font>
+<br>
+<br>
+<font face="Courier New, Courier, monospace">// getting default factor</font><br>
+<dt><font face="Courier New, Courier, monospace"><b>PersistenceFactory</b>
+  <b>factory</b> = <b>PersistenceFactory();</b><br>
+  </font></dt>
+&nbsp;<dt><font face="Courier New, Courier, monospace">//get reference to
+PersistenceManager (handle Exception as required by application)</font></dt>
+<dt><font face="Courier New, Courier, monospace">// if user defines own properties</font></dt>
+<dt><font face="Courier New, Courier, monospace">&nbsp;try</font></dt>
+<dt><font face="Courier New, Courier, monospace">{</font></dt>
+<dt><font face="Courier New, Courier, monospace">&nbsp;&nbsp;&nbsp; String
+filepath = "/home/user/userdefined.properties"</font></dt>
+<dt><font face="Courier New, Courier, monospace">&nbsp;&nbsp;&nbsp; <b>PersistenceManager
+manager = factory.createPersistenceManager(filepath);</b></font></dt>
+<dt><font face="Courier New, Courier, monospace">&nbsp; &nbsp; <br>
+&nbsp;&nbsp;&nbsp; //if user used existing properties by filling the values
+(default properties)</font></dt>
+<dt><font face="Courier New, Courier, monospace">&nbsp;&nbsp;&nbsp; // <b>PersistenceManager
+manager = factory.createPersistenceManager();</b></font></dt>
+<dt><font face="Courier New, Courier, monospace">}catch (Exception e)</font></dt>
+<dt><font face="Courier New, Courier, monospace">{</font></dt>
+<dt><font face="Courier New, Courier, monospace">&nbsp;&nbsp;&nbsp; //handle
+Exception</font></dt>
+<dt><font face="Courier New, Courier, monospace">}</font></dt>
+<dt><br>
+</dt>
+<dt><br>
+</dt>
+<dt><font face="Courier New, Courier, monospace">//once the persistencemanager
+reference is obtained, use available</font></dt>
+<dt><font face="Courier New, Courier, monospace">// to save a NV</font></dt>
+<dt><font face="Courier New, Courier, monospace">HashMap map = new HashMap();</font></dt>
+<dt><font face="Courier New, Courier, monospace">map.put("bela", "bela");</font></dt>
+<dt><font face="Courier New, Courier, monospace">map.put("mandar", "mandar");</font></dt>
+<dt><font face="Courier New, Courier, monospace">try</font></dt>
+<dt><font face="Courier New, Courier, monospace">{</font></dt>
+<dt><font face="Courier New, Courier, monospace">&nbsp;&nbsp;&nbsp; <b>manager.saveAll(map);</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+// will store all values from map into storage</font></dt>
+<dt><font face="Courier New, Courier, monospace">}catch (CannotPersistException
+cpe)</font></dt>
+<dt><font face="Courier New, Courier, monospace">{</font></dt>
+<dt><font face="Courier New, Courier, monospace">&nbsp;&nbsp;&nbsp; //handle
+exception</font></dt>
+<dt><font face="Courier New, Courier, monospace">}</font></dt>
+<dt><br>
+</dt>
+<dt><br>
+</dt>
+<dt><font face="Courier New, Courier, monospace">//to update a value;</font></dt>
+<dt><font face="Courier New, Courier, monospace">try</font></dt>
+<dt><font face="Courier New, Courier, monospace">{</font></dt>
+<dt><font face="Courier New, Courier, monospace">&nbsp;&nbsp;&nbsp; map.put("bela",
+"geek");</font></dt>
+<dt><font face="Courier New, Courier, monospace">&nbsp;&nbsp;&nbsp; <b>manager.save("bela",
+"geek");</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;// will update { {bela,bela}, {mandar,mandar})</font></dt>
+<dt><font face="Courier New, Courier, monospace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+// to&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; { {bela,geek},
+{mandar,mandar})</font></dt>
+<dt><font face="Courier New, Courier, monospace">}catch (CannotPersistException
+cpe)</font></dt>
+<dt><font face="Courier New, Courier, monospace">{</font></dt>
+<dt><font face="Courier New, Courier, monospace">&nbsp;&nbsp;&nbsp; //handle
+exception</font></dt>
+<dt><font face="Courier New, Courier, monospace">}</font></dt>
+<dt><br>
+</dt>
+<dt><br>
+</dt>
+<dt><font face="Courier New, Courier, monospace">// to remove an entry</font></dt>
+<dt><font face="Courier New, Courier, monospace">try</font></dt>
+<dt><font face="Courier New, Courier, monospace">{</font></dt>
+<dt><font face="Courier New, Courier, monospace">&nbsp;&nbsp;&nbsp; <b>map.remove("mandar");</b></font></dt>
+<dt><font face="Courier New, Courier, monospace">&nbsp;&nbsp;&nbsp; String
+value = (String) <b>manager.remove("mandar");</b>// will update {{bela,geek},
+{mandar, mandar}}</font></dt>
+<dt><font face="Courier New, Courier, monospace">&nbsp;&nbsp;&nbsp; //use
+value if required&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+// to&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {bela,geek}</font></dt>
+<dt><font face="Courier New, Courier, monospace">}catch (CannotRemoveException
+cre)</font></dt>
+<dt><font face="Courier New, Courier, monospace">{</font></dt>
+<dt><font face="Courier New, Courier, monospace">&nbsp;&nbsp;&nbsp; // handle
+exception</font></dt>
+<dt><font face="Courier New, Courier, monospace">}</font></dt>
+<dt><br>
+</dt>
+<dt><font face="Courier New, Courier, monospace">//**************************************************************************</font></dt>
+<dt><br>
+</dt>
+<dt><font face="Courier New, Courier, monospace">// say, at start of application
+, need to get back stored state</font></dt>
+<dt><font face="Courier New, Courier, monospace">//use above example to get
+back reference to "manager"</font></dt>
+<dt><font face="Courier New, Courier, monospace">try</font></dt>
+<dt><font face="Courier New, Courier, monospace">{</font></dt>
+<dt><font face="Courier New, Courier, monospace">&nbsp;&nbsp;&nbsp; HashMap
+map = (HashMap) <b>manager.retrieveAll();</b>&nbsp;&nbsp;&nbsp; // map will
+get {{bela,geek}}</font></dt>
+<dt><font face="Courier New, Courier, monospace">}catch (CannotRetrieveException
+cree)</font></dt>
+<dt><font face="Courier New, Courier, monospace">{</font></dt>
+<dt><font face="Courier New, Courier, monospace">&nbsp;&nbsp;&nbsp; // handle
+exception</font></dt>
+<dt><font face="Courier New, Courier, monospace">}</font></dt>
+<dt><br>
+</dt>
+<h2>Entering Properties (persist.properties)</h2>
+Currently, the properties reflect only the DB related, as the FILE based implementation
+is not in place.<br>
+&nbsp;
+<table border="1" cols="3" width="100%" nosave="">
+  <tbody>
+    <tr>
+      <td>Name</td>
+      <td>Description</td>
+      <td>Typical Value</td>
+    </tr>
+    <tr>
+      <td>persist</td>
+      <td>Used to decide between DB or FILE.</td>
+      <td>DB/FILE (No default assumed)</td>
+    </tr>
+    <tr>
+      <td>jdbc.table</td>
+      <td>Lets the user dictate the schema used to storage purposes on the
+database.</td>
+      <td>create table replhashmap(key varchar(100), keybin blob, valbin
+blob)&nbsp;</td>
+    </tr>
+    <tr>
+      <td>jdbc.Driver</td>
+      <td>Classname for driver that needs to be loaded for DB storage.</td>
+      <td>oracle.jdbc.driver.OracleDriver</td>
+    </tr>
+    <tr>
+      <td>jdbc.Conn</td>
+      <td>Connection string required for user to connect to Db instance</td>
+      <td>jdbc:oracle:oci8:@instance</td>
+    </tr>
+    <tr>
+      <td>jdbc.User</td>
+      <td>User name required to connect to provided DB instance</td>
+      <td>user</td>
+    </tr>
+    <tr>
+      <td>jdbc.Pass</td>
+      <td>Password wrt to User provided</td>
+      <td>pass</td>
+    </tr>
+     
+  </tbody>
+</table>
+<dt><br>
+</dt>
+<dt><br>
+</dt>
+<dt><br>
+</dt>
+<h2>Using org.jgroups.blocks.DistributedHashtable with PersistenceManager</h2>
+<dt>// Example of how to setup and use DistributedHashtable<br>
+</dt>
+<ul>
+  <li>Create persist.properties (classpath or home dir)<br>
+  </li>
+  <li>Start one instance with -persist</li>
+  <li>Start another instance with -persist</li>
+  <li>Add a couple of values</li>
+  <li>Delete both instances</li>
+  <li>Start first instance again: previous values should be available</li>
+</ul>
+<br>
+<dt><br>
+</dt>
+<dt><br>
+</dt>
+<dt><br>
+</dt>
+<br>
+</body>
+</html>

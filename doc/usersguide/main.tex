@@ -1,0 +1,49 @@
+
+\documentclass[10pt]{report}  % twoside is default !
+\usepackage{epsfig,array}
+
+\title{JavaGroups User's Guide}
+
+\author{Bela Ban\\
+       \tt{belaban@yahoo.com}
+       }
+\date{Nov 16 2002}
+
+
+%% Format modifications
+
+%%\addtolength{\textheight}{1cm}
+%% \addtolength{\textwidth}{1cm}
+
+\addtolength{\textheight}{3cm}
+\addtolength{\textwidth}{2cm}
+
+
+
+\setlength{\evensidemargin}{-0.5cm}
+\setlength{\oddsidemargin}{0.5cm}
+%%\setlength{\topmargin}{-1cm}
+\setlength{\parindent}{-1pt}
+
+
+
+\sloppy
+
+\begin{document}
+
+  \maketitle
+  \tableofcontents
+  \newpage
+
+  \include{Overview}
+  \include{Installation}
+  \include{Channel}
+  \include{BuildingBlocks}
+  \include{Advanced}
+
+  \bibliographystyle{alpha}
+  \addcontentsline{toc}{chapter}{Bibliography}
+  \bibliography{refs}
+
+\end{document}
+

@@ -1,0 +1,21 @@
+<chapter id="protlist">
+<chapterinfo>
+<pubdate>$Date: 2003/09/09 01:24:04 $</pubdate>
+<releaseinfo>$Revision: 1.1 $</releaseinfo>
+</chapterinfo>
+
+<title>List of protocols</title>
+<para>
+For each protocol define
+<itemizedlist>
+<listitem>Properties provided</listitem>
+<listitem>Required services</listitem>
+<listitem>Provided services</listitem>
+<listitem>Behavior</listitem>
+</itemizedlist>
+
+</para>
+
+
+
+</chapter>

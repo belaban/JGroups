@@ -1,0 +1,43 @@
+<?xml version='1.0'?>
+<!DOCTYPE pg [
+<!ENTITY overview     SYSTEM "overview.xml">
+<!ENTITY architecture SYSTEM "architecture.xml">
+<!ENTITY channel      SYSTEM "channel.xml">
+<!ENTITY protstack    SYSTEM "protstack.xml">
+<!ENTITY blocks       SYSTEM "blocks.xml">
+<!ENTITY protocols    SYSTEM "protocols.xml">
+<!ENTITY protlist     SYSTEM "protlist.xml">
+<!ENTITY eventlist    SYSTEM "eventlist.xml">
+]>
+
+<book id="ProgramersGuide">
+
+
+<bookinfo>
+<mediaobject role="online">
+    <imageobject>
+      <imagedata fileref="../images/cover.png" align="left"/>
+    </imageobject>
+</mediaobject>
+<title>JGroups Programmer's Guide</title>
+<subtitle>Protocol Development</subtitle>
+<authorgroup>
+<author><firstname>Bela</firstname><surname>Ban</surname></author>
+<!-- othercredit><firstname>Vladimir</firstname><surname>Blagejovic</surname></othercredit-->
+</authorgroup>
+<copyright><year>2002</year>
+<holder>Bela Ban</holder>
+</copyright>
+</bookinfo>
+
+&overview;
+&architecture;
+&channel;
+&protstack;
+&blocks;
+&protocols;
+&protlist;
+&eventlist;
+
+</book>
+

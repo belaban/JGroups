@@ -1,0 +1,360 @@
+<?xml version="1.0"?>
+
+<!-- $Id: build.xml,v 1.1 2003/09/09 01:24:04 belaban Exp $ -->
+
+<project name="JGroups" default="compile" basedir=".">
+    <description>
+        build.xml file for JGroups. Needs Ant (jakarta.apache.org) to run
+    </description>
+
+    <property file="build.properties"/>
+    <property name="root.dir" value="${basedir}"/>
+    <property name="src.dir" value="${root.dir}/src"/>
+    <property name="tests.dir" value="${root.dir}/tests/other"/>
+    <property name="junit.dir" value="${root.dir}/tests/junit"/>
+    <property name="log4j.dir" value="${root.dir}/log4j"/>
+    <property name="compile.dir" value="${root.dir}/classes"/>
+    <property name="lib.dir" value="${root.dir}/lib"/>
+    <property name="dist.dir" value="${root.dir}/dist"/>
+    <property name="doc.dir" value="${root.dir}/doc"/>
+    <property name="javadoc.dir" value="${dist.dir}/javadoc"/>
+    <property name="conf.dir" value="${root.dir}/conf"/>
+    <property name="pg.dir" value="${doc.dir}/progguide"/>
+    <property name="docbook.dir" value="${pg.dir}/docbook-xsl"/>
+    <property name="build.compiler.emacs" value="true"/>
+    <property name="javadoc.packages" value="org.jgroups.*"/>
+
+
+    <path id="jg.classpath">
+        <pathelement location="${compile.dir}"/>
+        <pathelement location="${conf.dir}"/>
+        <fileset dir="${lib.dir}">
+            <include name="*.jar"/>
+        </fileset>
+    </path>
+
+
+    <path id="fop.classpath">
+        <fileset dir="${lib.dir}">
+            <include name="*.jar"/>
+        </fileset>
+    </path>
+
+
+
+    <target name="prepare">
+        <property environment="env"/>
+        <mkdir dir="${compile.dir}"/>
+        <mkdir dir="${dist.dir}"/>
+        <mkdir dir="${dist.dir}/pg"/>
+        <mkdir dir="${dist.dir}/pg/html"/>
+        <mkdir dir="${dist.dir}/pg/pdf"/>
+        <mkdir dir="${javadoc.dir}"/>
+        <!-- If jikes is available we use it. Otherwise javac will be used -->
+        <!-- available property="build.compiler" value="jikes"  filepath="${env.PATH}" file="jikes"/ -->
+    </target>
+
+
+    <target name="compile"
+        depends="prepare"
+        description="Compiles are Java files (excluding files dependent on JDK 1.4">
+        <javac destdir="${compile.dir}"
+            classpathref="jg.classpath"
+            debug="on"
+            deprecation="off"
+            optimize="off"
+            listfiles="true"
+            includes="org/jgroups/**">
+            <exclude name="**/obsolete/**"/>
+            <exclude name="**/*1_4*"/>
+            <src path="${src.dir}"/>
+            <src path="${tests.dir}"/>
+            <src path="${junit.dir}"/>
+        </javac>
+    </target>
+
+    <target name="compile-1.4"
+        depends="prepare"
+        description="Compiles are Java files (including files dependent on JDK 1.4)">
+        <javac destdir="${compile.dir}"
+            classpathref="jg.classpath"
+            debug="on"
+            deprecation="off"
+            optimize="off"
+            listfiles="true"
+            includes="org/jgroups/**">
+            <exclude name="**/obsolete/**"/>
+            <src path="${src.dir}"/>
+            <src path="${tests.dir}"/>
+            <src path="${junit.dir}"/>
+        </javac>
+    </target>
+
+    <target name="compile-log4j"
+        depends="prepare"
+        description="Compiles are Java files with log4j support">
+        <javac destdir="${compile.dir}"
+            classpathref="jg.classpath"
+            debug="on"
+            deprecation="off"
+            optimize="off"
+            listfiles="true"
+            includes="org/jgroups/log/**">
+            <exclude name="**/obsolete/**"/>
+            <exclude name="**/*1_4*"/>
+            <src path="${log4j.dir}"/>
+        </javac>
+        <javac destdir="${compile.dir}"
+            classpathref="jg.classpath"
+            debug="on"
+            deprecation="off"
+            optimize="off"
+            listfiles="true"
+            includes="org/jgroups/**">
+            <exclude name="**/obsolete/**"/>
+            <exclude name="**/*1_4*"/>
+            <exclude name="org/jgroups/log/**"/>
+            <src path="${src.dir}"/>
+            <src path="${tests.dir}"/>
+            <src path="${junit.dir}"/>
+        </javac>
+    </target>
+
+
+    <target name="jar"
+        description="Compiles and creates JAR files in the ./dist directory"
+        depends="compile,
+                jgroups-all.jar,
+                jgroups-core.jar,
+            jgroups-demo.jar,
+            jgroups-test.jar"
+        >
+    </target>
+
+    <target name="jar-1.4"
+        description="Compiles for 1.4 and creates JAR files in the ./dist directory"
+        depends="compile-1.4,
+                jgroups-all.jar,
+                jgroups-core.jar,
+            jgroups-demo.jar,
+            jgroups-test.jar"
+        >
+    </target>
+    <target name="jar-log4j"
+        description="Compiles with log4j support and creates JAR files in the ./dist directory"
+        depends="compile-log4j,
+                jgroups-all.jar,
+                jgroups-core.jar,
+            jgroups-demo.jar,
+            jgroups-test.jar"
+        >
+    </target>
+
+
+    <target name="jgroups-all.jar"
+        description="Creates the jgroups-all.jar (includes everything)">
+        <jar destfile="${dist.dir}/jgroups-all.jar"
+            basedir="${compile.dir}"
+            manifest="${conf.dir}/manifest.mf"
+            includes="org/jgroups/**">
+            <fileset dir="${conf.dir}" includes="*.dtd, *.xml"/>
+        </jar>
+    </target>
+
+    <target name="jgroups-core.jar"
+        description="Creates the jgroups-core.jar. Includes only core file, no demos">
+        <jar jarfile="${dist.dir}/jgroups-core.jar"
+            basedir="${compile.dir}"
+            includes="org/jgroups/**"
+            excludes="org/jgroups/demos/**,
+                      org/jgroups/tests/**,
+                      org/jgroups/**/*Test.class,
+                      org/jgroups/**/*Test\$*.class">
+            <fileset dir="${conf.dir}" includes="*.dtd, *.xml"/>
+        </jar>
+    </target>
+
+    <target name="jgroups-demo.jar"
+        description="Create the jgroups-demo.jar. Includes core plus demos">
+        <jar jarfile="${dist.dir}/jgroups-demo.jar"
+             basedir="${compile.dir}"
+             includes="org/jgroups/demos/**"/>
+    </target>
+
+    <target name="jgroups-test.jar"
+        description="Create the jgroups-test.jar. Includes core plus tests">
+        <jar jarfile="${dist.dir}/jgroups-test.jar"
+            basedir="${compile.dir}"
+            includes="org/jgroups/tests/**,
+                      org/jgroups/service/**,
+                      org/jgroups/**/*Test.class,
+                      org/jgroups/**/*Test\$*.class"
+            />
+    </target>
+
+
+    <!-- generate java doc -->
+    <target name="javadoc"
+        depends="prepare"
+        description="Create Javadoc documentation in the ./doc/javadoc directory">
+        <javadoc packagenames="${javadoc.packages}"
+            sourcepath="${src.dir}"
+            destdir="${javadoc.dir}"
+            classpathref="jg.classpath"
+            author="true"
+            version="true"
+            use="true"
+            bottom="Copyright &#169; 2001,2002 www.jgroups.com . All Rights Reserved."
+            />
+    </target>
+
+
+    <!-- Create the programmer's guide in the dist directory -->
+    <target name="pg" depends="prepare"
+        description="Create the Programmer's Guide (HTML)">
+        <style in="${pg.dir}/main.xml"
+            style="${docbook.dir}/html/docbook.xsl"
+            out="${dist.dir}/pg/html/pg.html"/>
+    </target>
+
+    <!--
+    <target name="chunkedhtml" depends="prepare"
+            description="Generates the Programmer's Guide in chunked HTML">
+	<style basedir="${pg.dir}"
+	       includes="*.xml"
+	       style="${docbook.dir}/html/chunk.xsl"
+	       destdir="${dist.dir}/pg/html"/>
+    </target>
+    -->
+
+
+    <target name="pdf" depends="prepare"
+        description="Generates PDF for Programmer's Guide">
+        <java classpathref="fop.classpath"
+            classname="org.apache.fop.apps.Fop"
+            fork="yes">
+            <!-- Must use fully realized relative paths in arg tag -->
+            <arg line="-xsl ${docbook.dir}/fo/docbook.xsl "/>
+            <arg line="-xml ${pg.dir}/main.xml "/>
+            <arg line="-pdf ${dist.dir}/pg/pdf/pg.pdf "/>
+        </java>
+    </target>
+
+
+    <!-- clean up directories -->
+    <target name="clean"
+        description="Removes all class files and the ./dist directory">
+        <delete dir="${compile.dir}" failonerror="false"/>
+        <delete dir="${dist.dir}" failonerror="false"/>
+        <delete dir="${root.dir}/tmp" failonerror="false"/>
+        <delete>
+            <fileset dir="${root.dir}" defaultexcludes="no">
+                <include name="**/*~"/>
+            </fileset>
+        </delete>
+    </target>
+
+
+    <!-- clean up directories -->
+    <target name="cleanall"
+        description="Removes all class files and the ./dist
+    directory plus the Makefile generated files">
+        <delete dir="${compile.dir}"/>
+        <delete dir="${dist.dir}"/>
+        <delete>
+            <fileset dir="${root.dir}" defaultexcludes="no">
+                <include name="**/*~"/>
+                <include name="Makefile.include"/>
+                <include name="configure.cache"/>
+            </fileset>
+        </delete>
+    </target>
+
+
+    <target name="all"
+        depends="jar,javadoc"
+        description="Compiles all files, creates JARs and Javadoc documentation"/>
+
+    <target name="all-1.4"
+        depends="jar-1.4,javadoc"
+        description="Compiles all files (for 1.4), creates JARs and Javadoc documentation"/>
+
+    <target name="all-log4j"
+        depends="jar-log4j,javadoc"
+        description="Compiles all files (including log4j support), creates JARs and Javadoc documentation"/>
+
+
+    <target name="version"
+        depends="compile"
+        description="Prints some info about the Ant version and the OS/JDK used">
+        <echo message="${ant.version}"/>
+        <echo message="JDK=${java.vm.version} on ${os.name} ${os.version}"/>
+        <java classname="org.jgroups.Version" classpathref="jg.classpath"/>
+    </target>
+
+
+    <target name="unittests"
+        depends="compile"
+        description="Runs all unit tests in tests/junit and prints results to stdout">
+        <junit printsummary="yes" timeout="120000" fork="yes">
+            <classpath refid="jg.classpath"/>
+            <formatter type="brief" usefile="false"/>
+            <batchtest todir="${root.dir}/tmp">
+                <fileset dir="${junit.dir}"
+                    includes="**/*Test.java"/>
+            </batchtest>
+        </junit>
+    </target>
+
+
+    <target name="upload"
+        description="FTP jgroups-all.jar to host defined in build.properties">
+        <ftp server="${ftp.servername}"
+            userid="${ftp.userid}"
+            password="${ftp.password}"
+            remotedir="${ftp.remotedir}"
+            verbose="true">
+            <fileset dir="${dist.dir}" includes="jgroups-all.jar"/>
+        </ftp>
+    </target>
+
+
+    <target name="unittests-xml" depends="compile">
+        <delete dir="${root.dir}/tmp/tests-results"/>
+        <mkdir dir="${root.dir}/tmp/tests-results"/>
+        <junit printsummary="yes" timeout="120000" fork="yes">
+            <jvmarg value="-Dtests.tmp.dir=${root.dir}/tmp"/>
+            <classpath refid="jg.classpath"/>
+            <formatter type="xml" usefile="true"/>
+            <batchtest todir="${root.dir}/tmp/tests-results">
+                <fileset dir="${junit.dir}"
+                    includes="**/*Test.java"/>
+            </batchtest>
+        </junit>
+    </target>
+
+
+    <target name="findxalan">
+        <available property="xalan.available" classname="org.apache.xalan.Version"/>
+        <fail unless="xalan.available"
+            message="Xalan was not found. Please add the xalan.jar file from the lib directory to the CLASSPATH and retry"/>
+    </target>
+
+
+    <target name="testreport"
+        depends="findxalan,unittests-xml"
+        if="xalan.available"
+        description="Generates HTML from unit tests (target unitests-xml must have run before)">
+        <delete dir="${root.dir}/tmp/html"/>
+        <mkdir dir="${root.dir}/tmp/html"/>
+        <junitreport todir="${root.dir}/tmp/html">
+            <fileset dir="${root.dir}/tmp/tests-results" includes="TEST*.xml" excludes="*TestSuites*"/>
+            <report todir="${root.dir}/tmp/html"/>
+        </junitreport>
+        <echo message="********************************************************************"/>
+        <echo message="The unit test report is available in ${root.dir}/tmp/html/index.html"/>
+        <echo message="********************************************************************"/>
+    </target>
+
+
+</project>

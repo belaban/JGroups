@@ -1,0 +1,185 @@
+// $Id: DistributedQueueTest.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+
+package org.jgroups.blocks;
+
+import java.util.Vector;
+
+import junit.framework.Test;
+import junit.framework.TestCase;
+import junit.framework.TestSuite;
+
+import org.apache.log4j.Logger;
+import org.jgroups.log.Trace;
+
+public class DistributedQueueTest extends TestCase
+{
+
+	final int NUM_ITEMS = 10;
+	static Logger logger = Logger.getLogger(DistributedQueueTest.class.getName());
+    String props;
+
+	public DistributedQueueTest(String testName)
+	{
+		super(testName);
+	}
+
+	public static Test suite()
+	{
+		return new TestSuite(DistributedQueueTest.class);
+	}
+
+	protected DistributedQueue queue1;
+	protected DistributedQueue queue2;
+	protected DistributedQueue queue3;
+
+	public void setUp() throws Exception
+	{
+
+//		String props =
+//			"UDP(mcast_addr=224.0.0.35;mcast_port=45566;ip_ttl=32;"
+//				+ "mcast_send_buf_size=150000;mcast_recv_buf_size=80000):"
+//				+ "PING(timeout=2000;num_initial_members=5):"
+////				+ "MERGE2(min_interval=5000;max_interval=10000):"
+//				+ "FD_SOCK:"
+//				+ "VERIFY_SUSPECT(timeout=1500):"
+//				+ "UNICAST(timeout=5000):"
+//				+ "FRAG(frag_size=8192;down_thread=false;up_thread=false):"
+//				+ "TOTAL_TOKEN(block_sending=50;unblock_sending=10):"
+//				+ "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;"
+//				+ "shun=false;print_local_addr=true):"
+//				+ "STATE_TRANSFER:"
+//				+ "QUEUE";
+        props="UDP(mcast_recv_buf_size=80000;mcast_send_buf_size=150000;mcast_port=45566;" +
+                "mcast_addr=228.8.8.8;ip_ttl=32):" +
+                "PING(timeout=2000;num_initial_members=3):" +
+                "FD_SOCK:" +
+                "VERIFY_SUSPECT(timeout=1500):" +
+                "UNICAST(timeout=600,1200,2000,2500):" +
+                "FRAG(frag_size=8096;down_thread=false;up_thread=false):" +
+                "TOTAL_TOKEN(unblock_sending=10;block_sending=50):" +
+                "pbcast.GMS(print_local_addr=true;join_timeout=3000;join_retry_timeout=2000;shun=true):" +
+                "STATE_TRANSFER:" +
+                "QUEUE";
+
+		Trace.init();
+
+		queue1 = new DistributedQueue("testing", null, props, 5000);
+
+		// give some time for the channel to become a coordinator
+		try
+		{
+			Thread.sleep(1000);
+		}
+		catch (Exception ex)
+		{
+		}
+
+		queue2 = new DistributedQueue("testing", null, props, 5000);
+
+		try
+		{
+			Thread.sleep(1000);
+		}
+		catch (InterruptedException ex)
+		{
+		}
+
+		queue3 = new DistributedQueue("testing", null, props, 5000);
+
+		try
+		{
+			Thread.sleep(1000);
+		}
+		catch (InterruptedException ex)
+		{
+		}
+	}
+
+	public void tearDown() throws Exception
+	{
+		queue1.stop();
+		queue2.stop();
+		queue3.stop();
+	}
+
+	class PutTask implements Runnable
+	{
+		protected DistributedQueue queue;
+		protected String name;
+		protected boolean finished;
+
+		public PutTask(String name, DistributedQueue q)
+		{
+			queue = q;
+			this.name = name;
+			finished = false;
+		}
+
+		public void run()
+		{
+			for (int i = 0; i < NUM_ITEMS; i++)
+			{
+				queue.add(name + "_" + i);
+			}
+			finished = true;
+		}
+
+		public boolean finished()
+		{
+			return finished;
+		}
+	}
+
+
+	public void testConcurrent() throws Exception
+	{
+		PutTask t1 = new PutTask("Queue1", queue1);
+		PutTask t2 = new PutTask("Queue2", queue2);
+		PutTask t3 = new PutTask("Queue3", queue3);
+		Thread rTask1 = new Thread(t1);
+		Thread rTask2 = new Thread(t2);
+		Thread rTask3 = new Thread(t3);
+
+		rTask1.start();
+		rTask2.start();
+		rTask3.start();
+
+		while (!t1.finished() || !t2.finished() || !t3.finished())
+		{
+			try
+			{
+				Thread.sleep(1000);
+			}
+			catch (InterruptedException ex)
+			{
+			}
+		}
+
+		assertEquals(queue1.size(), queue2.size());
+		assertEquals(queue1.size(), queue3.size());
+
+		checkContents(queue1.getContents(), queue2.getContents());
+		checkContents(queue1.getContents(), queue3.getContents());
+	}
+
+	protected void checkContents(Vector q1, Vector q2)
+	{
+		for (int i = 0; i < q1.size(); i++)
+		{
+			Object e1 = q1.elementAt(i);
+			Object e2 = q2.elementAt(i);
+			boolean t = e1.equals(e2);
+			if (!t)
+			{
+				logger.error("Data order differs :" + e1 + "!=" + e2);
+			} else
+			logger.debug("Data order ok :" + e1 + "==" + e2);
+			assertTrue(e1.equals(e2));
+		}
+	}
+	
+	public static void main(String[] args)
+	{
+		junit.textui.TestRunner.run(suite());
+	}
+}

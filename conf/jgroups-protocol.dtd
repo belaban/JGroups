@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- 
+  A fully qualified Java class name 
+  This class name is used to dynamically load the protocol when the class is setup
+-->
+<!ELEMENT class-name (#PCDATA)>
+
+<!-- 
+  A free text description of an configuration element 
+-->
+<!ELEMENT description (#PCDATA)>
+
+<!-- 
+  A name of a protocol, this is not the class name but a name that we can reference this protocol with.
+  The protocol name is unique within the protocol stack
+  If another protocol stack inherits this stack's configuration, it can override protocol parameters from 
+  this stack by referencing the protocol name
+-->
+<!ELEMENT protocol-name (#PCDATA)>
+
+<!-- 
+  A protocol parameter, for example mcast_address for the UDP protocol 
+  Always name-value pairs
+-->
+<!ELEMENT protocol-param EMPTY>
+<!ATTLIST protocol-param
+	name CDATA #REQUIRED
+	value CDATA #REQUIRED
+>
+
+<!-- 
+  Each protocol stack consists of one or more protocols that can be configured individually for this stack
+-->
+
+<!ELEMENT protocol (protocol-name, description, class-name, protocol-params?)>
+
+<!-- 
+  A list of protocol parameters 
+-->
+<!ELEMENT protocol-params (protocol-param+)>
+
+<!-- 
+  A protol stack can either contain a list of protocols or it can inherit the list of protocols from another 
+  stack. If this protol stack inherits the protocol list from another stack
+  the protocol-override element can be used to override parameters settings in the protocol list
+-->  
+<!ELEMENT protocol-override (protocol-name, protocol-params+)>
+
+<!--
+  A protol stack either contains a list of protocol elements if, the stack configuration
+  Or it can contain a list of protocol-override elements.
+  If the stack contains protocol-override elements, the attribute inherit has to be set 
+  
+-->
+<!ELEMENT protocol-stack (description?, (protocol+ | protocol-override+))>
+
+<!-- 
+      A preconfigured protocol stack
+      The name is just a descriptive name since we only allow one stack per configuration file
+      the "inherit" attribute is used if this protocol stack inherits the protocol list from another configuration file (protocol stack)
+      the inherit value has to be a valid URL (ie comply to the java.net.URL settings).
+-->
+
+<!ATTLIST protocol-stack
+	name CDATA #REQUIRED
+	inherit CDATA #IMPLIED
+    version CDATA #REQUIRED
+>

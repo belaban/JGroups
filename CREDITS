@@ -1,0 +1,53 @@
+
+
+			       Credits
+			       -------
+
+
+These are the people who contributed to JavaGroups (in chronological
+order of contribution):
+
+
+
+Bela Ban (bela@nms.fnc.fujitsu.com)
+- Original author. Responsible for core, pbcast protocols
+
+
+Gianluca Collot (gianluca@tin.it)
+- Extended virtual synchrony, partitions and merging
+
+
+John Georgiadis (i.georgiadis@doc.ic.ac.uk)
+- Total order protocol (TOTAL)
+
+
+Jim Menard (jimm@io.com)
+- Trace module and makefiles
+
+
+Filip Hanik (filip@filip.net)
+- ANT based build system (./build)
+- XML-based protocol stack configuration
+- Class marshalling and magic number mapping (XML)
+
+
+Vladimir Blagojevic  (vladimir@cs.yorku.ca)
+- Causal order protocol (CAUSAL)
+- Token based total order protocol (TOTAL_TOKEN)
+
+
+Roman Rokytskyy (roman@gate5.de)
+- JMS protocol
+- JavaGroups Services (org.javagroups.service): locking/leasing
+
+
+Ananda Bollu (akbollu@users.sf.net)
+- FLOW_CONTROL protocol
+
+
+Mandar Shinde (whizkid_bay@users.sf.net)
+- Persistence manager (org.javagroups.persistence)
+
+Ovidiu Feodorov (ovidiuf@users.sourceforge.net)
+- WAN capabilities, TUNNEL and Router
+

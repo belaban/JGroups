@@ -1,0 +1,445 @@
+// $Id: NotificationBus.java,v 1.1 2003/09/09 01:24:08 belaban Exp $
+
+package org.jgroups.blocks;
+
+
+import java.io.Serializable;
+import java.util.Vector;
+
+import org.jgroups.*;
+import org.jgroups.util.Promise;
+import org.jgroups.util.Util;
+import org.jgroups.log.Trace;
+
+
+/**
+ * Class for dissemination of notifications. Producers can send notifications to all registered consumers.
+ * Provides hooks to implement shared group state (cache).
+ * @author Bela Ban
+ */
+public class NotificationBus implements MessageListener, MembershipListener {
+    Vector members=new Vector();
+    JChannel channel=null;
+    Address local_addr=null;
+    PullPushAdapter ad=null;
+    Consumer consumer=null; // only a single consumer allowed
+    String bus_name="notification_bus";
+    Promise get_cache_promise=new Promise();
+    Object cache_mutex=new Object();
+
+
+    String props="UDP(mcast_addr=228.1.2.3;mcast_port=45566;ip_ttl=0;trace=true):" +
+            "PING(timeout=3000;num_initial_members=6):" +
+            "FD(trace=true;timeout=5000):" +
+            "VERIFY_SUSPECT(trace=false;timeout=1500):" +
+            // "DISCARD(trace=true;down=0.2):" +
+            "pbcast.STABLE(trace=true;desired_avg_gossip=5000):" +
+            "pbcast.NAKACK(trace=true;gc_lag=5;retransmit_timeout=3000):" +
+            "UNICAST(timeout=5000):" +
+            "FRAG:" +
+            "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
+            "trace=true;shun=false;print_local_addr=false)";
+
+
+    public interface Consumer {
+        void handleNotification(Serializable n);
+
+        /** Called on the coordinator to obtains its cache */
+        Serializable getCache();
+
+        void memberJoined(Address mbr);
+
+        void memberLeft(Address mbr);
+    }
+
+
+    public NotificationBus() throws Exception {
+        this(null, null);
+    }
+
+
+    public NotificationBus(String bus_name) throws Exception {
+        this(bus_name, null);
+    }
+
+
+    public NotificationBus(String bus_name, String properties) throws Exception {
+        if(bus_name != null) this.bus_name=bus_name;
+        if(properties != null) props=properties;
+        channel=new JChannel(props);
+    }
+
+
+    public void setConsumer(Consumer c) {
+        consumer=c;
+    }
+
+
+    public Address getLocalAddress() {
+        if(local_addr != null) return local_addr;
+        if(channel != null)
+            local_addr=channel.getLocalAddress();
+        return local_addr;
+    }
+
+
+    /**
+     Returns a reference to the real membership: don't modify. If you need to modify, make a copy first !
+     */
+    public Vector getMembership() {
+        return members;
+    }
+
+
+    /** Used to operate on the underlying channel directly, e.g. perform operations that are not
+     provided using only NotificationBus. Should be used sparingly */
+    public Channel getChannel() {
+        return channel;
+    }
+
+
+    public boolean isCoordinator() {
+        Object first_mbr=null;
+
+        synchronized(members) {
+            first_mbr=members.size() > 0 ? members.elementAt(0) : null;
+            if(first_mbr == null)
+                return true;
+        }
+        if(getLocalAddress() != null && first_mbr != null)
+            return getLocalAddress().equals(first_mbr);
+        return false;
+    }
+
+
+    public void start() throws Exception {
+        channel.connect(bus_name);
+        ad=new PullPushAdapter(channel, this, this);
+    }
+
+
+    public void stop() {
+        if(ad != null) {
+            ad.stop();
+            ad=null;
+        }
+        if(channel != null) {
+            channel.close();  // disconnects from channel and closes it
+            channel=null;
+        }
+    }
+
+
+    /** Pack the argument in a Info, serialize that one into the message buffer and send the message */
+    public void sendNotification(Serializable n) {
+        Message msg=null;
+        byte[] data=null;
+        Info info;
+
+        try {
+            if(n == null) return;
+            info=new Info(Info.NOTIFICATION, n);
+            data=Util.objectToByteBuffer(info);
+            msg=new Message(null, null, data);
+            if(channel == null) {
+                Trace.error("NotificationBus.sendNotification()", "channel is null. " +
+                                                                  " Won't send notification");
+                return;
+            }
+            channel.send(msg);
+        }
+        catch(Throwable ex) {
+            if(Trace.trace)
+                Trace.error("NotificationBus.sendNotification()", "exception is " + ex);
+        }
+    }
+
+
+    /**
+     Determines the coordinator and asks it for its cache. If there is no coordinator (because we are first member),
+     null will be returned. Used only internally by NotificationBus.
+     @param timeout Max number of msecs until the call returns
+     @param max_tries Max number of attempts to fetch the cache from the coordinator
+     */
+    public Serializable getCacheFromCoordinator(long timeout, int max_tries) {
+        return getCacheFromMember(null, timeout, max_tries);
+    }
+
+
+    /**
+     Determines the coordinator and asks it for its cache. If there is no coordinator (because we are first member),
+     null will be returned. Used only internally by NotificationBus.
+     @param mbr The address of the member from which to fetch the state. If null, the current coordinator
+     will be asked for the state
+     @param timeout Max number of msecs until the call returns - if timeout elapses
+     null will be returned
+     @param max_tries Max number of attempts to fetch the cache from the coordinator (will be set to 1 if < 1)
+     */
+    public Serializable getCacheFromMember(Address mbr, long timeout, int max_tries) {
+        Serializable cache=null;
+        int num_tries=0;
+        Info info=new Info(Info.GET_CACHE_REQ);
+        Message msg;
+        Address dst=mbr;  // member from which to fetch the cache
+
+        long start, stop; // +++ remove
+
+
+        if(max_tries < 1) max_tries=1;
+
+        get_cache_promise.reset();
+        while(num_tries <= max_tries) {
+            if(mbr == null) {  // mbr == null means get cache from coordinator
+                dst=determineCoordinator();
+                if(dst == null || dst.equals(getLocalAddress())) { // we are the first member --> empty cache
+                    if(Trace.trace)
+                        Trace.info("NotificationBus.getCacheFromMember()", "[" + getLocalAddress() +
+                                                                           "] no coordinator found --> first member (cache is empty)");
+                    return null;
+                }
+            }
+
+            // +++ remove
+            Trace.info("NotificationBus.getCacheFromMember()", "[" + getLocalAddress() + "] dst=" + dst +
+                                                               ", timeout=" + timeout + ", max_tries=" + max_tries + ", num_tries=" + num_tries);
+
+            if(dst != null) {
+                info=new Info(Info.GET_CACHE_REQ);
+                msg=new Message(dst, null, info);
+                channel.down(new Event(Event.MSG, msg));
+
+                start=System.currentTimeMillis();
+                cache=(Serializable) get_cache_promise.getResult(timeout);
+                stop=System.currentTimeMillis();
+                if(cache != null) {
+                    if(Trace.trace)
+                        Trace.info("NotificationBus.getCacheFromMember()", "got cache from " +
+                                                                           dst + ": cache is valid (waited " + (stop - start) + " msecs on get_cache_promise)");
+                    return cache;
+                }
+                else {
+                    if(Trace.trace)
+                        Trace.error("NotificationBus.getCacheFromMember()", "received null cache; retrying (waited " +
+                                                                            (stop - start) + " msecs on get_cache_promise)");
+                }
+            }
+
+            Util.sleep(500);
+            ++num_tries;
+        }
+        if(cache == null)
+            Trace.error("NotificationBus.getCacheFromMember()", "[" + getLocalAddress() +
+                                                                "] cache is null (num_tries=" + num_tries + ")");
+        return cache;
+    }
+
+
+    /**
+     Don't multicast this to all members, just apply it to local consumers.
+     */
+    public void notifyConsumer(Serializable n) {
+        if(consumer != null && n != null)
+            consumer.handleNotification(n);
+    }
+
+
+    /* -------------------------------- Interface MessageListener -------------------------------- */
+    public void receive(Message msg) {
+        Info info=null;
+        byte[] data;
+        Object obj;
+
+        if(msg == null || (data=msg.getBuffer()) == null) return;
+        try {
+            obj=Util.objectFromByteBuffer(data);
+            if(!(obj instanceof Info)) {
+                if(Trace.trace)
+                    Trace.error("NotificationBus.receive()", "expected an instance of Info (received " +
+                                                             obj.getClass().getName() + ")");
+                return;
+            }
+            info=(Info) obj;
+            switch(info.type) {
+                case Info.NOTIFICATION:
+                    notifyConsumer(info.data);
+                    break;
+
+                case Info.GET_CACHE_REQ:
+                    handleCacheRequest(msg.getSrc());
+                    break;
+
+                case Info.GET_CACHE_RSP:
+                    // +++ remove
+                    Trace.debug("NotificationBus.receive()", "[GET_CACHE_RSP] cache was received from " + msg.getSrc());
+                    get_cache_promise.setResult(info.data);
+                    break;
+
+                default:
+                    Trace.error("NotificationBus.receive()", "type " + info.type + " unknown");
+                    break;
+            }
+        }
+        catch(Throwable ex) {
+            if(Trace.trace)
+                Trace.error("NotificationBus.receive()", "exception=" + ex);
+        }
+    }
+
+    public byte[] getState() {
+        return null;
+    }
+
+    public void setState(byte[] state) {
+    }
+
+    /* ----------------------------- End of Interface MessageListener ---------------------------- */
+
+
+
+
+    /* ------------------------------- Interface MembershipListener ------------------------------ */
+
+    public synchronized void viewAccepted(View new_view) {
+        Vector joined_mbrs, left_mbrs, tmp;
+        Object tmp_mbr;
+
+        if(new_view == null) return;
+        tmp=new_view.getMembers();
+
+        synchronized(members) {
+            // get new members
+            joined_mbrs=new Vector();
+            for(int i=0; i < tmp.size(); i++) {
+                tmp_mbr=tmp.elementAt(i);
+                if(!members.contains(tmp_mbr))
+                    joined_mbrs.addElement(tmp_mbr);
+            }
+
+            // get members that left
+            left_mbrs=new Vector();
+            for(int i=0; i < members.size(); i++) {
+                tmp_mbr=members.elementAt(i);
+                if(!tmp.contains(tmp_mbr))
+                    left_mbrs.addElement(tmp_mbr);
+            }
+
+            // adjust our own membership
+            members.removeAllElements();
+            members.addAll(tmp);
+        }
+
+        if(consumer != null) {
+            if(joined_mbrs.size() > 0)
+                for(int i=0; i < joined_mbrs.size(); i++)
+                    consumer.memberJoined((Address) joined_mbrs.elementAt(i));
+            if(left_mbrs.size() > 0)
+                for(int i=0; i < left_mbrs.size(); i++)
+                    consumer.memberLeft((Address) left_mbrs.elementAt(i));
+        }
+    }
+
+
+    public void suspect(Address suspected_mbr) {
+    }
+
+    public void block() {
+    }
+
+
+    /* ----------------------------- End of Interface MembershipListener ------------------------- */
+
+
+
+
+
+
+
+    /* ------------------------------------- Private Methods ------------------------------------- */
+
+    Address determineCoordinator() {
+        Vector v=channel != null ? channel.getView().getMembers() : null;
+        return v != null ? (Address) v.elementAt(0) : null;
+    }
+
+
+    void handleCacheRequest(Address sender) {
+        Serializable cache=null;
+        Message msg;
+        Info info;
+
+        if(sender == null) {
+            // +++ remove
+            // if(Trace.trace)
+            Trace.error("NotificationBus.handleCacheRequest()", "sender is null");
+            return;
+        }
+
+        synchronized(cache_mutex) {
+            cache=getCache(); // get the cache from the consumer
+            info=new Info(Info.GET_CACHE_RSP, cache);
+            msg=new Message(sender, null, info);
+
+            // +++ remove
+            Trace.info("NotificationBus.handleCacheRequest()", "[" + getLocalAddress() + "] returning cache to " + sender);
+
+            channel.down(new Event(Event.MSG, msg));
+        }
+    }
+
+    public Serializable getCache() {
+        return consumer != null ? consumer.getCache() : null;
+    }
+
+
+
+    /* --------------------------------- End of Private Methods ---------------------------------- */
+
+
+
+
+
+    private static class Info implements Serializable {
+        public final static int NOTIFICATION=1;
+        public final static int GET_CACHE_REQ=2;
+        public final static int GET_CACHE_RSP=3;
+
+
+        int type=0;
+        Serializable data=null;  // if type == NOTIFICATION data is notification, if type == GET_CACHE_RSP, data is cache
+
+
+        public Info(int type) {
+            this.type=type;
+        }
+
+        public Info(int type, Serializable data) {
+            this.type=type;
+            this.data=data;
+        }
+
+
+        public String toString() {
+            StringBuffer sb=new StringBuffer();
+            sb.append("type= ");
+            if(type == NOTIFICATION)
+                sb.append("NOTIFICATION");
+            else if(type == GET_CACHE_REQ)
+                sb.append("GET_CACHE_REQ");
+            else if(type == GET_CACHE_RSP)
+                sb.append("GET_CACHE_RSP");
+            else
+                sb.append("<unknown>");
+            if(data != null) {
+                if(type == NOTIFICATION)
+                    sb.append(", notification=" + data);
+                else if(type == GET_CACHE_RSP) sb.append(", cache=" + data);
+            }
+            return sb.toString();
+        }
+    }
+
+
+}
+
+
+

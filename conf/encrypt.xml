@@ -1,0 +1,148 @@
+	<!-- PROTOCOL STACK is replica of default with the ENCRYPT protocol added below GMS -->
+	<protocol-stack name="Default protocol stack" version="1.0.0">
+		<description>JGroups Default Protocol Stack</description>
+		<protocol>
+			<protocol-name>UDP Protocol</protocol-name>
+			<description>Sends and receives messages on UDP sockets</description>
+			<class-name>org.jgroups.protocols.UDP</class-name>
+			<protocol-params>
+				<protocol-param name="mcast_addr"          value="228.8.8.8"/>
+				<!-- protocol-param name="bind_addr"  	   value="192.168.10.10"/ -->
+				<protocol-param name="mcast_port"          value="45566"/>
+				<protocol-param name="ucast_send_buf_size" value="32000"/>
+				<protocol-param name="ucast_recv_buf_size" value="64000"/>
+				<protocol-param name="mcast_send_buf_size" value="32000"/>
+				<protocol-param name="mcast_recv_buf_size" value="64000"/>
+				<protocol-param name="use_packet_handler"  value="false"/>
+				<protocol-param name="loopback"            value="true"/>
+				<protocol-param name="ip_ttl"              value="32"/>
+			</protocol-params>
+		</protocol>
+		<!--
+		<protocol>
+			<protocol-name>Auto Configuration</protocol-name>
+			<description>Senses the network properties and
+			allows other protocols to configure themselves
+			automatically</description>
+			<class-name>org.jgroups.protocols.AUTOCONF</class-name>
+			<protocol-params>
+			</protocol-params>
+		</protocol>
+		-->
+		<protocol>
+			<protocol-name>Ping Protocol</protocol-name>
+			<description>Find the initial membership</description>
+			<class-name>org.jgroups.protocols.PING</class-name>
+			<protocol-params>
+				<protocol-param name="timeout" value="2000"/>
+				<protocol-param name="num_initial_members" value="3"/>
+			</protocol-params>
+		</protocol>
+		<protocol>
+			<protocol-name>Merge Protocol</protocol-name>
+			<description>Periodically tries to detect subgroups and emits MERGE events in
+			that case</description>
+			<class-name>org.jgroups.protocols.MERGE2</class-name>
+			<protocol-params>
+				<protocol-param name="min_interval" value="5000"/>
+				<protocol-param name="max_interval" value="10000"/>
+			</protocol-params>
+		</protocol>
+		<protocol>
+			<protocol-name>Failure Detection Socket</protocol-name>
+			<description>Failure detection based on sockets</description>
+			<class-name>org.jgroups.protocols.FD</class-name>
+			<protocol-params>
+				<protocol-param name="timeout"      value="2000"/>
+				<protocol-param name="max_tries"    value="3"/>
+				<protocol-param name="shun"         value="true"/>
+			</protocol-params>
+		</protocol>
+		<protocol>
+			<protocol-name>Verify Suspect</protocol-name>
+			<description>Double-checks that a suspected member is really dead</description>
+			<class-name>org.jgroups.protocols.VERIFY_SUSPECT</class-name>
+			<protocol-params>
+				<protocol-param name="timeout" value="1500"/>
+			</protocol-params>
+		</protocol>
+		<protocol>
+			<protocol-name>Reliable mcast message transission</protocol-name>
+			<description>Uses a negative acknowledgement protocol for retransmissions</description>
+			<class-name>org.jgroups.protocols.pbcast.NAKACK</class-name>
+			<protocol-params>
+				<protocol-param name="gc_lag" value="50"/>
+				<protocol-param name="retransmit_timeout" value="600,1200,2400,4800"/>
+				<protocol-param name="max_xmit_size" value="8192"/>
+			</protocol-params>
+		</protocol>
+		<protocol>
+			<protocol-name>Unicast Protocol</protocol-name>
+			<description>Provides lossless transmission of unicast message (similar to TCP)</description>
+			<class-name>org.jgroups.protocols.UNICAST</class-name>
+			<protocol-params>
+				<protocol-param name="timeout" value="1200,2400,3600"/>
+			</protocol-params>
+		</protocol>
+                <protocol>
+            <protocol-name>Stable protocol</protocol-name>
+            <description>Distributed message garbage collection protocol. Deletes messages
+                seen by all group members</description>
+            <class-name>org.jgroups.protocols.pbcast.STABLE</class-name>
+            <protocol-params>
+                <!-- Periodically sends STABLE messages around. 0 disables this -->
+                <protocol-param name="desired_avg_gossip" value="20000"/>
+
+                <!--
+                Max number of bytes received from anyone until a STABLE message is sent. Use either this or
+                desired_avg_gossip, but not both ! 0 disables it.
+                -->
+                <protocol-param name="max_bytes" value="0"/>
+                <!--
+                Range (number of milliseconds) that we wait until sending a STABILITY message. This prevents
+                STABILITY multicast storms. If max_bytes is used, this should be set to a low value (> 0 though !).
+                -->
+                <protocol-param name="stability_delay" value="1000"/>
+            </protocol-params>
+        </protocol>
+		<protocol>
+			<protocol-name>Fragmentation Protocol</protocol-name>
+			<description>Divides up larger message into smaller pieces</description>
+			<class-name>org.jgroups.protocols.FRAG</class-name>
+			<protocol-params>
+				<protocol-param name="frag_size" value="8192"/>
+				<protocol-param name="down_thread" value="false"/>
+				<protocol-param name="up_thread" value="false"/>
+			</protocol-params>
+		</protocol>
+
+		<!--- This is used to see if encryption works...uncomment it while testing
+		<protocol>		
+			<protocol-name> Print Protocol </protocol-name>
+			<description> Protocol provides encryption to all communication </description>
+			<class-name>org.jgroups.protocols.PRINTOBJS</class-name>
+		</protocol>
+		-->              
+ 		<protocol>		
+		        <protocol-name> Encryption Protocol </protocol-name>
+			<description> Protocol provides encryption to all communication </description>
+			<class-name>org.jgroups.protocols.ENCRYPT1_4</class-name>
+			<protocol-params>
+			       <protocol-param name="asymInit" value="512"/>
+			       <protocol-param name="symInit" value="56"/>
+			       <protocol-param name="asymAlgorithm" value="RSA"/>
+			       <protocol-param name="symAlgorithm" value="DES/ECB/PKCS5Padding"/>
+			</protocol-params>
+		</protocol>
+		<protocol>
+			<protocol-name>PB Cast Group Membership Protocol</protocol-name>
+			<description>Maintains the member ship view</description>
+			<class-name>org.jgroups.protocols.pbcast.GMS</class-name>
+			<protocol-params>
+				<protocol-param name="join_timeout" value="3000"/>
+				<protocol-param name="join_retry_timeout" value="2000"/>
+				<protocol-param name="shun" value="true"/>
+				<protocol-param name="print_local_addr" value="true"/>
+			</protocol-params>
+		</protocol>		
+	</protocol-stack>

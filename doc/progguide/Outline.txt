@@ -1,0 +1,66 @@
+
+
+		      Outline Programmer's Guide
+		      ==========================
+
+
+0. Overview
+   - Group Communication
+   - Philosophy of JGroups (KISS, flexibility, core services)
+   - Focus of PG on Protocol Development
+
+
+1. Architecture
+   - Channel
+     - Address, Message, Header, Event, View, ViewId
+   - Protocol stack
+   - Building blocks
+
+2. JChannel
+   - States of channel
+   - Connection to ProtocolStack
+   - Message queues, pull principle of receiving a message
+   - Use Cases
+     - Creation of JChannel
+     - Connecting to a channel
+     - Sending a message
+     - Receiving a message
+     - Disconnecting from a channel
+     - Closing a channel
+
+
+
+3. Protocol Stack
+   3.1 ProtocolStack
+   3.2 Setup and teardown of Channel/ProtocolStack (creation, connect(),
+       disconnect(), close())
+   3.2 Protocol
+   3.2.2 MessageProtocol
+   3.2.3 RpcProtocol
+   3.3 Configurator
+       - PlainConfigurator
+       - UrlConfigurator
+
+4. Building blocks
+
+5. Protocols
+
+   - Virtual Synchrony
+   - PBCAST
+   - Token Ring
+
+   5.1 How to write a protocol
+   
+   5.2 Overview of available protocols
+
+   5.3 Tested protocol configurations
+
+
+Appendix A. List of protocols
+	 %% For each protocol
+	 %% - Properties provided
+	 %% - Required services
+	 %% - Provided services
+	 %% - Behavior
+
+Appendix B: List of Events

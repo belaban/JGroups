@@ -1,0 +1,47 @@
+# This file contains the necessary parameters for running the JavaGrps
+#  performance tests. It should be placed in the same directory from
+#  which you'll invoke the tests. You are free to create
+#  your own configuration file as long as it respects the structure of
+#  this one and pass it to the Test class as the command line argument,
+#  or you may edit simply edit this file.
+#
+# sender (true/false): Should this object start a sender thread or only
+#                      the receiver thread.
+SENDER=false;
+
+#
+# msgs_burst (int): Number of messages in a single burst.
+#
+MSGS_BURST=10;
+#
+# sleep_msec (int): Sleeping time in msec. between two bursts.
+#
+SLEEP_MSEC=5;
+#
+# num_bursts (int): Number of bursts that should be multicast.
+#
+NUM_BURSTS=50000;
+#
+# msg_size (int): Message size in bytes.
+#
+MSG_SIZE=10000;
+#
+# grpMembers (int): Expected number of group members. Sender and receiver thread
+#                   shall not be started until all members join the group.
+#
+GRPMEMBERS=4;
+#
+# num_senders (int): Number of senders in the group. Min 1, max grpMembers.
+#
+NUM_SENDERS=2;
+#
+
+# dump stats every n msgs
+LOG_INTERVAL=1000;
+
+# Needs to either contain the full property string, or an URL pointing to a valid
+# location (needs to be changed)
+PROPS=file:/home/bela/fc.xml;
+
+# dump throughput data in column format, easy to read for gnuplot
+GNUPLOT_OUTPUT=false;

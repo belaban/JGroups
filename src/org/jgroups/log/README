@@ -1,0 +1,13 @@
+OVERVIEW
+
+See the javadocs for an overview of the JavaGroups.Util package.
+Alternately, you can read ./JavaGroups/Common/package.html.
+
+If you have any questions, feel free to contact Jim Menard at jimm@io.com.
+
+REQUIREMENTS
+
+The code in JavaGroups.Common requires Java 1.2.
+
+For testing only (../Tests/CommonTest.java), JUnit is required. See
+http://www.junit.org.

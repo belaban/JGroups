@@ -1,0 +1,305 @@
+<!DOCTYPE doctype PUBLIC "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+  <meta http-equiv="Content-Type"
+ content="text/html; charset=iso-8859-1">
+  <meta name="GENERATOR"
+ content="Mozilla/4.61 [en] (X11; U; SunOS 5.8 sun4u) [Netscape]">
+  <title>JGroups 2.0.X Installation</title>
+  <link rel="STYLESHEET" href="../user.css">
+</head>
+<body text="#000000" bgcolor="#ffffff" link="#0000ee" vlink="#551a8b"
+ alink="#ff0000">
+<comment> </comment>
+<h1> Installation Instructions for JGroups 2.x</h1>
+JGroups comes in a binary and a source version: the binary version
+is <b>JGroups-2.x.x.bin.zip</b>, the source version is <b>JGroups-2.x.x.src.zip</b>
+. The binary version contains the JGroups JAR file, plus the Xerces
+parser which is needed by JGroups. The source version contains all
+source
+files, plus several JAR files needed by JGroups, e.g. ANT to build
+JGroups from the sources.<br>
+<br>
+<h3> Requirements</h3>
+<ul>
+  <li> JGroups 2.1.x and higher requires JDK 1.3 (or higher). There
+is no JNI code present so it should run on all platforms. JDK 1.4 is
+fine
+too.</li>
+  <li> An XML parser is required for configuration of JGroups if
+you want the ability to use XML configuration files for class mapping,
+and to read protocol stack specifications in XML format. Not using an
+XML parser will result in slower serialization and limit you to use
+only
+plain protocol stack configuration strings. <br>
+Note that there is an XML parser shipped with JGroups in the <tt>lib</tt>
+directory. Add the JAR files <tt>xercesimpl-2.1.0.jar</tt> and <tt>xercesxmlapi-2.1.0.jar</tt>
+to your CLASSPATH. Note that any other JAXP compliant XML parser can
+be used.</li>
+  <li>If you want to generate HTML-based test reports from the
+unittests, then xalan.jar needs to be in the CLASSPATH (also available
+in the lib
+directory)<br>
+  </li>
+</ul>
+<br>
+<h3> Installing the binary distribution</h3>
+The binary version contains<br>
+<ol>
+  <li>jgroups-all.jar: the JGroups library including the demos</li>
+  <li>CREDITS: list of contributors</li>
+  <li>INSTALL.html: this file</li>
+  <li>xercesimpl-2.1.0.jar: the Xerces parser implementation (see <a
+ href="http://xml.apache.org"> http://xml.apache.org</a> )</li>
+  <li>xercesxmlapi-2.1.0.jar: the Xerces parser APIs</li>
+  <li>jms.jar: JMS library<br>
+  </li>
+</ol>
+<br>
+Place the JAR files somewhere in your <b>CLASSPATH</b>, and you're
+ready to start using JGroups. If you already have Xerces installed, or
+if you have another XML parser, the Xerces JARs can be omitted.<br>
+If you want to use the JGroups JMS protocol
+(org.jgroups.protocols.JMS), then you will also need to place jms.jar
+somewhere in your CLASSPATH.<br>
+<br>
+<h3>Installing the source distribution</h3>
+The source version consists of the following directories:<br>
+<ol>
+  <li>conf: configuration files needed by JGroups, plus default
+protocol stack definitions</li>
+  <li>doc: documentation</li>
+  <li>lib: various JARs needed to build and run JGroups:</li>
+  <ol>
+    <li><a href="http://jakarta.apache.org/ant">Ant</a> JARs: used to
+build JGroups. If you already have Ant installed, you won't need these
+files</li>
+    <li>jms.jar: JMS library. Needed if you intend to run the
+org.jgroups.protocols.JMS protocol</li>
+    <li>junit.jar: to run the <a href="http://www.junit.org">JUnit</a>
+test cases</li>
+    <li><a href="http://xml.apache.org">xalan.jar</a> : to format the
+output of the JUnit tests using an XSLT converter to HTML</li>
+    <li>xercesimpl-2.1.0.jar: the Xerces parser implementation (see <a
+ href="http://xml.apache.org"> http://xml.apache.org</a> )</li>
+    <li>xercesxmlapi-2.1.0.jar: the Xerces parser APIs</li>
+  </ol>
+</ol>
+<br>
+<h3>Building JGroups with the ANT build system (source distribution
+only)</h3>
+<ol>
+  <li>Unzip the source distribution, e.g. unzip JGroups-2.1.x.src.zip.
+This will create the JGroups-2.1.x directory (root directory) under the
+current directory.<br>
+  </li>
+  <li> cd to the root directory</li>
+  <li>Modify build.properties if you want to use a Java compiler other
+than
+javac (e.g. jikes)<br>
+  </li>
+  <li> On UNIX systems use <tt>build.sh</tt>, on Windows <tt>build.bat:
+$&gt; <b>./build.sh compile</b></tt></li>
+  <li> This will compile all Java files (into the <tt>classes</tt>
+directory). Note that if you want to compile all JDK 1.4-only classes
+use
+.<b>/build.sh compile-1.4</b> instead.&nbsp;</li>
+  <li>To generate the JARs:&nbsp;<tt>$&gt; <b>./build.sh jar</b></tt></li>
+  <li>This will generate the following JAR files in the <tt>dist</tt>
+directory:<br>
+    <ul>
+      <li><tt>jgroups-core.jar</tt> - the core JGroups libraries</li>
+      <li><tt>jgroups-all.jar</tt> - the complete JGroups libraries
+including demos and unit tests</li>
+      <li><tt>jgroups-test.jar</tt> - the JGroups test libraries</li>
+      <li><tt>jgroups-demo.jar</tt> - the JGroups demo libraries</li>
+    </ul>
+  </li>
+  <li>The <b>CLASSPATH </b>now has to be set accordingly: the
+following directories and/or JARs have to be included:</li>
+  <ol>
+    <li><b>&lt;JGroups rootdir&gt;/classes</b></li>
+    <li><b>&lt;JGroups rootdir&gt;/conf</b></li>
+    <li>All needed JAR files in <b>&lt;JGroups rootdir&gt;/lib</b>. To
+simple run JGroups, the Xerces JARs are sufficient. To build from
+sources, the two Ant JARs are required. To run unit tests, the JUnit
+(and
+possibly the Xalan) JARs are needed.<br>
+    </li>
+  </ol>
+  <li>To generate JavaDocs simple run $&gt; &nbsp;.<b>/<tt>build.sh
+javadoc</tt></b> and the Javadoc documentation will be generated in
+the&nbsp; <tt>dist/javadoc</tt> directory</li>
+  <li>Note that - if you already have Ant installed on your system -
+you do not need to use build.sh or build.bat, simply invoke ant on the
+build.xml file. To be able to invoked ant from any directory below the
+root directory, place <b>ANT_ARGS="-find build.xml -emacs"</b> into
+the <b>.antrc</b>
+file in yourhome directory.<br>
+  </li>
+  <li> For more details on Ant see <a
+ href="http://jakarta.apache.org/ant/"> http://jakarta.apache.org/ant/</a>
+.</li>
+</ol>
+<h3> Testing your Setup</h3>
+To see whether your system can find the JGroups classes, execute the
+following command:
+<pre><b>java org.jgroups.Version</b></pre>
+You should see the following output (more or less) if the class is
+found:
+<pre><br>Version:        2.2<br>CVS:            $Id: INSTALL.html,v 1.1 2003/09/09 01:24:04 belaban Exp $<br>History:        (see doc/history.txt for details)<br><br><br><br></pre>
+<h3> Running a Demo Program</h3>
+To test whether JGroups works okay on your machine, run
+<pre><b>java org.jgroups.demos.Draw</b></pre>
+twice. 2 whiteboard windows should appear. If you started them
+simultaneously, they should initially show a membership of 1 in their
+title bars. After some time, both windows should show 2. This means
+that the two instances
+found each other and formed a group.
+<p>When drawing in one window, the second instance should also be
+updated. As the default group transport uses IP multicast, make sure
+that - if
+you want to start the 2 instances in different subnets - IP multicast
+is enabled. If this is not the case, the 2 instances won't 'find' each
+other and the sample won't work. </p>
+<p>You can change the properties of the demo to for example use a
+different transport if multicast doesn't work (it should always work on
+the same
+machine). Please consult the documentation to see how to do this. <br>
+&nbsp; </p>
+<h3> Using IP Multicasting without a network connection</h3>
+Sometimes there isn't a network connection (e.g. DSL modem is down), or
+we want to multicast only on the local machine. For this the loopback
+interface (typically lo) can be configured, e.g.
+<pre><b>route add -net 224.0.0.0 netmask 224.0.0.0 dev lo</b></pre>
+This means that all traffic directed to the 224.0.0.0 network will
+be sent to the loopback interface, which means it doesn't need any
+network to be running. Note that the 224.0.0.0 network is a placeholder
+for all multicast addresses in most UNIX implementations: it will catch
+<b>all</b> multicast traffic. This is an undocumented feature of
+/sbin/route and may not work across all UNIX flavors. The above
+instructions may also work for Windows systems, but this hasn't been
+tested. Note that not all systems allow multicast traffic to use the
+loopback interface.
+<p>Typical home networks have a gateway/firewall with 2 NICs: the first
+(eth0) is connected to the outside world (Internet Service Provider),
+the second (eth1) to the internal network, with the gateway
+firewalling/masquerading traffic between the internal and external
+networks. If no route for multicast traffic is added, the default will
+be to use the fdefault gateway, which will typically direct the
+multicast traffic towards the ISP. To prevent
+this (e.g. ISP drops multicast traffic, or latency is too high), we
+recommend to add a route for multicast traffic which goes to the
+internal network
+(e.g. eth1). <br>
+&nbsp; </p>
+<h3> It doesn't work !</h3>
+Make sure your machine is set up correctly for IP multicast. There
+are 2 test programs that can be used to detect this: McastReceiverTest
+and McastSenderTest. Start McastReceiverTest, e.g.
+<pre><b>java org.jgroups.tests.McastReceiverTest -mcast_addr 224.10.10.10 -port 5555</b></pre>
+Then start McastSenderTest:
+<pre><b>java org.jgroups.tests.McastSenderTest -mcast_addr 224.10.10.10 -port 5555</b></pre>
+You should be able to type in the McastSenderTest window and see the
+output in the McastReceiverWindow. If not, try to use -ttl 32 in the
+sender. If this still fails, consult a system administrator to help you
+setup IP multicast correctly. If you <b>are</b> the system
+administrator, look
+for another job :-)
+<p>Other means of getting help: there is a public forum on <a
+ href="http://javagroups.sf.net"> javagroups.sf.net</a> for questions.
+Also consider subscribing to the javagroups-users mailing list to
+discuss such and other problems.&nbsp;</p>
+<p><br>
+</p>
+<h3>The instances still don't find each other !&nbsp;</h3>
+<p>In this case we have to use a sledgehammer (running only under JDK
+1.4. and higher): we can enable the above sender and receiver test to
+use all
+available interfaces for sending and receiving. One of them will
+certainly
+be the right one... Start the receiver as follows:</p>
+<pre><b>java org.jgroups.tests.McastReceiverTest1_4 -mcast_addr 228.8.8.8 -use_all_interfaces</b><br></pre>
+<p>The multicast receiver uses the 1.4 functionality to list <i><b>all
+available network interfaces and bind to all of them</b></i> (including
+the loopback interface). This means that whichever interface a packet
+comes in on, we
+will receive it.<br>
+Now start the sender:<br>
+</p>
+<pre><b>java org.jgroups.tests.McastSenderTest1_4 -mcast_addr 228.8.8.8 -use_all_interfaces</b><br></pre>
+<h3></h3>
+<p>The sender will also determine the available network interfaces and
+send each packet over all interfaces.</p>
+<p>This test can be used to find out which network interface to bind to
+when previously no packets were received. E.g. when you see the
+following output in the receiver:</p>
+<pre>bash-2.03$ <b>java org.jgroups.tests.McastReceiverTest1_4 -mcast_addr 228.8.8.8 -bind_addr 192.168.168.4</b><br>Socket=0.0.0.0/0.0.0.0:5555, bind interface=/192.168.168.4<br>dd [sender=192.168.168.4:5555]<br>dd [sender=192.168.168.1:5555]<br>dd [sender=192.168.168.2:5555]</pre>
+<p>you know that you can bind to any of the 192.168.168.{1,2,4}
+interfaces to receive your multicast packets. In this case you would
+need to modify
+your protocol spec to include bind_addr=192.168.168.2 in UDP, e.g. <b>"UDP(mcast_addr=228.8.8.8;bind_addr=192.168.168.2):..."</b>
+.</p>
+<p><br>
+</p>
+<p>Alternatively you can use McastDiscovery1_4 (runs only on JDK 1.4).
+Start this program simultaneously on multiple machines. Binding to all
+available interfaces, this program tries to discover what other members
+are available in a network and determines which interfaces should be
+used by UDP. After some time (e.g. 30 seconds), press &lt;enter&gt; on
+each program. The program will then list the interfaces which can be
+used to bind to. There may be
+one or multiple interfaces. When there are multiple interfaces listed,
+take
+the one with the highest number of responses (at the top of the list).
+The
+UDP protocol spec can then be changed to explicitly bind to that
+interface,
+e.g.<br>
+</p>
+<p><b>"UDP(bind_addr=&lt;interface&gt;;...)"</b><br>
+</p>
+<p><br>
+</p>
+<h3>Problems with IPv6</h3>
+<p>Another source of problems might be the use of IPv6, and/or
+misconfiguration
+of <b>/etc/hosts</b>. If you communicate between an IPv4 and an IPv6
+host,
+and they are not able to find each other, try the <b>java.net.preferIP4Stack=true</b>
+property, e.g.<br>
+</p>
+<p><b>java -Djava.net.preferIPv4Stack=true org.jgroups.demos.Draw
+-props
+file:c:\\default.xml<br>
+</b></p>
+<p>JDK 1.4.1 uses IPv6 by default, although is has a dual stack, that
+is,
+it also supports IPv4. <a
+ href="http://java.sun.com/j2se/1.4/docs/guide/net/ipv6_guide/">Here's </a>more
+details on the subject.<br>
+</p>
+<p><br>
+</p>
+<h3> I have discovered a bug !</h3>
+If you think that you discovered a bug, submit a bug report on <a
+ href="http://javagroups.sf.net"> javagroups.sf.net</a> or send email
+to javagroups-developers if you're unsure about it. Please include the
+following information:
+<ul>
+  <li> Version of JGroups (j<tt>ava org.jgroups.Version</tt>)</li>
+  <li> Platform (e.g. Solaris 8)</li>
+  <li> Version of JDK (e.g. JDK 1.3.1)</li>
+  <li> Stack trace. Use kill -3 PID on UNIX systems or CTRL-BREAK on
+windows machines</li>
+  <li> Small program that reproduces the bug</li>
+</ul>
+<br>
+&nbsp; <br>
+&nbsp; <br>
+<br>
+<br>
+<br>
+<br>
+</body>
+</html>
