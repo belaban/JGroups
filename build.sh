@@ -21,7 +21,7 @@ esac
 LIB=lib
 
 
-if [ $cygwin = "true" ]; then
+if [ "$cygwin" = "true" ]; then
     CP=${LIB}/ant.jar\;${LIB}/ant-optional.jar\;${LIB}/xercesxmlapi-2.1.0.jar\;${LIB}/xercesimpl-2.1.0.jar\;${LIB}/xalan.jar\;${LIB}/junit.jar
 else
     CP=${LIB}/ant.jar:${LIB}/ant-optional.jar:${LIB}/xercesxmlapi-2.1.0.jar:${LIB}/xercesimpl-2.1.0.jar:${LIB}/xalan.jar:${LIB}/junit.jar
@@ -30,7 +30,7 @@ fi
 
 if [ -n "$JAVA_HOME" ]; then
     if [ -f "$JAVA_HOME/lib/tools.jar" ]; then
-        if [ $cygwin = "true" ]; then
+        if [ "$cygwin" = "true" ]; then
             CP=${CP}\;${JAVA_HOME}/lib/tools.jar
         else
             CP=${CP}:${JAVA_HOME}/lib/tools.jar
