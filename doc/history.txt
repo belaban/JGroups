@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.123 2004/09/26 11:09:21 belaban Exp $
+Revision: $Id: history.txt,v 1.124 2004/09/26 11:17:27 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -27,6 +27,11 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
 Version 2.2.8
 -------------
+
+- UDP: removed 1 copy operation per sent message by using ExposedByteArrayOutputStream rather than ByteArrayOutputStream.
+  ByteArrayOutputStream.toByteArray() copies the buffer, ExposedByteArrayOutputStream.getRawBuffer() returns a
+  *reference* to the raw buffer plus and offset and length. This is then passed to the resulting DatagramPacket
+  (bela Sept 26 2004)
 
 - Added ExposedByteArrayOutputStream (exposes the raw buffer), avoids copying the underlying byte buffer
   (bela Set 26 2004)
