@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.10 2004/09/13 20:17:34 belaban Exp $
+// $Id: FD_SOCK.java,v 1.11 2004/09/13 20:47:16 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -363,8 +363,10 @@ public class FD_SOCK extends Protocol implements Runnable {
 
             // at this point ping_input must be non-null, otherwise setupPingSocket() would have thrown an exception
             try {
-                if(ping_input.read() == -1) // waits until the socket is closed
-                    handleSocketClose(null);
+                if(ping_input != null) {
+                    if(ping_input.read() == -1) // waits until the socket is closed
+                        handleSocketClose(null);
+                }
             }
             catch(IOException ex) {  // we got here when the peer closed the socket --> suspect peer and then continue
                 handleSocketClose(ex);
