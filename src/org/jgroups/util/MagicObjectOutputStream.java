@@ -13,7 +13,7 @@ import java.io.OutputStream;
 /**
  * Uses magic numbers for class descriptors
  * @author Bela Ban
- * @version $Id: MagicObjectOutputStream.java,v 1.2 2004/09/24 09:53:29 belaban Exp $
+ * @version $Id: MagicObjectOutputStream.java,v 1.3 2004/09/24 13:34:11 belaban Exp $
  */
 public class MagicObjectOutputStream extends ObjectOutputStream {
     static ClassConfigurator conf=null;
@@ -39,12 +39,11 @@ public class MagicObjectOutputStream extends ObjectOutputStream {
             super.writeClassDescriptor(desc);
             return;
         }
-
         magic_num=conf.getMagicNumberFromObjectStreamClass(desc);
         super.writeInt(magic_num);
         if(magic_num == -1) {
-            if(log.isWarnEnabled())
-                log.warn("could not find magic number for " + desc.getName() + ": writing full class descriptor");
+            if(log.isTraceEnabled()) // todo: remove
+                log.trace("could not find magic number for '" + desc.getName() + "': writing full class descriptor");
             super.writeClassDescriptor(desc);
         }
         else {
@@ -52,5 +51,6 @@ public class MagicObjectOutputStream extends ObjectOutputStream {
                // log.trace("writing descriptor (num=" + magic_num + "): " + desc.getName());
         }
     }
+
 }
 

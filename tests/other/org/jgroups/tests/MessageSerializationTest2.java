@@ -8,7 +8,7 @@ import java.io.*;
 
 /**
  * @author Bela Ban Feb 12, 2004
- * @version $Id: MessageSerializationTest2.java,v 1.4 2004/07/05 14:15:11 belaban Exp $
+ * @version $Id: MessageSerializationTest2.java,v 1.5 2004/09/24 13:34:11 belaban Exp $
  */
 public class MessageSerializationTest2 {
 
@@ -77,7 +77,7 @@ public class MessageSerializationTest2 {
 
     public static void main(String[] args) {
         if(args.length != 1) {
-            System.out.println("MessageTest <num>");
+            System.out.println("MessageSerializationTest2 <num>");
             return;
         }
 

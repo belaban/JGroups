@@ -1,4 +1,4 @@
-// $Id: FC.java,v 1.15 2004/09/23 16:29:41 belaban Exp $
+// $Id: FC.java,v 1.16 2004/09/24 13:34:09 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -19,7 +19,7 @@ import java.util.*;
  * Note that this protocol must be located towards the top of the stack, or all down_threads from JChannel to this
  * protocol must be set to false ! This is in order to block JChannel.send()/JChannel.down().
  * @author Bela Ban
- * @version $Revision: 1.15 $
+ * @version $Revision: 1.16 $
  */
 public class FC extends Protocol {
 
@@ -351,10 +351,13 @@ public class FC extends Protocol {
                 return true;
             }
             else {
-                if(log.isTraceEnabled())
-                    log.trace("not enough credits left for " + dest + ": left=" + new_credits_left +
-                              ", required+min_credits=" + (credits_required +min_credits) +
-                              ", required=" + credits_required + ", min_credits=" + min_credits);
+                if(log.isTraceEnabled()) {
+                    StringBuffer sb=new StringBuffer();
+                    sb.append("not enough credits left for ").append(dest).append(": left=").append(new_credits_left);
+                    sb.append(", required+min_credits=").append((credits_required +min_credits)).append(", required=");
+                    sb.append(credits_required).append(", min_credits=").append(min_credits);
+                    log.trace(sb.toString());
+                }
                 return false;
             }
         }

@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.45 2004/09/24 09:53:16 belaban Exp $
+// $Id: UDP.java,v 1.46 2004/09/24 13:34:09 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -98,10 +98,10 @@ public class UDP extends Protocol implements Runnable {
     int             ip_ttl=64;
 
     /** The members of this group (updated when a member joins or leaves) */
-    final Vector          members=new Vector(11);
+    final Vector    members=new Vector(11);
 
     /** Pre-allocated byte stream. Used for serializing datagram packets. Will grow as needed */
-    final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(65535);
+    final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
 
     /** Send buffer size of the multicast datagram socket */
     int             mcast_send_buf_size=32000;
@@ -334,7 +334,7 @@ public class UDP extends Protocol implements Runnable {
      * Creates the unicast and multicast sockets and starts the unicast and multicast receiver threads
      */
     public void start() throws Exception {
-         if(log.isDebugEnabled()) log.debug("creating sockets and starting threads");
+        if(log.isDebugEnabled()) log.debug("creating sockets and starting threads");
         createSockets();
         passUp(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
         startThreads();
@@ -342,10 +342,11 @@ public class UDP extends Protocol implements Runnable {
 
 
     public void stop() {
-         if(log.isDebugEnabled()) log.debug("closing sockets and stopping threads");
+        if(log.isDebugEnabled()) log.debug("closing sockets and stopping threads");
         stopThreads();  // will close sockets, closeSockets() is not really needed anymore, but...
         closeSockets(); // ... we'll leave it in there for now (doesn't do anything if already closed)
     }
+
 
 
     /**
@@ -679,7 +680,7 @@ public class UDP extends Protocol implements Runnable {
      */
     void handleIncomingUdpPacket(byte[] data) {
         ByteArrayInputStream inp_stream;
-        ObjectInputStream    inp;
+        ObjectInputStream    inp=null;
         Message              msg=null;
         List                 l;  // used if bundling is enabled
 
@@ -713,6 +714,15 @@ public class UDP extends Protocol implements Runnable {
         catch(Throwable e) {
             if(log.isErrorEnabled()) log.error("exception=" + Util.getStackTrace(e));
         }
+        finally {
+            if(inp != null)
+                closeInputStream(inp);
+        }
+    }
+
+    void closeInputStream(ObjectInputStream inp) {
+        if(inp != null)
+            try {inp.close();} catch(IOException e) {}
     }
 
 
@@ -853,10 +863,6 @@ public class UDP extends Protocol implements Runnable {
         out_stream.reset();
         out_stream.write(Version.version_id, 0, Version.version_id.length); // write the version
         // out=new ObjectOutputStream(new BufferedOutputStream(out_stream));
-        // BufferedOutputStream makes no difference
-
-        // out=new ObjectOutputStream(new BufferedOutputStream(out_stream));
-
         out=new MagicObjectOutputStream(new BufferedOutputStream(out_stream));
         msg.writeExternal(out);
         out.close(); // needed if out buffers its output to out_stream

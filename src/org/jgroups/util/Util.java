@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.16 2004/09/23 16:29:56 belaban Exp $
+// $Id: Util.java,v 1.17 2004/09/24 13:34:11 belaban Exp $
 
 package org.jgroups.util;
 
@@ -24,7 +24,7 @@ import java.util.Vector;
  */
 public class Util {
     private static final Object mutex=new Object();
-    private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(65535);
+    private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
 
     protected static final Log log=LogFactory.getLog(Util.class);
 
@@ -41,11 +41,9 @@ public class Util {
             if(buffer == null) return null;
             Object retval=null;
             ByteArrayInputStream in_stream=new ByteArrayInputStream(buffer);
-            // ObjectInputStream in=new ObjectInputStream(in_stream);
-            ObjectInputStream in=new ContextObjectInputStream(in_stream);
+            ObjectInputStream in=new ObjectInputStream(in_stream);
             retval=in.readObject();
             in.close();
-
             if(retval == null)
                 return null;
             return retval;
@@ -64,7 +62,6 @@ public class Util {
             out.writeObject(obj);
             result=out_stream.toByteArray();
             out.close();
-
         }
         return result;
     }
