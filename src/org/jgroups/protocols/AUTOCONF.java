@@ -1,4 +1,4 @@
-// $Id: AUTOCONF.java,v 1.3 2003/12/12 18:04:55 belaban Exp $
+// $Id: AUTOCONF.java,v 1.4 2004/02/12 23:23:25 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -27,11 +27,11 @@ import java.util.Properties;
  */
 public class AUTOCONF extends Protocol {
     HashMap config=new HashMap();
-    int num_iterations=10; // to find optimal frag_size
+    static int num_iterations=10; // to find optimal frag_size
 
     /** Number of bytes to subtract from computed fragmentation size, due to (a) headers and
      * (b) serialization overhead */
-    int frag_overhead=1000;
+    static int frag_overhead=1000;
 
 
     public String getName() {
@@ -99,7 +99,12 @@ public class AUTOCONF extends Protocol {
 
     /* -------------------------------------- Private metods ------------------------------------------- */
     void senseNetworkConfiguration() {
-        senseMaxFragSize(config);
+        int max_frag_size=senseMaxFragSize();
+        if(max_frag_size <= 0) {
+            Trace.error("AUTOCONF.senseNetworkConfiguration()", "max_frag_size is invalid: " + max_frag_size);
+        }
+        else
+            config.put("frag_size", new Integer(max_frag_size));
         senseMaxSendBufferSize(config);
         senseMaxReceiveBufferSize(config);
     }
@@ -109,7 +114,7 @@ public class AUTOCONF extends Protocol {
      * Tries to find out the max number of bytes in a DatagramPacket we can send by sending increasingly
      * larger packets, until there is an exception (e.g. java.io.IOException: message too long)
      */
-    void senseMaxFragSize(HashMap map) {
+    public static int senseMaxFragSize() {
         int max_send=32000;
         int upper=8192;
         int lower=0;
@@ -126,7 +131,7 @@ public class AUTOCONF extends Protocol {
         }
         catch(Exception ex) {
             Trace.warn("AUTOCONF.senseMaxFragSize()", "failed creating DatagramSocket: " + ex);
-            return;
+            return 0;
         }
 
         upper=max_send;
@@ -156,10 +161,10 @@ public class AUTOCONF extends Protocol {
 
         /** Reduce the frag_size a bit to prevent packets that are too large (see bug #854887) */
         lower-=frag_overhead;
-
-        map.put("frag_size", new Integer(lower));
         if(Trace.trace) Trace.info("AUTOCONF.senseMaxFragSize()", "frag_size=" + lower);
+        return lower;
     }
+
 
     void senseMaxSendBufferSize(HashMap map) {
         DatagramSocket sock=null;
@@ -212,5 +217,10 @@ public class AUTOCONF extends Protocol {
 
 
     /* ----------------------------------- End of Private metods --------------------------------------- */
+
+    public static void main(String[] args) {
+        int frag_size=senseMaxFragSize();
+        System.out.println("frag_size: " + frag_size);
+    }
 
 }

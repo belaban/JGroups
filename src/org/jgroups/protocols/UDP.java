@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.10 2004/01/08 02:39:56 belaban Exp $
+// $Id: UDP.java,v 1.11 2004/02/12 23:23:25 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -140,13 +140,30 @@ public class UDP extends Protocol implements Runnable {
      * for example transport independent addresses */
     byte[]          additional_data=null;
 
+    /** Maximum number of bytes for messages to be queued until they are sent. This value needs to be smaller
+        than the largest UDP datagram packet size */
+    int max_bundle_size=AUTOCONF.senseMaxFragSize();
 
+    /** Max number of milliseconds until queued messages are sent. Messages are sent when max_bundle_size or
+     * max_bundle_timeout has been exceeded (whichever occurs faster)
+     */
+    long max_bundle_timeout=20;
+
+    /** Enabled bundling of smaller messages into bigger ones */
+    boolean enable_bundling=true;
 
     /** The name of this protocol */
     final String    name="UDP";
 
 
     final int VERSION_LENGTH=Version.getLength();
+
+
+
+
+
+
+
 
 
     /**
@@ -427,6 +444,34 @@ public class UDP extends Protocol implements Runnable {
             props.remove("use_outgoing_packet_handler");
         }
 
+        str=props.getProperty("max_bundle_size");
+        if(str != null) {
+            int bundle_size=Integer.parseInt(str);
+            if(bundle_size > max_bundle_size) {
+                Trace.error("UDP.setProperties()", "max_bundle_size (" + bundle_size +
+                        ") is greater than largest UDP fragmentation size (" + max_bundle_size + ")");
+                return false;
+            }
+            max_bundle_size=bundle_size;
+            props.remove("max_bundle_size");
+        }
+
+        str=props.getProperty("max_bundle_timeout");
+        if(str != null) {
+            max_bundle_timeout=Long.parseLong(str);
+            if(max_bundle_timeout <= 0) {
+                Trace.error("UDP.setProperties()", "max_bundle_timeout of " + max_bundle_timeout + " is invalid");
+                return false;
+            }
+            props.remove("max_bundle_timeout");
+        }
+
+        str=props.getProperty("enable_bundling");
+        if(str != null) {
+            enable_bundling=new Boolean(str).booleanValue();
+            props.remove("enable_bundling");
+        }
+
         if(props.size() > 0) {
             System.err.println("UDP.setProperties(): the following properties are not recognized:");
             props.list(System.out);
@@ -660,24 +705,15 @@ public class UDP extends Protocol implements Runnable {
     /** Internal method to serialize and send a message. This method is not reentrant */
     void send(Message msg) throws Exception {
         DatagramPacket       packet;
-        ObjectOutputStream   out;
-        // BufferedOutputStream bos;
         byte[]               buf;
-        IpAddress            dest=(IpAddress)msg.getDest();
 
-        out_stream.reset();
-        //bos=new BufferedOutputStream(out_stream);
-        out_stream.write(Version.version_id, 0, Version.version_id.length); // write the version
-        // bos.write(Version.version_id, 0, Version.version_id.length); // write the version
-        out=new ObjectOutputStream(out_stream);
-        // out=new ObjectOutputStream(bos);
-        msg.writeExternal(out);
-        out.flush(); // needed if out buffers its output to out_stream
-        buf=out_stream.toByteArray();
+        IpAddress            dest=(IpAddress)msg.getDest();
+        buf=messageToBuffer(msg);
         packet=new DatagramPacket(buf, buf.length, dest.getIpAddress(), dest.getPort());
         if(sock != null)
             sock.send(packet);
     }
+
 
 
     void sendMultipleUdpMessages(Message msg, Vector dests) {
@@ -696,6 +732,21 @@ public class UDP extends Protocol implements Runnable {
         }
     }
 
+
+    byte[] messageToBuffer(Message msg) throws Exception {
+        ObjectOutputStream   out;
+        // BufferedOutputStream bos;
+
+        out_stream.reset();
+        //bos=new BufferedOutputStream(out_stream);
+        out_stream.write(Version.version_id, 0, Version.version_id.length); // write the version
+        // bos.write(Version.version_id, 0, Version.version_id.length); // write the version
+        out=new ObjectOutputStream(out_stream);
+        // out=new ObjectOutputStream(bos);
+        msg.writeExternal(out);
+        out.flush(); // needed if out buffers its output to out_stream
+        return out_stream.toByteArray();
+    }
 
     /**
      * Create UDP sender and receiver sockets. Currently there are 2 sockets
