@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.57 2005/01/28 15:43:07 belaban Exp $
+// $Id: UDP.java,v 1.58 2005/04/01 08:16:06 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -1305,9 +1305,8 @@ public class UDP extends Protocol implements Runnable {
         if(ip_mcast) {
             if(mcast_receiver != null) {
                 if(mcast_receiver.isAlive()) {
-
-                        if(log.isDebugEnabled()) log.debug("did not create new multicastreceiver thread as existing " +
-                                   "multicast receiver thread is still running");
+                    if(log.isDebugEnabled()) log.debug("did not create new multicastreceiver thread as existing " +
+                                                       "multicast receiver thread is still running");
                 }
                 else
                     mcast_receiver=null; // will be created just below...
@@ -1359,6 +1358,10 @@ public class UDP extends Protocol implements Runnable {
         // 3. Stop the in_packet_handler thread
         if(incoming_packet_handler != null)
             incoming_packet_handler.stop();
+
+        // 4. Stop the outgoing packet handler thread
+        if(outgoing_packet_handler != null)
+            outgoing_packet_handler.stop();
     }
 
 
@@ -1570,7 +1573,7 @@ public class UDP extends Protocol implements Runnable {
         }
 
         void start() {
-            if(t == null) {
+            if(t == null || !t.isAlive()) {
                 t=new Thread(this, "UDP.IncomingPacketHandler thread");
                 t.setDaemon(true);
                 t.start();
@@ -1621,7 +1624,7 @@ public class UDP extends Protocol implements Runnable {
 
 
         void start() {
-            if(t == null) {
+            if(t == null || !t.isAlive()) {
                 t=new Thread(this, "UDP.OutgoingPacketHandler thread");
                 t.setDaemon(true);
                 t.start();
