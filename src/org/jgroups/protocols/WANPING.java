@@ -1,264 +1,92 @@
-// $Id: WANPING.java,v 1.8 2004/12/31 14:10:38 belaban Exp $
+// $Id: WANPING.java,v 1.9 2005/01/04 08:18:31 belaban Exp $
 
 package org.jgroups.protocols;
 
 
-import org.jgroups.*;
-import org.jgroups.stack.Protocol;
+import org.jgroups.Event;
+import org.jgroups.Message;
 import org.jgroups.util.List;
 
 import java.util.Enumeration;
 import java.util.Properties;
 import java.util.StringTokenizer;
-import java.util.Vector;
-
-
 
 
 /**
-   Similar to TCPPING, except that the initial host list is specified as a list of logical pipe names.
-*/
-public class WANPING extends Protocol {
-    final Vector          members=new Vector();
-    final Vector initial_members=new Vector();
-    Address         local_addr=null;
-    String          group_addr=null;
-    final String          groupname=null;
-    long            timeout=3000;
-    long            num_initial_members=2;
-    int             port_range=5;        // number of ports to be probed for initial membership
-    List            initial_hosts=null;  // hosts to be contacted for the initial membership
-    boolean         is_server=false;
+ * Similar to TCPPING, except that the initial host list is specified as a list of logical pipe names.
+ */
+public class WANPING extends Discovery {
+    int port_range=5;        // number of ports to be probed for initial membership
+    List initial_hosts=null;  // hosts to be contacted for the initial membership
 
 
-
-    public String  getName() {return "WANPING";}
-
-
-
-    public Vector providedUpServices() {
-	Vector ret=new Vector();
-	ret.addElement(new Integer(Event.FIND_INITIAL_MBRS));
-	return ret;
+    public String getName() {
+        return "WANPING";
     }
 
 
-    public boolean setProperties(Properties props) {super.setProperties(props);
-	String     str;
+    public boolean setProperties(Properties props) {
+        String str;
+        str=props.getProperty("port_range");           // if member cannot be contacted on base port,
+        if(str != null) {                              // how many times can we increment the port
+            port_range=Integer.parseInt(str);
+            props.remove("port_range");
+        }
 
-	str=props.getProperty("timeout");              // max time to wait for initial members
-	if(str != null) {
-	    timeout=Long.parseLong(str);
-	    props.remove("timeout");
-	}
+        str=props.getProperty("initial_hosts");
+        if(str != null) {
+            props.remove("initial_hosts");
+            initial_hosts=createInitialHosts(str);
+            if(log.isInfoEnabled()) log.info("initial_hosts: " + initial_hosts);
+        }
 
-	str=props.getProperty("port_range");           // if member cannot be contacted on base port,
-	if(str != null) {                              // how many times can we increment the port
-	    port_range=Integer.parseInt(str);
-	    props.remove("port_range");
-	}
-
-	str=props.getProperty("num_initial_members");  // wait for at most n members
-	if(str != null) {
-	    num_initial_members=Integer.parseInt(str);
-	    props.remove("num_initial_members");
-	}
-
-	str=props.getProperty("initial_hosts");
-	if(str != null) {
-	    props.remove("initial_hosts");
-	    initial_hosts=createInitialHosts(str);
-	     if(log.isInfoEnabled()) log.info("initial_hosts: " + initial_hosts);
-	}
-
-	if(initial_hosts == null || initial_hosts.size() == 0) {
-	    System.err.println("WANPING.setProperties(): hosts to contact for initial membership " +
-			       "not specified. Cannot determine coordinator !");
-	    return false;
-	}
-
-	if(props.size() > 0) {
-	    System.err.println("WANPING.setProperties(): the following properties are not recognized:");
-	    props.list(System.out);
-	    return false;
-	}
-	return true;
+        if(initial_hosts == null || initial_hosts.size() == 0) {
+            System.err.println("WANPING.setProperties(): hosts to contact for initial membership " +
+                               "not specified. Cannot determine coordinator !");
+            return false;
+        }
+        return super.setProperties(props);
     }
 
+    public void sendGetMembersRequest() {
+        Message msg, copy;
+        PingHeader hdr;
+        String h;
 
+        hdr=new PingHeader(PingHeader.GET_MBRS_REQ, null);
+        msg=new Message(null, null, null);
+        msg.putHeader(getName(), hdr);
 
-
-
-    public void up(Event evt) {
-	Message      msg, rsp_msg;
-	Object       obj;
-	PingHeader   hdr, rsp_hdr;
-	PingRsp      rsp;
-	Address      coord;
-
-
-	switch(evt.getType()) {
-
-	case Event.MSG:
-	    msg=(Message)evt.getArg();
-	    obj=msg.getHeader(getName());
-	    	    if(obj == null || !(obj instanceof PingHeader)) {
-		passUp(evt);
-		return;
-	    }
-	    hdr=(PingHeader)msg.removeHeader(getName());
-
-	    switch(hdr.type) {
-
-	    case PingHeader.GET_MBRS_REQ:   // return Rsp(local_addr, coord)
-		if(!is_server) {
-		    //System.err.println("WANPING.up(GET_MBRS_REQ): did not return a response " +
-		    //	       "as I'm not a server yet !");
-		    return;
-		}
-		synchronized(members) {
-		    coord=members.size() > 0 ? (Address)members.firstElement() : local_addr;
-		}
-		rsp_msg=new Message(msg.getSrc(), null, null);
-		rsp_hdr=new PingHeader(PingHeader.GET_MBRS_RSP, new PingRsp(local_addr, coord));
-		rsp_msg.putHeader(getName(), rsp_hdr);
-		passDown(new Event(Event.MSG, rsp_msg));
-		return;
-
-	    case PingHeader.GET_MBRS_RSP:   // add response to vector and notify waiting thread
-		rsp=hdr.arg;
-		synchronized(initial_members) {
-		    initial_members.addElement(rsp);
-		    initial_members.notifyAll();
-		}
-		return;
-
-	    default:
-		System.err.println("WANPING.up(): got WANPING header with unknown type (" + 
-				   hdr.type + ')');
-		return;
-	    }
-	    
-
-	case Event.SET_LOCAL_ADDRESS:
-	    passUp(evt);
-	    local_addr=(Address)evt.getArg();
-	    break;
-
-	default:
-	    passUp(evt);            // Pass up to the layer above us
-	    break;
-	}
-    }
-
-
-
-
-
-    public void down(Event evt) {
-	Message      msg, copy;
-	PingHeader   hdr;
-	long         time_to_wait, start_time;
-	String       h;
-
-	switch(evt.getType()) {
-
-	case Event.FIND_INITIAL_MBRS:   // sent by GMS layer, pass up a GET_MBRS_OK event
-	    
-	    // 1. Mcast GET_MBRS_REQ message
-
-	    System.out.println("WANPING.FIND_INITIAL_MBRS");
-	    
-	    hdr=new PingHeader(PingHeader.GET_MBRS_REQ, null);
-	    msg=new Message(null, null, null);
-	    msg.putHeader(getName(), hdr);
-
-	    System.out.println("Sending PING to " + initial_hosts);
-	    
-	    for(Enumeration en=initial_hosts.elements(); en.hasMoreElements();) {
-		h=(String)en.nextElement();
-		copy=msg.copy();
-		copy.setDest(new WanPipeAddress(h));
-
-		    System.out.println("WANPING.down(FIND_INITIAL_MBRS): sending PING request to " +
-				       copy.getDest());
-		passDown(new Event(Event.MSG, copy));
-	    }
-	    
-	    
-	    // 2. Wait 'timeout' ms or until 'num_initial_members' have been retrieved
-	    synchronized(initial_members) {
-		initial_members.removeAllElements();
-		start_time=System.currentTimeMillis();
-		time_to_wait=timeout;
-		
-		while(initial_members.size() < num_initial_members && time_to_wait > 0) {
-		    try {initial_members.wait(time_to_wait);} catch(Exception e) {}
-		    time_to_wait=timeout - (System.currentTimeMillis() - start_time);
-		}
-	    }
-
-	    System.out.println("Initial members are " + initial_members);
-	    
-	    // 3. Send response
-	    passUp(new Event(Event.FIND_INITIAL_MBRS_OK, initial_members));
-	    break;
-	   	    
-	case Event.TMP_VIEW:
-	case Event.VIEW_CHANGE:	    
-	    Vector tmp;
-	    if((tmp=((View)evt.getArg()).getMembers()) != null) {
-		synchronized(members) {
-		    members.removeAllElements();
-		    for(int i=0; i < tmp.size(); i++)
-			members.addElement(tmp.elementAt(i));
-		}
-	    }
-	    passDown(evt);
-	    break;
-
-	case Event.BECOME_SERVER: // called after client has joined and is fully working group member
-	    passDown(evt);
-	    is_server=true;
-	    break;
-
-	case Event.CONNECT:
-	    group_addr=(String)evt.getArg();
-	    passDown(evt);
-	    break;
-
-	case Event.DISCONNECT:
-	    passDown(evt);
-	    break;
-	    
-	default:
-	    passDown(evt);          // Pass on to the layer below us
-	    break;
-	}
+        for(Enumeration en=initial_hosts.elements(); en.hasMoreElements();) {
+            h=(String)en.nextElement();
+            copy=msg.copy();
+            copy.setDest(new WanPipeAddress(h));
+            passDown(new Event(Event.MSG, copy));
+        }
     }
 
 
 
     /* -------------------------- Private methods ---------------------------- */
 
-
-  
-    /** Input is "pipe1,pipe2". Return List of Strings */
+    /**
+     * Input is "pipe1,pipe2". Return List of Strings
+     */
     private List createInitialHosts(String l) {
-	List            tmp=new List();
-	StringTokenizer tok=new StringTokenizer(l, ",");
-	String          t;
+        List tmp=new List();
+        StringTokenizer tok=new StringTokenizer(l, ",");
+        String t;
 
-	while(tok.hasMoreTokens()) {
-	    try {
-		t=tok.nextToken();
-		tmp.add(t.trim());
-	    }
-	    catch(NumberFormatException e) {
-		System.err.println("WANPING.createInitialHosts(): " + e);
-	    }
-	}
-	return tmp;
+        while(tok.hasMoreTokens()) {
+            try {
+                t=tok.nextToken();
+                tmp.add(t.trim());
+            }
+            catch(NumberFormatException e) {
+                System.err.println("WANPING.createInitialHosts(): " + e);
+            }
+        }
+        return tmp;
     }
 
 
