@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.24 2004/10/08 13:04:24 belaban Exp $
+// $Id: GMS.java,v 1.25 2005/01/28 12:38:47 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -842,7 +842,6 @@ public class GMS extends Protocol {
                     sb.append(", <merge cancelled>, merge_id=" + merge_id);
                     break;
             }
-            sb.append('\n');
             return sb.toString();
         }
 
