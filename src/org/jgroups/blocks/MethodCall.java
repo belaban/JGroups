@@ -20,7 +20,7 @@ import java.lang.reflect.Method;
  * It includes the name of the method (case sensitive) and a list of arguments.
  * A method call is serializable and can be passed over the wire.
  * @author Bela Ban
- * @version $Revision: 1.12 $
+ * @version $Revision: 1.13 $
  */
 public class MethodCall implements Externalizable {
 
@@ -261,7 +261,7 @@ public class MethodCall implements Externalizable {
         }
         catch(Throwable e) {
             // e.printStackTrace(System.err);
-            if(log.isErrorEnabled()) log.error("exception=" + Util.printStackTrace(e));
+            if(log.isErrorEnabled()) log.error("exception in invoke()", e);
             throw e;
         }
     }
