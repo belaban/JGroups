@@ -1,4 +1,4 @@
-// $Id: Queue.java,v 1.9 2003/09/24 22:50:38 belaban Exp $
+// $Id: Queue.java,v 1.10 2003/09/26 08:38:16 rds13 Exp $
 
 package org.jgroups.util;
 
@@ -230,6 +230,9 @@ public class Queue {
             retval=removeInternal();
             if(retval == null)
                 Trace.error("Queue.remove()", "element was null, should never be the case");
+
+            /*wake up all the threads that are waiting for the lock to be released*/
+            add_mutex.notifyAll();
         }
 
         /*
@@ -291,9 +294,12 @@ public class Queue {
                 close(false);
                 throw new QueueClosedException();
             }
-            /*at this point we actually did receive a value from the queue, return it*/
-            return retval;
+            /*wake up all the threads that are waiting for the lock to be released*/
+            add_mutex.notifyAll();
+
+	    /*at this point we actually did receive a value from the queue, return it*/
         }
+	return retval;
     }
 
 
