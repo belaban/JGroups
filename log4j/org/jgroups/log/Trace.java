@@ -1,4 +1,4 @@
-// $Id: Trace.java,v 1.1 2003/09/09 01:24:07 belaban Exp $
+// $Id: Trace.java,v 1.2 2003/11/27 21:09:14 belaban Exp $
 
 package org.jgroups.log;
 
@@ -49,7 +49,7 @@ public class Trace {
      (if recompiled) when this flag is set to false. Therefore, code that should be removed from the final
      product should use if(Trace.debug) rather than if(Trace.trace).
      */
-    public static final boolean debug=true;
+    public static final boolean debug=false;
 
 
     /**
