@@ -1,4 +1,4 @@
-// $Id: LazyRoutingClientTest.java,v 1.3 2004/03/30 06:47:30 belaban Exp $
+// $Id: LazyRoutingClientTest.java,v 1.4 2004/07/23 02:29:00 belaban Exp $
 
 package org.jgroups.tests.stack;
 
@@ -23,7 +23,7 @@ import java.net.SocketException;
  * post-2.2.1 one.
  *
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Revision: 1.3 $
+ * @version $Revision: 1.4 $
  * @since 2.2.1
  */
 public class LazyRoutingClientTest extends TestCase {
@@ -73,7 +73,7 @@ public class LazyRoutingClientTest extends TestCase {
         assertEquals(localAddr.getPort(), s.getLocalPort());
 
         // send GET request later than GossipRouter's routingClientReplyTimeout
-        Thread.currentThread().sleep(routingClientReplyTimeout + 500);
+        Thread.sleep(routingClientReplyTimeout + 500);
 
         // I expect the socket to be closed by now. I test this in a different
         // way on Java 1.3 and Java 1.4

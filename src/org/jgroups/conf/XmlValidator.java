@@ -1,4 +1,4 @@
-// $Id: XmlValidator.java,v 1.3 2004/07/05 05:43:51 belaban Exp $
+// $Id: XmlValidator.java,v 1.4 2004/07/23 02:26:54 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -55,7 +55,7 @@ public class XmlValidator
         builder.setEntityResolver(new JGEntityResolver(mDtdUrl));
         JGErrorHandler errorhandler = new JGErrorHandler();
         builder.setErrorHandler(errorhandler);
-        Document document = builder.parse( this.getInputStream( mXmlUrl ));
+        Document document = builder.parse( getInputStream( mXmlUrl ));
         if ( mPrintXml )
             PrintXMLTree.print(new java.io.PrintWriter(System.out),document.getDocumentElement());
         System.out.println("\n\nError Report:");
