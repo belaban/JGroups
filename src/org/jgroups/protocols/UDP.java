@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.58 2005/04/01 08:16:06 belaban Exp $
+// $Id: UDP.java,v 1.59 2005/04/01 14:19:10 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -53,7 +53,7 @@ public class UDP extends Protocol implements Runnable {
 
     /** Maintain a list of local ports opened by DatagramSocket. If this is 0, this option is turned off.
      * If bind_port is null, then this options will be ignored */
-    int num_last_ports=100;
+    int             num_last_ports=100;
 
     /** IP multicast socket for <em>receiving</em> multicast packets */
     MulticastSocket mcast_recv_sock=null;
@@ -72,6 +72,9 @@ public class UDP extends Protocol implements Runnable {
 
     /** The interface (NIC) to which the unicast and multicast sockets bind */
     InetAddress     bind_addr=null;
+
+    /** Bind the receiver multicast socket to all available interfaces (requires JDK 1.4) */
+    boolean         bind_to_all_interfaces=false;
 
     /** The port to which the unicast receiver socket binds.
      * 0 means to bind to any (ephemeral) port */
@@ -408,6 +411,12 @@ public class UDP extends Protocol implements Runnable {
                 return false;
             }
             props.remove("bind_addr");
+        }
+
+        str=props.getProperty("bind_to_all_interfaces");
+        if(str != null) {
+            bind_to_all_interfaces=new Boolean(str).booleanValue();
+            props.remove("bind_to_all_interfaces");
         }
 
         str=props.getProperty("bind_port");
@@ -1043,11 +1052,17 @@ public class UDP extends Protocol implements Runnable {
             // 3a. Create mcast receiver socket
             mcast_recv_sock=new MulticastSocket(mcast_port);
             mcast_recv_sock.setTimeToLive(ip_ttl);
-            if(bind_addr != null)
-                mcast_recv_sock.setInterface(bind_addr);
             tmp_addr=InetAddress.getByName(mcast_addr_name);
             mcast_addr=new IpAddress(tmp_addr, mcast_port);
-            mcast_recv_sock.joinGroup(tmp_addr);
+
+            if(bind_to_all_interfaces && Util.getJavaVersion() >= 14) {
+                bindToAllInterfaces(mcast_recv_sock, mcast_addr.getIpAddress());
+            }
+            else {
+                if(bind_addr != null)
+                    mcast_recv_sock.setInterface(bind_addr);
+                 mcast_recv_sock.joinGroup(tmp_addr);
+            }
 
             // 3b. Create mcast sender socket
             mcast_send_sock=new MulticastSocket();
@@ -1059,6 +1074,24 @@ public class UDP extends Protocol implements Runnable {
 
         setBufferSizes();
         if(log.isInfoEnabled()) log.info("socket information:\n" + dumpSocketInfo());
+    }
+
+
+    private void bindToAllInterfaces(MulticastSocket s, InetAddress mcastAddr) throws IOException {
+        SocketAddress tmp_mcast_addr=new InetSocketAddress(mcastAddr, mcast_port);
+        Enumeration en=NetworkInterface.getNetworkInterfaces();
+        while(en.hasMoreElements()) {
+            NetworkInterface i=(NetworkInterface)en.nextElement();
+            for(Enumeration en2=i.getInetAddresses(); en2.hasMoreElements();) {
+                InetAddress addr=(InetAddress)en2.nextElement();
+                // if(addr.isLoopbackAddress())
+                // continue;
+                s.joinGroup(tmp_mcast_addr, i);
+                if(log.isTraceEnabled())
+                    log.trace("joined " + tmp_mcast_addr + " on interface " + i.getName() + " (" + addr + ")");
+                break;
+            }
+        }
     }
 
 
