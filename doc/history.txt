@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.140 2005/03/17 18:33:41 belaban Exp $
+Revision: $Id: history.txt,v 1.141 2005/03/23 11:00:35 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -27,6 +27,9 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
 Version 2.2.8
 -------------
+
+- TCPPING: remove myself from pinged members
+  (bela March 23 2005)
 
 - Added patch by David Orrell (external addresses for TCP/ConnectionTable)
   (bela March 17 2005)
