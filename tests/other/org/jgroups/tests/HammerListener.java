@@ -8,7 +8,6 @@ import org.jgroups.blocks.RpcDispatcher;
  */
 public class HammerListener implements ChannelListener, MembershipListener {
     private static JChannel channel = null;
-    private static RpcDispatcher disp;
     private static int SEND_COUNT= 100000;
     private static int counter = 0;
     private static long startTime = 0;
@@ -58,7 +57,7 @@ public class HammerListener implements ChannelListener, MembershipListener {
         try {
             channel = new JChannel(props);
             HammerListener listener = new HammerListener();
-            disp = new RpcDispatcher(channel, null, listener, listener);
+            new RpcDispatcher(channel, null, listener, listener);
             channel.connect("BOSGroup");
 
         }              
@@ -97,13 +96,11 @@ public class HammerListener implements ChannelListener, MembershipListener {
     }
 
     static public void main(String[] args) {
-	startTime = System.currentTimeMillis();
-	System.out.println("startTime "+startTime);
-        HammerSender sender = new HammerSender();
-	for(int i = 0;i<SEND_COUNT;i++) {
-	    sender.executeDistributedCommand ("not used");
-	}
-
+        startTime = System.currentTimeMillis();
+        System.out.println("startTime "+startTime);
+        for(int i = 0;i<SEND_COUNT;i++) {
+            HammerSender.executeDistributedCommand ("not used");
+        }
     }
 
     /** lets' clean up when we are done */

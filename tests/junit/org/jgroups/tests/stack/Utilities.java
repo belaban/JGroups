@@ -1,4 +1,4 @@
-// $Id: Utilities.java,v 1.3 2004/03/30 06:47:30 belaban Exp $
+// $Id: Utilities.java,v 1.4 2004/07/23 02:29:46 belaban Exp $
 
 package org.jgroups.tests.stack;
 
@@ -17,7 +17,7 @@ import java.net.Socket;
  * @since 2.2.1
  *
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Revision: 1.3 $
+ * @version $Revision: 1.4 $
  **/
 public class Utilities {
 
@@ -85,7 +85,7 @@ public class Utilities {
 	    }
 	    catch(Exception e) {
 		lastConnectException = e;
-                Thread.currentThread().sleep(1000);
+                Thread.sleep(1000);
 		crtms = System.currentTimeMillis();
 	    }
         }
@@ -201,7 +201,7 @@ public class Utilities {
 	    }
 	    catch(Exception e) {
 		lastConnectException = e;
-                Thread.currentThread().sleep(1000);
+                Thread.sleep(1000);
 		crtms = System.currentTimeMillis();
 	    }
         }
