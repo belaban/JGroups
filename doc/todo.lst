@@ -1,10 +1,12 @@
-$Id: todo.lst,v 1.4 2004/02/02 19:43:00 belaban Exp $
+$Id: todo.lst,v 1.5 2004/02/10 05:10:27 belaban Exp $
 
 
 
 
 			      Todo List
 			      ---------
+
+- Discovery doesn't work when working over a disabled (e.g. WiFi) interface			      
 
 - Add list of joined, crashed and left members to View
 
