@@ -199,5 +199,11 @@
         <preload>true</preload>
         <magic-number>53</magic-number>
     </class>
+    <class>
+        <description>Header for FC protocol</description>
+        <class-name>org.jgroups.protocols.FC$FcHeader</class-name>
+        <preload>true</preload>
+        <magic-number>54</magic-number>
+    </class>
 
 </magic-number-class-mapping>
