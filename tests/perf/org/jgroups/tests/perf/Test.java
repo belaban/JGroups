@@ -55,7 +55,7 @@ public class Test implements Receiver {
 
 
 
-    public void start(Properties c) throws Exception {
+    public void start(Properties c, boolean silent) throws Exception {
         String          config_file="config.txt";
         BufferedReader  fileReader;
         String          line;
@@ -63,10 +63,7 @@ public class Test implements Receiver {
         StringTokenizer st;
         Properties      tmp=new Properties();
 
-
-
         config_file=c.getProperty("config");
-
         fileReader=new BufferedReader(new FileReader(config_file));
         while((line=fileReader.readLine()) != null) {
             if(line.startsWith("#"))
@@ -87,7 +84,6 @@ public class Test implements Receiver {
         this.config=tmp;
 
         StringBuffer sb=new StringBuffer();
-
         sb.append("\n\n----------------------- TEST -----------------------\n");
         sb.append("Date: ").append(new Date()).append('\n');
         sb.append("Run by: ").append(System.getProperty("user.name")).append("\n\n");
@@ -98,7 +94,8 @@ public class Test implements Receiver {
             sb.append(entry.getKey()).append(":\t").append(entry.getValue()).append('\n');
         }
         sb.append('\n');
-        System.out.println("Configuration is: " + sb);
+        if(!silent)
+            System.out.println("Configuration is: " + sb);
 
         log.info(sb.toString());
 
@@ -471,7 +468,7 @@ public class Test implements Receiver {
 
     public static void main(String[] args) {
         Properties config=new Properties();
-        boolean sender=false;
+        boolean sender=false, silent=false;
         Test t=null;
 
         for(int i=0; i < args.length; i++) {
@@ -495,13 +492,17 @@ public class Test implements Receiver {
                 config.put("props", props);
                 continue;
             }
+            if("-silent".equals(args[i])) {
+                silent=true;
+                continue;
+            }
             help();
             return;
         }
 
         try {
             t=new Test();
-            t.start(config);
+            t.start(config, silent);
             t.runDiscoveryPhase();
             if(sender) {
                 t.sendMessages();
@@ -526,7 +527,7 @@ public class Test implements Receiver {
 
 
     static void help() {
-        System.out.println("Test [-help] ([-sender] | [-receiver]) [-config <config file>] [-props <stack config>]");
+        System.out.println("Test [-help] ([-sender] | [-receiver]) [-config <config file>] [-props <stack config>] [-silent]");
     }
 
 
