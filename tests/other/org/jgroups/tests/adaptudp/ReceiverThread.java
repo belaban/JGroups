@@ -4,8 +4,11 @@ import org.apache.log4j.Logger;
 
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ObjectInputStream;
 import java.net.MulticastSocket;
 import java.net.Socket;
+import java.net.DatagramPacket;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,9 +34,7 @@ public class ReceiverThread extends Thread {
     boolean gnuplot_output=Boolean.getBoolean("gnuplot_output");
     MulticastSocket recv_sock;
     List    receivers=new ArrayList();
-    Object  signal=new Object();
     Object  counter_mutex=new Object();
-    boolean done=false;
     boolean started=false;
 
 
@@ -53,9 +54,47 @@ public class ReceiverThread extends Thread {
         counter=1;
         beginning=0;
         ending=0;
+        boolean done=false;
+        Request req;
+        byte[] buf=new byte[300000];
+        DatagramPacket p=new DatagramPacket(buf, buf.length);
+        ByteArrayInputStream input;
+        ObjectInputStream in;
 
+        while(recv_sock != null && counter < expected_msgs && !done) {
+            try {
+                p.setData(buf);
+                recv_sock.receive(p);
+                input=new ByteArrayInputStream(p.getData(), 0, p.getLength());
+                in=new ObjectInputStream(input);
+                req=(Request)in.readObject();
+                if(req.type != Request.DATA)
+                    continue;
 
-
+                synchronized(counter_mutex) {
+                    if(counter == 1 && !started) {
+                        beginning=System.currentTimeMillis();
+                        last_dump=beginning;
+                        started=true;
+                    }
+                    counter++;
+                    if(counter % 100 == 0) {
+                        System.out.println("-- received " + counter + " msgs");
+                    }
+                    if(counter % log_interval == 0) {
+                        log.info(dumpStats(counter));
+                    }
+                    if(counter >= expected_msgs && !done) {
+                        ending=System.currentTimeMillis();
+                        done=true;
+                    }
+                }
+            }
+            catch(Exception ex) {
+                if(recv_sock == null) return;
+                break;
+            }
+        }
 
 
         if(gnuplot_output) {
@@ -73,38 +112,7 @@ public class ReceiverThread extends Thread {
         }
 
 
-        // accept connections and start 1 Receiver per connection
-/*        Thread acceptor=new Thread() {
-            public void run() {
-                while(true) {
-                    try {
-                        Socket s=srv_sock.accept();
-                        Receiver r=new Receiver(s);
-                        r.setDaemon(true);
-                        receivers.add(r);
-                        r.start();
-                    }
-                    catch(Exception ex) {
-                        ex.printStackTrace();
-                        break;
-                    }
-                }
-            }
-        };
-        acceptor.setDaemon(true);
-        acceptor.start();*/
 
-        // wait for all messages
-        synchronized(signal) {
-            while(!done) {
-                try {
-                    signal.wait();
-                }
-                catch(Exception ex) {
-                    ;
-                }
-            }
-        }
 
         elapsed_time=(ending - beginning);
 
@@ -177,76 +185,4 @@ public class ReceiverThread extends Thread {
         last_dump=current;
     }
 
-
-    void done() {
-        synchronized(signal) {
-            System.out.println("** notify()");
-            signal.notifyAll();
-        }
-    }
-
-
-
-    class Receiver extends Thread {
-        Socket          sock;
-        DataInputStream in;
-
-        Receiver(Socket sock) throws Exception {
-            this.sock=sock;
-            sock.setSoTimeout(5000);
-            in=new DataInputStream(new BufferedInputStream(sock.getInputStream()));
-        }
-
-        public void run() {
-            while(sock != null && counter < expected_msgs) {
-                try {
-                    readMessage(in);
-
-                    synchronized(counter_mutex) {
-                        if(counter == 1 && !started) {
-                            beginning=System.currentTimeMillis();
-                            last_dump=beginning;
-                            started=true;
-                        }
-                        counter++;
-                        if(counter % 1000 == 0) {
-                            System.out.println("-- received " + counter + " msgs");
-                        }
-                        if(counter % log_interval == 0) {
-                            log.info(dumpStats(counter));
-                        }
-                        if(counter >= expected_msgs && !done) {
-                            ending=System.currentTimeMillis();
-                            synchronized(signal) {
-                                done=true;
-                                signal.notifyAll();
-                            }
-                        }
-                    }
-                }
-                catch(Exception ex) {
-                    if(sock == null) return;
-                    // ex.printStackTrace();
-                    break;
-                }
-            }
-        }
-
-        void stopThread() {
-            try {
-                sock.close();
-                sock=null;
-            }
-            catch(Exception ex) {
-
-            }
-        }
-
-
-        void readMessage(DataInputStream in) throws Exception {
-            int len=in.readInt();
-            byte[] buf=new byte[len];
-            in.readFully(buf, 0, len);
-        }
-    }
 }
