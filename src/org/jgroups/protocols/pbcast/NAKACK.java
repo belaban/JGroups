@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.29 2004/10/13 15:57:39 belaban Exp $
+// $Id: NAKACK.java,v 1.30 2004/12/28 10:44:05 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -53,6 +53,11 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
      * around, and don't need to wait for garbage collection to remove them.
      */
     private boolean discard_delivered_msgs=false;
+
+    /** If value is > 0, the retransmit buffer is bounded: only the max_xmit_buf_size latest messages are kept,
+     * older ones are discarded when the buffer size is exceeded. A value <= 0 means unbounded buffers
+     */
+    private int max_xmit_buf_size=0;
 
 
     /**
@@ -430,6 +435,12 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
             props.remove("discard_delivered_msgs");
         }
 
+        str=props.getProperty("max_xmit_buf_size");
+        if(str != null) {
+            max_xmit_buf_size=Integer.parseInt(str);
+            props.remove("max_xmit_buf_size");
+        }
+
         if(props.size() > 0) {
             System.err.println("NAKACK.setProperties(): these properties are not recognized:");
             props.list(System.out);
@@ -499,7 +510,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
         }
 
         if(log.isTraceEnabled()) {
-            log.trace("[" + local_addr + "] received <" + sender + '#' + hdr.seqno + '>');
+            log.trace("[" + local_addr + "] received " + sender + '#' + hdr.seqno);
         }
 
         // msg is potentially re-sent later as result of XMIT_REQ reception; that's why hdr is added !
@@ -521,11 +532,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
         }
         win.add(hdr.seqno, msg);  // add in order, then remove and pass up as many msgs as possible
         msg=null;
-
-        // todo: remove below
-        if(log.isTraceEnabled()) {
-            log.trace("receiver window for " + sender + " is: " + win);
-        }
 
         while((msg_to_deliver=win.remove()) != null) {
 
@@ -719,6 +725,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
                     win=new NakReceiverWindow(sender, this, 0, timer);
                     win.setRetransmitTimeouts(retransmit_timeout);
                     win.setDiscardDeliveredMessages(discard_delivered_msgs);
+                    win.setMaxXmitBufSize(this.max_xmit_buf_size);
                     received_msgs.put(sender, win);
                 }
             }
@@ -807,6 +814,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
             win=new NakReceiverWindow(sender, this, initial_seqno, timer);
             win.setRetransmitTimeouts(retransmit_timeout);
             win.setDiscardDeliveredMessages(discard_delivered_msgs);
+            win.setMaxXmitBufSize(this.max_xmit_buf_size);
             synchronized(received_msgs) {
                 received_msgs.put(sender, win);
             }
@@ -845,6 +853,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
                     win=new NakReceiverWindow(sender, this, initial_seqno, timer);
                     win.setRetransmitTimeouts(retransmit_timeout);
                     win.setDiscardDeliveredMessages(discard_delivered_msgs);
+                    win.setMaxXmitBufSize(this.max_xmit_buf_size);
                     received_msgs.put(sender, win);
                 }
                 else {
@@ -854,6 +863,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
                         win=new NakReceiverWindow(sender, this, initial_seqno, timer);
                         win.setRetransmitTimeouts(retransmit_timeout);
                         win.setDiscardDeliveredMessages(discard_delivered_msgs);
+                        win.setMaxXmitBufSize(this.max_xmit_buf_size);
                         received_msgs.put(sender, win);
                     }
                 }
@@ -939,7 +949,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
      * NakReceiverWindow corresponding to P which are <= seqno at digest[P].
      */
     void stable(Digest d) {
-        long seqno;
+        long tmp_seqno;
         NakReceiverWindow recv_win;
         Address sender;
         long my_highest_rcvd;        // highest seqno received in my digest for a sender P
@@ -958,7 +968,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
 
         for(int i=0; i < d.size(); i++) {
             sender=d.senderAt(i);
-            seqno=d.highSeqnoAt(i);
+            tmp_seqno=d.highSeqnoAt(i);
             if(sender == null) {
                 continue;
             }
@@ -987,20 +997,20 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
                 }
             }
 
-            seqno-=gc_lag;
-            if(seqno < 0) {
+            tmp_seqno-=gc_lag;
+            if(tmp_seqno < 0) {
                 continue;
             }
 
             if(log.isDebugEnabled()) {
-                log.debug("deleting msgs <= " + seqno + " from " + sender);
+                log.debug("deleting msgs <= " + tmp_seqno + " from " + sender);
             }
 
             // garbage collect from sent_msgs if sender was myself
             if(sender.equals(local_addr)) {
                 synchronized(sent_msgs) {
                     // gets us a subset from [lowest seqno - seqno]
-                    SortedMap stable_keys=sent_msgs.headMap(new Long(seqno));
+                    SortedMap stable_keys=sent_msgs.headMap(new Long(tmp_seqno));
                     if(stable_keys != null) {
                         stable_keys.clear(); // this will modify sent_msgs directly
                     }
@@ -1010,7 +1020,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
             // delete *delivered* msgs that are stable
             // recv_win=(NakReceiverWindow)received_msgs.get(sender);
             if(recv_win != null) {
-                recv_win.stable(seqno);  // delete all messages with seqnos <= seqno
+                recv_win.stable(tmp_seqno);  // delete all messages with seqnos <= seqno
             }
         }
     }
