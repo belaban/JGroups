@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.44 2004/09/23 22:30:49 belaban Exp $
+// $Id: UDP.java,v 1.45 2004/09/24 09:53:16 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -688,7 +688,9 @@ public class UDP extends Protocol implements Runnable {
             inp_stream=new ByteArrayInputStream(data, VERSION_LENGTH, data.length - VERSION_LENGTH);
             // inp=new ObjectInputStream(new BufferedInputStream(inp_stream));
             // BufferedInputStream above makes no diff
-            inp=new ObjectInputStream(inp_stream);
+
+            // inp=new ObjectInputStream(inp_stream);
+            inp=new MagicObjectInputStream(inp_stream);
             if(enable_bundling) {
                 l=new List();
                 l.readExternal(inp);
@@ -852,7 +854,10 @@ public class UDP extends Protocol implements Runnable {
         out_stream.write(Version.version_id, 0, Version.version_id.length); // write the version
         // out=new ObjectOutputStream(new BufferedOutputStream(out_stream));
         // BufferedOutputStream makes no difference
-        out=new ObjectOutputStream(new BufferedOutputStream(out_stream));
+
+        // out=new ObjectOutputStream(new BufferedOutputStream(out_stream));
+
+        out=new MagicObjectOutputStream(new BufferedOutputStream(out_stream));
         msg.writeExternal(out);
         out.close(); // needed if out buffers its output to out_stream
         return out_stream.toByteArray();
@@ -1485,7 +1490,7 @@ public class UDP extends Protocol implements Runnable {
         long          total_bytes=0;
         boolean       timer_running=false;
 
-        /** HashMap<Address, List>. Keys are destinations, values are lists of Messages */
+        /** HashMap<Address, List<Message>>. Keys are destinations, values are lists of Messages */
         final HashMap       msgs=new HashMap(11);
 
         final MyTask        task=new MyTask();
@@ -1585,8 +1590,9 @@ public class UDP extends Protocol implements Runnable {
                         // BufferedOutputStream bos=new BufferedOutputStream(out_stream);
                         out_stream.write(Version.version_id, 0, Version.version_id.length); // write the version
                         //bos.write(Version.version_id, 0, Version.version_id.length); // write the version
-                        outstream=new ObjectOutputStream(out_stream);
-                        // out=new ObjectOutputStream(bos);
+
+                        // outstream=new ObjectOutputStream(new BufferedOutputStream(out_stream));
+                        outstream=new MagicObjectOutputStream(new BufferedOutputStream(out_stream));
                         l.writeExternal(outstream);
                         outstream.close(); // needed if out buffers its output to out_stream
                         data=out_stream.toByteArray();
