@@ -1,4 +1,4 @@
-// $Id: LogicalAddress.java,v 1.4 2003/12/27 02:01:11 belaban Exp $
+// $Id: LogicalAddress.java,v 1.5 2003/12/27 02:28:00 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -116,6 +116,36 @@ public class LogicalAddress implements Address {
      */
     public ArrayList getPhysicalAddresses() {
         return physical_addrs != null? (ArrayList)physical_addrs.clone() : null;
+    }
+
+    /**
+     * For internal use only ! Don't use this method !
+     * @param addr
+     */
+    public void addPhysicalAddress(SocketAddress addr) {
+        if(addr != null) {
+            if(physical_addrs == null)
+                physical_addrs=new ArrayList();
+            if(!physical_addrs.contains(addr))
+                physical_addrs.add(addr);
+        }
+    }
+
+    /**
+     * For internal use only ! Don't use this method !
+     * @param addr
+     */
+    public void removePhysicalAddress(SocketAddress addr) {
+        if(addr != null && physical_addrs != null)
+            physical_addrs.remove(addr);
+    }
+
+    /**
+     * For internal use only ! Don't use this method !
+     */
+    public void removeAllPhysicalAddresses() {
+        if(physical_addrs != null)
+            physical_addrs.clear();
     }
 
     public boolean isMulticastAddress() {
@@ -265,7 +295,14 @@ public class LogicalAddress implements Address {
         return ret;
     }
 
-
+    public LogicalAddress copy() {
+        try {
+            return (LogicalAddress)clone();
+        }
+        catch(CloneNotSupportedException e) {
+            return null;
+        }
+    }
 
 
 
