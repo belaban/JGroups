@@ -10,6 +10,9 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Iterator;
 
 
 
@@ -19,7 +22,7 @@ import java.lang.reflect.Method;
  * It includes the name of the method (case sensitive) and a list of arguments.
  * A method call is serializable and can be passed over the wire.
  * @author Bela Ban
- * @version $Revision: 1.15 $
+ * @version $Revision: 1.16 $
  */
 public class MethodCall implements Externalizable {
 
@@ -162,7 +165,7 @@ public class MethodCall implements Externalizable {
         int     len=args != null? args.length : 0;
         Method  m;
 
-        Method[] methods=target_class.getDeclaredMethods();
+        Method[] methods=getAllMethods(target_class);
         for(int i=0; i < methods.length; i++) {
             m=methods[i];
             if(m.getName().equals(method_name)) {
@@ -175,7 +178,65 @@ public class MethodCall implements Externalizable {
     }
 
 
+    /**
+     * The method walks up the class hierarchy and returns <i>all</i> methods of this class
+     * and those inherited from superclasses and superinterfaces.
+     */
+    Method[] getAllMethods(Class target) {
 
+        Class superclass = target;
+        List methods = new ArrayList();
+        int size = 0;
+
+        while(superclass != null) {
+            Method[] m = superclass.getDeclaredMethods();
+            methods.add(m);
+            size += m.length;
+            superclass = superclass.getSuperclass();
+        }
+
+        Method[] result = new Method[size];
+        int index = 0;
+        for(Iterator i = methods.iterator(); i.hasNext();) {
+            Method[] m = (Method[])i.next();
+            System.arraycopy(m, 0, result, index, m.length);
+            index += m.length;
+        }
+        return result;
+    }
+
+    /**
+     * Returns the first method that matches the specified name and parameter types. The overriding
+     * methods have priority. The method is chosen from all the methods of the current class and all
+     * its superclasses and superinterfaces.
+     *
+     * @return the matching method or null if no mathching method has been found.
+     */
+    Method getMethod(Class target, String methodName, Class[] types) {
+
+        if (types == null) {
+            types = new Class[0];
+        }
+
+        Method[] methods = getAllMethods(target);
+        methods: for(int i = 0; i < methods.length; i++) {
+            Method m = methods[i];
+            if (!methodName.equals(m.getName())) {
+                continue methods;
+            }
+            Class[] parameters = m.getParameterTypes();
+            if (types.length != parameters.length) {
+                continue methods;
+            }
+            for(int j = 0; j < types.length; j++) {
+                if (!types[j].equals(parameters[j])) {
+                    continue methods;
+                }
+            }
+            return m;
+        }
+        return null;
+    }
 
 
     /**
@@ -206,13 +267,15 @@ public class MethodCall implements Externalizable {
                         meth=this.method;
                     break;
                 case TYPES:
-                    meth=cl.getDeclaredMethod(method_name, types);
+                    //meth=cl.getDeclaredMethod(method_name, types);
+                    meth = getMethod(cl, method_name, types);
                     break;
                 case SIGNATURE:
                     Class[] mytypes=null;
                     if(signature != null)
                         mytypes=getTypesFromString(cl, signature);
-                    meth=cl.getDeclaredMethod(method_name, mytypes);
+                    //meth=cl.getDeclaredMethod(method_name, mytypes);
+                    meth = getMethod(cl, method_name, mytypes);
                     break;
                 default:
                     if(log.isErrorEnabled()) log.error("mode " + mode + " is invalid");
