@@ -1,16 +1,14 @@
-// $Id: DistributedQueueConcurrencyTest.java,v 1.5 2004/01/09 18:23:27 rds13 Exp $
+// $Id: DistributedQueueConcurrencyTest.java,v 1.6 2004/03/30 06:47:30 belaban Exp $
 
 package org.jgroups.blocks;
-
-import java.util.Vector;
 
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
-
 import org.apache.log4j.Logger;
-import org.jgroups.log.Trace;
 import org.jgroups.util.Util;
+
+import java.util.Vector;
 
 /**
  * This class setup multiple DistributedQueue, some handles by a reader thread
@@ -79,7 +77,6 @@ public class DistributedQueueConcurrencyTest extends TestCase implements ICounte
                 + "QUEUE";
         */
 
-        Trace.init();
 
     }
 

@@ -1,12 +1,10 @@
-// $Id: Chat.java,v 1.4 2004/02/26 19:15:00 belaban Exp $
+// $Id: Chat.java,v 1.5 2004/03/30 06:47:16 belaban Exp $
 
 package org.jgroups.demos;
 
 
 import org.jgroups.*;
 import org.jgroups.blocks.PullPushAdapter;
-import org.jgroups.log.Trace;
-import org.jgroups.util.Util;
 
 import javax.swing.*;
 import java.awt.*;
@@ -55,7 +53,7 @@ public class Chat implements MouseListener, WindowListener, MessageListener, Mem
             return;
         }
 
-        Trace.init();
+
 
         selfRef=new Chat(props);
         selfRef.go();

@@ -1,16 +1,16 @@
-// $Id: WANPING.java,v 1.1 2003/09/09 01:24:11 belaban Exp $
+// $Id: WANPING.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
 
 package org.jgroups.protocols;
 
 
-import java.util.Vector;
-import java.util.Properties;
-import java.util.Enumeration;
-import java.util.StringTokenizer;
 import org.jgroups.*;
-import org.jgroups.util.*;
-import org.jgroups.stack.*;
-import org.jgroups.log.Trace;
+import org.jgroups.stack.Protocol;
+import org.jgroups.util.List;
+
+import java.util.Enumeration;
+import java.util.Properties;
+import java.util.StringTokenizer;
+import java.util.Vector;
 
 
 
@@ -67,7 +67,7 @@ public class WANPING extends Protocol {
 	if(str != null) {
 	    props.remove("initial_hosts");
 	    initial_hosts=createInitialHosts(str);
-	    if(Trace.trace) Trace.info("WANPING.setProperties()", "initial_hosts: " + initial_hosts);
+	     if(log.isInfoEnabled()) log.info("initial_hosts: " + initial_hosts);
 	}
 
 	if(initial_hosts == null || initial_hosts.size() == 0) {
@@ -182,7 +182,7 @@ public class WANPING extends Protocol {
 		h=(String)en.nextElement();
 		copy=msg.copy();
 		copy.setDest(new WanPipeAddress(h));
-		if(Trace.trace)
+
 		    System.out.println("WANPING.down(FIND_INITIAL_MBRS): sending PING request to " +
 				       copy.getDest());
 		passDown(new Event(Event.MSG, copy));

@@ -1,4 +1,4 @@
-// $Id: XmlConfigurator.java,v 1.1 2003/09/09 01:24:09 belaban Exp $
+// $Id: XmlConfigurator.java,v 1.2 2004/03/30 06:47:14 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -7,7 +7,9 @@ package org.jgroups.conf;
  * @author Filip Hanik (<a href="mailto:filip@filip.net">filip@filip.net)
  * @version 1.0
  */
-import org.jgroups.log.Trace;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.jgroups.util.Util;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -41,6 +43,7 @@ public class XmlConfigurator implements ProtocolStackConfigurator
     
     private ArrayList mProtocolStack = new ArrayList();
     private String mStackName;
+    protected static Log log=LogFactory.getLog(XmlConfigurator.class);
 
     protected XmlConfigurator(String stackName,
                             ProtocolData[] protocols)
@@ -163,8 +166,8 @@ public class XmlConfigurator implements ProtocolStackConfigurator
             else 
             {
                 if ( xml_debug ) x.printStackTrace();
-                String error = Trace.getStackTrace(x);
-                Trace.error("XmlConfigurator",error);
+                String error = Util.getStackTrace(x);
+                if(log.isErrorEnabled()) log.error(error);
                 throw new java.io.IOException(x.getMessage());
             }
         }
@@ -213,8 +216,8 @@ public class XmlConfigurator implements ProtocolStackConfigurator
             else 
             {
                 if ( xml_debug ) x.printStackTrace();
-                String error = Trace.getStackTrace(x);
-                Trace.error("XmlConfigurator",error);
+                String error = Util.getStackTrace(x);
+                if(log.isErrorEnabled()) log.error(error);
                 throw new java.io.IOException(x.getMessage());
             }
         }
@@ -282,8 +285,8 @@ public class XmlConfigurator implements ProtocolStackConfigurator
             {
                 
                 if ( xml_debug ) x.printStackTrace();
-                String error = Trace.getStackTrace(x);
-                Trace.error("XmlConfigurator",error);
+                String error = Util.getStackTrace(x);
+                if(log.isErrorEnabled()) log.error(error);
                 throw new java.io.IOException(x.getMessage());
             }//end if           
         }//catch
@@ -319,8 +322,8 @@ public class XmlConfigurator implements ProtocolStackConfigurator
             {
                 
                 if ( xml_debug ) x.printStackTrace();
-                String error = Trace.getStackTrace(x);
-                Trace.error("XmlConfigurator",error);
+                String error = Util.getStackTrace(x);
+                if(log.isErrorEnabled()) log.error(error);
                 throw new java.io.IOException(x.getMessage());
             }//end if           
         }//catch

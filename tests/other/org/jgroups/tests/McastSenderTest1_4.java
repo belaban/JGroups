@@ -1,14 +1,11 @@
-// $Id: McastSenderTest1_4.java,v 1.1 2003/09/09 01:24:13 belaban Exp $
+// $Id: McastSenderTest1_4.java,v 1.2 2004/03/30 06:47:34 belaban Exp $
 
 package org.jgroups.tests;
 
-import java.net.*;
-import java.util.*;
 import java.io.DataInputStream;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.MulticastSocket;
+import java.net.*;
+import java.util.Enumeration;
+import java.util.Vector;
 
 
 
@@ -16,7 +13,7 @@ import java.net.MulticastSocket;
    Same as McastSenderTest, but uses all available interfaces (including loopback) to send the packets
    @see McastReceiverTest
    @author Bela Ban
-   @version $Revision: 1.1 $
+   @version $Revision: 1.2 $
  */
 public class McastSenderTest1_4 {
 

@@ -1,13 +1,13 @@
-// $Id: FragTestUnicast.java,v 1.2 2003/09/24 23:26:06 belaban Exp $
+// $Id: FragTestUnicast.java,v 1.3 2004/03/30 06:47:34 belaban Exp $
 
 
 package org.jgroups.tests;
 
 
-import java.util.Vector;
 import org.jgroups.*;
-import org.jgroups.util.*;
-import org.jgroups.log.Trace;
+import org.jgroups.util.Util;
+
+import java.util.Vector;
 
 
 
@@ -69,7 +69,7 @@ public class FragTestUnicast {
 	View     view;
 	Address  receiver=null;
 
-	Trace.init();
+
 	channel=new JChannel(props);
 	// if(mode == 1) channel.setOpt(Channel.LOCAL, Boolean.FALSE);
 	channel.connect(groupname);

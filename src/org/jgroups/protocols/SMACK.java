@@ -1,21 +1,21 @@
-// $Id: SMACK.java,v 1.3 2003/12/11 06:15:48 belaban Exp $
+// $Id: SMACK.java,v 1.4 2004/03/30 06:47:21 belaban Exp $
 
 package org.jgroups.protocols;
 
 
-import java.io.*;
-import java.util.*;
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Header;
-import org.jgroups.Message;
-import org.jgroups.View;
-import org.jgroups.ViewId;
-import org.jgroups.stack.Protocol;
-import org.jgroups.util.Util;
+import org.jgroups.*;
 import org.jgroups.stack.AckMcastSenderWindow;
 import org.jgroups.stack.AckReceiverWindow;
-import org.jgroups.log.Trace;
+import org.jgroups.stack.Protocol;
+import org.jgroups.util.Util;
+
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Properties;
+import java.util.Vector;
 
 
 
@@ -46,7 +46,7 @@ import org.jgroups.log.Trace;
  * </ul>
  * Advantage of this protocol: no group membership necessary, fast.
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.3 $
+ * @version $Revision: 1.4 $
  * todo: initial mcast to announce new member (for view change)
  * todo: fix membershop bug: start a, b, kill b, restart b: b will be suspected by a
  */
@@ -150,8 +150,8 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
                 return;
 
             case Event.SUSPECT:
-                if(Trace.trace)
-                    Trace.info("SMACK.up()", "removing suspected member " + evt.getArg());
+
+                    if(log.isInfoEnabled()) log.info("removing suspected member " + evt.getArg());
                 removeMember((Address)evt.getArg());
                 break;
 
@@ -173,8 +173,8 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
 
                         tmp_seqno=new Long(hdr.seqno);
 
-                        if(Trace.debug)
-                            Trace.info("SMACK.up()", "received #" + tmp_seqno + " from " + sender);
+                        if(log.isTraceEnabled())
+                            log.trace("received #" + tmp_seqno + " from " + sender);
 
                         win=(AckReceiverWindow)receivers.get(sender);
                         if(win == null) {
@@ -193,13 +193,13 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
                         addMember(msg.getSrc());
                         sender_win.ack(hdr.seqno, msg.getSrc());
                         sender_win.clearStableMessages();
-                        if(Trace.debug)
-                            Trace.info("SMACK.up()", "received ack for #" + hdr.seqno + " from " + msg.getSrc());
+                        if(log.isTraceEnabled())
+                            log.trace("received ack for #" + hdr.seqno + " from " + msg.getSrc());
                         return;
 
                     case SmackHeader.JOIN_ANNOUNCEMENT:
-                        if(Trace.trace)
-                            Trace.info("SMACK.up()", "received join announcement by " + msg.getSrc());
+
+                            if(log.isInfoEnabled()) log.info("received join announcement by " + msg.getSrc());
 
                         if(!containsMember(sender)) {
                             Message join_rsp=new Message(sender, null, null);
@@ -210,14 +210,14 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
                         return;
 
                     case SmackHeader.LEAVE_ANNOUNCEMENT:
-                        if(Trace.trace)
-                            Trace.info("SMACK.up()", "received leave announcement by " + msg.getSrc());
+
+                            if(log.isInfoEnabled()) log.info("received leave announcement by " + msg.getSrc());
 
                         removeMember(sender);
                         return;
 
                     default:
-                        Trace.warn("SMACK.up()", "detected SmackHeader with invalid type: " + hdr);
+                        if(log.isWarnEnabled()) log.warn("detected SmackHeader with invalid type: " + hdr);
                         break;
                 }
                 break;
@@ -262,7 +262,7 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
                 if(msg.getDest() == null || msg.getDest().isMulticastAddress()) {
                     msg.putHeader(name, new SmackHeader(SmackHeader.MCAST, seqno));
                     sender_win.add(seqno, msg, (Vector)members.clone());
-                    if(Trace.debug) Trace.info("SMACK.down()", "sending mcast #" + seqno);
+                    if(log.isTraceEnabled()) log.trace("sending mcast #" + seqno);
                     seqno++;
                 }
                 break;
@@ -277,8 +277,8 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
 
     public void retransmit(long seqno, Message msg, Address dest) {
         msg.setDest(dest);
-        if(Trace.trace)
-            Trace.info("SMACK.retransmit()", seqno + ", msg=" + msg);
+
+            if(log.isInfoEnabled()) log.info(seqno + ", msg=" + msg);
         passDown(new Event(Event.MSG, msg));
     }
 
@@ -343,8 +343,8 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
                 View new_view;
                 members.addElement(mbr);
                 tmp=members.clone();
-                if(Trace.debug)
-                    Trace.info("SMACK.addMember()", "added " + mbr + ", members=" + tmp);
+                if(log.isTraceEnabled())
+                    log.trace("added " + mbr + ", members=" + tmp);
                 new_view=new View(new ViewId(local_addr, vid++), (Vector)tmp);
                 passUp(new Event(Event.VIEW_CHANGE, new_view));
                 passDown(new Event(Event.VIEW_CHANGE, new_view));
@@ -359,8 +359,8 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
                 View new_view;
                 members.removeElement(mbr);
                 tmp=members.clone();
-                if(Trace.debug)
-                    Trace.info("SMACK.removeMember()", "removed " + mbr + ", members=" + tmp);
+                if(log.isTraceEnabled())
+                    log.trace("removed " + mbr + ", members=" + tmp);
                 new_view=new View(new ViewId(local_addr, vid++), (Vector)tmp);
                 passUp(new Event(Event.VIEW_CHANGE, new_view));
                 passDown(new Event(Event.VIEW_CHANGE, new_view));

@@ -13,7 +13,7 @@ import java.util.List;
  *    Sleeps for sleep_msec after each burst.
  * @author Milcan Prica (prica@deei.units.it)
  * @author Bela Ban (belaban@yahoo.com)
- * @version $Id: SenderThread.java,v 1.5 2004/02/20 22:50:25 belaban Exp $
+ * @version $Id: SenderThread.java,v 1.6 2004/03/30 06:47:34 belaban Exp $
  */
 public class SenderThread extends Thread {
     private int num_msgs;
@@ -63,7 +63,7 @@ public class SenderThread extends Thread {
                 }
                 if(total_msgs % log_interval == 0) {
                     if(gnuplot_output == false)
-                        log.info(dumpStats(total_msgs));
+                        if(log.isInfoEnabled()) log.info(dumpStats(total_msgs));
                 }
             }
             System.out.println("Sent all bursts. Sender terminates.\n");

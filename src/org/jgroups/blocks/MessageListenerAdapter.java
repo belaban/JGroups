@@ -1,7 +1,8 @@
 package org.jgroups.blocks;
 
-import org.jgroups.MessageListener;
 import org.jgroups.Message;
+import org.jgroups.MessageListener;
+
 import java.util.HashSet;
 
 /**

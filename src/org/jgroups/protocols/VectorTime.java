@@ -1,10 +1,11 @@
-// $Id: VectorTime.java,v 1.1 2003/09/09 01:24:11 belaban Exp $
+// $Id: VectorTime.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
 
 
 package org.jgroups.protocols;
 
+import org.jgroups.Address;
+
 import java.util.*;
-import org.jgroups.*;
 
 
 
@@ -12,7 +13,7 @@ import org.jgroups.*;
  * Vector timestamp used in CAUSAL order protocol stack
  *
  * @author Vladimir Blagojevic vladimir@cs.yorku.ca
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.2 $
  */
 public class VectorTime
 {

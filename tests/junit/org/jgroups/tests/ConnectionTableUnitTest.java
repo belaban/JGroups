@@ -1,12 +1,12 @@
-// $Id: ConnectionTableUnitTest.java,v 1.2 2004/02/12 23:23:26 belaban Exp $
+// $Id: ConnectionTableUnitTest.java,v 1.3 2004/03/30 06:47:31 belaban Exp $
 
 package org.jgroups.tests;
 
 
 import junit.framework.TestCase;
-import org.jgroups.blocks.ConnectionTable;
-import org.jgroups.Message;
 import org.jgroups.Address;
+import org.jgroups.Message;
+import org.jgroups.blocks.ConnectionTable;
 
 import java.net.SocketException;
 

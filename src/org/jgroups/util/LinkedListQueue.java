@@ -1,11 +1,16 @@
-// $Id: LinkedListQueue.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+// $Id: LinkedListQueue.java,v 1.2 2004/03/30 06:47:28 belaban Exp $
 
 package org.jgroups.util;
 
 
-import java.util.*;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jgroups.TimeoutException;
-import org.jgroups.log.Trace;
+
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.NoSuchElementException;
+import java.util.Vector;
 
 
 
@@ -38,6 +43,8 @@ public class LinkedListQueue {
      * @see LinkedListQueue#close
      */
     private static final Object endMarker=new Object();
+
+    protected static Log log=LogFactory.getLog(LinkedListQueue.class);
 
 
 
@@ -149,7 +156,7 @@ public class LinkedListQueue {
 		    closed=true;
 	    }
 	    catch(NoSuchElementException ex) {
-		Trace.error("LinkedListQueue.remove()", "retval == null, size()=" + l.size());
+		if(log.isErrorEnabled()) log.error("retval == null, size()=" + l.size());
 		return null;		
 	    }
 
@@ -238,7 +245,7 @@ public class LinkedListQueue {
         synchronized(mutex) {	    
 	    removed=l.remove(obj);
 	    if(!removed)
-		Trace.warn("LinkedListQueue.removeElement()", "element " + obj + " was not found in the queue");
+		if(log.isWarnEnabled()) log.warn("element " + obj + " was not found in the queue");
         }
     }
 
@@ -274,7 +281,7 @@ public class LinkedListQueue {
 		retval=l.getFirst();
 	    }
 	    catch(NoSuchElementException ex) {
-		Trace.error("LinkedListQueue.peek()", "retval == null, size()=" + l.size());
+		if(log.isErrorEnabled()) log.error("retval == null, size()=" + l.size());
 		return null;	
 	    }
         }
@@ -364,7 +371,7 @@ public class LinkedListQueue {
                 mutex.notifyAll();
             }
             catch(Exception e) {
-                Trace.error("LinkedListQueue.close()", "exception=" + e);
+                if(log.isErrorEnabled()) log.error("exception=" + e);
             }
         }
     }

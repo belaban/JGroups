@@ -1,11 +1,10 @@
-// $Id: LargeState.java,v 1.5 2004/03/01 16:51:13 belaban Exp $
+// $Id: LargeState.java,v 1.6 2004/03/30 06:47:34 belaban Exp $
 
 
 package org.jgroups.tests;
 
 
 import org.jgroups.*;
-import org.jgroups.log.Trace;
 
 
 /**
@@ -115,7 +114,7 @@ public class LargeState {
                 "shun=false;print_local_addr=true):" +
                 "pbcast.STATE_TRANSFER";
 
-        Trace.init();
+
 
         for(int i=0; i < args.length; i++) {
             if(args[i].equals("-help")) {

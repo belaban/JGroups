@@ -1,13 +1,21 @@
 package org.jgroups.service.lease;
 
 
-import java.util.*;
-import java.io.*;
-import org.jgroups.*;
-import org.jgroups.blocks.*;
-import org.jgroups.log.Trace;
-import org.jgroups.service.*;
+import org.jgroups.Address;
+import org.jgroups.Channel;
+import org.jgroups.Message;
+import org.jgroups.MessageListener;
+import org.jgroups.blocks.PullPushAdapter;
+import org.jgroups.service.AbstractService;
 import org.jgroups.util.Util;
+
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 
 
@@ -148,8 +156,8 @@ public class LeaseFactoryService extends AbstractService {
     protected void denyLeaseRequest(int denialType, Address requester, 
 	String reason, Object leaseTarget, Object tenant) 
     {
-        if (Trace.debug)
-            Trace.debug(DENY_METHOD, "Denying request: type=" + denialType + 
+
+            if(log.isDebugEnabled()) log.debug("Denying request: type=" + denialType +
                 ", requester=" + requester + ", leaseTarget=" + leaseTarget + 
                 ", tenant=" + tenant + ", reason : " + reason);
         
@@ -180,8 +188,8 @@ public class LeaseFactoryService extends AbstractService {
 	if (leaseTarget == null)
 	    return;
 
-        if (Trace.debug) 
-            Trace.debug(NEW_LEASE_METHOD, "New lease request: " +
+
+            if(log.isDebugEnabled()) log.debug("New lease request: " +
                 "target=" + leaseTarget + ", tenant=" + header.getTenant() + 
                 ", requester=" + requester);
 
@@ -270,8 +278,8 @@ public class LeaseFactoryService extends AbstractService {
 	if (leaseTarget == null)
 	    return;
 	    
-        if (Trace.debug) 
-            Trace.debug(RENEW_LEASE_METHOD, "Renew lease request: " +
+
+            if(log.isDebugEnabled()) log.debug("Renew lease request: " +
                 "target=" + leaseTarget + ", tenant=" + header.getTenant() + 
                 ", requester=" + requester);
             
@@ -349,8 +357,8 @@ public class LeaseFactoryService extends AbstractService {
 	if (leaseTarget == null)
 	    return;
 	    
-        if (Trace.debug) 
-            Trace.debug(CANCEL_LEASE_METHOD, "Cancel lease request: " +
+
+            if(log.isDebugEnabled()) log.debug("Cancel lease request: " +
                 "target=" + leaseTarget + ", tenant=" + header.getTenant() + 
                 ", requester=" + requester);
             
@@ -495,8 +503,7 @@ public class LeaseFactoryService extends AbstractService {
                 return Util.objectToByteBuffer(new HashMap(leases));
             }
             catch(Exception ex) {
-                Trace.error("LeaseFactoryService.ServiceMessageListener.getState()",
-                            "exception marshalling state: " + ex);
+                if(log.isErrorEnabled()) log.error("exception marshalling state: " + ex);
                 return null;
             }
         }
@@ -552,8 +559,7 @@ public class LeaseFactoryService extends AbstractService {
                 state=Util.objectFromByteBuffer(data);
             }
             catch(Exception ex) {
-                Trace.error("LeaseFactoryService.ServiceMessageListener.setState()",
-                            "exception unmarshalling state: " + ex);
+                if(log.isErrorEnabled()) log.error("exception unmarshalling state: " + ex);
                 return;
             }
 	    

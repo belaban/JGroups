@@ -1,13 +1,14 @@
-// $Id: QUEUE.java,v 1.1 2003/09/09 01:24:10 belaban Exp $
+// $Id: QUEUE.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
 
 package org.jgroups.protocols;
 
+import org.jgroups.Event;
+import org.jgroups.Message;
+import org.jgroups.stack.Protocol;
+import org.jgroups.util.Util;
+
 import java.util.Properties;
 import java.util.Vector;
-import org.jgroups.*;
-import org.jgroups.util.*;
-import org.jgroups.stack.*;
-import org.jgroups.log.Trace;
 
 
 /**
@@ -98,7 +99,7 @@ public class QUEUE extends Protocol {
 	switch(evt.getType()) {
 
 	case Event.START_QUEUEING:  // start queueing all up events
-	    if(Trace.trace) Trace.info("QUEUE.up()", "received START_QUEUEING");
+	     if(log.isInfoEnabled()) log.info("received START_QUEUEING");
 	    queueing_up=true;
 	    return;
 
@@ -108,7 +109,7 @@ public class QUEUE extends Protocol {
 		for(int i=0; i < event_list.size(); i++)
 		    passUp((Event)event_list.elementAt(i));
 	    
-	    if(Trace.trace) Trace.info("QUEUE.up()", "replaying up events");
+	     if(log.isInfoEnabled()) log.info("replaying up events");
 	    
 	    for(int i=0; i < up_vec.size(); i++) {
 		e=(Event)up_vec.elementAt(i);
@@ -121,8 +122,8 @@ public class QUEUE extends Protocol {
 	}
 	
 	if(queueing_up) {
-	    if(Trace.trace) {
-		Trace.info("QUEUE.up()", "queued up event " + evt);
+	     {
+		if(log.isInfoEnabled()) log.info("queued up event " + evt);
 	    }
 	    if(observer != null) {
 		if(observer.addingToUpVector(evt, up_vec.size()) == false)
@@ -145,18 +146,18 @@ public class QUEUE extends Protocol {
 	switch(evt.getType()) {
 	    
 	case Event.START_QUEUEING:  // start queueing all down events
-	    if(Trace.trace) Trace.info("QUEUE.down()", "received START_QUEUEING");
+	     if(log.isInfoEnabled()) log.info("received START_QUEUEING");
 	    queueing_dn=true;
 	    return;
 
 	case Event.STOP_QUEUEING:         // stop queueing all down events	    
-	    if(Trace.trace) Trace.info("QUEUE.down()", "received STOP_QUEUEING");
+	     if(log.isInfoEnabled()) log.info("received STOP_QUEUEING");
 	    event_list=(Vector)evt.getArg();
 	    if(event_list != null)  // play events first (if available)
 		for(int i=0; i < event_list.size(); i++)
 		    passDown((Event)event_list.elementAt(i));
 	    
-	    if(Trace.trace) Trace.info("QUEUE.down()", "replaying down events ("+ dn_vec.size() +")");
+	     if(log.isInfoEnabled()) log.info("replaying down events ("+ dn_vec.size() +")");
 	    
 	    for(int i=0; i < dn_vec.size(); i++) {
 		passDown((Event)dn_vec.elementAt(i));
@@ -168,8 +169,8 @@ public class QUEUE extends Protocol {
   	}
 	    
 	if(queueing_dn) {
-	    if(Trace.trace)
-		Trace.info("QUEUE.down()", "queued down event: " + Util.printEvent(evt));
+
+		if(log.isInfoEnabled()) log.info("queued down event: " + Util.printEvent(evt));
 
 	    if(observer != null) {
 		if(observer.addingToDownVector(evt, dn_vec.size()) == false)

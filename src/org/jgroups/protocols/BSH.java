@@ -1,4 +1,4 @@
-// $Id: BSH.java,v 1.4 2004/02/26 19:15:00 belaban Exp $
+// $Id: BSH.java,v 1.5 2004/03/30 06:47:20 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -9,8 +9,8 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Header;
 import org.jgroups.Message;
-import org.jgroups.log.Trace;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.Util;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -95,8 +95,7 @@ public class BSH extends Protocol {
                         destroyInterpreter();
                         return;
                     default:
-                        Trace.error("BSH.handleRequest()",
-                                    "header type was not REQ as expected" +
+                        if(log.isErrorEnabled()) log.error("header type was not REQ as expected" +
                                     " (was " + type + ")");
                         return;
                 }
@@ -112,7 +111,7 @@ public class BSH extends Protocol {
 
 
         if(buf == null) {
-            Trace.error("BSH.handleRequest()", "buffer was null");
+            if(log.isErrorEnabled()) log.error("buffer was null");
             return;
         }
 
@@ -121,27 +120,27 @@ public class BSH extends Protocol {
         // create interpreter just-in-time
         if(interpreter == null) {
             interpreter=new Interpreter();
-            if(Trace.trace)
-                Trace.info("BSH.handleRequest()", "beanshell interpreter was created");
+
+                if(log.isInfoEnabled()) log.info("beanshell interpreter was created");
             try {
                 interpreter.set("bsh_prot", this);
-                if(Trace.trace)
-                    Trace.info("BSH.handleRequest()", "set \"bsh_prot\" to " + this);
+
+                    if(log.isInfoEnabled()) log.info("set \"bsh_prot\" to " + this);
             }
             catch(EvalError err) {
-                Trace.error("BSH.handleRequest()", "failed setting \"bsh_prot\": " + err);
+                if(log.isErrorEnabled()) log.error("failed setting \"bsh_prot\": " + err);
             }
 
         }
 
         try {
             retval=interpreter.eval(code);
-            if(Trace.trace)
-                Trace.info("BSH.handleRequest()", "eval: \"" + code +
+
+                if(log.isInfoEnabled()) log.info("eval: \"" + code +
                                                   "\", retval=" + retval);
         }
         catch(EvalError ex) {
-            Trace.error("BSH.handleRequest()", "error is " + Trace.getStackTrace(ex));
+            if(log.isErrorEnabled()) log.error("error is " + Util.getStackTrace(ex));
             retval=ex;
         }
 
@@ -157,8 +156,8 @@ public class BSH extends Protocol {
                     rsp.setObject(retval.toString());
             }
 
-            if(Trace.trace)
-                Trace.info("BSH.handleRequest()", "sending back response " +
+
+                if(log.isInfoEnabled()) log.info("sending back response " +
                                                   retval + " to " + rsp.getDest());
             rsp.putHeader(name, new BshHeader(BshHeader.RSP));
             passDown(new Event(Event.MSG, rsp));
@@ -171,11 +170,11 @@ public class BSH extends Protocol {
 //        Object retval=null;
 //        try {
 //            retval=interpreter.eval(code);
-//            if(Trace.trace)
-//                Trace.info("BSH.eval()", "eval: \"" + code +
+//
+//                if(log.isInfoEnabled()) log.info("BSH.eval()", "eval: \"" + code +
 //                           "\", retval=" + retval);
 //            if(retval != null && !(retval instanceof Serializable)) {
-//                Trace.error("BSH.eval", "return value " + retval +
+//                if(log.isErrorEnabled()) log.error("BSH.eval", "return value " + retval +
 //                                        " is not serializable, cannot be sent back " +
 //                                        "(returning null)");
 //                return null;
@@ -183,15 +182,15 @@ public class BSH extends Protocol {
 //            return retval;
 //        }
 //        catch(EvalError ex) {
-//            Trace.error("BSH.eval()", "error is " + Trace.getStackTrace(ex));
+//            if(log.isErrorEnabled()) log.error("BSH.eval()", "error is " + Util.getStackTrace(ex));
 //            return ex;
 //        }
 //    }
 //
     public void destroyInterpreter() {
         interpreter=null; // allow it to be garbage collected
-        if(Trace.trace)
-            Trace.info("BSH.destroyInterpreter()", "beanshell interpreter was destroyed");
+
+            if(log.isInfoEnabled()) log.info("beanshell interpreter was destroyed");
     }
     /* ------------------------ End of Callbacks ------------------------ */
 

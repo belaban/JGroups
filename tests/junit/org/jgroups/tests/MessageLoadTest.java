@@ -1,13 +1,16 @@
 package org.jgroups.tests;
 
-import junit.framework.*;
+import junit.framework.TestCase;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.jgroups.JChannel;
+import org.jgroups.Message;
+import org.jgroups.MessageListener;
+import org.jgroups.blocks.PullPushAdapter;
+import org.jgroups.debug.Debugger;
 
-import java.util.*;
-import java.io.IOException;
-
-import org.jgroups.*;
-import org.jgroups.blocks.*;
-import org.jgroups.debug.*;
+import java.util.Iterator;
+import java.util.Vector;
 
 /**
  * This test case checks how high volume of messages are handled by JGroups
@@ -21,7 +24,7 @@ import org.jgroups.debug.*;
  * <li><code>-debug</code> - pop-up protocol debugger;
  * <li><code>-cummulative</code> - debugger shows cummulative messages.
  * </ul>
- * $Id: MessageLoadTest.java,v 1.3 2004/01/16 16:47:52 belaban Exp $
+ * $Id: MessageLoadTest.java,v 1.4 2004/03/30 06:47:31 belaban Exp $
  */
 public class MessageLoadTest extends TestCase {
 
@@ -60,7 +63,10 @@ public class MessageLoadTest extends TestCase {
     //"SPEED_LIMIT(down_queue_limit=10):" +
     //"pbcast.STATE_TRANSFER(down_thread=false)";
 
-    
+
+    protected Log log=LogFactory.getLog(this.getClass());
+
+
     /**
      * This method returns the protocol stack depending on loopback option.
      */
@@ -103,8 +109,6 @@ public class MessageLoadTest extends TestCase {
      * stack debuggers if such option was selected at startup.
      */
     protected void setUp() throws Exception {
-        org.jgroups.log.Trace.init();
-
         printSelectedOptions();
 
         channel1=new JChannel(getProtocolStack());

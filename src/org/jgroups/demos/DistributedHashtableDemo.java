@@ -1,15 +1,14 @@
-// $Id: DistributedHashtableDemo.java,v 1.2 2003/11/29 01:25:28 belaban Exp $
+// $Id: DistributedHashtableDemo.java,v 1.3 2004/03/30 06:47:16 belaban Exp $
 
 
 package org.jgroups.demos;
 
 
+import org.jgroups.ChannelException;
 import org.jgroups.ChannelFactory;
 import org.jgroups.JChannelFactory;
-import org.jgroups.ChannelException;
-import org.jgroups.persistence.PersistenceFactory;
 import org.jgroups.blocks.DistributedHashtable;
-import org.jgroups.log.Trace;
+import org.jgroups.persistence.PersistenceFactory;
 
 import javax.swing.*;
 import java.awt.*;
@@ -96,7 +95,6 @@ public class DistributedHashtableDemo extends Frame implements WindowListener, A
 
     public void start(ChannelFactory factory, String props, boolean persist) 
             throws ChannelException {
-        Trace.init();
         h=new DistributedHashtable(groupname, factory, props, persist, 10000);
         h.addNotifier(this);
 

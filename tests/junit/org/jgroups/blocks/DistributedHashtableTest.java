@@ -1,12 +1,10 @@
-// $Id: DistributedHashtableTest.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+// $Id: DistributedHashtableTest.java,v 1.2 2004/03/30 06:47:30 belaban Exp $
 package org.jgroups.blocks;
 
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
-
 import org.apache.log4j.Logger;
-import org.jgroups.log.Trace;
 
 public class DistributedHashtableTest extends TestCase
 {
@@ -46,7 +44,7 @@ public class DistributedHashtableTest extends TestCase
 				+ "STATE_TRANSFER:"
 				+ "QUEUE";
 				
-		Trace.init();
+
 
 		queue1 = new DistributedHashtable("testing", null, props, 10000);
 

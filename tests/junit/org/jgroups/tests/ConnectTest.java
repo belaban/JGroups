@@ -1,16 +1,16 @@
-// $Id: ConnectTest.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+// $Id: ConnectTest.java,v 1.2 2004/03/30 06:47:31 belaban Exp $
 
 package org.jgroups.tests;
 
 
 import junit.framework.TestCase;
 import org.jgroups.JChannel;
-import org.jgroups.View;
 import org.jgroups.Message;
 import org.jgroups.MessageListener;
+import org.jgroups.View;
 import org.jgroups.blocks.PullPushAdapter;
-import org.jgroups.util.Util;
 import org.jgroups.util.Promise;
+import org.jgroups.util.Util;
 
 
 /**

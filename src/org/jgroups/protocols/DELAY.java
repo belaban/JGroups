@@ -1,12 +1,12 @@
-// $Id: DELAY.java,v 1.1 2003/09/09 01:24:09 belaban Exp $
+// $Id: DELAY.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
 
 package org.jgroups.protocols;
 
+import org.jgroups.Event;
+import org.jgroups.stack.Protocol;
+import org.jgroups.util.Util;
+
 import java.util.Properties;
-import org.jgroups.*;
-import org.jgroups.stack.*;
-import org.jgroups.log.Trace;
-import org.jgroups.util.*;
 
 
 
@@ -57,8 +57,8 @@ public class DELAY extends Protocol {
 
 	switch(evt.getType()) {
 	case Event.MSG:         // Only delay messages, not other events !
-	    if(Trace.trace)
-		Trace.info("DELAY.up()", "delaying incoming message for " + delay + " milliseconds");
+
+		if(log.isInfoEnabled()) log.info("delaying incoming message for " + delay + " milliseconds");
 	    Util.sleep(delay);	    
 	    break;
 	}
@@ -76,8 +76,8 @@ public class DELAY extends Protocol {
 	switch(evt.getType()) {
 
 	case Event.MSG:         // Only delay messages, not other events !
-	    if(Trace.trace)
-		Trace.info("DELAY.down()", "delaying outgoing message for " + delay + " milliseconds");
+
+		if(log.isInfoEnabled()) log.info("delaying outgoing message for " + delay + " milliseconds");
 	    Util.sleep(delay);
 	    break;
 	}

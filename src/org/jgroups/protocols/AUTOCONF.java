@@ -1,9 +1,8 @@
-// $Id: AUTOCONF.java,v 1.4 2004/02/12 23:23:25 belaban Exp $
+// $Id: AUTOCONF.java,v 1.5 2004/03/30 06:47:20 belaban Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.Event;
-import org.jgroups.log.Trace;
 import org.jgroups.stack.Protocol;
 
 import java.io.IOException;
@@ -41,8 +40,8 @@ public class AUTOCONF extends Protocol {
 
     public void init() throws Exception {
         senseNetworkConfiguration();
-        if(Trace.trace)
-            Trace.info("AUTOCONF.init()", "configuration is\n" + config);
+
+            if(log.isInfoEnabled()) log.info("configuration is\n" + config);
     }
 
     public void start() throws Exception {
@@ -101,7 +100,7 @@ public class AUTOCONF extends Protocol {
     void senseNetworkConfiguration() {
         int max_frag_size=senseMaxFragSize();
         if(max_frag_size <= 0) {
-            Trace.error("AUTOCONF.senseNetworkConfiguration()", "max_frag_size is invalid: " + max_frag_size);
+            if(log.isErrorEnabled()) log.error("max_frag_size is invalid: " + max_frag_size);
         }
         else
             config.put("frag_size", new Integer(max_frag_size));
@@ -109,12 +108,15 @@ public class AUTOCONF extends Protocol {
         senseMaxReceiveBufferSize(config);
     }
 
+    public static int senseMaxFragSizeStatic() {
+        return new AUTOCONF().senseMaxFragSize();
+    }
 
     /**
      * Tries to find out the max number of bytes in a DatagramPacket we can send by sending increasingly
      * larger packets, until there is an exception (e.g. java.io.IOException: message too long)
      */
-    public static int senseMaxFragSize() {
+    public int senseMaxFragSize() {
         int max_send=32000;
         int upper=8192;
         int lower=0;
@@ -130,7 +132,7 @@ public class AUTOCONF extends Protocol {
             local_addr=InetAddress.getLocalHost();
         }
         catch(Exception ex) {
-            Trace.warn("AUTOCONF.senseMaxFragSize()", "failed creating DatagramSocket: " + ex);
+            if(log.isWarnEnabled()) log.warn("failed creating DatagramSocket: " + ex);
             return 0;
         }
 
@@ -154,14 +156,14 @@ public class AUTOCONF extends Protocol {
                 upper=(upper + lower) / 2;
             }
             catch(Throwable ex) {
-                Trace.warn("AUTOCONF.senseMaxFragSize()", "exception=" + ex);
+                if(log.isWarnEnabled()) log.warn("exception=" + ex);
                 break;
             }
         }
 
         /** Reduce the frag_size a bit to prevent packets that are too large (see bug #854887) */
         lower-=frag_overhead;
-        if(Trace.trace) Trace.info("AUTOCONF.senseMaxFragSize()", "frag_size=" + lower);
+         if(log.isInfoEnabled()) log.info("frag_size=" + lower);
         return lower;
     }
 
@@ -183,7 +185,7 @@ public class AUTOCONF extends Protocol {
             }
         }
         catch(Throwable ex) {
-            Trace.error("AUTOCONF.senseMaxSendBufferSize()", "failed getting the max send buffer size: " + ex +
+            if(log.isErrorEnabled()) log.error("failed getting the max send buffer size: " + ex +
                     ". Defaulting to " + retval);
             return;
         }
@@ -191,6 +193,8 @@ public class AUTOCONF extends Protocol {
             map.put("send_buf_size", new Integer(retval));
         }
     }
+
+
 
     void senseMaxReceiveBufferSize(HashMap map) {
         DatagramSocket sock=null;
@@ -206,7 +210,7 @@ public class AUTOCONF extends Protocol {
             }
         }
         catch(Throwable ex) {
-            Trace.error("AUTOCONF.senseMaxReceiveBufferSize()", "failed getting the max send buffer size: " + ex +
+            if(log.isErrorEnabled()) log.error("failed getting the max send buffer size: " + ex +
                     ". Defaulting to " + retval);
             return;
         }
@@ -219,7 +223,7 @@ public class AUTOCONF extends Protocol {
     /* ----------------------------------- End of Private metods --------------------------------------- */
 
     public static void main(String[] args) {
-        int frag_size=senseMaxFragSize();
+        int frag_size=new AUTOCONF().senseMaxFragSize();
         System.out.println("frag_size: " + frag_size);
     }
 

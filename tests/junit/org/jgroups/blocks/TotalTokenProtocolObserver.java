@@ -1,7 +1,5 @@
-// $Id: TotalTokenProtocolObserver.java,v 1.2 2004/02/26 19:14:13 belaban Exp $
+// $Id: TotalTokenProtocolObserver.java,v 1.3 2004/03/30 06:47:30 belaban Exp $
 package org.jgroups.blocks;
-
-import java.util.Vector;
 
 import org.apache.log4j.Logger;
 import org.jgroups.Event;
@@ -9,7 +7,8 @@ import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolObserver;
-import org.jgroups.util.Util;
+
+import java.util.Vector;
 
 public class TotalTokenProtocolObserver  implements ProtocolObserver
 {

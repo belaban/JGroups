@@ -1,4 +1,4 @@
-// $Id: MessageProtocol.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+// $Id: MessageProtocol.java,v 1.2 2004/03/30 06:47:27 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -7,7 +7,6 @@ import org.jgroups.*;
 import org.jgroups.blocks.GroupRequest;
 import org.jgroups.blocks.RequestCorrelator;
 import org.jgroups.blocks.RequestHandler;
-import org.jgroups.log.Trace;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
@@ -116,11 +115,11 @@ public abstract class MessageProtocol extends Protocol implements RequestHandler
         rsp_list=_req.getResults();
 
         if(rsp_list.size() == 0) {
-            Trace.error("MessageProtocol.sendMessage()", "response list is empty");
+            if(log.isErrorEnabled()) log.error("response list is empty");
             return null;
         }
         if(rsp_list.size() > 1)
-            Trace.error("MessageProtocol.sendMessage()", "response list contains " +
+            if(log.isErrorEnabled()) log.error("response list contains " +
                                                          "more that 1 response; returning first response");
         rsp=(Rsp)rsp_list.elementAt(0);
         if(rsp.wasSuspected())
@@ -170,8 +169,7 @@ public abstract class MessageProtocol extends Protocol implements RequestHandler
                     return;
                 }
                 else
-                    Trace.error("MessageProtocol.up()",
-                                "Request correlator is null! Event is " + Util.printEvent(evt));
+                    if(log.isErrorEnabled()) log.error("Request correlator is null! Event is " + Util.printEvent(evt));
 
                 break;
         }

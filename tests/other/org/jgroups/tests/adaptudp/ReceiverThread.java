@@ -2,13 +2,10 @@ package org.jgroups.tests.adaptudp;
 
 import org.apache.log4j.Logger;
 
-import java.io.BufferedInputStream;
-import java.io.DataInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ObjectInputStream;
-import java.net.MulticastSocket;
-import java.net.Socket;
 import java.net.DatagramPacket;
+import java.net.MulticastSocket;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -82,7 +79,7 @@ public class ReceiverThread extends Thread {
                         System.out.println("-- received " + counter + " msgs");
                     }
                     if(counter % log_interval == 0) {
-                        log.info(dumpStats(counter));
+                        if(log.isInfoEnabled()) log.info(dumpStats(counter));
                     }
                     if(counter >= expected_msgs && !done) {
                         ending=System.currentTimeMillis();
@@ -108,7 +105,7 @@ public class ReceiverThread extends Thread {
             sb.append(" [msgs/sec] ");
             sb.append(", rolling_throughput (last ").append(log_interval).append(" msgs) ");
             sb.append(" [KB/sec]\n");
-            log.info(sb.toString());
+            if(log.isInfoEnabled()) log.info(sb.toString());
         }
 
 
@@ -126,7 +123,7 @@ public class ReceiverThread extends Thread {
                 "Throughput: " + throughput_b + " [KB/sec]\n" +
                 "Total received: " + expected_msgs * (msg_size / 1000.0 / 1000.0) + " [MB]\n";
         System.out.println(result);
-        log.info(result);
+        if(log.isInfoEnabled()) log.info(result);
     }
 
 

@@ -1,16 +1,15 @@
-// $Id: UnicastTest2.java,v 1.2 2004/02/26 19:14:15 belaban Exp $
+// $Id: UnicastTest2.java,v 1.3 2004/03/30 06:47:34 belaban Exp $
 
 
 package org.jgroups.tests;
 
 
+import org.jgroups.*;
+
 import java.io.Serializable;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
-import org.jgroups.*;
-import org.jgroups.util.*;
-import org.jgroups.log.Trace;
 
 
 
@@ -193,7 +192,7 @@ public class UnicastTest2 implements Runnable {
 
     public static void main(String[] args) {
 	try {
-	    Trace.init();
+
 	    new UnicastTest2().start();
 	}
 	catch(Exception e) {

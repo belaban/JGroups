@@ -1,13 +1,15 @@
-// $Id: MessageDispatcherTestAsync.java,v 1.5 2004/03/01 16:55:36 belaban Exp $
+// $Id: MessageDispatcherTestAsync.java,v 1.6 2004/03/30 06:47:34 belaban Exp $
 
 package org.jgroups.tests;
 
 
 import org.jgroups.*;
-import org.jgroups.blocks.*;
-import org.jgroups.util.*;
-import org.jgroups.debug.*;
-import org.jgroups.log.Trace;
+import org.jgroups.blocks.MessageDispatcher;
+import org.jgroups.blocks.RequestHandler;
+import org.jgroups.blocks.RspCollector;
+import org.jgroups.debug.Debugger;
+import org.jgroups.util.RspList;
+import org.jgroups.util.Util;
 
 import java.io.IOException;
 
@@ -146,7 +148,7 @@ public class MessageDispatcherTestAsync implements RequestHandler {
             }
         }
 
-        Trace.init();
+
 
         try {
             test=new MessageDispatcherTestAsync(debug, cummulative);

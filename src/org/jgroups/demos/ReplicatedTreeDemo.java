@@ -1,25 +1,23 @@
-// $Id: ReplicatedTreeDemo.java,v 1.2 2004/03/01 16:15:22 belaban Exp $
+// $Id: ReplicatedTreeDemo.java,v 1.3 2004/03/30 06:47:16 belaban Exp $
 
 package org.jgroups.demos;
 
 
-import javax.swing.*;
-import javax.swing.event.*;
-import javax.swing.table.*;
-import javax.swing.tree.*;
+import org.jgroups.View;
+import org.jgroups.blocks.ReplicatedTree;
 
+import javax.swing.*;
+import javax.swing.event.TableModelEvent;
+import javax.swing.event.TableModelListener;
+import javax.swing.event.TreeSelectionEvent;
+import javax.swing.event.TreeSelectionListener;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableColumn;
+import javax.swing.tree.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
-import java.util.Iterator;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.StringTokenizer;
-import java.util.Vector;
-
-import org.jgroups.View;
-import org.jgroups.blocks.*;
+import java.util.*;
 
 
 /**

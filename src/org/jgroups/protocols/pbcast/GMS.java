@@ -1,18 +1,22 @@
-// $Id: GMS.java,v 1.7 2004/01/08 02:39:56 belaban Exp $
+// $Id: GMS.java,v 1.8 2004/03/30 06:47:18 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
+
+import org.jgroups.*;
+import org.jgroups.stack.Protocol;
+import org.jgroups.util.BoundedList;
+import org.jgroups.util.TimeScheduler;
+import org.jgroups.util.Util;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
-import java.util.*;
-
-import org.jgroups.*;
-import org.jgroups.util.*;
-import org.jgroups.stack.*;
-import org.jgroups.log.Trace;
+import java.util.Hashtable;
+import java.util.Iterator;
+import java.util.Properties;
+import java.util.Vector;
 
 
 
@@ -84,7 +88,7 @@ public class GMS extends Protocol {
     public void setImpl(GmsImpl new_impl) {
         synchronized(impl_mutex) {
             impl=new_impl;
-            if(Trace.trace) Trace.info("GMS.setImpl()", "changed role to " + new_impl.getClass().getName());
+             if(log.isInfoEnabled()) log.info("changed role to " + new_impl.getClass().getName());
         }
     }
 
@@ -123,7 +127,7 @@ public class GMS extends Protocol {
         }
         tmp.leaving=false;
         setImpl(tmp);
-        if(Trace.trace) Trace.info("GMS.becomeCoordinator()", local_addr + " became coordinator");
+         if(log.isInfoEnabled()) log.info(local_addr + " became coordinator");
     }
 
 
@@ -136,7 +140,7 @@ public class GMS extends Protocol {
         }
         tmp.leaving=false;
         setImpl(tmp);
-        if(Trace.trace) Trace.info("GMS.becomeParticipant()", local_addr + " became participant");
+         if(log.isInfoEnabled()) log.info(local_addr + " became participant");
     }
 
     public void becomeClient() {
@@ -148,7 +152,7 @@ public class GMS extends Protocol {
         }
         tmp.initial_mbrs.removeAllElements();
         setImpl(tmp);
-        if(Trace.trace) Trace.info("GMS.becomeClient", local_addr + " became client");
+         if(log.isInfoEnabled()) log.info(local_addr + " became client");
     }
 
 
@@ -170,14 +174,14 @@ public class GMS extends Protocol {
 
         synchronized(members) {
             if(view_id == null) {
-                Trace.error("GMS.getNextView()", "view_id is null");
+                if(log.isErrorEnabled()) log.error("view_id is null");
                 return null; // this should *never* happen !
             }
             vid=Math.max(view_id.getId(), ltime) + 1;
             ltime=vid;
 
-            if(Trace.trace)
-                Trace.debug("GMS.getNextView()", "VID=" + vid + ", current members=" +
+
+                if(log.isDebugEnabled()) log.debug("VID=" + vid + ", current members=" +
                                                  Util.printMembers(members.getMembers()) +
                                                  ", new_mbrs=" + Util.printMembers(new_mbrs) +
                                                  ", old_mbrs=" + Util.printMembers(old_mbrs) + ", suspected_mbrs=" +
@@ -218,8 +222,8 @@ public class GMS extends Protocol {
                 }
             }
 
-            if(Trace.trace)
-                Trace.debug("GMS.getNextView()", "new view is " + v);
+
+                if(log.isDebugEnabled()) log.debug("new view is " + v);
             return v;
         }
     }
@@ -274,8 +278,8 @@ public class GMS extends Protocol {
         Message view_change_msg;
         GmsHeader hdr;
 
-        if(Trace.trace)
-            Trace.info("GMS.castViewChange()", "mcasting view {" + new_view + "} (" + new_view.size() + " mbrs)\n");
+
+            if(log.isInfoEnabled()) log.info("mcasting view {" + new_view + "} (" + new_view.size() + " mbrs)\n");
         view_change_msg=new Message(); // bcast to all members
         hdr=new GmsHeader(GmsHeader.VIEW, new_view);
         hdr.digest=digest;
@@ -304,13 +308,13 @@ public class GMS extends Protocol {
         ViewId vid=new_view.getVid();
         Vector mbrs=new_view.getMembers();
 
-        if(Trace.trace) Trace.info("GMS.installView()", "[local_addr=" + local_addr + "] view is " + new_view);
+         if(log.isInfoEnabled()) log.info("[local_addr=" + local_addr + "] view is " + new_view);
 
         // Discards view with id lower than our own. Will be installed without check if first view
         if(view_id != null) {
             rc=vid.compareTo(view_id);
             if(rc <= 0) {
-                Trace.error("GMS.installView()", "[" + local_addr + "] received view <= current view;" +
+                if(log.isErrorEnabled()) log.error("[" + local_addr + "] received view <= current view;" +
                                                  " discarding it (current vid: " + view_id + ", new vid: " + vid + ")");
                 return;
             }
@@ -321,8 +325,8 @@ public class GMS extends Protocol {
         /* Check for self-inclusion: if I'm not part of the new membership, I just discard it.
         This ensures that messages sent in view V1 are only received by members of V1 */
         if(checkSelfInclusion(mbrs) == false) {
-            if(Trace.trace)
-                Trace.warn("GMS.installView()", "checkSelfInclusion() failed, " + local_addr +
+
+                if(log.isWarnEnabled()) log.warn("checkSelfInclusion() failed, " + local_addr +
                                                 " is not a member of view " + new_view + "; discarding view");
 
             // only shun if this member was previously part of the group. avoids problem where multiple
@@ -330,8 +334,8 @@ public class GMS extends Protocol {
             // {A,B,X}, which would cause Y and Z to be shunned as they are not part of the membership
             // bela Nov 20 2003
             if(shun && local_addr != null && prev_members.contains(local_addr)) {
-                if(Trace.trace)
-                    Trace.warn("GMS.installView()", "I (" + local_addr +
+
+                    if(log.isWarnEnabled()) log.warn("I (" + local_addr +
                                                     ") am being shunned, will leave and rejoin group. " +
                                                     "prev_members are " + prev_members);
                 passUp(new Event(Event.EXIT));
@@ -473,7 +477,7 @@ public class GMS extends Protocol {
                 return ret;
             }
             else {
-                Trace.error("GMS.getDigest()", "digest could not be fetched from PBCAST layer");
+                if(log.isErrorEnabled()) log.error("digest could not be fetched from PBCAST layer");
                 return null;
             }
         }
@@ -502,12 +506,12 @@ public class GMS extends Protocol {
                         impl.handleJoinResponse(hdr.join_rsp);
                         break;
                     case GmsHeader.LEAVE_REQ:
-                        if(Trace.trace)
-                            Trace.info("GMS.up()", "received LEAVE_REQ " + hdr + " from " + msg.getSrc());
+
+                            if(log.isInfoEnabled()) log.info("received LEAVE_REQ " + hdr + " from " + msg.getSrc());
 
                         if(hdr.mbr == null) {
-                            if(Trace.trace)
-                                Trace.error("GMS.up()", "LEAVE_REQ's mbr field is null");
+
+                                if(log.isErrorEnabled()) log.error("LEAVE_REQ's mbr field is null");
                             return;
                         }
                         sendLeaveResponse(hdr.mbr);
@@ -518,7 +522,7 @@ public class GMS extends Protocol {
                         break;
                     case GmsHeader.VIEW:
                         if(hdr.view == null) {
-                            Trace.error("GMS.up()", "[VIEW]: view == null");
+                            if(log.isErrorEnabled()) log.error("[VIEW]: view == null");
                             return;
                         }
                         impl.handleViewChange(hdr.view, hdr.digest);
@@ -543,7 +547,7 @@ public class GMS extends Protocol {
                         break;
 
                     default:
-                        Trace.error("GMS.up()", "GmsHeader with type=" + hdr.type + " not known");
+                        if(log.isErrorEnabled()) log.error("GmsHeader with type=" + hdr.type + " not known");
                 }
                 return;  // don't pass up
 
@@ -610,10 +614,10 @@ public class GMS extends Protocol {
                     group_addr=(String)evt.getArg();
                 }
                 catch(ClassCastException cce) {
-                    Trace.error("GMS.down()", "[CONNECT]: group address must be a string (channel name)");
+                    if(log.isErrorEnabled()) log.error("[CONNECT]: group address must be a string (channel name)");
                 }
                 if(local_addr == null)
-                    Trace.fatal("GMS.down()", "[CONNECT] local_addr is null");
+                    if(log.isFatalEnabled()) log.fatal("[CONNECT] local_addr is null");
                 impl.join(local_addr);
                 passUp(new Event(Event.CONNECT_OK));
                 return;                              // don't pass down: was already passed down
@@ -712,18 +716,18 @@ public class GMS extends Protocol {
         GmsHeader hdr;
 
         if(mbr == null) {
-            if(Trace.trace)
-                Trace.error("GMS.handleJoinRequest()", "mbr is null");
+
+                if(log.isErrorEnabled()) log.error("mbr is null");
             return;
         }
 
-        if(Trace.trace)
-            Trace.debug("GMS.handleJoinRequest()", "mbr=" + mbr);
+
+            if(log.isDebugEnabled()) log.debug("mbr=" + mbr);
 
         // 1. Get the new view and digest
         join_rsp=impl.handleJoin(mbr);
         if(join_rsp == null)
-            Trace.error("GMS.handleJoinRequest()", impl.getClass().toString() + ".handleJoin(" + mbr +
+            if(log.isErrorEnabled()) log.error(impl.getClass().toString() + ".handleJoin(" + mbr +
                                                    ") returned null: will not be able to multicast new view");
 
         // 2. Send down a local TMP_VIEW event. This is needed by certain layers (e.g. NAKACK) to compute correct digest

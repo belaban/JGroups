@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.4 2004/02/26 19:15:00 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.5 2004/03/30 06:47:21 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -9,7 +9,6 @@ import org.jgroups.View;
 import org.jgroups.blocks.GroupRequest;
 import org.jgroups.blocks.RequestCorrelator;
 import org.jgroups.blocks.RequestHandler;
-import org.jgroups.log.Trace;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.StateTransferInfo;
 import org.jgroups.util.Rsp;
@@ -206,7 +205,7 @@ public class STATE_TRANSFER extends Protocol implements RequestHandler {
                 coord=determineCoordinator();
 
                 if(coord == null || coord.equals(local_addr)) {
-                    Trace.warn("STATE_TRANSFER.down()", "GET_STATE: coordinator is null");
+                    if(log.isWarnEnabled()) log.warn("GET_STATE: coordinator is null");
                     event_list=new Vector();
                     event_list.addElement(new Event(Event.GET_STATE_OK, null));
                     passUp(new Event(Event.STOP_QUEUEING, event_list));
@@ -256,18 +255,18 @@ public class STATE_TRANSFER extends Protocol implements RequestHandler {
                     if(is_server)
                         return cached_state;
                     else {
-                        Trace.warn("STATE_TRANSFER.handle()", "RETURN_STATE: returning null" +
+                        if(log.isWarnEnabled()) log.warn("RETURN_STATE: returning null" +
                                 "as I'm not yet an operational state server !");
                         return null;
                     }
                 default:
-                    Trace.error("STATE_TRANSFER.handle()", "type " + req.getType() +
+                    if(log.isErrorEnabled()) log.error("type " + req.getType() +
                             "is unknown in StateTransferRequest !");
                     return null;
             }
         }
         catch(Exception e) {
-            Trace.error("STATE_TRANSFER.handle()", "exception is " + e);
+            if(log.isErrorEnabled()) log.error("exception is " + e);
             return null;
         }
     }
@@ -295,7 +294,7 @@ public class STATE_TRANSFER extends Protocol implements RequestHandler {
             msg=new Message(null, null, Util.objectToByteBuffer(r));
         }
         catch(Exception e) {
-            Trace.error("STATE_TRANSFER.getStateFromSingle()", "exception=" + e);
+            if(log.isErrorEnabled()) log.error("exception=" + e);
             return null;
         }
 

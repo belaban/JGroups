@@ -1,10 +1,15 @@
-// $Id: GmsImpl.java,v 1.1 2003/09/09 01:24:11 belaban Exp $
+// $Id: GmsImpl.java,v 1.2 2004/03/30 06:47:18 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Membership;
+import org.jgroups.View;
+
 import java.util.Vector;
-import org.jgroups.*;
-import org.jgroups.log.Trace;
 
 
 
@@ -12,6 +17,7 @@ import org.jgroups.log.Trace;
 
 public abstract class GmsImpl {
     protected GMS          gms=null;
+     protected Log log=LogFactory.getLog(getClass());
 
 
     public abstract void      join(Address mbr);
@@ -45,7 +51,7 @@ public abstract class GmsImpl {
 
 
     protected void wrongMethod(String method_name) {
-	Trace.error("GmsImpl.wrongMethod()", method_name + 
+	if(log.isErrorEnabled()) log.error(method_name +
 		    "() should not be invoked on an instance of " + getClass().getName());
     }
 

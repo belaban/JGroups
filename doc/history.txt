@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.53 2004/03/29 19:01:57 belaban Exp $
+Revision: $Id: history.txt,v 1.54 2004/03/30 06:47:12 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -23,12 +23,24 @@ romuald     = Romuald du Song
 
 
 
-
-Version 2.2.2
+Version 2.2.3
 -------------
+
+- Conversion of Trace-based logging system to commons-logging.
+  Removed log4j subdir, removed org.jgroups.log package
+  (bela March 29 2004)
 
 - Added commons-logging.jar
   (bela March 29 2004)
+
+- Created new version
+  (bela March 29 2004)
+
+
+
+
+Version 2.2.2
+-------------
 
 - Made UpHandler/DownHandler threads in Protocol daemon threads
   (bela March 17 2004)

@@ -1,12 +1,13 @@
-// $Id: FragTest2.java,v 1.2 2003/09/24 23:25:37 belaban Exp $
+// $Id: FragTest2.java,v 1.3 2004/03/30 06:47:34 belaban Exp $
 
 
 package org.jgroups.tests;
 
 
-import org.jgroups.*;
-import org.jgroups.util.*;
-import org.jgroups.log.Trace;
+import org.jgroups.Channel;
+import org.jgroups.JChannel;
+import org.jgroups.Message;
+import org.jgroups.util.Util;
 
 
 
@@ -60,7 +61,7 @@ public class FragTest2 {
 
 
     public void start() throws Exception {
-	Trace.init();
+
 	channel=new JChannel(props);
 	if(mode == 1) channel.setOpt(Channel.LOCAL, Boolean.FALSE);
 	channel.connect(groupname);

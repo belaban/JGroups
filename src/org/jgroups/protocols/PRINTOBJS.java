@@ -1,10 +1,10 @@
-// $Id: PRINTOBJS.java,v 1.2 2004/02/26 19:15:00 belaban Exp $
+// $Id: PRINTOBJS.java,v 1.3 2004/03/30 06:47:21 belaban Exp $
 
 package org.jgroups.protocols;
 
-import org.jgroups.*;
-import org.jgroups.util.*;
-import org.jgroups.stack.*;
+import org.jgroups.Event;
+import org.jgroups.Message;
+import org.jgroups.stack.Protocol;
 
 
 public class PRINTOBJS extends Protocol {

@@ -1,6 +1,12 @@
 package org.jgroups.tests;
 
 
+import org.jgroups.Address;
+import org.jgroups.JChannel;
+import org.jgroups.Message;
+import org.jgroups.View;
+import org.jgroups.debug.Debugger;
+
 import javax.swing.*;
 import javax.swing.border.BevelBorder;
 import javax.swing.border.Border;
@@ -12,11 +18,6 @@ import java.awt.event.KeyEvent;
 import java.awt.event.WindowEvent;
 import java.util.Hashtable;
 import java.util.Map;
-import java.io.IOException;
-
-import org.jgroups.*;
-import org.jgroups.debug.*;
-import org.jgroups.log.Trace;
 
 
 /**
@@ -93,9 +94,6 @@ public class PartitionerTest extends JFrame implements Runnable {
 
     public PartitionerTest() {
         try {
-            Trace.setDefaultOutput(Trace.DEBUG, System.out);
-            Trace.setAutoFlushAll(true);
-//      Trace.setOutput("AckReceiverWindow");
             channel=new JChannel(channel_properties);
         }
         catch(Exception ex) {

@@ -2,15 +2,15 @@ package org.jgroups.tests;
 
 import org.jgroups.util.Util;
 
-import java.net.MulticastSocket;
-import java.net.InetAddress;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.MulticastSocket;
 
 /**
  * Discovers all UDP-based members running on a certain mcast address
  * @author Bela Ban
- * @version $Revision: 1.2 $
+ * @version $Revision: 1.3 $
  * Date: Jun 2, 2003
  * Time: 4:35:29 PM
  */

@@ -1,9 +1,8 @@
-// $Id: STATE_TRANSFER.java,v 1.2 2003/09/24 23:20:47 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.3 2004/03/30 06:47:18 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
 import org.jgroups.*;
-import org.jgroups.log.Trace;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.StateTransferInfo;
 import org.jgroups.util.List;
@@ -92,13 +91,13 @@ public class STATE_TRANSFER extends Protocol {
             case Event.GET_DIGEST_STATE_OK:
                 synchronized(state_requesters) {
                     if(digest != null) {
-                        Trace.warn("STATE_TRANSFER.up()", "GET_DIGEST_STATE_OK: existing digest is not null, " +
+                        if(log.isWarnEnabled()) log.warn("GET_DIGEST_STATE_OK: existing digest is not null, " +
                                 "overwriting it !");
                     }
 
                     digest=(Digest)evt.getArg();
-                    if(Trace.trace)
-                        Trace.info("STATE_TRANSFER.up()", "GET_DIGEST_STATE_OK: digest is " +
+
+                        if(log.isInfoEnabled()) log.info("GET_DIGEST_STATE_OK: digest is " +
                                 digest + "\npassUp(GET_APPLSTATE)");
                     passUp(new Event(Event.GET_APPLSTATE));
                 }
@@ -119,7 +118,7 @@ public class STATE_TRANSFER extends Protocol {
                         handleStateRsp(hdr.sender, hdr.digest, msg.getBuffer());
                         break;
                     default:
-                        Trace.error("STATE_TRANSFER.up()", "type " + hdr.type + " not known in StateHeader");
+                        if(log.isErrorEnabled()) log.error("type " + hdr.type + " not known in StateHeader");
                         break;
                 }
 
@@ -156,7 +155,7 @@ public class STATE_TRANSFER extends Protocol {
             case Event.GET_STATE:
                 info=(StateTransferInfo)evt.getArg();
                 if(info.type != StateTransferInfo.GET_FROM_SINGLE) {
-                    Trace.warn("STATE_TRANSFER.down()", "[GET_STATE] (info=" + info + "): getting the state from " +
+                    if(log.isWarnEnabled()) log.warn("[GET_STATE] (info=" + info + "): getting the state from " +
                             "all members is not currently supported by pbcast.STATE_TRANSFER, will use " +
                             "coordinator to fetch state instead");
                 }
@@ -166,18 +165,18 @@ public class STATE_TRANSFER extends Protocol {
                 else {
                     target=info.target;
                     if(target.equals(local_addr)) {
-                        Trace.error("STATE_TRANSFER.down()", "GET_STATE: cannot fetch state from myself !");
+                        if(log.isErrorEnabled()) log.error("GET_STATE: cannot fetch state from myself !");
                         target=null;
                     }
                 }
                 if(target == null) {
-                    if(Trace.trace) Trace.info("STATE_TRANSFER.down()", "GET_STATE: first member (no state)");
+                     if(log.isInfoEnabled()) log.info("GET_STATE: first member (no state)");
                     passUp(new Event(Event.GET_STATE_OK, null));
                 }
                 else {
                     state_req=new Message(target, null, null);
                     state_req.putHeader(getName(), new StateHeader(StateHeader.STATE_REQ, local_addr, state_id++, null));
-                    if(Trace.trace) Trace.info("STATE_TRANSFER.down()", "GET_STATE: asking " + target + " for state");
+                     if(log.isInfoEnabled()) log.info("GET_STATE: asking " + target + " for state");
                     passDown(new Event(Event.MSG, state_req));
                 }
                 return;                 // don't pass down any further !
@@ -186,12 +185,12 @@ public class STATE_TRANSFER extends Protocol {
                 state=(byte[])evt.getArg();
                 synchronized(state_requesters) {
                     if(state_requesters.size() == 0) {
-                        Trace.warn("STATE_TRANSFER.down()", "GET_APPLSTATE_OK: received application state, " +
+                        if(log.isWarnEnabled()) log.warn("GET_APPLSTATE_OK: received application state, " +
                                 "but there are no requesters !");
                         return;
                     }
                     if(digest == null)
-                        Trace.warn("STATE_TRANSFER.down()", "GET_APPLSTATE_OK: received application state, " +
+                        if(log.isWarnEnabled()) log.warn("GET_APPLSTATE_OK: received application state, " +
                                 "but there is no digest !");
                     else
                         digest=digest.copy();
@@ -267,7 +266,7 @@ public class STATE_TRANSFER extends Protocol {
      */
     void handleStateReq(Object sender, long state_id) {
         if(sender == null) {
-            Trace.error("STATE_TRANSFER.handleStateReq()", "sender is null !");
+            if(log.isErrorEnabled()) log.error("sender is null !");
             return;
         }
 
@@ -278,8 +277,8 @@ public class STATE_TRANSFER extends Protocol {
             else {
                 state_requesters.add(sender);
                 digest=null;
-                if(Trace.trace)
-                    Trace.info("STATE_TRANSFER.handleStateReq()", "passing down GET_DIGEST_STATE");
+
+                    if(log.isInfoEnabled()) log.info("passing down GET_DIGEST_STATE");
                 passDown(new Event(Event.GET_DIGEST_STATE));
             }
         }
@@ -289,12 +288,12 @@ public class STATE_TRANSFER extends Protocol {
     /** Set the digest and the send the state up to the application */
     void handleStateRsp(Object sender, Digest digest, byte[] state) {
         if(digest == null)
-            Trace.warn("STATE_TRANSFER.handleStateRsp()", "digest received from " +
+            if(log.isWarnEnabled()) log.warn("digest received from " +
                     sender + " is null, skipping setting digest !");
         else
             setDigest(digest);
         if(state == null)
-            Trace.warn("STATE_TRANSFER.handleStateRsp()", "state received from " +
+            if(log.isWarnEnabled()) log.warn("state received from " +
                     sender + " is null, will return null state to application");
         passUp(new Event(Event.GET_STATE_OK, state));
     }

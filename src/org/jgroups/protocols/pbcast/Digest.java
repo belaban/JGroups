@@ -1,9 +1,10 @@
-// $Id: Digest.java,v 1.1 2003/09/09 01:24:11 belaban Exp $
+// $Id: Digest.java,v 1.2 2004/03/30 06:47:18 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
-import org.jgroups.log.Trace;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -30,6 +31,7 @@ public class Digest implements Externalizable {
     long[]    high_seqnos=null;      // highest seqnos seen so far *that are deliverable*, initially 0
     long[]    high_seqnos_seen=null; // highest seqnos seen so far (not necessarily deliverable), initially -1
     int       index=0;               // current index of where next member is added
+    protected static Log log=LogFactory.getLog(Digest.class);
 
 
     public Digest() {
@@ -42,12 +44,12 @@ public class Digest implements Externalizable {
 
     public void add(Address sender, long low_seqno, long high_seqno) {
         if(index >= senders.length) {
-            Trace.error("Digest.add()", "index " + index +
+            if(log.isErrorEnabled()) log.error("index " + index +
                     " out of bounds, please create new Digest if you want more members !");
             return;
         }
         if(sender == null) {
-            Trace.error("Digest.add()", "sender is null, will not add it !");
+            if(log.isErrorEnabled()) log.error("sender is null, will not add it !");
             return;
         }
         senders[index]=sender;
@@ -60,12 +62,12 @@ public class Digest implements Externalizable {
 
     public void add(Address sender, long low_seqno, long high_seqno, long high_seqno_seen) {
         if(index >= senders.length) {
-            Trace.error("Digest.add()", "index " + index +
+            if(log.isErrorEnabled()) log.error("index " + index +
                     " out of bounds, please create new Digest if you want more members !");
             return;
         }
         if(sender == null) {
-            Trace.error("Digest.add()", "sender is null, will not add it !");
+            if(log.isErrorEnabled()) log.error("sender is null, will not add it !");
             return;
         }
         senders[index]=sender;
@@ -101,7 +103,7 @@ public class Digest implements Externalizable {
         long low_seqno, high_seqno, high_seqno_seen;
 
         if(d == null) {
-            Trace.error("Digest.merge()", "digest to be merged with is null");
+            if(log.isErrorEnabled()) log.error("digest to be merged with is null");
             return;
         }
         for(int i=0; i < d.size(); i++) {
@@ -127,7 +129,7 @@ public class Digest implements Externalizable {
         int index;
         long my_low_seqno, my_high_seqno, my_high_seqno_seen;
         if(sender == null) {
-            Trace.error("Digest.merge()", "sender == null");
+            if(log.isErrorEnabled()) log.error("sender == null");
             return;
         }
         index=getIndex(sender);
@@ -185,7 +187,7 @@ public class Digest implements Externalizable {
         if(index < size())
             return senders[index];
         else {
-            Trace.error("Digest.senderAt()", "index " + index + " is out of bounds");
+            if(log.isErrorEnabled()) log.error("index " + index + " is out of bounds");
             return null;
         }
     }
@@ -203,7 +205,7 @@ public class Digest implements Externalizable {
             high_seqnos_seen[index]=-1;
         }
         else
-            Trace.error("Digest.resetAt()", "index " + index + " is out of bounds");
+            if(log.isErrorEnabled()) log.error("index " + index + " is out of bounds");
     }
 
 
@@ -222,7 +224,7 @@ public class Digest implements Externalizable {
         if(index < size())
             return low_seqnos[index];
         else {
-            Trace.error("Digest.lowSeqnoAt()", "index " + index + " is out of bounds");
+            if(log.isErrorEnabled()) log.error("index " + index + " is out of bounds");
             return 0;
         }
     }
@@ -232,7 +234,7 @@ public class Digest implements Externalizable {
         if(index < size())
             return high_seqnos[index];
         else {
-            Trace.error("Digest.highSeqnoAt()", "index " + index + " is out of bounds");
+            if(log.isErrorEnabled()) log.error("index " + index + " is out of bounds");
             return 0;
         }
     }
@@ -241,7 +243,7 @@ public class Digest implements Externalizable {
         if(index < size())
             return high_seqnos_seen[index];
         else {
-            Trace.error("Digest.highSeqnoSeenAt()", "index " + index + " is out of bounds");
+            if(log.isErrorEnabled()) log.error("index " + index + " is out of bounds");
             return 0;
         }
     }
@@ -277,7 +279,7 @@ public class Digest implements Externalizable {
             low_seqnos[index]=low_seqno;
         }
         else
-            Trace.error("Digest.setLowSeqnoAt()", "index " + index + " is out of bounds");
+            if(log.isErrorEnabled()) log.error("index " + index + " is out of bounds");
     }
 
 
@@ -286,7 +288,7 @@ public class Digest implements Externalizable {
             high_seqnos[index]=high_seqno;
         }
         else
-            Trace.error("Digest.setHighSeqnoAt()", "index " + index + " is out of bounds");
+            if(log.isErrorEnabled()) log.error("index " + index + " is out of bounds");
     }
 
     public void setHighSeqnoSeenAt(int index, long high_seqno_seen) {
@@ -294,7 +296,7 @@ public class Digest implements Externalizable {
             high_seqnos_seen[index]=high_seqno_seen;
         }
         else
-            Trace.error("Digest.setHighSeqnoSeenAt()", "index " + index + " is out of bounds");
+            if(log.isErrorEnabled()) log.error("index " + index + " is out of bounds");
     }
 
 

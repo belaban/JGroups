@@ -1,9 +1,10 @@
-// $Id: Message.java,v 1.8 2004/02/27 01:32:07 belaban Exp $
+// $Id: Message.java,v 1.9 2004/03/30 06:47:29 belaban Exp $
 
 package org.jgroups;
 
 
-import org.jgroups.log.Trace;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jgroups.util.Marshaller;
 
 import java.io.*;
@@ -35,6 +36,9 @@ public class Message implements Externalizable {
     protected transient int     length=0;
 
     protected HashMap headers=null;
+
+    protected static Log log=LogFactory.getLog(Message.class);
+
     static final long ADDRESS_OVERHEAD=200; // estimated size of Address (src and dest)
     static final long serialVersionUID=-1137364035832847034L;
 
@@ -236,11 +240,11 @@ public class Message implements Externalizable {
     /** Puts a header given a key into the hashmap. Overwrites potential existing entry. */
     public void putHeader(String key, Header hdr) {
         // the following code is compiled out of JGroups when Trace.debug==false
-        if(Trace.debug) {
+        if(log.isTraceEnabled()) {
             if(headers().containsKey(key)) {
-                Trace.debug("Message.putHeader()", "header for \"" + key  +
-                                                   "\" is already present: old header=" +
-                                                   headers().get(key) + ", new header=" + hdr);
+                log.trace("header for \"" + key  +
+                        "\" is already present: old header=" +
+                        headers().get(key) + ", new header=" + hdr);
             }
         }
         headers().put(key, hdr);

@@ -1,19 +1,20 @@
-// $Id: DEADLOCK.java,v 1.1 2003/09/09 01:24:09 belaban Exp $
+// $Id: DEADLOCK.java,v 1.2 2004/03/30 06:47:20 belaban Exp $
 
 package org.jgroups.protocols;
 
+
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.View;
+import org.jgroups.blocks.GroupRequest;
+import org.jgroups.blocks.MethodCall;
+import org.jgroups.stack.RpcProtocol;
+import org.jgroups.util.RspList;
 
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.Vector;
-import org.jgroups.Event;
-import org.jgroups.Address;
-import org.jgroups.View;
-import org.jgroups.stack.*;
-import org.jgroups.blocks.*;
-import org.jgroups.blocks.GroupRequest;
-import org.jgroups.util.RspList;
 
 
 

@@ -1,4 +1,4 @@
-// $Id: VERIFY_SUSPECT.java,v 1.1 2003/09/09 01:24:11 belaban Exp $
+// $Id: VERIFY_SUSPECT.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -6,7 +6,6 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Header;
 import org.jgroups.Message;
-import org.jgroups.log.Trace;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 
@@ -51,7 +50,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         if(str != null) {
             num_msgs=new Integer(str).intValue();
             if(num_msgs <= 0) {
-                Trace.warn("VERIFY_SUSPECT.setProperties()", "num_msgs is invalid (" +
+                if(log.isWarnEnabled()) log.warn("num_msgs is invalid (" +
                                                              num_msgs + "): setting it to 1");
                 num_msgs=1;
             }
@@ -82,7 +81,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
             case Event.SUSPECT:  // it all starts here ...
                 suspected_mbr=(Address)evt.getArg();
                 if(suspected_mbr == null) {
-                    Trace.error("VERIFY_SUSPECT.up()", "suspected member is null");
+                    if(log.isErrorEnabled()) log.error("suspected member is null");
                     return;
                 }
                 suspect(suspected_mbr);
@@ -98,7 +97,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
                 switch(hdr.type) {
                     case VerifyHeader.ARE_YOU_DEAD:
                         if(hdr.from == null)
-                            Trace.error("VERIFY_SUSPECT.up()", "ARE_YOU_DEAD: hdr.from is null");
+                            if(log.isErrorEnabled()) log.error("ARE_YOU_DEAD: hdr.from is null");
                         else {
                             for(int i=0; i < num_msgs; i++) {
                                 rsp=new Message(hdr.from, null, null);
@@ -109,7 +108,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
                         return;
                     case VerifyHeader.I_AM_NOT_DEAD:
                         if(hdr.from == null) {
-                            Trace.error("VERIFY_SUSPECT.up()", "I_AM_NOT_DEAD: hdr.from is null");
+                            if(log.isErrorEnabled()) log.error("I_AM_NOT_DEAD: hdr.from is null");
                             return;
                         }
                         unsuspect(hdr.from);
@@ -142,8 +141,8 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
                     curr_time=System.currentTimeMillis();
                     diff=curr_time - val;
                     if(diff >= timeout) {  // haven't been unsuspected, pass up SUSPECT
-                        if(Trace.trace)
-                            Trace.info("VERIFY_SUSPECT.run()", "diff=" + diff + ", mbr " + mbr +
+
+                            if(log.isInfoEnabled()) log.info("diff=" + diff + ", mbr " + mbr +
                                                                " is dead (passing up SUSPECT event)");
                         passUp(new Event(Event.SUSPECT, mbr));
                         suspects.remove(mbr);
@@ -175,8 +174,8 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
             if(suspects.containsKey(mbr))
                 return;
             suspects.put(mbr, new Long(System.currentTimeMillis()));
-            if(Trace.trace)
-                Trace.info("VERIFY_SUSPECT.suspect()", "verifying that " + mbr + " is dead");
+
+                if(log.isInfoEnabled()) log.info("verifying that " + mbr + " is dead");
             for(int i=0; i < num_msgs; i++) {
                 msg=new Message(mbr, null, null);
                 msg.putHeader(getName(), new VerifyHeader(VerifyHeader.ARE_YOU_DEAD, local_addr));
@@ -191,8 +190,8 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         if(mbr == null) return;
         synchronized(suspects) {
             if(suspects.containsKey(mbr)) {
-                if(Trace.trace)
-                    Trace.info("VERIFY_SUSPECT.unsuspect()", "member " + mbr + " is not dead !");
+
+                    if(log.isInfoEnabled()) log.info("member " + mbr + " is not dead !");
                 suspects.remove(mbr);
                 passDown(new Event(Event.UNSUSPECT, mbr));
                 passUp(new Event(Event.UNSUSPECT, mbr));

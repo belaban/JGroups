@@ -1,18 +1,10 @@
-// $Id: ChannelMono.java,v 1.2 2004/02/26 19:14:14 belaban Exp $
+// $Id: ChannelMono.java,v 1.3 2004/03/30 06:47:31 belaban Exp $
 
 package org.jgroups.tests;
 
 import junit.framework.TestCase;
-
 import org.apache.log4j.Logger;
-import org.jgroups.Channel;
-import org.jgroups.ChannelClosedException;
-import org.jgroups.ChannelException;
-import org.jgroups.ChannelNotConnectedException;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
-import org.jgroups.TimeoutException;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.util.Util;
 
 /*

@@ -1,11 +1,11 @@
-// $Id: ConnectionTableTest.java,v 1.2 2004/02/26 19:14:15 belaban Exp $
+// $Id: ConnectionTableTest.java,v 1.3 2004/03/30 06:47:34 belaban Exp $
 
 package org.jgroups.tests;
 
 import org.jgroups.Address;
 import org.jgroups.Message;
-import org.jgroups.stack.IpAddress;
 import org.jgroups.blocks.ConnectionTable;
+import org.jgroups.stack.IpAddress;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -105,8 +105,6 @@ public class ConnectionTableTest implements ConnectionTable.Receiver, Connection
         }
 
         try {
-            org.jgroups.log.Trace.init();
-
             if(reaper_interval > 0 || conn_expire_time > 0) {
                 if(reaper_interval <= 0) reaper_interval=60000;
                 if(conn_expire_time <= 0) conn_expire_time=300000;

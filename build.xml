@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.11 2004/03/01 03:35:30 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.12 2004/03/30 06:47:37 belaban Exp $ -->
 
 <project name="JGroups" default="compile-1.4" basedir=".">
     <description>
@@ -14,7 +14,6 @@
     <property name="junit.dir" value="${root.dir}/tests/junit"/>
     <property name="stress.dir" value="${root.dir}/tests/stress"/>
     <property name="perf.dir" value="${root.dir}/tests/perf"/>
-    <property name="log4j.dir" value="${root.dir}/log4j"/>
     <property name="compile.dir" value="${root.dir}/classes"/>
     <property name="lib.dir" value="${root.dir}/lib"/>
     <property name="dist.dir" value="${root.dir}/dist"/>
@@ -66,7 +65,7 @@
             debug="on"
             deprecation="off"
             optimize="off"
-            listfiles="true"
+            listfiles="false"
             includes="org/jgroups/**">
             <exclude name="**/obsolete/**"/>
             <exclude name="**/*1_4*"/>
@@ -86,41 +85,9 @@
             debug="on"
             deprecation="off"
             optimize="off"
-            listfiles="true"
+            listfiles="false"
             includes="org/jgroups/**">
             <exclude name="**/obsolete/**"/>
-            <src path="${src.dir}"/>
-            <src path="${tests.dir}"/>
-            <src path="${junit.dir}"/>
-            <src path="${stress.dir}"/>
-            <src path="${perf.dir}"/>
-        </javac>
-    </target>
-
-    <target name="compile-log4j"
-        depends="prepare"
-        description="Compiles are Java files with log4j support">
-        <javac destdir="${compile.dir}"
-            classpathref="jg.classpath"
-            debug="on"
-            deprecation="off"
-            optimize="off"
-            listfiles="true"
-            includes="org/jgroups/log/**">
-            <exclude name="**/obsolete/**"/>
-            <exclude name="**/*1_4*"/>
-            <src path="${log4j.dir}"/>
-        </javac>
-        <javac destdir="${compile.dir}"
-            classpathref="jg.classpath"
-            debug="on"
-            deprecation="off"
-            optimize="off"
-            listfiles="true"
-            includes="org/jgroups/**">
-            <exclude name="**/obsolete/**"/>
-            <exclude name="**/*1_4*"/>
-            <exclude name="org/jgroups/log/**"/>
             <src path="${src.dir}"/>
             <src path="${tests.dir}"/>
             <src path="${junit.dir}"/>
@@ -143,15 +110,6 @@
     <target name="jar-1.4"
         description="Compiles for 1.4 and creates JAR files in the ./dist directory"
         depends="compile-1.4,
-                jgroups-all.jar,
-                jgroups-core.jar,
-            jgroups-demo.jar,
-            jgroups-test.jar"
-        >
-    </target>
-    <target name="jar-log4j"
-        description="Compiles with log4j support and creates JAR files in the ./dist directory"
-        depends="compile-log4j,
                 jgroups-all.jar,
                 jgroups-core.jar,
             jgroups-demo.jar,
@@ -201,7 +159,7 @@
             />
     </target>
 
-    <target name="jboss-service" depends="compile-log4j"
+    <target name="jboss-service"
         description="Creates the service archive used to deploy GossipServer as a JBoss MBean">
         <jar jarfile="${dist.dir}/jgroups-router.sar"
             basedir="${compile.dir}"
@@ -302,10 +260,6 @@
     <target name="all-1.4"
         depends="jar-1.4,javadoc"
         description="Compiles all files (for 1.4), creates JARs and Javadoc documentation"/>
-
-    <target name="all-log4j"
-        depends="jar-log4j,javadoc"
-        description="Compiles all files (including log4j support), creates JARs and Javadoc documentation"/>
 
 
     <target name="version"

@@ -1,4 +1,4 @@
-// $Id: MagicNumberReader.java,v 1.1 2003/09/09 01:24:08 belaban Exp $
+// $Id: MagicNumberReader.java,v 1.2 2004/03/30 06:47:14 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -8,7 +8,9 @@ package org.jgroups.conf;
  * @version 1.0
  */
 
-import org.jgroups.log.Trace;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.jgroups.util.Util;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -23,6 +25,8 @@ public class MagicNumberReader {
 
     public String mMagicNumberFile=MAGIC_NUMBER_FILE;
 
+    protected static Log log=LogFactory.getLog(MagicNumberReader.class);
+
     public void setFilename(String file) {
         mMagicNumberFile=file;
     }
@@ -31,7 +35,7 @@ public class MagicNumberReader {
         try {
             InputStream stream=getClass().getClassLoader().getResourceAsStream(mMagicNumberFile);
             if(stream == null) {
-                Trace.warn("MagicNumberReader.readMagicNumberMapping()", "failed reading " +
+                if(log.isWarnEnabled()) log.warn("failed reading " +
                                                                          mMagicNumberFile + ". Please make sure it is in the CLASSPATH. Will " +
                                                                          "continue, but marshalling will be slower");
                 return new ClassMap[0];
@@ -40,8 +44,8 @@ public class MagicNumberReader {
         }
         catch(Exception x) {
             if(xml_debug) x.printStackTrace();
-            String error=Trace.getStackTrace(x);
-            Trace.error("MagicNumberReader.readMagicNumberMapping()", error);
+            String error=Util.getStackTrace(x);
+            if(log.isErrorEnabled()) log.error(error);
         }
         return new ClassMap[0];
     }
@@ -114,8 +118,8 @@ public class MagicNumberReader {
             else {
 
                 if(xml_debug) x.printStackTrace();
-                String error=Trace.getStackTrace(x);
-                Trace.error("MagicNumberReader.parseClassData()", error);
+                String error=Util.getStackTrace(x);
+                if(log.isErrorEnabled()) log.error(error);
                 throw new java.io.IOException(x.getMessage());
             }//end if
         }//catch

@@ -1,15 +1,17 @@
-// $Id: MessageDispatcher.java,v 1.9 2004/03/16 17:55:54 belaban Exp $
+// $Id: MessageDispatcher.java,v 1.10 2004/03/30 06:47:12 belaban Exp $
 
 package org.jgroups.blocks;
 
-import java.io.Serializable;
-import java.util.Vector;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
 import org.jgroups.stack.Protocol;
-import org.jgroups.log.Trace;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
+
+import java.io.Serializable;
+import java.util.Vector;
 
 
 
@@ -34,6 +36,7 @@ public class MessageDispatcher implements RequestHandler {
     protected boolean             deadlock_detection=true;
     protected PullPushAdapter     adapter=null;
     protected Serializable        id=null;
+    protected Log log=LogFactory.getLog(getClass());
 
     /** Process items on the queue concurrently (RequestCorrelator). The default is to wait until the
      * processing of an item has completed before fetching the next item from the queue. Note that setting
@@ -303,11 +306,11 @@ public class MessageDispatcher implements RequestHandler {
                     adapter.send(msg);
             }
             catch(Throwable ex) {
-                Trace.error("MessageDispatcher.send()", "exception=" + Util.print(ex));
+                if(log.isErrorEnabled()) log.error("exception=" + Util.print(ex));
             }
         }
         else {
-            Trace.error("MessageDispatcher.send()", "channel == null");
+            if(log.isErrorEnabled()) log.error("channel == null");
         }
     }
     
@@ -361,12 +364,11 @@ public class MessageDispatcher implements RequestHandler {
        }
 
        // don't even send the message if the destination list is empty
-       if(Trace.trace)
-           Trace.debug("MessageDispatcher.castMessage()", "real_dests=" + real_dests);
+
+           if(log.isDebugEnabled()) log.debug("real_dests=" + real_dests);
        if(real_dests == null || real_dests.size() == 0) {
-           if(Trace.trace) {
-               Trace.info("MessageDispatcher.castMessage()",
-                       "destination list is empty, won't send message");
+            {
+               if(log.isInfoEnabled()) log.info("destination list is empty, won't send message");
                return new RspList(); // return empty response list
            }
        }
@@ -395,12 +397,12 @@ public class MessageDispatcher implements RequestHandler {
         Channel       tmp;
 
         if(msg == null) {
-            Trace.error("MessageDispatcher.castMessage()", "request is null");
+            if(log.isErrorEnabled()) log.error("request is null");
             return;
         }
 
         if(coll == null) {
-            Trace.error("MessageDispatcher.castMessage()", "response collector is null (must be non-null)");
+            if(log.isErrorEnabled()) log.error("response collector is null (must be non-null)");
             return;
         }
             
@@ -425,9 +427,8 @@ public class MessageDispatcher implements RequestHandler {
         
         // don't even send the message if the destination list is empty
         if(real_dests.size() == 0) {
-            if(Trace.trace) {
-                Trace.info("MessageDispatcher.castMessage()",
-                           "destination list is empty, won't send message");
+             {
+                if(log.isInfoEnabled()) log.info("destination list is empty, won't send message");
                 return;
             }
         }
@@ -455,7 +456,7 @@ public class MessageDispatcher implements RequestHandler {
         GroupRequest  _req=null;
 
         if(dest == null) {
-            Trace.error("MessageProtocol.sendMessage()", "the message's destination is null, " +
+            if(log.isErrorEnabled()) log.error("the message's destination is null, " +
                         "cannot send message");
             return null;
         }
@@ -472,11 +473,11 @@ public class MessageDispatcher implements RequestHandler {
         rsp_list=_req.getResults();
         
         if(rsp_list.size() == 0) {
-            Trace.warn("MessageProtocol.sendMessage()", " response list is empty");
+            if(log.isWarnEnabled()) log.warn(" response list is empty");
             return null;            
         }
         if(rsp_list.size() > 1)
-            Trace.warn("MessageProtocol.sendMessage()", "response list contains " +
+            if(log.isWarnEnabled()) log.warn("response list contains " +
                        "more that 1 response; returning first response !");
         rsp=(Rsp)rsp_list.elementAt(0);
         if(rsp.wasSuspected())
@@ -492,8 +493,8 @@ public class MessageDispatcher implements RequestHandler {
 //            Address new_local_addr=channel.getLocalAddress();
 //            if(new_local_addr != null) {
 //                this.local_addr=new_local_addr;
-//                if(Trace.trace)
-//                    Trace.info("MessageDispatcher.channelConnected()", "new local address is " + this.local_addr);
+//
+//                    if(log.isInfoEnabled()) log.info("MessageDispatcher.channelConnected()", "new local address is " + this.local_addr);
 //            }
 //        }
 //    }
@@ -512,8 +513,8 @@ public class MessageDispatcher implements RequestHandler {
 //            Address new_local_addr=channel.getLocalAddress();
 //            if(new_local_addr != null) {
 //                this.local_addr=new_local_addr;
-//                if(Trace.trace)
-//                    Trace.info("MessageDispatcher.channelReconnected()", "new local address is " + this.local_addr);
+//
+//                    if(log.isInfoEnabled()) log.info("MessageDispatcher.channelReconnected()", "new local address is " + this.local_addr);
 //            }
 //        }
 //    }
@@ -583,7 +584,7 @@ public class MessageDispatcher implements RequestHandler {
                         msg_listener.setState((byte[])evt.getArg());
                     }
                     catch(ClassCastException cast_ex) {
-                        Trace.error("MessageDispatcher.passUp()", "received SetStateEvent, but argument " + 
+                        if(log.isErrorEnabled()) log.error("received SetStateEvent, but argument " +
                                     evt.getArg() + " is not serializable. Discarding message.");
                     }
                 }
@@ -636,7 +637,7 @@ public class MessageDispatcher implements RequestHandler {
             if(corr != null)
                 corr.receive(evt);
             else
-                Trace.error("MessageDispatcher.up()", "corr == null");
+                if(log.isErrorEnabled()) log.error("corr == null");
         }
 
 
@@ -644,7 +645,7 @@ public class MessageDispatcher implements RequestHandler {
             if(channel != null)
                 channel.down(evt);
             else
-                Trace.error("MessageDispatcher.down()", "channel == null");
+                if(log.isErrorEnabled()) log.error("channel == null");
         }
         /* ----------------------- End of Protocol Interface ------------------------ */
 
@@ -667,11 +668,11 @@ public class MessageDispatcher implements RequestHandler {
                         adapter.send(msg);
                 }
                 catch(Throwable ex) {
-                    Trace.error("MessageDispatcher.send()", "exception=" + Util.print(ex));
+                    if(log.isErrorEnabled()) log.error("exception=" + Util.print(ex));
                 }
             }
             else {
-                Trace.error("MessageDispatcher.send()", "channel == null");
+                if(log.isErrorEnabled()) log.error("channel == null");
             }
         }
 

@@ -1,16 +1,19 @@
-// $Id: TUNNEL.java,v 1.2 2003/09/24 23:19:23 belaban Exp $
+// $Id: TUNNEL.java,v 1.3 2004/03/30 06:47:21 belaban Exp $
 
 
 package org.jgroups.protocols;
 
 
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Message;
+import org.jgroups.View;
+import org.jgroups.stack.Protocol;
+import org.jgroups.stack.RouterStub;
+
+import java.util.Enumeration;
 import java.util.Properties;
 import java.util.Vector;
-import java.util.Enumeration;
-
-import org.jgroups.*;
-import org.jgroups.stack.*;
-import org.jgroups.log.Trace;
 
 
 
@@ -87,11 +90,11 @@ public class TUNNEL extends Protocol implements Runnable {
             props.remove("router_port");
         }
 
-        if(Trace.trace)
-            Trace.info("TUNNEL.setProperties()", "router_host=" + router_host + ";router_port=" + router_port);
+
+            if(log.isInfoEnabled()) log.info("router_host=" + router_host + ";router_port=" + router_port);
 
         if(router_host == null || router_port == 0) {
-            Trace.error("TUNNEL.setProperties()", "both router_host and router_port have to be set !");
+            if(log.isErrorEnabled()) log.error("both router_host and router_port have to be set !");
             //System.exit(-1);
         }
 
@@ -103,7 +106,7 @@ public class TUNNEL extends Protocol implements Runnable {
                     sb.append(", ");
                 }
             }
-            Trace.error("TUNNEL.setProperties()", "The following properties are not recognized: " + sb.toString());
+            if(log.isErrorEnabled()) log.error("The following properties are not recognized: " + sb.toString());
             return false;
         }
         return true;
@@ -115,7 +118,7 @@ public class TUNNEL extends Protocol implements Runnable {
         Message      msg;
         TunnelHeader hdr;
 
-        if(Trace.trace) Trace.info("TUNNEL.down()", "event is " + evt);
+         if(log.isInfoEnabled()) log.info("event is " + evt);
 
         if(evt.getType() != Event.MSG) {
             handleDownEvent(evt);
@@ -167,7 +170,7 @@ public class TUNNEL extends Protocol implements Runnable {
         Message msg;
 
         if(stub == null) {
-            Trace.error("TUNNEL.run()", "router stub is null; cannot receive messages from router !");
+            if(log.isErrorEnabled()) log.error("router stub is null; cannot receive messages from router !");
             return;
         }
 
@@ -175,10 +178,10 @@ public class TUNNEL extends Protocol implements Runnable {
             msg=stub.receive();
             if(msg == null) {
                 if(receiver == null) break;
-                Trace.error("TUNNEL.run()", "received a null message. Trying to reconnect to router");
+                if(log.isErrorEnabled()) log.error("received a null message. Trying to reconnect to router");
                 if(stub.reconnect()) {
                     stub.register(channel_name);
-                    Trace.warn("TUNNEL.run()", "Reconnected!");
+                    if(log.isWarnEnabled()) log.warn("Reconnected!");
                 }
                 continue;
             }
@@ -198,7 +201,7 @@ public class TUNNEL extends Protocol implements Runnable {
     public void handleIncomingMessage(Message msg) {
         TunnelHeader hdr=(TunnelHeader)msg.removeHeader(getName());
 
-        if(Trace.trace) Trace.info("TUNNEL.handleIncomingMessage()", "received msg " + msg);
+         if(log.isInfoEnabled()) log.info("received msg " + msg);
 
 
         /* Discard all messages destined for a channel with a different name */
@@ -236,7 +239,7 @@ public class TUNNEL extends Protocol implements Runnable {
             case Event.CONNECT:
                 channel_name=(String)evt.getArg();
                 if(stub == null)
-                    Trace.error("TUNNEL.handleDownEvent()", "CONNECT:  router stub is null!");
+                    if(log.isErrorEnabled()) log.error("CONNECT:  router stub is null!");
                 else {
                     stub.register(channel_name);
                 }

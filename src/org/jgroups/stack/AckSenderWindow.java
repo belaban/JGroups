@@ -1,12 +1,13 @@
-// $Id: AckSenderWindow.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+// $Id: AckSenderWindow.java,v 1.2 2004/03/30 06:47:27 belaban Exp $
 
 package org.jgroups.stack;
 
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
-import org.jgroups.log.Trace;
 import org.jgroups.util.Queue;
 import org.jgroups.util.Util;
 
@@ -34,6 +35,7 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
     int               min_threshold = -1;
     boolean           use_sliding_window = false, queueing = false;
     Protocol          transport = null; // used to send messages
+    protected static Log log=LogFactory.getLog(AckSenderWindow.class);
 
 
     public interface RetransmitCommand {
@@ -79,20 +81,20 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
         if (min_threshold > window_size) {
             this.min_threshold = window_size;
             this.window_size = min_threshold;
-            Trace.warn("AckSenderWindow.setWindowSize()", "min_threshold (" + min_threshold +
+            if(log.isWarnEnabled()) log.warn("min_threshold (" + min_threshold +
                     ") has to be less than window_size ( " + window_size + "). Values are swapped");
         }
         if (this.window_size <= 0) {
             this.window_size = this.min_threshold > 0 ? (int) (this.min_threshold * 1.5) : 500;
-            Trace.warn("AckSenderWindow.setWindowSize()", "window_size is <= 0, setting it to " + this.window_size);
+            if(log.isWarnEnabled()) log.warn("window_size is <= 0, setting it to " + this.window_size);
         }
         if (this.min_threshold <= 0) {
             this.min_threshold = this.window_size > 0 ? (int) (this.window_size * 0.5) : 250;
-            Trace.warn("AckSenderWindow.setWindowSize()", "min_threshold is <= 0, setting it to " + this.min_threshold);
+            if(log.isWarnEnabled()) log.warn("min_threshold is <= 0, setting it to " + this.min_threshold);
         }
 
-        if (Trace.trace)
-            Trace.info("AckSenderWindow.setWindowSize()", "window_size=" + this.window_size +
+
+            if(log.isInfoEnabled()) log.info("window_size=" + this.window_size +
                     ", min_threshold=" + this.min_threshold);
         use_sliding_window = true;
     }
@@ -136,8 +138,8 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
                     if (msgs.size() + 1 > window_size) {
                         queueing = true;
                         addToQueue(seqno, msg);
-                        if (Trace.debug)
-                            Trace.info("AckSenderWindow.add()", "window_size (" + window_size + ") was exceeded, " +
+
+                            if(log.isInfoEnabled()) log.info("window_size (" + window_size + ") was exceeded, " +
                                     "starting to queue messages until window size falls under " + min_threshold);
                     } else {
                         addMessage(seqno, tmp, msg);
@@ -164,8 +166,8 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
 
             if (use_sliding_window && queueing) {
                 if (msgs.size() < min_threshold) { // we fell below threshold, now we can resume adding msgs
-                    if (Trace.debug)
-                        Trace.info("AckSenderWindow.ack()", "number of messages in table fell " +
+
+                        if(log.isInfoEnabled()) log.info("number of messages in table fell " +
                                 "under min_threshold (" + min_threshold + "): adding " +
                                 msg_queue.size() + " messages on queue");
 
@@ -178,15 +180,14 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
                     }
 
                     if (msgs.size() + 1 > window_size) {
-                        if (Trace.debug)
-                            Trace.info("AckSenderWindow.ack()", "exceded window_size (" + window_size +
+
+                            if(log.isInfoEnabled()) log.info("exceded window_size (" + window_size +
                                     ") again, will still queue");
                         return; // still queueuing
                     } else
                         queueing = false; // allows add() to add messages again
-                    if (Trace.debug)
-                        Trace.info("AckSenderWindow.ack()",
-                                "set queueing to false (table size=" + msgs.size() + ")");
+
+                        if(log.isInfoEnabled()) log.info("set queueing to false (table size=" + msgs.size() + ")");
                 }
             }
         }
@@ -228,7 +229,7 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
         try {
             msg_queue.add(new Entry(seqno, msg));
         } catch (Exception ex) {
-            Trace.error("AckSenderWindow.addToQueue()", "exception=" + ex);
+            if(log.isErrorEnabled()) log.error("exception=" + ex);
         }
     }
 
@@ -236,7 +237,7 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
         try {
             return msg_queue.size() == 0 ? null : (Entry) msg_queue.remove();
         } catch (Exception ex) {
-            Trace.error("AckSenderWindow.removeFromQueue()", "exception=" + ex);
+            if(log.isErrorEnabled()) log.error("exception=" + ex);
             return null;
         }
     }
@@ -262,8 +263,8 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
 
 
         public void retransmit(long seqno, Message msg) {
-            if (Trace.trace)
-                Trace.info("Dummy.retransmit()", "seqno=" + seqno);
+
+                if(log.isInfoEnabled()) log.info("seqno=" + seqno);
 
             curr_time = System.currentTimeMillis();
         }
@@ -274,7 +275,7 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
         long[] xmit_timeouts = {1000, 2000, 3000, 4000};
         AckSenderWindow win = new AckSenderWindow(new Dummy(), xmit_timeouts);
 
-        Trace.init();
+
 
         final int NUM = 1000;
 

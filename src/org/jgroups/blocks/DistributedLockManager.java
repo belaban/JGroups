@@ -1,10 +1,11 @@
 package org.jgroups.blocks;
 
-import java.util.*;
-import java.io.*;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.jgroups.ChannelException;
 
-import org.jgroups.*;
-import org.jgroups.log.*;
+import java.io.Serializable;
+import java.util.HashMap;
 
 /**
  * Distributed lock manager is responsible for maintaining the lock information
@@ -39,6 +40,9 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
 	private TwoPhaseVotingAdapter votingAdapter;
 
 	private Object id;
+
+    protected Log log=LogFactory.getLog(getClass());
+
 
     /**
      * Create instance of this class.
@@ -287,10 +291,7 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
             
         if (decree instanceof AcquireLockDecree) {
             AcquireLockDecree acquireDecree = (AcquireLockDecree)decree;
-            
-            if (Trace.debug)
-                Trace.debug("DistributedLockManager.prepare()", 
-                    "Preparing to acquire decree " + acquireDecree.lockId);
+            if(log.isDebugEnabled()) log.debug("Preparing to acquire decree " + acquireDecree.lockId);
             
             if (!checkPrepared(preparedLocks, acquireDecree))
                 // there is a prepared lock owned by third party
@@ -306,9 +307,8 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
         if (decree instanceof ReleaseLockDecree) {
             ReleaseLockDecree releaseDecree = (ReleaseLockDecree)decree;
             
-            if (Trace.debug)
-                Trace.debug("DistributedLockManager.prepare()", 
-                    "Preparing to release decree " + releaseDecree.lockId);
+
+                if(log.isDebugEnabled()) log.debug("Preparing to release decree " + releaseDecree.lockId);
 
             if (!checkPrepared(preparedReleases, releaseDecree))
                 // there is a prepared release owned by third party
@@ -344,9 +344,8 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
 
         if (decree instanceof AcquireLockDecree) {
             
-            if (Trace.debug)
-                Trace.debug("DistributedLockManager.commit()", 
-                    "Committing decree acquisition " + ((LockDecree)decree).lockId);
+
+                if(log.isDebugEnabled()) log.debug("Committing decree acquisition " + ((LockDecree)decree).lockId);
             
             if (!checkPrepared(preparedLocks, (LockDecree)decree))
                 // there is a prepared lock owned by third party
@@ -360,9 +359,8 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
         } else
         if (decree instanceof ReleaseLockDecree) {
             
-            if (Trace.debug)
-                Trace.debug("DistributedLockManager.commit()", 
-                    "Committing decree release " + ((LockDecree)decree).lockId);
+
+                if(log.isDebugEnabled()) log.debug("Committing decree release " + ((LockDecree)decree).lockId);
             
             if (!checkPrepared(preparedReleases, (LockDecree)decree))
                 // there is a prepared release owned by third party
@@ -394,9 +392,8 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
 
         if (decree instanceof AcquireLockDecree) {
             
-            if (Trace.debug)
-                Trace.debug("DistributedLockManager.abort()", 
-                    "Aborting decree acquisition " + ((LockDecree)decree).lockId);
+
+                if(log.isDebugEnabled()) log.debug("Aborting decree acquisition " + ((LockDecree)decree).lockId);
             
             if (!checkPrepared(preparedLocks, (LockDecree)decree))
                 // there is a prepared lock owned by third party
@@ -406,9 +403,8 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
         } else
         if (decree instanceof ReleaseLockDecree) {
             
-            if (Trace.debug)
-                Trace.debug("DistributedLockManager.abort()", 
-                    "Aborting decree release " + ((LockDecree)decree).lockId);
+
+                if(log.isDebugEnabled()) log.debug("Aborting decree release " + ((LockDecree)decree).lockId);
             
             if (!checkPrepared(preparedReleases, (LockDecree)decree))
                 // there is a prepared release owned by third party

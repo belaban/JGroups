@@ -1,4 +1,4 @@
-// $Id: PERF_TP.java,v 1.1 2004/02/25 02:38:22 belaban Exp $
+// $Id: PERF_TP.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -6,7 +6,6 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
-import org.jgroups.log.Trace;
 import org.jgroups.stack.Protocol;
 
 import java.util.Properties;
@@ -15,7 +14,7 @@ import java.util.Properties;
 /**
  * Measures the time for a message to travel from the channel to the transport
  * @author Bela Ban
- * @version $Id: PERF_TP.java,v 1.1 2004/02/25 02:38:22 belaban Exp $
+ * @version $Id: PERF_TP.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
  */
 public class PERF_TP extends Protocol {
     private Address local_addr=null;
@@ -108,7 +107,7 @@ public class PERF_TP extends Protocol {
 
             case Event.MSG:
                 if(done) {
-                    Trace.warn("PERF_TP.down()", "all done (discarding msg)");
+                    if(log.isWarnEnabled()) log.warn("all done (discarding msg)");
                     break;
                 }
                 msg=(Message)evt.getArg();
@@ -121,7 +120,7 @@ public class PERF_TP extends Protocol {
                         done=true;
                         this.notifyAll();
                     }
-                    Trace.info("PERF_TP.down()", "all done (num_msgs=" + num_msgs + ", expected_msgs=" + expected_msgs);
+                    if(log.isInfoEnabled()) log.info("all done (num_msgs=" + num_msgs + ", expected_msgs=" + expected_msgs);
                 }
                 break;
 

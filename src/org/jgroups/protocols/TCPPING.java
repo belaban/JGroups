@@ -1,4 +1,4 @@
-// $Id: TCPPING.java,v 1.5 2004/01/18 15:11:08 tsorgie Exp $
+// $Id: TCPPING.java,v 1.6 2004/03/30 06:47:21 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -7,18 +7,11 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.View;
-import org.jgroups.log.Trace;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.List;
 
-import java.net.InetAddress;
-import java.util.Enumeration;
-import java.util.Properties;
-import java.util.StringTokenizer;
-import java.util.Vector;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 
 /**
@@ -141,7 +134,7 @@ public class TCPPING extends Protocol {
                         return;
 
                     default:
-                        Trace.warn("TCPPING.up()", "got TCPPING header with unknown type (" + hdr.type + ")");
+                        if(log.isWarnEnabled()) log.warn("got TCPPING header with unknown type (" + hdr.type + ")");
                         return;
                 }
 
@@ -163,7 +156,7 @@ public class TCPPING extends Protocol {
                       hlist = new List();
                       hlist.add(local_addr);
                       initial_hosts.add(hlist);
-                      Trace.info("TCPPING.up()", "[SET_LOCAL_ADDRESS]: adding my own address (" + local_addr +
+                      if(log.isInfoEnabled()) log.info("[SET_LOCAL_ADDRESS]: adding my own address (" + local_addr +
                               ") to initial_hosts; initial_hosts=" + initial_hosts);
                    }
                 }
@@ -206,16 +199,16 @@ public class TCPPING extends Protocol {
                                 initial_members.add(new PingRsp(h, coord));
                                 isMember = true;
                                 numMemberInitialHosts++;
-                                if(Trace.trace) {
-                                    Trace.info("TCPPING.down()", "[FIND_INITIAL_MBRS] " + h + " is already a member");
+                                 {
+                                    if(log.isInfoEnabled()) log.info("[FIND_INITIAL_MBRS] " + h + " is already a member");
                                 }
                             } 
                         }
                         for(Enumeration hen=hlist.elements(); hen.hasMoreElements() && !isMember;) {
                             h=(IpAddress)hen.nextElement();
                             msg.setDest(h);
-                            if(Trace.trace) {
-                                Trace.info("TCPPING.down()", "[FIND_INITIAL_MBRS] sending PING request to " + msg.getDest());
+                             {
+                                if(log.isInfoEnabled()) log.info("[FIND_INITIAL_MBRS] sending PING request to " + msg.getDest());
                             }
                             passDown(new Event(Event.MSG, msg.copy()));
                         }
@@ -237,7 +230,7 @@ public class TCPPING extends Protocol {
                     }
                 }
 
-                if(Trace.trace) Trace.info("TCPPING.down()", "[FIND_INITIAL_MBRS] initial members are " + initial_members);
+                 if(log.isInfoEnabled()) log.info("[FIND_INITIAL_MBRS] initial members are " + initial_members);
 
                 // 3. Send response
                 passUp(new Event(Event.FIND_INITIAL_MBRS_OK, initial_members));
@@ -303,7 +296,7 @@ public class TCPPING extends Protocol {
                 tmp.add(hosts);
             }
             catch(NumberFormatException e) {
-                Trace.error("TCPPING.createInitialHosts()", "exeption is " + e);
+                if(log.isErrorEnabled()) log.error("exeption is " + e);
             }
         }
 

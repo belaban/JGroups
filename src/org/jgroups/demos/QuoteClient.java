@@ -1,4 +1,4 @@
-// $Id: QuoteClient.java,v 1.2 2003/09/24 23:20:47 belaban Exp $
+// $Id: QuoteClient.java,v 1.3 2004/03/30 06:47:16 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -6,8 +6,8 @@ package org.jgroups.demos;
 import org.jgroups.*;
 import org.jgroups.blocks.GroupRequest;
 import org.jgroups.blocks.RpcDispatcher;
-import org.jgroups.util.RspList;
 import org.jgroups.util.Rsp;
+import org.jgroups.util.RspList;
 
 import java.awt.*;
 import java.awt.event.ActionEvent;

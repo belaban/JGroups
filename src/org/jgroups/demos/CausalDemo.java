@@ -1,10 +1,11 @@
-// $Id: CausalDemo.java,v 1.1 2003/09/09 01:24:09 belaban Exp $
+// $Id: CausalDemo.java,v 1.2 2004/03/30 06:47:16 belaban Exp $
 package org.jgroups.demos;
+
+import org.jgroups.*;
 
 import java.io.Serializable;
 import java.util.Random;
 import java.util.Vector;
-import org.jgroups.*;
 
 
 

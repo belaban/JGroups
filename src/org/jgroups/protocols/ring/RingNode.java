@@ -1,9 +1,10 @@
-//$Id: RingNode.java,v 1.1 2003/09/09 01:24:11 belaban Exp $
+//$Id: RingNode.java,v 1.2 2004/03/30 06:47:20 belaban Exp $
 
 package org.jgroups.protocols.ring;
 
-import java.util.Vector;
 import org.jgroups.stack.IpAddress;
+
+import java.util.Vector;
 
 public interface RingNode
 {

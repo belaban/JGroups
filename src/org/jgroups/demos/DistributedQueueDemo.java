@@ -1,29 +1,19 @@
-// $Id: DistributedQueueDemo.java,v 1.3 2004/01/05 10:08:54 rds13 Exp $
+// $Id: DistributedQueueDemo.java,v 1.4 2004/03/30 06:47:16 belaban Exp $
 package org.jgroups.demos;
-
-import java.awt.Color;
-import java.awt.Font;
-import java.awt.Frame;
-import java.awt.Rectangle;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.WindowEvent;
-import java.awt.event.WindowListener;
-
-import java.util.Collection;
-import java.util.Vector;
-
-import javax.swing.JButton;
-import javax.swing.JLabel;
-import javax.swing.JTextField;
 
 import org.jgroups.ChannelException;
 import org.jgroups.ChannelFactory;
 import org.jgroups.JChannelFactory;
-
 import org.jgroups.blocks.DistributedQueue;
 
-import org.jgroups.log.Trace;
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
+import java.util.Collection;
+import java.util.Vector;
 
 
 /**
@@ -96,8 +86,6 @@ public class DistributedQueueDemo extends Frame implements WindowListener, Actio
     public void start(String groupname, ChannelFactory factory, String props)
                throws ChannelException
     {
-        Trace.init();
-
         h = new DistributedQueue(groupname, factory, props, 10000);
         h.addNotifier(this);
 

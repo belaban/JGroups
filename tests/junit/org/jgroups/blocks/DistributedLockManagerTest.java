@@ -1,9 +1,9 @@
 package org.jgroups.blocks;
 
-import junit.framework.*;
-
-import org.jgroups.*;
-import org.jgroups.log.*;
+import junit.framework.Test;
+import junit.framework.TestCase;
+import junit.framework.TestSuite;
+import org.jgroups.JChannel;
 
 public class DistributedLockManagerTest extends TestCase {
 
@@ -50,7 +50,7 @@ public class DistributedLockManagerTest extends TestCase {
 
     public void setUp() throws Exception {
         
-        Trace.init();
+
 
         channel1 = new JChannel(SERVER_PROTOCOL_STACK);
         adapter1 = new VotingAdapter(channel1);

@@ -1,9 +1,11 @@
 package org.jgroups.protocols;
 
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Message;
+import org.jgroups.stack.Protocol;
+
 import java.util.Vector;
-import org.jgroups.*;
-import org.jgroups.stack.*;
-import org.jgroups.log.Trace;
 
 
 
@@ -42,13 +44,13 @@ public class FLOWCONTROL extends Protocol {
 	    break;
 
 	case Event.MSG:               msg = (Message) evt.getArg();
-	    if (Trace.trace) Trace.debug("FLOWCONTROL.up()", "Message received");
+	     if(log.isDebugEnabled()) log.debug("Message received");
 	    if (msg.getSrc().equals(myAddr)) {
 		if (queuedMsgs.size() > 0) {
-		    if (Trace.trace) Trace.debug("FLOWCONTROL.up()", "Message from me received - Queue size was " + queuedMsgs.size());
+		     if(log.isDebugEnabled()) log.debug("Message from me received - Queue size was " + queuedMsgs.size());
 		    passDown((Event) queuedMsgs.remove(0));
 		} else {
-		    if (Trace.trace) Trace.debug("FLOWCONTROL.up()", "Message from me received - No messages in queue");
+		     if(log.isDebugEnabled()) log.debug("Message from me received - No messages in queue");
 		    sentMsgs--;
 		}
 	    }
@@ -66,7 +68,7 @@ public class FLOWCONTROL extends Protocol {
 	    if ((msg.getDest() == null) || (msg.getDest().equals(myAddr))) {
 		if (sentMsgs < MAXSENTMSGS) {
 		    sentMsgs++;
-		    if (Trace.trace) Trace.debug("FLOWCONTROL.down()", "Message " + sentMsgs + " sent");
+		     if(log.isDebugEnabled()) log.debug("Message " + sentMsgs + " sent");
 		} else {
 		    queuedMsgs.add(evt); //queues message (we add the event to avoid creating a new event to send the message)
 		    return;

@@ -1,10 +1,9 @@
-// $Id: PerfTest.java,v 1.3 2004/01/08 20:03:51 belaban Exp $
+// $Id: PerfTest.java,v 1.4 2004/03/30 06:47:34 belaban Exp $
 
 package org.jgroups.tests;
 
 import org.jgroups.*;
 import org.jgroups.blocks.PullPushAdapter;
-import org.jgroups.log.Trace;
 import org.jgroups.util.Util;
 
 import java.io.IOException;
@@ -340,7 +339,7 @@ public class PerfTest implements MessageListener, MembershipListener{
 
         PerfTest t;
 
-        Trace.init();
+
         for(int i=0; i < args.length; i++) {
             if(args[i].equals("-props")) {
                 props=args[++i];

@@ -1,14 +1,18 @@
-// $Id: FragTest.java,v 1.2 2004/02/26 19:14:14 belaban Exp $
+// $Id: FragTest.java,v 1.3 2004/03/30 06:47:31 belaban Exp $
 
 package org.jgroups.tests;
 
 
-import junit.framework.*;
-import org.jgroups.*;
-import org.jgroups.util.*;
-import org.jgroups.stack.Protocol;
-import org.jgroups.stack.IpAddress;
+import junit.framework.Test;
+import junit.framework.TestCase;
+import junit.framework.TestSuite;
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Message;
 import org.jgroups.debug.ProtocolTester;
+import org.jgroups.stack.IpAddress;
+import org.jgroups.stack.Protocol;
+import org.jgroups.util.Util;
 
 
 
@@ -52,8 +56,7 @@ public class FragTest extends TestCase {
     public void test0() throws Exception {
 	Object         mutex=new Object();
 	FragReceiver   frag_receiver=new FragReceiver(this, mutex);
-	ProtocolTester t=new ProtocolTester("FRAG(frag_size=" + 
-					    FRAG_SIZE + ")", frag_receiver, true);
+	ProtocolTester t=new ProtocolTester("FRAG(frag_size=" + FRAG_SIZE + ")", frag_receiver);
 	Message        big_msg;
 	IpAddress      local_addr=new IpAddress(5555);
 

@@ -1,11 +1,15 @@
 package org.jgroups.tests;
 
 
-import java.util.*;
-import org.jgroups.*;
-import org.jgroups.log.Trace;
-import org.jgroups.blocks.*;
+import org.jgroups.JChannel;
+import org.jgroups.JChannelFactory;
+import org.jgroups.blocks.DistributedHashtable;
+import org.jgroups.blocks.ReplicatedHashtable;
 import org.jgroups.debug.Debugger;
+
+import java.util.Hashtable;
+import java.util.Map;
+import java.util.Vector;
 
 
 /**
@@ -145,7 +149,7 @@ public class HashtableTest {
 
 
 
-	Trace.init();
+
 	
 	
 	try {

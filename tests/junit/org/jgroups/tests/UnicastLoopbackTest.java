@@ -3,12 +3,10 @@ package org.jgroups.tests;
 import junit.framework.TestCase;
 import org.jgroups.*;
 
-import java.io.IOException;
-
 /**
  * Tests unicasts to self (loopback of transport protocol)
  * @author Bela Ban Dec 31 2003
- * @version $Id: UnicastLoopbackTest.java,v 1.4 2004/01/16 16:47:52 belaban Exp $
+ * @version $Id: UnicastLoopbackTest.java,v 1.5 2004/03/30 06:47:31 belaban Exp $
  */
 public class UnicastLoopbackTest extends TestCase {
     JChannel channel=null;

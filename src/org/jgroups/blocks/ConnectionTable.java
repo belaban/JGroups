@@ -1,6 +1,14 @@
-// $Id: ConnectionTable.java,v 1.4 2004/02/12 23:23:25 belaban Exp $
+// $Id: ConnectionTable.java,v 1.5 2004/03/30 06:47:12 belaban Exp $
 
 package org.jgroups.blocks;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.jgroups.Address;
+import org.jgroups.Message;
+import org.jgroups.Version;
+import org.jgroups.stack.IpAddress;
+import org.jgroups.util.Util;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -8,13 +16,6 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.net.*;
 import java.util.*;
-
-import org.jgroups.Address;
-import org.jgroups.Message;
-import org.jgroups.Version;
-import org.jgroups.log.Trace;
-import org.jgroups.stack.IpAddress;
-import org.jgroups.util.Util;
 
 
 /**
@@ -45,6 +46,7 @@ public class ConnectionTable implements Runnable {
     long          conn_expire_time=300000;     // connections can be idle for 5 minutes before they are reaped
     boolean       use_reaper=false;            // by default we don't reap idle conns
     ThreadGroup   thread_group=null;
+    protected Log log=LogFactory.getLog(getClass());
     final byte[]  cookie={'b', 'e', 'l', 'a'};
 
 
@@ -185,7 +187,8 @@ public class ConnectionTable implements Runnable {
         Connection conn;
 
         if(dest == null) {
-            Trace.error("ConnectionTable.send()", "msg is null or message's destination is null");
+            if(log.isErrorEnabled())
+                log.error("msg is null or message's destination is null");
             return;
         }
 
@@ -198,7 +201,7 @@ public class ConnectionTable implements Runnable {
             throw sock_ex;
         }
         catch(Throwable ex) {
-            Trace.info("ConnectionTable.send()", "connection to " + dest + " could not be established: " + ex);
+            if(log.isInfoEnabled()) log.info("connection to " + dest + " could not be established: " + ex);
             throw new SocketException(ex.toString());
         }
 
@@ -207,8 +210,8 @@ public class ConnectionTable implements Runnable {
             conn.send(msg);
         }
         catch(Throwable ex) {
-            if(Trace.trace)
-                Trace.info("ConnectionTable.send()", "sending message to " + dest + " failed (ex=" +
+
+                if(log.isInfoEnabled()) log.info("sending message to " + dest + " failed (ex=" +
                                                      ex.getClass().getName() + "); removing from connection table");
             remove(dest);
         }
@@ -229,14 +232,14 @@ public class ConnectionTable implements Runnable {
                     sock.setSendBufferSize(send_buf_size);
                 }
                 catch(IllegalArgumentException ex) {
-                    Trace.error("ConnectionTable.getConnection()", "exception setting send buffer size to " +
+                    if(log.isErrorEnabled()) log.error("exception setting send buffer size to " +
                             send_buf_size + " bytes: " + ex);
                 }
                 try {
                     sock.setReceiveBufferSize(recv_buf_size);
                 }
                 catch(IllegalArgumentException ex) {
-                    Trace.error("ConnectionTable.getConnection()", "exception setting receive buffer size to " +
+                    if(log.isErrorEnabled()) log.error("exception setting receive buffer size to " +
                             send_buf_size + " bytes: " + ex);
                 }
                 conn=new Connection(sock, dest);
@@ -245,7 +248,7 @@ public class ConnectionTable implements Runnable {
                 // conns.put(dest, conn);
                 addConnection(dest, conn);
                 conn.init();
-                if(Trace.trace) Trace.info("ConnectionTable.getConnection()", "created socket to " + dest);
+                 if(log.isInfoEnabled()) log.info("created socket to " + dest);
             }
             return conn;
         }
@@ -260,8 +263,8 @@ public class ConnectionTable implements Runnable {
         else
             local_addr=new IpAddress(srv_sock.getLocalPort());
 
-        if(Trace.trace) {
-            Trace.info("ConnectionTable.start()", "server socket created " +
+         {
+            if(log.isInfoEnabled()) log.info("server socket created " +
                                                   "on " + local_addr);
         }
 
@@ -328,8 +331,8 @@ public class ConnectionTable implements Runnable {
                 }
                 conns.remove(addr);
             }
-            if(Trace.trace)
-                Trace.info("ConnectionTable.remove()", "addr=" + addr + ", connections are " + toString());
+
+                if(log.isInfoEnabled()) log.info("addr=" + addr + ", connections are " + toString());
         }
     }
 
@@ -347,8 +350,8 @@ public class ConnectionTable implements Runnable {
         while(srv_sock != null) {
             try {
                 client_sock=srv_sock.accept();
-                if(Trace.trace)
-                    Trace.info("ConnectionTable.run()", "accepted connection, client_sock=" + client_sock);
+
+                    if(log.isInfoEnabled()) log.info("accepted connection, client_sock=" + client_sock);
 
                 // create new thread and add to conn table
                 conn=new Connection(client_sock, null); // will call receive(msg)
@@ -360,8 +363,8 @@ public class ConnectionTable implements Runnable {
 
                 synchronized(conns) {
                     if(conns.contains(peer_addr)) {
-                        if(Trace.trace)
-                            Trace.warn("ConnectionTable.run()", peer_addr +
+
+                            if(log.isWarnEnabled()) log.warn(peer_addr +
                                                                 " is already there, will terminate connection");
                         conn.destroy();
                         return;
@@ -373,14 +376,14 @@ public class ConnectionTable implements Runnable {
                 conn.init(); // starts handler thread on this socket
             }
             catch(SocketException sock_ex) {
-                if(Trace.trace) Trace.info("ConnectionTable.run()", "exception is " + sock_ex);
+                 if(log.isInfoEnabled()) log.info("exception is " + sock_ex);
                 if(conn != null)
                     conn.destroy();
                 if(srv_sock == null)
                     break;  // socket was closed, therefore stop
             }
             catch(Throwable ex) {
-                if(Trace.trace) Trace.warn("ConnectionTable.run()", "exception is " + ex);
+                 if(log.isWarnEnabled()) log.warn("exception is " + ex);
             }
         }
     }
@@ -397,7 +400,7 @@ public class ConnectionTable implements Runnable {
             }
         }
         else
-            Trace.error("ConnectionTable.receive()", "receiver is null (not set) !");
+            if(log.isErrorEnabled()) log.error("receiver is null (not set) !");
     }
 
 
@@ -435,7 +438,7 @@ public class ConnectionTable implements Runnable {
                 continue;
             }
             catch(IOException io_ex) {
-                Trace.error("ConnectionTable.createServerSocket()", "exception is " + io_ex);
+                if(log.isErrorEnabled()) log.error("exception is " + io_ex);
             }
             srv_port=start_port;
             break;
@@ -483,7 +486,7 @@ public class ConnectionTable implements Runnable {
                 in=new DataInputStream(sock.getInputStream());
             }
             catch(Exception ex) {
-                Trace.error("ConnectionTable.Connection()", "exception is " + ex);
+                if(log.isErrorEnabled()) log.error("exception is " + ex);
             }
         }
 
@@ -498,14 +501,14 @@ public class ConnectionTable implements Runnable {
         }
 
         void updateLastAccessed() {
-            //if(Trace.trace)
-            ///Trace.info("ConnectionTable.Connection.updateLastAccessed()", "connections are " + conns);
+            //
+            ///if(log.isInfoEnabled()) log.info("ConnectionTable.Connection.updateLastAccessed()", "connections are " + conns);
             last_access=System.currentTimeMillis();
         }
 
         void init() {
-            if(Trace.trace)
-                Trace.info("ConnectionTable.Connection.init()", "connection was created to " + peer_addr);
+
+                if(log.isInfoEnabled()) log.info("connection was created to " + peer_addr);
             if(handler == null) {
                 // Roland Kurmann 4/7/2003, put in thread_group
                 handler=new Thread(thread_group, this, "ConnectionTable.Connection.HandlerThread");
@@ -528,22 +531,22 @@ public class ConnectionTable implements Runnable {
                     updateLastAccessed();
                 }
                 catch(IOException io_ex) {
-                    if(Trace.trace)
-                        Trace.warn("ConnectionTable.Connection.send()", "peer closed connection, " +
+
+                        if(log.isWarnEnabled()) log.warn("peer closed connection, " +
                                                                         "trying to re-establish connection and re-send msg.");
                     try {
                         doSend(msg);
                         updateLastAccessed();
                     }
                     catch(IOException io_ex2) {
-                        if(Trace.trace) Trace.error("ConnectionTable.Connection.send()", "2nd attempt to send data failed too");
+                         if(log.isErrorEnabled()) log.error("2nd attempt to send data failed too");
                     }
                     catch(Exception ex2) {
-                        if(Trace.trace) Trace.error("ConnectionTable.Connection.send()", "exception is " + ex2);
+                         if(log.isErrorEnabled()) log.error("exception is " + ex2);
                     }
                 }
                 catch(Exception ex) {
-                    if(Trace.trace) Trace.error("ConnectionTable.Connection.send()", "exception is " + ex);
+                     if(log.isErrorEnabled()) log.error("exception is " + ex);
                 }
             }
         }
@@ -554,7 +557,7 @@ public class ConnectionTable implements Runnable {
             byte[]    buffie=null;
 
             if(dst_addr == null || dst_addr.getIpAddress() == null) {
-                Trace.error("ConnectionTable.Connection.doSend()", "the destination address is null; aborting send");
+                if(log.isErrorEnabled()) log.error("the destination address is null; aborting send");
                 return;
             }
 
@@ -565,7 +568,7 @@ public class ConnectionTable implements Runnable {
 
                 buffie=Util.objectToByteBuffer(msg);
                 if(buffie.length <= 0) {
-                    Trace.error("ConnectionTable.Connection.doSend()", "buffer.length is 0. Will not send message");
+                    if(log.isErrorEnabled()) log.error("buffer.length is 0. Will not send message");
                     return;
                 }
 
@@ -580,9 +583,8 @@ public class ConnectionTable implements Runnable {
                 }
             }
             catch(Exception ex) {
-                if(Trace.trace)
-                    Trace.error("ConnectionTable.Connection.doSend()",
-                                "to " + dst_addr + ", exception is " + ex + ", stack trace:\n" +
+
+                    if(log.isErrorEnabled()) log.error("to " + dst_addr + ", exception is " + ex + ", stack trace:\n" +
                                 Util.printStackTrace(ex));
                 remove(dst_addr);
                 throw ex;
@@ -613,8 +615,7 @@ public class ConnectionTable implements Runnable {
                 in.read(version, 0, version.length);
 
                 if(Version.compareTo(version) == false) {
-                    Trace.warn("ConnectionTable.readPeerAddress()",
-                               "packet from " + client_addr + ":" + client_port +
+                    if(log.isWarnEnabled()) log.warn("packet from " + client_addr + ":" + client_port +
                                " has different version (" +
                                Version.printVersionId(version, Version.version_id.length) +
                                ") from ours (" + Version.printVersionId(Version.version_id) +
@@ -642,7 +643,7 @@ public class ConnectionTable implements Runnable {
             byte[] buf;
 
             if(local_addr == null) {
-                Trace.warn("ConnectionTable.Connection.sendLocalAddress()", "local_addr is null");
+                if(log.isWarnEnabled()) log.warn("local_addr is null");
                 return;
             }
             if(out != null) {
@@ -664,7 +665,7 @@ public class ConnectionTable implements Runnable {
                     updateLastAccessed();
                 }
                 catch(Throwable t) {
-                    Trace.error("ConnectionTable.Connection.sendLocalAddress()", "exception is " + t);
+                    if(log.isErrorEnabled()) log.error("exception is " + t);
                 }
             }
         }
@@ -678,8 +679,8 @@ public class ConnectionTable implements Runnable {
 
         boolean matchCookie(byte[] input) {
             if(input == null || input.length < cookie.length) return false;
-            if(Trace.trace)
-                Trace.info("ConnectionTable.Connection.matchCookie()", "input_cookie is " + printCookie(input));
+
+                if(log.isInfoEnabled()) log.info("input_cookie is " + printCookie(input));
             for(int i=0; i < cookie.length; i++)
                 if(cookie[i] != input[i]) return false;
             return true;
@@ -700,7 +701,7 @@ public class ConnectionTable implements Runnable {
             while(handler != null) {
                 try {
                     if(in == null) {
-                        Trace.error("ConnectionTable.Connection.run()", "input stream is null !");
+                        if(log.isErrorEnabled()) log.error("input stream is null !");
                         break;
                     }
                     len=in.readInt();
@@ -712,21 +713,21 @@ public class ConnectionTable implements Runnable {
                     receive(msg); // calls receiver.receiver(msg)
                 }
                 catch(OutOfMemoryError mem_ex) {
-                    Trace.warn("ConnectionTable.Connection.run()", "dropped invalid message, closing connection");
+                    if(log.isWarnEnabled()) log.warn("dropped invalid message, closing connection");
                     break; // continue;
                 }
                 catch(EOFException eof_ex) {  // peer closed connection
-                    Trace.info("ConnectionTable.Connection.run()", "exception is " + eof_ex);
+                    if(log.isInfoEnabled()) log.info("exception is " + eof_ex);
                     notifyConnectionClosed(peer_addr);
                     break;
                 }
                 catch(IOException io_ex) {
-                    Trace.info("ConnectionTable.Connection.run()", "exception is " + io_ex);
+                    if(log.isInfoEnabled()) log.info("exception is " + io_ex);
                     notifyConnectionClosed(peer_addr);
                     break;
                 }
                 catch(Exception e) {
-                    Trace.warn("ConnectionTable.Connection.run()", "exception is " + e);
+                    if(log.isWarnEnabled()) log.warn("exception is " + e);
                 }
             }
             handler=null;
@@ -825,8 +826,8 @@ public class ConnectionTable implements Runnable {
             Map.Entry entry;
             long curr_time;
 
-            if(Trace.trace)
-                Trace.info("ConnectionTable.Reaper.run()", "connection reaper thread was started. Number of connections=" +
+
+                if(log.isInfoEnabled()) log.info("connection reaper thread was started. Number of connections=" +
                                                            conns.size() + ", reaper_interval=" + reaper_interval + ", conn_expire_time=" +
                                                            conn_expire_time);
 
@@ -838,13 +839,13 @@ public class ConnectionTable implements Runnable {
                     for(Iterator it=conns.entrySet().iterator(); it.hasNext();) {
                         entry=(Map.Entry)it.next();
                         value=(Connection)entry.getValue();
-                        if(Trace.trace)
-                            Trace.info("ConnectionTable.Reaper.run()", "connection is " +
+
+                            if(log.isInfoEnabled()) log.info("connection is " +
                                                                        ((curr_time - value.last_access) / 1000) + " seconds old (curr-time=" +
                                                                        curr_time + ", last_access=" + value.last_access + ")");
                         if(value.last_access + conn_expire_time < curr_time) {
-                            if(Trace.trace)
-                                Trace.info("ConnectionTable.Reaper.run()", "connection " + value +
+
+                                if(log.isInfoEnabled()) log.info("connection " + value +
                                                                            " has been idle for too long (conn_expire_time=" + conn_expire_time +
                                                                            "), will be removed");
 
@@ -854,8 +855,8 @@ public class ConnectionTable implements Runnable {
                     }
                 }
             }
-            if(Trace.trace)
-                Trace.info("ConnectionTable.Reaper.run()", "reaper terminated");
+
+                if(log.isInfoEnabled()) log.info("reaper terminated");
             t=null;
         }
     }

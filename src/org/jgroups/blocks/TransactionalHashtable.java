@@ -1,34 +1,18 @@
-// $Id: TransactionalHashtable.java,v 1.3 2003/09/24 23:20:46 belaban Exp $
+// $Id: TransactionalHashtable.java,v 1.4 2004/03/30 06:47:12 belaban Exp $
 
 package org.jgroups.blocks;
 
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Vector;
-
-import org.jgroups.Address;
-import org.jgroups.Channel;
-import org.jgroups.JChannel;
-import org.jgroups.MembershipListener;
-import org.jgroups.Message;
-import org.jgroups.MessageListener;
-import org.jgroups.TimeoutException;
-import org.jgroups.log.Trace;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.jgroups.*;
 import org.jgroups.util.RWLock;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
+
+import java.io.*;
+import java.util.*;
 
 
 
@@ -82,6 +66,8 @@ public class TransactionalHashtable extends HashMap implements ReplicationReceiv
     //public static final int      ASYNC           = 1;  // asynchronous replication
     //public static final int      SYNC            = 2;  // synchronous replication
     //public static final int      SYNC_WITH_LOCKS = 3;  // synchronous replication with locking
+
+    protected Log log=LogFactory.getLog(this.getClass());
 
 
 
@@ -192,7 +178,7 @@ public class TransactionalHashtable extends HashMap implements ReplicationReceiv
             buf=Util.objectToByteBuffer(data);
         }
         catch(Throwable ex) {
-            Trace.error("TransactionalHashtable.put()", "marshalling failure: " + ex);
+            if(log.isErrorEnabled()) log.error("marshalling failure: " + ex);
             return null;
         }
         retval=get(key);
@@ -253,19 +239,19 @@ public class TransactionalHashtable extends HashMap implements ReplicationReceiv
             buf=Util.objectToByteBuffer(data);
         }
         catch(Throwable ex) {
-            Trace.error("TransactionalHashtable.put()", "marshalling failure: " + ex);
+            if(log.isErrorEnabled()) log.error("marshalling failure: " + ex);
             return null;
         }
         retval=get(key);
         curr_transaction=getCurrentTransaction();
         if(curr_transaction == null) {
-            Trace.info("TransactionalHashtable.putl()", "no transaction associated with current thread." + 
+            if(log.isInfoEnabled()) log.info("no transaction associated with current thread." +
                        " Will create new transaction with transaction mode=" + Xid.modeToString(transaction_mode));
             try {
                 begin(transaction_mode);
             }
             catch(Throwable ex) {
-                Trace.error("TransactionalHashtable.putl()", "could not start new transaction: " + ex);
+                if(log.isErrorEnabled()) log.error("could not start new transaction: " + ex);
                 return null;
             }
             curr_transaction=getCurrentTransaction();
@@ -283,7 +269,7 @@ public class TransactionalHashtable extends HashMap implements ReplicationReceiv
         
         // now check results
         if(rsps == null) // should not happen
-            Trace.error("TransactionalHashtable.putl()", "RspList of call is null");
+            if(log.isErrorEnabled()) log.error("RspList of call is null");
         else
             checkResults(rsps); // may throw a LockingException or TimeoutException
 
@@ -338,7 +324,7 @@ public class TransactionalHashtable extends HashMap implements ReplicationReceiv
             buf=Util.objectToByteBuffer(data);
         }
         catch(Throwable ex) {
-            Trace.error("TransactionalHashtable.putAll()", "marshalling failure: " + ex);
+            if(log.isErrorEnabled()) log.error("marshalling failure: " + ex);
             return;
         }
         repl_mgr.send(null,          // mcast to all members of the group
@@ -393,18 +379,18 @@ public class TransactionalHashtable extends HashMap implements ReplicationReceiv
             buf=Util.objectToByteBuffer(data);
         }
         catch(Throwable ex) {
-            Trace.error("TransactionalHashtable.putAll()", "marshalling failure: " + ex);
+            if(log.isErrorEnabled()) log.error("marshalling failure: " + ex);
             return;
         }
         curr_transaction=getCurrentTransaction();
         if(curr_transaction == null) {
-            Trace.info("TransactionalHashtable.putAlll()", "no transaction associated with current thread." + 
+            if(log.isInfoEnabled()) log.info("no transaction associated with current thread." +
                        " Will create new transaction with transaction mode=" + Xid.modeToString(transaction_mode));
             try {
                 begin(transaction_mode);
             }
             catch(Throwable ex) {
-                Trace.error("TransactionalHashtable.putAll()", "could not start new transaction: " + ex);
+                if(log.isErrorEnabled()) log.error("could not start new transaction: " + ex);
                 return;
             }
             curr_transaction=getCurrentTransaction();
@@ -422,7 +408,7 @@ public class TransactionalHashtable extends HashMap implements ReplicationReceiv
         
         // now check results
         if(rsps == null) // should not happen
-            Trace.error("TransactionalHashtable.putAlll()", "RspList of call is null");
+            if(log.isErrorEnabled()) log.error("RspList of call is null");
         else
             checkResults(rsps); // may throw a LockingException or TimeoutException
 
@@ -490,7 +476,7 @@ public class TransactionalHashtable extends HashMap implements ReplicationReceiv
             buf=Util.objectToByteBuffer(data);
         }
         catch(Throwable ex) {
-            Trace.error("TransactionalHashtable.remove()", "marshalling failure: " + ex);
+            if(log.isErrorEnabled()) log.error("marshalling failure: " + ex);
             return null;
         }
         retval=get(key);
@@ -550,19 +536,19 @@ public class TransactionalHashtable extends HashMap implements ReplicationReceiv
             buf=Util.objectToByteBuffer(data);
         }
         catch(Throwable ex) {
-            Trace.error("TransactionalHashtable.remove()", "marshalling failure: " + ex);
+            if(log.isErrorEnabled()) log.error("marshalling failure: " + ex);
             return null;
         }
         retval=get(key);
         curr_transaction=getCurrentTransaction();
         if(curr_transaction == null) {
-            Trace.info("TransactionalHashtable.removel()", "no transaction associated with current thread." + 
+            if(log.isInfoEnabled()) log.info("no transaction associated with current thread." +
                        " Will create new transaction with transaction mode=" + Xid.modeToString(transaction_mode));
             try {
                 begin(transaction_mode);
             }
             catch(Throwable ex) {
-                Trace.error("TransactionalHashtable.remove()", "could not start new transaction: " + ex);
+                if(log.isErrorEnabled()) log.error("could not start new transaction: " + ex);
                 return null;
             }
             curr_transaction=getCurrentTransaction();
@@ -580,7 +566,7 @@ public class TransactionalHashtable extends HashMap implements ReplicationReceiv
         
         // now check results
         if(rsps == null) // should not happen
-            Trace.error("TransactionalHashtable.removel()", "RspList of call is null");
+            if(log.isErrorEnabled()) log.error("RspList of call is null");
         else
             checkResults(rsps); // may throw a LockingException or TimeoutException
 
@@ -648,7 +634,7 @@ public class TransactionalHashtable extends HashMap implements ReplicationReceiv
             buf=Util.objectToByteBuffer(data);
         }
         catch(Throwable ex) {
-            Trace.error("TransactionalHashtable.clear()", "marshalling failure: " + ex);
+            if(log.isErrorEnabled()) log.error("marshalling failure: " + ex);
             return;
         }
 
@@ -703,18 +689,18 @@ public class TransactionalHashtable extends HashMap implements ReplicationReceiv
             buf=Util.objectToByteBuffer(data);
         }
         catch(Throwable ex) {
-            Trace.error("TransactionalHashtable.clear()", "marshalling failure: " + ex);
+            if(log.isErrorEnabled()) log.error("marshalling failure: " + ex);
             return;
         }
         curr_transaction=getCurrentTransaction();
         if(curr_transaction == null) {
-            Trace.info("TransactionalHashtable.clearl()", "no transaction associated with current thread." + 
+            if(log.isInfoEnabled()) log.info("no transaction associated with current thread." +
                        " Will create new transaction with transaction mode=" + Xid.modeToString(transaction_mode));
             try {
                 begin(transaction_mode);
             }
             catch(Throwable ex) {
-                Trace.error("TransactionalHashtable.clear()", "could not start new transaction: " + ex);
+                if(log.isErrorEnabled()) log.error("could not start new transaction: " + ex);
                 return;
             }
             curr_transaction=getCurrentTransaction();
@@ -732,7 +718,7 @@ public class TransactionalHashtable extends HashMap implements ReplicationReceiv
         
         // now check results
         if(rsps == null) // should not happen
-            Trace.error("TransactionalHashtable.clearl()", "RspList of call is null");
+            if(log.isErrorEnabled()) log.error("RspList of call is null");
         else
             checkResults(rsps); // may throw a LockingException or TimeoutException
 
@@ -825,7 +811,7 @@ public class TransactionalHashtable extends HashMap implements ReplicationReceiv
             }
         }
         catch(Throwable t) {
-            Trace.error("TransactionalHashtable.receive()", "exception is " + t);
+            if(log.isErrorEnabled()) log.error("exception is " + t);
             return t;
         }
     }
@@ -867,7 +853,7 @@ public class TransactionalHashtable extends HashMap implements ReplicationReceiv
             return Util.objectToByteBuffer(copy);
         }
         catch(Throwable ex) {
-            Trace.error("TransactionalHashtable.getState()", "exception marshalling state: " + ex);
+            if(log.isErrorEnabled()) log.error("exception marshalling state: " + ex);
             return null;
         }
     }
@@ -886,7 +872,7 @@ public class TransactionalHashtable extends HashMap implements ReplicationReceiv
                 return;
         }
         catch(Throwable ex) {
-            Trace.error("TransactionalHashtable.setState()", "exception unmarshalling state: " + ex);
+            if(log.isErrorEnabled()) log.error("exception unmarshalling state: " + ex);
             return;
         }
 
@@ -896,8 +882,8 @@ public class TransactionalHashtable extends HashMap implements ReplicationReceiv
 	    entry=(Map.Entry)it.next();
 	    super.put(entry.getKey(), entry.getValue());
 	}
-        if(Trace.trace)
-            Trace.info("TransactionalHashtable.setState()", "hashmap has " + size() + " items");
+
+            if(log.isInfoEnabled()) log.info("hashmap has " + size() + " items");
     }
 
     /* --------------------------------- End of MessageListener interface --------------------------- */
@@ -917,7 +903,7 @@ public class TransactionalHashtable extends HashMap implements ReplicationReceiv
     public void setMembershipListener(MembershipListener ml) {
         if(ml == null) return;
         if(repl_mgr == null)
-            Trace.error("TransactionalHashtable.setMembershipListener()", "ReplicationManager is null");
+            if(log.isErrorEnabled()) log.error("ReplicationManager is null");
         else
             repl_mgr.setMembershipListener(ml);
     }
@@ -999,14 +985,14 @@ public class TransactionalHashtable extends HashMap implements ReplicationReceiv
             thread_local.set(m);
         }
         else if(!(m instanceof Map)) {
-            Trace.warn("ReplicationManager.begin()", "thread local data was not a hashmap (was " +
+            if(log.isWarnEnabled()) log.warn("thread local data was not a hashmap (was " +
                        m + "); setting data to be a hashmap");
             m=new HashMap();
             thread_local.set(m);
         }
         
         if((xid=(Xid)((Map)m).get(Xid.XID)) != null) {
-            Trace.warn("ReplicationManager.begin()", "transaction already present (will be reused): " + xid);
+            if(log.isWarnEnabled()) log.warn("transaction already present (will be reused): " + xid);
             return;
         }
         else {
@@ -1023,7 +1009,7 @@ public class TransactionalHashtable extends HashMap implements ReplicationReceiv
     public void commit() {
         Xid curr_tx=getCurrentTransaction();
         if(curr_tx == null)
-            Trace.error("TransactionalHashtable.commit()", "no transaction associated with current thread");
+            if(log.isErrorEnabled()) log.error("no transaction associated with current thread");
         else {
             repl_mgr.commit(curr_tx);
             ((Map)thread_local.get()).remove(Xid.XID);
@@ -1038,7 +1024,7 @@ public class TransactionalHashtable extends HashMap implements ReplicationReceiv
     public void rollback() {
         Xid curr_tx=getCurrentTransaction();
         if(curr_tx == null)
-            Trace.error("TransactionalHashtable.rollback()", "no transaction associated with current thread");
+            if(log.isErrorEnabled()) log.error("no transaction associated with current thread");
         else {
             repl_mgr.rollback(curr_tx);
             ((Map)thread_local.get()).remove(Xid.XID);
@@ -1190,23 +1176,23 @@ public class TransactionalHashtable extends HashMap implements ReplicationReceiv
         this.properties=properties;
         this.state_timeout=state_timeout;
 
-        Trace.init();
+
         channel=new JChannel(properties);
         channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
         channel.connect(groupname);
         repl_mgr=new ReplicationManager(channel, this, null, this);
 
         if(channel.getState(null, state_timeout))
-            Trace.info("TransactionalHashtable.TransactionalHashtable()", "state was retrieved successfully");
+            if(log.isInfoEnabled()) log.info("state was retrieved successfully");
         else
-            Trace.info("TransactionalHashtable.TransactionalHashtable()", "state could not be retrieved (first member)");
+            if(log.isInfoEnabled()) log.info("state could not be retrieved (first member)");
     }
 
     
     protected Object handlePut(Serializable key, Serializable value, Xid transaction,
                                long lock_acquisition_timeout, long lock_lease_timeout,
                                boolean use_locks) throws LockingException, UpdateException {
-        if(Trace.trace) {
+         {
             StringBuffer sb=new StringBuffer();
             sb.append("key=").append(key).append(", value=").append(value).append(", use_locks=").append(use_locks);
             if(use_locks) {
@@ -1214,7 +1200,7 @@ public class TransactionalHashtable extends HashMap implements ReplicationReceiv
                 sb.append(", lock_acquisition_timeout=").append(lock_acquisition_timeout);
                 sb.append(", lock_lease_timeout=").append(lock_lease_timeout);
             }
-            Trace.info("TransactionalHashtable.handlePut()", sb.toString());
+            if(log.isInfoEnabled()) log.info(sb.toString());
         }
 
         if(!use_locks) {

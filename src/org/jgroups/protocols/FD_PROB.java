@@ -1,6 +1,10 @@
-// $Id: FD_PROB.java,v 1.1 2003/09/09 01:24:10 belaban Exp $
+// $Id: FD_PROB.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
 
 package org.jgroups.protocols;
+
+import org.jgroups.*;
+import org.jgroups.stack.Protocol;
+import org.jgroups.util.Util;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -9,11 +13,6 @@ import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Properties;
 import java.util.Vector;
-
-import org.jgroups.*;
-import org.jgroups.util.*;
-import org.jgroups.stack.*;
-import org.jgroups.log.Trace;
 
 
 /**
@@ -27,7 +26,7 @@ import org.jgroups.log.Trace;
  * for timeout seconds, Q will be suspected.<p>
  * This protocol can be used both with a PBCAST *and* regular stacks.
  * @author Bela Ban 1999
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.2 $
  */
 public class FD_PROB extends Protocol implements Runnable {
     Address local_addr=null;
@@ -127,16 +126,16 @@ public class FD_PROB extends Protocol implements Runnable {
                             return;
 
                         // 2. Update my own array of counters
-                        if(Trace.trace)
-                            Trace.info("FD_PROB.updateCounters()", "<-- HEARTBEAT from " + msg.getSrc());
+
+                            if(log.isInfoEnabled()) log.info("<-- HEARTBEAT from " + msg.getSrc());
                         updateCounters(hdr);
                         return;                                     // don't pass up !
                     case FdHeader.NOT_MEMBER:
-                        Trace.warn("FD_PROB.up()", "NOT_MEMBER: I'm being shunned; exiting");
+                        if(log.isWarnEnabled()) log.warn("NOT_MEMBER: I'm being shunned; exiting");
                         passUp(new Event(Event.EXIT));
                         return;
                     default:
-                        Trace.warn("FD_PROB.up()", "FdHeader type " + hdr.type + " not known");
+                        if(log.isWarnEnabled()) log.warn("FdHeader type " + hdr.type + " not known");
                         return;
                 }
         }
@@ -179,7 +178,7 @@ public class FD_PROB extends Protocol implements Runnable {
                                     start();
                                 }
                                 catch(Exception ex) {
-                                    Trace.warn("FD_PROB.down()", "exception when calling start(): " + ex);
+                                    if(log.isWarnEnabled()) log.warn("exception when calling start(): " + ex);
                                 }
                             }
                         }
@@ -208,15 +207,15 @@ public class FD_PROB extends Protocol implements Runnable {
         long curr_time, diff;
 
 
-        if(Trace.trace)
-            Trace.info("FD_PROB.run()", "heartbeat thread was started");
+
+            if(log.isInfoEnabled()) log.info("heartbeat thread was started");
 
         while(hb != null && members.size() > 1) {
 
             // 1. Get a random member P (excluding ourself)
             hb_dest=getHeartbeatDest();
             if(hb_dest == null) {
-                Trace.warn("FD_PROB.run()", "hb_dest is null");
+                if(log.isWarnEnabled()) log.warn("hb_dest is null");
                 Util.sleep(gossip_interval);
                 continue;
             }
@@ -234,17 +233,17 @@ public class FD_PROB extends Protocol implements Runnable {
             // 3. Send heartbeat to P
             hdr=createHeader();
             if(hdr == null)
-                Trace.warn("FD_PROB.run()", "header could not be created. Heartbeat will not be sent");
+                if(log.isWarnEnabled()) log.warn("header could not be created. Heartbeat will not be sent");
             else {
                 hb_msg=new Message(hb_dest, null, null);
                 hb_msg.putHeader(getName(), hdr);
-                if(Trace.trace)
-                    Trace.info("FD_PROB.run()", "--> HEARTBEAT to " + hb_dest);
+
+                    if(log.isInfoEnabled()) log.info("--> HEARTBEAT to " + hb_dest);
                 passDown(new Event(Event.MSG, hb_msg));
             }
 
-            if(Trace.trace)
-                Trace.info("FD_PROB.run()", "own counters are " + printCounters());
+
+                if(log.isInfoEnabled()) log.info("own counters are " + printCounters());
 
 
             // 4. Suspect members from which we haven't heard for timeout msecs
@@ -257,14 +256,14 @@ public class FD_PROB extends Protocol implements Runnable {
                     if(entry.excluded()) {
                         if(diff >= 2 * timeout) {  // remove members marked as 'excluded' after 2*timeout msecs
                             counters.remove(key);
-                            if(Trace.trace)
-                                Trace.info("FD_PROB.run()", "removed " + key);
+
+                                if(log.isInfoEnabled()) log.info("removed " + key);
                             continue;
                         }
                     }
                     else {
-                        if(Trace.trace)
-                            Trace.info("FD_PROB.run()", "suspecting " + key);
+
+                            if(log.isInfoEnabled()) log.info("suspecting " + key);
                         passUp(new Event(Event.SUSPECT, key));
                     }
                 }
@@ -272,8 +271,8 @@ public class FD_PROB extends Protocol implements Runnable {
             Util.sleep(gossip_interval);
         } // end while
 
-        if(Trace.trace)
-            Trace.info("FD_PROB.run()", "heartbeat thread was stopped");
+
+            if(log.isInfoEnabled()) log.info("heartbeat thread was stopped");
     }
 
 
@@ -316,7 +315,7 @@ public class FD_PROB extends Protocol implements Runnable {
             if(entry.excluded())
                 continue;
             if(index >= ret.members.length) {
-                Trace.warn("FD_PROB.createHeader()", "index " + index + " is out of bounds (" +
+                if(log.isWarnEnabled()) log.warn("index " + index + " is out of bounds (" +
                                                      ret.members.length + ")");
                 break;
             }
@@ -335,7 +334,7 @@ public class FD_PROB extends Protocol implements Runnable {
         FdEntry entry;
 
         if(hdr == null || hdr.members == null || hdr.counters == null) {
-            Trace.warn("FD_PROB.updateCounters()", "hdr is null or contains no counters");
+            if(log.isWarnEnabled()) log.warn("hdr is null or contains no counters");
             return;
         }
 
@@ -403,7 +402,7 @@ public class FD_PROB extends Protocol implements Runnable {
             if(invalid_pingers.containsKey(hb_sender)) {
                 num_pings=((Integer) invalid_pingers.get(hb_sender)).intValue();
                 if(num_pings >= max_tries) {
-                    Trace.error(" FD_PROB.checkPingerValidity()", "sender " + hb_sender +
+                    if(log.isErrorEnabled()) log.error("sender " + hb_sender +
                                                                   " is not member in " + members + " ! Telling it to leave group");
                     shun_msg=new Message((Address) hb_sender, null, null);
                     hdr=new FdHeader(FdHeader.NOT_MEMBER);

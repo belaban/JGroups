@@ -1,10 +1,11 @@
-// $Id: JoinRsp.java,v 1.1 2003/09/09 01:24:11 belaban Exp $
+// $Id: JoinRsp.java,v 1.2 2004/03/30 06:47:18 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
 
+import org.jgroups.View;
+
 import java.io.Serializable;
-import org.jgroups.*;
 
 
 

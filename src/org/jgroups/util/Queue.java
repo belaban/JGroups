@@ -1,10 +1,11 @@
-// $Id: Queue.java,v 1.12 2004/01/02 16:44:46 belaban Exp $
+// $Id: Queue.java,v 1.13 2004/03/30 06:47:28 belaban Exp $
 
 package org.jgroups.util;
 
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jgroups.TimeoutException;
-import org.jgroups.log.Trace;
 
 import java.util.Vector;
 
@@ -48,6 +49,9 @@ public class Queue {
      */
     private static final Object endMarker=new Object();
 
+    protected static Log log=LogFactory.getLog(Queue.class);
+
+    
     /**
      * the class Element indicates an object in the queue.
      * This element allows for the linked list algorithm by always holding a
@@ -118,7 +122,7 @@ public class Queue {
      */
     public void add(Object obj) throws QueueClosedException {
         if(obj == null) {
-            Trace.error("Queue.add()", "argument must not be null");
+            if(log.isErrorEnabled()) log.error("argument must not be null");
             return;
         }
         if(closed)
@@ -166,7 +170,7 @@ public class Queue {
      */
     public void addAtHead(Object obj) throws QueueClosedException {
         if(obj == null) {
-            Trace.error("Queue.addAtHead()", "argument must not be null");
+            if(log.isErrorEnabled()) log.error("argument must not be null");
             return;
         }
         if(closed)
@@ -229,7 +233,7 @@ public class Queue {
             /*remove the head from the queue, if we make it to this point, retval should not be null !*/
             retval=removeInternal();
             if(retval == null)
-                Trace.error("Queue.remove()", "element was null, should never be the case");
+                if(log.isErrorEnabled()) log.error("element was null, should never be the case");
         }
 
         /*
@@ -306,7 +310,7 @@ public class Queue {
         Element el, tmp_el;
 
         if(obj == null) {
-            Trace.error("Queue.removeElement()", "argument must not be null");
+            if(log.isErrorEnabled()) log.error("argument must not be null");
             return;
         }
 
@@ -391,7 +395,7 @@ public class Queue {
             // @remove:
             if(retval == null) {
                 // print some diagnostics
-                Trace.error("Queue.peek()", "retval is null: head=" + head + ", tail=" + tail + ", size()=" + size() +
+                if(log.isErrorEnabled()) log.error("retval is null: head=" + head + ", tail=" + tail + ", size()=" + size() +
                                             ", num_markers=" + num_markers + ", closed()=" + closed());
             }
         }

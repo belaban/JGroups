@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.3 2004/02/26 19:15:00 belaban Exp $
+// $Id: Draw.java,v 1.4 2004/03/30 06:47:16 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -6,7 +6,6 @@ package org.jgroups.demos;
 
 import org.jgroups.*;
 import org.jgroups.debug.Debugger;
-import org.jgroups.log.Trace;
 import org.jgroups.util.Util;
 
 import javax.swing.*;
@@ -45,7 +44,7 @@ public class Draw implements ActionListener, ChannelListener {
 
 
     public Draw(String props, boolean debug, boolean no_channel) throws Exception {
-        Trace.init();
+
         this.no_channel=no_channel;
         if(no_channel)
             return;

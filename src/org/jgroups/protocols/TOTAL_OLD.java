@@ -1,15 +1,15 @@
-// $Id: TOTAL_OLD.java,v 1.1 2003/09/09 01:24:10 belaban Exp $
+// $Id: TOTAL_OLD.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
 
 package org.jgroups.protocols;
+
+import org.jgroups.*;
+import org.jgroups.stack.Protocol;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Properties;
 import java.util.Vector;
-import org.jgroups.*;
-import org.jgroups.stack.*;
-import org.jgroups.log.Trace;
 
 
 
@@ -515,7 +515,7 @@ public class TOTAL_OLD extends Protocol {
     public boolean setProperties(Properties props) {
         String     str;
 
-	if (Trace.trace) System.err.println( "TOTAL_OLD layer - trace is on\n" );
+	 System.err.println( "TOTAL_OLD layer - trace is on\n" );
 
         if(props.size() > 0) {
             System.err.println("TOTAL_OLD.setProperties(): the following properties are not recognized:");
@@ -669,7 +669,7 @@ public class TOTAL_OLD extends Protocol {
             System.out.println( "View Change event passed up to TOTAL_OLD (debug - mms21)" ); 
             View new_view = (View) evt.getArg();
 	    members = new_view.getMembers();
-	    if (Trace.trace) {
+	     {
 		// print the members of this new view
 		System.out.println( "New view members (printed in TOTAL_OLD):" );
 		int view_size = members.size();
@@ -685,7 +685,7 @@ public class TOTAL_OLD extends Protocol {
 	    //   TOTAL_NEW_VIEW message to the group
 	    if ( isSequencer() ) {
 		// we are the sequencer in this new view
-		if (Trace.trace) System.err.println( "TOTAL_OLD.up() - I am the sequencer of this new view" );
+		 System.err.println( "TOTAL_OLD.up() - I am the sequencer of this new view" );
 
 		// we need to keep track of acknowledgements messages
 		ack_history = new MessageAcks( members );
@@ -747,7 +747,7 @@ public class TOTAL_OLD extends Protocol {
 	    /* don't drop messages, it should be requesting resends
 	    // all messages stored have sequence ids greater than expected
 	    if ( queued_messages.getSize() > 10 ) {
-		if (Trace.trace) {
+		 {
 		    System.err.println( "WARNING: TOTAL_OLD.passUpMessages() - more than 10 messages saved" );
 		    System.err.println( "Dropping sequence id: " + next_seq_id );
 		}
@@ -771,7 +771,7 @@ public class TOTAL_OLD extends Protocol {
 	/* store the message anyway, hopefully we'll get a TOTAL_NEW_VIEW message later
 	if ( next_seq < 0 ) {
 	    // don't know what sequence id to expect
-	    if (Trace.trace) System.err.println( "TOTAL_OLD.handleBCastMessage() - received broadcast message but don't know what sequence id to expect" );
+	     System.err.println( "TOTAL_OLD.handleBCastMessage() - received broadcast message but don't know what sequence id to expect" );
 	    return;
 	}
 	*/
@@ -789,7 +789,7 @@ public class TOTAL_OLD extends Protocol {
 	int num_passed = passUpMessages();
 // TODO: this if is temporary (debug)
 if ( num_passed > 1 )
-	if (Trace.trace) System.err.println( "TOTAL_OLD.handleBCastMessage() - " + num_passed + " message(s) passed up the Protocol Stack" );
+	 System.err.println( "TOTAL_OLD.handleBCastMessage() - " + num_passed + " message(s) passed up the Protocol Stack" );
 
         /* this is handles by the retransmission thread now
 	// see if we may need to issue any resend requests
@@ -823,7 +823,7 @@ if ( num_passed > 1 )
 		Message resend_msg = new Message( sequencer, local_addr, null );
 		resend_msg.putHeader(getName(),  new TotalHeader( TotalHeader.TOTAL_RESEND, resend_seq ) );
 		passDown( new Event( Event.MSG, resend_msg ) );
-		if (Trace.trace) System.err.println( "TOTAL_OLD.handleBCastMessage() - resend requested for message " + resend_seq );
+		 System.err.println( "TOTAL_OLD.handleBCastMessage() - resend requested for message " + resend_seq );
 	    }
 	}
 	*/
@@ -856,12 +856,12 @@ if ( num_passed > 1 )
 	ack_history.addMessage( msg_copy, next_seq_id_to_assign );
 
 	// begin debug
-	if (Trace.trace) {
+	 {
 	    Object header = msg_copy.getHeader(getName());
 	    if ( !(header instanceof TotalHeader) ) {
 		System.err.println( "Error: TOTAL_OLD.handleRequestMessage() - BAD: stored message that did not contain a TotalHeader - " + next_seq_id_to_assign );
 	    }
-	} // if (Trace.trace)
+	} //
 	// end debug
 
 	// increment the next sequence id to use
@@ -876,7 +876,7 @@ if ( num_passed > 1 )
      * respond to a request to resend a message with the specified sequence id
      */
     private synchronized void handleResendRequest( Message msg, long seq ) {
-	if (Trace.trace) System.err.println( "TOTAL_OLD.handleRequestMessage() - received resend request for message " + seq );
+	 System.err.println( "TOTAL_OLD.handleRequestMessage() - received resend request for message " + seq );
 
 	/* just rebroadcast for now because i can't get the source - this is bad (TODO: fix this) 
 	Object requester = msg.makeReply().getSrc();  // Address? of requester - test (debug)
@@ -896,9 +896,9 @@ if ( num_passed > 1 )
 	}
 	*/
 	Address requester = null;
-//if (Trace.trace) System.err.println( "TOTAL_OLD: got here - 1" );
+// System.err.println( "TOTAL_OLD: got here - 1" );
 	Message resend_msg = ack_history.getMessage( seq );
-//if (Trace.trace) System.err.println( "TOTAL_OLD: got here - 2" );
+// System.err.println( "TOTAL_OLD: got here - 2" );
 	if ( resend_msg == null ) {
 	    // couldn't find this message in the history
 	    System.err.println( "TOTAL_OLD.handleResendRequest() - could not find the message " + seq + " in the history to resend" );
@@ -909,18 +909,18 @@ if ( num_passed > 1 )
 	// note: do not need to add a TotalHeader because it should already be a
 	//       TOTAL_BCAST message
 	// begin debug
-	if (Trace.trace) {
+	 {
 	    Object header = resend_msg.getHeader(getName());
 	    if ( header instanceof TotalHeader ) {
 		//System.err.println( "TOTAL_OLD: resend msg GOOD (header is TotalHeader) - " + seq );
 	    } else {
 		System.err.println( "TOTAL_OLD: resend msg BAD (header is NOT a TotalHeader) - " + seq );
 	    }
-	} // if (Trace.trace)
+	} //
 	// end debug
 
 	passDown( new Event( Event.MSG, resend_msg ) );
-	if (Trace.trace) System.err.println( "TOTAL_OLD.handleResendRequest() - responded to resend request for message " + seq );
+	 System.err.println( "TOTAL_OLD.handleResendRequest() - responded to resend request for message " + seq );
     }
 
 

@@ -1,30 +1,13 @@
-// $Id: DistributedQueue.java,v 1.7 2004/01/27 04:55:11 belaban Exp $
+// $Id: DistributedQueue.java,v 1.8 2004/03/30 06:47:12 belaban Exp $
 package org.jgroups.blocks;
 
-import java.io.Serializable;
-
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.NoSuchElementException;
-import java.util.Vector;
-
 import org.apache.log4j.Logger;
-
-import org.jgroups.Address;
-import org.jgroups.Channel;
-import org.jgroups.ChannelClosedException;
-import org.jgroups.ChannelException;
-import org.jgroups.ChannelFactory;
-import org.jgroups.ChannelNotConnectedException;
-import org.jgroups.JChannel;
-import org.jgroups.MembershipListener;
-import org.jgroups.Message;
-import org.jgroups.MessageListener;
-import org.jgroups.View;
-
+import org.jgroups.*;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
+
+import java.io.Serializable;
+import java.util.*;
 
 
 /**

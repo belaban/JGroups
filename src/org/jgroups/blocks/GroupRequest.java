@@ -1,13 +1,14 @@
-// $Id: GroupRequest.java,v 1.4 2004/03/10 02:07:23 belaban Exp $
+// $Id: GroupRequest.java,v 1.5 2004/03/30 06:47:12 belaban Exp $
 
 package org.jgroups.blocks;
 
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.Transport;
 import org.jgroups.View;
-import org.jgroups.log.Trace;
 import org.jgroups.util.Command;
 import org.jgroups.util.RspList;
 
@@ -38,7 +39,7 @@ import java.util.Vector;
  * to do so.<p>
  * <b>Requirements</b>: lossless delivery, e.g. acknowledgment-based message confirmation.
  * @author Bela Ban
- * @version $Revision: 1.4 $
+ * @version $Revision: 1.5 $
  */
 public class GroupRequest implements RspCollector, Command {
     /** return only first response */
@@ -84,6 +85,8 @@ public class GroupRequest implements RspCollector, Command {
     protected Object rsp_mutex=new Object();
     protected long timeout=0;
     protected int expected_mbrs=0;
+
+    protected static Log log=LogFactory.getLog(GroupRequest.class);
 
     /** to generate unique request IDs (see getRequestId()) */
     private static long last_req_id=1;
@@ -182,16 +185,14 @@ public class GroupRequest implements RspCollector, Command {
     public boolean execute() {
         boolean retval;
         if(corr == null && transport == null) {
-            Trace.error(
-                    "GroupRequest.execute()",
-                    "both corr and transport are null, cannot send group request");
+            if(log.isErrorEnabled()) log.error("both corr and transport are null, cannot send group request");
             return false;
         }
         synchronized(rsp_mutex) {
             done=false;
             retval=doExecute(timeout);
-            if(retval == false && Trace.trace)
-                Trace.info("GroupRequest.execute()", "call did not execute correctly, request is " + toString());
+            if(retval == false && log.isTraceEnabled())
+                log.trace("call did not execute correctly, request is " + toString());
             done=true;
             return retval;
         }
@@ -265,12 +266,11 @@ public class GroupRequest implements RspCollector, Command {
         Address sender=m.getSrc(), mbr;
         Object val=null;
         if(done) {
-            Trace.warn("GroupRequest.receiveResponse()", "command is done; cannot add response !");
+            if(log.isWarnEnabled()) log.warn("command is done; cannot add response !");
             return;
         }
         if(suspects != null && suspects.size() > 0 && suspects.contains(sender)) {
-            Trace.warn("GroupRequest.receiveResponse()",
-                    "received response from suspected member " + sender + "; discarding");
+            if(log.isWarnEnabled()) log.warn("received response from suspected member " + sender + "; discarding");
             return;
         }
         if(m.getLength() > 0) {
@@ -278,7 +278,7 @@ public class GroupRequest implements RspCollector, Command {
                 val=m.getObject();
             }
             catch(Exception e) {
-                Trace.error("GroupRequest.receiveResponse()", "exception=" + e);
+                if(log.isErrorEnabled()) log.error("exception=" + e);
             }
         }
         synchronized(rsp_mutex) {
@@ -288,8 +288,8 @@ public class GroupRequest implements RspCollector, Command {
                     if(received[i] == NOT_RECEIVED) {
                         responses[i]=val;
                         received[i]=RECEIVED;
-                        if(Trace.trace)
-                            Trace.debug("GroupRequest.receiveResponse()", "received response for request " +
+
+                            if(log.isDebugEnabled()) log.debug("received response for request " +
                                     req_id + ", sender=" + sender + ", val=" + val);
                         rsp_mutex.notifyAll(); // wakes up execute()
                         break;
@@ -465,8 +465,8 @@ public class GroupRequest implements RspCollector, Command {
         }
 
         try {
-            if(Trace.trace)
-                Trace.debug("GroupRequest.doExecute()", "sending request (id=" + req_id + ")");
+
+                if(log.isDebugEnabled()) log.debug("sending request (id=" + req_id + ")");
             if(corr != null) {
                 java.util.List tmp=members != null? members : null;
                 corr.sendRequest(req_id, tmp, request_msg, rsp_mode == GET_NONE? null : this);
@@ -476,7 +476,7 @@ public class GroupRequest implements RspCollector, Command {
             }
         }
         catch(Throwable e) {
-            Trace.error("GroupRequest.doExecute()", "exception=" + e);
+            if(log.isErrorEnabled()) log.error("exception=" + e);
             if(corr != null)
                 corr.done(req_id);
             return false;
@@ -488,8 +488,8 @@ public class GroupRequest implements RspCollector, Command {
                 if(getResponses()) {
                     if(corr != null)
                         corr.done(req_id);
-                    if(Trace.trace)
-                        Trace.debug("GroupRequest.doExecute()", "received all responses: " + toString());
+
+                        if(log.isDebugEnabled()) log.debug("received all responses: " + toString());
                     return true;
                 }
                 try {
@@ -505,8 +505,8 @@ public class GroupRequest implements RspCollector, Command {
                 if(getResponses()) {
                     if(corr != null)
                         corr.done(req_id);
-                    if(Trace.trace)
-                        Trace.debug("GroupRequest.doExecute()", "received all responses: " + toString());
+
+                        if(log.isDebugEnabled()) log.debug("received all responses: " + toString());
                     return true;
                 }
                 timeout=timeout - (System.currentTimeMillis() - start_time);
@@ -566,9 +566,7 @@ public class GroupRequest implements RspCollector, Command {
             case GET_NONE:
                 return true;
             default :
-                Trace.error(
-                        "GroupRequest.execute()",
-                        "rsp_mode " + rsp_mode + " unknown !");
+                if(log.isErrorEnabled()) log.error("rsp_mode " + rsp_mode + " unknown !");
                 break;
         }
         return false;
@@ -611,7 +609,7 @@ public class GroupRequest implements RspCollector, Command {
     void adjustMembership() {
         Address mbr;
         if(membership == null || membership.length == 0) {
-            // Trace.warn("GroupRequest.adjustMembership()", "membership is null");
+            // if(log.isWarnEnabled()) log.warn("GroupRequest.adjustMembership()", "membership is null");
             return;
         }
         for(int i=0; i < membership.length; i++) {

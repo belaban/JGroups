@@ -1,12 +1,12 @@
-// $Id: ConfiguratorFactory.java,v 1.2 2003/09/11 17:52:57 belaban Exp $
+// $Id: ConfiguratorFactory.java,v 1.3 2004/03/30 06:47:14 belaban Exp $
 
 package org.jgroups.conf;
 
-import java.net.URL;
+import org.w3c.dom.Element;
+
 import java.io.IOException;
 import java.io.InputStream;
-
-import org.w3c.dom.Element;
+import java.net.URL;
 
 
 

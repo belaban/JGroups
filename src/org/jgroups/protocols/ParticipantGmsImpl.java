@@ -1,13 +1,14 @@
-// $Id: ParticipantGmsImpl.java,v 1.2 2003/09/24 23:20:47 belaban Exp $
+// $Id: ParticipantGmsImpl.java,v 1.3 2004/03/30 06:47:21 belaban Exp $
 
 package org.jgroups.protocols;
 
-import java.util.Vector;
-
-import org.jgroups.*;
-import org.jgroups.blocks.*;
+import org.jgroups.Address;
+import org.jgroups.View;
+import org.jgroups.ViewId;
 import org.jgroups.blocks.GroupRequest;
-import org.jgroups.log.Trace;
+import org.jgroups.blocks.MethodCall;
+
+import java.util.Vector;
 
 
 public class ParticipantGmsImpl extends GmsImpl {
@@ -60,8 +61,8 @@ public class ParticipantGmsImpl extends GmsImpl {
                 }
                 else {
                     try {
-                        if(Trace.trace)
-                            Trace.info("Participant.leave()", "sending LEAVE request to " + coord);
+
+                            if(log.isInfoEnabled()) log.info("sending LEAVE request to " + coord);
                         MethodCall call = new MethodCall("handleLeave", new Object[] {mbr, Boolean.FALSE}, 
                             new String[] {Address.class.getName(), boolean.class.getName()});
                         gms.callRemoteMethod(coord, call, GroupRequest.GET_NONE, 0);  // asynchronous
@@ -107,7 +108,7 @@ public class ParticipantGmsImpl extends GmsImpl {
      excludes us before we can leave.
      */
     public void handleViewChange(ViewId new_view, Vector mbrs) {
-        if(Trace.trace) Trace.info("ParticipantGmsImpl.handleViewChange()", "mbrs are " + mbrs);
+         if(log.isInfoEnabled()) log.info("mbrs are " + mbrs);
 
         suspected_mbrs.removeAllElements();
         new_mbrs.removeAllElements();
@@ -117,7 +118,7 @@ public class ParticipantGmsImpl extends GmsImpl {
 
         if(leaving) {
             if(mbrs.contains(gms.local_addr)) {
-                Trace.warn("ParticipantGmsImpl.handleViewChange()", "received view in " +
+                if(log.isWarnEnabled()) log.warn("received view in " +
                                                                     "which I'm still a member, cannot quit yet");
                 gms.installView(new_view, mbrs);
             }
@@ -147,14 +148,13 @@ public class ParticipantGmsImpl extends GmsImpl {
             suspected_mbrs.addElement(mbr);
         new_mbrs.removeElement(mbr);
 
-        if(Trace.trace)
-            Trace.info("ParticipantGmsImpl.handleSuspect()", "suspected mbr=" + mbr +
+
+            if(log.isInfoEnabled()) log.info("suspected mbr=" + mbr +
                                                              "\nsuspected_mbrs=" + suspected_mbrs + "\nnew_mbrs=" + new_mbrs);
 
         if(new_mbrs.size() > 0 && new_mbrs.elementAt(0).equals(gms.local_addr)) {
-            if(Trace.trace)
-                Trace.info("ParticipantGmsImpl.handleSuspect()",
-                           "suspected mbr=" + mbr + ", members are " + gms.members +
+
+                if(log.isInfoEnabled()) log.info("suspected mbr=" + mbr + ", members are " + gms.members +
                            ", coord=" + gms.local_addr + ": I'm the new coord !");
 
             suspects=(Vector) suspected_mbrs.clone();

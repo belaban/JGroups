@@ -1,9 +1,10 @@
-// $Id: ReplicationManager.java,v 1.4 2004/02/26 19:14:59 belaban Exp $
+// $Id: ReplicationManager.java,v 1.5 2004/03/30 06:47:12 belaban Exp $
 
 package org.jgroups.blocks;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
-import org.jgroups.log.Trace;
 import org.jgroups.util.RspList;
 
 import java.io.Serializable;
@@ -30,6 +31,8 @@ public class ReplicationManager implements RequestHandler {
 
     /** Used to broadcast updates and receive responses (latter only in synchronous case) */
     protected MessageDispatcher disp=null;
+
+    protected Log log=LogFactory.getLog(this.getClass());
 
 
 
@@ -112,7 +115,7 @@ public class ReplicationManager implements RequestHandler {
         if(l == null)
             return;
         if(disp == null)
-            Trace.error("ReplicationManager.setMembershipListener()", "dispatcher is null, cannot set MembershipListener");
+            if(log.isErrorEnabled()) log.error("dispatcher is null, cannot set MembershipListener");
         else
             disp.setMembershipListener(l);
     }
@@ -202,8 +205,8 @@ public class ReplicationManager implements RequestHandler {
                                               lock_acquisition_timeout,
                                               lock_lease_timeout,
                                               use_locks);
-        if(Trace.trace)
-            Trace.info("ReplicationManager.send()", "data is " + d + " (synchronous=" + synchronous + ")");
+
+            if(log.isInfoEnabled()) log.info("data is " + d + " (synchronous=" + synchronous + ")");
         msg=new Message(dest, null, d);
         if(synchronous) {
             return disp.castMessage(null, msg, GroupRequest.GET_ALL, synchronous_timeout);
@@ -241,12 +244,12 @@ public class ReplicationManager implements RequestHandler {
         ReplicationData data;
 
         if(msg == null) {
-            Trace.error("ReplicationManager.handle()", "received message was null");
+            if(log.isErrorEnabled()) log.error("received message was null");
             return null;
         }
 
         if(msg.getLength() == 0) {
-            Trace.error("ReplicationManager.handle()", "payload of received message was null");
+            if(log.isErrorEnabled()) log.error("payload of received message was null");
             return null;
         }
         
@@ -254,7 +257,7 @@ public class ReplicationManager implements RequestHandler {
             data=(ReplicationData)msg.getObject();
         }
         catch(Throwable ex) {
-            Trace.error("ReplicationManager.handle()", "failure unmarshalling message: " + ex);
+            if(log.isErrorEnabled()) log.error("failure unmarshalling message: " + ex);
             return null;
         }
 
@@ -264,7 +267,7 @@ public class ReplicationManager implements RequestHandler {
                 return handleSend(data);
             }
             catch(Throwable ex) {
-                Trace.error("ReplicationManager.handle()", "failed handling update: " + ex);
+                if(log.isErrorEnabled()) log.error("failed handling update: " + ex);
                 return ex;
             }
         case ReplicationData.COMMIT:
@@ -274,7 +277,7 @@ public class ReplicationManager implements RequestHandler {
             handleRollback(data.getTransaction());
             break;
         default:
-            Trace.error("ReplicationManager.handle()", "received incorrect replication message: " + data);
+            if(log.isErrorEnabled()) log.error("received incorrect replication message: " + data);
             return null;
         }
 
@@ -287,7 +290,7 @@ public class ReplicationManager implements RequestHandler {
     protected Object handleSend(ReplicationData data) throws UpdateException, LockingException {
         try {
             if(receiver == null) {
-                Trace.warn("ReplicationManager.handleSend()", "receiver is not set");
+                if(log.isWarnEnabled()) log.warn("receiver is not set");
                 return null;
             }
             return receiver.receive(data.getTransaction(),
@@ -305,7 +308,7 @@ public class ReplicationManager implements RequestHandler {
 
     protected void handleCommit(Xid transaction) {
         if(receiver == null) {
-            Trace.warn("ReplicationManager.handleCommit()", "receiver is not set");
+            if(log.isWarnEnabled()) log.warn("receiver is not set");
         }
         else
             receiver.commit(transaction);
@@ -313,7 +316,7 @@ public class ReplicationManager implements RequestHandler {
 
     protected void handleRollback(Xid transaction) {
         if(receiver == null) {
-            Trace.warn("ReplicationManager.handleRollback()", "receiver is not set");
+            if(log.isWarnEnabled()) log.warn("receiver is not set");
         }
         else
             receiver.rollback(transaction);

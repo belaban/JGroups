@@ -1,4 +1,4 @@
-// $Id: DisconnectTest.java,v 1.3 2004/03/01 03:27:50 belaban Exp $
+// $Id: DisconnectTest.java,v 1.4 2004/03/30 06:47:31 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -11,7 +11,6 @@ import org.jgroups.Message;
 import org.jgroups.MessageListener;
 import org.jgroups.View;
 import org.jgroups.blocks.PullPushAdapter;
-import org.jgroups.log.Trace;
 import org.jgroups.stack.GossipData;
 import org.jgroups.stack.GossipServer;
 import org.jgroups.stack.Router;
@@ -31,7 +30,7 @@ import java.net.Socket;
  * stack configurations.
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
- * @version $Revision: 1.3 $
+ * @version $Revision: 1.4 $
  **/
 public class DisconnectTest extends TestCase {
 
@@ -43,8 +42,6 @@ public class DisconnectTest extends TestCase {
 
     public void setUp() throws Exception {
         super.setUp();
-        Trace.setTrace(true);
-        Trace.setDefaultOutput(Trace.WARN, System.err);
     }
 
     public void tearDown() throws Exception {

@@ -1,15 +1,13 @@
-// $Id: DistributedQueueTest.java,v 1.2 2003/10/15 16:10:02 rds13 Exp $
+// $Id: DistributedQueueTest.java,v 1.3 2004/03/30 06:47:30 belaban Exp $
 
 package org.jgroups.blocks;
-
-import java.util.Vector;
 
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
-
 import org.apache.log4j.Logger;
-import org.jgroups.log.Trace;
+
+import java.util.Vector;
 
 public class DistributedQueueTest extends TestCase
 {
@@ -61,7 +59,7 @@ public class DistributedQueueTest extends TestCase
                 "STATE_TRANSFER:" +
                 "QUEUE";
 
-		Trace.init();
+
 
 		queue1 = new DistributedQueue("testing", null, props, 5000);
 

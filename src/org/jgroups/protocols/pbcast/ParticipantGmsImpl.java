@@ -1,12 +1,14 @@
-// $Id: ParticipantGmsImpl.java,v 1.3 2003/11/21 19:43:30 belaban Exp $
+// $Id: ParticipantGmsImpl.java,v 1.4 2004/03/30 06:47:18 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
-import java.util.Vector;
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Message;
+import org.jgroups.View;
+import org.jgroups.util.Promise;
 
-import org.jgroups.*;
-import org.jgroups.util.*;
-import org.jgroups.log.Trace;
+import java.util.Vector;
 
 
 public class ParticipantGmsImpl extends GmsImpl {
@@ -46,8 +48,8 @@ public class ParticipantGmsImpl extends GmsImpl {
                 gms.getImpl().handleLeave(mbr, false);    // regular leave
                 return;
             }
-            if(Trace.trace)
-                Trace.info("ParticipantGmsImpl.leave()", "sending LEAVE request to " + coord);
+
+            if(log.isInfoEnabled()) log.info("sending LEAVE request to " + coord);
             sendLeaveMessage(coord, mbr);
             synchronized(leave_promise) {
                 result=leave_promise.getResult(gms.leave_timeout);
@@ -65,7 +67,7 @@ public class ParticipantGmsImpl extends GmsImpl {
 
     public void handleLeaveResponse() {
         if(leave_promise == null) {
-            Trace.error("ParticipantGmsImpl.handleLeaveResponse()", "leave_promise is null");
+            if(log.isErrorEnabled()) log.error("leave_promise is null");
             return;
         }
         synchronized(leave_promise) {
@@ -106,7 +108,7 @@ public class ParticipantGmsImpl extends GmsImpl {
      */
     public void handleViewChange(View new_view, Digest digest) {
         Vector mbrs=new_view.getMembers();
-        if(Trace.trace) Trace.info("ParticipantGmsImpl.handleViewChange()", "view=" + new_view);
+         if(log.isInfoEnabled()) log.info("view=" + new_view);
         suspected_mbrs.removeAllElements();
         if(leaving && !mbrs.contains(gms.local_addr)) { // received a view in which I'm not member: ignore
             return;
@@ -123,13 +125,13 @@ public class ParticipantGmsImpl extends GmsImpl {
             suspected_mbrs.addElement(mbr);
 
 
-        if(Trace.trace)
-            Trace.info("ParticipantGmsImpl.handleSuspect()", "suspected mbr=" + mbr +
+
+            if(log.isInfoEnabled()) log.info("suspected mbr=" + mbr +
                                                              ", suspected_mbrs=" + suspected_mbrs);
 
         if(wouldIBeCoordinator()) {
-            if(Trace.trace)
-                Trace.info("ParticipantGmsImpl.handleSuspect()", "suspected mbr=" + mbr + "), members are " +
+
+                if(log.isInfoEnabled()) log.info("suspected mbr=" + mbr + "), members are " +
                                                                  gms.members + ", coord=" + gms.local_addr + ": I'm the new coord !");
 
             suspects=(Vector)suspected_mbrs.clone();

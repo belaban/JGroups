@@ -1,13 +1,16 @@
-// $Id: NakAckHeader.java,v 1.1 2003/09/09 01:24:10 belaban Exp $
+// $Id: NakAckHeader.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
 
 package org.jgroups.protocols;
 
+
+import org.jgroups.Address;
+import org.jgroups.Header;
+import org.jgroups.ViewId;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Vector;
-import org.jgroups.*;
 
 
 

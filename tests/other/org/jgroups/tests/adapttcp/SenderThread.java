@@ -3,8 +3,8 @@ package org.jgroups.tests.adapttcp;
 import org.apache.log4j.Logger;
 import org.jgroups.util.Util;
 
-import java.io.DataOutputStream;
 import java.io.BufferedOutputStream;
+import java.io.DataOutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.util.Iterator;
@@ -67,7 +67,7 @@ public class SenderThread extends Thread {
                 }
                 if(total_msgs % log_interval == 0) {
                     if(gnuplot_output == false)
-                        log.info(dumpStats(total_msgs));
+                        if(log.isInfoEnabled()) log.info(dumpStats(total_msgs));
                 }
             }
             System.out.println("Sent all bursts. Sender terminates.\n");

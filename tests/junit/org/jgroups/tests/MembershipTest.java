@@ -1,11 +1,15 @@
-// $Id: MembershipTest.java,v 1.1 2003/09/09 01:24:13 belaban Exp $
+// $Id: MembershipTest.java,v 1.2 2004/03/30 06:47:31 belaban Exp $
 
 package org.jgroups.tests;
 
-import java.util.Vector;
-import junit.framework.*;
-import org.jgroups.*;
+import junit.framework.Test;
+import junit.framework.TestCase;
+import junit.framework.TestSuite;
+import org.jgroups.Address;
+import org.jgroups.Membership;
 import org.jgroups.stack.IpAddress;
+
+import java.util.Vector;
 
 
 

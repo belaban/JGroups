@@ -5,16 +5,16 @@ import org.jgroups.tests.perf.Receiver;
 import org.jgroups.tests.perf.Transport;
 
 import java.io.*;
+import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.ConnectException;
 import java.util.*;
 
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: TcpTransport.java,v 1.1 2004/01/24 16:54:37 belaban Exp $
+ * @version $Id: TcpTransport.java,v 1.2 2004/03/30 06:47:36 belaban Exp $
  */
 public class TcpTransport implements Transport {
     Receiver         receiver=null;

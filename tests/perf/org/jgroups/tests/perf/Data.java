@@ -1,13 +1,16 @@
 package org.jgroups.tests.perf;
 
-import java.io.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.HashMap;
 
 /**
  * Data sent around between members
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: Data.java,v 1.3 2004/01/24 16:56:32 belaban Exp $
+ * @version $Id: Data.java,v 1.4 2004/03/30 06:47:37 belaban Exp $
  */
 public class Data implements Externalizable {
     final static int DISCOVERY_REQ = 1;

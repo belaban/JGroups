@@ -1,13 +1,14 @@
-// $Id: RpcDispatcher.java,v 1.6 2004/03/10 02:07:23 belaban Exp $
+// $Id: RpcDispatcher.java,v 1.7 2004/03/30 06:47:12 belaban Exp $
 
 package org.jgroups.blocks;
 
 
+import org.jgroups.*;
+import org.jgroups.util.RspList;
+import org.jgroups.util.Util;
+
 import java.io.Serializable;
 import java.util.Vector;
-import org.jgroups.*;
-import org.jgroups.util.*;
-import org.jgroups.log.Trace;
 
 
 
@@ -84,13 +85,13 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
 
 
     public RspList castMessage(Vector dests, Message msg, int mode, long timeout) {
-        Trace.error("RpcDispatcher.castMessage()", "this method should not be used with " +
+        if(log.isErrorEnabled()) log.error("this method should not be used with " +
                     "RpcDispatcher, but MessageDispatcher. Returning null");
         return null;
     }
 
     public Object sendMessage(Message msg, int mode, long timeout) throws TimeoutException, SuspectedException {
-        Trace.error("RpcDispatcher.sendMessage()", "this method should not be used with " +
+        if(log.isErrorEnabled()) log.error("this method should not be used with " +
                     "RpcDispatcher, but MessageDispatcher. Returning null");
         return null;
     }
@@ -160,22 +161,22 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         Message  msg=null;
         RspList  retval=null;
 
-        if(Trace.trace)
-            Trace.debug("RpcDispatcher.callRemoteMethods()", "dests=" + dests +
+
+            if(log.isDebugEnabled()) log.debug("dests=" + dests +
                     ", method_call=" + method_call + ", mode=" + mode + ", timeout=" + timeout);
 
         try {
             buf=marshaller != null? marshaller.objectToByteBuffer(method_call) : Util.objectToByteBuffer(method_call);
         }
         catch(Exception e) {
-            Trace.error("RpcProtocol.callRemoteMethods()", "exception=" + e);
+            if(log.isErrorEnabled()) log.error("exception=" + e);
             return null;
         }
 
         msg=new Message(null, null, buf);
         retval=super.castMessage(dests, msg, mode, timeout);
-        if(Trace.trace)
-            Trace.debug("RpcDispatcher.callRemoteMethods()", "responses: " + retval);
+
+            if(log.isDebugEnabled()) log.debug("responses: " + retval);
         return retval;
     }
 
@@ -199,7 +200,7 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
 //            buf=marshaller != null? marshaller.objectToByteBuffer(method_call) : Util.objectToByteBuffer(method_call);
 //        }
 //        catch(Exception e) {
-//            Trace.error("RpcProtocol.callRemoteMethods()", "exception=" + e);
+//            if(log.isErrorEnabled()) log.error("RpcProtocol.callRemoteMethods()", "exception=" + e);
 //            return;
 //        }
 //
@@ -275,22 +276,22 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         Message  msg=null;
         Object   retval=null;
 
-        if(Trace.trace)
-            Trace.debug("RpcDispatcher.callRemoteMethod()", "dest=" + dest +
+
+            if(log.isDebugEnabled()) log.debug("dest=" + dest +
                     ", method_call=" + method_call + ", mode=" + mode + ", timeout=" + timeout);
 
         try {
             buf=marshaller != null? marshaller.objectToByteBuffer(method_call) : Util.objectToByteBuffer(method_call);
         }
         catch(Exception e) {
-            Trace.error("RpcProtocol.callRemoteMethod()", "exception=" + e);
+            if(log.isErrorEnabled()) log.error("exception=" + e);
             return null;
         }
 
         msg=new Message(dest, null, buf);
         retval=super.sendMessage(msg, mode, timeout);
-        if(Trace.trace)
-            Trace.debug("RpcDispatcher.callRemoteMethod()", "retval: " + retval);
+
+            if(log.isDebugEnabled()) log.debug("retval: " + retval);
         return retval;
     }
 
@@ -307,12 +308,12 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         MethodCall  method_call;
 
         if(server_obj == null) {
-            Trace.error("RpcDispatcher.handle()", "no method handler is registered. Discarding request.");
+            if(log.isErrorEnabled()) log.error("no method handler is registered. Discarding request.");
             return null;
         }
 
         if(req == null || req.getLength() == 0) {
-            Trace.error("RpcProtocol.handle()", "message or message buffer is null");
+            if(log.isErrorEnabled()) log.error("message or message buffer is null");
             return null;
         }
 
@@ -320,25 +321,25 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
             body=marshaller != null? marshaller.objectFromByteBuffer(req.getBuffer()) : req.getObject();
         }
         catch(Throwable e) {
-            Trace.error("RpcDispatcher.handle()", "exception=" + e);
+            if(log.isErrorEnabled()) log.error("exception=" + e);
             return e;
         }
 
         if(body == null || !(body instanceof MethodCall)) {
-            Trace.error("RpcDispatcher.handle()", "message does not contain a MethodCall object");
+            if(log.isErrorEnabled()) log.error("message does not contain a MethodCall object");
             return null;
         }
 
         method_call=(MethodCall)body;
 
         try {
-            if(Trace.trace)
-                Trace.debug("RpcDispatcher.handle()", "[sender=" + req.getSrc() + "], method_call: " +
+
+                if(log.isDebugEnabled()) log.debug("[sender=" + req.getSrc() + "], method_call: " +
                         method_call);
             return method_call.invoke(server_obj, method_lookup);
         }
         catch(Throwable x) {
-            Trace.error("RpcDispatcher.handle()", Trace.getStackTrace(x));
+            if(log.isErrorEnabled()) log.error(Util.getStackTrace(x));
             return x;
         }
     }

@@ -1,9 +1,8 @@
 package org.jgroups.protocols;
 
-import java.net.InetAddress;
-
 import org.jgroups.blocks.ConnectionTable1_4;
-import org.jgroups.log.Trace;
+
+import java.net.InetAddress;
 
 public class TCP1_4 extends TCP
 {
@@ -21,12 +20,12 @@ public class TCP1_4 extends TCP
 		} else {
 			if (ri == 0) {
 				ri = 5000;
-				Trace.warn("TCP.start()", "reaper_interval was 0, set it to "
+				if(log.isWarnEnabled()) log.warn("reaper_interval was 0, set it to "
 						+ ri);
 			}
 			if (cet == 0) {
 				cet = 1000 * 60 * 5;
-				Trace.warn("TCP.start()", "conn_expire_time was 0, set it to "
+				if(log.isWarnEnabled()) log.warn("conn_expire_time was 0, set it to "
 						+ cet);
 			}
 			ct = new ConnectionTable1_4(this, b_addr, s_port, ri, cet);

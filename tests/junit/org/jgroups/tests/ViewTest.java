@@ -1,10 +1,11 @@
-// $Id: ViewTest.java,v 1.1 2003/09/09 01:24:13 belaban Exp $
+// $Id: ViewTest.java,v 1.2 2004/03/30 06:47:31 belaban Exp $
 
 package org.jgroups.tests;
 
 
-import junit.framework.*;
-import org.jgroups.*;
+import junit.framework.TestCase;
+import org.jgroups.View;
+import org.jgroups.ViewId;
 import org.jgroups.stack.IpAddress;
 
 

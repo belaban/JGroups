@@ -1,8 +1,9 @@
-//$Id: RingNodeFlowControl.java,v 1.1 2003/09/09 01:24:11 belaban Exp $
+//$Id: RingNodeFlowControl.java,v 1.2 2004/03/30 06:47:20 belaban Exp $
 
 package org.jgroups.protocols.ring;
 
-import org.jgroups.log.Trace;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 public class RingNodeFlowControl
 {
@@ -13,6 +14,7 @@ public class RingNodeFlowControl
    private int memberCount;
    private int previousBacklog;
    private int backlog;
+    protected Log log=LogFactory.getLog(this.getClass());
 
    public RingNodeFlowControl(int initialWindow,
                               float windowReduceFactor,
@@ -88,9 +90,8 @@ public class RingNodeFlowControl
       if (maxAllowed < 1)
          maxAllowed = 0;
 
-      if (Trace.trace)
-         Trace.info("RingNodeFlowControl.getAllowedToBroadcast, minimum of ",
-                    "fairWindowShare=" + fairWindowShare + " maxMessages="
+
+         if(log.isInfoEnabled()) log.info("fairWindowShare=" + fairWindowShare + " maxMessages="
                     + maxMessages + " maxAllowed=" + maxAllowed);
 
       return (fairWindowShare < maxAllowed)?Math.min(fairWindowShare, maxMessages):Math.min(maxAllowed, maxMessages);

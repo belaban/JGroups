@@ -1,10 +1,11 @@
-// $Id: PullPushAdapter.java,v 1.2 2003/11/27 21:45:24 belaban Exp $
+// $Id: PullPushAdapter.java,v 1.3 2004/03/30 06:47:12 belaban Exp $
 
 package org.jgroups.blocks;
 
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
-import org.jgroups.log.Trace;
 import org.jgroups.util.Util;
 
 import java.io.IOException;
@@ -38,6 +39,7 @@ public class PullPushAdapter implements Runnable {
     protected List            membership_listeners=new ArrayList();
     protected Thread          receiver_thread=null;
     protected HashMap         listeners=new HashMap(); // keys=identifier (Serializable), values=MessageListeners
+    protected Log log=LogFactory.getLog(getClass());
     static final String       PULL_HEADER="PULL_HEADER";
 
 
@@ -99,7 +101,7 @@ public class PullPushAdapter implements Runnable {
 
     public void send(Serializable identifier, Message msg) throws Exception {
         if(msg == null) {
-            Trace.error("PullPushAdapter.send()", "msg is null");
+            if(log.isErrorEnabled()) log.error("msg is null");
             return;
         }
         if(identifier == null)
@@ -122,11 +124,11 @@ public class PullPushAdapter implements Runnable {
 
     public void registerListener(Serializable identifier, MessageListener l) {
         if(l == null || identifier == null) {
-            Trace.error("PullPushAdapter.registerListener()", "message listener or identifier is null");
+            if(log.isErrorEnabled()) log.error("message listener or identifier is null");
             return;
         }
         if(listeners.containsKey(identifier)) {
-            Trace.error("PullPushAdapter.registerListener()", "listener with identifier=" + identifier +
+            if(log.isErrorEnabled()) log.error("listener with identifier=" + identifier +
                     " already exists, choose a different identifier");
         }
         listeners.put(identifier, l);
@@ -166,7 +168,7 @@ public class PullPushAdapter implements Runnable {
                         if(transport instanceof Channel)
                             ((Channel)transport).returnState(listener.getState());
                         else {
-                            Trace.error("PullPushAdapter.run()", "underlying transport is not a Channel, but a " +
+                            if(log.isErrorEnabled()) log.error("underlying transport is not a Channel, but a " +
                                     transport.getClass().getName() + ": cannot fetch state using returnState()");
                             continue;
                         }
@@ -178,7 +180,7 @@ public class PullPushAdapter implements Runnable {
                             listener.setState(((SetStateEvent)obj).getArg());
                         }
                         catch(ClassCastException cast_ex) {
-                            Trace.error("PullPushAdapter.run()", "received SetStateEvent, but argument " +
+                            if(log.isErrorEnabled()) log.error("received SetStateEvent, but argument " +
                                     ((SetStateEvent)obj).getArg() + " is not serializable ! Discarding message.");
                             continue;
                         }
@@ -196,7 +198,7 @@ public class PullPushAdapter implements Runnable {
             }
             catch(ChannelNotConnectedException conn) {
                 Address local_addr=((Channel)transport).getLocalAddress();
-                Trace.warn("PullPushAdapter.run()", "[" + (local_addr == null ? "<null>" : local_addr.toString()) +
+                if(log.isWarnEnabled()) log.warn("[" + (local_addr == null ? "<null>" : local_addr.toString()) +
                         "] channel not connected, exception is " + conn);
                 Util.sleep(1000);
                 receiver_thread=null;
@@ -204,7 +206,7 @@ public class PullPushAdapter implements Runnable {
             }
             catch(ChannelClosedException closed_ex) {
                 Address local_addr=((Channel)transport).getLocalAddress();
-                Trace.warn("PullPushAdapter.run()", "[" + (local_addr == null ? "<null>" : local_addr.toString()) +
+                if(log.isWarnEnabled()) log.warn("[" + (local_addr == null ? "<null>" : local_addr.toString()) +
                         "] channel closed, exception is " + closed_ex);
                 Util.sleep(1000);
                 receiver_thread=null;
@@ -229,7 +231,7 @@ public class PullPushAdapter implements Runnable {
         if(hdr != null && (identifier=hdr.getIdentifier()) != null) {
             l=(MessageListener)listeners.get(identifier);
             if(l == null) {
-                Trace.error("PullPushAdapter.handleMessage()", "received a messages tagged with identifier=" +
+                if(log.isErrorEnabled()) log.error("received a messages tagged with identifier=" +
                         identifier + ", but there is no registration for that identifier. Will drop message");
             }
             else
@@ -252,7 +254,7 @@ public class PullPushAdapter implements Runnable {
                 l.viewAccepted(v);
             }
             catch(Throwable ex) {
-                Trace.error("PullPushAdapter.notifyViewChange()", "exception notifying " + l + ": " + ex);
+                if(log.isErrorEnabled()) log.error("exception notifying " + l + ": " + ex);
             }
         }
     }
@@ -267,7 +269,7 @@ public class PullPushAdapter implements Runnable {
                 l.suspect(suspected_mbr);
             }
             catch(Throwable ex) {
-                Trace.error("PullPushAdapter.notifySuspect()", "exception notifying " + l + ": " + ex);
+                if(log.isErrorEnabled()) log.error("exception notifying " + l + ": " + ex);
             }
         }
     }
@@ -281,7 +283,7 @@ public class PullPushAdapter implements Runnable {
                 l.block();
             }
             catch(Throwable ex) {
-                Trace.error("PullPushAdapter.block()", "exception notifying " + l + ": " + ex);
+                if(log.isErrorEnabled()) log.error("exception notifying " + l + ": " + ex);
             }
         }
     }

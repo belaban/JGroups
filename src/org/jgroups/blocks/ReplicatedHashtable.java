@@ -1,29 +1,14 @@
-// $Id: ReplicatedHashtable.java,v 1.4 2004/01/16 16:47:50 belaban Exp $
+// $Id: ReplicatedHashtable.java,v 1.5 2004/03/30 06:47:12 belaban Exp $
 
 package org.jgroups.blocks;
 
-import java.io.Serializable;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.Hashtable;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Vector;
-import java.util.Map;
-
-import org.jgroups.Address;
-import org.jgroups.Channel;
-import org.jgroups.ChannelClosedException;
-import org.jgroups.ChannelFactory;
-import org.jgroups.ChannelNotConnectedException;
-import org.jgroups.JChannel;
-import org.jgroups.MembershipListener;
-import org.jgroups.Message;
-import org.jgroups.MessageListener;
-import org.jgroups.View;
-import org.jgroups.log.Trace;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.jgroups.*;
 import org.jgroups.util.Util;
+
+import java.io.Serializable;
+import java.util.*;
 
 /**
  * Provides the abstraction of a java.util.Hashtable that is replicated at several
@@ -75,6 +60,8 @@ public class ReplicatedHashtable extends Hashtable implements MessageListener, M
      * messages when there are no member in the group */
     private transient boolean send_message=false;
 
+    protected Log log=LogFactory.getLog(this.getClass());
+
     /**
      * Creates a ReplicatedHashtable
      * @param groupname The name of the group to join
@@ -93,12 +80,12 @@ public class ReplicatedHashtable extends Hashtable implements MessageListener, M
             channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
             boolean rc=channel.getState(null, state_timeout);
             if(rc)
-                Trace.info("ReplicatedHashtable.ReplicatedHashtable()", "state was retrieved successfully");
+                if(log.isInfoEnabled()) log.info("state was retrieved successfully");
             else
-                Trace.info("ReplicatedHashtable.ReplicatedHashtable()", "state could not be retrieved (first member)");
+                if(log.isInfoEnabled()) log.info("state could not be retrieved (first member)");
         }
         catch(Exception e) {
-            Trace.error("ReplicatedHashtable.ReplicatedHashtable()", "exception=" + e);
+            if(log.isErrorEnabled()) log.error("exception=" + e);
         }
     }
 
@@ -107,9 +94,9 @@ public class ReplicatedHashtable extends Hashtable implements MessageListener, M
             notifyStateTransferStarted();
             boolean rc=channel.getState(null, state_timeout);
             if(rc)
-                Trace.info("ReplicatedHashtable.ReplicatedHashtable()", "state was retrieved successfully");
+                if(log.isInfoEnabled()) log.info("state was retrieved successfully");
             else {
-                Trace.info("ReplicatedHashtable.ReplicatedHashtable()", "state could not be retrieved (first member)");
+                if(log.isInfoEnabled()) log.info("state could not be retrieved (first member)");
                 notifyStateTransferCompleted(false);
             }
         }
@@ -136,9 +123,9 @@ public class ReplicatedHashtable extends Hashtable implements MessageListener, M
         this.channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
         boolean rc=channel.getState(null, state_timeout);
         if(rc)
-            Trace.info("ReplicatedHashtable.ReplicatedHashtable()", "state was retrieved successfully");
+            if(log.isInfoEnabled()) log.info("state was retrieved successfully");
         else
-            Trace.info("ReplicatedHashtable.ReplicatedHashtable()", "state could not be retrieved (first member)");
+            if(log.isInfoEnabled()) log.info("state could not be retrieved (first member)");
     }
 
     public boolean stateTransferRunning() {
@@ -212,7 +199,7 @@ public class ReplicatedHashtable extends Hashtable implements MessageListener, M
                 channel.send(msg);
             }
             catch(Exception e) {
-                Trace.error("ReplicatedHashtable.clear()", "exception=" + e);
+                if(log.isErrorEnabled()) log.error("exception=" + e);
             }
         }
         else {
@@ -233,7 +220,7 @@ public class ReplicatedHashtable extends Hashtable implements MessageListener, M
                 channel.send(msg);
             }
             catch(Exception e) {
-                Trace.error("ReplicatedHashtable.clear()", "exception=" + e);
+                if(log.isErrorEnabled()) log.error("exception=" + e);
             }
         }
         else {
@@ -358,7 +345,7 @@ public class ReplicatedHashtable extends Hashtable implements MessageListener, M
             return Util.objectToByteBuffer(copy);
         }
         catch(Exception ex) {
-            Trace.error("ReplicatedHashtable.getState()", "exception marshalling state: " + ex);
+            if(log.isErrorEnabled()) log.error("exception marshalling state: " + ex);
             return null;
         }
     }
@@ -375,7 +362,7 @@ public class ReplicatedHashtable extends Hashtable implements MessageListener, M
             }
         }
         catch(Throwable ex) {
-            Trace.error("ReplicatedHashtable.setState()", "exception unmarshalling state: " + ex);
+            if(log.isErrorEnabled()) log.error("exception unmarshalling state: " + ex);
             notifyStateTransferCompleted(false);
             return;
         }

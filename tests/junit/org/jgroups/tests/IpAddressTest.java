@@ -1,16 +1,17 @@
-// $Id: IpAddressTest.java,v 1.1 2003/09/09 01:24:13 belaban Exp $
+// $Id: IpAddressTest.java,v 1.2 2004/03/30 06:47:31 belaban Exp $
 
 package org.jgroups.tests;
+
+import junit.framework.Test;
+import junit.framework.TestCase;
+import junit.framework.TestSuite;
+import org.jgroups.stack.IpAddress;
+import org.jgroups.util.Util;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-
-
-import junit.framework.*;
-import org.jgroups.util.*;
-import org.jgroups.stack.IpAddress;
 
 
 public class IpAddressTest extends TestCase {

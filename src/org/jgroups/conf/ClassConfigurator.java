@@ -1,9 +1,10 @@
-// $Id: ClassConfigurator.java,v 1.1 2003/09/09 01:24:08 belaban Exp $
+// $Id: ClassConfigurator.java,v 1.2 2004/03/30 06:47:14 belaban Exp $
 
 package org.jgroups.conf;
 
 
-import org.jgroups.log.Trace;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jgroups.util.Util;
 
 import java.util.HashMap;
@@ -32,8 +33,9 @@ public class ClassConfigurator
     //this is where we store magic numbers
     private Map classMap = new HashMap(); // key=Class, value=magic number
     private Map magicMap = new TreeMap(); // key=magic number, value=Class
-        
-        
+    protected Log log=LogFactory.getLog(getClass());
+
+
 
 
     private ClassConfigurator(boolean init) {
@@ -46,7 +48,7 @@ public class ClassConfigurator
             MagicNumberReader reader = new MagicNumberReader();
 	    String mnfile = System.getProperty("org.jgroups.conf.magicNumberFile");
 	    if (mnfile!=null) {
-		Trace.debug("ClassConfigurator()", "Using "+mnfile+" as magic number file");
+		if(log.isDebugEnabled()) log.debug("Using "+mnfile+" as magic number file");
 		reader.setFilename(mnfile);
 	    }
             ClassMap[] mapping = reader.readMagicNumberMapping();
@@ -56,11 +58,11 @@ public class ClassConfigurator
 			Integer m = new Integer(mapping[i].getMagicNumber());
 			Class clazz = mapping[i].getClassForMap();
 			if(clazz == null) {
-			    Trace.error("ClassConfigurator()", "failed to create class " + mapping[i].getClassName());
+			    if(log.isErrorEnabled()) log.error("failed to create class " + mapping[i].getClassName());
 			    continue;
 			}
 			if(magicMap.containsKey(m)) {
-			    Trace.error("ClassConfigurator", "magic key " + m + " (" + clazz.getName() + ")" +
+			    if(log.isErrorEnabled()) log.error("magic key " + m + " (" + clazz.getName() + ")" +
 					" is already in map (won't be overwritten). Please make sure that " +
 					"all magic keys are unique");
 			}
@@ -70,15 +72,15 @@ public class ClassConfigurator
 			}
 		    }
 		    catch ( Exception cx ) {
-			Trace.error("ClassConfigurator","Failed to load class:"+mapping[i].getClassName());
+			if(log.isErrorEnabled()) log.error("Failed to load class:"+mapping[i].getClassName());
 		    }
 		}
-		if(Trace.trace)
-                    Trace.info("ClassConfigurator.ClassConfigurator()", "mapping is:\n" + printMagicMap());
+
+                    if(log.isInfoEnabled()) log.info("mapping is:\n" + printMagicMap());
 	    }
         }
         catch ( Throwable x ) {
-            Trace.error("ClassConfigurator",ConfiguratorFactory.JAR_MISSING_ERROR + "\nstack trace:\n" + Util.print(x));
+            if(log.isErrorEnabled()) log.error(ConfiguratorFactory.JAR_MISSING_ERROR + "\nstack trace:\n" + Util.print(x));
         }
     }
 
@@ -112,7 +114,7 @@ public class ClassConfigurator
         }
         catch ( Exception x )
         {
-            Trace.error("ClassConfigurator",Trace.getStackTrace(x));
+            if(log.isErrorEnabled()) log.error(Util.getStackTrace(x));
         }
         return null;
     }
@@ -169,7 +171,7 @@ public class ClassConfigurator
     public static void main(String[] args)
         throws Exception
     {
-        Trace.init();
+
         ClassConfigurator test = getInstance();
         System.out.println("\n" + test.printMagicMap());
     }

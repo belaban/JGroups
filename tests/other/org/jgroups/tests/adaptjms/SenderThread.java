@@ -1,12 +1,11 @@
 package org.jgroups.tests.adaptjms;
 
 import org.apache.log4j.Logger;
-import org.jgroups.util.Util;
 
-import javax.jms.*;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
+import javax.jms.ObjectMessage;
+import javax.jms.Topic;
+import javax.jms.TopicPublisher;
+import javax.jms.TopicSession;
 import java.util.List;
 
 /**  Sender thread: inputs into the system a num_busts bursts
@@ -63,7 +62,7 @@ public class SenderThread extends Thread {
                 }
                 if(total_msgs % log_interval == 0) {
                     if(gnuplot_output == false)
-                        log.info(dumpStats(total_msgs));
+                        if(log.isInfoEnabled()) log.info(dumpStats(total_msgs));
                 }
             }
             System.out.println("Sent all bursts. Sender terminates.\n");

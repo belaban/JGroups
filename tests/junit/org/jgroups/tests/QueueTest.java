@@ -1,12 +1,13 @@
-// $Id: QueueTest.java,v 1.9 2003/09/25 19:08:07 belaban Exp $
+// $Id: QueueTest.java,v 1.10 2004/03/30 06:47:31 belaban Exp $
 
 package org.jgroups.tests;
 
 
-import junit.framework.*;
-
+import junit.framework.TestCase;
 import org.jgroups.TimeoutException;
-import org.jgroups.util.*;
+import org.jgroups.util.Queue;
+import org.jgroups.util.QueueClosedException;
+import org.jgroups.util.Util;
 
 
 public class QueueTest extends TestCase {

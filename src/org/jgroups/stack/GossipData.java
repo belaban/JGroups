@@ -1,14 +1,15 @@
-// $Id: GossipData.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+// $Id: GossipData.java,v 1.2 2004/03/30 06:47:27 belaban Exp $
 
 package org.jgroups.stack;
 
+
+import org.jgroups.Address;
 
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Vector;
-import org.jgroups.Address;
 
 
 

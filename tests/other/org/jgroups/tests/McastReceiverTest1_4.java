@@ -1,9 +1,11 @@
-// $Id: McastReceiverTest1_4.java,v 1.1 2003/09/09 01:24:13 belaban Exp $
+// $Id: McastReceiverTest1_4.java,v 1.2 2004/03/30 06:47:34 belaban Exp $
 
 package org.jgroups.tests;
 
 import java.net.DatagramPacket;
-import java.net.*;
+import java.net.InetAddress;
+import java.net.MulticastSocket;
+import java.net.NetworkInterface;
 import java.util.Enumeration;
 
 
@@ -17,7 +19,7 @@ import java.util.Enumeration;
    This class compiles and runs only under JDK 1.4 or higher
    @see McastSenderTest
    @author Bela Ban
-   @version $Revision: 1.1 $
+   @version $Revision: 1.2 $
  */
 public class McastReceiverTest1_4 {
 

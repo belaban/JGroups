@@ -1,15 +1,17 @@
-// $Id: DistributedHashtableTest.java,v 1.2 2003/12/04 01:20:51 belaban Exp $
+// $Id: DistributedHashtableTest.java,v 1.3 2004/03/30 06:47:34 belaban Exp $
 
 package org.jgroups.tests;
 
 
-import java.io.*;
-import java.util.*;
-
-import org.jgroups.*;
-import org.jgroups.util.Util;
-import org.jgroups.log.Trace;
+import org.jgroups.Address;
+import org.jgroups.JChannelFactory;
 import org.jgroups.blocks.DistributedHashtable;
+import org.jgroups.util.Util;
+
+import java.io.DataInputStream;
+import java.util.Iterator;
+import java.util.Set;
+import java.util.TreeSet;
 
 
 
@@ -201,7 +203,7 @@ public class DistributedHashtableTest implements Runnable {
             }
         }
 
-        Trace.init();
+
 
         try {
             DistributedHashtableTest test=new DistributedHashtableTest();

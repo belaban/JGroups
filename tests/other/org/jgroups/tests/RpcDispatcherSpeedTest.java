@@ -1,18 +1,13 @@
 package org.jgroups.tests;
 
 
-import org.jgroups.Channel;
-import org.jgroups.JChannel;
-import org.jgroups.Address;
-import org.jgroups.View;
-import org.jgroups.MembershipListener;
+import org.jgroups.*;
 import org.jgroups.blocks.GroupRequest;
-import org.jgroups.blocks.RpcDispatcher;
 import org.jgroups.blocks.MethodCall;
-import org.jgroups.util.RspList;
+import org.jgroups.blocks.RpcDispatcher;
 import org.jgroups.util.Rsp;
+import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
-import org.jgroups.log.Trace;
 
 import java.lang.reflect.Method;
 
@@ -22,7 +17,7 @@ import java.lang.reflect.Method;
 /**
  * Interactive test for measuring group RPCs using different invocation techniques.
  * @author Bela Ban
- * @version $Revision: 1.3 $
+ * @version $Revision: 1.4 $
  */
 public class RpcDispatcherSpeedTest implements MembershipListener {
     Channel             channel;
@@ -251,7 +246,7 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
             return;
         }
 
-        Trace.init();
+
         try {
             test=new RpcDispatcherSpeedTest(props, server, num, mode);
             test.start();

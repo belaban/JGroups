@@ -1,7 +1,10 @@
-// $Id: TotalOrder.java,v 1.3 2004/02/26 19:15:00 belaban Exp $
+// $Id: TotalOrder.java,v 1.4 2004/03/30 06:47:16 belaban Exp $
 
 
 package org.jgroups.demos;
+
+import org.jgroups.*;
+import org.jgroups.util.Util;
 
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -9,9 +12,6 @@ import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.net.InetAddress;
-import org.jgroups.*;
-import org.jgroups.util.*;
-import org.jgroups.log.Trace;
 
 
 
@@ -417,7 +417,6 @@ public class TotalOrder extends Frame {
 	    }
 	}
 
-	Trace.init();
 
 	try {
 	    g=new TotalOrder("Total Order Demo on " + InetAddress.getLocalHost().getHostName(),

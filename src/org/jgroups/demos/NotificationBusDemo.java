@@ -1,16 +1,16 @@
-// $Id: NotificationBusDemo.java,v 1.1 2003/09/09 01:24:09 belaban Exp $
+// $Id: NotificationBusDemo.java,v 1.2 2004/03/30 06:47:16 belaban Exp $
 
 
 package org.jgroups.demos;
 
 
+import org.jgroups.Address;
+import org.jgroups.blocks.NotificationBus;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.Serializable;
 import java.util.Vector;
-import org.jgroups.*;
-import org.jgroups.blocks.*;
-import org.jgroups.log.Trace;
 
 
 
@@ -31,7 +31,7 @@ public class NotificationBusDemo implements NotificationBus.Consumer {
 
     public void start(String bus_name, String props) {
 	try {
-	    Trace.init();
+
 	    bus=new NotificationBus(bus_name, props);
 	    bus.start();
 	    //System.out.println("Getting the cache from coordinator:");

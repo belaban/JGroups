@@ -1,4 +1,4 @@
-// $Id: Promise.java,v 1.4 2004/01/18 15:14:06 tsorgie Exp $
+// $Id: Promise.java,v 1.5 2004/03/30 06:47:28 belaban Exp $
 
 package org.jgroups.util;
 
@@ -24,6 +24,32 @@ public class Promise {
      */
     public Object getResult(long timeout) {
         Object ret=null;
+        // long   time_to_wait=timeout;
+
+//        synchronized(this) {
+//            while(hasResult == false) {
+//                try {
+//                    if(timeout <= 0) {
+//                        wait();
+//                        break;
+//                    }
+//                    else {
+//                        wait(time_to_wait);
+//
+//                    }
+//                }
+//                catch(InterruptedException ex) {
+//                    ;
+//                }
+//            }
+//            if(hasResult) {
+//                ret=result;
+//                result=null;
+//                hasResult=false;
+//                return ret;
+//            }
+//        }
+
 
         synchronized(this) {
             if(hasResult) {

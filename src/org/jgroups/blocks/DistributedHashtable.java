@@ -1,20 +1,19 @@
-// $Id: DistributedHashtable.java,v 1.9 2004/03/09 04:05:05 belaban Exp $
+// $Id: DistributedHashtable.java,v 1.10 2004/03/30 06:47:12 belaban Exp $
 
 package org.jgroups.blocks;
 
-import java.io.Serializable;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Hashtable;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Vector;
-
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
-import org.jgroups.log.Trace;
-import org.jgroups.util.Util;
+import org.jgroups.persistence.CannotPersistException;
+import org.jgroups.persistence.CannotRemoveException;
+import org.jgroups.persistence.PersistenceFactory;
+import org.jgroups.persistence.PersistenceManager;
 import org.jgroups.util.Promise;
-import org.jgroups.persistence.*;
+import org.jgroups.util.Util;
+
+import java.io.Serializable;
+import java.util.*;
 
 
 
@@ -36,7 +35,7 @@ import org.jgroups.persistence.*;
  * initial state (using the state exchange funclet <code>StateExchangeFunclet</code>.
  * @author Bela Ban
  * @author <a href="mailto:aolias@yahoo.com">Alfonso Olias-Sanz</a>
- * @version $Id: DistributedHashtable.java,v 1.9 2004/03/09 04:05:05 belaban Exp $
+ * @version $Id: DistributedHashtable.java,v 1.10 2004/03/30 06:47:12 belaban Exp $
  */
 public class DistributedHashtable extends Hashtable implements MessageListener, MembershipListener, Cloneable {
 
@@ -69,6 +68,7 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
 
     protected transient Promise          state_promise=new Promise();
 
+    protected Log log=LogFactory.getLog(this.getClass());
 
 
 
@@ -180,12 +180,12 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
     public void start(long state_timeout) throws ChannelClosedException, ChannelNotConnectedException {
         boolean rc;
         if(persistent) {
-            Trace.info("DistributedHashtable.start()", "fetching state from database");
+            if(log.isInfoEnabled()) log.info("fetching state from database");
             try {
                 persistence_mgr=PersistenceFactory.getInstance().createManager();
             }
             catch(Throwable ex) {
-                Trace.error("DistributedHashtable.start()", "failed creating PersistenceManager, " +
+                if(log.isErrorEnabled()) log.error("failed creating PersistenceManager, " +
                             "turning persistency off. Exception: " + Util.printStackTrace(ex));
                 persistent=false;
             }
@@ -194,19 +194,19 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
         state_promise.reset();
         rc=channel.getState(null, state_timeout);
         if(rc) {
-            Trace.info("DistributedHashtable.start()", "state was retrieved successfully, waiting for setState()");
+            if(log.isInfoEnabled()) log.info("state was retrieved successfully, waiting for setState()");
             Boolean result=(Boolean)state_promise.getResult(state_timeout);
             if(result == null) {
-                Trace.error("DistributedHashtable.start()", "setState() never got called");
+                if(log.isErrorEnabled()) log.error("setState() never got called");
             }
             else {
-                Trace.info("DistributedHashtable.start()", "setState() was called");
+                if(log.isInfoEnabled()) log.info("setState() was called");
             }
         }
         else {
-            Trace.info("DistributedHashtable.start()", "state could not be retrieved (first member)");
+            if(log.isInfoEnabled()) log.info("state could not be retrieved (first member)");
             if(persistent) {
-                Trace.info("DistributedHashtable.start()", "fetching state from database");
+                if(log.isInfoEnabled()) log.info("fetching state from database");
                 try {
                     Map m=persistence_mgr.retrieveAll();
                     if(m != null) {
@@ -216,15 +216,15 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
                             entry=(Map.Entry)it.next();
                             key=entry.getKey();
                             val=entry.getValue();
-                            if(Trace.trace)
-                                Trace.info("DistributedHashtable.start()", "inserting " + key +
+
+                                if(log.isInfoEnabled()) log.info("inserting " + key +
                                            " --> " + val);
                             put(key, val);  // will replicate key and value
                         }
                     }
                 }
                 catch(Throwable ex) {
-                    Trace.error("DistributedHashtable.start()", "failed creating PersistenceManager, " +
+                    if(log.isErrorEnabled()) log.error("failed creating PersistenceManager, " +
                                 "turning persistency off. Exception: " + Util.printStackTrace(ex));
                     persistent=false;
                 }
@@ -332,7 +332,7 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
                         0);
             }
             catch(Exception e) {
-                Trace.error("DistributedHashtable.clear()", "exception=" + e);
+                if(log.isErrorEnabled()) log.error("exception=" + e);
             }
         }
         else {
@@ -382,11 +382,11 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
                 persistence_mgr.save((Serializable)key, (Serializable)value);
             }
             catch(CannotPersistException cannot_persist_ex) {
-                Trace.error("DistributedHashtable._put()", "failed persisting " + key + " + " +
+                if(log.isErrorEnabled()) log.error("failed persisting " + key + " + " +
                             value + ", exception=" + cannot_persist_ex);
             }
             catch(Throwable t) {
-                Trace.error("DistributedHashtable._put()", "failed persisting " + key + " + " +
+                if(log.isErrorEnabled()) log.error("failed persisting " + key + " + " +
                             value + ", exception=" + Util.printStackTrace(t));
             }
         }
@@ -421,10 +421,10 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
                 persistence_mgr.saveAll(m);
             }
             catch (CannotPersistException persist_ex) {
-                Trace.error("DistributedHashtable._putAll()", "failed persisting contents: " + persist_ex);
+                if(log.isErrorEnabled()) log.error("failed persisting contents: " + persist_ex);
             }
             catch (Throwable t) {
-                Trace.error("DistributedHashtable._putAll()", "failed persisting contents: " + t);
+                if(log.isErrorEnabled()) log.error("failed persisting contents: " + t);
             }
         }
         for(int i=0; i < notifs.size(); i++)
@@ -439,11 +439,10 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
                 persistence_mgr.clear();
             }
             catch(CannotRemoveException cannot_remove_ex) {
-                Trace.error("DistributedHashtable._clear()",
-                            "failed clearing contents, exception=" + cannot_remove_ex);
+                if(log.isErrorEnabled()) log.error("failed clearing contents, exception=" + cannot_remove_ex);
             }
             catch(Throwable t) {
-                Trace.error("DistributedHashtable._clear()", "failed clearing contents, exception=" + t);
+                if(log.isErrorEnabled()) log.error("failed clearing contents, exception=" + t);
             }
         }
         for(int i=0; i < notifs.size(); i++)
@@ -458,11 +457,10 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
                 persistence_mgr.remove((Serializable)key);
             }
             catch(CannotRemoveException cannot_remove_ex) {
-                Trace.error("DistributedHashtable._remove()",
-                            "failed clearing contents, exception=" + cannot_remove_ex);
+                if(log.isErrorEnabled()) log.error("failed clearing contents, exception=" + cannot_remove_ex);
             }
             catch(Throwable t) {
-                Trace.error("DistributedHashtable._remove()", "failed clearing contents, exception=" + t);
+                if(log.isErrorEnabled()) log.error("failed clearing contents, exception=" + t);
             }
         }
         for(int i=0; i < notifs.size(); i++)
@@ -492,7 +490,7 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
             return Util.objectToByteBuffer(copy);
         }
         catch(Throwable ex) {
-            Trace.error("DistributedHashtable.getState()", "exception marshalling state: " + ex);
+            if(log.isErrorEnabled()) log.error("exception marshalling state: " + ex);
             return null;
         }
     }
@@ -507,7 +505,7 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
                 return;
         }
         catch(Throwable ex) {
-            Trace.error("DistributedHashtable.setState()", "exception unmarshalling state: " + ex);
+            if(log.isErrorEnabled()) log.error("exception unmarshalling state: " + ex);
             return;
         }
         _putAll(new_copy);
@@ -605,7 +603,7 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
             }
         }
         catch(Throwable ex) {
-            Trace.error("DistributedHashtable.initMethods()", "exception=" + ex);
+            if(log.isErrorEnabled()) log.error("exception=" + ex);
         }
     }
 

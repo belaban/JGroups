@@ -1,17 +1,15 @@
-// $Id: DistributedQueueBasicTest.java,v 1.2 2003/12/22 10:14:09 rds13 Exp $
+// $Id: DistributedQueueBasicTest.java,v 1.3 2004/03/30 06:47:30 belaban Exp $
 
 package org.jgroups.blocks;
 
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
-
 import org.apache.log4j.Logger;
 import org.jgroups.ChannelException;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.MessageListener;
-import org.jgroups.log.Trace;
 
 public class DistributedQueueBasicTest extends TestCase implements MessageListener
 {
@@ -64,7 +62,7 @@ public class DistributedQueueBasicTest extends TestCase implements MessageListen
                 + "STATE_TRANSFER:"
                 + "QUEUE";
 
-        Trace.init();
+
 
     }
 

@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.5 2004/02/19 05:23:59 akbollu Exp $
+// $Id: TCP.java,v 1.6 2004/03/30 06:47:21 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -7,19 +7,18 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.View;
-import org.jgroups.util.Util;
-import org.jgroups.util.BoundedList;
 import org.jgroups.blocks.ConnectionTable;
-import org.jgroups.log.Trace;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.BoundedList;
+import org.jgroups.util.Util;
 
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.net.SocketException;
+import java.net.UnknownHostException;
+import java.util.HashMap;
 import java.util.Properties;
 import java.util.Vector;
-import java.util.HashMap;
 
 
 
@@ -115,11 +114,11 @@ public class TCP extends Protocol implements ConnectionTable.Receiver, Connectio
         else {
             if(ri == 0) {
                 ri=5000;
-                Trace.warn("TCP.start()", "reaper_interval was 0, set it to " + ri);
+                if(log.isWarnEnabled()) log.warn("reaper_interval was 0, set it to " + ri);
             }
             if(cet == 0) {
                 cet=1000 * 60 * 5;
-                Trace.warn("TCP.start()", "conn_expire_time was 0, set it to " + cet);
+                if(log.isWarnEnabled()) log.warn("conn_expire_time was 0, set it to " + cet);
             }
             cTable=new ConnectionTable(this, b_addr, s_port, ri, cet);
         }
@@ -160,7 +159,7 @@ public class TCP extends Protocol implements ConnectionTable.Receiver, Connectio
 
         if(dest_addr == null) {  // broadcast (to all members)
             if(group_addr == null) {
-                Trace.warn("TCP.down()", "dest address of message is null, and " +
+                if(log.isWarnEnabled()) log.warn("dest address of message is null, and " +
                                          "sending to default address fails as group_addr is null, too !" +
                                          " Discarding message.");
                 return;
@@ -187,9 +186,9 @@ public class TCP extends Protocol implements ConnectionTable.Receiver, Connectio
             observer.up(evt, up_queue.size());
 
 
-        if(Trace.trace) Trace.info("TCP.receive()", "received msg " + msg);
-        //if(Trace.trace)
-          //  Trace.info("TCP.receive()", "src=" + msg.getSrc() + ", hdrs:\n" + msg.printObjectHeaders());
+         if(log.isInfoEnabled()) log.info("received msg " + msg);
+        //
+          //  if(log.isInfoEnabled()) log.info("TCP.receive()", "src=" + msg.getSrc() + ", hdrs:\n" + msg.printObjectHeaders());
 
 
         hdr=(TcpHeader)msg.removeHeader(getName());
@@ -204,7 +203,7 @@ public class TCP extends Protocol implements ConnectionTable.Receiver, Connectio
             // below lines were commented as patch sent by Roland Kurmann (bela March 20 2003)
 
 //             if(group_addr == null) {
-//                if(Trace.trace) Trace.warn("TCP.receive()", "group address in header was null, discarded");
+//                 if(log.isWarnEnabled()) log.warn("TCP.receive()", "group address in header was null, discarded");
 //              return;
 //             }
 
@@ -212,7 +211,7 @@ public class TCP extends Protocol implements ConnectionTable.Receiver, Connectio
             // message is a diagnosis message (special group name DIAG_GROUP)
             if(ch_name != null && !group_addr.equals(ch_name) &&
                     !ch_name.equals(Util.DIAG_GROUP)) {
-                Trace.warn("TCP.receive()", "discarded message from different group (" +
+                if(log.isWarnEnabled()) log.warn("discarded message from different group (" +
                                             ch_name + "). Sender was " + msg.getSrc());
                 return;
             }
@@ -224,13 +223,13 @@ public class TCP extends Protocol implements ConnectionTable.Receiver, Connectio
 
     // ConnectionTable.ConnectionListener interface
     public void connectionOpened(Address peer_addr) {
-        if(Trace.trace)
-            Trace.info("TCP.connectionOpened()", "opened connection to " + peer_addr);
+
+            if(log.isInfoEnabled()) log.info("opened connection to " + peer_addr);
     }
 
     public void connectionClosed(Address peer_addr) {
-        if(peer_addr != null && Trace.trace)
-            Trace.info("TCP.connectionClosed()", "closed connection to " + peer_addr);
+        if(peer_addr != null)
+            if(log.isInfoEnabled()) log.info("closed connection to " + peer_addr);
     }
 
 
@@ -250,7 +249,7 @@ public class TCP extends Protocol implements ConnectionTable.Receiver, Connectio
                 bind_addr=InetAddress.getByName(str);
             }
             catch(UnknownHostException unknown) {
-                Trace.fatal("TCP.setProperties()", "(bind_addr): host " + str + " not known");
+                if(log.isFatalEnabled()) log.fatal("(bind_addr): host " + str + " not known");
                 return false;
             }
             props.remove("bind_addr");
@@ -322,7 +321,7 @@ public class TCP extends Protocol implements ConnectionTable.Receiver, Connectio
 
         dest=(IpAddress)msg.getDest();  // guaranteed not to be null
         if(!(dest instanceof IpAddress)) {
-            Trace.error("TCP.sendUnicastMessage()", "destination address is not of type IpAddress !");
+            if(log.isErrorEnabled()) log.error("destination address is not of type IpAddress !");
             return;
         }
         setSourceAddress(msg);
@@ -346,13 +345,13 @@ public class TCP extends Protocol implements ConnectionTable.Receiver, Connectio
             passUp(evt);
             return;
         }
-        if(Trace.trace)
-            Trace.info("TCP.sendUnicastMessage()", "dest=" + msg.getDest() + ", hdrs:\n" + msg.printObjectHeaders());
+
+            if(log.isInfoEnabled()) log.info("dest=" + msg.getDest() + ", hdrs:\n" + msg.printObjectHeaders());
         try {
             if(skip_suspected_members) {
                 if(suspected_mbrs.contains(dest)) {
-                    if(Trace.trace)
-                        Trace.info("TCP.sendUnicastMessage()", "will not send unicast message to " + dest +
+
+                        if(log.isInfoEnabled()) log.info("will not send unicast message to " + dest +
                                 " as it is currently suspected");
                     return;
                 }
@@ -374,8 +373,8 @@ public class TCP extends Protocol implements ConnectionTable.Receiver, Connectio
         Address dest;
         Vector mbrs=(Vector)members.clone();
 
-//        if(Trace.trace)
-//            Trace.info("TCP.sendMulticastMessage()", "sending message to " + msg.getDest() +
+//
+//            if(log.isInfoEnabled()) log.info("TCP.sendMulticastMessage()", "sending message to " + msg.getDest() +
 //                                                     ", mbrs=" + mbrs);
         for(int i=0; i < mbrs.size(); i++) {
             dest=(Address)mbrs.elementAt(i);
@@ -414,7 +413,7 @@ public class TCP extends Protocol implements ConnectionTable.Receiver, Connectio
                 break;
 
             case Event.CONFIG:
-                if(Trace.trace) Trace.info("UDP.down()", "received CONFIG event: " + evt.getArg());
+                 if(log.isInfoEnabled()) log.info("received CONFIG event: " + evt.getArg());
                 handleConfigEvent((HashMap)evt.getArg());
                 break;
 

@@ -1,8 +1,10 @@
 package org.jgroups.protocols;
 
+import org.jgroups.Event;
+import org.jgroups.Message;
+import org.jgroups.stack.Protocol;
+
 import java.util.*;
-import org.jgroups.*;
-import org.jgroups.stack.*;
 
 
 

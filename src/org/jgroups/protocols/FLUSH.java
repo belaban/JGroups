@@ -1,19 +1,24 @@
-// $Id: FLUSH.java,v 1.1 2003/09/09 01:24:10 belaban Exp $
+// $Id: FLUSH.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
 
 
 
 package org.jgroups.protocols;
 
 
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.View;
+import org.jgroups.blocks.GroupRequest;
+import org.jgroups.blocks.MethodCall;
+import org.jgroups.stack.RpcProtocol;
+import org.jgroups.util.List;
+import org.jgroups.util.Rsp;
+import org.jgroups.util.RspList;
+import org.jgroups.util.Util;
+
 import java.util.Enumeration;
 import java.util.Properties;
 import java.util.Vector;
-import org.jgroups.*;
-import org.jgroups.util.*;
-import org.jgroups.stack.*;
-import org.jgroups.blocks.*;
-import org.jgroups.blocks.GroupRequest;
-import org.jgroups.log.Trace;
 
 
 
@@ -127,12 +132,12 @@ public class FLUSH extends RpcProtocol {
 
 	/* Call the handleFlush() method of all existing members. The highest seqnos seen by the coord
 	   is the argument */
-	if(Trace.trace) Trace.info("FLUSH.flush()", "calling HandleFlush(" + dests + ")");
+	 if(log.isInfoEnabled()) log.info("calling HandleFlush(" + dests + ")");
 	passDown(new Event(Event.SWITCH_OUT_OF_BAND)); // we need out-of-band control for FLUSH ...
 	MethodCall call = new MethodCall("handleFlush", new Object[] {dests, highest_delivered_msgs.clone()}, 
 		new String[] {Vector.class.getName(), long[].class.getName()});
 	rsp_list=callRemoteMethods(dests, call, GroupRequest.GET_ALL, 0);
-	if(Trace.trace) Trace.info("FLUSH.flush()", "flush done");
+	 if(log.isInfoEnabled()) log.info("flush done");
 
 
 	/* Process all the responses (Digest): compute a range of messages (min and max seqno) for each
@@ -215,25 +220,25 @@ public class FLUSH extends RpcProtocol {
     public synchronized Digest handleFlush(Vector flush_dests, long[] highest_seqnos) {
 	digest=null;
 
-	if(Trace.trace) Trace.info("FLUSH.handleFlush()", "flush_dests=" + flush_dests + 
+	 if(log.isInfoEnabled()) log.info("flush_dests=" + flush_dests +
 				   " , highest_seqnos=" + Util.array2String(highest_seqnos));
 
 	if(!is_server) // don't handle the FLUSH if not yet joined to the group
 	    return digest;
 
 	if(flush_dests == null) {
-	    if(Trace.trace) Trace.warn("FLUSH.handleFlush()", "flush dest is null, ignoring flush !");
+	     if(log.isWarnEnabled()) log.warn("flush dest is null, ignoring flush !");
 	    return digest;
 	}
 
 	if(flush_dests.size() == 0) {
-	    if(Trace.trace) Trace.warn("FLUSH.handleFlush()", "flush dest is empty, ignoring flush !");
+	     if(log.isWarnEnabled()) log.warn("flush dest is empty, ignoring flush !");
 	    return digest;
 	}
 
 	if(!flush_dests.contains(local_addr)) {
-	    if(Trace.trace)
-		Trace.warn("FLUSH.handleFlush()", "am not in the flush dests, ignoring flush");
+
+		if(log.isWarnEnabled()) log.warn("am not in the flush dests, ignoring flush");
 	    return digest;
 	}
 
@@ -249,7 +254,7 @@ public class FLUSH extends RpcProtocol {
 
 	// asks NAKACK layer for unstable messages and saves result in 'digest'
 	getMessageDigest(highest_seqnos);
-	if (Trace.trace) Trace.info("FLUSH.handleFlush()", "returning digest : " + digest);
+	 if(log.isInfoEnabled()) log.info("returning digest : " + digest);
 	return digest;
     }
 
@@ -266,7 +271,7 @@ public class FLUSH extends RpcProtocol {
 		highest_delivered_mutex.wait(4000);
 	    }
 	    catch(Exception e) {
-		Trace.debug("FLUSH.getHighestDeliveredSeqnos()", "exception is " + e);
+		if(log.isDebugEnabled()) log.debug("exception is " + e);
 	    }
 	}
     }

@@ -1,13 +1,14 @@
-// $Id: RpcDispatcherStressTest.java,v 1.2 2003/09/24 23:26:44 belaban Exp $
+// $Id: RpcDispatcherStressTest.java,v 1.3 2004/03/30 06:47:34 belaban Exp $
 
 
 package org.jgroups.tests;
 
 
 import org.jgroups.*;
-import org.jgroups.log.Trace;
-import org.jgroups.util.*;
-import org.jgroups.blocks.*;
+import org.jgroups.blocks.GroupRequest;
+import org.jgroups.blocks.RpcDispatcher;
+import org.jgroups.util.RspList;
+import org.jgroups.util.Util;
 
 
 
@@ -173,7 +174,7 @@ public class RpcDispatcherStressTest implements MembershipListener {
                 return;
             }
 
-            Trace.init();
+
             new RpcDispatcherStressTest().start(props, num_threads, interval, discard_local);
         }
         catch(Exception e) {

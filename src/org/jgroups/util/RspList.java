@@ -1,10 +1,11 @@
-// $Id: RspList.java,v 1.2 2003/12/11 06:41:40 belaban Exp $
+// $Id: RspList.java,v 1.3 2004/03/30 06:47:28 belaban Exp $
 
 package org.jgroups.util;
 
 
-import java.util.Vector;
 import org.jgroups.Address;
+
+import java.util.Vector;
 
 
 /**
