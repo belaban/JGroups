@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.53 2004/11/27 12:20:55 belaban Exp $
+// $Id: UDP.java,v 1.54 2004/12/11 14:40:56 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -170,6 +170,8 @@ public class UDP extends Protocol implements Runnable {
 
     /** The name of this protocol */
     static final String    name="UDP";
+
+    static final String IGNORE_BIND_ADDRESS_PROPERTY="ignore.bind.address";
 
 
     final int VERSION_LENGTH=Version.getLength();
@@ -380,6 +382,9 @@ public class UDP extends Protocol implements Runnable {
         // PropertyPermission not granted if running in an untrusted environment with JNLP.
         try {
             tmp=System.getProperty("bind.address");
+            if(Boolean.getBoolean(IGNORE_BIND_ADDRESS_PROPERTY)) {
+                tmp=null;
+            }
         }
         catch (SecurityException ex){
         }
