@@ -29,7 +29,6 @@
     blocks         Building blocks
     debug	   Debugging functionality
     demos	   All the demos
-    ensemble	   The Ensemble code
     log		   The current tracing facility. Will be replaced by
 		   JDK 1.4 logging API    
     protocols/	   The main protocol branch (including virtual synchrony)

@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.118 2004/09/21 14:04:41 belaban Exp $
+Revision: $Id: history.txt,v 1.119 2004/09/21 14:13:18 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -27,6 +27,9 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
 Version 2.2.8
 -------------
+
+- Removed Ensemble
+  (bela Sept 21 2004)
 
 - Removed some unneeded unit tests
   (bela Sept 21 2004)
