@@ -1,4 +1,4 @@
-// $Id: VERIFY_SUSPECT.java,v 1.4 2004/05/14 00:21:13 belaban Exp $
+// $Id: VERIFY_SUSPECT.java,v 1.5 2004/05/14 00:24:38 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -52,7 +52,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
             num_msgs=new Integer(str).intValue();
             if(num_msgs <= 0) {
                 if(log.isWarnEnabled()) log.warn("num_msgs is invalid (" +
-                                                             num_msgs + "): setting it to 1");
+                        num_msgs + "): setting it to 1");
                 num_msgs=1;
             }
             props.remove("num_msgs");
@@ -174,8 +174,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
             if(suspects.containsKey(mbr))
                 return;
             suspects.put(mbr, new Long(System.currentTimeMillis()));
-
-                if(log.isInfoEnabled()) log.info("verifying that " + mbr + " is dead");
+            if(log.isTraceEnabled()) log.trace("verifying that " + mbr + " is dead");
             for(int i=0; i < num_msgs; i++) {
                 msg=new Message(mbr, null, null);
                 msg.putHeader(getName(), new VerifyHeader(VerifyHeader.ARE_YOU_DEAD, local_addr));
@@ -190,8 +189,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         if(mbr == null) return;
         synchronized(suspects) {
             if(suspects.containsKey(mbr)) {
-
-                    if(log.isInfoEnabled()) log.info("member " + mbr + " is not dead !");
+                if(log.isTraceEnabled()) log.trace("member " + mbr + " is not dead !");
                 suspects.remove(mbr);
                 passDown(new Event(Event.UNSUSPECT, mbr));
                 passUp(new Event(Event.UNSUSPECT, mbr));
