@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.8 2004/04/23 20:02:38 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.9 2004/05/13 06:15:07 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -54,10 +54,6 @@ public class RequestCorrelator {
     /** The dispatching thread pool */
     protected Scheduler scheduler=null;
 
-    /** Whether or not to use the Scheduler. If false, Scheduler is bypassed, and handleRequest(Message) is
-     * called directly
-     */
-    protected boolean use_scheduler=true;
 
     /** The address of this group member */
     protected Address local_addr=null;
@@ -70,16 +66,18 @@ public class RequestCorrelator {
      */
     protected java.util.Stack call_stack=null;
 
-    /** Whether to perform deadlock detection is synchronous calls */
-    protected boolean deadlock_detection=true;
+    /** Whether or not to perform deadlock detection for synchronous (potentially recursive) group method invocations.
+     *  If on, we use a scheduler (handling a priority queue), otherwise we don't and call handleRequest() directly.
+     */
+    protected boolean deadlock_detection=false;
 
     /**
      * This field is used only if deadlock detection is enabled.
      * It sets the calling stack for to that for the currently running request
      */
-    protected CallStackSetter call_stack_setter=new CallStackSetter();
+    protected CallStackSetter call_stack_setter=null;
 
-    /** Process items on the queue concurrently (Scehduler). The default is to wait until the processing of an item
+    /** Process items on the queue concurrently (Scheduler). The default is to wait until the processing of an item
      * has completed before fetching the next item from the queue. Note that setting this to true
      * may destroy the properties of a protocol stack, e.g total or causal order may not be
      * guaranteed. Set this to true only if you know what you're doing ! */
@@ -197,15 +195,6 @@ public class RequestCorrelator {
      */
     public void setDeadlockDetection(boolean flag) {
         deadlock_detection=flag;
-    }
-
-
-    public void setUseScheduler(boolean flag) {
-        use_scheduler=flag;
-    }
-
-    public boolean useScheduler() {
-        return use_scheduler;
     }
 
 
@@ -342,11 +331,10 @@ public class RequestCorrelator {
     /**
      */
     public void start() {
-        if(deadlock_detection) use_scheduler=true;
-        if(use_scheduler) {
+        if(deadlock_detection) {
             if(scheduler == null) {
                 scheduler=new Scheduler();
-                if(deadlock_detection && call_stack_setter != null)
+                if(call_stack_setter != null)
                     scheduler.setListener(call_stack_setter);
                 if(concurrent_processing)
                     scheduler.setConcurrentProcessing(concurrent_processing);
@@ -428,7 +416,6 @@ public class RequestCorrelator {
     public boolean receiveMessage(Message msg) {
         Object tmpHdr;
         Header hdr;
-        Request req;
         RspCollector coll;
         java.util.Stack stack;
         java.util.List dests;
@@ -442,7 +429,7 @@ public class RequestCorrelator {
         if(tmpHdr == null || !(tmpHdr instanceof Header))
             return (true);
 
-        hdr=(Header)msg.getHeader(name);
+        hdr=(Header)tmpHdr;
         if(hdr.name == null || !hdr.name.equals(name)) {
             if(log.isDebugEnabled())
                 log.debug("name of request correlator header (" +
@@ -456,8 +443,7 @@ public class RequestCorrelator {
         if(dests != null && local_addr != null && !dests.contains(local_addr)) {
             if(log.isDebugEnabled())
                 log.debug("discarded request from " + msg.getSrc() +
-                        " as we are not part of destination list (local_addr=" + local_addr +
-                        ", hdr=" + hdr + ")");
+                        " as we are not part of destination list (local_addr=" + local_addr + ", hdr=" + hdr + ")");
             return false;
         }
 
@@ -479,20 +465,22 @@ public class RequestCorrelator {
                     return (false);
                 }
 
-                req=new Request(msg);
                 if(deadlock_detection) {
+                    Request req=new Request(msg);
                     stack=hdr.call_stack;
                     if(hdr.rsp_expected && stack != null && local_addr != null) {
                         if(stack.contains(local_addr)) {
-                            scheduler.addPrio(req);
+                            if(scheduler != null) scheduler.addPrio(req);
                             break;
                         }
                     }
+                    if(scheduler != null) {
+                        scheduler.add(req);
+                        break;
+                    }
                 }
-                if(scheduler != null)
-                    scheduler.add(req);
-                else
-                    handleRequest(msg);
+
+                handleRequest(msg);
                 break;
 
             case Header.RSP:
