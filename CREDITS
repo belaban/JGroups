@@ -4,12 +4,12 @@
 			       -------
 
 
-These are the people who contributed to JavaGroups (in chronological
+These are the people who contributed to JGroups (in chronological
 order of contribution):
 
 
 
-Bela Ban (bela@nms.fnc.fujitsu.com)
+Bela Ban (bela@yahoo.com)
 - Original author. Responsible for core, pbcast protocols
 
 
@@ -38,7 +38,7 @@ Vladimir Blagojevic  (vladimir@cs.yorku.ca)
 
 Roman Rokytskyy (roman@gate5.de)
 - JMS protocol
-- JavaGroups Services (org.javagroups.service): locking/leasing
+- JGroups Services (org.javagroups.service): locking/leasing
 
 
 Ananda Bollu (akbollu@users.sf.net)

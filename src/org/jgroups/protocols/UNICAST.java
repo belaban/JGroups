@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
+// $Id: UNICAST.java,v 1.3 2004/04/05 01:44:03 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -338,10 +338,10 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
      */
     void handleDataReceived(Object sender, long seqno, boolean first, Message msg) {
         Entry    entry;
-        Message  m;  
+        Message  m;
 
-	if(log.isTraceEnabled()) log.trace("[" + local_addr +
-				   "] <-- DATA(" + sender + ": #" + seqno + ", first=" + first);
+        if(log.isTraceEnabled())
+            log.trace("[" + local_addr + "] <-- DATA(" + sender + ": #" + seqno + ", first=" + first);
 	
         entry=(Entry)connections.get(sender);
         if(entry == null) {
@@ -354,12 +354,12 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 entry.received_msgs=new AckReceiverWindow(seqno);
             else {
                 if(operational) {
-
-                        if(log.isWarnEnabled()) log.warn("[" + local_addr + "] seqno " + seqno + " from " +
-                                   sender + " is not tagged as the first message sent by " + sender + 
-                                   "; however, the table for received messages from " + sender + 
-                                   " is still null ! We probably haven't received the first message from " 
-                                   + sender + " ! Discarding message (operational=" + operational + ")");
+                    if(log.isWarnEnabled())
+                        log.warn("[" + local_addr + "] seqno " + seqno + " from " +
+                                sender + " is not tagged as the first message sent by " + sender +
+                                "; however, the table for received messages from " + sender +
+                                " is still null ! We probably haven't received the first message from "
+                                + sender + " ! Discarding message (operational=" + operational + ")");
                     return;
                 }
             }

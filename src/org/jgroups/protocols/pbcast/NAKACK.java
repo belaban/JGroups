@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.8 2004/03/30 06:47:18 belaban Exp $
+// $Id: NAKACK.java,v 1.9 2004/04/05 01:45:53 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -324,8 +324,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
 
                 // discard messages while not yet server (i.e., until JOIN has returned)
                 if(!is_server) {
-
-                        if(log.isDebugEnabled()) log.debug("message was discarded (not yet server)");
+                    if(log.isDebugEnabled())
+                        log.debug("message was discarded (not yet server)");
                     return;
                 }
 

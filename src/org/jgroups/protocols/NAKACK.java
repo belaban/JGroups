@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.4 2004/03/30 06:47:21 belaban Exp $
+// $Id: NAKACK.java,v 1.5 2004/04/05 01:41:16 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -289,7 +289,7 @@ public class NAKACK extends Protocol {
 
             case Event.MSG:
                 msg=(Message)evt.getArg();
-                if(msg.getDest() != null && !msg.getDest().isMulticastAddress())
+                if(vid == null && msg.getDest() != null && !msg.getDest().isMulticastAddress())
                     break; // unicast address: not null and not mcast, pass down unchanged
 
                 if(send_next_msg_out_of_band) {
