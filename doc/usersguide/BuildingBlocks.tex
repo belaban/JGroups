@@ -9,7 +9,7 @@ interface is required. Whereas channels are simple socket-like constructs, build
 blocks may offer a far more sophisticated interface. In some cases, building blocks
 offer access to the underlying channel, so that -- if the building block at hand does
 not offer a certain functionality -- the channel can be accessed directly.  Building
-blocks are located in the {\tt org.javagroups.blocks} package. Only the ones that are
+blocks are located in the {\tt org.jgroups.blocks} package. Only the ones that are
 relevant for application programmers are discussed below. For a more detailed
 description and for architecture and implementation details refer to the Programmer's
 Guide.
@@ -170,7 +170,7 @@ Guide.
   defines the maximum amount of time in milliseconds to wait for the responses.
 
   The {\tt mode} parameter defines whether the message will be sent synchronously or
-  asynchronously. The following values are valid (from {\tt org.javagroups.blocks.GroupRequest}):
+  asynchronously. The following values are valid (from {\tt org.jgroups.blocks.GroupRequest}):
 
   \begin{description}
   \item[GET\_FIRST] Returns the first response received.
@@ -497,7 +497,7 @@ Guide.
   all children nodes of a given node. This gives a programmer modest navigation
   possibilities within the tree.
 
-  There is a demo application in {\tt org.javagroups.demos.DistributedTreeDemo}.
+  There is a demo application in {\tt org.jgroups.demos.DistributedTreeDemo}.
 
 
 

@@ -31,7 +31,7 @@ Note that these instructions are also available in the JavaGroups distribution (
   usersguide  Users Guide
 /lib          3rd party libraries (e.g.  JUnit, JAXP)
 /src/         The source code for JavaGroups
-  javagroups/ Top level public files, e.g. Channel, Message etc
+  jgroups/    Top level public files, e.g. Channel, Message etc
     blocks         Building blocks
     debug          Debugging functionality
     demos          All the demos
@@ -48,14 +48,14 @@ Note that these instructions are also available in the JavaGroups distribution (
   
   \section{Requirements}
 
-  JavaGroups 2.0 requires JDK 1.3 (or higher). There is no JNI code present so it
+  JGroups 2.0 requires JDK 1.3 (or higher). There is no JNI code present so it
   should run on all platforms.
 
 
   \section{Installing the compiled version}
 
   \begin{enumerate}
-  \item Include JavaGroups-2.0.jar in your CLASSPATH 
+  \item Include jgroups-2.0.jar in your CLASSPATH 
   \end{enumerate}
 
 
@@ -63,9 +63,9 @@ Note that these instructions are also available in the JavaGroups distribution (
   \section{Installing and compiling the source version using the make build system (on UNIX platforms)}
 
   \begin{enumerate}
-  \item Unzip JavaGroups.zip or untar JavaGroups.tar This will create a directory, e.g. JavaGroups-2.0.
+  \item Unzip jgroups.zip or untar jgroups.tar This will create a directory, e.g. JGroups-2.0.
   \item Add the classes subdirectory of this directory to your CLASSPATH, e.g.: 
-        {\tt export CLASSPATH=\$CLASSPATH:/home/<user>/JavaGroups-2.0/classes}.
+        {\tt export CLASSPATH=\$CLASSPATH:/home/<user>/JGroups-2.0/classes}.
              (JavaGroups would be in /home/{\em user}/JavaGroups-2.0). Note that it is
              probably advisable to add a period (.:) to your
              CLASSPATH so that class files in the current directory are found
@@ -81,7 +81,7 @@ Note that these instructions are also available in the JavaGroups distribution (
           what directory JavaGroups lives in. Finally, it creates two files:
 	  Makefile.include and configure.cache. The latter file is used the next time the Perl script is run. 
     \item The class files will be created in the classes directory 
-    \item If you want to create javagroups.jar, type make javagroups.jar. This will
+    \item If you want to create jgroups.jar, type make jgroups.jar. This will
           create the JAR files in the dist directory.
     \item To generate the JAVADOC documentation type make documentation. This creates
           the documentation in the doc/javadoc directory  
@@ -106,7 +106,7 @@ Note that these instructions are also available in the JavaGroups distribution (
   To see whether your system can find the JavaGroups classes, execute the following
   command:
 
-  {\tt java org.javagroups.Version}.
+  {\tt java org.jgroups.Version}.
 
   You should see the following output (more or less) if the class is found: 
 
@@ -117,7 +117,7 @@ Note that these instructions are also available in the JavaGroups distribution (
 
   To test whether JavaGroups works okay on your machine, run
 
-  {\tt java org.javagroups.demos.Draw -trace}. twice.
+  {\tt java org.jgroups.demos.Draw -trace}. twice.
 
   2 whiteboard windows should appear. If you started them simultaneously, they should
   initially show a membership of 1 in their title bars. After some time, both windows
@@ -164,11 +164,11 @@ Note that these instructions are also available in the JavaGroups distribution (
   programs that can be used to detect this: McastReceiverTest and
   McastSenderTest. Start McastReceiverTest, e.g.
 
-  {\tt java org.javagroups.tests.McastReceiverTest -mcast\_addr 224.10.10.10 -port 5555}.
+  {\tt java org.jgroups.tests.McastReceiverTest -mcast\_addr 224.10.10.10 -port 5555}.
 
   Then start McastSenderTest: 
 
-  {\tt java org.javagroups.tests.McastSenderTest -mcast\_addr 224.10.10.10 -port 5555}.
+  {\tt java org.jgroups.tests.McastSenderTest -mcast\_addr 224.10.10.10 -port 5555}.
 
   You should be able to type in the McastSenderTest window and see the output in the
   McastReceiverTest. If not, try to use -ttl 32 in the sender. If this still fails,
@@ -187,7 +187,7 @@ Note that these instructions are also available in the JavaGroups distribution (
   following information:
 
   \begin{itemize}
-  \item Version of JavaGroups (java org.javagroups.Version) 
+  \item Version of JGroups (java org.jgroups.Version) 
   \item Platform (e.g. Solaris 8) 
   \item Version of JDK (e.g. JDK 1.3.1) 
   \item Stack trace. Use kill -3 PID on UNIX systems or CTRL-BREAK on windows machines 
