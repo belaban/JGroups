@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.68 2004/05/02 08:24:30 yaron-r Exp $
+Revision: $Id: history.txt,v 1.69 2004/05/02 15:25:14 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -29,6 +29,10 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
 Version 2.2.4
 -------------
+
+- Removed log4j directory
+  (bela May 2 2004)
+
 - Solved bug #943709
   (yaronr April 28 2004)  
 
