@@ -1,4 +1,4 @@
-// $Id: NakAckHeader.java,v 1.6 2004/10/08 13:32:27 belaban Exp $
+// $Id: NakAckHeader.java,v 1.7 2004/10/08 13:54:52 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -12,12 +12,12 @@ import java.io.*;
 
 
 public class NakAckHeader extends Header implements Streamable {
-    public static final short MSG=1;       // regular msg
-    public static final short XMIT_REQ=2;  // retransmit request
-    public static final short XMIT_RSP=3;  // retransmit response (contains one or more messages)
+    public static final byte MSG=1;       // regular msg
+    public static final byte XMIT_REQ=2;  // retransmit request
+    public static final byte XMIT_RSP=3;  // retransmit response (contains one or more messages)
 
 
-    short type=0;
+    byte  type=0;
     long  seqno=-1;        // seqno of regular message (MSG)
     Range range=null;      // range of msgs to be retransmitted (XMIT_REQ) or retransmitted (XMIT_RSP)
 
@@ -29,7 +29,7 @@ public class NakAckHeader extends Header implements Streamable {
     /**
      * Constructor for regular messages
      */
-    public NakAckHeader(short type, long seqno) {
+    public NakAckHeader(byte type, long seqno) {
         this.type=type;
         this.seqno=seqno;
     }
@@ -37,7 +37,7 @@ public class NakAckHeader extends Header implements Streamable {
     /**
      * Constructor for retransmit requests/responses (low and high define the range of msgs)
      */
-    public NakAckHeader(short type, long low, long high) {
+    public NakAckHeader(byte type, long low, long high) {
         this.type=type;
         range=new Range(low, high);
     }
@@ -49,7 +49,7 @@ public class NakAckHeader extends Header implements Streamable {
 
 
     public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeShort(type);
+        out.writeByte(type);
         out.writeLong(seqno);
         if(range != null) {
             out.writeBoolean(true);  // wasn't here before, bad bug !
@@ -62,7 +62,7 @@ public class NakAckHeader extends Header implements Streamable {
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         boolean read_range;
-        type=in.readShort();
+        type=in.readByte();
         seqno=in.readLong();
         read_range=in.readBoolean();
         if(read_range) {
@@ -72,13 +72,13 @@ public class NakAckHeader extends Header implements Streamable {
     }
 
     public void writeTo(DataOutputStream out) throws IOException {
-        out.writeShort(type);
+        out.writeByte(type);
         out.writeLong(seqno);
         Util.writeStreamable(range, out);
     }
 
     public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
-        type=in.readShort();
+        type=in.readByte();
         seqno=in.readLong();
         range=(Range)Util.readStreamable(Range.class, in);
     }
@@ -91,7 +91,7 @@ public class NakAckHeader extends Header implements Streamable {
     }
 
 
-    public static String type2Str(int t) {
+    public static String type2Str(byte t) {
         switch(t) {
             case MSG:
                 return "MSG";

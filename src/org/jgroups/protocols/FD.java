@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.13 2004/10/08 13:26:56 belaban Exp $
+// $Id: FD.java,v 1.14 2004/10/08 13:59:59 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -35,7 +35,7 @@ import java.util.Vector;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Revision: 1.13 $
+ * @version $Revision: 1.14 $
  */
 public class FD extends Protocol {
     Address               ping_dest=null;
@@ -331,13 +331,13 @@ public class FD extends Protocol {
 
 
     public static class FdHeader extends Header implements Streamable {
-        static final short HEARTBEAT=0;
-        static final short HEARTBEAT_ACK=1;
-        static final short SUSPECT=2;
-        static final short NOT_MEMBER=3;  // received as response by pinged mbr when we are not a member
+        static final byte HEARTBEAT=0;
+        static final byte HEARTBEAT_ACK=1;
+        static final byte SUSPECT=2;
+        static final byte NOT_MEMBER=3;  // received as response by pinged mbr when we are not a member
 
 
-        short   type=HEARTBEAT;
+        byte    type=HEARTBEAT;
         Vector  mbrs=null;
         Address from=null;  // member who detected that suspected_mbr has failed
 
@@ -346,7 +346,7 @@ public class FD extends Protocol {
         public FdHeader() {
         } // used for externalization
 
-        FdHeader(short type) {
+        FdHeader(byte type) {
             this.type=type;
         }
 
@@ -367,7 +367,7 @@ public class FD extends Protocol {
         }
 
         public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeShort(type);
+            out.writeByte(type);
             if(mbrs == null)
                 out.writeBoolean(false);
             else {
@@ -382,7 +382,7 @@ public class FD extends Protocol {
         }
 
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            type=in.readShort();
+            type=in.readByte();
             boolean mbrs_not_null=in.readBoolean();
             if(mbrs_not_null) {
                 int len=in.readInt();
@@ -396,7 +396,7 @@ public class FD extends Protocol {
         }
 
         public void writeTo(DataOutputStream out) throws IOException {
-            out.writeShort(type);
+            out.writeByte(type);
             out.writeInt(mbrs != null? mbrs.size() : 0);
             if(mbrs != null) {
                 for(Iterator it=mbrs.iterator(); it.hasNext();) {
@@ -408,7 +408,7 @@ public class FD extends Protocol {
         }
 
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
-            type=in.readShort();
+            type=in.readByte();
             int size=in.readInt();
             if(size > 0) {
                 if(mbrs == null)
