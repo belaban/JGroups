@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.2 2003/09/24 23:20:46 belaban Exp $
+// $Id: MessageDispatcher.java,v 1.3 2003/11/27 21:22:47 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -99,6 +99,7 @@ public class MessageDispatcher implements RequestHandler {
     public MessageDispatcher(PullPushAdapter adapter, Serializable id,
                              MessageListener l, MembershipListener l2) {
         this.adapter=adapter; this.id=id;
+        setMembers (((Channel) adapter.getTransport()).getView().getMembers());
         setMessageListener(l);
         setMembershipListener(l2);
         PullPushHandler handler=new PullPushHandler();
@@ -138,6 +139,7 @@ public class MessageDispatcher implements RequestHandler {
                              MessageListener l, MembershipListener l2,
                              RequestHandler req_handler) {
         this.adapter=adapter; this.id=id;
+        setMembers (((Channel) adapter.getTransport()).getView().getMembers());
         setRequestHandler(req_handler);
         setMessageListener(l);
         setMembershipListener(l2);
@@ -159,7 +161,19 @@ public class MessageDispatcher implements RequestHandler {
         start();
     }
 
-
+    /** 
+     * If this dispatcher is using a user-provided PullPushAdapter, then need to set the members
+     * from the adapter initially since viewChange has most likely already been called in PullPushAdapter. 
+     */
+    private void setMembers (Vector new_mbrs)
+    {
+        if(new_mbrs != null) {
+            members.removeAllElements();
+            for(int i=0; i < new_mbrs.size(); i++)
+                members.addElement(new_mbrs.elementAt(i));
+        }
+    }
+    
     public void setDeadlockDetection(boolean flag) {
         deadlock_detection=flag;
         corr.setDeadlockDetection(flag);
@@ -535,7 +549,22 @@ public class MessageDispatcher implements RequestHandler {
     class TransportAdapter implements Transport {
 
         public void send(Message msg) throws Exception {
-            // @todo: implement
+            if(channel != null)
+                channel.send(msg);
+            else if(adapter != null) {
+                try {
+                    if(id != null)
+                        adapter.send(id, msg);
+                    else
+                        adapter.send(msg);
+                }
+                catch(Throwable ex) {
+                    Trace.error("MessageDispatcher.send()", "exception=" + Util.print(ex));
+                }
+            }
+            else {
+                Trace.error("MessageDispatcher.send()", "channel == null");
+            }
         }
 
         public Object receive(long timeout) throws Exception {
