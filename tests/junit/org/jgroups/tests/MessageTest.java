@@ -1,4 +1,4 @@
-// $Id: MessageTest.java,v 1.5 2004/02/25 21:35:39 belaban Exp $
+// $Id: MessageTest.java,v 1.6 2004/02/26 01:56:59 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -158,11 +158,13 @@ public class MessageTest extends TestCase {
         m3=m1.copy();
         m4=m2.copy();
 
-        assertEquals(m1.getOffset(), m3.getOffset());
-        assertEquals(m1.getBufferSize(), m3.getBufferSize());
+        assertEquals(0, m3.getOffset());
+        assertEquals(4, m3.getBufferSize());
+        assertEquals(4, m3.getBuffer().length);
 
-        assertEquals(m2.getOffset(), m4.getOffset());
-        assertEquals(m2.getBufferSize(), m4.getBufferSize());
+        assertEquals(0, m4.getOffset());
+        assertEquals(3, m4.getBufferSize());
+        assertEquals(3, m4.getBuffer().length);
     }
 
     public void testComputeFragOffsets() {

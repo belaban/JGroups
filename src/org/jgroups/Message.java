@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.5 2004/02/25 20:42:32 belaban Exp $
+// $Id: Message.java,v 1.6 2004/02/26 01:57:19 belaban Exp $
 
 package org.jgroups;
 
@@ -244,11 +244,31 @@ public class Message implements Externalizable {
 
 
     public Message copy() {
+        return copy(true);
+    }
+
+    /**
+     * Create a copy of the message. If offset and length are used (to refer to another buffer), the copy will
+     * contain only the subset offset and length point to, copying the subset into the new copy.
+     * @param copy_buffer
+     * @return
+     */
+    public Message copy(boolean copy_buffer) {
         Message retval=new Message();
         retval.dest_addr=dest_addr;
         retval.src_addr=src_addr;
-        if(buf != null)
-            retval.setBuffer(buf, offset, length);
+
+        if(copy_buffer && buf != null) {
+            byte[] new_buf;
+            if(offset > 0 || length != buf.length) { // resolve reference to subset by copying subset into new buffer
+                new_buf=new byte[length];
+                System.arraycopy(buf, offset, new_buf, 0, length);
+            }
+            else
+                new_buf=buf;
+            retval.setBuffer(new_buf);
+        }
+
         if(headers != null)
             retval.headers=(HashMap)headers.clone();
         return retval;
