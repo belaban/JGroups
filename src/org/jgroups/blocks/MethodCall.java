@@ -16,7 +16,7 @@ import org.jgroups.log.Trace;
  * It includes the name of the method (case sensitive) and a list of arguments.
  * A method call is serializable and can be passed over the wire.
  * @author Bela Ban
- * @version $Revision: 1.2 $
+ * @version $Revision: 1.3 $
  */
 public class MethodCall implements Externalizable {
 
@@ -456,15 +456,32 @@ public class MethodCall implements Externalizable {
 
     public String toString() {
         StringBuffer ret=new StringBuffer();
-        ret.append("MethodCall (name=" + method_name);
-        ret.append(", number of args=" + args.length + ")");
-        ret.append("\nArgs:");
+        boolean first=true;
+        ret.append(method_name).append("(");
         for(int i=0; i < args.length; i++) {
-            ret.append("\n[" + args[i] + " (" +
-                       (args[i] != null? args[i].getClass().getName() : "null") + ")]");
+            if(first) {
+                first=false;
+            }
+            else {
+                ret.append(", ");
+            }
+            ret.append(args[i]);
         }
+        ret.append(")");
         return ret.toString();
     }
+
+    public String toStringDetails() {
+         StringBuffer ret=new StringBuffer();
+         ret.append("MethodCall (name=" + method_name);
+         ret.append(", number of args=" + args.length + ")");
+         ret.append("\nArgs:");
+         for(int i=0; i < args.length; i++) {
+             ret.append("\n[" + args[i] + " (" +
+                        (args[i] != null? args[i].getClass().getName() : "null") + ")]");
+         }
+         return ret.toString();
+     }
 
 
     public void writeExternal(ObjectOutput out) throws IOException {
