@@ -1,4 +1,4 @@
-// $Id: MessageTest.java,v 1.1 2004/02/25 20:40:15 belaban Exp $
+// $Id: MessageTest.java,v 1.2 2004/02/25 21:07:51 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -6,6 +6,9 @@ import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.jgroups.Message;
+import org.jgroups.util.List;
+import org.jgroups.util.Util;
+import org.jgroups.util.Range;
 
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
@@ -137,6 +140,48 @@ public class MessageTest extends TestCase {
 
         assertEquals(m2.getOffset(), m4.getOffset());
         assertEquals(m2.getBufferSize(), m4.getBufferSize());
+    }
+
+    public void testComputeFragOffsets() {
+        Range r;
+        byte[] buf={0,1,2,3,4,5,6,7,8,9};
+        java.util.List retval=Util.computeFragOffsets(buf, 4);
+        System.out.println("list is " + retval);
+        assertEquals(3, retval.size());
+        r=(Range)retval.get(0);
+        assertEquals(0, r.low);
+        assertEquals(4, r.high);
+
+        r=(Range)retval.get(1);
+        assertEquals(4, r.low);
+        assertEquals(4, r.high);
+
+        r=(Range)retval.get(2);
+        assertEquals(8, r.low);
+        assertEquals(2, r.high);
+    }
+
+
+    public void testComputeFragOffsets2() {
+        Range r;
+        byte[] buf={0,1,2,3,4,5,6,7,8,9};
+        java.util.List retval=Util.computeFragOffsets(buf, 10);
+        System.out.println("list is " + retval);
+        assertEquals(1, retval.size());
+        r=(Range)retval.get(0);
+        assertEquals(0, r.low);
+        assertEquals(10, r.high);
+    }
+
+    public void testComputeFragOffsets3() {
+        Range r;
+        byte[] buf={0,1,2,3,4,5,6,7,8,9};
+        java.util.List retval=Util.computeFragOffsets(buf, 100);
+        System.out.println("list is " + retval);
+        assertEquals(1, retval.size());
+        r=(Range)retval.get(0);
+        assertEquals(0, r.low);
+        assertEquals(10, r.high);
     }
 
     public static Test suite() {
