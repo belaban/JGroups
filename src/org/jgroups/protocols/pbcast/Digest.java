@@ -1,4 +1,4 @@
-// $Id: Digest.java,v 1.4 2004/04/28 17:41:41 belaban Exp $
+// $Id: Digest.java,v 1.5 2004/06/18 17:53:16 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -357,6 +357,7 @@ public class Digest implements Externalizable {
     public String toString() {
         StringBuffer sb=new StringBuffer();
         boolean first=true;
+        if(senders == null) return "[]";
         for(int i=0; i < senders.length; i++) {
             if(!first) {
                 sb.append(", ");
