@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.1 2003/09/09 01:24:11 belaban Exp $
+// $Id: GMS.java,v 1.2 2003/11/21 07:57:19 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -10,6 +10,7 @@ import java.io.Serializable;
 import java.util.Hashtable;
 import java.util.Properties;
 import java.util.Vector;
+import java.util.Iterator;
 
 import org.jgroups.*;
 import org.jgroups.util.*;
@@ -51,6 +52,12 @@ public class GMS extends Protocol {
     final String       PART="Participant";
     TimeScheduler      timer=null;
 
+    /** Max number of old members to keep in history */
+    protected int      num_prev_mbrs=50;
+
+    /** Keeps track of old members (up to num_prev_mbrs) */
+    BoundedList        prev_members=null;
+
 
     public GMS() {
         initState();
@@ -85,6 +92,7 @@ public class GMS extends Protocol {
 
 
     public void init() throws Exception {
+        prev_members=new BoundedList(num_prev_mbrs);
         timer=stack != null? stack.timer : null;
         if(timer == null)
             throw new Exception("GMS.init(): timer is null");
@@ -98,6 +106,8 @@ public class GMS extends Protocol {
 
     public void stop() {
         if(impl != null) impl.stop();
+        if(prev_members != null)
+            prev_members.removeAll();
     }
 
 
@@ -282,16 +292,22 @@ public class GMS extends Protocol {
                This ensures that messages sent in view V1 are only received by members of V1 */
             if(checkSelfInclusion(mbrs) == false) {
                 if(Trace.trace)
-                    Trace.warn("GMS.installView()",
-                               "checkSelfInclusion() failed, not a member of view " + mbrs + "; discarding view");
-                if(shun) {
+                    Trace.warn("GMS.installView()", "checkSelfInclusion() failed, " + local_addr +
+                                                    " is not a member of view " + mbrs + "; discarding view");
+
+                // only shun if this member was previously part of the group. avoids problem where multiple
+                // members (e.g. X,Y,Z) join {A,B} concurrently, X is joined first, and Y and Z get view
+                // {A,B,X}, which would cause Y and Z to be shunned as they are not part of the membership
+                // bela Nov 20 2003
+                if(shun && local_addr != null && prev_members.contains(local_addr)) {
                     if(Trace.trace)
-                        Trace.warn("GMS.installView()", "I'm being shunned, will leave and rejoin group");
+                        Trace.warn("GMS.installView()", "I (" + local_addr +
+                                                        ") am being shunned, will leave and rejoin group. " +
+                                                        "prev_members are " + prev_members);
                     passUp(new Event(Event.EXIT));
                 }
                 return;
             }
-
 
 
             // Discards view with id lower than our own. Will be installed without check if first view
@@ -315,6 +331,13 @@ public class GMS extends Protocol {
                 tmp_members.set(members);
                 joining.removeAll(mbrs);  // remove all members in mbrs from joining
                 tmp_members.add(joining); // adjust temporary membership
+
+                // add to prev_members
+                for(Iterator it=mbrs.iterator(); it.hasNext();) {
+                    Address addr=(Address)it.next();
+                    if(!prev_members.contains(addr))
+                        prev_members.add(addr);
+                }
             }
 
             // Send VIEW_CHANGE event up and down the stack:
@@ -633,6 +656,12 @@ public class GMS extends Protocol {
         if(str != null) {
             disable_initial_coord=new Boolean(str).booleanValue();
             props.remove("disable_initial_coord");
+        }
+
+        str=props.getProperty("num_prev_mbrs");
+        if(str != null) {
+            num_prev_mbrs=Integer.parseInt(str);
+            props.remove("num_prev_mbrs");
         }
 
         if(props.size() > 0) {
