@@ -1,4 +1,4 @@
-// $Id: DigestTest.java,v 1.2 2004/03/30 06:47:31 belaban Exp $
+// $Id: DigestTest.java,v 1.3 2004/04/28 17:41:10 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -10,168 +10,200 @@ import org.jgroups.protocols.pbcast.Digest;
 import org.jgroups.stack.IpAddress;
 
 
-
 public class DigestTest extends TestCase {
-    Digest     d;
-    IpAddress  a1, a2, a3;    
-    
+    Digest d, d2;
+    IpAddress a1, a2, a3;
+
     public DigestTest(String name) {
-	super(name);
+        super(name);
     }
 
 
     public void setUp() {
-	d=new Digest(3);
-	a1=new IpAddress(5555);
-	a2=new IpAddress(6666);
-	a3=new IpAddress(7777);
-	d.add(a1, 4, 500, 501);
-	d.add(a2, 25, 26, 26);
-	d.add(a3, 20, 25, 33);
+        d=new Digest(3);
+        a1=new IpAddress(5555);
+        a2=new IpAddress(6666);
+        a3=new IpAddress(7777);
+        d.add(a1, 4, 500, 501);
+        d.add(a2, 25, 26, 26);
+        d.add(a3, 20, 25, 33);
     }
 
     public void tearDown() {
-	
+
     }
 
-    
+
+
+
     public void testConstructor() {
-	assertTrue(d.size() == 3);
-	d.reset(2);
-	assertTrue(d.size() == 2);
-	d.reset(4);
-	assertTrue(d.size() == 4);
+        assertTrue(d.size() == 3);
+        d.reset(2);
+        assertTrue(d.size() == 2);
+        d.reset(4);
+        assertTrue(d.size() == 4);
     }
-    
 
 
     public void testConstructor2() {
-	Digest dd=new Digest(3);
-	assertTrue(dd.lowSeqnoAt(0) == 0);
-	assertTrue(dd.highSeqnoAt(0) == 0);
-	assertTrue(dd.highSeqnoSeenAt(0) == -1);
+        Digest dd=new Digest(3);
+        assertTrue(dd.lowSeqnoAt(0) == 0);
+        assertTrue(dd.highSeqnoAt(0) == 0);
+        assertTrue(dd.highSeqnoSeenAt(0) == -1);
     }
 
 
-    
     public void testGetIndex() {
-	assertTrue(d.getIndex(a1) == 0);
-	assertTrue(d.getIndex(a3) == 2);
+        assertTrue(d.getIndex(a1) == 0);
+        assertTrue(d.getIndex(a3) == 2);
     }
-    
 
 
     public void testContains() {
-	assertTrue(d.contains(a2));
+        assertTrue(d.contains(a2));
     }
 
 
     public void testSenderAt() {
-	assertTrue(d.senderAt(2).equals(a3));
+        assertTrue(d.senderAt(2).equals(a3));
     }
 
-    
+
     public void testResetAt() {
-	d.resetAt(0);
-	assertTrue(d.lowSeqnoAt(0)      == 0);
-	assertTrue(d.highSeqnoAt(0)     == 0);
-	assertTrue(d.highSeqnoSeenAt(0) == -1);
+        d.resetAt(0);
+        assertTrue(d.lowSeqnoAt(0) == 0);
+        assertTrue(d.highSeqnoAt(0) == 0);
+        assertTrue(d.highSeqnoSeenAt(0) == -1);
     }
 
-    
+
     public void testLowSeqnoAt() {
-	assertTrue(d.lowSeqnoAt(0) == 4);
-	assertTrue(d.lowSeqnoAt(1) == 25);
-	assertTrue(d.lowSeqnoAt(2) == 20);
+        assertTrue(d.lowSeqnoAt(0) == 4);
+        assertTrue(d.lowSeqnoAt(1) == 25);
+        assertTrue(d.lowSeqnoAt(2) == 20);
     }
 
-    
+
     public void testHighSeqnoAt() {
-	assertTrue(d.highSeqnoAt(0) == 500);
-	assertTrue(d.highSeqnoAt(1) == 26);
-	assertTrue(d.highSeqnoAt(2) == 25);
+        assertTrue(d.highSeqnoAt(0) == 500);
+        assertTrue(d.highSeqnoAt(1) == 26);
+        assertTrue(d.highSeqnoAt(2) == 25);
     }
-    
+
     public void testHighSeqnoSeenAt() {
-	assertTrue(d.highSeqnoSeenAt(0) == 501);
-	assertTrue(d.highSeqnoSeenAt(1) == 26);
-	assertTrue(d.highSeqnoSeenAt(2) == 33);
+        assertTrue(d.highSeqnoSeenAt(0) == 501);
+        assertTrue(d.highSeqnoSeenAt(1) == 26);
+        assertTrue(d.highSeqnoSeenAt(2) == 33);
     }
 
     public void testCopy() {
-	d=d.copy();
-	testLowSeqnoAt();
-	testHighSeqnoAt();
-	testHighSeqnoSeenAt();
-	testGetIndex();
-	testContains();
-	testSenderAt();
-	testResetAt();
+        d=d.copy();
+        testLowSeqnoAt();
+        testHighSeqnoAt();
+        testHighSeqnoSeenAt();
+        testGetIndex();
+        testContains();
+        testSenderAt();
+        testResetAt();
     }
 
 
     public void testNonConflictingMerge() {
-	Digest    cons_d=new Digest(5);
-	IpAddress ip1=new IpAddress(1111), ip2=new IpAddress(2222);
+        Digest cons_d=new Digest(5);
+        IpAddress ip1=new IpAddress(1111), ip2=new IpAddress(2222);
 
-	cons_d.add(ip1, 1, 10, 10);
-	cons_d.add(ip2, 2, 20, 20);
-	// System.out.println("\ncons_d before: " + cons_d);
-	cons_d.merge(d);
-	//System.out.println("\ncons_d after: " + cons_d);
-	assertTrue(cons_d.getIndex(ip1) == 0);
-	assertTrue(cons_d.getIndex(ip2) == 1);
-	assertTrue(cons_d.getIndex(a1)  == 2);
-	assertTrue(cons_d.getIndex(a2)  == 3);
-	assertTrue(cons_d.getIndex(a3)  == 4);
-	assertTrue(cons_d.lowSeqnoAt(0) == 1);
-	assertTrue(cons_d.lowSeqnoAt(1) == 2);
-	assertTrue(cons_d.lowSeqnoAt(2) == 4);
-	assertTrue(cons_d.lowSeqnoAt(3) == 25);
-	assertTrue(cons_d.lowSeqnoAt(4) == 20);
-	assertTrue(cons_d.highSeqnoAt(0) == 10);
-	assertTrue(cons_d.highSeqnoAt(1) == 20);
-	assertTrue(cons_d.highSeqnoAt(2) == 500);
-	assertTrue(cons_d.highSeqnoAt(3) == 26);
-	assertTrue(cons_d.highSeqnoAt(4) == 25);
-	assertTrue(cons_d.highSeqnoSeenAt(0) == 10);
-	assertTrue(cons_d.highSeqnoSeenAt(1) == 20);
-	assertTrue(cons_d.highSeqnoSeenAt(2) == 501);
-	assertTrue(cons_d.highSeqnoSeenAt(3) == 26);
-	assertTrue(cons_d.highSeqnoSeenAt(4) == 33);
+        cons_d.add(ip1, 1, 10, 10);
+        cons_d.add(ip2, 2, 20, 20);
+        // System.out.println("\ncons_d before: " + cons_d);
+        cons_d.merge(d);
+        //System.out.println("\ncons_d after: " + cons_d);
+        assertTrue(cons_d.getIndex(ip1) == 0);
+        assertTrue(cons_d.getIndex(ip2) == 1);
+        assertTrue(cons_d.getIndex(a1) == 2);
+        assertTrue(cons_d.getIndex(a2) == 3);
+        assertTrue(cons_d.getIndex(a3) == 4);
+        assertTrue(cons_d.lowSeqnoAt(0) == 1);
+        assertTrue(cons_d.lowSeqnoAt(1) == 2);
+        assertTrue(cons_d.lowSeqnoAt(2) == 4);
+        assertTrue(cons_d.lowSeqnoAt(3) == 25);
+        assertTrue(cons_d.lowSeqnoAt(4) == 20);
+        assertTrue(cons_d.highSeqnoAt(0) == 10);
+        assertTrue(cons_d.highSeqnoAt(1) == 20);
+        assertTrue(cons_d.highSeqnoAt(2) == 500);
+        assertTrue(cons_d.highSeqnoAt(3) == 26);
+        assertTrue(cons_d.highSeqnoAt(4) == 25);
+        assertTrue(cons_d.highSeqnoSeenAt(0) == 10);
+        assertTrue(cons_d.highSeqnoSeenAt(1) == 20);
+        assertTrue(cons_d.highSeqnoSeenAt(2) == 501);
+        assertTrue(cons_d.highSeqnoSeenAt(3) == 26);
+        assertTrue(cons_d.highSeqnoSeenAt(4) == 33);
     }
 
 
     public void testConflictingMerge() {
-	Digest new_d=new Digest(2);
-	new_d.add(a1, 5, 450, 501);
-	new_d.add(a3, 18, 28, 35);
-	//System.out.println("\nd before: " + d);
-	//System.out.println("new_: " + new_d);
-	d.merge(new_d);
-	//System.out.println("d after: " + d);
-	
-	assertTrue(d.lowSeqnoAt(0)      ==   4);  // low_seqno should *not* have changed
-	assertTrue(d.highSeqnoAt(0)     == 500);  // high_seqno should *not* have changed
-	assertTrue(d.highSeqnoSeenAt(0) == 501);  // high_seqno_seen should *not* have changed
+        Digest new_d=new Digest(2);
+        new_d.add(a1, 5, 450, 501);
+        new_d.add(a3, 18, 28, 35);
+        //System.out.println("\nd before: " + d);
+        //System.out.println("new_: " + new_d);
+        d.merge(new_d);
+        //System.out.println("d after: " + d);
 
-	assertTrue(d.lowSeqnoAt(1)      ==  25);  // low_seqno should *not* have changed
-	assertTrue(d.highSeqnoAt(1)     ==  26);  // high_seqno should *not* have changed
-	assertTrue(d.highSeqnoSeenAt(1) ==  26);  // high_seqno_seen should *not* have changed
+        assertTrue(d.lowSeqnoAt(0) == 4);  // low_seqno should *not* have changed
+        assertTrue(d.highSeqnoAt(0) == 500);  // high_seqno should *not* have changed
+        assertTrue(d.highSeqnoSeenAt(0) == 501);  // high_seqno_seen should *not* have changed
 
-	assertTrue(d.lowSeqnoAt(2)      ==  18);  // low_seqno should *not* have changed
-	assertTrue(d.highSeqnoAt(2)     ==  28);  // high_seqno should *not* have changed
-	assertTrue(d.highSeqnoSeenAt(2) ==  35);  // high_seqno_seen should *not* have changed
+        assertTrue(d.lowSeqnoAt(1) == 25);  // low_seqno should *not* have changed
+        assertTrue(d.highSeqnoAt(1) == 26);  // high_seqno should *not* have changed
+        assertTrue(d.highSeqnoSeenAt(1) == 26);  // high_seqno_seen should *not* have changed
+
+        assertTrue(d.lowSeqnoAt(2) == 18);  // low_seqno should *not* have changed
+        assertTrue(d.highSeqnoAt(2) == 28);  // high_seqno should *not* have changed
+        assertTrue(d.highSeqnoSeenAt(2) == 35);  // high_seqno_seen should *not* have changed
     }
 
-   
+
+    public void testSameSendersOtherIsNull() {
+        assertFalse(d.sameSenders(null));
+    }
+
+    public void testSameSenders1MNullDifferentLenth() {
+        d2=new Digest(1);
+        assertFalse(d2.sameSenders(d));
+    }
+
+    public void testSameSenders1MNullSameLength() {
+        d2=new Digest(3);
+        assertFalse(d2.sameSenders(d));
+    }
+
+    public void testSameSendersIdentical() {
+        d2=d.copy();
+        assertTrue(d.sameSenders(d2));
+    }
+
+    public void testSameSendersNotIdentical() {
+        d2=new Digest(3);
+        d2.add(a1, 4, 500, 501);
+        d2.add(a3, 20, 25, 33);
+        d2.add(a2, 25, 26, 26);
+        assertFalse(d.sameSenders(d2));
+    }
+
+    public void testSameSendersNotSameLength() {
+        d2=new Digest(3);
+        d2.add(a1, 4, 500, 501);
+        d2.add(a2, 25, 26, 26);
+        assertFalse(d.sameSenders(d2));
+    }
+
 
     public static Test suite() {
-	TestSuite s=new TestSuite(DigestTest.class);
-	return s;
+        TestSuite s=new TestSuite(DigestTest.class);
+        return s;
     }
 
     public static void main(String[] args) {
-	junit.textui.TestRunner.run(suite());
+        junit.textui.TestRunner.run(suite());
     }
 }
