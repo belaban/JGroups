@@ -1,4 +1,4 @@
-// $Id: EnsChannel.java,v 1.4 2004/03/30 06:47:29 belaban Exp $
+// $Id: EnsChannel.java,v 1.5 2004/07/05 06:00:40 belaban Exp $
 
 package org.jgroups;
 
@@ -32,12 +32,6 @@ public class EnsChannel extends Channel implements Hot_Callbacks {
     private View                my_view=null;
     private final String        default_properties="Gmp:Sync:Heal:Frag:Suspect:Flow:Total";
 
-    private final int           CAST_MSG  = 0;
-    private final int           SEND_MSG  = 1;
-    private final int           VIEW_MSG  = 2;
-    private final int           EXIT_MSG  = 3;
-    private final int           BLOCK_MSG = 4;
-    
     private boolean             receive_views=true;
     private boolean             receive_suspects=true;
     private boolean             receive_blocks=false;
@@ -222,12 +216,6 @@ public class EnsChannel extends Channel implements Hot_Callbacks {
 
 
 
-    public void finalize() {
-	if(channel_id != null)
-	    disconnect();
-	close();
-    }
-
 
 
     private void cast(byte[] msg) throws ChannelNotConnectedException, ChannelClosedException {
@@ -285,7 +273,7 @@ public class EnsChannel extends Channel implements Hot_Callbacks {
 	else if(dest instanceof Hot_Endpoint)
 	    rc=ensemble.send(channel_id, (Hot_Endpoint)dest, m, tmp);
 	else {
-	    if(log.isErrorEnabled()) log.error("dest address is wrong (" + dest + ")");
+	    if(log.isErrorEnabled()) log.error("dest address is wrong (" + dest + ')');
 	    return;
 	}
 
@@ -443,13 +431,13 @@ public class EnsChannel extends Channel implements Hot_Callbacks {
     public Object  getOpt(int option) {
 	switch(option) {
 	case VIEW:
-	    return new Boolean(receive_views);
+	    return Boolean.valueOf(receive_views);
 	case SUSPECT:
-	    return new Boolean(receive_suspects);
+	    return Boolean.valueOf(receive_suspects);
 	case BLOCK:
-	    return new Boolean(receive_blocks);
+	    return Boolean.valueOf(receive_blocks);
 	case LOCAL:
-	    return new Boolean(receive_local_msgs);
+	    return Boolean.valueOf(receive_local_msgs);
 	default:
 	    if(log.isErrorEnabled()) log.error("(" + option + "): option not known");
 	    return null;

@@ -1,4 +1,4 @@
-// $Id: TimedWriter.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+// $Id: TimedWriter.java,v 1.2 2004/07/05 05:59:41 belaban Exp $
 
 package org.jgroups.util;
 
@@ -245,7 +245,7 @@ public class TimedWriter {
 	try {
 	    local=InetAddress.getByName(args[0]);
 	    remote=InetAddress.getByName(args[1]);
-	    port=new Integer(args[2]).intValue();
+	    port=Integer.parseInt(args[2]);
 	}
 	catch(Exception e) {
 	    System.err.println("Could find host " + remote);

@@ -1,4 +1,4 @@
-// $Id: Router.java,v 1.2 2004/03/30 06:47:27 belaban Exp $
+// $Id: Router.java,v 1.3 2004/07/05 05:58:46 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -78,7 +78,7 @@ public class Router {
         d=new Date();
          {
             if(log.isInfoEnabled()) log.info("Router started at " + d);
-            if(log.isInfoEnabled()) log.info("Listening on port " + port + " bound on address " + bind_address + "\n");
+            if(log.isInfoEnabled()) log.info("Listening on port " + port + " bound on address " + bind_address + '\n');
         }
         d=null;
 
@@ -206,9 +206,9 @@ public class Router {
                         else {
                             for(Enumeration e=l.elements(); e.hasMoreElements();) {
                                 AddressEntry ae=(AddressEntry)e.nextElement();
-                                sb.append("\t");
+                                sb.append('\t');
                                 sb.append(ae.toString());
-                                sb.append("\n");
+                                sb.append('\n');
                             }
                         }
                 }
@@ -508,7 +508,7 @@ public class Router {
                 catch(IOException io_ex) {
 
                         if(log.isInfoEnabled()) log.info("client " +
-                                                                sock.getInetAddress().getHostName() + ":" + sock.getPort() +
+                                                                sock.getInetAddress().getHostName() + ':' + sock.getPort() +
                                                                 " closed connection; removing it from routing table");
                     removeEntry(sock); // will close socket
                     return;
@@ -532,16 +532,16 @@ public class Router {
         System.out.println("Router is starting...");
         for(int i=0; i < args.length; i++) {
             arg=args[i];
-            if(arg.equals("-help")) {
+            if("-help".equals(arg)) {
                 System.out.println("Router [-port <port>] [-bindaddress <address>]");
                 return;
             }
             else
-                if(arg.equals("-port")) {
-                    port=new Integer(args[++i]).intValue();
+                if("-port".equals(arg)) {
+                    port=Integer.parseInt(args[++i]);
                 }
                 else
-                    if(arg.equals("-bindaddress")) {
+                    if("-bindaddress".equals(arg)) {
                         address=InetAddress.getByName(args[++i]);
                     }
 

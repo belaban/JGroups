@@ -1,4 +1,4 @@
-// $Id: IpAddress.java,v 1.5 2004/06/09 15:32:31 belaban Exp $
+// $Id: IpAddress.java,v 1.6 2004/07/05 05:58:46 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -27,7 +27,7 @@ public class IpAddress implements Address {
     protected static HashMap  sAddrCache=new HashMap();
     protected static Log log=LogFactory.getLog(IpAddress.class);
 
-    static transient boolean resolve_dns=new Boolean(System.getProperty("resolve.dns", "true")).booleanValue();
+    static transient boolean resolve_dns=Boolean.valueOf(System.getProperty("resolve.dns", "true")).booleanValue();
 
     static final transient  char[] digits = {
         '0', '1', '2', '3', '4', '5',   
@@ -42,7 +42,7 @@ public class IpAddress implements Address {
             ip_addr=InetAddress.getByName(i);
         }
         catch(Exception e) {
-            if(log.isWarnEnabled()) log.warn("failed to get " + i + ":" + p +
+            if(log.isWarnEnabled()) log.warn("failed to get " + i + ':' + p +
                        ", using \"127.0.0.1\", exception: " + Util.printStackTrace(e));
             try {
                 ip_addr=InetAddress.getByName("127.0.0.1");

@@ -1,4 +1,4 @@
-// $Id: GetStateEvent.java,v 1.1 2003/09/09 01:24:07 belaban Exp $
+// $Id: GetStateEvent.java,v 1.2 2004/07/05 06:00:40 belaban Exp $
 
 package org.jgroups;
 
@@ -9,5 +9,5 @@ public class GetStateEvent {
 
     public Object getRequestor() {return requestor;}
 
-    public String toString() {return "GetStateEvent[requestor=" + requestor + "]";}
+    public String toString() {return "GetStateEvent[requestor=" + requestor + ']';}
 }

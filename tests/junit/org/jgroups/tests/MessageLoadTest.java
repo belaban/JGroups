@@ -24,7 +24,7 @@ import java.util.Vector;
  * <li><code>-debug</code> - pop-up protocol debugger;
  * <li><code>-cummulative</code> - debugger shows cummulative messages.
  * </ul>
- * $Id: MessageLoadTest.java,v 1.4 2004/03/30 06:47:31 belaban Exp $
+ * $Id: MessageLoadTest.java,v 1.5 2004/07/05 06:04:28 belaban Exp $
  */
 public class MessageLoadTest extends TestCase {
 
@@ -380,7 +380,7 @@ public class MessageLoadTest extends TestCase {
      */
     public static void main(String[] args) {
         for(int i=0; i < args.length; i++) {
-            if(args[i].equals("-sleep")) {
+            if("-sleep".equals(args[i])) {
                 SLEEP_BETWEEN_SENDING=true;
                 if(!(i < args.length - 1))
                     throw new RuntimeException("You have to specify sleep time");
@@ -394,7 +394,7 @@ public class MessageLoadTest extends TestCase {
 
                 continue;
             }
-            else if(args[i].equals("-msg_num")) {
+            else if("-msg_num".equals(args[i])) {
                 if(!(i < args.length - 1))
                     throw new RuntimeException("You have to specify messages number");
 
@@ -407,21 +407,21 @@ public class MessageLoadTest extends TestCase {
 
                 continue;
             }
-            else if(args[i].equals("-loopback")) {
+            else if("-loopback".equals(args[i])) {
                 LOOPBACK=true;
 
                 continue;
             }
-            else if(args[i].equals("-debug")) {
+            else if("-debug".equals(args[i])) {
                 USE_DEBUGGER=true;
 
                 continue;
             }
-            else if(args[i].equals("-cummulative")) {
+            else if("-cummulative".equals(args[i])) {
                 CUMMULATIVE=true;
                 continue;
             }
-            else if(args[i].equals("-help")) {
+            else if("-help".equals(args[i])) {
                 help();
                 return;
             }

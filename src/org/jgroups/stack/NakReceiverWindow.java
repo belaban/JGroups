@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindow.java,v 1.11 2004/06/25 00:27:41 belaban Exp $
+// $Id: NakReceiverWindow.java,v 1.12 2004/07/05 05:58:46 belaban Exp $
 
 
 package org.jgroups.stack;
@@ -202,7 +202,7 @@ public class NakReceiverWindow {
             }
             else if(seqno < tail) {
                 if(log.isTraceEnabled())
-                    log.trace("added missing msg " + msg.getSrc() + "#" + seqno);
+                    log.trace("added missing msg " + msg.getSrc() + '#' + seqno);
 
                 Object val=received_msgs.get(new Long(seqno));
                 if(val == null) {
@@ -370,7 +370,7 @@ public class NakReceiverWindow {
 
         if(low > high) {
             if(log.isErrorEnabled()) log.error("invalid range: low (" + low +
-                    ") is higher than high (" + high + ")");
+                    ") is higher than high (" + high + ')');
             return null;
         }
 
@@ -552,7 +552,7 @@ public class NakReceiverWindow {
             try {min=(Long)delivered_msgs.firstKey();} catch(NoSuchElementException ex) {}
             try {max=(Long)delivered_msgs.lastKey();}  catch(NoSuchElementException ex) {}
         }
-        sb.append("[").append(min).append(" - ").append(max).append("]");
+        sb.append('[').append(min).append(" - ").append(max).append(']');
         return sb.toString();
     }
 
@@ -563,7 +563,7 @@ public class NakReceiverWindow {
      */
     String printReceivedMessages() {
         StringBuffer sb=new StringBuffer();
-        sb.append("[");
+        sb.append('[');
         if(received_msgs.size() > 0) {
             Long first=null, last=null;
             try {first=(Long)received_msgs.firstKey();} catch(NoSuchElementException ex) {}
@@ -577,9 +577,9 @@ public class NakReceiverWindow {
                 if(entry.getValue() == null)
                     non_received++;
             }
-            sb.append(" (size=").append(received_msgs.size()).append(", missing=").append(non_received).append(")");
+            sb.append(" (size=").append(received_msgs.size()).append(", missing=").append(non_received).append(')');
         }
-        sb.append("]");
+        sb.append(']');
         return sb.toString();
     }
 

@@ -1,4 +1,4 @@
-// $Id: AckMcastSenderWindow.java,v 1.3 2004/03/30 06:47:27 belaban Exp $
+// $Id: AckMcastSenderWindow.java,v 1.4 2004/07/05 05:58:46 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -33,7 +33,7 @@ import java.util.*;
  *
  * @author Bela Ban June 9 1999
  * @author John Georgiadis May 8 2001
- * @version $Revision: 1.3 $
+ * @version $Revision: 1.4 $
  */
 public class AckMcastSenderWindow {
     /**
@@ -570,11 +570,11 @@ public class AckMcastSenderWindow {
 
 	ret = new StringBuffer();
 	synchronized(msgs) {
-	    ret.append("msgs: (" + msgs.size() + ")");
+	    ret.append("msgs: (" + msgs.size() + ')');
 	    for (Enumeration e = msgs.keys(); e.hasMoreElements();) {
 		key   = (Long)e.nextElement();
 		entry = (Entry)msgs.get(key);
-		ret.append("key = " + key + ", value = " + entry + "\n");
+		ret.append("key = " + key + ", value = " + entry + '\n');
 	    }
 	    synchronized(stable_msgs) {
 		ret.append("\nstable_msgs: " + stable_msgs);

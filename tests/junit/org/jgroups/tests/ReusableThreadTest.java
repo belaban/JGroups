@@ -1,4 +1,4 @@
-// $Id: ReusableThreadTest.java,v 1.3 2004/04/28 04:48:45 belaban Exp $
+// $Id: ReusableThreadTest.java,v 1.4 2004/07/05 06:04:28 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -29,7 +29,7 @@ public class ReusableThreadTest extends TestCase {
             System.out.println("Thread " + name + " is run");
 
             long sleep_time=(long)(Math.random() * 5000);
-            System.out.print("Thread #" + num + ": sleeping " + sleep_time + ":");
+            System.out.print("Thread #" + num + ": sleeping " + sleep_time + ':');
             Util.sleep(sleep_time);
             //throw new Error("hello world");
             System.out.println(" -- done");

@@ -110,7 +110,7 @@ public class ServiceRunner {
         };
 
         Thread shutdownThread=new Thread(shutdownHook, service.getName() +
-                " shutdown hook [" + service.getAddress() + "]");
+                " shutdown hook [" + service.getAddress() + ']');
         shutdownThread.setDaemon(true);
 
         Runtime.getRuntime().addShutdownHook(shutdownThread);

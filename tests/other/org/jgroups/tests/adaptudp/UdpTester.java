@@ -120,7 +120,7 @@ public class UdpTester {
                                 members.add(new_mbr);
                                 System.out.println("-- discovered " + new_mbr);
                                 if(members.size() >= num_members) {
-                                    System.out.println("-- all members have joined (" + members + ")");
+                                    System.out.println("-- all members have joined (" + members + ')');
                                     running=false;
                                     break;
                                 }

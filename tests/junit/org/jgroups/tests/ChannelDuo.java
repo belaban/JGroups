@@ -1,4 +1,4 @@
-// $Id: ChannelDuo.java,v 1.2 2004/03/30 06:47:31 belaban Exp $
+// $Id: ChannelDuo.java,v 1.3 2004/07/05 06:04:23 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -77,7 +77,7 @@ public class ChannelDuo extends TestCase
 
             start = System.currentTimeMillis();
             for (int i = 0; i < nitems; i++)
-                channel2.send(new Message(null, null, new String("Msg #" + i).getBytes()));
+                channel2.send(new Message(null, null, ("Msg #" + i).getBytes()));
             mythread.join();
             stop = System.currentTimeMillis();
             logger.info("Took " + (stop - start) + " msecs");
@@ -334,7 +334,7 @@ public class ChannelDuo extends TestCase
         logger.info("-- adding element 99");
         try
         {
-            channel2.send(null, null, new String("99").getBytes());
+            channel2.send(null, null, "99".getBytes());
         }
         catch (Exception ex)
         {
@@ -345,7 +345,7 @@ public class ChannelDuo extends TestCase
         logger.info("-- adding element 100");
         try
         {
-            channel2.send(null, null, new String("100").getBytes());
+            channel2.send(null, null, "100".getBytes());
         }
         catch (Exception ex)
         {
@@ -483,7 +483,7 @@ public class ChannelDuo extends TestCase
                     if (readers[i].isAlive())
                     {
                         allStopped = false;
-                        logger.info("reader #" + i + " " + reads[i] + " read items");
+                        logger.info("reader #" + i + ' ' + reads[i] + " read items");
                     }
                     logger.info("reader #" + i + " is " + (readers[i].isAlive() ? "alive" : "terminated"));
                 }
@@ -671,7 +671,7 @@ public class ChannelDuo extends TestCase
                 for (int i = 0; i < iteration; i++)
                 {
                     channel.send(null, null, new Long(rank));
-                    logger.debug("Thread #" + rank + " added element (" + rank + ")");
+                    logger.debug("Thread #" + rank + " added element (" + rank + ')');
                     Util.sleepRandom(100);
                 }
             }

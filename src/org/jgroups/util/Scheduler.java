@@ -1,4 +1,4 @@
-// $Id: Scheduler.java,v 1.7 2004/05/11 00:17:30 belaban Exp $
+// $Id: Scheduler.java,v 1.8 2004/07/05 05:59:41 belaban Exp $
 
 package org.jgroups.util;
 
@@ -35,7 +35,7 @@ public class Scheduler implements Runnable {
     boolean            concurrent_processing=false;
 
     /** max number of threads, will only be allocated when needed */
-    int                NUM_THREADS=new Integer(System.getProperty("scheduler.max.threads", "128")).intValue();
+    int                NUM_THREADS=Integer.parseInt(System.getProperty("scheduler.max.threads", "128"));
 
     final int          WAIT_FOR_THREAD_AVAILABILITY=3000;
     final int          THREAD_JOIN_TIMEOUT=1000;
@@ -236,7 +236,7 @@ public class Scheduler implements Runnable {
         }
 
         public String toString() {
-            return "[thread=" + thread + ", target=" + target + ", suspended=" + suspended + "]";
+            return "[thread=" + thread + ", target=" + target + ", suspended=" + suspended + ']';
         }
     }
 

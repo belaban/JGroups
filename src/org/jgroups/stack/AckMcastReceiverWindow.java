@@ -1,4 +1,4 @@
-// $Id: AckMcastReceiverWindow.java,v 1.2 2004/03/30 06:47:27 belaban Exp $
+// $Id: AckMcastReceiverWindow.java,v 1.3 2004/07/05 05:58:46 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -102,7 +102,7 @@ public class AckMcastReceiverWindow {
 	
 	for(Enumeration e=msgs.keys(); e.hasMoreElements();) {
 	    sender=e.nextElement();
-	    ret.append(sender + " --> " + msgs.get(sender) + "\n");
+	    ret.append(sender + " --> " + msgs.get(sender) + '\n');
 	}
 	return ret.toString();
     }

@@ -77,7 +77,7 @@ public class LogicalAddressTest extends TestCase {
         assertTrue(b.equals(b2));
 
         assertTrue(a2.getAdditionalData() == null);
-        assertTrue(new String(b2.getAdditionalData()).equals("Bela Ban"));
+        assertTrue("Bela Ban".equals(new String(b2.getAdditionalData())));
     }
 
 

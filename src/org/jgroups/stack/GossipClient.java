@@ -1,4 +1,4 @@
-// $Id: GossipClient.java,v 1.3 2004/03/30 06:47:27 belaban Exp $
+// $Id: GossipClient.java,v 1.4 2004/07/05 05:58:46 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -153,7 +153,7 @@ public class GossipClient {
             try {
 
                     if(log.isInfoEnabled()) log.info("REGISTER_REQ --> " +
-                                                           entry.getIpAddress() + ":" + entry.getPort());
+                                                           entry.getIpAddress() + ':' + entry.getPort());
                 sock=new Socket(entry.getIpAddress(), entry.getPort());
                 out=new ObjectOutputStream(sock.getOutputStream());
                 gossip_req=new GossipData(GossipData.REGISTER_REQ, group, mbr, null);
@@ -190,7 +190,7 @@ public class GossipClient {
             try {
 
                     if(log.isInfoEnabled()) log.info("GET_REQ --> " +
-                                                             entry.getIpAddress() + ":" + entry.getPort());
+                                                             entry.getIpAddress() + ':' + entry.getPort());
                 sock=new Socket(entry.getIpAddress(), entry.getPort());
                 out=new ObjectOutputStream(sock.getOutputStream());
 
@@ -273,17 +273,17 @@ public class GossipClient {
 
 
         for(int i=0; i < args.length; i++) {
-            if(args[i].equals("-help")) {
+            if("-help".equals(args[i])) {
                 usage();
                 return;
             }
-            if(args[i].equals("-expiry")) {
-                expiry=new Long(args[++i]).longValue();
+            if("-expiry".equals(args[i])) {
+                expiry=Long.parseLong(args[++i]);
                 continue;
             }
-            if(args[i].equals("-host")) {
+            if("-host".equals(args[i])) {
                 host=args[++i];
-                port=new Integer(args[++i]).intValue();
+                port=Integer.parseInt(args[++i]);
                 try {
                     ip_addr=InetAddress.getByName(host);
                     gossip_hosts.addElement(new IpAddress(ip_addr, port));
@@ -293,19 +293,19 @@ public class GossipClient {
                 }
                 continue;
             }
-            if(args[i].equals("-keep_running")) {
+            if("-keep_running".equals(args[i])) {
                 keep_running=true;
                 continue;
             }
-            if(args[i].equals("-get")) {
+            if("-get".equals(args[i])) {
                 get=true;
                 get_group=args[++i];
                 continue;
             }
-            if(args[i].equals("-register")) {
+            if("-register".equals(args[i])) {
                 register_group=args[++i];
                 register_host=args[++i];
-                register_port=new Integer(args[++i]).intValue();
+                register_port=Integer.parseInt(args[++i]);
                 register=true;
                 continue;
             }
@@ -333,7 +333,7 @@ public class GossipClient {
         try {
             gossip_client=new GossipClient(gossip_hosts, expiry);
             if(register) {
-                System.out.println("Registering " + register_group + " --> " + register_host + ":" + register_port);
+                System.out.println("Registering " + register_group + " --> " + register_host + ':' + register_port);
                 gossip_client.register(register_group, new IpAddress(register_host, register_port));
             }
 

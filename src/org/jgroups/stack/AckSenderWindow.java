@@ -1,4 +1,4 @@
-// $Id: AckSenderWindow.java,v 1.4 2004/05/14 16:20:21 belaban Exp $
+// $Id: AckSenderWindow.java,v 1.5 2004/07/05 05:58:46 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -187,7 +187,7 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
                     else
                         queueing=false; // allows add() to add messages again
 
-                    if(log.isTraceEnabled()) log.trace("set queueing to false (table size=" + msgs.size() + ")");
+                    if(log.isTraceEnabled()) log.trace("set queueing to false (table size=" + msgs.size() + ')');
                 }
             }
         }
@@ -195,7 +195,7 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
 
 
     public String toString() {
-        return msgs.keySet().toString() + " (retransmitter: " + retransmitter.toString() + ")";
+        return msgs.keySet().toString() + " (retransmitter: " + retransmitter.toString() + ')';
     }
 
     /* -------------------------------- Retransmitter.RetransmitCommand interface ------------------- */

@@ -1,4 +1,4 @@
-// $Id: InexistentRouterTest.java,v 1.2 2004/03/30 06:47:31 belaban Exp $
+// $Id: InexistentRouterTest.java,v 1.3 2004/07/05 06:04:28 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -20,7 +20,7 @@ import java.net.Socket;
  * only.
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
- * @version $Revision: 1.2 $
+ * @version $Revision: 1.3 $
  */
 public class InexistentRouterTest extends TestCase {
     private int SERVER_SOCKET_TIMEOUT=20000;
@@ -44,7 +44,7 @@ public class InexistentRouterTest extends TestCase {
         ss.close();
 
         debug("ROUTER PORT: " + port);
-        String props="TUNNEL(router_host=127.0.0.1;router_port=" + port + ")";
+        String props="TUNNEL(router_host=127.0.0.1;router_port=" + port + ')';
         channel=new JChannel(props);
 
     }

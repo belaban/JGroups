@@ -1,4 +1,4 @@
-// $Id: Retransmitter.java,v 1.2 2004/03/30 06:47:27 belaban Exp $
+// $Id: Retransmitter.java,v 1.3 2004/07/05 05:58:46 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -26,7 +26,7 @@ import java.util.ListIterator;
  *
  * @author John Giorgiadis
  * @author Bela Ban
- * @version $Revision: 1.2 $
+ * @version $Revision: 1.3 $
  */
 public class Retransmitter {
 
@@ -187,7 +187,7 @@ public class Retransmitter {
 
 
     public String toString() {
-        return (msgs.size() + " messages to retransmit: (" + msgs.toString() + ")");
+        return (msgs.size() + " messages to retransmit: (" + msgs.toString() + ')');
     }
 
 
@@ -382,7 +382,7 @@ public class Retransmitter {
 
         public void retransmit(long first_seqno, long last_seqno, Address sender) {
             System.out.println("-- " + new java.util.Date() + ": retransmit(" + first_seqno + ", " +
-                               last_seqno + ", " + sender + ")");
+                               last_seqno + ", " + sender + ')');
         }
     }
 

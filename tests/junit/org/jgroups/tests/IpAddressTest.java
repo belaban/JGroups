@@ -1,4 +1,4 @@
-// $Id: IpAddressTest.java,v 1.2 2004/03/30 06:47:31 belaban Exp $
+// $Id: IpAddressTest.java,v 1.3 2004/07/05 06:04:28 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -115,7 +115,7 @@ public class IpAddressTest extends TestCase {
         assertTrue(b.equals(b2));
         
         assertTrue(a2.getAdditionalData() == null);
-        assertTrue(new String(b2.getAdditionalData()).equals("Bela Ban"));
+        assertTrue("Bela Ban".equals(new String(b2.getAdditionalData())));
     }
 
     

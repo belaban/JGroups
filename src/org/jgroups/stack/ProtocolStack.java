@@ -1,4 +1,4 @@
-// $Id: ProtocolStack.java,v 1.10 2004/04/23 01:39:04 belaban Exp $
+// $Id: ProtocolStack.java,v 1.11 2004/07/05 05:58:46 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -86,20 +86,20 @@ public class ProtocolStack extends Protocol implements Transport {
         while(prot != null) {
             name=prot.getName();
             if(name != null) {
-                if(name.equals("ProtocolStack"))
+                if("ProtocolStack".equals(name))
                     break;
                 sb.append(name);
                 if(include_properties) {
                     props=prot.getProperties();
                     if(props != null) {
-                        sb.append("\n");
+                        sb.append('\n');
                         for(Iterator it=props.entrySet().iterator(); it.hasNext();) {
                             entry=(Map.Entry)it.next();
                             sb.append(entry + "\n");
                         }
                     }
                 }
-                sb.append("\n");
+                sb.append('\n');
 
                 prot=prot.getDownProtocol();
             }

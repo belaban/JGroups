@@ -1,4 +1,4 @@
-// $Id: Range.java,v 1.2 2004/02/25 20:48:50 belaban Exp $
+// $Id: Range.java,v 1.3 2004/07/05 05:59:41 belaban Exp $
 
 package org.jgroups.util;
 
@@ -27,7 +27,7 @@ public class Range implements Externalizable {
 
 
     public String toString() {
-        return "[" + low + " : " + high + "]";
+        return "[" + low + " : " + high + ']';
     }
 
 

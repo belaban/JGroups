@@ -1,4 +1,4 @@
-// $Id: Configurator.java,v 1.3 2004/04/23 19:11:34 belaban Exp $
+// $Id: Configurator.java,v 1.4 2004/07/05 05:58:46 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -96,7 +96,7 @@ public class Configurator {
     }
 
 
-    public Protocol getBottommostProtocol(Protocol prot_stack) throws Exception {
+    public Protocol getBottommostProtocol(Protocol prot_stack) {
         Protocol tmp=null, curr_prot=prot_stack;
 
         while(true) {
@@ -418,7 +418,7 @@ public class Configurator {
 
         public String toString() {
             StringBuffer ret=new StringBuffer();
-            ret.append("\n" + name + ":");
+            ret.append('\n' + name + ':');
             if(up_reqs != null)
                 ret.append("\nRequires from above: " + printUpReqs());
 
@@ -438,20 +438,20 @@ public class Configurator {
             StringBuffer ret=new StringBuffer("[");
             if(up_reqs != null) {
                 for(int i=0; i < up_reqs.size(); i++) {
-                    ret.append(Event.type2String(((Integer)up_reqs.elementAt(i)).intValue()) + " ");
+                    ret.append(Event.type2String(((Integer)up_reqs.elementAt(i)).intValue()) + ' ');
                 }
             }
-            return ret.toString() + "]";
+            return ret.toString() + ']';
         }
 
         String printDownReqs() {
             StringBuffer ret=new StringBuffer("[");
             if(down_reqs != null) {
                 for(int i=0; i < down_reqs.size(); i++) {
-                    ret.append(Event.type2String(((Integer)down_reqs.elementAt(i)).intValue()) + " ");
+                    ret.append(Event.type2String(((Integer)down_reqs.elementAt(i)).intValue()) + ' ');
                 }
             }
-            return ret.toString() + "]";
+            return ret.toString() + ']';
         }
 
 
@@ -459,10 +459,10 @@ public class Configurator {
             StringBuffer ret=new StringBuffer("[");
             if(up_provides != null) {
                 for(int i=0; i < up_provides.size(); i++) {
-                    ret.append(Event.type2String(((Integer)up_provides.elementAt(i)).intValue()) + " ");
+                    ret.append(Event.type2String(((Integer)up_provides.elementAt(i)).intValue()) + ' ');
                 }
             }
-            return ret.toString() + "]";
+            return ret.toString() + ']';
         }
 
         String printDownProvides() {
@@ -470,9 +470,9 @@ public class Configurator {
             if(down_provides != null) {
                 for(int i=0; i < down_provides.size(); i++)
                     ret.append(Event.type2String(((Integer)down_provides.elementAt(i)).intValue()) +
-                               " ");
+                               ' ');
             }
-            return ret.toString() + "]";
+            return ret.toString() + ']';
         }
 
     }
@@ -555,7 +555,7 @@ public class Configurator {
             // FH: The context class loader doesn't work in Tomcat
             ClassLoader loader=Thread.currentThread().getContextClassLoader();
             try {
-                String defaultProtocolName=protocol_prefix + "." + protocol_name;
+                String defaultProtocolName=protocol_prefix + '.' + protocol_name;
                 Class clazz=null;
 
                 // first try to load the class in the default package
@@ -623,7 +623,7 @@ public class Configurator {
             else
                 retval.append(protocol_name);
             if(properties != null)
-                retval.append("(" + properties + ")");
+                retval.append("(" + properties + ')');
             return retval.toString();
         }
     }

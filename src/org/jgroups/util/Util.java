@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.10 2004/05/19 00:32:32 belaban Exp $
+// $Id: Util.java,v 1.11 2004/07/05 05:59:41 belaban Exp $
 
 package org.jgroups.util;
 
@@ -262,7 +262,7 @@ public class Util {
         Thread.enumerate(threads);
         sb.append("------- Threads -------\n");
         for(int i=0; i < threads.length; i++) {
-            sb.append("#" + i + ": " + threads[i] + "\n");
+            sb.append("#" + i + ": " + threads[i] + '\n');
         }
         sb.append("------- Threads -------\n");
         return sb.toString();
@@ -361,7 +361,7 @@ public class Util {
 
     public static void printFragments(byte[] frags[]) {
         for(int i=0; i < frags.length; i++)
-            System.out.println("'" + new String(((byte[])frags[i])) + "'");
+            System.out.println('\'' + new String(frags[i]) + '\'');
     }
 
 
@@ -436,7 +436,7 @@ public class Util {
                 ret.append(array[i] + " ");
         }
 
-        ret.append("]");
+        ret.append(']');
         return ret.toString();
     }
 
@@ -448,7 +448,7 @@ public class Util {
                 ret.append(array[i] + " ");
         }
 
-        ret.append("]");
+        ret.append(']');
         return ret.toString();
     }
 
@@ -459,7 +459,7 @@ public class Util {
             for(int i=0; i < array.length; i++)
                 ret.append(array[i] + " ");
         }
-        ret.append("]");
+        ret.append(']');
         return ret.toString();
     }
 
@@ -526,7 +526,7 @@ public class Util {
                     sb.append(el);
             }
         }
-        sb.append(")");
+        sb.append(')');
         return sb.toString();
     }
 

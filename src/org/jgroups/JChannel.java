@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.17 2004/06/23 16:01:07 belaban Exp $
+// $Id: JChannel.java,v 1.18 2004/07/05 06:00:40 belaban Exp $
 
 package org.jgroups;
 
@@ -23,7 +23,7 @@ import java.util.Vector;
  * protocol stack
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.17 $
+ * @version $Revision: 1.18 $
  */
 public class JChannel extends Channel {
 
@@ -56,13 +56,13 @@ public class JChannel extends Channel {
     protected CloserThread closer=null;
 
     /*lock objects*/
-    private Object  local_addr_mutex=new Object();
-    private Object  connect_mutex=new Object();
-    private boolean	connect_ok_event_received=false;
-    private Object  disconnect_mutex=new Object();
-    private boolean disconnect_ok_event_received=false;
-    private Object  get_state_mutex=new Object();
-    private Object  flow_control_mutex=new Object();
+    private final Object  local_addr_mutex=new Object();
+    private final Object  connect_mutex=new Object();
+    private boolean	      connect_ok_event_received=false;
+    private final Object  disconnect_mutex=new Object();
+    private boolean       disconnect_ok_event_received=false;
+    private final Object  get_state_mutex=new Object();
+    private final Object  flow_control_mutex=new Object();
 
     /** wait until we have a non-null local_addr */
     private long LOCAL_ADDR_TIMEOUT=Long.parseLong(System.getProperty("local_addr.timeout", "30000"));
@@ -151,7 +151,7 @@ public class JChannel extends Channel {
             catch(Exception x) {
                 String strace=Util.getStackTrace(x);
                 if(log.isErrorEnabled()) log.error(strace);
-                throw new ChannelException("unable to load protocol stack: {" + x.getMessage() + ";" + strace + "}");
+                throw new ChannelException("unable to load protocol stack: {" + x.getMessage() + ';' + strace + '}');
             }
         }
 
@@ -260,7 +260,7 @@ public class JChannel extends Channel {
 
         /*create a temporary view, assume this channel is the only member and
          *is the coordinator*/
-        Vector t=new Vector();
+        Vector t=new Vector(1);
         t.addElement(local_addr);
         my_view=new View(local_addr, 0, t);  // create a dummy view
 
@@ -661,15 +661,15 @@ public class JChannel extends Channel {
     public Object getOpt(int option) {
         switch(option) {
             case VIEW:
-                return new Boolean(receive_views);
+                return Boolean.valueOf(receive_views);
             case BLOCK:
-                return new Boolean(receive_blocks);
+                return Boolean.valueOf(receive_blocks);
             case SUSPECT:
-                return new Boolean(receive_suspects);
+                return Boolean.valueOf(receive_suspects);
             case GET_STATE_EVENTS:
-                return new Boolean(receive_get_states);
+                return Boolean.valueOf(receive_get_states);
             case LOCAL:
-                return new Boolean(receive_local_msgs);
+                return Boolean.valueOf(receive_local_msgs);
             default:
                 if(log.isErrorEnabled()) log.error("option " + Channel.option2String(option) + " not known");
                 return null;
@@ -881,7 +881,7 @@ public class JChannel extends Channel {
         }
 
         if(type == Event.MSG || type == Event.VIEW_CHANGE || type == Event.SUSPECT ||
-                type == Event.GET_APPLSTATE || type == Event.BLOCK || type == Event.EXIT) {
+                type == Event.GET_APPLSTATE || type == Event.BLOCK) {
             try {
                 mq.add(evt);
             }
@@ -904,7 +904,7 @@ public class JChannel extends Channel {
             synchronized(flow_control_mutex) {
                 while(block_sending)
                     try {
-                         if(log.isInfoEnabled()) log.info("down() blocks because block_sending == true");
+                        if(log.isInfoEnabled()) log.info("down() blocks because block_sending == true");
                         flow_control_mutex.wait();
                     }
                     catch(Exception ex) {
@@ -935,24 +935,24 @@ public class JChannel extends Channel {
 
     public String toString(boolean details) {
         StringBuffer sb=new StringBuffer();
-        sb.append("local_addr=").append(local_addr).append("\n");
-        sb.append("channel_name=").append(channel_name).append("\n");
-        sb.append("my_view=").append(my_view).append("\n");
-        sb.append("connected=").append(connected).append("\n");
-        sb.append("closed=").append(closed).append("\n");
+        sb.append("local_addr=").append(local_addr).append('\n');
+        sb.append("channel_name=").append(channel_name).append('\n');
+        sb.append("my_view=").append(my_view).append('\n');
+        sb.append("connected=").append(connected).append('\n');
+        sb.append("closed=").append(closed).append('\n');
         if(mq != null)
-            sb.append("incoming queue size=").append(mq.size()).append("\n");
+            sb.append("incoming queue size=").append(mq.size()).append('\n');
         if(details) {
-            sb.append("block_sending=").append(block_sending).append("\n");
-            sb.append("receive_views=").append(receive_views).append("\n");
-            sb.append("receive_suspects=").append(receive_suspects).append("\n");
-            sb.append("receive_blocks=").append(receive_blocks).append("\n");
-            sb.append("receive_local_msgs=").append(receive_local_msgs).append("\n");
-            sb.append("receive_get_states=").append(receive_get_states).append("\n");
-            sb.append("auto_reconnect=").append(auto_reconnect).append("\n");
-            sb.append("auto_getstate=").append(auto_getstate).append("\n");
-            sb.append("state_transfer_supported=").append(state_transfer_supported).append("\n");
-            sb.append("props=").append(props).append("\n");
+            sb.append("block_sending=").append(block_sending).append('\n');
+            sb.append("receive_views=").append(receive_views).append('\n');
+            sb.append("receive_suspects=").append(receive_suspects).append('\n');
+            sb.append("receive_blocks=").append(receive_blocks).append('\n');
+            sb.append("receive_local_msgs=").append(receive_local_msgs).append('\n');
+            sb.append("receive_get_states=").append(receive_get_states).append('\n');
+            sb.append("auto_reconnect=").append(auto_reconnect).append('\n');
+            sb.append("auto_getstate=").append(auto_getstate).append('\n');
+            sb.append("state_transfer_supported=").append(state_transfer_supported).append('\n');
+            sb.append("props=").append(props).append('\n');
         }
 
         return sb.toString();
@@ -1019,7 +1019,7 @@ public class JChannel extends Channel {
      *         returns null if the event is null
      *         returns the event itself if a match (See above) can not be made of the event type
      */
-    Object getEvent(Event evt) {
+    static Object getEvent(Event evt) {
         if(evt == null)
             return null; // correct ?
 
@@ -1203,7 +1203,7 @@ public class JChannel extends Channel {
                     try {
                         if(additional_data != null) {
                             // set previously set additional data
-                            Map m=new HashMap();
+                            Map m=new HashMap(11);
                             m.put("additional_data", additional_data);
                             down(new Event(Event.CONFIG, m));
                         }

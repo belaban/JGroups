@@ -1,4 +1,4 @@
-// $Id: AckReceiverWindow.java,v 1.4 2004/05/14 00:35:54 belaban Exp $
+// $Id: AckReceiverWindow.java,v 1.5 2004/07/05 05:58:46 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -36,7 +36,7 @@ public class AckReceiverWindow {
         if(seqno < next_to_remove) {
             if(log.isTraceEnabled())
                 log.trace("discarded msg with seqno=" + seqno +
-                        " (next msg to receive is " + next_to_remove + ")");
+                        " (next msg to receive is " + next_to_remove + ')');
             return;
         }
         msgs.put(new Long(seqno), msg);

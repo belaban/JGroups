@@ -1,4 +1,4 @@
-// $Id: TUNNELDeadLockTest.java,v 1.3 2004/03/30 06:47:31 belaban Exp $
+// $Id: TUNNELDeadLockTest.java,v 1.4 2004/07/05 06:04:28 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -22,7 +22,7 @@ import java.net.Socket;
  * under heavy load.
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
- * @version $Revision: 1.3 $
+ * @version $Revision: 1.4 $
  * @see TUNNELDeadLockTest#testStress
  */
 public class TUNNELDeadLockTest extends TestCase {
@@ -68,7 +68,7 @@ public class TUNNELDeadLockTest extends TestCase {
 
 
     private String getTUNNELProps(int routerPort) {
-        return "TUNNEL(router_host=127.0.0.1;router_port=" + routerPort + ")";
+        return "TUNNEL(router_host=127.0.0.1;router_port=" + routerPort + ')';
 
     }
 

@@ -1,4 +1,4 @@
-// $Id: SchedulerTest.java,v 1.3 2004/04/19 18:41:36 belaban Exp $
+// $Id: SchedulerTest.java,v 1.4 2004/07/05 06:04:28 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -25,7 +25,7 @@ public class SchedulerTest extends TestCase {
         }
 
         public String toString() {
-            return "MyThread [name=" + name + "]";
+            return "MyThread [name=" + name + ']';
         }
 
     }
