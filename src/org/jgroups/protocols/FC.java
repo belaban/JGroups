@@ -1,4 +1,4 @@
-// $Id: FC.java,v 1.2 2004/01/09 00:28:03 belaban Exp $
+// $Id: FC.java,v 1.3 2004/01/09 01:10:09 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -16,20 +16,22 @@ import java.io.ObjectInput;
  * to send). When the credits have been exhausted, the sender blocks. Each receiver also keeps track of
  * how many credits it has received from a sender. When credits for a sender fall below a threshold,
  * the receiver sends more credits to the sender. Works for both unicast and multicast messages.<br>
- * TODO: finer-grained synchronization (currently coarse-grained on down() and up()).
  * Note that this protocol must be located towards the top of the stack, or all down_threads from JChannel to this
  * protocol must be set to false ! This is in order to block JChannel.send()/JChannel.down().
  * @author Bela Ban
- * @version $Revision: 1.2 $
+ * @version $Revision: 1.3 $
  */
 public class FC extends Protocol {
+
+    /** My own address */
+    Address local_addr=null;
 
     /** HashMap<Address,Long>: keys are members, values are credits left. For each send, the
      * number of credits is decremented by the message size */
     HashMap sent=new HashMap();
 
     /** HashMap<Address,Long>: keys are members, values are credits left (in bytes).
-     * For each receive, the credits for the sender are decrmented by the size of the received message.
+     * For each receive, the credits for the sender are decremented by the size of the received message.
      * When the credits are 0, we refill and send a CREDIT message to the sender. Sender blocks until CREDIT
      * is received after reaching <tt>min_credits</tt> credits. */
     HashMap received=new HashMap();
@@ -57,7 +59,7 @@ public class FC extends Protocol {
 
     /** When <tt>direct_blocking</tt> is enabled, block for a max number of milliseconds regardless of whether
      * credits have been received. If value is 0 we will wait forever. */
-    long MAX_BLOCK_TIME=10000; // todo: change back to 60000
+    long MAX_BLOCK_TIME=10000;
 
     final String name="FC";
 
@@ -126,6 +128,9 @@ public class FC extends Protocol {
     public void up(Event evt) {
         synchronized(this) {
             switch(evt.getType()) {
+                case Event.SET_LOCAL_ADDRESS:
+                    local_addr=(Address)evt.getArg();
+                    break;
                 case Event.VIEW_CHANGE:
                     handleViewChange(((View)evt.getArg()).getMembers());
                     break;
@@ -186,6 +191,9 @@ public class FC extends Protocol {
             return;
         }
 
+        if(src.equals(local_addr))
+            return;
+
         if(Trace.trace)
             Trace.info("FC.handleUpMessage()", "credit for " + src + " is " + received.get(src));
 
@@ -240,8 +248,6 @@ public class FC extends Protocol {
                 if(Trace.trace)
                     Trace.info("FC.handleDownMessage()", "blocking " + MAX_BLOCK_TIME +
                             " msecs. Creditors are\n" + printCreditors());
-                //System.out.println("**** blocking for " + MAX_BLOCK_TIME +
-                //      " msecs. Creditors are\n" + printCreditors());
                 try {this.wait(MAX_BLOCK_TIME);}
                 catch(Throwable e) {e.printStackTrace();}
                 if(decrMessage(msg) == true)
@@ -249,10 +255,7 @@ public class FC extends Protocol {
                 else {
                     if(Trace.trace)
                         Trace.info("FC.handleDownMessage()",
-                                "insufficient credits to send message, creditors=\n" +
-                                printCreditors());
-                    //System.out.println("**** insufficient credits to send message, creditors=\n" +
-                    //      printCreditors());
+                                "insufficient credits to send message, creditors=\n" + printCreditors());
                 }
             }
         }
@@ -265,7 +268,7 @@ public class FC extends Protocol {
      * For unicast destinations, the credits required are subtracted from the unicast destination member, for
      * multicast messages the credits are subtracted from all current members in the group.
      * @param msg
-     * @return
+     * @return false: will block, true: will not block
      */
     boolean decrMessage(Message msg) {
         Address dest;
@@ -279,6 +282,8 @@ public class FC extends Protocol {
         dest=msg.getDest();
         size=msg.getBuffer() != null? msg.getBuffer().length : 24;
         if(dest != null && !dest.isMulticastAddress()) { // unicast destination
+            if(dest.equals(local_addr))
+                return true;
             if(Trace.trace)
                 Trace.info("FC.decrMessage()", "credit for " + dest + " is " + sent.get(dest));
             if(sufficientCredit(sent, dest, size)) {
@@ -291,7 +296,9 @@ public class FC extends Protocol {
         }
         else {                 // multicast destination
             for(Iterator it=members.iterator(); it.hasNext();) {
-                dest=(Address) it.next();
+                dest=(Address)it.next();
+                if(dest.equals(local_addr))
+                    continue;
                 if(Trace.trace)
                     Trace.info("FC.decrMessage()", "credit for " + dest + " is " + sent.get(dest));
                 if(sufficientCredit(sent, dest, size) == false) {
@@ -364,9 +371,10 @@ public class FC extends Protocol {
                     return true;
                 }
                 else {
-                    Trace.info("FC.checkCredit()", "insufficient credit for " + mbr +
-                            ": credits left=" + credits_left + ", credits required=" + credits_required +
-                            " (min_credits=" + min_credits + ")");
+                    if(Trace.trace)
+                        Trace.info("FC.checkCredit()", "insufficient credit for " + mbr +
+                                ": credits left=" + credits_left + ", credits required=" + credits_required +
+                                " (min_credits=" + min_credits + ")");
                     return false;
                 }
             }
@@ -397,13 +405,11 @@ public class FC extends Protocol {
                             dest + ": left=" + credits_left + ", required=" + credits_required);
             }
         }
-        else {
-            map.put(dest, new Long(max_credits - credits_required));
-        }
     }
 
 
     void handleViewChange(Vector mbrs) {
+        Address addr;
         if(mbrs == null) return;
 
         if(Trace.trace)
@@ -414,31 +420,31 @@ public class FC extends Protocol {
 
         // add members not in membership (with full credit)
         for(int i=0; i < mbrs.size(); i++) {
-            Address addr=(Address) mbrs.elementAt(i);
-            if(!sent.containsKey(addr)) {
+            addr=(Address) mbrs.elementAt(i);
+            if(addr.equals(local_addr))
+                continue;
+            if(!sent.containsKey(addr))
                 sent.put(addr, new Long(max_credits));
-            }
         }
         // remove members that left
         for(Iterator it=sent.keySet().iterator(); it.hasNext();) {
-            Address addr=(Address)it.next();
-            if(!mbrs.contains(addr)) {
+            addr=(Address)it.next();
+            if(!mbrs.contains(addr))
                 it.remove(); // modified the underlying map
-            }
         }
 
         // ditto for received messages
         for(int i=0; i < mbrs.size(); i++) {
-            Address addr=(Address) mbrs.elementAt(i);
-            if(!received.containsKey(addr)) {
+            addr=(Address) mbrs.elementAt(i);
+            if(addr.equals(local_addr))
+                continue;
+            if(!received.containsKey(addr))
                 received.put(addr, new Long(max_credits));
-            }
         }
         for(Iterator it=received.keySet().iterator(); it.hasNext();) {
-            Address addr=(Address) it.next();
-            if(!mbrs.contains(addr)) {
+            addr=(Address) it.next();
+            if(!mbrs.contains(addr))
                 it.remove();
-            }
         }
 
         // remove all creditors which are not in the new view
