@@ -1,21 +1,20 @@
-// $Id: Header.java,v 1.1 2003/09/09 01:24:07 belaban Exp $
+// $Id: Header.java,v 1.2 2003/10/18 06:36:53 belaban Exp $
 
 package org.jgroups;
 
 import java.io.Externalizable;
 
 
-
 /**
-   Abstract base class for all headers to be added to a Message.
-   @author Bela Ban, bela@nms.fnc.fujitsu.com
+ Abstract base class for all headers to be added to a Message.
+ @author Bela Ban, bela@nms.fnc.fujitsu.com
  */
 public abstract class Header implements Externalizable, Cloneable {
     public static final long HDR_OVERHEAD=255; // estimated size of a header (used to estimate the size of the entire msg)
 
-    
+
     public Header() {
-	
+
     }
 
 
@@ -27,12 +26,12 @@ public abstract class Header implements Externalizable, Cloneable {
      * be serialized into a byte buffer, so we can determine the exact size.
      */
     public long size() {
-	return HDR_OVERHEAD;
+        return HDR_OVERHEAD;
     }
 
 
     public String toString() {
-	return "[" + getClass().getName() + " Header]";
+        return "[" + getClass().getName() + " Header]";
     }
 
 }
