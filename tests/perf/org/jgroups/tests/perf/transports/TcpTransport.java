@@ -14,7 +14,7 @@ import java.util.*;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: TcpTransport.java,v 1.4 2004/07/05 14:15:20 belaban Exp $
+ * @version $Id: TcpTransport.java,v 1.5 2004/10/04 20:43:39 belaban Exp $
  */
 public class TcpTransport implements Transport {
     Receiver         receiver=null;
@@ -208,7 +208,7 @@ public class TcpTransport implements Transport {
         }
 
         public void run() {
-            while(sock != null && !sock.isClosed()) {
+            while(sock != null) {
                 try {
                     int len=in.readInt();
                     byte[] buf=new byte[len];
@@ -220,7 +220,7 @@ public class TcpTransport implements Transport {
                     break;
                 }
                 catch(Exception ex) {
-                    if(sock == null || sock.isClosed()) return;
+                    if(sock == null) return;
                     ex.printStackTrace();
                 }
             }

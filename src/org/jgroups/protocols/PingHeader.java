@@ -1,25 +1,24 @@
-// $Id: PingHeader.java,v 1.5 2004/07/05 14:17:15 belaban Exp $
+// $Id: PingHeader.java,v 1.6 2004/10/04 20:43:31 belaban Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.Header;
+import org.jgroups.util.Streamable;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.*;
 
 
-public class PingHeader extends Header {
+public class PingHeader extends Header implements Streamable {
     public static final int GET_MBRS_REQ=1;   // arg = null
     public static final int GET_MBRS_RSP=2;   // arg = PingRsp(local_addr, coord_addr)
 
     public int type=0;
-    public Object arg=null;
+    public PingRsp arg=null;
 
     public PingHeader() {
     } // for externalization
 
-    public PingHeader(int type, Object arg) {
+    public PingHeader(int type, PingRsp arg) {
         this.type=type;
         this.arg=arg;
     }
@@ -52,7 +51,26 @@ public class PingHeader extends Header {
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         type=in.readInt();
-        arg=in.readObject();
+        arg=(PingRsp)in.readObject();
     }
 
+    public void writeTo(DataOutputStream outstream) throws IOException {
+        outstream.writeInt(type);
+        if(arg != null) {
+            outstream.write(1);
+            arg.writeTo(outstream);
+        }
+        else {
+            outstream.write(0);
+        }
+    }
+
+    public void readFrom(DataInputStream instream) throws IOException, IllegalAccessException, InstantiationException {
+        type=instream.readInt();
+        int b=instream.read();
+        if(b == 1) {
+            arg=new PingRsp();
+            arg.readFrom(instream);
+        }
+    }
 }

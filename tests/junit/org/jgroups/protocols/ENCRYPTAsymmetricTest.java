@@ -6,9 +6,7 @@
  */
 package org.jgroups.protocols;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.*;
 import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -681,6 +679,8 @@ public class ENCRYPTAsymmetricTest extends TestCase {
 			
 		}
 
+
+
 		/* (non-Javadoc)
 		 * @see java.lang.Comparable#compareTo(java.lang.Object)
 		 */
@@ -697,7 +697,13 @@ public class ENCRYPTAsymmetricTest extends TestCase {
 			}
 			return false;
 		}
-	}
+
+        public void writeTo(DataOutputStream out) throws IOException {
+        }
+
+        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        }
+    }
 
 	
 }

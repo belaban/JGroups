@@ -1,18 +1,17 @@
-// $Id: NakAckHeader.java,v 1.4 2004/07/05 05:49:41 belaban Exp $
+// $Id: NakAckHeader.java,v 1.5 2004/10/04 20:43:31 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
 
 import org.jgroups.Header;
 import org.jgroups.util.Range;
+import org.jgroups.util.Streamable;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.*;
 
 
-public class NakAckHeader extends Header {
-    public static final int MSG=1;  // regular msg
+public class NakAckHeader extends Header implements Streamable {
+    public static final int MSG=1;       // regular msg
     public static final int XMIT_REQ=2;  // retransmit request
     public static final int XMIT_RSP=3;  // retransmit response (contains one or more messages)
 
@@ -71,6 +70,28 @@ public class NakAckHeader extends Header {
         }
     }
 
+    public void writeTo(DataOutputStream out) throws IOException {
+        out.writeInt(type);
+        out.writeLong(seqno);
+        if(range != null) {
+            out.write(1);  // wasn't here before, bad bug !
+            range.writeTo(out);
+        }
+        else
+            out.write(0);
+    }
+
+    public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        int b;
+        type=in.readInt();
+        seqno=in.readLong();
+        b=in.read();
+        if(b == 1) {
+            range=new Range();
+            range.readFrom(in);
+        }
+    }
+
 
     public NakAckHeader copy() {
         NakAckHeader ret=new NakAckHeader(type, seqno);
@@ -100,5 +121,6 @@ public class NakAckHeader extends Header {
         ret.append(']');
         return ret.toString();
     }
+
 
 }

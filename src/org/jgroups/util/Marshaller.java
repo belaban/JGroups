@@ -1,4 +1,4 @@
-// $Id: Marshaller.java,v 1.4 2004/09/24 09:03:45 belaban Exp $
+// $Id: Marshaller.java,v 1.5 2004/10/04 20:43:35 belaban Exp $
 
 package org.jgroups.util;
 
@@ -37,7 +37,7 @@ public class Marshaller {
 
     static {
         try {
-            mConfigurator=ClassConfigurator.getInstance();
+            mConfigurator=ClassConfigurator.getInstance(true);
         }
         catch(ChannelException e) {
             throw new ExceptionInInitializerError(e.toString());

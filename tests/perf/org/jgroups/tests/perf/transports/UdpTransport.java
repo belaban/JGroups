@@ -15,7 +15,7 @@ import java.util.Properties;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: UdpTransport.java,v 1.4 2004/07/05 14:15:20 belaban Exp $
+ * @version $Id: UdpTransport.java,v 1.5 2004/10/04 20:43:39 belaban Exp $
  */
 public class UdpTransport implements Transport {
     Receiver         receiver=null;
@@ -144,7 +144,7 @@ public class UdpTransport implements Transport {
                     }
                 }
                 catch(IOException e) {
-                    if(sock == null || sock.isClosed())
+                    if(sock == null)
                         t=null;
                 }
             }

@@ -49,7 +49,7 @@ public class LeaseFactoryClientTest extends TestCase {
     protected void setUp() throws Exception {
 
         svcServerChannel=new JChannel(SERVER_PROTOCOL_STACK);
-        svcServerChannel.setOpt(JChannel.GET_STATE_EVENTS, Boolean.valueOf(true));
+        svcServerChannel.setOpt(JChannel.GET_STATE_EVENTS, Boolean.TRUE);
         svcServerChannel.connect("server");
 
         try {

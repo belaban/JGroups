@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.17 2004/09/24 13:34:11 belaban Exp $
+// $Id: Util.java,v 1.18 2004/10/04 20:43:35 belaban Exp $
 
 package org.jgroups.util;
 
@@ -7,6 +7,7 @@ import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
+import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.stack.IpAddress;
 
 import java.io.*;
@@ -65,6 +66,82 @@ public class Util {
         }
         return result;
     }
+
+
+    public static void writeAddress(Address addr, DataOutputStream out) throws IOException {
+        if(addr == null) {
+            out.write(0);
+            return;
+        }
+
+        out.write(1);
+        if(addr instanceof IpAddress) {
+            // regular case, we don't need to include class information about the type of Address, e.g. JmsAddress
+            out.write(1);
+            addr.writeTo(out);
+        }
+        else {
+            out.write(0);
+            writeOtherAddress(addr, out);
+        }
+    }
+
+    private static void writeOtherAddress(Address addr, DataOutputStream out) throws IOException {
+        ClassConfigurator conf=null;
+        try {conf=ClassConfigurator.getInstance(false);} catch(Exception e) {}
+        int magic_number=conf != null? conf.getMagicNumber(addr.getClass()) : -1;
+
+        // write the class info
+        if(magic_number == -1) {
+            out.write(0);
+            out.writeUTF(addr.getClass().getName());
+        }
+        else {
+            out.write(1);
+            out.writeInt(magic_number);
+        }
+
+        // write the data itself
+        addr.writeTo(out);
+    }
+
+    public static Address readAddress(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        Address addr=null;
+        int b=in.read();
+        if(b == 0)
+            return null;
+        b=in.read();
+        if(b == 1) {
+            addr=new IpAddress();
+            addr.readFrom(in);
+        }
+        else {
+            addr=readOtherAddress(in);
+        }
+        return addr;
+    }
+
+    private static Address readOtherAddress(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        ClassConfigurator conf=null;
+        try {conf=ClassConfigurator.getInstance(false);} catch(Exception e) {}
+        int b=in.read();
+        int magic_number;
+        String classname;
+        Class cl=null;
+        Address addr;
+        if(b == 1) {
+            magic_number=in.readInt();
+            cl=conf.get(magic_number);
+        }
+        else {
+            classname=in.readUTF();
+            cl=conf.get(classname);
+        }
+        addr=(Address)cl.newInstance();
+        addr.readFrom(in);
+        return addr;
+    }
+
 
 
     /** Sleep for timeout msecs. Returns when timeout has elapsed or thread was interrupted */

@@ -1,4 +1,4 @@
-// $Id: IpAddress.java,v 1.11 2004/09/23 16:29:53 belaban Exp $
+// $Id: IpAddress.java,v 1.12 2004/10/04 20:43:34 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -7,9 +7,7 @@ import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.util.Util;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.*;
 import java.net.InetAddress;
 import java.util.HashMap;
 
@@ -290,6 +288,42 @@ public class IpAddress implements Address {
         if(len > 0) {
             additional_data=new byte[len];
             in.readFully(additional_data, 0, additional_data.length);        
+        }
+    }
+
+    public void writeTo(DataOutputStream out) throws IOException {
+        byte[] address = ip_addr.getAddress();
+        out.write(address, 0, address.length);
+        out.writeInt(port);
+        if(additional_data != null) {
+            out.write(1);
+            out.writeInt(additional_data.length);
+            out.write(additional_data, 0, additional_data.length);
+        }
+        else {
+            out.write(0);
+        }
+    }
+
+    public void readFrom(DataInputStream in) throws IOException {
+        int len=0;
+        //read the four bytes
+        byte[] a = new byte[4];
+        //in theory readFully(byte[]) should be faster
+        //than read(byte[]) since latter reads
+        // 4 bytes one at a time
+        in.readFully(a);
+        //then read the port
+        port = in.readInt();
+        //look up an instance in the cache
+        this.ip_addr = getIpAddress(a);
+        len=in.read();
+        if(len == 0)
+            return;
+        len=in.readInt();
+        if(len > 0) {
+            additional_data=new byte[len];
+            in.readFully(additional_data, 0, additional_data.length);
         }
     }
 

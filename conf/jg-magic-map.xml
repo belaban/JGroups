@@ -277,5 +277,11 @@
         <preload>true</preload>
         <magic-number>54</magic-number>
     </class>
+    <class>
+        <description>bla</description>
+        <class-name>org.jgroups.protocols.WanPipeAddress</class-name>
+        <preload>true</preload>
+        <magic-number>55</magic-number>
+    </class>
 
 </magic-number-class-mapping>

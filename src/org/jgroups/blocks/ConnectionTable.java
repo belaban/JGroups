@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.9 2004/09/23 16:29:10 belaban Exp $
+// $Id: ConnectionTable.java,v 1.10 2004/10/04 20:43:30 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -368,10 +368,6 @@ public class ConnectionTable implements Runnable {
                 }
                 notifyConnectionOpened(peer_addr);
                 conn.init(); // starts handler thread on this socket
-            }
-            catch(SocketTimeoutException timeout_ex) {
-                if(srv_sock == null)
-                    break;  // socket was closed, therefore stop
             }
             catch(SocketException sock_ex) {
                 if(log.isInfoEnabled()) log.info("exception is " + sock_ex);

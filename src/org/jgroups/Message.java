@@ -1,15 +1,19 @@
-// $Id: Message.java,v 1.16 2004/09/22 10:34:16 belaban Exp $
+// $Id: Message.java,v 1.17 2004/10/04 20:43:36 belaban Exp $
 
 package org.jgroups;
 
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.jgroups.util.Marshaller;
+import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.util.ContextObjectInputStream;
+import org.jgroups.util.Marshaller;
+import org.jgroups.util.Streamable;
+import org.jgroups.util.Util;
 
 import java.io.*;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -23,7 +27,7 @@ import java.util.Map;
  * when the message is serialized, we only write the bytes between index and length.
  * @author Bela Ban
  */
-public class Message implements Externalizable {
+public class Message implements Externalizable, Streamable {
     protected Address dest_addr=null;
     protected Address src_addr=null;
 
@@ -42,6 +46,8 @@ public class Message implements Externalizable {
 
     static final long ADDRESS_OVERHEAD=200; // estimated size of Address (src and dest)
     static final long serialVersionUID=-1137364035832847034L;
+
+    static final HashSet nonStreamableHeaders=new HashSet(); // todo: remove when all headers are streamable
 
 
 
@@ -496,6 +502,85 @@ public class Message implements Externalizable {
     /* --------------------------------- End of Interface Externalizable ----------------------------- */
 
 
+    /* ----------------------------------- Interface Externalizable ------------------------------- */
+
+    /**
+     * Streams all members (dest and src addresses, buffer and headers to the output stream
+     * @param outstream
+     * @throws IOException
+     */
+    public void writeTo(DataOutputStream out) throws IOException {
+        Map.Entry        entry;
+
+        // 1. dest_addr
+        Util.writeAddress(dest_addr, out);
+
+        // 2. src_addr
+        Util.writeAddress(src_addr, out);
+
+        // 3. buf
+        if(buf == null)
+            out.write(0);
+        else {
+            out.write(1);
+            out.writeInt(length);
+            out.write(buf, offset, length);
+        }
+
+        // 4. headers
+        if(headers == null || headers.size() == 0) {
+            out.write(0);
+            return;
+        }
+        out.write(1);
+        out.writeInt(headers.size());
+        for(Iterator it=headers.entrySet().iterator(); it.hasNext();) {
+            entry=(Map.Entry)it.next();
+            out.writeUTF((String)entry.getKey());
+            writeHeader((Header)entry.getValue(), out);
+        }
+    }
+
+
+
+
+    public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        int b;
+        String hdr_name;
+        Header hdr;
+
+        // 1. dest_addr
+        dest_addr=Util.readAddress(in);
+
+        // 2. src_addr
+        src_addr=Util.readAddress(in);
+
+        // 3. buf
+        b=in.read();
+        if(b == 1) {
+            b=in.readInt();
+            buf=new byte[b];
+            in.read(buf, 0, b);
+            length=b;
+        }
+
+        // 4. headers
+        b=in.read();
+        if(b == 0)
+            return;
+        b=in.readInt();
+        headers();
+        for(int i=0; i < b; i++) {
+            hdr_name=in.readUTF();
+            hdr=readHeader(in);
+            headers.put(hdr_name, hdr);
+        }
+    }
+
+
+
+    /* --------------------------------- End of Interface Streamable ----------------------------- */
+
 
 
     /* ----------------------------------- Private methods ------------------------------- */
@@ -503,7 +588,86 @@ public class Message implements Externalizable {
     HashMap headers() {
         return headers != null ? headers : (headers=new HashMap(11));
     }
+
+    private void writeHeader(Header value, DataOutputStream out) throws IOException {
+        int magic_number;
+        String classname;
+        ObjectOutputStream oos=null;
+        try {
+            magic_number=ClassConfigurator.getInstance(false).getMagicNumber(value.getClass());
+            // write the magic number or the class name
+            if(magic_number == -1) {
+                out.write(0);
+                classname=value.getClass().getName();
+                out.writeUTF(classname);
+            }
+            else {
+                out.write(1);
+                out.writeInt(magic_number);
+            }
+
+            // write the contents
+            if(value instanceof Streamable) {
+                ((Streamable)value).writeTo(out);
+            }
+            else {
+                oos=new ObjectOutputStream(out);
+                value.writeExternal(oos);
+                if(!nonStreamableHeaders.contains(value.getClass())) {
+                    nonStreamableHeaders.add(value.getClass());
+                    if(log.isTraceEnabled())
+                        log.trace("encountered non-Streamable header: " + value.getClass());
+                }
+            }
+        }
+        catch(ChannelException e) {
+            log.error("failed writing the header", e);
+        }
+        finally {
+            if(oos != null)
+                oos.close();
+        }
+    }
+
+
+    private Header readHeader(DataInputStream in) throws IOException {
+        Header hdr=null;
+        int use_magic_number=in.read(), magic_number;
+        String classname;
+        Class clazz;
+        ObjectInputStream ois=null;
+
+        try {
+            if(use_magic_number == 1) {
+                magic_number=in.readInt();
+                clazz=ClassConfigurator.getInstance(false).get(magic_number);
+            }
+            else {
+                classname=in.readUTF();
+                clazz=ClassConfigurator.getInstance(false).get(classname);
+            }
+            hdr=(Header)clazz.newInstance();
+            if(hdr instanceof Streamable) {
+               ((Streamable)hdr).readFrom(in);
+            }
+            else {
+                ois=new ObjectInputStream(in);
+                hdr.readExternal(ois);
+            }
+        }
+        catch(Exception ex) {
+            throw new IOException("failed read header: " + ex.toString());
+        }
+        finally {
+            if(ois != null)
+                ois.close();
+        }
+
+        return hdr;
+    }
+
     /* ------------------------------- End of Private methods ---------------------------- */
+
 
 
 }

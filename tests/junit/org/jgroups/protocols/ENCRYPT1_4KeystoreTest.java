@@ -6,9 +6,7 @@
  */
 package org.jgroups.protocols;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.*;
 import java.security.MessageDigest;
 import java.util.HashMap;
 import java.util.Map;
@@ -410,6 +408,14 @@ public class ENCRYPT1_4KeystoreTest extends TestCase {
 			
 		}
 
+        public void writeTo(DataOutputStream out) throws IOException {
+            ;
+        }
+
+        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+            ;
+        }
+
 		/* (non-Javadoc)
 		 * @see java.lang.Comparable#compareTo(java.lang.Object)
 		 */
@@ -418,6 +424,7 @@ public class ENCRYPT1_4KeystoreTest extends TestCase {
 			// TODO Auto-generated method stub
 			return -1;
 		}
-		
-	}
+
+
+    }
 }
