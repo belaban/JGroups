@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.2 2003/12/11 06:37:25 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.3 2004/02/20 21:43:46 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -548,7 +548,7 @@ public class RequestCorrelator {
      */
     private void handleRequest(Message req) {
         Object        retval;
-        byte[]        rsp_buf;
+        byte[]        rsp_buf=null;
         Header        hdr, rsp_hdr;
         Message       rsp;
 
@@ -559,22 +559,36 @@ public class RequestCorrelator {
         // handler to a reply msg and send it back. The reply msg has the same
         // ID as the request and the name of the sender request correlator
         hdr    = (Header)req.removeHeader(name);
-        retval = request_handler.handle(req);
 
-        if(!hdr.rsp_expected)
+        try {
+            retval = request_handler.handle(req);
+        }
+        catch(Throwable t) {
+            Trace.error("RequestCorrelator.handleRequest()", "error invoking method, exception=" + t.toString());
+            retval=t;
+        }
+
+        if(!hdr.rsp_expected) // asynchronous call, we don't need to send a response; terminate call here
             return;
+
         if (transport == null) {
-            Trace.error("RequestCorrelator.handleRequest()", "failure sending " +
-                        "response. No protocol available ! ");
+            Trace.error("RequestCorrelator.handleRequest()", "failure sending " + "response; no transport available");
             return;
         }
 
+        // changed (bela Feb 20 2004): catch exception and return exception
         try {
-            rsp_buf=(retval != null? Util.objectToByteBuffer(retval):null);
-        } catch(Exception e) {
-            Trace.error("RequestCorrelator.handleRequest()", "failed sending response: " +
-                        "return value is not serializable. Sending null value");
-            return;
+            rsp_buf=Util.objectToByteBuffer(retval);  // retval could be an exception, or a real value
+        }
+        catch(Throwable t) {
+            try {
+                rsp_buf=Util.objectToByteBuffer(t); // this call shoudl succeed (all exceptions are serializable)
+            }
+            catch(Throwable tt) {
+                Trace.error("RequestCorrelator.handleRequest()", "failed sending response: " +
+                        "return value (" + retval + ") is not serializable");
+                return;
+            }
         }
 
         rsp=req.makeReply();

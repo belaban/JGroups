@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.38 2004/02/20 21:03:53 akbollu Exp $
+Revision: $Id: history.txt,v 1.39 2004/02/20 21:46:00 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java JGroups.Version')]
 
@@ -27,6 +27,10 @@ romuald     = Romuald du Song
 
 Version 2.2.1
 -------------
+
+- RequestCorrelator: catching exceptions caused by non-serializable return value, return them
+  as exceptions. This fixes bug# 901274.
+  (bela Feb 20 2004)
 
 - Added NIO version of ConnectionTable1_4; works with JDK 1.4 or later. 
   TCP1_4.java protocol uses ConnectionTable1_4 and tcp1_4.xml config file for NIO 
