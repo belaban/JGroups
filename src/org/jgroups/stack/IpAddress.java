@@ -1,4 +1,4 @@
-// $Id: IpAddress.java,v 1.12 2004/10/04 20:43:34 belaban Exp $
+// $Id: IpAddress.java,v 1.13 2004/10/06 08:45:12 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -47,38 +47,38 @@ public class IpAddress implements Address {
     }
     
     public IpAddress(String i, int p) {
+        port=p;
     	try {
         	ip_addr=InetAddress.getByName(i);
         }
         catch(Exception e) {
-            if(log.isWarnEnabled()) log.warn("failed to get " + i + ':' + p +
-                       ", using \"127.0.0.1\", exception: " + Util.printStackTrace(e));
-            try {
-                ip_addr=InetAddress.getByName("127.0.0.1");
-            }
-            catch(Exception ex) {
-                if(log.isWarnEnabled()) log.warn("exception: " + ex);
-            }
+            if(log.isWarnEnabled()) log.warn("failed to get " + i + ": " + e);
         }
-        port=p;
+        if(this.ip_addr == null)
+            setAddressToLocalHost();
     }
 
 
 
     public IpAddress(InetAddress i, int p) {
         ip_addr=i; port=p;
+        if(this.ip_addr == null)
+            setAddressToLocalHost();
     }
 
 
-
-    public IpAddress(int port) {
+    private void setAddressToLocalHost() {
         try {
             ip_addr=InetAddress.getLocalHost();  // get first NIC found (on multi-homed systems)
-            this.port=port;
         }
         catch(Exception e) {
             if(log.isWarnEnabled()) log.warn("exception: " + e);
         }
+    }
+
+    public IpAddress(int port) {
+        this.port=port;
+        setAddressToLocalHost();
     }
 
 
