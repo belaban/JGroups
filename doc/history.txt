@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.7 2003/10/15 20:22:50 ovidiuf Exp $
+Revision: $Id: history.txt,v 1.8 2003/10/18 15:57:01 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java JGroups.Version')]
 
@@ -32,6 +32,9 @@ romuald     = Romuald du Song
 
 Version 2.2
 -----------
+
+- Added compression protocol (COMPRESS) and example stack (compress.xml)
+  (bela Oct 17 2003)
 
 - JChannel.close(): queue will not be reset until re-opened
   (bela Sept 25 2003)
