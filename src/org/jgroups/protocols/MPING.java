@@ -4,10 +4,12 @@ import org.jgroups.Message;
 import org.jgroups.Event;
 import org.jgroups.util.Buffer;
 import org.jgroups.util.ExposedByteArrayOutputStream;
+import org.jgroups.util.Util;
 
 import java.io.*;
 import java.net.*;
 import java.util.Properties;
+import java.util.Enumeration;
 
 /**
  * Uses its own IP multicast socket to send and receive discovery requests/responses. Can be used in
@@ -17,18 +19,20 @@ import java.util.Properties;
  * back via the regular transport (e.g. TCP) to the sender (discovery request contained sender's regular address,
  * e.g. 192.168.0.2:7800).
  * @author Bela Ban
- * @version $Id: MPING.java,v 1.4 2005/03/31 08:35:23 belaban Exp $
+ * @version $Id: MPING.java,v 1.5 2005/04/01 14:03:45 belaban Exp $
  */
 public class MPING extends PING implements Runnable {
-    MulticastSocket mcast_sock=null;
-    Thread         receiver=null;
-    InetAddress    bind_addr=null;
-    int            ip_ttl=16;
-    InetAddress    mcast_addr=null;
-    int            mcast_port=0;
+    MulticastSocket     mcast_sock=null;
+    Thread              receiver=null;
+    InetAddress         bind_addr=null;
+    boolean             bind_to_all_interfaces=true;
+    int                 ip_ttl=16;
+    InetAddress         mcast_addr=null;
+    int                 mcast_port=0;
+
     /** Pre-allocated byte stream. Used for serializing datagram packets. Will grow as needed */
     final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(512);
-    byte           receive_buf[]=new byte[65535];
+    byte                receive_buf[]=new byte[65535];
     static final String IGNORE_BIND_ADDRESS_PROPERTY="ignore.bind.address";
 
 
@@ -89,29 +93,67 @@ public class MPING extends PING implements Runnable {
             props.remove("ip_ttl");
         }
 
+        str=props.getProperty("bind_to_all_interfaces");
+        if(str != null) {
+            bind_to_all_interfaces=new Boolean(str).booleanValue();
+            props.remove("bind_to_all_interfaces");
+        }
+
         return super.setProperties(props);
     }
 
 
     public void start() throws Exception {
-        if(bind_addr == null) {
-            InetAddress[] interfaces=InetAddress.getAllByName(InetAddress.getLocalHost().getHostAddress());
-            if(interfaces != null && interfaces.length > 0)
-                bind_addr=interfaces[0];
-        }
-        if(bind_addr == null)
-            bind_addr=InetAddress.getLocalHost();
-
-        if(bind_addr != null)
-            if(log.isInfoEnabled()) log.info("sockets will use interface " + bind_addr.getHostAddress());
+        int jdk_version=Util.getJavaVersion();
 
         mcast_sock=new MulticastSocket(mcast_port);
         mcast_sock.setTimeToLive(ip_ttl);
-        if(bind_addr != null)
-            mcast_sock.setInterface(bind_addr);
-        mcast_sock.joinGroup(mcast_addr);
+
+        if(bind_to_all_interfaces && jdk_version >= 14) {
+            bindToAllInterfaces();
+        }
+        else {
+            if(bind_addr == null) {
+                InetAddress[] interfaces=InetAddress.getAllByName(InetAddress.getLocalHost().getHostAddress());
+                if(interfaces != null && interfaces.length > 0)
+                    bind_addr=interfaces[0];
+            }
+            if(bind_addr == null)
+                bind_addr=InetAddress.getLocalHost();
+
+            if(bind_addr != null)
+                if(log.isInfoEnabled()) log.info("sockets will use interface " + bind_addr.getHostAddress());
+
+
+            if(bind_addr != null) {
+                mcast_sock.setInterface(bind_addr);
+                // mcast_sock.setNetworkInterface(NetworkInterface.getByInetAddress(bind_addr)); // JDK 1.4 specific
+            }
+            mcast_sock.joinGroup(mcast_addr);
+        }
+
         startReceiver();
         super.start();
+    }
+
+
+
+
+    private void bindToAllInterfaces() throws IOException {
+        SocketAddress tmp_mcast_addr=new InetSocketAddress(mcast_addr, mcast_port);
+        Enumeration en=NetworkInterface.getNetworkInterfaces();
+        while(en.hasMoreElements()) {
+            NetworkInterface i=(NetworkInterface)en.nextElement();
+            for(Enumeration en2=i.getInetAddresses(); en2.hasMoreElements();) {
+                InetAddress addr=(InetAddress)en2.nextElement();
+                // if(addr.isLoopbackAddress())
+                   // continue;
+                mcast_sock.joinGroup(tmp_mcast_addr, i);
+                if(log.isTraceEnabled())
+                    log.trace("joined " + tmp_mcast_addr + " on interface " + i.getName() + " (" + addr + ")");
+                break;
+            }
+        }
     }
 
     private void startReceiver() {
