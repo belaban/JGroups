@@ -1,4 +1,4 @@
-// $Id: ViewId.java,v 1.1 2003/09/09 01:24:08 belaban Exp $
+// $Id: ViewId.java,v 1.2 2003/12/18 23:51:55 belaban Exp $
 
 package org.jgroups;
 
@@ -24,7 +24,7 @@ public class ViewId implements Externalizable, Comparable, Cloneable {
 
     /**
      * Creates a ViewID with the coordinator address and a Lamport timestamp of 0.
-     * @param coord_addr, the address of the member that issued this view
+     * @param coord_addr the address of the member that issued this view
      */
     public ViewId(Address coord_addr)
     {
