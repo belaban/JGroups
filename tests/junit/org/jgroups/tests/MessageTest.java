@@ -1,4 +1,4 @@
-// $Id: MessageTest.java,v 1.3 2004/02/25 21:10:02 belaban Exp $
+// $Id: MessageTest.java,v 1.4 2004/02/25 21:22:16 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -6,14 +6,13 @@ import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.jgroups.Message;
-import org.jgroups.util.List;
-import org.jgroups.util.Util;
 import org.jgroups.util.Range;
+import org.jgroups.util.Util;
 
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectOutputStream;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 
 
 
@@ -63,6 +62,30 @@ public class MessageTest extends TestCase {
         assertEquals(3, b2.length);
     }
 
+
+    public void testInvalidOffset() {
+        byte[] buf={'b', 'e', 'l', 'a', 'b', 'a', 'n'};
+
+        try {
+            m1=new Message(null, null, buf, -1, 4);
+            fail("we should not get here (offset is -1)");
+        }
+        catch(ArrayIndexOutOfBoundsException ex) {
+            assertTrue("correct: offset is invalid (caught correctly)", true);
+        }
+    }
+
+    public void testInvalidLength() {
+        byte[] buf={'b', 'e', 'l', 'a', 'b', 'a', 'n'};
+
+        try {
+            m1=new Message(null, null, buf, 3, 6);
+            fail("we should not get here (length is 9)");
+        }
+        catch(ArrayIndexOutOfBoundsException ex) {
+            assertTrue("correct: length is invalid (caught correctly)", true);
+        }
+    }
 
     public void testSerialization() throws Exception {
         byte[] buf={'b', 'e', 'l', 'a', 'b', 'a', 'n'};
