@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.7 2004/09/23 16:29:35 belaban Exp $
+// $Id: Draw.java,v 1.8 2005/01/05 10:37:56 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -214,7 +214,10 @@ public class Draw implements ActionListener, ChannelListener {
 
                 if(tmp instanceof View) {
                     View v=(View)tmp;
-                    System.out.println("** View=" + v);
+                    if(v instanceof MergeView)
+                        System.out.println("** MergeView=" + v);
+                    else
+                        System.out.println("** View=" + v);
                     member_size=v.size();
                     if(mainFrame != null)
                         setTitle();
