@@ -1,10 +1,11 @@
-// $Id: FRAG.java,v 1.13 2004/09/23 16:29:41 belaban Exp $
+// $Id: FRAG.java,v 1.14 2004/10/07 14:20:33 belaban Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
+import org.jgroups.util.Streamable;
 
 import java.io.*;
 import java.util.HashMap;
@@ -45,7 +46,7 @@ import java.util.Vector;
  *
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.13 2004/09/23 16:29:41 belaban Exp $
+ * @version $Id: FRAG.java,v 1.14 2004/10/07 14:20:33 belaban Exp $
  */
 public class FRAG extends Protocol {
     private int frag_size=8192;  // conservative value
@@ -290,10 +291,11 @@ public class FRAG extends Protocol {
     }
 
 
-    public static class FragHeader extends Header {
+    public static class FragHeader extends Header implements Streamable {
         public long id=0;
         public int frag_id=0;
         public int num_frags=0;
+
 
         public FragHeader() {
         } // used for externalization
@@ -321,6 +323,18 @@ public class FRAG extends Protocol {
             num_frags=in.readInt();
         }
 
+
+        public void writeTo(DataOutputStream out) throws IOException {
+            out.writeLong(id);
+            out.writeInt(frag_id);
+            out.writeInt(num_frags);
+        }
+
+        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+            id=in.readLong();
+            frag_id=in.readInt();
+            num_frags=in.readInt();
+        }
 
     }
 

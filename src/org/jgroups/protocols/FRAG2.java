@@ -1,4 +1,4 @@
-// $Id: FRAG2.java,v 1.11 2004/09/23 16:29:41 belaban Exp $
+// $Id: FRAG2.java,v 1.12 2004/10/07 14:20:16 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -6,10 +6,9 @@ import org.jgroups.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Range;
 import org.jgroups.util.Util;
+import org.jgroups.util.Streamable;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.*;
 import java.util.*;
 
 
@@ -27,7 +26,7 @@ import java.util.*;
  * size addition for headers and src and dest address is minimal when the transport finally has to serialize the
  * message, so we add a constant (1000 bytes).
  * @author Bela Ban
- * @version $Id: FRAG2.java,v 1.11 2004/09/23 16:29:41 belaban Exp $
+ * @version $Id: FRAG2.java,v 1.12 2004/10/07 14:20:16 belaban Exp $
  */
 public class FRAG2 extends Protocol {
 
@@ -283,7 +282,7 @@ public class FRAG2 extends Protocol {
     }
 
 
-    public static class FragHeader extends Header {
+    public static class FragHeader extends Header implements Streamable {
         public long id=0;
         public int frag_id=0;
         public int num_frags=0;
@@ -314,6 +313,17 @@ public class FRAG2 extends Protocol {
             num_frags=in.readInt();
         }
 
+       public void writeTo(DataOutputStream out) throws IOException {
+            out.writeLong(id);
+            out.writeInt(frag_id);
+            out.writeInt(num_frags);
+        }
+
+        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+            id=in.readLong();
+            frag_id=in.readInt();
+            num_frags=in.readInt();
+        }
 
     }
 
