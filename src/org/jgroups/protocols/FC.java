@@ -1,4 +1,4 @@
-// $Id: FC.java,v 1.3 2004/01/09 01:10:09 belaban Exp $
+// $Id: FC.java,v 1.4 2004/01/09 02:26:43 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -19,7 +19,7 @@ import java.io.ObjectInput;
  * Note that this protocol must be located towards the top of the stack, or all down_threads from JChannel to this
  * protocol must be set to false ! This is in order to block JChannel.send()/JChannel.down().
  * @author Bela Ban
- * @version $Revision: 1.3 $
+ * @version $Revision: 1.4 $
  */
 public class FC extends Protocol {
 
@@ -197,16 +197,11 @@ public class FC extends Protocol {
         if(Trace.trace)
             Trace.info("FC.handleUpMessage()", "credit for " + src + " is " + received.get(src));
 
-        if(checkCredit(received, src, size, this.min_credits)) {
-            decrementCredit(received, src, size);
-        }
-        else {
-            decrementCredit(received, src, size);
+        if(decrementCredit(received, src, size) == false) {
+            // not enough credits left
             new_credits=max_credits - getCredits(received, src);
             if(Trace.trace)
                 Trace.info("FC.handleUpMessage()", "sending " + new_credits + " credits to " + src);
-            // System.out.println("** FC.handleUpMessage(): sending " + new_credits + " credits to " + src);
-
             sendCredit(src, new_credits);
             replenishCredits(received, src, new_credits);
         }
@@ -362,27 +357,27 @@ public class FC extends Protocol {
 
 
     boolean checkCredit(Map map, Address mbr, long credits_required, long min_credits) {
-            long    credits_left;
-            Long    tmp=(Long)map.get(mbr);
+        long    credits_left;
+        Long    tmp=(Long)map.get(mbr);
 
-            if(tmp != null) {
-                credits_left=tmp.longValue();
-                if(credits_left - credits_required >= min_credits) {
-                    return true;
-                }
-                else {
-                    if(Trace.trace)
-                        Trace.info("FC.checkCredit()", "insufficient credit for " + mbr +
-                                ": credits left=" + credits_left + ", credits required=" + credits_required +
-                                " (min_credits=" + min_credits + ")");
-                    return false;
-                }
-            }
-            else {
-                map.put(mbr, new Long(max_credits - credits_required));
+        if(tmp != null) {
+            credits_left=tmp.longValue();
+            if(credits_left - credits_required >= min_credits) {
                 return true;
             }
+            else {
+                if(Trace.trace)
+                    Trace.info("FC.checkCredit()", "insufficient credit for " + mbr +
+                            ": credits left=" + credits_left + ", credits required=" + credits_required +
+                            " (min_credits=" + min_credits + ")");
+                return false;
+            }
         }
+        else {
+            map.put(mbr, new Long(max_credits - credits_required));
+            return true;
+        }
+    }
 
 
 
@@ -390,20 +385,28 @@ public class FC extends Protocol {
      * Find the credits associated with <tt>dest</tt> and decrement its credits by the message size.
      * @param map
      * @param dest
+     * @return Whether the required credits could successfully be subtracted from the credits left
      */
-    void decrementCredit(HashMap map, Address dest, long credits_required) {
-        long    credits_left;
+    boolean decrementCredit(HashMap map, Address dest, long credits_required) {
+        long    credits_left, new_credits_left;
         Long    tmp=(Long)map.get(dest);
 
         if(tmp != null) {
             credits_left=tmp.longValue();
-            if(credits_left - credits_required >= 0) {
-                map.put(dest, new Long(credits_left - credits_required));
+            new_credits_left=Math.max(0, credits_left - credits_required);
+            map.put(dest, new Long(new_credits_left));
+
+            if(new_credits_left >= min_credits) {
+                return true;
             }
             else {
-                Trace.error("FC.decrementCredit()", "not enough credits left for " +
-                            dest + ": left=" + credits_left + ", required=" + credits_required);
+                Trace.info("FC.decrementCredit()", "not enough credits left for " +
+                        dest + ": left=" + credits_left + ", required=" + credits_required);
+                return false;
             }
+        }
+        else {
+            return false;
         }
     }
 
