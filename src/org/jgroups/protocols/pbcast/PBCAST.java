@@ -1,4 +1,4 @@
-// $Id: PBCAST.java,v 1.1 2003/09/09 01:24:11 belaban Exp $
+// $Id: PBCAST.java,v 1.2 2003/11/09 04:57:00 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -786,7 +786,7 @@ public class PBCAST extends Protocol implements Runnable {
         for(Enumeration e=xmit_msgs.elements(); e.hasMoreElements();) {
             m=(Message) e.nextElement();
             hdr=(PbcastHeader) m.removeHeader(getName());
-            if(Trace.trace)
+            if(Trace.trace && hdr != null)
                 Trace.info("PBCAST.handleXmitRsp()", "received #" + hdr.seqno + ", type=" +
                                                      PbcastHeader.type2String(hdr.type) + ", msg=" + m);
             handleUpMessage(m, hdr);
