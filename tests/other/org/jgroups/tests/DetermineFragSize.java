@@ -1,4 +1,4 @@
-package org.jgroups.debug;
+package org.jgroups.tests;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -10,7 +10,7 @@ import java.net.InetAddress;
  * FRAG.frag_size and NAKACK.max_xmit_size
  * @author Bela Ban Dec 11
  * @author 2003
- * @version $Id: DetermineFragSize.java,v 1.1 2003/12/12 18:28:05 belaban Exp $
+ * @version $Id: DetermineFragSize.java,v 1.2 2003/12/12 18:34:48 belaban Exp $
  */
 public class DetermineFragSize {
 
