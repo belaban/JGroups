@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.111 2004/09/08 09:17:45 belaban Exp $
+Revision: $Id: history.txt,v 1.112 2004/09/08 10:35:37 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -21,6 +21,14 @@ whizkid_bay = Mandar Shinde (whizkid_bay@users.sf.net)
 ovidiuf     = Ovidiu Feodorov (ovidiuf@users.sf.net)
 romuald     = Romuald du Song
 yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
+
+
+
+
+Version 2.2.8
+-------------
+
+
 
 
 
