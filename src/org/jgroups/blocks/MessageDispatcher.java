@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.31 2004/09/23 16:29:11 belaban Exp $
+// $Id: MessageDispatcher.java,v 1.32 2004/10/04 20:35:57 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -602,7 +602,7 @@ public class MessageDispatcher implements RequestHandler {
                             tmp_state=msg_listener.getState();
                         }
                         catch(Throwable t) {
-                            log.error("failed getting state from message listener (" + msg_listener + ')', t);
+                            this.log.error("failed getting state from message listener (" + msg_listener + ')', t);
                         }
                     }
                     channel.returnState(tmp_state);
@@ -614,8 +614,8 @@ public class MessageDispatcher implements RequestHandler {
                             msg_listener.setState((byte[]) evt.getArg());
                         }
                         catch(ClassCastException cast_ex) {
-                            if(log.isErrorEnabled())
-                                log.error("received SetStateEvent, but argument " +
+                            if(this.log.isErrorEnabled())
+                                this.log.error("received SetStateEvent, but argument " +
                                         evt.getArg() + " is not serializable. Discarding message.");
                         }
                     }
@@ -722,8 +722,8 @@ public class MessageDispatcher implements RequestHandler {
                 corr.receive(evt);
             }
             else {
-                if(log.isErrorEnabled()) { //Something is seriously wrong, correlator should not be null since latch is not locked!
-                    log.error("correlator is null, but latch is not locked! Event ignored.");
+                if(this.log.isErrorEnabled()) { //Something is seriously wrong, correlator should not be null since latch is not locked!
+                    this.log.error("correlator is null, but latch is not locked! Event ignored.");
                 }
             }
         }
@@ -733,8 +733,8 @@ public class MessageDispatcher implements RequestHandler {
                 channel.down(evt);
             }
             else
-                if(log.isErrorEnabled()) {
-                    log.error("channel == null");
+                if(this.log.isErrorEnabled()) {
+                    this.log.error("channel == null");
                 }
         }
         /* ----------------------- End of Protocol Interface ------------------------ */

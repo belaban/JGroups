@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.16 2004/09/21 14:03:51 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.17 2004/10/04 20:35:40 belaban Exp $ -->
 
 <project name="JGroups" default="compile-1.4" basedir=".">
     <description>
@@ -67,14 +67,14 @@
             optimize="off"
             listfiles="false"
             includes="org/jgroups/**">
-            <exclude name="**/obsolete/**"/>
-            <exclude name="**/*1_4*"/>
-            <exclude name="**/*1_5*"/>
             <src path="${src.dir}"/>
             <src path="${tests.dir}"/>
             <src path="${junit.dir}"/>
             <src path="${stress.dir}"/>
             <src path="${perf.dir}"/>
+            <exclude name="**/obsolete/**"/>
+            <exclude name="**/*1_4*"/>
+            <exclude name="**/*1_5*"/>
         </javac>
     </target>
 
