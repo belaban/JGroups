@@ -1,11 +1,8 @@
-// $Id: List.java,v 1.8 2004/09/23 16:29:56 belaban Exp $
+// $Id: List.java,v 1.9 2004/09/27 20:31:08 belaban Exp $
 
 package org.jgroups.util;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.*;
 import java.util.Enumeration;
 import java.util.NoSuchElementException;
 import java.util.Vector;
@@ -22,6 +19,8 @@ public class List implements Externalizable, Cloneable {
     protected Element head=null, tail=null;
     protected int     size=0;
     protected final Object  mutex=new Object();
+
+
 
     class Element {
         Object obj=null;
@@ -307,6 +306,38 @@ public class List implements Externalizable, Cloneable {
             add(obj);
         }
     }
+
+
+//    public void writeTo(ByteArrayOutputStream outstream) throws IOException {
+//        DataOutputStream dos=new DataOutputStream(outstream);
+//        Streamable el;
+//        try {
+//            if(size == 0) {
+//                dos.writeInt(0);
+//                return;
+//            }
+//            dos.writeInt(size);
+//            for(Enumeration en=elements(); en.hasMoreElements();) {
+//                el=(Streamable)en.nextElement();
+//                el.writeTo(outstream);
+//            }
+//        }
+//        finally {
+//            dos.close();
+//        }
+//    }
+//
+//    public void readFrom(ByteArrayInputStream instream) throws IOException {
+//        DataInputStream dis=new DataInputStream(instream);
+//        try {
+//            size=dis.readInt();
+//
+//        }
+//        finally {
+//            dis.close();
+//        }
+//    }
+
 
 
     class ListEnumerator implements Enumeration {
