@@ -1,4 +1,4 @@
-// $Id: QueueTest.java,v 1.5 2003/09/20 01:16:15 belaban Exp $
+// $Id: QueueTest.java,v 1.6 2003/09/23 00:24:25 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -326,6 +326,39 @@ public class QueueTest extends TestCase {
     }
 
 
+    public void testWaitUntilQueueClosed() {
+         try {
+            queue.add("one");
+            queue.add("two");
+            queue.add("three");
+
+            new Thread() {
+                public void run() {
+                    try {
+                        sleep(1000);
+                        queue.close(false);
+                    }
+                    catch(Exception e) {
+                    }
+                }
+            }.start();
+
+            queue.waitUntilEmpty(0);
+            fail("shouldn't get here; we should have caught a QueueClosedException");
+        }
+        catch(TimeoutException timeout) {
+            fail("we should not have gottem here");
+        }
+         catch(QueueClosedException ex2) {
+             assertTrue(true);
+         }
+        catch(Exception e) {
+             e.printStackTrace();
+             fail();
+        }
+    }
+
+
     /** Multiple threads call remove(), one threads then adds an element. Only 1 thread should actually terminate
      * (the one that has the element) */
     public void testBarrier() {
@@ -454,7 +487,7 @@ public class QueueTest extends TestCase {
 		{
 			try
 			{
-				Long retval = (Long) queue.remove();
+				queue.remove();
 				num_items++;
 			}
 			catch (Exception ex)
@@ -645,6 +678,7 @@ public class QueueTest extends TestCase {
 		{
 			super("RemoveOneItem thread #" + rank);
 			this.rank = rank;
+            this.timeout=timeout;
 			setDaemon(true);
 		}
 
