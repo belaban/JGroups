@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindow.java,v 1.3 2004/04/19 18:41:07 belaban Exp $
+// $Id: NakReceiverWindow.java,v 1.4 2004/04/21 23:07:36 belaban Exp $
 
 
 package org.jgroups.stack;
@@ -243,8 +243,8 @@ public class NakReceiverWindow {
                     }
                 }
             }
-            _updateLowestSeen();
-            _updateHighestSeen();
+            updateLowestSeen();
+            updateHighestSeen();
         }
         finally {
             lock.writeUnlock();
@@ -294,11 +294,16 @@ public class NakReceiverWindow {
             while((e=(Entry)delivered_msgs.peekAtHead()) != null) {
                 if(e.seqno > seqno)
                     break;
-                else
+                else {
                     delivered_msgs.removeFromHead();
+                    lowest_seen=e.seqno;
+                }
             }
-            _updateLowestSeen();
-            _updateHighestSeen();
+            // _updateLowestSeen();
+
+            // Not needed because we only *remove*, never *add* msgs (bela April 19 2004).
+            // We save the cost of a liner iteration through msgs
+            // updateHighestSeen();
         }
         finally {
             lock.writeUnlock();
@@ -594,7 +599,7 @@ public class NakReceiverWindow {
      * Sets the value of lowest_seen to the lowest seqno of the delivered messages (if available), otherwise
      * to the lowest seqno of received messages.
      */
-    private void _updateLowestSeen() {
+    private void updateLowestSeen() {
         Entry entry=null;
 
         // If both delivered and received messages are empty, let the highest
@@ -631,7 +636,7 @@ public class NakReceiverWindow {
      * Returns seqno-1 if there are no messages in the queues (the first
      * message to be expected is always seqno).
      */
-    private void _updateHighestSeen() {
+    private void updateHighestSeen() {
         long ret=0;
         Entry entry=null;
 

@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.4 2004/04/08 04:58:48 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.5 2004/04/21 23:07:08 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -287,13 +287,13 @@ public class STATE_TRANSFER extends Protocol {
     /** Set the digest and the send the state up to the application */
     void handleStateRsp(Object sender, Digest digest, byte[] state) {
         if(digest == null)
-            if(log.isWarnEnabled()) log.warn("digest received from " +
-                    sender + " is null, skipping setting digest !");
+            if(log.isWarnEnabled())
+                log.warn("digest received from " + sender + " is null, skipping setting digest !");
         else
             setDigest(digest);
         if(state == null)
-            if(log.isWarnEnabled()) log.warn("state received from " +
-                    sender + " is null, will return null state to application");
+            if(log.isWarnEnabled())
+                log.warn("state received from " + sender + " is null, will return null state to application");
         passUp(new Event(Event.GET_STATE_OK, state));
     }
 

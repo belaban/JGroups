@@ -1,15 +1,14 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
-import org.jgroups.blocks.RpcDispatcher;
 import org.jgroups.blocks.GroupRequest;
-import org.jgroups.util.Util;
+import org.jgroups.blocks.RpcDispatcher;
 
 /**
  * Tests the "NAKACK retransmit message lost" problem. Start 2 members, then a third one, and you should never see
  * the problem with messages than cannot be retransmitted because they were already garbage-collected.
  * @author Bela Ban Apr 4, 2004
- * @version $Id: NAKACKTest2.java,v 1.1 2004/04/16 07:07:17 belaban Exp $
+ * @version $Id: NAKACKTest2.java,v 1.2 2004/04/21 23:08:26 belaban Exp $
  */
 public class NAKACKTest2 {
     Channel ch;
@@ -62,6 +61,7 @@ public class NAKACKTest2 {
             receiver.start();
         }
         while(true) {
+        // for(int j=0; j < 10000; j++) {
             if(use_rpc) {
                 disp.callRemoteMethods(null, "receive", new Object[]{local_addr, new Long(i++)},
                         new Class[]{Address.class, Long.class}, GroupRequest.GET_ALL, 10000);
@@ -72,6 +72,8 @@ public class NAKACKTest2 {
             }
             //Util.sleep(1);
         }
+
+        // Util.sleep(3600000);
     }
 
     public static void main(String[] args) {
