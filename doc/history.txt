@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.74 2004/05/13 06:40:28 belaban Exp $
+Revision: $Id: history.txt,v 1.75 2004/05/15 00:38:37 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -28,6 +28,10 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
 Version 2.2.5
 -------------
+
+- Removed all deprecated methods from MethodCall.
+- Changed all dependent classes (RpcDispatcher, RpcProtocol etc)
+  (bela May 14 2004)
 
 - Properties for a JChannel constructor can now be regular files
   (bela May 12 2004)
