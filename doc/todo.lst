@@ -1,4 +1,4 @@
-$Id: todo.lst,v 1.1 2003/09/09 01:24:04 belaban Exp $
+$Id: todo.lst,v 1.2 2003/09/10 00:55:53 belaban Exp $
 
 
 
@@ -6,6 +6,12 @@ $Id: todo.lst,v 1.1 2003/09/09 01:24:04 belaban Exp $
 			      Todo List
 			      ---------
 
+
+- Logical IpAddress: use any number of NICs, and fail over between
+  NICs, but always have the same logical address
+
+- TCPPING: make generic, e.g. STATIC_PING. Can apply to UDP transport
+  as well.
 
 - RpcDispatcherSpeedTest is very slow when using tcp.xml
 
