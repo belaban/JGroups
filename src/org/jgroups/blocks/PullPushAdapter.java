@@ -1,4 +1,4 @@
-// $Id: PullPushAdapter.java,v 1.4 2004/04/28 19:37:56 belaban Exp $
+// $Id: PullPushAdapter.java,v 1.5 2004/05/20 14:57:00 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -98,7 +98,12 @@ public class PullPushAdapter implements Runnable {
         receiver_thread=null;
     }
 
-
+    /**
+     * Sends a message to the group - listeners to this identifier will receive the messages
+     * @param identifier the key that the proper listeners are listenting on 
+     * @param msg the Message to be sent
+     * @see registerListener
+     */
     public void send(Serializable identifier, Message msg) throws Exception {
         if(msg == null) {
             if(log.isErrorEnabled()) log.error("msg is null");
@@ -112,7 +117,11 @@ public class PullPushAdapter implements Runnable {
         }
     }
 
-
+    /**
+     * sends a message with no identifier , listener member will get this message on the other group members
+     * @param msg the Message to be sent
+     * @throws Exception
+     */
     public void send(Message msg) throws Exception {
         send(null, msg);
     }
@@ -121,7 +130,13 @@ public class PullPushAdapter implements Runnable {
     public void setListener(MessageListener l) {
         listener=l;
     }
-
+    
+    /**
+     * sets a listener to messages with a given identifier messages sent with this identifier in there header will be routed to this listener
+     * <b>note: there could be only one listener for one identifier, if you want to register a different listener to an already registered identifier then unregister first</b> 
+     * @param identifier - messages sent on the group with this object will be receive by this listener 
+     * @param l - the listener that will get the message
+     */
     public void registerListener(Serializable identifier, MessageListener l) {
         if(l == null || identifier == null) {
             if(log.isErrorEnabled()) log.error("message listener or identifier is null");
@@ -129,9 +144,19 @@ public class PullPushAdapter implements Runnable {
         }
         if(listeners.containsKey(identifier)) {
             if(log.isErrorEnabled()) log.error("listener with identifier=" + identifier +
-                    " already exists, choose a different identifier");
+                    " already exists, choose a different identifier or unregister current listener");
+            // we do not want to overwrite the listener
+            return;
         }
         listeners.put(identifier, l);
+    }
+    
+    /**
+     * removes a listener to a given identifier from the listeners map
+     * @param identifier - the key to whom we do not want to listen any more
+     */
+    public void unregisterListener(Serializable identifier) {
+    	listeners.remove(identifier);
     }
 
 
@@ -337,4 +362,10 @@ public class PullPushAdapter implements Runnable {
     }
 
 
+	/**
+	 * @return Returns the listener.
+	 */
+	public MessageListener getListener() {
+		return listener;
+	}
 }
