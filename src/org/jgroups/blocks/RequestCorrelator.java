@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.7 2004/04/23 01:39:02 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.8 2004/04/23 20:02:38 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -53,6 +53,11 @@ public class RequestCorrelator {
 
     /** The dispatching thread pool */
     protected Scheduler scheduler=null;
+
+    /** Whether or not to use the Scheduler. If false, Scheduler is bypassed, and handleRequest(Message) is
+     * called directly
+     */
+    protected boolean use_scheduler=true;
 
     /** The address of this group member */
     protected Address local_addr=null;
@@ -195,6 +200,15 @@ public class RequestCorrelator {
     }
 
 
+    public void setUseScheduler(boolean flag) {
+        use_scheduler=flag;
+    }
+
+    public boolean useScheduler() {
+        return use_scheduler;
+    }
+
+
     public void setRequestHandler(RequestHandler handler) {
         request_handler=handler;
         start();
@@ -328,13 +342,16 @@ public class RequestCorrelator {
     /**
      */
     public void start() {
-        if(scheduler == null) {
-            scheduler=new Scheduler();
-            if(deadlock_detection && call_stack_setter != null)
-                scheduler.setListener(call_stack_setter);
-            if(concurrent_processing)
-                scheduler.setConcurrentProcessing(concurrent_processing);
-            scheduler.start();
+        if(deadlock_detection) use_scheduler=true;
+        if(use_scheduler) {
+            if(scheduler == null) {
+                scheduler=new Scheduler();
+                if(deadlock_detection && call_stack_setter != null)
+                    scheduler.setListener(call_stack_setter);
+                if(concurrent_processing)
+                    scheduler.setConcurrentProcessing(concurrent_processing);
+                scheduler.start();
+            }
         }
     }
 
@@ -409,36 +426,38 @@ public class RequestCorrelator {
      * @return true if the event should be forwarded further up, otherwise false (message was consumed)
      */
     public boolean receiveMessage(Message msg) {
-        Object          tmpHdr;
-        Header          hdr;
-        Request         req;
-        RspCollector    coll;
+        Object tmpHdr;
+        Header hdr;
+        Request req;
+        RspCollector coll;
         java.util.Stack stack;
-        java.util.List  dests;
+        java.util.List dests;
 
         // i. If header is not an instance of request correlator header, ignore
         //
         // ii. Check whether the message was sent by a request correlator with
         // the same name (there may be multiple request correlators in the same
         // protocol stack...)
-        tmpHdr = msg.getHeader(name);
+        tmpHdr=msg.getHeader(name);
         if(tmpHdr == null || !(tmpHdr instanceof Header))
-            return(true);
+            return (true);
 
         hdr=(Header)msg.getHeader(name);
         if(hdr.name == null || !hdr.name.equals(name)) {
-            if(log.isDebugEnabled()) log.debug("name of request correlator header (" +
-                    hdr.name + ") is different from ours (" + name + "). Msg not accepted, passed up");
-            return(true);
+            if(log.isDebugEnabled())
+                log.debug("name of request correlator header (" +
+                        hdr.name + ") is different from ours (" + name + "). Msg not accepted, passed up");
+            return (true);
         }
 
         // If the header contains a destination list, and we are not part of it, then we discard the
         // request (was addressed to other members)
         dests=hdr.dest_mbrs;
         if(dests != null && local_addr != null && !dests.contains(local_addr)) {
-            if(log.isDebugEnabled()) log.debug("discarded request from " + msg.getSrc() +
-                    " as we are not part of destination list (local_addr=" + local_addr +
-                    ", hdr=" + hdr + ")");
+            if(log.isDebugEnabled())
+                log.debug("discarded request from " + msg.getSrc() +
+                        " as we are not part of destination list (local_addr=" + local_addr +
+                        ", hdr=" + hdr + ")");
             return false;
         }
 
@@ -454,40 +473,43 @@ public class RequestCorrelator {
         // Remove the msg request correlator header and notify the associated
         // <tt>RspCollector</tt> that a reply has been received
         switch(hdr.type) {
-        case Header.REQ:
-            if(request_handler == null) {
-                if(log.isWarnEnabled()) log.warn("there is no request handler installed to deliver request !");
-                return(false);
-            }
+            case Header.REQ:
+                if(request_handler == null) {
+                    if(log.isWarnEnabled()) log.warn("there is no request handler installed to deliver request !");
+                    return (false);
+                }
 
-            req=new Request(msg);
-            if(deadlock_detection) {
-                stack=hdr.call_stack;
-                if(hdr.rsp_expected && stack != null && local_addr != null) {
-                    if(stack.contains(local_addr)) {
-                        scheduler.addPrio(req);
-                        break;
+                req=new Request(msg);
+                if(deadlock_detection) {
+                    stack=hdr.call_stack;
+                    if(hdr.rsp_expected && stack != null && local_addr != null) {
+                        if(stack.contains(local_addr)) {
+                            scheduler.addPrio(req);
+                            break;
+                        }
                     }
                 }
-            }
-            scheduler.add(req);
-            break;
+                if(scheduler != null)
+                    scheduler.add(req);
+                else
+                    handleRequest(msg);
+                break;
 
-        case Header.RSP:
-            msg.removeHeader(name);
-            coll=findEntry(hdr.id);
-            if(coll != null) {
-                coll.receiveResponse(msg);
-            }
-            break;
+            case Header.RSP:
+                msg.removeHeader(name);
+                coll=findEntry(hdr.id);
+                if(coll != null) {
+                    coll.receiveResponse(msg);
+                }
+                break;
 
-        default:
-            msg.removeHeader(name);
-            if(log.isErrorEnabled()) log.error("header's type is neither REQ nor RSP !");
-            break;
+            default:
+                msg.removeHeader(name);
+                if(log.isErrorEnabled()) log.error("header's type is neither REQ nor RSP !");
+                break;
         }
 
-        return(false);
+        return (false);
     }
 
     public Address getLocalAddress() {
@@ -568,9 +590,9 @@ public class RequestCorrelator {
         // ID as the request and the name of the sender request correlator
         hdr    = (Header)req.removeHeader(name);
 
-        if(log.isTraceEnabled()) log.trace("calling request handler (" +
-                (request_handler != null? request_handler.getClass().getName() : "null") +
-                ") with request " + hdr.id);
+        if(log.isTraceEnabled())
+            log.trace("calling (" + (request_handler != null? request_handler.getClass().getName() : "null") +
+                    ") with request " + hdr.id);
 
         try {
             retval = request_handler.handle(req);
