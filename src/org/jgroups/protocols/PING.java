@@ -1,4 +1,4 @@
-// $Id: PING.java,v 1.21 2005/01/04 08:17:59 belaban Exp $
+// $Id: PING.java,v 1.22 2005/01/12 01:36:54 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -219,7 +219,6 @@ public class PING extends Discovery {
             }
             else {
                 // 1. Mcast GET_MBRS_REQ message
-                if(log.isTraceEnabled()) log.trace("FIND_INITIAL_MBRS");
                 hdr=new PingHeader(PingHeader.GET_MBRS_REQ, null);
                 msg=new Message(null, null, null);  // mcast msg
                 msg.putHeader(getName(), hdr);

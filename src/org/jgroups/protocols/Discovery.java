@@ -23,7 +23,7 @@ import java.util.*;
  * <li>num_ping_requests - the number of GET_MBRS_REQ messages to be sent (min=1), distributed over timeout ms
  * </ul>
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.3 2005/01/05 15:17:40 belaban Exp $
+ * @version $Id: Discovery.java,v 1.4 2005/01/12 01:36:54 belaban Exp $
  */
 public abstract class Discovery extends Protocol {
     final Vector  members=new Vector(11);
@@ -187,7 +187,7 @@ public abstract class Discovery extends Protocol {
                 rsp_hdr=new PingHeader(PingHeader.GET_MBRS_RSP, ping_rsp);
                 rsp_msg.putHeader(getName(), rsp_hdr);
                 if(log.isTraceEnabled())
-                    log.trace("[GET_MBRS_REQ] from " + msg.getSrc() + ", sending response " + rsp_hdr);
+                    log.trace("received GET_MBRS_REQ from " + msg.getSrc() + ", sending response " + rsp_hdr);
                 passDown(new Event(Event.MSG, rsp_msg));
                 return;
 
@@ -195,7 +195,7 @@ public abstract class Discovery extends Protocol {
                 rsp=hdr.arg;
 
                 if(log.isTraceEnabled())
-                    log.trace("received FIND_INITAL_MBRS_RSP, rsp=" + rsp);
+                    log.trace("received GET_MBRS_RSP, rsp=" + rsp);
                 ping_waiter.addResponse(rsp);
                 return;
 
