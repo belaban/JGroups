@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.4 2004/01/16 16:47:51 belaban Exp $
+// $Id: Message.java,v 1.5 2004/02/25 20:42:32 belaban Exp $
 
 package org.jgroups;
 
@@ -16,16 +16,29 @@ import java.util.Map;
  * A Message encapsulates data sent to members of a group. It contains among other things the
  * address of the sender, the destination address, a payload (byte buffer) and a list of
  * headers. Headers are added by protocols on the sender side and removed by protocols
- * on the receiver's side.
+ * on the receiver's side.<br/>
+ * The byte buffer can point to a reference, and we can subset it using index and length. However,
+ * when the message is serialized, we only write the bytes between index and length.
  * @author Bela Ban
  */
 public class Message implements Externalizable {
     protected Address dest_addr=null;
     protected Address src_addr=null;
-    protected byte[] buf=null;
+
+    /** The payload */
+    private byte[]  buf=null;
+
+    /** The index into the payload (usually 0) */
+    protected transient int     offset=0;
+
+    /** The number of bytes in the buffer (usually buf.length is buf != null) */
+    protected transient int     length=0;
+
     protected HashMap headers=null;
     static final long ADDRESS_OVERHEAD=200; // estimated size of Address (src and dest)
     static final long serialVersionUID=-1137364035832847034L;
+
+
 
     /** Public constructor
      *  @param dest Address of receiver. If it is <em>null</em> or a <em>string</em>, then
@@ -42,7 +55,30 @@ public class Message implements Externalizable {
     public Message(Address dest, Address src, byte[] buf) {
         dest_addr=dest;
         src_addr=src;
-        this.buf=buf;
+        setBuffer(buf);
+    }
+
+    /**
+     * Constructs a message. The index and length parameters allow to provide a <em>reference</em> to
+     * a byte buffer, rather than a copy, and refer to a subset of the buffer. This is important when
+     * we want to avoid copying. When the message is serialized, only the subset is serialized.
+     * @param dest Address of receiver. If it is <em>null</em> or a <em>string</em>, then
+     *              it is sent to the group (either to current group or to the group as given
+     *              in the string). If it is a Vector, then it contains a number of addresses
+     *              to which it must be sent. Otherwise, it contains a single destination.<p>
+     *              Addresses are generally untyped (all are of type <em>Object</em>. A channel
+     *              instance must know what types of addresses it expects and downcast
+     *              accordingly.
+     * @param src    Address of sender
+     * @param buf    A reference to a byte buffer
+     * @param offset The index into the byte buffer
+     * @param length The number of bytes to be used from <tt>buf</tt>. Both index and length are checked for
+     *               array index violations and an ArrayIndexOutOfBoundsException will be thrown if invalid
+     */
+    public Message(Address dest, Address src, byte[] buf, int offset, int length) {
+        dest_addr=dest;
+        src_addr=src;
+        setBuffer(buf, offset, length);
     }
 
 
@@ -89,7 +125,8 @@ public class Message implements Externalizable {
     /**
      * Returns the payload (byte buffer). Note that this buffer should not be modified as we do not
      * copy the buffer on copy() or clone(): the buffer of the copied message is simply a reference to
-     * the old buffer.
+     * the old buffer.<br/>
+     * If offset and length are used: we return the <em>entire</em> buffer, not a subset.
      */
     public byte[] getBuffer() {
         return buf;
@@ -97,6 +134,42 @@ public class Message implements Externalizable {
 
     public void setBuffer(byte[] b) {
         buf=b;
+        if(buf != null) {
+            offset=0;
+            length=buf.length;
+        }
+        else {
+            offset=length=0;
+        }
+    }
+
+    /**
+     * Set the internal buffer to point to a subset of a given buffer
+     * @param b The reference to a given buffer. If null, we'll reset the buffer to null
+     * @param offset The initial position
+     * @param length The number of bytes
+     */
+    public void setBuffer(byte[] b, int offset, int length) {
+        buf=b;
+        if(buf != null) {
+            if(offset < 0 || offset > buf.length)
+                throw new ArrayIndexOutOfBoundsException(offset);
+            if((offset + length) > buf.length)
+                throw new ArrayIndexOutOfBoundsException((offset+length));
+            this.offset=offset;
+            this.length=length;
+        }
+        else {
+            offset=length=0;
+        }
+    }
+
+    public int getOffset() {
+        return offset;
+    }
+
+    public int getLength() {
+        return length;
     }
 
     public Map getHeaders() {
@@ -106,10 +179,10 @@ public class Message implements Externalizable {
     public void setObject(Serializable obj) {
         if(obj == null) return;
         try {
-            ByteArrayOutputStream out_stream=new ByteArrayOutputStream(256);
+            ByteArrayOutputStream out_stream=new ByteArrayOutputStream();
             ObjectOutputStream out=new ObjectOutputStream(out_stream);
             out.writeObject(obj);
-            buf=out_stream.toByteArray();
+            setBuffer(out_stream.toByteArray());
         }
         catch(IOException ex) {
             throw new IllegalArgumentException(ex.toString());
@@ -119,7 +192,7 @@ public class Message implements Externalizable {
     public Object getObject() {
         if(buf == null) return null;
         try {
-            ByteArrayInputStream in_stream=new ByteArrayInputStream(buf);
+            ByteArrayInputStream in_stream=new ByteArrayInputStream(buf, offset, length);
             ObjectInputStream in=new ObjectInputStream(in_stream);
             return in.readObject();
         }
@@ -135,7 +208,7 @@ public class Message implements Externalizable {
      */
     public void reset() {
         dest_addr=src_addr=null;
-        buf=null;
+        setBuffer(null);
         if(headers != null)
             headers.clear();
     }
@@ -175,8 +248,7 @@ public class Message implements Externalizable {
         retval.dest_addr=dest_addr;
         retval.src_addr=src_addr;
         if(buf != null)
-            retval.buf=buf;
-
+            retval.setBuffer(buf, offset, length);
         if(headers != null)
             retval.headers=(HashMap)headers.clone();
         return retval;
@@ -221,8 +293,8 @@ public class Message implements Externalizable {
 //         }
 
         ret.append(", size = ");
-        if(buf != null && buf.length > 0)
-            ret.append(buf.length);
+        if(buf != null && length > 0)
+            ret.append(length);
         else
             ret.append("0");
         ret.append(" bytes");
@@ -255,7 +327,7 @@ public class Message implements Externalizable {
      * therefore getting the correct value.
      */
     public long size() {
-        long retval=buf != null ? buf.length : 0;
+        long retval=length;
         long hdr_size=0;
         Header hdr;
 
@@ -274,6 +346,10 @@ public class Message implements Externalizable {
             }
         }
         return retval;
+    }
+
+    public int getBufferSize() {
+        return length;
     }
 
 
@@ -318,8 +394,8 @@ public class Message implements Externalizable {
         if(buf == null)
             out.writeInt(0);
         else {
-            out.writeInt(buf.length);
-            out.write(buf);
+            out.writeInt(length);
+            out.write(buf, offset, length);
         }
 
         if(headers == null)
@@ -356,6 +432,8 @@ public class Message implements Externalizable {
         if(i != 0) {
             buf=new byte[i];
             in.readFully(buf);
+            offset=0;
+            length=buf.length;
         }
 
         len=in.readInt();
