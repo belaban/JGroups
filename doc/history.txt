@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.20 2003/12/12 18:07:45 belaban Exp $
+Revision: $Id: history.txt,v 1.21 2003/12/12 18:10:17 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java JGroups.Version')]
 
@@ -41,10 +41,7 @@ Version 2.2.1
   constant, as headers or serialization is constant too.
   (bela Dec 12 2003)
 
-This is the same problem for NAKACK and max_xmit_size.
 
-The solution is to subtract a certain number of bytes from
-AUTOCONF's value, so we're below the threshold
 
 - Added initial_hosts support for PING (copied from TCPPING)
   (bela Dec 11 2003)
