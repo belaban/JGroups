@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.13 2004/02/24 23:54:28 belaban Exp $
+// $Id: UDP.java,v 1.14 2004/02/25 20:51:22 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -492,8 +492,11 @@ public class UDP extends Protocol implements Runnable {
             return false;
         }
 
-        if(enable_bundling)
+        if(enable_bundling) {
+            if(use_outgoing_packet_handler == false)
+                Trace.warn("UDP.setProperties()", "enable_bundling is true; setting use_outgoing_packet_handler=true");
             use_outgoing_packet_handler=true;
+        }
 
         return true;
     }
