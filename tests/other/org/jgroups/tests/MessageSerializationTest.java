@@ -1,4 +1,4 @@
-// $Id: MessageSerializationTest.java,v 1.4 2004/07/05 14:15:11 belaban Exp $
+// $Id: MessageSerializationTest.java,v 1.5 2004/09/24 09:03:02 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -12,14 +12,23 @@ package org.jgroups.tests;
  */
 
 import org.jgroups.Message;
+import org.jgroups.util.MagicObjectOutputStream;
+import org.jgroups.util.MagicObjectInputStream;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.*;
 import org.jgroups.stack.IpAddress;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import java.net.InetAddress;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ObjectInputStream;
 
 
 public class MessageSerializationTest {
+    static final Log log=LogFactory.getLog(MessageSerializationTest.class);
 
     public MessageSerializationTest() {
     }
@@ -29,12 +38,9 @@ public class MessageSerializationTest {
         boolean add_headers=false;
         InetAddress addr=InetAddress.getLocalHost();
         int num=10000;
+        boolean use_magic=false;
 
         for(int i=0; i < args.length; i++) {
-            if("-help".equals(args[i])) {
-                help();
-                return;
-            }
             if("-add_headers".equals(args[i])) {
                 add_headers=true;
                 continue;
@@ -43,6 +49,12 @@ public class MessageSerializationTest {
                 num=Integer.parseInt(args[++i]);
                 continue;
             }
+            if("-use_magic".equals(args[i])) {
+                use_magic=true;
+                continue;
+            }
+            help();
+            return;
         }
 
 
@@ -52,16 +64,18 @@ public class MessageSerializationTest {
             Message m=new Message(new IpAddress(addr, 5555), new IpAddress(addr, 6666), new byte[256]);
             if(add_headers)
                 addHeaders(m);
-            java.io.ByteArrayOutputStream msg_data=new java.io.ByteArrayOutputStream();
-            java.io.ObjectOutputStream msg_out=new java.io.ObjectOutputStream(msg_data);
-            m.writeExternal(msg_out);
+            ByteArrayOutputStream msg_data=new ByteArrayOutputStream();
+            ObjectOutputStream msg_out=use_magic? new MagicObjectOutputStream(msg_data) : new ObjectOutputStream(msg_data);
+            //m.writeExternal(msg_out);
+            msg_out.writeObject(m);
             msg_out.flush();
             msg_out.close();
             byte[] data=msg_data.toByteArray();
-            java.io.ByteArrayInputStream msg_in_data=new java.io.ByteArrayInputStream(data);
-            java.io.ObjectInputStream msg_in=new java.io.ObjectInputStream(msg_in_data);
-            Message m2=(Message)Message.class.newInstance();
-            m2.readExternal(msg_in);
+            ByteArrayInputStream msg_in_data=new ByteArrayInputStream(data);
+            ObjectInputStream msg_in=use_magic? new MagicObjectInputStream(msg_in_data) : new ObjectInputStream(msg_in_data);
+            //Message m2=(Message)Message.class.newInstance();
+            //m2.readExternal(msg_in);
+            Message m2=(Message)msg_in.readObject();
         }
 
         long stop=System.currentTimeMillis();
@@ -85,6 +99,6 @@ public class MessageSerializationTest {
 
 
     static void help() {
-        System.out.println("MessageSerializationTest [-help] [-add_headers] [-num <iterations>]");
+        System.out.println("MessageSerializationTest [-help] [-add_headers] [-num <iterations>] [-use_magic]");
     }
 }
