@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.16 2004/09/23 16:29:38 belaban Exp $
+// $Id: STABLE.java,v 1.17 2004/09/24 09:02:18 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -635,14 +635,22 @@ public class STABLE extends Protocol {
 
         public void writeExternal(ObjectOutput out) throws IOException {
             out.writeInt(type);
+            if(digest == null) {
+                out.writeBoolean(false);
+                return;
+            }
+            out.writeBoolean(true);
             digest.writeExternal(out);
         }
 
 
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             type=in.readInt();
-            digest=new Digest();
-            digest.readExternal(in);
+            boolean digest_not_null=in.readBoolean();
+            if(digest_not_null) {
+                digest=new Digest();
+                digest.readExternal(in);
+            }
         }
 
 
