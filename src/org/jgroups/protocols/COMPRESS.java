@@ -1,0 +1,171 @@
+package org.jgroups.protocols;
+
+import org.jgroups.stack.Protocol;
+import org.jgroups.Event;
+import org.jgroups.Header;
+import org.jgroups.Message;
+import org.jgroups.util.Util;
+import org.jgroups.log.Trace;
+
+import java.util.Properties;
+import java.util.zip.Deflater;
+import java.util.zip.Inflater;
+import java.util.zip.DataFormatException;
+import java.io.ObjectOutput;
+import java.io.IOException;
+import java.io.ObjectInput;
+
+/**
+ * Compresses the payload of a message. Goal is to reduce the number of messages sent across the wire.
+ * Should ideally be layered somewhere above a fragmentation protocol (e.g. FRAG).
+ * @author Bela Ban
+ * @version $Id: COMPRESS.java,v 1.1 2003/10/18 08:14:27 belaban Exp $
+ */
+public class COMPRESS extends Protocol {
+
+    Deflater deflater=null;
+
+    Inflater inflater=null;
+
+
+    /** Values are from 0-9 (0=no compression, 9=best compression) */
+    int compression_level=Deflater.BEST_COMPRESSION; // this is 9
+
+    /** Minimal payload size of a message (in bytes) for compression to kick in */
+    long min_size=500;
+
+    final static String name="COMPRESS";
+
+    public String getName() {
+        return name;
+    }
+
+    public void init() throws Exception {
+        deflater=new Deflater(compression_level);
+        inflater=new Inflater();
+    }
+
+    public void destroy() {
+        deflater.end();
+        deflater=null;
+        inflater.end();
+        inflater=null;
+    }
+
+    public boolean setProperties(Properties props) {
+        String str;
+
+        str=props.getProperty("compression_level");
+        if(str != null) {
+            compression_level=Integer.parseInt(str);
+            props.remove("compression_level");
+        }
+
+        str=props.getProperty("min_size");
+        if(str != null) {
+            min_size=Long.parseLong(str);
+            props.remove("min_size");
+        }
+
+        if(props.size() > 0) {
+            System.err.println("COMPRESS.setProperties(): the following properties are not recognized:");
+            props.list(System.out);
+            return false;
+        }
+        return true;
+    }
+
+
+    /**
+     * If there is no header, we pass the message up. Otherwise we uncompress the payload to its original size.
+     * @param evt
+     */
+    public void up(Event evt) {
+        if(evt.getType() == Event.MSG) {
+            Message msg=(Message)evt.getArg();
+            CompressHeader hdr=(CompressHeader)msg.removeHeader(name);
+            if(hdr != null) {
+                byte[] compressed_payload=msg.getBuffer();
+                if(compressed_payload != null) {
+                    int original_size=hdr.original_size;
+                    byte[] uncompressed_payload=new byte[original_size];
+                    inflater.reset();
+                    inflater.setInput(compressed_payload);
+                    try {
+                        inflater.inflate(uncompressed_payload);
+                        if(Trace.trace)
+                            Trace.info("COMPRESS.up()",
+                                       "uncompressed " + compressed_payload.length + " bytes to " +
+                                       original_size + " bytes");
+                        msg.setBuffer(uncompressed_payload);
+                    }
+                    catch(DataFormatException e) {
+                        Trace.error("COMPRESS.up()", "exception on uncompression: " + Util.printStackTrace(e));
+                    }
+                }
+            }
+        }
+        passUp(evt);
+    }
+
+
+
+    /**
+     * We compress the payload if it is larger than <code>min_size</code>. In this case we add a header containing
+     * the original size before compression. Otherwise we add no header.
+     * @param evt
+     */
+    public void down(Event evt) {
+        if(evt.getType() == Event.MSG) {
+            Message msg=(Message)evt.getArg();
+            byte[] payload=msg.getBuffer();
+            if(payload != null) {
+                int size=payload.length;
+                if(size >= min_size) {
+                    byte[] compressed_payload=new byte[size];
+                    deflater.reset();
+                    deflater.setInput(payload);
+                    deflater.finish();
+                    deflater.deflate(compressed_payload);
+                    int compressed_size=deflater.getTotalOut();
+                    byte[] new_payload=new byte[compressed_size];
+                    System.arraycopy(compressed_payload, 0, new_payload, 0, compressed_size);
+                    msg.setBuffer(new_payload);
+                    msg.putHeader(name, new CompressHeader(size));
+                    if(Trace.trace)
+                        Trace.info("COMPRESS.down()", "compressed payload from " + size + " bytes to " +
+                                                    compressed_size + " bytes");
+                }
+            }
+        }
+        passDown(evt);
+    }
+
+
+
+
+    public static class CompressHeader extends Header {
+        int original_size=0;
+
+        public CompressHeader() {
+            super();
+        }
+
+        public CompressHeader(int s) {
+            original_size=s;
+        }
+
+
+        public long size() {
+            return 16;
+        }
+
+        public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeInt(original_size);
+        }
+
+        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            original_size=in.readInt();
+        }
+    }
+}
