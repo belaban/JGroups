@@ -1,4 +1,4 @@
-// $Id: Digest.java,v 1.2 2004/03/30 06:47:18 belaban Exp $
+// $Id: Digest.java,v 1.3 2004/04/05 03:57:27 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -447,7 +447,6 @@ public class Digest implements Externalizable {
             for(int i=0; i < high_seqnos.length; i++)
                 high_seqnos[i]=in.readLong();
         }
-
 
         num=in.readInt();
         if(num == 0)
