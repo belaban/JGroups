@@ -1,4 +1,4 @@
-// $Id: NotificationBus.java,v 1.5 2004/03/30 06:47:12 belaban Exp $
+// $Id: NotificationBus.java,v 1.6 2004/07/05 05:41:45 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -109,7 +109,7 @@ public class NotificationBus implements MessageListener, MembershipListener {
             if(first_mbr == null)
                 return true;
         }
-        if(getLocalAddress() != null && first_mbr != null)
+        if(getLocalAddress() != null)
             return getLocalAddress().equals(first_mbr);
         return false;
     }
@@ -195,36 +195,31 @@ public class NotificationBus implements MessageListener, MembershipListener {
             if(mbr == null) {  // mbr == null means get cache from coordinator
                 dst=determineCoordinator();
                 if(dst == null || dst.equals(getLocalAddress())) { // we are the first member --> empty cache
-
-                        if(log.isInfoEnabled()) log.info("[" + getLocalAddress() +
-                                                                           "] no coordinator found --> first member (cache is empty)");
+                    if(log.isInfoEnabled()) log.info("[" + getLocalAddress() +
+                                                     "] no coordinator found --> first member (cache is empty)");
                     return null;
                 }
             }
 
             // +++ remove
             if(log.isInfoEnabled()) log.info("[" + getLocalAddress() + "] dst=" + dst +
-                                                               ", timeout=" + timeout + ", max_tries=" + max_tries + ", num_tries=" + num_tries);
+                                             ", timeout=" + timeout + ", max_tries=" + max_tries + ", num_tries=" + num_tries);
 
-            if(dst != null) {
-                info=new Info(Info.GET_CACHE_REQ);
-                msg=new Message(dst, null, info);
-                channel.down(new Event(Event.MSG, msg));
+            info=new Info(Info.GET_CACHE_REQ);
+            msg=new Message(dst, null, info);
+            channel.down(new Event(Event.MSG, msg));
 
-                start=System.currentTimeMillis();
-                cache=(Serializable) get_cache_promise.getResult(timeout);
-                stop=System.currentTimeMillis();
-                if(cache != null) {
-
-                        if(log.isInfoEnabled()) log.info("got cache from " +
-                                                                           dst + ": cache is valid (waited " + (stop - start) + " msecs on get_cache_promise)");
-                    return cache;
-                }
-                else {
-
-                        if(log.isErrorEnabled()) log.error("received null cache; retrying (waited " +
-                                                                            (stop - start) + " msecs on get_cache_promise)");
-                }
+            start=System.currentTimeMillis();
+            cache=(Serializable) get_cache_promise.getResult(timeout);
+            stop=System.currentTimeMillis();
+            if(cache != null) {
+                if(log.isInfoEnabled()) log.info("got cache from " +
+                                                 dst + ": cache is valid (waited " + (stop - start) + " msecs on get_cache_promise)");
+                return cache;
+            }
+            else {
+                if(log.isErrorEnabled()) log.error("received null cache; retrying (waited " +
+                                                   (stop - start) + " msecs on get_cache_promise)");
             }
 
             Util.sleep(500);
@@ -232,7 +227,7 @@ public class NotificationBus implements MessageListener, MembershipListener {
         }
         if(cache == null)
             if(log.isErrorEnabled()) log.error("[" + getLocalAddress() +
-                                                                "] cache is null (num_tries=" + num_tries + ")");
+                                               "] cache is null (num_tries=" + num_tries + ')');
         return cache;
     }
 
@@ -257,7 +252,7 @@ public class NotificationBus implements MessageListener, MembershipListener {
             if(!(obj instanceof Info)) {
 
                     if(log.isErrorEnabled()) log.error("expected an instance of Info (received " +
-                                                             obj.getClass().getName() + ")");
+                                                             obj.getClass().getName() + ')');
                 return;
             }
             info=(Info) obj;

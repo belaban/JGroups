@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.25 2004/06/25 00:27:49 belaban Exp $
+// $Id: NAKACK.java,v 1.26 2004/07/05 05:49:41 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -33,7 +33,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
     long[]  retransmit_timeout={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
     boolean is_server=false;
     Address local_addr=null;
-    Vector  members=new Vector();
+    Vector  members=new Vector(11);
     long    seqno=0;                                   // current message sequence number (starts with 0)
     long    max_xmit_size=8192;                        // max size of a retransmit message (otherwise send multiple)
     int     gc_lag=20;                                 // number of msgs garbage collection lags behind
@@ -59,7 +59,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
      * Hashtable<Address,NakReceiverWindow>. Stores received messages (keyed by sender). Note that this is no long term
      * storage; messages are just stored until they can be delivered (ie., until the correct FIFO order is established)
      */
-    HashMap received_msgs=new HashMap();
+    HashMap received_msgs=new HashMap(11);
 
     /**
      * TreeMap<Long,Message>. Map of messages sent by me (keyed and sorted on sequence number)
@@ -174,7 +174,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
 
 
     public Vector providedUpServices() {
-        Vector retval=new Vector();
+        Vector retval=new Vector(5);
         retval.addElement(new Integer(Event.GET_DIGEST));
         retval.addElement(new Integer(Event.GET_DIGEST_STABLE));
         retval.addElement(new Integer(Event.GET_DIGEST_STATE));
@@ -185,7 +185,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
 
 
     public Vector providedDownServices() {
-        Vector retval=new Vector();
+        Vector retval=new Vector(2);
         retval.addElement(new Integer(Event.GET_DIGEST));
         retval.addElement(new Integer(Event.GET_DIGEST_STABLE));
         return retval;
@@ -406,7 +406,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
 
         str=props.getProperty("gc_lag");
         if(str != null) {
-            gc_lag=new Integer(str).intValue();
+            gc_lag=Integer.parseInt(str);
             if(gc_lag < 1) {
                 System.err.println("NAKACK.setProperties(): gc_lag has to be at least 1");
                 return false;
@@ -422,13 +422,13 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
 
         str=props.getProperty("use_mcast_xmit");
         if(str != null) {
-            use_mcast_xmit=new Boolean(str).booleanValue();
+            use_mcast_xmit=Boolean.valueOf(str).booleanValue();
             props.remove("use_mcast_xmit");
         }
 
         str=props.getProperty("discard_delivered_msgs");
         if(str != null) {
-            discard_delivered_msgs=new Boolean(str).booleanValue();
+            discard_delivered_msgs=Boolean.valueOf(str).booleanValue();
             props.remove("discard_delivered_msgs");
         }
 
@@ -501,7 +501,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
         }
 
         if(log.isTraceEnabled()) {
-            log.trace("[" + local_addr + "] received <" + sender + "#" + hdr.seqno + ">");
+            log.trace("[" + local_addr + "] received <" + sender + '#' + hdr.seqno + '>');
         }
 
         // msg is potentially re-sent later as result of XMIT_REQ reception; that's why hdr is added !
@@ -557,7 +557,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
         long size=0, marker=first_seqno, len;
 
         if(log.isTraceEnabled()) {
-            log.trace(local_addr + ": received xmit request for " + dest + " [" + first_seqno + " - " + last_seqno + "]");
+            log.trace(local_addr + ": received xmit request for " + dest + " [" + first_seqno + " - " + last_seqno + ']');
         }
 
         if(first_seqno > last_seqno) {
@@ -583,7 +583,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
 
                 // size has reached max_xmit_size. go ahead and send message (excluding the current message)
                 if(log.isTraceEnabled()) {
-                    log.trace("xmitting msgs [" + marker + "-" + (i - 1) + "] to " + dest);
+                    log.trace("xmitting msgs [" + marker + '-' + (i - 1) + "] to " + dest);
                 }
                 sendXmitRsp(dest, (LinkedList)list.clone(), marker, i - 1);
                 marker=i;
@@ -605,7 +605,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
 
         if(list.size() > 0) {
             if(log.isTraceEnabled()) {
-                log.trace("xmitting msgs [" + marker + "-" + last_seqno + "] to " + dest);
+                log.trace("xmitting msgs [" + marker + '-' + last_seqno + "] to " + dest);
             }
             sendXmitRsp(dest, (LinkedList)list.clone(), marker, last_seqno);
             list.clear();
@@ -982,7 +982,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
                                 stability_highest_rcvd +
                                 "): requesting retransmission of " +
                                 sender +
-                                "#" +
+                                  '#' +
                                 stability_highest_rcvd);
                     }
                     retransmit(stability_highest_rcvd, stability_highest_rcvd, sender);
@@ -1107,7 +1107,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
                 entry=(Map.Entry)it.next();
                 addr=(Address)entry.getKey();
                 w=entry.getValue();
-                ret.append(addr).append(": ").append(w.toString()).append("\n");
+                ret.append(addr).append(": ").append(w.toString()).append('\n');
             }
         }
         return ret.toString();
@@ -1121,7 +1121,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
             min_seqno=sent_msgs.size() > 0 ? (Long)sent_msgs.firstKey() : new Long(0);
             max_seqno=sent_msgs.size() > 0 ? (Long)sent_msgs.lastKey() : new Long(0);
         }
-        sb.append("[").append(min_seqno).append(" - ").append(max_seqno).append("]");
+        sb.append('[').append(min_seqno).append(" - ").append(max_seqno).append(']');
         return sb.toString();
     }
 

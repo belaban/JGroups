@@ -1,4 +1,4 @@
-// $Id: XmlConfigurator.java,v 1.4 2004/04/26 18:40:13 belaban Exp $
+// $Id: XmlConfigurator.java,v 1.5 2004/07/05 05:43:51 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -89,9 +89,9 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
             if(convert) buf.append("/>");
             if(it.hasNext()) {
                 if(convert)
-                    buf.append("\n");
+                    buf.append('\n');
                 else
-                    buf.append(":");
+                    buf.append(':');
             }
         }
         if(convert) buf.append("\n</config>");
@@ -252,7 +252,7 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
             }
 
             String root_name=root.getNodeName();
-            if(!root_name.trim().toLowerCase().equals("config")) {
+            if(!"config".equals(root_name.trim().toLowerCase())) {
                 log.fatal("XML protocol stack configuration does not start with a '<config>' element; " +
                         "maybe the XML configuration needs to be converted to the new format ?\n" +
                         "use 'java org.jgroups.conf.XmlConfigurator <old XML file> -new_format' to do so");
@@ -460,7 +460,7 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
         input_file=args[0];
 
         for(int i=1; i < args.length; i++) {
-            if(args[i].equals("-new_format")) {
+            if("-new_format".equals(args[i])) {
                 new_format=true;
                 continue;
             }
@@ -490,7 +490,7 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
             output=replace(output, "org.jgroups.protocols.", "");
             if(new_format)
                 System.out.println(getTitle(input_file));
-            System.out.println("\n" + output);
+            System.out.println('\n' + output);
         }
         else {
             System.err.println("no input file given");

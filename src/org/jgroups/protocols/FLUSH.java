@@ -1,4 +1,4 @@
-// $Id: FLUSH.java,v 1.3 2004/04/23 19:36:13 belaban Exp $
+// $Id: FLUSH.java,v 1.4 2004/07/05 05:51:24 belaban Exp $
 
 
 
@@ -132,7 +132,7 @@ public class FLUSH extends RpcProtocol {
 
 	/* Call the handleFlush() method of all existing members. The highest seqnos seen by the coord
 	   is the argument */
-	 if(log.isInfoEnabled()) log.info("calling HandleFlush(" + dests + ")");
+	 if(log.isInfoEnabled()) log.info("calling HandleFlush(" + dests + ')');
 	passDown(new Event(Event.SWITCH_OUT_OF_BAND)); // we need out-of-band control for FLUSH ...
 	MethodCall call = new MethodCall("handleFlush", new Object[] {dests, highest_delivered_msgs.clone()}, 
 		new String[] {Vector.class.getName(), long[].class.getName()});
@@ -320,8 +320,7 @@ public class FLUSH extends RpcProtocol {
 	case Event.GET_MSGS_RECEIVED_OK:
 	    long[] tmp=(long[])evt.getArg();
 	    if(tmp != null)
-		for(int i=0; i < tmp.length; i++)
-		    highest_delivered_msgs[i]=tmp[i];
+            System.arraycopy(tmp, 0, highest_delivered_msgs, 0, tmp.length);
 	    synchronized(highest_delivered_mutex) {
 		highest_delivered_mutex.notify();
 	    }
@@ -417,13 +416,13 @@ public class FLUSH extends RpcProtocol {
 
 	str=props.getProperty("block_timeout");
 	if(str != null) {
-	    block_timeout=new Long(str).longValue();
+	    block_timeout=Long.parseLong(str);
 	    props.remove("block_timeout");
 	}
 
 	str=props.getProperty("digest_timeout");
 	if(str != null) {
-	    digest_timeout=new Long(str).longValue();
+	    digest_timeout=Long.parseLong(str);
 	    props.remove("digest_timeout");
 	}
 

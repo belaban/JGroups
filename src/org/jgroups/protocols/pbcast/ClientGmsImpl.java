@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.8 2004/04/28 04:48:44 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.9 2004/07/05 05:49:41 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -21,10 +21,10 @@ import java.util.Vector;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.8 $
+ * @version $Revision: 1.9 $
  */
 public class ClientGmsImpl extends GmsImpl {
-    Vector  initial_mbrs=new Vector();
+    Vector  initial_mbrs=new Vector(11);
     boolean initial_mbrs_received=false;
     Object  view_installation_mutex=new Object();
     Promise join_promise=new Promise();
@@ -280,7 +280,7 @@ public class ClientGmsImpl extends GmsImpl {
         if(mbrs == null || mbrs.size() < 1)
             return null;
 
-        votes=new Hashtable();
+        votes=new Hashtable(5);
 
         // count *all* the votes (unlike the 2000 election)
         for(int i=0; i < mbrs.size(); i++) {
@@ -295,11 +295,11 @@ public class ClientGmsImpl extends GmsImpl {
             }
         }
 
-         {
+        if(log.isDebugEnabled()) {
             if(votes.size() > 1)
                 if(log.isWarnEnabled()) log.warn("there was more than 1 candidate for coordinator: " + votes);
-            else
-                if(log.isDebugEnabled()) log.debug("election results: " + votes);
+                else
+                    if(log.isDebugEnabled()) log.debug("election results: " + votes);
         }
 
 
@@ -322,7 +322,7 @@ public class ClientGmsImpl extends GmsImpl {
     void becomeSingletonMember(Address mbr) {
         Digest initial_digest;
         ViewId view_id=null;
-        Vector mbrs=new Vector();
+        Vector mbrs=new Vector(1);
 
         // set the initial digest (since I'm the first member)
         initial_digest=new Digest(1);             // 1 member (it's only me)
@@ -337,7 +337,7 @@ public class ClientGmsImpl extends GmsImpl {
         gms.passUp(new Event(Event.BECOME_SERVER));
         gms.passDown(new Event(Event.BECOME_SERVER));
         if(log.isDebugEnabled()) log.debug("created group (first member). My view is " + gms.view_id +
-                ", impl is " + gms.getImpl().getClass().getName());
+                                           ", impl is " + gms.getImpl().getClass().getName());
     }
 
 

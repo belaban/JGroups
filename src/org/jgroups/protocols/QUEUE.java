@@ -1,4 +1,4 @@
-// $Id: QUEUE.java,v 1.3 2004/04/23 19:36:13 belaban Exp $
+// $Id: QUEUE.java,v 1.4 2004/07/05 05:51:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -146,7 +146,7 @@ public class QUEUE extends Protocol {
 		for(int i=0; i < event_list.size(); i++)
 		    passDown((Event)event_list.elementAt(i));
 	    
-	     if(log.isInfoEnabled()) log.info("replaying down events ("+ dn_vec.size() +")");
+	     if(log.isInfoEnabled()) log.info("replaying down events ("+ dn_vec.size() +')');
 	    
 	    for(int i=0; i < dn_vec.size(); i++) {
 		passDown((Event)dn_vec.elementAt(i));

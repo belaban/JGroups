@@ -1,4 +1,4 @@
-// $Id: TcpHeader.java,v 1.1 2003/09/09 01:24:11 belaban Exp $
+// $Id: TcpHeader.java,v 1.2 2004/07/05 05:51:25 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -23,7 +23,7 @@ public class TcpHeader extends Header {
     }
 
     public String toString() {
-        return "[TCP:group_addr=" + group_addr + "]";
+        return "[TCP:group_addr=" + group_addr + ']';
     }
 
     public void writeExternal(ObjectOutput out) throws IOException {

@@ -1,4 +1,4 @@
-// $Id: DELAY.java,v 1.3 2004/04/23 19:36:12 belaban Exp $
+// $Id: DELAY.java,v 1.4 2004/07/05 05:51:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -34,13 +34,13 @@ public class DELAY extends Protocol {
 
         str=props.getProperty("in_delay");
         if(str != null) {
-            in_delay=new Integer(str).intValue();
+            in_delay=Integer.parseInt(str);
             props.remove("in_delay");
         }
 
         str=props.getProperty("out_delay");
         if(str != null) {
-            out_delay=new Integer(str).intValue();
+            out_delay=Integer.parseInt(str);
             props.remove("out_delay");
         }
 

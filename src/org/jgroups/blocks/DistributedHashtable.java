@@ -1,4 +1,4 @@
-// $Id: DistributedHashtable.java,v 1.11 2004/05/15 00:19:56 belaban Exp $
+// $Id: DistributedHashtable.java,v 1.12 2004/07/05 05:41:45 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -35,7 +35,7 @@ import java.util.*;
  * initial state (using the state exchange funclet <code>StateExchangeFunclet</code>.
  * @author Bela Ban
  * @author <a href="mailto:aolias@yahoo.com">Alfonso Olias-Sanz</a>
- * @version $Id: DistributedHashtable.java,v 1.11 2004/05/15 00:19:56 belaban Exp $
+ * @version $Id: DistributedHashtable.java,v 1.12 2004/07/05 05:41:45 belaban Exp $
  */
 public class DistributedHashtable extends Hashtable implements MessageListener, MembershipListener, Cloneable {
 
@@ -148,7 +148,7 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
         this.channel = (Channel)adapter.getTransport();
         this.groupname = this.channel.getChannelName();
         disp=new RpcDispatcher(adapter, id, this, this, this);
-        channel.setOpt(Channel.GET_STATE_EVENTS, new Boolean(true));
+        channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.valueOf(true));
         start(state_timeout);
     }
 
@@ -157,7 +157,7 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
         this.channel = (Channel)adapter.getTransport();
         this.groupname = this.channel.getChannelName();
         disp=new RpcDispatcher(adapter, id, this, this, this);
-        channel.setOpt(Channel.GET_STATE_EVENTS, new Boolean(true));
+        channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.valueOf(true));
     }
 
     protected void init(long state_timeout) throws ChannelClosedException, ChannelNotConnectedException {

@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.10 2004/04/28 19:56:57 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.11 2004/07/05 05:49:41 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -226,7 +226,7 @@ public class STATE_TRANSFER extends Protocol {
         // STATE_TRANSFER up and STATE_TRANSFER_OK down
         str=props.getProperty("timeout_get_appl_state");
         if(str != null) {
-            timeout_get_appl_state=new Long(str).longValue();
+            timeout_get_appl_state=Long.parseLong(str);
             props.remove("timeout_get_appl_state");
         }
 
@@ -234,7 +234,7 @@ public class STATE_TRANSFER extends Protocol {
         // forever. States are retrieved using GroupRequest/RequestCorrelator
         str=props.getProperty("timeout_return_state");
         if(str != null) {
-            timeout_return_state=new Long(str).longValue();
+            timeout_return_state=Long.parseLong(str);
             props.remove("timeout_return_state");
         }
 

@@ -1,4 +1,4 @@
-// $Id: FRAG2.java,v 1.7 2004/06/23 15:57:25 belaban Exp $
+// $Id: FRAG2.java,v 1.8 2004/07/05 05:51:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -27,7 +27,7 @@ import java.util.*;
  * size addition for headers and src and dest address is minimal when the transport finally has to serialize the
  * message, so we add a constant (1000 bytes).
  * @author Bela Ban
- * @version $Id: FRAG2.java,v 1.7 2004/06/23 15:57:25 belaban Exp $
+ * @version $Id: FRAG2.java,v 1.8 2004/07/05 05:51:24 belaban Exp $
  */
 public class FRAG2 extends Protocol {
 
@@ -44,7 +44,7 @@ public class FRAG2 extends Protocol {
     private FragmentationList     fragment_list=new FragmentationList();
     private int                   curr_id=1;
     private Address               local_addr=null;
-    private Vector                members=new Vector();
+    private Vector                members=new Vector(11);
     private final String          name="FRAG2";
 
 
@@ -60,13 +60,13 @@ public class FRAG2 extends Protocol {
         super.setProperties(props);
         str=props.getProperty("frag_size");
         if(str != null) {
-            frag_size=new Integer(str).intValue();
+            frag_size=Integer.parseInt(str);
             props.remove("frag_size");
         }
 
         str=props.getProperty("overhead");
         if(str != null) {
-            overhead=new Integer(str).intValue();
+            overhead=Integer.parseInt(str);
             props.remove("overhead");
         }
 
@@ -106,7 +106,7 @@ public class FRAG2 extends Protocol {
                      {
                         StringBuffer sb=new StringBuffer("message's buffer size is ");
                         sb.append(size).append(", will fragment ").append("(frag_size=");
-                        sb.append(frag_size).append(")");
+                        sb.append(frag_size).append(')');
                         if(log.isInfoEnabled()) log.info(sb.toString());
                     }
                     fragment(msg);  // Fragment and pass down
@@ -210,7 +210,7 @@ public class FRAG2 extends Protocol {
              {
                 sb=new StringBuffer("fragmenting packet to ");
                 sb.append((dest != null ? dest.toString() : "<all members>")).append(" (size=").append(buffer.length);
-                sb.append(") into ").append(num_frags).append(" fragment(s) [frag_size=").append(frag_size).append("]");
+                sb.append(") into ").append(num_frags).append(" fragment(s) [frag_size=").append(frag_size).append(']');
                 if(log.isInfoEnabled()) log.info(sb.toString());
             }
 
@@ -298,7 +298,7 @@ public class FRAG2 extends Protocol {
         }
 
         public String toString() {
-            return "[FRAG2: id=" + id + ", frag_id=" + frag_id + ", num_frags=" + num_frags + "]";
+            return "[FRAG2: id=" + id + ", frag_id=" + frag_id + ", num_frags=" + num_frags + ']';
         }
 
         public void writeExternal(ObjectOutput out) throws IOException {
@@ -529,7 +529,7 @@ public class FRAG2 extends Protocol {
              */
             public String toString() {
                 StringBuffer ret=new StringBuffer();
-                ret.append("[tot_frags=" + tot_frags + ", number_of_frags_recvd=" + number_of_frags_recvd + "]");
+                ret.append("[tot_frags=" + tot_frags + ", number_of_frags_recvd=" + number_of_frags_recvd + ']');
                 return ret.toString();
             }
 

@@ -1,4 +1,4 @@
-// $Id: Whiteboard.java,v 1.1 2003/09/09 01:24:09 belaban Exp $
+// $Id: Whiteboard.java,v 1.2 2004/07/05 05:44:56 belaban Exp $
 
 package org.jgroups.demos.wb;
 
@@ -48,8 +48,8 @@ public class Whiteboard extends Applet implements ActionListener, MessageListene
 
     private String getInfo() {
         StringBuffer ret = new StringBuffer();
-        ret.append(" (" + System.getProperty("os.name") + " " + System.getProperty("os.version") +
-                " " + System.getProperty("os.arch") + ")");
+        ret.append(" (" + System.getProperty("os.name") + ' ' + System.getProperty("os.version") +
+                   ' ' + System.getProperty("os.arch") + ')');
         return ret.toString();
     }
 
@@ -159,7 +159,7 @@ public class Whiteboard extends Applet implements ActionListener, MessageListene
     public void actionPerformed(ActionEvent e) {
         String command = e.getActionCommand();
 
-        if (command.equals("Exit")) {
+        if ("Exit".equals(command)) {
             try {
                 setVisible(false);
                 destroy();
@@ -240,7 +240,7 @@ public class Whiteboard extends Applet implements ActionListener, MessageListene
         String props = null;
 
         for (int i = 0; i < args.length; i++) {
-            if (args[i].equals("-props")) {
+            if ("-props".equals(args[i])) {
                 props = args[++i];
                 continue;
             }

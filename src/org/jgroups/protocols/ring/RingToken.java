@@ -1,4 +1,4 @@
-//$Id: RingToken.java,v 1.2 2004/03/30 06:47:20 belaban Exp $
+//$Id: RingToken.java,v 1.3 2004/07/05 05:51:18 belaban Exp $
 
 package org.jgroups.protocols.ring;
 
@@ -234,7 +234,7 @@ public class RingToken implements Externalizable
       buf.append(",windowSize=").append(windowSize);
       buf.append(",windowThreshold=").append(windowThreshold);
       buf.append(",retransmissionList=").append(getRetransmissionRequests());
-      buf.append("]");
+      buf.append(']');
       return buf.toString();
    }
 }

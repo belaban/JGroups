@@ -1,4 +1,4 @@
-// $Id: Link.java,v 1.2 2004/03/30 06:47:12 belaban Exp $
+// $Id: Link.java,v 1.3 2004/07/05 05:41:45 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -191,12 +191,12 @@ public class Link implements Runnable {
 		/** This piece of code would only accept connections from the peer address defined above. */
 		if(remote.equals(incoming.getInetAddress())) {
 		    if(trace)
-			System.out.println("Link.run(): accepted connection from " + peer + ":" + peer_port);
+			System.out.println("Link.run(): accepted connection from " + peer + ':' + peer_port);
 		}
 		else {
 		    if(trace) 
 			System.err.println("Link.run(): rejected connection request from " + 
-					   peer + ":" + peer_port + ". Address not specified as peer in link !");
+					   peer + ':' + peer_port + ". Address not specified as peer in link !");
 		    closeIncomingConnection();  // only close incoming connection
 		    continue;
 		}
@@ -239,8 +239,8 @@ public class Link implements Runnable {
 
     public String toString() {
 	StringBuffer ret=new StringBuffer();
-	ret.append("Link <" + local_addr + ":" + local_port + " --> " +
-		   remote_addr + ":" + remote_port + ">");
+	ret.append("Link <" + local_addr + ':' + local_port + " --> " +
+		   remote_addr + ':' + remote_port + '>');
 	ret.append(established? " (established)" : " (not established)");
 	return ret.toString();
     }
@@ -419,11 +419,11 @@ public class Link implements Runnable {
 	if(s == null) return "<null>";
 	StringBuffer ret=new StringBuffer();
 	ret.append(s.getLocalAddress().getHostName());
-	ret.append(":");
+	ret.append(':');
 	ret.append(s.getLocalPort());
 	ret.append(" --> ");
 	ret.append(s.getInetAddress().getHostName());
-	ret.append(":");
+	ret.append(':');
 	ret.append(s.getPort());
 	return ret.toString();
     }
@@ -519,7 +519,7 @@ public class Link implements Runnable {
 	public void run() {
 	    long  diff=0, curr_time=0, num_missed_hbs=0;
 	    
-	    if(trace) System.out.println("heartbeat to " + remote + ":" + remote_port + " started");
+	    if(trace) System.out.println("heartbeat to " + remote + ':' + remote_port + " started");
 	    while(!stop_hb) {
 
 		if(established) {  // send heartbeats
@@ -579,7 +579,7 @@ public class Link implements Runnable {
 		    }
 		}
 	    }
-	    if(trace) System.out.println("heartbeat to " + remote + ":" + remote_port + " stopped");
+	    if(trace) System.out.println("heartbeat to " + remote + ':' + remote_port + " stopped");
 	    thread=null;
 	}
     }
@@ -598,19 +598,19 @@ public class Link implements Runnable {
 	}
 	
 	public void linkDown(InetAddress l, int lp, InetAddress r, int rp) {
-	    System.out.println("** linkDown(): " + r + ":" + rp);
+	    System.out.println("** linkDown(): " + r + ':' + rp);
 	}
 	
 	public void linkUp(InetAddress l, int lp, InetAddress r, int rp) {
-	    System.out.println("** linkUp(): " + r + ":" + rp);
+	    System.out.println("** linkUp(): " + r + ':' + rp);
 	}
 	
 	public void missedHeartbeat(InetAddress l, int lp, InetAddress r, int rp, int num) {
-	    System.out.println("** missedHeartbeat(): " + r + ":" + rp);
+	    System.out.println("** missedHeartbeat(): " + r + ':' + rp);
 	}
 	
 	public void receivedHeartbeatAgain(InetAddress l, int lp, InetAddress r, int rp) {
-	    System.out.println("** receivedHeartbeatAgain(): " + r + ":" + rp);
+	    System.out.println("** receivedHeartbeatAgain(): " + r + ':' + rp);
 	}
     }
 
@@ -627,8 +627,8 @@ public class Link implements Runnable {
 	}
 	local=args[0];
 	remote=args[2];
-	local_port=new Integer(args[1]).intValue();
-	remote_port=new Integer(args[3]).intValue();
+	local_port=Integer.parseInt(args[1]);
+	remote_port=Integer.parseInt(args[3]);
 
 	Link l=new Link(local, local_port, remote, remote_port, new MyReceiver());
 

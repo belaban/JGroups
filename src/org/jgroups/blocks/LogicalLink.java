@@ -1,4 +1,4 @@
-// $Id: LogicalLink.java,v 1.1 2003/09/09 01:24:08 belaban Exp $
+// $Id: LogicalLink.java,v 1.2 2004/07/05 05:41:45 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -245,12 +245,12 @@ public class LogicalLink implements Link.Receiver {
 	
 	/** All of the physical links are down --> logical link is down too */
 	public synchronized void linkDown(InetAddress l, int lp, InetAddress r, int rp) {
-	    System.out.println("** linkDown(): " + r + ":" + rp);
+	    System.out.println("** linkDown(): " + r + ':' + rp);
 	}
 	
 	/** At least 1 physical links is up again */
 	public synchronized void linkUp(InetAddress l, int lp, InetAddress r, int rp) {
-	    System.out.println("** linkUp(): " + r + ":" + rp);
+	    System.out.println("** linkUp(): " + r + ':' + rp);
 	}
 	
 	public synchronized void missedHeartbeat(InetAddress l, int lp, InetAddress r, int rp, int num) {
@@ -281,9 +281,9 @@ public class LogicalLink implements Link.Receiver {
 	
 	while(i < args.length) {
 	    local_host=args[i++];
-	    local_port=new Integer(args[i++]).intValue();
+	    local_port=Integer.parseInt(args[i++]);
 	    remote_host=args[i++];
-	    remote_port=new Integer(args[i++]).intValue();
+	    remote_port=Integer.parseInt(args[i++]);
 	    ll.addLink(local_host, local_port, remote_host, remote_port);
 	}
 	

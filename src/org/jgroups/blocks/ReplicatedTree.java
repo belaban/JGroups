@@ -1,4 +1,4 @@
-// $Id: ReplicatedTree.java,v 1.5 2004/06/25 01:10:12 belaban Exp $
+// $Id: ReplicatedTree.java,v 1.6 2004/07/05 05:41:45 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -414,7 +414,7 @@ public class ReplicatedTree implements Runnable, Cloneable, MessageListener, Mem
             Collection nodes=children.values();
             for(Iterator it=nodes.iterator(); it.hasNext();) {
                 ((Node)it.next()).print(sb, indent);
-                sb.append("\n");
+                sb.append('\n');
             }
         }
         else
@@ -685,7 +685,7 @@ public class ReplicatedTree implements Runnable, Cloneable, MessageListener, Mem
         String name;
         StringBuffer sb=null;
 
-        if(fqn == null || fqn.equals(SEPARATOR) || fqn.equals(""))
+        if(fqn == null || fqn.equals(SEPARATOR) || "".equals(fqn))
             return curr;
 
         sb=new StringBuffer();
@@ -719,7 +719,7 @@ public class ReplicatedTree implements Runnable, Cloneable, MessageListener, Mem
         Node n=findParentNode(fqn, sh, false);
         String child_name=sh.getValue();
 
-        if(fqn == null || fqn.equals(SEPARATOR) || fqn.equals(""))
+        if(fqn == null || fqn.equals(SEPARATOR) || "".equals(fqn))
             return root;
 
         if(n == null || child_name == null)
@@ -884,7 +884,7 @@ public class ReplicatedTree implements Runnable, Cloneable, MessageListener, Mem
             if(children != null && children.size() > 0) {
                 Collection values=children.values();
                 for(Iterator it=values.iterator(); it.hasNext();) {
-                    sb.append("\n");
+                    sb.append('\n');
                     ((Node)it.next()).print(sb, indent + INDENT);
                 }
             }
@@ -893,7 +893,7 @@ public class ReplicatedTree implements Runnable, Cloneable, MessageListener, Mem
         void printIndent(StringBuffer sb, int indent) {
             if(sb != null) {
                 for(int i=0; i < indent; i++)
-                    sb.append(" ");
+                    sb.append(' ');
             }
         }
 
@@ -986,7 +986,7 @@ public class ReplicatedTree implements Runnable, Cloneable, MessageListener, Mem
                 default:
                     break;
             }
-            sb.append(")");
+            sb.append(')');
             return sb.toString();
         }
 

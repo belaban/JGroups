@@ -1,4 +1,4 @@
-// $Id: ViewDemo.java,v 1.3 2004/03/30 06:47:16 belaban Exp $
+// $Id: ViewDemo.java,v 1.4 2004/07/05 05:45:31 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -28,7 +28,7 @@ public class ViewDemo implements MembershipListener {
 
     /** Called when a member is suspected */
     public void suspect(Address suspected_mbr) {
-	System.out.println("Suspected(" + suspected_mbr + ")");
+	System.out.println("Suspected(" + suspected_mbr + ')');
     }
 
 
@@ -83,11 +83,11 @@ public class ViewDemo implements MembershipListener {
 
 
 	for(int i=0; i < args.length; i++) {
-	    if(args[i].equals("-help")) {
+	    if("-help".equals(args[i])) {
 		help();
 		return;
 	    }
-	    if(args[i].equals("-props")) {
+	    if("-props".equals(args[i])) {
 		props=args[++i];
 		continue;
 	    }

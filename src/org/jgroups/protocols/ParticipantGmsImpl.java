@@ -1,4 +1,4 @@
-// $Id: ParticipantGmsImpl.java,v 1.3 2004/03/30 06:47:21 belaban Exp $
+// $Id: ParticipantGmsImpl.java,v 1.4 2004/07/05 05:51:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -15,8 +15,8 @@ public class ParticipantGmsImpl extends GmsImpl {
     boolean leaving=false;
     boolean received_final_view=false;
     Object leave_mutex=new Object();
-    Vector suspected_mbrs=new Vector();
-    Vector new_mbrs=new Vector();
+    Vector suspected_mbrs=new Vector(5);
+    Vector new_mbrs=new Vector(11);
 
 
     public ParticipantGmsImpl(GMS g) {

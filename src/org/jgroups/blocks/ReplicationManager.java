@@ -1,4 +1,4 @@
-// $Id: ReplicationManager.java,v 1.5 2004/03/30 06:47:12 belaban Exp $
+// $Id: ReplicationManager.java,v 1.6 2004/07/05 05:41:45 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -206,7 +206,7 @@ public class ReplicationManager implements RequestHandler {
                                               lock_lease_timeout,
                                               use_locks);
 
-            if(log.isInfoEnabled()) log.info("data is " + d + " (synchronous=" + synchronous + ")");
+            if(log.isInfoEnabled()) log.info("data is " + d + " (synchronous=" + synchronous + ')');
         msg=new Message(dest, null, d);
         if(synchronous) {
             return disp.castMessage(null, msg, GroupRequest.GET_ALL, synchronous_timeout);

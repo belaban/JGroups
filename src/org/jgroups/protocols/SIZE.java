@@ -1,4 +1,4 @@
-// $Id: SIZE.java,v 1.7 2004/04/23 19:36:13 belaban Exp $
+// $Id: SIZE.java,v 1.8 2004/07/05 05:51:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -49,7 +49,7 @@ public class SIZE extends Protocol {
 
         str=props.getProperty("print_msg");
         if(str != null) {
-            print_msg=new Boolean(str).booleanValue();
+            print_msg=Boolean.valueOf(str).booleanValue();
             props.remove("print_msg");
         }
 

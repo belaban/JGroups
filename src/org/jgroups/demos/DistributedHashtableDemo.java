@@ -1,4 +1,4 @@
-// $Id: DistributedHashtableDemo.java,v 1.3 2004/03/30 06:47:16 belaban Exp $
+// $Id: DistributedHashtableDemo.java,v 1.4 2004/07/05 05:45:31 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -176,7 +176,7 @@ public class DistributedHashtableDemo extends Frame implements WindowListener, A
                     showMsg("Key is empty !");
                     return;
                 }
-                showMsg("Looking up value for " + stock_name + ":");
+                showMsg("Looking up value for " + stock_name + ':');
                 Float val=(Float)h.get(stock_name);
                 if(val != null) {
                     value_field.setText(val.toString());
@@ -272,7 +272,7 @@ public class DistributedHashtableDemo extends Frame implements WindowListener, A
         try {
             for(int i=0; i < args.length; i++) {
                 arg=args[i];
-                if(arg.equals("-persist") && i+1<args.length) {
+                if("-persist".equals(arg) && i+1<args.length) {
                     persist=true;
                     PersistenceFactory.getInstance().createManager(args[++i]);
                     continue;

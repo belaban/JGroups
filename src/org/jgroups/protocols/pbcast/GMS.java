@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.11 2004/04/23 19:36:11 belaban Exp $
+// $Id: GMS.java,v 1.12 2004/07/05 05:49:41 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -28,17 +28,16 @@ import java.util.Vector;
  */
 public class GMS extends Protocol {
     private GmsImpl    impl=null;
-    public Properties  props=null;
     public Address     local_addr=null;
     public String      group_addr=null;
     public Membership  members=new Membership();     // real membership
     public Membership  tmp_members=new Membership(); // base for computing next view
 
     /** Members joined but for which no view has been received yet */
-    public Vector      joining=new Vector();
+    public Vector      joining=new Vector(7);
 
     /** Members excluded from group, but for which no view has been received yet */
-    public Vector      leaving=new Vector();
+    public Vector      leaving=new Vector(7);
 
     public ViewId      view_id=null;
     public long        ltime=0;
@@ -50,7 +49,7 @@ public class GMS extends Protocol {
     public Object      impl_mutex=new Object();    // synchronizes event entry into impl
     private Object     digest_mutex=new Object();  // synchronizes the GET_DIGEST/GET_DIGEST_OK events
     private Digest     digest=null;                // holds result of GET_DIGEST event
-    private Hashtable  impls=new Hashtable();
+    private Hashtable  impls=new Hashtable(3);
     private boolean    shun=true;
     private boolean    print_local_addr=true;
     boolean            disable_initial_coord=false; // can the member become a coord on startup or not ?
@@ -77,7 +76,7 @@ public class GMS extends Protocol {
 
 
     public Vector requiredDownServices() {
-        Vector retval=new Vector();
+        Vector retval=new Vector(3);
         retval.addElement(new Integer(Event.GET_DIGEST));
         retval.addElement(new Integer(Event.SET_DIGEST));
         retval.addElement(new Integer(Event.FIND_INITIAL_MBRS));
@@ -312,7 +311,7 @@ public class GMS extends Protocol {
             if(rc <= 0) {
                 if(log.isErrorEnabled())
                     log.error("[" + local_addr + "] received view <= current view;" +
-                            " discarding it (current vid: " + view_id + ", new vid: " + vid + ")");
+                            " discarding it (current vid: " + view_id + ", new vid: " + vid + ')');
                 return;
             }
         }
@@ -332,7 +331,7 @@ public class GMS extends Protocol {
             if(shun && local_addr != null && prev_members.contains(local_addr)) {
                 if(log.isWarnEnabled())
                     log.warn("I (" + local_addr + ") am being shunned, will leave and " +
-                            "rejoin group (prev_members are " + prev_members + ")");
+                            "rejoin group (prev_members are " + prev_members + ')');
                 passUp(new Event(Event.EXIT));
             }
             return;
@@ -633,49 +632,49 @@ public class GMS extends Protocol {
         super.setProperties(props);
         str=props.getProperty("shun");
         if(str != null) {
-            shun=new Boolean(str).booleanValue();
+            shun=Boolean.valueOf(str).booleanValue();
             props.remove("shun");
         }
 
         str=props.getProperty("print_local_addr");
         if(str != null) {
-            print_local_addr=new Boolean(str).booleanValue();
+            print_local_addr=Boolean.valueOf(str).booleanValue();
             props.remove("print_local_addr");
         }
 
         str=props.getProperty("join_timeout");           // time to wait for JOIN
         if(str != null) {
-            join_timeout=new Long(str).longValue();
+            join_timeout=Long.parseLong(str);
             props.remove("join_timeout");
         }
 
         str=props.getProperty("join_retry_timeout");     // time to wait between JOINs
         if(str != null) {
-            join_retry_timeout=new Long(str).longValue();
+            join_retry_timeout=Long.parseLong(str);
             props.remove("join_retry_timeout");
         }
 
         str=props.getProperty("leave_timeout");           // time to wait until coord responds to LEAVE req.
         if(str != null) {
-            leave_timeout=new Long(str).longValue();
+            leave_timeout=Long.parseLong(str);
             props.remove("leave_timeout");
         }
 
         str=props.getProperty("merge_timeout");           // time to wait for MERGE_RSPS from subgroup coordinators
         if(str != null) {
-            merge_timeout=new Long(str).longValue();
+            merge_timeout=Long.parseLong(str);
             props.remove("merge_timeout");
         }
 
         str=props.getProperty("digest_timeout");          // time to wait for GET_DIGEST_OK from PBCAST
         if(str != null) {
-            digest_timeout=new Long(str).longValue();
+            digest_timeout=Long.parseLong(str);
             props.remove("digest_timeout");
         }
 
         str=props.getProperty("disable_initial_coord");
         if(str != null) {
-            disable_initial_coord=new Boolean(str).booleanValue();
+            disable_initial_coord=Boolean.valueOf(str).booleanValue();
             props.remove("disable_initial_coord");
         }
 
@@ -801,7 +800,7 @@ public class GMS extends Protocol {
 
         public String toString() {
             StringBuffer sb=new StringBuffer("GmsHeader");
-            sb.append("[" + type2String(type) + "]");
+            sb.append('[' + type2String(type) + ']');
             switch(type) {
 
                 case JOIN_REQ:
@@ -840,7 +839,7 @@ public class GMS extends Protocol {
                     sb.append(", <merge cancelled>, merge_id=" + merge_id);
                     break;
             }
-            sb.append("\n");
+            sb.append('\n');
             return sb.toString();
         }
 

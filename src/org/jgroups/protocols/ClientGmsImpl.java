@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.3 2004/03/30 06:47:20 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.4 2004/07/05 05:51:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -25,10 +25,10 @@ import java.util.Vector;
  * tell the client what its initial membership is.
  * 
  * @author Bela Ban
- * @version $Revision: 1.3 $
+ * @version $Revision: 1.4 $
  */
 public class ClientGmsImpl extends GmsImpl {
-    Vector initial_mbrs=new Vector();
+    Vector initial_mbrs=new Vector(7);
     Object view_installation_mutex=new Object();
     boolean joined=false;
 
@@ -266,7 +266,7 @@ public class ClientGmsImpl extends GmsImpl {
         if(mbrs == null || mbrs.size() < 1)
             return null;
 
-        votes=new Hashtable();
+        votes=new Hashtable(5);
 
         // count *all* the votes (unlike the 2000 election)
         for(int i=0; i < mbrs.size(); i++) {

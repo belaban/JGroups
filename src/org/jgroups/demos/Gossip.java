@@ -1,4 +1,4 @@
-// $Id: Gossip.java,v 1.4 2004/03/30 06:47:16 belaban Exp $
+// $Id: Gossip.java,v 1.5 2004/07/05 05:45:31 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -67,12 +67,12 @@ public class Gossip implements Runnable, WindowListener, ActionListener, Channel
 
 
         for(int i=0; i < args.length; i++) {
-            if(args[i].equals("-help")) {
+            if("-help".equals(args[i])) {
                 System.out.println("Gossip [-traffic_interval <interval in msecs>] [-help]");
                 return;
             }
-            if(args[i].equals("-traffic_interval")) {
-                traffic=new Long(args[++i]).longValue();
+            if("-traffic_interval".equals(args[i])) {
+                traffic=Long.parseLong(args[++i]);
                 continue;
             }
         }
@@ -395,14 +395,14 @@ public class Gossip implements Runnable, WindowListener, ActionListener, Channel
 
     public void actionPerformed(ActionEvent e) {
         String command=e.getActionCommand();
-        if(command.equals("Gossip")) {
+        if("Gossip".equals(command)) {
             sendGossip();
         }
         else
-            if(command.equals("Clear"))
+            if("Clear".equals(command))
                 sendClearPanelMsg();
             else
-                if(command.equals("Leave & Exit")) {
+                if("Leave & Exit".equals(command)) {
                     try {
                         channel.disconnect();
                         channel.close();
@@ -438,7 +438,7 @@ public class Gossip implements Runnable, WindowListener, ActionListener, Channel
     }
 
     public void channelReconnected(Address new_addr) {
-        System.out.println("----> channelReconnected(" + new_addr + ")");
+        System.out.println("----> channelReconnected(" + new_addr + ')');
         local_addr=new_addr;
     }
 
@@ -468,7 +468,7 @@ public class Gossip implements Runnable, WindowListener, ActionListener, Channel
             StringBuffer ret=new StringBuffer();
             switch(mode) {
                 case GOSSIP:
-                    ret.append("GOSSIP(" + r + "|" + g + "|" + b);
+                    ret.append("GOSSIP(" + r + '|' + g + '|' + b);
                     break;
                 case CLEAR:
                     ret.append("CLEAR");

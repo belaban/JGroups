@@ -1,4 +1,4 @@
-// $Id: PingRsp.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
+// $Id: PingRsp.java,v 1.3 2004/07/05 05:51:24 belaban Exp $
 
 package org.jgroups.protocols;
 import org.jgroups.Address;
@@ -22,6 +22,6 @@ public class PingRsp implements java.io.Serializable {
     public Address getCoordAddress() {return coord_addr;}
 
     public String toString() {
-	return "[own_addr=" + own_addr + ", coord_addr=" + coord_addr + "]";
+	return "[own_addr=" + own_addr + ", coord_addr=" + coord_addr + ']';
     }
 }

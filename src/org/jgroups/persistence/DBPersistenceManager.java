@@ -36,7 +36,7 @@ public class DBPersistenceManager implements PersistenceManager {
 
         // 1. Try ${user.home}/persist.properties
         try {
-            home_dir=home_dir + "/" + filename;
+            home_dir=home_dir + '/' + filename;
             init(new FileInputStream(home_dir));
             return;
         }
@@ -46,7 +46,7 @@ public class DBPersistenceManager implements PersistenceManager {
 
         // 2. Try to find persist.properties from somewhere on the CLASSPATH
         try {
-            InputStream in=DBPersistenceManager.class.getResourceAsStream("/" + filename);
+            InputStream in=DBPersistenceManager.class.getResourceAsStream('/' + filename);
             if(in != null) {
                 init(in);
                 return;
@@ -186,7 +186,7 @@ public class DBPersistenceManager implements PersistenceManager {
         try {
             conn=this.getConnection();
             stat=conn.createStatement();
-            String exQuery=" select * from replhashmap where key like '" + key.toString() + "'";
+            String exQuery=" select * from replhashmap where key like '" + key.toString() + '\'';
             set=stat.executeQuery(exQuery);
             set.next();
             val=getSerializable(set.getBinaryStream(3));

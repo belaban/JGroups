@@ -1,4 +1,4 @@
-// $Id: AUTOCONF.java,v 1.7 2004/04/23 19:36:12 belaban Exp $
+// $Id: AUTOCONF.java,v 1.8 2004/07/05 05:51:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -61,13 +61,13 @@ public class AUTOCONF extends Protocol {
         super.setProperties(props);
         str=props.getProperty("num_iterations");
         if(str != null) {
-            num_iterations=new Integer(str).intValue();
+            num_iterations=Integer.parseInt(str);
             props.remove("num_iterations");
         }
 
         str=props.getProperty("frag_overhead");
         if(str != null) {
-            frag_overhead=new Integer(str).intValue();
+            frag_overhead=Integer.parseInt(str);
             props.remove("frag_overhead");
         }
 

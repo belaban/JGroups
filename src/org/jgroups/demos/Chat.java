@@ -1,4 +1,4 @@
-// $Id: Chat.java,v 1.5 2004/03/30 06:47:16 belaban Exp $
+// $Id: Chat.java,v 1.6 2004/07/05 05:45:31 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -45,7 +45,7 @@ public class Chat implements MouseListener, WindowListener, MessageListener, Mem
         String props=null;
 
         for(int i=0; i < args.length; i++) {
-            if(args[i].equals("-props")) {
+            if("-props".equals(args[i])) {
                 props=args[++i];
                 continue;
             }
@@ -146,7 +146,7 @@ public class Chat implements MouseListener, WindowListener, MessageListener, Mem
     /* ------------------- Interface MembershipListener ----------------- */
 
     public void viewAccepted(View new_view) {
-        ta.append("Received view " + new_view + "\n");
+        ta.append("Received view " + new_view + '\n');
     }
 
 
@@ -189,11 +189,11 @@ public class Chat implements MouseListener, WindowListener, MessageListener, Mem
             ad.start();
             System.out.println(" -- done");
 
-            ta.append("successfully rejoined the group" + "\n");
+            ta.append("successfully rejoined the group" + '\n');
         }
         catch(Exception e) {
             e.printStackTrace();
-            ta.append("Failed rejoined the group: " + e.toString() + "\n");
+            ta.append("Failed rejoined the group: " + e.toString() + '\n');
         }
     }
 
@@ -204,7 +204,7 @@ public class Chat implements MouseListener, WindowListener, MessageListener, Mem
             channel.send(msg);
         }
         catch(Exception e) {
-            ta.append("Failed casting: " + e.toString() + "\n");
+            ta.append("Failed casting: " + e.toString() + '\n');
         }
     }
 

@@ -32,7 +32,7 @@ import java.util.*;
  * the unicast routing caches should ensure that unicasts are only sent via 1 interface in almost all cases.
  * 
  * @author Bela Ban Oct 2003
- * @version $Id: UDP1_4.java,v 1.16 2004/05/14 16:26:11 belaban Exp $
+ * @version $Id: UDP1_4.java,v 1.17 2004/07/05 05:51:25 belaban Exp $
  * todo: sending of dummy packets
  */
 public class UDP1_4 extends Protocol implements  Receiver {
@@ -154,7 +154,7 @@ public class UDP1_4 extends Protocol implements  Receiver {
      * debug only
      */
     public String toString() {
-        return "Protocol UDP(local address: " + local_addr + ")";
+        return "Protocol UDP(local address: " + local_addr + ')';
     }
 
 
@@ -279,11 +279,11 @@ public class UDP1_4 extends Protocol implements  Receiver {
 
     String getDiagResponse() {
         StringBuffer sb=new StringBuffer();
-        sb.append(local_addr).append(" (").append(group_name).append(")");
+        sb.append(local_addr).append(" (").append(group_name).append(')');
         sb.append(" [").append(mcast_addr).append("]\n");
         sb.append("Version=").append(Version.version).append(", cvs=\"").append(Version.cvs).append("\"\n");
-        sb.append("physical addresses: ").append(local_addr.getPhysicalAddresses()).append("\n");
-        sb.append("members: ").append(members).append("\n");
+        sb.append("physical addresses: ").append(local_addr.getPhysicalAddresses()).append('\n');
+        sb.append("members: ").append(members).append('\n');
 
         return sb.toString();
     }
@@ -374,7 +374,7 @@ public class UDP1_4 extends Protocol implements  Receiver {
         str=props.getProperty("bind_addrs");
         if(str != null) {
             str=str.trim();
-            if(str.toLowerCase().equals("all")) {
+            if("all".equals(str.toLowerCase())) {
                 try {
                     bind_addrs=determineAllBindInterfaces();
                 }
@@ -398,43 +398,43 @@ public class UDP1_4 extends Protocol implements  Receiver {
 
         str=props.getProperty("bind_port");
         if(str != null) {
-            local_bind_port=new Integer(str).intValue();
+            local_bind_port=Integer.parseInt(str);
             props.remove("bind_port");
         }
 
         str=props.getProperty("start_port");
         if(str != null) {
-            local_bind_port=new Integer(str).intValue();
+            local_bind_port=Integer.parseInt(str);
             props.remove("start_port");
         }
 
         str=props.getProperty("port_range");
         if(str != null) {
-            port_range=new Integer(str).intValue();
+            port_range=Integer.parseInt(str);
             props.remove("port_range");
         }
 
         str=props.getProperty("mcast_addr");
         if(str != null) {
-            mcast_addr_name=new String(str);
+            mcast_addr_name=str;
             props.remove("mcast_addr");
         }
 
         str=props.getProperty("mcast_port");
         if(str != null) {
-            mcast_port=new Integer(str).intValue();
+            mcast_port=Integer.parseInt(str);
             props.remove("mcast_port");
         }
 
         str=props.getProperty("ip_mcast");
         if(str != null) {
-            ip_mcast=new Boolean(str).booleanValue();
+            ip_mcast=Boolean.valueOf(str).booleanValue();
             props.remove("ip_mcast");
         }
 
         str=props.getProperty("ip_ttl");
         if(str != null) {
-            ip_ttl=new Integer(str).intValue();
+            ip_ttl=Integer.parseInt(str);
             props.remove("ip_ttl");
         }
 
@@ -464,7 +464,7 @@ public class UDP1_4 extends Protocol implements  Receiver {
 
         str=props.getProperty("use_packet_handler");
         if(str != null) {
-            use_packet_handler=new Boolean(str).booleanValue();
+            use_packet_handler=Boolean.valueOf(str).booleanValue();
             props.remove("use_packet_handler");
         }
 
@@ -1378,7 +1378,7 @@ public class UDP1_4 extends Protocol implements  Receiver {
             String tmp=new String(buf, 0, len);
             if(len > 4) {
                 if(tmp.startsWith("rsp:")) {
-                    System.out.println("-- received respose: \"" + tmp + "\"");
+                    System.out.println("-- received respose: \"" + tmp + '\"');
                     return;
                 }
             }
@@ -1453,11 +1453,11 @@ public class UDP1_4 extends Protocol implements  Receiver {
         }
 
         for(int i=0; i < args.length; i++) {
-            if(args[i].equals("-help")) {
+            if("-help".equals(args[i])) {
                 help();
                 continue;
             }
-            if(args[i].equals("-bind_addrs")) {
+            if("-bind_addrs".equals(args[i])) {
                 while(++i < args.length && !args[i].trim().startsWith("-")) {
                     try {
                         ct.listenOn(args[i], 0, 1, receive_buffer_size, 120000, 12000, 32, r);

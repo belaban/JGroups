@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.9 2004/05/13 06:15:07 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.10 2004/07/05 05:41:45 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -180,12 +180,6 @@ public class RequestCorrelator {
     }
 
 
-    /**
-     * Stop the dispatch thread pool
-     */
-    public void finalize() {
-        stop();
-    }
 
 
     /**
@@ -443,7 +437,7 @@ public class RequestCorrelator {
         if(dests != null && local_addr != null && !dests.contains(local_addr)) {
             if(log.isDebugEnabled())
                 log.debug("discarded request from " + msg.getSrc() +
-                        " as we are not part of destination list (local_addr=" + local_addr + ", hdr=" + hdr + ")");
+                        " as we are not part of destination list (local_addr=" + local_addr + ", hdr=" + hdr + ')');
             return false;
         }
 
@@ -719,7 +713,7 @@ public class RequestCorrelator {
             ret.append("[Header: name=" + name + ", type=");
             ret.append(type == REQ ? "REQ" : type == RSP ? "RSP" : "<unknown>");
             ret.append(", id=" + id);
-            ret.append(", rsp_expected=" + rsp_expected + "]");
+            ret.append(", rsp_expected=" + rsp_expected + ']');
             if(dest_mbrs != null)
                 ret.append(", dest_mbrs=").append(dest_mbrs);
             return ret.toString();

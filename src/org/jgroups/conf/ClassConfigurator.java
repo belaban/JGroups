@@ -1,4 +1,4 @@
-// $Id: ClassConfigurator.java,v 1.3 2004/04/23 01:39:02 belaban Exp $
+// $Id: ClassConfigurator.java,v 1.4 2004/07/05 05:43:51 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -60,7 +60,7 @@ public class ClassConfigurator {
                         }
                         if(magicMap.containsKey(m)) {
                             if(log.isErrorEnabled())
-                                log.error("magic key " + m + " (" + clazz.getName() + ")" +
+                                log.error("magic key " + m + " (" + clazz.getName() + ')' +
                                         " is already in map (won't be overwritten). Please make sure that " +
                                         "all magic keys are unique");
                         }
@@ -140,7 +140,7 @@ public class ClassConfigurator {
 
         for(Iterator it=magicMap.entrySet().iterator(); it.hasNext();) {
             entry=(Map.Entry)it.next();
-            sb.append(entry.getKey()).append(":\t").append(entry.getValue()).append("\n");
+            sb.append(entry.getKey()).append(":\t").append(entry.getValue()).append('\n');
         }
         return sb.toString();
     }
@@ -151,7 +151,7 @@ public class ClassConfigurator {
 
         for(Iterator it=classMap.entrySet().iterator(); it.hasNext();) {
             entry=(Map.Entry)it.next();
-            sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
+            sb.append(entry.getKey()).append(": ").append(entry.getValue()).append('\n');
         }
         return sb.toString();
     }
@@ -165,6 +165,6 @@ public class ClassConfigurator {
             throws Exception {
 
         ClassConfigurator test=getInstance();
-        System.out.println("\n" + test.printMagicMap());
+        System.out.println('\n' + test.printMagicMap());
     }
 }

@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.5 2004/03/30 06:47:12 belaban Exp $
+// $Id: ConnectionTable.java,v 1.6 2004/07/05 05:41:45 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -414,10 +414,10 @@ public class ConnectionTable implements Runnable {
             for(Enumeration e=conns.keys(); e.hasMoreElements();) {
                 key=(Address)e.nextElement();
                 val=(Connection)conns.get(key);
-                ret.append("key: " + key.toString() + ": " + val.toString() + "\n");
+                ret.append("key: " + key.toString() + ": " + val.toString() + '\n');
             }
         }
-        ret.append("\n");
+        ret.append('\n');
         return ret.toString();
     }
 
@@ -615,7 +615,7 @@ public class ConnectionTable implements Runnable {
                 in.read(version, 0, version.length);
 
                 if(Version.compareTo(version) == false) {
-                    if(log.isWarnEnabled()) log.warn("packet from " + client_addr + ":" + client_port +
+                    if(log.isWarnEnabled()) log.warn("packet from " + client_addr + ':' + client_port +
                                " has different version (" +
                                Version.printVersionId(version, Version.version_id.length) +
                                ") from ours (" + Version.printVersionId(Version.version_id) +
@@ -751,8 +751,8 @@ public class ConnectionTable implements Runnable {
                 remote=tmp_sock.getInetAddress();
                 local_str=local != null ? Util.shortName(local.getHostName()) : "<null>";
                 remote_str=remote != null ? Util.shortName(local.getHostName()) : "<null>";
-                ret.append("<" + local_str + ":" + tmp_sock.getLocalPort() +
-                           " --> " + remote_str + ":" + tmp_sock.getPort() + "> (" +
+                ret.append('<' + local_str + ':' + tmp_sock.getLocalPort() +
+                           " --> " + remote_str + ':' + tmp_sock.getPort() + "> (" +
                            ((System.currentTimeMillis() - last_access) / 1000) + " secs old)");
                 tmp_sock=null;
             }
@@ -842,7 +842,7 @@ public class ConnectionTable implements Runnable {
 
                             if(log.isInfoEnabled()) log.info("connection is " +
                                                                        ((curr_time - value.last_access) / 1000) + " seconds old (curr-time=" +
-                                                                       curr_time + ", last_access=" + value.last_access + ")");
+                                                                       curr_time + ", last_access=" + value.last_access + ')');
                         if(value.last_access + conn_expire_time < curr_time) {
 
                                 if(log.isInfoEnabled()) log.info("connection " + value +

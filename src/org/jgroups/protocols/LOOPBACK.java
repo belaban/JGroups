@@ -1,4 +1,4 @@
-// $Id: LOOPBACK.java,v 1.6 2004/06/23 16:06:42 belaban Exp $
+// $Id: LOOPBACK.java,v 1.7 2004/07/05 05:51:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -29,7 +29,7 @@ public class LOOPBACK extends Protocol {
 
 
     public String toString() {
-        return "Protocol LOOPBACK(local address: " + local_addr + ")";
+        return "Protocol LOOPBACK(local address: " + local_addr + ')';
     }
 
 

@@ -1,4 +1,4 @@
-// $Id: Digest.java,v 1.5 2004/06/18 17:53:16 belaban Exp $
+// $Id: Digest.java,v 1.6 2004/07/05 05:49:41 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -363,15 +363,15 @@ public class Digest implements Externalizable {
                 sb.append(", ");
             }
             else {
-                sb.append("[");
+                sb.append('[');
                 first=false;
             }
-            sb.append(senders[i]).append(": ").append("[").append(low_seqnos[i]).append(" : ");
+            sb.append(senders[i]).append(": ").append('[').append(low_seqnos[i]).append(" : ");
             sb.append(high_seqnos[i]);
             if(high_seqnos_seen[i] >= 0)
                 sb.append(" (").append(high_seqnos_seen[i]).append(")]");
         }
-        sb.append("]");
+        sb.append(']');
         return sb.toString();
     }
 
@@ -384,14 +384,14 @@ public class Digest implements Externalizable {
                 sb.append(", ");
             }
             else {
-                sb.append("[");
+                sb.append('[');
                 first=false;
             }
             sb.append(senders[i]);
-            sb.append("#");
+            sb.append('#');
             sb.append(high_seqnos[i]);
         }
-        sb.append("]");
+        sb.append(']');
         return sb.toString();
     }
 
@@ -404,14 +404,14 @@ public class Digest implements Externalizable {
                 sb.append(", ");
             }
             else {
-                sb.append("[");
+                sb.append('[');
                 first=false;
             }
             sb.append(senders[i]);
-            sb.append("#");
+            sb.append('#');
             sb.append(high_seqnos_seen[i]);
         }
-        sb.append("]");
+        sb.append(']');
         return sb.toString();
     }
 

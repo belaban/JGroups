@@ -1,4 +1,4 @@
-// $Id: PBCAST.java,v 1.8 2004/05/06 16:32:43 belaban Exp $
+// $Id: PBCAST.java,v 1.9 2004/07/05 05:49:41 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -121,7 +121,7 @@ public class PBCAST extends Protocol implements Runnable {
 
                                     if(log.isWarnEnabled()) log.warn("gossip request " +
                                                               PbcastHeader.type2String(hdr.type) + " discarded because " +
-                                                              "gossip_queue is full (number of elements=" + gossip_queue.size() + ")");
+                                                              "gossip_queue is full (number of elements=" + gossip_queue.size() + ')');
                                 return;
                             }
                             gossip_queue.add(new GossipEntry(hdr, m.getSrc(), m.getBuffer()));
@@ -278,55 +278,55 @@ public class PBCAST extends Protocol implements Runnable {
 
         str=props.getProperty("dynamic");
         if(str != null) {
-            dynamic=new Boolean(str).booleanValue();
+            dynamic=Boolean.valueOf(str).booleanValue();
             props.remove("dynamic");
         }
 
         str=props.getProperty("shun");
         if(str != null) {
-            shun=new Boolean(str).booleanValue();
+            shun=Boolean.valueOf(str).booleanValue();
             props.remove("shun");
         }
 
         str=props.getProperty("gossip_interval");
         if(str != null) {
-            gossip_interval=new Long(str).longValue();
+            gossip_interval=Long.parseLong(str);
             props.remove("gossip_interval");
         }
 
         str=props.getProperty("mcast_gossip");
         if(str != null) {
-            mcast_gossip=new Boolean(str).booleanValue();
+            mcast_gossip=Boolean.valueOf(str).booleanValue();
             props.remove("mcast_gossip");
         }
 
         str=props.getProperty("subset");
         if(str != null) {
-            subset=new Double(str).doubleValue();
+            subset=Double.parseDouble(str);
             props.remove("subset");
         }
 
         str=props.getProperty("desired_avg_gossip");
         if(str != null) {
-            desired_avg_gossip=new Long(str).longValue();
+            desired_avg_gossip=Long.parseLong(str);
             props.remove("desired_avg_gossip");
         }
 
         str=props.getProperty("max_queue");
         if(str != null) {
-            max_queue=new Integer(str).intValue();
+            max_queue=Integer.parseInt(str);
             props.remove("max_queue");
         }
 
         str=props.getProperty("max_gossip_cache");
         if(str != null) {
-            max_gossip_cache=new Integer(str).intValue();
+            max_gossip_cache=Integer.parseInt(str);
             props.remove("max_gossip_cache");
         }
 
         str=props.getProperty("gc_lag");
         if(str != null) {
-            gc_lag=new Integer(str).intValue();
+            gc_lag=Integer.parseInt(str);
             props.remove("gc_lag");
         }
 
@@ -468,7 +468,7 @@ public class PBCAST extends Protocol implements Runnable {
             key=(Address) e.nextElement();
             win=(NakReceiverWindow) digest.get(key);
             highest_seqno=win.getHighestSeen();
-            sb.append(key + ": " + highest_seqno + "\n");
+            sb.append(key + ": " + highest_seqno + '\n');
         }
         return sb.toString();
     }
@@ -681,7 +681,7 @@ public class PBCAST extends Protocol implements Runnable {
                     if(missing_msgs != null) {
                         if(log.isInfoEnabled())
                             log.info("asking " + gossip.sender + " for retransmission of " +
-                                    sender + ", missing messages: " + missing_msgs + "\nwin for " + sender + ":\n" + win + "\n");
+                                    sender + ", missing messages: " + missing_msgs + "\nwin for " + sender + ":\n" + win + '\n');
                         if(ht == null) ht=new Hashtable();
                         ht.put(sender, missing_msgs);
                     }

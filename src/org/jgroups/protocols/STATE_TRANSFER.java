@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.6 2004/04/23 19:36:13 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.7 2004/07/05 05:51:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -43,7 +43,7 @@ class StateTransferRequest implements Serializable {
     }
 
     public String toString() {
-        return "[StateTransferRequest: type=" + type2Str(type) + ", arg=" + arg + "]";
+        return "[StateTransferRequest: type=" + type2Str(type) + ", arg=" + arg + ']';
     }
 
     static String type2Str(int t) {
@@ -75,7 +75,7 @@ class StateTransferRequest implements Serializable {
  */
 public class STATE_TRANSFER extends Protocol implements RequestHandler {
     Address local_addr=null;
-    Vector members=new Vector();
+    Vector members=new Vector(11);
     Message m=null;
     boolean is_server=false;
     byte[] cached_state=null;
@@ -83,8 +83,8 @@ public class STATE_TRANSFER extends Protocol implements RequestHandler {
     long timeout_get_appl_state=5000;
     long timeout_return_state=5000;
     RequestCorrelator corr=null;
-    Vector observers=new Vector();
-    HashMap map=new HashMap();
+    Vector observers=new Vector(5);
+    HashMap map=new HashMap(7);
 
 
     /**
@@ -122,7 +122,7 @@ public class STATE_TRANSFER extends Protocol implements RequestHandler {
         // STATE_TRANSFER up and STATE_TRANSFER_OK down
         str=props.getProperty("timeout_get_appl_state");
         if(str != null) {
-            timeout_get_appl_state=new Long(str).longValue();
+            timeout_get_appl_state=Long.parseLong(str);
             props.remove("timeout_get_appl_state");
         }
 
@@ -130,7 +130,7 @@ public class STATE_TRANSFER extends Protocol implements RequestHandler {
         // forever. States are retrieved using GroupRequest/RequestCorrelator
         str=props.getProperty("timeout_return_state");
         if(str != null) {
-            timeout_return_state=new Long(str).longValue();
+            timeout_return_state=Long.parseLong(str);
             props.remove("timeout_return_state");
         }
 
@@ -145,7 +145,7 @@ public class STATE_TRANSFER extends Protocol implements RequestHandler {
 
 
     public Vector requiredUpServices() {
-        Vector ret=new Vector();
+        Vector ret=new Vector(2);
         ret.addElement(new Integer(Event.START_QUEUEING));
         ret.addElement(new Integer(Event.STOP_QUEUEING));
         return ret;
@@ -207,7 +207,7 @@ public class STATE_TRANSFER extends Protocol implements RequestHandler {
 
                 if(coord == null || coord.equals(local_addr)) {
                     if(log.isWarnEnabled()) log.warn("GET_STATE: coordinator is null");
-                    event_list=new Vector();
+                    event_list=new Vector(1);
                     event_list.addElement(new Event(Event.GET_STATE_OK, null));
                     passUp(new Event(Event.STOP_QUEUEING, event_list));
                     return;             // don't pass down any further !
@@ -221,7 +221,7 @@ public class STATE_TRANSFER extends Protocol implements RequestHandler {
                     state=getStateFromSingle(info.target);
 
                 /* Pass up the state to the application layer (insert into JChannel's event queue */
-                event_list=new Vector();
+                event_list=new Vector(1);
                 event_list.addElement(new Event(Event.GET_STATE_OK, state));
 
                 /* Now stop queueing */
@@ -281,7 +281,7 @@ public class STATE_TRANSFER extends Protocol implements RequestHandler {
 
 
     byte[] getStateFromSingle(Address target) {
-        Vector dests=new Vector();
+        Vector dests=new Vector(11);
         Message msg;
         StateTransferRequest r=new StateTransferRequest(StateTransferRequest.RETURN_STATE, local_addr);
         RspList rsp_list;
@@ -322,7 +322,7 @@ public class STATE_TRANSFER extends Protocol implements RequestHandler {
 
 
     Vector getStateFromMany(Vector targets) {
-        Vector dests=new Vector();
+        Vector dests=new Vector(11);
         Message msg;
         StateTransferRequest r=new StateTransferRequest(StateTransferRequest.RETURN_STATE, local_addr);
         RspList rsp_list;
@@ -362,8 +362,7 @@ public class STATE_TRANSFER extends Protocol implements RequestHandler {
         GroupRequest req;
         Message msg=new Message();
         StateTransferRequest r=new StateTransferRequest(StateTransferRequest.MAKE_COPY, local_addr);
-        Vector dests=new Vector();
-
+        Vector dests=new Vector(11);
 
         for(int i=0; i < members.size(); i++)  // don't add myself twice in dests !
             if(!local_addr.equals(members.elementAt(i)))

@@ -1,4 +1,4 @@
-// $Id: NotificationBusDemo.java,v 1.2 2004/03/30 06:47:16 belaban Exp $
+// $Id: NotificationBusDemo.java,v 1.3 2004/07/05 05:45:31 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -108,11 +108,11 @@ public class NotificationBusDemo implements NotificationBus.Consumer {
                 "shun=false;print_local_addr=true)";
 
 	for(int i=0; i < args.length; i++) {
-	    if(args[i].equals("-bus_name")) {
+	    if("-bus_name".equals(args[i])) {
 		name=args[++i];
 		continue;
 	    }
-	    if(args[i].equals("-props")) {
+	    if("-props".equals(args[i])) {
 		props=args[++i];
 		continue;
 	    }

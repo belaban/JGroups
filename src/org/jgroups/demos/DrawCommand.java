@@ -1,4 +1,4 @@
-// $Id: DrawCommand.java,v 1.1 2003/09/09 01:24:09 belaban Exp $
+// $Id: DrawCommand.java,v 1.2 2004/07/05 05:45:31 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -38,7 +38,7 @@ public class DrawCommand implements Serializable {
     public String toString() {
 	StringBuffer ret=new StringBuffer();
 	switch(mode) {
-	case DRAW: ret.append("DRAW(" + x + ", " + y + ") [" + r + "|" + g + "|" + b + "]");
+	case DRAW: ret.append("DRAW(" + x + ", " + y + ") [" + r + '|' + g + '|' + b + ']');
 	    break;
 	case CLEAR: ret.append("CLEAR");
 	    break;

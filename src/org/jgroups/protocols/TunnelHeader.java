@@ -1,4 +1,4 @@
-// $Id: TunnelHeader.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
+// $Id: TunnelHeader.java,v 1.3 2004/07/05 05:51:25 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -23,7 +23,7 @@ public class TunnelHeader extends Header {
     }
 
     public String toString() {
-	return "[TUNNEL:channel_name=" + channel_name + "]";
+	return "[TUNNEL:channel_name=" + channel_name + ']';
     }
 
 

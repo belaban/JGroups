@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.7 2004/05/14 16:26:12 belaban Exp $
+// $Id: UNICAST.java,v 1.8 2004/07/05 05:51:25 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -39,8 +39,8 @@ import java.util.Vector;
  */
 public class UNICAST extends Protocol implements AckSenderWindow.RetransmitCommand {
     boolean       operational=false;
-    Vector        members=new Vector();
-    Hashtable     connections=new Hashtable();   // Object (sender or receiver) -- Entries
+    Vector        members=new Vector(11);
+    Hashtable     connections=new Hashtable(11);   // Object (sender or receiver) -- Entries
     long[]        timeout={800,1600,3200,6400};  // for AckSenderWindow: max time to wait for missing acks
     Address       local_addr=null;
     TimeScheduler timer=null;                    // used for retransmissions (passed to AckSenderWindow)
@@ -71,9 +71,9 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         public String toString() {
             StringBuffer sb=new StringBuffer();
             if(sent_msgs != null)
-                sb.append("sent_msgs=" + sent_msgs + "\n");
+                sb.append("sent_msgs=" + sent_msgs + '\n');
             if(received_msgs != null)
-                sb.append("received_msgs=" + received_msgs + "\n");	    
+                sb.append("received_msgs=" + received_msgs + '\n');
             return sb.toString();
         }
     }
@@ -112,7 +112,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
 	str=props.getProperty("use_gms");
         if(str != null) {
-	    use_gms=new Boolean(str).booleanValue();
+	    use_gms=Boolean.valueOf(str).booleanValue();
             props.remove("use_gms");
         }
 
@@ -128,7 +128,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             return false;
         }
         if(window_size > 0 && min_threshold > 0 && window_size < min_threshold) {
-            log.error("min_threshold (" + min_threshold + ") has to be less than window_size (" + window_size + ")");
+            log.error("min_threshold (" + min_threshold + ") has to be less than window_size (" + window_size + ')');
             return false;
         }
         return true;
@@ -221,7 +221,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 }
                 msg.putHeader(getName(), hdr);
                 if(log.isTraceEnabled()) log.trace("[" + local_addr + "] --> DATA(" + dst + ": #" +
-                        entry.sent_msgs_seqno + ", first=" + hdr.first + ")");
+                        entry.sent_msgs_seqno + ", first=" + hdr.first + ')');
 
                 if (Global.copy)
                     entry.sent_msgs.add(entry.sent_msgs_seqno, msg.copy());  // add *including* UnicastHeader
@@ -317,7 +317,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         //          }
 	
         if(log.isTraceEnabled())
-            log.trace("[" + local_addr + "] --> XMIT(" + dst + ": #" + seqno + ")");
+            log.trace("[" + local_addr + "] --> XMIT(" + dst + ": #" + seqno + ')');
 
 	if(Global.copy)
 	    passDown(new Event(Event.MSG, msg.copy()));
@@ -359,7 +359,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                                 sender + " is not tagged as the first message sent by " + sender +
                                 "; however, the table for received messages from " + sender +
                                 " is still null ! We probably haven't received the first message from "
-                                + sender + " ! Discarding message (operational=" + operational + ")");
+                                + sender + " ! Discarding message (operational=" + operational + ')');
                     return;
                 }
             }
@@ -382,7 +382,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         Entry           entry;
         AckSenderWindow win;
 
-        if(log.isTraceEnabled()) log.trace("[" + local_addr + "] <-- ACK(" + sender + ": #" + seqno + ")");
+        if(log.isTraceEnabled()) log.trace("[" + local_addr + "] <-- ACK(" + sender + ": #" + seqno + ')');
         entry=(Entry)connections.get(sender);
         if(entry == null || entry.sent_msgs == null) {
             return;
@@ -396,7 +396,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     void sendAck(Address dst, long seqno) {
         Message ack=new Message(dst, null, null);
         ack.putHeader(getName(), new UnicastHeader(UnicastHeader.DATA_ACK, seqno));
-        if(log.isTraceEnabled()) log.trace("[" + local_addr + "] --> ACK(" + dst + ": #" + seqno + ")");
+        if(log.isTraceEnabled()) log.trace("[" + local_addr + "] --> ACK(" + dst + ": #" + seqno + ')');
         passDown(new Event(Event.MSG, ack));
     }
 
@@ -422,7 +422,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         }
 	
         public String toString() {
-            return "[UNICAST: " + type2Str(type) + ", seqno=" + seqno + "]";
+            return "[UNICAST: " + type2Str(type) + ", seqno=" + seqno + ']';
         }
 	
         public String type2Str(int t) {

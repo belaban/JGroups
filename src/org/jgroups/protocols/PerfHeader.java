@@ -1,4 +1,4 @@
-// $Id: PerfHeader.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
+// $Id: PerfHeader.java,v 1.3 2004/07/05 05:51:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -72,25 +72,25 @@ public class PerfHeader extends Header {
 	Protocol     p;
 
 	if(sender != null)
-	    sb.append("sender=" + sender + "\n");
+	    sb.append("sender=" + sender + '\n');
 	if(receiver != null)
-	    sb.append("receiver=" + receiver + "\n");
+	    sb.append("receiver=" + receiver + '\n');
 
 	if(detailed)
-	    sb.append("start_time=" + start_time + "\nend_time=" + end_time + "\n");
+	    sb.append("start_time=" + start_time + "\nend_time=" + end_time + '\n');
 
 	if(end_time >= start_time)
-	    sb.append("total time=" + (end_time - start_time) + "\n");
+	    sb.append("total time=" + (end_time - start_time) + '\n');
 	else
 	    sb.append("total time=n/a\n");
 
 	if(detailed) {
-	    if(network_send > 0) sb.append("network_send=" + network_send + "\n");
-	    if(network_recv > 0) sb.append("network_recv=" + network_recv + "\n");
+	    if(network_send > 0) sb.append("network_send=" + network_send + '\n');
+	    if(network_recv > 0) sb.append("network_recv=" + network_recv + '\n');
 	}
 
 	if(network_time > 0)
-	    sb.append("network=" + network_time + "\n");
+	    sb.append("network=" + network_time + '\n');
 	
 
 	sb.append("\nDOWN\n-----\n");
@@ -99,14 +99,14 @@ public class PerfHeader extends Header {
 		p=(Protocol)prots.elementAt(i);
 		key=p.getName();
 		val=(PerfEntry)down.get(key);
-		sb.append(key + ":" + "\t" + val.printContents(detailed) + "\n");
+		sb.append(key + ':' + '\t' + val.printContents(detailed) + '\n');
 	    }
 	}
 	else
 	    for(Enumeration e=down.keys(); e.hasMoreElements();) {
 		key=(String)e.nextElement();
 		val=(PerfEntry)down.get(key);
-		sb.append(key + ":" + "\t" + val.printContents(detailed) + "\n");
+		sb.append(key + ':' + '\t' + val.printContents(detailed) + '\n');
 	    }
 	
 	sb.append("\nUP\n-----\n");
@@ -115,14 +115,14 @@ public class PerfHeader extends Header {
 		p=(Protocol)prots.elementAt(i);
 		key=p.getName();
 		val=(PerfEntry)up.get(key);
-		sb.append(key + ":" + "\t" + val.printContents(detailed) + "\n");
+		sb.append(key + ':' + '\t' + val.printContents(detailed) + '\n');
 	    }
 	}
 	else
 	    for(Enumeration e=up.keys(); e.hasMoreElements();) {
 		key=(String)e.nextElement();
 		val=(PerfEntry)up.get(key);
-		sb.append(key + ":" + "\t" + val.printContents(detailed) + "\n");
+		sb.append(key + ':' + '\t' + val.printContents(detailed) + '\n');
 	    }
 	
 

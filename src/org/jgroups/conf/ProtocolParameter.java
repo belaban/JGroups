@@ -1,4 +1,4 @@
-// $Id: ProtocolParameter.java,v 1.2 2004/04/24 11:19:27 belaban Exp $
+// $Id: ProtocolParameter.java,v 1.3 2004/07/05 05:43:51 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -45,14 +45,14 @@ public class ProtocolParameter {
     public String getParameterString() {
         StringBuffer buf=new StringBuffer(mParameterName);
         if(mParameterValue != null)
-            buf.append("=").append(mParameterValue.toString());
+            buf.append('=').append(mParameterValue.toString());
         return buf.toString();
     }
 
     public String getParameterStringXml() {
         StringBuffer buf=new StringBuffer(mParameterName);
         if(mParameterValue != null)
-            buf.append("=\"").append(mParameterValue.toString()).append("\"");
+            buf.append("=\"").append(mParameterValue.toString()).append('\"');
         return buf.toString();
     }
 }

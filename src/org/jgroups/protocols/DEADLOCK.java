@@ -1,4 +1,4 @@
-// $Id: DEADLOCK.java,v 1.2 2004/03/30 06:47:20 belaban Exp $
+// $Id: DEADLOCK.java,v 1.3 2004/07/05 05:51:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -97,7 +97,6 @@ class MyFrame extends Frame {
    Tests the deadlock detection mechanism of RequestCorrelator.
  */
 public class DEADLOCK extends RpcProtocol {
-    Vector   members=new Vector();
     MyFrame  frame=null;
     
 

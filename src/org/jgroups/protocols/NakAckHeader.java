@@ -1,4 +1,4 @@
-// $Id: NakAckHeader.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
+// $Id: NakAckHeader.java,v 1.3 2004/07/05 05:51:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -99,7 +99,7 @@ public class NakAckHeader extends Header {
 		   ", vid=" + vid );
 	if(type == WRAPPED_MSG)
 	    ret.append(", sender=" + sender);
-	ret.append("]");
+	ret.append(']');
 
 	return ret.toString();
     }

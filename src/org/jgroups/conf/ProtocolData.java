@@ -1,4 +1,4 @@
-// $Id: ProtocolData.java,v 1.4 2004/04/26 18:40:13 belaban Exp $
+// $Id: ProtocolData.java,v 1.5 2004/07/05 05:43:51 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -82,28 +82,28 @@ public class ProtocolData {
     public String getProtocolString() {
         StringBuffer buf=new StringBuffer(mClassName);
         if(mParameters.size() > 0) {
-            buf.append("(");
+            buf.append('(');
             Iterator i=mParameters.keySet().iterator();
             while(i.hasNext()) {
                 String key=(String)i.next();
                 ProtocolParameter param=(ProtocolParameter)mParameters.get(key);
                 buf.append(param.getParameterString());
-                if(i.hasNext()) buf.append(";");
+                if(i.hasNext()) buf.append(';');
             }//while
-            buf.append(")");
+            buf.append(')');
         }
         return buf.toString();
     }
 
     public String getProtocolStringNewXml() {
-        StringBuffer buf=new StringBuffer(mClassName + " ");
+        StringBuffer buf=new StringBuffer(mClassName + ' ');
         if(mParameters.size() > 0) {
             Iterator i=mParameters.keySet().iterator();
             while(i.hasNext()) {
                 String key=(String)i.next();
                 ProtocolParameter param=(ProtocolParameter)mParameters.get(key);
                 buf.append(param.getParameterStringXml());
-                if(i.hasNext()) buf.append(" ");
+                if(i.hasNext()) buf.append(' ');
             }
         }
         return buf.toString();

@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.3 2004/03/30 06:47:20 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.4 2004/07/05 05:51:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -100,18 +100,15 @@ public class CoordGmsImpl extends GmsImpl {
 
 
     public synchronized boolean handleJoin(Address mbr) {
-        Vector new_mbrs=new Vector();
+        Vector new_mbrs=new Vector(1);
 
-
-            if(log.isInfoEnabled()) log.info("received JOIN request from " + mbr);
-
+        if(log.isInfoEnabled()) log.info("received JOIN request from " + mbr);
         if(gms.local_addr.equals(mbr)) {
             if(log.isErrorEnabled()) log.error("cannot join myself !");
             return false;
         }
         if(gms.members.contains(mbr)) {
-
-                if(log.isWarnEnabled()) log.warn("member " + mbr + " already present !");
+            if(log.isWarnEnabled()) log.warn("member " + mbr + " already present !");
             return true;  // already joined
         }
 
@@ -126,7 +123,7 @@ public class CoordGmsImpl extends GmsImpl {
      * this member crashed and therefore is forced to leave, otherwise it is leaving voluntarily.
      */
     public synchronized void handleLeave(Address mbr, boolean suspected) {
-        Vector v=new Vector();  // contains either leaving mbrs or suspected mbrs
+        Vector v=new Vector(1);  // contains either leaving mbrs or suspected mbrs
         if(!gms.members.contains(mbr)) {
              if(log.isErrorEnabled()) log.error("mbr " + mbr + " is not a member !");
             return;

@@ -19,7 +19,7 @@ import java.lang.reflect.Method;
  * It includes the name of the method (case sensitive) and a list of arguments.
  * A method call is serializable and can be passed over the wire.
  * @author Bela Ban
- * @version $Revision: 1.8 $
+ * @version $Revision: 1.9 $
  */
 public class MethodCall implements Externalizable {
 
@@ -276,21 +276,21 @@ public class MethodCall implements Externalizable {
 
         for(int i=0; i < signature.length; i++) {
             name=signature[i];
-            if(name.equals("long"))
+            if("long".equals(name))
                 parameter=long.class;
-            else if(name.equals("int"))
+            else if("int".equals(name))
                 parameter=int.class;
-            else if(name.equals("short"))
+            else if("short".equals(name))
                 parameter=short.class;
-            else if(name.equals("char"))
+            else if("char".equals(name))
                 parameter=char.class;
-            else if(name.equals("byte"))
+            else if("byte".equals(name))
                 parameter=byte.class;
-            else if(name.equals("float"))
+            else if("float".equals(name))
                 parameter=float.class;
-            else if(name.equals("double"))
+            else if("double".equals(name))
                 parameter=double.class;
-            else if(name.equals("boolean"))
+            else if("boolean".equals(name))
                 parameter=boolean.class;
             else
                 parameter=Class.forName(name, false, cl.getClassLoader());
@@ -303,7 +303,7 @@ public class MethodCall implements Externalizable {
     public String toString() {
         StringBuffer ret=new StringBuffer();
         boolean first=true;
-        ret.append(method_name).append("(");
+        ret.append(method_name).append('(');
         for(int i=0; i < args.length; i++) {
             if(first) {
                 first=false;
@@ -313,14 +313,14 @@ public class MethodCall implements Externalizable {
             }
             ret.append(args[i]);
         }
-        ret.append(")");
+        ret.append(')');
         return ret.toString();
     }
 
     public String toStringDetails() {
          StringBuffer ret=new StringBuffer();
          ret.append("MethodCall (name=" + method_name);
-         ret.append(", number of args=" + args.length + ")");
+         ret.append(", number of args=" + args.length + ')');
          ret.append("\nArgs:");
          for(int i=0; i < args.length; i++) {
              ret.append("\n[" + args[i] + " (" +

@@ -1,4 +1,4 @@
-// $Id: JMS.java,v 1.4 2004/04/23 19:36:13 belaban Exp $ 
+// $Id: JMS.java,v 1.5 2004/07/05 05:51:24 belaban Exp $ 
 
 package org.jgroups.protocols;
 
@@ -129,7 +129,7 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
      * @return string representation of the protocol (not very useful though).
      */
     public String toString() {
-        return "Protocol JMS(local address: " + local_addr + ")";
+        return "Protocol JMS(local address: " + local_addr + ')';
     }
 
     /**
@@ -220,7 +220,7 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
             
 
                 if(log.isDebugEnabled()) log.debug("Got message for group [" +
-                groupName + "]" + ", my group is [" + group_addr + "]");
+                groupName + ']' + ", my group is [" + group_addr + ']');
 
             // not our message, ignore it
             if (!group_addr.equals(groupName))
@@ -499,7 +499,7 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
        
         int rndPort = RND.nextInt(65535);
         
-        return hostName + ":" + rndPort;
+        return hostName + ':' + rndPort;
     }
 
     /**
@@ -661,7 +661,7 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
          * @return string representation of the address.
          */
         public String toString() {
-            return !isMCast ? "#" + address : address;
+            return !isMCast ? '#' + address : address;
         }
 
         /**

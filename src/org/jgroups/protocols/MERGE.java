@@ -1,4 +1,4 @@
-// $Id: MERGE.java,v 1.3 2004/04/23 19:36:13 belaban Exp $
+// $Id: MERGE.java,v 1.4 2004/07/05 05:51:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -54,19 +54,19 @@ public class MERGE extends Protocol implements Runnable {
         super.setProperties(props);
         str=props.getProperty("timeout");          // max time to wait for initial members
         if(str != null) {
-            timeout=new Long(str).longValue();
+            timeout=Long.parseLong(str);
             props.remove("timeout");
         }
 
         str=props.getProperty("router_host");      // host to send gossip queries (if gossip enabled)
         if(str != null) {
-            router_host=new String(str);
+            router_host=str;
             props.remove("router_host");
         }
 
         str=props.getProperty("router_port");
         if(str != null) {
-            router_port=new Integer(str).intValue();
+            router_port=Integer.parseInt(str);
             props.remove("router_port");
         }
 
@@ -157,7 +157,7 @@ public class MERGE extends Protocol implements Runnable {
                         return;
 
                     default:
-                        if(log.isErrorEnabled()) log.error("got MERGE hdr with unknown type (" + hdr.type + ")");
+                        if(log.isErrorEnabled()) log.error("got MERGE hdr with unknown type (" + hdr.type + ')');
                         return;
                 }
 
@@ -328,7 +328,7 @@ public class MERGE extends Protocol implements Runnable {
         }
 
         public String toString() {
-            return "[MERGE: type=" + type2Str(type) + "]";
+            return "[MERGE: type=" + type2Str(type) + ']';
         }
 
         String type2Str(int t) {

@@ -1,4 +1,4 @@
-// $Id: Profiler.java,v 1.1 2003/09/09 01:24:09 belaban Exp $
+// $Id: Profiler.java,v 1.2 2004/07/05 05:44:35 belaban Exp $
 
 package org.jgroups.debug;
 
@@ -86,8 +86,8 @@ public class Profiler {
 	    return;
 	}
 	try {
-	    os.write(new String("Key:      Number of calls:    Total time (ms): Average time (ms):\n").getBytes());
-	    os.write(new String("-----------------------------------------------------------------\n\n").getBytes());
+	    os.write("Key:      Number of calls:    Total time (ms): Average time (ms):\n".getBytes());
+	    os.write("-----------------------------------------------------------------\n\n".getBytes());
 	}
 	catch(Exception e) {
 	    System.err.println(e);
@@ -96,8 +96,8 @@ public class Profiler {
 	    key=(String)e.nextElement();
 	    val=(Entry)entries.get(key);
 	    try {
-		os.write(new String(key + ": " + val.num_calls + " " + 
-				    val.tot_time + " " + trim(val.avg) + "\n").getBytes());
+		os.write((key + ": " + val.num_calls + ' ' +
+                  val.tot_time + ' ' + trim(val.avg) + '\n').getBytes());
 	    }
 	    catch(Exception ex) {
 		System.err.println(ex);

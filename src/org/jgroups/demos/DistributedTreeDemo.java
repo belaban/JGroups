@@ -1,4 +1,4 @@
-// $Id: DistributedTreeDemo.java,v 1.4 2004/06/25 01:10:28 belaban Exp $
+// $Id: DistributedTreeDemo.java,v 1.5 2004/07/05 05:45:31 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -78,7 +78,7 @@ class MyNode extends DefaultMutableTreeNode {
 
 
     void remove(String fqn) {
-	System.out.println("MyNode.remove(" + fqn + ")");
+	System.out.println("MyNode.remove(" + fqn + ')');
 	removeFromParent();
     }
     
@@ -128,17 +128,17 @@ class MyNode extends DefaultMutableTreeNode {
 	StringBuffer sb=new StringBuffer();
 
 	for(int i=0; i < indent; i++)
-	    sb.append(" ");
+	    sb.append(' ');
 	if(!isRoot()) {
 	    if(name == null) 
 		sb.append("/<unnamed>");
 	    else {
-		sb.append("/" + name);
+		sb.append('/' + name);
 		if(userObject != null)
 		    sb.append(" --> " + userObject);
 	    }
 	}
-	sb.append("\n");
+	sb.append('\n');
 	if(getChildCount() > 0) {
 	    if(isRoot()) indent=0;
 	    else indent+=4;
@@ -301,10 +301,10 @@ public class DistributedTreeDemo extends Frame implements WindowListener,
 	if(path == null) return null;
 	for(int i=0; i < path.length; i++) {
 	    tmp_name=((MyNode)path[i]).name;
-	    if(tmp_name.equals("/"))
+	    if("/".equals(tmp_name))
 		continue;
 	    else
-		sb.append("/" + tmp_name);
+		sb.append('/' + tmp_name);
 	}
 	tmp_name=sb.toString();
 	if(tmp_name.length() == 0)
@@ -356,7 +356,7 @@ public class DistributedTreeDemo extends Frame implements WindowListener,
 	
 	for(int i=0; i < children.size(); i++) {
 	    child_name=(String)children.elementAt(i);
-	    tmp_name=tmp_fqn + "/" + child_name;
+	    tmp_name=tmp_fqn + '/' + child_name;
 	    root.add(tmp_name, tree.get(tmp_name));
 	    populateTree(tree, tmp_name);
 	}
@@ -423,12 +423,12 @@ public class DistributedTreeDemo extends Frame implements WindowListener,
 	
 	for(int i=0; i < path.getPathCount(); i++) {
 	    component_name=((MyNode)path.getPathComponent(i)).name;
-	    if(component_name.equals("/"))
+	    if("/".equals(component_name))
 		continue;
-	    if(fqn.equals("/"))
+	    if("/".equals(fqn))
 		fqn+=component_name;
 	    else
-		fqn=fqn + "/" + component_name;
+		fqn=fqn + '/' + component_name;
 	}
 	props=(Properties)dt.get(fqn);
 	if(props != null)
@@ -443,7 +443,7 @@ public class DistributedTreeDemo extends Frame implements WindowListener,
 
     public void nodeAdded(String fqn, Serializable element) {
 	MyNode n;
-	System.out.println("** nodeCreated(" + fqn + ")");
+	System.out.println("** nodeCreated(" + fqn + ')');
 
 	root.add(fqn, element);
 	n=root.findNode(fqn);
@@ -454,7 +454,7 @@ public class DistributedTreeDemo extends Frame implements WindowListener,
     public void nodeRemoved(String fqn) {
 	MyNode   n;
 	TreeNode par;
-	System.out.println("** nodeRemoved(" + fqn + ")");
+	System.out.println("** nodeRemoved(" + fqn + ')');
 	n=root.findNode(fqn);
 	if(n != null) {
 	    n.removeAllChildren();	    
@@ -465,7 +465,7 @@ public class DistributedTreeDemo extends Frame implements WindowListener,
     }
 
     public void nodeModified(String fqn, Serializable old_element, Serializable new_element) {
-	System.out.println("** nodeModified(" + fqn + ")");
+	System.out.println("** nodeModified(" + fqn + ')');
 	root.modify(fqn, new_element);
 	populateTable((Properties)new_element);
     }
@@ -478,11 +478,11 @@ public class DistributedTreeDemo extends Frame implements WindowListener,
 	boolean             create=false;
 
 	for(int i=0; i < args.length; i++) {
-	    if(args[i].equals("-help")) {
+	    if("-help".equals(args[i])) {
 		System.out.println("DistributedTreeDemo [-create] [-help]");
 		return;
 	    }
-	    if(args[i].equals("-create")) {
+	    if("-create".equals(args[i])) {
 		create=true;
 		continue;
 	    }

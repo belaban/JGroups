@@ -1,4 +1,4 @@
-// $Id: VERIFY_SUSPECT.java,v 1.5 2004/05/14 00:24:38 belaban Exp $
+// $Id: VERIFY_SUSPECT.java,v 1.6 2004/07/05 05:51:25 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -43,13 +43,13 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         super.setProperties(props);
         str=props.getProperty("timeout");
         if(str != null) {
-            timeout=new Long(str).longValue();
+            timeout=Long.parseLong(str);
             props.remove("timeout");
         }
 
         str=props.getProperty("num_msgs");
         if(str != null) {
-            num_msgs=new Integer(str).intValue();
+            num_msgs=Integer.parseInt(str);
             if(num_msgs <= 0) {
                 if(log.isWarnEnabled()) log.warn("num_msgs is invalid (" +
                         num_msgs + "): setting it to 1");

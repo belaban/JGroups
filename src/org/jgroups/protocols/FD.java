@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.8 2004/04/27 17:47:15 belaban Exp $
+// $Id: FD.java,v 1.9 2004/07/05 05:51:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -35,7 +35,7 @@ import java.util.Vector;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Revision: 1.8 $
+ * @version $Revision: 1.9 $
  */
 public class FD extends Protocol {
     Address         ping_dest=null;
@@ -44,11 +44,11 @@ public class FD extends Protocol {
     long            last_ack=System.currentTimeMillis();
     int             num_tries=0;
     int             max_tries=2;   // number of times to send a are-you-alive msg (tot time= max_tries*timeout)
-    Vector          members=new Vector();
-    Hashtable       invalid_pingers=new Hashtable();  // keys=Address, val=Integer (number of pings from suspected mbrs)
+    Vector          members=new Vector(11);
+    Hashtable       invalid_pingers=new Hashtable(7);  // keys=Address, val=Integer (number of pings from suspected mbrs)
 
     /** Members from which we select ping_dest. may be subset of {@link #members} */
-    Vector          pingable_mbrs=new Vector();
+    Vector          pingable_mbrs=new Vector(11);
 
     boolean         shun=true;
     TimeScheduler   timer=null;
@@ -73,19 +73,19 @@ public class FD extends Protocol {
         super.setProperties(props);
         str=props.getProperty("timeout");
         if(str != null) {
-            timeout=new Long(str).longValue();
+            timeout=Long.parseLong(str);
             props.remove("timeout");
         }
 
         str=props.getProperty("max_tries");  // before suspecting a member
         if(str != null) {
-            max_tries=new Integer(str).intValue();
+            max_tries=Integer.parseInt(str);
             props.remove("max_tries");
         }
 
         str=props.getProperty("shun");
         if(str != null) {
-            shun=new Boolean(str).booleanValue();
+            shun=Boolean.valueOf(str).booleanValue();
             props.remove("shun");
         }
 
@@ -376,7 +376,7 @@ public class FD extends Protocol {
             boolean mbrs_not_null=in.readBoolean();
             if(mbrs_not_null) {
                 int len=in.readInt();
-                mbrs=new Vector();
+                mbrs=new Vector(11);
                 for(int i=0; i < len; i++) {
                     Address addr=(Address)Marshaller.read(in);
                     mbrs.add(addr);
@@ -422,7 +422,7 @@ public class FD extends Protocol {
             hb_req=new Message(ping_dest, null, null);
             hb_req.putHeader(getName(), new FdHeader(FdHeader.HEARTBEAT));  // send heartbeat request
             if(log.isDebugEnabled())
-                log.debug("sending are-you-alive msg to " + ping_dest + " (own address=" + local_addr + ")");
+                log.debug("sending are-you-alive msg to " + ping_dest + " (own address=" + local_addr + ')');
             passDown(new Event(Event.MSG, hb_req));
 
             // 2. If the time of the last heartbeat is > timeout and max_tries heartbeat messages have not been
@@ -443,7 +443,7 @@ public class FD extends Protocol {
                 }
                 else {
                     if(log.isDebugEnabled())
-                        log.debug("heartbeat missing from " + ping_dest + " (number=" + num_tries + ")");
+                        log.debug("heartbeat missing from " + ping_dest + " (number=" + num_tries + ')');
                     num_tries++;
                 }
             }
@@ -463,7 +463,7 @@ public class FD extends Protocol {
      * any longer. Then the task terminates.
      */
     private class BroadcastTask implements TimeScheduler.Task {
-        Vector suspected_mbrs=new Vector();
+        Vector suspected_mbrs=new Vector(7);
         boolean stopped=false;
 
 
@@ -480,7 +480,7 @@ public class FD extends Protocol {
             synchronized(suspected_mbrs) {
                 if(!suspected_mbrs.contains(mbr)) {
                     suspected_mbrs.addElement(mbr);
-                    if(log.isDebugEnabled()) log.debug("mbr=" + mbr + " (size=" + suspected_mbrs.size() + ")");
+                    if(log.isDebugEnabled()) log.debug("mbr=" + mbr + " (size=" + suspected_mbrs.size() + ')');
                 }
                 if(stopped && suspected_mbrs.size() > 0) {
                     stopped=false;
