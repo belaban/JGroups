@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.10 2005/01/03 10:51:04 belaban Exp $
+// $Id: MERGE2.java,v 1.11 2005/01/05 10:39:28 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -300,6 +300,8 @@ public class MERGE2 extends Protocol {
             if(initial_mbrs == null) return null;
             for(int i=0; i < initial_mbrs.size(); i++) {
                 rsp=(PingRsp)initial_mbrs.elementAt(i);
+                if(!rsp.is_server)
+                    continue;
                 coord=rsp.getCoordAddress();
                 if(!ret.contains(coord))
                     ret.addElement(coord);

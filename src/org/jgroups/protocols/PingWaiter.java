@@ -12,7 +12,7 @@ import java.util.Vector;
 /**
  * Class that waits for n PingRsp'es, or m milliseconds to return the initial membership
  * @author Bela Ban
- * @version $Id: PingWaiter.java,v 1.3 2005/01/04 13:34:09 belaban Exp $
+ * @version $Id: PingWaiter.java,v 1.4 2005/01/05 10:39:28 belaban Exp $
  */
 public class PingWaiter implements Runnable {
     Thread              t=null;
@@ -20,19 +20,21 @@ public class PingWaiter implements Runnable {
     long                timeout=3000;
     int                 num_rsps=3;
     Protocol            parent=null;
+    PingSender          ping_sender;
     protected final Log log=LogFactory.getLog(this.getClass());
 
 
-    public PingWaiter(long timeout, int num_rsps, Protocol parent) {
+    public PingWaiter(long timeout, int num_rsps, Protocol parent, PingSender ping_sender) {
         this.timeout=timeout;
         this.num_rsps=num_rsps;
         this.parent=parent;
+        this.ping_sender=ping_sender;
     }
 
 
     public synchronized void start() {
+        ping_sender.start();
         if(t == null || !t.isAlive()) {
-            // clearResponses();
             t=new Thread(this, "PingWaiter");
             t.setDaemon(true);
             t.start();
@@ -40,6 +42,8 @@ public class PingWaiter implements Runnable {
     }
 
     public synchronized void stop() {
+        if(ping_sender != null)
+            ping_sender.stop();
         if(t != null) {
             Thread tmp=t;
             t=null;
@@ -55,10 +59,10 @@ public class PingWaiter implements Runnable {
     public void addResponse(PingRsp rsp) {
         if(rsp != null) {
             synchronized(rsps) {
-                if(!rsps.contains(rsp)) {
-                    rsps.add(rsp);
-                    rsps.notifyAll();
-                }
+                if(rsps.contains(rsp))
+                    rsps.remove(rsp); // overwrite existing element
+                rsps.add(rsp);
+                rsps.notifyAll();
             }
         }
     }
@@ -80,27 +84,42 @@ public class PingWaiter implements Runnable {
     public void run() {
         long start_time, time_to_wait;
 
+        // ping_sender.start();
+
         synchronized(rsps) {
+            if(rsps.size() > 0) {
+                if(log.isTraceEnabled())
+                    log.trace("clearing old responses: " + rsps);
+                rsps.clear();
+            }
+
             start_time=System.currentTimeMillis();
             time_to_wait=timeout;
 
-            while(rsps.size() < num_rsps && time_to_wait > 0 && t != null && Thread.currentThread().equals(t)) {
-                if(log.isTraceEnabled()) // +++ remove
-                    log.trace("waiting for initial members: time_to_wait=" + time_to_wait +
-                              ", got " + rsps.size() + " rsps");
+            try {
+                while(rsps.size() < num_rsps && time_to_wait > 0 && t != null && Thread.currentThread().equals(t)) {
+                    if(log.isTraceEnabled()) // +++ remove
+                        log.trace("waiting for initial members: time_to_wait=" + time_to_wait +
+                                  ", got " + rsps.size() + " rsps");
 
-                try {
-                    rsps.wait(time_to_wait);
+                    try {
+                        rsps.wait(time_to_wait);
+                    }
+                    catch(Exception e) {
+                    }
+                    time_to_wait=timeout - (System.currentTimeMillis() - start_time);
                 }
-                catch(Exception e) {
-                }
-                time_to_wait=timeout - (System.currentTimeMillis() - start_time);
+                if(log.isDebugEnabled())
+                    log.debug("initial mbrs are " + rsps);
             }
-            if(log.isDebugEnabled())
-                log.debug("initial mbrs are " + rsps);
-            // 3. Send response
-            if(parent != null)
-                parent.passUp(new Event(Event.FIND_INITIAL_MBRS_OK, new Vector(rsps)));
+            finally {
+                // 3. Send response
+                if(ping_sender != null)
+                    ping_sender.stop();
+
+                if(parent != null)
+                    parent.passUp(new Event(Event.FIND_INITIAL_MBRS_OK, new Vector(rsps)));
+            }
         }
     }
 }

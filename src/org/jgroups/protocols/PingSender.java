@@ -7,7 +7,7 @@ import org.jgroups.util.Util;
 /**
  * Sends num_ping_request GET_MBRS_REQ messages, distributed over timeout ms
  * @author Bela Ban
- * @version $Id: PingSender.java,v 1.1 2005/01/04 23:09:04 belaban Exp $
+ * @version $Id: PingSender.java,v 1.2 2005/01/05 10:39:28 belaban Exp $
  */
 public class PingSender implements Runnable {
     Thread              t=null;
