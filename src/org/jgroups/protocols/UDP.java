@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.21 2004/04/23 19:36:13 belaban Exp $
+// $Id: UDP.java,v 1.22 2004/05/04 00:22:03 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -712,9 +712,8 @@ public class UDP extends Protocol implements Runnable {
             // message is a diagnosis message (special group name DIAG_GROUP)
             if(ch_name != null && group_addr != null && !group_addr.equals(ch_name) &&
                     !ch_name.equals(Util.DIAG_GROUP)) {
-
-                    if(log.isWarnEnabled()) log.warn("discarded message from different group (" +
-                            ch_name + "). Sender was " + msg.getSrc());
+                if(log.isWarnEnabled()) log.warn("discarded message from different group (" +
+                        ch_name + "). Sender was " + msg.getSrc());
                 return;
             }
         }
