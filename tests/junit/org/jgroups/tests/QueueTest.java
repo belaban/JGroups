@@ -1,4 +1,4 @@
-// $Id: QueueTest.java,v 1.11 2004/12/06 15:14:57 belaban Exp $
+// $Id: QueueTest.java,v 1.12 2005/02/18 08:16:46 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -8,6 +8,8 @@ import org.jgroups.TimeoutException;
 import org.jgroups.util.Queue;
 import org.jgroups.util.QueueClosedException;
 import org.jgroups.util.Util;
+
+import java.util.LinkedList;
 
 
 public class QueueTest extends TestCase {
@@ -72,6 +74,19 @@ public class QueueTest extends TestCase {
             System.out.println(x);
             assertTrue(false);
         }
+    }
+
+
+    public void testValues() throws QueueClosedException {
+        queue.add(new Integer(1));
+        queue.add(new Integer(3));
+        queue.add(new Integer(99));
+        queue.add(new Integer(8));
+        System.out.println("queue: " + Util.dumpQueue(queue));
+        int size=queue.size();
+        assertEquals(4, size);
+        LinkedList values=queue.values();
+        assertEquals(size, values.size());
     }
 
 

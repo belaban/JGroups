@@ -1,10 +1,12 @@
-// $Id: Util.java,v 1.26 2005/01/04 08:20:04 belaban Exp $
+// $Id: Util.java,v 1.27 2005/02/18 08:16:34 belaban Exp $
 
 package org.jgroups.util;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
+import org.jgroups.protocols.FD;
+import org.jgroups.protocols.PingHeader;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.stack.IpAddress;
 
@@ -13,9 +15,7 @@ import java.net.BindException;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.ServerSocket;
-import java.util.ArrayList;
-import java.util.StringTokenizer;
-import java.util.Vector;
+import java.util.*;
 
 
 /**
@@ -380,6 +380,72 @@ public class Util {
             if(exit)
                 System.exit(0);
         }
+    }
+
+
+    /**
+     * Debugging method used to dump the content of a protocol queue in a condensed form. Useful
+     * to follow the evolution of the queue's content in time.
+     */
+    public static String dumpQueue(Queue q) {
+        StringBuffer sb=new StringBuffer();
+        LinkedList values=q.values();
+        if(values.size() == 0) {
+            sb.append("empty");
+        }
+        else {
+            for(Iterator it=values.iterator(); it.hasNext();) {
+                Object o=it.next();
+                String s=null;
+                if(o instanceof Event) {
+                    Event event=(Event)o;
+                    int type=event.getType();
+                    s=Event.type2String(type);
+
+                    if(type == Event.MSG) {
+                        s+="[";
+                        Message m=(Message)event.getArg();
+                        Map headers=m.getHeaders();
+                        for(Iterator i=headers.keySet().iterator(); i.hasNext();) {
+                            Object headerKey=i.next();
+                            Object value=headers.get(headerKey);
+                            String headerToString=null;
+                            if(value instanceof FD.FdHeader) {
+                                headerToString=value.toString();
+                            }
+                            else
+                                if(value instanceof PingHeader) {
+                                    headerToString=headerKey + "-";
+                                    if(((PingHeader)value).type == PingHeader.GET_MBRS_REQ) {
+                                        headerToString+="GMREQ";
+                                    }
+                                    else
+                                        if(((PingHeader)value).type == PingHeader.GET_MBRS_RSP) {
+                                            headerToString+="GMRSP";
+                                        }
+                                        else {
+                                            headerToString+="UNKNOWN";
+                                        }
+                                }
+                                else {
+                                    headerToString=headerKey + "-" + (value == null ? "null" : value.toString());
+                                }
+                            s+=headerToString;
+
+                            if(i.hasNext()) {
+                                s+=",";
+                            }
+                        }
+                        s+="]";
+                    }
+                }
+                else {
+                    s=o.toString();
+                }
+                sb.append(s).append(" ");
+            }
+        }
+        return sb.toString();
     }
 
 
