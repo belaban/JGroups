@@ -1,4 +1,4 @@
-// $Id: FC.java,v 1.1 2003/09/09 01:24:09 belaban Exp $
+// $Id: FC.java,v 1.2 2004/01/09 00:28:03 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -17,18 +17,16 @@ import java.io.ObjectInput;
  * how many credits it has received from a sender. When credits for a sender fall below a threshold,
  * the receiver sends more credits to the sender. Works for both unicast and multicast messages.<br>
  * TODO: finer-grained synchronization (currently coarse-grained on down() and up()).
+ * Note that this protocol must be located towards the top of the stack, or all down_threads from JChannel to this
+ * protocol must be set to false ! This is in order to block JChannel.send()/JChannel.down().
  * @author Bela Ban
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.2 $
  */
 public class FC extends Protocol {
 
     /** HashMap<Address,Long>: keys are members, values are credits left. For each send, the
      * number of credits is decremented by the message size */
     HashMap sent=new HashMap();
-
-    /** Messages get queued temporarily until sender ceases to send on XOFF. On XON, we will pass these
-     * messages down before accepting new messages */
-    List down_msgs=new LinkedList();
 
     /** HashMap<Address,Long>: keys are members, values are credits left (in bytes).
      * For each receive, the credits for the sender are decrmented by the size of the received message.
@@ -57,22 +55,17 @@ public class FC extends Protocol {
     /** Current mode. True if channel was sent a BLOCK_SEND event, false if UNBLOCK_EVENT was sent */
     boolean blocking=false;
 
-    /** Enables/disables direct blocking. If enabled, we won't send up <tt>BLOCK_SEND</tt> and
-     * <tt>UNBLOCK_SEND</tt> events to block at the channel level, but we will block the
-     * {@link #handleDownMessage(Message)} call directly. If enabled, messages won't be queued either.<br/>
-     * Note that direct blocking only works if {@link #down(Event)} is called on the same thread from
-     * Channel down to FC. */
-    boolean direct_blocking=true;
-
     /** When <tt>direct_blocking</tt> is enabled, block for a max number of milliseconds regardless of whether
      * credits have been received. If value is 0 we will wait forever. */
     long MAX_BLOCK_TIME=10000; // todo: change back to 60000
 
+    final String name="FC";
 
 
 
+    
     public String getName() {
-        return "FC";
+        return name;
     }
 
 
@@ -101,12 +94,6 @@ public class FC extends Protocol {
 
         if(!min_credits_set)
             min_credits=(long)((double)max_credits * min_threshold);
-
-        str=props.getProperty("direct_blocking");
-        if(str != null) {
-            direct_blocking=new Boolean(str).booleanValue();
-            props.remove("direct_blocking");
-        }
 
         if(props.size() > 0) {
             System.err.println("FC.setProperties(): the following properties are not recognized:");
@@ -187,24 +174,6 @@ public class FC extends Protocol {
         }
     }
 
-    boolean sendQueuedMessages() {
-        if(Trace.trace)
-            Trace.info("FC.sendQueuedMessages()", "sending queued messages (" + down_msgs.size() + " msgs)");
-        for(Iterator it=down_msgs.iterator(); it.hasNext();) {
-            Message msg=(Message)it.next();
-            if(decrMessage(msg)) {
-                passDown(new Event(Event.MSG, msg));
-                it.remove();
-            }
-            else {
-                return false;
-            }
-        }
-        down_msgs.clear();  // not really needed because list is empty if we get here anyway...
-        return true;
-    }
-
-
 
 
     void handleUpMessage(Message msg) {
@@ -259,44 +228,32 @@ public class FC extends Protocol {
         if(blocking) {
             if(Trace.trace)
                 Trace.info("FC.handleDownMessage()", "blocking message to " + msg.getDest());
-            if(direct_blocking) {
-                while(blocking) {
-                    try {this.wait(MAX_BLOCK_TIME);} catch(InterruptedException e) {}
-                }
-            }
-            else {
-                down_msgs.add(msg);
-                return false; // don't pass down
+            while(blocking) {
+                try {this.wait(MAX_BLOCK_TIME);} catch(InterruptedException e) {}
             }
         }
 
         if(decrMessage(msg) == false) {
-            blockSender(); // will set blocking=true
+            blocking=true;
 
-            if(direct_blocking) {
-                while(blocking) {
+            while(blocking) {
+                if(Trace.trace)
+                    Trace.info("FC.handleDownMessage()", "blocking " + MAX_BLOCK_TIME +
+                            " msecs. Creditors are\n" + printCreditors());
+                //System.out.println("**** blocking for " + MAX_BLOCK_TIME +
+                //      " msecs. Creditors are\n" + printCreditors());
+                try {this.wait(MAX_BLOCK_TIME);}
+                catch(Throwable e) {e.printStackTrace();}
+                if(decrMessage(msg) == true)
+                    return true;
+                else {
                     if(Trace.trace)
-                        Trace.info("FC.handleDownMessage()", "blocking " + MAX_BLOCK_TIME +
-                                " msecs. Creditors are\n" + printCreditors());
-                    //System.out.println("**** blocking for " + MAX_BLOCK_TIME +
-                      //      " msecs. Creditors are\n" + printCreditors());
-                    try {this.wait(MAX_BLOCK_TIME);}
-                    catch(Throwable e) {e.printStackTrace();}
-                    if(decrMessage(msg) == true)
-                        return true;
-                    else {
-                        if(Trace.trace)
-                            Trace.info("FC.handleDownMessage()",
-                                    "insufficient credits to send message, creditors=\n" +
-                                    printCreditors());
-                        //System.out.println("**** insufficient credits to send message, creditors=\n" +
-                          //      printCreditors());
-                    }
+                        Trace.info("FC.handleDownMessage()",
+                                "insufficient credits to send message, creditors=\n" +
+                                printCreditors());
+                    //System.out.println("**** insufficient credits to send message, creditors=\n" +
+                    //      printCreditors());
                 }
-            }
-            else {
-                down_msgs.add(msg);
-                return false; // don't pass down
             }
         }
         return true;
@@ -355,33 +312,13 @@ public class FC extends Protocol {
 
 
 
-    void blockSender() {
-        if(direct_blocking == false) {
-            passUp(new Event(Event.BLOCK_SEND)); // tell the JChannel to block send()
-        }
-
-        if(Trace.trace)
-            Trace.info("FC.blockSender()", "setting blocking=true; creditors are:\n" + printCreditors());
-        // System.out.println("** block sender");
-        blocking=true;
-    }
-
-
 
     /** If message queueing is enabled, sends queued messages and unlocks sender (if successful) */
     void unblockSender() {
         if(Trace.trace)
             Trace.info("FC.unblockSender()", "setting blocking=false");
-        if(direct_blocking) {
-            blocking=false;
-            this.notifyAll();
-        }
-        else {
-            if(sendQueuedMessages()) {
-                passUp(new Event(Event.UNBLOCK_SEND)); // tell the JChannel to block send()
-                blocking=false;
-            }
-        }
+        blocking=false;
+        this.notifyAll();
     }
 
     String printCreditors() {
