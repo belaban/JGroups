@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.16 2004/05/02 13:44:29 yaron-r Exp $
+// $Id: MessageDispatcher.java,v 1.17 2004/05/02 16:11:13 yaron-r Exp $
 
 package org.jgroups.blocks;
 
@@ -272,12 +272,13 @@ public class MessageDispatcher implements RequestHandler {
             Vector tmp_mbrs = channel.getView() != null ? channel.getView().getMembers() : null;
             setMembers(tmp_mbrs);
         }
-        prot_adapter.resume();
+        if (null != prot_adapter) { //null if called from the constructor that uses PullPushAdapter
+            prot_adapter.resume();
+        }
     }
 
 
     public void stop() {
-        prot_adapter.pause();
         if (corr != null) {
             corr.stop();
             corr = null;
