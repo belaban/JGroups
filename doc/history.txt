@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.33 2004/01/18 15:15:00 tsorgie Exp $
+Revision: $Id: history.txt,v 1.34 2004/01/18 21:25:55 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java JGroups.Version')]
 
@@ -27,6 +27,9 @@ romuald     = Romuald du Song
 
 Version 2.2.1
 -------------
+
+- ConnectionTable: new sockets now use the bind_addr (used to ignore it)
+  (bela Jan 18 2004)
 
 - Added network optimization to PING and TCPPING for FIND_INITIAL_MBRS event when initial hosts is used,
   rather than send to all, skip send for initial members already in the view
