@@ -1,4 +1,4 @@
-// $Id: Trace.java,v 1.4 2004/02/24 17:08:54 belaban Exp $
+// $Id: Trace.java,v 1.5 2004/02/24 17:36:12 belaban Exp $
 
 package org.jgroups.log;
 
@@ -23,6 +23,14 @@ public class Trace {
         }
         else {
             Trace.trace=true;
+        }
+
+        String version=System.getProperty("java.version");
+        if(version != null) {
+            version=version.trim();
+            if(version.startsWith("1.1") || version.startsWith("1.2") || version.startsWith(("1.3"))) {
+                throw new RuntimeException("log4j.Trace requires JDK 1.4 or higher");
+            }
         }
     }
 
