@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.8 2005/01/05 10:37:56 belaban Exp $
+// $Id: Draw.java,v 1.9 2005/01/28 14:16:43 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -169,6 +169,7 @@ public class Draw implements ActionListener, ChannelListener {
         setTitle();
         mainFrame.pack();
         mainFrame.setLocation(15, 25);
+        mainFrame.setBounds(new Rectangle(280, 280));
         mainFrame.setVisible(true);
         if(!no_channel)
             mainLoop();
