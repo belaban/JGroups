@@ -1,4 +1,4 @@
-// $Id: ProtocolData.java,v 1.2 2004/03/30 06:47:14 belaban Exp $
+// $Id: ProtocolData.java,v 1.3 2004/04/24 11:19:27 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -7,95 +7,117 @@ package org.jgroups.conf;
  * @author Filip Hanik (<a href="mailto:filip@filip.net">filip@filip.net)
  * @version 1.0
  */
+
 import java.util.HashMap;
 import java.util.Iterator;
-public class ProtocolData
-{
-    private HashMap mParameters = new HashMap(); 
+
+public class ProtocolData {
+    private HashMap mParameters=new HashMap();
     private String mProtocolName;
     private String mDescription;
     private String mClassName;
-    private boolean mIsOverRide = false;
-    
-    public ProtocolData(String protocolName, 
-                        String description, 
-                        String className, 
-                        ProtocolParameter[] params)
-    {
-        mProtocolName = protocolName;
-        mDescription  = description;
-        mClassName    = className;
-        if ( params != null )  
-            for ( int i=0; i<params.length; i++)
-            {
-                mParameters.put(params[i].getName(),params[i]);
+    private boolean mIsOverRide=false;
+
+    public ProtocolData(String protocolName,
+                        String description,
+                        String className,
+                        ProtocolParameter[] params) {
+        mProtocolName=protocolName;
+        mDescription=description;
+        mClassName=className;
+        if(params != null)
+            for(int i=0; i < params.length; i++) {
+                mParameters.put(params[i].getName(), params[i]);
             }//for
     }
-    
-    public ProtocolData(String overRideName, 
-                        ProtocolParameter[] params)
-    {
-        this(overRideName,null,null,params);
-        mIsOverRide = true;
-        
+
+    public ProtocolData(String overRideName,
+                        ProtocolParameter[] params) {
+        this(overRideName, null, null, params);
+        mIsOverRide=true;
+
     }
-    
-    public String getClassName() { return mClassName; }
-    public String getProtocolName() { return mProtocolName; }
-    public String getDescription() { return mDescription; }
-    public HashMap getParameters() { return mParameters; }
-    public boolean isOverride() { return mIsOverRide; }
-    
-    public ProtocolParameter[] getParametersAsArray() 
-    { 
-        ProtocolParameter[] result = new ProtocolParameter[mParameters.size()];
-        Iterator it = mParameters.keySet().iterator();
-        for ( int i=0; i<result.length; i++ )
-        {
-            String key = (String)it.next();
-            result[i] = (ProtocolParameter)mParameters.get(key);
+
+    public String getClassName() {
+        return mClassName;
+    }
+
+    public String getProtocolName() {
+        return mProtocolName;
+    }
+
+    public String getDescription() {
+        return mDescription;
+    }
+
+    public HashMap getParameters() {
+        return mParameters;
+    }
+
+    public boolean isOverride() {
+        return mIsOverRide;
+    }
+
+    public ProtocolParameter[] getParametersAsArray() {
+        ProtocolParameter[] result=new ProtocolParameter[mParameters.size()];
+        Iterator it=mParameters.keySet().iterator();
+        for(int i=0; i < result.length; i++) {
+            String key=(String)it.next();
+            result[i]=(ProtocolParameter)mParameters.get(key);
         }
         return result;
     }
-    
-    
-    public void override(ProtocolParameter[] params)
-    {
-        for ( int i=0; i<params.length; i++ )
-            mParameters.put(params[i].getName(),params[i]);
+
+
+    public void override(ProtocolParameter[] params) {
+        for(int i=0; i < params.length; i++)
+            mParameters.put(params[i].getName(), params[i]);
     }
-    
-    public String getProtocolString()
-    {
-        StringBuffer buf= new StringBuffer(mClassName);
-        if ( mParameters.size() > 0)
-        {
+
+    public String getProtocolString(boolean new_format) {
+        return new_format? getProtocolStringNewXml() : getProtocolString();
+    }
+
+    public String getProtocolString() {
+        StringBuffer buf=new StringBuffer(mClassName);
+        if(mParameters.size() > 0) {
             buf.append("(");
-            Iterator i = mParameters.keySet().iterator();
-            while ( i.hasNext() )
-            {
-                String key = (String)i.next();
-                ProtocolParameter param = (ProtocolParameter)mParameters.get(key);
+            Iterator i=mParameters.keySet().iterator();
+            while(i.hasNext()) {
+                String key=(String)i.next();
+                ProtocolParameter param=(ProtocolParameter)mParameters.get(key);
                 buf.append(param.getParameterString());
-                if ( i.hasNext() ) buf.append(";"); 
-            }//while       
+                if(i.hasNext()) buf.append(";");
+            }//while
             buf.append(")");
         }
         return buf.toString();
     }
-    
-    public int hashCode()
-    {
+
+    public String getProtocolStringNewXml() {
+        StringBuffer buf=new StringBuffer(mClassName + " ");
+        if(mParameters.size() > 0) {
+            Iterator i=mParameters.keySet().iterator();
+            while(i.hasNext()) {
+                String key=(String)i.next();
+                ProtocolParameter param=(ProtocolParameter)mParameters.get(key);
+                buf.append(param.getParameterStringXml());
+                if(i.hasNext()) buf.append(" ");
+            }
+        }
+        return buf.toString();
+    }
+
+    public int hashCode() {
         return mProtocolName.hashCode();
     }
-    
-    public boolean equals(Object another)
-    {
-        if ( another instanceof ProtocolData )
-           return getProtocolName().equals(((ProtocolData)another).getProtocolName()); 
+
+    public boolean equals(Object another) {
+        if(another instanceof ProtocolData)
+            return getProtocolName().equals(((ProtocolData)another).getProtocolName());
         else
             return false;
     }
-    
-    
+
+
 }
