@@ -1,4 +1,4 @@
-// $Id: Queue.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+// $Id: Queue.java,v 1.2 2003/09/19 18:20:53 belaban Exp $
 
 package org.jgroups.util;
 
@@ -23,14 +23,18 @@ import java.util.Vector;
 public class Queue {
     /*head and the tail of the list so that we can easily add and remove objects*/
     Element head=null, tail=null;
+
     /*flag to determine the state of the queue*/
     boolean closed=false;
+
     /*current size of the queue*/
-    int size=0;
+    int     size=0;
+
     /*lock object for synchronization*/
-    Object mutex=new Object();
+    Object  mutex=new Object();
+
     /*the number of end markers that have been added*/
-    int num_markers=0;
+    int     num_markers=0;
 
 
     /**
@@ -525,7 +529,30 @@ public class Queue {
     }
 
 
-
+    /**
+     * Blocks until the queue has no elements left. If the queue is empty, the call will return
+     * immediately
+     * @param timeout Call returns if timeout has elapsed (number of milliseconds). 0 means to wait forever
+     * @throws QueueClosedException Thrown if queue has been closed
+     * @throws TimeoutException Thrown if timeout has elapsed
+     */
+    public void waitUntilEmpty(long timeout) throws QueueClosedException, TimeoutException {
+        synchronized(mutex) {
+            if(closed)
+                throw new QueueClosedException();
+            if(size == 0)
+                return;
+            try {
+                mutex.wait(timeout);
+            }
+            catch(InterruptedException e) {
+            }
+            if(closed)
+                throw new QueueClosedException();
+            if(size > 0)
+                throw new TimeoutException("queue has " + size + " elements");
+        }
+    }
 
 
     /* ------------------------------------- Private Methods ----------------------------------- */
