@@ -1,4 +1,4 @@
-// $Id: LOOPBACK.java,v 1.4 2004/04/23 19:36:13 belaban Exp $
+// $Id: LOOPBACK.java,v 1.5 2004/06/11 06:57:19 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -8,6 +8,7 @@ import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.stack.Protocol;
+import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
 
 import java.util.Properties;
@@ -44,7 +45,11 @@ public class LOOPBACK extends Protocol {
 
 
     public void init() throws Exception {
-        local_addr=new org.jgroups.stack.IpAddress("localhost", 10000); // fake address
+        local_addr=new IpAddress("localhost", 10000) { // fake address
+            public String toString() {
+                return "<fake>";
+            }
+        };
     }
 
     public void start() throws Exception {
@@ -62,10 +67,8 @@ public class LOOPBACK extends Protocol {
         Message msg, rsp;
         Address dest_addr;
 
-
-            if(log.isInfoEnabled()) log.info("event is " + evt + ", group_addr=" + group_addr +
-                                          ", time is " + System.currentTimeMillis() + ", hdrs: " + Util.printEvent(evt));
-
+        if(log.isInfoEnabled()) log.info("event is " + evt + ", group_addr=" + group_addr +
+                                         ", time is " + System.currentTimeMillis() + ", hdrs: " + Util.printEvent(evt));
 
         switch(evt.getType()) {
 
