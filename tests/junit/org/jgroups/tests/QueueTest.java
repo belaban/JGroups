@@ -1,4 +1,4 @@
-// $Id: QueueTest.java,v 1.10 2004/03/30 06:47:31 belaban Exp $
+// $Id: QueueTest.java,v 1.11 2004/12/06 15:14:57 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -17,12 +17,14 @@ public class QueueTest extends TestCase {
         super(Name_);
     }
 
-    public void setUp() {
+    public void setUp() throws Exception {
+        super.setUp();
         queue=new Queue();
     }
 
 
-    public void tearDown() {
+    public void tearDown() throws Exception {
+        super.tearDown();
         if(queue != null) {
             queue.reset();
             queue=null;
