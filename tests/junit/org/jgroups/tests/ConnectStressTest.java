@@ -1,4 +1,4 @@
-// $Id: ConnectStressTest.java,v 1.10 2004/07/05 14:15:04 belaban Exp $
+// $Id: ConnectStressTest.java,v 1.11 2004/09/13 20:47:38 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -6,6 +6,8 @@ package org.jgroups.tests;
 import EDU.oswego.cs.dl.util.concurrent.BrokenBarrierException;
 import EDU.oswego.cs.dl.util.concurrent.CyclicBarrier;
 import junit.framework.TestCase;
+import junit.framework.Test;
+import junit.framework.TestSuite;
 import org.jgroups.ChannelException;
 import org.jgroups.JChannel;
 import org.jgroups.View;
@@ -17,7 +19,7 @@ import java.util.Vector;
 /**
  * Creates 1 channel, then creates NUM channels, all try to join the same channel concurrently.
  * @author Bela Ban Nov 20 2003
- * @version $Id: ConnectStressTest.java,v 1.10 2004/07/05 14:15:04 belaban Exp $
+ * @version $Id: ConnectStressTest.java,v 1.11 2004/09/13 20:47:38 belaban Exp $
  */
 public class ConnectStressTest extends TestCase {
     static CyclicBarrier  start_connecting=null;
@@ -30,15 +32,15 @@ public class ConnectStressTest extends TestCase {
     static String         groupname="ConcurrentTestDemo";
 
 
-    static String props="UDP(mcast_addr=228.8.8.9;mcast_port=7788;ip_ttl=32;" +
+    static String props="UDP(mcast_addr=228.8.8.9;mcast_port=7788;ip_ttl=1;" +
             "mcast_send_buf_size=150000;mcast_recv_buf_size=80000):" +
             "PING(timeout=3000;num_initial_members=3):" +
             "MERGE2(min_interval=5000;max_interval=10000):" +
             "FD_SOCK:" +
             "VERIFY_SUSPECT(timeout=1500):" +
-            "pbcast.NAKACK(gc_lag=50;retransmit_timeout=1200,2400,4800):" +
-            "UNICAST(timeout=600,1200,2400):" +
-            "pbcast.STABLE(desired_avg_gossip=20000):" +
+            "pbcast.NAKACK(gc_lag=50;retransmit_timeout=300,600,1200,2400,4800):" +
+            "UNICAST(timeout=300,600,1200,2400):" +
+            "pbcast.STABLE(desired_avg_gossip=5000):" +
             "FRAG(frag_size=4096;down_thread=false;up_thread=false):" +
             "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
             "shun=true;print_local_addr=false)";
@@ -63,6 +65,7 @@ public class ConnectStressTest extends TestCase {
         //  create main channel - will be coordinator for JOIN requests
         channel=new JChannel(props);
         channel.connect(groupname);
+        System.out.println("connected the first member: address is " + channel.getLocalAddress());
         // at this point we have successfully connected
 
         assertEquals(channel.getView().getMembers().size(), 1);
@@ -76,7 +79,6 @@ public class ConnectStressTest extends TestCase {
         // signal the threads to start connecting to their channels
         start_connecting.barrier();
         start=System.currentTimeMillis();
-
 
         try {
             connected.barrier();
@@ -106,7 +108,6 @@ public class ConnectStressTest extends TestCase {
         disconnected.barrier();
         stop=System.currentTimeMillis();
         System.out.println("-- took " + (stop-start) + " msecs for " + NUM + " threads to disconnect");
-
 
         int num_members=0;
         for(int i=0; i < 10; i++) {
@@ -140,7 +141,6 @@ public class ConnectStressTest extends TestCase {
 
             try {
                 ch=new JChannel(props);
-                log("created channel");
 
                 start_connecting.barrier();
 
@@ -150,8 +150,8 @@ public class ConnectStressTest extends TestCase {
                 ch.connect(groupname);
                 stop=System.currentTimeMillis();
                 total_connect_time=stop-start;
-                log("connected in " + total_connect_time + " msecs (" + channel.getView().getMembers().size() +
-                    " members). local_addr=" + ch.getLocalAddress() + ", view: " + channel.getView());
+                log(ch.getLocalAddress() + " connected in " + total_connect_time + " msecs (" +
+                    channel.getView().getMembers().size() + " members).");
 
                 connected.barrier();
 
@@ -161,10 +161,7 @@ public class ConnectStressTest extends TestCase {
                 ch.close();
                 stop=System.currentTimeMillis();
 
-                View v=ch.getView();
-                String size_str=v != null? "(" + v.getMembers().size() + " members)" : "";
-
-                log("disconnected in " + (stop-start) + " msecs " + size_str);
+                log("disconnected in " + (stop-start) + " msecs");
                 disconnected.barrier();
             }
             catch(BrokenBarrierException e) {
@@ -183,6 +180,13 @@ public class ConnectStressTest extends TestCase {
         }
     }
 
+
+    public static Test suite() {
+        TestSuite s=new TestSuite();
+        s.addTest(new ConnectStressTest("testConcurrentJoins"));
+        s.addTest(new ConnectStressTest("testConcurrentLeaves"));
+        return s;
+    }
 
     public static void main(String[] args) {
         String[] testCaseName={ConnectStressTest.class.getName()};
