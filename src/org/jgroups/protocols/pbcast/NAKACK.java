@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.28 2004/09/23 16:29:38 belaban Exp $
+// $Id: NAKACK.java,v 1.29 2004/10/13 15:57:39 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -61,9 +61,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
      */
     private final HashMap received_msgs=new HashMap(11);
 
-    /**
-     * TreeMap<Long,Message>. Map of messages sent by me (keyed and sorted on sequence number)
-     */
+    /** TreeMap<Long,Message>. Map of messages sent by me (keyed and sorted on sequence number) */
     private final TreeMap sent_msgs=new TreeMap();
 
     private boolean leaving=false;
