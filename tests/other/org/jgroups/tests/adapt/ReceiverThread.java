@@ -129,19 +129,19 @@ public class ReceiverThread extends Thread {
     String dumpStats(long received_msgs) {
         StringBuffer sb=new StringBuffer();
         if(gnuplot_output)
-            sb.append(received_msgs).append(" ");
+            sb.append(received_msgs).append(' ');
         else
             sb.append("\nmsgs_received=").append(received_msgs);
 
         if(gnuplot_output)
-            sb.append(Runtime.getRuntime().freeMemory() / 1000.0).append(" ");
+            sb.append(Runtime.getRuntime().freeMemory() / 1000.0).append(' ');
         else
             sb.append(", free_mem=").append(Runtime.getRuntime().freeMemory() / 1000.0);
 
         if(gnuplot_output)
-            sb.append(Runtime.getRuntime().totalMemory() / 1000.0).append(" ");
+            sb.append(Runtime.getRuntime().totalMemory() / 1000.0).append(' ');
         else
-            sb.append(", total_mem=").append(Runtime.getRuntime().totalMemory() / 1000.0).append("\n");
+            sb.append(", total_mem=").append(Runtime.getRuntime().totalMemory() / 1000.0).append('\n');
 
         dumpThroughput(sb, received_msgs);
         return sb.toString();
@@ -156,19 +156,19 @@ public class ReceiverThread extends Thread {
 
         tmp=(1000 * counter) / (current - beginning);
         if(gnuplot_output)
-            sb.append(tmp).append(" ");
+            sb.append(tmp).append(' ');
         else
             sb.append("total_msgs_sec=").append(tmp).append(" [msgs/sec]");
 
         tmp=(received_msgs * msg_size) / (current - beginning);
         if(gnuplot_output)
-            sb.append(tmp).append(" ");
+            sb.append(tmp).append(' ');
         else
             sb.append("\ntotal_throughput=").append(tmp).append(" [KB/sec]");
 
         tmp=(1000 * log_interval) / (current - last_dump);
         if(gnuplot_output)
-            sb.append(tmp).append(" ");
+            sb.append(tmp).append(' ');
         else {
             sb.append("\nrolling_msgs_sec (last ").append(log_interval).append(" msgs)=");
             sb.append(tmp).append(" [msgs/sec]");
@@ -176,7 +176,7 @@ public class ReceiverThread extends Thread {
 
         tmp=(log_interval * msg_size) / (current - last_dump);
         if(gnuplot_output)
-            sb.append(tmp).append(" ");
+            sb.append(tmp).append(' ');
         else {
             sb.append("\nrolling_throughput (last ").append(log_interval).append(" msgs)=");
             sb.append(tmp).append(" [KB/sec]\n");

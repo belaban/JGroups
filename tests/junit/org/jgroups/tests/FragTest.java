@@ -1,4 +1,4 @@
-// $Id: FragTest.java,v 1.3 2004/03/30 06:47:31 belaban Exp $
+// $Id: FragTest.java,v 1.4 2004/07/05 06:04:27 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -56,11 +56,11 @@ public class FragTest extends TestCase {
     public void test0() throws Exception {
 	Object         mutex=new Object();
 	FragReceiver   frag_receiver=new FragReceiver(this, mutex);
-	ProtocolTester t=new ProtocolTester("FRAG(frag_size=" + FRAG_SIZE + ")", frag_receiver);
+	ProtocolTester t=new ProtocolTester("FRAG(frag_size=" + FRAG_SIZE + ')', frag_receiver);
 	Message        big_msg;
 	IpAddress      local_addr=new IpAddress(5555);
 
-	System.out.println("\nProtocol for protocol tester: " + t.getProtocolSpec() + "\n");
+	System.out.println("\nProtocol for protocol tester: " + t.getProtocolSpec() + '\n');
 
 	synchronized(mutex) {
 	    for(int i=0; i < NUM_MSGS; i++) {

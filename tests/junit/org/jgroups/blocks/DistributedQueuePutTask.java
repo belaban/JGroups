@@ -1,4 +1,4 @@
-// $Id: DistributedQueuePutTask.java,v 1.3 2004/03/30 06:47:30 belaban Exp $
+// $Id: DistributedQueuePutTask.java,v 1.4 2004/07/05 06:02:33 belaban Exp $
 /*
  * Created on Oct 15, 2003
  *
@@ -43,7 +43,7 @@ public class DistributedQueuePutTask implements Runnable
     {
         for (int i = 0; i < max; i++)
         {
-            String item = name + "_" + i;
+            String item = name + '_' + i;
             queue.add(item);
             content.addElement(item);
             if (delay > 0)

@@ -1,4 +1,4 @@
-// $Id: GossipRouter.java,v 1.4 2004/03/30 06:47:27 belaban Exp $
+// $Id: GossipRouter.java,v 1.5 2004/07/05 05:58:46 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -295,7 +295,7 @@ public class GossipRouter {
         d=new Date();
          {
             System.out.println("GossipRouter started at " + d +
-                    "\nListening on port " + port + " bound on address " + bindAddress + "\n");
+                    "\nListening on port " + port + " bound on address " + bindAddress + '\n');
         }
         d=null;
 
@@ -556,7 +556,7 @@ public class GossipRouter {
                 return null;
 
             default:
-                if(log.isWarnEnabled()) log.warn("received unkown gossip request (gossip=" + gossip + ")");
+                if(log.isWarnEnabled()) log.warn("received unkown gossip request (gossip=" + gossip + ')');
                 return null;
             }
         }
@@ -622,7 +622,7 @@ public class GossipRouter {
                             j.remove();
 
                                if(log.isInfoEnabled()) log.info("Removed member " + ae +
-                                       " from group " + key + "(" + diff + " msecs old)");
+                                       " from group " + key + '(' + diff + " msecs old)");
                             num_entries_removed++;
                         }
                     }
@@ -740,9 +740,9 @@ public class GossipRouter {
                         else {
                             for(Iterator j=l.iterator(); j.hasNext();) {
                                 AddressEntry ae=(AddressEntry)j.next();
-                                sb.append("\t");
+                                sb.append('\t');
                                 sb.append(ae.toString());
-                                sb.append("\n");
+                                sb.append('\n');
                             }
                         }
                 }
@@ -1046,7 +1046,7 @@ public class GossipRouter {
                 }
                 catch(EOFException io_ex) {
                      {
-                        if(log.isInfoEnabled()) log.info("client " +sock.getInetAddress().getHostName() + ":" + sock.getPort() +
+                        if(log.isInfoEnabled()) log.info("client " +sock.getInetAddress().getHostName() + ':' + sock.getPort() +
                                 " closed connection; removing it from routing table");
                     }
                     removeEntry(sock); // will close socket
@@ -1074,7 +1074,7 @@ public class GossipRouter {
 
         for(int i=0; i < args.length; i++) {
             arg=args[i];
-            if(arg.equals("-help")) {
+            if("-help".equals(arg)) {
                 System.out.println();
                 System.out.println("GossipRouter [-port <port>] [-bindaddress <address>] [options]");
                 System.out.println("Options: ");
@@ -1085,20 +1085,20 @@ public class GossipRouter {
                 System.out.println("                            protocol on the connection.");
                 return;
             }
-            else if(arg.equals("-port")) {
-                    port=new Integer(args[++i]).intValue();
+            else if("-port".equals(arg)) {
+                    port=Integer.parseInt(args[++i]);
             }
-            else if(arg.equals("-bindaddress")) {
+            else if("-bindaddress".equals(arg)) {
                 address=args[++i];
             }
-            else if(arg.equals("-expiry")) {
-                expiry=new Long(args[++i]).longValue();
+            else if("-expiry".equals(arg)) {
+                expiry=Long.parseLong(args[++i]);
             }
-            else if(arg.equals("-timeout")) {
-                timeout=new Long(args[++i]).longValue();
+            else if("-timeout".equals(arg)) {
+                timeout=Long.parseLong(args[++i]);
             }
-            else if(arg.equals("-rtimeout")) {
-                routingTimeout=new Long(args[++i]).longValue();
+            else if("-rtimeout".equals(arg)) {
+                routingTimeout=Long.parseLong(args[++i]);
             }
         }
         System.out.println("GossipRouter is starting...");

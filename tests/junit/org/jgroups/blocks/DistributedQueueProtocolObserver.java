@@ -1,4 +1,4 @@
-// $Id: DistributedQueueProtocolObserver.java,v 1.2 2004/02/26 19:14:13 belaban Exp $
+// $Id: DistributedQueueProtocolObserver.java,v 1.3 2004/07/05 06:02:33 belaban Exp $
 package org.jgroups.blocks;
 
 import org.apache.log4j.Logger;
@@ -27,7 +27,7 @@ public class DistributedQueueProtocolObserver  implements ProtocolObserver
 		for (int i = 0; i < prots.size(); i++)
 		{
 			Protocol prot = (Protocol) prots.elementAt(i);
-			if (prot.getName().equals("TOTAL_TOKEN"))
+			if ("TOTAL_TOKEN".equals(prot.getName()))
 			{
 				prot.setObserver(this);
 			}
@@ -81,7 +81,7 @@ public class DistributedQueueProtocolObserver  implements ProtocolObserver
 					+ msg.getSrc()
 					+ ", headers are "
 					+ msg.printObjectHeaders()
-					+ ")");
+					+ ')');
 
 		return true;
 	}

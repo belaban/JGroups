@@ -47,15 +47,15 @@ public class Test {
         String topic_name="topic/testTopic";
 
         for(int i=0; i < args.length; i++) {
-            if(args[i].equals("-sender")) {
+            if("-sender".equals(args[i])) {
                 sender=true;
                 continue;
             }
-            if(args[i].equals("-receiver")) {
+            if("-receiver".equals(args[i])) {
                 sender=false;
                 continue;
             }
-            if(args[i].equals("-config")) {
+            if("-config".equals(args[i])) {
                 config=args[++i];
                 continue;
             }
@@ -91,7 +91,7 @@ public class Test {
                             line.indexOf(';')));
                 }
                 else if(line.startsWith("TOPIC=")) {
-                   topic_name=new String(line.substring(line.indexOf('=') + 1, line.indexOf(';')));
+                   topic_name=line.substring(line.indexOf('=') + 1, line.indexOf(';'));
                 }
                 else if(line.startsWith("GNUPLOT_OUTPUT=")) {
                     // only parse if not yet set by -Dgnuplot_output=true option (overrides file)
@@ -111,7 +111,7 @@ public class Test {
                     + "Sender:" + sender + "  num_msgs:" + num_msgs
                     + "  Size(bytes):" + msg_size + "  # Mbrs:" + grpMembers
                     + "  Senders: " + num_senders
-                    + "\nLog interval: " + log_interval + "\n";
+                    + "\nLog interval: " + log_interval + '\n';
 
             System.out.println(s);
             Logger.getLogger(Test.class).info("main(): " + s);

@@ -1,4 +1,4 @@
-// $Id: TotalTokenProtocolObserver.java,v 1.3 2004/03/30 06:47:30 belaban Exp $
+// $Id: TotalTokenProtocolObserver.java,v 1.4 2004/07/05 06:02:33 belaban Exp $
 package org.jgroups.blocks;
 
 import org.apache.log4j.Logger;
@@ -24,7 +24,7 @@ public class TotalTokenProtocolObserver  implements ProtocolObserver
 		for (int i = 0; i < prots.size(); i++)
 		{
 			Protocol prot = (Protocol) prots.elementAt(i);
-			if (prot.getName().equals("TOTAL_TOKEN"))
+			if ("TOTAL_TOKEN".equals(prot.getName()))
 			{
 				prot.setObserver(this);
 			}
@@ -76,7 +76,7 @@ public class TotalTokenProtocolObserver  implements ProtocolObserver
 					+ msg.getSrc()
 					+ ", headers are "
 					+ msg.printObjectHeaders()
-					+ ")");
+					+ ')');
 
 		return true;
 	}

@@ -1,4 +1,4 @@
-// $Id: ViewId.java,v 1.2 2003/12/18 23:51:55 belaban Exp $
+// $Id: ViewId.java,v 1.3 2004/07/05 06:00:40 belaban Exp $
 
 package org.jgroups;
 
@@ -64,7 +64,7 @@ public class ViewId implements Externalizable, Comparable, Cloneable {
 
     public String toString()
     {
-        return "[" + coord_addr + "|" + id + "]";
+        return "[" + coord_addr + '|' + id + ']';
     }
 
     /**

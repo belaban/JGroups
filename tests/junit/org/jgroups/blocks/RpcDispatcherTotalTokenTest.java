@@ -1,4 +1,4 @@
-// $Id: RpcDispatcherTotalTokenTest.java,v 1.2 2004/03/30 06:47:30 belaban Exp $
+// $Id: RpcDispatcherTotalTokenTest.java,v 1.3 2004/07/05 06:02:33 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -117,7 +117,7 @@ public class RpcDispatcherTotalTokenTest extends TestCase
                     MethodCall call =
                         new MethodCall(
                             "print",
-                            new Object[] { new String(taskName + "_" + i)},
+                            new Object[] { taskName + '_' + i},
                             new String[] { String.class.getName()});
                     rsp_list = disp.callRemoteMethods(null, call, GroupRequest.GET_ALL, 0);
                     logger.debug("Task " + taskName + " Responses: " + rsp_list);

@@ -1,4 +1,4 @@
-// $Id: Header.java,v 1.2 2003/10/18 06:36:53 belaban Exp $
+// $Id: Header.java,v 1.3 2004/07/05 06:00:40 belaban Exp $
 
 package org.jgroups;
 
@@ -31,7 +31,7 @@ public abstract class Header implements Externalizable, Cloneable {
 
 
     public String toString() {
-        return "[" + getClass().getName() + " Header]";
+        return '[' + getClass().getName() + " Header]";
     }
 
 }

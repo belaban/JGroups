@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.9 2004/03/30 06:47:29 belaban Exp $
+// $Id: Message.java,v 1.10 2004/07/05 06:00:40 belaban Exp $
 
 package org.jgroups;
 
@@ -346,9 +346,9 @@ public class Message implements Externalizable {
         if(buf != null && length > 0)
             ret.append(length);
         else
-            ret.append("0");
+            ret.append('0');
         ret.append(" bytes");
-        ret.append("]");
+        ret.append(']');
         return ret.toString();
     }
 
@@ -406,7 +406,7 @@ public class Message implements Externalizable {
         if(headers != null) {
             for(Iterator it=headers.entrySet().iterator(); it.hasNext();) {
                 entry=(Map.Entry)it.next();
-                sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
+                sb.append(entry.getKey()).append(": ").append(entry.getValue()).append('\n');
             }
         }
         return sb.toString();
@@ -483,7 +483,7 @@ public class Message implements Externalizable {
         }
 
         len=in.readInt();
-        if(len > 0) headers=new HashMap();
+        if(len > 0) headers=new HashMap(11);
         while(len-- > 0) {
             key=in.readUTF();
             value=Marshaller.read(in);
@@ -498,7 +498,7 @@ public class Message implements Externalizable {
     /* ----------------------------------- Private methods ------------------------------- */
 
     HashMap headers() {
-        return headers != null ? headers : (headers=new HashMap());
+        return headers != null ? headers : (headers=new HashMap(11));
     }
     /* ------------------------------- End of Private methods ---------------------------- */
 

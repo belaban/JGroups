@@ -1,4 +1,4 @@
-// $Id: View.java,v 1.2 2003/12/18 01:27:50 belaban Exp $
+// $Id: View.java,v 1.3 2004/07/05 06:00:40 belaban Exp $
 
 package org.jgroups;
 
@@ -154,7 +154,7 @@ public class View implements Externalizable, Cloneable
             {
                 ret.append(members.elementAt(i)).append("\n\t");
             }
-            ret.append("\n");
+            ret.append('\n');
         }
         return ret.toString();
     }

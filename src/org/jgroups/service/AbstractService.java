@@ -178,7 +178,7 @@ public abstract class AbstractService implements MembershipListener {
             }
 	};
 	
-	Thread thread = new Thread(runnable, getName() + " Thread [" + getAddress() + "]");
+	Thread thread = new Thread(runnable, getName() + " Thread [" + getAddress() + ']');
         // thread.setDaemon(true);
 	thread.start();
     }

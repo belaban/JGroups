@@ -1,4 +1,4 @@
-// $Id: DistributedQueueReadTask.java,v 1.3 2004/03/30 06:47:30 belaban Exp $
+// $Id: DistributedQueueReadTask.java,v 1.4 2004/07/05 06:02:33 belaban Exp $
 /*
  * Created on Oct 15, 2003
  *
@@ -56,7 +56,7 @@ public     class DistributedQueueReadTask implements Runnable
 			}
 			if (counter.getValue() >= max)
 				finished = true;
-			logger.debug("Found item in queue " + name + ":" + contenu);
+			logger.debug("Found item in queue " + name + ':' + contenu);
 		}
 		finished = true;
 	}

@@ -1,4 +1,4 @@
-// $Id: ChannelMono.java,v 1.3 2004/03/30 06:47:31 belaban Exp $
+// $Id: ChannelMono.java,v 1.4 2004/07/05 06:04:27 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -75,7 +75,7 @@ public class ChannelMono extends TestCase
 
             start = System.currentTimeMillis();
             for (int i = 0; i < nitems; i++)
-                channel.send(new Message(null, null, new String("Msg #" + i).getBytes()));
+                channel.send(new Message(null, null, ("Msg #" + i).getBytes()));
 
             mythread.join();
 
@@ -282,7 +282,7 @@ public class ChannelMono extends TestCase
         logger.info("-- adding element 99");
         try
         {
-            channel.send(null, null, new String("99").getBytes());
+            channel.send(null, null, "99".getBytes());
         }
         catch (Exception ex)
         {
@@ -293,7 +293,7 @@ public class ChannelMono extends TestCase
         logger.info("-- adding element 100");
         try
         {
-            channel.send(null, null, new String("100").getBytes());
+            channel.send(null, null, "100".getBytes());
         }
         catch (Exception ex)
         {
@@ -320,7 +320,7 @@ public class ChannelMono extends TestCase
             {
                 try
                 {
-                    channel.send(null, null, new String("Closing Message").getBytes());
+                    channel.send(null, null, "Closing Message".getBytes());
                 }
                 catch (Exception ex)
                 {
@@ -430,7 +430,7 @@ public class ChannelMono extends TestCase
                     if (readers[i].isAlive())
                     {
                         allStopped = false;
-                        logger.info("reader #" + i + " " + reads[i] + " read items");
+                        logger.info("reader #" + i + ' ' + reads[i] + " read items");
                     }
                     logger.info("reader #" + i + " is " + (readers[i].isAlive() ? "alive" : "terminated"));
                 }
@@ -613,7 +613,7 @@ public class ChannelMono extends TestCase
                 for (int i = 0; i < iteration; i++)
                 {
                     channel.send(null, null, new Long(rank));
-                    logger.debug("Thread #" + rank + " added element (" + rank + ")");
+                    logger.debug("Thread #" + rank + " added element (" + rank + ')');
                 }
             }
             catch (ChannelException ex)

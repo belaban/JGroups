@@ -1,4 +1,4 @@
-// $Id: ChannelTrio.java,v 1.2 2004/03/30 06:47:31 belaban Exp $
+// $Id: ChannelTrio.java,v 1.3 2004/07/05 06:04:27 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -71,7 +71,7 @@ public class ChannelTrio extends TestCase
             channel3.connect(channelName);
             start = System.currentTimeMillis();
             for (int i = 0; i < nitems; i++)
-                channel3.send(new Message(null, null, new String("Msg #" + i).getBytes()));
+                channel3.send(new Message(null, null, ("Msg #" + i).getBytes()));
 
             rthread1.join();
             rthread2.join();
@@ -340,7 +340,7 @@ public class ChannelTrio extends TestCase
         logger.info("-- adding Msg #1");
         try
         {
-            channel2.send(new Message(null, null, new String("Msg #1").getBytes()));
+            channel2.send(new Message(null, null, "Msg #1".getBytes()));
         }
         catch (Exception ex)
         {
@@ -367,7 +367,7 @@ public class ChannelTrio extends TestCase
         logger.info("-- adding Msg #2");
         try
         {
-            channel2.send(new Message(null, null, new String("Msg #2").getBytes()));
+            channel2.send(new Message(null, null, "Msg #2".getBytes()));
         }
         catch (Exception ex)
         {
@@ -401,9 +401,9 @@ public class ChannelTrio extends TestCase
         try
         {
             logger.info("-- adding Msg #3");
-            channel2.send(new Message(null, null, new String("Msg #3").getBytes()));
+            channel2.send(new Message(null, null, "Msg #3".getBytes()));
             logger.info("-- adding Msg #4");
-            channel2.send(new Message(null, null, new String("Msg #4").getBytes()));
+            channel2.send(new Message(null, null, "Msg #4".getBytes()));
         }
         catch (Exception ex)
         {
@@ -597,7 +597,7 @@ public class ChannelTrio extends TestCase
                     if (readersOne[i].isAlive())
                     {
                         allStopped = false;
-                        logger.info("reader One #" + i + " " + readsOne[i] + " read items");
+                        logger.info("reader One #" + i + ' ' + readsOne[i] + " read items");
                     }
                     logger.info("reader One #" + i + " is " + (readersOne[i].isAlive() ? "alive" : "terminated"));
                 }
@@ -623,7 +623,7 @@ public class ChannelTrio extends TestCase
                     if (readersTwo[i].isAlive())
                     {
                         allStopped = false;
-                        logger.info("reader Two #" + i + " " + readsTwo[i] + " read items");
+                        logger.info("reader Two #" + i + ' ' + readsTwo[i] + " read items");
                     }
                     logger.info("reader Two #" + i + " is " + (readersTwo[i].isAlive() ? "alive" : "terminated"));
                 }
@@ -816,7 +816,7 @@ public class ChannelTrio extends TestCase
                 for (int i = 0; i < iteration; i++)
                 {
                     channel.send(null, null, new Long(rank));
-                    logger.debug("Thread #" + rank + " added element (" + rank + ")");
+                    logger.debug("Thread #" + rank + " added element (" + rank + ')');
                     Util.sleepRandom(100);
                 }
             }

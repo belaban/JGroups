@@ -1,4 +1,4 @@
-// $Id: MethodCallTest.java,v 1.5 2004/05/19 17:30:06 belaban Exp $
+// $Id: MethodCallTest.java,v 1.6 2004/07/05 06:04:28 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -34,7 +34,7 @@ public class MethodCallTest extends TestCase {
 
 
     public boolean foo(int a, String b) {
-        System.out.println("test(" + a + ", " + b + ")");
+        System.out.println("test(" + a + ", " + b + ')');
         return true;
     }
 
@@ -43,7 +43,7 @@ public class MethodCallTest extends TestCase {
         if(a != null) {
             for(int i=0; i < a.length; i++) {
                 String s=a[i];
-                System.out.print(s + " ");
+                System.out.print(s + ' ');
             }
         }
         else

@@ -1,4 +1,4 @@
-// $Id: Protocol.java,v 1.16 2004/05/04 23:37:27 belaban Exp $
+// $Id: Protocol.java,v 1.17 2004/07/05 05:58:46 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -28,7 +28,7 @@ class UpHandler extends Thread {
         this.handler=handler;
         this.observer=observer;
         if(handler != null)
-            setName("UpHandler (" + handler.getName() + ")");
+            setName("UpHandler (" + handler.getName() + ')');
         else
             setName("UpHandler");
         setDaemon(true);
@@ -85,7 +85,7 @@ class DownHandler extends Thread {
         this.handler=handler;
         this.observer=observer;
         if(handler != null)
-            setName("DownHandler (" + handler.getName() + ")");
+            setName("DownHandler (" + handler.getName() + ')');
         else
             setName("DownHandler");
         setDaemon(true);
@@ -194,7 +194,7 @@ public abstract class Protocol {
 
         str=props.getProperty("down_thread");
         if(str != null) {
-            down_thread=new Boolean(str).booleanValue();
+            down_thread=Boolean.valueOf(str).booleanValue();
             props.remove("down_thread");
         }
 
@@ -206,7 +206,7 @@ public abstract class Protocol {
 
         str=props.getProperty("up_thread");
         if(str != null) {
-            up_thread=new Boolean(str).booleanValue();
+            up_thread=Boolean.valueOf(str).booleanValue();
             props.remove("up_thread");
         }
 

@@ -65,7 +65,7 @@ public class SenderThread extends Thread {
 
     String dumpStats(long sent_msgs) {
         StringBuffer sb=new StringBuffer();
-        sb.append("\nmsgs_sent=").append(sent_msgs).append("\n");
+        sb.append("\nmsgs_sent=").append(sent_msgs).append('\n');
         sb.append("free_mem=").append(Runtime.getRuntime().freeMemory());
         sb.append(" (total_mem=").append(Runtime.getRuntime().totalMemory()).append(")\n");
         return sb.toString();

@@ -1,4 +1,4 @@
-// $Id: GossipServer.java,v 1.3 2004/03/30 06:47:27 belaban Exp $
+// $Id: GossipServer.java,v 1.4 2004/07/05 05:58:46 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -71,7 +71,7 @@ public class GossipServer {
                 sock=srv_sock.accept();
 
                     if(log.isInfoEnabled()) log.info("accepted connection from " + sock.getInetAddress() +
-                                                     ":" + sock.getPort());
+                                                     ':' + sock.getPort());
                 sock.setSoLinger(true, 500);
                 input=new ObjectInputStream(sock.getInputStream());
                 gossip_req=(GossipData) input.readObject();
@@ -146,7 +146,7 @@ public class GossipServer {
                 return null;
 
             default:
-                if(log.isWarnEnabled()) log.warn("received unkown gossip request (gossip=" + gossip + ")");
+                if(log.isWarnEnabled()) log.warn("received unkown gossip request (gossip=" + gossip + ')');
                 return null;
         }
     }
@@ -247,7 +247,7 @@ public class GossipServer {
                         it.remove();
 
                             if(log.isInfoEnabled()) log.info("removed member " + entry +
-                                                               " from group " + key + "(" + diff + " msecs old)");
+                                                               " from group " + key + '(' + diff + " msecs old)");
                         num_entries_removed++;
                     }
                 }
@@ -312,19 +312,19 @@ public class GossipServer {
         InetAddress address=null;
         for(int i=0; i < args.length; i++) {
             arg=args[i];
-            if(arg.equals("-help")) {
+            if("-help".equals(arg)) {
                 System.out.println("GossipServer [-port <port>] [-expiry <msecs>] [-bindaddress <address>]");
                 return;
             }
-            if(arg.equals("-port")) {
-                port=new Integer(args[++i]).intValue();
+            if("-port".equals(arg)) {
+                port=Integer.parseInt(args[++i]);
                 continue;
             }
-            if(arg.equals("-expiry")) {
-                expiry_time=new Long(args[++i]).longValue();
+            if("-expiry".equals(arg)) {
+                expiry_time=Long.parseLong(args[++i]);
                 continue;
             }
-            if(arg.equals("-bindaddress")) {
+            if("-bindaddress".equals(arg)) {
                 address=InetAddress.getByName(args[++i]);
                 continue;
             }

@@ -24,7 +24,7 @@ import java.util.List;
  *   3. Starts the receiver thread and if(sender), the sender thread.
  * @author Milcan Prica (prica@deei.units.it)
  * @author Bela Ban (belaban@yahoo.com)
- * @version $Id: JmsTester.java,v 1.1 2004/02/20 22:54:05 belaban Exp $
+ * @version $Id: JmsTester.java,v 1.2 2004/07/05 06:08:09 belaban Exp $
  */
 public class JmsTester {
     private boolean sender;
@@ -120,7 +120,7 @@ public class JmsTester {
                             members.add(new_mbr);
                             System.out.println("-- discovered " + new_mbr);
                             if(members.size() >= num_members) {
-                                System.out.println("-- all members have joined (" + members + ")");
+                                System.out.println("-- all members have joined (" + members + ')');
                                 running=false;
                                 synchronized(this) {
                                     if(sub != null) {

@@ -1,4 +1,4 @@
-// $Id: RouterStub.java,v 1.4 2004/03/30 06:47:27 belaban Exp $
+// $Id: RouterStub.java,v 1.5 2004/07/05 05:58:46 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -129,7 +129,7 @@ public class RouterStub {
         byte[] buf=null;
 
         if(sock == null || output == null || input == null) {
-            if(log.isErrorEnabled()) log.error(".register(): No connection to router (groupname=" + groupname + ")");
+            if(log.isErrorEnabled()) log.error(".register(): No connection to router (groupname=" + groupname + ')');
             connected=false;
             return false;
         }
@@ -235,7 +235,7 @@ public class RouterStub {
         Object dst_addr=null;
 
         if(sock == null || output == null || input == null) {
-            if(log.isErrorEnabled()) log.error("send(): No connection to router (groupname=" + groupname + ")");
+            if(log.isErrorEnabled()) log.error("send(): No connection to router (groupname=" + groupname + ')');
             connected=false;
             return false;
         }
@@ -340,7 +340,7 @@ public class RouterStub {
             System.out.println("RouterStub <host> <port>");
             return;
         }
-        RouterStub stub=new RouterStub(args[0], new Integer(args[1]).intValue());
+        RouterStub stub=new RouterStub(args[0], Integer.parseInt(args[1]));
         Address my_addr;
         boolean rc;
         final String groupname="BelaGroup";

@@ -1,4 +1,4 @@
-// $Id: LinkedListQueue.java,v 1.2 2004/03/30 06:47:28 belaban Exp $
+// $Id: LinkedListQueue.java,v 1.3 2004/07/05 05:59:41 belaban Exp $
 
 package org.jgroups.util;
 
@@ -405,7 +405,7 @@ public class LinkedListQueue {
      * prints the size of the queue
      */
     public String toString() {
-        return "LinkedListQueue (" + size() + ") messages [closed=" + closed + "]";
+        return "LinkedListQueue (" + size() + ") messages [closed=" + closed + ']';
     }
 
 

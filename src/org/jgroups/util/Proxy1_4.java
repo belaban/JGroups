@@ -1,4 +1,4 @@
-// $Id: Proxy1_4.java,v 1.3 2004/03/30 06:47:28 belaban Exp $
+// $Id: Proxy1_4.java,v 1.4 2004/07/05 05:59:41 belaban Exp $
 
 package org.jgroups.util;
 
@@ -345,7 +345,7 @@ public class Proxy1_4 {
             if (debug) {
                 sb=new StringBuffer();
                 sb.append(new String(buf.array()).trim());
-                sb.append("\n");
+                sb.append('\n');
                 log(sb.toString());
             }
             to.write(buf);
@@ -361,7 +361,7 @@ public class Proxy1_4 {
             return null;
         if ((sock=ch.socket()) == null)
             return null;
-        sb.append(sock.getInetAddress().getHostName()).append(":").append(sock.getPort());
+        sb.append(sock.getInetAddress().getHostName()).append(':').append(sock.getPort());
         return sb.toString();
     }
 
@@ -370,9 +370,9 @@ public class Proxy1_4 {
 
         if (addr == null)
             return null;
-        sb.append(addr.getAddress().getHostName()).append(":").append(addr.getPort());
+        sb.append(addr.getAddress().getHostName()).append(':').append(addr.getPort());
         if (addr instanceof MyInetSocketAddress)
-            sb.append(" [ssl=").append(((MyInetSocketAddress) addr).ssl()).append("]");
+            sb.append(" [ssl=").append(((MyInetSocketAddress) addr).ssl()).append(']');
         return sb.toString();
     }
 
@@ -481,15 +481,15 @@ public class Proxy1_4 {
         try {
             for (int i=0; i < args.length; i++) {
                 tmp=args[i];
-                if (tmp.equals("-help")) {
+                if ("-help".equals(tmp)) {
                     help();
                     return;
                 }
-                if (tmp.equals("-verbose")) {
+                if ("-verbose".equals(tmp)) {
                     verbose=true;
                     continue;
                 }
-                if (tmp.equals("-local")) {
+                if ("-local".equals(tmp)) {
                     tmp_addr=args[++i];
                     index=tmp_addr.indexOf(':');
                     if (index > -1) { // it is in the format address:port
@@ -502,11 +502,11 @@ public class Proxy1_4 {
                         local=InetAddress.getByName(args[++i]);
                     continue;
                 }
-                if (tmp.equals("-local_port")) {
+                if ("-local_port".equals(tmp)) {
                     local_port=Integer.parseInt(args[++i]);
                     continue;
                 }
-                if (tmp.equals("-remote")) {
+                if ("-remote".equals(tmp)) {
                     tmp_addr=args[++i];
                     index=tmp_addr.indexOf(':');
                     if (index > -1) { // it is in the format address:port
@@ -519,15 +519,15 @@ public class Proxy1_4 {
                         remote=InetAddress.getByName(args[++i]);
                     continue;
                 }
-                if (tmp.equals("-remote_port")) {
+                if ("-remote_port".equals(tmp)) {
                     remote_port=Integer.parseInt(args[++i]);
                     continue;
                 }
-                if (tmp.equals("-file")) {
+                if ("-file".equals(tmp)) {
                     mapping_file=args[++i];
                     continue;
                 }
-                if (tmp.equals("-debug")) {
+                if ("-debug".equals(tmp)) {
                     debug=true;
                     continue;
                 }
@@ -553,7 +553,7 @@ public class Proxy1_4 {
     }
 
     static void log(String method_name, String msg) {
-        System.out.println("[" + method_name + "]: " + msg);
+        System.out.println('[' + method_name + "]: " + msg);
     }
 
     static void log(String msg) {
@@ -670,7 +670,7 @@ public class Proxy1_4 {
 
         String toString(Socket s) {
             if(s == null) return null;
-            return s.getInetAddress().getHostName() + ":" + s.getPort();
+            return s.getInetAddress().getHostName() + ':' + s.getPort();
         }
         
 
@@ -721,7 +721,7 @@ public class Proxy1_4 {
         }
 
         public String toString() {
-            return super.toString() + " [ssl: " + ssl() + "]";
+            return super.toString() + " [ssl: " + ssl() + ']';
         }
     }
 

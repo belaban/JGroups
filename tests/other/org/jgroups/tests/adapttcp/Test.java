@@ -42,15 +42,15 @@ public class Test {
         List nodes=new ArrayList(); // list of cluster nodes (InetAddresses)
 
         for(int i=0; i < args.length; i++) {
-            if(args[i].equals("-sender")) {
+            if("-sender".equals(args[i])) {
                 sender=true;
                 continue;
             }
-            if(args[i].equals("-receiver")) {
+            if("-receiver".equals(args[i])) {
                 sender=false;
                 continue;
             }
-            if(args[i].equals("-config")) {
+            if("-config".equals(args[i])) {
                 config=args[++i];
                 continue;
             }
@@ -108,7 +108,7 @@ public class Test {
                     + "Sender:" + sender + "  num_msgs:" + num_msgs
                     + "  Size(bytes):" + msg_size + "  # Mbrs:" + grpMembers
                     + "  Senders: " + num_senders
-                    + "\nLog interval: " + log_interval + "\n";
+                    + "\nLog interval: " + log_interval + '\n';
 
             System.out.println(s);
             Logger.getLogger(Test.class).info("main(): " + s);

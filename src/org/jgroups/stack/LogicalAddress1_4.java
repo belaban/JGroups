@@ -1,4 +1,4 @@
-// $Id: LogicalAddress1_4.java,v 1.1 2004/05/14 16:20:21 belaban Exp $
+// $Id: LogicalAddress1_4.java,v 1.2 2004/07/05 05:58:46 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -231,9 +231,9 @@ public class LogicalAddress1_4 implements Address {
         StringBuffer sb=new StringBuffer();
 
         sb.append(host);
-        sb.append(":").append(id);
+        sb.append(':').append(id);
         if(print_details) {
-            sb.append(" (created ").append(new Date(timestamp)).append(")");
+            sb.append(" (created ").append(new Date(timestamp)).append(')');
             if(physical_addrs != null)
                 sb.append("\nphysical addrs: ").append(physical_addrs);
         }

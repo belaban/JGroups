@@ -1,4 +1,4 @@
-// $Id: SendAndReceiveTest.java,v 1.2 2004/03/30 06:47:31 belaban Exp $
+// $Id: SendAndReceiveTest.java,v 1.3 2004/07/05 06:04:28 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -147,7 +147,7 @@ public class SendAndReceiveTest extends TestCase {
                 msg=channel.receive(wait_time);
                 if(msg instanceof Message) {
                     received++;
-                    System.out.print("+" + received + " ");
+                    System.out.print("+" + received + ' ');
                 }
                 if(received >= num)
                     break;

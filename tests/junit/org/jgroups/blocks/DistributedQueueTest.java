@@ -1,4 +1,4 @@
-// $Id: DistributedQueueTest.java,v 1.3 2004/03/30 06:47:30 belaban Exp $
+// $Id: DistributedQueueTest.java,v 1.4 2004/07/05 06:02:33 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -117,7 +117,7 @@ public class DistributedQueueTest extends TestCase
 		{
 			for (int i = 0; i < NUM_ITEMS; i++)
 			{
-				queue.add(name + "_" + i);
+				queue.add(name + '_' + i);
 			}
 			finished = true;
 		}

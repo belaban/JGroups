@@ -1,4 +1,4 @@
-// $Id: DistributedQueueBasicTest.java,v 1.4 2004/05/03 14:53:39 belaban Exp $
+// $Id: DistributedQueueBasicTest.java,v 1.5 2004/07/05 06:02:27 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -99,7 +99,7 @@ public class DistributedQueueBasicTest extends TestCase implements MessageListen
         public void run()
         {
             r = (String) queue.remove();
-            logger.debug("Remove from " + name + ":" + r);
+            logger.debug("Remove from " + name + ':' + r);
             finished = true;
         }
 

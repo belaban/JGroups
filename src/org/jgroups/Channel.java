@@ -1,4 +1,4 @@
-// $Id: Channel.java,v 1.2 2003/11/21 17:51:59 belaban Exp $
+// $Id: Channel.java,v 1.3 2004/07/05 06:00:39 belaban Exp $
 
 package org.jgroups;
 
@@ -406,7 +406,7 @@ public abstract class Channel implements Transport {
             case AUTO_GETSTATE:
                 return "AUTO_GETSTATE";
             default:
-                return "unknown (" + option + ")";
+                return "unknown (" + option + ')';
         }
     }
 }

@@ -13,7 +13,7 @@ import java.util.List;
  *    Sleeps for sleep_msec after each burst.
  * @author Milcan Prica (prica@deei.units.it)
  * @author Bela Ban (belaban@yahoo.com)
- * @version $Id: SenderThread.java,v 1.6 2004/03/30 06:47:34 belaban Exp $
+ * @version $Id: SenderThread.java,v 1.7 2004/07/05 06:10:00 belaban Exp $
  */
 public class SenderThread extends Thread {
     private int num_msgs;
@@ -79,7 +79,7 @@ public class SenderThread extends Thread {
 
     String dumpStats(long sent_msgs) {
         StringBuffer sb=new StringBuffer();
-        sb.append("\nmsgs_sent=").append(sent_msgs).append("\n");
+        sb.append("\nmsgs_sent=").append(sent_msgs).append('\n');
         sb.append("free_mem=").append(Runtime.getRuntime().freeMemory());
         sb.append(" (total_mem=").append(Runtime.getRuntime().totalMemory()).append(")\n");
         return sb.toString();
