@@ -16,6 +16,9 @@ import java.util.Vector;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import javax.crypto.*;
+import java.security.Security;
 
 import junit.framework.TestCase;
 
@@ -36,7 +39,10 @@ import org.jgroups.stack.ProtocolObserver;
 public class ENCRYPTAsymmetricTest extends TestCase {
 
 	
-
+    {
+        Security.addProvider( new org.bouncycastle.jce.provider.BouncyCastleProvider());
+        
+    }
 
 	public void testInitNoProperties()
 	{
@@ -166,7 +172,7 @@ public class ENCRYPTAsymmetricTest extends TestCase {
 	{
 		Properties props = new Properties();
 		props.put("sym_algorithm","AES");
-		props.put("sym_init","192");
+		props.put("sym_init","128");
 		ENCRYPT encrypt = new ENCRYPT();
 		encrypt.setProperties(props);
 		try {
@@ -178,7 +184,7 @@ public class ENCRYPTAsymmetricTest extends TestCase {
 	
 		// test the default symetric key
 		assertEquals("AES",encrypt.getSymAlgorithm());
-		assertEquals(192,encrypt.getSymInit());
+		assertEquals(128,encrypt.getSymInit());
 		assertEquals("AES",encrypt.getDesKey().getAlgorithm());
 		assertEquals("RAW",encrypt.getDesKey().getFormat());
 		assertNotNull(encrypt.getDesKey().getEncoded());
