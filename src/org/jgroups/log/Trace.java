@@ -1,4 +1,4 @@
-// $Id: Trace.java,v 1.2 2004/01/16 05:50:01 belaban Exp $
+// $Id: Trace.java,v 1.3 2004/02/27 20:56:12 belaban Exp $
 
 package org.jgroups.log;
 
