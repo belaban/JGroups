@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.143 2005/03/31 08:32:43 belaban Exp $
+Revision: $Id: history.txt,v 1.144 2005/04/01 08:17:22 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -27,6 +27,10 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
 Version 2.2.8
 -------------
+
+- Fixed stopping outgoing packet handler (http://jira.jboss.com/jira/browse/JGRP-49)
+  [fix by Steve Nicolai]
+  (bela April 1 2005)
 
 - Added MPING. Allows for multicast discovery on a TCP-based stack
   (bela March 31 2005)
