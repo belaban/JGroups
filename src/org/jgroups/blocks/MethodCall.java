@@ -3,7 +3,6 @@ package org.jgroups.blocks;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.jgroups.util.Util;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -20,7 +19,7 @@ import java.lang.reflect.Method;
  * It includes the name of the method (case sensitive) and a list of arguments.
  * A method call is serializable and can be passed over the wire.
  * @author Bela Ban
- * @version $Revision: 1.14 $
+ * @version $Revision: 1.15 $
  */
 public class MethodCall implements Externalizable {
 
@@ -163,7 +162,7 @@ public class MethodCall implements Externalizable {
         int     len=args != null? args.length : 0;
         Method  m;
 
-        Method[] methods=target_class.getMethods();
+        Method[] methods=target_class.getDeclaredMethods();
         for(int i=0; i < methods.length; i++) {
             m=methods[i];
             if(m.getName().equals(method_name)) {
@@ -175,20 +174,7 @@ public class MethodCall implements Externalizable {
         return null;
     }
 
-//    Method findMethod(Class target_class) throws Exception {
-//        int     len=args != null? args.length : 0;
-//        Class[] formal_parms=new Class[len];
-//        Method  retval;
-//
-//        for(int i=0; i < len; i++) {
-//            formal_parms[i]=args[i].getClass();
-//        }
-//
-//        /* getDeclaredMethod() is a bit faster, but only searches for methods in the current
-//        class, not in superclasses */
-//        retval=target_class.getMethod(method_name, formal_parms);
-//        return retval;
-//    }
+
 
 
 
@@ -220,13 +206,13 @@ public class MethodCall implements Externalizable {
                         meth=this.method;
                     break;
                 case TYPES:
-                    meth=cl.getMethod(method_name, types);
+                    meth=cl.getDeclaredMethod(method_name, types);
                     break;
                 case SIGNATURE:
                     Class[] mytypes=null;
                     if(signature != null)
                         mytypes=getTypesFromString(cl, signature);
-                    meth=cl.getMethod(method_name, mytypes);
+                    meth=cl.getDeclaredMethod(method_name, mytypes);
                     break;
                 default:
                     if(log.isErrorEnabled()) log.error("mode " + mode + " is invalid");
@@ -379,7 +365,7 @@ public class MethodCall implements Externalizable {
                 Class[] parametertypes=(Class[])in.readObject();
                 Class   declaringclass=(Class)in.readObject();
                 try {
-                    method=declaringclass.getMethod(method_name, parametertypes);
+                    method=declaringclass.getDeclaredMethod(method_name, parametertypes);
                 }
                 catch(NoSuchMethodException e) {
                     throw new IOException(e.toString());
