@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.12 2004/07/05 14:17:35 belaban Exp $
+// $Id: Util.java,v 1.13 2004/07/28 08:14:14 belaban Exp $
 
 package org.jgroups.util;
 
@@ -41,7 +41,8 @@ public class Util {
             if(buffer == null) return null;
             Object retval=null;
             ByteArrayInputStream in_stream=new ByteArrayInputStream(buffer);
-            ObjectInputStream in=new ObjectInputStream(in_stream);
+            // ObjectInputStream in=new ObjectInputStream(in_stream);
+            ObjectInputStream in=new ContextObjectInputStream(in_stream);
             retval=in.readObject();
             in.close();
 
