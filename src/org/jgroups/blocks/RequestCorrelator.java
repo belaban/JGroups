@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.11 2004/07/26 10:51:10 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.12 2004/09/05 04:54:21 ovidiuf Exp $
 
 package org.jgroups.blocks;
 
@@ -442,14 +442,16 @@ public class RequestCorrelator {
         // the same name (there may be multiple request correlators in the same
         // protocol stack...)
         tmpHdr=msg.getHeader(name);
-        if(tmpHdr == null || !(tmpHdr instanceof Header))
+        if(tmpHdr == null || !(tmpHdr instanceof Header)) {
             return (true);
+        }
 
         hdr=(Header)tmpHdr;
         if(hdr.name == null || !hdr.name.equals(name)) {
-            if(log.isDebugEnabled())
+            if(log.isDebugEnabled()) {
                 log.debug("name of request correlator header (" +
                         hdr.name + ") is different from ours (" + name + "). Msg not accepted, passed up");
+            }
             return (true);
         }
 
@@ -457,13 +459,16 @@ public class RequestCorrelator {
         // request (was addressed to other members)
         dests=hdr.dest_mbrs;
         if(dests != null && local_addr != null && !dests.contains(local_addr)) {
-            if(log.isDebugEnabled())
+            if(log.isDebugEnabled()) {
                 log.debug("discarded request from " + msg.getSrc() +
                         " as we are not part of destination list (local_addr=" + local_addr + ", hdr=" + hdr + ')');
+            }
             return false;
         }
 
-        if(log.isTraceEnabled()) log.trace("header is " + hdr);
+        if(log.isTraceEnabled()) {
+            log.trace("header is " + hdr);
+        }
 
         // [Header.REQ]:
         // i. If there is no request handler, discard
@@ -477,7 +482,9 @@ public class RequestCorrelator {
         switch(hdr.type) {
             case Header.REQ:
                 if(request_handler == null) {
-                    if(log.isWarnEnabled()) log.warn("there is no request handler installed to deliver request !");
+                    if(log.isWarnEnabled()) {
+                        log.warn("there is no request handler installed to deliver request !");
+                    }
                     return (false);
                 }
 
