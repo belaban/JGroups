@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.2 2004/01/18 21:24:40 belaban Exp $
+// $Id: ConnectionTable.java,v 1.3 2004/02/10 05:10:27 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -50,6 +50,7 @@ public class ConnectionTable implements Runnable {
     public interface Receiver {
         void receive(Message msg);
     }
+
 
 
     /** Used to be notified about connection establishment and teardown */
@@ -157,8 +158,11 @@ public class ConnectionTable implements Runnable {
     }
 
 
-    /** Sends a message to a unicast destination. The destination has to be set */
-    public void send(Message msg) {
+    /** Sends a message to a unicast destination. The destination has to be set
+     * @param msg The message to send
+     * @throws SocketException. Thrown if connection cannot be established
+     */
+    public void send(Message msg) throws SocketException {
         Address dest=msg != null ? msg.getDest() : null;
         Connection conn;
 
@@ -172,9 +176,12 @@ public class ConnectionTable implements Runnable {
             conn=getConnection(dest);
             if(conn == null) return;
         }
+        catch(SocketException sock_ex) {
+            throw sock_ex;
+        }
         catch(Throwable ex) {
             Trace.info("ConnectionTable.send()", "connection to " + dest + " could not be established: " + ex);
-            return;
+            throw new SocketException(ex.toString());
         }
 
         // 2. Send the message using that connection

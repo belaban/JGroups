@@ -31,7 +31,7 @@ import java.util.*;
  * the unicast routing caches should ensure that unicasts are only sent via 1 interface in almost all cases.
  * 
  * @author Bela Ban Oct 2003
- * @version $Id: UDP1_4.java,v 1.12 2004/01/03 02:08:58 belaban Exp $
+ * @version $Id: UDP1_4.java,v 1.13 2004/02/10 05:10:28 belaban Exp $
  * todo: sending of dummy packets
  */
 public class UDP1_4 extends Protocol implements  Receiver {
@@ -585,7 +585,9 @@ public class UDP1_4 extends Protocol implements  Receiver {
     /* ------------------------------ Private Methods -------------------------------- */
 
 
+    void handleMessage(Message msg) {
 
+    }
 
 
     /**
@@ -1390,6 +1392,35 @@ public class UDP1_4 extends Protocol implements  Receiver {
             }
         }
     }
+
+
+
+    public static class MulticastReceiver implements Runnable {
+        Unmarshaller m=null;
+        DatagramSocket sock=null; // may be DatagramSocket or MulticastSocket
+
+        public void run() {
+            // receives packet from socket
+            // calls Unmarshaller.receive()
+        }
+
+    }
+
+    public static class Unmarshaller {
+        Queue q=null;
+
+        void receive(byte[] data, SocketAddress sender) {
+            // if (q) --> q.add()
+            // unserialize and call handleMessage()
+        }
+    }
+
+
+
+    public static class Mailman {
+        
+    }
+
 
     static void help() {
         System.out.println("UDP1_4 [-help] [-bind_addrs <list of interfaces>]");

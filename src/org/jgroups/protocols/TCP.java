@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.2 2003/09/24 23:19:40 belaban Exp $
+// $Id: TCP.java,v 1.3 2004/02/10 05:10:28 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -8,6 +8,7 @@ import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.util.Util;
+import org.jgroups.util.BoundedList;
 import org.jgroups.blocks.ConnectionTable;
 import org.jgroups.log.Trace;
 import org.jgroups.stack.IpAddress;
@@ -15,6 +16,7 @@ import org.jgroups.stack.Protocol;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.net.SocketException;
 import java.util.Properties;
 import java.util.Vector;
 import java.util.HashMap;
@@ -45,8 +47,16 @@ public class TCP extends Protocol implements ConnectionTable.Receiver, Connectio
     boolean                 loopback=false;     // loops back msgs to self if true
 
     /** If set it will be added to <tt>local_addr</tt>. Used to implement
-      * for example transport independent addresses */
-     byte[]                 additional_data=null;
+     * for example transport independent addresses */
+    byte[]                 additional_data=null;
+
+    /** List the maintains the currently suspected members. This is used so we don't send too many SUSPECT
+     * events up the stack (one per message !)
+     */
+    BoundedList            suspected_mbrs=new BoundedList(20);
+
+    /** Should we drop unicast messages to suspected members or not */
+    boolean                skip_suspected_members=true;
 
 
 
@@ -242,6 +252,12 @@ public class TCP extends Protocol implements ConnectionTable.Receiver, Connectio
             props.remove("loopback");
         }
 
+        str=props.getProperty("skip_suspected_members");
+        if(str != null) {
+            skip_suspected_members=new Boolean(str).booleanValue();
+            props.remove("skip_suspected_members");
+        }
+
         if(props.size() > 0) {
             System.err.println("TCP.setProperties(): the following properties are not recognized:");
             props.list(System.out);
@@ -296,9 +312,27 @@ public class TCP extends Protocol implements ConnectionTable.Receiver, Connectio
             passUp(evt);
             return;
         }
-        //if(Trace.trace)
-            //Trace.info("TCP.sendUnicastMessage()", "dest=" + msg.getDest() + ", hdrs:\n" + msg.printObjectHeaders());
-        ct.send(msg);
+        if(Trace.trace)
+            Trace.info("TCP.sendUnicastMessage()", "dest=" + msg.getDest() + ", hdrs:\n" + msg.printObjectHeaders());
+        try {
+            if(skip_suspected_members) {
+                if(suspected_mbrs.contains(dest)) {
+                    if(Trace.trace)
+                        Trace.info("TCP.sendUnicastMessage()", "will not send unicast message to " + dest +
+                                " as it is currently suspected");
+                    return;
+                }
+            }
+            ct.send(msg);
+        }
+        catch(SocketException e) {
+            if(members.contains(dest)) {
+                if(!suspected_mbrs.contains(dest)) {
+                    suspected_mbrs.add(dest);
+                    passUp(new Event(Event.SUSPECT, dest));
+                }
+            }
+        }
     }
 
 
@@ -322,11 +356,10 @@ public class TCP extends Protocol implements ConnectionTable.Receiver, Connectio
 
             case Event.TMP_VIEW:
             case Event.VIEW_CHANGE:
+                suspected_mbrs.removeAll();
                 synchronized(members) {
-                    members.removeAllElements();
-                    Vector tmpvec=((View)evt.getArg()).getMembers();
-                    for(int i=0; i < tmpvec.size(); i++)
-                        members.addElement(tmpvec.elementAt(i));
+                    members.clear();
+                    members.addAll(((View)evt.getArg()).getMembers());
                 }
                 break;
 

@@ -1,35 +1,17 @@
-// $Id: GossipRouter.java,v 1.2 2003/10/29 16:00:51 ovidiuf Exp $
+// $Id: GossipRouter.java,v 1.3 2004/02/10 05:10:28 belaban Exp $
 
 package org.jgroups.stack;
 
-import java.io.BufferedInputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
-import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Hashtable;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.Vector;
 import org.jgroups.Address;
-import org.jgroups.Message;
 import org.jgroups.log.Trace;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
+
+import java.io.*;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.*;
 
 /**
  * Router for TCP based group comunication (using layer TCP instead of UDP). 
@@ -244,7 +226,7 @@ public class GossipRouter {
     public void stop() {
 
         if (srvSock==null) {
-            Trace.warn("GossipRouter", "Router already stopped");
+            Trace.warn("GossipRouters.stop()", "Router already stopped");
             return;
         }
 
@@ -254,11 +236,11 @@ public class GossipRouter {
             srvSock.close();
         }
         catch(Exception e) {
-            Trace.error("GossipRouter", "Failed to close server socket: "+e);
+            Trace.error("GossipRouter.stop()", "Failed to close server socket: "+e);
         }
         // exiting the mainLoop will clean the tables
         srvSock = null;
-        Trace.info("GossipRouter", "Router stopped");
+        Trace.info("GossipRouter.stop()", "Router stopped");
     }
 
     /**
@@ -309,8 +291,8 @@ public class GossipRouter {
         }
         d=new Date();
         if(Trace.trace) {
-            Trace.info("GossipRouter", "GossipRouter started at " + d);
-            Trace.info("GossipRouter", "Listening on port " + port + " bound on address " + bindAddress + "\n");
+            System.out.println("GossipRouter started at " + d +
+                    "\nListening on port " + port + " bound on address " + bindAddress + "\n");
         }
         d=null;
 
@@ -321,7 +303,7 @@ public class GossipRouter {
                 sock.setSoLinger(true, 500);
 
                 if(Trace.debug) {
-                    Trace.debug("GossipRouter", "router accepted connection from "+sock);
+                    Trace.debug("GossipRouter.mainLoop()", "router accepted connection from "+sock);
                 }
 
                 final BufferedInputStream bis = new BufferedInputStream(sock.getInputStream());
@@ -355,7 +337,7 @@ public class GossipRouter {
                                 s.close();
                             }
                             catch(Exception e) {
-                                Trace.debug("GossipRouter","Gossip Thread exception :"+e);
+                                Trace.debug("GossipRouter.mainLoop()","gossip thread exception :"+e);
                                 waitArea.setResult(GOSSIP_FAILURE);
                             }
                             finally {
@@ -419,7 +401,7 @@ public class GossipRouter {
                     processGetRequest(sock, output, gname); // closes sock after processing
                     break;
                 case GossipRouter.DUMP:
-                    processDumpRequest(peer_addr, sock, output); // closes sock after processing
+                    processDumpRequest(sock, output); // closes sock after processing
                     break;
                 case GossipRouter.REGISTER:
                     Address addr;
@@ -432,7 +414,7 @@ public class GossipRouter {
                     st.start();
                     break;
                 case GossipRouter.SHUTDOWN:
-                    Trace.info("GossipRouter", "Router shutting down");
+                    Trace.info("GossipRouter.mainLoop()", "router shutting down");
                     output.writeInt(SHUTDOWN_OK);
                     output.flush();
                     try {
@@ -444,18 +426,18 @@ public class GossipRouter {
                     up = false;
                     continue;
                 default:
-                    Trace.error("GossipRouter", "request of type " + type + " not recognized");
+                    Trace.error("GossipRouter.mainLoop()", "request of type " + type + " not recognized");
                     continue;
                 }
             }
             catch(Exception e) {
-                Trace.error("GossipRouter", "Failure handling a client connection: " + e);
+                Trace.error("GossipRouter.mainLoop()", "failure handling a client connection: " + e);
 		e.printStackTrace();
                 try {
                     sock.close();
                 }
                 catch(IOException e2) {
-                    Trace.warn("GossipRouter", "Failed to close socket "+sock);
+                    Trace.warn("GossipRouter.mainLoop()", "failed to close socket "+sock);
                 }
                 continue;
             }
@@ -481,11 +463,11 @@ public class GossipRouter {
                 }
             }
             routingTable.clear();
-            Trace.info("GossipRouter", "Routing Table cleared");
+            Trace.info("GossipRouter.cleanup()", "routing table cleared");
         }
         synchronized(gossipTable) {
             gossipTable.clear();
-            Trace.info("GossipRouter", "Gossip Table cleared");
+            Trace.info("GossipRouter.cleanup()", "gossip table cleared");
         }
 
     }
@@ -511,7 +493,7 @@ public class GossipRouter {
             s.close();
         }
         catch(Exception e) {
-            Trace.error("GossipRouter", "Shutdown failed: "+e);
+            Trace.error("GossipRouter.shutdown()", "shutdown failed: "+e);
         }
         
     }
@@ -526,11 +508,11 @@ public class GossipRouter {
     private GossipData processGossip(GossipData gossip) {
 
         if (Trace.debug) {
-            Trace.debug("GossipRouter", "processGossip("+gossip+")");
+            Trace.debug("GossipRouter.processGossip()", "gossip is "+gossip);
         }
 
         if (gossip==null) {
-            Trace.warn("Route", "null gossip request");
+            Trace.warn("GossipRouter.processGossip()", "null gossip request");
             return null;
         }
 
@@ -544,7 +526,7 @@ public class GossipRouter {
             case GossipData.REGISTER_REQ: 
                 mbr=gossip.getMbr();
                 if(group == null || mbr == null) {
-                    Trace.error("GossipRouter", "processGossip(): group or member is null, cannot register member");
+                    Trace.error("GossipRouter.processGossip()", "group or member is null, cannot register member");
                     return null;
                 }
                 addGossipEntry(group, new AddressEntry(mbr));
@@ -552,7 +534,7 @@ public class GossipRouter {
 
             case GossipData.GET_REQ:
                 if(group == null) {
-                    Trace.error("GossipRouter", "group is null, cannot get membership");
+                    Trace.error("GossipRouter.processGossip()", "group is null, cannot get membership");
                     return null;
                 }
                 Vector mbrs = null;
@@ -567,11 +549,11 @@ public class GossipRouter {
                 return new GossipData(GossipData.GET_RSP, group, null, mbrs);
 
             case GossipData.GET_RSP: 
-                Trace.warn("GossipRouter", "received a GET_RSP. Should not be received by server");
+                Trace.warn("GossipRouter.processGossip()", "received a GET_RSP. Should not be received by server");
                 return null;
 
             default:
-                Trace.warn("GossipRouter", "received unkown gossip request (gossip=" + gossip + ")");
+                Trace.warn("GossipRouter.processGossip()", "received unkown gossip request (gossip=" + gossip + ")");
                 return null;
             }
         }
@@ -589,7 +571,7 @@ public class GossipRouter {
         List val;
 
         if(groupname == null) {
-            Trace.error("GossipRouter", "groupname was null, not added !");
+            Trace.error("GossipRouter.addGossipEntry()", "groupname was null, not added !");
             return;
         }
 
@@ -622,7 +604,7 @@ public class GossipRouter {
         List val;
 
         if (Trace.debug) {
-            Trace.debug("GossipRouter", "running sweep");
+            Trace.debug("GossipRouter.sweep()", "running sweep");
         }
 
         synchronized(gossipTable) {
@@ -636,8 +618,8 @@ public class GossipRouter {
                         if(diff > expiryTime) {
                             j.remove();
                             if(Trace.trace)
-                                Trace.info("GossipRouter", "Removed member " + ae +
-                                           " from group " + key + "(" + diff + " msecs old)");
+                               Trace.info("GossipRouter.sweep()", "Removed member " + ae +
+                                       " from group " + key + "(" + diff + " msecs old)");
                             num_entries_removed++;
                         }
                     }
@@ -646,7 +628,7 @@ public class GossipRouter {
         }
         
         if(Trace.trace && num_entries_removed > 0) {
-            Trace.info("GossipRouter", "Done (removed " + num_entries_removed + " entries)");
+            Trace.info("GossipRouter.sweep()", "done (removed " + num_entries_removed + " entries)");
         }
     }
 
@@ -703,14 +685,14 @@ public class GossipRouter {
     /**
      * Dumps the routing table as String to the socket's OutputStream.
      **/
-    private void processDumpRequest(Address peerAddress, Socket sock, DataOutputStream output) {
+    private void processDumpRequest(Socket sock, DataOutputStream output) {
 
         try {
             output.writeUTF(dumpRoutingTable());
         }
         catch(Exception e) {
-            Trace.error("GossipRouter",
-                        "Error sending the answer back to the client: " + e);
+            Trace.error("GossipRouter.processDumpRequest()",
+                        "error sending the answer back to the client: " + e);
         }
         finally {
             try {
@@ -719,15 +701,15 @@ public class GossipRouter {
                 }
             }
             catch(Exception e) {
-                Trace.error("GossipRouter",
-                            "Error closing the output stream: " + e);
+                Trace.error("GossipRouter.processDumpRequest()",
+                            "error closing the output stream: " + e);
             }
             try {
                 sock.close();
             }
             catch(Exception e) {
-                Trace.error("GossipRouter",
-                            "Error closing the socket: " + e);
+                Trace.error("GossipRouter.processDumpRequest()",
+                            "error closing the socket: " + e);
             }
         }
     }
@@ -773,21 +755,13 @@ public class GossipRouter {
 
     private synchronized void route(Address dest, String dest_group, byte[] msg) {
 
-	Message message = null;
-	try {
-	    message = (Message)Util.objectFromByteBuffer(msg);
-	}
-	catch(Exception e) {
-	    Trace.error("GossipRouter", "error deserializing message: "+e.getMessage());
-	}
-
 //         Trace.debug("GossipRouter", "routing request for "+dest_group+", destination "+
 //                     (dest==null?"ALL":dest.toString())+", message="+message);
 
         if(dest == null) { 
             // send to all members in group dest.getChannelName()
             if(dest_group == null) {
-                Trace.error("GossipRouter", "both dest address and group are null");
+                Trace.error("GossipRouter.route()", "both dest address and group are null");
                 return;
             }
             else {
@@ -798,18 +772,18 @@ public class GossipRouter {
             // send to destination address
             AddressEntry ae = findAddressEntry(dest);
             if (ae == null) {
-                Trace.error("GossipRouter", "Cannot find address "+dest+" in the routing table");
+                Trace.error("GossipRouter.route()", "cannot find address "+dest+" in the routing table");
                 return;
             }
             if (ae.output==null) {
-                Trace.error("GossipRouter", "Address "+dest+" is associated with a null output stream");
+                Trace.error("GossipRouter.route()", "address "+dest+" is associated with a null output stream");
                 return;
             }
             try {
                 sendToMember(ae.output, msg);
             }
             catch(Exception e) {
-                Trace.error("GossipRouter", "Failed sending message to "+dest+": "+e.getMessage());
+                Trace.error("GossipRouter.route()", "failed sending message to "+dest+": "+e.getMessage());
                 removeEntry(ae.sock); // will close socket
             }
         }
@@ -909,7 +883,8 @@ public class GossipRouter {
                         sendToMember(dos, msg);
                     }
                     catch(Exception e) {
-                        Trace.warn("GossipRouter", "Cannot send to "+ae.addr+": "+e.getMessage());
+                        Trace.warn("GossipRouter.sendToAllMembersInGroup()",
+                                "cannot send to "+ae.addr+": "+e.getMessage());
                         ae.destroy(); // this closes the socket
                         i.remove();
                     }
@@ -1036,7 +1011,7 @@ public class GossipRouter {
 
         void finish() {
             if (Trace.debug) {
-                Trace.debug("GossipRouter", "Finishing the SocketThread for "+sock);
+                Trace.debug("GossipRouter.finish()", "finishing the SocketThread for "+sock);
             }
             active = false;
         }
@@ -1072,14 +1047,15 @@ public class GossipRouter {
                 }
                 catch(EOFException io_ex) {
                     if(Trace.trace) {
-                        Trace.info("GossipRouter", "Client " +sock.getInetAddress().getHostName() + ":" + sock.getPort() +
-                                   " closed connection; removing it from routing table");
+                        Trace.info("GossipRouter.SocketThread.run()",
+                                "client " +sock.getInetAddress().getHostName() + ":" + sock.getPort() +
+                                " closed connection; removing it from routing table");
                     }
                     removeEntry(sock); // will close socket
                     return;
                 }
                 catch(Exception e) {
-                    Trace.error("GossipRouter","SocketThread.run() exception=" + e);
+                    Trace.error("GossipRouter.SocketThread.run()","exception=" + e);
                     break;
                 }
             }
@@ -1133,8 +1109,6 @@ public class GossipRouter {
         try {
             router= new GossipRouter(port, address, expiry, timeout, routingTimeout);
             router.start();
-            System.out.println("GossipRouter was created at " + new Date());
-            System.out.println("Listening on port " + port + " and bound to address " + address);
         }
         catch(Exception e) {
             System.err.println(e);
