@@ -1,4 +1,4 @@
-// $Id: ReusableThread.java,v 1.6 2004/09/23 16:29:56 belaban Exp $
+// $Id: ReusableThread.java,v 1.7 2005/01/16 01:04:52 belaban Exp $
 
 package org.jgroups.util;
 
@@ -53,12 +53,18 @@ public class ReusableThread implements Runnable {
         return done();
     }
 
+    public boolean isAlive() {
+        synchronized(this) {
+            return thread != null && thread.isAlive();
+        }
+    }
+
 
     /**
      * Will always be called from synchronized method, no need to do our own synchronization
      */
     public void start() {
-        if(thread == null) {
+        if(thread == null || (thread != null && !thread.isAlive())) {
             thread=new Thread(this, thread_name);
             thread.setDaemon(true);
             thread.start();
@@ -93,6 +99,9 @@ public class ReusableThread implements Runnable {
         if(tmp != null && tmp.isAlive()) {
             long s1=System.currentTimeMillis(), s2=0;
             if(log.isTraceEnabled()) log.trace("join(" + TASK_JOIN_TIME + ')');
+
+            tmp.interrupt();
+
             try {
                 tmp.join(TASK_JOIN_TIME);
             }
@@ -211,7 +220,7 @@ public class ReusableThread implements Runnable {
                     task.run(); //here we are actually running the task
                 }
                 catch(Throwable ex) {
-                    if(log.isErrorEnabled()) log.error("exception=" + Util.printStackTrace(ex));
+                    if(log.isErrorEnabled()) log.error("failed running task", ex);
                 }
                 if(log.isTraceEnabled()) log.trace("task completed");
             }
