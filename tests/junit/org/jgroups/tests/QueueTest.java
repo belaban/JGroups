@@ -1,4 +1,4 @@
-// $Id: QueueTest.java,v 1.12 2005/02/18 08:16:46 belaban Exp $
+// $Id: QueueTest.java,v 1.13 2005/03/17 18:40:10 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -281,6 +281,19 @@ public class QueueTest extends TestCase {
         }
         catch(QueueClosedException ex) {
             assertTrue(ex instanceof QueueClosedException); // of course, stupid comparison...
+        }
+    }
+
+
+    public void testInterruptAndRemove() throws QueueClosedException {
+        Thread.currentThread().interrupt();
+        Object el=null;
+        try {
+            el=queue.remove(2000);
+            fail("we should not get here");
+        }
+        catch(TimeoutException e) {
+            assertNull(el);
         }
     }
 
