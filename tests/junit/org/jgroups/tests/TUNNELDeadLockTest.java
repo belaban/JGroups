@@ -1,4 +1,4 @@
-// $Id: TUNNELDeadLockTest.java,v 1.1 2003/09/09 01:24:13 belaban Exp $
+// $Id: TUNNELDeadLockTest.java,v 1.2 2003/10/15 20:16:09 ovidiuf Exp $
 
 package org.jgroups.tests;
 
@@ -23,7 +23,7 @@ import org.jgroups.TimeoutException;
  * @see TUNNELDeadLockTest#testStress
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.2 $
  **/
 public class TUNNELDeadLockTest extends TestCase {
 
@@ -202,6 +202,7 @@ public class TUNNELDeadLockTest extends TestCase {
 	    }
 	    catch(Exception e) {
 		lastConnectException = e;
+                Thread.currentThread().sleep(1000);
 		crtms = System.currentTimeMillis();
 		continue;
 	    }
