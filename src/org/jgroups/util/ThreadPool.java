@@ -1,4 +1,4 @@
-// $Id: ThreadPool.java,v 1.4 2004/03/30 06:47:28 belaban Exp $
+// $Id: ThreadPool.java,v 1.5 2004/04/23 01:39:04 belaban Exp $
 
 package org.jgroups.util;
 
@@ -34,8 +34,7 @@ public class ThreadPool {
             pool[i]=null;
             available_threads[i]=true;
         }
-
-            if(log.isInfoEnabled()) log.info("created a pool of " + MAX_NUM + " threads");
+        if(log.isDebugEnabled()) log.debug("created a pool of " + MAX_NUM + " threads");
     }
 
 

@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.4 2004/04/05 03:57:27 belaban Exp $
+// $Id: STABLE.java,v 1.5 2004/04/23 01:39:03 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -148,8 +148,8 @@ public class STABLE extends Protocol {
                     if(log.isTraceEnabled())
                         log.trace("received message of " + size + " bytes, total bytes received=" + num_bytes_received);
                     if(num_bytes_received >= max_bytes) {
-                        if(log.isInfoEnabled())
-                            log.info("max_bytes has been exceeded (max_bytes=" + max_bytes +
+                        if(log.isDebugEnabled())
+                            log.debug("max_bytes has been exceeded (max_bytes=" + max_bytes +
                                     ", number of bytes received=" + num_bytes_received + "): sending STABLE message");
 
                         new Thread() {
@@ -259,8 +259,8 @@ public class STABLE extends Protocol {
         }
         stable_task=new StableTask();
         timer.add(stable_task, true); // fixed-rate scheduling
-
-            if(log.isInfoEnabled()) log.info("stable task started; num_gossip_runs=" + num_gossip_runs +
+        if(log.isDebugEnabled())
+            log.debug("stable task started; num_gossip_runs=" + num_gossip_runs +
                     ", max_gossip_runs=" + max_gossip_runs);
     }
 
@@ -291,10 +291,9 @@ public class STABLE extends Protocol {
             return;
         }
 
-        if(log.isInfoEnabled()) log.info("received digest " + printStabilityDigest(d) + " from " + sender);
-
+        if(log.isDebugEnabled()) log.debug("received digest " + printStabilityDigest(d) + " from " + sender);
         if(!heard_from.contains(sender)) {  // already received gossip from sender; discard it
-            if(log.isInfoEnabled()) log.info("already received gossip from " + sender);
+            if(log.isDebugEnabled()) log.debug("already received gossip from " + sender);
             return;
         }
 
@@ -303,7 +302,7 @@ public class STABLE extends Protocol {
             highest_seqno=d.highSeqnoAt(i);
             highest_seen_seqno=d.highSeqnoSeenAt(i);
             if(digest.getIndex(mbr) == -1) {
-                if(log.isInfoEnabled()) log.info("sender " + mbr + " not found in stability vector");
+                if(log.isDebugEnabled()) log.debug("sender " + mbr + " not found in stability vector");
                 continue;
             }
 
@@ -330,7 +329,7 @@ public class STABLE extends Protocol {
 
         heard_from.removeElement(sender);
         if(heard_from.size() == 0) {
-            if(log.isInfoEnabled()) log.info("sending stability msg " + printStabilityDigest(digest));
+            if(log.isDebugEnabled()) log.debug("sending stability msg " + printStabilityDigest(digest));
             sendStabilityMessage(digest.copy());
             initialize();
         }
@@ -348,8 +347,8 @@ public class STABLE extends Protocol {
 
         d=getDigest();
         if(d != null && d.size() > 0) {
-            if(log.isInfoEnabled())
-                log.info("mcasting digest " + d +
+            if(log.isDebugEnabled())
+                log.debug("mcasting digest " + d +
                         " (num_gossip_runs=" + num_gossip_runs + ", max_gossip_runs=" + max_gossip_runs + ")");
             hdr=new StableHeader(StableHeader.STABLE_GOSSIP, d);
             msg.putHeader(getName(), hdr);
@@ -394,8 +393,8 @@ public class STABLE extends Protocol {
         // our random sleep, we will not send the STABILITY msg. this prevents that all mbrs mcast a
         // STABILITY msg at the same time
         delay=Util.random(stability_delay);
-        if(log.isInfoEnabled())
-            log.info("stability_task=" + stability_task + ", delay is " + delay);
+        if(log.isDebugEnabled())
+            log.debug("stability_task=" + stability_task + ", delay is " + delay);
         synchronized(stability_mutex) {
             if(stability_task != null && !stability_task.cancelled())  // schedule only if not yet running
                 return;
@@ -411,10 +410,10 @@ public class STABLE extends Protocol {
             return;
         }
 
-        if(log.isInfoEnabled()) log.info("stability vector is " + d.printHighSeqnos());
+        if(log.isDebugEnabled()) log.debug("stability vector is " + d.printHighSeqnos());
         synchronized(stability_mutex) {
             if(stability_task != null) {
-                if(log.isInfoEnabled()) log.info("cancelling stability task (running=" +
+                if(log.isDebugEnabled()) log.debug("cancelling stability task (running=" +
                         !stability_task.cancelled() + ")");
                 stability_task.stop();
                 stability_task=null;
@@ -541,9 +540,8 @@ public class STABLE extends Protocol {
             sendStableMessage();
             num_gossip_runs--;
             if(num_gossip_runs <= 0) {
-
-                    if(log.isInfoEnabled()) log.info("stable task terminating (num_gossip_runs=" +
-                            num_gossip_runs + ", max_gossip_runs=" + max_gossip_runs + ")");
+                if(log.isDebugEnabled()) log.debug("stable task terminating (num_gossip_runs=" +
+                        num_gossip_runs + ", max_gossip_runs=" + max_gossip_runs + ")");
                 stop();
             }
         }

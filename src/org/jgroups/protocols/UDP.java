@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.19 2004/03/30 06:47:21 belaban Exp $
+// $Id: UDP.java,v 1.20 2004/04/23 01:39:03 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -242,7 +242,7 @@ public class UDP extends Protocol implements Runnable {
                     handleIncomingUdpPacket(data);
             }
             catch(SocketException sock_ex) {
-                 if(log.isInfoEnabled()) log.info("multicast socket is closed, exception=" + sock_ex);
+                 if(log.isDebugEnabled()) log.debug("multicast socket is closed, exception=" + sock_ex);
                 break;
             }
             catch(InterruptedIOException io_ex) { // thread was interrupted
@@ -253,7 +253,7 @@ public class UDP extends Protocol implements Runnable {
                 Util.sleep(300); // so we don't get into 100% cpu spinning (should NEVER happen !)
             }
         }
-         if(log.isInfoEnabled()) log.info("multicast thread terminated");
+         if(log.isDebugEnabled()) log.debug("multicast thread terminated");
     }
 
     void handleDiagnosticProbe(InetAddress sender, int port) {
@@ -261,7 +261,7 @@ public class UDP extends Protocol implements Runnable {
             byte[]      diag_rsp=getDiagResponse().getBytes();
             DatagramPacket rsp=new DatagramPacket(diag_rsp, 0, diag_rsp.length, sender, port);
 
-                if(log.isInfoEnabled()) log.info("sending diag response to " + sender + ":" + port);
+                if(log.isDebugEnabled()) log.debug("sending diag response to " + sender + ":" + port);
             sock.send(rsp);
         }
         catch(Throwable t) {
@@ -315,7 +315,7 @@ public class UDP extends Protocol implements Runnable {
      * Creates the unicast and multicast sockets and starts the unicast and multicast receiver threads
      */
     public void start() throws Exception {
-         if(log.isInfoEnabled()) log.info("creating sockets and starting threads");
+         if(log.isDebugEnabled()) log.debug("creating sockets and starting threads");
         createSockets();
         passUp(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
         startThreads();
@@ -323,7 +323,7 @@ public class UDP extends Protocol implements Runnable {
 
 
     public void stop() {
-         if(log.isInfoEnabled()) log.info("closing sockets and stopping threads");
+         if(log.isDebugEnabled()) log.debug("closing sockets and stopping threads");
         stopThreads();  // will close sockets, closeSockets() is not really needed anymore, but...
         closeSockets(); // ... we'll leave it in there for now (doesn't do anything if already closed)
     }
@@ -520,7 +520,7 @@ public class UDP extends Protocol implements Runnable {
 
             case Event.CONFIG:
                 passUp(evt);
-                 if(log.isInfoEnabled()) log.info("received CONFIG event: " + evt.getArg());
+                 if(log.isDebugEnabled()) log.debug("received CONFIG event: " + evt.getArg());
                 handleConfigEvent((HashMap)evt.getArg());
                 return;
         }
@@ -975,7 +975,7 @@ public class UDP extends Protocol implements Runnable {
                 }
                 mcast_sock.close(); // this will cause the mcast receiver thread to break out of its loop
                 mcast_sock=null;
-                 if(log.isInfoEnabled()) log.info("multicast socket closed");
+                 if(log.isDebugEnabled()) log.debug("multicast socket closed");
             }
             catch(IOException ex) {
             }
@@ -991,7 +991,7 @@ public class UDP extends Protocol implements Runnable {
 
             sock.close();
             sock=null;
-             if(log.isInfoEnabled()) log.info("socket closed");
+             if(log.isDebugEnabled()) log.debug("socket closed");
         }
     }
 
@@ -1041,14 +1041,14 @@ public class UDP extends Protocol implements Runnable {
             //start the listener thread of the ucast_recv_sock
             ucast_receiver=new UcastReceiver();
             ucast_receiver.start();
-             if(log.isInfoEnabled()) log.info("created unicast receiver thread");
+             if(log.isDebugEnabled()) log.debug("created unicast receiver thread");
         }
 
         if(ip_mcast) {
             if(mcast_receiver != null) {
                 if(mcast_receiver.isAlive()) {
 
-                        if(log.isInfoEnabled()) log.info("did not create new multicastreceiver thread as existing " +
+                        if(log.isDebugEnabled()) log.debug("did not create new multicastreceiver thread as existing " +
                                    "multicast receiver thread is still running");
                 }
                 else
@@ -1136,7 +1136,7 @@ public class UDP extends Protocol implements Runnable {
                 break;
 
             case Event.CONFIG:
-                 if(log.isInfoEnabled()) log.info("received CONFIG event: " + evt.getArg());
+                 if(log.isDebugEnabled()) log.debug("received CONFIG event: " + evt.getArg());
                 handleConfigEvent((HashMap)evt.getArg());
                 break;
         }
@@ -1237,7 +1237,7 @@ public class UDP extends Protocol implements Runnable {
                 }
                 catch(SocketException sock_ex) {
 
-                        if(log.isInfoEnabled()) log.info("unicast receiver socket is closed, exception=" + sock_ex);
+                        if(log.isDebugEnabled()) log.debug("unicast receiver socket is closed, exception=" + sock_ex);
                     break;
                 }
                 catch(InterruptedIOException io_ex) { // thread was interrupted
@@ -1249,7 +1249,7 @@ public class UDP extends Protocol implements Runnable {
                     Util.sleep(300); // so we don't get into 100% cpu spinning (should NEVER happen !)
                 }
             }
-             if(log.isInfoEnabled()) log.info("unicast receiver thread terminated");
+             if(log.isDebugEnabled()) log.debug("unicast receiver thread terminated");
         }
     }
 
@@ -1268,7 +1268,7 @@ public class UDP extends Protocol implements Runnable {
                     data=(byte[])incoming_queue.remove();
                 }
                 catch(QueueClosedException closed_ex) {
-                     if(log.isInfoEnabled()) log.info("packet_handler thread terminating");
+                     if(log.isDebugEnabled()) log.debug("packet_handler thread terminating");
                     break;
                 }
                 handleIncomingUdpPacket(data);
@@ -1313,7 +1313,7 @@ public class UDP extends Protocol implements Runnable {
                     handleMessage(msg);
                 }
                 catch(QueueClosedException closed_ex) {
-                     if(log.isInfoEnabled()) log.info("packet_handler thread terminating");
+                     if(log.isDebugEnabled()) log.debug("packet_handler thread terminating");
                     break;
                 }
                 catch(Throwable t) {
@@ -1410,9 +1410,7 @@ public class UDP extends Protocol implements Runnable {
                         "Set the fragmentation/bundle size in FRAG and UDP correctly");
 
             if(total_bytes + len >= max_bundle_size) {
-                 {
-                    if(log.isInfoEnabled()) log.info("sending " + total_bytes + " bytes");
-                }
+                if(log.isTraceEnabled()) log.trace("sending " + total_bytes + " bytes");
                 bundleAndSend(); // send all pending message and clear table
                 total_bytes=0;
             }
@@ -1441,9 +1439,7 @@ public class UDP extends Protocol implements Runnable {
             byte[]               data;
             List                 l;
 
-
-                if(log.isInfoEnabled()) log.info("\nsending msgs:\n" + dumpMessages(msgs));
-
+            if(log.isDebugEnabled()) log.debug("\nsending msgs:\n" + dumpMessages(msgs));
             synchronized(msgs) {
                 stopTimer();
 

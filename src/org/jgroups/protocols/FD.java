@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.4 2004/04/16 05:33:36 belaban Exp $
+// $Id: FD.java,v 1.5 2004/04/23 01:39:03 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -35,7 +35,7 @@ import java.util.Vector;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Revision: 1.4 $
+ * @version $Revision: 1.5 $
  */
 public class FD extends Protocol {
     Address         ping_dest=null;
@@ -193,7 +193,7 @@ public class FD extends Protocol {
                         if(ping_dest != null && ping_dest.equals(hdr.from)) {
                             last_ack=System.currentTimeMillis();
                             num_tries=0;
-                            if(log.isInfoEnabled()) log.info("received ack from " + hdr.from);
+                            if(log.isDebugEnabled()) log.debug("received ack from " + hdr.from);
                         }
                         else {
                             stop();
@@ -211,7 +211,7 @@ public class FD extends Protocol {
 
                     case FdHeader.SUSPECT:
                         if(hdr.mbrs != null) {
-                            if(log.isInfoEnabled()) log.info("[SUSPECT] suspect hdr is " + hdr);
+                            if(log.isDebugEnabled()) log.debug("[SUSPECT] suspect hdr is " + hdr);
                             for(int i=0; i < hdr.mbrs.size(); i++) {
                                 Address m=(Address)hdr.mbrs.elementAt(i);
                                 if(local_addr != null && m.equals(local_addr)) {
@@ -231,7 +231,7 @@ public class FD extends Protocol {
 
                     case FdHeader.NOT_MEMBER:
                         if(shun) {
-                            if(log.isInfoEnabled()) log.info("[NOT_MEMBER] I'm being shunned; exiting");
+                            if(log.isDebugEnabled()) log.debug("[NOT_MEMBER] I'm being shunned; exiting");
                             passUp(new Event(Event.EXIT));
                         }
                         break;
@@ -300,8 +300,8 @@ public class FD extends Protocol {
             if(invalid_pingers.containsKey(hb_sender)) {
                 num_pings=((Integer)invalid_pingers.get(hb_sender)).intValue();
                 if(num_pings >= max_tries) {
-                    if(log.isInfoEnabled())
-                        log.info(hb_sender + " is not in " + members + " ! Telling it to leave group");
+                    if(log.isDebugEnabled())
+                        log.debug(hb_sender + " is not in " + members + " ! Telling it to leave group");
                     shun_msg=new Message(hb_sender, null, null);
                     shun_msg.putHeader(getName(), new FdHeader(FdHeader.NOT_MEMBER));
                     passDown(new Event(Event.MSG, shun_msg));
@@ -434,8 +434,8 @@ public class FD extends Protocol {
             // quick & dirty fix: increase timeout by 500msecs to allow for latency (bela June 27 2003)
             if(not_heard_from > timeout + 500) { // no heartbeat ack for more than timeout msecs
                 if(num_tries >= max_tries) {
-                    if(log.isInfoEnabled())
-                        log.info("[" + local_addr + "]: received no heartbeat ack from " + ping_dest +
+                    if(log.isDebugEnabled())
+                        log.debug("[" + local_addr + "]: received no heartbeat ack from " + ping_dest +
                                 " for " + num_tries + 1 + " times, suspecting it");
                     // broadcast a SUSPECT message to all members - loop until
                     // unsuspect or view change is received
@@ -480,7 +480,7 @@ public class FD extends Protocol {
             synchronized(suspected_mbrs) {
                 if(!suspected_mbrs.contains(mbr)) {
                     suspected_mbrs.addElement(mbr);
-                    if(log.isInfoEnabled()) log.info("mbr=" + mbr + " (size=" + suspected_mbrs.size() + ")");
+                    if(log.isDebugEnabled()) log.debug("mbr=" + mbr + " (size=" + suspected_mbrs.size() + ")");
                 }
                 if(stopped && suspected_mbrs.size() > 0) {
                     stopped=false;
@@ -492,7 +492,7 @@ public class FD extends Protocol {
 
         void removeSuspectedMember(Address suspected_mbr) {
             if(suspected_mbr == null) return;
-            if(log.isInfoEnabled()) log.info("member is " + suspected_mbr);
+            if(log.isDebugEnabled()) log.debug("member is " + suspected_mbr);
             synchronized(suspected_mbrs) {
                 suspected_mbrs.removeElement(suspected_mbr);
                 if(suspected_mbrs.size() == 0)
@@ -521,7 +521,7 @@ public class FD extends Protocol {
                     suspected_mbr=(Address)it.next();
                     if(!new_mbrship.contains(suspected_mbr)) {
                         it.remove();
-                        if(log.isInfoEnabled()) log.info("removed " + suspected_mbr + " (size=" + suspected_mbrs.size() + ")");
+                        if(log.isDebugEnabled()) log.debug("removed " + suspected_mbr + " (size=" + suspected_mbrs.size() + ")");
                     }
                 }
                 if(suspected_mbrs.size() == 0)
@@ -544,13 +544,13 @@ public class FD extends Protocol {
             Message suspect_msg;
             FD.FdHeader hdr;
 
-            if(log.isInfoEnabled())
-                log.info("broadcasting SUSPECT message [suspected_mbrs=" + suspected_mbrs + "] to group");
+            if(log.isDebugEnabled())
+                log.debug("broadcasting SUSPECT message [suspected_mbrs=" + suspected_mbrs + "] to group");
 
             synchronized(suspected_mbrs) {
                 if(suspected_mbrs.size() == 0) {
                     stopped=true;
-                    if(log.isInfoEnabled()) log.info("task done (no suspected members)");
+                    if(log.isDebugEnabled()) log.debug("task done (no suspected members)");
                     return;
                 }
 
@@ -561,7 +561,7 @@ public class FD extends Protocol {
             suspect_msg=new Message();       // mcast SUSPECT to all members
             suspect_msg.putHeader(getName(), hdr);
             passDown(new Event(Event.MSG, suspect_msg));
-            if(log.isInfoEnabled()) log.info("task done");
+            if(log.isDebugEnabled()) log.debug("task done");
         }
     }
 

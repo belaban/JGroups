@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.6 2004/04/19 18:41:34 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.7 2004/04/23 01:39:03 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -99,9 +99,9 @@ public class CoordGmsImpl extends GmsImpl {
         tmp=new Membership(other_coords);
         tmp.sort();
         leader=(Address)tmp.elementAt(0);
-        if(log.isInfoEnabled()) log.info("coordinators in merge protocol are: " + tmp);
+        if(log.isDebugEnabled()) log.debug("coordinators in merge protocol are: " + tmp);
         if(leader.equals(gms.local_addr)) {
-            if(log.isInfoEnabled()) log.info("I (" + leader + ") will be the leader. Starting the merge task");
+            if(log.isDebugEnabled()) log.debug("I (" + leader + ") will be the leader. Starting the merge task");
             startMergeTask(other_coords);
         }
     }
@@ -126,7 +126,7 @@ public class CoordGmsImpl extends GmsImpl {
         merging=true;
         this.merge_id=(Serializable)merge_id;
 
-            if(log.isInfoEnabled()) log.info("sender=" + sender + ", merge_id=" + merge_id);
+            if(log.isDebugEnabled()) log.debug("sender=" + sender + ", merge_id=" + merge_id);
 
         digest=gms.getDigest();
         view=new View(gms.view_id.copy(), gms.members.getMembers());
@@ -151,7 +151,7 @@ public class CoordGmsImpl extends GmsImpl {
         }
         merging=true;
         this.merge_id=(Serializable)merge_id;
-        if(log.isInfoEnabled()) log.info("sender=" + sender + ", merge_id=" + merge_id);
+        if(log.isDebugEnabled()) log.debug("sender=" + sender + ", merge_id=" + merge_id);
 
         digest=gms.getDigest();
         view=new View(gms.view_id.copy(), gms.members.getMembers());
@@ -216,7 +216,7 @@ public class CoordGmsImpl extends GmsImpl {
                 && this.merge_id != null
                 && this.merge_id.equals(merge_id)) {
 
-                if(log.isInfoEnabled()) log.info("merge was cancelled (merge_id=" + merge_id + ")");
+                if(log.isDebugEnabled()) log.debug("merge was cancelled (merge_id=" + merge_id + ")");
             this.merge_id=null;
             merging=false;
         }
@@ -231,7 +231,7 @@ public class CoordGmsImpl extends GmsImpl {
         View v=null;
         Digest d, tmp;
 
-        if(log.isInfoEnabled()) log.info("mbr=" + mbr);
+        if(log.isDebugEnabled()) log.debug("mbr=" + mbr);
         if(gms.local_addr.equals(mbr)) {
             if(log.isErrorEnabled()) log.error("cannot join myself !");
             return null;
@@ -250,7 +250,7 @@ public class CoordGmsImpl extends GmsImpl {
             if(log.isErrorEnabled()) log.error("received null digest from GET_DIGEST: will cause JOIN to fail");
             return null;
         }
-        if(log.isInfoEnabled()) log.info("got digest=" + tmp);
+        if(log.isDebugEnabled()) log.debug("got digest=" + tmp);
 
         d=new Digest(tmp.size() + 1);
         // create a new digest, which contains 1 more member
@@ -271,7 +271,7 @@ public class CoordGmsImpl extends GmsImpl {
         // contains either leaving mbrs or suspected mbrs
 
 
-            if(log.isInfoEnabled()) log.info("mbr=" + mbr);
+            if(log.isDebugEnabled()) log.debug("mbr=" + mbr);
         if(!gms.members.contains(mbr)) {
 
                 if(log.isErrorEnabled()) log.error("mbr " + mbr + " is not a member !");
@@ -294,9 +294,9 @@ public class CoordGmsImpl extends GmsImpl {
         Vector mbrs=new_view.getMembers();
          {
             if(digest != null)
-                if(log.isInfoEnabled()) log.info("view=" + new_view + ", digest=" + digest);
+                if(log.isDebugEnabled()) log.debug("view=" + new_view + ", digest=" + digest);
             else
-                if(log.isInfoEnabled()) log.info("view=" + new_view);
+                if(log.isDebugEnabled()) log.debug("view=" + new_view);
         }
         if(leaving && !mbrs.contains(gms.local_addr)) {
             if(leave_promise != null) {
@@ -352,7 +352,7 @@ public class CoordGmsImpl extends GmsImpl {
         synchronized(merge_rsps) {
             merge_rsps.removeAllElements();
 
-                if(log.isInfoEnabled()) log.info("sending MERGE_REQ to " + coords);
+                if(log.isDebugEnabled()) log.debug("sending MERGE_REQ to " + coords);
             for(int i=0; i < coords.size(); i++) {
                 coord=(Address)coords.elementAt(i);
 
@@ -376,7 +376,7 @@ public class CoordGmsImpl extends GmsImpl {
             while(end_time > curr_time) {
                 time_to_wait=end_time - curr_time;
 
-                    if(log.isInfoEnabled()) log.info("waiting for "
+                    if(log.isDebugEnabled()) log.debug("waiting for "
                             + time_to_wait
                             + " msecs for merge responses");
                 if(merge_rsps.size() < num_rsps_expected) {
@@ -387,7 +387,7 @@ public class CoordGmsImpl extends GmsImpl {
                     }
                 }
 
-                    if(log.isInfoEnabled()) log.info("num_rsps_expected=" + num_rsps_expected
+                    if(log.isDebugEnabled()) log.debug("num_rsps_expected=" + num_rsps_expected
                                + ", actual responses=" + merge_rsps.size());
 
                 if(merge_rsps.size() >= num_rsps_expected)
@@ -432,7 +432,7 @@ public class CoordGmsImpl extends GmsImpl {
         for(int i=0; i < v.size(); i++) {
             tmp_data=(MergeData)v.elementAt(i);
 
-                if(log.isInfoEnabled()) log.info("merge data is " + tmp_data);
+                if(log.isDebugEnabled()) log.debug("merge data is " + tmp_data);
             tmp_view=tmp_data.getView();
             if(tmp_view != null) {
                 tmp_vid=tmp_view.getVid();
@@ -459,7 +459,7 @@ public class CoordGmsImpl extends GmsImpl {
         // determine the new view
         new_view=new MergeView(new_vid, new_mbrs.getMembers(), subgroups);
 
-            if(log.isInfoEnabled()) log.info("new merged view will be " + new_view);
+            if(log.isDebugEnabled()) log.debug("new merged view will be " + new_view);
 
         // determine the new digest
         new_digest=consolidateDigests(v, num_mbrs);
@@ -468,7 +468,7 @@ public class CoordGmsImpl extends GmsImpl {
             return null;
         }
 
-            if(log.isInfoEnabled()) log.info("consolidated digest=" + new_digest);
+            if(log.isDebugEnabled()) log.debug("consolidated digest=" + new_digest);
 
         ret=new MergeData(gms.local_addr, new_view, new_digest);
         return ret;
@@ -541,7 +541,7 @@ public class CoordGmsImpl extends GmsImpl {
         hdr.digest=digest;
         msg.putHeader(gms.getName(), hdr);
 
-            if(log.isInfoEnabled()) log.info("response=" + hdr);
+            if(log.isDebugEnabled()) log.debug("response=" + hdr);
         gms.passDown(new Event(Event.MSG, msg));
     }
 
@@ -552,7 +552,7 @@ public class CoordGmsImpl extends GmsImpl {
         hdr.merge_id=merge_id;
         msg.putHeader(gms.getName(), hdr);
 
-            if(log.isInfoEnabled()) log.info("response=" + hdr);
+            if(log.isDebugEnabled()) log.debug("response=" + hdr);
         gms.passDown(new Event(Event.MSG, msg));
     }
 
@@ -585,7 +585,7 @@ public class CoordGmsImpl extends GmsImpl {
                     coords.removeElement(data.getSender());
                 it.remove();
 
-                    if(log.isInfoEnabled()) log.info("removed element " + data);
+                    if(log.isDebugEnabled()) log.debug("removed element " + data);
             }
         }
     }
@@ -637,7 +637,7 @@ public class CoordGmsImpl extends GmsImpl {
                 return;
             }
 
-            if(log.isInfoEnabled()) log.info("merge task started");
+            if(log.isDebugEnabled()) log.debug("merge task started");
             try {
 
                 /* 1. Generate a merge_id that uniquely identifies the merge in progress */
@@ -675,7 +675,7 @@ public class CoordGmsImpl extends GmsImpl {
             finally {
                 merging=false;
 
-                    if(log.isInfoEnabled()) log.info("merge task terminated");
+                    if(log.isDebugEnabled()) log.debug("merge task terminated");
                 t=null;
             }
         }

@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.6 2004/04/22 23:50:16 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.7 2004/04/23 01:39:03 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -95,8 +95,8 @@ public class STATE_TRANSFER extends Protocol {
                             log.warn("GET_DIGEST_STATE_OK: existing digest is not null, overwriting it !");
                     }
                     digest=(Digest)evt.getArg();
-                    if(log.isInfoEnabled())
-                        log.info("GET_DIGEST_STATE_OK: digest is " + digest + "\npassUp(GET_APPLSTATE)");
+                    if(log.isDebugEnabled())
+                        log.debug("GET_DIGEST_STATE_OK: digest is " + digest + "\npassUp(GET_APPLSTATE)");
                     passUp(new Event(Event.GET_APPLSTATE));
                 }
                 return;
@@ -168,13 +168,13 @@ public class STATE_TRANSFER extends Protocol {
                     }
                 }
                 if(target == null) {
-                    if(log.isInfoEnabled()) log.info("GET_STATE: first member (no state)");
+                    if(log.isDebugEnabled()) log.debug("GET_STATE: first member (no state)");
                     passUp(new Event(Event.GET_STATE_OK, null));
                 }
                 else {
                     state_req=new Message(target, null, null);
                     state_req.putHeader(getName(), new StateHeader(StateHeader.STATE_REQ, local_addr, state_id++, null));
-                    if(log.isInfoEnabled()) log.info("GET_STATE: asking " + target + " for state");
+                    if(log.isDebugEnabled()) log.debug("GET_STATE: asking " + target + " for state");
                     passDown(new Event(Event.MSG, state_req));
                 }
                 return;                 // don't pass down any further !
@@ -275,7 +275,7 @@ public class STATE_TRANSFER extends Protocol {
             else {
                 state_requesters.add(sender);
                 digest=null;
-                if(log.isInfoEnabled()) log.info("passing down GET_DIGEST_STATE");
+                if(log.isDebugEnabled()) log.debug("passing down GET_DIGEST_STATE");
                 passDown(new Event(Event.GET_DIGEST_STATE));
             }
         }

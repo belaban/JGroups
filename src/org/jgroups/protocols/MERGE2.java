@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
+// $Id: MERGE2.java,v 1.3 2004/04/23 01:39:03 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -226,20 +226,18 @@ public class MERGE2 extends Protocol {
             Event evt;
             Vector initial_mbrs;
 
-
-                if(log.isInfoEnabled()) log.info("merge task started");
-
+            if(log.isDebugEnabled()) log.debug("merge task started");
             while(thread != null) {
                 interval=computeInterval();
                 Util.sleep(interval);
                 if(thread == null) break;
                 initial_mbrs=findInitialMembers();
                 if(thread == null) break;
-                 if(log.isInfoEnabled()) log.info("initial_mbrs=" + initial_mbrs);
+                if(log.isDebugEnabled()) log.debug("initial_mbrs=" + initial_mbrs);
                 coords=findMultipleCoordinators(initial_mbrs);
                 if(coords != null && coords.size() > 1) {
-                    if(log.isInfoEnabled()) log.info("found multiple coordinators: " +
-                                                             coords + "; sending up MERGE event");
+                    if(log.isDebugEnabled())
+                        log.debug("found multiple coordinators: " + coords + "; sending up MERGE event");
                     evt=new Event(Event.MERGE, coords);
                     passUp(evt);
                 }

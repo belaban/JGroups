@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.3 2004/04/05 01:44:03 belaban Exp $
+// $Id: UNICAST.java,v 1.4 2004/04/23 01:39:03 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -123,12 +123,11 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
 	// Some sanity checks
 	if((window_size > 0 && min_threshold <= 0) || (window_size <= 0 && min_threshold > 0)) {
-	    if(log.isErrorEnabled()) log.error("window_size and min_threshold have to be both set if one of them is set");
+	    log.error("window_size and min_threshold have to be both set if one of them is set");
 	    return false;
 	}
 	if(window_size > 0 && min_threshold > 0 && window_size < min_threshold) {
-	    if(log.isErrorEnabled()) log.error("min_threshold (" + min_threshold +
-			") has to be less than window_size (" + window_size + ")");
+	    log.error("min_threshold (" + min_threshold + ") has to be less than window_size (" + window_size + ")");
 	    return false;
 	}
         return true;
@@ -171,7 +170,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                         handleAckReceived(src, hdr.seqno);
                         break;
                     default:
-                        if(log.isErrorEnabled()) log.error("UnicastHeader type " + hdr.type + " not known !");
+                        log.error("UnicastHeader type " + hdr.type + " not known !");
                         break;
                 }
                 return;
@@ -218,10 +217,8 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                         entry.sent_msgs.setWindowSize(window_size, min_threshold);
                 }
                 msg.putHeader(getName(), hdr);
-
-
-                    if(log.isInfoEnabled()) log.info("[" + local_addr + "] --> DATA(" + dst + ": #" +
-                            entry.sent_msgs_seqno + ", first=" + hdr.first + ")");
+                if(log.isTraceEnabled()) log.trace("[" + local_addr + "] --> DATA(" + dst + ": #" +
+                        entry.sent_msgs_seqno + ", first=" + hdr.first + ")");
 
                 if (Global.copy)
                     entry.sent_msgs.add(entry.sent_msgs_seqno, msg.copy());  // add *including* UnicastHeader
@@ -267,8 +264,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         Entry entry=(Entry)connections.get(mbr);
         if(entry != null) {
             entry.reset();
-
-                if(log.isInfoEnabled()) log.info("removed " + mbr + " from connection table");
+            if(log.isDebugEnabled()) log.debug("removed " + mbr + " from connection table");
         }
         connections.remove(mbr);
     }
@@ -383,7 +379,6 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         AckSenderWindow win;
 
         if(log.isTraceEnabled()) log.trace("[" + local_addr + "] <-- ACK(" + sender + ": #" + seqno + ")");
-
         entry=(Entry)connections.get(sender);
         if(entry == null || entry.sent_msgs == null) {
             return;
