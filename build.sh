@@ -6,8 +6,26 @@
 JG_HOME=.
 
 
+case "`uname`" in
+    CYGWIN*)
+        cygwin=true
+        ;;
+
+    Darwin*)
+        darwin=true
+        ;;
+esac
+
+
+
 LIB=lib
-CP=${LIB}/ant.jar\;${LIB}/ant-optional.jar\;${LIB}/xercesxmlapi-2.1.0.jar\;${LIB}/xercesimpl-2.1.0.jar\;${LIB}/xalan.jar\;${LIB}/junit.jar
+
+
+if [ $cygwin = "true" ]; then
+    CP=${LIB}/ant.jar\;${LIB}/ant-optional.jar\;${LIB}/xercesxmlapi-2.1.0.jar\;${LIB}/xercesimpl-2.1.0.jar\;${LIB}/xalan.jar\;${LIB}/junit.jar
+else
+    CP=${LIB}/ant.jar:${LIB}/ant-optional.jar:${LIB}/xercesxmlapi-2.1.0.jar:${LIB}/xercesimpl-2.1.0.jar:${LIB}/xalan.jar:${LIB}/junit.jar
+fi
 
 
 
