@@ -1,4 +1,4 @@
-// $Id: RouterTest.java,v 1.5 2004/03/30 06:47:30 belaban Exp $
+// $Id: RouterTest.java,v 1.6 2005/02/19 11:05:56 ovidiuf Exp $
 
 package org.jgroups.tests.stack;
 
@@ -12,6 +12,8 @@ import org.jgroups.stack.IpAddress;
 import org.jgroups.util.List;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -26,10 +28,12 @@ import java.util.Random;
  * may timeout.
  *
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Revision: 1.5 $
+ * @version $Revision: 1.6 $
  * @since 2.2.1
  */
 public class RouterTest extends TestCase {
+
+    private static final Log log = LogFactory.getLog(RouterTest.class);
 
     private int routerPort=-1;
     private Random random=new Random();
@@ -54,6 +58,8 @@ public class RouterTest extends TestCase {
     public void testEmptyGET() throws Exception {
         int len;
         byte[] buffer;
+
+        log.warn("running testEmptyGET");
 
         Socket s=new Socket("localhost", routerPort);
         DataInputStream dis=new DataInputStream(s.getInputStream());
@@ -89,6 +95,9 @@ public class RouterTest extends TestCase {
      * group just registered.
      */
     public void test_REGISTER_GET() throws Exception {
+
+        log.warn("running test_REGISTER_GET");
+
 
         int len;
         byte[] buffer;
@@ -157,17 +166,19 @@ public class RouterTest extends TestCase {
     }
 
     /**
-     * Sends a GossipRouter.REGISTER request followed by a series of simple routing
-     * requests (to all members of the group, to itself, to an inexistent
-     * member).
+     * Sends a GossipRouter.REGISTER request followed by a series of simple routing requests (to all
+     * members of the group, to itself, to an inexistent member).
      */
 
-    public void test_REGISTER_Route() throws Exception {
+    public void test_REGISTER_Route_To_Self() throws Exception {
+
+        log.warn("running test_REGISTER_Route_To_Self");
+
 
         int len;
         byte[] buffer, destAddrBuffer;
         String groupName="TESTGROUP";
-        Message msg, msgCopy;
+        Message msg;
 
         Socket s=new Socket("localhost", routerPort);
         DataInputStream dis=new DataInputStream(s.getInputStream());
@@ -199,18 +210,13 @@ public class RouterTest extends TestCase {
         msg=new Message(null, localAddr, payload);
         buffer=Util.objectToByteBuffer(msg);
         dos.writeUTF(groupName);
-        dos.writeInt(0);
+        dos.write(0); // a 0 byte means a null address
         dos.writeInt(buffer.length);
         dos.write(buffer, 0, buffer.length);
-        
-        // read the message
-        len=dis.readInt();
-        buffer=new byte[len];
-        dis.readFully(buffer, 0, len);
-        msgCopy=(Message)Util.objectFromByteBuffer(buffer);
-        assertEquals(msg.getSrc(), msgCopy.getSrc());
-        assertNull(msgCopy.getDest());
-        assertEquals(msg.getObject(), msgCopy.getObject());
+
+        // due to Bela's optimizations, the router won't loopback local messages, the RouterStub
+        // is expected to loop them back, so the following section is useless. The router will
+        // just discard the message.
 
         // send a simple routing request to itself
         msg=new Message(localAddr, localAddr, payload);
@@ -221,15 +227,10 @@ public class RouterTest extends TestCase {
         dos.write(destAddrBuffer, 0, destAddrBuffer.length);
         dos.writeInt(buffer.length);
         dos.write(buffer, 0, buffer.length);
-        
-        // read the message
-        len=dis.readInt();
-        buffer=new byte[len];
-        dis.readFully(buffer, 0, len);
-        msgCopy=(Message)Util.objectFromByteBuffer(buffer);
-        assertEquals(msg.getSrc(), msgCopy.getSrc());
-        assertEquals(msg.getDest(), msgCopy.getDest());
-        assertEquals(msg.getObject(), msgCopy.getObject());
+
+        // due to Bela's optimizations, the router won't loopback local messages, the RouterStub
+        // is expected to loop them back, so the following section is useless. The router will
+        // just discard the message.
 
         // send a simple routing request to an inexistent member, the message
         // should be discarded by router
@@ -244,14 +245,214 @@ public class RouterTest extends TestCase {
         dos.write(destAddrBuffer, 0, destAddrBuffer.length);
         dos.writeInt(buffer.length);
         dos.write(buffer, 0, buffer.length);
-        
+
         // the message should be discarded by router
-        
+
         // close the routing connection
         dis.close();
         dos.close();
         s.close();
     }
+
+
+    public void test_REGISTER_Route_To_All() throws Exception {
+
+        log.warn("running test_REGISTER_Route_To_All");
+
+        int len;
+        byte[] buffer;
+        String groupName="TESTGROUP";
+        Message msg, msgCopy;
+
+        // Register the first member
+
+        Socket sOne = new Socket("localhost", routerPort);
+        DataInputStream disOne = new DataInputStream(sOne.getInputStream());
+        DataOutputStream dosOne = new DataOutputStream(sOne.getOutputStream());
+
+        // read the IpAddress sent by GossipRouter
+        len=disOne.readInt();
+        buffer=new byte[len];
+        disOne.readFully(buffer, 0, len);
+        IpAddress localAddrOne=(IpAddress)Util.objectFromByteBuffer(buffer);
+        assertEquals(localAddrOne.getIpAddress(), sOne.getLocalAddress());
+        assertEquals(localAddrOne.getPort(), sOne.getLocalPort());
+
+        // send REGISTER request
+        dosOne.writeInt(GossipRouter.REGISTER);
+        dosOne.writeUTF(groupName);
+
+        // send the Address back to the router
+        buffer=Util.objectToByteBuffer(localAddrOne);
+        dosOne.writeInt(buffer.length);
+        dosOne.write(buffer, 0, buffer.length);
+        dosOne.flush();
+
+        // registration of the first member is complete
+
+        // Register the second member
+
+        Socket sTwo = new Socket("localhost", routerPort);
+        DataInputStream disTwo = new DataInputStream(sTwo.getInputStream());
+        DataOutputStream dosTwo = new DataOutputStream(sTwo.getOutputStream());
+
+        // read the IpAddress sent by GossipRouter
+        len=disTwo.readInt();
+        buffer=new byte[len];
+        disTwo.readFully(buffer, 0, len);
+        IpAddress localAddrTwo=(IpAddress)Util.objectFromByteBuffer(buffer);
+        assertEquals(localAddrTwo.getIpAddress(), sTwo.getLocalAddress());
+        assertEquals(localAddrTwo.getPort(), sTwo.getLocalPort());
+
+        // send REGISTER request
+        dosTwo.writeInt(GossipRouter.REGISTER);
+        dosTwo.writeUTF(groupName);
+
+        // send the Address back to the router
+        buffer=Util.objectToByteBuffer(localAddrTwo);
+        dosTwo.writeInt(buffer.length);
+        dosTwo.write(buffer, 0, buffer.length);
+        dosTwo.flush();
+
+        // registration of the second member is complete
+
+        // make sure both clients registered
+        Thread.sleep(1000);
+
+        String payload="THIS IS A MESSAGE PAYLOAD " + random.nextLong();
+
+        // the first member sends a simple routing request to all members (null dest address)
+        msg=new Message(null, localAddrOne, payload);
+        buffer=Util.objectToByteBuffer(msg);
+        dosOne.writeUTF(groupName);
+        dosOne.write(0); // a 0 byte means a null address
+        dosOne.writeInt(buffer.length);
+        dosOne.write(buffer, 0, buffer.length);
+
+        dosOne.flush();
+
+
+        // only the second member should receive the routing request, the router won't send a
+        // message to the originator
+
+        // the second member reads the message
+        len=disTwo.readInt();
+        buffer=new byte[len];
+        disTwo.readFully(buffer, 0, len);
+        msgCopy=(Message)Util.objectFromByteBuffer(buffer);
+        assertEquals(msg.getSrc(), msgCopy.getSrc());
+        assertNull(msgCopy.getDest());
+        assertEquals(msg.getObject(), msgCopy.getObject());
+
+
+        // close the routing connection
+        disOne.close();
+        dosOne.close();
+        sOne.close();
+        disTwo.close();
+        dosTwo.close();
+        sTwo.close();
+
+    }
+
+    public void test_REGISTER_Route_To_Other() throws Exception {
+
+        log.warn("running test_REGISTER_Route_To_Other");
+
+
+        int len;
+        byte[] buffer;
+        String groupName="TESTGROUP";
+        Message msg, msgCopy;
+
+        // Register the first member
+
+        Socket sOne = new Socket("localhost", routerPort);
+        DataInputStream disOne = new DataInputStream(sOne.getInputStream());
+        DataOutputStream dosOne = new DataOutputStream(sOne.getOutputStream());
+
+        // read the IpAddress sent by GossipRouter
+        len=disOne.readInt();
+        buffer=new byte[len];
+        disOne.readFully(buffer, 0, len);
+        IpAddress localAddrOne=(IpAddress)Util.objectFromByteBuffer(buffer);
+        assertEquals(localAddrOne.getIpAddress(), sOne.getLocalAddress());
+        assertEquals(localAddrOne.getPort(), sOne.getLocalPort());
+
+        // send REGISTER request
+        dosOne.writeInt(GossipRouter.REGISTER);
+        dosOne.writeUTF(groupName);
+
+        // send the Address back to the router
+        buffer=Util.objectToByteBuffer(localAddrOne);
+        dosOne.writeInt(buffer.length);
+        dosOne.write(buffer, 0, buffer.length);
+        dosOne.flush();
+
+        // registration of the first member is complete
+
+        // Register the second member
+
+        Socket sTwo = new Socket("localhost", routerPort);
+        DataInputStream disTwo = new DataInputStream(sTwo.getInputStream());
+        DataOutputStream dosTwo = new DataOutputStream(sTwo.getOutputStream());
+
+        // read the IpAddress sent by GossipRouter
+        len=disTwo.readInt();
+        buffer=new byte[len];
+        disTwo.readFully(buffer, 0, len);
+        IpAddress localAddrTwo=(IpAddress)Util.objectFromByteBuffer(buffer);
+        assertEquals(localAddrTwo.getIpAddress(), sTwo.getLocalAddress());
+        assertEquals(localAddrTwo.getPort(), sTwo.getLocalPort());
+
+        // send REGISTER request
+        dosTwo.writeInt(GossipRouter.REGISTER);
+        dosTwo.writeUTF(groupName);
+
+        // send the Address back to the router
+        buffer=Util.objectToByteBuffer(localAddrTwo);
+        dosTwo.writeInt(buffer.length);
+        dosTwo.write(buffer, 0, buffer.length);
+        dosTwo.flush();
+
+        // registration of the second member is complete
+
+        // make sure both clients registered
+        Thread.sleep(1000);
+
+        String payload="THIS IS A MESSAGE PAYLOAD " + random.nextLong();
+
+        // first member send a simple routing request to the second member
+        msg=new Message(localAddrTwo, localAddrOne, payload);
+        buffer=Util.objectToByteBuffer(msg);
+        dosOne.writeUTF(groupName);
+        dosOne.write(1);
+        dosOne.write(1); // regular IPAddress
+        localAddrTwo.writeTo(dosOne);
+        dosOne.writeInt(buffer.length);
+        dosOne.write(buffer, 0, buffer.length);
+
+        dosOne.flush();
+
+        // the second member reads the message
+        len=disTwo.readInt();
+        buffer=new byte[len];
+        disTwo.readFully(buffer, 0, len);
+        msgCopy=(Message)Util.objectFromByteBuffer(buffer);
+        assertEquals(msg.getSrc(), msgCopy.getSrc());
+        assertEquals(msg.getDest(), msgCopy.getDest());
+        assertEquals(msg.getObject(), msgCopy.getObject());
+
+        // close the routing connection
+        disOne.close();
+        dosOne.close();
+        sOne.close();
+        disTwo.close();
+        dosTwo.close();
+        sTwo.close();
+    }
+
+
 
 
     /**
@@ -260,37 +461,69 @@ public class RouterTest extends TestCase {
      */
     public void test_REGISTER_RouteStressAll() throws Exception {
 
-        int len;
-        byte[] buffer, destAddrBuffer;
-        final String groupName="TESTGROUP";
-        Message msg, msgCopy;
+        log.warn("running test_REGISTER_RouteStressAll, this may take a while .... ");
 
-        Socket s=new Socket("localhost", routerPort);
-        final DataInputStream dis=new DataInputStream(s.getInputStream());
-        final DataOutputStream dos=new DataOutputStream(s.getOutputStream());
+
+        int len;
+        byte[] buffer;
+        final String groupName="TESTGROUP";
+
+        // Register the first member
+
+        Socket sOne = new Socket("localhost", routerPort);
+        DataInputStream disOne = new DataInputStream(sOne.getInputStream());
+        final DataOutputStream dosOne = new DataOutputStream(sOne.getOutputStream());
 
         // read the IpAddress sent by GossipRouter
-        len=dis.readInt();
+        len=disOne.readInt();
         buffer=new byte[len];
-        dis.readFully(buffer, 0, len);
-        final IpAddress localAddr=
-                (IpAddress)Util.objectFromByteBuffer(buffer);
-        assertEquals(localAddr.getIpAddress(), s.getLocalAddress());
-        assertEquals(localAddr.getPort(), s.getLocalPort());
+        disOne.readFully(buffer, 0, len);
+        final IpAddress localAddrOne=(IpAddress)Util.objectFromByteBuffer(buffer);
+        assertEquals(localAddrOne.getIpAddress(), sOne.getLocalAddress());
+        assertEquals(localAddrOne.getPort(), sOne.getLocalPort());
 
         // send REGISTER request
-        dos.writeInt(GossipRouter.REGISTER);
-        dos.writeUTF(groupName);
+        dosOne.writeInt(GossipRouter.REGISTER);
+        dosOne.writeUTF(groupName);
 
         // send the Address back to the router
-        buffer=Util.objectToByteBuffer(localAddr);
-        dos.writeInt(buffer.length);
-        dos.write(buffer, 0, buffer.length);
-        dos.flush();
+        buffer=Util.objectToByteBuffer(localAddrOne);
+        dosOne.writeInt(buffer.length);
+        dosOne.write(buffer, 0, buffer.length);
+        dosOne.flush();
 
-        // registration is complete
+        // registration of the first member is complete
 
-        // send a series of stress routing requests to all members 
+        // Register the second member
+
+        Socket sTwo = new Socket("localhost", routerPort);
+        final DataInputStream disTwo = new DataInputStream(sTwo.getInputStream());
+        DataOutputStream dosTwo = new DataOutputStream(sTwo.getOutputStream());
+
+        // read the IpAddress sent by GossipRouter
+        len=disTwo.readInt();
+        buffer=new byte[len];
+        disTwo.readFully(buffer, 0, len);
+        IpAddress localAddrTwo=(IpAddress)Util.objectFromByteBuffer(buffer);
+        assertEquals(localAddrTwo.getIpAddress(), sTwo.getLocalAddress());
+        assertEquals(localAddrTwo.getPort(), sTwo.getLocalPort());
+
+        // send REGISTER request
+        dosTwo.writeInt(GossipRouter.REGISTER);
+        dosTwo.writeUTF(groupName);
+
+        // send the Address back to the router
+        buffer=Util.objectToByteBuffer(localAddrTwo);
+        dosTwo.writeInt(buffer.length);
+        dosTwo.write(buffer, 0, buffer.length);
+        dosTwo.flush();
+
+        // registration of the second member is complete
+
+        // make sure both clients registered
+        Thread.sleep(1000);
+
+        // send a series of stress routing requests to all members
         final int count=100000; // total number of messages to be sent
         int timeout=120; // nr of secs to wait for all messages to arrrive
 
@@ -304,14 +537,14 @@ public class RouterTest extends TestCase {
         new Thread(new Runnable() {
             public void run() {
                 for(int i=0; i < count; i++) {
-                    Message msg=new Message(null, localAddr, new Integer(i));
+                    Message msg=new Message(null, localAddrOne, new Integer(i));
                     try {
                         byte[] buffer=Util.objectToByteBuffer(msg);
-                        dos.writeUTF(groupName);
-                        dos.writeInt(0);
-                        dos.writeInt(buffer.length);
-                        dos.write(buffer, 0, buffer.length);
-                        dos.flush();
+                        dosOne.writeUTF(groupName);
+                        dosOne.write(0);
+                        dosOne.writeInt(buffer.length);
+                        dosOne.write(buffer, 0, buffer.length);
+                        dosOne.flush();
                     }
                     catch(Exception e) {
                         // this fails the test
@@ -327,11 +560,10 @@ public class RouterTest extends TestCase {
                 int cnt=0;
                 while(cnt < count) {
                     try {
-                        int len=dis.readInt();
+                        int len=disTwo.readInt();
                         byte[] buffer=new byte[len];
-                        dis.readFully(buffer, 0, len);
-                        Message msg=
-                                (Message)Util.objectFromByteBuffer(buffer);
+                        disTwo.readFully(buffer, 0, len);
+                        Message msg= (Message)Util.objectFromByteBuffer(buffer);
                         int index=((Integer)msg.getObject()).intValue();
                         received[index]=true;
                         cnt++;
@@ -345,15 +577,19 @@ public class RouterTest extends TestCase {
             }
         }, "Receiving Thread").start();
 
-        
+
         // wait here the stress threads to finish
         Object result=waitingArea.getResult((long)timeout * 1000);
         long stop=System.currentTimeMillis();
-        
+
         // close the routing connection
-        dis.close();
-        dos.close();
-        s.close();
+        disOne.close();
+        dosOne.close();
+        sOne.close();
+        disTwo.close();
+        dosTwo.close();
+        sTwo.close();
+
 
         int messok=0;
         for(int i=0; i < count; i++) {
@@ -371,7 +607,6 @@ public class RouterTest extends TestCase {
         }
 
         // make sure all messages have been received
-        boolean success=true;
         for(int i=0; i < count; i++) {
             if(!received[i]) {
                 fail("At least message " + i + " NOT RECEIVED");
