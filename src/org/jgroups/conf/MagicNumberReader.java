@@ -1,4 +1,4 @@
-// $Id: MagicNumberReader.java,v 1.6 2004/09/23 16:29:14 belaban Exp $
+// $Id: MagicNumberReader.java,v 1.7 2004/09/23 22:31:22 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -17,7 +17,6 @@ import org.w3c.dom.NodeList;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
@@ -33,29 +32,33 @@ public class MagicNumberReader {
     public void setFilename(String file) {
         mMagicNumberFile=file;
     }
+
     /**
      * try to read the magic number configuration file as a Resource form the classpath using getResourceAsStream
      * if this fails this method tries to read the configuration file from mMagicNumberFile using a FileInputStream (not in classpath but somewhere else in the disk)
+     *
      * @return an array of ClassMap objects that where parsed from the file (if found) or an empty array if file not found or had en exception
      */
     public ClassMap[] readMagicNumberMapping() {
         try {
             InputStream stream=getClass().getClassLoader().getResourceAsStream(mMagicNumberFile);
             // try to load the map from file even if it is not a Resource in the class path 
-            if(stream == null){
-            	try{
-            		if(log.isInfoEnabled()) log.info("Could not read " + mMagicNumberFile +" as Resource from the CLASSPATH, will try to read it from file.");
-            		stream = new FileInputStream(mMagicNumberFile);
-            		if(stream != null &&log.isInfoEnabled() )
-            			log.info("Magic number File found at '" + mMagicNumberFile+'\'' );
-            	}catch(FileNotFoundException fnfe){
-            		if(log.isWarnEnabled()) log.warn("Failed reading - '" +
-                            mMagicNumberFile + "' is not found, got error '"+fnfe.getLocalizedMessage()+"'. Please make sure it is in the CLASSPATH or in the Specified location. Will " +
-                            "continue, but marshalling will be slower");
-            	}
-            	
+            if(stream == null) {
+                try {
+                    if(log.isInfoEnabled()) log.info("Could not read " + mMagicNumberFile + " as Resource from the CLASSPATH, will try to read it from file.");
+                    stream=new FileInputStream(mMagicNumberFile);
+                    if(stream != null && log.isInfoEnabled())
+                        log.info("Magic number File found at '" + mMagicNumberFile + '\'');
+                }
+                catch(FileNotFoundException fnfe) {
+                    if(log.isWarnEnabled())
+                        log.warn("Failed reading - '" +
+                                 mMagicNumberFile + "' is not found, got error '" + fnfe.getLocalizedMessage() + "'. Please make sure it is in the CLASSPATH or in the Specified location. Will " +
+                                 "continue, but marshalling will be slower");
+                }
+
             }
-            		
+
             if(stream == null) {
                 return new ClassMap[0];
             }

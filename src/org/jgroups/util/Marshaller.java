@@ -1,9 +1,10 @@
-// $Id: Marshaller.java,v 1.2 2004/09/23 16:29:56 belaban Exp $
+// $Id: Marshaller.java,v 1.3 2004/09/23 22:31:24 belaban Exp $
 
 package org.jgroups.util;
 
 
 import org.jgroups.conf.ClassConfigurator;
+import org.jgroups.ChannelException;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -32,7 +33,17 @@ public class Marshaller {
     /**
      * The class configurator maps classes to magic numbers
      */
-    private static final ClassConfigurator mConfigurator=ClassConfigurator.getInstance();
+    private static final ClassConfigurator mConfigurator;
+
+    static {
+        try {
+            mConfigurator=ClassConfigurator.getInstance();
+        }
+        catch(ChannelException e) {
+            throw new ExceptionInInitializerError(e.toString());
+        }
+    }
+
 
     public Marshaller() {
     }
