@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.23 2004/10/08 12:17:42 belaban Exp $
+// $Id: Util.java,v 1.24 2004/10/08 16:57:04 belaban Exp $
 
 package org.jgroups.util;
 
@@ -83,6 +83,9 @@ public class Util {
             writeOtherAddress(addr, out);
         }
     }
+
+
+
 
     private static void writeOtherAddress(Address addr, DataOutputStream out) throws IOException {
         ClassConfigurator conf=null;
