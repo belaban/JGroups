@@ -1,4 +1,4 @@
-// $Id: TCPPING.java,v 1.20 2005/02/03 23:43:03 ovidiuf Exp $
+// $Id: TCPPING.java,v 1.21 2005/03/23 11:00:57 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -67,11 +67,11 @@ public class TCPPING extends Discovery {
 
     public void localAddressSet(Address addr) {
         // Add own address to initial_hosts if not present: we must always be able to ping ourself !
-        if(initial_hosts != null && local_addr != null) {
-            if(!initial_hosts.contains(local_addr)) {
-                if(log.isDebugEnabled()) log.debug("[SET_LOCAL_ADDRESS]: adding my own address (" + local_addr +
-                                                   ") to initial_hosts; initial_hosts=" + initial_hosts);
-                initial_hosts.add(local_addr);
+        if(initial_hosts != null && addr != null) {
+            if(initial_hosts.contains(addr)) {
+                if(log.isDebugEnabled()) log.debug("[SET_LOCAL_ADDRESS]: removing my own address (" + addr +
+                                                   ") from initial_hosts; initial_hosts=" + initial_hosts);
+                initial_hosts.remove(addr);
             }
         }
     }
@@ -79,22 +79,17 @@ public class TCPPING extends Discovery {
 
     public void sendGetMembersRequest() {
         Message msg;
-        msg=new Message(null, null, null);
-        msg.putHeader(getName(), new PingHeader(PingHeader.GET_MBRS_REQ, null));
-
-        //Vector tmpMbrs;
-        //synchronized(members) {
-          //  tmpMbrs=new Vector(members);
-        //}
 
         for(Iterator it=initial_hosts.iterator(); it.hasNext();) {
             Address addr=(Address)it.next();
             // if(tmpMbrs.contains(addr)) {
                // ; // continue; // changed as suggested by Mark Kopec
             // }
-            msg.setDest(addr);
+            msg=new Message(addr, null, null);
+            msg.putHeader(getName(), new PingHeader(PingHeader.GET_MBRS_REQ, null));
+
             if(log.isTraceEnabled()) log.trace("[FIND_INITIAL_MBRS] sending PING request to " + msg.getDest());
-            passDown(new Event(Event.MSG, msg.copy()));
+            passDown(new Event(Event.MSG, msg));
         }
     }
 
