@@ -1,4 +1,4 @@
-// $Id: ProtocolData.java,v 1.3 2004/04/24 11:19:27 belaban Exp $
+// $Id: ProtocolData.java,v 1.4 2004/04/26 18:40:13 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -25,10 +25,11 @@ public class ProtocolData {
         mProtocolName=protocolName;
         mDescription=description;
         mClassName=className;
-        if(params != null)
+        if(params != null) {
             for(int i=0; i < params.length; i++) {
                 mParameters.put(params[i].getName(), params[i]);
-            }//for
+            }
+        }
     }
 
     public ProtocolData(String overRideName,

@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.13 2004/04/21 22:49:39 belaban Exp $
+// $Id: MessageDispatcher.java,v 1.14 2004/04/26 18:40:12 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -364,12 +364,10 @@ public class MessageDispatcher implements RequestHandler {
 
        // don't even send the message if the destination list is empty
 
-           if(log.isDebugEnabled()) log.debug("real_dests=" + real_dests);
+       if(log.isDebugEnabled()) log.debug("real_dests=" + real_dests);
        if(real_dests == null || real_dests.size() == 0) {
-            {
-               if(log.isInfoEnabled()) log.info("destination list is empty, won't send message");
-               return new RspList(); // return empty response list
-           }
+           if(log.isDebugEnabled()) log.debug("destination list is empty, won't send message");
+           return new RspList(); // return empty response list
        }
 
        _req=new GroupRequest(msg, corr, real_dests, mode, timeout, 0);
@@ -426,10 +424,8 @@ public class MessageDispatcher implements RequestHandler {
         
         // don't even send the message if the destination list is empty
         if(real_dests.size() == 0) {
-             {
-                if(log.isInfoEnabled()) log.info("destination list is empty, won't send message");
-                return;
-            }
+            if(log.isDebugEnabled()) log.debug("destination list is empty, won't send message");
+            return;
         }
 
         corr.sendRequest(req_id, real_dests, msg, coll);
