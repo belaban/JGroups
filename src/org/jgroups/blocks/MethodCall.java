@@ -3,6 +3,7 @@ package org.jgroups.blocks;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jgroups.util.Util;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -19,7 +20,7 @@ import java.lang.reflect.Method;
  * It includes the name of the method (case sensitive) and a list of arguments.
  * A method call is serializable and can be passed over the wire.
  * @author Bela Ban
- * @version $Revision: 1.11 $
+ * @version $Revision: 1.12 $
  */
 public class MethodCall implements Externalizable {
 
@@ -259,8 +260,8 @@ public class MethodCall implements Externalizable {
             throw no;
         }
         catch(Throwable e) {
-            e.printStackTrace(System.err);
-            if(log.isErrorEnabled()) log.error("exception=" + e);
+            // e.printStackTrace(System.err);
+            if(log.isErrorEnabled()) log.error("exception=" + Util.printStackTrace(e));
             throw e;
         }
     }
