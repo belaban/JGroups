@@ -1,4 +1,4 @@
-// $Id: RpcDispatcherTest.java,v 1.7 2004/09/06 15:43:38 belaban Exp $
+// $Id: RpcDispatcherTest.java,v 1.8 2004/09/07 12:07:31 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -37,6 +37,7 @@ public class RpcDispatcherTest {
 
     public void start(int num, long interval) throws Exception {
         channel=new JChannel(props);
+        channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
         disp=new RpcDispatcher(channel, null, null, this);
         channel.connect("RpcDispatcherTestGroup");
 
