@@ -1,4 +1,4 @@
-$Id: DESIGN,v 1.1 2003/09/09 01:24:11 belaban Exp $
+$Id: DESIGN,v 1.2 2003/11/22 00:12:43 belaban Exp $
 
 			    Design Issues
 			    =============
@@ -291,8 +291,8 @@ trace is disabled.
 
 
 
-Membership Updating
--------------------
+Membership Updating for JOIN/LEAVE requests
+-------------------------------------------
 
 When many members join a group at the same time, there were
 inconsistent views mcast by the coordinator (P). The reason was that P
@@ -320,6 +320,9 @@ Solution: a temporary membership list keeps track of the unofficial
 membership. This is one hasn't yet been made official by means of a
 view change, but which keeps joining members which are not yet
 contained in the official membership.
+
+[bela Nov 22 2003]: implemented the same mechanism for LEAVE requests
+(using a 'leaving' list in pbcast.GMS)
 
 
 
