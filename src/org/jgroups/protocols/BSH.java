@@ -1,4 +1,4 @@
-// $Id: BSH.java,v 1.5 2004/03/30 06:47:20 belaban Exp $
+// $Id: BSH.java,v 1.6 2004/04/23 19:36:12 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -42,9 +42,7 @@ public class BSH extends Protocol {
         return name;
     }
 
-    public boolean setProperties(Properties props) {
-        return super.setProperties(props);
-    }
+
 
     public void init() throws Exception {
         ;

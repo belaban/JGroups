@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.7 2004/04/23 01:39:03 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.8 2004/04/23 19:36:12 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -212,6 +212,7 @@ public class STATE_TRANSFER extends Protocol {
     public boolean setProperties(Properties props) {
         String str;
 
+        super.setProperties(props);
         // Milliseconds to wait for application to provide requested state, events are
         // STATE_TRANSFER up and STATE_TRANSFER_OK down
         str=props.getProperty("timeout_get_appl_state");

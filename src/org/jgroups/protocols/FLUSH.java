@@ -1,4 +1,4 @@
-// $Id: FLUSH.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
+// $Id: FLUSH.java,v 1.3 2004/04/23 19:36:13 belaban Exp $
 
 
 
@@ -412,7 +412,7 @@ public class FLUSH extends RpcProtocol {
 
 
 
-    public boolean setProperties(Properties props) {
+    public boolean setProperties(Properties props) {super.setProperties(props);
 	String     str;
 
 	str=props.getProperty("block_timeout");

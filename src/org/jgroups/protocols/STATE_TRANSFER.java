@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.5 2004/03/30 06:47:21 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.6 2004/04/23 19:36:13 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -116,7 +116,8 @@ public class STATE_TRANSFER extends Protocol implements RequestHandler {
 
     public boolean setProperties(Properties props) {
         String str;
-	
+
+        super.setProperties(props);
         // Milliseconds to wait for application to provide requested state, events are
         // STATE_TRANSFER up and STATE_TRANSFER_OK down
         str=props.getProperty("timeout_get_appl_state");

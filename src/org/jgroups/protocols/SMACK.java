@@ -1,4 +1,4 @@
-// $Id: SMACK.java,v 1.4 2004/03/30 06:47:21 belaban Exp $
+// $Id: SMACK.java,v 1.5 2004/04/23 19:36:13 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -46,7 +46,7 @@ import java.util.Vector;
  * </ul>
  * Advantage of this protocol: no group membership necessary, fast.
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.4 $
+ * @version $Revision: 1.5 $
  * todo: initial mcast to announce new member (for view change)
  * todo: fix membershop bug: start a, b, kill b, restart b: b will be suspected by a
  */
@@ -80,6 +80,7 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
         String str;
         long[] tmp;
 
+        super.setProperties(props);
         str=props.getProperty("print_local_addr");
         if(str != null) {
             print_local_addr=new Boolean(str).booleanValue();

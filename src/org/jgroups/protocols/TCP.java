@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.6 2004/03/30 06:47:21 belaban Exp $
+// $Id: TCP.java,v 1.7 2004/04/23 19:36:13 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -237,6 +237,7 @@ public class TCP extends Protocol implements ConnectionTable.Receiver, Connectio
     public boolean setProperties(Properties props) {
         String str;
 
+        super.setProperties(props);
         str=props.getProperty("start_port");
         if(str != null) {
             start_port=new Integer(str).intValue();

@@ -1,4 +1,4 @@
-// $Id: FD_PID.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
+// $Id: FD_PID.java,v 1.3 2004/04/23 19:36:13 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -64,6 +64,7 @@ public class FD_PID extends Protocol {
     public boolean setProperties(Properties props) {
         String str;
 
+        super.setProperties(props);
         str=props.getProperty("timeout");
         if(str != null) {
             timeout=new Long(str).longValue();

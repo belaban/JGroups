@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.4 2004/04/23 01:39:03 belaban Exp $
+// $Id: UNICAST.java,v 1.5 2004/04/23 19:36:13 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -87,8 +87,9 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
     public boolean setProperties(Properties props) {
         String     str;
-	long[]     tmp;
+        long[]     tmp;
 
+        super.setProperties(props);
         str=props.getProperty("timeout");
         if(str != null) {
 	    tmp=Util.parseCommaDelimitedLongs(str);

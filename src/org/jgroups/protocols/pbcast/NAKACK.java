@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.14 2004/04/23 01:39:03 belaban Exp $
+// $Id: NAKACK.java,v 1.15 2004/04/23 19:36:12 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -367,6 +367,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
         String str;
         long[] tmp;
 
+        super.setProperties(props);
         str=props.getProperty("retransmit_timeout");
         if(str != null) {
             tmp=Util.parseCommaDelimitedLongs(str);

@@ -1,4 +1,4 @@
-// $Id: TCPPING.java,v 1.6 2004/03/30 06:47:21 belaban Exp $
+// $Id: TCPPING.java,v 1.7 2004/04/23 19:36:13 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -53,6 +53,7 @@ public class TCPPING extends Protocol {
     public boolean setProperties(Properties props) {
         String str;
 
+        super.setProperties(props);
         str=props.getProperty("timeout");              // max time to wait for initial members
         if(str != null) {
             timeout=new Long(str).longValue();

@@ -1,4 +1,4 @@
-// $Id: QUEUE.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
+// $Id: QUEUE.java,v 1.3 2004/04/23 19:36:13 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -72,17 +72,6 @@ public class QUEUE extends Protocol {
 	return ret;
     }
 
-
-    public boolean setProperties(Properties props) {
-	String     str;
-
-	if(props.size() > 0) {
-	    System.err.println("QUEUE.setProperties(): these properties are not recognized:");
-	    props.list(System.out);
-	    return false;
-	}
-	return true;
-    }
 
 
 

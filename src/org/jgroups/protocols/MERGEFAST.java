@@ -24,10 +24,6 @@ public class MERGEFAST extends Protocol {
         return name;
     }
 
-    public boolean setProperties(Properties props) {
-        return super.setProperties(props);
-    }
-
 
     public void down(Event evt) {
         if(is_coord == true && evt.getType() == Event.MSG && local_addr != null) {

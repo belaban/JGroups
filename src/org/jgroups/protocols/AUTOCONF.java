@@ -1,4 +1,4 @@
-// $Id: AUTOCONF.java,v 1.6 2004/04/23 01:39:03 belaban Exp $
+// $Id: AUTOCONF.java,v 1.7 2004/04/23 19:36:12 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -58,6 +58,7 @@ public class AUTOCONF extends Protocol {
     public boolean setProperties(Properties props) {
         String str;
 
+        super.setProperties(props);
         str=props.getProperty("num_iterations");
         if(str != null) {
             num_iterations=new Integer(str).intValue();
@@ -65,11 +66,10 @@ public class AUTOCONF extends Protocol {
         }
 
         str=props.getProperty("frag_overhead");
-         if(str != null) {
-             frag_overhead=new Integer(str).intValue();
-             props.remove("frag_overhead");
-         }
-
+        if(str != null) {
+            frag_overhead=new Integer(str).intValue();
+            props.remove("frag_overhead");
+        }
 
         if(props.size() > 0) {
             System.err.println("AUTOCONF.setProperties(): the following properties are not recognized:");

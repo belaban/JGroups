@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.6 2004/04/23 17:32:54 belaban Exp $
+// $Id: NAKACK.java,v 1.7 2004/04/23 19:36:13 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -460,6 +460,7 @@ public class NAKACK extends Protocol {
         String str;
         long[] tmp;
 
+        super.setProperties(props);
         str=props.getProperty("retransmit_timeout");
         if(str != null) {
             tmp=Util.parseCommaDelimitedLongs(str);

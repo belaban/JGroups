@@ -18,7 +18,7 @@ import java.util.zip.Inflater;
  * Compresses the payload of a message. Goal is to reduce the number of messages sent across the wire.
  * Should ideally be layered somewhere above a fragmentation protocol (e.g. FRAG).
  * @author Bela Ban
- * @version $Id: COMPRESS.java,v 1.3 2004/03/30 06:47:20 belaban Exp $
+ * @version $Id: COMPRESS.java,v 1.4 2004/04/23 19:36:12 belaban Exp $
  */
 public class COMPRESS extends Protocol {
 
@@ -54,6 +54,7 @@ public class COMPRESS extends Protocol {
     public boolean setProperties(Properties props) {
         String str;
 
+        super.setProperties(props);
         str=props.getProperty("compression_level");
         if(str != null) {
             compression_level=Integer.parseInt(str);

@@ -1,87 +1,73 @@
-// $Id: VIEW_ENFORCER.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
+// $Id: VIEW_ENFORCER.java,v 1.3 2004/04/23 19:36:13 belaban Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.Address;
 import org.jgroups.Event;
-import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.stack.Protocol;
 
-import java.util.Properties;
 import java.util.Vector;
 
 
-
 /**
-   Used by a client until it becomes a member: all up messages are discarded until a VIEW_CHANGE
-   is encountered. From then on, this layer just acts as a pass-through layer. Later, we may
-   add some functionality that checks for the VIDs of messages and discards messages accordingly.
+ * Used by a client until it becomes a member: all up messages are discarded until a VIEW_CHANGE
+ * is encountered. From then on, this layer just acts as a pass-through layer. Later, we may
+ * add some functionality that checks for the VIDs of messages and discards messages accordingly.
  */
 
 public class VIEW_ENFORCER extends Protocol {
-    Address  local_addr=null;
-    boolean  is_member=false;
+    Address local_addr=null;
+    boolean is_member=false;
 
 
-    /** All protocol names have to be unique ! */
-    public String  getName() {return "VIEW_ENFORCER";}
-
-
-    public boolean setProperties(Properties props) {
-	String     str;
-
-	if(props.size() > 0) {
-	    System.err.println("VIEW_ENFORCER.setProperties(): these properties are not recognized:");
-	    props.list(System.out);
-	    return false;
-	}
-	return true;
+    /**
+     * All protocol names have to be unique !
+     */
+    public String getName() {
+        return "VIEW_ENFORCER";
     }
-
 
 
     public void up(Event evt) {
-	Message msg;
 
-	switch(evt.getType()) {
+        switch(evt.getType()) {
 
-	case Event.VIEW_CHANGE:
-	    if(is_member)       // pass the view change up if we are already a member of the group
-		break;
+            case Event.VIEW_CHANGE:
+                if(is_member)       // pass the view change up if we are already a member of the group
+                    break;
 
-	    Vector new_members=((View)evt.getArg()).getMembers();
-	    if(new_members == null || new_members.size() == 0)
-		break;
-	    if(local_addr == null) {
-		System.err.println("VIEW_ENFORCER.up(VIEW_CHANGE): local address is null; cannot check " +
-				   "whether I'm a member of the group; discarding view change");
-		return;
-	    }
+                Vector new_members=((View)evt.getArg()).getMembers();
+                if(new_members == null || new_members.size() == 0)
+                    break;
+                if(local_addr == null) {
+                    System.err.println("VIEW_ENFORCER.up(VIEW_CHANGE): local address is null; cannot check " +
+                            "whether I'm a member of the group; discarding view change");
+                    return;
+                }
 
-	    if(new_members.contains(local_addr))
-		is_member=true;
-	    else
-		return;
-	    
-	    break;
+                if(new_members.contains(local_addr))
+                    is_member=true;
+                else
+                    return;
 
-	case Event.SET_LOCAL_ADDRESS:
-	    local_addr=(Address)evt.getArg();
-	    break;
+                break;
+
+            case Event.SET_LOCAL_ADDRESS:
+                local_addr=(Address)evt.getArg();
+                break;
 
 
-	case Event.MSG:
-	    if(!is_member) {    // drop message if we are not yet member of the group
-		 if(log.isInfoEnabled()) log.info("dropping message " + evt.getArg());
-		return;
-	    }
-	    break;
+            case Event.MSG:
+                if(!is_member) {    // drop message if we are not yet member of the group
+                    if(log.isInfoEnabled()) log.info("dropping message " + evt.getArg());
+                    return;
+                }
+                break;
 
-	}
-	passUp(evt);            // Pass up to the layer above us
+        }
+        passUp(evt);            // Pass up to the layer above us
     }
-
 
 
 }

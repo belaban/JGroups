@@ -1,4 +1,4 @@
-// $Id: PING.java,v 1.11 2004/04/23 00:37:03 belaban Exp $
+// $Id: PING.java,v 1.12 2004/04/23 19:36:13 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -69,6 +69,7 @@ public class PING extends Protocol {
     public boolean setProperties(Properties props) {
         String str;
 
+        super.setProperties(props);
         str=props.getProperty("timeout");              // max time to wait for initial members
         if(str != null) {
             timeout=new Long(str).longValue();
