@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.15 2005/03/23 09:50:07 belaban Exp $
+// $Id: ConnectionTable.java,v 1.16 2005/03/23 11:01:27 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -29,7 +29,7 @@ import java.util.*;
  * @author Bela Ban
  */
 public class ConnectionTable implements Runnable {
-    final Hashtable     conns=new Hashtable();       // keys: Addresses (peer address), values: Connection
+    final HashMap       conns=new HashMap();       // keys: Addresses (peer address), values: Connection
     Receiver            receiver=null;
     ServerSocket        srv_sock=null;
     InetAddress         bind_addr=null;
@@ -341,18 +341,17 @@ public class ConnectionTable implements Runnable {
         Connection conn;
 
         synchronized(conns) {
-            conn=(Connection)conns.get(addr);
-
-            if(conn != null) {
-                try {
-                    conn.destroy();  // won't do anything if already destroyed
-                }
-                catch(Exception e) {
-                }
-                conns.remove(addr);
-            }
-            if(log.isInfoEnabled()) log.info("addr=" + addr + ", connections are " + toString());
+            conn=(Connection)conns.remove(addr);
         }
+
+        if(conn != null) {
+            try {
+                conn.destroy();  // won't do anything if already destroyed
+            }
+            catch(Exception e) {
+            }
+        }
+        if(log.isTraceEnabled()) log.trace("removed " + addr + ", connections are " + toString());
     }
 
 
@@ -381,7 +380,7 @@ public class ConnectionTable implements Runnable {
                 conn.setPeerAddress(peer_addr);
 
                 synchronized(conns) {
-                    if(conns.contains(peer_addr)) {
+                    if(conns.containsKey(peer_addr)) {
                         if(log.isWarnEnabled()) log.warn(peer_addr + " is already there, will terminate connection");
                         conn.destroy();
                         continue; // return; // we cannot terminate the thread (bela Sept 2 2004)
@@ -429,14 +428,18 @@ public class ConnectionTable implements Runnable {
         StringBuffer ret=new StringBuffer();
         Address key;
         Connection val;
+        Map.Entry entry;
+        HashMap copy;
 
         synchronized(conns) {
-            ret.append("connections (" + conns.size() + "):\n");
-            for(Enumeration e=conns.keys(); e.hasMoreElements();) {
-                key=(Address)e.nextElement();
-                val=(Connection)conns.get(key);
-                ret.append("key: " + key.toString() + ": " + val.toString() + '\n');
-            }
+            copy=new HashMap(conns);
+        }
+        ret.append("connections (" + copy.size() + "):\n");
+        for(Iterator it=copy.entrySet().iterator(); it.hasNext();) {
+            entry=(Map.Entry)it.next();
+            key=(Address)entry.getKey();
+            val=(Connection)entry.getValue();
+            ret.append("key: " + key + ": " + val + '\n');
         }
         ret.append('\n');
         return ret.toString();
@@ -456,8 +459,8 @@ public class ConnectionTable implements Runnable {
                     ret=new ServerSocket(start_port, backlog, bind_addr);
             }
             catch(BindException bind_ex) {
-		if (start_port==end_port) throw new BindException("No available port to bind to");
-		start_port++;
+                if (start_port==end_port) throw new BindException("No available port to bind to");
+                start_port++;
                 continue;
             }
             catch(IOException io_ex) {
@@ -845,7 +848,7 @@ public class ConnectionTable implements Runnable {
                                              conns.size() + ", reaper_interval=" + reaper_interval + ", conn_expire_time=" +
                                              conn_expire_time);
 
-            while(conns.size() > 0 && t != null) {
+            while(conns.size() > 0 && t != null && t.equals(Thread.currentThread())) {
                 // first sleep
                 Util.sleep(reaper_interval);
                 synchronized(conns) {
