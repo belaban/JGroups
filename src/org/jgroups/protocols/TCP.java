@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.1 2003/09/09 01:24:10 belaban Exp $
+// $Id: TCP.java,v 1.2 2003/09/24 23:19:40 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -349,6 +349,10 @@ public class TCP extends Protocol implements ConnectionTable.Receiver, Connectio
             case Event.CONFIG:
                 if(Trace.trace) Trace.info("UDP.down()", "received CONFIG event: " + evt.getArg());
                 handleConfigEvent((HashMap)evt.getArg());
+                break;
+
+            case Event.ACK:
+                passUp(new Event(Event.ACK_OK));
                 break;
         }
     }
