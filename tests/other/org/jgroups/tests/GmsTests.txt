@@ -1,4 +1,4 @@
-$Id: GmsTests.txt,v 1.1 2003/09/09 01:24:13 belaban Exp $
+$Id: GmsTests.txt,v 1.2 2004/09/14 12:57:22 belaban Exp $
 
 
      Manual tests for the Group Membership Service (GMS) Protocol
@@ -135,6 +135,7 @@ Test 13
 - Mbrship should be 20
 - Kill and leave members randomly
 - Last member should show mbrship=1
+[ test with both FD and FD_SOCK ]
 
 
 Test 14
