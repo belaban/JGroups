@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.22 2004/05/04 00:22:03 belaban Exp $
+// $Id: UDP.java,v 1.23 2004/05/14 00:16:21 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -90,10 +90,6 @@ public class UDP extends Protocol implements Runnable {
 
     /** Pre-allocated byte stream. Used for serializing datagram packets. Will grow as needed */
     ByteArrayOutputStream out_stream=new ByteArrayOutputStream(65535);
-
-    /** Header to be added to all messages sent via this protocol. It is
-     * preallocated for efficiency */
-    UdpHeader       udp_hdr=null;
 
     /** Send buffer size of the multicast datagram socket */
     int             mcast_send_buf_size=32000;
@@ -571,9 +567,9 @@ public class UDP extends Protocol implements Runnable {
 
         msg=(Message)evt.getArg();
 
-        if(udp_hdr != null && udp_hdr.group_addr != null) {
+        if(group_addr != null) {
             // added patch by Roland Kurmann (March 20 2003)
-            msg.putHeader(name, udp_hdr);
+            msg.putHeader(name, new UdpHeader(group_addr));
         }
 
         dest_addr=msg.getDest();
@@ -1123,7 +1119,6 @@ public class UDP extends Protocol implements Runnable {
 
             case Event.CONNECT:
                 group_addr=(String)evt.getArg();
-                udp_hdr=new UdpHeader(group_addr);
 
                 // removed March 18 2003 (bela), not needed (handled by GMS)
                 // changed July 2 2003 (bela): we discard CONNECT_OK at the GMS level anyway, this might
