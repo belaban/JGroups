@@ -1,4 +1,4 @@
-// $Id: XmlConfigurator.java,v 1.5 2004/07/05 05:43:51 belaban Exp $
+// $Id: XmlConfigurator.java,v 1.6 2004/07/14 06:37:34 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -105,7 +105,7 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
 
 
     public ProtocolData[] getProtocolStack() {
-        return (ProtocolData[])mProtocolStack.toArray(new ProtocolData[mProtocolStack.size()]);
+        return mProtocolStack.toArray(new ProtocolData[mProtocolStack.size()]);
     }
 
     public String getName() {
@@ -307,34 +307,66 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
 
 
 
-    protected static XmlConfigurator parse(Element root) throws java.io.IOException {
+    protected static XmlConfigurator parse(Element root_element) throws java.io.IOException {
         XmlConfigurator configurator=null;
+
+        /** LinkedList<ProtocolData> */
+        LinkedList prot_data=new LinkedList();
+
+
+        /**
+         * CAUTION: crappy code ahead ! I (bela) am not an XML expert, so the code below is pretty amateurish...
+         * But it seems to work, and it is executed only on startup, so no perf loss on the critical path.
+         * If somebody wants to improve this, please be my guest.
+         */
         try {
-            Document document=root.getOwnerDocument();
-            //print("",new PrintWriter(System.out),root);
-            String stackname=root.getAttribute(ATTR_NAME);
-            String inherit=root.getAttribute(ATTR_INHERIT);
-            boolean isinherited=(inherit != null && inherit.length() > 0);
-            NodeList protocol_list=document.getElementsByTagName(isinherited ? ELMT_PROT_OVERRIDE : ELMT_PROT);
-            Vector v=new Vector();
-            for(int i=0; i < protocol_list.getLength(); i++) {
-                if(protocol_list.item(i).getNodeType() == Node.ELEMENT_NODE) {
-                    v.addElement(parseProtocolData(protocol_list.item(i)));
+            Node root=null;
+            NodeList roots=root_element.getChildNodes();
+            for(int i =0; i < roots.getLength(); i++) {
+                root=roots.item(i);
+                if(root.getNodeType() != Node.ELEMENT_NODE)
+                    continue;
+            }
+
+            String root_name=root.getNodeName();
+            if(!"config".equals(root_name.trim().toLowerCase())) {
+                log.fatal("XML protocol stack configuration does not start with a '<config>' element; " +
+                        "maybe the XML configuration needs to be converted to the new format ?\n" +
+                        "use 'java org.jgroups.conf.XmlConfigurator <old XML file> -new_format' to do so");
+                throw new IOException("invalid XML configuration");
+            }
+
+            NodeList prots=root.getChildNodes();
+            for(int i=0; i < prots.getLength(); i++) {
+                Node node = prots.item(i);
+                if( node.getNodeType() != Node.ELEMENT_NODE )
+                    continue;
+
+                Element tag = (Element) node;
+                String protocol = tag.getTagName();
+                // System.out.println("protocol: " + protocol);
+                LinkedList tmp=new LinkedList();
+
+                NamedNodeMap attrs = tag.getAttributes();
+                int attrLength = attrs.getLength();
+                for(int a = 0; a < attrLength; a ++) {
+                    Attr attr = (Attr) attrs.item(a);
+                    String name = attr.getName();
+                    String value = attr.getValue();
+                    // System.out.println("    name=" + name + ", value=" + value);
+                    tmp.add(new ProtocolParameter(name, value));
                 }
+                ProtocolParameter[] params=new ProtocolParameter[tmp.size()];
+                for(int j=0; j < tmp.size(); j++)
+                    params[j]=(ProtocolParameter)tmp.get(j);
+                ProtocolData data=new ProtocolData(protocol, "bla", "" + protocol, params);
+                prot_data.add(data);
             }
-            ProtocolData[] protocols=new ProtocolData[v.size()];
-            v.copyInto(protocols);
 
-            if(isinherited) {
-                URL inheritURL=new URL(inherit);
-                configurator=XmlConfigurator.getInstance(inheritURL);
-                for(int i=0; i < protocols.length; i++)
-                    configurator.override(protocols[i]);
-            }
-            else {
-                configurator=new XmlConfigurator(stackname, protocols);
-            }//end if
-
+            ProtocolData[] data=new ProtocolData[(prot_data.size())];
+            for(int k=0; k < prot_data.size(); k++)
+                data[k]=(ProtocolData)prot_data.get(k);
+            configurator=new XmlConfigurator("bla", data);
         }
         catch(Exception x) {
             if(x instanceof java.io.IOException)
