@@ -1,4 +1,4 @@
-// $Id: Protocol.java,v 1.5 2003/12/15 21:23:36 belaban Exp $
+// $Id: Protocol.java,v 1.6 2003/12/15 22:26:50 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -546,7 +546,7 @@ public abstract class Protocol {
 
                     // if we're the transport protocol, reply with a START_OK up the stack
                     if(down_prot == null) {
-                        passUp(new Event(Event.START_OK));
+                        passUp(new Event(Event.START_OK, Boolean.TRUE));
                         return false; // don't pass down the stack
                     }
                     else
@@ -559,7 +559,7 @@ public abstract class Protocol {
             case Event.STOP:
                 stop();
                 if(down_prot == null) {
-                    passUp(new Event(Event.STOP_OK));
+                    passUp(new Event(Event.STOP_OK, Boolean.TRUE));
                     return false; // don't pass down the stack
                 }
                 else
