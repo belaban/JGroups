@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.12 2004/09/15 17:40:58 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.13 2004/09/16 13:55:32 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -175,7 +175,7 @@ public class STATE_TRANSFER extends Protocol {
                     // fixes bugs #943480 and #938584). Wake up when state has been received
                     if(log.isDebugEnabled())
                         log.debug("passing down a SUSPEND_STABLE event");
-                    passDown(new Event(Event.SUSPEND_STABLE));
+                    passDown(new Event(Event.SUSPEND_STABLE, new Long(info.timeout)));
 
                     start=System.currentTimeMillis();
                     passDown(new Event(Event.MSG, state_req));
