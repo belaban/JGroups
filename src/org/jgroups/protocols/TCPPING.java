@@ -1,4 +1,4 @@
-// $Id: TCPPING.java,v 1.2 2003/12/22 17:13:57 belaban Exp $
+// $Id: TCPPING.java,v 1.3 2003/12/22 17:14:33 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -283,36 +283,6 @@ public class TCPPING extends Protocol {
 
         return tmp;
     }
-
-//
-//    class HostInfo {
-//        public String host;
-//        public int port;
-//
-//
-//        HostInfo() {
-//        }
-//
-//        HostInfo(String h, int p) {
-//            host=h;
-//            port=p;
-//        }
-//
-//        public String toString() {
-//            return host + ":" + port;
-//        }
-//
-//
-//        public boolean equals(Object obj) {
-//            if(obj == null || !(obj instanceof HostInfo))
-//                return false;
-//            if(host == null || ((HostInfo) obj).host == null)
-//                return false;
-//            return host.equals(((HostInfo) obj).host);
-//        }
-//
-//
-//    }
 
 }
 
