@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.5 2004/03/30 06:47:18 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.6 2004/04/22 23:50:16 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -21,7 +21,7 @@ import java.util.Vector;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.5 $
+ * @version $Revision: 1.6 $
  */
 public class ClientGmsImpl extends GmsImpl {
     Vector  initial_mbrs=new Vector();
@@ -56,62 +56,54 @@ public class ClientGmsImpl extends GmsImpl {
         join_promise.reset();
         while(true) {
             findInitialMembers();
-
-                if(log.isDebugEnabled()) log.debug("initial_mbrs are " + initial_mbrs);
+            if(log.isDebugEnabled()) log.debug("initial_mbrs are " + initial_mbrs);
             if(initial_mbrs.size() == 0) {
                 if(gms.disable_initial_coord) {
-
-                        if(log.isInfoEnabled()) log.info("received an initial membership of 0, but " +
-                                                           "cannot become coordinator (disable_initial_coord=" + gms.disable_initial_coord +
-                                                           "), will retry fetching the initial membership");
+                    if(log.isInfoEnabled())
+                        log.info("received an initial membership of 0, but cannot become coordinator (disable_initial_coord=" +
+                                gms.disable_initial_coord + "), will retry fetching the initial membership");
                     continue;
                 }
-
-                    if(log.isInfoEnabled()) log.info("no initial members discovered: " +
-                                                       "creating group as first member");
+                if(log.isInfoEnabled())
+                    log.info("no initial members discovered: creating group as first member");
                 becomeSingletonMember(mbr);
                 return;
             }
 
             coord=determineCoord(initial_mbrs);
             if(coord == null) {
-                if(log.isErrorEnabled()) log.error("could not determine coordinator " +
-                                                    "from responses " + initial_mbrs);
+                if(log.isErrorEnabled())
+                    log.error("could not determine coordinator from responses " + initial_mbrs);
                 continue;
             }
 
             try {
-
-                    if(log.isInfoEnabled()) log.info("sending handleJoin(" + mbr + ") to " + coord);
+                if(log.isInfoEnabled()) log.info("sending handleJoin(" + mbr + ") to " + coord);
                 sendJoinMessage(coord, mbr);
                 rsp=(JoinRsp)join_promise.getResult(gms.join_timeout);
 
                 if(rsp == null) {
-
-                        if(log.isWarnEnabled()) log.warn("handleJoin(" + mbr + ") failed, retrying");
+                    if(log.isWarnEnabled()) log.warn("handleJoin(" + mbr + ") failed, retrying");
                 }
                 else {
                     // 1. Install digest
                     tmp_digest=rsp.getDigest();
-
                     if(tmp_digest != null) {
                         tmp_digest.incrementHighSeqno(coord); 	// see DESIGN for an explanantion
-                         if(log.isInfoEnabled()) log.info("digest is " + tmp_digest);
+                        if(log.isInfoEnabled()) log.info("digest is " + tmp_digest);
                         gms.setDigest(tmp_digest);
                     }
                     else
                         if(log.isErrorEnabled()) log.error("digest of JOIN response is null");
 
                     // 2. Install view
-
-                        if(log.isDebugEnabled()) log.debug("[" + gms.local_addr + "]: JoinRsp=" + rsp.getView() +
-                                    " [size=" + rsp.getView().size() + "]\n\n");
+                    if(log.isDebugEnabled()) log.debug("[" + gms.local_addr + "]: JoinRsp=" + rsp.getView() +
+                            " [size=" + rsp.getView().size() + "]\n\n");
 
                     if(rsp.getView() != null) {
                         if(!installView(rsp.getView())) {
-
-                                if(log.isErrorEnabled()) log.error("view installation failed, " +
-                                                                    "retrying to join group");
+                            if(log.isErrorEnabled()) log.error("view installation failed, " +
+                                    "retrying to join group");
                             continue;
                         }
                         gms.passUp(new Event(Event.BECOME_SERVER));
