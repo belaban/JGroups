@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.24 2004/05/15 00:20:11 belaban Exp $
+// $Id: UDP.java,v 1.25 2004/05/19 00:12:58 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -695,7 +695,7 @@ public class UDP extends Protocol implements Runnable {
         if(observer != null)
             observer.up(evt, up_queue.size());
 
-        hdr=(UdpHeader)msg.removeHeader(name);
+        hdr=(UdpHeader)msg.getHeader(name); // replaced removeHeader() with getHeader()
         if(hdr != null) {
 
             /* Discard all messages destined for a channel with a different name */
@@ -738,7 +738,7 @@ public class UDP extends Protocol implements Runnable {
         // we will discard our own multicast message
         if(loopback && (dest.equals(local_addr) || dest.isMulticastAddress())) {
             copy=msg.copy();
-            copy.removeHeader(name);
+            // copy.removeHeader(name); // we don't remove the header
             copy.setSrc(local_addr);
             copy.setDest(dest);
             evt=new Event(Event.MSG, copy);
