@@ -6,7 +6,7 @@ import org.jgroups.*;
 /**
  * Tests unicasts to self (loopback of transport protocol)
  * @author Bela Ban Dec 31 2003
- * @version $Id: UnicastLoopbackTest.java,v 1.5 2004/03/30 06:47:31 belaban Exp $
+ * @version $Id: UnicastLoopbackTest.java,v 1.6 2005/01/28 21:45:04 belaban Exp $
  */
 public class UnicastLoopbackTest extends TestCase {
     JChannel channel=null;
@@ -17,11 +17,13 @@ public class UnicastLoopbackTest extends TestCase {
     }
 
     protected void setUp() throws Exception {
+        super.setUp();
         channel=new JChannel();
         channel.connect("demo-group");
     }
 
     protected void tearDown() throws Exception {
+        super.tearDown();
         if(channel != null) {
             channel.close();
             channel=null;
