@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.17 2005/03/24 09:59:38 belaban Exp $
+// $Id: ConnectionTable.java,v 1.18 2005/03/24 11:20:19 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -501,26 +501,39 @@ public class ConnectionTable implements Runnable {
 
     class Connection implements Runnable {
         Socket           sock=null;                // socket to/from peer (result of srv_sock.accept() or new Socket())
+        String           sock_addr=null;           // used for Thread.getName()
         DataOutputStream out=null;                 // for sending messages
         DataInputStream  in=null;                  // for receiving messages
-        Thread           handler=null;             // thread for receiving messages
+        Thread           receiverThread=null;      // thread for receiving messages
         Address          peer_addr=null;           // address of the 'other end' of the connection
         final Object     send_mutex=new Object();  // serialize sends
         long             last_access=System.currentTimeMillis(); // last time a message was sent or received
         LinkedQueue      send_queue=new LinkedQueue();
-        Sender           send_queue_handler=new Sender();
+        Sender           sender=new Sender();
         final long       POLL_TIMEOUT=30000;
 
 
+        String getSockAddress() {
+            if(sock_addr != null)
+                return sock_addr;
+            if(sock != null) {
+                StringBuffer sb=new StringBuffer();
+                sb.append(sock.getLocalAddress().getHostAddress()).append(':').append(sock.getLocalPort());
+                sb.append(" - ").append(sock.getInetAddress().getHostAddress()).append(':').append(sock.getPort());
+                sock_addr=sb.toString();
+            }
+            return sock_addr;
+        }
+
         class Sender implements Runnable {
-            Thread sender;
+            Thread senderThread;
             private boolean running=false;
 
             void start() {
-                if(sender == null || !sender.isAlive()) {
-                    sender=new Thread(thread_group, this, "Sender");
-                    sender.setDaemon(true);
-                    sender.start();
+                if(senderThread == null || !senderThread.isAlive()) {
+                    senderThread=new Thread(thread_group, this, "ConnectionTable.Connection.Sender [" + getSockAddress() + "]");
+                    senderThread.setDaemon(true);
+                    senderThread.start();
                     running=true;
                     if(log.isTraceEnabled())
                         log.trace("ConnectionTable.Connection.Sender thread started");
@@ -528,20 +541,20 @@ public class ConnectionTable implements Runnable {
             }
 
             void stop() {
-                if(sender != null) {
-                    sender.interrupt();
-                    sender=null;
+                if(senderThread != null) {
+                    senderThread.interrupt();
+                    senderThread=null;
                     running=false;
                 }
             }
 
             boolean isRunning() {
-                return running && sender != null;
+                return running && senderThread != null;
             }
 
             public void run() {
                 Message msg;
-                while(sender != null && sender.equals(Thread.currentThread())) {
+                while(senderThread != null && senderThread.equals(Thread.currentThread())) {
                     try {
                         msg=(Message)send_queue.poll(POLL_TIMEOUT);
                         if(msg == null)
@@ -573,7 +586,7 @@ public class ConnectionTable implements Runnable {
 
 
         boolean established() {
-            return handler != null;
+            return receiverThread != null;
         }
 
 
@@ -587,29 +600,29 @@ public class ConnectionTable implements Runnable {
 
         void init() {
             // if(log.isInfoEnabled()) log.info("connection was created to " + peer_addr);
-            if(handler == null || !handler.isAlive()) {
+            if(receiverThread == null || !receiverThread.isAlive()) {
                 // Roland Kurmann 4/7/2003, put in thread_group
-                handler=new Thread(thread_group, this, "ConnectionTable.Connection.HandlerThread");
-                handler.setDaemon(true);
-                handler.start();
+                receiverThread=new Thread(thread_group, this, "ConnectionTable.Connection.Receiver [" + getSockAddress() + "]");
+                receiverThread.setDaemon(true);
+                receiverThread.start();
                 if(log.isTraceEnabled())
-                    log.trace("ConnectionTable.Connection.HandlerThread started");
+                    log.trace("ConnectionTable.Connection.Receiver started");
             }
         }
 
 
         void destroy() {
             closeSocket(); // should terminate handler as well
-            send_queue_handler.stop();
-            handler=null;
+            sender.stop();
+            receiverThread=null;
         }
 
 
         void send(Message msg) {
             try {
                 send_queue.put(msg);
-                if(!send_queue_handler.isRunning())
-                    send_queue_handler.start();
+                if(!sender.isRunning())
+                    sender.start();
             }
             catch(InterruptedException e) {
                 log.error("failed adding message to send_queue", e);
@@ -673,8 +686,8 @@ public class ConnectionTable implements Runnable {
                 }
             }
             catch(Exception ex) {
-                if(log.isErrorEnabled()) log.error("to " + dst_addr + ", exception is " + ex + ", stack trace:\n" +
-                                                   Util.printStackTrace(ex));
+                if(log.isErrorEnabled())
+                    log.error("failure sending to " + dst_addr, ex);
                 remove(dst_addr);
                 throw ex;
             }
@@ -786,7 +799,7 @@ public class ConnectionTable implements Runnable {
             byte[] buf=new byte[256];
             int len=0;
 
-            while(handler != null && handler.equals(Thread.currentThread())) {
+            while(receiverThread != null && receiverThread.equals(Thread.currentThread())) {
                 try {
                     if(in == null) {
                         if(log.isErrorEnabled()) log.error("input stream is null !");
@@ -819,8 +832,8 @@ public class ConnectionTable implements Runnable {
                 }
             }
             if(log.isTraceEnabled())
-                log.trace("ConnectionTable.Connection.HandlerThread terminated");
-            handler=null;
+                log.trace("ConnectionTable.Connection.Receiver terminated");
+            receiverThread=null;
             closeSocket();
             remove(peer_addr);
         }
