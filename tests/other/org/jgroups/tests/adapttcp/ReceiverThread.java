@@ -3,6 +3,7 @@ package org.jgroups.tests.adapttcp;
 import org.apache.log4j.Logger;
 
 import java.io.DataInputStream;
+import java.io.BufferedInputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -197,7 +198,7 @@ public class ReceiverThread extends Thread {
         Receiver(Socket sock) throws Exception {
             this.sock=sock;
             sock.setSoTimeout(5000);
-            in=new DataInputStream(sock.getInputStream());
+            in=new DataInputStream(new BufferedInputStream(sock.getInputStream()));
         }
 
         public void run() {
@@ -212,7 +213,7 @@ public class ReceiverThread extends Thread {
                             started=true;
                         }
                         counter++;
-                        if(counter % 100 == 0) {
+                        if(counter % 1000 == 0) {
                             System.out.println("-- received " + counter + " msgs");
                         }
                         if(counter % log_interval == 0) {

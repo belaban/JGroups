@@ -4,6 +4,7 @@ import org.apache.log4j.Logger;
 import org.jgroups.util.Util;
 
 import java.io.DataOutputStream;
+import java.io.BufferedOutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.util.Iterator;
@@ -68,7 +69,7 @@ public class SenderThread extends Thread {
                 for(int j=0; j < msgs_burst; j++) {
                     ct.writeMessage(msg);
                     total_msgs++;
-                    if(total_msgs % 100 == 0) {
+                    if(total_msgs % 1000 == 0) {
                         System.out.println("++ sent " + total_msgs);
                     }
                     if(total_msgs % log_interval == 0) {
@@ -156,7 +157,7 @@ public class SenderThread extends Thread {
 
         Connection(InetAddress addr) throws Exception {
             sock=new Socket(addr, Test.srv_port);
-            out=new DataOutputStream(sock.getOutputStream());
+            out=new DataOutputStream(new BufferedOutputStream(sock.getOutputStream()));
         }
 
         void writeMessage(byte[] msg) throws Exception {
