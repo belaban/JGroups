@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.14 2004/09/06 09:18:54 belaban Exp $
+// $Id: STABLE.java,v 1.15 2004/09/16 13:55:32 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -76,10 +76,10 @@ public class STABLE extends Protocol {
      * messages anymore, eventually, with a lot of traffic, every member would accumulate messages and run
      * out of memory !
      */
-    long                max_suspend_time=600000;
+    // long                max_suspend_time=600000;
 
-    SuspendTask         suspend_task=null;
-
+    ResumeTask          resume_task=null;
+    final Object        resume_task_mutex=new Object();
 
 
     public String getName() {
@@ -130,7 +130,7 @@ public class STABLE extends Protocol {
 
         str=props.getProperty("max_suspend_time");
         if(str != null) {
-            max_suspend_time=Long.parseLong(str);
+            System.err.println("max_suspend_time is not supported any longer; please remove it (ignoring it)");
             props.remove("max_suspend_time");
         }
 
@@ -143,28 +143,20 @@ public class STABLE extends Protocol {
     }
 
 
-    void suspend() {
+    void suspend(long timeout) {
         if(!suspended) {
             suspended=true;
             if(log.isDebugEnabled())
                 log.debug("suspending message garbage collection");
         }
-        if(suspend_task == null || suspend_task.cancelled()) {
-            suspend_task=new SuspendTask();
-            timer.add(suspend_task);
-        }
+        startResumeTask(timeout); // will not start task if already running
     }
 
     void resume() {
-        if(suspended) {
-            suspended=false;
-            if(log.isDebugEnabled())
-                log.debug("resuming message garbage collection");
-        }
-        if(suspend_task != null) {
-            suspend_task.stop();
-            suspend_task=null;
-        }
+        suspended=false;
+        if(log.isDebugEnabled())
+            log.debug("resuming message garbage collection");
+        stopResumeTask();
     }
 
     public void start() throws Exception {
@@ -234,7 +226,7 @@ public class STABLE extends Protocol {
         passUp(evt);
         if(desired_avg_gossip > 0) {
             if(type == Event.VIEW_CHANGE || type == Event.MSG)
-                startStableTask(); // only start if not yet running
+                startStableTask(); // only starts task if not yet running
         }
     }
 
@@ -275,8 +267,12 @@ public class STABLE extends Protocol {
                 break;
 
             case Event.SUSPEND_STABLE:
+                long timeout=0;
+                Object t=evt.getArg();
+                if(t != null && t instanceof Long)
+                    timeout=((Long)t).longValue();
                 stopStableTask();
-                suspend();
+                suspend(timeout);
                 break;
 
             case Event.RESUME_STABLE:
@@ -286,7 +282,7 @@ public class STABLE extends Protocol {
 
         if(desired_avg_gossip > 0) {
             if(type == Event.VIEW_CHANGE || type == Event.MSG)
-                startStableTask(); // only start if not yet running
+                startStableTask(); // only starts task if not yet running
         }
 
         passDown(evt);
@@ -311,12 +307,20 @@ public class STABLE extends Protocol {
 
     void startStableTask() {
         num_gossip_runs=max_gossip_runs;
+
+        // Here double-checked locking works: we don't want to synchronize if the task already runs (which is the case
+        // 99% of the time). If stable_task gets nulled after the condition check, we return anyways, but just miss
+        // 1 cycle: on the next message or view, we will start the task
+        if(stable_task != null)
+            return;
         synchronized(stable_task_mutex) {
-            if(stable_task != null && !stable_task.cancelled()) {
+            if(stable_task != null && stable_task.running()) {
                 return;  // already running
             }
-            stable_task=new StableTask();
-            timer.add(stable_task, true); // fixed-rate scheduling
+            else {
+                stable_task=new StableTask();
+                timer.add(stable_task, true); // fixed-rate scheduling
+            }
         }
         if(log.isDebugEnabled())
             log.debug("stable task started; num_gossip_runs=" + num_gossip_runs + ", max_gossip_runs=" + max_gossip_runs);
@@ -324,10 +328,62 @@ public class STABLE extends Protocol {
 
 
     void stopStableTask() {
+        // contrary to startStableTask(), we don't need double-checked locking here because this method is not
+        // called frequently
         synchronized(stable_task_mutex) {
             if(stable_task != null) {
                 stable_task.stop();
                 stable_task=null;
+            }
+        }
+    }
+
+
+    void startResumeTask(long max_suspend_time) {
+        max_suspend_time=(long)(max_suspend_time * 1.1); // little slack
+
+        synchronized(resume_task_mutex) {
+            if(resume_task != null && resume_task.running()) {
+                return;  // already running
+            }
+            else {
+                resume_task=new ResumeTask(max_suspend_time);
+                timer.add(resume_task, true); // fixed-rate scheduling
+            }
+        }
+        if(log.isDebugEnabled())
+            log.debug("resume task started, max_suspend_time=" + max_suspend_time);
+    }
+
+
+    void stopResumeTask() {
+        synchronized(resume_task_mutex) {
+            if(resume_task != null) {
+                resume_task.stop();
+                resume_task=null;
+            }
+        }
+    }
+
+
+    void startStabilityTask(Digest d, long delay) {
+        synchronized(stability_mutex) {
+            if(stability_task != null && stability_task.running()) {
+                return;  // already running
+            }
+            else {
+                stability_task=new StabilitySendTask(d, delay);
+                timer.add(stability_task, true); // fixed-rate scheduling
+            }
+        }
+    }
+
+
+    void stopStabilityTask() {
+        synchronized(stability_mutex) {
+            if(stability_task != null) {
+                stability_task.stop();
+                stability_task=null;
             }
         }
     }
@@ -353,7 +409,7 @@ public class STABLE extends Protocol {
 
         if(suspended) {
             if(log.isDebugEnabled()) {
-                log.debug("STABLE message will not be handled as suspened=" + suspended);
+                log.debug("STABLE message will not be handled as suspended=" + suspended);
             }
             return;
         }
@@ -423,16 +479,17 @@ public class STABLE extends Protocol {
         Message msg=new Message(); // mcast message
         StableHeader hdr;
 
+        if(suspended) {
+            if(log.isTraceEnabled())
+                log.trace("will not send STABLE message as suspended=" + suspended);
+            return;
+        }
+
         d=getDigest();
         if(d != null && d.size() > 0) {
             if(log.isDebugEnabled())
-                log.debug("mcasting digest " + d +
-                        " (num_gossip_runs=" + num_gossip_runs + ", max_gossip_runs=" + max_gossip_runs + ')');
-            if(suspended) {
-                if(log.isTraceEnabled())
-                    log.trace("will not send STABLE message as suspended=" + suspended);
-                return;
-            }
+                log.debug("mcasting STABLE msg, digest=" + d +
+                          " (num_gossip_runs=" + num_gossip_runs + ", max_gossip_runs=" + max_gossip_runs + ')');
             hdr=new StableHeader(StableHeader.STABLE_GOSSIP, d);
             msg.putHeader(getName(), hdr);
             passDown(new Event(Event.MSG, msg));
@@ -477,14 +534,7 @@ public class STABLE extends Protocol {
         // our random sleep, we will not send the STABILITY msg. this prevents that all mbrs mcast a
         // STABILITY msg at the same time
         delay=Util.random(stability_delay);
-        if(log.isDebugEnabled())
-            log.debug("stability_task=" + stability_task + ", delay is " + delay);
-        synchronized(stability_mutex) {
-            if(stability_task != null && !stability_task.cancelled())  // schedule only if not yet running
-                return;
-            stability_task=new StabilitySendTask(this, tmp, delay);
-            timer.add(stability_task, true); // run it 1x after delay msecs. use fixed-rate scheduling
-        }
+        startStabilityTask(tmp, delay);
     }
 
 
@@ -502,14 +552,7 @@ public class STABLE extends Protocol {
         }
 
         if(log.isDebugEnabled()) log.debug("stability vector is " + d.printHighSeqnos());
-        synchronized(stability_mutex) {
-            if(stability_task != null) {
-                if(log.isDebugEnabled()) log.debug("cancelling stability task (running=" +
-                        !stability_task.cancelled() + ')');
-                stability_task.stop();
-                stability_task=null;
-            }
-        }
+        stopStabilityTask();
 
         // we won't handle the gossip d, if d's members don't match the membership in my own digest,
         // this is part of the fix for the NAKACK problem (bugs #943480 and #938584)
@@ -617,12 +660,12 @@ public class STABLE extends Protocol {
     private class StableTask implements TimeScheduler.Task {
         boolean stopped=false;
 
-        public void reset() {
-            stopped=false;
-        }
-
         public void stop() {
             stopped=true;
+        }
+
+        public boolean running() { // syntactic sugar
+            return !stopped;
         }
 
         public boolean cancelled() {
@@ -637,9 +680,11 @@ public class STABLE extends Protocol {
                 return interval;
         }
 
+
         public void run() {
             if(suspended) {
                 log.debug("stable task will not run as suspended=" + suspended);
+                stopStableTask();
                 return;
             }
             initialize();
@@ -648,7 +693,7 @@ public class STABLE extends Protocol {
             if(num_gossip_runs <= 0) {
                 if(log.isDebugEnabled()) log.debug("stable task terminating (num_gossip_runs=" +
                         num_gossip_runs + ", max_gossip_runs=" + max_gossip_runs + ')');
-                stop();
+                stopStableTask();
             }
         }
 
@@ -670,15 +715,17 @@ public class STABLE extends Protocol {
      */
     private class StabilitySendTask implements TimeScheduler.Task {
         Digest   d=null;
-        Protocol stable_prot=null;
         boolean  stopped=false;
         long     delay=2000;
 
 
-        public StabilitySendTask(Protocol stable_prot, Digest d, long delay) {
-            this.stable_prot=stable_prot;
+        public StabilitySendTask(Digest d, long delay) {
             this.d=d;
             this.delay=delay;
+        }
+
+        public boolean running() {
+            return !stopped;
         }
 
         public void stop() {
@@ -702,7 +749,7 @@ public class STABLE extends Protocol {
 
             if(suspended) {
                 if(log.isDebugEnabled()) {
-                    log.debug("STABILITY message will not be sent as suspened=" + suspended);
+                    log.debug("STABILITY message will not be sent as suspended=" + suspended);
                 }
                 stopped=true;
                 return;
@@ -712,7 +759,7 @@ public class STABLE extends Protocol {
                 msg=new Message();
                 hdr=new StableHeader(StableHeader.STABILITY, d);
                 msg.putHeader(STABLE.name, hdr);
-                stable_prot.passDown(new Event(Event.MSG, msg));
+                passDown(new Event(Event.MSG, msg));
                 d=null;
             }
             stopped=true; // run only once
@@ -720,15 +767,20 @@ public class STABLE extends Protocol {
     }
 
 
-    private class SuspendTask implements TimeScheduler.Task {
+    private class ResumeTask implements TimeScheduler.Task {
         boolean running=true;
+        long max_suspend_time=0;
 
-        SuspendTask() {
+        ResumeTask(long max_suspend_time) {
+            this.max_suspend_time=max_suspend_time;
         }
-
 
         void stop() {
             running=false;
+        }
+
+        public boolean running() {
+            return running;
         }
 
         public boolean cancelled() {
@@ -740,12 +792,10 @@ public class STABLE extends Protocol {
         }
 
         public void run() {
-            if(suspended) {
-                suspended=false;
-                log.warn("Reset suspended flag to true, this should never happen: " +
-                        "check why RESUME_STABLE has not been received");
-            }
-            stop();
+            if(suspended)
+                log.warn("ResumeTask resumed message garbage collection - this should be done by a RESUME_STABLE event; " +
+                         "check why this event was not received (or increase max_suspend_time for large state transfers)");
+            resume();
         }
     }
 
