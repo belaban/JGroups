@@ -1,4 +1,4 @@
-// $Id: ReplicatedTree.java,v 1.8 2004/09/23 16:29:11 belaban Exp $
+// $Id: ReplicatedTree.java,v 1.9 2005/02/19 13:23:34 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -21,6 +21,7 @@ import java.util.*;
  * members reliably and in the same order.
  * @author Bela Ban Jan 17 2002
  * @author <a href="mailto:aolias@yahoo.com">Alfonso Olias-Sanz</a>
+ * @deprecated This class is unsupported; use JBossCache instead: http://www.jboss.com/products/jbosscache
  */
 public class ReplicatedTree implements Runnable, MessageListener, MembershipListener {
     public static final String SEPARATOR="/";
