@@ -1,11 +1,10 @@
-// $Id: MethodCallTest.java,v 1.8 2004/08/10 14:08:54 belaban Exp $
+// $Id: MethodCallTest.java,v 1.9 2005/02/19 12:33:34 ovidiuf Exp $
 
 package org.jgroups.tests;
 
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
-import org.jgroups.blocks.MethodCall;
 
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
@@ -13,9 +12,17 @@ import java.io.ByteArrayInputStream;
 import java.io.ObjectInputStream;
 import java.lang.reflect.Method;
 
+import org.jgroups.blocks.MethodCall;
 
+
+/**
+ * @author Bela Ban belaban@yahoo.com
+ * @author <a href="mailto:ovidiu@jboss.org">Ovidiu Feodorov</a>
+ * @version $Revision: 1.9 $
+ **/
 
 public class MethodCallTest extends TestCase {
+
     Class cl=MethodCallTest.class;
 
     public MethodCallTest(String name) {
@@ -253,10 +260,6 @@ public class MethodCallTest extends TestCase {
     }
 
 
-
-
-
-
     public void testBufferSize() throws Exception {
         int a=10;
         String b="Bela";
@@ -275,6 +278,130 @@ public class MethodCallTest extends TestCase {
         System.out.println(m2.getArgs().length);
     }
 
+    //
+    // OLD
+    //
+
+    public void testOLD() throws Throwable {
+
+        MethodCall methodCall = new MethodCall("someMethod", new Object[] {"abc"});
+
+        Target target = new Target();
+        Object result = methodCall.invoke(target);
+        assertEquals("ABC", result);
+    }
+
+    public void testInheritanceOLD() throws Throwable {
+
+        MethodCall methodCall = new MethodCall("someMethod", new Object[] {"abc"});
+
+        TargetSubclass target = new TargetSubclass();
+        Object result = methodCall.invoke(target);
+        assertEquals("ABC", result);
+    }
+
+    //
+    // METHOD
+    //
+
+    public void testMETHOD() throws Throwable {
+
+        Method method = Target.class.getMethod("someMethod", new Class[] { String.class });
+        MethodCall methodCall = new MethodCall(method, new Object[] {"abc"});
+
+        Target target = new Target();
+        Object result = methodCall.invoke(target);
+        assertEquals("ABC", result);
+    }
+
+    public void testInheritanceMETHOD() throws Throwable {
+
+        Method method = Target.class.getMethod("someMethod", new Class[] { String.class });
+        MethodCall methodCall = new MethodCall(method, new Object[] {"abc"});
+
+        TargetSubclass target = new TargetSubclass();
+        Object result = methodCall.invoke(target);
+        assertEquals("ABC", result);
+    }
+
+    //
+    // TYPES
+    //
+
+    public void testTYPES() throws Throwable {
+
+        MethodCall methodCall = new MethodCall("someMethod",
+                                               new Object[] { "abc" },
+                                               new Class[] { String.class });
+
+        Target target = new Target();
+        Object result = methodCall.invoke(target);
+        assertEquals("ABC", result);
+    }
+
+    public void testInheritanceTYPES() throws Throwable {
+
+        MethodCall methodCall = new MethodCall("someMethod",
+                                               new Object[] { "abc" },
+                                               new Class[] { String.class });
+
+        TargetSubclass target = new TargetSubclass();
+        Object result = methodCall.invoke(target);
+        assertEquals("ABC", result);
+    }
+
+    /**
+     * This tests whether overriden methods are correctly identified and invoked.
+     */
+    public void testOverriddenForTYPES() throws Throwable  {
+
+        MethodCall methodCall = new MethodCall("overriddenMethod",
+                                               new Object[] { "abc" },
+                                               new Class[] { String.class });
+
+        TargetSubclass target = new TargetSubclass();
+        Object result = methodCall.invoke(target);
+        assertEquals("TargetSubclassABC", result);
+
+    }
+
+    public void testNoArgumentMethodForTYPES() throws Throwable  {
+
+        MethodCall methodCall = new MethodCall("noArgumentMethod", new Object[0], new Class[0]);
+
+        TargetSubclass target = new TargetSubclass();
+        Object result = methodCall.invoke(target);
+        assertEquals("noArgumentMethodResult", result);
+
+    }
+
+
+    //
+    // SIGNATURE
+    //
+
+    public void testSIGNATURE() throws Throwable {
+
+        MethodCall methodCall = new MethodCall("someMethod",
+                                               new Object[] { "abc" },
+                                               new String[] { "java.lang.String" });
+
+        Target target = new Target();
+        Object result = methodCall.invoke(target);
+        assertEquals("ABC", result);
+    }
+
+    public void testInheritanceSIGNATURE() throws Throwable {
+
+        MethodCall methodCall = new MethodCall("someMethod",
+                                               new Object[] { "abc" },
+                                               new String[] { "java.lang.String" });
+
+        TargetSubclass target = new TargetSubclass();
+        Object result = methodCall.invoke(target);
+        assertEquals("ABC", result);
+    }
+
 
     public static Test suite() {
         TestSuite s=new TestSuite(MethodCallTest.class);
@@ -284,4 +411,29 @@ public class MethodCallTest extends TestCase {
     public static void main(String[] args) {
         junit.textui.TestRunner.run(suite());
     }
+
+    public class Target {
+
+        public String someMethod(String arg) {
+            return arg.toUpperCase();
+        }
+
+        public String overriddenMethod(String arg) {
+            return "Target" + arg.toUpperCase();
+        }
+
+        public String noArgumentMethod() {
+            return "noArgumentMethodResult";
+        }
+    }
+
+    public class TargetSubclass extends Target {
+
+        public String overriddenMethod(String arg) {
+            return "TargetSubclass" + arg.toUpperCase();
+        }
+
+    }
+
+
 }
