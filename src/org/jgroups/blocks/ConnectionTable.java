@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.1 2003/09/09 01:24:08 belaban Exp $
+// $Id: ConnectionTable.java,v 1.2 2004/01/18 21:24:40 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -58,10 +58,6 @@ public class ConnectionTable implements Runnable {
         void connectionClosed(Address peer_addr);
     }
 
-
-    private ConnectionTable() { // cannot be used, other ctor has to be used
-
-    }
 
     /**
      * Regular ConnectionTable without expiration of idle connections
@@ -202,7 +198,8 @@ public class ConnectionTable implements Runnable {
         synchronized(conns) {
             conn=(Connection)conns.get(dest);
             if(conn == null) {
-                sock=new Socket(((IpAddress)dest).getIpAddress(), ((IpAddress)dest).getPort());
+                // changed by bela Jan 18 2004: use the bind address for the client sockets as well
+                sock=new Socket(((IpAddress)dest).getIpAddress(), ((IpAddress)dest).getPort(), bind_addr, 0);
                 conn=new Connection(sock, dest);
                 conn.sendLocalAddress(local_addr);
                 notifyConnectionOpened(dest);
