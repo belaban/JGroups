@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.19 2004/07/05 14:17:36 belaban Exp $
+// $Id: JChannel.java,v 1.20 2004/07/15 19:46:00 belaban Exp $
 
 package org.jgroups;
 
@@ -23,7 +23,7 @@ import java.util.Vector;
  * protocol stack
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.19 $
+ * @version $Revision: 1.20 $
  */
 public class JChannel extends Channel {
 
@@ -106,14 +106,6 @@ public class JChannel extends Channel {
 
     protected Log log=LogFactory.getLog(getClass());
 
-
-    /**
-     * initializes the JChannel with its default settings and
-     * default protocol stack
-     */
-    protected JChannel(boolean dummy) throws ChannelException {
-
-    }
 
 
     /**
@@ -966,7 +958,7 @@ public class JChannel extends Channel {
      * Initializes all variables. Used after <tt>close()</tt> or <tt>disconnect()</tt>,
      * to be ready for new <tt>connect()</tt>
      */
-    private void init() { // todo
+    private void init() {
         local_addr=null;
         channel_name=null;
         my_view=null;
