@@ -1,4 +1,4 @@
-// $Id: TransactionalHashtable.java,v 1.1 2003/09/09 01:24:08 belaban Exp $
+// $Id: TransactionalHashtable.java,v 1.2 2003/09/11 18:05:07 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -1298,7 +1298,7 @@ public class TransactionalHashtable extends HashMap implements ReplicationReceiv
         }
 
         try {
-            th=new TransactionalHashtable("bla", "file:/home/bela/state_transfer.xml", 3000);
+            th=new TransactionalHashtable("bla", "state_transfer.xml", 3000);
             System.out.println("-- TransactionalHashtable created");
             System.out.println("-- contents:\n" + dump(th));
             th.put(args[0], args[1], true, 5000);
