@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.11 2004/10/04 20:43:31 belaban Exp $
+// $Id: UNICAST.java,v 1.12 2004/10/08 13:39:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -405,17 +405,17 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
 
     public static class UnicastHeader extends Header implements Streamable {
-        static final int DATA=0;
-        static final int DATA_ACK=1;
+        static final short DATA=0;
+        static final short DATA_ACK=1;
 	
-        int     type=DATA;
+        short   type=DATA;
         long    seqno=0;   // First msg is 0
         boolean first=false;
 
 
         public UnicastHeader() {} // used for externalization
 	
-        public UnicastHeader(int type, long seqno) {
+        public UnicastHeader(short type, long seqno) {
             this.type=type == DATA_ACK ? DATA_ACK : DATA;
             this.seqno=seqno;
         }
@@ -424,7 +424,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             return "[UNICAST: " + type2Str(type) + ", seqno=" + seqno + ']';
         }
 	
-        public String type2Str(int t) {
+        public String type2Str(short t) {
             switch(t) {
                 case DATA: return "DATA";
                 case DATA_ACK: return "DATA_ACK";
@@ -434,7 +434,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 	
 	
         public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeInt(type);
+            out.writeShort(type);
             out.writeLong(seqno);
             out.writeBoolean(first);
         }
@@ -442,19 +442,19 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 	
 	
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            type=in.readInt();
+            type=in.readShort();
             seqno=in.readLong();
             first=in.readBoolean();
         }
 
         public void writeTo(DataOutputStream out) throws IOException {
-            out.writeInt(type);
+            out.writeShort(type);
             out.writeLong(seqno);
             out.writeBoolean(first);
         }
 
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
-            type=in.readInt();
+            type=in.readShort();
             seqno=in.readLong();
             first=in.readBoolean();
         }
