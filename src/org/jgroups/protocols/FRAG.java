@@ -1,4 +1,4 @@
-// $Id: FRAG.java,v 1.7 2004/04/23 19:36:13 belaban Exp $
+// $Id: FRAG.java,v 1.8 2004/05/12 17:09:51 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -45,7 +45,7 @@ import java.util.Vector;
  *
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.7 2004/04/23 19:36:13 belaban Exp $
+ * @version $Id: FRAG.java,v 1.8 2004/05/12 17:09:51 belaban Exp $
  */
 public class FRAG extends Protocol {
     private int frag_size=8192;  // conservative value
@@ -212,7 +212,6 @@ public class FRAG extends Protocol {
             buffer=bos.toByteArray();
             fragments=Util.fragmentBuffer(buffer, frag_size);
             num_frags=fragments.length;
-
 
             if(log.isTraceEnabled())
                 log.trace("fragmenting packet to " + (dest != null ? dest.toString() : "<all members>") +
