@@ -27,12 +27,19 @@ public class Test implements Receiver {
     ArrayList       members=new ArrayList();
 
     /** Set when first message is received */
-    long start;
+    long            start=0;
 
     /** Set when last message is received */
-    long stop;
+    long            stop=0;
 
-    int num_members=0;
+    int             num_members=0;
+
+    Logger          log=Logger.getLogger(this.getClass());
+
+    boolean         all_received=false;
+
+    /** HashMap<Object, HashMap>. A hashmap of senders, each value is the 'senders' hashmap */
+    HashMap         results=new HashMap();
 
 
 
@@ -46,10 +53,8 @@ public class Test implements Receiver {
         this.config=config;
         Trace.init();
 
-        sender=Boolean.getBoolean(config.getProperty("sender"));
+        sender=new Boolean(config.getProperty("sender")).booleanValue();
         config_file=config.getProperty("config");
-        props=config.getProperty("props");
-        num_members=Integer.parseInt(config.getProperty("num_members"));
 
         fileReader=new BufferedReader(new FileReader(config_file));
         while((line=fileReader.readLine()) != null) {
@@ -73,6 +78,9 @@ public class Test implements Receiver {
         System.out.println("Configuration is: " + sb.toString());
         Logger.getLogger(Test.class).info("main(): " + sb.toString());
 
+        props=config.getProperty("props");
+        num_members=Integer.parseInt(config.getProperty("num_members"));
+
         String transport_name=config.getProperty("transport");
         transport=(Transport)Thread.currentThread().getContextClassLoader().loadClass(transport_name).newInstance();
         transport.create(config);
@@ -81,6 +89,12 @@ public class Test implements Receiver {
         local_addr=transport.getLocalAddress();
     }
 
+    public void stop() {
+        if(transport != null) {
+            transport.stop();
+            transport.destroy();
+        }
+    }
 
     public void receive(Object sender, byte[] payload) {
         Data d;
@@ -108,8 +122,58 @@ public class Test implements Receiver {
                         }
                     }
                     break;
+
                 case Data.DATA:
+                    if(all_received)
+                        return;
+                    if(start == 0)
+                        start=System.currentTimeMillis();
+                    MemberInfo info=(MemberInfo)this.senders.get(sender);
+                    if(info != null) {
+                        if(info.start == 0)
+                            info.start=System.currentTimeMillis();
+                        info.num_msgs_received++;
+                        info.total_bytes_received+=d.payload.length;
+                        if(info.num_msgs_received % 1000 == 0)
+                            System.out.println("-- received " + info.num_msgs_received + " messages");
+                        if(info.num_msgs_received >= info.num_msgs_expected) {
+                            info.done=true;
+                            if(info.stop == 0)
+                                info.stop=System.currentTimeMillis();
+                            if(allReceived()) {
+                                all_received=true;
+                                if(stop == 0)
+                                    stop=System.currentTimeMillis();
+                                sendResults();
+                            }
+                        }
+                    }
+                    else {
+                        System.err.println("-- sender " + sender + " not found in senders hashmap");
+                    }
                     break;
+
+                case Data.DONE:
+                    MemberInfo mi=(MemberInfo)this.senders.get(sender);
+                    if(mi != null) {
+                        mi.done=true;
+                        if(mi.stop == 0)
+                            mi.stop=System.currentTimeMillis();
+                        if(allReceived()) {
+                            all_received=true;
+                            if(stop == 0)
+                                stop=System.currentTimeMillis();
+                            sendResults();
+                        }
+                    }
+                    else {
+                        System.err.println("-- sender " + sender + " not found in senders hashmap");
+                    }
+                    break;
+
+                case Data.RESULTS:
+                    break;
+
                 default:
                     System.err.println("received invalid data type: " + payload[0]);
                     break;
@@ -120,8 +184,56 @@ public class Test implements Receiver {
         }
     }
 
+    void sendResults() throws Exception {
+        Data d=new Data(Data.RESULTS);
+        byte[] buf;
+        d.results=(HashMap)this.senders.clone();
+        buf=Util.objectToByteBuffer(d);
+        transport.send(null, buf);
+    }
 
-    void sendMessages() {
+    boolean allReceived() {
+        MemberInfo mi;
+
+        for(Iterator it=this.senders.values().iterator(); it.hasNext();) {
+            mi=(MemberInfo)it.next();
+            if(mi.done == false)
+                return false;
+        }
+        return true;
+    }
+
+
+    void sendMessages() throws Exception {
+        long total_msgs=0;
+        int msg_size=Integer.parseInt(config.getProperty("msg_size"));
+        int num_msgs=Integer.parseInt(config.getProperty("num_msgs"));
+        int log_interval=Integer.parseInt(config.getProperty("log_interval"));
+        boolean gnuplot_output=Boolean.getBoolean(config.getProperty("gnuplot_output", "false"));
+        byte[] buf=new byte[msg_size];
+        for(int i=0; i < msg_size; i++)
+            buf[i]='.';
+        Data d=new Data(Data.DATA);
+        d.payload=buf;
+        byte[] payload=Util.objectToByteBuffer(d);
+
+
+        for(int i=0; i < num_msgs; i++) {
+            transport.send(null, payload);
+            total_msgs++;
+            if(total_msgs % 1000 == 0) {
+                System.out.println("++ sent " + total_msgs);
+            }
+            if(total_msgs % log_interval == 0) {
+                //if(gnuplot_output == false)
+                //  log.info(dumpStats(total_msgs));
+            }
+        }
+        System.out.println("Sent all messages. Asking receivers if they received all messages\n");
+
+
+        // now send DONE message (periodically re-send to make up for message loss over unreliable transport)
+        // when all results have been received, dump stats and exit
     }
 
     void runDiscoveryPhase() throws Exception {
@@ -151,6 +263,8 @@ public class Test implements Receiver {
     public static void main(String[] args) {
         Properties config=new Properties();
         boolean sender=false;
+        Test t=null;
+
         config.put("sender", "false");
         config.put("num_msgs", "1000");
         config.put("msg_size", "1000");
@@ -185,14 +299,20 @@ public class Test implements Receiver {
         }
 
         try {
-            Test t=new Test();
+            t=new Test();
             t.start(config);
             t.runDiscoveryPhase();
             if(sender)
                 t.sendMessages();
+
+            Thread.sleep(15000);
         }
         catch(Exception e) {
             e.printStackTrace();
+        }
+        finally {
+            if(t != null)
+                t.stop();
         }
     }
 
