@@ -1,4 +1,4 @@
-// $Id: DistributedTreeDemo.java,v 1.3 2004/03/30 06:47:16 belaban Exp $
+// $Id: DistributedTreeDemo.java,v 1.4 2004/06/25 01:10:28 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -443,7 +443,7 @@ public class DistributedTreeDemo extends Frame implements WindowListener,
 
     public void nodeAdded(String fqn, Serializable element) {
 	MyNode n;
-	System.out.println("** nodeAdded(" + fqn + ")");
+	System.out.println("** nodeCreated(" + fqn + ")");
 
 	root.add(fqn, element);
 	n=root.findNode(fqn);
