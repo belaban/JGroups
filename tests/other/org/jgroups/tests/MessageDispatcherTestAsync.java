@@ -1,7 +1,6 @@
-// $Id: MessageDispatcherTestAsync.java,v 1.4 2004/01/16 16:47:52 belaban Exp $
+// $Id: MessageDispatcherTestAsync.java,v 1.5 2004/03/01 16:55:36 belaban Exp $
 
 package org.jgroups.tests;
-
 
 
 import org.jgroups.*;
@@ -13,24 +12,23 @@ import org.jgroups.log.Trace;
 import java.io.IOException;
 
 
-
-
 /**
  * Asynchronous example for MessageDispatcher; message is mcast to all members, responses are received
  * asynchronously by calling RspCollector.receiveResponse(). Message is periodically broadcast to all
  * members; handle() method is invoked whenever a message is received.
+ *
  * @author Bela Ban
  */
 public class MessageDispatcherTestAsync implements RequestHandler {
-    Channel            channel;
-    MessageDispatcher  disp;
-    RspList            rsp_list;
-    MyCollector        coll=new MyCollector();
-    Debugger           debugger=null;
-    boolean            debug=false;
-    boolean            cummulative=false;
-    boolean            done_submitted=true;
-    static final int   NUM=10;
+    Channel channel;
+    MessageDispatcher disp;
+    RspList rsp_list;
+    MyCollector coll=new MyCollector();
+    Debugger debugger=null;
+    boolean debug=false;
+    boolean cummulative=false;
+    boolean done_submitted=true;
+    static final int NUM=10;
 
 
     String props="UDP(loopback=true;mcast_addr=224.0.0.35;mcast_port=45566;ip_ttl=32;" +
@@ -49,75 +47,75 @@ public class MessageDispatcherTestAsync implements RequestHandler {
 
     class MyCollector implements RspCollector {
 
-	public void receiveResponse(Message msg) {
-        Object tmp=msg.getObject();
-        System.out.println("** received response " + tmp + " [sender=" + msg.getSrc() + "]");
-	}
+        public void receiveResponse(Message msg) {
+            Object tmp=msg.getObject();
+            System.out.println("** received response " + tmp + " [sender=" + msg.getSrc() + "]");
+        }
 
-	public void suspect(Address mbr) {
-	    System.out.println("** suspected member " + mbr);
-	}
+        public void suspect(Address mbr) {
+            System.out.println("** suspected member " + mbr);
+        }
 
-	public void viewChange(View new_view) {
-	    System.out.println("** received new view " + new_view);
-	}
+        public void viewChange(View new_view) {
+            System.out.println("** received new view " + new_view);
+        }
     }
 
 
     public MessageDispatcherTestAsync(boolean debug, boolean cummulative) {
-	this.debug=debug; this.cummulative=cummulative;
+        this.debug=debug;
+        this.cummulative=cummulative;
     }
 
 
-
     public void start() throws Exception {
-	channel=new JChannel(props);
-	if(debug) {
-	    debugger=new Debugger((JChannel)channel, cummulative);
-	    debugger.start();
-	}
-	//channel.setOpt(Channel.LOCAL, Boolean.FALSE);
-	disp=new MessageDispatcher(channel, null, null, this);
-	channel.connect("MessageDispatcherTestAsyncGroup");
+        channel=new JChannel(props);
+        if(debug) {
+            debugger=new Debugger((JChannel)channel, cummulative);
+            debugger.start();
+        }
+        //channel.setOpt(Channel.LOCAL, Boolean.FALSE);
+        disp=new MessageDispatcher(channel, null, null, this);
+        channel.connect("MessageDispatcherTestAsyncGroup");
     }
 
 
     public void mcast(int num) throws IOException {
-	if(!done_submitted) {
-	    System.err.println("Must submit 'done' (press 'd') before mcasting new message");
-	    return;
-	}
-	for(int i=0; i < num; i++) {
-	    Util.sleep(100);
-	    System.out.println("Casting message #" + i);
-	    disp.castMessage(null,
-			     i,
-			     new Message(null, null, "Number #" + i),
-			     coll);
-	}
-	done_submitted=false;
+        if(!done_submitted) {
+            System.err.println("Must submit 'done' (press 'd') before mcasting new message");
+            return;
+        }
+        for(int i=0; i < num; i++) {
+            Util.sleep(100);
+            System.out.println("Casting message #" + i);
+            disp.castMessage(null,
+                    i,
+                    new Message(null, null, "Number #" + i),
+                    coll);
+        }
+        done_submitted=false;
     }
 
 
     public void disconnect() {
-	System.out.println("** Disconnecting channel");
-	channel.disconnect();
-	System.out.println("** Disconnecting channel -- done");
+        System.out.println("** Disconnecting channel");
+        channel.disconnect();
+        System.out.println("** Disconnecting channel -- done");
 
-	System.out.println("** Closing channel");
-	channel.close();
-	System.out.println("** Closing channel -- done");
+        System.out.println("** Closing channel");
+        channel.close();
+        System.out.println("** Closing channel -- done");
 
-	System.out.println("** disp.stop()");
-	disp.stop();
-	System.out.println("** disp.stop() -- done");
+        System.out.println("** disp.stop()");
+        disp.stop();
+        System.out.println("** disp.stop() -- done");
     }
 
 
     public void done() {
-	for(int i=0; i < NUM; i++)
-	    disp.done(i);
-	done_submitted=true;
+        for(int i=0; i < NUM; i++)
+            disp.done(i);
+        done_submitted=true;
     }
 
 
@@ -128,59 +126,58 @@ public class MessageDispatcherTestAsync implements RequestHandler {
     }
 
 
-
     public static void main(String[] args) {
-	int                        c;
-	MessageDispatcherTestAsync test=null;
-	boolean                    debug=false, cummulative=false;
+        int c;
+        MessageDispatcherTestAsync test=null;
+        boolean debug=false, cummulative=false;
 
-	for(int i=0; i < args.length; i++) {
-	    if(args[i].equals("-help")) {
-		help();
-		return;
-	    }
-	    if(args[i].equals("-debug")) {
-		debug=true;
-		continue;
-	    }
-	    if(args[i].equals("-cummulative")) {
-		cummulative=true;
-		continue;
-	    }
-	}
+        for(int i=0; i < args.length; i++) {
+            if(args[i].equals("-help")) {
+                help();
+                return;
+            }
+            if(args[i].equals("-debug")) {
+                debug=true;
+                continue;
+            }
+            if(args[i].equals("-cummulative")) {
+                cummulative=true;
+                continue;
+            }
+        }
 
-	Trace.init();
+        Trace.init();
 
-	try {
-	    test=new MessageDispatcherTestAsync(debug, cummulative);
-	    test.start();
-	    while(true) {
-		System.out.println("[m=mcast " + NUM + " msgs x=exit]");
-		c=System.in.read();
-		switch(c) {
-		case 'x':
-		    test.disconnect();
-		    System.exit(0);
-		    return;
-		case 'm':
-		    test.mcast(NUM);
-		    break;
-		case 'd':
-		    test.done();
-		    break;
-		default:
-		    break;
-		}
+        try {
+            test=new MessageDispatcherTestAsync(debug, cummulative);
+            test.start();
+            while(true) {
+                System.out.println("[m=mcast " + NUM + " msgs x=exit]");
+                c=System.in.read();
+                switch(c) {
+                    case 'x':
+                        test.disconnect();
+                        System.exit(0);
+                        return;
+                    case 'm':
+                        test.mcast(NUM);
+                        break;
+                    case 'd':
+                        test.done();
+                        break;
+                    default:
+                        break;
+                }
 
-	    }
-	}
-	catch(Exception e) {
-	    System.err.println(e);
-	}
+            }
+        }
+        catch(Exception e) {
+            System.err.println(e);
+        }
     }
 
     static void help() {
-	System.out.println("MessageDispatcherTestAsync [-debug] [-cummulative]");
+        System.out.println("MessageDispatcherTestAsync [-debug] [-cummulative]");
     }
 
 }

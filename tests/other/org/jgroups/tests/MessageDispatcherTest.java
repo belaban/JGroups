@@ -1,4 +1,4 @@
-// $Id: MessageDispatcherTest.java,v 1.6 2004/02/26 19:14:15 belaban Exp $
+// $Id: MessageDispatcherTest.java,v 1.7 2004/03/01 16:54:12 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -6,11 +6,10 @@ package org.jgroups.tests;
 import org.jgroups.Channel;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
-import org.jgroups.log.Trace;
 import org.jgroups.blocks.GroupRequest;
 import org.jgroups.blocks.MessageDispatcher;
 import org.jgroups.blocks.RequestHandler;
-import org.jgroups.blocks.RpcDispatcher;
+import org.jgroups.log.Trace;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
 
@@ -77,7 +76,7 @@ public class MessageDispatcherTest implements RequestHandler {
             for(int i=0; i < 10; i++) {
                 System.out.println("[" + getName() + "] casting message #" +i);
                 rsp_list=disp.castMessage(null,
-                        new Message(null, null, new String("[" + getName() + "] number #" +i).getBytes()),
+                        new Message(null, null, new String("[" + getName() + "] number #" +i)),
                         GroupRequest.GET_ALL, 0);
                 System.out.println("[" + getName() + "] responses:\n" + rsp_list);
             }
