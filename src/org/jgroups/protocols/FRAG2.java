@@ -1,4 +1,4 @@
-// $Id: FRAG2.java,v 1.6 2004/04/23 19:36:13 belaban Exp $
+// $Id: FRAG2.java,v 1.7 2004/06/23 15:57:25 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -27,7 +27,7 @@ import java.util.*;
  * size addition for headers and src and dest address is minimal when the transport finally has to serialize the
  * message, so we add a constant (1000 bytes).
  * @author Bela Ban
- * @version $Id: FRAG2.java,v 1.6 2004/04/23 19:36:13 belaban Exp $
+ * @version $Id: FRAG2.java,v 1.7 2004/06/23 15:57:25 belaban Exp $
  */
 public class FRAG2 extends Protocol {
 
@@ -392,10 +392,10 @@ public class FRAG2 extends Protocol {
          */
         public synchronized Address[] getSenders() {
             Address[] result=new Address[frag_tables.size()];
-            java.util.Enumeration enum=frag_tables.keys();
+            java.util.Enumeration en=frag_tables.keys();
             int index=0;
-            while(enum.hasMoreElements()) {
-                result[index++]=(Address)enum.nextElement();
+            while(en.hasMoreElements()) {
+                result[index++]=(Address)en.nextElement();
             }
             return result;
         }

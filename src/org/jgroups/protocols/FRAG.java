@@ -1,4 +1,4 @@
-// $Id: FRAG.java,v 1.8 2004/05/12 17:09:51 belaban Exp $
+// $Id: FRAG.java,v 1.9 2004/06/23 15:57:04 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -45,7 +45,7 @@ import java.util.Vector;
  *
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.8 2004/05/12 17:09:51 belaban Exp $
+ * @version $Id: FRAG.java,v 1.9 2004/06/23 15:57:04 belaban Exp $
  */
 public class FRAG extends Protocol {
     private int frag_size=8192;  // conservative value
@@ -407,10 +407,10 @@ public class FRAG extends Protocol {
          */
         public synchronized Address[] getSenders() {
             Address[] result=new Address[frag_tables.size()];
-            java.util.Enumeration enum=frag_tables.keys();
+            java.util.Enumeration en=frag_tables.keys();
             int index=0;
-            while(enum.hasMoreElements()) {
-                result[index++]=(Address)enum.nextElement();
+            while(en.hasMoreElements()) {
+                result[index++]=(Address)en.nextElement();
             }
             return result;
         }
