@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.63 2004/04/26 18:40:12 belaban Exp $
+Revision: $Id: history.txt,v 1.64 2004/04/28 18:32:41 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -24,6 +24,9 @@ romuald     = Romuald du Song
 
 Version 2.2.4
 -------------
+
+- Fixed #943881 (patch by Chris Wampler)
+  (bela April 28 2004)
 
 - Changed default format for XML properties to a simpler format (similar to JBoss)
   Modified all XML files in ./conf
