@@ -1,4 +1,4 @@
-// $Id: MessageTest.java,v 1.8 2004/02/26 19:14:14 belaban Exp $
+// $Id: MessageTest.java,v 1.9 2004/03/01 03:03:47 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -181,7 +181,7 @@ public class MessageTest extends TestCase {
         assertEquals(4, m3.getLength());
         assertEquals(4, m3.getBuffer().length);
 
-        assertEquals(0, m4.getOffset());
+        assertEquals(4, m4.getOffset());
         assertEquals(3, m4.getLength());
         assertEquals(3, m4.getBuffer().length);
     }
