@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.54 2004/03/30 06:47:12 belaban Exp $
+Revision: $Id: history.txt,v 1.55 2004/04/01 04:09:19 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -25,6 +25,9 @@ romuald     = Romuald du Song
 
 Version 2.2.3
 -------------
+
+- Created distribution (CVS tag = JG_2_2_1)
+  (bela March 31 2004)
 
 - Conversion of Trace-based logging system to commons-logging.
   Removed log4j subdir, removed org.jgroups.log package
