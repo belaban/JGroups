@@ -1,4 +1,4 @@
-$Id: todo.lst,v 1.13 2004/10/06 08:16:58 belaban Exp $
+$Id: todo.lst,v 1.14 2004/10/06 09:06:53 belaban Exp $
 
 
 
@@ -17,10 +17,6 @@ $Id: todo.lst,v 1.13 2004/10/06 08:16:58 belaban Exp $
   - Test m-m mode (everyone sends to everyone) with 4 nodes
   - Expose statistics (e.g. retransmission counter, flow control
     stats), maybe use AOP to do so
-
-- Discovery doesn't work when working over a disabled (e.g. WiFi) interface
-
-- FD_SOCK problem on multi-homed systems
 
 - Add list of joined, crashed and left members to View
 
@@ -49,10 +45,6 @@ $Id: todo.lst,v 1.13 2004/10/06 08:16:58 belaban Exp $
 
 - UDP should bind to *all* available network interfaces for receiving
   messages (JDK 1.4 specific)
-
-- Fix DistributedHashtable: only coord should access DB
-
-- ImplementTransactionalHashtable.Notification interface
 
 - NAKACK: send xmits also to other members if no response from
   original sender (e.g. because it crashed). All members therefore
@@ -245,6 +237,9 @@ $Id: todo.lst,v 1.13 2004/10/06 08:16:58 belaban Exp $
 				 Done
 				 ----
 
+
+- Oct 6 2004 (bela)
+  FD_SOCK problem on multi-homed systems
 
 - April 2004 (bela)
   UDP and bundling: error "ERROR 21:15:21,660 [UDP.IncomingPacketHandler thread] - message
