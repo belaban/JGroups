@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.17 2004/09/24 09:02:18 belaban Exp $
+// $Id: STABLE.java,v 1.18 2004/10/08 12:31:51 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -8,10 +8,9 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.Promise;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
+import org.jgroups.util.Streamable;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.*;
 import java.util.Properties;
 import java.util.Vector;
 
@@ -37,10 +36,10 @@ import java.util.Vector;
  */
 public class STABLE extends Protocol {
     Address             local_addr=null;
-    final Vector              mbrs=new Vector();
-    final Digest              digest=new Digest();          // keeps track of the highest seqnos from all members
-    final Promise             digest_promise=new Promise(); // for fetching digest (from NAKACK layer)
-    final Vector              heard_from=new Vector();      // keeps track of who we already heard from (STABLE_GOSSIP msgs)
+    final Vector        mbrs=new Vector();
+    final Digest        digest=new Digest();          // keeps track of the highest seqnos from all members
+    final Promise       digest_promise=new Promise(); // for fetching digest (from NAKACK layer)
+    final Vector        heard_from=new Vector();      // keeps track of who we already heard from (STABLE_GOSSIP msgs)
     long                digest_timeout=60000;         // time to wait until digest is received (from NAKACK)
 
     /** Sends a STABLE gossip every 20 seconds on average. 0 disables gossipping of STABLE messages */
@@ -50,9 +49,9 @@ public class STABLE extends Protocol {
      * small number (> 0 !) if <code>max_bytes</code> is used */
     long                stability_delay=6000;
     StabilitySendTask   stability_task=null;
-    final Object              stability_mutex=new Object(); // to synchronize on stability_task
+    final Object        stability_mutex=new Object(); // to synchronize on stability_task
     StableTask          stable_task=null;             // bcasts periodic STABLE message (added to timer below)
-    final Object              stable_task_mutex=new Object(); // to sync on stable_task
+    final Object        stable_task_mutex=new Object(); // to sync on stable_task
     TimeScheduler       timer=null;                   // to send periodic STABLE msgs (and STABILITY messages)
     int                 max_gossip_runs=3;            // max. number of times the StableTask runs before terminating
     int                 num_gossip_runs=max_gossip_runs; // this number is decremented (max_gossip_runs doesn't change)
@@ -594,7 +593,7 @@ public class STABLE extends Protocol {
 
 
 
-    public static class StableHeader extends Header {
+    public static class StableHeader extends Header implements Streamable {
         static final int STABLE_GOSSIP=1;
         static final int STABILITY=2;
 
@@ -651,6 +650,16 @@ public class STABLE extends Protocol {
                 digest=new Digest();
                 digest.readExternal(in);
             }
+        }
+
+        public void writeTo(DataOutputStream out) throws IOException {
+            out.writeInt(type);
+            Util.writeStreamable(digest, out);
+        }
+
+        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+            type=in.readInt();
+            digest=(Digest)Util.readStreamable(Digest.class, in);
         }
 
 
