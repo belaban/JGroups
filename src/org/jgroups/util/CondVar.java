@@ -8,7 +8,7 @@ import org.jgroups.TimeoutException;
  * matches the expected result, or a timeout occurs. First version used WaitableBoolean from util.concurrent, but
  * that class would not allow for timeouts.
  * @author Bela Ban
- * @version $Id: CondVar.java,v 1.2 2004/09/23 10:00:10 belaban Exp $
+ * @version $Id: CondVar.java,v 1.3 2004/12/31 14:10:40 belaban Exp $
  */
 public class CondVar {
     Object cond;
@@ -97,7 +97,7 @@ public class CondVar {
                     }
                     else {
                         doWait(time_to_wait);
-                        time_to_wait-=System.currentTimeMillis()-start;
+                        time_to_wait=timeout - (System.currentTimeMillis() - start);
                     }
                 }
             }

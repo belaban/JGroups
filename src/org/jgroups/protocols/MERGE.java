@@ -1,4 +1,4 @@
-// $Id: MERGE.java,v 1.6 2004/09/23 16:29:41 belaban Exp $
+// $Id: MERGE.java,v 1.7 2004/12/31 14:10:38 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -108,11 +108,9 @@ public class MERGE extends Protocol implements Runnable {
 
 
     public void up(Event evt) {
-        Message msg, rsp_msg;
+        Message msg;
         Object obj;
-        MergeHeader hdr, rsp_hdr;
-        PingRsp rsp;
-        Object coord;
+        MergeHeader hdr;
         Address sender;
         boolean contains;
         Vector tmp;
@@ -174,10 +172,6 @@ public class MERGE extends Protocol implements Runnable {
 
 
     public void down(Event evt) {
-        Message msg;
-        MergeHeader hdr;
-        long time_to_wait, start_time;
-        Vector gossip_rsps=new Vector();
 
         switch(evt.getType()) {
 

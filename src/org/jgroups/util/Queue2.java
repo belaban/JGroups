@@ -1,4 +1,4 @@
-// $Id: Queue2.java,v 1.4 2004/09/23 16:29:56 belaban Exp $
+// $Id: Queue2.java,v 1.5 2004/12/31 14:10:40 belaban Exp $
 
 package org.jgroups.util;
 
@@ -623,7 +623,7 @@ public class Queue2 {
                     catch(InterruptedException ex) {
 
                     }
-                    time_to_wait-= (System.currentTimeMillis() - start_time);
+                    time_to_wait=timeout - (System.currentTimeMillis() - start_time);
                 }
 
                 if(size > 0)

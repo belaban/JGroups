@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.135 2004/12/11 14:40:55 belaban Exp $
+Revision: $Id: history.txt,v 1.136 2004/12/31 14:10:37 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -27,6 +27,9 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
 Version 2.2.8
 -------------
+
+- Fixed JGRP-10 (incorrect computation of wait time in waiting loops)
+  (bela Dec 31 2004, on suggestion from Zac Hansen)
 
 - Added system property ignore.bind.address, which ignores the system property bind.address
   (bela Dec 12 2004)

@@ -1,4 +1,4 @@
-// $Id: Promise.java,v 1.7 2004/09/22 10:34:15 belaban Exp $
+// $Id: Promise.java,v 1.8 2004/12/31 14:10:40 belaban Exp $
 
 package org.jgroups.util;
 
@@ -57,7 +57,7 @@ public class Promise {
                 }
                 else {
                     doWait(time_to_wait);
-                    time_to_wait-=System.currentTimeMillis()-start;
+                    time_to_wait=timeout - (System.currentTimeMillis() - start);
                 }
             }
         }
