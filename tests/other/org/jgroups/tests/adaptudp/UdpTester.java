@@ -1,11 +1,15 @@
 package org.jgroups.tests.adaptudp;
 
-import java.net.ServerSocket;
+import org.jgroups.stack.IpAddress;
+import org.jgroups.util.Util;
+
+import java.io.*;
+import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.MulticastSocket;
-import java.util.List;
-import java.util.HashMap;
 import java.util.ArrayList;
+import java.util.List;
 
 
 
@@ -34,6 +38,8 @@ public class UdpTester {
     MulticastSocket recv_sock;
     DatagramSocket send_sock;
     int num_members;
+    IpAddress local_addr;
+    MyReceiver receiver=null;
 
     /** List<Address> . Contains member addresses */
     List members=new ArrayList();
@@ -48,11 +54,13 @@ public class UdpTester {
         this.log_interval=log_interval;
         this.recv_sock=recv_sock;
         this.send_sock=send_sock;
+        this.local_addr=new IpAddress(send_sock.getLocalAddress(), send_sock.getLocalPort());
     }
 
-    public void initialize() {
+    public void initialize() throws Exception {
 
         waitUntilAllMembersHaveJoined();
+        Util.sleep(1000);
 
         new ReceiverThread(recv_sock, num_msgs, msg_size, num_senders, log_interval).start();
         if(sender) {
@@ -60,10 +68,102 @@ public class UdpTester {
         }
     }
 
-    void waitUntilAllMembersHaveJoined() {
+    void waitUntilAllMembersHaveJoined() throws Exception {
+        discoverExistingMembers();
 
     }
 
+    private void discoverExistingMembers() throws Exception {
+        receiver=new MyReceiver();
+        members.clear();
+        receiver.start();
+        receiver.discoverExistingMembers();
+        receiver.sendMyAddress();
+        receiver.waitUntilAllMembersHaveJoined();
 
+        // clear recv_sock
+    }
+
+    class MyReceiver extends Thread {
+        boolean running=true;
+
+        public void run() {
+            byte[] buf=new byte[65000];
+            DatagramPacket p=new DatagramPacket(buf, buf.length);
+            ByteArrayInputStream input;
+            ObjectInputStream in;
+            Request req;
+            boolean running=true;
+
+            while(running) {
+                try {
+                    recv_sock.receive(p);
+                    input=new ByteArrayInputStream(p.getData(), 0, p.getLength());
+                    in=new ObjectInputStream(input);
+                    req=(Request)in.readObject();
+                    switch(req.type) {
+                        case Request.DISCOVERY_REQ:
+                            byte[] tmp;
+                            ByteArrayOutputStream output=new ByteArrayOutputStream();
+                            ObjectOutputStream out=new ObjectOutputStream(output);
+                            Request rsp=new Request(Request.NEW_MEMBER, local_addr);
+                            out.writeObject(rsp);
+                            output.flush();
+                            tmp=output.toByteArray();
+                            DatagramPacket rsp_p=new DatagramPacket(tmp, tmp.length,
+                                    InetAddress.getByName(Test.mcast_addr), Test.mcast_port);
+                            send_sock.send(rsp_p);
+                            break;
+                        case Request.NEW_MEMBER:
+                            IpAddress new_mbr=(IpAddress)req.arg;
+                            if(!members.contains(new_mbr)) {
+                                members.add(new_mbr);
+                                System.out.println("-- discovered " + new_mbr);
+                                if(members.size() >= num_members) {
+                                    System.out.println("-- all members have joined (" + members + ")");
+                                    running=false;
+                                    break;
+                                }
+                            }
+                            break;
+                        default:
+                            System.err.println("don't recognize request with type=" + req.type);
+                            break;
+                    }
+                }
+                catch(IOException e) {
+                    e.printStackTrace();
+                    break;
+                }
+                catch(ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        public void discoverExistingMembers() throws Exception {
+            Request req=new Request(Request.DISCOVERY_REQ, null);
+            byte[] b=Util.objectToByteBuffer(req);
+            DatagramPacket p=new DatagramPacket(b, b.length, InetAddress.getByName(Test.mcast_addr), Test.mcast_port);
+            send_sock.send(p);
+
+        }
+
+        public void sendMyAddress() throws Exception {
+            Request req=new Request(Request.NEW_MEMBER, local_addr);
+            byte[] b=Util.objectToByteBuffer(req);
+            DatagramPacket p=new DatagramPacket(b, b.length, InetAddress.getByName(Test.mcast_addr), Test.mcast_port);
+            send_sock.send(p);
+        }
+
+        public void waitUntilAllMembersHaveJoined() throws InterruptedException {
+            if(members.size() < num_members) {
+                if(receiver.isAlive())
+                    receiver.join();
+            }
+        }
+
+    }
 
 }
+

@@ -3,12 +3,9 @@ package org.jgroups.tests.adaptudp;
 import org.apache.log4j.Logger;
 import org.jgroups.util.Util;
 
-import java.io.DataOutputStream;
-import java.io.BufferedOutputStream;
-import java.net.InetAddress;
-import java.net.Socket;
+import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.util.Iterator;
+import java.net.InetAddress;
 import java.util.List;
 
 /**  Sender thread: inputs into the system a num_busts bursts
@@ -38,30 +35,28 @@ public class SenderThread extends Thread {
 
     public void run() {
         long total_msgs=0;
-        ConnectionTable ct=null;
+        Request req;
+        byte[] buf;
+        DatagramPacket p;
+        InetAddress mcast_addr;
 
         System.out.println("Sender thread started...");
 
         try {
+            mcast_addr=InetAddress.getByName(Test.mcast_addr);
+
             byte[] msg=new byte[msg_size];
             for(int h=0; h < msg_size; h++) {
                 msg[h]=(byte)h;
             }
 
-            while(true) {
-                try {
-                    ct.init();
-                    break;
-                }
-                catch(Exception ex) {
-                    Util.sleep(1000);
-                }
-            }
-            System.out.println("Everyone joined, ready to begin test...\n" +
-                    "cluster: " + ct.toString());
+            System.out.println("Everyone joined, ready to begin test...\n");
 
             for(int i=0; i < num_msgs; i++) {
-                ct.writeMessage(msg);
+                req=new Request(Request.DATA, msg);
+                buf=Util.objectToByteBuffer(req);
+                p=new DatagramPacket(buf, buf.length, mcast_addr, Test.mcast_port);
+                send_sock.send(p);
                 total_msgs++;
                 if(total_msgs % 1000 == 0) {
                     System.out.println("++ sent " + total_msgs);
@@ -77,8 +72,6 @@ public class SenderThread extends Thread {
             e.printStackTrace();
         }
         finally {
-            if(ct != null)
-                ct.close();
         }
     }
 
@@ -90,82 +83,6 @@ public class SenderThread extends Thread {
         sb.append("free_mem=").append(Runtime.getRuntime().freeMemory());
         sb.append(" (total_mem=").append(Runtime.getRuntime().totalMemory()).append(")\n");
         return sb.toString();
-    }
-
-    class ConnectionTable {
-        List nodes;
-        Connection[] connections;
-
-        ConnectionTable(List nodes) throws Exception {
-            this.nodes=nodes;
-            connections=new Connection[nodes.size()];
-        }
-
-
-        void init() throws Exception {
-            int i=0;
-
-            for(Iterator it=nodes.iterator(); it.hasNext();) {
-                InetAddress addr=(InetAddress)it.next();
-                if(connections[i] == null) {
-                    connections[i]=new Connection(addr);
-                    System.out.println("-- connected to " +addr);
-                    System.out.flush();
-                }
-                i++;
-            }
-        }
-
-        // todo: parallelize
-        void writeMessage(byte[] msg) throws Exception {
-            for(int i=0; i < connections.length; i++) {
-                Connection c=connections[i];
-                if(c != null)
-                    c.writeMessage(msg);
-            }
-        }
-
-        void close() {
-            for(int i=0; i < connections.length; i++) {
-                Connection c=connections[i];
-                if(c != null)
-                    c.close();
-            }
-        }
-
-        public String toString() {
-            StringBuffer sb=new StringBuffer();
-            for(Iterator it=nodes.iterator(); it.hasNext();) {
-                InetAddress inetAddress=(InetAddress)it.next();
-                sb.append(inetAddress).append(" ");
-            }
-            return sb.toString();
-        }
-    }
-
-    class Connection {
-        Socket sock;
-        DataOutputStream out;
-
-        Connection(InetAddress addr) throws Exception {
-            sock=new Socket(addr, Test.mcast_port);
-            out=new DataOutputStream(new BufferedOutputStream(sock.getOutputStream()));
-        }
-
-        void writeMessage(byte[] msg) throws Exception {
-            out.writeInt(msg.length);
-            out.write(msg, 0, msg.length);
-            out.flush();
-        }
-
-        void close() {
-            try {
-                sock.close();
-            }
-            catch(Exception ex) {
-
-            }
-        }
     }
 
 }
