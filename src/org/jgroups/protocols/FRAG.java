@@ -1,4 +1,4 @@
-// $Id: FRAG.java,v 1.5 2004/04/23 01:39:03 belaban Exp $
+// $Id: FRAG.java,v 1.6 2004/04/23 19:11:19 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -45,7 +45,7 @@ import java.util.Vector;
  *
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.5 2004/04/23 01:39:03 belaban Exp $
+ * @version $Id: FRAG.java,v 1.6 2004/04/23 19:11:19 belaban Exp $
  */
 public class FRAG extends Protocol {
     private int frag_size=8192;  // conservative value
@@ -70,7 +70,8 @@ public class FRAG extends Protocol {
      */
     public boolean setProperties(Properties props) {
         String str;
-
+        
+        super.setProperties(props);
         str=props.getProperty("frag_size");
         if(str != null) {
             frag_size=new Integer(str).intValue();
