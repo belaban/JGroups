@@ -1,13 +1,5 @@
-// $Id: DistributedQueueDemo.java,v 1.2 2004/01/05 09:54:08 rds13 Exp $
+// $Id: DistributedQueueDemo.java,v 1.3 2004/01/05 10:08:54 rds13 Exp $
 package org.jgroups.demos;
-
-import org.jgroups.ChannelException;
-import org.jgroups.ChannelFactory;
-import org.jgroups.JChannelFactory;
-
-import org.jgroups.blocks.DistributedQueue;
-
-import org.jgroups.log.Trace;
 
 import java.awt.Color;
 import java.awt.Font;
@@ -25,6 +17,14 @@ import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JTextField;
 
+import org.jgroups.ChannelException;
+import org.jgroups.ChannelFactory;
+import org.jgroups.JChannelFactory;
+
+import org.jgroups.blocks.DistributedQueue;
+
+import org.jgroups.log.Trace;
+
 
 /**
  * Uses the DistributedQueue building block. The latter subclasses org.jgroups.util.Queue and overrides
@@ -34,7 +34,7 @@ import javax.swing.JTextField;
  * @author Romuald du Song
  */
 public class DistributedQueueDemo extends Frame implements WindowListener, ActionListener,
-    DistributedQueue.Notification
+                                                           DistributedQueue.Notification
 {
     DistributedQueue h = null;
     JButton add = new JButton("Add");
@@ -89,12 +89,12 @@ public class DistributedQueueDemo extends Frame implements WindowListener, Actio
 
         for (int i = 0; i < v.size(); i++)
         {
-            listbox.add((String) v.elementAt(i));
+            listbox.add((String)v.elementAt(i));
         }
     }
 
     public void start(String groupname, ChannelFactory factory, String props)
-        throws ChannelException
+               throws ChannelException
     {
         Trace.init();
 
@@ -229,7 +229,7 @@ public class DistributedQueueDemo extends Frame implements WindowListener, Actio
                 System.out.println("Unknown action");
             }
         }
-         catch (Exception ex)
+        catch (Exception ex)
         {
             value_field.setText("");
             showMsg(ex.toString());
@@ -271,7 +271,8 @@ public class DistributedQueueDemo extends Frame implements WindowListener, Actio
         boolean trace = false;
         boolean persist = false;
 
-        String props = "UDP(mcast_addr=228.8.8.8;mcast_port=45566;ip_ttl=32;" +
+        String props =
+            "UDP(mcast_addr=228.8.8.8;mcast_port=45566;ip_ttl=32;" +
             "mcast_send_buf_size=150000;mcast_recv_buf_size=80000):" + "PING(timeout=2000;num_initial_members=3):" +
             "MERGE2(min_interval=5000;max_interval=10000):" + "FD_SOCK:" + "VERIFY_SUSPECT(timeout=1500):" +
             "UNICAST(timeout=5000):" + "FRAG(frag_size=8192;down_thread=false;up_thread=false):" +
@@ -288,30 +289,34 @@ public class DistributedQueueDemo extends Frame implements WindowListener, Actio
                 if (arg.equals("-trace"))
                 {
                     trace = true;
-
                     continue;
                 }
 
                 if (args[i].equals("-groupname"))
                 {
                     groupname = args[++i];
-
                     continue;
                 }
 
                 help();
-
                 return;
             }
         }
-         catch (Exception e)
+        catch (Exception e)
         {
             help();
 
             return;
         }
 
-        client.start(groupname, factory, props);
+        try
+        {
+            client.start(groupname, factory, props);
+        }
+        catch (Throwable t)
+        {
+            t.printStackTrace();
+        }
     }
 
     static void help()
