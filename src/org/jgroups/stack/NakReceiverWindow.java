@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindow.java,v 1.6 2004/05/04 17:45:49 belaban Exp $
+// $Id: NakReceiverWindow.java,v 1.7 2004/05/04 20:58:02 belaban Exp $
 
 
 package org.jgroups.stack;
@@ -578,8 +578,8 @@ public class NakReceiverWindow {
         StringBuffer sb=new StringBuffer();
         lock.readLock();
         try {
-            sb.append("delivered_msgs: " + delivered_msgs);
-            sb.append("\nreceived_msgs: " + received_msgs);
+            sb.append("received_msgs: " + received_msgs);
+            sb.append(", delivered_msgs: " + printDeliveredMessages());
         }
         finally {
             lock.readUnlock();
@@ -588,6 +588,15 @@ public class NakReceiverWindow {
         return sb.toString();
     }
 
+
+    String printDeliveredMessages() {
+        StringBuffer sb=new StringBuffer();
+        Entry min, max;
+        min=(Entry)delivered_msgs.peekAtHead();
+        max=(Entry)delivered_msgs.peek();
+        sb.append("[").append(min).append(" - ").append(max).append("]");
+        return sb.toString();
+    }
 
 
     /* ------------------------------- Private Methods -------------------------------------- */
