@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.1 2003/09/09 01:24:04 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.2 2003/10/29 16:00:53 ovidiuf Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -190,6 +190,21 @@
                       org/jgroups/**/*Test.class,
                       org/jgroups/**/*Test\$*.class"
             />
+    </target>
+
+    <target name="jboss-service" depends="compile-log4j"
+            description="Creates the service archive used to deploy GossipServer as a JBoss MBean">
+        <jar jarfile="${dist.dir}/jgroups-router.sar"
+             basedir="${compile.dir}"
+             includes="org/jgroups/**"
+             excludes="org/jgroups/demos/**,
+                       org/jgroups/tests/**,
+                       org/jgroups/**/*Test.class,
+                       org/jgroups/**/*Test\$*.class">
+             <metainf dir="${src.dir}/org/jgroups/stack" 
+                      includes="jboss-service.xml"/>
+             <fileset dir="${conf.dir}" includes="*.dtd, *.xml"/>
+        </jar>
     </target>
 
 
