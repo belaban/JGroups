@@ -1,22 +1,23 @@
 package org.jgroups.tests.perf;
 
-import org.jgroups.util.Util;
-
 import java.io.Externalizable;
-import java.io.ObjectOutput;
 import java.io.IOException;
 import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.HashMap;
 
 /**
  * Data sent around between members
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: Data.java,v 1.1 2004/01/23 00:08:31 belaban Exp $
+ * @version $Id: Data.java,v 1.2 2004/01/23 02:19:44 belaban Exp $
  */
 public class Data implements Externalizable {
     final static int DISCOVERY_REQ = 1;
     final static int DISCOVERY_RSP = 2;
     final static int DATA          = 3;
+    final static int DONE          = 4; // sent when a sender is done
+    final static int RESULTS       = 5; // sent when a receiver has received all messages
 
     public Data() {
         ;
@@ -30,6 +31,7 @@ public class Data implements Externalizable {
     byte[]  payload=null; // used with DATA
     boolean sender=false; // used with DISCOVERY_RSP
     long    num_msgs=0;   // used with DISCOVERY_RSP
+    HashMap results=null; // used with RESULTS
 
     public int getType() {
         return type;
@@ -46,6 +48,12 @@ public class Data implements Externalizable {
         }
         out.writeBoolean(sender);
         out.writeLong(num_msgs);
+        if(results != null) {
+            out.writeBoolean(true);
+            out.writeObject(results);
+        }
+        else
+            out.writeBoolean(false);
     }
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
@@ -57,6 +65,9 @@ public class Data implements Externalizable {
         }
         sender=in.readBoolean();
         num_msgs=in.readLong();
+        boolean results_available=in.readBoolean();
+        if(results_available)
+            results=(HashMap)in.readObject();
     }
 
 //    public byte[] write() throws Exception {
@@ -100,8 +111,10 @@ public class Data implements Externalizable {
         switch(type) {
             case DISCOVERY_REQ: sb.append("DISCOVERY_REQ"); break;
             case DISCOVERY_RSP: sb.append("DISCOVERY_RSP"); break;
-            case DATA: sb.append("DATA"); break;
-            default: sb.append("<unknown>"); break;
+            case DATA:          sb.append("DATA"); break;
+            case DONE:          sb.append("DONE"); break;
+            case RESULTS:       sb.append("RESULTS"); break;
+            default:            sb.append("<unknown>"); break;
         }
         sb.append("] ");
         return sb.toString();

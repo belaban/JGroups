@@ -9,7 +9,7 @@ import java.util.Properties;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: JGroupsTransport.java,v 1.1 2004/01/23 00:08:30 belaban Exp $
+ * @version $Id: JGroupsTransport.java,v 1.2 2004/01/23 02:19:24 belaban Exp $
  */
 public class JGroupsTransport implements Transport, Runnable {
     Properties config=null;
@@ -86,11 +86,9 @@ public class JGroupsTransport implements Transport, Runnable {
                 }
             }
             catch(ChannelNotConnectedException e) {
-                e.printStackTrace();
                 t=null;
             }
             catch(ChannelClosedException e) {
-                e.printStackTrace();
                 t=null;
             }
             catch(TimeoutException e) {
