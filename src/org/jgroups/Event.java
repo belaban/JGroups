@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.3 2003/12/05 23:38:48 belaban Exp $
+// $Id: Event.java,v 1.4 2004/04/28 18:50:51 belaban Exp $
 
 package org.jgroups;
 
@@ -73,6 +73,8 @@ public class Event {
     public static final int START_OK                  = 62;  // arg = exception of null - internal event, handled by Protocol
     public static final int STOP                      = 63;  // triggers stop() - internal event, handled by Protocol
     public static final int STOP_OK                   = 64;  // arg = exception or null - internal event, handled by Protocol
+    public static final int SUSPEND_STABLE            = 65;  // arg = null
+    public static final int RESUME_STABLE             = 66;  // arg = null
 
 
 
@@ -176,6 +178,8 @@ public class Event {
             case START_OK:               return "START_OK";
             case STOP:                   return "STOP";
             case STOP_OK:                return "STOP_OK";
+            case SUSPEND_STABLE:         return "SUSPEND_STABLE";
+            case RESUME_STABLE:          return "RESUME_STABLE";
 
             case USER_DEFINED:           return "USER_DEFINED";
             default:                     return "UNDEFINED";
