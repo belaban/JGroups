@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.129 2004/10/07 13:27:19 belaban Exp $
+Revision: $Id: history.txt,v 1.130 2004/10/08 13:06:55 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -27,6 +27,9 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
 Version 2.2.8
 -------------
+
+- Implemented Streamable for more classes (headers)
+  (bela Oct 8 2004)
 
 - Changed FD's BroadcastTask: this could *not* fire in the case where a task was stopped and immediately
   restarted
