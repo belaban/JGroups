@@ -3,9 +3,9 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.50 2004/03/16 18:00:47 belaban Exp $
+Revision: $Id: history.txt,v 1.51 2004/03/16 18:02:21 belaban Exp $
 
-[For current version, see file Version.java (or invoke 'java JGroups.Version')]
+[For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
 
 bba         = Bela Ban, bba@cs.cornell.edu
