@@ -1,4 +1,4 @@
-// $Id: PING.java,v 1.6 2003/12/22 17:10:06 belaban Exp $
+// $Id: PING.java,v 1.7 2003/12/22 17:37:58 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -346,9 +346,8 @@ public class PING extends Protocol {
                 Vector tmp;
                 if((tmp=((View)evt.getArg()).getMembers()) != null) {
                     synchronized(members) {
-                        members.removeAllElements();
-                        for(int i=0; i < tmp.size(); i++)
-                            members.addElement(tmp.elementAt(i));
+                        members.clear();
+                        members.addAll(tmp);
                     }
                 }
                 passDown(evt);
