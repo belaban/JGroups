@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.1 2003/09/09 01:24:04 belaban Exp $
+Revision: $Id: history.txt,v 1.2 2003/09/11 17:55:14 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java JGroups.Version')]
 
@@ -25,6 +25,11 @@ romuald     = Romuald du Song
 
 Version 2.2
 -----------
+
+- Added resource handling, e.g. instead of full URLs a simple XML file name can be passed.
+  getResourceAsStream will be used on the thread's classloader to find the resource.
+  Example: java org.jgroups.demos.Draw -props default.xml (default.xml has to be in the classpath)
+  (bela Sept 11 2003)
 
 - JavaGroups was renamed to JGroups. Package is now org.jgroups. The
   final 2.1.1 version was tagged with the JG_FINAL_SEPT_8_2003 tag.
