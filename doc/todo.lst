@@ -1,4 +1,4 @@
-$Id: todo.lst,v 1.3 2003/12/18 23:55:29 belaban Exp $
+$Id: todo.lst,v 1.4 2004/02/02 19:43:00 belaban Exp $
 
 
 
@@ -30,14 +30,18 @@ $Id: todo.lst,v 1.3 2003/12/18 23:55:29 belaban Exp $
 
 - ImplementTransactionalHashtable.Notification interface
 
-- TransactionalHashtable: when async replication, provide option to
-  periodically replicate changes (e.g. using a queue)
-
 - NAKACK: send xmits also to other members if no response from
   original sender (e.g. because it crashed). All members therefore
   have to respond to an xmit request by not only searching the
   sent-table, but also the received-table. Requires that members store
   *received* messages as well, not just *sent* messages.
+  - Send xmit request to
+    (a) sender (default)
+    (b) random member
+    (c) all members using multicast. Staggered replies, when 1 member sends response,
+        other members suppress reply
+
+- SMACK: introduce negative acks (currently positive acks). This should be configurable.
 
 - Add exception chaining (only available in JDK 1.4)
 
@@ -62,9 +66,6 @@ $Id: todo.lst,v 1.3 2003/12/18 23:55:29 belaban Exp $
 
 - Change GroupRequest: wait(10000) --> wait()
 
-- IpAddress: mainatain own cache to prevent unnecessary DNS lookups
-  IpAddressFactory: too many instances of the same IpAddress
-
 - ThreadPool: should release unused threads after some time.
   --> Replace ThreadPool with Executor in concurrent.util
 
@@ -86,31 +87,6 @@ $Id: todo.lst,v 1.3 2003/12/18 23:55:29 belaban Exp $
   Starting point is pbcast.GMS: to add vsync, do the following:
   - Flush protocol before installing view (ack-based)
   - Discard messages with view different from current view
-
-- Look into whether NAKACK/UNICAST/STABLE need to store copies of
-  messages, or whether references are okay. Now that we use hashmaps
-  instead of headers, this might be fine. (Immutable messages)
-
-- Related to previous item: remove check for Trace.copy once this
-  works okay. If references screw up the processing, Trace.copy can be
-  set to true and after recompiling JavaGroups we have the situation
-  we had before.
-
-- Peer-To-Peer protocols:
-  - Simpler GMS, where joiners can ask anyone in the group to join
-    it. That member will add the new member and mcast a ViewChange
-    message. Receivers of the ViewChange message make the new
-    membership the union of the existing mbrship, plus the newly
-    joined members, minus the removed members. Membership may not be
-    exactly the same on all members, but will converge over time.
-    The advantage of this scheme is that the botleneck of the single
-    coordinator is eliminated.
-  - Simpler mcast retransmission protocol (SACK=Simple ACK). Ack-based
-    scheme, mcasts with seqnos are sent to the group, acks are
-    expected from each member. Outstanding acks from (potentially)
-    crashed members can be reset by either (a) suspect messages, (b)
-    view changes, or (c) by verifying whether the outstanding member
-    is dead.
 
 - LinkingPing Channel (LP)
   - Channel which acts as a 'linking pin'
@@ -135,12 +111,6 @@ $Id: todo.lst,v 1.3 2003/12/18 23:55:29 belaban Exp $
 - Multiplexer building block. Allows multiple building blocks on top
   of the same channel (could extend PullPushAdaptor)
 
-- MERGE: as an alternative to periodically mcasting merge packets, we
-  could simply wait for mcasts from a member that has the same group
-  name but is not in the membership. In this case we'd attempt a merge.
-
-- Client time out on HandleJoin()
-
 - Integrate group membership with PBCAST ? No pbcast.GMS needed ?
 
 - NAKACK/NakReceiverWindow:
@@ -149,10 +119,6 @@ $Id: todo.lst,v 1.3 2003/12/18 23:55:29 belaban Exp $
     Replace with log(n) access pattern, e.g. TreeMap
   - updateHighestSeqno(): linear search
 
-- Add reliable unicast communication, e.g. server channel and client
-  channel. Add Channel.connect(Address) (overloading
-  Channel.connect(String))
-
 - ReplicatedTree:
   - Add mounting functionality (mounts another RT into an existing
     node)
@@ -160,12 +126,6 @@ $Id: todo.lst,v 1.3 2003/12/18 23:55:29 belaban Exp $
     directories/files, and hashtable data is contents, creation time
     etc. A FileReader/FileWriter subclass can be written which uses a
     RT instead of the file system.
-
-- EventPool: pool for Event instances. Since a lot of Event instances
-  are used, we should reuse them to avoid constant instance
-  creation. Use OptimizeIt to measure number of Events created.
-
-- Queue.Element: same as for EventPool
 
 - NAKACK: add functionality to xmit missing messages in batches
   (already impemented in pbcast.NAKACK)
@@ -176,12 +136,6 @@ $Id: todo.lst,v 1.3 2003/12/18 23:55:29 belaban Exp $
 
 - Documentation (DocBook ?)
 
-- Since message IDs are ever increasing with PBCAST, we have to reset
-  them (e.g. when they reach 2 E9; 4E9 is the current max size of a
-  long on Solaris 8). Write a protocol that resets the message IDs in
-  all members at the same logical point in time. Alternative: create
-  new SequenceNumber class, use it instead of long for seqnos
-
 - pbcast.STATE_TRANSFER: allow multiple simultaneous state transfers
   to take place (use state transfer IDs)
 
@@ -191,13 +145,6 @@ $Id: todo.lst,v 1.3 2003/12/18 23:55:29 belaban Exp $
 - ThreadPool: instead of allocating threads in a static array, make
   the array grow and shrink, allowing to return unused threads to the
   system resources
-
-- UDP: currently there are 3 sockets: 1 mcast in/out, 1 ucast in and 1
-  ucast out. Combine them into 1 or 2 sockets (e.g. 1 mcast in/out, 1
-  ucast in/out). The reason for this was that under Linux, because
-  sockets were not BSD-compatible, a ucast send socket has to be
-  closed and re-opened after every send ! This error may have been
-  fixed in the meantime.
 
 - Make the max. number of threads in Scheduler user-defined
 
@@ -218,9 +165,6 @@ $Id: todo.lst,v 1.3 2003/12/18 23:55:29 belaban Exp $
 
 - TimedWriter: replace own thread with ReusableThread
 
-- ConnectionPool: garbage collect sockets over which no activity
-  occurred for n minutes
-
 - Multiple Routers communicating with IP MCAST; clients connect via
   TCP. Tunnels through links that don't support IPMCAST.
 
@@ -235,28 +179,11 @@ $Id: todo.lst,v 1.3 2003/12/18 23:55:29 belaban Exp $
   acks as a an ordered linked list as well as a Hashtable might
   be more efficient.
 
-- Gianluca Collot: Maybe a useful thing to modify the use of Vectors
-  to create them with the right dimension to avoid memory waste and
-  redefine many metods to bring List,Set or such an interface as
-  arguments instead of Vectors so you can use another implementation
-  for that informations.
-
-- Gianluca Collot:
-    1. you have 4 channels on the same partition whit a view composed of all the 4 members (namely A,B,C,D) A is the
-  coordinator and the Address order is alphabetical
-    2. you split the partition in 2 partitions with 2 members per partition {A,C} {B,D}
-    3. B will become coordinator of the new partition because he suspected A first
-    4. B wants to install a new View composed of {B,C,D} and tries to Flush them.
-    5. The FLUSH protocol makes a GroupRequest on B,C,D without timeout and hangs because C never responds.
-  As workaround is sufficient to give a timeout to this operation but
-  I think there is an error on the suspecting mechanism  on the
-  Correlator.
-
 - Replace TimedWriter with TimedExecutor; more generic API for timed
   executions. Current implementation is hacked for writing to a file
   and creating a socket.
 
-- MethodCall.FindMethod(): better matching of supplied arguments with
+- MethodCall.findMethod(): better matching of supplied arguments with
   formal parameters ! Dispatching not only according to type of
   receiver, but also types of arguments ! (CLOS, Ada)
 
@@ -293,6 +220,59 @@ $Id: todo.lst,v 1.3 2003/12/18 23:55:29 belaban Exp $
 
 				 Done
 				 ----
+
+- 2003 (bela)
+  ConnectionPool: garbage collect sockets over which no activity
+  occurred for n minutes
+
+- Jan/Feb 2004 (bela)
+  UDP: currently there are 3 sockets: 1 mcast in/out, 1 ucast in and 1
+  ucast out. Combine them into 1 or 2 sockets (e.g. 1 mcast in/out, 1
+  ucast in/out). The reason for this was that under Linux, because
+  sockets were not BSD-compatible, a ucast send socket has to be
+  closed and re-opened after every send ! This error may have been
+  fixed in the meantime.
+  --> Implemented in UDP and UDP1_4 protocols
+
+- 2003 (bela)
+  Add reliable unicast communication, e.g. server channel and client
+  channel. Add Channel.connect(Address) (overloading
+  Channel.connect(String))
+
+- 2003 (bela)
+  MERGE: as an alternative to periodically mcasting merge packets, we
+  could simply wait for mcasts from a member that has the same group
+  name but is not in the membership. In this case we'd attempt a merge.
+  --> Done (MERGEFAST protocol)
+
+- 2003 (bela)
+  Peer-To-Peer protocols:
+  - Simpler GMS, where joiners can ask anyone in the group to join
+    it. That member will add the new member and mcast a ViewChange
+    message. Receivers of the ViewChange message make the new
+    membership the union of the existing mbrship, plus the newly
+    joined members, minus the removed members. Membership may not be
+    exactly the same on all members, but will converge over time.
+    The advantage of this scheme is that the botleneck of the single
+    coordinator is eliminated.
+  - Simpler mcast retransmission protocol (SACK=Simple ACK). Ack-based
+    scheme, mcasts with seqnos are sent to the group, acks are
+    expected from each member. Outstanding acks from (potentially)
+    crashed members can be reset by either (a) suspect messages, (b)
+    view changes, or (c) by verifying whether the outstanding member
+    is dead.
+    --> done, added SMACK protocol
+
+- 2002/2003 (bela)
+  Look into whether NAKACK/UNICAST/STABLE need to store copies of
+  messages, or whether references are okay. Now that we use hashmaps
+  instead of headers, this might be fine. (Immutable messages)
+
+- 2003 (bela)
+  IpAddress: mainatain own cache to prevent unnecessary DNS lookups
+  IpAddressFactory: too many instances of the same IpAddress
+  In the future, we may remove this because InetAddress has its own internal
+  cache as well.
 
 - Jan 2003 (bela)
   RpcDispatcher/MessageDispatcher: ship destination list with call and
@@ -838,6 +818,28 @@ $Id: todo.lst,v 1.3 2003/12/18 23:55:29 belaban Exp $
 
 			       Rejected
 			       --------
+
+
+
+- 2003 (bela)
+  Since message IDs are ever increasing with PBCAST, we have to reset
+  them (e.g. when they reach 2 E9; 4E9 is the current max size of a
+  long on Solaris 8). Write a protocol that resets the message IDs in
+  all members at the same logical point in time. Alternative: create
+  new SequenceNumber class, use it instead of long for seqnos
+  --> longs are 8 bytes, so we have 2E10 -1 numbers, that is more than enough.
+
+- 2003 (bela)
+  EventPool: pool for Event instances. Since a lot of Event instances
+  are used, we should reuse them to avoid constant instance
+  creation. Use OptimizeIt to measure number of Events created.
+  --> JDKs 1.4 and higher now manage object pools internally, this is
+      not needed anymore
+
+- 2003/2004
+  TransactionalHashtable: when async replication, provide option to
+  periodically replicate changes (e.g. using a queue)
+  --> done in JBossCache, currently no plans to backport to JGroups
 
 - Aug 2002
   Integrate latest version of EJAVA (comes with 0.70 distribution of
