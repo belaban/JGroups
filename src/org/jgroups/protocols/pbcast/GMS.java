@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.22 2004/10/05 15:30:06 belaban Exp $
+// $Id: GMS.java,v 1.23 2004/10/08 12:28:30 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -8,11 +8,9 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.BoundedList;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
+import org.jgroups.util.Streamable;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.io.Serializable;
+import java.io.*;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Properties;
@@ -755,7 +753,7 @@ public class GMS extends Protocol {
 
 
 
-    public static class GmsHeader extends Header {
+    public static class GmsHeader extends Header implements Streamable {
         public static final int JOIN_REQ=1;
         public static final int JOIN_RSP=2;
         public static final int LEAVE_REQ=3;
@@ -893,6 +891,27 @@ public class GMS extends Protocol {
             join_rsp=(JoinRsp)in.readObject();
             digest=(Digest)in.readObject();
             merge_id=(Serializable)in.readObject();
+            merge_rejected=in.readBoolean();
+        }
+
+
+        public void writeTo(DataOutputStream out) throws IOException {
+            out.writeInt(type);
+            Util.writeStreamable(view, out);
+            Util.writeStreamable(mbr, out);
+            Util.writeStreamable(join_rsp, out);
+            Util.writeStreamable(digest, out);
+            Util.writeStreamable((Streamable)merge_id, out); // kludge: we know merge_id is a ViewId
+            out.writeBoolean(merge_rejected);
+        }
+
+        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+            type=in.readInt();
+            view=(View)Util.readStreamable(View.class, in);
+            mbr=(Address)Util.readStreamable(Address.class, in);
+            join_rsp=(JoinRsp)Util.readStreamable(JoinRsp.class, in);
+            digest=(Digest)Util.readStreamable(Digest.class, in);
+            merge_id=(Serializable)Util.readStreamable(ViewId.class, in);
             merge_rejected=in.readBoolean();
         }
 
