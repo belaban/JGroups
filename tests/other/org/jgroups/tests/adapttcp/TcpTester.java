@@ -25,7 +25,7 @@ public class TcpTester {
     private boolean sender;
     private long msgs_burst;
     private long sleep_msec;
-    private int num_bursts;
+    private int num_msgs;
     private int msg_size;
     private int grpMembers;
     private int num_senders;
@@ -34,14 +34,12 @@ public class TcpTester {
     List nodes;
 
 
-    public TcpTester(boolean snd, long mb, long st,
-                            int nb, int ms, int gm, int ns, long log_interval,
+    public TcpTester(boolean snd, int num_msgs,
+                            int msg_size, int gm, int ns, long log_interval,
                             ServerSocket srv_sock, List nodes) {
         sender=snd;
-        msgs_burst=mb;
-        sleep_msec=st;
-        num_bursts=nb;
-        msg_size=ms;
+        this.num_msgs=num_msgs;
+        this.msg_size=msg_size;
         grpMembers=gm;
         num_senders=ns;
         this.log_interval=log_interval;
@@ -50,11 +48,9 @@ public class TcpTester {
     }
 
     public void initialize() {
-        new ReceiverThread(srv_sock, msgs_burst, num_bursts,
-                msg_size, num_senders, log_interval).start();
+        new ReceiverThread(srv_sock, num_msgs, msg_size, num_senders, log_interval).start();
         if(sender) {
-            new SenderThread(nodes, msgs_burst, sleep_msec,
-                    num_bursts, msg_size, log_interval).start();
+            new SenderThread(nodes, num_msgs, msg_size, log_interval).start();
         }
     }
 }

@@ -21,25 +21,34 @@ public class Test {
 
     public static void main(String[] args) {
 
-        String config;
+        String config="config.txt";
         BufferedReader fileReader;
         String line;
 
         boolean sender=false;
-        long msgs_burst=50;
-        long sleep_msec=50;
-        int num_bursts=50;
+        int num_msgs=1000;
         int msg_size=500;
         int grpMembers=4;
         int num_senders=1;
         String props=null;
         long   log_interval=1000;
 
-        try {
-            config=args[0];
-        }
-        catch(Exception e) {
-            config="config.txt";
+
+        for(int i=0; i < args.length; i++) {
+            if(args[i].equals("-sender")) {
+                sender=true;
+                continue;
+            }
+            if(args[i].equals("-receiver")) {
+                sender=false;
+                continue;
+            }
+            if(args[i].equals("-config")) {
+                config=args[++i];
+                continue;
+            }
+            help();
+            return;
         }
 
         Trace.init();
@@ -49,20 +58,8 @@ public class Test {
             while((line=fileReader.readLine()) != null) {
                 if(line.startsWith("#"))
                     continue;
-                else if(line.startsWith("SENDER=")) {
-                    sender=new Boolean(line.substring(line.indexOf('=') + 1,
-                            line.indexOf(';'))).booleanValue();
-                }
-                else if(line.startsWith("MSGS_BURST=")) {
-                    msgs_burst=Long.parseLong(line.substring(line.indexOf('=') + 1,
-                            line.indexOf(';')));
-                }
-                else if(line.startsWith("SLEEP_MSEC=")) {
-                    sleep_msec=Long.parseLong(line.substring(line.indexOf('=') + 1,
-                            line.indexOf(';')));
-                }
-                else if(line.startsWith("NUM_BURSTS=")) {
-                    num_bursts=Integer.parseInt(line.substring(line.indexOf('=') + 1,
+                else if(line.startsWith("NUM_MSGS=")) {
+                    num_msgs=Integer.parseInt(line.substring(line.indexOf('=') + 1,
                             line.indexOf(';')));
                 }
                 else if(line.startsWith("MSG_SIZE=")) {
@@ -100,8 +97,7 @@ public class Test {
             System.out.println("Javagroups test:");
             String s="Initial params parsing completed. Starting test"
                     + " with these values:\n"
-                    + "Sender:" + sender + "  Msgs/Burst:" + msgs_burst
-                    + "  Sleep(ms):" + sleep_msec + "  # Bursts:" + num_bursts
+                    + "Sender:" + sender + "  num_msgs:" + num_msgs
                     + "  Size(bytes):" + msg_size + "  # Mbrs:" + grpMembers
                     + "  Senders: " + num_senders
                     + "\nLog interval: " + log_interval + "\n";
@@ -109,8 +105,8 @@ public class Test {
             System.out.println(s);
             Logger.getLogger(Test.class).info("main(): " + s);
 
-            new JGroupsTester(sender, msgs_burst, sleep_msec,
-                    num_bursts, msg_size, grpMembers, num_senders, props, log_interval).initialize();
+            new JGroupsTester(sender, num_msgs,
+                    msg_size, grpMembers, num_senders, props, log_interval).initialize();
         }
         catch(FileNotFoundException notFound) {
             System.err.println("File not found.\n" + notFound);
@@ -118,5 +114,9 @@ public class Test {
         catch(IOException ioError) {
             ioError.printStackTrace();
         }
+    }
+
+    static void help() {
+        System.out.println("Test [-help] ([-sender] | [-receiver]) [-config <config file>]");
     }
 }

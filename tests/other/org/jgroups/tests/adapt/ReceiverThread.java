@@ -17,30 +17,27 @@ import org.apache.log4j.Logger;
 public class ReceiverThread extends Thread {
 
     private Channel channel;
-    private long msgs_burst;
-    private long num_bursts;
+    private int num_msgs;
     private int msg_size;
     private int num_senders;
     Logger  log=Logger.getLogger(this.getClass());
     long    counter=1;
-    long    expected_msgs=msgs_burst * num_bursts * num_senders;
+    long    expected_msgs=num_msgs * num_senders;
     long    beginning=0, ending=0, elapsed_time, last_dump;
     long    log_interval=1000;
     boolean gnuplot_output=Boolean.getBoolean("gnuplot_output");
 
 
-    public ReceiverThread(Channel ch, long mb, int nb, int ms, int ns, long log_interval) {
+    public ReceiverThread(Channel ch, int num_msgs, int msg_size, int ns, long log_interval) {
         channel=ch;
-        msgs_burst=mb;
-        num_bursts=nb;
-        msg_size=ms;
+        this.num_msgs=num_msgs;
+        this.msg_size=msg_size;
         num_senders=ns;
-        expected_msgs=msgs_burst * num_bursts * num_senders;
+        expected_msgs=num_msgs * num_senders;
         this.log_interval=log_interval;
     }
 
     public void run() {
-
         double throughput_s, throughput_b;
         System.out.println("\nReceiver thread started...\n");
         counter=1;
@@ -73,7 +70,7 @@ public class ReceiverThread extends Thread {
                     if(counter == expected_msgs)
                         ending=System.currentTimeMillis();
                     counter++;
-                    if(counter % 100 == 0) {
+                    if(counter % 1000 == 0) {
                         System.out.println("-- received " + counter + " msgs");
                     }
                     if(counter % log_interval == 0) {

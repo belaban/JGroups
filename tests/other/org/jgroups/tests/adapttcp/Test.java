@@ -27,14 +27,12 @@ public class Test {
     public static int grpMembers=4;
 
     public static void main(String[] args) {
-        String config;
+        String config="config.txt";
         BufferedReader fileReader;
         String line;
 
         boolean sender=false;
-        long msgs_burst=50;
-        long sleep_msec=50;
-        int num_bursts=50;
+        int num_msgs=1000;
         int msg_size=500;
 
         int num_senders=1;
@@ -44,11 +42,21 @@ public class Test {
         ServerSocket srv_sock;
         List nodes=new ArrayList(); // list of cluster nodes (InetAddresses)
 
-        try {
-            config=args[0];
-        }
-        catch(Exception e) {
-            config="config.txt";
+        for(int i=0; i < args.length; i++) {
+            if(args[i].equals("-sender")) {
+                sender=true;
+                continue;
+            }
+            if(args[i].equals("-receiver")) {
+                sender=false;
+                continue;
+            }
+            if(args[i].equals("-config")) {
+                config=args[++i];
+                continue;
+            }
+            help();
+            return;
         }
 
         Trace.init();
@@ -58,20 +66,8 @@ public class Test {
             while((line=fileReader.readLine()) != null) {
                 if(line.startsWith("#"))
                     continue;
-                else if(line.startsWith("SENDER=")) {
-                    sender=new Boolean(line.substring(line.indexOf('=') + 1,
-                            line.indexOf(';'))).booleanValue();
-                }
-                else if(line.startsWith("MSGS_BURST=")) {
-                    msgs_burst=Long.parseLong(line.substring(line.indexOf('=') + 1,
-                            line.indexOf(';')));
-                }
-                else if(line.startsWith("SLEEP_MSEC=")) {
-                    sleep_msec=Long.parseLong(line.substring(line.indexOf('=') + 1,
-                            line.indexOf(';')));
-                }
-                else if(line.startsWith("NUM_BURSTS=")) {
-                    num_bursts=Integer.parseInt(line.substring(line.indexOf('=') + 1,
+                else if(line.startsWith("NUM_MSGS=")) {
+                    num_msgs=Integer.parseInt(line.substring(line.indexOf('=') + 1,
                             line.indexOf(';')));
                 }
                 else if(line.startsWith("MSG_SIZE=")) {
@@ -110,8 +106,7 @@ public class Test {
             System.out.println("Javagroups test:");
             String s="Initial params parsing completed. Starting test"
                     + " with these values:\n"
-                    + "Sender:" + sender + "  Msgs/Burst:" + msgs_burst
-                    + "  Sleep(ms):" + sleep_msec + "  # Bursts:" + num_bursts
+                    + "Sender:" + sender + "  num_msgs:" + num_msgs
                     + "  Size(bytes):" + msg_size + "  # Mbrs:" + grpMembers
                     + "  Senders: " + num_senders
                     + "\nLog interval: " + log_interval + "\n";
@@ -121,8 +116,8 @@ public class Test {
 
             srv_sock=new ServerSocket(srv_port);
 
-            new TcpTester(sender, msgs_burst, sleep_msec,
-                    num_bursts, msg_size, grpMembers, num_senders,
+            new TcpTester(sender, num_msgs,
+                    msg_size, grpMembers, num_senders,
                     log_interval, srv_sock, nodes).initialize();
         }
         catch(FileNotFoundException notFound) {
@@ -150,5 +145,9 @@ public class Test {
             retval.add(host);
         }
         return retval;
+    }
+
+    static void help() {
+        System.out.println("Test [-help] ([-sender] | [-receiver]) [-config <config file>]");
     }
 }

@@ -16,20 +16,16 @@ import org.apache.log4j.Logger;
 public class SenderThread extends Thread {
 
     private Channel channel;
-    private long msgs_burst;
-    private long sleep_msec;
-    private int num_bursts;
+    private int num_msgs;
     private int msg_size;
     Logger  log=Logger.getLogger(this.getClass());
     long log_interval=1000;
     boolean gnuplot_output=Boolean.getBoolean("gnuplot_output");
 
-    public SenderThread(Channel ch, long mb, long st, int nb, int ms, long log_interval) {
+    public SenderThread(Channel ch, int num_msgs, int msg_size, long log_interval) {
         channel=ch;
-        msgs_burst=mb;
-        sleep_msec=st;
-        num_bursts=nb;
-        msg_size=ms;
+        this.num_msgs=num_msgs;
+        this.msg_size=msg_size;
         this.log_interval=log_interval;
     }
 
@@ -44,30 +40,24 @@ public class SenderThread extends Thread {
                 msg[h]=(byte)h;
             }
 
-            for(int i=0; i < num_bursts; i++) {
-                for(int j=0; j < msgs_burst; j++) {
-                    Message jg_msg=new Message(null, null, msg);
-                    channel.send(jg_msg);
-                    total_msgs++;
-                    if(total_msgs % 100 == 0) {
-                        System.out.println("++ sent " + total_msgs);
-                    }
-                    if(total_msgs % log_interval == 0) {
-                        if(gnuplot_output == false)
-                            log.info(dumpStats(total_msgs));
-                    }
+            for(int i=0; i < num_msgs; i++) {
+                Message jg_msg=new Message(null, null, msg);
+                channel.send(jg_msg);
+                total_msgs++;
+                if(total_msgs % 1000 == 0) {
+                    System.out.println("++ sent " + total_msgs);
                 }
-                sleep((long)sleep_msec);
+                if(total_msgs % log_interval == 0) {
+                    if(gnuplot_output == false)
+                        log.info(dumpStats(total_msgs));
+                }
             }
-            System.out.println("Sent all bursts. Sender terminates.\n");
+            System.out.println("Sent all messages. Sender terminates.\n");
         }
         catch(ChannelNotConnectedException e) {
             e.printStackTrace();
         }
         catch(ChannelClosedException e) {
-            e.printStackTrace();
-        }
-        catch(InterruptedException e) {
             e.printStackTrace();
         }
     }

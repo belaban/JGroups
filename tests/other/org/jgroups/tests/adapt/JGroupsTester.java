@@ -22,24 +22,6 @@ import org.jgroups.*;
  */
 public class JGroupsTester {
 
-    /*
-       private String props="UDP(mcast_addr=228.1.2.3;mcast_port=45566):" +
-                            "PING:" +
-                            "FD(timeout=5000):" +
-                            "VERIFY_SUSPECT(timeout=1500):" +
-                            "MERGE:" +
-                            "NAKACK:" +
-                            "UNICAST(timeout=5000):" +
-                            //"UNICAST(timeout=5000;min_wait_time=2000):"
-                            "FRAG:" +
-                            "FLUSH:" +
-                            "GMS:" +
-                            "STATE_TRANSFER:" +
-                            "QUEUE";
-    */
-
-
-
     private String props="UDP(mcast_recv_buf_size=64000;mcast_send_buf_size=32000;mcast_port=45566;use_packet_handler=true;ucast_recv_buf_size=64000;mcast_addr=228.8.8.8;loopback=true;ucast_send_buf_size=32000;ip_ttl=32):AUTOCONF:PING(timeout=2000;num_initial_members=3):MERGE2(max_interval=10000;min_interval=5000):FD(timeout=2000;max_tries=3;shun=true):VERIFY_SUSPECT(timeout=1500):pbcast.NAKACK(max_xmit_size=8192;gc_lag=50;retransmit_timeout=300,600,1200,2400,4800):UNICAST(timeout=300,600,1200,2400,3600):pbcast.STABLE(stability_delay=1000;desired_avg_gossip=5000;max_bytes=250000):pbcast.GMS(print_local_addr=true;join_timeout=3000;join_retry_timeout=2000;shun=true):FC(max_credits=2000000;down_thread=false;direct_blocking=true;min_credits=52000):FRAG(frag_size=8192;down_thread=false;up_thread=true)";
 
 
@@ -47,22 +29,18 @@ public class JGroupsTester {
     private View view;
     private String myGrpName="myGroup";
     private boolean sender;
-    private long msgs_burst;
-    private long sleep_msec;
-    private int num_bursts;
     private int msg_size;
     private int grpMembers;
     private int num_senders;
     private long log_interval=1000;
+    private int num_msgs=1000;
 
 
-    public JGroupsTester(boolean snd, long mb, long st,
-                            int nb, int ms, int gm, int ns, String props, long log_interval) {
+    public JGroupsTester(boolean snd, int num_msgs,
+                         int msg_size, int gm, int ns, String props, long log_interval) {
         sender=snd;
-        msgs_burst=mb;
-        sleep_msec=st;
-        num_bursts=nb;
-        msg_size=ms;
+        this.num_msgs=num_msgs;
+        this.msg_size=msg_size;
         grpMembers=gm;
         num_senders=ns;
         if(props != null)
@@ -110,11 +88,10 @@ public class JGroupsTester {
 
         }
 
-        new ReceiverThread(channel, msgs_burst, num_bursts,
+        new ReceiverThread(channel, num_msgs,
                 msg_size, num_senders, log_interval).start();
         if(sender) {
-            new SenderThread(channel, msgs_burst, sleep_msec,
-                    num_bursts, msg_size, log_interval).start();
+            new SenderThread(channel, num_msgs, msg_size, log_interval).start();
         }
     }
 }
