@@ -1,25 +1,21 @@
-// $Id: FCTest.java,v 1.2 2004/09/23 22:31:25 belaban Exp $
+// $Id: FCTest.java,v 1.3 2005/01/28 20:52:04 belaban Exp $
 
 package org.jgroups.tests;
 
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
+import org.jgroups.Event;
+import org.jgroups.Message;
+import org.jgroups.View;
+import org.jgroups.debug.Simulator;
+import org.jgroups.protocols.FC;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
-import org.jgroups.View;
-import org.jgroups.Event;
-import org.jgroups.Message;
-import org.jgroups.protocols.FC;
-import org.jgroups.debug.Simulator;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.util.Vector;
 import java.util.Properties;
+import java.util.Vector;
 
 
 /**
@@ -41,6 +37,7 @@ public class FCTest extends TestCase {
 
 
     public void setUp() throws Exception {
+        super.setUp();
         a1=new IpAddress(1111);
         members=new Vector();
         members.add(a1);
@@ -59,7 +56,8 @@ public class FCTest extends TestCase {
         s.start();
     }
 
-    public void tearDown() {
+    public void tearDown() throws Exception {
+        super.tearDown();
         s.stop();
     }
 
