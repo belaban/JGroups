@@ -1,4 +1,4 @@
-// $Id: TCPPING.java,v 1.14 2004/10/05 06:19:20 belaban Exp $
+// $Id: TCPPING.java,v 1.15 2004/10/07 07:03:00 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -177,37 +177,12 @@ public class TCPPING extends Protocol {
                     for(Iterator it=initial_hosts.iterator(); it.hasNext();) {
                         Address addr=(Address)it.next();
                         if(members.contains(addr)) {
-                           ; // continue; // changed as suggested by Mark Kopec (merge didn't work on Solaris)
+                           ; // continue; // changed as suggested by Mark Kopec
                         }
                         msg.setDest(addr);
                         if(log.isTraceEnabled()) log.trace("[FIND_INITIAL_MBRS] sending PING request to " + msg.getDest());
                         passDown(new Event(Event.MSG, msg.copy()));
                     }
-
-//                    int numMembers=members.size();
-//                    int numMemberInitialHosts = 0;
-//                    Address coord=numMembers > 0 ? (Address)members.firstElement() : local_addr;
-//                    for(Enumeration en=initial_hosts.elements(); en.hasMoreElements();) {
-//                        hlist=(List)en.nextElement();
-//                        boolean isMember = false;
-//
-//                        for(Enumeration hen=hlist.elements(); hen.hasMoreElements() && !isMember && numMemberInitialHosts < numMembers;) {
-//                            h=(IpAddress)hen.nextElement();
-//                            if (members_set.contains(h)) {
-//                                //update the initial_members list for this already connected member
-//                                initial_members.add(new PingRsp(h, coord));
-//                                isMember = true;
-//                                numMemberInitialHosts++;
-//                                if(log.isTraceEnabled()) log.trace("[FIND_INITIAL_MBRS] " + h + " is already a member");
-//                            }
-//                        }
-//                        for(Enumeration hen=hlist.elements(); hen.hasMoreElements() && !isMember;) {
-//                            h=(IpAddress)hen.nextElement();
-//                            msg.setDest(h);
-//                            if(log.isTraceEnabled()) log.trace("[FIND_INITIAL_MBRS] sending PING request to " + msg.getDest());
-//                            passDown(new Event(Event.MSG, msg.copy()));
-//                        }
-//                    }
                 }
 
                 // 2. Wait 'timeout' ms or until 'num_initial_members' have been retrieved
