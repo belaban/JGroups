@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.27 2004/08/04 12:38:39 belaban Exp $
+// $Id: MessageDispatcher.java,v 1.28 2004/08/04 14:29:15 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -6,16 +6,10 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.Rsp;
-import org.jgroups.util.RspList;
-import org.jgroups.util.Util;
-import org.jgroups.util.ReentrantLatch;
-
+import org.jgroups.util.*;
 
 import java.io.Serializable;
 import java.util.Vector;
-
-import EDU.oswego.cs.dl.util.concurrent.LinkedQueue;
 
 
 /**
@@ -557,8 +551,8 @@ public class MessageDispatcher implements RequestHandler {
 
 
     class ProtocolAdapter extends Protocol implements UpHandler {
-        private Thread m_upProcessingThread=null;
-        private EDU.oswego.cs.dl.util.concurrent.Channel m_upQueue=new LinkedQueue();
+        private Thread upProcessingThread=null;
+        private Queue upQueue=new Queue();
         private ReentrantLatch m_upLatch=new ReentrantLatch(false);
 
 
@@ -669,43 +663,43 @@ public class MessageDispatcher implements RequestHandler {
 
         synchronized void suspend() {
             m_upLatch.lock();
-            if(m_upProcessingThread != null) {
-                Thread t=m_upProcessingThread;
-                m_upProcessingThread=null;
+            if(upProcessingThread != null) {
+                Thread t=upProcessingThread;
+                upProcessingThread=null;
                 t.interrupt();
             }
         }
 
         synchronized void resume() {
-            if(m_upProcessingThread == null) {
+            m_upLatch.unlock();
+            if(upProcessingThread == null) {
                 startProcessingThread();
             }
-            m_upLatch.unlock();
-            m_upProcessingThread.interrupt();
         }
 
 
         private void startProcessingThread() {
-            m_upProcessingThread=new Thread(new Runnable() {
+            upProcessingThread=new Thread(new Runnable() {
                 public void run() {
                     Event event=null;
-                    while(Thread.currentThread() == m_upProcessingThread) {
+                    while(upProcessingThread != null) {
                         try {
-                            event=(Event)m_upQueue.take();
+                            event=(Event)upQueue.remove();
                             m_upLatch.passThrough();
                             handleUp(event);
                         }
-                        catch(InterruptedException ex) {
-                            //this is ok.
+                        catch(QueueClosedException ex1) {
+                            break;
+                        }
+                        catch(InterruptedException ex2) {
+                            //this is ok, the 'interrupted' flag is cleared
                         }
                     }
-                    Thread.interrupted(); // clears the interrupt flag in case we didn't terminate via the
-                                          // catch clause
                 }
             });
-            m_upProcessingThread.setName("MessageDispatcher up processing thread");
-            m_upProcessingThread.setDaemon(true);
-            m_upProcessingThread.start();
+            upProcessingThread.setName("MessageDispatcher up processing thread");
+            upProcessingThread.setDaemon(true);
+            upProcessingThread.start();
         }
 
 
@@ -714,10 +708,10 @@ public class MessageDispatcher implements RequestHandler {
          */
         public void up(Event evt) {
             try {
-                m_upQueue.put(evt);
+                upQueue.add(evt);
             }
-            catch(InterruptedException ex) {
-                //this is ok
+            catch(QueueClosedException ex) {
+                // this is ok
             }
         }
 
