@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.24 2004/07/29 09:08:51 belaban Exp $
+// $Id: MessageDispatcher.java,v 1.25 2004/08/01 07:15:56 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -558,7 +558,7 @@ public class MessageDispatcher implements RequestHandler {
 
     class ProtocolAdapter extends Protocol implements UpHandler {
 
-        protected boolean running=false;
+        protected volatile boolean running=false;
 
         /* ------------------------- Protocol Interface --------------------------- */
 
@@ -690,6 +690,10 @@ public class MessageDispatcher implements RequestHandler {
         void suspend() {
             running=false;
             m_upLatch.lock();
+            if (m_upProcessingThread != null) {
+                m_upProcessingThread.interrupt();
+                m_upProcessingThread = null;
+            }
         }
 
         synchronized void resume() {
@@ -698,6 +702,7 @@ public class MessageDispatcher implements RequestHandler {
                 startProcessingThreads();
             }
             m_upLatch.unlock();
+            m_upProcessingThread.interrupt();
         }
 
         /**
