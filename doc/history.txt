@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.126 2004/10/05 15:30:05 belaban Exp $
+Revision: $Id: history.txt,v 1.127 2004/10/06 08:10:06 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -27,6 +27,9 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
 Version 2.2.8
 -------------
+
+- Added support for bind.address system property in FD_SOCK
+  (bela Oct 6 2004)
 
 - Fix for hanging merge when coordinator/participant crashes or shuns-and-reconnects during merge
   (bela Oct 5 2004)
