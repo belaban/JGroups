@@ -1,7 +1,8 @@
-// $Id: DistributedQueue.java,v 1.3 2003/10/15 16:14:10 rds13 Exp $
+// $Id: DistributedQueue.java,v 1.4 2003/12/22 10:12:16 rds13 Exp $
 
 package org.jgroups.blocks;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -104,6 +105,32 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
         init();
     }
 
+	/**
+	  * Uses a user-provided PullPushAdapter to create the dispatcher rather than a Channel. If id is non-null, it will be
+	  * used to register under that id. This is typically used when another building block is already using
+	  * PullPushAdapter, and we want to add this building block in addition. The id is the used to discriminate
+	  * between messages for the various blocks on top of PullPushAdapter. If null, we will assume we are the
+	  * first block created on PullPushAdapter.
+	  * The caller needs to call start(), before using the this block. It gives the opportunity for the caller
+	  * to register as a lessoner for Notifications events.
+	  * @param adapter The PullPushAdapter which to use as underlying transport
+	  * @param id A serializable object (e.g. an Integer) used to discriminate (multiplex/demultiplex) between
+	  *           requests/responses for different building blocks on top of PullPushAdapter.
+	  * @param state_timeout Max number of milliseconds to wait for state to be retrieved
+	  */
+	 public DistributedQueue(PullPushAdapter adapter, Serializable id)
+		 throws ChannelNotConnectedException, ChannelClosedException {
+		 this.channel = (Channel)adapter.getTransport();
+		 this.groupname = this.channel.getChannelName();
+
+		 initMethods();
+		 internalQueue = new LinkedList();
+
+		 channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
+		 disp=new RpcDispatcher(adapter, id, this, this, this);
+		 disp.setDeadlockDetection(false); // To ensure strict FIFO MethodCall
+	 }
+	 
     protected void init() throws ChannelClosedException, ChannelNotConnectedException
     {
         initMethods();
