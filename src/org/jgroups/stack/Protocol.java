@@ -1,4 +1,4 @@
-// $Id: Protocol.java,v 1.17 2004/07/05 05:58:46 belaban Exp $
+// $Id: Protocol.java,v 1.18 2004/07/05 14:17:33 belaban Exp $
 
 package org.jgroups.stack;
 

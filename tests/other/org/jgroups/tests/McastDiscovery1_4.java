@@ -1,4 +1,4 @@
-// $Id: McastDiscovery1_4.java,v 1.2 2004/07/05 06:10:44 belaban Exp $
+// $Id: McastDiscovery1_4.java,v 1.3 2004/07/05 14:15:11 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -17,7 +17,7 @@ import java.util.*;
  * After n responses or m milliseconds, the sender terminates and computes the network interfaces which should be used.
  * The network interface is the intersection of the interface variable of all ACKs received.
  * @author Bela Ban July 26 2002
- * @version $Revision: 1.2 $
+ * @version $Revision: 1.3 $
  */
 public class McastDiscovery1_4 {
     int ttl = 32;

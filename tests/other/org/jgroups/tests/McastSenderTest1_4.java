@@ -1,4 +1,4 @@
-// $Id: McastSenderTest1_4.java,v 1.3 2004/07/05 06:10:44 belaban Exp $
+// $Id: McastSenderTest1_4.java,v 1.4 2004/07/05 14:15:11 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -13,7 +13,7 @@ import java.util.Vector;
    Same as McastSenderTest, but uses all available interfaces (including loopback) to send the packets
    @see McastReceiverTest
    @author Bela Ban
-   @version $Revision: 1.3 $
+   @version $Revision: 1.4 $
  */
 public class McastSenderTest1_4 {
 

@@ -1,4 +1,4 @@
-// $Id: AckMcastSenderWindow.java,v 1.4 2004/07/05 05:58:46 belaban Exp $
+// $Id: AckMcastSenderWindow.java,v 1.5 2004/07/05 14:17:32 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -33,7 +33,7 @@ import java.util.*;
  *
  * @author Bela Ban June 9 1999
  * @author John Georgiadis May 8 2001
- * @version $Revision: 1.4 $
+ * @version $Revision: 1.5 $
  */
 public class AckMcastSenderWindow {
     /**

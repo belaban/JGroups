@@ -1,4 +1,4 @@
-// $Id: AUTOCONF.java,v 1.8 2004/07/05 05:51:24 belaban Exp $
+// $Id: AUTOCONF.java,v 1.9 2004/07/05 14:17:14 belaban Exp $
 
 package org.jgroups.protocols;
 

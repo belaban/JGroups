@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.18 2004/07/05 06:00:40 belaban Exp $
+// $Id: JChannel.java,v 1.19 2004/07/05 14:17:36 belaban Exp $
 
 package org.jgroups;
 
@@ -23,7 +23,7 @@ import java.util.Vector;
  * protocol stack
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.18 $
+ * @version $Revision: 1.19 $
  */
 public class JChannel extends Channel {
 

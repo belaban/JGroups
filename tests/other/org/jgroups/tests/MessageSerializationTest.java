@@ -1,4 +1,4 @@
-// $Id: MessageSerializationTest.java,v 1.3 2004/07/05 06:10:44 belaban Exp $
+// $Id: MessageSerializationTest.java,v 1.4 2004/07/05 14:15:11 belaban Exp $
 
 package org.jgroups.tests;
 

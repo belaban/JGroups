@@ -1,4 +1,4 @@
-// $Id: McastSenderTest.java,v 1.3 2004/07/05 06:10:44 belaban Exp $
+// $Id: McastSenderTest.java,v 1.4 2004/07/05 14:15:11 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -20,7 +20,7 @@ import java.net.MulticastSocket;
  test whether IPMCAST works between different subnets.
  @see McastReceiverTest
  @author Bela Ban
- @version $Revision: 1.3 $
+ @version $Revision: 1.4 $
  */
 public class McastSenderTest {
 

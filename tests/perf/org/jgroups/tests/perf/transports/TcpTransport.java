@@ -14,7 +14,7 @@ import java.util.*;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: TcpTransport.java,v 1.3 2004/07/05 06:18:11 belaban Exp $
+ * @version $Id: TcpTransport.java,v 1.4 2004/07/05 14:15:20 belaban Exp $
  */
 public class TcpTransport implements Transport {
     Receiver         receiver=null;

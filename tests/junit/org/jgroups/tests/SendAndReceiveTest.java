@@ -1,4 +1,4 @@
-// $Id: SendAndReceiveTest.java,v 1.3 2004/07/05 06:04:28 belaban Exp $
+// $Id: SendAndReceiveTest.java,v 1.4 2004/07/05 14:15:04 belaban Exp $
 
 package org.jgroups.tests;
 

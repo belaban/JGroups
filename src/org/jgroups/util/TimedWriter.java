@@ -1,4 +1,4 @@
-// $Id: TimedWriter.java,v 1.2 2004/07/05 05:59:41 belaban Exp $
+// $Id: TimedWriter.java,v 1.3 2004/07/05 14:17:35 belaban Exp $
 
 package org.jgroups.util;
 

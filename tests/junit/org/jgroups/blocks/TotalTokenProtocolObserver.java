@@ -1,4 +1,4 @@
-// $Id: TotalTokenProtocolObserver.java,v 1.4 2004/07/05 06:02:33 belaban Exp $
+// $Id: TotalTokenProtocolObserver.java,v 1.5 2004/07/05 14:15:02 belaban Exp $
 package org.jgroups.blocks;
 
 import org.apache.log4j.Logger;

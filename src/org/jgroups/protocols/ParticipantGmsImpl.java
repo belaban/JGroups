@@ -1,4 +1,4 @@
-// $Id: ParticipantGmsImpl.java,v 1.4 2004/07/05 05:51:24 belaban Exp $
+// $Id: ParticipantGmsImpl.java,v 1.5 2004/07/05 14:17:15 belaban Exp $
 
 package org.jgroups.protocols;
 

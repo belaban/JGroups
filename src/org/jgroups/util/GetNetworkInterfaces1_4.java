@@ -9,7 +9,7 @@ import java.util.Enumeration;
  * Lists all network interfaces on a system
  * @author Bela Ban Dec 18
  * @author 2003
- * @version $Id: GetNetworkInterfaces1_4.java,v 1.3 2004/07/05 05:59:41 belaban Exp $
+ * @version $Id: GetNetworkInterfaces1_4.java,v 1.4 2004/07/05 14:17:35 belaban Exp $
  */
 public class GetNetworkInterfaces1_4 {
 

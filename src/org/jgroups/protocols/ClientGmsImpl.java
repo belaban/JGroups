@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.4 2004/07/05 05:51:24 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.5 2004/07/05 14:17:15 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -25,7 +25,7 @@ import java.util.Vector;
  * tell the client what its initial membership is.
  * 
  * @author Bela Ban
- * @version $Revision: 1.4 $
+ * @version $Revision: 1.5 $
  */
 public class ClientGmsImpl extends GmsImpl {
     Vector initial_mbrs=new Vector(7);

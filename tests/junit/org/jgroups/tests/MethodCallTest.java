@@ -1,4 +1,4 @@
-// $Id: MethodCallTest.java,v 1.6 2004/07/05 06:04:28 belaban Exp $
+// $Id: MethodCallTest.java,v 1.7 2004/07/05 14:15:04 belaban Exp $
 
 package org.jgroups.tests;
 

@@ -8,7 +8,7 @@ import org.jgroups.protocols.PERF_TP;
 /**
  * Test of PERF_TP. Requirement: transport needs to be PERF_TP
  * @author Bela Ban Feb 24, 2004
- * @version $Id: PerfTpTest.java,v 1.3 2004/07/05 06:10:45 belaban Exp $
+ * @version $Id: PerfTpTest.java,v 1.4 2004/07/05 14:15:11 belaban Exp $
  */
 public class PerfTpTest {
     JChannel ch=null;

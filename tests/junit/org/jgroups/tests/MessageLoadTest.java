@@ -24,7 +24,7 @@ import java.util.Vector;
  * <li><code>-debug</code> - pop-up protocol debugger;
  * <li><code>-cummulative</code> - debugger shows cummulative messages.
  * </ul>
- * $Id: MessageLoadTest.java,v 1.5 2004/07/05 06:04:28 belaban Exp $
+ * $Id: MessageLoadTest.java,v 1.6 2004/07/05 14:15:04 belaban Exp $
  */
 public class MessageLoadTest extends TestCase {
 

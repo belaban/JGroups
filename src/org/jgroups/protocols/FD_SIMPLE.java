@@ -1,4 +1,4 @@
-// $Id: FD_SIMPLE.java,v 1.4 2004/07/05 05:51:24 belaban Exp $
+// $Id: FD_SIMPLE.java,v 1.5 2004/07/05 14:17:15 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -23,7 +23,7 @@ import java.util.Vector;
  * suspected. When a message or a heartbeat are received, the counter is reset to 0.
  *
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.4 $
+ * @version $Revision: 1.5 $
  */
 public class FD_SIMPLE extends Protocol {
     Address local_addr=null;

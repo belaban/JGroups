@@ -13,7 +13,7 @@ import java.util.List;
  *    Sleeps for sleep_msec after each burst.
  * @author Milcan Prica (prica@deei.units.it)
  * @author Bela Ban (belaban@yahoo.com)
- * @version $Id: SenderThread.java,v 1.7 2004/07/05 06:10:00 belaban Exp $
+ * @version $Id: SenderThread.java,v 1.8 2004/07/05 14:15:09 belaban Exp $
  */
 public class SenderThread extends Thread {
     private int num_msgs;

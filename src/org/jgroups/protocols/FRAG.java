@@ -1,4 +1,4 @@
-// $Id: FRAG.java,v 1.10 2004/07/05 05:51:24 belaban Exp $
+// $Id: FRAG.java,v 1.11 2004/07/05 14:17:15 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -45,7 +45,7 @@ import java.util.Vector;
  *
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.10 2004/07/05 05:51:24 belaban Exp $
+ * @version $Id: FRAG.java,v 1.11 2004/07/05 14:17:15 belaban Exp $
  */
 public class FRAG extends Protocol {
     private int frag_size=8192;  // conservative value

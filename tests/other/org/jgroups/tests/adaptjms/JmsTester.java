@@ -24,7 +24,7 @@ import java.util.List;
  *   3. Starts the receiver thread and if(sender), the sender thread.
  * @author Milcan Prica (prica@deei.units.it)
  * @author Bela Ban (belaban@yahoo.com)
- * @version $Id: JmsTester.java,v 1.2 2004/07/05 06:08:09 belaban Exp $
+ * @version $Id: JmsTester.java,v 1.3 2004/07/05 14:15:07 belaban Exp $
  */
 public class JmsTester {
     private boolean sender;

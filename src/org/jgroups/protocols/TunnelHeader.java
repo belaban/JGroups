@@ -1,4 +1,4 @@
-// $Id: TunnelHeader.java,v 1.3 2004/07/05 05:51:25 belaban Exp $
+// $Id: TunnelHeader.java,v 1.4 2004/07/05 14:17:16 belaban Exp $
 
 package org.jgroups.protocols;
 
