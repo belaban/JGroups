@@ -1,4 +1,4 @@
-// $Id: Chat.java,v 1.7 2004/09/23 16:29:35 belaban Exp $
+// $Id: Chat.java,v 1.8 2005/03/10 15:19:54 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -15,12 +15,11 @@ import java.awt.event.WindowListener;
 
 
 /**
- * Instances of the group can broadcast short messages to the group, and receive them. A special button
- * (leaveJoin()) leaves the group and the re-joins it.
- * Originally written by a student, modified by Bela Ban
+ * Simple chat demo
+ * @author Bela Ban
+ * @version $Id: Chat.java,v 1.8 2005/03/10 15:19:54 belaban Exp $
  */
 public class Chat implements MouseListener, WindowListener, MessageListener, MembershipListener {
-    static Chat selfRef=null;
     Channel channel;
     PullPushAdapter ad;
     Thread mainThread;
@@ -30,10 +29,9 @@ public class Chat implements MouseListener, WindowListener, MessageListener, Mem
     TextArea ta;
     TextField tf;
     Label csLabel;
-    JButton ltjButton;
-    JButton castButton;
+    JButton leaveButton;
     JButton sendButton;
-    JButton rnvButton;
+    JButton clearButton;
 
 
     public Chat(String props) {
@@ -53,10 +51,8 @@ public class Chat implements MouseListener, WindowListener, MessageListener, Mem
             return;
         }
 
-
-
-        selfRef=new Chat(props);
-        selfRef.go();
+        Chat chat=new Chat(props);
+        chat.start();
     }
 
 
@@ -65,7 +61,7 @@ public class Chat implements MouseListener, WindowListener, MessageListener, Mem
     }
 
 
-    public void go() {
+    public void start() {
         mainFrame=new Frame();
         mainFrame.setLayout(null);
         mainFrame.setSize(600, 507);
@@ -80,25 +76,24 @@ public class Chat implements MouseListener, WindowListener, MessageListener, Mem
         tf.setBounds(100, 392, 400, 30);
         mainFrame.add(tf);
 
-        csLabel=new Label("Cast/Send:");
+        csLabel=new Label("Send:");
         csLabel.setBounds(12, 392, 85, 30);
         mainFrame.add(csLabel);
 
-        ltjButton=new JButton("LeaveThenJoin");
-        ltjButton.setBounds(12, 428, 150, 30);
-        ltjButton.addMouseListener(this);
-        mainFrame.add(ltjButton);
-
-        castButton=new JButton("Cast");
-        castButton.setBounds(182, 428, 150, 30);
-        castButton.addMouseListener(this);
-        mainFrame.add(castButton);
+        leaveButton=new JButton("Leave");
+        leaveButton.setBounds(12, 428, 150, 30);
+        leaveButton.addMouseListener(this);
+        mainFrame.add(leaveButton);
 
         sendButton=new JButton("Send");
-        sendButton.setBounds(355, 428, 86, 30);
+        sendButton.setBounds(182, 428, 150, 30);
         sendButton.addMouseListener(this);
-        sendButton.setEnabled(false);
         mainFrame.add(sendButton);
+
+        clearButton=new JButton("Clear");
+        clearButton.setBounds(340, 428, 150, 30);
+        clearButton.addMouseListener(this);
+        mainFrame.add(clearButton);
 
         try {
             channel=new JChannel(props);
@@ -111,6 +106,9 @@ public class Chat implements MouseListener, WindowListener, MessageListener, Mem
             ta.append(e.toString());
         }
         mainFrame.pack();
+        mainFrame.setLocation(15, 25);
+        mainFrame.setBounds(new Rectangle(580, 480));
+        mainFrame.setVisible(true);
         mainFrame.show();
     }
 
@@ -163,7 +161,7 @@ public class Chat implements MouseListener, WindowListener, MessageListener, Mem
 
 
 
-    private synchronized void handleLTJ() {
+    private synchronized void handleLeave() {
         try {
             System.out.print("Stopping PullPushAdapter");
             ad.stop();
@@ -176,89 +174,47 @@ public class Chat implements MouseListener, WindowListener, MessageListener, Mem
             System.out.print("Closing the channel");
             channel.close();
             System.out.println(" -- done");
-
-            System.out.print("Reopening the channel");
-            channel.open();
-            System.out.println(" -- done");
-
-            System.out.print("Connecting to " + group_name);
-            channel.connect(group_name);
-            System.out.println(" -- done");
-
-            System.out.print("Starting PullPushAdapter");
-            ad.start();
-            System.out.println(" -- done");
-
-            ta.append("successfully rejoined the group" + '\n');
         }
         catch(Exception e) {
             e.printStackTrace();
-            ta.append("Failed rejoined the group: " + e.toString() + '\n');
+            ta.append("Failed leaving the group: " + e.toString() + '\n');
         }
     }
 
 
-    private void handleCast() {
+    private void handleSend() {
         try {
             Message msg=new Message(null, null, tf.getText());
             channel.send(msg);
         }
         catch(Exception e) {
-            ta.append("Failed casting: " + e.toString() + '\n');
+            ta.append("Failed sending message: " + e.toString() + '\n');
         }
     }
 
-    private void handleSend() {
-    }
 
     public void mouseClicked(MouseEvent e) {
         Object obj=e.getSource();
 
-        if(obj == ltjButton) {
-            handleLTJ();
-        }
-        else
-            if(obj == castButton) {
-                handleCast();
-            }
-            else
-                if(obj == sendButton) {
-                    handleSend();
-                }
+        if(obj == leaveButton)
+            handleLeave();
+        else if(obj == sendButton)
+                handleSend();
+        else if(obj == clearButton)
+            ta.setText("");
     }
 
-    public void mouseEntered(MouseEvent e) {
-    }
+    public void mouseEntered(MouseEvent e) {}
+    public void mouseExited(MouseEvent e) {}
+    public void mousePressed(MouseEvent e) {}
+    public void mouseReleased(MouseEvent e) {}
 
-    public void mouseExited(MouseEvent e) {
-    }
-
-    public void mousePressed(MouseEvent e) {
-    }
-
-    public void mouseReleased(MouseEvent e) {
-    }
-
-    public void windowActivated(WindowEvent e) {
-    }
-
-    public void windowClosed(WindowEvent e) {
-    }
-
-    public void windowClosing(WindowEvent e) {
-        System.exit(0);
-    }
-
-    public void windowDeactivated(WindowEvent e) {
-    }
-
-    public void windowDeiconified(WindowEvent e) {
-    }
-
-    public void windowIconified(WindowEvent e) {
-    }
-
-    public void windowOpened(WindowEvent e) {
-    }
+    public void windowActivated(WindowEvent e) {}
+    public void windowClosed(WindowEvent e) {}
+    public void windowClosing(WindowEvent e) { System.exit(0); }
+    public void windowDeactivated(WindowEvent e) {}
+    public void windowDeiconified(WindowEvent e) {}
+    public void windowIconified(WindowEvent e) {}
+    public void windowOpened(WindowEvent e) {}
 
 }
