@@ -1,4 +1,4 @@
-// $Id: IpAddress.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+// $Id: IpAddress.java,v 1.2 2003/12/01 01:40:55 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -271,10 +271,18 @@ public class IpAddress implements Address {
             in.readFully(additional_data, 0, additional_data.length);        
         }
     }
-    
-    
-    
-    
+
+    public Object clone() throws CloneNotSupportedException {
+        IpAddress ret=new IpAddress(ip_addr, port);
+        if(additional_data != null) {
+            ret.additional_data=new byte[additional_data.length];
+            System.arraycopy(additional_data, 0, ret.additional_data, 0, additional_data.length);
+        }
+
+        return ret;
+    }
+
+
     protected static InetAddress getIpAddress(byte[] addr) {
         try {
             HashKey key = new HashKey(addr);
