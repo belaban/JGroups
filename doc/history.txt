@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.134 2004/11/29 09:29:30 belaban Exp $
+Revision: $Id: history.txt,v 1.135 2004/12/11 14:40:55 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -27,6 +27,9 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
 Version 2.2.8
 -------------
+
+- Added system property ignore.bind.address, which ignores the system property bind.address
+  (bela Dec 12 2004)
 
 - Changed Util.objectFromByteBuffer() to use ContextObjectInputStream. This uses the classloader of the caller
   rather than the system classloader
