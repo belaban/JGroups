@@ -19,7 +19,7 @@
   a new tarball to the download section.
 
 - Don't use any functionality found in JDKs higher than the one
-  JavaGroups is currently using
+  JGroups is currently using
 
 - Don't use any functionality not found in the reference JDK
   (e.g. from Microsoft's proprietary JDK implementation)
@@ -35,7 +35,7 @@
   the ownership you can change the file if you want to.
 
 - Try to write test drivers for your module(s) and add them to
-  JavaGroups/Tests. We use JUnit (www.junit.org) for regression
+  JGroups/tests. We use JUnit (www.junit.org) for regression
   testing. It is pretty simple to add a new test to the directory,
   e.g. by just copying an existing test driver and modifying it.
 
