@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.138 2005/01/20 02:06:15 ovidiuf Exp $
+Revision: $Id: history.txt,v 1.139 2005/02/19 05:03:19 ovidiuf Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -27,6 +27,12 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
 Version 2.2.8
 -------------
+- Fixed JGRP-42 (MethodCall doesn't correctly handle inheritance)
+  org.jgroups.blocks.MethodCall was updated to walk the class hierarchy and locate method not only 
+  in the current class, but also in the superclasses and superinterfaces. There is a new test that
+  contains use cases: tests/junit/org/jgroups/blocks/MethodCallTest.java
+  (ovidiuf Feb 18 2005)
+
 - org.jgroups.util.Rsp: changed the sender's type from Object to Address.
   (ovidiuf Jan 19 2005)
 
