@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.20 2004/07/15 19:46:00 belaban Exp $
+// $Id: JChannel.java,v 1.21 2004/07/15 19:52:27 belaban Exp $
 
 package org.jgroups;
 
@@ -23,7 +23,7 @@ import java.util.Vector;
  * protocol stack
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.20 $
+ * @version $Revision: 1.21 $
  */
 public class JChannel extends Channel {
 
@@ -131,7 +131,7 @@ public class JChannel extends Channel {
     public JChannel(Object properties) throws ChannelException {
         String tmp_props;
         if((tmp_props=System.getProperty(FORCE_PROPS)) != null) {
-             if(log.isInfoEnabled()) log.info("properties override: " + tmp_props);
+            if(log.isInfoEnabled()) log.info("properties override: " + tmp_props);
             properties=tmp_props;
         }
 
