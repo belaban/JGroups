@@ -1,4 +1,4 @@
-// $Id: DistributedHashtable.java,v 1.8 2004/01/05 09:56:29 rds13 Exp $
+// $Id: DistributedHashtable.java,v 1.9 2004/03/09 04:05:05 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -13,6 +13,7 @@ import java.util.Vector;
 import org.jgroups.*;
 import org.jgroups.log.Trace;
 import org.jgroups.util.Util;
+import org.jgroups.util.Promise;
 import org.jgroups.persistence.*;
 
 
@@ -35,7 +36,7 @@ import org.jgroups.persistence.*;
  * initial state (using the state exchange funclet <code>StateExchangeFunclet</code>.
  * @author Bela Ban
  * @author <a href="mailto:aolias@yahoo.com">Alfonso Olias-Sanz</a>
- * @version $Id: DistributedHashtable.java,v 1.8 2004/01/05 09:56:29 rds13 Exp $
+ * @version $Id: DistributedHashtable.java,v 1.9 2004/03/09 04:05:05 belaban Exp $
  */
 public class DistributedHashtable extends Hashtable implements MessageListener, MembershipListener, Cloneable {
 
@@ -64,7 +65,9 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
 
 	/** Determines when the updates have to be sent across the network, avoids sending unnecessary
      * messages when there are no member in the group */
-	private transient boolean send_message = false;
+	private transient boolean            send_message = false;
+
+    protected transient Promise          state_promise=new Promise();
 
 
 
@@ -149,8 +152,7 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
         start(state_timeout);
     }
 
-    public DistributedHashtable(PullPushAdapter adapter, Serializable id)
-        throws ChannelNotConnectedException, ChannelClosedException {
+    public DistributedHashtable(PullPushAdapter adapter, Serializable id) {
         initMethods();
         this.channel = (Channel)adapter.getTransport();
         this.groupname = this.channel.getChannelName();
@@ -168,27 +170,43 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
         // start(state_timeout);
     }
 
+
+    /**
+     * Fetches the state
+     * @param state_timeout
+     * @throws ChannelClosedException
+     * @throws ChannelNotConnectedException
+     */
     public void start(long state_timeout) throws ChannelClosedException, ChannelNotConnectedException {
         boolean rc;
         if(persistent) {
-            Trace.info("DistributedHashtable.initState()", "fetching state from database");
+            Trace.info("DistributedHashtable.start()", "fetching state from database");
             try {
                 persistence_mgr=PersistenceFactory.getInstance().createManager();
             }
             catch(Throwable ex) {
-                Trace.error("DistributedHashtable.initState()", "failed creating PersistenceManager, " +
+                Trace.error("DistributedHashtable.start()", "failed creating PersistenceManager, " +
                             "turning persistency off. Exception: " + Util.printStackTrace(ex));
                 persistent=false;
             }
         }
 
+        state_promise.reset();
         rc=channel.getState(null, state_timeout);
-        if(rc)
-            Trace.info("DistributedHashtable.initState()", "state was retrieved successfully");
+        if(rc) {
+            Trace.info("DistributedHashtable.start()", "state was retrieved successfully, waiting for setState()");
+            Boolean result=(Boolean)state_promise.getResult(state_timeout);
+            if(result == null) {
+                Trace.error("DistributedHashtable.start()", "setState() never got called");
+            }
+            else {
+                Trace.info("DistributedHashtable.start()", "setState() was called");
+            }
+        }
         else {
-            Trace.info("DistributedHashtable.initState()", "state could not be retrieved (first member)");
+            Trace.info("DistributedHashtable.start()", "state could not be retrieved (first member)");
             if(persistent) {
-                Trace.info("DistributedHashtable.initState()", "fetching state from database");
+                Trace.info("DistributedHashtable.start()", "fetching state from database");
                 try {
                     Map m=persistence_mgr.retrieveAll();
                     if(m != null) {
@@ -199,14 +217,14 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
                             key=entry.getKey();
                             val=entry.getValue();
                             if(Trace.trace)
-                                Trace.info("DistributedHashtable.initState()", "inserting " + key +
+                                Trace.info("DistributedHashtable.start()", "inserting " + key +
                                            " --> " + val);
                             put(key, val);  // will replicate key and value
                         }
                     }
                 }
                 catch(Throwable ex) {
-                    Trace.error("DistributedHashtable.initState()", "failed creating PersistenceManager, " +
+                    Trace.error("DistributedHashtable.start()", "failed creating PersistenceManager, " +
                                 "turning persistency off. Exception: " + Util.printStackTrace(ex));
                     persistent=false;
                 }
@@ -493,6 +511,7 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
             return;
         }
         _putAll(new_copy);
+        state_promise.setResult(Boolean.TRUE);
     }
 
 
