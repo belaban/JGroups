@@ -1,4 +1,4 @@
-$Id: todo.lst,v 1.2 2003/09/10 00:55:53 belaban Exp $
+$Id: todo.lst,v 1.3 2003/12/18 23:55:29 belaban Exp $
 
 
 
@@ -6,6 +6,7 @@ $Id: todo.lst,v 1.2 2003/09/10 00:55:53 belaban Exp $
 			      Todo List
 			      ---------
 
+- Add list of joined, crashed and left members to View
 
 - Logical IpAddress: use any number of NICs, and fail over between
   NICs, but always have the same logical address
