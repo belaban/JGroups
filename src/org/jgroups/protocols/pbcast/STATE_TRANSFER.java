@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.9 2004/04/28 04:48:44 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.10 2004/04/28 19:56:57 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -36,7 +36,7 @@ public class STATE_TRANSFER extends Protocol {
     List     state_requesters=new List(); // requesters of state (usually just 1, could be more)
     Digest   digest=null;
     HashMap  map=new HashMap(); // to store configuration information
-    long start, stop; // to measure state transfer time
+    long     start, stop; // to measure state transfer time
 
 
     /** All protocol names have to be unique ! */
@@ -176,6 +176,13 @@ public class STATE_TRANSFER extends Protocol {
                     state_req=new Message(target, null, null);
                     state_req.putHeader(getName(), new StateHeader(StateHeader.STATE_REQ, local_addr, state_id++, null));
                     if(log.isDebugEnabled()) log.debug("GET_STATE: asking " + target + " for state");
+
+                    // suspend sending and handling of mesage garbage collection gossip messages,
+                    // fixes bugs #943480 and #938584). Wake up when state has been received
+                    if(log.isDebugEnabled())
+                        log.debug("passing down a SUSPEND_STABLE event");
+                    passDown(new Event(Event.SUSPEND_STABLE));
+
                     start=System.currentTimeMillis();
                     passDown(new Event(Event.MSG, state_req));
                 }
@@ -291,10 +298,17 @@ public class STATE_TRANSFER extends Protocol {
             if(log.isWarnEnabled())
                 log.warn("digest received from " + sender + " is null, skipping setting digest !");
         }
-        else {
+        else
             passDown(new Event(Event.SET_DIGEST, digest)); // set the digest (e.g. in NAKACK)
-        }
         stop=System.currentTimeMillis();
+
+        // resume sending and handling of mesage garbage collection gossip messages,
+        // fixes bugs #943480 and #938584). Wakes up a previously suspended message garbage
+        // collection protocol (e.g. STABLE)
+        if(log.isDebugEnabled())
+            log.debug("passing down a RESUME_STABLE event");
+        passDown(new Event(Event.RESUME_STABLE));
+
         if(state == null) {
             if(log.isWarnEnabled())
                 log.warn("state received from " + sender + " is null, will return null state to application");
