@@ -31,7 +31,7 @@ import java.util.*;
  * the unicast routing caches should ensure that unicasts are only sent via 1 interface in almost all cases.
  * 
  * @author Bela Ban Oct 2003
- * @version $Id: UDP1_4.java,v 1.8 2003/12/31 23:15:42 belaban Exp $
+ * @version $Id: UDP1_4.java,v 1.9 2004/01/01 01:34:31 belaban Exp $
  * todo: sending of dummy packets
  */
 public class UDP1_4 extends Protocol implements  Receiver {
@@ -686,11 +686,9 @@ public class UDP1_4 extends Protocol implements  Receiver {
         // Don't send if destination is local address. Instead, switch dst and src and put in up_queue.
         // If multicast message, loopback a copy directly to us (but still multicast). Once we receive this,
         // we will discard our own multicast message
-        if(dest == null || dest.equals(local_addr)) {
+        if(dest == null || dest.isMulticastAddress() || dest.equals(local_addr)) {
             copy=msg.copy();
             copy.removeHeader(name);
-            // copy.setSrc(local_addr_canonical);
-            // copy.setDest(dest);
             evt=new Event(Event.MSG, copy);
 
             /* Because Protocol.up() is never called by this bottommost layer, we call up() directly in the observer.
@@ -699,9 +697,10 @@ public class UDP1_4 extends Protocol implements  Receiver {
                 observer.up(evt, up_queue.size());
             if(Trace.debug) Trace.info("UDP1_4.sendUdpMessage()", "looped back local message " + copy);
             passUp(evt);
-            if(dest != null)
+            if(dest != null && !dest.isMulticastAddress())
                 return; // it is a unicast message to myself, no need to put on the network
         }
+
 
         out_stream.reset();
         out_stream.write(Version.version_id, 0, Version.version_id.length); // write the version
