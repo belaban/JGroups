@@ -1,4 +1,4 @@
-// $Id: ConnectStressTest.java,v 1.2 2003/11/21 08:57:56 belaban Exp $
+// $Id: ConnectStressTest.java,v 1.3 2003/11/21 09:12:40 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -9,20 +9,21 @@ import junit.framework.TestCase;
 import org.jgroups.ChannelException;
 import org.jgroups.JChannel;
 import org.jgroups.View;
+import org.jgroups.util.Util;
 import org.jgroups.log.Trace;
 
 
 /**
  * Creates 1 channel, then creates NUM channels, all try to join the same channel concurrently.
  * @author Bela Ban Nov 20 2003
- * @version $Id: ConnectStressTest.java,v 1.2 2003/11/21 08:57:56 belaban Exp $
+ * @version $Id: ConnectStressTest.java,v 1.3 2003/11/21 09:12:40 belaban Exp $
  */
 public class ConnectStressTest extends TestCase {
     static CyclicBarrier  start_connecting=null;
     static CyclicBarrier  connected=null;
     static CyclicBarrier  start_disconnecting=null;
     static CyclicBarrier  disconnected=null;
-    final int             NUM=10;
+    final int             NUM=50;
     MyThread[]            threads;
     static JChannel       channel;
     static String         groupname="ConcurrentTestDemo";
@@ -79,7 +80,7 @@ public class ConnectStressTest extends TestCase {
             connected.barrier();
             stop=System.currentTimeMillis();
             System.out.println("-- took " + (stop-start) + " msecs for all " + NUM + " threads to connect");
-            // Util.sleep(500);
+            Util.sleep(1000);
             int num_members=channel.getView().getMembers().size();
             System.out.println("*--* number of members connected: " + num_members + ", (expected: " +
                                (NUM+1) + ")");
@@ -98,7 +99,7 @@ public class ConnectStressTest extends TestCase {
         disconnected.barrier();
         stop=System.currentTimeMillis();
         System.out.println("-- took " + (stop-start) + " msecs for " + NUM + " threads to disconnect");
-        //Util.sleep(500);
+        Util.sleep(1000);
         View view=channel.getView();
         System.out.println("-- view is " + view);
         int num_members=view.getMembers().size();
