@@ -1,12 +1,10 @@
-// $Id: RpcProtocol.java,v 1.4 2004/05/13 05:44:32 belaban Exp $
+// $Id: RpcProtocol.java,v 1.5 2004/05/15 00:20:34 belaban Exp $
 
 package org.jgroups.stack;
 
 
 import org.jgroups.*;
 import org.jgroups.blocks.MethodCall;
-import org.jgroups.blocks.MethodLookup;
-import org.jgroups.blocks.MethodLookupJava;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
 
@@ -20,7 +18,6 @@ import java.util.Vector;
  * @author Bela Ban
  */
 public class RpcProtocol extends MessageProtocol {
-    MethodLookup method_lookup=new MethodLookupJava();
 
 
     public String getName() {
@@ -126,7 +123,7 @@ public class RpcProtocol extends MessageProtocol {
 
         method_call=(MethodCall)body;
         try {
-            return method_call.invoke(this, method_lookup);
+            return method_call.invoke(this);
         }
         catch(Throwable x) {
             if(log.isErrorEnabled()) log.error(Util.getStackTrace(x));
