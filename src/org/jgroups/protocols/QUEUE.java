@@ -1,4 +1,4 @@
-// $Id: QUEUE.java,v 1.5 2004/07/05 14:17:15 belaban Exp $
+// $Id: QUEUE.java,v 1.6 2004/07/23 02:28:01 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -7,7 +7,6 @@ import org.jgroups.Message;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 
-import java.util.Properties;
 import java.util.Vector;
 
 

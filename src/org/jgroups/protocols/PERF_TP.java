@@ -1,4 +1,4 @@
-// $Id: PERF_TP.java,v 1.5 2004/07/05 14:17:15 belaban Exp $
+// $Id: PERF_TP.java,v 1.6 2004/07/23 02:28:01 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -8,13 +8,11 @@ import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.stack.Protocol;
 
-import java.util.Properties;
-
 
 /**
  * Measures the time for a message to travel from the channel to the transport
  * @author Bela Ban
- * @version $Id: PERF_TP.java,v 1.5 2004/07/05 14:17:15 belaban Exp $
+ * @version $Id: PERF_TP.java,v 1.6 2004/07/23 02:28:01 belaban Exp $
  */
 public class PERF_TP extends Protocol {
     private Address local_addr=null;

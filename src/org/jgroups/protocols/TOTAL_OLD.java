@@ -1,4 +1,4 @@
-// $Id: TOTAL_OLD.java,v 1.5 2004/07/05 14:17:16 belaban Exp $
+// $Id: TOTAL_OLD.java,v 1.6 2004/07/23 02:28:01 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -8,7 +8,6 @@ import org.jgroups.stack.Protocol;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.Properties;
 import java.util.Vector;
 
 

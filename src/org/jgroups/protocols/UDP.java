@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.33 2004/07/19 22:22:52 belaban Exp $
+// $Id: UDP.java,v 1.34 2004/07/23 02:28:01 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -6,9 +6,8 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.*;
 import org.jgroups.util.List;
-import org.jgroups.util.Queue;
+import org.jgroups.util.*;
 
 import java.io.*;
 import java.net.*;
