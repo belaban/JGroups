@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.14 2004/04/26 18:40:15 belaban Exp $
+// $Id: JChannel.java,v 1.15 2004/04/28 04:48:45 belaban Exp $
 
 package org.jgroups;
 
@@ -23,7 +23,7 @@ import java.util.Vector;
  * protocol stack
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.14 $
+ * @version $Revision: 1.15 $
  */
 public class JChannel extends Channel {
 
@@ -1137,6 +1137,8 @@ public class JChannel extends Channel {
         if(closer != null && !closer.isAlive())
             closer=null;
         if(closer == null) {
+            if(log.isInfoEnabled())
+                log.info("received an EXIT event, will leave the channel");
             closer=new CloserThread(evt);
             closer.start();
         }
@@ -1160,6 +1162,8 @@ public class JChannel extends Channel {
         public void run() {
             try {
                 String old_channel_name=channel_name; // remember because close() will null it
+                if(log.isInfoEnabled())
+                    log.info("closing the channel");
                 _close(false, false); // do not disconnect before closing channel, do not close mq (yet !)
 
                 if(up_handler != null)
@@ -1209,6 +1213,8 @@ public class JChannel extends Channel {
                 }
 
                 if(auto_getstate) {
+                    if(log.isInfoEnabled())
+                        log.info("fetching the state (auto_getstate=true)");
                     boolean rc=getState(null, GET_STATE_DEFAULT_TIMEOUT);
                     if(rc)
                         if(log.isInfoEnabled()) log.info("state was retrieved successfully");
