@@ -1,4 +1,4 @@
-// $Id: GossipClient.java,v 1.7 2004/10/07 10:10:38 belaban Exp $
+// $Id: GossipClient.java,v 1.8 2004/12/31 14:34:35 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -151,8 +151,8 @@ public class GossipClient {
                 continue;
             }
             try {
-                if(log.isInfoEnabled())
-                    log.info("REGISTER_REQ --> " + entry.getIpAddress() + ':' + entry.getPort());
+                if(log.isTraceEnabled())
+                    log.trace("REGISTER_REQ --> " + entry.getIpAddress() + ':' + entry.getPort());
                 sock=new Socket(entry.getIpAddress(), entry.getPort());
                 out=new ObjectOutputStream(sock.getOutputStream());
                 gossip_req=new GossipData(GossipData.REGISTER_REQ, group, mbr, null);
@@ -188,8 +188,7 @@ public class GossipClient {
             }
             try {
 
-                    if(log.isInfoEnabled()) log.info("GET_REQ --> " +
-                                                             entry.getIpAddress() + ':' + entry.getPort());
+                if(log.isTraceEnabled()) log.trace("GET_REQ --> " + entry.getIpAddress() + ':' + entry.getPort());
                 sock=new Socket(entry.getIpAddress(), entry.getPort());
                 out=new ObjectOutputStream(sock.getOutputStream());
 
@@ -235,23 +234,20 @@ public class GossipClient {
             Vector mbrs;
             Address mbr;
 
-             if(log.isInfoEnabled()) log.info("refresher task is run");
+             if(log.isTraceEnabled()) log.trace("refresher task is run");
             for(Enumeration e=groups.keys(); e.hasMoreElements();) {
                 group=(String) e.nextElement();
                 mbrs=(Vector) groups.get(group);
                 if(mbrs != null) {
                     for(int i=0; i < mbrs.size(); i++) {
                         mbr=(Address) mbrs.elementAt(i);
-
-                            if(log.isInfoEnabled()) log.info("registering " + group + " : " + mbr);
+                        if(log.isTraceEnabled()) log.trace("registering " + group + " : " + mbr);
                         register(group, mbr);
                         num_items++;
                     }
                 }
             }
-
-
-                if(log.isInfoEnabled()) log.info("refresher task done. Registered " + num_items + " items");
+            if(log.isTraceEnabled()) log.trace("refresher task done. Registered " + num_items + " items");
         }
 
     }
