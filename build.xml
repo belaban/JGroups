@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.5 2003/11/24 16:34:19 rds13 Exp $ -->
+<!-- $Id: build.xml,v 1.6 2003/11/28 23:33:03 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -12,6 +12,7 @@
     <property name="src.dir" value="${root.dir}/src"/>
     <property name="tests.dir" value="${root.dir}/tests/other"/>
     <property name="junit.dir" value="${root.dir}/tests/junit"/>
+    <property name="stress.dir" value="${root.dir}/tests/stress"/>
     <property name="log4j.dir" value="${root.dir}/log4j"/>
     <property name="compile.dir" value="${root.dir}/classes"/>
     <property name="lib.dir" value="${root.dir}/lib"/>
@@ -43,7 +44,6 @@
     </path>
 
 
-
     <target name="prepare">
         <property environment="env"/>
         <mkdir dir="${compile.dir}"/>
@@ -72,6 +72,7 @@
             <src path="${src.dir}"/>
             <src path="${tests.dir}"/>
             <src path="${junit.dir}"/>
+            <src path="${stress.dir}"
         </javac>
     </target>
 
@@ -89,6 +90,7 @@
             <src path="${src.dir}"/>
             <src path="${tests.dir}"/>
             <src path="${junit.dir}"/>
+            <src path="${stress.dir}"
         </javac>
     </target>
 
@@ -119,6 +121,7 @@
             <src path="${src.dir}"/>
             <src path="${tests.dir}"/>
             <src path="${junit.dir}"/>
+            <src path="${stress.dir}"
         </javac>
     </target>
 
@@ -179,8 +182,8 @@
     <target name="jgroups-demo.jar"
         description="Create the jgroups-demo.jar. Includes core plus demos">
         <jar jarfile="${dist.dir}/jgroups-demo.jar"
-             basedir="${compile.dir}"
-             includes="org/jgroups/demos/**"/>
+            basedir="${compile.dir}"
+            includes="org/jgroups/demos/**"/>
     </target>
 
     <target name="jgroups-test.jar"
@@ -195,17 +198,17 @@
     </target>
 
     <target name="jboss-service" depends="compile-log4j"
-            description="Creates the service archive used to deploy GossipServer as a JBoss MBean">
+        description="Creates the service archive used to deploy GossipServer as a JBoss MBean">
         <jar jarfile="${dist.dir}/jgroups-router.sar"
-             basedir="${compile.dir}"
-             includes="org/jgroups/**"
-             excludes="org/jgroups/demos/**,
-                       org/jgroups/tests/**,
-                       org/jgroups/**/*Test.class,
-                       org/jgroups/**/*Test\$*.class">
-             <metainf dir="${src.dir}/org/jgroups/stack" 
-                      includes="jboss-service.xml"/>
-             <fileset dir="${conf.dir}" includes="*.dtd, *.xml"/>
+            basedir="${compile.dir}"
+            includes="org/jgroups/**"
+            excludes="org/jgroups/demos/**,
+                      org/jgroups/tests/**,
+                      org/jgroups/**/*Test.class,
+                      org/jgroups/**/*Test\$*.class">
+            <metainf dir="${src.dir}/org/jgroups/stack"
+                includes="jboss-service.xml"/>
+            <fileset dir="${conf.dir}" includes="*.dtd, *.xml"/>
         </jar>
     </target>
 
@@ -392,8 +395,4 @@
         </junitreport>
         <echo message="********************************************************************"/>
         <echo message="The unit test report is available in ${root.dir}/tmp/html/index.html"/>
-        <echo message="********************************************************************"/>
-    </target>
-
-
-</project>
+        <echo message="***********************
