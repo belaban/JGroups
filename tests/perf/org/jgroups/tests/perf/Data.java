@@ -1,16 +1,13 @@
 package org.jgroups.tests.perf;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.*;
 import java.util.HashMap;
 
 /**
  * Data sent around between members
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: Data.java,v 1.2 2004/01/23 02:19:44 belaban Exp $
+ * @version $Id: Data.java,v 1.3 2004/01/24 16:56:32 belaban Exp $
  */
 public class Data implements Externalizable {
     final static int DISCOVERY_REQ = 1;
@@ -61,7 +58,7 @@ public class Data implements Externalizable {
         int len=in.readInt();
         if(len > 0) {
             payload=new byte[len];
-            in.read(payload, 0, len);
+            in.readFully(payload, 0, payload.length);
         }
         sender=in.readBoolean();
         num_msgs=in.readLong();
