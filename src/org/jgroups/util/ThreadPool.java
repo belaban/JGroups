@@ -1,4 +1,4 @@
-// $Id: ThreadPool.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+// $Id: ThreadPool.java,v 1.2 2003/12/11 07:12:24 belaban Exp $
 
 package org.jgroups.util;
 
@@ -13,86 +13,88 @@ import org.jgroups.log.Trace;
  * Creates threads only as needed, up to the MAX_NUM limit. However, does not shrink the pool
  * when more threads become available than are used.
  * todo: Shrink thread pool if threads are unused after some configurable time
+ * 
  * @author Bela Ban
  */
 public class ThreadPool {
-    int               MAX_NUM=255;
-    int               current_index=0;   /// next available thread
-    ReusableThread[]  pool=null;
-    boolean[]         available_threads=null;
-    
+    int              MAX_NUM=255;
+    int              current_index=0;   /// next available thread
+    ReusableThread[] pool=null;
+    boolean[]        available_threads=null;
+
 
     public ThreadPool(int max_num) {
-	MAX_NUM=max_num;
-	pool=new ReusableThread[MAX_NUM];
-	available_threads=new boolean[MAX_NUM];
-	for(int i=0; i < pool.length; i++) {
-	    pool[i]=null;
-	    available_threads[i]=true;
-	}
+        MAX_NUM=max_num;
+        pool=new ReusableThread[MAX_NUM];
+        available_threads=new boolean[MAX_NUM];
+        for(int i=0; i < pool.length; i++) {
+            pool[i]=null;
+            available_threads[i]=true;
+        }
+        if(Trace.trace)
+            Trace.info("ThreadPool()", "created a pool of " + MAX_NUM + " threads");
     }
 
-    
-    
+
     public ReusableThread getThread() {
         ReusableThread retval=null, tmp;
-	
-	synchronized(pool) {
-	    // check whether a previously created thread can be reused
-	    for(int i=0; i < current_index; i++) {
-		tmp=pool[i];
-		if(tmp.available()) {
-		    return tmp;
-		}
-	    }
 
-	    // else create a new thread and add it to the pool
-	    if(current_index >= MAX_NUM) {
-		Trace.error("ThreadPool.getThread()", "could not create new thread because " +
-			    "pool's max size reached (" + MAX_NUM + ") !");
-		return null;
-	    }
-	    else {
-		retval=new ReusableThread();
-		pool[current_index++]=retval;
-		return retval;
-	    }
-	}
+        synchronized(pool) {
+            // check whether a previously created thread can be reused
+            for(int i=0; i < current_index; i++) {
+                tmp=pool[i];
+                if(tmp.available()) {
+                    return tmp;
+                }
+            }
+
+            // else create a new thread and add it to the pool
+            if(current_index >= MAX_NUM) {
+                Trace.error("ThreadPool.getThread()", "could not create new thread because " +
+                        "pool's max size reached (" + MAX_NUM + ") !");
+                return null;
+            }
+            else {
+                retval=new ReusableThread();
+                pool[current_index++]=retval;
+                return retval;
+            }
+        }
 
     }
 
 
-    public void destroy() {deletePool();}
+    public void destroy() {
+        deletePool();
+    }
 
 
     public String toString() {
-	StringBuffer ret=new StringBuffer();
+        StringBuffer ret=new StringBuffer();
 
-	synchronized(pool) {
-	    ret.append("ThreadPool: capacity=" + pool.length + ", index=" + current_index + "\n");
-	    ret.append("Threads are:\n");
-	    for(int i=0; i < current_index; i++)
-		ret.append("[" + i + ": " + pool[i] + "]\n");
-	}
-	return ret.toString();
+        synchronized(pool) {
+            ret.append("ThreadPool: capacity=" + pool.length + ", index=" + current_index + "\n");
+            ret.append("Threads are:\n");
+            for(int i=0; i < current_index; i++)
+                ret.append("[" + i + ": " + pool[i] + "]\n");
+        }
+        return ret.toString();
     }
 
 
     void deletePool() {
-	ReusableThread t;
-	synchronized(pool) {
-	    for(int i=0; i < MAX_NUM; i++) {
-		t=pool[i];
-		if(t != null) {
-		    t.stop();
-		    pool[i]=null;
-		}
-	    }
-	    current_index=0;
-	}
+        ReusableThread t;
+        synchronized(pool) {
+            for(int i=0; i < MAX_NUM; i++) {
+                t=pool[i];
+                if(t != null) {
+                    t.stop();
+                    pool[i]=null;
+                }
+            }
+            current_index=0;
+        }
     }
-    
 
 
-    
 }
