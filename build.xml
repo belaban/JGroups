@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.15 2004/07/04 22:42:13 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.16 2004/09/21 14:03:51 belaban Exp $ -->
 
 <project name="JGroups" default="compile-1.4" basedir=".">
     <description>
@@ -218,7 +218,7 @@
             author="true"
             version="true"
             use="true"
-            bottom="Copyright &#169; 2001,2002 www.jgroups.com . All Rights Reserved."
+            bottom="Copyright &#169; 1998-2004 www.jgroups.org . All Rights Reserved."
 			useexternalfile="yes"
             />
     </target>
@@ -315,18 +315,7 @@
             <formatter type="brief" usefile="false"/>
             <batchtest todir="${root.dir}/tmp">
                 <fileset dir="${junit.dir}"
-                    includes="**/*Test.java"
-                    excludes="**/Channel*Test.java,**/DistributedQueueConcurrencyTest.java"/>
-            </batchtest>
-        </junit>
-        <junit printsummary="yes" timeout="${unittest.timeout.high}" fork="yes">
-            <classpath refid="jg.classpath"/>
-            <formatter type="brief" usefile="false"/>
-            <test todir="${root.dir}/tmp" name="org.jgroups.blocks.DistributedQueueConcurrencyTest">
-            </test>
-            <batchtest todir="${root.dir}/tmp">
-                <fileset dir="${junit.dir}"
-                    includes="**/Channel*DefaultTest.java"/>
+                    includes="**/*Test.java"/>
             </batchtest>
         </junit>
     </target>
@@ -353,25 +342,7 @@
             <formatter type="xml" usefile="true"/>
             <batchtest todir="${root.dir}/tmp/tests-results">
                 <fileset dir="${junit.dir}"
-                    includes="**/*Test.java"
-                    excludes="**/Channel*Test.java,**/DistributedQueueConcurrencyTest.java"/>
-            </batchtest>
-        </junit>
-    </target>
-
-
-       <target name="unittests-stress" depends="compile">
-        <delete dir="${root.dir}/tmp/tests-results"/>
-        <mkdir dir="${root.dir}/tmp/tests-results"/>
-        <junit printsummary="yes" timeout="${unittest.timeout.high}" fork="yes">
-            <jvmarg value="-Dtests.tmp.dir=${root.dir}/tmp"/>
-            <classpath refid="jg.classpath"/>
-            <formatter type="xml" usefile="true"/>
-            <test todir="${root.dir}/tmp/tests-results" name="org.jgroups.blocks.DistributedQueueConcurrencyTest">
-            </test>
-            <batchtest todir="${root.dir}/tmp/tests-results">
-                <fileset dir="${junit.dir}"
-                    includes="**/Channel*DefaultTest.java"/>
+                    includes="**/*Test.java"/>
             </batchtest>
         </junit>
     </target>
