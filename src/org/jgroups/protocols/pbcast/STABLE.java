@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.9 2004/04/28 19:18:56 belaban Exp $
+// $Id: STABLE.java,v 1.10 2004/04/28 19:55:54 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -146,16 +146,21 @@ public class STABLE extends Protocol {
     void suspend() {
         if(!suspended) {
             suspended=true;
-            if(suspend_task == null || suspend_task.cancelled()) {
-                suspend_task=new SuspendTask();
-                timer.add(suspend_task);
-            }
+            if(log.isDebugEnabled())
+                log.debug("suspending message garbage collection");
+        }
+        if(suspend_task == null || suspend_task.cancelled()) {
+            suspend_task=new SuspendTask();
+            timer.add(suspend_task);
         }
     }
 
     void resume() {
-        if(suspended)
+        if(suspended) {
             suspended=false;
+            if(log.isDebugEnabled())
+                log.debug("resuming message garbage collection");
+        }
         if(suspend_task != null) {
             suspend_task.stop();
             suspend_task=null;
