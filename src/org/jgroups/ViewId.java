@@ -1,4 +1,4 @@
-// $Id: ViewId.java,v 1.7 2004/10/07 14:28:03 belaban Exp $
+// $Id: ViewId.java,v 1.8 2004/10/07 15:46:29 belaban Exp $
 
 package org.jgroups;
 
@@ -138,7 +138,7 @@ public class ViewId implements Externalizable, Comparable, Cloneable, Streamable
 
     public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
         coord_addr=Util.readAddress(in);
-        id=in.readInt();
+        id=in.readLong();
     }
 
 }
