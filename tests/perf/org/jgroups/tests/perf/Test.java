@@ -50,7 +50,6 @@ public class Test implements Receiver {
     /** Last time we dumped info */
     long            last_dump=0;
 
-    long            beginning=0;
     long            counter=1;
     long            msg_size=1000;
 
@@ -88,13 +87,20 @@ public class Test implements Receiver {
         this.config=tmp;
 
         StringBuffer sb=new StringBuffer();
+
+        sb.append("\n\n----------------------- TEST -----------------------\n");
+        sb.append("Date: ").append(new Date()).append("\n");
+        sb.append("Run by: ").append(System.getProperty("user.name")).append("\n\n");
+        sb.append("Properties: ").append(printProperties()).append("\n-------------------------\n\n");
+
         for(Iterator it=this.config.entrySet().iterator(); it.hasNext();) {
             Map.Entry entry=(Map.Entry)it.next();
             sb.append(entry.getKey()).append(":\t").append(entry.getValue()).append("\n");
         }
         sb.append("\n");
         System.out.println("Configuration is: " + sb.toString());
-        log.info("main(): " + sb.toString());
+
+        log.info(sb.toString());
 
         props=this.config.getProperty("props");
         num_members=Integer.parseInt(this.config.getProperty("num_members"));
@@ -127,6 +133,16 @@ public class Test implements Receiver {
         transport.setReceiver(this);
         transport.start();
         local_addr=transport.getLocalAddress();
+    }
+
+    private String printProperties() {
+        StringBuffer sb=new StringBuffer();
+        Properties p=System.getProperties();
+        for(Iterator it=p.entrySet().iterator(); it.hasNext();) {
+            Map.Entry entry=(Map.Entry)it.next();
+            sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
+        }
+        return sb.toString();
     }
 
     public void stop() {
@@ -166,8 +182,10 @@ public class Test implements Receiver {
                 case Data.DATA:
                     if(all_received)
                         return;
-                    if(start == 0)
+                    if(start == 0) {
                         start=System.currentTimeMillis();
+                        last_dump=start;
+                    }
                     MemberInfo info=(MemberInfo)this.senders.get(sender);
                     if(info != null) {
                         if(info.start == 0)
@@ -179,7 +197,7 @@ public class Test implements Receiver {
                             System.out.println("-- received " + info.num_msgs_received +
                                     " messages from " + sender);
 
-                        if(info.num_msgs_received % log_interval == 0) {
+                        if(counter % log_interval == 0) {
                             if(log.isInfoEnabled()) log.info(dumpStats(counter));
                         }
 
@@ -391,16 +409,18 @@ public class Test implements Receiver {
         double tmp;
         long   current=System.currentTimeMillis();
 
-        if(last_dump == 0 || (current - last_dump) <= 0)
-            return;
+        //if(last_dump == 0 || (current - last_dump) <= 0) {
+          //  last_dump=System.currentTimeMillis();
+            //return;
+        //}
 
-        tmp=(1000 * counter) / (current - beginning);
+        tmp=(1000 * received_msgs) / (current - start);
         if(gnuplot_output)
             sb.append(tmp).append(" ");
         else
             sb.append("total_msgs_sec=").append(tmp).append(" [msgs/sec]");
 
-        tmp=(received_msgs * msg_size) / (current - beginning);
+        tmp=(received_msgs * msg_size) / (current - start);
         if(gnuplot_output)
             sb.append(tmp).append(" ");
         else
@@ -490,7 +510,7 @@ public class Test implements Receiver {
             }
             else {
                 synchronized(t) {
-                    t.wait(60000);
+                    t.wait();
                 }
                 Util.sleep(2000);
             }
