@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.13 2005/03/23 14:35:40 belaban Exp $
+// $Id: MERGE2.java,v 1.14 2005/03/23 14:51:54 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -261,6 +261,10 @@ public class MERGE2 extends Protocol {
                         passUp(evt);
                     }
                 }
+                else {
+                    if(log.isTraceEnabled())
+                        log.trace("didn't find multiple coordinators in " + initial_mbrs + ", skipping merge");
+                }
             }
             if(log.isTraceEnabled())
                 log.trace("MERGE2.FindSubgroups thread terminated");
@@ -280,11 +284,12 @@ public class MERGE2 extends Protocol {
          * Returns a list of PingRsp pairs.
          */
         Vector findInitialMembers() {
+            PingRsp tmp=new PingRsp(local_addr, local_addr, true);
             find_promise.reset();
             passDown(new Event(Event.FIND_INITIAL_MBRS));
             Vector retval=(Vector)find_promise.getResult(0); // wait indefinitely until response is received
-            if(retval != null && is_coord && local_addr != null && !retval.contains(local_addr))
-                retval.add(new PingRsp(local_addr, local_addr, true));
+            if(retval != null && is_coord && local_addr != null && !retval.contains(tmp))
+                retval.add(tmp);
             return retval;
         }
 
