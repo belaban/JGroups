@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.48 2004/10/04 20:43:31 belaban Exp $
+// $Id: UDP.java,v 1.49 2004/10/08 15:51:35 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -606,7 +606,7 @@ public class UDP extends Protocol implements Runnable {
                     return;
                 }
                 //if we want to use IP multicast, then set the destination of the message
-                msg.setDest(mcast_addr);
+                // msg.setDest(mcast_addr); // we don't do this anymore, saves us 10 bytes per message
             }
             else {
                 //sends a separate UDP message to each address
@@ -707,13 +707,15 @@ public class UDP extends Protocol implements Runnable {
     void handleMessage(Message msg) {
         Event evt;
         UdpHeader hdr;
+        Address dst=msg.getDest();
+
+        if(dst == null)
+            dst=mcast_addr;
 
         // discard my own multicast loopback copy
         if(loopback) {
-            Address dst=msg.getDest();
             Address src=msg.getSrc();
-
-            if(dst != null && dst.isMulticastAddress() && src != null && local_addr.equals(src)) {
+            if((dst == null || (dst != null && dst.isMulticastAddress())) && src != null && local_addr.equals(src)) {
                 if(log.isTraceEnabled())
                     log.trace("discarded own loopback multicast packet");
                 return;
@@ -764,17 +766,16 @@ public class UDP extends Protocol implements Runnable {
         setSourceAddress(msg);
 
         if(log.isTraceEnabled())
-            log.trace("sending message to " + msg.getDest() +
-                        " (src=" + msg.getSrc() + "), headers are " + msg.getHeaders());
+            log.trace("sending msg to " + msg.getDest() + " (src=" + msg.getSrc() + "), headers are " + msg.getHeaders());
 
         // Don't send if destination is local address. Instead, switch dst and src and put in up_queue.
         // If multicast message, loopback a copy directly to us (but still multicast). Once we receive this,
         // we will discard our own multicast message
-        if(loopback && (dest.equals(local_addr) || dest.isMulticastAddress())) {
+        if(loopback && (dest == null || dest.equals(local_addr) || dest.isMulticastAddress())) {
             copy=msg.copy();
             // copy.removeHeader(name); // we don't remove the header
             copy.setSrc(local_addr);
-            copy.setDest(dest);
+            // copy.setDest(dest);
             evt=new Event(Event.MSG, copy);
 
             /* Because Protocol.up() is never called by this bottommost layer, we call up() directly in the observer.
@@ -783,7 +784,7 @@ public class UDP extends Protocol implements Runnable {
                 observer.up(evt, up_queue.size());
             if(log.isTraceEnabled()) log.trace("looped back local message " + copy);
             passUp(evt);
-            if(!dest.isMulticastAddress())
+            if(dest != null && !dest.isMulticastAddress())
                 return;
         }
 
@@ -800,6 +801,9 @@ public class UDP extends Protocol implements Runnable {
     void send(Message msg) throws Exception {
         IpAddress  dest=(IpAddress)msg.getDest();
         Buffer buf=messageToBuffer(msg);
+
+        if(dest == null)
+            dest=mcast_addr;
         doSend(buf, dest.getIpAddress(), dest.getPort());
     }
 
