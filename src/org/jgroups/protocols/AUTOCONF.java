@@ -1,4 +1,4 @@
-// $Id: AUTOCONF.java,v 1.2 2003/12/12 07:40:55 belaban Exp $
+// $Id: AUTOCONF.java,v 1.3 2003/12/12 18:04:55 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -28,6 +28,10 @@ import java.util.Properties;
 public class AUTOCONF extends Protocol {
     HashMap config=new HashMap();
     int num_iterations=10; // to find optimal frag_size
+
+    /** Number of bytes to subtract from computed fragmentation size, due to (a) headers and
+     * (b) serialization overhead */
+    int frag_overhead=1000;
 
 
     public String getName() {
@@ -61,6 +65,12 @@ public class AUTOCONF extends Protocol {
             num_iterations=new Integer(str).intValue();
             props.remove("num_iterations");
         }
+
+        str=props.getProperty("frag_overhead");
+         if(str != null) {
+             frag_overhead=new Integer(str).intValue();
+             props.remove("frag_overhead");
+         }
 
 
         if(props.size() > 0) {
@@ -143,6 +153,9 @@ public class AUTOCONF extends Protocol {
                 break;
             }
         }
+
+        /** Reduce the frag_size a bit to prevent packets that are too large (see bug #854887) */
+        lower-=frag_overhead;
 
         map.put("frag_size", new Integer(lower));
         if(Trace.trace) Trace.info("AUTOCONF.senseMaxFragSize()", "frag_size=" + lower);
