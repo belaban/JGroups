@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.4 2003/11/21 17:28:28 belaban Exp $
+// $Id: UDP.java,v 1.5 2003/12/06 01:24:21 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -1021,10 +1021,6 @@ public class UDP extends Protocol implements Runnable {
             case Event.CONFIG:
                 if(Trace.trace) Trace.info("UDP.down()", "received CONFIG event: " + evt.getArg());
                 handleConfigEvent((HashMap)evt.getArg());
-                break;
-
-            case Event.ACK:
-                passUp(new Event(Event.ACK_OK));
                 break;
         }
     }
