@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.7 2004/04/23 19:36:13 belaban Exp $
+// $Id: TCP.java,v 1.8 2004/05/18 01:18:50 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -185,11 +185,7 @@ public class TCP extends Protocol implements ConnectionTable.Receiver, Connectio
         if(observer != null)
             observer.up(evt, up_queue.size());
 
-
-         if(log.isInfoEnabled()) log.info("received msg " + msg);
-        //
-          //  if(log.isInfoEnabled()) log.info("TCP.receive()", "src=" + msg.getSrc() + ", hdrs:\n" + msg.printObjectHeaders());
-
+        if(log.isTraceEnabled()) log.trace("received msg " + msg);
 
         hdr=(TcpHeader)msg.removeHeader(getName());
 
@@ -223,13 +219,12 @@ public class TCP extends Protocol implements ConnectionTable.Receiver, Connectio
 
     // ConnectionTable.ConnectionListener interface
     public void connectionOpened(Address peer_addr) {
-
-            if(log.isInfoEnabled()) log.info("opened connection to " + peer_addr);
+        if(log.isTraceEnabled()) log.trace("opened connection to " + peer_addr);
     }
 
     public void connectionClosed(Address peer_addr) {
         if(peer_addr != null)
-            if(log.isInfoEnabled()) log.info("closed connection to " + peer_addr);
+            if(log.isTraceEnabled()) log.trace("closed connection to " + peer_addr);
     }
 
 
@@ -346,14 +341,12 @@ public class TCP extends Protocol implements ConnectionTable.Receiver, Connectio
             passUp(evt);
             return;
         }
-
-            if(log.isInfoEnabled()) log.info("dest=" + msg.getDest() + ", hdrs:\n" + msg.printObjectHeaders());
+        if(log.isTraceEnabled()) log.trace("dest=" + msg.getDest() + ", hdrs:\n" + msg.printObjectHeaders());
         try {
             if(skip_suspected_members) {
                 if(suspected_mbrs.contains(dest)) {
-
-                        if(log.isInfoEnabled()) log.info("will not send unicast message to " + dest +
-                                " as it is currently suspected");
+                    if(log.isTraceEnabled()) log.trace("will not send unicast message to " + dest +
+                                                       " as it is currently suspected");
                     return;
                 }
             }
@@ -373,10 +366,6 @@ public class TCP extends Protocol implements ConnectionTable.Receiver, Connectio
     private void sendMulticastMessage(Message msg) {
         Address dest;
         Vector mbrs=(Vector)members.clone();
-
-//
-//            if(log.isInfoEnabled()) log.info("TCP.sendMulticastMessage()", "sending message to " + msg.getDest() +
-//                                                     ", mbrs=" + mbrs);
         for(int i=0; i < mbrs.size(); i++) {
             dest=(Address)mbrs.elementAt(i);
             msg.setDest(dest);
@@ -414,7 +403,7 @@ public class TCP extends Protocol implements ConnectionTable.Receiver, Connectio
                 break;
 
             case Event.CONFIG:
-                 if(log.isInfoEnabled()) log.info("received CONFIG event: " + evt.getArg());
+            if(log.isTraceEnabled()) log.trace("received CONFIG event: " + evt.getArg());
                 handleConfigEvent((HashMap)evt.getArg());
                 break;
 
