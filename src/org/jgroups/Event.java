@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.1 2003/09/09 01:24:07 belaban Exp $
+// $Id: Event.java,v 1.2 2003/09/24 23:03:43 belaban Exp $
 
 package org.jgroups;
 
@@ -67,6 +67,8 @@ public class Event {
     public static final int CONFIG                    = 56;  // arg = HashMap (config properties)
     public static final int GET_DIGEST_STABLE         = 57;
     public static final int GET_DIGEST_STABLE_OK      = 58;  // response to GET_DIGEST_STABLE
+    public static final int ACK                       = 59;  // used to flush down events
+    public static final int ACK_OK                    = 60;  // response to ACK
 
 
 
@@ -164,6 +166,8 @@ public class Event {
             case CONFIG:                 return "CONFIG";
             case GET_DIGEST_STABLE:      return "GET_DIGEST_STABLE";
             case GET_DIGEST_STABLE_OK:   return "GET_DIGEST_STABLE_OK";
+            case ACK:                    return "ACK";
+            case ACK_OK:                 return "ACK_OK";
 
             case USER_DEFINED:           return "USER_DEFINED";
             default:                     return "UNDEFINED";
