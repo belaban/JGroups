@@ -37,8 +37,7 @@
 - Try to write test drivers for your module(s) and add them to
   JavaGroups/Tests. We use JUnit (www.junit.org) for regression
   testing. It is pretty simple to add a new test to the directory,
-  e.g. by just copying an existing test driver and modifying it. Also
-  add your new test to runtests.
+  e.g. by just copying an existing test driver and modifying it.
 
 - Add the <dollarsign>Id<dollarsign> identifier to the top of all your
   files (<dollarsign> is a $, it cannot be written out otherwise it
