@@ -1,4 +1,4 @@
-// $Id: PING.java,v 1.12 2004/04/23 19:36:13 belaban Exp $
+// $Id: PING.java,v 1.13 2004/05/05 17:39:45 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -205,9 +205,6 @@ public class PING extends Protocol {
                         }
 
                         PingRsp ping_rsp=new PingRsp(local_addr, coord);
-
-                        // System.out.println("ping_rsp=" + ping_rsp + ", sent back to " + msg.getSrc());
-
                         rsp_msg=new Message(msg.getSrc(), null, null);
                         rsp_hdr=new PingHeader(PingHeader.GET_MBRS_RSP, ping_rsp);
                         rsp_msg.putHeader(getName(), rsp_hdr);

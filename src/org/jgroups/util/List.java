@@ -1,4 +1,4 @@
-// $Id: List.java,v 1.3 2004/05/04 17:44:12 belaban Exp $
+// $Id: List.java,v 1.4 2004/05/05 17:39:33 belaban Exp $
 
 package org.jgroups.util;
 
@@ -395,9 +395,8 @@ public class List implements Externalizable, Cloneable {
         System.out.println(" OK");
 
         long num=0;
-        Object obj;
         System.out.print("Removing all elements: ");
-        while((obj=l.remove()) != null)
+        while((l.remove()) != null)
             num++;
         System.out.println("OK, removed " + num + " objects");
     }
