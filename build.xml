@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.12 2004/03/30 06:47:37 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.13 2004/04/08 14:46:26 yaron-r Exp $ -->
 
 <project name="JGroups" default="compile-1.4" basedir=".">
     <description>
@@ -187,9 +187,9 @@
             version="true"
             use="true"
             bottom="Copyright &#169; 2001,2002 www.jgroups.com . All Rights Reserved."
+			useexternalfile="yes"
             />
     </target>
-
 
     <!-- Create the programmer's guide in the dist directory -->
     <target name="pg" depends="prepare"
