@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.2 2003/09/24 23:20:47 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.3 2003/11/21 01:59:07 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -233,19 +233,17 @@ public class CoordGmsImpl extends GmsImpl {
 
         if(gms.members.contains(mbr)) {
             if(Trace.trace)
-                Trace.error(
-                        "CoordGmsImpl.handleJoin()",
-                        "member "
-                        + mbr
-                        + " already present; returning existing view "
-                        + gms.members.getMembers());
-            return new JoinRsp(
-                    new View(gms.view_id, gms.members.getMembers()),
-                    gms.getDigest());
+                Trace.error("CoordGmsImpl.handleJoin()", "member " + mbr
+                        + " already present; returning existing view " + gms.members.getMembers());
+            return new JoinRsp(new View(gms.view_id, gms.members.getMembers()), gms.getDigest());
             // already joined: return current digest and membership
         }
         new_mbrs.addElement(mbr);
         tmp=gms.getDigest(); // get existing digest
+        if(tmp == null) {
+            Trace.error("CoordGmsImpl.handleJoin()", "received null digest from GET_DIGEST: will cause JOIN to fail");
+            return null;
+        }
         if(Trace.trace)
             Trace.info("CoordGmsImpl.handleJoin()", "got digest=" + tmp);
 
@@ -256,9 +254,7 @@ public class CoordGmsImpl extends GmsImpl {
         // ... and add the new member. it's first seqno will be 1
         v=gms.getNextView(new_mbrs, null, null);
         if(Trace.trace)
-            Trace.debug(
-                    "CoordGmsImpl.handleJoin()",
-                    "joined member " + mbr + ", view is " + v);
+            Trace.debug("CoordGmsImpl.handleJoin()", "joined member " + mbr + ", view is " + v);
         return new JoinRsp(v, d);
     }
 
