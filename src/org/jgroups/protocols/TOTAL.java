@@ -1,4 +1,4 @@
-// $Id: TOTAL.java,v 1.1 2003/09/09 01:24:10 belaban Exp $
+// $Id: TOTAL.java,v 1.2 2003/12/04 13:33:53 igeorg Exp $
 package org.jgroups.protocols;
 
 
@@ -399,7 +399,7 @@ public class TOTAL extends Protocol {
 		reqTbl.put(new Long(id), msg);
 		}
 		_transmitBcastRequest(id);
-		retransmitter.add(id, null);
+		retransmitter.add(id, msg);
 	}
 
 
