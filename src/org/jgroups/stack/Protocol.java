@@ -1,4 +1,4 @@
-// $Id: Protocol.java,v 1.15 2004/04/23 19:36:17 belaban Exp $
+// $Id: Protocol.java,v 1.16 2004/05/04 23:37:27 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -439,6 +439,7 @@ public abstract class Protocol {
         }
         try {
             up_queue.add(evt);
+            evt=null;
         }
         catch(Exception e) {
             if(log.isWarnEnabled()) log.warn("exception: " + e);
@@ -468,6 +469,7 @@ public abstract class Protocol {
         }
         try {
             down_queue.add(evt);
+            evt=null;
         }
         catch(Exception e) {
             if(log.isWarnEnabled()) log.warn("exception: " + e);
@@ -487,6 +489,7 @@ public abstract class Protocol {
 
         if(up_prot != null) {
             up_prot.receiveUpEvent(evt);
+            evt=null; // give the garbage collector a hand
         }
         else
             if(log.isErrorEnabled()) log.error("no upper layer available");
@@ -503,8 +506,10 @@ public abstract class Protocol {
             }
         }
 
-        if(down_prot != null)
+        if(down_prot != null) {
             down_prot.receiveDownEvent(evt);
+            evt=null; // give the garbage collector a hand
+        }
         else
             if(log.isErrorEnabled()) log.error("no lower layer available");
     }
