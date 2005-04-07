@@ -1,4 +1,4 @@
-// $Id: AUTOCONF.java,v 1.10 2004/09/23 16:29:41 belaban Exp $
+// $Id: AUTOCONF.java,v 1.11 2005/04/07 15:03:20 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -120,7 +120,7 @@ public class AUTOCONF extends Protocol {
         int upper=8192;
         int lower=0;
         int highest_failed=-1;
-        DatagramSocket sock;
+        DatagramSocket sock=null;
         byte[] buf;
         DatagramPacket packet;
         InetAddress local_addr;
@@ -135,35 +135,41 @@ public class AUTOCONF extends Protocol {
             return 0;
         }
 
-        upper=max_send;
-        for(int i=0; i < num_iterations && lower < upper; i++) { // iterations to approximate frag_size
-            try {
-                buf=new byte[upper];
-                // System.out.println("** upper=" + upper + " (lower=" + lower + ")");
-                packet=new DatagramPacket(buf, buf.length, local_addr, 9);
-                sock.send(packet);
-                lower=Math.max(lower, upper);
-                upper=upper * 2;
-                if(highest_failed > -1)
-                    upper=Math.min(highest_failed, upper);
+        try {
+            upper=max_send;
+            for(int i=0; i < num_iterations && lower < upper; i++) { // iterations to approximate frag_size
+                try {
+                    buf=new byte[upper];
+                    // System.out.println("** upper=" + upper + " (lower=" + lower + ")");
+                    packet=new DatagramPacket(buf, buf.length, local_addr, 9);
+                    sock.send(packet);
+                    lower=Math.max(lower, upper);
+                    upper=upper * 2;
+                    if(highest_failed > -1)
+                        upper=Math.min(highest_failed, upper);
+                }
+                catch(IOException io_ex) {
+                    if(highest_failed > -1)
+                        highest_failed=Math.min(highest_failed, upper); // never exceed max_upper
+                    else
+                        highest_failed=upper;
+                    upper=(upper + lower) / 2;
+                }
+                catch(Throwable ex) {
+                    if(log.isWarnEnabled()) log.warn("exception=" + ex);
+                    break;
+                }
             }
-            catch(IOException io_ex) {
-                if(highest_failed > -1)
-                    highest_failed=Math.min(highest_failed, upper); // never exceed max_upper
-                else
-                    highest_failed=upper;
-                upper=(upper + lower) / 2;
-            }
-            catch(Throwable ex) {
-                if(log.isWarnEnabled()) log.warn("exception=" + ex);
-                break;
-            }
-        }
 
-        /** Reduce the frag_size a bit to prevent packets that are too large (see bug #854887) */
-        lower-=frag_overhead;
-         if(log.isDebugEnabled()) log.debug("frag_size=" + lower);
-        return lower;
+            /** Reduce the frag_size a bit to prevent packets that are too large (see bug #854887) */
+            lower-=frag_overhead;
+            if(log.isDebugEnabled()) log.debug("frag_size=" + lower);
+            return lower;
+        }
+        finally {
+            if(sock != null)
+                sock.close();
+        }
     }
 
 
