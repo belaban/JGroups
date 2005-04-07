@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.15 2005/03/26 22:45:41 belaban Exp $
+// $Id: MERGE2.java,v 1.16 2005/04/07 16:37:19 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -42,15 +42,16 @@ import java.util.Vector;
  * @author Bela Ban, Oct 16 2001
  */
 public class MERGE2 extends Protocol {
-    Address local_addr=null;
+    Address       local_addr=null;
     FindSubgroups task=null;             // task periodically executing as long as we are coordinator
-    long min_interval=5000;     // minimum time between executions of the FindSubgroups task
-    long max_interval=20000;    // maximum time between executions of the FindSubgroups task
-    boolean is_coord=false;
+    private final Object task_lock=new Object();
+    long          min_interval=5000;     // minimum time between executions of the FindSubgroups task
+    long          max_interval=20000;    // maximum time between executions of the FindSubgroups task
+    boolean       is_coord=false;
     final Promise find_promise=new Promise(); // to synchronize FindSubgroups.findInitialMembers() on
 
     /** Use a new thread to send the MERGE event up the stack */
-    boolean use_separate_thread=false;
+    boolean       use_separate_thread=false;
 
 
     public String getName() {
@@ -184,16 +185,19 @@ public class MERGE2 extends Protocol {
 
     /* -------------------------------------- Private Methods --------------------------------------- */
     void startTask() {
-        if(task == null) {
-            task=new FindSubgroups();
+        synchronized(task_lock) {
+            if(task == null)
+                task=new FindSubgroups();
             task.start();
         }
     }
 
     void stopTask() {
-        if(task != null) {
-            task.stop(); // will cause timer to remove task from execution schedule
-            task=null;
+        synchronized(task_lock) {
+            if(task != null) {
+                task.stop(); // will cause timer to remove task from execution schedule
+                task=null;
+            }
         }
     }
     /* ---------------------------------- End of Private Methods ------------------------------------ */
@@ -235,15 +239,15 @@ public class MERGE2 extends Protocol {
             Vector coords=null;
             Vector initial_mbrs;
 
-            if(log.isDebugEnabled()) log.debug("merge task started");
-            while(thread != null) {
+            if(log.isDebugEnabled()) log.debug("merge task started as I'm the coordinator");
+            while(thread != null && Thread.currentThread().equals(thread)) {
                 interval=computeInterval();
                 Util.sleep(interval);
                 if(thread == null) break;
                 initial_mbrs=findInitialMembers();
                 if(thread == null) break;
                 if(log.isDebugEnabled()) log.debug("initial_mbrs=" + initial_mbrs);
-                coords=findMultipleCoordinators(initial_mbrs);
+                coords=detectMultipleCoordinators(initial_mbrs);
                 if(coords != null && coords.size() > 1) {
                     if(log.isDebugEnabled())
                         log.debug("found multiple coordinators: " + coords + "; sending up MERGE event");
@@ -256,6 +260,7 @@ public class MERGE2 extends Protocol {
                         };
                         merge_notifier.setDaemon(true);
                         merge_notifier.setName("merge notifier thread");
+                        merge_notifier.start();
                     }
                     else {
                         passUp(evt);
@@ -300,7 +305,7 @@ public class MERGE2 extends Protocol {
          * @return Vector A list of the coordinators (Addresses) found. Will contain just 1 element for a correct
          *         membership, and more than 1 for multiple coordinators
          */
-        Vector findMultipleCoordinators(Vector initial_mbrs) {
+        Vector detectMultipleCoordinators(Vector initial_mbrs) {
             Vector ret=new Vector(11);
             PingRsp rsp;
             Address coord;
