@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.25 2005/01/28 12:38:47 belaban Exp $
+// $Id: GMS.java,v 1.26 2005/04/07 15:32:36 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -48,6 +48,7 @@ public class GMS extends Protocol {
     private Digest            digest=null;                // holds result of GET_DIGEST event
     private final Hashtable   impls=new Hashtable(3);
     private boolean           shun=true;
+    boolean                   merge_leader=false;         // can I initiate a merge ?
     private boolean           print_local_addr=true;
     boolean                   disable_initial_coord=false; // can the member become a coord on startup or not ?
     static final String       CLIENT="Client";
@@ -60,6 +61,7 @@ public class GMS extends Protocol {
 
     /** Keeps track of old members (up to num_prev_mbrs) */
     BoundedList               prev_members=null;
+
 
 
     public GMS() {
@@ -642,6 +644,12 @@ public class GMS extends Protocol {
         if(str != null) {
             shun=Boolean.valueOf(str).booleanValue();
             props.remove("shun");
+        }
+
+        str=props.getProperty("merge_leader");
+        if(str != null) {
+            merge_leader=Boolean.valueOf(str).booleanValue();
+            props.remove("merge_leader");
         }
 
         str=props.getProperty("print_local_addr");
