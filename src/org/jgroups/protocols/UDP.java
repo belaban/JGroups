@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.59 2005/04/01 14:19:10 belaban Exp $
+// $Id: UDP.java,v 1.60 2005/04/07 15:57:13 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -1254,13 +1254,13 @@ public class UDP extends Protocol implements Runnable {
             try {
                 if(mcast_addr != null) {
                     // by sending a dummy packet the thread will be awakened
-                    sendDummyPacket(mcast_addr.getIpAddress(), mcast_addr.getPort());
-                    Util.sleep(300);
+                    // sendDummyPacket(mcast_addr.getIpAddress(), mcast_addr.getPort());
+                    // Util.sleep(300);
                     mcast_recv_sock.leaveGroup(mcast_addr.getIpAddress());
                 }
                 mcast_recv_sock.close(); // this will cause the mcast receiver thread to break out of its loop
                 mcast_recv_sock=null;
-                 if(log.isDebugEnabled()) log.debug("multicast receive socket closed");
+                if(log.isDebugEnabled()) log.debug("multicast receive socket closed");
             }
             catch(IOException ex) {
             }
@@ -1278,11 +1278,11 @@ public class UDP extends Protocol implements Runnable {
     void closeSocket() {
         if(sock != null) {
             // by sending a dummy packet, the thread will terminate (if it was flagged as stopped before)
-            sendDummyPacket(sock.getLocalAddress(), sock.getLocalPort());
+            // sendDummyPacket(sock.getLocalAddress(), sock.getLocalPort());
 
             sock.close();
             sock=null;
-             if(log.isDebugEnabled()) log.debug("socket closed");
+            if(log.isDebugEnabled()) log.debug("socket closed");
         }
     }
 
@@ -1296,32 +1296,32 @@ public class UDP extends Protocol implements Runnable {
      * @param dest The destination host. Will be local host if null
      * @param port The destination port
      */
-    void sendDummyPacket(InetAddress dest, int port) {
-        DatagramPacket packet;
-        byte[] buf={0};
-
-        if(dest == null) {
-            try {
-                dest=InetAddress.getLocalHost();
-            }
-            catch(Exception e) {
-            }
-        }
-
-        if(log.isTraceEnabled()) log.trace("sending packet to " + dest + ':' + port);
-
-        if(sock == null || dest == null) {
-            if(log.isWarnEnabled()) log.warn("sock was null or dest was null, cannot send dummy packet");
-            return;
-        }
-        packet=new DatagramPacket(buf, buf.length, dest, port);
-        try {
-            sock.send(packet);
-        }
-        catch(Throwable e) {
-            if(log.isErrorEnabled()) log.error("exception sending dummy packet to " + dest + ':' + port + ": " + e);
-        }
-    }
+//    private void sendDummyPacket(InetAddress dest, int port) {
+//        DatagramPacket packet;
+//        byte[] buf={0};
+//
+//        if(dest == null) {
+//            try {
+//                dest=InetAddress.getLocalHost();
+//            }
+//            catch(Exception e) {
+//            }
+//        }
+//
+//        if(log.isTraceEnabled()) log.trace("sending packet to " + dest + ':' + port);
+//
+//        if(sock == null || dest == null) {
+//            if(log.isWarnEnabled()) log.warn("sock was null or dest was null, cannot send dummy packet");
+//            return;
+//        }
+//        packet=new DatagramPacket(buf, buf.length, dest, port);
+//        try {
+//            sock.send(packet);
+//        }
+//        catch(Throwable e) {
+//            if(log.isErrorEnabled()) log.error("exception sending dummy packet to " + dest + ':' + port + ": " + e);
+//        }
+//    }
 
 
     /**
