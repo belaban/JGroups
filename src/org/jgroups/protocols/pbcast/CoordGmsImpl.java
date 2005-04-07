@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.18 2005/03/24 14:41:52 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.19 2005/04/07 15:32:36 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -110,8 +110,8 @@ public class CoordGmsImpl extends GmsImpl {
         }
 
         if(other_coords.size() <= 1) {
-            if(log.isErrorEnabled()) log.error("number of coordinators found is "
-                                               + other_coords.size() + "; will not perform merge");
+            if(log.isErrorEnabled())
+                log.error("number of coordinators found is " + other_coords.size() + "; will not perform merge");
             return;
         }
 
@@ -120,8 +120,10 @@ public class CoordGmsImpl extends GmsImpl {
         tmp.sort();
         merge_leader=(Address)tmp.elementAt(0);
         if(log.isDebugEnabled()) log.debug("coordinators in merge protocol are: " + tmp);
-        if(merge_leader.equals(gms.local_addr)) {
-            if(log.isTraceEnabled()) log.trace("I (" + gms.local_addr + ") will be the leader. Starting the merge task");
+        if(merge_leader.equals(gms.local_addr) || gms.merge_leader) {
+            if(log.isTraceEnabled())
+                log.trace("I (" + gms.local_addr + ", merge_leader=" + gms.merge_leader +
+                          ") will be the leader. Starting the merge task");
             startMergeTask(other_coords);
         }
         else {
