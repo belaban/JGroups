@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.147 2005/04/07 15:33:41 belaban Exp $
+Revision: $Id: history.txt,v 1.148 2005/04/08 07:52:13 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -27,6 +27,9 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
 Version 2.2.8
 -------------
+
+- Removed TransactionalHashtable (obsolete, replaced by JBossCache)
+  (bela April 8 2005)
 
 - GMS/CoordGmsImpl: added merge_leader flag. If enabled, the member can initiate a merge although
   it is not the coordinator
