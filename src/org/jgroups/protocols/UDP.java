@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.60 2005/04/07 15:57:13 belaban Exp $
+// $Id: UDP.java,v 1.61 2005/04/08 14:05:16 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -127,7 +127,7 @@ public class UDP extends Protocol implements Runnable {
 
     /** Discard packets with a different version. Usually minor version differences are okay. Setting this property
      * to true means that we expect the exact same version on all incoming packets */
-    boolean discard_incompatible_packets=false;
+    boolean         discard_incompatible_packets=false;
 
     /** Sometimes receivers are overloaded (they have to handle de-serialization etc).
      * Packet handler is a separate thread taking care of de-serialization, receiver
@@ -342,7 +342,7 @@ public class UDP extends Protocol implements Runnable {
             if(enable_bundling) {
                 timer=stack != null? stack.timer : null;
                 if(timer == null)
-                    throw new Exception("UDP.init(): timer could not be retrieved");
+                    throw new Exception("timer could not be retrieved");
                 outgoing_packet_handler=new BundlingOutgoingPacketHandler();
             }
             else
@@ -1745,7 +1745,7 @@ public class UDP extends Protocol implements Runnable {
             long           len;
             List           tmp;
 
-            len=msg.size(); // todo: use msg.getLength() instead of msg.getSize()
+            len=msg.size();
             if(len > max_bundle_size)
                 throw new Exception("UDP.BundlingOutgoingPacketHandler.handleMessage(): " +
                         "message size (" + len + ") is greater than UDP fragmentation size. " +
