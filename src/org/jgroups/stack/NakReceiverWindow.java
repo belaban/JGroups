@@ -1,14 +1,15 @@
-// $Id: NakReceiverWindow.java,v 1.17 2005/04/08 07:52:58 belaban Exp $
+// $Id: NakReceiverWindow.java,v 1.18 2005/04/08 08:58:54 belaban Exp $
 
 
 package org.jgroups.stack;
 
+import EDU.oswego.cs.dl.util.concurrent.ReadWriteLock;
+import EDU.oswego.cs.dl.util.concurrent.WriterPreferenceReadWriteLock;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.util.List;
-import org.jgroups.util.RWLock;
 import org.jgroups.util.TimeScheduler;
 
 import java.util.*;
@@ -60,7 +61,8 @@ public class NakReceiverWindow {
 
 
     /** The big read/write lock */
-    private final RWLock lock=new RWLock();
+    private final ReadWriteLock lock=new WriterPreferenceReadWriteLock();
+    //private final ReadWriteLock lock=new NullReadWriteLock();
 
     /** keep track of *next* seqno to remove and highest received */
     private long   head=0;
@@ -183,167 +185,115 @@ public class NakReceiverWindow {
     public void add(long seqno, Message msg) {
         long old_tail;
 
-        lock.writeLock();
         try {
-            old_tail=tail;
-            if(seqno < head) {
-                if(log.isTraceEnabled())
-                    log.trace("seqno " + seqno + " is smaller than " + head + "); discarding message");
-                return;
-            }
+            lock.writeLock().acquire();
+            try {
+                old_tail=tail;
+                if(seqno < head) {
+                    if(log.isTraceEnabled())
+                        log.trace("seqno " + seqno + " is smaller than " + head + "); discarding message");
+                    return;
+                }
 
-            // add at end (regular expected msg)
-            if(seqno == tail) {
-                received_msgs.put(new Long(seqno), msg);
-                tail++;
-            }
-            // gap detected
-            // i. add placeholders, creating gaps
-            // ii. add real msg
-            // iii. tell retransmitter to retrieve missing msgs
-            else if(seqno > tail) {
-                for(long i=tail; i < seqno; i++) {
-                    received_msgs.put(new Long(i), null);
-                    // XmitEntry xmit_entry=new XmitEntry();
-                    //xmits.put(new Long(i), xmit_entry);
+                // add at end (regular expected msg)
+                if(seqno == tail) {
+                    received_msgs.put(new Long(seqno), msg);
                     tail++;
                 }
-                received_msgs.put(new Long(seqno), msg);
-                tail=seqno + 1;
-                if(retransmitter != null) {
-                    retransmitter.add(old_tail, seqno - 1);
-                }
-                // finally received missing message
-            }
-            else if(seqno < tail) {
-                if(log.isTraceEnabled())
-                    log.trace("added missing msg " + msg.getSrc() + '#' + seqno);
-
-                Object val=received_msgs.get(new Long(seqno));
-                if(val == null) {
-                    // only set message if not yet received (bela July 23 2003)
+                // gap detected
+                // i. add placeholders, creating gaps
+                // ii. add real msg
+                // iii. tell retransmitter to retrieve missing msgs
+                else if(seqno > tail) {
+                    for(long i=tail; i < seqno; i++) {
+                        received_msgs.put(new Long(i), null);
+                        // XmitEntry xmit_entry=new XmitEntry();
+                        //xmits.put(new Long(i), xmit_entry);
+                        tail++;
+                    }
                     received_msgs.put(new Long(seqno), msg);
-
-                    //XmitEntry xmit_entry=(XmitEntry)xmits.get(new Long(seqno));
-                    //if(xmit_entry != null)
-                    //  xmit_entry.received=System.currentTimeMillis();
-                    //long xmit_diff=xmit_entry == null? -1 : xmit_entry.received - xmit_entry.created;
-                    //NAKACK.addXmitResponse(msg.getSrc(), seqno);
-                    if(retransmitter != null) retransmitter.remove(seqno);
+                    tail=seqno + 1;
+                    if(retransmitter != null) {
+                        retransmitter.add(old_tail, seqno - 1);
+                    }
+                    // finally received missing message
                 }
+                else if(seqno < tail) {
+                    if(log.isTraceEnabled())
+                        log.trace("added missing msg " + msg.getSrc() + '#' + seqno);
+
+                    Object val=received_msgs.get(new Long(seqno));
+                    if(val == null) {
+                        // only set message if not yet received (bela July 23 2003)
+                        received_msgs.put(new Long(seqno), msg);
+
+                        //XmitEntry xmit_entry=(XmitEntry)xmits.get(new Long(seqno));
+                        //if(xmit_entry != null)
+                        //  xmit_entry.received=System.currentTimeMillis();
+                        //long xmit_diff=xmit_entry == null? -1 : xmit_entry.received - xmit_entry.created;
+                        //NAKACK.addXmitResponse(msg.getSrc(), seqno);
+                        if(retransmitter != null) retransmitter.remove(seqno);
+                    }
+                }
+                updateLowestSeen();
+                updateHighestSeen();
             }
-            updateLowestSeen();
-            updateHighestSeen();
+            finally {
+                lock.writeLock().release();
+            }
         }
-        finally {
-            lock.writeUnlock();
+        catch(InterruptedException e) {
+            log.error("failed acquiring write lock", e);
         }
     }
 
 
-    /**
-     * Returns the first entry (with the lowest seqno) from the received_msgs map if its associated message is not
-     * null, otherwise returns null. The entry is then added to delivered_msgs. If a bounded buffer is used: if message
-     * is not null: return it, else remove null messages until number of received messages drops below max size
-     * of bounded buffer
-     */
-   /* public Message remove() {
-        Message retval=null;
-        Object key;
 
-        lock.writeLock();
-        try {
-            if(received_msgs.size() > 0) {
-
-                if(log.isTraceEnabled())
-                    log.trace("received msgs=" + received_msgs.size() + "max_xmit_buf_size=" + max_xmit_buf_size);
-
-                if(max_xmit_buf_size > 0 && received_msgs.size() > max_xmit_buf_size)
-                    return removeBounded();
-                key=received_msgs.firstKey();
-                retval=(Message)received_msgs.get(key);
-                if(retval != null) {
-                    received_msgs.remove(key);       // move from received_msgs to ...
-                    if(discard_delivered_msgs == false) {
-                        delivered_msgs.put(key, retval); // delivered_msgs
-                    }
-                    head++;
-                }
-            }
-            return retval;
-        }
-        finally {
-            lock.writeUnlock();
-        }
-    }*/
-
-
-     public Message remove() {
+    public Message remove() {
         Message retval=null;
         Long    key;
         boolean bounded_buffer_enabled=max_xmit_buf_size > 0;
 
-        lock.writeLock();
         try {
-            while(received_msgs.size() > 0) {
-                if(log.isTraceEnabled())
-                    log.trace("received msgs=" + received_msgs.size() + ", max_xmit_buf_size=" + max_xmit_buf_size);
+            lock.writeLock().acquire();
+            try {
+                while(received_msgs.size() > 0) {
+                    if(log.isTraceEnabled())
+                        log.trace("received msgs=" + received_msgs.size() + ", max_xmit_buf_size=" + max_xmit_buf_size);
 
-                key=(Long)received_msgs.firstKey();
-                retval=(Message)received_msgs.get(key);
-                if(retval != null) { // message exists and is ready for delivery
-                    received_msgs.remove(key);       // move from received_msgs to ...
-                    if(discard_delivered_msgs == false) {
-                        delivered_msgs.put(key, retval); // delivered_msgs
-                    }
-                    head++;  // is removed from retransmitter somewhere else (when missing message is received)
-                    return retval;
-                }
-                else { // message has not yet been received (gap in the message sequence stream)
-                    if(bounded_buffer_enabled && received_msgs.size() > max_xmit_buf_size) {
+                    key=(Long)received_msgs.firstKey();
+                    retval=(Message)received_msgs.get(key);
+                    if(retval != null) { // message exists and is ready for delivery
                         received_msgs.remove(key);       // move from received_msgs to ...
-                        head++;
-                        retransmitter.remove(key.longValue());
+                        if(discard_delivered_msgs == false) {
+                            delivered_msgs.put(key, retval); // delivered_msgs
+                        }
+                        head++;  // is removed from retransmitter somewhere else (when missing message is received)
+                        return retval;
                     }
-                    else {
-                        break;
+                    else { // message has not yet been received (gap in the message sequence stream)
+                        if(bounded_buffer_enabled && received_msgs.size() > max_xmit_buf_size) {
+                            received_msgs.remove(key);       // move from received_msgs to ...
+                            head++;
+                            retransmitter.remove(key.longValue());
+                        }
+                        else {
+                            break;
+                        }
                     }
-                }
-            }
-            return retval;
-        }
-        finally {
-            lock.writeUnlock();
-        }
-    }
-
-
- /*   private Message removeBounded() {
-        Message retval=null;
-        Map.Entry entry;
-
-        for(Iterator it=received_msgs.entrySet().iterator(); it.hasNext();) {
-            entry=(Map.Entry)it.next();
-            retval=(Message)entry.getValue();
-            it.remove();
-            head++;
-            if(retval != null) {
-                if(discard_delivered_msgs == false) {
-                    delivered_msgs.put(entry.getKey(), retval); // delivered_msgs
                 }
                 return retval;
             }
-            else {
-                if(log.isTraceEnabled())
-                    log.trace("removed message #" + entry.getKey() +
-                              " to maintain bounded buffer (number of received msgs=" + received_msgs.size() +
-                              ", max_xmit_buf_size=" + max_xmit_buf_size + ")");
-                if(received_msgs.size() < max_xmit_buf_size)
-                    break;
+            finally {
+                lock.writeLock().release();
             }
         }
-        return retval;
-    }*/
+        catch(InterruptedException e) {
+            log.error("failed acquiring write lock", e);
+            return null;
+        }
+    }
+
 
 
     /**
@@ -352,17 +302,22 @@ public class NakReceiverWindow {
      * (all messages are ordered on seqnos).
      */
     public void stable(long seqno) {
-        lock.writeLock();
         try {
-            // we need to remove all seqnos *including* seqno: because headMap() *excludes* seqno, we
-            // simply increment it, so we have to correct behavior
-            SortedMap m=delivered_msgs.headMap(new Long(seqno +1));
-            if(m.size() > 0)
-                lowest_seen=Math.max(lowest_seen, ((Long)m.lastKey()).longValue());
-            m.clear(); // removes entries from delivered_msgs
+            lock.writeLock().acquire();
+            try {
+                // we need to remove all seqnos *including* seqno: because headMap() *excludes* seqno, we
+                // simply increment it, so we have to correct behavior
+                SortedMap m=delivered_msgs.headMap(new Long(seqno +1));
+                if(m.size() > 0)
+                    lowest_seen=Math.max(lowest_seen, ((Long)m.lastKey()).longValue());
+                m.clear(); // removes entries from delivered_msgs
+            }
+            finally {
+                lock.writeLock().release();
+            }
         }
-        finally {
-            lock.writeUnlock();
+        catch(InterruptedException e) {
+            log.error("failed acquiring write lock", e);
         }
     }
 
@@ -371,14 +326,19 @@ public class NakReceiverWindow {
      * Reset the retransmitter and the nak window<br>
      */
     public void reset() {
-        lock.writeLock();
         try {
-            if(retransmitter != null)
-                retransmitter.reset();
-            _reset();
+            lock.writeLock().acquire();
+            try {
+                if(retransmitter != null)
+                    retransmitter.reset();
+                _reset();
+            }
+            finally {
+                lock.writeLock().release();
+            }
         }
-        finally {
-            lock.writeUnlock();
+        catch(InterruptedException e) {
+            log.error("failed acquiring write lock", e);
         }
     }
 
@@ -387,14 +347,19 @@ public class NakReceiverWindow {
      * Stop the retransmitter and reset the nak window<br>
      */
     public void destroy() {
-        lock.writeLock();
         try {
-            if(retransmitter != null)
-                retransmitter.stop();
-            _reset();
+            lock.writeLock().acquire();
+            try {
+                if(retransmitter != null)
+                    retransmitter.stop();
+                _reset();
+            }
+            finally {
+                lock.writeLock().release();
+            }
         }
-        finally {
-            lock.writeUnlock();
+        catch(InterruptedException e) {
+            log.error("failed acquiring write lock", e);
         }
     }
 
@@ -404,12 +369,18 @@ public class NakReceiverWindow {
      * application (by <code>remove()</code>)
      */
     public long getHighestDelivered() {
-        lock.readLock();
         try {
-            return (Math.max(head - 1, -1));
+            lock.readLock().acquire();
+            try {
+                return (Math.max(head - 1, -1));
+            }
+            finally {
+                lock.readLock().release();
+            }
         }
-        finally {
-            lock.readUnlock();
+        catch(InterruptedException e) {
+            log.error("failed acquiring read lock", e);
+            return -1;
         }
     }
 
@@ -420,12 +391,18 @@ public class NakReceiverWindow {
      * <code>remove()</code>)
      */
     public long getLowestSeen() {
-        lock.readLock();
         try {
-            return (lowest_seen);
+            lock.readLock().acquire();
+            try {
+                return (lowest_seen);
+            }
+            finally {
+                lock.readLock().release();
+            }
         }
-        finally {
-            lock.readUnlock();
+        catch(InterruptedException e) {
+            log.error("failed acquiring read lock", e);
+            return -1;
         }
     }
 
@@ -437,12 +414,18 @@ public class NakReceiverWindow {
      * @see NakReceiverWindow#getHighestReceived
      */
     public long getHighestSeen() {
-        lock.readLock();
         try {
-            return (highest_seen);
+            lock.readLock().acquire();
+            try {
+                return (highest_seen);
+            }
+            finally {
+                lock.readLock().release();
+            }
         }
-        finally {
-            lock.readUnlock();
+        catch(InterruptedException e) {
+            log.error("failed acquiring read lock", e);
+            return -1;
         }
     }
 
@@ -465,15 +448,16 @@ public class NakReceiverWindow {
             return null;
         }
 
-        lock.readLock();
         try {
+            lock.readLock().acquire();
+            try {
 
-            // my_high=Math.max(head - 1, 0);
-            // check only received messages, because delivered messages *must* have a non-null msg
-            SortedMap m=received_msgs.subMap(new Long(low), new Long(high+1));
-            for(Iterator it=m.keySet().iterator(); it.hasNext();) {
-                retval.add(it.next());
-            }
+                // my_high=Math.max(head - 1, 0);
+                // check only received messages, because delivered messages *must* have a non-null msg
+                SortedMap m=received_msgs.subMap(new Long(low), new Long(high+1));
+                for(Iterator it=m.keySet().iterator(); it.hasNext();) {
+                    retval.add(it.next());
+                }
 
 //            if(received_msgs.size() > 0) {
 //                entry=(Entry)received_msgs.peek();
@@ -482,10 +466,15 @@ public class NakReceiverWindow {
 //            for(long i=my_high + 1; i <= high; i++)
 //                retval.add(new Long(i));
 
-            return retval;
+                return retval;
+            }
+            finally {
+                lock.readLock().release();
+            }
         }
-        finally {
-            lock.readUnlock();
+        catch(InterruptedException e) {
+            log.error("failed acquiring read lock", e);
+            return null;
         }
     }
 
@@ -498,12 +487,18 @@ public class NakReceiverWindow {
      * @see NakReceiverWindow#getHighestSeen
      */
     public long getHighestReceived() {
-        lock.readLock();
         try {
-            return Math.max(tail - 1, -1);
+            lock.readLock().acquire();
+            try {
+                return Math.max(tail - 1, -1);
+            }
+            finally {
+                lock.readLock().release();
+            }
         }
-        finally {
-            lock.readUnlock();
+        catch(InterruptedException e) {
+            log.error("failed acquiring read lock", e);
+            return -1;
         }
     }
 
@@ -517,25 +512,31 @@ public class NakReceiverWindow {
     public List getMessagesHigherThan(long seqno) {
         List retval=new List();
 
-        lock.readLock();
         try {
-            // check received messages
-            SortedMap m=received_msgs.tailMap(new Long(seqno+1));
-            for(Iterator it=m.values().iterator(); it.hasNext();) {
-                retval.add((it.next()));
-            }
+            lock.readLock().acquire();
+            try {
+                // check received messages
+                SortedMap m=received_msgs.tailMap(new Long(seqno+1));
+                for(Iterator it=m.values().iterator(); it.hasNext();) {
+                    retval.add((it.next()));
+                }
 
-            // we retrieve all msgs whose seqno is strictly greater than seqno (tailMap() *includes* seqno,
-            // but we need to exclude seqno, that's why we increment it
-            m=delivered_msgs.tailMap(new Long(seqno +1));
-            for(Iterator it=m.values().iterator(); it.hasNext();) {
-                retval.add(((Message)it.next()).copy());
-            }
-            return (retval);
+                // we retrieve all msgs whose seqno is strictly greater than seqno (tailMap() *includes* seqno,
+                // but we need to exclude seqno, that's why we increment it
+                m=delivered_msgs.tailMap(new Long(seqno +1));
+                for(Iterator it=m.values().iterator(); it.hasNext();) {
+                    retval.add(((Message)it.next()).copy());
+                }
+                return (retval);
 
+            }
+            finally {
+                lock.readLock().release();
+            }
         }
-        finally {
-            lock.readUnlock();
+        catch(InterruptedException e) {
+            log.error("failed acquiring read lock", e);
+            return null;
         }
     }
 
@@ -548,23 +549,29 @@ public class NakReceiverWindow {
     public List getMessagesInRange(long lower, long upper) {
         List retval=new List();
 
-        lock.readLock();
         try {
-            // check received messages
-            SortedMap m=received_msgs.subMap(new Long(lower +1), new Long(upper +1));
-            for(Iterator it=m.values().iterator(); it.hasNext();) {
-                retval.add(it.next());
-            }
+            lock.readLock().acquire();
+            try {
+                // check received messages
+                SortedMap m=received_msgs.subMap(new Long(lower +1), new Long(upper +1));
+                for(Iterator it=m.values().iterator(); it.hasNext();) {
+                    retval.add(it.next());
+                }
 
-            m=delivered_msgs.subMap(new Long(lower +1), new Long(upper +1));
-            for(Iterator it=m.values().iterator(); it.hasNext();) {
-                retval.add(((Message)it.next()).copy());
-            }
-            return retval;
+                m=delivered_msgs.subMap(new Long(lower +1), new Long(upper +1));
+                for(Iterator it=m.values().iterator(); it.hasNext();) {
+                    retval.add(((Message)it.next()).copy());
+                }
+                return retval;
 
+            }
+            finally {
+                lock.readLock().release();
+            }
         }
-        finally {
-            lock.readUnlock();
+        catch(InterruptedException e) {
+            log.error("failed acquiring read lock", e);
+            return null;
         }
     }
 
@@ -584,47 +591,65 @@ public class NakReceiverWindow {
             return ret;
         }
 
-        lock.readLock();
         try {
-            Long seqno;
-            Message msg;
-            for(Enumeration en=missing_msgs.elements(); en.hasMoreElements();) {
-                seqno=(Long)en.nextElement();
-                msg=(Message)delivered_msgs.get(seqno);
-                if(msg != null)
-                    ret.add(msg.copy());
-                msg=(Message)received_msgs.get(seqno);
-                if(msg != null)
-                    ret.add(msg.copy());
+            lock.readLock().acquire();
+            try {
+                Long seqno;
+                Message msg;
+                for(Enumeration en=missing_msgs.elements(); en.hasMoreElements();) {
+                    seqno=(Long)en.nextElement();
+                    msg=(Message)delivered_msgs.get(seqno);
+                    if(msg != null)
+                        ret.add(msg.copy());
+                    msg=(Message)received_msgs.get(seqno);
+                    if(msg != null)
+                        ret.add(msg.copy());
+                }
+                return ret;
             }
-            return ret;
+            finally {
+                lock.readLock().release();
+            }
         }
-        finally {
-            lock.readUnlock();
+        catch(InterruptedException e) {
+            log.error("failed acquiring read lock", e);
+            return null;
         }
     }
 
 
     public int size() {
-        lock.readLock();
+        boolean acquired=false;
+        try {
+            lock.readLock().acquire();
+            acquired=true;
+        }
+        catch(InterruptedException e) {}
         try {
             return received_msgs.size();
         }
         finally {
-            lock.readUnlock();
+            if(acquired)
+                lock.readLock().release();
         }
     }
 
 
     public String toString() {
         StringBuffer sb=new StringBuffer();
-        lock.readLock();
         try {
-            sb.append("received_msgs: " + printReceivedMessages());
-            sb.append(", delivered_msgs: " + printDeliveredMessages());
+            lock.readLock().acquire();
+            try {
+                sb.append("received_msgs: " + printReceivedMessages());
+                sb.append(", delivered_msgs: " + printDeliveredMessages());
+            }
+            finally {
+                lock.readLock().release();
+            }
         }
-        finally {
-            lock.readUnlock();
+        catch(InterruptedException e) {
+            log.error("failed acquiring read lock", e);
+            return "";
         }
 
         return sb.toString();
