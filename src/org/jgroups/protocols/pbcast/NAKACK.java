@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.31 2004/12/28 16:01:12 belaban Exp $
+// $Id: NAKACK.java,v 1.32 2005/04/08 07:23:02 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -1080,12 +1080,12 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
     void removeAll() {
         NakReceiverWindow win;
 
-        if(log.isDebugEnabled()) {
-            if(sent_msgs.size() > 0 && received_msgs.size() > 0) {
-                String contents=dumpContents();
-                log.debug("contents for " + local_addr + ":\n" + contents);
-            }
-        }
+//        if(log.isTraceEnabled()) {
+//            if(sent_msgs.size() > 0 && received_msgs.size() > 0) {
+//                String contents=dumpContents();
+//                log.trace("contents for " + local_addr + ":\n" + contents);
+//            }
+//        }
 
         synchronized(sent_msgs) {
             sent_msgs.clear();

@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.26 2005/04/07 15:32:36 belaban Exp $
+// $Id: GMS.java,v 1.27 2005/04/08 07:22:37 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -487,7 +487,7 @@ public class GMS extends Protocol {
                 return ret;
             }
             else {
-                if(log.isErrorEnabled()) log.error("digest could not be fetched from PBCAST layer");
+                if(log.isErrorEnabled()) log.error("digest could not be fetched from below");
                 return null;
             }
         }
