@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindow.java,v 1.18 2005/04/08 08:58:54 belaban Exp $
+// $Id: NakReceiverWindow.java,v 1.19 2005/04/08 13:34:09 belaban Exp $
 
 
 package org.jgroups.stack;
@@ -199,6 +199,7 @@ public class NakReceiverWindow {
                 if(seqno == tail) {
                     received_msgs.put(new Long(seqno), msg);
                     tail++;
+                    highest_seen=seqno;
                 }
                 // gap detected
                 // i. add placeholders, creating gaps
@@ -227,6 +228,9 @@ public class NakReceiverWindow {
                         // only set message if not yet received (bela July 23 2003)
                         received_msgs.put(new Long(seqno), msg);
 
+                        if(highest_seen +1 == seqno || seqno == head)
+                            updateHighestSeen();
+
                         //XmitEntry xmit_entry=(XmitEntry)xmits.get(new Long(seqno));
                         //if(xmit_entry != null)
                         //  xmit_entry.received=System.currentTimeMillis();
@@ -236,7 +240,7 @@ public class NakReceiverWindow {
                     }
                 }
                 updateLowestSeen();
-                updateHighestSeen();
+                // updateHighestSeen();
             }
             finally {
                 lock.writeLock().release();
@@ -248,6 +252,18 @@ public class NakReceiverWindow {
     }
 
 
+    /** Start from the current sequence number and set highest_seen until we find a gap (null value in the entry) */
+    void updateHighestSeen() {
+        SortedMap map=received_msgs.tailMap(new Long(highest_seen));
+        Map.Entry entry;
+        for(Iterator it=map.entrySet().iterator(); it.hasNext();) {
+            entry=(Map.Entry)it.next();
+            if(entry.getValue() != null)
+                highest_seen=((Long)entry.getKey()).longValue();
+            else
+                break;
+        }
+    }
 
     public Message remove() {
         Message retval=null;
@@ -753,49 +769,49 @@ public class NakReceiverWindow {
      * Returns seqno-1 if there are no messages in the queues (the first
      * message to be expected is always seqno).
      */
-    private void updateHighestSeen() {
-        long      ret=0;
-        Map.Entry entry=null;
-
-        // If both delivered and received messages are empty, let the highest
-        // seen seqno be the one *before* the one which is expected to be
-        // received next by the NakReceiverWindow (head-1)
-
-        // changed by bela (April 19 2004): we don't change the value if received and delivered msgs are empty
-        /*if((delivered_msgs.size() == 0) && (msgs.size() == 0)) {
-            highest_seen=0;
-            return;
-        }*/
-
-
-        // The highest seqno is the last of the delivered messages, to start with,
-        // or again the one before the first seqno expected (if no delivered
-        // msgs). Then iterate through the received messages, and find the highest seqno *before* a gap
-        Long highest_seqno=null;
-        if(delivered_msgs.size() > 0) {
-            try {
-                highest_seqno=(Long)delivered_msgs.lastKey();
-                ret=highest_seqno.longValue();
-            }
-            catch(NoSuchElementException ex) {
-            }
-        }
-        else {
-            ret=Math.max(head - 1, 0);
-        }
-
-        // Now check the received msgs head to tail. if there is an entry
-        // with a non-null msg, increment ret until we find an entry with
-        // a null msg
-        for(Iterator it=received_msgs.entrySet().iterator(); it.hasNext();) {
-            entry=(Map.Entry)it.next();
-            if(entry.getValue() != null)
-                ret=((Long)entry.getKey()).longValue();
-            else
-                break;
-        }
-        highest_seen=Math.max(ret, 0);
-    }
+//    private void updateHighestSeen() {
+//        long      ret=0;
+//        Map.Entry entry=null;
+//
+//        // If both delivered and received messages are empty, let the highest
+//        // seen seqno be the one *before* the one which is expected to be
+//        // received next by the NakReceiverWindow (head-1)
+//
+//        // changed by bela (April 19 2004): we don't change the value if received and delivered msgs are empty
+//        /*if((delivered_msgs.size() == 0) && (msgs.size() == 0)) {
+//            highest_seen=0;
+//            return;
+//        }*/
+//
+//
+//        // The highest seqno is the last of the delivered messages, to start with,
+//        // or again the one before the first seqno expected (if no delivered
+//        // msgs). Then iterate through the received messages, and find the highest seqno *before* a gap
+//        Long highest_seqno=null;
+//        if(delivered_msgs.size() > 0) {
+//            try {
+//                highest_seqno=(Long)delivered_msgs.lastKey();
+//                ret=highest_seqno.longValue();
+//            }
+//            catch(NoSuchElementException ex) {
+//            }
+//        }
+//        else {
+//            ret=Math.max(head - 1, 0);
+//        }
+//
+//        // Now check the received msgs head to tail. if there is an entry
+//        // with a non-null msg, increment ret until we find an entry with
+//        // a null msg
+//        for(Iterator it=received_msgs.entrySet().iterator(); it.hasNext();) {
+//            entry=(Map.Entry)it.next();
+//            if(entry.getValue() != null)
+//                ret=((Long)entry.getKey()).longValue();
+//            else
+//                break;
+//        }
+//        highest_seen=Math.max(ret, 0);
+//    }
 
 
     /**
