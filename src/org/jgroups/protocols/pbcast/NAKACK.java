@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.32 2005/04/08 07:23:02 belaban Exp $
+// $Id: NAKACK.java,v 1.33 2005/04/08 07:53:38 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -470,7 +470,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
             log.trace("sending msg #" + msg_id);
         }
         msg.putHeader(name, new NakAckHeader(NakAckHeader.MSG, msg_id));
-        if(log.isTraceEnabled()) { // todo: remove
+        if(log.isTraceEnabled()) {
             log.trace("sent_msgs: " + printSentMsgs());
         }
 
