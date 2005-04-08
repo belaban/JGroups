@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindowTest.java,v 1.3 2004/04/21 23:08:16 belaban Exp $
+// $Id: NakReceiverWindowTest.java,v 1.4 2005/04/08 12:58:46 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -57,8 +57,8 @@ public class NakReceiverWindowTest extends TestCase {
         NakReceiverWindow win=new NakReceiverWindow(null, 100);
         win.add(101, new Message());
         win.add(100, new Message());
-        assertTrue(win.getLowestSeen() == 100);
-        assertTrue(win.getHighestSeen() == 101);
+        assertEquals(100, win.getLowestSeen());
+        assertEquals(101, win.getHighestSeen());
     }
 
     public void test6() throws Exception {
@@ -166,18 +166,61 @@ public class NakReceiverWindowTest extends TestCase {
     }
 
 
+    public void test13() throws Exception {
+        NakReceiverWindow win=new NakReceiverWindow(null, 1);
+        win.add(1, new Message());
+        win.add(2, new Message());
+        win.add(3, new Message());
+        win.add(4, new Message());
+        assertEquals(1, win.getLowestSeen());
+        assertEquals(4, win.getHighestSeen());
 
-
-
-    /*
-    public void test12() {
-	NakReceiverWindow win=new NakReceiverWindow(null, 22);
-	
-	System.out.println("win.getHighestReceived()=" + win.getHighestReceived() +
-			   "\nwin.getHighestDelivered()=" + win.getHighestDelivered() +
-			   "\nwin.getHighestSeen()=" + win.getHighestSeen());
+        win.remove();
+        win.remove();
+        win.add(5, new Message());
+        win.add(6, new Message());
+        assertEquals(1, win.getLowestSeen());
+        assertEquals(6, win.getHighestSeen());
+        win.stable(2);
+        assertEquals(2, win.getLowestSeen());
     }
-    */
+
+
+
+
+    public void testUpdateHighestSeen() {
+        add(1000);
+        add(2000);
+        add(3000);
+        add(4000);
+        add(5000);
+        add(10000);
+        add(15000);
+        add(20000);
+        add(30000);
+    }
+
+    public void test1000() {
+        add(1000);
+    }
+
+    public void test10000() {
+        add(10000);
+    }
+
+
+    void add(int num_msgs) {
+        long start, stop;
+        double time_per_msg;
+        NakReceiverWindow win=new NakReceiverWindow(null, 1);
+        start=System.currentTimeMillis();
+        for(int i=1; i < 1 + num_msgs; i++) {
+            win.add(i, new Message());
+        }
+        stop=System.currentTimeMillis();
+        time_per_msg=(stop-start) / (double)num_msgs;
+        System.out.println("-- time for " + num_msgs + " msgs: " + (stop-start) + ", " + time_per_msg + " ms/msg");
+    }
 
 
 
