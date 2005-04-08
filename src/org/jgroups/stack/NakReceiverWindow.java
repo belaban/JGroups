@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindow.java,v 1.16 2004/12/28 16:00:37 belaban Exp $
+// $Id: NakReceiverWindow.java,v 1.17 2005/04/08 07:52:58 belaban Exp $
 
 
 package org.jgroups.stack;
@@ -76,7 +76,7 @@ public class NakReceiverWindow {
     private final TreeMap received_msgs=new TreeMap();
 
     /** TreeMap<Long,Message>. Delivered (= seen by all members) messages. A remove() method causes a message to be
-     moved from received_msgs to delivered_msgs. Message garbage colection will gradually remove elements in this map */
+     moved from received_msgs to delivered_msgs. Message garbage collection will gradually remove elements in this map */
     private final TreeMap delivered_msgs=new TreeMap();
 
     /**
