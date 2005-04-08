@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.61 2005/04/08 14:05:16 belaban Exp $
+// $Id: UDP.java,v 1.62 2005/04/08 16:08:04 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -1641,14 +1641,14 @@ public class UDP extends Protocol implements Runnable {
                     handleMessage(msg);
                 }
                 catch(QueueClosedException closed_ex) {
-                     if(log.isDebugEnabled()) log.debug("packet_handler thread terminating");
                     break;
                 }
                 catch(Throwable th) {
-                    if(log.isErrorEnabled()) log.error("exception sending packet: " + Util.printStackTrace(th));
+                    if(log.isErrorEnabled()) log.error("exception sending packet", th);
                 }
                 msg=null; // let's give the poor garbage collector a hand...
             }
+            if(log.isTraceEnabled()) log.trace("packet_handler thread terminating");
         }
 
         protected void handleMessage(Message msg) throws Exception {
@@ -1685,81 +1685,80 @@ public class UDP extends Protocol implements Runnable {
         long                total_bytes=0;
         /** HashMap<Address, List<Message>>. Keys are destinations, values are lists of Messages */
         final HashMap       msgs=new HashMap(11);
-        MyTask              task=null;
-        final Object        task_mutex=new Object();
 
 
-        class MyTask implements TimeScheduler.Task {
-            boolean  running=true;
+        void start() {
+            super.start();
+            t.setName("UDP.BundlingOutgoingPacketHandler thread");
+        }
 
-            public boolean cancelled() {
-                return !running;
-            }
 
-            public void cancel() {
-                running=false;
-            }
-
-            public long nextInterval() {
-                return max_bundle_timeout;
-            }
-
-            public void run() {
-                if(running)
+        public void run() {
+            while(outgoing_queue != null) {
+                try {
+                    total_bytes=0;
+                    outgoing_queue.peek();
+                    waitForMessagesToAccumulate(outgoing_queue, max_bundle_size, max_bundle_timeout);
                     bundleAndSend();
-                cancel(); // only run once
+                }
+                catch(QueueClosedException closed_ex) {
+                    break;
+                }
+                catch(Throwable th) {
+                    if(log.isErrorEnabled()) log.error("exception sending packet", th);
+                }
             }
+            bundleAndSend();
+            if(log.isTraceEnabled()) log.trace("packet_handler thread terminating");
         }
 
 
-        void startTimer() {
-            synchronized(task_mutex) {
-                if(task == null || task.cancelled()) {
-                    task=new MyTask();
-                    timer.add(task);
+        void waitForMessagesToAccumulate(Queue q, long max_size, long max_time) {
+            Message msg;
+            long    len;
+            long    start=System.currentTimeMillis();
+            long    time_to_wait=max_time, waited_time;
+            boolean running=true;
+
+            while(running) {
+                try {
+                    msg=(Message)q.remove(time_to_wait);
+                    len=msg.size();
+                    checkLength(len);
+                    waited_time=System.currentTimeMillis() - start;
+                    time_to_wait-=waited_time;
                     if(log.isTraceEnabled())
-                        log.trace("started bundling task");
+                        log.trace("accumulated bytes: " + total_bytes + ", waited time: " + waited_time);
+
+                    if(total_bytes + len >= max_size || time_to_wait <= 0)
+                        running=false;
+                    addMessage(msg);
+                    total_bytes+=len;
+                }
+                catch(TimeoutException timeout) {
+                    break;
+                }
+                catch(QueueClosedException e) {
+                    break;
+                }
+                catch(Exception ex) {
+                    log.error("failure in bundling", ex);
                 }
             }
         }
 
-        void stopTimer() {
-            synchronized(task_mutex) {
-                if(task != null) {
-                    task.cancel();
-                    task=null;
-                    if(log.isTraceEnabled())
-                        log.trace("stopped bundling task");
-                }
-            }
-        }
 
-
-        void stop() {
-            stopTimer();
-            super.stop();
-        }
-
-        protected void handleMessage(Message msg) throws Exception {
-            Address        dst=msg.getDest();
-            long           len;
-            List           tmp;
-
-            len=msg.size();
+        void checkLength(long len) throws Exception {
             if(len > max_bundle_size)
-                throw new Exception("UDP.BundlingOutgoingPacketHandler.handleMessage(): " +
-                        "message size (" + len + ") is greater than UDP fragmentation size. " +
-                        "Set the fragmentation/bundle size in FRAG and UDP correctly");
+                throw new Exception("UDP.BundlingOutgoingPacketHandler.handleMessage(): message size (" + len +
+                                    ") is greater than UDP fragmentation size. " +
+                                    "Set the fragmentation/bundle size in FRAG and UDP correctly");
+        }
 
-            if(log.isTraceEnabled())
-                log.trace("accumulated bytes: " + total_bytes);
-            if(total_bytes + len >= max_bundle_size) {
-                if(log.isTraceEnabled()) log.trace("sending " + total_bytes + " bytes");
-                bundleAndSend(); // send all pending message and clear table
-                total_bytes=0;
-                stopTimer(); // this is more of a reset than a stop
-            }
 
+        void addMessage(Message msg) {
+            List    tmp;
+            Address dst=msg.getDest();
             synchronized(msgs) {
                 tmp=(List)msgs.get(dst);
                 if(tmp == null) {
@@ -1767,13 +1766,12 @@ public class UDP extends Protocol implements Runnable {
                     msgs.put(dst, tmp);
                 }
                 tmp.add(msg);
-                total_bytes+=len;
             }
-            startTimer(); // doesn't start if already running
         }
 
 
-        void bundleAndSend() {
+
+        private void bundleAndSend() {
             Map.Entry      entry;
             IpAddress      dst;
             Buffer         buffer;
@@ -1781,12 +1779,11 @@ public class UDP extends Protocol implements Runnable {
             int            port;
             List           l;
 
-            if(log.isTraceEnabled()) log.trace("sending msgs: " + dumpMessages(msgs));
             synchronized(msgs) {
-                // stopTimer();
                 if(msgs.size() == 0)
                     return;
 
+                if(log.isTraceEnabled()) log.trace("sending msgs: " + dumpMessages(msgs));
                 for(Iterator it=msgs.entrySet().iterator(); it.hasNext();) {
                     entry=(Map.Entry)it.next();
                     dst=(IpAddress)entry.getKey();
@@ -1794,8 +1791,10 @@ public class UDP extends Protocol implements Runnable {
                     port=dst.getPort();
                     l=(List)entry.getValue();
                     try {
-                        buffer=listToBuffer(l, dst);
-                        doSend(buffer, addr, port);
+                        if(l.size() > 0) {
+                            buffer=listToBuffer(l, dst);
+                            doSend(buffer, addr, port);
+                        }
                     }
                     catch(IOException e) {
                         if(log.isErrorEnabled()) log.error("exception sending msg (to dest=" + dst + "): " + e);
@@ -1805,6 +1804,7 @@ public class UDP extends Protocol implements Runnable {
             }
         }
     }
+
 
     String dumpMessages(HashMap map) {
         StringBuffer sb=new StringBuffer();
@@ -1823,41 +1823,5 @@ public class UDP extends Protocol implements Runnable {
         return sb.toString();
     }
 
-
-//    class MessageList {
-//        long  total_size=0;
-//        List  l=new List();
-//
-//        void add(Message msg, int len) {
-//            total_size+=len;
-//            l.add(msg);
-//        }
-//
-//        public void removeAll() {
-//            l.removeAll();
-//            total_size=0;
-//        }
-//
-//        public long getTotalSize() {
-//            return total_size;
-//        }
-//
-//        public void setTotalSize(long s) {
-//            total_size=s;
-//        }
-//
-//        List getList() {
-//            return l;
-//        }
-//
-//        public int size() {
-//            return l.size();
-//        }
-//
-//        public String toString() {
-//            return super.toString() + " [total size=" + total_size + "bytes]";
-//        }
-//    }
-//
 
 }
