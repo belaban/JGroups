@@ -1,4 +1,4 @@
-// $Id: Queue.java,v 1.21 2005/02/18 08:16:33 belaban Exp $
+// $Id: Queue.java,v 1.22 2005/04/11 12:54:56 belaban Exp $
 
 package org.jgroups.util;
 
@@ -278,7 +278,7 @@ public class Queue {
             /*get the next value*/
             retval=removeInternal();
             /*null result means we timed out*/
-            if(retval == null) throw new TimeoutException();
+            if(retval == null) throw new TimeoutException("timeout=" + timeout + "ms");
 
             /*if we reached an end marker we are going to close the queue*/
             if(retval == endMarker) {
@@ -416,7 +416,7 @@ public class Queue {
 
             retval=head != null? head.obj : null;
 
-            if(retval == null) throw new TimeoutException();
+            if(retval == null) throw new TimeoutException("timeout=" + timeout + "ms");
 
             if(retval == endMarker) {
                 close(false);
