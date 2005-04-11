@@ -1,6 +1,6 @@
 
 
-//$Id: ENCRYPT.java,v 1.7 2005/04/08 06:41:23 steview Exp $
+//$Id: ENCRYPT.java,v 1.8 2005/04/11 14:34:13 steview Exp $
 
 package org.jgroups.protocols;
 
@@ -861,9 +861,10 @@ final Map keyMap = new WeakHashMap();
 	 */
 	private  void drainUpQueue() throws QueueClosedException, Exception
 	{
-		synchronized(upLock){
+		//we do not synchronize here as we only have one up thread so we should never get an issue
+		//synchronized(upLock){
 			Event tmp =null;
-			while ((tmp = (Event)upMessageQueue.poll(1L)) != null){				
+			while ((tmp = (Event)upMessageQueue.poll(0L)) != null){				
 				//if (log.isDebugEnabled()){
 				//	log.info("queue draining with message " + tmp);
 				//}
@@ -880,7 +881,7 @@ final Map keyMap = new WeakHashMap();
 						}
 					}
 			}
-		}
+		//}
 	}
 
 
@@ -1129,13 +1130,14 @@ final Map keyMap = new WeakHashMap();
 	 */
 	private void drainDownQueue() throws Exception, QueueClosedException
 	{
-		synchronized(downLock){
+//		we do not synchronize here as we only have one down thread so we should never get an issue
+		//synchronized(downLock){
 			// first lets replay any oustanding events
 			Event tmp =null;
-			while((tmp = (Event)downMessageQueue.poll(1L) )!= null){
+			while((tmp = (Event)downMessageQueue.poll(0L) )!= null){
 				sendDown(tmp);
 			}
-		}
+		//}
 	}
 
 
