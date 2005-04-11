@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.149 2005/04/08 08:12:31 belaban Exp $
+Revision: $Id: history.txt,v 1.150 2005/04/11 09:00:24 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 

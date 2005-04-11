@@ -32,7 +32,7 @@ import java.util.*;
  * the unicast routing caches should ensure that unicasts are only sent via 1 interface in almost all cases.
  * 
  * @author Bela Ban Oct 2003
- * @version $Id: UDP1_4.java,v 1.20 2004/09/23 16:29:42 belaban Exp $
+ * @version $Id: UDP1_4.java,v 1.21 2005/04/11 09:00:26 belaban Exp $
  * todo: sending of dummy packets
  */
 public class UDP1_4 extends Protocol implements  Receiver {
@@ -550,7 +550,7 @@ public class UDP1_4 extends Protocol implements  Receiver {
 
         msg=(Message)evt.getArg();
 
-        if(udp_hdr != null && udp_hdr.group_addr != null) {
+        if(udp_hdr != null && udp_hdr.channel_name != null) {
             // added patch by Roland Kurmann (March 20 2003)
             msg.putHeader(name, udp_hdr);
         }
@@ -651,8 +651,8 @@ public class UDP1_4 extends Protocol implements  Receiver {
             /* Discard all messages destined for a channel with a different name */
             String ch_name=null;
 
-            if(hdr.group_addr != null)
-                ch_name=hdr.group_addr;
+            if(hdr.channel_name != null)
+                ch_name=hdr.channel_name;
 
             // Discard if message's group name is not the same as our group name unless the
             // message is a diagnosis message (special group name DIAG_GROUP)

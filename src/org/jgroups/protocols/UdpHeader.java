@@ -1,4 +1,4 @@
-// $Id: UdpHeader.java,v 1.5 2004/10/04 20:43:31 belaban Exp $
+// $Id: UdpHeader.java,v 1.6 2005/04/11 09:00:27 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -12,17 +12,17 @@ import java.io.*;
 
 
 public class UdpHeader extends Header implements Streamable {
-    public String group_addr=null;
+    public String channel_name=null;
 
     public UdpHeader() {
     }  // used for externalization
 
     public UdpHeader(String n) {
-        group_addr=n;
+        channel_name=n;
     }
 
     public String toString() {
-        return "[UDP:group_addr=" + group_addr + ']';
+        return "[UDP:channel_name=" + channel_name + ']';
     }
 
 
@@ -31,20 +31,20 @@ public class UdpHeader extends Header implements Streamable {
     }
 
     public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeUTF(group_addr);
+        out.writeUTF(channel_name);
     }
 
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        group_addr=in.readUTF();
+        channel_name=in.readUTF();
     }
 
 
     public void writeTo(DataOutputStream out) throws IOException {
-        out.writeUTF(group_addr);
+        out.writeUTF(channel_name);
     }
 
     public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
-        group_addr=in.readUTF();
+        channel_name=in.readUTF();
     }
 }
