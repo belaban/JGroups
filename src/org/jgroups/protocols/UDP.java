@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.63 2005/04/11 09:00:26 belaban Exp $
+// $Id: UDP.java,v 1.64 2005/04/11 15:28:56 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -1698,12 +1698,15 @@ public class UDP extends Protocol implements Runnable {
 
 
         public void run() {
+            Message msg=null, leftover=null;
+            long start=0;
             while(outgoing_queue != null) {
                 try {
                     total_bytes=0;
-                    outgoing_queue.peek();
-                    waitForMessagesToAccumulate(outgoing_queue, max_bundle_size, max_bundle_timeout);
-                    bundleAndSend();
+                    msg=leftover != null? leftover : (Message)outgoing_queue.remove(); // blocks until message is available
+                    start=System.currentTimeMillis();
+                    leftover=waitForMessagesToAccumulate(msg, outgoing_queue, max_bundle_size, start, max_bundle_timeout);
+                    bundleAndSend(start);
                 }
                 catch(QueueClosedException closed_ex) {
                     break;
@@ -1712,43 +1715,67 @@ public class UDP extends Protocol implements Runnable {
                     if(log.isErrorEnabled()) log.error("exception sending packet", th);
                 }
             }
-            bundleAndSend();
+            bundleAndSend(start);
             if(log.isTraceEnabled()) log.trace("packet_handler thread terminating");
         }
 
 
-        void waitForMessagesToAccumulate(Queue q, long max_size, long max_time) {
-            Message msg;
-            long    len;
-            long    start=System.currentTimeMillis();
-            long    time_to_wait=max_time, waited_time;
-            boolean running=true;
+        /**
+         * Waits until max_size bytes have accumulated in the queue, or max_time milliseconds have elapsed.
+         * When a message cannot be added to the ready-to-send bundle, it is returned, so the caller can
+         * re-submit it again next time.
+         * @param m
+         * @param q
+         * @param max_size
+         * @param max_time
+         * @return
+         */
+        Message waitForMessagesToAccumulate(Message m, Queue q, long max_size, long start_time, long max_time) {
+            Message msg, leftover=null;
+            boolean running=true, size_exceeded=false, time_reached=false;
+            long    len, time_to_wait=max_time, waited_time=0;
 
             while(running) {
                 try {
-                    msg=(Message)q.remove(time_to_wait);
+                    msg=m != null? m : (Message)q.remove(time_to_wait);
+                    m=null; // necessary, otherwise we get 'm' again in subsequent iterations of the same loop !
                     len=msg.size();
                     checkLength(len);
-                    waited_time=System.currentTimeMillis() - start;
-                    time_to_wait-=waited_time;
-                    if(log.isTraceEnabled())
-                        log.trace("accumulated bytes: " + total_bytes + ", waited time: " + waited_time);
+                    waited_time=System.currentTimeMillis() - start_time;
+                    time_to_wait=max_time - waited_time;
+                    size_exceeded=total_bytes + len > max_size;
+                    time_reached=time_to_wait <= 0;
 
-                    if(total_bytes + len >= max_size || time_to_wait <= 0)
+                    if(size_exceeded) {
                         running=false;
-                    addMessage(msg);
-                    total_bytes+=len;
+                        leftover=msg;
+                    }
+                    else {
+                        addMessage(msg);
+                        total_bytes+=len;
+                        if(time_reached)
+                            running=false;
+                    }
                 }
                 catch(TimeoutException timeout) {
+                    waited_time=System.currentTimeMillis() - start_time;
+                    time_reached=true;
                     break;
                 }
-                catch(QueueClosedException e) {
+                catch(QueueClosedException closed) {
                     break;
                 }
                 catch(Exception ex) {
                     log.error("failure in bundling", ex);
                 }
             }
+//            if(log.isTraceEnabled()) {
+//                StringBuffer sb=new StringBuffer("size_exceeded=").append(size_exceeded).append(", time_reached=");
+//                sb.append(time_reached).append(", bytes received=").append(total_bytes);
+//                sb.append(", time waited=").append(waited_time).append(")");
+//                log.trace(sb.toString());
+//            }
+            return leftover;
         }
 
 
@@ -1775,19 +1802,26 @@ public class UDP extends Protocol implements Runnable {
 
 
 
-        private void bundleAndSend() {
+        private void bundleAndSend(long start_time) {
             Map.Entry      entry;
             IpAddress      dst;
             Buffer         buffer;
             InetAddress    addr;
             int            port;
             List           l;
+            long           stop_time=System.currentTimeMillis();
 
             synchronized(msgs) {
                 if(msgs.size() == 0)
                     return;
+                if(start_time == 0)
+                    start_time=System.currentTimeMillis();
 
-                if(log.isTraceEnabled()) log.trace("sending msgs: " + dumpMessages(msgs));
+                if(log.isTraceEnabled()) {
+                    StringBuffer sb=new StringBuffer("sending ").append(numMsgs(msgs)).append(" msgs (");
+                    sb.append(total_bytes).append(" bytes, ").append(stop_time-start_time).append("ms)");
+                    log.trace(sb.toString());
+                }
                 for(Iterator it=msgs.entrySet().iterator(); it.hasNext();) {
                     entry=(Map.Entry)it.next();
                     dst=(IpAddress)entry.getKey();
@@ -1807,6 +1841,17 @@ public class UDP extends Protocol implements Runnable {
                 msgs.clear();
             }
         }
+
+        private int numMsgs(HashMap map) {
+            Collection values=map.values();
+            List l;
+            int size=0;
+            for(Iterator it=values.iterator(); it.hasNext();) {
+                l=(List)it.next();
+                size+=l.size();
+            }
+            return size;
+        }
     }
 
 
@@ -1814,12 +1859,16 @@ public class UDP extends Protocol implements Runnable {
         StringBuffer sb=new StringBuffer();
         Map.Entry    entry;
         List         l;
+        Object       key;
         if(map != null) {
             synchronized(map) {
                 for(Iterator it=map.entrySet().iterator(); it.hasNext();) {
                     entry=(Map.Entry)it.next();
+                    key=entry.getKey();
+                    if(key == null)
+                        key="null";
                     l=(List)entry.getValue();
-                    sb.append(entry.getKey()).append(": ");
+                    sb.append(key).append(": ");
                     sb.append(l.size()).append(" msgs\n");
                 }
             }
