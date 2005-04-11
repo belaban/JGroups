@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.62 2005/04/08 16:08:04 belaban Exp $
+// $Id: UDP.java,v 1.63 2005/04/11 09:00:26 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -65,7 +65,9 @@ public class UDP extends Protocol implements Runnable {
     IpAddress       local_addr=null;
 
     /** The name of the group to which this member is connected */
-    String          group_addr=null;
+    String          channel_name=null;
+
+    UdpHeader       udp_hdr=null;
 
     /** The multicast address (mcast address and port) this member uses */
     IpAddress       mcast_addr=null;
@@ -312,7 +314,7 @@ public class UDP extends Protocol implements Runnable {
 
     String getDiagResponse() {
         StringBuffer sb=new StringBuffer();
-        sb.append(local_addr).append(" (").append(group_addr).append(')');
+        sb.append(local_addr).append(" (").append(channel_name).append(')');
         sb.append(" [").append(mcast_addr_name).append(':').append(mcast_port).append("]\n");
         sb.append("Version=").append(Version.version).append(", cvs=\"").append(Version.cvs).append("\"\n");
         sb.append("bound to ").append(bind_addr).append(':').append(bind_port).append('\n');
@@ -621,9 +623,10 @@ public class UDP extends Protocol implements Runnable {
 
         msg=(Message)evt.getArg();
 
-        if(group_addr != null) {
+        if(channel_name != null) {
             // added patch by Roland Kurmann (March 20 2003)
-            msg.putHeader(name, new UdpHeader(group_addr));
+            // msg.putHeader(name, new UdpHeader(channel_name));
+            msg.putHeader(name, udp_hdr);
         }
 
         dest_addr=msg.getDest();
@@ -741,9 +744,9 @@ public class UDP extends Protocol implements Runnable {
 
 
     void handleMessage(Message msg) {
-        Event evt;
+        Event     evt;
         UdpHeader hdr;
-        Address dst=msg.getDest();
+        Address   dst=msg.getDest();
 
         if(dst == null)
             dst=mcast_addr;
@@ -771,11 +774,11 @@ public class UDP extends Protocol implements Runnable {
         if(hdr != null) {
 
             /* Discard all messages destined for a channel with a different name */
-            String ch_name=hdr.group_addr;
+            String ch_name=hdr.channel_name;
 
             // Discard if message's group name is not the same as our group name unless the
             // message is a diagnosis message (special group name DIAG_GROUP)
-            if(ch_name != null && group_addr != null && !group_addr.equals(ch_name) &&
+            if(ch_name != null && channel_name != null && !channel_name.equals(ch_name) &&
                     !ch_name.equals(Util.DIAG_GROUP)) {
                 if(log.isWarnEnabled()) log.warn("discarded message from different group (" +
                         ch_name + "). Sender was " + msg.getSrc());
@@ -1401,37 +1404,38 @@ public class UDP extends Protocol implements Runnable {
     void handleDownEvent(Event evt) {
         switch(evt.getType()) {
 
-            case Event.TMP_VIEW:
-            case Event.VIEW_CHANGE:
-                synchronized(members) {
-                    members.removeAllElements();
-                    Vector tmpvec=((View)evt.getArg()).getMembers();
-                    for(int i=0; i < tmpvec.size(); i++)
-                        members.addElement(tmpvec.elementAt(i));
-                }
-                break;
+        case Event.TMP_VIEW:
+        case Event.VIEW_CHANGE:
+            synchronized(members) {
+                members.removeAllElements();
+                Vector tmpvec=((View)evt.getArg()).getMembers();
+                for(int i=0; i < tmpvec.size(); i++)
+                    members.addElement(tmpvec.elementAt(i));
+            }
+            break;
 
-            case Event.GET_LOCAL_ADDRESS:   // return local address -> Event(SET_LOCAL_ADDRESS, local)
-                passUp(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
-                break;
+        case Event.GET_LOCAL_ADDRESS:   // return local address -> Event(SET_LOCAL_ADDRESS, local)
+            passUp(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
+            break;
 
-            case Event.CONNECT:
-                group_addr=(String)evt.getArg();
+        case Event.CONNECT:
+            channel_name=(String)evt.getArg();
+            udp_hdr=new UdpHeader(channel_name);
 
-                // removed March 18 2003 (bela), not needed (handled by GMS)
-                // changed July 2 2003 (bela): we discard CONNECT_OK at the GMS level anyway, this might
-                // be needed if we run without GMS though
-                passUp(new Event(Event.CONNECT_OK));
-                break;
+            // removed March 18 2003 (bela), not needed (handled by GMS)
+            // changed July 2 2003 (bela): we discard CONNECT_OK at the GMS level anyway, this might
+            // be needed if we run without GMS though
+            passUp(new Event(Event.CONNECT_OK));
+            break;
 
-            case Event.DISCONNECT:
-                passUp(new Event(Event.DISCONNECT_OK));
-                break;
+        case Event.DISCONNECT:
+            passUp(new Event(Event.DISCONNECT_OK));
+            break;
 
-            case Event.CONFIG:
-                 if(log.isDebugEnabled()) log.debug("received CONFIG event: " + evt.getArg());
-                handleConfigEvent((HashMap)evt.getArg());
-                break;
+        case Event.CONFIG:
+            if(log.isDebugEnabled()) log.debug("received CONFIG event: " + evt.getArg());
+            handleConfigEvent((HashMap)evt.getArg());
+            break;
         }
     }
 
