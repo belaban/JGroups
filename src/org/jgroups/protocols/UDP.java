@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.64 2005/04/11 15:28:56 belaban Exp $
+// $Id: UDP.java,v 1.65 2005/04/11 16:29:52 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -1820,6 +1820,8 @@ public class UDP extends Protocol implements Runnable {
                 if(log.isTraceEnabled()) {
                     StringBuffer sb=new StringBuffer("sending ").append(numMsgs(msgs)).append(" msgs (");
                     sb.append(total_bytes).append(" bytes, ").append(stop_time-start_time).append("ms)");
+                    sb.append(" to ").append(msgs.size()).append(" destination(s)");
+                    if(msgs.size() > 1) sb.append(" (dests=").append(msgs.keySet()).append(")");
                     log.trace(sb.toString());
                 }
                 for(Iterator it=msgs.entrySet().iterator(); it.hasNext();) {
