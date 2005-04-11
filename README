@@ -1,4 +1,4 @@
-// $Id: README,v 1.4 2005/01/07 11:04:09 belaban Exp $
+// $Id: README,v 1.5 2005/04/11 08:43:15 belaban Exp $
 
 
 
@@ -47,7 +47,7 @@ enables replication of data structures across process boundaries.
 
 
 
-Group communication is important the following situations:
+Group communication is important in the following situations:
 
  - A service has to be replicated for availability. As long as at
    least one of the servers remains operational, the service itself
