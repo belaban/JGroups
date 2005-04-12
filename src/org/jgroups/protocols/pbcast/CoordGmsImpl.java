@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.19 2005/04/07 15:32:36 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.20 2005/04/12 15:09:13 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -651,7 +651,7 @@ public class CoordGmsImpl extends GmsImpl {
         Vector coords=null; // list of subgroup coordinators to be contacted
 
         public void start(Vector coords) {
-            if(t == null) {
+            if(t == null || !t.isAlive()) {
                 this.coords=(Vector)(coords != null? coords.clone() : null);
                 t=new Thread(this, "MergeTask thread");
                 t.setDaemon(true);
