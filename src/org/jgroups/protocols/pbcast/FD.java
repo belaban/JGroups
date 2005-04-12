@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.5 2004/09/23 16:29:38 belaban Exp $
+// $Id: FD.java,v 1.6 2005/04/12 10:39:53 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -34,6 +34,7 @@ import java.util.Vector;
 public class FD extends Protocol implements Runnable {
     Address local_addr=null;
     Thread checker=null;   // checks timestamps for timeout, generates SUSPECT event
+    final Object checker_lock=new Object();
     long timeout=6000;   // number of millisecs to wait for a member to be suspected
     // (should be higher than the gossip_interval value in PBCAST
     final Hashtable members=new Hashtable(11); // keys=Addresses (members), vals=Entries (timestamp)
@@ -98,12 +99,11 @@ public class FD extends Protocol implements Runnable {
                 break;
         }
 
-        passUp(evt);                                        // pass up to the layer above us
+        passUp(evt);   // pass up to the layer above us
     }
 
 
     public void down(Event evt) {
-        Message msg;
         View v;
         Vector mbrs;
         Address mbr;
@@ -140,7 +140,7 @@ public class FD extends Protocol implements Runnable {
         Address mbr;
         long timestamp, diff;
 
-        while(checker != null && members.size() > 0) {
+        while(checker != null && Thread.currentThread().equals(checker) && members.size() > 0) {
             for(Enumeration e=members.keys(); e.hasMoreElements();) {
                 mbr=(Address)e.nextElement();
                 timestamp=((Entry)members.get(mbr)).timestamp;
@@ -158,29 +158,33 @@ public class FD extends Protocol implements Runnable {
     }
 
 
-    synchronized void startChecker() {
-        if(checker == null) {
-            checker=new Thread(this, "FD.CheckerThread");
-            checker.setDaemon(true);
-            checker.start();
+    void startChecker() {
+        synchronized(checker_lock) {
+            if(checker == null) {
+                checker=new Thread(this, "FD.CheckerThread");
+                checker.setDaemon(true);
+                checker.start();
+            }
         }
     }
 
-    synchronized void stopChecker() {
+    void stopChecker() {
         Thread tmp=null;
-        if(checker != null && checker.isAlive()) {
-            tmp=checker;
+        synchronized(checker_lock) {
+            if(checker != null && checker.isAlive()) {
+                tmp=checker;
+                checker=null;
+                tmp.interrupt();
+                try {
+                    tmp.join(timeout);
+                }
+                catch(Exception ex) {
+                }
+                if(tmp.isAlive())
+                    if(log.isWarnEnabled()) log.warn("interrupted checker thread is still alive !");
+            }
             checker=null;
-            tmp.interrupt();
-            try {
-                tmp.join(timeout);
-            }
-            catch(Exception ex) {
-            }
-            if(tmp.isAlive())
-                if(log.isWarnEnabled()) log.warn("interrupted checker thread is still alive !");
         }
-        checker=null;
     }
 
 
