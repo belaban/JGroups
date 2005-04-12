@@ -1,13 +1,10 @@
-// $Id: MessageSerializationTest.java,v 1.7 2004/10/07 15:47:21 belaban Exp $
+// $Id: MessageSerializationTest.java,v 1.8 2005/04/12 13:52:45 belaban Exp $
 
 package org.jgroups.tests;
 
 /**
- * Title:        Java Groups Communications
- * Description:  Contact me at <a href="mailto:mail@filip.net">mail@filip.net</a>
- * Copyright:    Copyright (c) 2002
- * Company:      www.filip.net
  * @author Filip Hanik
+ * @author Bela Ban
  * @version 1.0
  */
 
