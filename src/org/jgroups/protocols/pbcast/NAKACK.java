@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.34 2005/04/12 12:48:59 belaban Exp $
+// $Id: NAKACK.java,v 1.35 2005/04/12 13:53:43 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -6,11 +6,10 @@ import org.jgroups.*;
 import org.jgroups.stack.NakReceiverWindow;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.Retransmitter;
-import org.jgroups.util.Range;
-import org.jgroups.util.TimeScheduler;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import java.util.*;
+import java.io.*;
 
 
 /**
@@ -376,9 +375,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
                         return;
 
                     case NakAckHeader.XMIT_RSP:
-                        if(log.isTraceEnabled()) {
+                        if(log.isTraceEnabled())
                             log.trace("received missing messages " + hdr.range);
-                        }
                         handleXmitRsp(msg);
                         return;
 
@@ -614,6 +612,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
 
 
     void sendXmitRsp(Address dest, LinkedList xmit_list, long first_seqno, long last_seqno) {
+        Buffer buf;
         if(xmit_list == null || xmit_list.size() == 0) {
             if(log.isErrorEnabled())
                 log.error("xmit_list is empty");
@@ -622,10 +621,18 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
         if(use_mcast_xmit)
             dest=null;
 
-        Message msg=new Message(dest, null, xmit_list);
-        msg.putHeader(name, new NakAckHeader(NakAckHeader.XMIT_RSP, first_seqno, last_seqno));
-        passDown(new Event(Event.MSG, msg));
+        try {
+            buf=Util.msgListToByteBuffer(xmit_list);
+            Message msg=new Message(dest, null, buf.getBuf(), buf.getOffset(), buf.getLength());
+            msg.putHeader(name, new NakAckHeader(NakAckHeader.XMIT_RSP, first_seqno, last_seqno));
+            passDown(new Event(Event.MSG, msg));
+        }
+        catch(IOException ex) {
+            log.error("failed marshalling xmit list", ex);
+        }
     }
+
+
 
 
     void handleXmitRsp(Message msg) {
@@ -638,7 +645,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
             return;
         }
         try {
-            list=(LinkedList)msg.getObject();
+            list=Util.byteBufferToMessageList(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
             if(list != null) {
                 for(Iterator it=list.iterator(); it.hasNext();) {
                     m=(Message)it.next();
@@ -655,37 +662,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
     }
 
 
-//    void handleXmitRsp(Message msg) {
-//        LinkedList   list;
-//        Message      m;
-//        Object       hdr;
-//
-//        if(msg == null) {
-//            if(log.isWarnEnabled()) log.warn("NAKACK.handleXmitRsp()", "message is null");
-//            return;
-//        }
-//        try {
-//            list=(LinkedList)msg.getObject();
-//            if(list != null) {
-//                for(Iterator it=list.iterator(); it.hasNext();) {
-//                    m=(Message)it.next();
-//
-//                    hdr=m.getHeader(name);
-//                    if(hdr == null || !(hdr instanceof NakAckHeader)) {
-//                        if(log.isErrorEnabled()) log.error("NAKACK.handleXmitRsp()", "retransmitted message does not have a NakAckHeader");
-//                        continue;
-//                    }
-//
-//                    handleMessage(msg, (NakAckHeader)hdr);
-//                    // up(new Event(Event.MSG, m));
-//                }
-//            }
-//        }
-//        catch(Exception ex) {
-//            if(log.isErrorEnabled()) log.error("NAKACK.handleXmitRsp()",
-//                        "message did not contain a list (LinkedList) of retransmitted messages: " + ex);
-//        }
-//    }
 
 
     /**
