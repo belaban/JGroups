@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.15 2005/01/10 14:50:39 belaban Exp $
+// $Id: FD.java,v 1.16 2005/04/12 10:47:28 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -35,7 +35,7 @@ import java.util.Vector;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Revision: 1.15 $
+ * @version $Revision: 1.16 $
  */
 public class FD extends Protocol {
     Address               ping_dest=null;
@@ -56,7 +56,7 @@ public class FD extends Protocol {
     private final Object  monitor_mutex=new Object();
 
     /** Transmits SUSPECT message until view change or UNSUSPECT is received */
-    final Broadcaster   bcast_task=new Broadcaster();
+    final Broadcaster     bcast_task=new Broadcaster();
 
 
 
@@ -260,10 +260,10 @@ public class FD extends Protocol {
                 synchronized(this) {
                     stop();
                     v=(View)evt.getArg();
-                    members.removeAllElements();
+                    members.clear();
                     members.addAll(v.getMembers());
                     bcast_task.adjustSuspectedMembers(members);
-                    pingable_mbrs.removeAllElements();
+                    pingable_mbrs.clear();
                     pingable_mbrs.addAll(members);
                     passDown(evt);
                     ping_dest=(Address)getPingDest(pingable_mbrs);
