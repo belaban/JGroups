@@ -1,4 +1,4 @@
-// $Id: ViewDemo.java,v 1.4 2004/07/05 05:45:31 belaban Exp $
+// $Id: ViewDemo.java,v 1.5 2005/04/12 15:29:05 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -8,53 +8,52 @@ import org.jgroups.blocks.PullPushAdapter;
 import org.jgroups.util.Util;
 
 
-
-
-
 /**
  * Demos the reception of views using a PullPushAdapter. Just start a number of members, and kill them
  * randomly. The view should always be correct.
  */
 public class ViewDemo implements MembershipListener {
-    private Channel          channel;
-    private PullPushAdapter  adapter;
+    private Channel channel;
 
 
     public void viewAccepted(View new_view) {
-	System.out.println("** New view: " + new_view);
-			   // ", channel.getView()=" + channel.getView());
+        System.out.println("** New view: " + new_view);
+        // ", channel.getView()=" + channel.getView());
     }
 
 
-    /** Called when a member is suspected */
+    /**
+     * Called when a member is suspected
+     */
     public void suspect(Address suspected_mbr) {
-	System.out.println("Suspected(" + suspected_mbr + ')');
+        System.out.println("Suspected(" + suspected_mbr + ')');
     }
 
 
-    /** Block sending and receiving of messages until ViewAccepted is called */
+    /**
+     * Block sending and receiving of messages until ViewAccepted is called
+     */
     public void block() {
-	
-    }
 
+    }
 
 
     public void start(String props) throws Exception {
 
-	channel=new JChannel(props);
-	channel.connect("ViewDemo");
-	channel.setOpt(Channel.VIEW, Boolean.TRUE);
-	adapter=new PullPushAdapter(channel, this);
+        channel=new JChannel(props);
+        channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
+        channel.connect("ViewDemo");
+        channel.setOpt(Channel.VIEW, Boolean.TRUE);
+        new PullPushAdapter(channel, this);
 
-	while(true) {
-	    Util.sleep(10000);
-	}
-
+        while(true) {
+            Util.sleep(10000);
+        }
     }
 
 
     public static void main(String args[]) {
-	ViewDemo t=new ViewDemo();
+        ViewDemo t=new ViewDemo();
         String props="UDP(mcast_addr=224.0.0.35;mcast_port=45566;ip_ttl=32;" +
                 "mcast_send_buf_size=150000;mcast_recv_buf_size=80000):" +
                 "PING(timeout=2000;num_initial_members=3):" +
@@ -70,41 +69,41 @@ public class ViewDemo implements MembershipListener {
 
 
 
-	/*
-	  String props="TCP(start_port=7800):" +
-	  "TCPPING(initial_hosts=66.87.163.92[7800];port_range=2;" +
-	  "timeout=5000;num_initial_members=3;up_thread=true;down_thread=true):" +
-	  "VERIFY_SUSPECT(timeout=1500):" +
-	  "pbcast.STABLE(desired_avg_gossip=200000;down_thread=false;up_thread=false):"+ 
-	  "pbcast.NAKACK(down_thread=true;up_thread=true;gc_lag=100;retransmit_timeout=3000):" +
-	  "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;shun=false;" +
-	  "print_local_addr=true;down_thread=true;up_thread=true)";
-	*/
+        /*
+          String props="TCP(start_port=7800):" +
+          "TCPPING(initial_hosts=66.87.163.92[7800];port_range=2;" +
+          "timeout=5000;num_initial_members=3;up_thread=true;down_thread=true):" +
+          "VERIFY_SUSPECT(timeout=1500):" +
+          "pbcast.STABLE(desired_avg_gossip=200000;down_thread=false;up_thread=false):"+
+          "pbcast.NAKACK(down_thread=true;up_thread=true;gc_lag=100;retransmit_timeout=3000):" +
+          "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;shun=false;" +
+          "print_local_addr=true;down_thread=true;up_thread=true)";
+        */
 
 
-	for(int i=0; i < args.length; i++) {
-	    if("-help".equals(args[i])) {
-		help();
-		return;
-	    }
-	    if("-props".equals(args[i])) {
-		props=args[++i];
-		continue;
-	    }
-	    help();
-	    return;
-	}
+        for(int i=0; i < args.length; i++) {
+            if("-help".equals(args[i])) {
+                help();
+                return;
+            }
+            if("-props".equals(args[i])) {
+                props=args[++i];
+                continue;
+            }
+            help();
+            return;
+        }
 
-	try {
-	    t.start(props);
-	}
-	catch(Exception e) {
-	    System.err.println(e);
-	}
+        try {
+            t.start(props);
+        }
+        catch(Exception e) {
+            System.err.println(e);
+        }
     }
 
     static void help() {
-	System.out.println("ViewDemo [-props <properties>");
+        System.out.println("ViewDemo [-props <properties>");
     }
 
 }
