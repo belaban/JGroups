@@ -1,4 +1,4 @@
-// $Id: VERIFY_SUSPECT.java,v 1.10 2004/10/08 13:26:37 belaban Exp $
+// $Id: VERIFY_SUSPECT.java,v 1.11 2005/04/12 10:56:57 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -131,7 +131,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         Address mbr;
         long val, curr_time, diff;
 
-        while(timer != null && suspects.size() > 0) {
+        while(timer != null && Thread.currentThread().equals(timer) && suspects.size() > 0) {
             diff=0;
 
             synchronized(suspects) {
@@ -141,8 +141,8 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
                     curr_time=System.currentTimeMillis();
                     diff=curr_time - val;
                     if(diff >= timeout) {  // haven't been unsuspected, pass up SUSPECT
-                        if(log.isTraceEnabled()) log.trace("diff=" + diff + ", mbr " + mbr +
-                                " is dead (passing up SUSPECT event)");
+                        if(log.isTraceEnabled())
+                            log.trace("diff=" + diff + ", mbr " + mbr + " is dead (passing up SUSPECT event)");
                         passUp(new Event(Event.SUSPECT, mbr));
                         suspects.remove(mbr);
                         continue;
@@ -198,7 +198,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
 
 
     void startTimer() {
-        if(timer == null) {
+        if(timer == null || !timer.isAlive()) {
             timer=new Thread(this, "VERIFY_SUSPECT.TimerThread");
             timer.setDaemon(true);
             timer.start();

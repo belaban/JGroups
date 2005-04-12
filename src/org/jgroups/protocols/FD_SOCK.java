@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.19 2004/10/08 14:01:15 belaban Exp $
+// $Id: FD_SOCK.java,v 1.20 2005/04/12 10:53:28 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -48,7 +48,7 @@ public class FD_SOCK extends Protocol implements Runnable {
     Address             local_addr=null;                   // our own address
     ServerSocket        srv_sock=null;                     // server socket to which another member connects to monitor me
     InetAddress         srv_sock_bind_addr=null;           // the NIC on which the ServerSocket should listen
-    ServerSocketHandler srv_sock_handler=null;       // accepts new connections on srv_sock
+    ServerSocketHandler srv_sock_handler=null;             // accepts new connections on srv_sock
     IpAddress           srv_sock_addr=null;                // pair of server_socket:port
     Address             ping_dest=null;                    // address of the member we monitor
     Socket              ping_sock=null;                    // socket to the member we monitor
@@ -63,7 +63,7 @@ public class FD_SOCK extends Protocol implements Runnable {
     final Object        sock_mutex=new Object();           // for access to ping_sock, ping_input
     TimeScheduler timer=null;
     final BroadcastTask bcast_task=new BroadcastTask();    // to transmit SUSPECT message (until view change)
-    boolean       regular_sock_close=false;          // used by interruptPingerThread() when new ping_dest is computed
+    boolean       regular_sock_close=false;                // used by interruptPingerThread() when new ping_dest is computed
     private static final int NORMAL_TEMINATION=9;
     private static final int ABNORMAL_TEMINATION=-1;
 
@@ -186,7 +186,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                             return;
                         }
 
-                        if(log.isDebugEnabled()) log.debug("who-has-sock " + hdr.mbr);
+                        if(log.isTraceEnabled()) log.trace("who-has-sock " + hdr.mbr);
 
                         // 1. Try my own address, maybe it's me whose socket is wanted
                         if(local_addr != null && local_addr.equals(hdr.mbr) && srv_sock_addr != null) {
@@ -209,8 +209,8 @@ public class FD_SOCK extends Protocol implements Runnable {
 
                         // if(!cache.containsKey(hdr.mbr))
                         cache.put(hdr.mbr, hdr.sock_addr); // update the cache
-                        if(log.isDebugEnabled()) log.debug("i-have-sock: " + hdr.mbr + " --> " +
-                                hdr.sock_addr + " (cache is " + cache + ')');
+                        if(log.isTraceEnabled()) log.trace("i-have-sock: " + hdr.mbr + " --> " +
+                                                           hdr.sock_addr + " (cache is " + cache + ')');
 
                         if(ping_dest != null && hdr.mbr.equals(ping_dest))
                             ping_addr_promise.setResult(hdr.sock_addr);
@@ -533,13 +533,10 @@ public class FD_SOCK extends Protocol implements Runnable {
                 result=(Hashtable) get_cache_promise.getResult(get_cache_timeout);
                 if(result != null) {
                     cache.putAll(result); // replace all entries (there should be none !) in cache with the new values
-
-                    if(log.isDebugEnabled()) log.debug("got cache from " +
-                            coord + ": cache is " + cache);
+                    if(log.isTraceEnabled()) log.trace("got cache from " + coord + ": cache is " + cache);
                     return;
                 }
                 else {
-
                     if(log.isErrorEnabled()) log.error("received null cache; retrying");
                 }
             }
