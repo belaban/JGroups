@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.29 2005/03/24 14:42:10 belaban Exp $
+// $Id: Util.java,v 1.30 2005/04/12 13:52:59 belaban Exp $
 
 package org.jgroups.util;
 
@@ -278,6 +278,53 @@ public class Util {
         }
         return null;
     }
+
+
+    /**
+       * Marshalls a list of messages
+       * @param xmit_list LinkedList<Message>
+       * @return
+       * @throws IOException
+       */
+    public static Buffer msgListToByteBuffer(LinkedList xmit_list) throws IOException {
+        ExposedByteArrayOutputStream output=new ExposedByteArrayOutputStream(512);
+        DataOutputStream out=new DataOutputStream(output);
+        Message msg;
+        Buffer retval=null;
+
+        out.writeInt(xmit_list.size());
+        for(Iterator it=xmit_list.iterator(); it.hasNext();) {
+            msg=(Message)it.next();
+            msg.writeTo(out);
+        }
+        out.flush();
+        retval=new Buffer(output.getRawBuffer(), 0, output.size());
+        out.close();
+        output.close();
+        return retval;
+    }
+
+    public static LinkedList byteBufferToMessageList(byte[] buffer, int offset, int length) throws Exception {
+        LinkedList retval=null;
+        ByteArrayInputStream input=new ByteArrayInputStream(buffer, offset, length);
+        DataInputStream in=new DataInputStream(input);
+        int size=in.readInt();
+
+        if(size == 0)
+            return null;
+
+        Message msg;
+        retval=new LinkedList();
+        for(int i=0; i < size; i++) {
+            msg=new Message();
+            msg.readFrom(in);
+            retval.add(msg);
+        }
+
+        return retval;
+    }
+
+
 
 
 
