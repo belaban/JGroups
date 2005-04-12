@@ -17,11 +17,18 @@
         ucast_send_buf_size="32000"
         ip_ttl="32"
         enable_bundling="false"/>
-    <PING timeout="2000" num_initial_members="3"/>
-    <MERGE2 max_interval="10000" min_interval="5000"/>
-    <FD timeout="2000" max_tries="3" shun="true"/>
+    <PING timeout="2000"
+        num_initial_members="3"/>
+    <MERGE2 max_interval="10000"
+        min_interval="5000"/>
+    <FD timeout="2000"
+        max_tries="3"
+        shun="true"/>
     <VERIFY_SUSPECT timeout="1500"/>
-    <pbcast.NAKACK max_xmit_size="8192" use_mcast_xmit="false" gc_lag="50" retransmit_timeout="600,1200,2400,4800"/>
+    <pbcast.NAKACK max_xmit_size="8192"
+        use_mcast_xmit="false"
+        gc_lag="50"
+        retransmit_timeout="600,1200,2400,4800"/>
     <UNICAST timeout="1200,2400,3600"/>
 
     <!--
@@ -31,7 +38,14 @@
     - stability_delay: range (number of milliseconds) that we wait until sending a STABILITY message.
       This prevents STABILITY multicast storms. If max_bytes is used, this should be set to a low value (> 0 though !).
     -->
-    <pbcast.STABLE stability_delay="1000" desired_avg_gossip="20000" max_bytes="0"/>
-    <FRAG frag_size="8192" down_thread="false" up_thread="false"/>
-    <pbcast.GMS print_local_addr="true" join_timeout="3000" join_retry_timeout="2000" shun="true"/>
+    <pbcast.STABLE stability_delay="1000"
+        desired_avg_gossip="20000"
+        max_bytes="0"/>
+    <FRAG frag_size="8192"
+        down_thread="false"
+        up_thread="false"/>
+    <pbcast.GMS print_local_addr="true"
+        join_timeout="3000"
+        join_retry_timeout="2000"
+        shun="true"/>
 </config>
