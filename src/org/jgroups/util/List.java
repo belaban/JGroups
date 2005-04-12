@@ -1,4 +1,4 @@
-// $Id: List.java,v 1.9 2004/09/27 20:31:08 belaban Exp $
+// $Id: List.java,v 1.10 2005/04/12 12:59:21 belaban Exp $
 
 package org.jgroups.util;
 
@@ -18,7 +18,7 @@ import java.util.Vector;
 public class List implements Externalizable, Cloneable {
     protected Element head=null, tail=null;
     protected int     size=0;
-    protected final Object  mutex=new Object();
+    protected transient final Object  mutex=new Object();
 
 
 
@@ -308,35 +308,50 @@ public class List implements Externalizable, Cloneable {
     }
 
 
-//    public void writeTo(ByteArrayOutputStream outstream) throws IOException {
-//        DataOutputStream dos=new DataOutputStream(outstream);
-//        Streamable el;
-//        try {
-//            if(size == 0) {
-//                dos.writeInt(0);
-//                return;
-//            }
-//            dos.writeInt(size);
-//            for(Enumeration en=elements(); en.hasMoreElements();) {
-//                el=(Streamable)en.nextElement();
-//                el.writeTo(outstream);
-//            }
+//    public void writeTo(DataOutputStream out) throws IOException {
+//        Element el;
+//        Object obj;
+//        if(size == 0) {
+//            out.writeInt(0);
+//            return;
 //        }
-//        finally {
-//            dos.close();
+//        out.writeInt(size);
+//        el=head;
+//        while(el != null) {
+//            obj=el.obj;
+//            if(obj instanceof Streamable) {
+//                out.writeByte(1);
+//                ((Streamable)obj).writeTo(out);
+//            }
+//            else {
+//                out.writeByte(0);
+//                ObjectOutputStream oos=new ObjectOutputStream(out); // very inefficient
+//                oos.writeObject(obj);
+//                oos.close();
+//            }
+//            el=el.next;
 //        }
 //    }
 //
-//    public void readFrom(ByteArrayInputStream instream) throws IOException {
-//        DataInputStream dis=new DataInputStream(instream);
-//        try {
-//            size=dis.readInt();
+//    public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+//        Object obj;
+//        int    size=in.readInt();
+//        byte   b;
 //
+//        for(int i=0; i < size; i++) {
+//            b=in.readByte();
+//            if(b == 1) {
+//
+//            }
+//            else if(b == 0) {
+//
+//            }
+//            else
+//                throw new InstantiationException("byte '" + b + "' not recognized (needs to be 1 or 0)");
 //        }
-//        finally {
-//            dis.close();
-//        }
+//
 //    }
+
 
 
 
@@ -436,45 +451,6 @@ public class List implements Externalizable, Cloneable {
 
 
 
-//      public static void main(String[] args) {
-//  	byte[]  buf;
-//  	List    l=new List(), l2, l3;
-
-
-//  	try {
-//  	    for(int i=0; i < 10; i++)
-//  		l.add(new Integer(i));
-//  	    System.out.println(l.getContents());
-
-//  	    buf=Util.objectToByteBuffer(l);
-//  	    l2=(List)Util.objectFromByteBuffer(buf);
-//  	    System.out.println(l2.getContents());
-
-//  	    l3=new List(); l3.add("Bela"); l3.add("Janet");
-
-
-//  	    l2.add(new Integer(300));
-
-//  	    FileOutputStream    outstream=new FileOutputStream("list.out");
-//  	    ObjectOutputStream  out=new ObjectOutputStream(outstream);
-//  	    out.writeObject(l2); out.writeObject(l3);
-
-
-//  	    FileInputStream instream=new FileInputStream("list.out");
-//  	    ObjectInputStream in=new ObjectInputStream(instream);
-//  	    l=(List)in.readObject();
-//  	    System.out.println(l.getContents());
-
-//  	    l=(List)in.readObject();
-//  	    System.out.println(l.getContents());
-
-//  	    //l=(List)in.readObject();
-//  	    //System.out.println(l.getContents());
-//  	}
-//  	catch(Exception e) {
-//  	}
-
-//      }
 
 
 }
