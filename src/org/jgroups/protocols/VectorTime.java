@@ -1,4 +1,4 @@
-// $Id: VectorTime.java,v 1.3 2004/09/23 16:29:43 belaban Exp $
+// $Id: VectorTime.java,v 1.4 2005/04/12 06:14:35 belaban Exp $
 
 
 package org.jgroups.protocols;
@@ -13,7 +13,7 @@ import java.util.*;
  * Vector timestamp used in CAUSAL order protocol stack
  *
  * @author Vladimir Blagojevic vladimir@cs.yorku.ca
- * @version $Revision: 1.3 $
+ * @version $Revision: 1.4 $
  */
 public class VectorTime
 {
@@ -94,13 +94,11 @@ public class VectorTime
    public void reset()
    {
       Address member = null;
-      int thisVectorValue = 0;
       Set keyEntries = entries.keySet();
       Iterator iter = keyEntries.iterator();
       while (iter.hasNext())
       {
          member = (Address) iter.next();
-         thisVectorValue = ((Integer) entries.get(member)).intValue();
          entries.put(member, new Integer(0));
       }
 
@@ -237,7 +235,7 @@ public class VectorTime
 
    /**
     * return String representation of the VectorTime
-    * @returnString representation of this VectorTime object
+    * @return String representation of this VectorTime object
     */
    public String toString()
    {
