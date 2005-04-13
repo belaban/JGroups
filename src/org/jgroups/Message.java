@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.22 2005/01/28 18:34:28 belaban Exp $
+// $Id: Message.java,v 1.23 2005/04/13 14:18:33 belaban Exp $
 
 package org.jgroups;
 
@@ -256,14 +256,6 @@ public class Message implements Externalizable, Streamable {
 
     /** Puts a header given a key into the hashmap. Overwrites potential existing entry. */
     public void putHeader(String key, Header hdr) {
-        // the following code is compiled out of JGroups when Trace.debug==false
-//        if(log.isTraceEnabled()) {
-//            if(headers().containsKey(key)) {
-//                log.trace("header for \"" + key  +
-//                        "\" is already present: old header=" +
-//                        headers().get(key) + ", new header=" + hdr);
-//            }
-//        }
         headers().put(key, hdr);
     }
 
