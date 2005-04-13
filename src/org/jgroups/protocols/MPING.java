@@ -19,7 +19,7 @@ import java.util.Enumeration;
  * back via the regular transport (e.g. TCP) to the sender (discovery request contained sender's regular address,
  * e.g. 192.168.0.2:7800).
  * @author Bela Ban
- * @version $Id: MPING.java,v 1.7 2005/04/13 10:54:36 belaban Exp $
+ * @version $Id: MPING.java,v 1.8 2005/04/13 13:03:46 belaban Exp $
  */
 public class MPING extends PING implements Runnable {
     MulticastSocket     mcast_sock=null;
@@ -32,7 +32,7 @@ public class MPING extends PING implements Runnable {
 
     /** Pre-allocated byte stream. Used for serializing datagram packets. Will grow as needed */
     final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(512);
-    byte                receive_buf[]=new byte[65535];
+    byte                receive_buf[]=new byte[1024];
     static final String IGNORE_BIND_ADDRESS_PROPERTY="ignore.bind.address";
 
 
