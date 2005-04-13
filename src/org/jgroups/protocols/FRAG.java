@@ -1,4 +1,4 @@
-// $Id: FRAG.java,v 1.14 2004/10/07 14:20:33 belaban Exp $
+// $Id: FRAG.java,v 1.15 2005/04/13 08:57:55 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -6,6 +6,7 @@ import org.jgroups.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 import org.jgroups.util.Streamable;
+import org.jgroups.util.ExposedByteArrayOutputStream;
 
 import java.io.*;
 import java.util.HashMap;
@@ -13,17 +14,6 @@ import java.util.Hashtable;
 import java.util.Properties;
 import java.util.Vector;
 
-
-/**
- * todo
- * Filip Hanik - To do - Done as of 2001-04-07
- * 1. Make sure that the fragmentation table set also stores the member not only the message id
- *    this way I can keep track of the member to find out if he/she crashes
- * 2. Then catch the view change event.
- * 3. If there is a view change event and the new view doesn't contain the member
- *    that has a message in the FRAG stack, clean up the FRAG stack
- *
- */
 
 
 /**
@@ -35,18 +25,9 @@ import java.util.Vector;
  * fragement ID which ranges from 0 to number_of_fragments-1.<p>
  * Requirement: lossless delivery (e.g. NAK, ACK). No requirement on ordering. Works for both unicast and
  * multicast messages.
- * <p/>
- * Typical stack:
- * <pre>
- * FIFO
- * FRAG
- * NAK
- * UDP
- * </pre>
- *
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.14 2004/10/07 14:20:33 belaban Exp $
+ * @version $Id: FRAG.java,v 1.15 2005/04/13 08:57:55 belaban Exp $
  */
 public class FRAG extends Protocol {
     private int frag_size=8192;  // conservative value
@@ -54,11 +35,10 @@ public class FRAG extends Protocol {
     /*the fragmentation list contains a fragmentation table per sender
      *this way it becomes easier to clean up if a sender (member) leaves or crashes
      */
-    private final FragmentationList fragment_list=new FragmentationList();
-    private int curr_id=1;
-    private Address local_addr=null;
-    private final ByteArrayOutputStream bos=new ByteArrayOutputStream(frag_size);  // to serialize messages to be fragmented
-    private final Vector members=new Vector(11);
+    private final FragmentationList     fragment_list=new FragmentationList();
+    private int                         curr_id=1;
+    private final ExposedByteArrayOutputStream bos=new ExposedByteArrayOutputStream(frag_size);
+    private final Vector                members=new Vector(11);
 
 
     public String getName() {
@@ -85,14 +65,6 @@ public class FRAG extends Protocol {
             return false;
         }
         return true;
-    }
-
-
-    /**
-     * Just remove if you don't need to reset any state
-     */
-    public void reset() {
-        //frag_table.reset();
     }
 
 
@@ -131,8 +103,8 @@ public class FRAG extends Protocol {
                     //the new view doesn't contain the sender, he must have left,
                     //hence we will clear all his fragmentation tables
                     fragment_list.remove(mbr);
-                    if(log.isDebugEnabled())
-                        log.debug("[VIEW_CHANGE] removed " + mbr + " from fragmentation table");
+                    if(log.isTraceEnabled())
+                        log.trace("[VIEW_CHANGE] removed " + mbr + " from fragmentation table");
                 }
                 break;
 
@@ -148,9 +120,7 @@ public class FRAG extends Protocol {
 
 
     /**
-     * If event is a message, if it is fragmented, re-assemble fragments into big message and pass up
-     * the stack.
-     * todo: Filip catch the view change event so that we can clean up old members
+     * If event is a message, if it is fragmented, re-assemble fragments into big message and pass up the stack.
      */
     public void up(Event evt) {
         switch(evt.getType()) {
@@ -163,10 +133,6 @@ public class FRAG extends Protocol {
                     unfragment(msg); // Unfragment and possibly pass up
                     return;
                 }
-                break;
-
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
                 break;
 
             case Event.CONFIG:
@@ -193,36 +159,37 @@ public class FRAG extends Protocol {
      * </pre>
      */
     private void fragment(Message msg) {
-        ObjectOutputStream oos;
-        byte[] buffer;
-        byte[] fragments[];
-        Event evt;
-        FragHeader hdr;
-        Message frag_msg=null;
-        Address dest=msg.getDest(), src=msg.getSrc();
-        long id=curr_id++; // used as seqnos
-        int num_frags=0;
-
+        DataOutputStream   out;
+        byte[]             buffer;
+        byte[]             fragments[];
+        Event              evt;
+        FragHeader         hdr;
+        Message            frag_msg=null;
+        Address            dest=msg.getDest(), src=msg.getSrc();
+        long               id=curr_id++; // used as seqnos
+        int                num_frags=0;
 
         try {
             // Write message into a byte buffer and fragment it
             bos.reset();
-            oos=new ObjectOutputStream(bos);
-            msg.writeExternal(oos);
-            oos.flush();
-            buffer=bos.toByteArray();
-            fragments=Util.fragmentBuffer(buffer, frag_size);
+            out=new DataOutputStream(bos);
+            msg.writeTo(out);
+            out.flush();
+            buffer=bos.getRawBuffer();
+            fragments=Util.fragmentBuffer(buffer, frag_size, bos.size());
             num_frags=fragments.length;
 
-            if(log.isTraceEnabled())
-                log.trace("fragmenting packet to " + (dest != null ? dest.toString() : "<all members>") +
-                        " (size=" + buffer.length + ") into " + num_frags + " fragment(s) [frag_size=" + frag_size + ']');
+            if(log.isTraceEnabled()) {
+                StringBuffer sb=new StringBuffer();
+                sb.append("fragmenting packet to ").append(dest != null ? dest.toString() : "<all members>");
+                sb.append(" (size=").append(buffer.length).append(") into ").append(num_frags);
+                sb.append(" fragment(s) [frag_size=").append(frag_size).append(']');
+                log.trace(sb.toString());
+            }
 
             for(int i=0; i < num_frags; i++) {
                 frag_msg=new Message(dest, src, fragments[i]);
                 hdr=new FragHeader(id, i, num_frags);
-
-                if(log.isTraceEnabled()) log.trace("fragment's header is " + hdr);
                 frag_msg.putHeader(getName(), hdr);
                 evt=new Event(Event.MSG, frag_msg);
                 passDown(evt);
@@ -231,7 +198,6 @@ public class FRAG extends Protocol {
         catch(Exception e) {
             log.error("exception is " + e);
         }
-
     }
 
 
@@ -243,16 +209,13 @@ public class FRAG extends Protocol {
      * 5. Pass msg up the stack
      */
     private void unfragment(Message msg) {
-        FragmentationTable frag_table=null;
-        Address sender=msg.getSrc();
-        Message assembled_msg;
-        FragHeader hdr=(FragHeader)msg.removeHeader(getName());
-        byte[] m;
+        FragmentationTable   frag_table=null;
+        Address              sender=msg.getSrc();
+        Message              assembled_msg;
+        FragHeader           hdr=(FragHeader)msg.removeHeader(getName());
+        byte[]               m;
         ByteArrayInputStream bis;
-        ObjectInputStream ois;
-
-
-        if(log.isTraceEnabled()) log.trace("[" + local_addr + "] received msg, hdr is " + hdr);
+        DataInputStream      in;
 
         frag_table=fragment_list.get(sender);
         if(frag_table == null) {
@@ -268,9 +231,9 @@ public class FRAG extends Protocol {
         if(m != null) {
             try {
                 bis=new ByteArrayInputStream(m);
-                ois=new ObjectInputStream(bis);
+                in=new DataInputStream(bis);
                 assembled_msg=new Message();
-                assembled_msg.readExternal(ois);
+                assembled_msg.readFrom(in);
                 if(log.isTraceEnabled()) log.trace("assembled_msg is " + assembled_msg);
                 assembled_msg.setSrc(sender); // needed ? YES, because fragments have a null src !!
                 passUp(new Event(Event.MSG, assembled_msg));
@@ -364,9 +327,7 @@ public class FRAG extends Protocol {
          * @param table  - the fragmentation table of this sender, cannot be null
          * @throws IllegalArgumentException if an entry for this sender already exist
          */
-        public synchronized void add(Address sender,
-                                     FragmentationTable table)
-                throws IllegalArgumentException {
+        public synchronized void add(Address sender, FragmentationTable table) throws IllegalArgumentException {
             FragmentationTable healthCheck=(FragmentationTable)frag_tables.get(sender);
             if(healthCheck == null) {
                 frag_tables.put(sender, table);
@@ -374,7 +335,6 @@ public class FRAG extends Protocol {
             else {
                 throw new IllegalArgumentException("Sender <" + sender + "> already exists in the fragementation list.");
             }
-
         }
 
         /**
@@ -554,14 +514,9 @@ public class FRAG extends Protocol {
          * @param tot_frags the total number of fragmentations expected
          * @param fragment  - the byte buffer for this fragment
          */
-        public synchronized byte[] add(long id,
-                                       int frag_id,
-                                       int tot_frags,
-                                       byte[] fragment) {
+        public synchronized byte[] add(long id, int frag_id, int tot_frags, byte[] fragment) {
 
-            /*initialize the return value to default
-             *not complete
-             */
+            /*initialize the return value to default not complete */
             byte[] retval=null;
 
             Entry e=(Entry)h.get(new Long(id));
