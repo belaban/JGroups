@@ -8,7 +8,7 @@ import org.jgroups.protocols.PERF_TP;
 /**
  * Test of PERF_TP. Requirement: transport needs to be PERF_TP
  * @author Bela Ban Feb 24, 2004
- * @version $Id: PerfTpTest.java,v 1.4 2004/07/05 14:15:11 belaban Exp $
+ * @version $Id: PerfTpTest.java,v 1.5 2005/04/13 13:04:11 belaban Exp $
  */
 public class PerfTpTest {
     JChannel ch=null;
@@ -61,6 +61,8 @@ public class PerfTpTest {
         for(int i=0; i < num_msgs; i++) {
             msg=new Message(null, null, buf);
             ch.send(msg);
+            if(i % 1000 == 0)
+                System.out.println("sent " + i + " messages");
         }
         synchronized(tp) {
             if(tp.done()) {

@@ -1,4 +1,4 @@
-// $Id: MessageSerializationTest.java,v 1.8 2005/04/12 13:52:45 belaban Exp $
+// $Id: MessageSerializationTest.java,v 1.9 2005/04/13 13:04:11 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -116,7 +116,7 @@ public class MessageSerializationTest {
         msg.putHeader("STABLE", new org.jgroups.protocols.pbcast.STABLE.StableHeader());
         msg.putHeader("NAKACK", new org.jgroups.protocols.pbcast.NakAckHeader());
         msg.putHeader("UNICAST", new UNICAST.UnicastHeader());
-        msg.putHeader("FRAG", new FRAG.FragHeader());
+        msg.putHeader("FRAG", new FragHeader());
         msg.putHeader("GMS", new org.jgroups.protocols.pbcast.GMS.GmsHeader());
     }
 
