@@ -39,7 +39,7 @@
     </class>
     <class>
         <description>(Description goes here)</description>
-        <class-name>org.jgroups.protocols.FRAG$FragHeader</class-name>
+        <class-name>org.jgroups.protocols.FragHeader</class-name>
         <preload>true</preload>
         <magic-number>7</magic-number>
     </class>
