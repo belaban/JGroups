@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.14 2004/09/23 16:29:38 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.15 2005/04/13 11:38:38 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -25,13 +25,13 @@ import java.util.Vector;
  * @author Bela Ban
  */
 public class STATE_TRANSFER extends Protocol {
-    Address  local_addr=null;
+    Address        local_addr=null;
     final Vector   members=new Vector();
-    long     state_id=1;  // used to differentiate between state transfers (not currently used)
+    long           state_id=1;  // used to differentiate between state transfers (not currently used)
     final List     state_requesters=new List(); // requesters of state (usually just 1, could be more)
-    Digest   digest=null;
+    Digest         digest=null;
     final HashMap  map=new HashMap(); // to store configuration information
-    long     start, stop; // to measure state transfer time
+    long           start, stop; // to measure state transfer time
 
 
     /** All protocol names have to be unique ! */
@@ -65,71 +65,64 @@ public class STATE_TRANSFER extends Protocol {
 
         switch(evt.getType()) {
 
-            case Event.BECOME_SERVER:
+        case Event.BECOME_SERVER:
+            break;
+
+        case Event.SET_LOCAL_ADDRESS:
+            local_addr=(Address)evt.getArg();
+            break;
+
+        case Event.TMP_VIEW:
+        case Event.VIEW_CHANGE:
+            Vector new_members=((View)evt.getArg()).getMembers();
+            synchronized(members) {
+                members.removeAllElements();
+                members.addAll(new_members);
+            }
+            break;
+
+        case Event.GET_DIGEST_STATE_OK:
+            synchronized(state_requesters) {
+                if(digest != null) {
+                    if(log.isWarnEnabled())
+                        log.warn("GET_DIGEST_STATE_OK: existing digest is not null, overwriting it !");
+                }
+                digest=(Digest)evt.getArg();
+                if(log.isDebugEnabled())
+                    log.debug("GET_DIGEST_STATE_OK: digest is " + digest + "\npassUp(GET_APPLSTATE)");
+                passUp(new Event(Event.GET_APPLSTATE));
+            }
+            return;
+
+        case Event.MSG:
+            msg=(Message)evt.getArg();
+            if(!(msg.getHeader(getName()) instanceof StateHeader))
                 break;
 
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
+            hdr=(StateHeader)msg.removeHeader(getName());
+            switch(hdr.type) {
+            case StateHeader.STATE_REQ:
+                handleStateReq(hdr.sender, hdr.id);
                 break;
-
-            case Event.TMP_VIEW:
-            case Event.VIEW_CHANGE:
-                Vector new_members=((View)evt.getArg()).getMembers();
-                synchronized(members) {
-                    members.removeAllElements();
-                    if(new_members != null && new_members.size() > 0)
-                        for(int k=0; k < new_members.size(); k++)
-                            members.addElement(new_members.elementAt(k));
-                }
+            case StateHeader.STATE_RSP:
+                handleStateRsp(hdr.sender, hdr.digest, msg.getBuffer());
                 break;
-
-            case Event.GET_DIGEST_STATE_OK:
-                synchronized(state_requesters) {
-                    if(digest != null) {
-                        if(log.isWarnEnabled())
-                            log.warn("GET_DIGEST_STATE_OK: existing digest is not null, overwriting it !");
-                    }
-                    digest=(Digest)evt.getArg();
-                    if(log.isDebugEnabled())
-                        log.debug("GET_DIGEST_STATE_OK: digest is " + digest + "\npassUp(GET_APPLSTATE)");
-                    passUp(new Event(Event.GET_APPLSTATE));
-                }
-                return;
-
-            case Event.MSG:
-                msg=(Message)evt.getArg();
-
-                if(!(msg.getHeader(getName()) instanceof StateHeader))
-                    break;
-
-                hdr=(StateHeader)msg.removeHeader(getName());
-                switch(hdr.type) {
-                    case StateHeader.STATE_REQ:
-                        handleStateReq(hdr.sender, hdr.id);
-                        break;
-                    case StateHeader.STATE_RSP:
-                        handleStateRsp(hdr.sender, hdr.digest, msg.getBuffer());
-                        break;
-                    default:
-                        if(log.isErrorEnabled()) log.error("type " + hdr.type + " not known in StateHeader");
-                        break;
-                }
-
-                return;
+            default:
+                if(log.isErrorEnabled()) log.error("type " + hdr.type + " not known in StateHeader");
+                break;
+            }
+            return;
         }
-
         passUp(evt);
     }
 
 
     public void down(Event evt) {
         byte[] state;
-        Address target;
+        Address target, requester;
         StateTransferInfo info;
         StateHeader hdr;
         Message state_req, state_rsp;
-        Address requester;
-
 
         switch(evt.getType()) {
 
@@ -138,13 +131,11 @@ public class STATE_TRANSFER extends Protocol {
                 Vector new_members=((View)evt.getArg()).getMembers();
                 synchronized(members) {
                     members.removeAllElements();
-                    if(new_members != null && new_members.size() > 0)
-                        for(int k=0; k < new_members.size(); k++)
-                            members.addElement(new_members.elementAt(k));
+                    members.addAll(new_members);
                 }
                 break;
 
-            // generated by JChannel.getState(). currently, getting the state from more than 1 mbrs is not implemented
+            // generated by JChannel.getState(). currently, getting the state from more than 1 mbr is not implemented
             case Event.GET_STATE:
                 info=(StateTransferInfo)evt.getArg();
                 if(info.type != StateTransferInfo.GET_FROM_SINGLE) {
