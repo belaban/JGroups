@@ -1,18 +1,19 @@
-// $Id: FRAG.java,v 1.15 2005/04/13 08:57:55 belaban Exp $
+// $Id: FRAG.java,v 1.16 2005/04/13 10:02:55 belaban Exp $
 
 package org.jgroups.protocols;
 
-import org.jgroups.*;
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Message;
+import org.jgroups.View;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.Util;
-import org.jgroups.util.Streamable;
 import org.jgroups.util.ExposedByteArrayOutputStream;
+import org.jgroups.util.Util;
 
-import java.io.*;
-import java.util.HashMap;
-import java.util.Hashtable;
-import java.util.Properties;
-import java.util.Vector;
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.util.*;
 
 
 
@@ -27,7 +28,7 @@ import java.util.Vector;
  * multicast messages.
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.15 2005/04/13 08:57:55 belaban Exp $
+ * @version $Id: FRAG.java,v 1.16 2005/04/13 10:02:55 belaban Exp $
  */
 public class FRAG extends Protocol {
     private int frag_size=8192;  // conservative value
@@ -254,52 +255,6 @@ public class FRAG extends Protocol {
     }
 
 
-    public static class FragHeader extends Header implements Streamable {
-        public long id=0;
-        public int frag_id=0;
-        public int num_frags=0;
-
-
-        public FragHeader() {
-        } // used for externalization
-
-        public FragHeader(long id, int frag_id, int num_frags) {
-            this.id=id;
-            this.frag_id=frag_id;
-            this.num_frags=num_frags;
-        }
-
-        public String toString() {
-            return "[FRAG: id=" + id + ", frag_id=" + frag_id + ", num_frags=" + num_frags + ']';
-        }
-
-        public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeLong(id);
-            out.writeInt(frag_id);
-            out.writeInt(num_frags);
-        }
-
-
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            id=in.readLong();
-            frag_id=in.readInt();
-            num_frags=in.readInt();
-        }
-
-
-        public void writeTo(DataOutputStream out) throws IOException {
-            out.writeLong(id);
-            out.writeInt(frag_id);
-            out.writeInt(num_frags);
-        }
-
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
-            id=in.readLong();
-            frag_id=in.readInt();
-            num_frags=in.readInt();
-        }
-
-    }
 
 
     /**
@@ -311,90 +266,100 @@ public class FRAG extends Protocol {
      * We do not have to do the same for the sender, since the sender doesn't keep a fragmentation table
      */
     static class FragmentationList {
-        /* initialize the hashtable to hold all the fragmentation
-         * tables
-         * 11 is the best growth capacity to start with
+        /* initialize the hashtable to hold all the fragmentation tables
+         * 11 is the best growth capacity to start with<br/>
+         * HashMap<Address,FragmentationTable>
          */
-        private final Hashtable frag_tables=new Hashtable(11);
+        private final HashMap frag_tables=new HashMap(11);
 
 
         /**
          * Adds a fragmentation table for this particular sender
          * If this sender already has a fragmentation table, an IllegalArgumentException
          * will be thrown.
-         *
          * @param sender - the address of the sender, cannot be null
          * @param table  - the fragmentation table of this sender, cannot be null
          * @throws IllegalArgumentException if an entry for this sender already exist
          */
-        public synchronized void add(Address sender, FragmentationTable table) throws IllegalArgumentException {
-            FragmentationTable healthCheck=(FragmentationTable)frag_tables.get(sender);
-            if(healthCheck == null) {
-                frag_tables.put(sender, table);
-            }
-            else {
-                throw new IllegalArgumentException("Sender <" + sender + "> already exists in the fragementation list.");
+        public void add(Address sender, FragmentationTable table) throws IllegalArgumentException {
+            FragmentationTable healthCheck;
+
+            synchronized(frag_tables) {
+                healthCheck=(FragmentationTable)frag_tables.get(sender);
+                if(healthCheck == null) {
+                    frag_tables.put(sender, table);
+                }
+                else {
+                    throw new IllegalArgumentException("Sender <" + sender + "> already exists in the fragementation list.");
+                }
             }
         }
 
         /**
          * returns a fragmentation table for this sender
          * returns null if the sender doesn't have a fragmentation table
-         *
          * @return the fragmentation table for this sender, or null if no table exist
          */
         public FragmentationTable get(Address sender) {
-            return (FragmentationTable)frag_tables.get(sender);
+            synchronized(frag_tables) {
+                return (FragmentationTable)frag_tables.get(sender);
+            }
         }
 
 
         /**
          * returns true if this sender already holds a
          * fragmentation for this sender, false otherwise
-         *
          * @param sender - the sender, cannot be null
          * @return true if this sender already has a fragmentation table
          */
         public boolean containsSender(Address sender) {
-            return frag_tables.containsKey(sender);
+            synchronized(frag_tables) {
+                return frag_tables.containsKey(sender);
+            }
         }
 
         /**
          * removes the fragmentation table from the list.
          * after this operation, the fragementation list will no longer
          * hold a reference to this sender's fragmentation table
-         *
          * @param sender - the sender who's fragmentation table you wish to remove, cannot be null
          * @return true if the table was removed, false if the sender doesn't have an entry
          */
-        public synchronized boolean remove(Address sender) {
-            boolean result=containsSender(sender);
-            frag_tables.remove(sender);
-            return result;
+        public boolean remove(Address sender) {
+            synchronized(frag_tables) {
+                boolean result=containsSender(sender);
+                frag_tables.remove(sender);
+                return result;
+            }
         }
 
         /**
-         * returns a list of all the senders that have fragmentation tables
-         * opened.
-         *
+         * returns a list of all the senders that have fragmentation tables opened.
          * @return an array of all the senders in the fragmentation list
          */
-        public synchronized Address[] getSenders() {
-            Address[] result=new Address[frag_tables.size()];
-            java.util.Enumeration en=frag_tables.keys();
-            int index=0;
-            while(en.hasMoreElements()) {
-                result[index++]=(Address)en.nextElement();
+        public Address[] getSenders() {
+            Address[] result;
+
+            synchronized(frag_tables) {
+                int index=0;
+                result=new Address[frag_tables.size()];
+                for(Iterator it=frag_tables.keySet().iterator(); it.hasNext();) {
+                    result[index++]=(Address)it.next();
+                }
             }
             return result;
         }
 
         public String toString() {
-            java.util.Enumeration e=frag_tables.elements();
-            StringBuffer buf=new StringBuffer("Fragmentation list contains ")
-                    .append(frag_tables.size()).append(" tables\n");
-            while(e.hasMoreElements()) {
-                buf.append(e.nextElement());
+            Map.Entry entry;
+            StringBuffer buf=new StringBuffer("Fragmentation list contains ");
+            synchronized(frag_tables) {
+                buf.append(frag_tables.size()).append(" tables\n");
+                for(Iterator it=frag_tables.entrySet().iterator(); it.hasNext();) {
+                    entry=(Map.Entry)it.next();
+                    buf.append(entry.getKey()).append(": " ).append(entry.getValue()).append("\n");
+                }
             }
             return buf.toString();
         }
@@ -439,8 +404,7 @@ public class FRAG extends Protocol {
              *
              * @param tot_frags the number of fragments to expect for this message
              */
-            Entry(long msg_id,
-                  int tot_frags) {
+            Entry(long msg_id, int tot_frags) {
                 this.msg_id=msg_id;
                 this.tot_frags=tot_frags;
                 fragments=new byte[tot_frags][];
