@@ -1,14 +1,15 @@
-// $Id: FRAG2.java,v 1.12 2004/10/07 14:20:16 belaban Exp $
+// $Id: FRAG2.java,v 1.13 2005/04/13 10:02:55 belaban Exp $
 
 package org.jgroups.protocols;
 
-import org.jgroups.*;
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Message;
+import org.jgroups.View;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Range;
 import org.jgroups.util.Util;
-import org.jgroups.util.Streamable;
 
-import java.io.*;
 import java.util.*;
 
 
@@ -26,7 +27,7 @@ import java.util.*;
  * size addition for headers and src and dest address is minimal when the transport finally has to serialize the
  * message, so we add a constant (1000 bytes).
  * @author Bela Ban
- * @version $Id: FRAG2.java,v 1.12 2004/10/07 14:20:16 belaban Exp $
+ * @version $Id: FRAG2.java,v 1.13 2005/04/13 10:02:55 belaban Exp $
  */
 public class FRAG2 extends Protocol {
 
@@ -35,16 +36,15 @@ public class FRAG2 extends Protocol {
 
     /** Number of bytes that we think the headers plus src and dest will take up when
         message is serialized by transport. This will be subtracted from frag_size */
-    int overhead=0; // todo: set to a higher value
+    int overhead=50;
 
     /*the fragmentation list contains a fragmentation table per sender
      *this way it becomes easier to clean up if a sender (member) leaves or crashes
      */
-    private final FragmentationList     fragment_list=new FragmentationList();
-    private int                   curr_id=1;
-    private Address               local_addr=null;
-    private final Vector                members=new Vector(11);
-    private static final String          name="FRAG2";
+    private final FragmentationList    fragment_list=new FragmentationList();
+    private int                        curr_id=1;
+    private final Vector               members=new Vector(11);
+    private static final String        name="FRAG2";
 
 
     public final String getName() {
@@ -72,13 +72,13 @@ public class FRAG2 extends Protocol {
         int old_frag_size=frag_size;
         frag_size-=overhead;
         if(frag_size <=0) {
-            if(log.isErrorEnabled()) log.error("frag_size=" + old_frag_size + ", overhead=" + overhead +
-                    ", new frag_size=" + frag_size + ": new frag_size is invalid");
+            log.error("frag_size=" + old_frag_size + ", overhead=" + overhead +
+                      ", new frag_size=" + frag_size + ": new frag_size is invalid");
             return false;
         }
 
-            if(log.isInfoEnabled()) log.info("frag_size=" + old_frag_size + ", overhead=" + overhead +
-                    ", new frag_size=" + frag_size);
+        if(log.isInfoEnabled())
+            log.info("frag_size=" + old_frag_size + ", overhead=" + overhead + ", new frag_size=" + frag_size);
 
         if(props.size() > 0) {
             System.err.println("FRAG2.setProperties(): the following properties are not recognized:");
@@ -102,11 +102,11 @@ public class FRAG2 extends Protocol {
                 Message msg=(Message)evt.getArg();
                 long size=msg.getLength();
                 if(size > frag_size) {
-                     {
+                    if(log.isTraceEnabled()) {
                         StringBuffer sb=new StringBuffer("message's buffer size is ");
                         sb.append(size).append(", will fragment ").append("(frag_size=");
                         sb.append(frag_size).append(')');
-                        if(log.isInfoEnabled()) log.info(sb.toString());
+                        log.trace(sb.toString());
                     }
                     fragment(msg);  // Fragment and pass down
                     return;
@@ -130,14 +130,13 @@ public class FRAG2 extends Protocol {
                     //the new view doesn't contain the sender, he must have left,
                     //hence we will clear all his fragmentation tables
                     fragment_list.remove(mbr);
-
-                        if(log.isInfoEnabled()) log.info("[VIEW_CHANGE] removed " + mbr + " from fragmentation table");
+                    if(log.isTraceEnabled()) log.trace("[VIEW_CHANGE] removed " + mbr + " from fragmentation table");
                 }
                 break;
 
             case Event.CONFIG:
                 passDown(evt);
-                 if(log.isInfoEnabled()) log.info("received CONFIG event: " + evt.getArg());
+                 if(log.isDebugEnabled()) log.debug("received CONFIG event: " + evt.getArg());
                 handleConfigEvent((HashMap)evt.getArg());
                 return;
         }
@@ -161,10 +160,6 @@ public class FRAG2 extends Protocol {
                     unfragment(msg); // Unfragment and possibly pass up
                     return;
                 }
-                break;
-
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
                 break;
 
             case Event.CONFIG:
@@ -206,21 +201,19 @@ public class FRAG2 extends Protocol {
             fragments=Util.computeFragOffsets(buffer, frag_size);
             num_frags=fragments.size();
 
-             {
+            if(log.isTraceEnabled()) {
                 sb=new StringBuffer("fragmenting packet to ");
                 sb.append((dest != null ? dest.toString() : "<all members>")).append(" (size=").append(buffer.length);
                 sb.append(") into ").append(num_frags).append(" fragment(s) [frag_size=").append(frag_size).append(']');
-                if(log.isInfoEnabled()) log.info(sb.toString());
+                log.trace(sb.toString());
             }
 
             for(int i=0; i < fragments.size(); i++) {
                 r=(Range)fragments.get(i);
                 // Copy the original msg (needed because we need to copy the headers too)
-                frag_msg=msg.copy(false); // don't copy the buffer
+                frag_msg=msg.copy(false); // don't copy the buffer, only src, dest and headers
                 frag_msg.setBuffer(buffer, (int)r.low, (int)r.high);
                 hdr=new FragHeader(id, i, num_frags);
-
-                    if(log.isDebugEnabled()) log.debug("fragment's header is " + hdr);
                 frag_msg.putHeader(name, hdr);
                 evt=new Event(Event.MSG, frag_msg);
                 passDown(evt);
@@ -229,7 +222,6 @@ public class FRAG2 extends Protocol {
         catch(Exception e) {
             if(log.isErrorEnabled()) log.error("exception is " + e);
         }
-
     }
 
 
@@ -246,8 +238,6 @@ public class FRAG2 extends Protocol {
         Message            assembled_msg;
         FragHeader         hdr=(FragHeader)msg.removeHeader(getName());
 
-         if(log.isDebugEnabled()) log.debug("[" + local_addr + "] received msg, hdr is " + hdr);
-
         frag_table=fragment_list.get(sender);
         if(frag_table == null) {
             frag_table=new FragmentationTable(sender);
@@ -261,7 +251,7 @@ public class FRAG2 extends Protocol {
         assembled_msg=frag_table.add(hdr.id, hdr.frag_id, hdr.num_frags, msg);
         if(assembled_msg != null) {
             try {
-                 if(log.isInfoEnabled()) log.info("assembled_msg is " + assembled_msg);
+                if(log.isTraceEnabled()) log.trace("assembled_msg is " + assembled_msg);
                 assembled_msg.setSrc(sender); // needed ? YES, because fragments have a null src !!
                 passUp(new Event(Event.MSG, assembled_msg));
             }
@@ -282,50 +272,6 @@ public class FRAG2 extends Protocol {
     }
 
 
-    public static class FragHeader extends Header implements Streamable {
-        public long id=0;
-        public int frag_id=0;
-        public int num_frags=0;
-
-        public FragHeader() {
-        } // used for externalization
-
-        public FragHeader(long id, int frag_id, int num_frags) {
-            this.id=id;
-            this.frag_id=frag_id;
-            this.num_frags=num_frags;
-        }
-
-        public String toString() {
-            return "[FRAG2: id=" + id + ", frag_id=" + frag_id + ", num_frags=" + num_frags + ']';
-        }
-
-        public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeLong(id);
-            out.writeInt(frag_id);
-            out.writeInt(num_frags);
-        }
-
-
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            id=in.readLong();
-            frag_id=in.readInt();
-            num_frags=in.readInt();
-        }
-
-       public void writeTo(DataOutputStream out) throws IOException {
-            out.writeLong(id);
-            out.writeInt(frag_id);
-            out.writeInt(num_frags);
-        }
-
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
-            id=in.readLong();
-            frag_id=in.readInt();
-            num_frags=in.readInt();
-        }
-
-    }
 
 
     /**
@@ -336,7 +282,7 @@ public class FRAG2 extends Protocol {
      * table and clean up the memory of the receiver.
      * We do not have to do the same for the sender, since the sender doesn't keep a fragmentation table
      */
-    class FragmentationList {
+    static class FragmentationList {
         /* initialize the hashtable to hold all the fragmentation
          * tables
          * 11 is the best growth capacity to start with
@@ -428,7 +374,7 @@ public class FRAG2 extends Protocol {
      * The fragmentation holds a an array of byte arrays for a unique sender
      * The first dimension of the array is the order of the fragmentation, in case the arrive out of order
      */
-    class FragmentationTable {
+    static class FragmentationTable {
         private final Address sender;
         /* the hashtable that holds the fragmentation entries for this sender*/
         private final Hashtable h=new Hashtable(11);  // keys: frag_ids, vals: Entrys
@@ -445,7 +391,7 @@ public class FRAG2 extends Protocol {
          * once all the byte buffer entries have been filled
          * the fragmentation is considered complete.
          */
-        class Entry {
+        static class Entry {
             //the total number of fragment in this message
             int tot_frags=0;
             // each fragment is a byte buffer
