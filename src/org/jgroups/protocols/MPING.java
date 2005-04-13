@@ -19,7 +19,7 @@ import java.util.Enumeration;
  * back via the regular transport (e.g. TCP) to the sender (discovery request contained sender's regular address,
  * e.g. 192.168.0.2:7800).
  * @author Bela Ban
- * @version $Id: MPING.java,v 1.6 2005/04/01 14:30:11 belaban Exp $
+ * @version $Id: MPING.java,v 1.7 2005/04/13 10:54:36 belaban Exp $
  */
 public class MPING extends PING implements Runnable {
     MulticastSocket     mcast_sock=null;
@@ -28,7 +28,7 @@ public class MPING extends PING implements Runnable {
     boolean             bind_to_all_interfaces=true;
     int                 ip_ttl=16;
     InetAddress         mcast_addr=null;
-    int                 mcast_port=0;
+    int                 mcast_port=7555;
 
     /** Pre-allocated byte stream. Used for serializing datagram packets. Will grow as needed */
     final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(512);
@@ -98,6 +98,15 @@ public class MPING extends PING implements Runnable {
             bind_to_all_interfaces=new Boolean(str).booleanValue();
             props.remove("bind_to_all_interfaces");
         }
+
+        if(mcast_addr == null)
+            try {
+                mcast_addr=InetAddress.getByName("230.5.6.7");
+            }
+            catch(UnknownHostException e) {
+                log.error("failed getting default mcast address", e);
+                return false;
+            }
 
         return super.setProperties(props);
     }
