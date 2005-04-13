@@ -1,10 +1,10 @@
-// $Id: MessageListStreamableTest.java,v 1.1 2005/04/12 14:20:45 belaban Exp $
+// $Id: MessageListStreamableTest.java,v 1.2 2005/04/13 13:02:39 belaban Exp $
 
 package org.jgroups.tests;
 
 /**
  * @author Bela Ban
- * @version $Id: MessageListStreamableTest.java,v 1.1 2005/04/12 14:20:45 belaban Exp $
+ * @version $Id: MessageListStreamableTest.java,v 1.2 2005/04/13 13:02:39 belaban Exp $
  */
 
 import org.apache.commons.logging.Log;
@@ -79,7 +79,7 @@ public class MessageListStreamableTest {
         msg.putHeader("STABLE", new org.jgroups.protocols.pbcast.STABLE.StableHeader());
         msg.putHeader("NAKACK", new org.jgroups.protocols.pbcast.NakAckHeader());
         msg.putHeader("UNICAST", new UNICAST.UnicastHeader());
-        msg.putHeader("FRAG", new FRAG.FragHeader());
+        msg.putHeader("FRAG", new FragHeader());
         msg.putHeader("GMS", new org.jgroups.protocols.pbcast.GMS.GmsHeader());
     }
 
