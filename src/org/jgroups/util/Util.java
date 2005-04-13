@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.30 2005/04/12 13:52:59 belaban Exp $
+// $Id: Util.java,v 1.31 2005/04/13 08:58:32 belaban Exp $
 
 package org.jgroups.util;
 
@@ -630,16 +630,16 @@ public class Util {
      of 248 bytes each and 1 fragment of 32 bytes.
      @return An array of byte buffers (<code>byte[]</code>).
      */
-    public static byte[][] fragmentBuffer(byte[] buf, int frag_size) {
+    public static byte[][] fragmentBuffer(byte[] buf, int frag_size, int length) {
         byte[] retval[];
-        long total_size=buf.length;
+        long total_size=length;
         int accumulated_size=0;
         byte[] fragment;
         int tmp_size=0;
         int num_frags;
         int index=0;
 
-        num_frags=buf.length % frag_size == 0 ? buf.length / frag_size : buf.length / frag_size + 1;
+        num_frags=length % frag_size == 0 ? length / frag_size : length / frag_size + 1;
         retval=new byte[num_frags][];
 
         while(accumulated_size < total_size) {
@@ -654,6 +654,11 @@ public class Util {
         }
         return retval;
     }
+
+    public static byte[][] fragmentBuffer(byte[] buf, int frag_size) {
+        return fragmentBuffer(buf, frag_size, buf.length);
+    }
+
 
 
     /**
