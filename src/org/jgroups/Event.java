@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.8 2004/09/22 10:34:16 belaban Exp $
+// $Id: Event.java,v 1.9 2005/04/14 15:30:25 belaban Exp $
 
 package org.jgroups;
 
@@ -81,8 +81,8 @@ public class Event {
     public static final int USER_DEFINED=1000;// arg = <user def., e.g. evt type + data>
 
 
-    private int    type=0;       // type of event
-    private Object arg=null;     // must be serializable if used for inter-stack communication
+    private int    type;       // type of event
+    private Object arg;        // must be serializable if used for inter-stack communication
 
 
     public Event(int type) {
