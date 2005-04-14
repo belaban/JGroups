@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.30 2005/04/14 15:58:32 belaban Exp $
+// $Id: JChannel.java,v 1.31 2005/04/14 16:12:49 belaban Exp $
 
 package org.jgroups;
 
@@ -24,7 +24,7 @@ import java.util.Vector;
  * protocol stack
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.30 $
+ * @version $Revision: 1.31 $
  */
 public class JChannel extends Channel {
 
@@ -948,7 +948,7 @@ public class JChannel extends Channel {
         // we use double-checked locking; it is okay to 'lose' one or more messages because block_sending changes
         // to true after an initial false value
         if(evt.getType() == Event.MSG && block_sending.get().equals(Boolean.TRUE)) {
-            if(log.isInfoEnabled()) log.info("down() blocks because block_sending == true");
+            if(log.isTraceEnabled()) log.trace("down() blocks because block_sending == true");
             block_sending.waitUntil(Boolean.FALSE);
         }
 
@@ -963,7 +963,6 @@ public class JChannel extends Channel {
             catch(Throwable t) {
                 if(log.isErrorEnabled()) log.error("CONFIG event did not contain a hashmap: " + t);
             }
-
         }
 
         if(prot_stack != null)
@@ -1026,7 +1025,7 @@ public class JChannel extends Channel {
      * health check.<BR>
      * throws a ChannelNotConnected exception if the channel is not connected
      */
-    private void checkNotConnected() throws ChannelNotConnectedException {
+    private final void checkNotConnected() throws ChannelNotConnectedException {
         if(!connected)
             throw new ChannelNotConnectedException();
     }
@@ -1035,7 +1034,7 @@ public class JChannel extends Channel {
      * health check<BR>
      * throws a ChannelClosed exception if the channel is closed
      */
-    private void checkClosed() throws ChannelClosedException {
+    private final void checkClosed() throws ChannelClosedException {
         if(closed)
             throw new ChannelClosedException();
     }
