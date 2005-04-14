@@ -182,7 +182,7 @@ public class VotingAdapter implements MessageListener, MembershipListener {
     /**
      * This method checks the response and says the processResponses() method
      * what to do.
-     * @returns PROCESS_CONTINUE to continue calculating votes,
+     * @return PROCESS_CONTINUE to continue calculating votes,
      * PROCESS_BREAK to stop calculating votes from the nodes,
      * PROCESS_SKIP to skip current response.
      * @throws ChannelException when the response is fatal to the
