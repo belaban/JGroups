@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.16 2005/02/07 08:56:59 belaban Exp $
+// $Id: UNICAST.java,v 1.17 2005/04/14 17:04:19 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -149,32 +149,33 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
         switch(evt.getType()) {
 
-            case Event.MSG:
-                msg=(Message)evt.getArg();
-                dst=msg.getDest();
-                src=msg.getSrc();
-                if(dst == null || dst.isMulticastAddress())  // only handle unicast messages
-                    break;  // pass up
+        case Event.MSG:
+            msg=(Message)evt.getArg();
+            dst=msg.getDest();
 
-                hdr=(UnicastHeader)msg.removeHeader(getName());
-                if(hdr == null) break;
-                switch(hdr.type) {
-                    case UnicastHeader.DATA:      // received regular message
-                        sendAck(src, hdr.seqno);
-                        handleDataReceived(src, hdr.seqno, hdr.first, msg);
-                        break;
-                    case UnicastHeader.DATA_ACK:  // received ACK for previously sent message
-                        handleAckReceived(src, hdr.seqno);
-                        break;
-                    default:
-                        log.error("UnicastHeader type " + hdr.type + " not known !");
-                        break;
-                }
-                return;
+            if(dst == null || dst.isMulticastAddress())  // only handle unicast messages
+                break;  // pass up
 
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
+            hdr=(UnicastHeader)msg.removeHeader(getName());
+            if(hdr == null) break;
+            src=msg.getSrc();
+            switch(hdr.type) {
+            case UnicastHeader.DATA:      // received regular message
+                sendAck(src, hdr.seqno);
+                handleDataReceived(src, hdr.seqno, hdr.first, msg);
                 break;
+            case UnicastHeader.DATA_ACK:  // received ACK for previously sent message
+                handleAckReceived(src, hdr.seqno);
+                break;
+            default:
+                log.error("UnicastHeader type " + hdr.type + " not known !");
+                break;
+            }
+            return;
+
+        case Event.SET_LOCAL_ADDRESS:
+            local_addr=(Address)evt.getArg();
+            break;
         }
 
         passUp(evt);   // Pass up to the layer above us

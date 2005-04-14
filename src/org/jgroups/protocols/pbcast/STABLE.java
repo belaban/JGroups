@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.18 2004/10/08 12:31:51 belaban Exp $
+// $Id: STABLE.java,v 1.19 2005/04/14 17:04:17 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -176,50 +176,51 @@ public class STABLE extends Protocol {
         Header obj;
         int type=evt.getType();
 
-        switch(evt.getType()) {
+        switch(type) {
 
-            case Event.MSG:
-                msg=(Message)evt.getArg();
+        case Event.MSG:
+            msg=(Message)evt.getArg();
 
-                if(max_bytes > 0) {  // message counting is enabled
-                    long size=Math.max(msg.getLength(), 24);
-                    num_bytes_received+=size;
-                    if(log.isTraceEnabled())
-                        log.trace("received message of " + size + " bytes, total bytes received=" + num_bytes_received);
-                    if(num_bytes_received >= max_bytes) {
-                        if(log.isDebugEnabled())
-                            log.debug("max_bytes has been exceeded (max_bytes=" + max_bytes +
-                                    ", number of bytes received=" + num_bytes_received + "): sending STABLE message");
-
-                        new Thread() {
-                            public void run() {
-                                initialize();
-                                sendStableMessage();
-                            }
-                        }.start();
-                        num_bytes_received=0;
+            if(max_bytes > 0) {  // message counting is enabled
+                long size=Math.max(msg.getLength(), 24);
+                num_bytes_received+=size;
+                if(num_bytes_received >= max_bytes) {
+                    if(log.isTraceEnabled()) {
+                        StringBuffer sb=new StringBuffer("max_bytes has been exceeded (max_bytes=");
+                        sb.append(max_bytes).append(", number of bytes received=");
+                        sb.append(num_bytes_received).append("): sending STABLE message");
+                        log.trace(sb.toString());
                     }
-                }
 
-                obj=msg.getHeader(getName());
-                if(obj == null || !(obj instanceof StableHeader))
-                    break;
-                hdr=(StableHeader)msg.removeHeader(getName());
-                switch(hdr.type) {
-                    case StableHeader.STABLE_GOSSIP:
-                        handleStableGossip(msg.getSrc(), hdr.digest);
-                        break;
-                    case StableHeader.STABILITY:
-                        handleStabilityMessage(hdr.digest);
-                        break;
-                    default:
-                        if(log.isErrorEnabled()) log.error("StableHeader type " + hdr.type + " not known");
+                    new Thread() {
+                        public void run() {
+                            initialize();
+                            sendStableMessage();
+                        }
+                    }.start();
+                    num_bytes_received=0;
                 }
-                return;  // don't pass STABLE or STABILITY messages up the stack
+            }
 
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
+            obj=msg.getHeader(name);
+            if(obj == null || !(obj instanceof StableHeader))
                 break;
+            hdr=(StableHeader)msg.removeHeader(name);
+            switch(hdr.type) {
+            case StableHeader.STABLE_GOSSIP:
+                handleStableGossip(msg.getSrc(), hdr.stableDigest);
+                break;
+            case StableHeader.STABILITY:
+                handleStabilityMessage(hdr.stableDigest);
+                break;
+            default:
+                if(log.isErrorEnabled()) log.error("StableHeader type " + hdr.type + " not known");
+            }
+            return;  // don't pass STABLE or STABILITY messages up the stack
+
+        case Event.SET_LOCAL_ADDRESS:
+            local_addr=(Address)evt.getArg();
+            break;
         }
 
         passUp(evt);
@@ -307,7 +308,7 @@ public class STABLE extends Protocol {
     void startStableTask() {
         num_gossip_runs=max_gossip_runs;
 
-        // Here double-checked locking works: we don't want to synchronize if the task already runs (which is the case
+        // Here, double-checked locking works: we don't want to synchronize if the task already runs (which is the case
         // 99% of the time). If stable_task gets nulled after the condition check, we return anyways, but just miss
         // 1 cycle: on the next message or view, we will start the task
         if(stable_task != null)
@@ -316,13 +317,11 @@ public class STABLE extends Protocol {
             if(stable_task != null && stable_task.running()) {
                 return;  // already running
             }
-            else {
-                stable_task=new StableTask();
-                timer.add(stable_task, true); // fixed-rate scheduling
-            }
+            stable_task=new StableTask();
+            timer.add(stable_task, true); // fixed-rate scheduling
         }
-        if(log.isDebugEnabled())
-            log.debug("stable task started; num_gossip_runs=" + num_gossip_runs + ", max_gossip_runs=" + max_gossip_runs);
+        if(log.isTraceEnabled())
+            log.trace("stable task started; num_gossip_runs=" + num_gossip_runs + ", max_gossip_runs=" + max_gossip_runs);
     }
 
 
@@ -473,7 +472,7 @@ public class STABLE extends Protocol {
      * Bcasts a STABLE message to all group members. Message contains highest seqnos of all members
      * seen by this member. Highest seqnos are retrieved from the NAKACK layer above.
      */
-    synchronized void sendStableMessage() {
+    void sendStableMessage() {
         Digest d=null;
         Message msg=new Message(); // mcast message
         StableHeader hdr;
@@ -486,11 +485,11 @@ public class STABLE extends Protocol {
 
         d=getDigest();
         if(d != null && d.size() > 0) {
-            if(log.isDebugEnabled())
-                log.debug("mcasting STABLE msg, digest=" + d +
+            if(log.isTraceEnabled())
+                log.trace("mcasting STABLE msg, digest=" + d +
                           " (num_gossip_runs=" + num_gossip_runs + ", max_gossip_runs=" + max_gossip_runs + ')');
             hdr=new StableHeader(StableHeader.STABLE_GOSSIP, d);
-            msg.putHeader(getName(), hdr);
+            msg.putHeader(name, hdr);
             passDown(new Event(Event.MSG, msg));
         }
     }
@@ -599,7 +598,7 @@ public class STABLE extends Protocol {
 
         int type=0;
         // Digest digest=new Digest();  // used for both STABLE_GOSSIP and STABILITY message
-        Digest digest=null; // changed by Bela April 4 2004
+        Digest stableDigest=null; // changed by Bela April 4 2004
 
         public StableHeader() {
         } // used for externalizable
@@ -607,7 +606,7 @@ public class STABLE extends Protocol {
 
         StableHeader(int type, Digest digest) {
             this.type=type;
-            this.digest=digest;
+            this.stableDigest=digest;
         }
 
 
@@ -627,19 +626,19 @@ public class STABLE extends Protocol {
             sb.append('[');
             sb.append(type2String(type));
             sb.append("]: digest is ");
-            sb.append(digest);
+            sb.append(stableDigest);
             return sb.toString();
         }
 
 
         public void writeExternal(ObjectOutput out) throws IOException {
             out.writeInt(type);
-            if(digest == null) {
+            if(stableDigest == null) {
                 out.writeBoolean(false);
                 return;
             }
             out.writeBoolean(true);
-            digest.writeExternal(out);
+            stableDigest.writeExternal(out);
         }
 
 
@@ -647,19 +646,19 @@ public class STABLE extends Protocol {
             type=in.readInt();
             boolean digest_not_null=in.readBoolean();
             if(digest_not_null) {
-                digest=new Digest();
-                digest.readExternal(in);
+                stableDigest=new Digest();
+                stableDigest.readExternal(in);
             }
         }
 
         public void writeTo(DataOutputStream out) throws IOException {
             out.writeInt(type);
-            Util.writeStreamable(digest, out);
+            Util.writeStreamable(stableDigest, out);
         }
 
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
             type=in.readInt();
-            digest=(Digest)Util.readStreamable(Digest.class, in);
+            stableDigest=(Digest)Util.readStreamable(Digest.class, in);
         }
 
 
@@ -700,7 +699,8 @@ public class STABLE extends Protocol {
 
         public void run() {
             if(suspended) {
-                log.debug("stable task will not run as suspended=" + suspended);
+                if(log.isTraceEnabled())
+                    log.trace("stable task will not run as suspended=" + suspended);
                 stopStableTask();
                 return;
             }
@@ -708,8 +708,9 @@ public class STABLE extends Protocol {
             sendStableMessage();
             num_gossip_runs--;
             if(num_gossip_runs <= 0) {
-                if(log.isDebugEnabled()) log.debug("stable task terminating (num_gossip_runs=" +
-                        num_gossip_runs + ", max_gossip_runs=" + max_gossip_runs + ')');
+                if(log.isTraceEnabled())
+                    log.trace("stable task terminating (num_gossip_runs=" +
+                              num_gossip_runs + ", max_gossip_runs=" + max_gossip_runs + ')');
                 stopStableTask();
             }
         }
