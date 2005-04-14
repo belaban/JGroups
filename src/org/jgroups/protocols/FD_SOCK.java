@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.20 2005/04/12 10:53:28 belaban Exp $
+// $Id: FD_SOCK.java,v 1.21 2005/04/14 16:28:59 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -58,18 +58,19 @@ public class FD_SOCK extends Protocol implements Runnable {
 
     /** Start port for server socket (uses first available port starting at start_port). A value of 0 (default)
      * picks a random port */
-    int           start_port=0;
+    int                 start_port=0;
     final Promise       ping_addr_promise=new Promise();   // to fetch the ping_addr for ping_dest
     final Object        sock_mutex=new Object();           // for access to ping_sock, ping_input
-    TimeScheduler timer=null;
+    TimeScheduler       timer=null;
     final BroadcastTask bcast_task=new BroadcastTask();    // to transmit SUSPECT message (until view change)
-    boolean       regular_sock_close=false;                // used by interruptPingerThread() when new ping_dest is computed
+    boolean              regular_sock_close=false;         // used by interruptPingerThread() when new ping_dest is computed
     private static final int NORMAL_TEMINATION=9;
     private static final int ABNORMAL_TEMINATION=-1;
+    private static final String name="FD_SOCK";
 
 
     public String getName() {
-        return "FD_SOCK";
+        return name;
     }
 
 
@@ -146,98 +147,95 @@ public class FD_SOCK extends Protocol implements Runnable {
     public void up(Event evt) {
         Message msg;
         FdHeader hdr=null;
-        Object tmphdr;
 
         switch(evt.getType()) {
 
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address) evt.getArg();
+        case Event.SET_LOCAL_ADDRESS:
+            local_addr=(Address) evt.getArg();
+            break;
+
+        case Event.MSG:
+            msg=(Message) evt.getArg();
+            hdr=(FdHeader) msg.removeHeader(name);
+            if(hdr == null || !(hdr instanceof FdHeader))
+                break;  // message did not originate from FD_SOCK layer, just pass up
+
+            switch(hdr.type) {
+
+            case FdHeader.SUSPECT:
+                if(hdr.mbrs != null) {
+                    if(log.isDebugEnabled()) log.debug("[SUSPECT] hdr=" + hdr);
+                    for(int i=0; i < hdr.mbrs.size(); i++) {
+                        passUp(new Event(Event.SUSPECT, hdr.mbrs.elementAt(i)));
+                        passDown(new Event(Event.SUSPECT, hdr.mbrs.elementAt(i)));
+                    }
+                }
+                else
+                    if(log.isWarnEnabled()) log.warn("[SUSPECT]: hdr.mbrs == null");
                 break;
 
-            case Event.MSG:
-                msg=(Message) evt.getArg();
-                tmphdr=msg.getHeader(getName());
-                if(tmphdr == null || !(tmphdr instanceof FdHeader))
-                    break;  // message did not originate from FD_SOCK layer, just pass up
+                // If I have the sock for 'hdr.mbr', return it. Otherwise look it up in my cache and return it
+            case FdHeader.WHO_HAS_SOCK:
+                if(local_addr != null && local_addr.equals(msg.getSrc()))
+                    return; // don't reply to WHO_HAS bcasts sent by me !
 
-                hdr=(FdHeader) msg.removeHeader(getName());
-
-                switch(hdr.type) {
-
-                    case FdHeader.SUSPECT:
-                        if(hdr.mbrs != null) {
-                            if(log.isDebugEnabled()) log.debug("[SUSPECT] hdr=" + hdr);
-                            for(int i=0; i < hdr.mbrs.size(); i++) {
-                                passUp(new Event(Event.SUSPECT, hdr.mbrs.elementAt(i)));
-                                passDown(new Event(Event.SUSPECT, hdr.mbrs.elementAt(i)));
-                            }
-                        }
-                        else
-                            if(log.isWarnEnabled()) log.warn("[SUSPECT]: hdr.mbrs == null");
-                        break;
-
-                        // If I have the sock for 'hdr.mbr', return it. Otherwise look it up in my cache and return it
-                    case FdHeader.WHO_HAS_SOCK:
-                        if(local_addr != null && local_addr.equals(msg.getSrc()))
-                            return; // don't reply to WHO_HAS bcasts sent by me !
-
-                        if(hdr.mbr == null) {
-                            if(log.isErrorEnabled()) log.error("hdr.mbr is null");
-                            return;
-                        }
-
-                        if(log.isTraceEnabled()) log.trace("who-has-sock " + hdr.mbr);
-
-                        // 1. Try my own address, maybe it's me whose socket is wanted
-                        if(local_addr != null && local_addr.equals(hdr.mbr) && srv_sock_addr != null) {
-                            sendIHaveSockMessage(msg.getSrc(), local_addr, srv_sock_addr);  // unicast message to msg.getSrc()
-                            return;
-                        }
-
-                        // 2. If I don't have it, maybe it is in the cache
-                        if(cache.containsKey(hdr.mbr))
-                            sendIHaveSockMessage(msg.getSrc(), hdr.mbr, (IpAddress) cache.get(hdr.mbr));  // ucast msg
-                        break;
-
-
-                        // Update the cache with the addr:sock_addr entry (if on the same host)
-                    case FdHeader.I_HAVE_SOCK:
-                        if(hdr.mbr == null || hdr.sock_addr == null) {
-                            if(log.isErrorEnabled()) log.error("[I_HAVE_SOCK]: hdr.mbr is null or hdr.sock_addr == null");
-                            return;
-                        }
-
-                        // if(!cache.containsKey(hdr.mbr))
-                        cache.put(hdr.mbr, hdr.sock_addr); // update the cache
-                        if(log.isTraceEnabled()) log.trace("i-have-sock: " + hdr.mbr + " --> " +
-                                                           hdr.sock_addr + " (cache is " + cache + ')');
-
-                        if(ping_dest != null && hdr.mbr.equals(ping_dest))
-                            ping_addr_promise.setResult(hdr.sock_addr);
-                        break;
-
-                        // Return the cache to the sender of this message
-                    case FdHeader.GET_CACHE:
-                        if(hdr.mbr == null) {
-                            if(log.isErrorEnabled()) log.error("(GET_CACHE): hdr.mbr == null");
-                            return;
-                        }
-                        hdr=new FdHeader(FdHeader.GET_CACHE_RSP);
-                        hdr.cachedAddrs=(Hashtable) cache.clone();
-                        msg=new Message(hdr.mbr, null, null);
-                        msg.putHeader(getName(), hdr);
-                        passDown(new Event(Event.MSG, msg));
-                        break;
-
-                    case FdHeader.GET_CACHE_RSP:
-                        if(hdr.cachedAddrs == null) {
-                            if(log.isErrorEnabled()) log.error("(GET_CACHE_RSP): cache is null");
-                            return;
-                        }
-                        get_cache_promise.setResult(hdr.cachedAddrs);
-                        break;
+                if(hdr.mbr == null) {
+                    if(log.isErrorEnabled()) log.error("hdr.mbr is null");
+                    return;
                 }
-                return;
+
+                if(log.isTraceEnabled()) log.trace("who-has-sock " + hdr.mbr);
+
+                // 1. Try my own address, maybe it's me whose socket is wanted
+                if(local_addr != null && local_addr.equals(hdr.mbr) && srv_sock_addr != null) {
+                    sendIHaveSockMessage(msg.getSrc(), local_addr, srv_sock_addr);  // unicast message to msg.getSrc()
+                    return;
+                }
+
+                // 2. If I don't have it, maybe it is in the cache
+                if(cache.containsKey(hdr.mbr))
+                    sendIHaveSockMessage(msg.getSrc(), hdr.mbr, (IpAddress) cache.get(hdr.mbr));  // ucast msg
+                break;
+
+
+                // Update the cache with the addr:sock_addr entry (if on the same host)
+            case FdHeader.I_HAVE_SOCK:
+                if(hdr.mbr == null || hdr.sock_addr == null) {
+                    if(log.isErrorEnabled()) log.error("[I_HAVE_SOCK]: hdr.mbr is null or hdr.sock_addr == null");
+                    return;
+                }
+
+                // if(!cache.containsKey(hdr.mbr))
+                cache.put(hdr.mbr, hdr.sock_addr); // update the cache
+                if(log.isTraceEnabled()) log.trace("i-have-sock: " + hdr.mbr + " --> " +
+                                                   hdr.sock_addr + " (cache is " + cache + ')');
+
+                if(ping_dest != null && hdr.mbr.equals(ping_dest))
+                    ping_addr_promise.setResult(hdr.sock_addr);
+                break;
+
+                // Return the cache to the sender of this message
+            case FdHeader.GET_CACHE:
+                if(hdr.mbr == null) {
+                    if(log.isErrorEnabled()) log.error("(GET_CACHE): hdr.mbr == null");
+                    return;
+                }
+                hdr=new FdHeader(FdHeader.GET_CACHE_RSP);
+                hdr.cachedAddrs=(Hashtable) cache.clone();
+                msg=new Message(hdr.mbr, null, null);
+                msg.putHeader(name, hdr);
+                passDown(new Event(Event.MSG, msg));
+                break;
+
+            case FdHeader.GET_CACHE_RSP:
+                if(hdr.cachedAddrs == null) {
+                    if(log.isErrorEnabled()) log.error("(GET_CACHE_RSP): cache is null");
+                    return;
+                }
+                get_cache_promise.setResult(hdr.cachedAddrs);
+                break;
+            }
+            return;
         }
 
         passUp(evt);                                        // pass up to the layer above us
@@ -528,7 +526,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                 hdr=new FdHeader(FdHeader.GET_CACHE);
                 hdr.mbr=local_addr;
                 msg=new Message(coord, null, null);
-                msg.putHeader(getName(), hdr);
+                msg.putHeader(name, hdr);
                 passDown(new Event(Event.MSG, msg));
                 result=(Hashtable) get_cache_promise.getResult(get_cache_timeout);
                 if(result != null) {
@@ -570,7 +568,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         hdr.mbrs=new Vector(1);
         hdr.mbrs.addElement(suspected_mbr);
         suspect_msg=new Message();
-        suspect_msg.putHeader(getName(), hdr);
+        suspect_msg.putHeader(name, hdr);
         passDown(new Event(Event.MSG, suspect_msg));
 
         // 2. Add to broadcast task and start latter (if not yet running). The task will end when
@@ -589,7 +587,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         msg=new Message();  // bcast msg
         hdr=new FdHeader(FdHeader.WHO_HAS_SOCK);
         hdr.mbr=mbr;
-        msg.putHeader(getName(), hdr);
+        msg.putHeader(name, hdr);
         passDown(new Event(Event.MSG, msg));
     }
 
@@ -603,7 +601,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         FdHeader hdr=new FdHeader(FdHeader.I_HAVE_SOCK);
         hdr.mbr=mbr;
         hdr.sock_addr=addr;
-        msg.putHeader(getName(), hdr);
+        msg.putHeader(name, hdr);
 
         if(log.isTraceEnabled()) // +++ remove
             log.trace("hdr=" + hdr);
@@ -642,7 +640,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         ping_addr_req=new Message(mbr, null, null); // unicast
         hdr=new FdHeader(FdHeader.WHO_HAS_SOCK);
         hdr.mbr=mbr;
-        ping_addr_req.putHeader(getName(), hdr);
+        ping_addr_req.putHeader(name, hdr);
         passDown(new Event(Event.MSG, ping_addr_req));
         ret=(IpAddress) ping_addr_promise.getResult(3000);
         if(ret != null) {
@@ -654,7 +652,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         ping_addr_req=new Message(null, null, null); // multicast
         hdr=new FdHeader(FdHeader.WHO_HAS_SOCK);
         hdr.mbr=mbr;
-        ping_addr_req.putHeader(getName(), hdr);
+        ping_addr_req.putHeader(name, hdr);
         passDown(new Event(Event.MSG, ping_addr_req));
         ret=(IpAddress) ping_addr_promise.getResult(3000);
         return ret;
@@ -1052,7 +1050,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                 hdr.mbrs=(Vector) suspected_mbrs.clone();
             }
             suspect_msg=new Message();       // mcast SUSPECT to all members
-            suspect_msg.putHeader(getName(), hdr);
+            suspect_msg.putHeader(name, hdr);
             passDown(new Event(Event.MSG, suspect_msg));
             if(log.isDebugEnabled()) log.debug("task done");
         }
