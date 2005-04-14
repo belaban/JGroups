@@ -1,4 +1,4 @@
-// $Id: PullPushAdapter.java,v 1.11 2005/01/12 01:36:51 belaban Exp $
+// $Id: PullPushAdapter.java,v 1.12 2005/04/14 03:59:56 laran Exp $
 
 package org.jgroups.blocks;
 
@@ -104,7 +104,7 @@ public class PullPushAdapter implements Runnable, ChannelListener {
      * Sends a message to the group - listeners to this identifier will receive the messages
      * @param identifier the key that the proper listeners are listenting on 
      * @param msg the Message to be sent
-     * @see registerListener
+     * @see #registerListener
      */
     public void send(Serializable identifier, Message msg) throws Exception {
         if(msg == null) {
