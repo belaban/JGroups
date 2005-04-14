@@ -1,23 +1,35 @@
 package org.jgroups.tests;
 
-import org.jgroups.ChannelException;
+import org.jgroups.Event;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.protocols.PERF_TP;
+import org.jgroups.stack.Protocol;
+
+import java.io.*;
+import java.util.Vector;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Iterator;
 
 /**
  * Test of PERF_TP. Requirement: transport needs to be PERF_TP
  * @author Bela Ban Feb 24, 2004
- * @version $Id: PerfTpTest.java,v 1.5 2005/04/13 13:04:11 belaban Exp $
+ * @version $Id: PerfTpTest.java,v 1.6 2005/04/14 14:37:18 belaban Exp $
  */
 public class PerfTpTest {
     JChannel ch=null;
     PERF_TP  tp=null;
+    DataInputStream in=null;
+    DataOutputStream out=null;
+
 
     public static void main(String[] args) {
         String props=null;
         int    num_msgs=1000;
         int    size=1000; // bytes
+        String   file_name=null;
+        boolean  write=true;
 
         for(int i=0; i < args.length; i++) {
             if("-props".equals(args[i])){
@@ -32,37 +44,88 @@ public class PerfTpTest {
                 size=Integer.parseInt(args[++i]);
                 continue;
             }
+            if("-file_name".equals(args[i])) {
+                file_name=args[++i];
+                continue;
+            }
+            if("-write".equals(args[i])) {
+                write=true;
+                continue;
+            }
+            if("-read".equals(args[i])) {
+                write=false;
+                continue;
+            }
             help();
             return;
         }
 
         try {
-            new PerfTpTest().start(props, num_msgs, size);
+            new PerfTpTest().start(props, num_msgs, size, file_name, write);
         }
-        catch(ChannelException e) {
-            e.printStackTrace();
-        }
-        catch(InterruptedException e) {
+        catch(Exception e) {
             e.printStackTrace();
         }
     }
 
     private static void help() {
-        System.out.println("PerfTpTest [-help] [-props <properties>] [-num <num msgs>] [-size <msg size (in bytes)]");
+        System.out.println("PerfTpTest [-help] [-props <properties>] [-num <num msgs>] " +
+                           "[-size <msg size (in bytes)] [-file_name <filename>] [-write] [-read]");
     }
 
-    void start(String props, int num_msgs, int size) throws ChannelException, InterruptedException {
+    void start(String props, int num_msgs, int size, String file_name, boolean write) throws Exception {
         Message msg;
+        Protocol transport;
         byte[] buf=new byte[size];
+
+        if(file_name != null) {
+            if(write)
+                out=new DataOutputStream(new FileOutputStream(file_name));
+            else
+                in=new DataInputStream(new FileInputStream(file_name));
+        }
+
         ch=new JChannel(props);
         ch.connect("demo");
         tp=PERF_TP.getInstance();
-        tp.setExpectedMessages(num_msgs);
-        for(int i=0; i < num_msgs; i++) {
-            msg=new Message(null, null, buf);
-            ch.send(msg);
-            if(i % 1000 == 0)
-                System.out.println("sent " + i + " messages");
+
+        if(write) {
+            tp.setExpectedMessages(num_msgs);
+            for(int i=0; i < num_msgs; i++) {
+                msg=new Message(null, null, buf);
+                ch.send(msg);
+                if(out != null)
+                    msg.writeTo(out);
+                if(i % 1000 == 0)
+                    System.out.println("sent " + i + " messages");
+            }
+        }
+        else {
+            List msgs=new LinkedList();
+            Vector protocols=ch.getProtocolStack().getProtocols();
+            transport=(Protocol)protocols.lastElement();
+            int i=0;
+            while(true) {
+                msg=new Message();
+                try {
+                    msg.readFrom(in);
+                    msgs.add(msg);
+
+                }
+                catch(EOFException eof) {
+                    break;
+                }
+            }
+
+            System.out.println("read " + msgs.size() + " msgs from file");
+            tp.setExpectedMessages(msgs.size()); // this starts the time
+            for(Iterator it=msgs.iterator(); it.hasNext();) {
+                msg=(Message)it.next();
+                i++;
+                transport.up(new Event(Event.MSG, msg));
+                if(i % 1000 == 0)
+                    System.out.println("passed up " + i + " messages");
+            }
         }
         synchronized(tp) {
             if(tp.done()) {
