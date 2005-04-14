@@ -1,4 +1,4 @@
-// $Id: Xid.java,v 1.3 2004/07/05 05:41:45 belaban Exp $
+// $Id: Xid.java,v 1.4 2005/04/14 03:58:19 laran Exp $
 
 package org.jgroups.blocks;
 
@@ -19,7 +19,7 @@ import java.io.ObjectOutput;
  * identify entities of work, with which resources are associated. A transaction
  * will thus trigger the creation of an associated entry on each receiver, which
  * keeps track of resources acquired and their locks, operations to be committed
- * in case {@link ReplicatioReceiver#commit(Xid)}is called<br/>
+ * in case {@link ReplicationReceiver#commit(Xid)}is called<br/>
  * A transaction is identified by its creator and a transaction ID. The creator
  * is currently a <a href="http://www.jgroups.com">JGroups</a> address,
  * consisting of the IP address and port of the member.
@@ -27,7 +27,7 @@ import java.io.ObjectOutput;
  * JTA counterpart.</em>
  * @
  * @author  <a href="mailto:belaban@yahoo.com">Bela Ban</a>.
- * @version $Revision: 1.3 $
+ * @version $Revision: 1.4 $
  *
  * <p><b>Revisions:</b>
  *
