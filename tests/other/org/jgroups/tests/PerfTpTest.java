@@ -15,7 +15,7 @@ import java.util.Iterator;
 /**
  * Test of PERF_TP. Requirement: transport needs to be PERF_TP
  * @author Bela Ban Feb 24, 2004
- * @version $Id: PerfTpTest.java,v 1.6 2005/04/14 14:37:18 belaban Exp $
+ * @version $Id: PerfTpTest.java,v 1.7 2005/04/14 16:12:50 belaban Exp $
  */
 public class PerfTpTest {
     JChannel ch=null;
@@ -110,7 +110,6 @@ public class PerfTpTest {
                 try {
                     msg.readFrom(in);
                     msgs.add(msg);
-
                 }
                 catch(EOFException eof) {
                     break;
@@ -118,13 +117,15 @@ public class PerfTpTest {
             }
 
             System.out.println("read " + msgs.size() + " msgs from file");
+            num_msgs=msgs.size();
             tp.setExpectedMessages(msgs.size()); // this starts the time
             for(Iterator it=msgs.iterator(); it.hasNext();) {
                 msg=(Message)it.next();
                 i++;
                 transport.up(new Event(Event.MSG, msg));
-                if(i % 1000 == 0)
+                if(i % 10000 == 0) {
                     System.out.println("passed up " + i + " messages");
+                }
             }
         }
         synchronized(tp) {
@@ -136,7 +137,7 @@ public class PerfTpTest {
             }
         }
         long total=tp.getTotalTime();
-        double msgs_per_ms=num_msgs / total;
+        double msgs_per_ms=num_msgs / (double)total;
         double msgs_per_sec=msgs_per_ms * 1000;
         double time_per_msg=total / (double)num_msgs;
         double usec_per_msg=time_per_msg * 1000;
