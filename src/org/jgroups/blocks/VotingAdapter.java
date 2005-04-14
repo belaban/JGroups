@@ -20,7 +20,7 @@ import java.util.Set;
  * Decree is an object that has some semantic meaning within the application. 
  * Each voting listener receives a decree and can respond with either 
  * <code>true</code> or false. If the decree has no meaning for the voting
- * listener, it is required to throw {@link VotingException}. In this case
+ * listener, it is required to throw {@link VoteException}. In this case
  * this specific listener will be excluded from the voting on the specified
  * decree. After performing local voting, this voting adapter sends the request
  * back to the originator of the voting process. Originator receives results
