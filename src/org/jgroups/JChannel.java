@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.29 2004/09/23 16:29:59 belaban Exp $
+// $Id: JChannel.java,v 1.30 2005/04/14 15:58:32 belaban Exp $
 
 package org.jgroups;
 
@@ -24,7 +24,7 @@ import java.util.Vector;
  * protocol stack
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.29 $
+ * @version $Revision: 1.30 $
  */
 public class JChannel extends Channel {
 
@@ -1026,7 +1026,7 @@ public class JChannel extends Channel {
      * health check.<BR>
      * throws a ChannelNotConnected exception if the channel is not connected
      */
-    void checkNotConnected() throws ChannelNotConnectedException {
+    private void checkNotConnected() throws ChannelNotConnectedException {
         if(!connected)
             throw new ChannelNotConnectedException();
     }
@@ -1035,7 +1035,7 @@ public class JChannel extends Channel {
      * health check<BR>
      * throws a ChannelClosed exception if the channel is closed
      */
-    void checkClosed() throws ChannelClosedException {
+    private void checkClosed() throws ChannelClosedException {
         if(closed)
             throw new ChannelClosedException();
     }
