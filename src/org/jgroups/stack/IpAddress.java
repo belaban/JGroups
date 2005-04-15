@@ -1,4 +1,4 @@
-// $Id: IpAddress.java,v 1.17 2005/03/23 14:51:38 belaban Exp $
+// $Id: IpAddress.java,v 1.18 2005/04/15 12:35:33 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -299,6 +299,7 @@ public class IpAddress implements Address {
 
     public void writeTo(DataOutputStream out) throws IOException {
         byte[] address = ip_addr.getAddress();
+        out.writeShort(address.length); // 2 bytes
         out.write(address, 0, address.length);
         out.writeInt(port);
         if(additional_data != null) {
@@ -312,9 +313,11 @@ public class IpAddress implements Address {
     }
 
     public void readFrom(DataInputStream in) throws IOException {
-        int len=0;
+        int len;
+
+        len=in.readShort();
         //read the four bytes
-        byte[] a = new byte[4];
+        byte[] a = new byte[len];
         //in theory readFully(byte[]) should be faster
         //than read(byte[]) since latter reads
         // 4 bytes one at a time
@@ -331,6 +334,13 @@ public class IpAddress implements Address {
             additional_data=new byte[len];
             in.readFully(additional_data, 0, additional_data.length);
         }
+    }
+
+    public int size() {
+        int size=11; // length + 4 bytes for IPv4 address + 4 bytes for port + 1 for additional_data available
+        if(additional_data != null)
+            size+=additional_data.length+4;
+        return size;
     }
 
     public Object clone() throws CloneNotSupportedException {
