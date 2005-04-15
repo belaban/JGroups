@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.15 2005/04/13 11:38:38 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.16 2005/04/15 13:17:00 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -105,7 +105,7 @@ public class STATE_TRANSFER extends Protocol {
                 handleStateReq(hdr.sender, hdr.id);
                 break;
             case StateHeader.STATE_RSP:
-                handleStateRsp(hdr.sender, hdr.digest, msg.getBuffer());
+                handleStateRsp(hdr.sender, hdr.my_digest, msg.getBuffer());
                 break;
             default:
                 if(log.isErrorEnabled()) log.error("type " + hdr.type + " not known in StateHeader");
@@ -303,7 +303,7 @@ public class STATE_TRANSFER extends Protocol {
         Address sender=null;   // sender of state STATE_REQ or STATE_RSP
         long id=0;          // state transfer ID (to separate multiple state transfers at the same time)
         int type=0;
-        Digest digest=null;   // digest of sender (if type is STATE_RSP)
+        Digest my_digest=null;   // digest of sender (if type is STATE_RSP)
 
 
         public StateHeader() {
@@ -314,7 +314,7 @@ public class STATE_TRANSFER extends Protocol {
             this.type=type;
             this.sender=sender;
             this.id=id;
-            this.digest=digest;
+            this.my_digest=digest;
         }
 
         public int getType() {
@@ -322,7 +322,7 @@ public class STATE_TRANSFER extends Protocol {
         }
 
         public Digest getDigest() {
-            return digest;
+            return my_digest;
         }
 
 
@@ -351,7 +351,7 @@ public class STATE_TRANSFER extends Protocol {
             StringBuffer sb=new StringBuffer();
             sb.append("[StateHeader: type=" + type2Str(type));
             if(sender != null) sb.append(", sender=" + sender + " id=#" + id);
-            if(digest != null) sb.append(", digest=" + digest);
+            if(my_digest != null) sb.append(", digest=" + my_digest);
             return sb.toString();
         }
 
@@ -372,7 +372,7 @@ public class STATE_TRANSFER extends Protocol {
             out.writeObject(sender);
             out.writeLong(id);
             out.writeInt(type);
-            out.writeObject(digest);
+            out.writeObject(my_digest);
         }
 
 
@@ -380,7 +380,7 @@ public class STATE_TRANSFER extends Protocol {
             sender=(Address)in.readObject();
             id=in.readLong();
             type=in.readInt();
-            digest=(Digest)in.readObject();
+            my_digest=(Digest)in.readObject();
         }
 
     }

@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.17 2005/04/14 17:04:19 belaban Exp $
+// $Id: UNICAST.java,v 1.18 2005/04/15 13:17:02 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -435,8 +435,12 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 default: return "<unknown>";
             }
         }
-	
-	
+
+        public long size() {
+            return (2 * Global.BYTE_SIZE) + Global.LONG_SIZE;
+        }
+
+
         public void writeExternal(ObjectOutput out) throws IOException {
             out.writeByte(type);
             out.writeLong(seqno);

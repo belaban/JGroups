@@ -3,12 +3,12 @@ package org.jgroups.protocols;
 import org.jgroups.Event;
 import org.jgroups.Header;
 import org.jgroups.Message;
+import org.jgroups.Global;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
+import org.jgroups.util.Streamable;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.*;
 import java.util.Properties;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
@@ -18,7 +18,7 @@ import java.util.zip.Inflater;
  * Compresses the payload of a message. Goal is to reduce the number of messages sent across the wire.
  * Should ideally be layered somewhere above a fragmentation protocol (e.g. FRAG).
  * @author Bela Ban
- * @version $Id: COMPRESS.java,v 1.6 2005/03/04 18:57:36 belaban Exp $
+ * @version $Id: COMPRESS.java,v 1.7 2005/04/15 13:17:01 belaban Exp $
  */
 public class COMPRESS extends Protocol {
 
@@ -142,7 +142,7 @@ public class COMPRESS extends Protocol {
 
 
 
-    public static class CompressHeader extends Header {
+    public static class CompressHeader extends Header implements Streamable {
         int original_size=0;
 
         public CompressHeader() {
@@ -155,7 +155,7 @@ public class COMPRESS extends Protocol {
 
 
         public long size() {
-            return 16;
+            return Global.INT_SIZE;
         }
 
         public void writeExternal(ObjectOutput out) throws IOException {
@@ -163,6 +163,14 @@ public class COMPRESS extends Protocol {
         }
 
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            original_size=in.readInt();
+        }
+
+        public void writeTo(DataOutputStream out) throws IOException {
+            out.writeInt(original_size);
+        }
+
+        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
             original_size=in.readInt();
         }
     }

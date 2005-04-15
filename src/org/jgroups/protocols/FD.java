@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.16 2005/04/12 10:47:28 belaban Exp $
+// $Id: FD.java,v 1.17 2005/04/15 13:17:01 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -35,7 +35,7 @@ import java.util.Vector;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Revision: 1.16 $
+ * @version $Revision: 1.17 $
  */
 public class FD extends Protocol {
     Address               ping_dest=null;
@@ -405,6 +405,24 @@ public class FD extends Protocol {
                 }
             }
             Util.writeAddress(from, out);
+        }
+
+
+        public long size() {
+            int retval=Global.BYTE_SIZE;
+            Address addr;
+            if(mbrs != null) {
+                retval+=Global.INT_SIZE; // size()
+                for(Iterator it=mbrs.iterator(); it.hasNext();) {
+                    addr=(Address)it.next();
+                    if(addr != null)
+                        retval+=addr.size() + Global.BYTE_SIZE; // presence
+                }
+            }
+            retval+=Global.BYTE_SIZE; // presence byte for 'from'
+            if(from != null)
+                retval+=from.size();
+            return retval;
         }
 
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {

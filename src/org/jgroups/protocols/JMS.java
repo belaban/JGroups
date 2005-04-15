@@ -1,4 +1,4 @@
-// $Id: JMS.java,v 1.10 2004/10/25 09:45:31 belaban Exp $ 
+// $Id: JMS.java,v 1.11 2005/04/15 13:17:02 belaban Exp $ 
 
 package org.jgroups.protocols;
 
@@ -595,6 +595,10 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
          */
         public boolean isMulticastAddress() {
             return isMCast;
+        }
+
+        public int size() {
+            return 22;
         }
 
         /**

@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.25 2005/04/15 12:43:17 belaban Exp $
+// $Id: Message.java,v 1.26 2005/04/15 13:17:04 belaban Exp $
 
 package org.jgroups;
 
@@ -46,7 +46,6 @@ public class Message implements Externalizable, Streamable {
 
     protected static final Log log=LogFactory.getLog(Message.class);
 
-    static final long ADDRESS_OVERHEAD=22; // estimated size of Address (src and dest)
     static final long serialVersionUID=-1137364035832847034L;
 
     static final byte DEST_SET=1;
@@ -391,18 +390,10 @@ public class Message implements Externalizable, Streamable {
                 + length                              // buffer
                 + (buf != null? Global.INT_SIZE : 0); // if buf != null 4 bytes for length
 
-        if(dest_addr != null) {
-            if(dest_addr instanceof IpAddress)
-                retval+=((IpAddress)dest_addr).size();
-            else
-                retval+=ADDRESS_OVERHEAD;
-        }
-        if(src_addr != null) {
-            if(src_addr instanceof IpAddress)
-                retval+=((IpAddress)src_addr).size();
-            else
-                retval+=ADDRESS_OVERHEAD;
-        }
+        if(dest_addr != null)
+            retval+=dest_addr.size();
+        if(src_addr != null)
+            retval+=(src_addr).size();
 
         if(headers != null) {
             Map.Entry entry;
@@ -638,7 +629,7 @@ public class Message implements Externalizable, Streamable {
         // 4. headers
         if((leading & HDRS_SET) == HDRS_SET) {
             len=in.readInt();
-            headers();
+            headers(len);
             for(int i=0; i < len; i++) {
                 hdr_name=in.readUTF();
                 hdr=readHeader(in);
@@ -657,6 +648,11 @@ public class Message implements Externalizable, Streamable {
 
     HashMap headers() {
         return headers != null ? headers : (headers=new HashMap(11));
+    }
+
+
+    HashMap headers(int len) {
+        return headers != null ? headers : (headers=new HashMap(len));
     }
 
     private void writeHeader(Header value, DataOutputStream out) throws IOException {

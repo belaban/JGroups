@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.20 2005/04/12 15:09:13 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.21 2005/04/15 13:16:59 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -573,7 +573,7 @@ public class CoordGmsImpl extends GmsImpl {
             msg=new Message(coord, null, null);
             hdr=new GMS.GmsHeader(GMS.GmsHeader.INSTALL_MERGE_VIEW);
             hdr.view=v;
-            hdr.digest=d;
+            hdr.my_digest=d;
             hdr.merge_id=merge_id;
             msg.putHeader(gms.getName(), hdr);
             gms.passDown(new Event(Event.MSG, msg));
@@ -588,7 +588,7 @@ public class CoordGmsImpl extends GmsImpl {
         GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.MERGE_RSP);
         hdr.merge_id=merge_id;
         hdr.view=view;
-        hdr.digest=digest;
+        hdr.my_digest=digest;
         msg.putHeader(gms.getName(), hdr);
         if(log.isDebugEnabled()) log.debug("response=" + hdr);
         gms.passDown(new Event(Event.MSG, msg));

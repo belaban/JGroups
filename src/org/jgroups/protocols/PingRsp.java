@@ -1,8 +1,9 @@
-// $Id: PingRsp.java,v 1.6 2005/01/05 10:39:28 belaban Exp $
+// $Id: PingRsp.java,v 1.7 2005/04/15 13:17:02 belaban Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.Address;
+import org.jgroups.Global;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
@@ -40,6 +41,15 @@ public class PingRsp implements Serializable, Streamable {
         if(own_addr != null && coord_addr != null)
             return own_addr.equals(coord_addr);
         return false;
+    }
+
+    public int size() {
+        int retval=Global.BYTE_SIZE *3; // for is_server, plus 2 presence bytes
+        if(own_addr != null)
+            retval+=own_addr.size();
+        if(coord_addr != null)
+            retval+=coord_addr.size();
+        return retval;
     }
 
     public Address getAddress() {
