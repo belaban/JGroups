@@ -1,9 +1,10 @@
-// $Id: NakAckHeader.java,v 1.8 2005/04/15 12:35:42 belaban Exp $
+// $Id: NakAckHeader.java,v 1.9 2005/04/15 12:43:16 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
 
 import org.jgroups.Header;
+import org.jgroups.Global;
 import org.jgroups.util.Range;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
@@ -44,9 +45,10 @@ public class NakAckHeader extends Header implements Streamable {
 
 
     public long size() {
-        int retval=9; // type (1 byte) = seqno (8 bytes)
+        // type (1 byte) + seqno (8 bytes)
+        int retval=Global.BYTE_SIZE + Global.LONG_SIZE;
         if(range != null)
-            retval+=1 + 16; // presence byte, plus 2 times 8 bytes for seqno
+            retval+=Global.BYTE_SIZE + (2 * Global.LONG_SIZE); // presence byte, plus 2 times 8 bytes for seqno
         return retval;
     }
 

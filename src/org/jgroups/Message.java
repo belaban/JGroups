@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.24 2005/04/15 12:32:55 belaban Exp $
+// $Id: Message.java,v 1.25 2005/04/15 12:43:17 belaban Exp $
 
 package org.jgroups;
 
@@ -387,9 +387,9 @@ public class Message implements Externalizable, Streamable {
      * therefore getting the correct value.
      */
     public long size() {
-        long retval=1                   // leading byte
-                + length                // buffer
-                + (buf != null? 4 : 0); // if buf != null 4 bytes for length
+        long retval=Global.BYTE_SIZE                  // leading byte
+                + length                              // buffer
+                + (buf != null? Global.INT_SIZE : 0); // if buf != null 4 bytes for length
 
         if(dest_addr != null) {
             if(dest_addr instanceof IpAddress)
@@ -408,7 +408,7 @@ public class Message implements Externalizable, Streamable {
             Map.Entry entry;
             String key;
             Header hdr;
-            retval+=4; // size (int)
+            retval+=Global.INT_SIZE; // size (int)
             for(Iterator it=headers.entrySet().iterator(); it.hasNext();) {
                 entry=(Map.Entry)it.next();
                 key=(String)entry.getKey();

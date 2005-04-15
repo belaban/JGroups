@@ -1,10 +1,11 @@
-// $Id: IpAddress.java,v 1.18 2005/04/15 12:35:33 belaban Exp $
+// $Id: IpAddress.java,v 1.19 2005/04/15 12:43:17 belaban Exp $
 
 package org.jgroups.stack;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
+import org.jgroups.Global;
 
 import java.io.*;
 import java.net.InetAddress;
@@ -337,9 +338,10 @@ public class IpAddress implements Address {
     }
 
     public int size() {
-        int size=11; // length + 4 bytes for IPv4 address + 4 bytes for port + 1 for additional_data available
+        // length + 4 bytes for IPv4 address + 4 bytes for port + 1 for additional_data available
+        int size=Global.SHORT_SIZE + (2*Global.INT_SIZE) + Global.BYTE_SIZE;
         if(additional_data != null)
-            size+=additional_data.length+4;
+            size+=additional_data.length+Global.INT_SIZE;
         return size;
     }
 
