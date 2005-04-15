@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.23 2005/04/13 14:18:33 belaban Exp $
+// $Id: Message.java,v 1.24 2005/04/15 12:32:55 belaban Exp $
 
 package org.jgroups;
 
@@ -41,6 +41,7 @@ public class Message implements Externalizable, Streamable {
     /** The number of bytes in the buffer (usually buf.length is buf != null) */
     protected transient int     length=0;
 
+    /** HashMap<String,Header> */
     protected HashMap headers=null;
 
     protected static final Log log=LogFactory.getLog(Message.class);
@@ -386,22 +387,35 @@ public class Message implements Externalizable, Streamable {
      * therefore getting the correct value.
      */
     public long size() {
-        long retval=length;
-        long hdr_size=0;
-        Header hdr;
+        long retval=1                   // leading byte
+                + length                // buffer
+                + (buf != null? 4 : 0); // if buf != null 4 bytes for length
 
-        if(dest_addr != null) retval+=ADDRESS_OVERHEAD;
-        if(src_addr != null) retval+=ADDRESS_OVERHEAD;
+        if(dest_addr != null) {
+            if(dest_addr instanceof IpAddress)
+                retval+=((IpAddress)dest_addr).size();
+            else
+                retval+=ADDRESS_OVERHEAD;
+        }
+        if(src_addr != null) {
+            if(src_addr instanceof IpAddress)
+                retval+=((IpAddress)src_addr).size();
+            else
+                retval+=ADDRESS_OVERHEAD;
+        }
 
         if(headers != null) {
-            for(Iterator it=headers.values().iterator(); it.hasNext();) {
-                hdr=(Header)it.next();
-                if(hdr == null) continue;
-                hdr_size=hdr.size();
-                if(hdr_size <= 0)
-                    hdr_size=Header.HDR_OVERHEAD;
-                else
-                    retval+=hdr_size;
+            Map.Entry entry;
+            String key;
+            Header hdr;
+            retval+=4; // size (int)
+            for(Iterator it=headers.entrySet().iterator(); it.hasNext();) {
+                entry=(Map.Entry)it.next();
+                key=(String)entry.getKey();
+                retval+=key.length() +2; // not the same as writeUTF(), but almost
+                hdr=(Header)entry.getValue();
+                retval+=5; // 1 for presence of magic number, 4 for magic number
+                retval+=hdr.size();
             }
         }
         return retval;
