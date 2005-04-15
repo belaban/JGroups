@@ -6,30 +6,20 @@
  */
 package org.jgroups.protocols;
 
+import junit.framework.TestCase;
+import org.jgroups.*;
+import org.jgroups.protocols.ENCRYPT.EncryptHeader;
+import org.jgroups.stack.Protocol;
+import org.jgroups.stack.ProtocolObserver;
+
+import javax.crypto.Cipher;
 import java.io.*;
 import java.security.MessageDigest;
-import java.util.Arrays;
+import java.security.Security;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Vector;
-
-import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import javax.crypto.*;
-import java.security.Security;
-
-import junit.framework.TestCase;
-
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Message;
-import org.jgroups.View;
-import org.jgroups.ViewId;
-import org.jgroups.protocols.ENCRYPT.EncryptHeader;
-import org.jgroups.stack.Protocol;
-import org.jgroups.stack.ProtocolObserver;
 /**
  * @author xenephon
  *
@@ -661,7 +651,11 @@ public class ENCRYPTAsymmetricTest extends TestCase {
 		public MockAddress(String name){
 			this.name = name;
 		}
-		public boolean isMulticastAddress()
+
+        public MockAddress() {
+        }
+
+        public boolean isMulticastAddress()
 		{
 			// TODO Auto-generated method stub
 			return false;
