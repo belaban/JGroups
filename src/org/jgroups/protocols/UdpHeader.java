@@ -1,4 +1,4 @@
-// $Id: UdpHeader.java,v 1.6 2005/04/11 09:00:27 belaban Exp $
+// $Id: UdpHeader.java,v 1.7 2005/04/15 12:33:15 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -13,12 +13,15 @@ import java.io.*;
 
 public class UdpHeader extends Header implements Streamable {
     public String channel_name=null;
+    int size=0;
 
     public UdpHeader() {
     }  // used for externalization
 
     public UdpHeader(String n) {
         channel_name=n;
+        if(channel_name != null)
+            size=channel_name.length()+2; // +2 for writeUTF()
     }
 
     public String toString() {
@@ -27,7 +30,7 @@ public class UdpHeader extends Header implements Streamable {
 
 
     public long size() {
-        return 100;
+        return size;
     }
 
     public void writeExternal(ObjectOutput out) throws IOException {
@@ -37,6 +40,8 @@ public class UdpHeader extends Header implements Streamable {
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         channel_name=in.readUTF();
+        if(channel_name != null)
+            size=channel_name.length()+2;
     }
 
 
