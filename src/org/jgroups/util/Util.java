@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.31 2005/04/13 08:58:32 belaban Exp $
+// $Id: Util.java,v 1.32 2005/04/15 10:39:26 belaban Exp $
 
 package org.jgroups.util;
 
@@ -932,6 +932,25 @@ public class Util {
 
         try {
             data=Util.objectToByteBuffer(inst);
+            return data.length;
+        }
+        catch(Exception ex) {
+            if(log.isErrorEnabled()) log.error("exception+" + ex);
+            return 0;
+        }
+    }
+
+    public static long sizeOf(Streamable inst) {
+        byte[] data;
+        ByteArrayOutputStream output;
+        DataOutputStream out;
+
+        try {
+            output=new ByteArrayOutputStream();
+            out=new DataOutputStream(output);
+            inst.writeTo(out);
+            out.flush();
+            data=output.toByteArray();
             return data.length;
         }
         catch(Exception ex) {
