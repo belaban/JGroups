@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.36 2005/04/13 15:28:09 belaban Exp $
+// $Id: NAKACK.java,v 1.37 2005/04/15 12:34:31 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -224,7 +224,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
             if(dest != null && !dest.isMulticastAddress()) {
                 break; // unicast address: not null and not mcast, pass down unchanged
             }
-            send(msg);
+            send(evt, msg);
             msg=null;
             evt=null;
             return;    // don't pass down the stack
@@ -457,10 +457,11 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
      * store a copy of the message, but a reference ! This saves us a lot of memory. However, this also means that a
      * message should not be changed after storing it in the sent-table ! See protocols/DESIGN for details.
      */
-    private final void send(Message msg) {
+    private final void send(Event evt, Message msg) {
         long msg_id=getNextSeqno();
         if(log.isTraceEnabled())
             log.trace("sending msg #" + msg_id);
+
         msg.putHeader(name, new NakAckHeader(NakAckHeader.MSG, msg_id));
 
         synchronized(sent_msgs) {
@@ -471,7 +472,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
                 sent_msgs.put(new Long(msg_id), msg);
             }
         }
-        passDown(new Event(Event.MSG, msg));
+        passDown(evt);
     }
 
 
