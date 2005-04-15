@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.32 2005/04/15 10:39:26 belaban Exp $
+// $Id: Util.java,v 1.33 2005/04/15 12:35:19 belaban Exp $
 
 package org.jgroups.util;
 
@@ -7,6 +7,8 @@ import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
 import org.jgroups.protocols.FD;
 import org.jgroups.protocols.PingHeader;
+import org.jgroups.protocols.UdpHeader;
+import org.jgroups.protocols.pbcast.NakAckHeader;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.stack.IpAddress;
 
@@ -1257,11 +1259,34 @@ public class Util {
     }
     */
 
-    public static void main(String args[]) {
-        System.out.println("Check for Linux:   " + checkForLinux());
-        System.out.println("Check for Solaris: " + checkForSolaris());
-        System.out.println("Check for Windows: " + checkForWindows());
-        System.out.println("version: " + getJavaVersion());
+    public static void main(String args[]) throws Exception {
+        ClassConfigurator.getInstance(true);
+
+        Message msg=new Message(null, new IpAddress("127.0.0.1", 4444), "Bela");
+        long    size=Util.sizeOf(msg);
+        System.out.println("size=" + msg.size() + ", streamable size=" + size);
+
+        msg.putHeader("belaban", new NakAckHeader((byte)1, 23, 34));
+        size=Util.sizeOf(msg);
+        System.out.println("size=" + msg.size() + ", streamable size=" + size);
+
+        msg.putHeader("bla", new UdpHeader("groupname"));
+        size=Util.sizeOf(msg);
+        System.out.println("size=" + msg.size() + ", streamable size=" + size);
+
+
+        IpAddress a1=new IpAddress(1234), a2=new IpAddress("127.0.0.1", 3333);
+        a1.setAdditionalData("Bela".getBytes());
+        size=Util.sizeOf(a1);
+        System.out.println("size=" + a1.size() + ", streamable size of a1=" + size);
+        size=Util.sizeOf(a2);
+        System.out.println("size=" + a2.size() + ", streamable size of a2=" + size);
+
+
+//        System.out.println("Check for Linux:   " + checkForLinux());
+//        System.out.println("Check for Solaris: " + checkForSolaris());
+//        System.out.println("Check for Windows: " + checkForWindows());
+//        System.out.println("version: " + getJavaVersion());
     }
 
 
