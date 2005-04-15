@@ -1,4 +1,4 @@
-// $Id: IpAddressTest.java,v 1.9 2005/01/07 08:24:38 belaban Exp $
+// $Id: IpAddressTest.java,v 1.10 2005/04/15 11:10:18 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -8,10 +8,7 @@ import junit.framework.TestSuite;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.HashSet;
@@ -200,8 +197,88 @@ public class IpAddressTest extends TestCase {
          assertTrue(h.equals(h2));
      }
 
-    
-   
+
+    public void testStreamable() throws Exception {
+        ByteArrayOutputStream bos=new ByteArrayOutputStream();
+        DataOutputStream      oos=new DataOutputStream(bos);
+        byte[]                buf=null;
+        ByteArrayInputStream  bis=null;
+        DataInputStream       ois;
+        IpAddress             a2, b2;
+
+        a.setAdditionalData(null);
+        b.setAdditionalData("Bela Ban".getBytes());
+        a.writeTo(oos);
+        b.writeTo(oos);
+
+
+        buf=bos.toByteArray();
+        bis=new ByteArrayInputStream(buf);
+        ois=new DataInputStream(bis);
+        a2=new IpAddress();
+        a2.readFrom(ois);
+        b2=new IpAddress();
+        b2.readFrom(ois);
+
+        assertTrue(a.equals(a2));
+        assertTrue(b.equals(b2));
+
+        assertTrue(a2.getAdditionalData() == null);
+        assertTrue("Bela Ban".equals(new String(b2.getAdditionalData())));
+    }
+
+
+
+    public void testStreamableAdditionalData() throws Exception {
+        ByteArrayOutputStream bos=new ByteArrayOutputStream();
+        DataOutputStream      oos=new DataOutputStream(bos);
+        byte[]                buf=null;
+        ByteArrayInputStream  bis=null;
+        DataInputStream       ois;
+        IpAddress             a2, b2, c2, d2, e2, f2, g2, h2;
+
+        a.writeTo(oos);
+        b.writeTo(oos);
+        c.writeTo(oos);
+        d.writeTo(oos);
+        e.writeTo(oos);
+        f.writeTo(oos);
+        g.writeTo(oos);
+        h.writeTo(oos);
+
+
+        buf=bos.toByteArray();
+        bis=new ByteArrayInputStream(buf);
+        ois=new DataInputStream(bis);
+        a2=new IpAddress();
+        a2.readFrom(ois);
+        b2=new IpAddress();
+        b2.readFrom(ois);
+        c2=new IpAddress();
+        c2.readFrom(ois);
+        d2=new IpAddress();
+        d2.readFrom(ois);
+        e2=new IpAddress();
+        e2.readFrom(ois);
+        f2=new IpAddress();
+        f2.readFrom(ois);
+        g2=new IpAddress();
+        g2.readFrom(ois);
+        h2=new IpAddress();
+        h2.readFrom(ois);
+
+        assertTrue(b2.equals(c2));
+        assertTrue(a.equals(a2));
+        assertTrue(b.equals(b2));
+        assertTrue(c.equals(c2));
+        assertTrue(d.equals(d2));
+        assertTrue(e.equals(e2));
+        assertTrue(f.equals(f2));
+        assertTrue(g.equals(g2));
+        assertTrue(h.equals(h2));
+    }
+
+
 
     public static Test suite() {
         TestSuite s=new TestSuite(IpAddressTest.class);
