@@ -1,18 +1,17 @@
-// $Id: TcpHeader.java,v 1.3 2004/07/05 14:17:16 belaban Exp $
+// $Id: TcpHeader.java,v 1.4 2005/04/15 13:17:02 belaban Exp $
 
 package org.jgroups.protocols;
 
 
 import org.jgroups.Header;
+import org.jgroups.util.Streamable;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-
+import java.io.*;
 
 
 
-public class TcpHeader extends Header {
+
+public class TcpHeader extends Header implements Streamable {
     public String group_addr=null;
 
     public TcpHeader() {
@@ -33,5 +32,17 @@ public class TcpHeader extends Header {
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         group_addr=(String)in.readObject();
+    }
+
+    public void writeTo(DataOutputStream out) throws IOException {
+        out.writeUTF(group_addr);
+    }
+
+    public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        group_addr=in.readUTF();
+    }
+
+    public long size() {
+        return group_addr.length() +2;
     }
 }

@@ -1,4 +1,4 @@
-// $Id: Address.java,v 1.2 2004/10/04 20:43:36 belaban Exp $
+// $Id: Address.java,v 1.3 2005/04/15 13:17:04 belaban Exp $
 
 package org.jgroups;
 
@@ -28,4 +28,7 @@ public interface Address extends Externalizable, Streamable, Comparable, Cloneab
      * @return true if this is a multicast address, false if it is a unicast address
      */
     boolean  isMulticastAddress();
+
+    /** Returns serialized size of this address */
+    int size();
 }

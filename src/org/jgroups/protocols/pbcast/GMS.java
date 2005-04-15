@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.27 2005/04/08 07:22:37 belaban Exp $
+// $Id: GMS.java,v 1.28 2005/04/15 13:17:00 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -289,7 +289,7 @@ public class GMS extends Protocol {
         if(log.isDebugEnabled()) log.debug("mcasting view {" + new_view + "} (" + new_view.size() + " mbrs)\n");
         view_change_msg=new Message(); // bcast to all members
         hdr=new GmsHeader(GmsHeader.VIEW, new_view);
-        hdr.digest=digest;
+        hdr.my_digest=digest;
         view_change_msg.putHeader(getName(), hdr);
         passDown(new Event(Event.MSG, view_change_msg));
     }
@@ -532,7 +532,7 @@ public class GMS extends Protocol {
                             if(log.isErrorEnabled()) log.error("[VIEW]: view == null");
                             return;
                         }
-                        impl.handleViewChange(hdr.view, hdr.digest);
+                        impl.handleViewChange(hdr.view, hdr.my_digest);
                         break;
 
                     case GmsHeader.MERGE_REQ:
@@ -540,13 +540,13 @@ public class GMS extends Protocol {
                         break;
 
                     case GmsHeader.MERGE_RSP:
-                        merge_data=new MergeData(msg.getSrc(), hdr.view, hdr.digest);
+                        merge_data=new MergeData(msg.getSrc(), hdr.view, hdr.my_digest);
                         merge_data.merge_rejected=hdr.merge_rejected;
                         impl.handleMergeResponse(merge_data, hdr.merge_id);
                         break;
 
                     case GmsHeader.INSTALL_MERGE_VIEW:
-                        impl.handleMergeView(new MergeData(msg.getSrc(), hdr.view, hdr.digest), hdr.merge_id);
+                        impl.handleMergeView(new MergeData(msg.getSrc(), hdr.view, hdr.my_digest), hdr.merge_id);
                         break;
 
                     case GmsHeader.CANCEL_MERGE:
@@ -776,7 +776,7 @@ public class GMS extends Protocol {
         View view=null;            // used when type=VIEW or MERGE_RSP or INSTALL_MERGE_VIEW
         Address mbr=null;             // used when type=JOIN_REQ or LEAVE_REQ
         JoinRsp join_rsp=null;        // used when type=JOIN_RSP
-        Digest digest=null;          // used when type=MERGE_RSP or INSTALL_MERGE_VIEW
+        Digest my_digest=null;          // used when type=MERGE_RSP or INSTALL_MERGE_VIEW
         Serializable merge_id=null;        // used when type=MERGE_REQ or MERGE_RSP or INSTALL_MERGE_VIEW or CANCEL_MERGE
         boolean merge_rejected=false; // used when type=MERGE_RSP
 
@@ -838,12 +838,12 @@ public class GMS extends Protocol {
                     break;
 
                 case MERGE_RSP:
-                    sb.append(": view=" + view + ", digest=" + digest + ", merge_rejected=" + merge_rejected +
+                    sb.append(": view=" + view + ", digest=" + my_digest + ", merge_rejected=" + merge_rejected +
                               ", merge_id=" + merge_id);
                     break;
 
                 case INSTALL_MERGE_VIEW:
-                    sb.append(": view=" + view + ", digest=" + digest);
+                    sb.append(": view=" + view + ", digest=" + my_digest);
                     break;
 
                 case CANCEL_MERGE:
@@ -885,7 +885,7 @@ public class GMS extends Protocol {
             out.writeObject(view);
             out.writeObject(mbr);
             out.writeObject(join_rsp);
-            out.writeObject(digest);
+            out.writeObject(my_digest);
             out.writeObject(merge_id);
             out.writeBoolean(merge_rejected);
         }
@@ -896,7 +896,7 @@ public class GMS extends Protocol {
             view=(View)in.readObject();
             mbr=(Address)in.readObject();
             join_rsp=(JoinRsp)in.readObject();
-            digest=(Digest)in.readObject();
+            my_digest=(Digest)in.readObject();
             merge_id=(Serializable)in.readObject();
             merge_rejected=in.readBoolean();
         }
@@ -907,7 +907,7 @@ public class GMS extends Protocol {
             Util.writeStreamable(view, out);
             Util.writeAddress(mbr, out);
             Util.writeStreamable(join_rsp, out);
-            Util.writeStreamable(digest, out);
+            Util.writeStreamable(my_digest, out);
             Util.writeStreamable((Streamable)merge_id, out); // kludge: we know merge_id is a ViewId
             out.writeBoolean(merge_rejected);
         }
@@ -917,7 +917,7 @@ public class GMS extends Protocol {
             view=(View)Util.readStreamable(View.class, in);
             mbr=Util.readAddress(in);
             join_rsp=(JoinRsp)Util.readStreamable(JoinRsp.class, in);
-            digest=(Digest)Util.readStreamable(Digest.class, in);
+            my_digest=(Digest)Util.readStreamable(Digest.class, in);
             merge_id=(Serializable)Util.readStreamable(ViewId.class, in);
             merge_rejected=in.readBoolean();
         }

@@ -1,4 +1,4 @@
-// $Id: LogicalAddress1_4.java,v 1.5 2004/10/05 16:19:09 belaban Exp $
+// $Id: LogicalAddress1_4.java,v 1.6 2005/04/15 13:17:03 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -149,6 +149,10 @@ public class LogicalAddress1_4 implements Address {
 
     public boolean isMulticastAddress() {
         return false; // LogicalAddresses can never be multicast
+    }
+
+    public int size() {
+        return 22;
     }
 
     /**

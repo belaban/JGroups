@@ -667,7 +667,11 @@ public class ENCRYPTAsymmetricTest extends TestCase {
 			return false;
 		}
 
-		/* (non-Javadoc)
+        public int size() {
+            return 0;
+        }
+
+        /* (non-Javadoc)
 		 * @see java.io.Externalizable#readExternal(java.io.ObjectInput)
 		 */
 		public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException

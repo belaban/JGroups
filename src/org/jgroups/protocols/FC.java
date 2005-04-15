@@ -1,4 +1,4 @@
-// $Id: FC.java,v 1.18 2004/10/08 13:58:32 belaban Exp $
+// $Id: FC.java,v 1.19 2005/04/15 13:17:01 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -18,7 +18,7 @@ import java.util.*;
  * Note that this protocol must be located towards the top of the stack, or all down_threads from JChannel to this
  * protocol must be set to false ! This is in order to block JChannel.send()/JChannel.down().
  * @author Bela Ban
- * @version $Revision: 1.18 $
+ * @version $Revision: 1.19 $
  */
 public class FC extends Protocol {
 
@@ -465,7 +465,7 @@ public class FC extends Protocol {
 
 
         public long size() {
-            return 4;
+            return Global.BYTE_SIZE;
         }
 
 

@@ -1,4 +1,4 @@
-// $Id: WanPipeAddress.java,v 1.5 2004/10/05 16:05:45 belaban Exp $
+// $Id: WanPipeAddress.java,v 1.6 2005/04/15 13:17:02 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -27,6 +27,10 @@ public class WanPipeAddress implements Address {
 
     public boolean isMulticastAddress() {
         return true;
+    }
+
+    public int size() {
+        return logical_name != null? logical_name.length()+2 : 22;
     }
 
 

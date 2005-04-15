@@ -1,13 +1,14 @@
 package org.jgroups.protocols;
 
 import org.jgroups.Header;
+import org.jgroups.Global;
 import org.jgroups.util.Streamable;
 
 import java.io.*;
 
 /**
  * @author Bela Ban
- * @version $Id: FragHeader.java,v 1.1 2005/04/13 09:24:03 belaban Exp $
+ * @version $Id: FragHeader.java,v 1.2 2005/04/15 13:17:02 belaban Exp $
  */
 public class FragHeader extends Header implements Streamable {
     public long id=0;
@@ -46,6 +47,10 @@ public class FragHeader extends Header implements Streamable {
         out.writeLong(id);
         out.writeInt(frag_id);
         out.writeInt(num_frags);
+    }
+
+    public long size() {
+        return Global.LONG_SIZE + 2*Global.INT_SIZE;
     }
 
     public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
