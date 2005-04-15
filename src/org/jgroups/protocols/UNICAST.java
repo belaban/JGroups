@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.18 2005/04/15 13:17:02 belaban Exp $
+// $Id: UNICAST.java,v 1.19 2005/04/15 16:17:49 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -199,7 +199,6 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
             /* only handle unicast messages */
             if (dst == null || ((Address) dst).isMulticastAddress()) {
-                msg=null;
                 break;
             }
 

@@ -1,4 +1,4 @@
-// $Id: FRAG2.java,v 1.13 2005/04/13 10:02:55 belaban Exp $
+// $Id: FRAG2.java,v 1.14 2005/04/15 16:17:49 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -27,12 +27,12 @@ import java.util.*;
  * size addition for headers and src and dest address is minimal when the transport finally has to serialize the
  * message, so we add a constant (1000 bytes).
  * @author Bela Ban
- * @version $Id: FRAG2.java,v 1.13 2005/04/13 10:02:55 belaban Exp $
+ * @version $Id: FRAG2.java,v 1.14 2005/04/15 16:17:49 belaban Exp $
  */
 public class FRAG2 extends Protocol {
 
     /** The max number of bytes in a message. If a message's buffer is bigger, it will be fragmented */
-    int frag_size=8192;
+    int frag_size=1500;
 
     /** Number of bytes that we think the headers plus src and dest will take up when
         message is serialized by transport. This will be subtracted from frag_size */
@@ -266,8 +266,7 @@ public class FRAG2 extends Protocol {
         if(map == null) return;
         if(map.containsKey("frag_size")) {
             frag_size=((Integer)map.get("frag_size")).intValue();
-
-                if(log.isInfoEnabled()) log.info("setting frag_size=" + frag_size);
+            if(log.isDebugEnabled()) log.debug("setting frag_size=" + frag_size);
         }
     }
 
@@ -283,11 +282,10 @@ public class FRAG2 extends Protocol {
      * We do not have to do the same for the sender, since the sender doesn't keep a fragmentation table
      */
     static class FragmentationList {
-        /* initialize the hashtable to hold all the fragmentation
-         * tables
-         * 11 is the best growth capacity to start with
+        /* * HashMap<Address,FragmentationTable>, initialize the hashtable to hold all the fragmentation
+         * tables (11 is the best growth capacity to start with)
          */
-        private final Hashtable frag_tables=new Hashtable(11);
+        private final HashMap frag_tables=new HashMap(11);
 
 
         /**
@@ -298,13 +296,17 @@ public class FRAG2 extends Protocol {
          * @param   table - the fragmentation table of this sender, cannot be null
          * @exception IllegalArgumentException if an entry for this sender already exist
          */
-        public synchronized void add(Address sender, FragmentationTable table) throws IllegalArgumentException {
-            FragmentationTable healthCheck=(FragmentationTable)frag_tables.get(sender);
-            if(healthCheck == null) {
-                frag_tables.put(sender, table);
-            }
-            else {
-                throw new IllegalArgumentException("Sender <" + sender + "> already exists in the fragementation list.");
+        public void add(Address sender, FragmentationTable table) throws IllegalArgumentException {
+            FragmentationTable healthCheck;
+
+            synchronized(frag_tables) {
+                healthCheck=(FragmentationTable)frag_tables.get(sender);
+                if(healthCheck == null) {
+                    frag_tables.put(sender, table);
+                }
+                else {
+                    throw new IllegalArgumentException("Sender <" + sender + "> already exists in the fragementation list.");
+                }
             }
         }
 
@@ -314,7 +316,9 @@ public class FRAG2 extends Protocol {
          * @return the fragmentation table for this sender, or null if no table exist
          */
         public FragmentationTable get(Address sender) {
-            return (FragmentationTable)frag_tables.get(sender);
+            synchronized(frag_tables) {
+                return (FragmentationTable)frag_tables.get(sender);
+            }
         }
 
 
@@ -325,7 +329,9 @@ public class FRAG2 extends Protocol {
          * @return true if this sender already has a fragmentation table
          */
         public boolean containsSender(Address sender) {
-            return frag_tables.containsKey(sender);
+            synchronized(frag_tables) {
+                return frag_tables.containsKey(sender);
+            }
         }
 
         /**
@@ -335,10 +341,12 @@ public class FRAG2 extends Protocol {
          * @param sender - the sender who's fragmentation table you wish to remove, cannot be null
          * @return true if the table was removed, false if the sender doesn't have an entry
          */
-        public synchronized boolean remove(Address sender) {
-            boolean result=containsSender(sender);
-            frag_tables.remove(sender);
-            return result;
+        public boolean remove(Address sender) {
+            synchronized(frag_tables) {
+                boolean result=containsSender(sender);
+                frag_tables.remove(sender);
+                return result;
+            }
         }
 
         /**
@@ -346,22 +354,28 @@ public class FRAG2 extends Protocol {
          * opened.
          * @return an array of all the senders in the fragmentation list
          */
-        public synchronized Address[] getSenders() {
-            Address[] result=new Address[frag_tables.size()];
-            java.util.Enumeration en=frag_tables.keys();
+        public Address[] getSenders() {
+            Address[] result;
             int index=0;
-            while(en.hasMoreElements()) {
-                result[index++]=(Address)en.nextElement();
+
+            synchronized(frag_tables) {
+                result=new Address[frag_tables.size()];
+                for(Iterator it=frag_tables.keySet().iterator(); it.hasNext();) {
+                    result[index++]=(Address)it.next();
+                }
             }
             return result;
         }
 
         public String toString() {
-            java.util.Enumeration e=frag_tables.elements();
-            StringBuffer buf=new StringBuffer("Fragmentation list contains ")
-                    .append(frag_tables.size()).append(" tables\n");
-            while(e.hasMoreElements()) {
-                buf.append(e.nextElement());
+            Map.Entry entry;
+            StringBuffer buf=new StringBuffer("Fragmentation list contains ");
+            synchronized(frag_tables) {
+                buf.append(frag_tables.size()).append(" tables\n");
+                for(Iterator it=frag_tables.entrySet().iterator(); it.hasNext();) {
+                    entry=(Map.Entry)it.next();
+                    buf.append(entry.getKey()).append(": " ).append(entry.getValue()).append("\n");
+                }
             }
             return buf.toString();
         }

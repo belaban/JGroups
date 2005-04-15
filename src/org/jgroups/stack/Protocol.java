@@ -1,4 +1,4 @@
-// $Id: Protocol.java,v 1.22 2005/04/15 10:31:41 belaban Exp $
+// $Id: Protocol.java,v 1.23 2005/04/15 16:17:50 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -509,7 +509,6 @@ public abstract class Protocol {
 
         if(down_prot != null) {
             down_prot.receiveDownEvent(evt);
-            // evt=null; // give the garbage collector a hand
         }
         else
             if(log.isErrorEnabled()) log.error("no lower layer available");

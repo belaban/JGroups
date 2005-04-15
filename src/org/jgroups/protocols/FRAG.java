@@ -1,4 +1,4 @@
-// $Id: FRAG.java,v 1.17 2005/04/13 12:41:27 belaban Exp $
+// $Id: FRAG.java,v 1.18 2005/04/15 16:17:49 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -28,7 +28,7 @@ import java.util.*;
  * multicast messages.
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.17 2005/04/13 12:41:27 belaban Exp $
+ * @version $Id: FRAG.java,v 1.18 2005/04/15 16:17:49 belaban Exp $
  */
 public class FRAG extends Protocol {
     private int frag_size=8192;  // conservative value
@@ -340,9 +340,9 @@ public class FRAG extends Protocol {
          */
         public Address[] getSenders() {
             Address[] result;
+            int index=0;
 
             synchronized(frag_tables) {
-                int index=0;
                 result=new Address[frag_tables.size()];
                 for(Iterator it=frag_tables.keySet().iterator(); it.hasNext();) {
                     result[index++]=(Address)it.next();
