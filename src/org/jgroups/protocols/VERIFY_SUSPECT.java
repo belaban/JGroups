@@ -1,4 +1,4 @@
-// $Id: VERIFY_SUSPECT.java,v 1.11 2005/04/12 10:56:57 belaban Exp $
+// $Id: VERIFY_SUSPECT.java,v 1.12 2005/04/18 13:50:09 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -29,10 +29,11 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     final Vector members=null;
     final Hashtable suspects=new Hashtable();  // keys=Addresses, vals=time in mcses since added
     Thread timer=null;
+    final String name="VERIFY_SUSPECT";
 
 
     public String getName() {
-        return "VERIFY_SUSPECT";
+        return name;
     }
 
 
@@ -90,10 +91,10 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
 
             case Event.MSG:
                 msg=(Message)evt.getArg();
-                obj=msg.getHeader(getName());
+                obj=msg.getHeader(name);
                 if(obj == null || !(obj instanceof VerifyHeader))
                     break;
-                hdr=(VerifyHeader)msg.removeHeader(getName());
+                hdr=(VerifyHeader)msg.removeHeader(name);
                 switch(hdr.type) {
                     case VerifyHeader.ARE_YOU_DEAD:
                         if(hdr.from == null)
@@ -101,7 +102,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
                         else {
                             for(int i=0; i < num_msgs; i++) {
                                 rsp=new Message(hdr.from, null, null);
-                                rsp.putHeader(getName(), new VerifyHeader(VerifyHeader.I_AM_NOT_DEAD, local_addr));
+                                rsp.putHeader(name, new VerifyHeader(VerifyHeader.I_AM_NOT_DEAD, local_addr));
                                 passDown(new Event(Event.MSG, rsp));
                             }
                         }
@@ -176,7 +177,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
             if(log.isTraceEnabled()) log.trace("verifying that " + mbr + " is dead");
             for(int i=0; i < num_msgs; i++) {
                 msg=new Message(mbr, null, null);
-                msg.putHeader(getName(), new VerifyHeader(VerifyHeader.ARE_YOU_DEAD, local_addr));
+                msg.putHeader(name, new VerifyHeader(VerifyHeader.ARE_YOU_DEAD, local_addr));
                 passDown(new Event(Event.MSG, msg));
             }
         }
