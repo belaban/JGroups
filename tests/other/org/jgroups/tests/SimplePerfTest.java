@@ -1,9 +1,8 @@
 package org.jgroups.tests;
 
-import org.jgroups.Event;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
+import org.jgroups.*;
 import org.jgroups.protocols.PERF_TP;
+import org.jgroups.protocols.pbcast.NakAckHeader;
 import org.jgroups.stack.Protocol;
 
 import java.io.DataInputStream;
@@ -13,13 +12,14 @@ import java.util.Vector;
 /**
  * Sends num_msgs up the stack. Stack has to have DUMMY_TP transport and PERF_TP top protocol
  * @author Bela Ban Feb 24, 2004
- * @version $Id: SimplePerfTest.java,v 1.1 2005/04/14 16:30:13 belaban Exp $
+ * @version $Id: SimplePerfTest.java,v 1.2 2005/04/18 13:55:57 belaban Exp $
  */
 public class SimplePerfTest {
     JChannel ch=null;
     PERF_TP  tp=null;
     DataInputStream in=null;
     DataOutputStream out=null;
+    private View view;
 
 
     public static void main(String[] args) {
@@ -61,9 +61,17 @@ public class SimplePerfTest {
         Message msg;
         Protocol transport;
         byte[] buf=new byte[size];
+        Address local_addr;
+        NakAckHeader hdr;
 
         ch=new JChannel(props);
         ch.connect("demo");
+        local_addr=ch.getLocalAddress();
+        Vector members=new Vector();
+        members.add(local_addr);
+        view=new View(local_addr, 0, members);
+        ch.down(new Event(Event.BECOME_SERVER));
+        ch.down(new Event(Event.VIEW_CHANGE, view));
         tp=PERF_TP.getInstance();
 
         Vector protocols=ch.getProtocolStack().getProtocols();
@@ -74,7 +82,9 @@ public class SimplePerfTest {
 
         tp.setExpectedMessages(num_msgs); // this starts the time
         for(int i=0; i < num_msgs; i++) {
-            msg=new Message(null, null, buf);
+            msg=new Message(null, local_addr, buf);
+            hdr=new NakAckHeader(NakAckHeader.MSG, i);
+            msg.putHeader("NAKACK", hdr);
             transport.up(new Event(Event.MSG, msg));
             if(i % 10000 == 0) {
                 System.out.println("passed up " + i + " messages");

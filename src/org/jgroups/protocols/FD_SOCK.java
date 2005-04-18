@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.21 2005/04/14 16:28:59 belaban Exp $
+// $Id: FD_SOCK.java,v 1.22 2005/04/18 13:55:15 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -146,7 +146,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
     public void up(Event evt) {
         Message msg;
-        FdHeader hdr=null;
+        FdHeader hdr;
 
         switch(evt.getType()) {
 
