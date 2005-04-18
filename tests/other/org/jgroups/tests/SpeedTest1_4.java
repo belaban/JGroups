@@ -1,6 +1,6 @@
 package org.jgroups.tests;
 
-// $Id: SpeedTest1_4.java,v 1.7 2004/07/05 14:15:11 belaban Exp $
+// $Id: SpeedTest1_4.java,v 1.8 2005/04/18 16:20:25 belaban Exp $
 
 
 import org.jgroups.Channel;
@@ -192,7 +192,7 @@ public class SpeedTest1_4 {
                     packet=new DatagramPacket(buf, buf.length, group_addr, 7777);
                     sock.send(packet);
                 }
-                if(i % 100 == 0)
+                if(i % 1000 == 0)
                     System.out.println("-- sent " + i);
 
                 matrix[i][0]=1;
@@ -332,7 +332,7 @@ public class SpeedTest1_4 {
                     matrix[number][1]=1;
                     // System.out.println("#set " + number);
                     num_received++;
-                    if(num_received % 100 == 0)
+                    if(num_received % 1000 == 0)
                         System.out.println("received " + num_received + " packets");
                     if(num_received >= num_msgs)
                         break;
