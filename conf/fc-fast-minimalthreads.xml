@@ -3,10 +3,17 @@
 <!-- input file: fc-fast.old.xml -->
 
 
-<!-- Best result with perf.Test (2 members, 1 sender, laptop, 20000 1K msgs
-     100Mbps): 2700 msgs/sec with 192.168.5.1 -->
+<!--
+Best result with perf.Test (2 members, 1 sender, laptop, 20000 1K msgs
+100Mbps)
+
+- March 2005: 2700 msgs/sec
+- April 18 2005: -Xmx500M -Xms500M -verbose:gc: 4100 msgs/sec:
+combined: num_msgs_expected=20000, num_msgs_received=20000 (loss rate=0%), recei
+ved=20MB, time=4827ms, msgs/sec=4143.36, throughput=4.14MB/sec
+ -->
 <config>
-    <UDP bind_addr="127.0.0.1" 
+    <UDP bind_addr="192.168.5.1"
          mcast_port="45566" 
          mcast_addr="228.8.8.8" 
          ucast_recv_buf_size="20000000"
