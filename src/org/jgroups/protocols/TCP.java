@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.19 2005/04/05 14:34:35 belaban Exp $
+// $Id: TCP.java,v 1.20 2005/04/18 09:54:45 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -62,6 +62,7 @@ public class TCP extends Protocol implements ConnectionTable.Receiver {
     int                    recv_buf_size=150000;
     int                    send_buf_size=150000;
     int                    sock_conn_timeout=2000; // max time in millis for a socket creation in ConnectionTable
+
 
     static final String IGNORE_BIND_ADDRESS_PROPERTY="ignore.bind.address";
 
@@ -128,7 +129,8 @@ public class TCP extends Protocol implements ConnectionTable.Receiver {
                connExpireTime=1000 * 60 * 5;
                if(log.isWarnEnabled()) log.warn("conn_expire_time was 0, set it to " + connExpireTime);
            }
-           cTable=new ConnectionTable(this, bindAddress, externalAddress, startPort, endPort, reaperInterval, connExpireTime);
+           cTable=new ConnectionTable(this, bindAddress, externalAddress, startPort, endPort, 
+                                      reaperInterval, connExpireTime);
        }
        return cTable;
    }
