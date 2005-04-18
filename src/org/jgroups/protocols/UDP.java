@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.65 2005/04/11 16:29:52 belaban Exp $
+// $Id: UDP.java,v 1.66 2005/04/18 12:19:56 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -1672,7 +1672,7 @@ public class UDP extends Protocol implements Runnable {
             if(outgoing_queue != null)
                 outgoing_queue.close(false); // should terminate the packet_handler thread too
             t=null;
-            outgoing_queue=null;
+            // outgoing_queue=null;
         }
     }
 
