@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindow.java,v 1.19 2005/04/08 13:34:09 belaban Exp $
+// $Id: NakReceiverWindow.java,v 1.20 2005/04/18 15:31:37 belaban Exp $
 
 
 package org.jgroups.stack;
@@ -190,8 +190,11 @@ public class NakReceiverWindow {
             try {
                 old_tail=tail;
                 if(seqno < head) {
-                    if(log.isTraceEnabled())
-                        log.trace("seqno " + seqno + " is smaller than " + head + "); discarding message");
+                    if(log.isTraceEnabled()) {
+                        StringBuffer sb=new StringBuffer("seqno ");
+                        sb.append(seqno).append(" is smaller than ").append(head).append("); discarding message");
+                        log.trace(sb.toString());
+                    }
                     return;
                 }
 
@@ -220,8 +223,11 @@ public class NakReceiverWindow {
                     // finally received missing message
                 }
                 else if(seqno < tail) {
-                    if(log.isTraceEnabled())
-                        log.trace("added missing msg " + msg.getSrc() + '#' + seqno);
+                    if(log.isTraceEnabled()) {
+                        StringBuffer sb=new StringBuffer("added missing msg ");
+                        sb.append(msg.getSrc()).append('#').append(seqno);
+                        log.trace(sb.toString());
+                    }
 
                     Object val=received_msgs.get(new Long(seqno));
                     if(val == null) {
@@ -240,7 +246,6 @@ public class NakReceiverWindow {
                     }
                 }
                 updateLowestSeen();
-                // updateHighestSeen();
             }
             finally {
                 lock.writeLock().release();
@@ -274,8 +279,11 @@ public class NakReceiverWindow {
             lock.writeLock().acquire();
             try {
                 while(received_msgs.size() > 0) {
-                    if(log.isTraceEnabled())
-                        log.trace("received msgs=" + received_msgs.size() + ", max_xmit_buf_size=" + max_xmit_buf_size);
+                    if(log.isTraceEnabled()) {
+                        StringBuffer sb=new StringBuffer("received msgs=");
+                        sb.append(received_msgs.size()).append(", max_xmit_buf_size=").append(max_xmit_buf_size);
+                        log.trace(sb.toString());
+                    }
 
                     key=(Long)received_msgs.firstKey();
                     retval=(Message)received_msgs.get(key);
