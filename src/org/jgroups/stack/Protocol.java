@@ -1,4 +1,4 @@
-// $Id: Protocol.java,v 1.23 2005/04/15 16:17:50 belaban Exp $
+// $Id: Protocol.java,v 1.24 2005/04/18 15:16:32 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -57,7 +57,6 @@ class UpHandler extends Thread {
                     }
                 }
                 handler.up(evt);
-                evt=null;
             }
             catch(QueueClosedException queue_closed) {
                 break;
@@ -120,7 +119,6 @@ class DownHandler extends Thread {
                         continue;
                 }
                 handler.down(evt);
-                evt=null;
             }
             catch(QueueClosedException queue_closed) {
                 break;
@@ -440,7 +438,6 @@ public abstract class Protocol {
         }
         try {
             up_queue.add(evt);
-            evt=null;
         }
         catch(Exception e) {
             if(log.isWarnEnabled()) log.warn("exception: " + e);
@@ -470,7 +467,6 @@ public abstract class Protocol {
         }
         try {
             down_queue.add(evt);
-            evt=null;
         }
         catch(Exception e) {
             if(log.isWarnEnabled()) log.warn("exception: " + e);
@@ -490,7 +486,6 @@ public abstract class Protocol {
 
         if(up_prot != null) {
             up_prot.receiveUpEvent(evt);
-            evt=null; // give the garbage collector a hand
         }
         else
             if(log.isErrorEnabled()) log.error("no upper layer available");

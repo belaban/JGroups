@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.38 2005/04/18 12:19:56 belaban Exp $
+// $Id: NAKACK.java,v 1.39 2005/04/18 15:18:29 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -296,7 +296,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
      * method as the event is passed up by default by the superclass after this method returns !</b>
      */
     public void up(Event evt) {
-        Object obj;
         NakAckHeader hdr;
         Message msg;
         Digest digest;
@@ -331,23 +330,20 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
 
         case Event.MSG:
             msg=(Message)evt.getArg();
-            obj=msg.getHeader(name);
-            if(obj == null || !(obj instanceof NakAckHeader)) {
+            hdr=(NakAckHeader)msg.getHeader(name);
+            if(hdr == null)
                 break;  // pass up (e.g. unicast msg)
-            }
 
             // discard messages while not yet server (i.e., until JOIN has returned)
             if(!is_server) {
-                if(log.isDebugEnabled()) {
-                    log.debug("message was discarded (not yet server)");
-                }
+                if(log.isTraceEnabled())
+                    log.trace("message was discarded (not yet server)");
                 return;
             }
 
             // Changed by bela Jan 29 2003: we must not remove the header, otherwise
             // further xmit requests will fail !
             //hdr=(NakAckHeader)msg.removeHeader(getName());
-            hdr=(NakAckHeader)obj;
 
             switch(hdr.type) {
 
@@ -477,26 +473,20 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
      * messages as possible from the NRW and passes them up the stack. Discards messages from non-members.
      */
     void handleMessage(Message msg, NakAckHeader hdr) {
-        NakReceiverWindow win=null;
+        NakReceiverWindow win;
         Message msg_to_deliver;
-        Address sender;
+        Address sender=msg.getSrc();
 
-        if(msg == null || hdr == null) {
-            if(log.isErrorEnabled()) {
-                log.error("msg or header is null");
-            }
-            return;
-        }
-        sender=msg.getSrc();
         if(sender == null) {
-            if(log.isErrorEnabled()) {
+            if(log.isErrorEnabled())
                 log.error("sender of message is null");
-            }
             return;
         }
 
         if(log.isTraceEnabled()) {
-            log.trace("[" + local_addr + "] received " + sender + '#' + hdr.seqno);
+            StringBuffer sb=new StringBuffer('[');
+            sb.append(local_addr).append("] received ").append(sender).append('#').append(hdr.seqno);
+            log.trace(sb.toString());
         }
 
         // msg is potentially re-sent later as result of XMIT_REQ reception; that's why hdr is added !
@@ -508,24 +498,23 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
             win=(NakReceiverWindow)received_msgs.get(sender);
         }
         if(win == null) {  // discard message if there is no entry for sender
-            if(leaving) {
+            if(leaving)
                 return;
-            }
             if(log.isWarnEnabled()) {
-                log.warn("[" + local_addr + "] discarded message from non-member " + sender);
+                StringBuffer sb=new StringBuffer('[');
+                sb.append(local_addr).append("] discarded message from non-member ").append(sender);
+                if(log.isWarnEnabled())
+                    log.warn(sb.toString());
             }
             return;
         }
         win.add(hdr.seqno, msg);  // add in order, then remove and pass up as many msgs as possible
-        msg=null;
 
         while((msg_to_deliver=win.remove()) != null) {
 
             // Changed by bela Jan 29 2003: not needed (see above)
             //msg_to_deliver.removeHeader(getName());
-
             passUp(new Event(Event.MSG, msg_to_deliver));
-            msg_to_deliver=null;
         }
     }
 
