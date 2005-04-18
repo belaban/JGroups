@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.22 2005/04/06 12:51:00 belaban Exp $
+// $Id: ConnectionTable.java,v 1.23 2005/04/18 09:54:44 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -36,6 +36,7 @@ public class ConnectionTable implements Runnable {
     final HashMap       conns=new HashMap();       // keys: Addresses (peer address), values: Connection
     Receiver            receiver=null;
     ServerSocket        srv_sock=null;
+    boolean             reuse_addr=false;
     InetAddress         bind_addr=null;
 
     /**
