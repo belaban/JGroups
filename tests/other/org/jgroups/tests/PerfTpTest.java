@@ -1,8 +1,6 @@
 package org.jgroups.tests;
 
-import org.jgroups.Event;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
+import org.jgroups.*;
 import org.jgroups.protocols.PERF_TP;
 import org.jgroups.stack.Protocol;
 
@@ -15,7 +13,7 @@ import java.util.Iterator;
 /**
  * Test of PERF_TP. Requirement: transport needs to be PERF_TP
  * @author Bela Ban Feb 24, 2004
- * @version $Id: PerfTpTest.java,v 1.7 2005/04/14 16:12:50 belaban Exp $
+ * @version $Id: PerfTpTest.java,v 1.8 2005/04/18 13:55:35 belaban Exp $
  */
 public class PerfTpTest {
     JChannel ch=null;
@@ -77,6 +75,8 @@ public class PerfTpTest {
         Message msg;
         Protocol transport;
         byte[] buf=new byte[size];
+        Address local_addr;
+        View    view;
 
         if(file_name != null) {
             if(write)
@@ -88,11 +88,17 @@ public class PerfTpTest {
         ch=new JChannel(props);
         ch.connect("demo");
         tp=PERF_TP.getInstance();
+        local_addr=ch.getLocalAddress();
+        Vector members=new Vector();
+        members.add(local_addr);
+        view=new View(local_addr, 0, members);
+        ch.down(new Event(Event.BECOME_SERVER));
+        ch.down(new Event(Event.VIEW_CHANGE, view));
 
         if(write) {
             tp.setExpectedMessages(num_msgs);
             for(int i=0; i < num_msgs; i++) {
-                msg=new Message(null, null, buf);
+                msg=new Message(null, local_addr, buf);
                 ch.send(msg);
                 if(out != null)
                     msg.writeTo(out);
@@ -116,8 +122,8 @@ public class PerfTpTest {
                 }
             }
 
-            System.out.println("read " + msgs.size() + " msgs from file");
             num_msgs=msgs.size();
+            System.out.println("read " + num_msgs + " msgs from file");
             tp.setExpectedMessages(msgs.size()); // this starts the time
             for(Iterator it=msgs.iterator(); it.hasNext();) {
                 msg=(Message)it.next();
