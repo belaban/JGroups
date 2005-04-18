@@ -1,4 +1,4 @@
-// $Id: SpeedTest.java,v 1.13 2004/07/05 14:15:11 belaban Exp $
+// $Id: SpeedTest.java,v 1.14 2005/04/18 16:20:25 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -8,9 +8,13 @@ import org.jgroups.Channel;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.debug.Debugger;
+import org.jgroups.util.ExposedByteArrayOutputStream;
 import org.jgroups.util.Util;
 
+import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -39,7 +43,6 @@ public class SpeedTest {
         Receiver receiver;
         int num_msgs=1000;
         int num_sent=0;
-        byte[] buf;
         DatagramPacket packet;
         InetAddress group_addr=null;
         int         group_port=7500;
@@ -56,6 +59,7 @@ public class SpeedTest {
         boolean yield=false;
         int num_yields=0;
         boolean loopback=false;
+        ExposedByteArrayOutputStream output=new ExposedByteArrayOutputStream(64);
 
 
         props="UDP(mcast_addr=224.0.0.36;mcast_port=55566;ip_ttl=32;" +
@@ -176,13 +180,21 @@ public class SpeedTest {
             receiver=new Receiver(group_addr, group_port, channel, matrix, jg);
             receiver.start();
 
+            byte[] buf;
+            DataOutputStream out;
+
             start=System.currentTimeMillis();
-            send_msg=new Message();
             for(int i=0; i < num_msgs; i++) {
-                buf=Util.objectToByteBuffer(new Integer(i));
+                // buf=Util.objectToByteBuffer(new Integer(i));
+                output.reset();
+                out=new DataOutputStream(output);
+                out.writeInt(i);
+                out.flush();
+                buf=output.getRawBuffer();
+                out.close();
 
                 if(jg) {
-                    send_msg=new Message(null, null, buf);
+                    send_msg=new Message(null, null, buf, 0, buf.length);
                     channel.send(send_msg);
                 }
                 else {
@@ -303,6 +315,7 @@ public class SpeedTest {
             byte[] msg_data=null;
             long total_time;
             double msgs_per_sec=0;
+            DataInputStream in;
 
             packet=new DatagramPacket(buf, buf.length);
             while(num_received <= num_msgs) {
@@ -324,7 +337,9 @@ public class SpeedTest {
                         msg_data=packet.getData();
                     }
 
-                    number=((Integer)Util.objectFromByteBuffer(msg_data)).intValue();
+                    // number=((Integer)Util.objectFromByteBuffer(msg_data)).intValue();
+                    in=new DataInputStream(new ByteArrayInputStream(buf));
+                    number=in.readInt();
                     matrix[number][1]=1;
                     // System.out.println("-- received " + number);
                     num_received++;
