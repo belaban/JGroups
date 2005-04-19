@@ -1,4 +1,4 @@
-// $Id: IpAddress.java,v 1.20 2005/04/19 08:34:28 belaban Exp $
+// $Id: IpAddress.java,v 1.21 2005/04/19 10:52:02 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -304,9 +304,16 @@ public class IpAddress implements Address {
     }
 
     public void writeTo(DataOutputStream out) throws IOException {
-        byte[] address = ip_addr.getAddress();
-        out.writeShort(address.length); // 2 bytes
-        out.write(address, 0, address.length);
+        byte[] address;
+
+        if(ip_addr != null) {
+            address=ip_addr.getAddress();
+            out.writeShort(address.length); // 2 bytes
+            out.write(address, 0, address.length);
+        }
+        else {
+            out.writeShort(0);
+        }
         out.writeInt(port);
         if(additional_data != null) {
             out.write(1);
@@ -322,19 +329,22 @@ public class IpAddress implements Address {
         int len;
 
         len=in.readShort();
-        //read the four bytes
-        byte[] a = new byte[len];
-        //in theory readFully(byte[]) should be faster
-        //than read(byte[]) since latter reads
-        // 4 bytes one at a time
-        in.readFully(a);
+        if(len > 0) {
+            //read the four bytes
+            byte[] a = new byte[len];
+            //in theory readFully(byte[]) should be faster
+            //than read(byte[]) since latter reads
+            // 4 bytes one at a time
+            in.readFully(a);
+            //look up an instance in the cache
+            if(jdk_14)
+                this.ip_addr=InetAddress.getByAddress(a);
+            else
+                this.ip_addr = getIpAddress(a);
+        }
         //then read the port
-        port = in.readInt();
-        //look up an instance in the cache
-        if(jdk_14)
-            this.ip_addr=InetAddress.getByAddress(a);
-        else
-            this.ip_addr = getIpAddress(a);
+        port=in.readInt();
+
         len=in.read();
         if(len == 0)
             return;
