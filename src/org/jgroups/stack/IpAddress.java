@@ -1,4 +1,4 @@
-// $Id: IpAddress.java,v 1.19 2005/04/15 12:43:17 belaban Exp $
+// $Id: IpAddress.java,v 1.20 2005/04/19 08:34:28 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -6,6 +6,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.Global;
+import org.jgroups.util.Util;
 
 import java.io.*;
 import java.net.InetAddress;
@@ -19,14 +20,15 @@ import java.util.HashMap;
  * @author Bela Ban
  */
 public class IpAddress implements Address {
-    private InetAddress       ip_addr=null;
-    private int               port=0;
-    private byte[]            additional_data=null;
+    private InetAddress             ip_addr=null;
+    private int                     port=0;
+    private byte[]                  additional_data=null;
     protected static final HashMap  sAddrCache=new HashMap();
-    protected static final Log log=LogFactory.getLog(IpAddress.class);
+    protected static final Log      log=LogFactory.getLog(IpAddress.class);
 
     static boolean resolve_dns=false;
     static final  char[] digits = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'};
+    static final boolean jdk_14=Util.getJavaVersion() >= 14;
 
 
     static {
@@ -290,7 +292,10 @@ public class IpAddress implements Address {
         //then read the port
         port = in.readInt();
         //look up an instance in the cache
-        this.ip_addr = getIpAddress(a);
+        if(jdk_14)
+            this.ip_addr=InetAddress.getByAddress(a);
+        else
+            this.ip_addr = getIpAddress(a);
         len=in.readInt();
         if(len > 0) {
             additional_data=new byte[len];
@@ -326,7 +331,10 @@ public class IpAddress implements Address {
         //then read the port
         port = in.readInt();
         //look up an instance in the cache
-        this.ip_addr = getIpAddress(a);
+        if(jdk_14)
+            this.ip_addr=InetAddress.getByAddress(a);
+        else
+            this.ip_addr = getIpAddress(a);
         len=in.read();
         if(len == 0)
             return;
