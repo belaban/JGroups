@@ -1,4 +1,4 @@
-// $Id: IpAddressTest.java,v 1.11 2005/04/19 08:34:44 belaban Exp $
+// $Id: IpAddressTest.java,v 1.12 2005/04/19 10:52:16 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -204,16 +204,20 @@ public class IpAddressTest extends TestCase {
         byte[]                buf=null;
         ByteArrayInputStream  bis=null;
         DataInputStream       ois;
-        IpAddress             a2, b2, x, x2;
+        IpAddress             a2, b2, x, x2, y, y2;
 
         x=new IpAddress(5555);
         x.setAdditionalData(new byte[]{'b','e','l','a'});
+
+        y=new IpAddress();
+        y.setAdditionalData(new byte[]{'b','e','l','a'});
 
         a.setAdditionalData(null);
         b.setAdditionalData("Bela Ban".getBytes());
         a.writeTo(oos);
         b.writeTo(oos);
         x.writeTo(oos);
+        y.writeTo(oos);
 
         buf=bos.toByteArray();
         bis=new ByteArrayInputStream(buf);
@@ -224,6 +228,8 @@ public class IpAddressTest extends TestCase {
         b2.readFrom(ois);
         x2=new IpAddress();
         x2.readFrom(ois);
+        y2=new IpAddress();
+        y2.readFrom(ois);
 
         assertTrue(a.equals(a2));
         assertTrue(b.equals(b2));
@@ -233,6 +239,11 @@ public class IpAddressTest extends TestCase {
 
         assertNotNull(x2.getAdditionalData());
         assertEquals(x2.getAdditionalData().length, 4);
+
+        assertNull(y2.getIpAddress());
+        assertEquals(0, y2.getPort());
+        assertNotNull(y2.getAdditionalData());
+        assertEquals(4, y2.getAdditionalData().length);
     }
 
 
