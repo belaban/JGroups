@@ -1,4 +1,4 @@
-// $Id: IpAddress.java,v 1.21 2005/04/19 10:52:02 belaban Exp $
+// $Id: IpAddress.java,v 1.22 2005/04/19 11:25:30 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -316,12 +316,12 @@ public class IpAddress implements Address {
         }
         out.writeInt(port);
         if(additional_data != null) {
-            out.write(1);
+            out.writeByte(1);
             out.writeInt(additional_data.length);
             out.write(additional_data, 0, additional_data.length);
         }
         else {
-            out.write(0);
+            out.writeByte(0);
         }
     }
 
@@ -345,8 +345,7 @@ public class IpAddress implements Address {
         //then read the port
         port=in.readInt();
 
-        len=in.read();
-        if(len == 0)
+        if(in.readByte() == 0)
             return;
         len=in.readInt();
         if(len > 0) {
