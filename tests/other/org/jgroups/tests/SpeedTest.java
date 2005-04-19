@@ -1,4 +1,4 @@
-// $Id: SpeedTest.java,v 1.14 2005/04/18 16:20:25 belaban Exp $
+// $Id: SpeedTest.java,v 1.15 2005/04/19 07:34:12 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -312,20 +312,17 @@ public class SpeedTest {
             DatagramPacket packet;
             Object obj;
             Message msg;
-            byte[] msg_data=null;
             long total_time;
             double msgs_per_sec=0;
             DataInputStream in;
 
             packet=new DatagramPacket(buf, buf.length);
             while(num_received <= num_msgs) {
-                msg_data=null;
                 try {
                     if(jg) {
                         obj=channel.receive(0);
                         if(obj instanceof Message) {
                             msg=(Message)obj;
-                            msg_data=msg.getBuffer();
                         }
                         else {
                             System.out.println("received non-msg: " + obj.getClass());
@@ -334,7 +331,6 @@ public class SpeedTest {
                     }
                     else {
                         sock.receive(packet);
-                        msg_data=packet.getData();
                     }
 
                     // number=((Integer)Util.objectFromByteBuffer(msg_data)).intValue();
