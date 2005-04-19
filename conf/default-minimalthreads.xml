@@ -3,15 +3,16 @@
 <!-- input file: default-minimalthreads.old.xml -->
 
 <config>
-    <UDP mcast_recv_buf_size="64000" down_thread="false" ip_mcast="true" mcast_send_buf_size="32000"
-        mcast_port="45566" ucast_recv_buf_size="64000" use_incoming_packet_handler="true"
-        mcast_addr="228.8.8.8" use_outgoing_packet_handler="true" loopback="true" ucast_send_buf_size="32000" ip_ttl="32"/>
+    <UDP mcast_recv_buf_size="500000" down_thread="false" ip_mcast="true" mcast_send_buf_size="32000"
+        mcast_port="45566" ucast_recv_buf_size="500000" use_incoming_packet_handler="false"
+        mcast_addr="228.8.8.8" use_outgoing_packet_handler="true" loopback="false" ucast_send_buf_size="32000" ip_ttl="32"/>
     <AUTOCONF down_thread="false" up_thread="false"/>
     <PING timeout="2000" down_thread="false" num_initial_members="3" up_thread="false"/>
     <MERGE2 max_interval="10000" down_thread="false" min_interval="5000" up_thread="false"/>
     <FD timeout="2000" max_tries="3" down_thread="false" up_thread="false" shun="true"/>
     <VERIFY_SUSPECT timeout="1500" down_thread="false" up_thread="false"/>
-    <pbcast.NAKACK max_xmit_size="8192" down_thread="false" use_mcast_xmit="false" gc_lag="50" up_thread="false" retransmit_timeout="600,1200,2400,4800"/>
+    <pbcast.NAKACK max_xmit_size="8192" down_thread="false" use_mcast_xmit="true" gc_lag="50" up_thread="false"
+                   retransmit_timeout="100,200,600,1200,2400,4800"/>
     <UNICAST timeout="1200,2400,3600" down_thread="false" up_thread="false"/>
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="20000" down_thread="false" max_bytes="0" up_thread="false"/>
     <FRAG frag_size="8192" down_thread="false" up_thread="false"/>
