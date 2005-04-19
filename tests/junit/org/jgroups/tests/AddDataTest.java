@@ -1,9 +1,7 @@
 package org.jgroups.tests;
 
 import junit.framework.TestCase;
-import org.jgroups.ChannelException;
-import org.jgroups.Event;
-import org.jgroups.JChannel;
+import org.jgroups.*;
 import org.jgroups.stack.IpAddress;
 
 import java.util.HashMap;
@@ -12,7 +10,7 @@ import java.util.Map;
 /**
  *
  * @author Bela Ban
- * @version $Id: AddDataTest.java,v 1.5 2004/03/30 06:47:31 belaban Exp $
+ * @version $Id: AddDataTest.java,v 1.6 2005/04/19 07:47:11 belaban Exp $
  */
 public class AddDataTest extends TestCase {
 
@@ -103,6 +101,34 @@ public class AddDataTest extends TestCase {
         catch(ChannelException e) {
             e.printStackTrace();
             fail(e.toString());
+        }
+    }
+
+
+    public void testBetweenTwoChannels() throws Exception {
+        JChannel ch1=null, ch2=null;
+        Map m=new HashMap();
+        m.put("additional_data", new byte[]{'b', 'e', 'l', 'a'});
+
+        try {
+            ch1=new JChannel();
+            ch1.down(new Event(Event.CONFIG, m));
+            ch2=new JChannel();
+            ch1.connect("group");
+            ch2.connect("group");
+            while(ch2.peek(10) != null)
+                ch2.receive(100);
+            ch1.send(new Message(null, null, null));
+            Message msg=(Message)ch2.receive(2000);
+            System.out.println("received " + msg);
+            IpAddress src=(IpAddress)msg.getSrc();
+            assertNotNull(src);
+            assertNotNull(src.getAdditionalData());
+            assertEquals(4, src.getAdditionalData().length);
+        }
+        finally {
+            if(ch2 != null) ch2.close();
+            if(ch1 != null) ch1.close();
         }
     }
 
