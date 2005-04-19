@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.150 2005/04/11 09:00:24 belaban Exp $
+Revision: $Id: history.txt,v 1.151 2005/04/19 12:38:41 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -27,6 +27,9 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
 Version 2.2.8
 -------------
+
+- Fixed bug where IpAddress.additional_data was not marshalled
+  (bela April 19 2005)
 
 - Removed RWLock, replaced uses with ReadWriteLock from util.concurrent
   (bela April 8 2005)
