@@ -10,27 +10,39 @@ import java.util.Map;
 /**
  *
  * @author Bela Ban
- * @version $Id: AddDataTest.java,v 1.6 2005/04/19 07:47:11 belaban Exp $
+ * @version $Id: AddDataTest.java,v 1.7 2005/04/19 12:11:41 belaban Exp $
  */
 public class AddDataTest extends TestCase {
-
+    JChannel ch1, ch2;
     
-    String props="UDP(mcast_addr=228.1.2.3;mcast_port=45566;ip_ttl=32):" +
-        "PING(timeout=2000;num_initial_members=2):" +
-        "FD(timeout=1000;max_tries=2):" +
-        "VERIFY_SUSPECT(timeout=1500):" +
-        "pbcast.NAKACK(gc_lag=10;retransmit_timeout=600,1200,2400,4800):" +
-            "UNICAST(timeout=600,1200,2400,4800):" +
-        "pbcast.STABLE(desired_avg_gossip=10000):" +
-        "FRAG:" +
-        "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
-        "shun=true;print_local_addr=true)";
+    String properties="UDP(mcast_addr=228.1.2.3;mcast_port=45566;ip_ttl=32;down_thread=false;up_thread=false):" +
+            "PING(timeout=2000;num_initial_members=2;down_thread=false;up_thread=false):" +
+            "pbcast.NAKACK(gc_lag=10;retransmit_timeout=600,1200,2400,4800;down_thread=false;up_thread=false):" +
+            "UNICAST(timeout=600,1200,2400,4800;down_thread=false;up_thread=false):" +
+            "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
+            "shun=true;print_local_addr=true;down_thread=false;up_thread=false)";
+
+    String bundlingProperties="UDP(mcast_addr=228.1.2.3;mcast_port=45566;ip_ttl=32;" +
+            "enable_bundling=true;max_bundle_size=3000;max_bundle_timeout=500;down_thread=false;up_thread=false):" +
+            "PING(timeout=2000;num_initial_members=2;down_thread=false;up_thread=false):" +
+            "pbcast.NAKACK(gc_lag=10;retransmit_timeout=600,1200,2400,4800;down_thread=false;up_thread=false):" +
+            "UNICAST(timeout=600,1200,2400,4800;down_thread=false;up_thread=false):" +
+            "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
+            "shun=true;print_local_addr=true;down_thread=false;up_thread=false)";
+
 
 
 
     public AddDataTest(String name) {
         super(name);
+    }
 
+    protected void tearDown() throws Exception {
+        super.tearDown();
+        if(ch2 != null)
+            ch2.close();
+        if(ch1 != null)
+            ch1.close();
     }
 
 
@@ -84,9 +96,9 @@ public class AddDataTest extends TestCase {
 
     public void testAdditionalData() {
         try {
-            for(int i=1; i <= 10; i++) {
+            for(int i=1; i <= 5; i++) {
                 System.out.println("-- attempt # " + i + "/10");
-                JChannel c=new JChannel(props);
+                JChannel c=new JChannel(properties);
                 Map m=new HashMap();
                 m.put("additional_data", new byte[]{'b', 'e', 'l', 'a'});
                 c.down(new Event(Event.CONFIG, m));
@@ -105,31 +117,53 @@ public class AddDataTest extends TestCase {
     }
 
 
-    public void testBetweenTwoChannels() throws Exception {
-        JChannel ch1=null, ch2=null;
+    public void testBetweenTwoChannelsMcast() throws Exception {
+        _testWithProps(this.properties, true);
+    }
+
+    public void testBetweenTwoChannelsUnicast() throws Exception {
+        _testWithProps(this.properties, false);
+    }
+
+    public void testBetweenTwoChannelsWithBundlingMcast() throws Exception {
+        _testWithProps(this.bundlingProperties, true);
+    }
+
+    public void testBetweenTwoChannelsWithBundlingUnicast() throws Exception {
+        _testWithProps(this.bundlingProperties, false);
+    }
+
+
+
+    private void _testWithProps(String props, boolean mcast) throws Exception {
         Map m=new HashMap();
         m.put("additional_data", new byte[]{'b', 'e', 'l', 'a'});
+        byte[] buf=new byte[1000];
 
-        try {
-            ch1=new JChannel();
-            ch1.down(new Event(Event.CONFIG, m));
-            ch2=new JChannel();
-            ch1.connect("group");
-            ch2.connect("group");
-            while(ch2.peek(10) != null)
-                ch2.receive(100);
-            ch1.send(new Message(null, null, null));
-            Message msg=(Message)ch2.receive(2000);
-            System.out.println("received " + msg);
-            IpAddress src=(IpAddress)msg.getSrc();
-            assertNotNull(src);
-            assertNotNull(src.getAdditionalData());
-            assertEquals(4, src.getAdditionalData().length);
+        ch1=new JChannel(props);
+        ch1.down(new Event(Event.CONFIG, m));
+        ch2=new JChannel(props);
+        ch1.connect("group");
+        ch2.connect("group");
+        while(ch2.peek(10) != null) {
+            System.out.println("-- received " + ch2.receive(100));
         }
-        finally {
-            if(ch2 != null) ch2.close();
-            if(ch1 != null) ch1.close();
+        if(mcast)
+            ch1.send(new Message(null, null, buf));
+        else {
+            Address dest=ch2.getLocalAddress();
+            ch1.send(new Message(dest, null, buf));
         }
+        Message msg=(Message)ch2.receive(10000);
+        System.out.println("received " + msg);
+        IpAddress src=(IpAddress)msg.getSrc();
+        System.out.println("src=" + src);
+
+        // Thread.sleep(600000); // todo: remove
+
+        assertNotNull(src);
+        assertNotNull(src.getAdditionalData());
+        assertEquals(4, src.getAdditionalData().length);
     }
 
 
