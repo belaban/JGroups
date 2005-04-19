@@ -1,4 +1,4 @@
-// $Id: LOOPBACK.java,v 1.9 2004/09/23 16:29:41 belaban Exp $
+// $Id: LOOPBACK.java,v 1.10 2005/04/19 14:18:49 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -51,7 +51,7 @@ public class LOOPBACK extends Protocol {
 //        };
 
           //local_addr=new org.jgroups.stack.IpAddress("localhost", 10000); // fake address
-       local_addr = new LocalIpAddress();
+       local_addr = new IpAddress(12345);
     }
 
     public void start() throws Exception {
@@ -121,34 +121,6 @@ public class LOOPBACK extends Protocol {
 
 
     /*--------------------------- End of Protocol interface -------------------------- */
-
-
-
-    static private class LocalIpAddress extends IpAddress {
-        public LocalIpAddress() {
-            super("localhost", 10000);
-        }
-        public String toString() {
-            return "<myself>";
-        }
-    }
-
-
-    /* ------------------------------ Private methods -------------------------------- */
-
-    /**
-     If the sender is null, set our own address. We cannot just go ahead and set the address
-     anyway, as we might be sending a message on behalf of someone else ! E.g. in case of
-     retransmission, when the original sender has crashed, or in a FLUSH protocol when we
-     have to return all unstable messages with the FLUSH_OK response.
-     */
-    private void setSourceAddress(Message msg) {
-        if(msg.getSrc() == null)
-            msg.setSrc(local_addr);
-    }
-
-
-    /* ------------------------------------------------------------------------------- */
 
 
 }
