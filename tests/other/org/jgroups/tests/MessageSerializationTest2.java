@@ -8,10 +8,11 @@ import org.jgroups.util.ExposedByteArrayOutputStream;
 
 import java.io.*;
 import java.util.Enumeration;
+import java.util.LinkedList;
 
 /**
  * @author Bela Ban Feb 12, 2004
- * @version $Id: MessageSerializationTest2.java,v 1.6 2004/10/08 11:25:53 belaban Exp $
+ * @version $Id: MessageSerializationTest2.java,v 1.7 2005/04/20 07:35:28 belaban Exp $
  */
 public class MessageSerializationTest2 {
     Message msg;
@@ -31,8 +32,7 @@ public class MessageSerializationTest2 {
 
 
 
-    public void start(int num, boolean use_serialization, boolean use_streamable)
-            throws IOException, IllegalAccessException, InstantiationException {
+    public void start(int num, boolean use_serialization, boolean use_streamable) throws Exception {
         IpAddress dest=new IpAddress("228.8.8.8", 7500);
         IpAddress src=new IpAddress("127.0.0.1", 5555);
 
@@ -50,15 +50,43 @@ public class MessageSerializationTest2 {
         System.out.println("\n-- total time for creating " + num +
                 " msgs = " + total + "ms \n(" + msgs_per_sec + " msgs/sec, time_per_msg=" + time_per_msg + " ms)");
 
+        LinkedList l_ser=null, l_stream=null;
         if(use_serialization)
-            serializeMessage();
+            l_ser=serializeMessage();
 
         if(use_streamable)
-            marshalMessages();
+            l_stream=marshalMessages();
+
+        if(l_ser != null && l_stream != null)
+            printDiffs(l_ser, l_stream);
+    }
+
+    private void printDiffs(LinkedList l_ser, LinkedList l_stream) {
+        int size_ser, size_stream;
+        long write_ser, write_stream, read_ser, read_stream;
+
+        size_ser=((Integer)l_ser.get(0)).intValue();
+        size_stream=((Integer)l_stream.get(0)).intValue();
+        write_ser=((Long)l_ser.get(1)).longValue();
+        read_ser=((Long)l_ser.get(2)).longValue();
+        write_stream=((Long)l_stream.get(1)).longValue();
+        read_stream=((Long)l_stream.get(2)).longValue();
+        System.out.println("\n\nserialized size=" + size_ser + ", streamable size=" + size_stream +
+                           ", streamable is " + (100.0 / size_stream * size_ser -100) + " percent smaller");
+        System.out.println("serialized write=" + write_ser + ", streamable write=" + write_stream +
+                           ", streamable write is " + (100.0 / write_stream * write_ser -100) + " percent faster");
+        System.out.println("serialized read=" + read_ser + ", streamable read=" + read_stream +
+                           ", streamable read is " + (100.0 / read_stream * read_ser -100) + " percent faster");
     }
 
 
-    void serializeMessage() throws IOException {
+    /**
+     *
+     * @return LinkedList with 3 elements: size of serialized buffer, write time, read time
+     * @throws IOException
+     */
+    LinkedList serializeMessage() throws IOException {
+        LinkedList retval=new LinkedList();
         System.out.println("-- starting to serialize " + num + " msgs");
         start=System.currentTimeMillis();
         output=new ExposedByteArrayOutputStream(65000);
@@ -68,9 +96,10 @@ public class MessageSerializationTest2 {
         stop=System.currentTimeMillis();
         buf=new Buffer(output.getRawBuffer(), 0, output.size());
         System.out.println("** serialized buffer size=" + buf.getLength() + " bytes");
-
+        retval.add(new Integer(buf.getLength()));
 
         total=stop-start;
+        retval.add(new Long(total));
         msgs_per_sec=num / (total/1000.0);
         time_per_msg=total / (double)num;
         System.out.println("\n-- total time for serializing " + num +
@@ -78,29 +107,29 @@ public class MessageSerializationTest2 {
 
         System.out.println("-- starting to unserialize msgs");
         start=System.currentTimeMillis();
-        ByteArrayInputStream input=new ByteArrayInputStream(buf.getBuf(), buf.getOffset(), buf.getLength());
-        ObjectInputStream in=new ObjectInputStream(input);
-
-
+        ByteArrayInputStream input2=new ByteArrayInputStream(buf.getBuf(), buf.getOffset(), buf.getLength());
+        ObjectInputStream in2=new ObjectInputStream(input2);
 
         try {
-            l2.readExternal(in);
+            l2.readExternal(in2);
         }
         catch(ClassNotFoundException e) {
             e.printStackTrace();
         }
         stop=System.currentTimeMillis();
         total=stop-start;
+        retval.add(new Long(total));
         msgs_read=l2.size();
         msgs_per_sec=msgs_read / (total/1000.0);
         time_per_msg=total / (double)msgs_read;
         System.out.println("\n-- total time for reading " + msgs_read +
                 " msgs = " + total + "ms \n(" + msgs_per_sec + " msgs/sec, time_per_msg=" + time_per_msg + ')');
         l2.removeAll();
-
+        return retval;
     }
 
-    void marshalMessages() throws IOException, IllegalAccessException, InstantiationException {
+    LinkedList marshalMessages() throws IOException, IllegalAccessException, InstantiationException {
+        LinkedList retval=new LinkedList();
         System.out.println("\n\n-- starting to marshal " + num + " msgs (using Streamable)");
         start=System.currentTimeMillis();
         output=new ExposedByteArrayOutputStream(65000);
@@ -115,9 +144,10 @@ public class MessageSerializationTest2 {
         stop=System.currentTimeMillis();
         buf=new Buffer(output.getRawBuffer(), 0, output.size());
         System.out.println("** marshalled buffer size=" + buf.getLength() + " bytes");
-
+        retval.add(new Integer(buf.getLength()));
 
         total=stop-start;
+        retval.add(new Long(total));
         msgs_per_sec=num / (total/1000.0);
         time_per_msg=total / (double)num;
         System.out.println("\n-- total time for marshaling " + num +
@@ -139,11 +169,13 @@ public class MessageSerializationTest2 {
 
         stop=System.currentTimeMillis();
         total=stop-start;
+        retval.add(new Long(total));
         msgs_read=l2.size();
         msgs_per_sec=msgs_read / (total/1000.0);
         time_per_msg=total / (double)msgs_read;
         System.out.println("\n-- total time for reading " + msgs_read +
                            " msgs = " + total + "ms \n(" + msgs_per_sec + " msgs/sec, time_per_msg=" + time_per_msg + ')');
+        return retval;
     }
 
     public static void main(String[] args) {
@@ -170,13 +202,7 @@ public class MessageSerializationTest2 {
         try {
             new MessageSerializationTest2().start(num, use_serialization, use_streamable);
         }
-        catch(IOException e) {
-            e.printStackTrace();
-        }
-        catch(IllegalAccessException e) {
-            e.printStackTrace();
-        }
-        catch(InstantiationException e) {
+        catch(Exception e) {
             e.printStackTrace();
         }
     }
