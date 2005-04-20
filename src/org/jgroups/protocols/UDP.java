@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.70 2005/04/20 10:32:34 belaban Exp $
+// $Id: UDP.java,v 1.71 2005/04/20 12:26:36 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -625,8 +625,7 @@ public class UDP extends Protocol implements Runnable {
         if(channel_name != null) {
             // added patch by Roland Kurmann (March 20 2003)
             // msg.putHeader(name, new UdpHeader(channel_name));
-            // msg.putHeader(name, udp_hdr);
-            msg.putHeader(name, new UdpHeader(channel_name));
+            msg.putHeader(name, udp_hdr);
         }
 
         dest_addr=msg.getDest();
