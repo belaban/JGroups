@@ -1,4 +1,4 @@
-// $Id: FRAG.java,v 1.20 2005/04/20 11:18:33 belaban Exp $
+// $Id: FRAG.java,v 1.21 2005/04/20 13:50:05 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -28,7 +28,7 @@ import java.util.*;
  * multicast messages.
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.20 2005/04/20 11:18:33 belaban Exp $
+ * @version $Id: FRAG.java,v 1.21 2005/04/20 13:50:05 belaban Exp $
  */
 public class FRAG extends Protocol {
     private int frag_size=8192;  // conservative value
@@ -223,7 +223,7 @@ public class FRAG extends Protocol {
         FragHeader           hdr=(FragHeader)msg.removeHeader(name);
         byte[]               m;
         ByteArrayInputStream bis;
-        DataInputStream      in;
+        DataInputStream      in=null;
 
         frag_table=fragment_list.get(sender);
         if(frag_table == null) {
@@ -248,6 +248,9 @@ public class FRAG extends Protocol {
             }
             catch(Exception e) {
                 log.error("exception is " + e);
+            }
+            finally {
+                Util.closeInputStream(in);
             }
         }
     }
