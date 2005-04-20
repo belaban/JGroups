@@ -1,4 +1,4 @@
-// $Id: FRAG.java,v 1.19 2005/04/20 10:32:34 belaban Exp $
+// $Id: FRAG.java,v 1.20 2005/04/20 11:18:33 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -28,7 +28,7 @@ import java.util.*;
  * multicast messages.
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.19 2005/04/20 10:32:34 belaban Exp $
+ * @version $Id: FRAG.java,v 1.20 2005/04/20 11:18:33 belaban Exp $
  */
 public class FRAG extends Protocol {
     private int frag_size=8192;  // conservative value
@@ -40,10 +40,11 @@ public class FRAG extends Protocol {
     private int                         curr_id=1;
     private final ExposedByteArrayOutputStream bos=new ExposedByteArrayOutputStream(1024);
     private final Vector                members=new Vector(11);
+    private final static String         name="FRAG";
 
 
     public String getName() {
-        return "FRAG";
+        return name;
     }
 
 
@@ -131,7 +132,7 @@ public class FRAG extends Protocol {
 
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
-                Object obj=msg.getHeader(getName());
+                Object obj=msg.getHeader(name);
 
                 if(obj != null && obj instanceof FragHeader) { // needs to be defragmented
                     unfragment(msg); // Unfragment and possibly pass up
@@ -194,7 +195,7 @@ public class FRAG extends Protocol {
             for(int i=0; i < num_frags; i++) {
                 frag_msg=new Message(dest, src, fragments[i]);
                 hdr=new FragHeader(id, i, num_frags);
-                frag_msg.putHeader(getName(), hdr);
+                frag_msg.putHeader(name, hdr);
                 evt=new Event(Event.MSG, frag_msg);
                 passDown(evt);
             }
@@ -219,7 +220,7 @@ public class FRAG extends Protocol {
         FragmentationTable   frag_table=null;
         Address              sender=msg.getSrc();
         Message              assembled_msg;
-        FragHeader           hdr=(FragHeader)msg.removeHeader(getName());
+        FragHeader           hdr=(FragHeader)msg.removeHeader(name);
         byte[]               m;
         ByteArrayInputStream bis;
         DataInputStream      in;
