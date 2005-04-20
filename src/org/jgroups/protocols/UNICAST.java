@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.19 2005/04/15 16:17:49 belaban Exp $
+// $Id: UNICAST.java,v 1.20 2005/04/20 13:56:02 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -46,7 +46,8 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     boolean          use_gms=true;
     int              window_size=-1;               // sliding window: max number of msgs in table (disabled by default)
     int              min_threshold=-1;             // num under which table has to fall before we resume adding msgs
-    
+    final static String name="UNICAST";
+
 
 
 
@@ -78,7 +79,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
 
     /** All protocol names have to be unique ! */
-    public String  getName() {return "UNICAST";}
+    public String  getName() {return name;}
 
 
     public boolean setProperties(Properties props) {
@@ -156,7 +157,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             if(dst == null || dst.isMulticastAddress())  // only handle unicast messages
                 break;  // pass up
 
-            hdr=(UnicastHeader)msg.removeHeader(getName());
+            hdr=(UnicastHeader)msg.removeHeader(name);
             if(hdr == null) break;
             src=msg.getSrc();
             switch(hdr.type) {
@@ -217,7 +218,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 if (window_size > 0)
                     entry.sent_msgs.setWindowSize(window_size, min_threshold);
             }
-            msg.putHeader(getName(), hdr);
+            msg.putHeader(name, hdr);
             if(log.isTraceEnabled()) log.trace("[" + local_addr + "] --> DATA(" + dst + ": #" +
                                                entry.sent_msgs_seqno + ", first=" + hdr.first + ')');
 
@@ -397,7 +398,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
     void sendAck(Address dst, long seqno) {
         Message ack=new Message(dst, null, null);
-        ack.putHeader(getName(), new UnicastHeader(UnicastHeader.DATA_ACK, seqno));
+        ack.putHeader(name, new UnicastHeader(UnicastHeader.DATA_ACK, seqno));
         if(log.isTraceEnabled()) log.trace("[" + local_addr + "] --> ACK(" + dst + ": #" + seqno + ')');
         passDown(new Event(Event.MSG, ack));
     }
