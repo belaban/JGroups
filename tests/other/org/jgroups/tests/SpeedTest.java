@@ -1,4 +1,4 @@
-// $Id: SpeedTest.java,v 1.15 2005/04/19 07:34:12 belaban Exp $
+// $Id: SpeedTest.java,v 1.16 2005/04/20 06:31:18 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -7,14 +7,16 @@ package org.jgroups.tests;
 import org.jgroups.Channel;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
+import org.jgroups.conf.ConfiguratorFactory;
+import org.jgroups.conf.ProtocolStackConfigurator;
 import org.jgroups.debug.Debugger;
 import org.jgroups.util.ExposedByteArrayOutputStream;
 import org.jgroups.util.Util;
 
-import java.io.DataOutputStream;
-import java.io.IOException;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -25,41 +27,31 @@ import java.net.MulticastSocket;
  * Test time taken for multicasting n local messages (messages sent to self). Uses simple MulticastSocket.
  * Note that packets might get dropped if Util.sleep(1) is commented out (on certain systems this has
  * to be increased even further). If running with -jg option and Util.sleep() is commented out, there will
- * probably be packet loss, which will be repaired (by means of retransmission) by JGroups. To see the
- * retransmit messages, enable tracing (trace=true) in jgroups.properties and add the following lines:
- * <pre>
- * trace0=NAKACK.retransmit DEBUG STDOUT
- * trace1=UNICAST.retransmit DEBUG STDOUT
- * </pre>
- * 
+ * probably be packet loss, which will be repaired (by means of retransmission) by JGroups.
  * @author Bela Ban
+ * @version $Id: SpeedTest.java,v 1.16 2005/04/20 06:31:18 belaban Exp $
  */
 public class SpeedTest {
     static long start, stop;
+    private static final String LOOPBACK="LOOPBACK(down_thread=false;up_thread=false)";
 
 
     public static void main(String[] args) {
         DatagramSocket sock=null;
         Receiver receiver;
-        int num_msgs=1000;
-        int num_sent=0;
+        int num_msgs=1000, num_sent=0, group_port=7500, num_yields=0;
         DatagramPacket packet;
         InetAddress group_addr=null;
-        int         group_port=7500;
         int[][] matrix;
         boolean jg=false; // use JGroups channel instead of UDP MulticastSocket
         JChannel channel=null;
-        String props=null, loopback_props;
         String group_name="SpeedTest-Group";
         Message send_msg;
-        boolean debug=false, cummulative=false;
+        boolean debug=false, cummulative=false, busy_sleep=false, yield=false, loopback=false;
         Debugger debugger=null;
         long sleep_time=1; // sleep in msecs between msg sends
-        boolean busy_sleep=false;
-        boolean yield=false;
-        int num_yields=0;
-        boolean loopback=false;
         ExposedByteArrayOutputStream output=new ExposedByteArrayOutputStream(64);
+        String props;
 
 
         props="UDP(mcast_addr=224.0.0.36;mcast_port=55566;ip_ttl=32;" +
@@ -73,25 +65,11 @@ public class SpeedTest {
                 "UNICAST(timeout=1200):" +
                 "pbcast.STABLE(desired_avg_gossip=10000):" +
                 "FRAG(frag_size=8192;down_thread=false;up_thread=false):" +
-// "PIGGYBACK(max_size=16000;max_wait_time=500):" +
                 "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
                 "shun=false;print_local_addr=true):" +
                 "pbcast.STATE_TRANSFER";
-        // "PERF(details=true)";
+                //  "PERF(details=true)";
 
-
-        loopback_props="LOOPBACK:" +
-                "PING(timeout=2000;num_initial_members=3):" +
-                "MERGE2(min_interval=5000;max_interval=10000):" +
-                "FD_SOCK:" +
-                "VERIFY_SUSPECT(timeout=1500):" +
-                "pbcast.NAKACK(gc_lag=50;retransmit_timeout=600,800,1200,2400,4800):" +
-                "UNICAST(timeout=5000):" +
-                "pbcast.STABLE(desired_avg_gossip=20000):" +
-                "FRAG(frag_size=16000;down_thread=false;up_thread=false):" +
-                "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
-                "shun=false;print_local_addr=true):" +
-                "pbcast.STATE_TRANSFER";
 
 
         for(int i=0; i < args.length; i++) {
@@ -105,7 +83,6 @@ public class SpeedTest {
             }
             if("-loopback".equals(args[i])) {
                 loopback=true;
-                props=loopback_props;
                 continue;
             }
             if("-props".equals(args[i])) {
@@ -161,7 +138,14 @@ public class SpeedTest {
             }
 
             if(jg) {
+                if(loopback) {
+                    ProtocolStackConfigurator conf=ConfiguratorFactory.getStackConfigurator(props);
+                    String tmp=conf.getProtocolStackString();
+                    int index=tmp.indexOf(':');
+                    props=LOOPBACK + tmp.substring(index);
+                }
                 channel=new JChannel(props);
+                // System.out.println("props:\n" + channel.getProperties());
                 channel.connect(group_name);
                 if(debug) {
                     debugger=new Debugger(channel, cummulative);
@@ -227,6 +211,7 @@ public class SpeedTest {
             System.exit(-1);
         }
     }
+
 
 
     /**
@@ -311,7 +296,6 @@ public class SpeedTest {
             int number;
             DatagramPacket packet;
             Object obj;
-            Message msg;
             long total_time;
             double msgs_per_sec=0;
             DataInputStream in;
@@ -322,7 +306,7 @@ public class SpeedTest {
                     if(jg) {
                         obj=channel.receive(0);
                         if(obj instanceof Message) {
-                            msg=(Message)obj;
+                            // msg=(Message)obj;
                         }
                         else {
                             System.out.println("received non-msg: " + obj.getClass());

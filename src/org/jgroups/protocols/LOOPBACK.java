@@ -1,4 +1,4 @@
-// $Id: LOOPBACK.java,v 1.10 2005/04/19 14:18:49 belaban Exp $
+// $Id: LOOPBACK.java,v 1.11 2005/04/20 06:31:17 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -69,8 +69,9 @@ public class LOOPBACK extends Protocol {
         Message msg, rsp;
         Address dest_addr;
 
-        if(log.isInfoEnabled()) log.info("event is " + evt + ", group_addr=" + group_addr +
-                                         ", time is " + System.currentTimeMillis() + ", hdrs: " + Util.printEvent(evt));
+        if(log.isTraceEnabled())
+            log.trace("event is " + evt + ", group_addr=" + group_addr +
+                      ", time is " + System.currentTimeMillis() + ", hdrs: " + Util.printEvent(evt));
 
         switch(evt.getType()) {
 
@@ -80,7 +81,7 @@ public class LOOPBACK extends Protocol {
                 dest_addr=msg.getDest();
                 rsp.setDest(local_addr);
                 rsp.setSrc(dest_addr != null ? dest_addr : local_addr);
-                passUp(new Event(Event.MSG, rsp));
+                up(new Event(Event.MSG, rsp));
                 break;
 
             case Event.TMP_VIEW:
