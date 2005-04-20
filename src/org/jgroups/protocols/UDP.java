@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.74 2005/04/20 20:25:47 belaban Exp $
+// $Id: UDP.java,v 1.75 2005/04/20 20:38:19 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -689,7 +689,9 @@ public class UDP extends Protocol implements Runnable {
 
     /**
      * Processes a packet read from either the multicast or unicast socket. Needs to be synchronized because
-     * mcast or unicast socket reads can be concurrent
+     * mcast or unicast socket reads can be concurrent.
+     * Correction (bela April 19 2005): we acces no instance variables, all vars are allocated on the stack, so
+     * this method should be reentrant: removed 'synchronized' keyword
      */
     void handleIncomingUdpPacket(IpAddress dest, InetAddress sender, int port, byte[] data) {
         ByteArrayInputStream inp_stream=null;
@@ -839,7 +841,7 @@ public class UDP extends Protocol implements Runnable {
         IpAddress  dest=(IpAddress)msg.getDest(); // guaranteed to be non-null
         IpAddress  src=(IpAddress)msg.getSrc();
 
-        synchronized(out_stream) { // todo: revisit
+        synchronized(out_stream) {
             buf=messageToBuffer(msg, dest, src);
             doSend(buf, dest.getIpAddress(), dest.getPort());
         }
@@ -881,6 +883,14 @@ public class UDP extends Protocol implements Runnable {
     }
 
 
+    /**
+     * This method needs to be synchronized on out_stream when it is called
+     * @param msg
+     * @param dest
+     * @param src
+     * @return
+     * @throws IOException
+     */
     Buffer messageToBuffer(Message msg, IpAddress dest, IpAddress src) throws IOException {
         Buffer retval;
         DataOutputStream out=null;
@@ -1826,8 +1836,10 @@ public class UDP extends Protocol implements Runnable {
                     l=(List)entry.getValue();
                     try {
                         if(l.size() > 0) {
-                            buffer=listToBuffer(l, dst);
-                            doSend(buffer, addr, port);
+                            synchronized(out_stream) {
+                                buffer=listToBuffer(l, dst);
+                                doSend(buffer, addr, port);
+                            }
                         }
                     }
                     catch(IOException e) {

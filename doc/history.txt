@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.151 2005/04/19 12:38:41 belaban Exp $
+Revision: $Id: history.txt,v 1.152 2005/04/20 20:38:18 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -27,6 +27,10 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
 Version 2.2.8
 -------------
+
+- UDP: synchronization around message marshalling and sending, non-sync could lead to intermingled
+  byte arrays at the receiver, due to concurrent access to out_stream
+  (bela April 20 2005)
 
 - Fixed bug where IpAddress.additional_data was not marshalled
   (bela April 19 2005)
