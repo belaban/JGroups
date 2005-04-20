@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.71 2005/04/20 12:26:36 belaban Exp $
+// $Id: UDP.java,v 1.72 2005/04/20 13:56:55 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -67,7 +67,7 @@ public class UDP extends Protocol implements Runnable {
     /** The name of the group to which this member is connected */
     String          channel_name=null;
 
-    UdpHeader       udp_hdr=null;
+    // UdpHeader       udp_hdr=null;
 
     /** The multicast address (mcast address and port) this member uses */
     IpAddress       mcast_addr=null;
@@ -106,7 +106,7 @@ public class UDP extends Protocol implements Runnable {
     final Vector    members=new Vector(11);
 
     /** Pre-allocated byte stream. Used for serializing datagram packets. Will grow as needed */
-    final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(512);
+    final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(1024);
 
     /** Send buffer size of the multicast datagram socket */
     int             mcast_send_buf_size=32000;
@@ -624,8 +624,8 @@ public class UDP extends Protocol implements Runnable {
 
         if(channel_name != null) {
             // added patch by Roland Kurmann (March 20 2003)
-            // msg.putHeader(name, new UdpHeader(channel_name));
-            msg.putHeader(name, udp_hdr);
+            msg.putHeader(name, new UdpHeader(channel_name));
+            // msg.putHeader(name, udp_hdr);
         }
 
         dest_addr=msg.getDest();
@@ -795,8 +795,11 @@ public class UDP extends Protocol implements Runnable {
         dest=(IpAddress)msg.getDest();  // guaranteed to be non-null
         setSourceAddress(msg);
 
-        if(log.isTraceEnabled())
-            log.trace("sending msg to " + msg.getDest() + " (src=" + msg.getSrc() + "), headers are " + msg.getHeaders());
+        if(log.isTraceEnabled()) {
+            StringBuffer sb=new StringBuffer("sending msg to ");
+            sb.append(msg.getDest()).append(" (src=").append(msg.getSrc()).append("), headers are ").append(msg.getHeaders());
+            log.trace(sb.toString());
+        }
 
         // Don't send if destination is local address. Instead, switch dst and src and put in up_queue.
         // If multicast message, loopback a copy directly to us (but still multicast). Once we receive this,
@@ -977,8 +980,6 @@ public class UDP extends Protocol implements Runnable {
             Util.closeOutputStream(out);
         }
     }
-
-
 
 
 
@@ -1414,7 +1415,7 @@ public class UDP extends Protocol implements Runnable {
 
         case Event.CONNECT:
             channel_name=(String)evt.getArg();
-            udp_hdr=new UdpHeader(channel_name);
+            // udp_hdr=new UdpHeader(channel_name);
 
             // removed March 18 2003 (bela), not needed (handled by GMS)
             // changed July 2 2003 (bela): we discard CONNECT_OK at the GMS level anyway, this might
