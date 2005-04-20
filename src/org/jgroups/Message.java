@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.29 2005/04/20 10:32:05 belaban Exp $
+// $Id: Message.java,v 1.30 2005/04/20 14:02:08 belaban Exp $
 
 package org.jgroups;
 
@@ -673,12 +673,12 @@ public class Message implements Externalizable, Streamable {
             magic_number=ClassConfigurator.getInstance(false).getMagicNumber(value.getClass());
             // write the magic number or the class name
             if(magic_number == -1) {
-                out.write(0);
+                out.writeBoolean(false);
                 classname=value.getClass().getName();
                 out.writeUTF(classname);
             }
             else {
-                out.write(1);
+                out.writeBoolean(true);
                 out.writeInt(magic_number);
             }
 
@@ -707,14 +707,15 @@ public class Message implements Externalizable, Streamable {
 
 
     private Header readHeader(DataInputStream in) throws IOException {
-        Header hdr=null;
-        int use_magic_number=in.read(), magic_number;
-        String classname;
-        Class clazz;
+        Header            hdr=null;
+        boolean           use_magic_number=in.readBoolean();
+        int               magic_number;
+        String            classname;
+        Class             clazz;
         ObjectInputStream ois=null;
 
         try {
-            if(use_magic_number == 1) {
+            if(use_magic_number) {
                 magic_number=in.readInt();
                 clazz=ClassConfigurator.getInstance(false).get(magic_number);
             }
