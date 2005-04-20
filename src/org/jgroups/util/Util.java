@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.33 2005/04/15 12:35:19 belaban Exp $
+// $Id: Util.java,v 1.34 2005/04/20 10:32:35 belaban Exp $
 
 package org.jgroups.util;
 
@@ -42,6 +42,18 @@ public class Util {
         }
         catch (SecurityException ex){
             resolve_dns=false;
+        }
+    }
+
+
+    public static void closeInputStream(InputStream inp) {
+        if(inp != null)
+            try {inp.close();} catch(IOException e) {}
+    }
+
+    public static void closeOutputStream(OutputStream out) {
+        if(out != null) {
+            try {out.close();} catch(IOException e) {}
         }
     }
 

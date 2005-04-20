@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.9 2005/04/14 15:30:25 belaban Exp $
+// $Id: Event.java,v 1.10 2005/04/20 10:32:17 belaban Exp $
 
 package org.jgroups;
 
@@ -187,7 +187,7 @@ public class Event {
     }
 
     public String toString() {
-        StringBuffer ret=new StringBuffer(21);
+        StringBuffer ret=new StringBuffer(64);
         ret.append("Event[type=" + type2String(type) + ", arg=" + arg + ']');
         return ret.toString();
     }

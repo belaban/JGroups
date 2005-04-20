@@ -1,4 +1,4 @@
-// $Id: FRAG.java,v 1.18 2005/04/15 16:17:49 belaban Exp $
+// $Id: FRAG.java,v 1.19 2005/04/20 10:32:34 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -28,7 +28,7 @@ import java.util.*;
  * multicast messages.
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.18 2005/04/15 16:17:49 belaban Exp $
+ * @version $Id: FRAG.java,v 1.19 2005/04/20 10:32:34 belaban Exp $
  */
 public class FRAG extends Protocol {
     private int frag_size=8192;  // conservative value
@@ -80,8 +80,11 @@ public class FRAG extends Protocol {
                 Message msg=(Message)evt.getArg();
                 long size=msg.size();
                 if(size > frag_size) {
-                    if(log.isTraceEnabled())
-                        log.trace("message size is " + size + ", will fragment (frag_size == " + frag_size + ')');
+                    if(log.isTraceEnabled()) {
+                        StringBuffer sb=new StringBuffer("message size is ");
+                        sb.append(size).append(", will fragment (frag_size=").append(frag_size).append(')');
+                        log.trace(sb.toString());
+                    }
                     fragment(msg);  // Fragment and pass down
                     return;
                 }
@@ -160,15 +163,15 @@ public class FRAG extends Protocol {
      * </pre>
      */
     private void fragment(Message msg) {
-        DataOutputStream   out;
+        DataOutputStream   out=null;
         byte[]             buffer;
         byte[]             fragments[];
         Event              evt;
         FragHeader         hdr;
-        Message            frag_msg=null;
+        Message            frag_msg;
         Address            dest=msg.getDest(), src=msg.getSrc();
         long               id=curr_id++; // used as seqnos
-        int                num_frags=0;
+        int                num_frags;
 
         try {
             // Write message into a byte buffer and fragment it
@@ -198,6 +201,9 @@ public class FRAG extends Protocol {
         }
         catch(Exception e) {
             log.error("exception is " + e);
+        }
+        finally {
+            Util.closeOutputStream(out);
         }
     }
 

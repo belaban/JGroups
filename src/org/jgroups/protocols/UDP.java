@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.69 2005/04/20 09:31:05 belaban Exp $
+// $Id: UDP.java,v 1.70 2005/04/20 10:32:34 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -724,21 +724,11 @@ public class UDP extends Protocol implements Runnable {
             if(log.isErrorEnabled()) log.error("exception in processing incoming packet", e);
         }
         finally {
-            closeInputStream(inp);
-            closeInputStream(inp_stream);
+            Util.closeInputStream(inp);
+            Util.closeInputStream(inp_stream);
         }
     }
 
-    private void closeInputStream(InputStream inp) {
-        if(inp != null)
-            try {inp.close();} catch(IOException e) {}
-    }
-
-    private void closeOutputStream(OutputStream out) {
-        if(out != null) {
-            try {out.close();} catch(IOException e) {}
-        }
-    }
 
 
     void handleMessage(Message msg) {
@@ -901,7 +891,7 @@ public class UDP extends Protocol implements Runnable {
             return retval;
         }
         finally {
-            closeOutputStream(out);
+            Util.closeOutputStream(out);
         }
     }
 
@@ -985,7 +975,7 @@ public class UDP extends Protocol implements Runnable {
             return retval;
         }
         finally {
-            closeOutputStream(out);
+            Util.closeOutputStream(out);
         }
     }
 
@@ -1011,7 +1001,7 @@ public class UDP extends Protocol implements Runnable {
             return l;
         }
         finally {
-            closeInputStream(in);
+            Util.closeInputStream(in);
         }
     }
 
@@ -1782,7 +1772,7 @@ public class UDP extends Protocol implements Runnable {
         void checkLength(long len) throws Exception {
             if(len > max_bundle_size)
                 throw new Exception("UDP.BundlingOutgoingPacketHandler.handleMessage(): message size (" + len +
-                                    ") is greater than UDP fragmentation size. " +
+                                    ") is greater than max bundling size (" + max_bundle_size + "). " +
                                     "Set the fragmentation/bundle size in FRAG and UDP correctly");
         }
 
