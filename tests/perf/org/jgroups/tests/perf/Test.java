@@ -300,12 +300,12 @@ public class Test implements Receiver {
 
     void sendMessages() throws Exception {
         long total_msgs=0;
-        int msg_size=Integer.parseInt(config.getProperty("msg_size"));
+        int msgSize=Integer.parseInt(config.getProperty("msg_size"));
         int num_msgs=Integer.parseInt(config.getProperty("num_msgs"));
-        int log_interval=Integer.parseInt(config.getProperty("log_interval"));
+        int logInterval=Integer.parseInt(config.getProperty("log_interval"));
         // boolean gnuplot_output=Boolean.getBoolean(config.getProperty("gnuplot_output", "false"));
-        byte[] buf=new byte[msg_size];
-        for(int k=0; k < msg_size; k++)
+        byte[] buf=new byte[msgSize];
+        for(int k=0; k < msgSize; k++)
             buf[k]='.';
         Data d=new Data(Data.DATA);
         byte[] payload=generatePayload(d, buf);
@@ -315,7 +315,7 @@ public class Test implements Receiver {
             if(total_msgs % 1000 == 0) {
                 System.out.println("++ sent " + total_msgs);
             }
-            if(total_msgs % log_interval == 0) {
+            if(total_msgs % logInterval == 0) {
                 //if(gnuplot_output == false)
                 //  if(log.isInfoEnabled()) log.info(dumpStats(total_msgs));
             }
@@ -391,7 +391,7 @@ public class Test implements Receiver {
 
     void dump(HashMap map, StringBuffer sb) {
         Map.Entry  entry;
-        Object     sender;
+        Object     mySender;
         MemberInfo mi;
         MemberInfo combined=new MemberInfo(0);
         combined.start = Long.MAX_VALUE;
@@ -399,14 +399,14 @@ public class Test implements Receiver {
 
         for(Iterator it2=map.entrySet().iterator(); it2.hasNext();) {
             entry=(Map.Entry)it2.next();
-            sender=entry.getKey();
+            mySender=entry.getKey();
             mi=(MemberInfo)entry.getValue();
             combined.start=Math.min(combined.start, mi.start);
             combined.stop=Math.max(combined.stop, mi.stop);
             combined.num_msgs_expected+=mi.num_msgs_expected;
             combined.num_msgs_received+=mi.num_msgs_received;
             combined.total_bytes_received+=mi.total_bytes_received;
-            sb.append("sender: ").append(sender).append(": ").append(mi).append('\n');
+            sb.append("sender: ").append(mySender).append(": ").append(mi).append('\n');
         }
         sb.append("\ncombined: ").append(combined).append('\n');
     }
