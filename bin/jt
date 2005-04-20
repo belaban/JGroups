@@ -1,0 +1,7 @@
+#!/bin/bash
+
+FLAGS="-Xmx500M -Xms500M -XX:NewRatio=1 -XX:+AggressiveHeap -verbose:gc -XX:+DisableExplicitGC -XX:ThreadStackSize=32 -XX:CompileThreshold=100"
+
+LOG="-Dlog4j.configuration=file:c:\log4j.properties"
+
+java $LOG $FLAGS -Dresolve.dns=false org.jgroups.tests.$*
