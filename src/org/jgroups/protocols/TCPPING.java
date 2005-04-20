@@ -1,4 +1,4 @@
-// $Id: TCPPING.java,v 1.22 2005/03/23 14:33:03 belaban Exp $
+// $Id: TCPPING.java,v 1.23 2005/04/20 20:25:47 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -34,11 +34,12 @@ public class TCPPING extends Discovery {
 
     /** List<IpAddress> */
     ArrayList       initial_hosts=null;  // hosts to be contacted for the initial membership
+    final static String name="TCPPING";
 
 
 
     public String getName() {
-        return "TCPPING";
+        return name;
     }
 
 
@@ -86,7 +87,7 @@ public class TCPPING extends Discovery {
                // ; // continue; // changed as suggested by Mark Kopec
             // }
             msg=new Message(addr, null, null);
-            msg.putHeader(getName(), new PingHeader(PingHeader.GET_MBRS_REQ, null));
+            msg.putHeader(name, new PingHeader(PingHeader.GET_MBRS_REQ, null));
 
             if(log.isTraceEnabled()) log.trace("[FIND_INITIAL_MBRS] sending PING request to " + msg.getDest());
             passDown(new Event(Event.MSG, msg));

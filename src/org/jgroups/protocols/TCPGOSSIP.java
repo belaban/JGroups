@@ -1,4 +1,4 @@
-// $Id: TCPGOSSIP.java,v 1.13 2005/01/04 21:22:43 belaban Exp $
+// $Id: TCPGOSSIP.java,v 1.14 2005/04/20 20:25:47 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -34,10 +34,11 @@ public class TCPGOSSIP extends Discovery {
     long gossip_refresh_rate=20000;
 
     final static Vector EMPTY_VECTOR=new Vector();
+    final static String name="TCPGOSSIP";
 
 
     public String getName() {
-        return "TCPGOSSIP";
+        return name;
     }
 
 
@@ -116,7 +117,7 @@ public class TCPGOSSIP extends Discovery {
         // 1. 'Mcast' GET_MBRS_REQ message
         hdr=new PingHeader(PingHeader.GET_MBRS_REQ, null);
         msg=new Message(null, null, null);
-        msg.putHeader(getName(), hdr);
+        msg.putHeader(name, hdr);
 
         for(int i=0; i < tmp_mbrs.size(); i++) {
             mbr_addr=(IpAddress)tmp_mbrs.elementAt(i);

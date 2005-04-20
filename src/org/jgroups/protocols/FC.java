@@ -1,4 +1,4 @@
-// $Id: FC.java,v 1.19 2005/04/15 13:17:01 belaban Exp $
+// $Id: FC.java,v 1.20 2005/04/20 20:25:46 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -18,7 +18,7 @@ import java.util.*;
  * Note that this protocol must be located towards the top of the stack, or all down_threads from JChannel to this
  * protocol must be set to false ! This is in order to block JChannel.send()/JChannel.down().
  * @author Bela Ban
- * @version $Revision: 1.19 $
+ * @version $Revision: 1.20 $
  */
 public class FC extends Protocol {
 
@@ -137,7 +137,7 @@ public class FC extends Protocol {
                 break;
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
-                FcHeader hdr=(FcHeader)msg.removeHeader(getName());
+                FcHeader hdr=(FcHeader)msg.removeHeader(name);
                 if(hdr != null) {
                     if(hdr.type == FcHeader.REPLENISH) {
                         handleCredit(msg.getSrc());
@@ -202,7 +202,7 @@ public class FC extends Protocol {
     void sendCredit(Address dest) {
         Message  msg=new Message(dest, null, null);
         FcHeader hdr=new FcHeader(FcHeader.REPLENISH);
-        msg.putHeader(getName(), hdr);
+        msg.putHeader(name, hdr);
         passDown(new Event(Event.MSG, msg));
     }
 

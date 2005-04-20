@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.20 2005/04/18 09:54:45 belaban Exp $
+// $Id: TCP.java,v 1.21 2005/04/20 20:25:47 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -63,8 +63,8 @@ public class TCP extends Protocol implements ConnectionTable.Receiver {
     int                    send_buf_size=150000;
     int                    sock_conn_timeout=2000; // max time in millis for a socket creation in ConnectionTable
 
-
-    static final String IGNORE_BIND_ADDRESS_PROPERTY="ignore.bind.address";
+    static final String    name="TCP";
+    static final String    IGNORE_BIND_ADDRESS_PROPERTY="ignore.bind.address";
 
 
     public TCP() {
@@ -156,7 +156,7 @@ public class TCP extends Protocol implements ConnectionTable.Receiver {
 
         if(group_addr != null) { // added patch sent by Roland Kurmann (bela March 20 2003)
             /* Add header (includes channel name) */
-            msg.putHeader(getName(), new TcpHeader(group_addr));
+            msg.putHeader(name, new TcpHeader(group_addr));
         }
 
         dest_addr=msg.getDest();
@@ -197,7 +197,7 @@ public class TCP extends Protocol implements ConnectionTable.Receiver {
 
         if(log.isTraceEnabled()) log.trace("received msg " + msg);
 
-        hdr=(TcpHeader)msg.removeHeader(getName());
+        hdr=(TcpHeader)msg.removeHeader(name);
 
         if(hdr != null) {
             /* Discard all messages destined for a channel with a different name */
@@ -372,9 +372,9 @@ public class TCP extends Protocol implements ConnectionTable.Receiver {
         /* Don't send if destination is local address. Instead, switch dst and src and put in up_queue  */
         if(loopback && local_addr != null && dest != null && dest.equals(local_addr)) {
             copy=msg.copy();
-            hdr=copy.getHeader(getName());
+            hdr=copy.getHeader(name);
             if(hdr != null && hdr instanceof TcpHeader)
-                copy.removeHeader(getName());
+                copy.removeHeader(name);
             copy.setSrc(local_addr);
             copy.setDest(local_addr);
 
@@ -452,10 +452,6 @@ public class TCP extends Protocol implements ConnectionTable.Receiver {
             case Event.CONFIG:
             if(log.isTraceEnabled()) log.trace("received CONFIG event: " + evt.getArg());
                 handleConfigEvent((HashMap)evt.getArg());
-                break;
-
-            case Event.ACK:
-                passUp(new Event(Event.ACK_OK));
                 break;
         }
     }

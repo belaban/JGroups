@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.73 2005/04/20 16:04:00 belaban Exp $
+// $Id: UDP.java,v 1.74 2005/04/20 20:25:47 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -67,7 +67,7 @@ public class UDP extends Protocol implements Runnable {
     /** The name of the group to which this member is connected */
     String          channel_name=null;
 
-    // UdpHeader       udp_hdr=null;
+    UdpHeader       udp_hdr=null;
 
     /** The multicast address (mcast address and port) this member uses */
     IpAddress       mcast_addr=null;
@@ -624,8 +624,8 @@ public class UDP extends Protocol implements Runnable {
 
         if(channel_name != null) {
             // added patch by Roland Kurmann (March 20 2003)
-            msg.putHeader(name, new UdpHeader(channel_name));
-            // msg.putHeader(name, udp_hdr);
+            // msg.putHeader(name, new UdpHeader(channel_name));
+            msg.putHeader(name, udp_hdr);
         }
 
         dest_addr=msg.getDest();
@@ -1419,7 +1419,7 @@ public class UDP extends Protocol implements Runnable {
 
         case Event.CONNECT:
             channel_name=(String)evt.getArg();
-            // udp_hdr=new UdpHeader(channel_name);
+            udp_hdr=new UdpHeader(channel_name);
 
             // removed March 18 2003 (bela), not needed (handled by GMS)
             // changed July 2 2003 (bela): we discard CONNECT_OK at the GMS level anyway, this might

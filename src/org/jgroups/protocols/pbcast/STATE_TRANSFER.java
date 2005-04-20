@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.16 2005/04/15 13:17:00 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.17 2005/04/20 20:25:45 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -32,11 +32,12 @@ public class STATE_TRANSFER extends Protocol {
     Digest         digest=null;
     final HashMap  map=new HashMap(); // to store configuration information
     long           start, stop; // to measure state transfer time
+    final static   String name="STATE_TRANSFER";
 
 
     /** All protocol names have to be unique ! */
     public String getName() {
-        return "STATE_TRANSFER";
+        return name;
     }
 
 
@@ -96,10 +97,10 @@ public class STATE_TRANSFER extends Protocol {
 
         case Event.MSG:
             msg=(Message)evt.getArg();
-            if(!(msg.getHeader(getName()) instanceof StateHeader))
+            if(!(msg.getHeader(name) instanceof StateHeader))
                 break;
 
-            hdr=(StateHeader)msg.removeHeader(getName());
+            hdr=(StateHeader)msg.removeHeader(name);
             switch(hdr.type) {
             case StateHeader.STATE_REQ:
                 handleStateReq(hdr.sender, hdr.id);
@@ -159,7 +160,7 @@ public class STATE_TRANSFER extends Protocol {
                 }
                 else {
                     state_req=new Message(target, null, null);
-                    state_req.putHeader(getName(), new StateHeader(StateHeader.STATE_REQ, local_addr, state_id++, null));
+                    state_req.putHeader(name, new StateHeader(StateHeader.STATE_REQ, local_addr, state_id++, null));
                     if(log.isDebugEnabled()) log.debug("GET_STATE: asking " + target + " for state");
 
                     // suspend sending and handling of mesage garbage collection gossip messages,
@@ -190,7 +191,7 @@ public class STATE_TRANSFER extends Protocol {
                         requester=(Address)e.nextElement();
                         state_rsp=new Message(requester, null, state); // put the state into state_rsp.buffer
                         hdr=new StateHeader(StateHeader.STATE_RSP, local_addr, 0, digest);
-                        state_rsp.putHeader(getName(), hdr);
+                        state_rsp.putHeader(name, hdr);
                         passDown(new Event(Event.MSG, state_rsp));
                     }
                     digest=null;

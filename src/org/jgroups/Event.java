@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.10 2005/04/20 10:32:17 belaban Exp $
+// $Id: Event.java,v 1.11 2005/04/20 20:25:50 belaban Exp $
 
 package org.jgroups;
 
@@ -9,7 +9,7 @@ package org.jgroups;
  * @author Bela Ban
  */
 public class Event {
-    public static final int MSG                       =  1;
+    public static final int MSG                       =  1;  // arg = Message
     public static final int CONNECT                   =  2;  // arg = group address (string)
     public static final int CONNECT_OK                =  3;  // arg = group multicast address (Address)
     public static final int DISCONNECT                =  4;  // arg = member address (Address)
@@ -67,8 +67,8 @@ public class Event {
     public static final int CONFIG                    = 56;  // arg = HashMap (config properties)
     public static final int GET_DIGEST_STABLE         = 57;
     public static final int GET_DIGEST_STABLE_OK      = 58;  // response to GET_DIGEST_STABLE
-    public static final int ACK                       = 59;  // used to flush down events
-    public static final int ACK_OK                    = 60;  // response to ACK
+    // public static final int ACK                       = 59;  // used to flush down events
+    // public static final int ACK_OK                    = 60;  // response to ACK
     public static final int START                     = 61;  // triggers start() - internal event, handled by Protocol
     public static final int START_OK                  = 62;  // arg = exception of null - internal event, handled by Protocol
     public static final int STOP                      = 63;  // triggers stop() - internal event, handled by Protocol
@@ -172,8 +172,8 @@ public class Event {
             case CONFIG:                 return "CONFIG";
             case GET_DIGEST_STABLE:      return "GET_DIGEST_STABLE";
             case GET_DIGEST_STABLE_OK:   return "GET_DIGEST_STABLE_OK";
-            case ACK:                    return "ACK";
-            case ACK_OK:                 return "ACK_OK";
+            // case ACK:                    return "ACK";
+            // case ACK_OK:                 return "ACK_OK";
             case START:                  return "START";
             case START_OK:               return "START_OK";
             case STOP:                   return "STOP";
@@ -185,6 +185,9 @@ public class Event {
             default:                     return "UNDEFINED";
         }
     }
+
+    public static final Event FIND_INITIAL_MBRS_EVT = new Event(Event.FIND_INITIAL_MBRS);
+    public static final Event GET_DIGEST_EVT        = new Event(Event.GET_DIGEST);
 
     public String toString() {
         StringBuffer ret=new StringBuffer(64);

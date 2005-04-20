@@ -1,4 +1,4 @@
-// $Id: Protocol.java,v 1.24 2005/04/18 15:16:32 belaban Exp $
+// $Id: Protocol.java,v 1.25 2005/04/20 20:25:49 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -114,7 +114,7 @@ class DownHandler extends Thread {
                 }
 
                 int type=evt.getType();
-                if(type == Event.ACK || type == Event.START || type == Event.STOP) {
+                if(type == Event.START || type == Event.STOP) {
                     if(handler.handleSpecialDownEvent(evt) == false)
                         continue;
                 }
@@ -458,7 +458,7 @@ public abstract class Protocol {
                 }
             }
             int type=evt.getType();
-            if(type == Event.ACK || type == Event.START || type == Event.STOP) {
+            if(type == Event.START || type == Event.STOP) {
                 if(handleSpecialDownEvent(evt) == false)
                     return;
             }
@@ -542,11 +542,6 @@ public abstract class Protocol {
      */
     protected boolean handleSpecialDownEvent(Event evt) {
         switch(evt.getType()) {
-            case Event.ACK:
-                if(down_prot == null) {
-                    passUp(new Event(Event.ACK_OK));
-                    return false; // don't pass down the stack
-                }
             case Event.START:
                 try {
                     start();

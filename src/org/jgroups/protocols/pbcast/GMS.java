@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.28 2005/04/15 13:17:00 belaban Exp $
+// $Id: GMS.java,v 1.29 2005/04/20 20:25:44 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -62,6 +62,8 @@ public class GMS extends Protocol {
     /** Keeps track of old members (up to num_prev_mbrs) */
     BoundedList               prev_members=null;
 
+    static final String       name="GMS";
+
 
 
     public GMS() {
@@ -70,7 +72,7 @@ public class GMS extends Protocol {
 
 
     public String getName() {
-        return "GMS";
+        return name;
     }
 
 
@@ -290,7 +292,7 @@ public class GMS extends Protocol {
         view_change_msg=new Message(); // bcast to all members
         hdr=new GmsHeader(GmsHeader.VIEW, new_view);
         hdr.my_digest=digest;
-        view_change_msg.putHeader(getName(), hdr);
+        view_change_msg.putHeader(name, hdr);
         passDown(new Event(Event.MSG, view_change_msg));
     }
 
@@ -473,7 +475,7 @@ public class GMS extends Protocol {
 
         synchronized(digest_mutex) {
             digest=null;
-            passDown(new Event(Event.GET_DIGEST));
+            passDown(Event.GET_DIGEST_EVT);
             if(digest == null) {
                 try {
                     digest_mutex.wait(digest_timeout);
@@ -504,10 +506,10 @@ public class GMS extends Protocol {
 
             case Event.MSG:
                 msg=(Message)evt.getArg();
-                obj=msg.getHeader(getName());
+                obj=msg.getHeader(name);
                 if(obj == null || !(obj instanceof GmsHeader))
                     break;
-                hdr=(GmsHeader)msg.removeHeader(getName());
+                hdr=(GmsHeader)msg.removeHeader(name);
                 switch(hdr.type) {
                     case GmsHeader.JOIN_REQ:
                         handleJoinRequest(hdr.mbr);
@@ -746,7 +748,7 @@ public class GMS extends Protocol {
         // 3. Return result to client
         m=new Message(mbr, null, null);
         hdr=new GmsHeader(GmsHeader.JOIN_RSP, join_rsp);
-        m.putHeader(getName(), hdr);
+        m.putHeader(name, hdr);
         passDown(new Event(Event.MSG, m));
 
         // 4. Bcast the new view
