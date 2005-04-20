@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.72 2005/04/20 13:56:55 belaban Exp $
+// $Id: UDP.java,v 1.73 2005/04/20 16:04:00 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -838,8 +838,11 @@ public class UDP extends Protocol implements Runnable {
         Buffer     buf;
         IpAddress  dest=(IpAddress)msg.getDest(); // guaranteed to be non-null
         IpAddress  src=(IpAddress)msg.getSrc();
-        buf=messageToBuffer(msg, dest, src);
-        doSend(buf, dest.getIpAddress(), dest.getPort());
+
+        synchronized(out_stream) { // todo: revisit
+            buf=messageToBuffer(msg, dest, src);
+            doSend(buf, dest.getIpAddress(), dest.getPort());
+        }
     }
 
 
@@ -881,6 +884,7 @@ public class UDP extends Protocol implements Runnable {
     Buffer messageToBuffer(Message msg, IpAddress dest, IpAddress src) throws IOException {
         Buffer retval;
         DataOutputStream out=null;
+
         out_stream.reset();
         out_stream.write(Version.version_id, 0, Version.version_id.length); // write the version
         try {
