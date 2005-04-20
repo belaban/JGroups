@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.68 2005/04/20 09:10:08 belaban Exp $
+// $Id: UDP.java,v 1.69 2005/04/20 09:31:05 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -729,9 +729,15 @@ public class UDP extends Protocol implements Runnable {
         }
     }
 
-    void closeInputStream(InputStream inp) {
+    private void closeInputStream(InputStream inp) {
         if(inp != null)
             try {inp.close();} catch(IOException e) {}
+    }
+
+    private void closeOutputStream(OutputStream out) {
+        if(out != null) {
+            try {out.close();} catch(IOException e) {}
+        }
     }
 
 
@@ -881,16 +887,22 @@ public class UDP extends Protocol implements Runnable {
 
 
     Buffer messageToBuffer(Message msg, IpAddress dest, IpAddress src) throws IOException {
-        Buffer retval=null;
+        Buffer retval;
+        DataOutputStream out=null;
         out_stream.reset();
         out_stream.write(Version.version_id, 0, Version.version_id.length); // write the version
-        DataOutputStream out=new DataOutputStream(out_stream);
-        nullAddresses(msg, dest, src);
-        msg.writeTo(out);
-        revertAddresses(msg, dest, src);
-        out.close(); // flushes contents to out_stream
-        retval=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
-        return retval;
+        try {
+            out=new DataOutputStream(out_stream);
+            nullAddresses(msg, dest, src);
+            msg.writeTo(out);
+            revertAddresses(msg, dest, src);
+            out.flush();
+            retval=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
+            return retval;
+        }
+        finally {
+            closeOutputStream(out);
+        }
     }
 
 
@@ -958,27 +970,35 @@ public class UDP extends Protocol implements Runnable {
         DataOutputStream out=null;
         out_stream.reset();
         out_stream.write(Version.version_id, 0, Version.version_id.length); // write the version
-        out=new DataOutputStream(out_stream);
-        out.writeInt(len);
-        for(Enumeration en=l.elements(); en.hasMoreElements();) {
-            msg=(Message)en.nextElement();
-            src=(IpAddress)msg.getSrc();
-            nullAddresses(msg, dest, src);
-            msg.writeTo(out);
-            revertAddresses(msg, dest, src);
+        try {
+            out=new DataOutputStream(out_stream);
+            out.writeInt(len);
+            for(Enumeration en=l.elements(); en.hasMoreElements();) {
+                msg=(Message)en.nextElement();
+                src=(IpAddress)msg.getSrc();
+                nullAddresses(msg, dest, src);
+                msg.writeTo(out);
+                revertAddresses(msg, dest, src);
+            }
+            out.flush();
+            retval=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
+            return retval;
         }
-        out.close(); // flush contents to outstream
-        retval=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
-        return retval;
+        finally {
+            closeOutputStream(out);
+        }
     }
+
+
+
 
 
     List bufferToList(DataInputStream instream, IpAddress dest, InetAddress sender, int port)
             throws IOException, IllegalAccessException, InstantiationException {
-        List l=new List();
-        DataInputStream dis=null;
-        int len;
-        Message msg;
+        List            l=new List();
+        DataInputStream in=null;
+        int             len;
+        Message         msg;
 
         try {
             len=instream.readInt();
@@ -991,22 +1011,11 @@ public class UDP extends Protocol implements Runnable {
             return l;
         }
         finally {
-            if(dis != null)
-                dis.close();
+            closeInputStream(in);
         }
     }
 
-//    Buffer objectToBuffer(Externalizable obj) throws IOException {
-//        ObjectOutputStream   out;
-//
-//        out_stream.reset();
-//        out_stream.write(Version.version_id, 0, Version.version_id.length); // write the version
-//        // out=new ObjectOutputStream(new BufferedOutputStream(out_stream));
-//        out=new MagicObjectOutputStream(out_stream);
-//        obj.writeExternal(out);
-//        out.close(); // needed to flush if out buffers its output to out_stream
-//        return new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
-//    }
+
 
     /**
      * Create UDP sender and receiver sockets. Currently there are 2 sockets
