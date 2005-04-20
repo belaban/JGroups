@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.11 2005/02/23 19:30:04 belaban Exp $
+// $Id: TUNNEL.java,v 1.12 2005/04/20 20:25:47 belaban Exp $
 
 
 package org.jgroups.protocols;
@@ -352,10 +352,6 @@ public class TUNNEL extends Protocol implements Runnable {
         case Event.CONFIG:
             if(log.isDebugEnabled()) log.debug("received CONFIG event: " + evt.getArg());
             handleConfigEvent((HashMap)evt.getArg());
-            break;
-
-        case Event.ACK:
-            passUp(new Event(Event.ACK_OK));
             break;
         }
     }

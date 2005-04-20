@@ -1,4 +1,4 @@
-// $Id: FRAG2.java,v 1.14 2005/04/15 16:17:49 belaban Exp $
+// $Id: FRAG2.java,v 1.15 2005/04/20 20:25:46 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -27,7 +27,7 @@ import java.util.*;
  * size addition for headers and src and dest address is minimal when the transport finally has to serialize the
  * message, so we add a constant (1000 bytes).
  * @author Bela Ban
- * @version $Id: FRAG2.java,v 1.14 2005/04/15 16:17:49 belaban Exp $
+ * @version $Id: FRAG2.java,v 1.15 2005/04/20 20:25:46 belaban Exp $
  */
 public class FRAG2 extends Protocol {
 
@@ -155,7 +155,7 @@ public class FRAG2 extends Protocol {
 
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
-                Object obj=msg.getHeader(getName());
+                Object obj=msg.getHeader(name);
                 if(obj != null && obj instanceof FragHeader) { // needs to be defragmented
                     unfragment(msg); // Unfragment and possibly pass up
                     return;
@@ -236,7 +236,7 @@ public class FRAG2 extends Protocol {
         FragmentationTable frag_table=null;
         Address            sender=msg.getSrc();
         Message            assembled_msg;
-        FragHeader         hdr=(FragHeader)msg.removeHeader(getName());
+        FragHeader         hdr=(FragHeader)msg.removeHeader(name);
 
         frag_table=fragment_list.get(sender);
         if(frag_table == null) {

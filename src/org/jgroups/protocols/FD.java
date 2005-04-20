@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.17 2005/04/15 13:17:01 belaban Exp $
+// $Id: FD.java,v 1.18 2005/04/20 20:25:46 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -35,7 +35,7 @@ import java.util.Vector;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Revision: 1.17 $
+ * @version $Revision: 1.18 $
  */
 public class FD extends Protocol {
     Address               ping_dest=null;
@@ -57,6 +57,7 @@ public class FD extends Protocol {
 
     /** Transmits SUSPECT message until view change or UNSUSPECT is received */
     final Broadcaster     bcast_task=new Broadcaster();
+    final static String   name="FD";
 
 
 
@@ -64,7 +65,7 @@ public class FD extends Protocol {
 
 
     public String getName() {
-        return "FD";
+        return name;
     }
 
 
@@ -168,7 +169,7 @@ public class FD extends Protocol {
 
             case Event.MSG:
                 msg=(Message)evt.getArg();
-                tmphdr=msg.getHeader(getName());
+                tmphdr=msg.getHeader(name);
                 if(tmphdr == null || !(tmphdr instanceof FdHeader)) {
                     if(ping_dest != null && (sender=msg.getSrc()) != null) {
                         if(ping_dest.equals(sender)) {
@@ -181,7 +182,7 @@ public class FD extends Protocol {
                     break;  // message did not originate from FD layer, just pass up
                 }
 
-                hdr=(FdHeader)msg.removeHeader(getName());
+                hdr=(FdHeader)msg.removeHeader(name);
                 switch(hdr.type) {
                     case FdHeader.HEARTBEAT:                       // heartbeat request; send heartbeat ack
                         Address hb_sender=msg.getSrc();
@@ -190,7 +191,7 @@ public class FD extends Protocol {
 
                         // 1.  Send an ack
                         tmp_hdr.from=local_addr;
-                        hb_ack.putHeader(getName(), tmp_hdr);
+                        hb_ack.putHeader(name, tmp_hdr);
                         passDown(new Event(Event.MSG, hb_ack));
 
                         // 2. Shun the sender of a HEARTBEAT message if that sender is not a member. This will cause
@@ -313,7 +314,7 @@ public class FD extends Protocol {
                     if(log.isDebugEnabled())
                         log.debug(hb_sender + " is not in " + members + " ! Shunning it");
                     shun_msg=new Message(hb_sender, null, null);
-                    shun_msg.putHeader(getName(), new FdHeader(FdHeader.NOT_MEMBER));
+                    shun_msg.putHeader(name, new FdHeader(FdHeader.NOT_MEMBER));
                     passDown(new Event(Event.MSG, shun_msg));
                     invalid_pingers.remove(hb_sender);
                 }
@@ -474,7 +475,7 @@ public class FD extends Protocol {
 
             // 1. send heartbeat request
             hb_req=new Message(ping_dest, null, null);
-            hb_req.putHeader(getName(), new FdHeader(FdHeader.HEARTBEAT));  // send heartbeat request
+            hb_req.putHeader(name, new FdHeader(FdHeader.HEARTBEAT));  // send heartbeat request
             if(log.isDebugEnabled())
                 log.debug("sending are-you-alive msg to " + ping_dest + " (own address=" + local_addr + ')');
             passDown(new Event(Event.MSG, hb_req));
@@ -641,7 +642,7 @@ public class FD extends Protocol {
                 hdr.from=local_addr;
             }
             suspect_msg=new Message();       // mcast SUSPECT to all members
-            suspect_msg.putHeader(getName(), hdr);
+            suspect_msg.putHeader(name, hdr);
             if(log.isDebugEnabled())
                 log.debug("broadcasting SUSPECT message [suspected_mbrs=" + suspected_members + "] to group");
             passDown(new Event(Event.MSG, suspect_msg));

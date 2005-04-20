@@ -1,4 +1,4 @@
-// $Id: Ping.java,v 1.4 2004/07/05 14:15:11 belaban Exp $
+// $Id: Ping.java,v 1.5 2005/04/20 20:25:50 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -47,7 +47,7 @@ public class Ping implements UpHandler {
 
         try {
             channel.connect(groupname);
-            channel.down(new Event(Event.FIND_INITIAL_MBRS));
+            channel.down(Event.FIND_INITIAL_MBRS_EVT);
         }
         catch(Exception e) {
             System.err.println("Ping.go(): " + e);

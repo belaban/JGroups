@@ -1,4 +1,4 @@
-// $Id: LOOPBACK.java,v 1.11 2005/04/20 06:31:17 belaban Exp $
+// $Id: LOOPBACK.java,v 1.12 2005/04/20 20:25:46 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -110,13 +110,7 @@ public class LOOPBACK extends Protocol {
             case Event.PERF:
                 passUp(evt);
                 break;
-
-            case Event.ACK:
-                passUp(new Event(Event.ACK_OK));
-                break;                
         }
-
-
     }
 
 
