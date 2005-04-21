@@ -20,14 +20,8 @@ public class XmlConfigurationTest extends TestCase
         super(Name_);
     }
 
-    protected void setUp()
-    {
-    }
 
-    protected void tearDown()
-    {
-    }
-    
+
     public void testBasic()
     {
         try

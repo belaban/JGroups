@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.15 2004/09/23 16:29:11 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.16 2005/04/21 15:02:10 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -633,7 +633,7 @@ public class RequestCorrelator {
         }
         catch(Throwable t) {
             try {
-                rsp_buf=Util.objectToByteBuffer(t); // this call shoudl succeed (all exceptions are serializable)
+                rsp_buf=Util.objectToByteBuffer(t); // this call should succeed (all exceptions are serializable)
             }
             catch(Throwable tt) {
                 if(log.isErrorEnabled()) log.error("failed sending response: " +
