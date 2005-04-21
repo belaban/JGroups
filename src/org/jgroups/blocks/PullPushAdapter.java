@@ -1,4 +1,4 @@
-// $Id: PullPushAdapter.java,v 1.12 2005/04/14 03:59:56 laran Exp $
+// $Id: PullPushAdapter.java,v 1.13 2005/04/21 14:50:12 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -375,7 +375,10 @@ public class PullPushAdapter implements Runnable, ChannelListener {
         }
 
         public long size() {
-            return 128;
+            if(identifier == null)
+                return 12;
+            else
+                return 64;
         }
 
 
@@ -390,7 +393,6 @@ public class PullPushAdapter implements Runnable, ChannelListener {
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             identifier=(Serializable)in.readObject();
         }
-
     }
 
 
