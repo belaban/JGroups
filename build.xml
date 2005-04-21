@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.21 2005/03/29 11:18:57 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.22 2005/04/21 13:30:50 belaban Exp $ -->
 
 <project name="JGroups" default="compile-1.4" basedir=".">
     <description>
@@ -168,6 +168,7 @@
         description="Creates the jgroups-core.jar. Includes only core file, no demos">
         <jar jarfile="${dist.dir}/jgroups-core.jar"
             basedir="${compile.dir}"
+            manifest="${conf.dir}/manifest.mf"
             includes="org/jgroups/**"
             excludes="org/jgroups/demos/**,
                       org/jgroups/tests/**,
@@ -181,6 +182,7 @@
         description="Create the jgroups-demo.jar. Includes core plus demos">
         <jar jarfile="${dist.dir}/jgroups-demo.jar"
             basedir="${compile.dir}"
+            manifest="${conf.dir}/manifest.mf"
             includes="org/jgroups/demos/**"/>
     </target>
 
@@ -188,6 +190,7 @@
         description="Create the jgroups-test.jar. Includes core plus tests">
         <jar jarfile="${dist.dir}/jgroups-test.jar"
             basedir="${compile.dir}"
+            manifest="${conf.dir}/manifest.mf"
             includes="org/jgroups/tests/**,
                       org/jgroups/service/**,
                       org/jgroups/**/*Test.class,
