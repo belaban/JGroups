@@ -8,7 +8,7 @@ import org.jgroups.util.Util;
 
 /**
  * @author Bela Ban
- * @version $Id: PullPushShunTest.java,v 1.1 2005/01/11 21:06:08 belaban Exp $
+ * @version $Id: PullPushShunTest.java,v 1.2 2005/04/21 14:50:48 belaban Exp $
  */
 public class PullPushShunTest extends TestCase implements MessageListener, MembershipListener {
     private JChannel channel;
