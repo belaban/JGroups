@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.22 2005/04/21 13:30:50 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.23 2005/04/21 13:33:38 belaban Exp $ -->
 
 <project name="JGroups" default="compile-1.4" basedir=".">
     <description>
@@ -127,30 +127,21 @@
         description="Compiles and creates JAR files in the ./dist directory"
         depends="compile,
                 jgroups-all.jar,
-                jgroups-core.jar,
-            jgroups-demo.jar,
-            jgroups-test.jar"
-        >
+                jgroups-core.jar">
     </target>
 
     <target name="jar-1.4"
         description="Compiles for 1.4 and creates JAR files in the ./dist directory"
         depends="compile-1.4,
                 jgroups-all.jar,
-                jgroups-core.jar,
-            jgroups-demo.jar,
-            jgroups-test.jar"
-        >
+                jgroups-core.jar">
     </target>
 
     <target name="jar-1.5"
         description="Compiles for 1.5 and creates JAR files in the ./dist directory"
         depends="compile-1.5,
                 jgroups-all.jar,
-                jgroups-core.jar,
-            jgroups-demo.jar,
-            jgroups-test.jar"
-        >
+                jgroups-core.jar">
     </target>
 
 
@@ -178,25 +169,6 @@
         </jar>
     </target>
 
-    <target name="jgroups-demo.jar"
-        description="Create the jgroups-demo.jar. Includes core plus demos">
-        <jar jarfile="${dist.dir}/jgroups-demo.jar"
-            basedir="${compile.dir}"
-            manifest="${conf.dir}/manifest.mf"
-            includes="org/jgroups/demos/**"/>
-    </target>
-
-    <target name="jgroups-test.jar"
-        description="Create the jgroups-test.jar. Includes core plus tests">
-        <jar jarfile="${dist.dir}/jgroups-test.jar"
-            basedir="${compile.dir}"
-            manifest="${conf.dir}/manifest.mf"
-            includes="org/jgroups/tests/**,
-                      org/jgroups/service/**,
-                      org/jgroups/**/*Test.class,
-                      org/jgroups/**/*Test\$*.class"
-            />
-    </target>
 
     <target name="jboss-service"
         description="Creates the service archive used to deploy GossipServer as a JBoss MBean">
