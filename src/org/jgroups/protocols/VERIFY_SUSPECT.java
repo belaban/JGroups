@@ -1,4 +1,4 @@
-// $Id: VERIFY_SUSPECT.java,v 1.12 2005/04/18 13:50:09 belaban Exp $
+// $Id: VERIFY_SUSPECT.java,v 1.13 2005/04/22 15:57:25 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -75,47 +75,48 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
 
         switch(evt.getType()) {
 
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
+        case Event.SET_LOCAL_ADDRESS:
+            local_addr=(Address)evt.getArg();
+            break;
+
+        case Event.SUSPECT:  // it all starts here ...
+            suspected_mbr=(Address)evt.getArg();
+            if(suspected_mbr == null) {
+                if(log.isErrorEnabled()) log.error("suspected member is null");
+                return;
+            }
+            suspect(suspected_mbr);
+            return;  // don't pass up; we will decide later (after verification) whether to pass it up
+
+
+        case Event.MSG:
+            msg=(Message)evt.getArg();
+            obj=msg.getHeader(name);
+            if(obj == null || !(obj instanceof VerifyHeader))
                 break;
-
-            case Event.SUSPECT:  // it all starts here ...
-                suspected_mbr=(Address)evt.getArg();
-                if(suspected_mbr == null) {
-                    if(log.isErrorEnabled()) log.error("suspected member is null");
-                    return;
+            hdr=(VerifyHeader)msg.removeHeader(name);
+            switch(hdr.type) {
+            case VerifyHeader.ARE_YOU_DEAD:
+                if(hdr.from == null) {
+                    if(log.isErrorEnabled()) log.error("ARE_YOU_DEAD: hdr.from is null");
                 }
-                suspect(suspected_mbr);
-                return;  // don't pass up; we will decide later (after verification) whether to pass it up
-
-
-            case Event.MSG:
-                msg=(Message)evt.getArg();
-                obj=msg.getHeader(name);
-                if(obj == null || !(obj instanceof VerifyHeader))
-                    break;
-                hdr=(VerifyHeader)msg.removeHeader(name);
-                switch(hdr.type) {
-                    case VerifyHeader.ARE_YOU_DEAD:
-                        if(hdr.from == null)
-                            if(log.isErrorEnabled()) log.error("ARE_YOU_DEAD: hdr.from is null");
-                        else {
-                            for(int i=0; i < num_msgs; i++) {
-                                rsp=new Message(hdr.from, null, null);
-                                rsp.putHeader(name, new VerifyHeader(VerifyHeader.I_AM_NOT_DEAD, local_addr));
-                                passDown(new Event(Event.MSG, rsp));
-                            }
-                        }
-                        return;
-                    case VerifyHeader.I_AM_NOT_DEAD:
-                        if(hdr.from == null) {
-                            if(log.isErrorEnabled()) log.error("I_AM_NOT_DEAD: hdr.from is null");
-                            return;
-                        }
-                        unsuspect(hdr.from);
-                        return;
+                else {
+                    for(int i=0; i < num_msgs; i++) {
+                        rsp=new Message(hdr.from, null, null);
+                        rsp.putHeader(name, new VerifyHeader(VerifyHeader.I_AM_NOT_DEAD, local_addr));
+                        passDown(new Event(Event.MSG, rsp));
+                    }
                 }
                 return;
+            case VerifyHeader.I_AM_NOT_DEAD:
+                if(hdr.from == null) {
+                    if(log.isErrorEnabled()) log.error("I_AM_NOT_DEAD: hdr.from is null");
+                    return;
+                }
+                unsuspect(hdr.from);
+                return;
+            }
+            return;
         }
         passUp(evt);
     }
