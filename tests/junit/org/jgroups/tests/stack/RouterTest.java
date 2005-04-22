@@ -1,4 +1,4 @@
-// $Id: RouterTest.java,v 1.6 2005/02/19 11:05:56 ovidiuf Exp $
+// $Id: RouterTest.java,v 1.7 2005/04/22 06:57:20 belaban Exp $
 
 package org.jgroups.tests.stack;
 
@@ -28,7 +28,7 @@ import java.util.Random;
  * may timeout.
  *
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Revision: 1.6 $
+ * @version $Revision: 1.7 $
  * @since 2.2.1
  */
 public class RouterTest extends TestCase {
@@ -625,6 +625,10 @@ public class RouterTest extends TestCase {
     public static void main(String[] args) {
         junit.textui.TestRunner.run(suite());
         System.exit(0);
+    }
+
+    static void log(String msg) {
+        
     }
 
 }
