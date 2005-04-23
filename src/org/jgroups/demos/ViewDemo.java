@@ -1,4 +1,4 @@
-// $Id: ViewDemo.java,v 1.5 2005/04/12 15:29:05 belaban Exp $
+// $Id: ViewDemo.java,v 1.6 2005/04/23 14:29:21 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -6,6 +6,8 @@ package org.jgroups.demos;
 import org.jgroups.*;
 import org.jgroups.blocks.PullPushAdapter;
 import org.jgroups.util.Util;
+
+import java.util.HashMap;
 
 
 /**
@@ -38,10 +40,17 @@ public class ViewDemo implements MembershipListener {
     }
 
 
-    public void start(String props) throws Exception {
+    public void start(String props, boolean use_additional_data) throws Exception {
 
         channel=new JChannel(props);
         channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
+
+        if(use_additional_data) {
+            HashMap m=new HashMap();
+            m.put("additional_data", "bela".getBytes());
+            channel.down(new Event(Event.CONFIG, m));
+        }
+
         channel.connect("ViewDemo");
         channel.setOpt(Channel.VIEW, Boolean.TRUE);
         new PullPushAdapter(channel, this);
@@ -54,6 +63,7 @@ public class ViewDemo implements MembershipListener {
 
     public static void main(String args[]) {
         ViewDemo t=new ViewDemo();
+        boolean use_additional_data=false;
         String props="UDP(mcast_addr=224.0.0.35;mcast_port=45566;ip_ttl=32;" +
                 "mcast_send_buf_size=150000;mcast_recv_buf_size=80000):" +
                 "PING(timeout=2000;num_initial_members=3):" +
@@ -90,12 +100,16 @@ public class ViewDemo implements MembershipListener {
                 props=args[++i];
                 continue;
             }
+            if("use_additional_data".equals(args[i])) {
+                use_additional_data=new Boolean(args[++i]).booleanValue();
+                continue;
+            }
             help();
             return;
         }
 
         try {
-            t.start(props);
+            t.start(props, use_additional_data);
         }
         catch(Exception e) {
             System.err.println(e);
@@ -103,7 +117,7 @@ public class ViewDemo implements MembershipListener {
     }
 
     static void help() {
-        System.out.println("ViewDemo [-props <properties>");
+        System.out.println("ViewDemo [-props <properties>] [-help] [-use_additional_data <flag>]");
     }
 
 }
