@@ -1,4 +1,4 @@
-// $Id: Configurator.java,v 1.9 2004/10/23 20:57:00 belaban Exp $
+// $Id: Configurator.java,v 1.10 2005/04/23 12:44:06 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -580,7 +580,8 @@ public class Configurator {
                 catch(ClassNotFoundException cnfe) {
                     //try using another class loader
                     try {
-                        loader=this.getClass().getClassLoader();
+                        // loader=this.getClass().getClassLoader();
+                        loader=Thread.currentThread().getContextClassLoader();
                         clazz=loader.loadClass(defaultProtocolName);
                     }
                     catch(Exception ignore) {
@@ -590,7 +591,8 @@ public class Configurator {
                     // try two class loaders, first the same one that
                     // loaded this class, then try the
                     try {
-                        loader=this.getClass().getClassLoader();
+                        // loader=this.getClass().getClassLoader();
+                        loader=Thread.currentThread().getContextClassLoader();
                         if(clazz == null) clazz=loader.loadClass(protocol_name);
                     }
                     catch(Exception ignore) {

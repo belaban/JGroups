@@ -1,4 +1,4 @@
-// $Id: ClassConfigurator.java,v 1.10 2004/10/04 20:43:30 belaban Exp $
+// $Id: ClassConfigurator.java,v 1.11 2005/04/23 12:43:52 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -51,7 +51,8 @@ public class ClassConfigurator {
         //populate the map
         try {
             // make sure we have a class for DocumentBuilderFactory
-            getClass().getClassLoader().loadClass("javax.xml.parsers.DocumentBuilderFactory");
+            // getClass().getClassLoader().loadClass("javax.xml.parsers.DocumentBuilderFactory");
+            Thread.currentThread().getContextClassLoader().loadClass("javax.xml.parsers.DocumentBuilderFactory");
 
             MagicNumberReader reader=new MagicNumberReader();
             
@@ -135,7 +136,8 @@ public class ClassConfigurator {
      */
     public Class get(String clazzname) {
         try {
-            return ClassConfigurator.class.getClassLoader().loadClass(clazzname);
+            // return ClassConfigurator.class.getClassLoader().loadClass(clazzname);
+            return Thread.currentThread().getContextClassLoader().loadClass(clazzname);
         }
         catch(Exception x) {
             if(log.isErrorEnabled()) log.error(Util.getStackTrace(x));
