@@ -1,4 +1,4 @@
-// $Id: LOOPBACK.java,v 1.12 2005/04/20 20:25:46 belaban Exp $
+// $Id: LOOPBACK.java,v 1.13 2005/04/23 12:41:49 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -75,41 +75,43 @@ public class LOOPBACK extends Protocol {
 
         switch(evt.getType()) {
 
-            case Event.MSG:
-                msg=(Message)evt.getArg();
-                rsp=msg.copy();
-                dest_addr=msg.getDest();
-                rsp.setDest(local_addr);
-                rsp.setSrc(dest_addr != null ? dest_addr : local_addr);
-                up(new Event(Event.MSG, rsp));
-                break;
+        case Event.MSG:
+            msg=(Message)evt.getArg();
+            if(msg.getSrc() == null)
+                msg.setSrc(local_addr);
+            rsp=msg.copy();
+            //dest_addr=msg.getDest();
+            //rsp.setDest(local_addr);
+            //rsp.setSrc(dest_addr != null ? dest_addr : local_addr);
+            up(new Event(Event.MSG, rsp));
+            break;
 
-            case Event.TMP_VIEW:
-            case Event.VIEW_CHANGE:
-                synchronized(members) {
-                    members.removeAllElements();
-                    Vector tmpvec=((View)evt.getArg()).getMembers();
-                    for(int i=0; i < tmpvec.size(); i++)
-                        members.addElement(tmpvec.elementAt(i));
-                }
-                break;
+        case Event.TMP_VIEW:
+        case Event.VIEW_CHANGE:
+            synchronized(members) {
+                members.removeAllElements();
+                Vector tmpvec=((View)evt.getArg()).getMembers();
+                for(int i=0; i < tmpvec.size(); i++)
+                    members.addElement(tmpvec.elementAt(i));
+            }
+            break;
 
-            case Event.GET_LOCAL_ADDRESS:   // return local address -> Event(SET_LOCAL_ADDRESS, local)
-                passUp(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
-                break;
+        case Event.GET_LOCAL_ADDRESS:   // return local address -> Event(SET_LOCAL_ADDRESS, local)
+            passUp(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
+            break;
 
-            case Event.CONNECT:
-                group_addr=(String)evt.getArg();
-                passUp(new Event(Event.CONNECT_OK));
-                break;
+        case Event.CONNECT:
+            group_addr=(String)evt.getArg();
+            passUp(new Event(Event.CONNECT_OK));
+            break;
 
-            case Event.DISCONNECT:
-                passUp(new Event(Event.DISCONNECT_OK));
-                break;
+        case Event.DISCONNECT:
+            passUp(new Event(Event.DISCONNECT_OK));
+            break;
 
-            case Event.PERF:
-                passUp(evt);
-                break;
+        case Event.PERF:
+            passUp(evt);
+            break;
         }
     }
 
