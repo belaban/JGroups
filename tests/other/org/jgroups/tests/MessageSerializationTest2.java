@@ -12,7 +12,7 @@ import java.util.LinkedList;
 
 /**
  * @author Bela Ban Feb 12, 2004
- * @version $Id: MessageSerializationTest2.java,v 1.7 2005/04/20 07:35:28 belaban Exp $
+ * @version $Id: MessageSerializationTest2.java,v 1.8 2005/04/23 20:31:19 belaban Exp $
  */
 public class MessageSerializationTest2 {
     Message msg;
@@ -32,9 +32,11 @@ public class MessageSerializationTest2 {
 
 
 
-    public void start(int num, boolean use_serialization, boolean use_streamable) throws Exception {
+    public void start(int num, boolean use_serialization, boolean use_streamable, boolean use_additional_data) throws Exception {
         IpAddress dest=new IpAddress("228.8.8.8", 7500);
         IpAddress src=new IpAddress("127.0.0.1", 5555);
+        if(use_additional_data)
+            src.setAdditionalData("bela".getBytes());
 
         this.num=num;
         System.out.println("-- starting to create " + num + " msgs");
@@ -180,7 +182,7 @@ public class MessageSerializationTest2 {
 
     public static void main(String[] args) {
         int num=10000;
-        boolean use_serialization=true, use_streamable=true;
+        boolean use_serialization=true, use_streamable=true, use_additional_data=false;
 
         for(int i=0; i < args.length; i++) {
             if(args[i].equals("-num")) {
@@ -195,12 +197,16 @@ public class MessageSerializationTest2 {
                 use_streamable=new Boolean(args[++i]).booleanValue();
                 continue;
             }
+            if(args[i].equals("-use_additional_data")) {
+                use_additional_data=true;
+                continue;
+            }
             help();
             return;
         }
 
         try {
-            new MessageSerializationTest2().start(num, use_serialization, use_streamable);
+            new MessageSerializationTest2().start(num, use_serialization, use_streamable, use_additional_data);
         }
         catch(Exception e) {
             e.printStackTrace();
@@ -209,6 +215,7 @@ public class MessageSerializationTest2 {
 
     static void help() {
         System.out.println("MessageSerializationTest2 [-help] [-num <number>] " +
-                           "[-use_serialization <true|false>] [-use_streamable <true|false>]");
+                           "[-use_serialization <true|false>] [-use_streamable <true|false>] " +
+                           "[-use_additional_data]");
     }
 }
