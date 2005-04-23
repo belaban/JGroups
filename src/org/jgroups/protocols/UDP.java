@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.75 2005/04/20 20:38:19 belaban Exp $
+// $Id: UDP.java,v 1.76 2005/04/23 20:39:17 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -913,18 +913,18 @@ public class UDP extends Protocol implements Runnable {
 
 
     void nullAddresses(Message msg, IpAddress dest, IpAddress src) {
+        msg.setDest(null);
         if(!dest.isMulticastAddress()) { // unicast
-            msg.setDest(null);
-            if(src != null && src.getAdditionalData() != null) {
-                msg.setSrc(new IpAddress());
-                ((IpAddress)msg.getSrc()).setAdditionalData(src.getAdditionalData());
+            if(src != null) {
+                msg.setSrc(new IpAddress(src.getPort(), false)); // null the host part, leave the port
+                if(src.getAdditionalData() != null)
+                    ((IpAddress)msg.getSrc()).setAdditionalData(src.getAdditionalData());
             }
             else {
                 msg.setSrc(null);
             }
         }
         else {  // multicast
-            msg.setDest(null); // we know the multicast address, it is the same for all members
             if(src != null) {
                 msg.setSrc(new IpAddress(src.getPort(), false));
                 if(src.getAdditionalData() != null)
@@ -962,9 +962,9 @@ public class UDP extends Protocol implements Runnable {
             byte[] tmp_additional_data=src_addr.getAdditionalData();
             if(src_addr.getIpAddress() == null) {
                 try {msg.setSrc(new IpAddress(sender, src_addr.getPort()));} catch(Throwable t) {}
-                if(tmp_additional_data != null)
-                    ((IpAddress)msg.getSrc()).setAdditionalData(tmp_additional_data);
             }
+            if(tmp_additional_data != null)
+                ((IpAddress)msg.getSrc()).setAdditionalData(tmp_additional_data);
         }
     }
 
