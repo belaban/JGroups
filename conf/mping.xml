@@ -1,0 +1,39 @@
+
+
+<!--
+TCP-based stack with IP multicast-based discovery
+Version: $Id: mping.xml,v 1.1 2005/04/23 11:58:12 belaban Exp $
+Author: Bela Ban
+ -->
+
+<config>
+    <TCP bind_addr="192.168.5.1" 
+         start_port="7800" sock_conn_timeout="500"
+         loopback="true"/>
+    <MPING timeout="4000"
+           bind_to_all_interfaces="true"
+           mcast_addr="228.8.8.8"
+           mcast_port="7500"
+           ip_ttl="8"
+           num_initial_members="2"
+           num_ping_requests="1"/>
+    <MERGE2 max_interval="10000" 
+            min_interval="5000"/>
+    <FD timeout="2000" 
+        max_tries="3"/>
+    <VERIFY_SUSPECT timeout="1500" 
+                    down_thread="false" 
+                    up_thread="false"/>
+    <pbcast.NAKACK gc_lag="50" 
+                   retransmit_timeout="600,1200,2400,4800"
+                   max_xmit_size="60000"/>
+    <pbcast.STABLE stability_delay="1000" 
+                   desired_avg_gossip="20000" 
+                   down_thread="false" 
+                   max_bytes="0" 
+                   up_thread="false"/>
+    <pbcast.GMS print_local_addr="true" 
+                join_timeout="5000" 
+                join_retry_timeout="2000" 
+                shun="true"/>
+</config>
