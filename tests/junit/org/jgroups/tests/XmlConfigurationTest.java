@@ -8,32 +8,26 @@ import org.jgroups.conf.XmlConfigurator;
 import java.io.InputStream;
 
 
-
-public class XmlConfigurationTest extends TestCase
-{
+public class XmlConfigurationTest extends TestCase {
 
     protected Log log=LogFactory.getLog(getClass());
 
 
-    public XmlConfigurationTest(String Name_)
-    {
+    public XmlConfigurationTest(String Name_) {
         super(Name_);
     }
 
 
-
-    public void testBasic()
-    {
-        try
-        {
-	    InputStream default_config = XmlConfigurator.class.getClassLoader().getResourceAsStream("default.xml");
-	    XmlConfigurator conf = XmlConfigurator.getInstance(default_config);
+    public void testBasic() {
+        try {
+            // InputStream default_config = XmlConfigurator.class.getClassLoader().getResourceAsStream("default.xml");
+            InputStream default_config=Thread.currentThread().getContextClassLoader().getResourceAsStream("default.xml");
+            XmlConfigurator conf=XmlConfigurator.getInstance(default_config);
             if(log.isDebugEnabled()) log.debug(conf.getProtocolStackString());
-            assertTrue("Successfully parsed a valid XML configuration file.",true);
+            assertTrue("Successfully parsed a valid XML configuration file.", true);
         }
-        catch ( Exception x )
-        {
-            assertTrue(x.getMessage(),false);
+        catch(Exception x) {
+            assertTrue(x.getMessage(), false);
         }
     }
 
@@ -54,9 +48,8 @@ public class XmlConfigurationTest extends TestCase
     */
 
     
-    public static void main(String[] args)
-    {
-        String[] testCaseName = {XmlConfigurationTest.class.getName()};
+    public static void main(String[] args) {
+        String[] testCaseName={XmlConfigurationTest.class.getName()};
         junit.swingui.TestRunner.main(testCaseName);
     } //public static void main(String[] args)
 

@@ -1,4 +1,4 @@
-// $Id: MagicNumberReader.java,v 1.7 2004/09/23 22:31:22 belaban Exp $
+// $Id: MagicNumberReader.java,v 1.8 2005/04/23 12:44:05 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -41,22 +41,23 @@ public class MagicNumberReader {
      */
     public ClassMap[] readMagicNumberMapping() {
         try {
-            InputStream stream=getClass().getClassLoader().getResourceAsStream(mMagicNumberFile);
-            // try to load the map from file even if it is not a Resource in the class path 
+            // InputStream stream=getClass().getClassLoader().getResourceAsStream(mMagicNumberFile);
+            InputStream stream=Thread.currentThread().getContextClassLoader().getResourceAsStream(mMagicNumberFile);
+            // try to load the map from file even if it is not a Resource in the class path
             if(stream == null) {
                 try {
-                    if(log.isInfoEnabled()) log.info("Could not read " + mMagicNumberFile + " as Resource from the CLASSPATH, will try to read it from file.");
+                    if(log.isTraceEnabled())
+                        log.trace("Could not read " + mMagicNumberFile + " as Resource from the CLASSPATH, will try to read it from file.");
                     stream=new FileInputStream(mMagicNumberFile);
-                    if(stream != null && log.isInfoEnabled())
-                        log.info("Magic number File found at '" + mMagicNumberFile + '\'');
+                    if(stream != null && log.isTraceEnabled())
+                        log.trace("Magic number File found at '" + mMagicNumberFile + '\'');
                 }
                 catch(FileNotFoundException fnfe) {
                     if(log.isWarnEnabled())
-                        log.warn("Failed reading - '" +
-                                 mMagicNumberFile + "' is not found, got error '" + fnfe.getLocalizedMessage() + "'. Please make sure it is in the CLASSPATH or in the Specified location. Will " +
-                                 "continue, but marshalling will be slower");
+                        log.warn("Failed reading - '" + mMagicNumberFile + "' is not found, got error '" +
+                                 fnfe.getLocalizedMessage() + "'. Please make sure it is in the CLASSPATH or in the " +
+                                 "specified location. Will continue, but marshalling will be slower");
                 }
-
             }
 
             if(stream == null) {
