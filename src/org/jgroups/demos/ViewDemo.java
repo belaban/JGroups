@@ -1,4 +1,4 @@
-// $Id: ViewDemo.java,v 1.6 2005/04/23 14:29:21 belaban Exp $
+// $Id: ViewDemo.java,v 1.7 2005/04/23 14:36:40 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -100,7 +100,7 @@ public class ViewDemo implements MembershipListener {
                 props=args[++i];
                 continue;
             }
-            if("use_additional_data".equals(args[i])) {
+            if("-use_additional_data".equals(args[i])) {
                 use_additional_data=new Boolean(args[++i]).booleanValue();
                 continue;
             }
