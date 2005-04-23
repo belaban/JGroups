@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.152 2005/04/20 20:38:18 belaban Exp $
+Revision: $Id: history.txt,v 1.153 2005/04/23 12:46:58 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -27,6 +27,10 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
 Version 2.2.8
 -------------
+
+- Replaced getClass().getClassLoader() with Thread.currentThread().getContextClassLoader().
+  JIRA issue http://jira.jboss.com/jira/browse/JGRP-34
+  (bela April 23 2005)
 
 - UDP: synchronization around message marshalling and sending, non-sync could lead to intermingled
   byte arrays at the receiver, due to concurrent access to out_stream
