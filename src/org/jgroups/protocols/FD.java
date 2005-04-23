@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.20 2005/04/23 14:29:33 belaban Exp $
+// $Id: FD.java,v 1.21 2005/04/23 20:41:39 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -35,7 +35,7 @@ import java.util.Vector;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Revision: 1.20 $
+ * @version $Revision: 1.21 $
  */
 public class FD extends Protocol {
     Address               ping_dest=null;
@@ -186,7 +186,7 @@ public class FD extends Protocol {
             switch(hdr.type) {
             case FdHeader.HEARTBEAT:                       // heartbeat request; send heartbeat ack
                 Address hb_sender=msg.getSrc();
-                Message hb_ack=new Message(msg.getSrc(), null, null);
+                Message hb_ack=new Message(hb_sender, null, null);
                 FdHeader tmp_hdr=new FdHeader(FdHeader.HEARTBEAT_ACK);
 
                 // 1.  Send an ack

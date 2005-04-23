@@ -3,13 +3,13 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.153 2005/04/23 12:46:58 belaban Exp $
+Revision: $Id: history.txt,v 1.155 2005/04/23 20:43:28 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
 
 bba         = Bela Ban, bba@cs.cornell.edu
-bela        = Bela Ban, bela@nms.fnc.fujitsu.com
+bela        = Bela Ban, belaban@yahoo.com
 i-scream    = Gianluca Collot, gianlucac@tin.it
 igeorg      = John Georgiadis, i.georgiadis@doc.ic.ac.uk
 jmenard     = Jim Menard (jimm@io.com)
@@ -27,6 +27,10 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
 Version 2.2.8
 -------------
+
+- UDP: fixed incorrect marshalling of IpAddresses with additional_data
+  (http://jira.jboss.com/jira/browse/JGRP-63)
+  (bela April 23 2005)
 
 - Replaced getClass().getClassLoader() with Thread.currentThread().getContextClassLoader().
   JIRA issue http://jira.jboss.com/jira/browse/JGRP-34
