@@ -3,13 +3,13 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.155 2005/04/23 20:43:28 belaban Exp $
+Revision: $Id: history.txt,v 1.154 2005/04/23 20:43:09 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
 
 bba         = Bela Ban, bba@cs.cornell.edu
-bela        = Bela Ban, belaban@yahoo.com
+bela        = Bela Ban, bela@nms.fnc.fujitsu.com
 i-scream    = Gianluca Collot, gianlucac@tin.it
 igeorg      = John Georgiadis, i.georgiadis@doc.ic.ac.uk
 jmenard     = Jim Menard (jimm@io.com)
