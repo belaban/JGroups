@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.18 2005/04/20 20:25:46 belaban Exp $
+// $Id: FD.java,v 1.19 2005/04/23 13:41:47 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -35,7 +35,7 @@ import java.util.Vector;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Revision: 1.18 $
+ * @version $Revision: 1.19 $
  */
 public class FD extends Protocol {
     Address               ping_dest=null;
@@ -222,7 +222,7 @@ public class FD extends Protocol {
 
                     case FdHeader.SUSPECT:
                         if(hdr.mbrs != null) {
-                            if(log.isDebugEnabled()) log.debug("[SUSPECT] suspect hdr is " + hdr);
+                            if(log.isTraceEnabled()) log.trace("[SUSPECT] suspect hdr is " + hdr);
                             for(int i=0; i < hdr.mbrs.size(); i++) {
                                 Address m=(Address)hdr.mbrs.elementAt(i);
                                 if(local_addr != null && m.equals(local_addr)) {
