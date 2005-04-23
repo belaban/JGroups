@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.34 2005/04/20 10:32:35 belaban Exp $
+// $Id: Util.java,v 1.35 2005/04/23 14:19:21 belaban Exp $
 
 package org.jgroups.util;
 
@@ -94,51 +94,29 @@ public class Util {
 
     public static void writeAddress(Address addr, DataOutputStream out) throws IOException {
         if(addr == null) {
-            out.write(0);
+            out.writeBoolean(false);
             return;
         }
 
-        out.write(1);
+        out.writeBoolean(true);
         if(addr instanceof IpAddress) {
             // regular case, we don't need to include class information about the type of Address, e.g. JmsAddress
-            out.write(1);
+            out.writeBoolean(true);
             addr.writeTo(out);
         }
         else {
-            out.write(0);
+            out.writeBoolean(false);
             writeOtherAddress(addr, out);
         }
     }
 
 
 
-
-    private static void writeOtherAddress(Address addr, DataOutputStream out) throws IOException {
-        ClassConfigurator conf=null;
-        try {conf=ClassConfigurator.getInstance(false);} catch(Exception e) {}
-        int magic_number=conf != null? conf.getMagicNumber(addr.getClass()) : -1;
-
-        // write the class info
-        if(magic_number == -1) {
-            out.write(0);
-            out.writeUTF(addr.getClass().getName());
-        }
-        else {
-            out.write(1);
-            out.writeInt(magic_number);
-        }
-
-        // write the data itself
-        addr.writeTo(out);
-    }
-
     public static Address readAddress(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
         Address addr=null;
-        int b=in.read();
-        if(b == 0)
+        if(in.readBoolean() == false)
             return null;
-        b=in.read();
-        if(b == 1) {
+        if(in.readBoolean()) {
             addr=new IpAddress();
             addr.readFrom(in);
         }
@@ -167,6 +145,25 @@ public class Util {
         addr=(Address)cl.newInstance();
         addr.readFrom(in);
         return addr;
+    }
+
+    private static void writeOtherAddress(Address addr, DataOutputStream out) throws IOException {
+        ClassConfigurator conf=null;
+        try {conf=ClassConfigurator.getInstance(false);} catch(Exception e) {}
+        int magic_number=conf != null? conf.getMagicNumber(addr.getClass()) : -1;
+
+        // write the class info
+        if(magic_number == -1) {
+            out.write(0);
+            out.writeUTF(addr.getClass().getName());
+        }
+        else {
+            out.write(1);
+            out.writeInt(magic_number);
+        }
+
+        // write the data itself
+        addr.writeTo(out);
     }
 
 
