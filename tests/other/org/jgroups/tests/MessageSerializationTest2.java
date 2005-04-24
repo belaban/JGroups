@@ -1,6 +1,7 @@
 package org.jgroups.tests;
 
 import org.jgroups.Message;
+import org.jgroups.protocols.*;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.List;
 import org.jgroups.util.Buffer;
@@ -12,7 +13,7 @@ import java.util.LinkedList;
 
 /**
  * @author Bela Ban Feb 12, 2004
- * @version $Id: MessageSerializationTest2.java,v 1.8 2005/04/23 20:31:19 belaban Exp $
+ * @version $Id: MessageSerializationTest2.java,v 1.9 2005/04/24 11:11:43 belaban Exp $
  */
 public class MessageSerializationTest2 {
     Message msg;
@@ -32,7 +33,8 @@ public class MessageSerializationTest2 {
 
 
 
-    public void start(int num, boolean use_serialization, boolean use_streamable, boolean use_additional_data) throws Exception {
+    public void start(int num, boolean use_serialization, boolean use_streamable,
+                      boolean use_additional_data, boolean add_headers) throws Exception {
         IpAddress dest=new IpAddress("228.8.8.8", 7500);
         IpAddress src=new IpAddress("127.0.0.1", 5555);
         if(use_additional_data)
@@ -43,6 +45,9 @@ public class MessageSerializationTest2 {
         start=System.currentTimeMillis();
         for(int i=1; i <= num; i++) {
             msg=new Message(dest, src, ("Hello world from message #" +i).getBytes());
+            if(add_headers) {
+                addHeaders(msg);
+            }
             my_list.add(msg);
         }
         stop=System.currentTimeMillis();
@@ -61,6 +66,19 @@ public class MessageSerializationTest2 {
 
         if(l_ser != null && l_stream != null)
             printDiffs(l_ser, l_stream);
+    }
+
+
+     void addHeaders(Message msg) {
+        msg.putHeader("UDP", new UdpHeader("MyGroup"));
+        msg.putHeader("PING", new PingHeader(PingHeader.GET_MBRS_REQ, null));
+        msg.putHeader("FD_SOCK", new FD_SOCK.FdHeader());
+        msg.putHeader("VERIFY_SUSPECT", new VERIFY_SUSPECT.VerifyHeader());
+        msg.putHeader("STABLE", new org.jgroups.protocols.pbcast.STABLE.StableHeader());
+        msg.putHeader("NAKACK", new org.jgroups.protocols.pbcast.NakAckHeader());
+        msg.putHeader("UNICAST", new UNICAST.UnicastHeader());
+        msg.putHeader("FRAG", new FragHeader());
+        msg.putHeader("GMS", new org.jgroups.protocols.pbcast.GMS.GmsHeader());
     }
 
     private void printDiffs(LinkedList l_ser, LinkedList l_stream) {
@@ -182,7 +200,7 @@ public class MessageSerializationTest2 {
 
     public static void main(String[] args) {
         int num=10000;
-        boolean use_serialization=true, use_streamable=true, use_additional_data=false;
+        boolean use_serialization=true, use_streamable=true, use_additional_data=false, add_headers=false;
 
         for(int i=0; i < args.length; i++) {
             if(args[i].equals("-num")) {
@@ -201,12 +219,16 @@ public class MessageSerializationTest2 {
                 use_additional_data=true;
                 continue;
             }
+            if(args[i].equals("-add_headers")) {
+                add_headers=true;
+                continue;
+            }
             help();
             return;
         }
 
         try {
-            new MessageSerializationTest2().start(num, use_serialization, use_streamable, use_additional_data);
+            new MessageSerializationTest2().start(num, use_serialization, use_streamable, use_additional_data, add_headers);
         }
         catch(Exception e) {
             e.printStackTrace();
@@ -216,6 +238,6 @@ public class MessageSerializationTest2 {
     static void help() {
         System.out.println("MessageSerializationTest2 [-help] [-num <number>] " +
                            "[-use_serialization <true|false>] [-use_streamable <true|false>] " +
-                           "[-use_additional_data]");
+                           "[-use_additional_data] [-add_headers]");
     }
 }

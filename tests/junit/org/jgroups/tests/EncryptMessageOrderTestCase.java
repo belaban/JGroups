@@ -23,9 +23,9 @@ import java.util.Vector;
  * <li><code>-debug</code> - pop-up protocol debugger;
  * <li><code>-cummulative</code> - debugger shows cummulative messages.
  * </ul>
- * $Id: EncryptMessageOrderTest.java,v 1.1 2005/04/08 08:11:51 steview Exp $
+ * $Id: EncryptMessageOrderTestCase.java,v 1.1 2005/04/24 11:11:43 belaban Exp $
  */
-public class EncryptMessageOrderTest extends TestCase {
+public class EncryptMessageOrderTestCase extends TestCase {
 
  
 	public static boolean USE_DEBUGGER=false;
@@ -51,7 +51,7 @@ public class EncryptMessageOrderTest extends TestCase {
     /**
      * Constructor to create test case.
      */
-    public EncryptMessageOrderTest(String string) {
+    public EncryptMessageOrderTestCase(String string) {
         super(string);
     }
 
@@ -403,7 +403,7 @@ public class EncryptMessageOrderTest extends TestCase {
             }
         }
 
-        junit.textui.TestRunner.run(EncryptMessageOrderTest.class);
+        junit.textui.TestRunner.run(EncryptMessageOrderTestCase.class);
     }
 
     static void help() {
