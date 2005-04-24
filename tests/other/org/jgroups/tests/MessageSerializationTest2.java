@@ -14,7 +14,7 @@ import java.util.LinkedList;
 
 /**
  * @author Bela Ban Feb 12, 2004
- * @version $Id: MessageSerializationTest2.java,v 1.11 2005/04/24 11:47:28 belaban Exp $
+ * @version $Id: MessageSerializationTest2.java,v 1.10 2005/04/24 11:46:03 belaban Exp $
  */
 public class MessageSerializationTest2 {
     Message msg;
@@ -161,6 +161,7 @@ public class MessageSerializationTest2 {
         for(Enumeration en=my_list.elements(); en.hasMoreElements();) {
             Message tmp=(Message)en.nextElement();
             tmp.writeTo(dos);
+            System.out.println("size=" + msg.size());
         }
 
         dos.close();
