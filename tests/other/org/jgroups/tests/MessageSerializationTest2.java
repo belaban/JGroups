@@ -1,6 +1,7 @@
 package org.jgroups.tests;
 
 import org.jgroups.Message;
+import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.*;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.List;
@@ -13,7 +14,7 @@ import java.util.LinkedList;
 
 /**
  * @author Bela Ban Feb 12, 2004
- * @version $Id: MessageSerializationTest2.java,v 1.9 2005/04/24 11:11:43 belaban Exp $
+ * @version $Id: MessageSerializationTest2.java,v 1.11 2005/04/24 11:47:28 belaban Exp $
  */
 public class MessageSerializationTest2 {
     Message msg;
@@ -39,6 +40,8 @@ public class MessageSerializationTest2 {
         IpAddress src=new IpAddress("127.0.0.1", 5555);
         if(use_additional_data)
             src.setAdditionalData("bela".getBytes());
+
+        ClassConfigurator.getInstance(true);
 
         this.num=num;
         System.out.println("-- starting to create " + num + " msgs");
@@ -200,7 +203,7 @@ public class MessageSerializationTest2 {
 
     public static void main(String[] args) {
         int num=10000;
-        boolean use_serialization=true, use_streamable=true, use_additional_data=false, add_headers=false;
+        boolean use_serialization=true, use_streamable=true, use_additional_data=false, add_headers=true;
 
         for(int i=0; i < args.length; i++) {
             if(args[i].equals("-num")) {
@@ -216,11 +219,11 @@ public class MessageSerializationTest2 {
                 continue;
             }
             if(args[i].equals("-use_additional_data")) {
-                use_additional_data=true;
+                use_additional_data=new Boolean(args[++i]).booleanValue();
                 continue;
             }
             if(args[i].equals("-add_headers")) {
-                add_headers=true;
+                add_headers=new Boolean(args[++i]).booleanValue();
                 continue;
             }
             help();
@@ -238,6 +241,6 @@ public class MessageSerializationTest2 {
     static void help() {
         System.out.println("MessageSerializationTest2 [-help] [-num <number>] " +
                            "[-use_serialization <true|false>] [-use_streamable <true|false>] " +
-                           "[-use_additional_data] [-add_headers]");
+                           "[-use_additional_data <true|false>] [-add_headers <true|false>]");
     }
 }

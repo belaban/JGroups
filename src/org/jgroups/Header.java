@@ -1,4 +1,4 @@
-// $Id: Header.java,v 1.6 2004/10/04 20:43:36 belaban Exp $
+// $Id: Header.java,v 1.7 2005/04/24 11:45:40 belaban Exp $
 
 package org.jgroups;
 
@@ -10,7 +10,7 @@ import java.io.Externalizable;
  @author Bela Ban
  */
 public abstract class Header implements Externalizable {
-    public static final long HDR_OVERHEAD=255; // estimated size of a header (used to estimate the size of the entire msg)
+    public static final long HDR_OVERHEAD=100; // estimated size of a header (used to estimate the size of the entire msg)
 
 
     public Header() {
