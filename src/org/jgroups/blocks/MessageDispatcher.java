@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.37 2005/04/25 15:10:13 belaban Exp $
+// $Id: MessageDispatcher.java,v 1.38 2005/04/25 15:36:04 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -235,9 +235,7 @@ public class MessageDispatcher implements RequestHandler {
     private void setMembers(Vector new_mbrs) {
         if(new_mbrs != null) {
             members.removeAllElements();
-            for(int i=0; i < new_mbrs.size(); i++) {
-                members.addElement(new_mbrs.elementAt(i));
-            }
+            members.addAll(new_mbrs);
         }
     }
 
@@ -641,9 +639,7 @@ public class MessageDispatcher implements RequestHandler {
 
                     if(new_mbrs != null) {
                         members.removeAllElements();
-                        for(int i=0; i < new_mbrs.size(); i++) {
-                            members.addElement(new_mbrs.elementAt(i));
-                        }
+                        members.addAll(new_mbrs);
                     }
 
                     if(membership_listener != null) {
