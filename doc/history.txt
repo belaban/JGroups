@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.156 2005/04/25 07:16:14 belaban Exp $
+Revision: $Id: history.txt,v 1.157 2005/04/25 10:38:45 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -27,6 +27,9 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
 Version 2.2.8 RC1
 -----------------
+
+- Removed xerces JARs
+  (bela April 25 2005)
 
 - UDP: fixed incorrect marshalling of IpAddresses with additional_data
   (http://jira.jboss.com/jira/browse/JGRP-63)
