@@ -1,4 +1,4 @@
-// $Id: Promise.java,v 1.8 2004/12/31 14:10:40 belaban Exp $
+// $Id: Promise.java,v 1.9 2005/04/25 08:35:44 belaban Exp $
 
 package org.jgroups.util;
 
@@ -9,6 +9,7 @@ import org.jgroups.TimeoutException;
  * Allows a thread to submit an asynchronous request and to wait for the result. The caller may choose to check
  * for the result at a later time, or immediately and it may block or not. Both the caller and responder have to
  * know the promise.
+ * @author Bela Ban
  */
 public class Promise {
     Object result=null;
