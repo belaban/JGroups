@@ -1,4 +1,4 @@
-// $Id: FCTest.java,v 1.3 2005/01/28 20:52:04 belaban Exp $
+// $Id: FCTest.java,v 1.4 2005/04/25 08:30:09 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -27,8 +27,10 @@ public class FCTest extends TestCase {
     Vector members;
     View v;
     Simulator s;
+
     final int NUM=10000;
     final int SIZE=1000; // bytes
+    final int NUM_MSGS=NUM * 10;
 
 
     public FCTest(String name) {
@@ -66,7 +68,7 @@ public class FCTest extends TestCase {
         int num_received=0;
         Receiver r=new Receiver();
         s.setReceiver(r);
-        for(int i=0; i < NUM; i++) {
+        for(int i=0; i < NUM_MSGS; i++) {
             Message msg=new Message(null, null, createPayload(SIZE));
             Event evt=new Event(Event.MSG, msg);
             s.send(evt);

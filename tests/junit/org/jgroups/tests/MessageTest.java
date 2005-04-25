@@ -1,4 +1,4 @@
-// $Id: MessageTest.java,v 1.9 2004/03/01 03:03:47 belaban Exp $
+// $Id: MessageTest.java,v 1.10 2005/04/25 08:27:42 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -22,15 +22,6 @@ public class MessageTest extends TestCase {
 
     public MessageTest(String name) {
         super(name);
-    }
-
-
-    public void setUp() {
-
-    }
-
-    public void tearDown() {
-        
     }
 
  
