@@ -1,4 +1,4 @@
-// $Id: RouterStub.java,v 1.10 2004/12/13 15:30:06 belaban Exp $
+// $Id: RouterStub.java,v 1.11 2005/04/25 09:07:12 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -311,7 +311,7 @@ public class RouterStub {
         }
         catch(Exception e) {
             if (connected) {
-                if(log.isErrorEnabled()) log.error("failed receiving message", e);
+                if(log.isTraceEnabled()) log.trace("failed receiving message", e);
             }
             connected=false;
             return null;
