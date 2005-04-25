@@ -1,4 +1,4 @@
-// $Id: Deadlock2Test.java,v 1.3 2005/04/25 10:37:58 belaban Exp $
+// $Id: Deadlock2Test.java,v 1.4 2005/04/25 15:05:47 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -21,7 +21,7 @@ import java.util.Vector;
  * @author John Giorgiadis
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
  * *
- * @version $Revision: 1.3 $
+ * @version $Revision: 1.4 $
  */
 public class Deadlock2Test extends TestCase {
 
@@ -107,7 +107,7 @@ public class Deadlock2Test extends TestCase {
             Vector dests = new Vector();
             dests.add(localAddress2);
             log("calling outerMethod() on " + localAddress2);
-            Object retval = disp1.callRemoteMethod(localAddress2, call, GroupRequest.GET_ALL, 5000);
+            Object retval = disp1.callRemoteMethod(localAddress2, call, GroupRequest.GET_ALL, 0);
             log("results of outerMethod(): " + retval);
         }
         finally {
@@ -151,7 +151,7 @@ public class Deadlock2Test extends TestCase {
         }
 
         public String outerMethod() {
-            log("outerMethod() received, calling innerMethod() on all members");
+            log("**** outerMethod() received, calling innerMethod() on all members");
             MethodCall call = new MethodCall("innerMethod", new Object[0], new Class[0]);
             // RspList rspList = disp.callRemoteMethods(null, call, GroupRequest.GET_ALL, 5000);
             RspList rspList = disp.callRemoteMethods(null, call, GroupRequest.GET_ALL, 0);
@@ -170,7 +170,7 @@ public class Deadlock2Test extends TestCase {
         }
 
         public String innerMethod() {
-            log("innerMethod() received, returning result");
+            log("**** innerMethod() received, returning result");
             return "innerMethod";
         }
 	}
