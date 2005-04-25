@@ -1,4 +1,4 @@
-// $Id: RouterTest.java,v 1.7 2005/04/22 06:57:20 belaban Exp $
+// $Id: RouterTest.java,v 1.8 2005/04/25 08:25:49 belaban Exp $
 
 package org.jgroups.tests.stack;
 
@@ -28,7 +28,7 @@ import java.util.Random;
  * may timeout.
  *
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Revision: 1.7 $
+ * @version $Revision: 1.8 $
  * @since 2.2.1
  */
 public class RouterTest extends TestCase {
@@ -545,6 +545,8 @@ public class RouterTest extends TestCase {
                         dosOne.writeInt(buffer.length);
                         dosOne.write(buffer, 0, buffer.length);
                         dosOne.flush();
+                        if(i % 10000 == 0)
+                            System.out.println("--sent " + i);
                     }
                     catch(Exception e) {
                         // this fails the test
@@ -567,6 +569,8 @@ public class RouterTest extends TestCase {
                         int index=((Integer)msg.getObject()).intValue();
                         received[index]=true;
                         cnt++;
+                        if(cnt % 10000 == 0)
+                            System.out.println("-- received " + cnt);
                     }
                     catch(Exception e) {
                         // this fails the test
