@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.36 2005/01/20 01:58:32 ovidiuf Exp $
+// $Id: MessageDispatcher.java,v 1.37 2005/04/25 15:10:13 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -495,7 +495,6 @@ public class MessageDispatcher implements RequestHandler {
             return null;
         }
 
-
         rsp_list=_req.getResults();
 
         if(rsp_list.size() == 0) {
@@ -716,7 +715,7 @@ public class MessageDispatcher implements RequestHandler {
                     }
                 }
             });
-            upProcessingThread.setName("MessageDispatcher thread " + upProcessingThread.hashCode());
+            // upProcessingThread.setName("MessageDispatcher thread " + upProcessingThread.hashCode());
             upProcessingThread.setDaemon(true);
             upProcessingThread.start();
         }
