@@ -1,4 +1,4 @@
-// $Id: Deadlock2Test.java,v 1.5 2005/04/25 15:13:51 belaban Exp $
+// $Id: Deadlock2Test.java,v 1.6 2005/04/25 15:23:04 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -21,7 +21,7 @@ import java.util.Vector;
  * @author John Giorgiadis
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
  * *
- * @version $Revision: 1.5 $
+ * @version $Revision: 1.6 $
  */
 public class Deadlock2Test extends TestCase {
 
@@ -109,6 +109,35 @@ public class Deadlock2Test extends TestCase {
             log("calling outerMethod() on " + localAddress2);
             Object retval = disp1.callRemoteMethod(localAddress2, call, GroupRequest.GET_ALL, 0);
             log("results of outerMethod(): " + retval);
+        }
+        finally {
+            c2.close();
+            c1.close();
+        }
+    }
+
+
+    public void testTwoChannelsWithInitialMulticast() throws Exception {
+        ServerObject obj1, obj2 = null;
+
+        JChannel c1 = new JChannel();
+        obj1 = new ServerObject("obj1");
+        RpcDispatcher disp1=new RpcDispatcher(c1, null, null, obj1, DEADLOCK_DETECTION);
+        obj1.setRpcDispatcher(disp1);
+        c1.connect(name);
+
+        JChannel c2 = new JChannel();
+        obj2 = new ServerObject("obj2");
+        RpcDispatcher disp2=new RpcDispatcher(c2, null, null, obj2, DEADLOCK_DETECTION);
+        obj2.setRpcDispatcher(disp2);
+        c2.connect(name);
+
+        try {
+            // call a point-to-point method on Member 2 that triggers a nested distributed RPC
+            MethodCall call = new MethodCall("outerMethod", new Object[0], new Class[0]);
+            log("calling outerMethod() on all members");
+            RspList rsps = disp1.callRemoteMethods(null, call, GroupRequest.GET_ALL, 0);
+            log("results of outerMethod():\n" + rsps);
         }
         finally {
             c2.close();
