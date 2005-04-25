@@ -1,4 +1,4 @@
-// $Id: Deadlock2Test.java,v 1.4 2005/04/25 15:05:47 belaban Exp $
+// $Id: Deadlock2Test.java,v 1.5 2005/04/25 15:13:51 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -21,7 +21,7 @@ import java.util.Vector;
  * @author John Giorgiadis
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
  * *
- * @version $Revision: 1.4 $
+ * @version $Revision: 1.5 $
  */
 public class Deadlock2Test extends TestCase {
 
