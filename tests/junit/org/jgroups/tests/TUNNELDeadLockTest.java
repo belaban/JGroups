@@ -1,4 +1,4 @@
-// $Id: TUNNELDeadLockTest.java,v 1.5 2004/07/05 14:15:04 belaban Exp $
+// $Id: TUNNELDeadLockTest.java,v 1.6 2005/04/25 08:55:36 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -10,6 +10,7 @@ import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.TimeoutException;
 import org.jgroups.stack.Router;
+import org.jgroups.stack.GossipRouter;
 import org.jgroups.util.Promise;
 
 import java.io.DataInputStream;
@@ -22,7 +23,7 @@ import java.net.Socket;
  * under heavy load.
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
- * @version $Revision: 1.5 $
+ * @version $Revision: 1.6 $
  * @see TUNNELDeadLockTest#testStress
  */
 public class TUNNELDeadLockTest extends TestCase {
@@ -38,6 +39,8 @@ public class TUNNELDeadLockTest extends TestCase {
     // the time (in ms) the main thread waits for all the messages to arrive,
     // before declaring the test failed.
     private int mainTimeout=60000;
+
+
 
 
     public TUNNELDeadLockTest(String name) {
@@ -68,8 +71,16 @@ public class TUNNELDeadLockTest extends TestCase {
 
 
     private String getTUNNELProps(int routerPort) {
-        return "TUNNEL(router_host=127.0.0.1;router_port=" + routerPort + ')';
+        String props;
 
+        props="TUNNEL(router_host=127.0.0.1;router_port=" + routerPort + "):" +
+                "PING(timeout=3000;gossip_refresh=10000;num_initial_members=3;" +
+                "gossip_host=127.0.0.1;gossip_port=" + routerPort + "):" +
+                "FD_SOCK:" +
+                "pbcast.NAKACK(gc_lag=100;retransmit_timeout=600,1200,2400,4800):" +
+                "pbcast.STABLE(stability_delay=1000;desired_avg_gossip=20000;down_thread=false;max_bytes=0;up_thread=false):" +
+                "pbcast.GMS(print_local_addr=true;join_timeout=5000;join_retry_timeout=2000;shun=true)";
+        return props;
     }
 
     /**
@@ -100,6 +111,8 @@ public class TUNNELDeadLockTest extends TestCase {
                         Object o=channel.receive(10000);
                         if(o instanceof Message) {
                             receivedCnt++;
+                            if(receivedCnt % 5000 == 0)
+                                System.out.println("-- received " + receivedCnt);
                             if(receivedCnt == msgCount) {
                                 // let the main thread know I got all msgs
                                 promise.setResult(new Object());
@@ -125,6 +138,8 @@ public class TUNNELDeadLockTest extends TestCase {
                 try {
                     for(int i=0; i < msgCount; i++) {
                         channel.send(null, null, new byte[payloadSize]);
+                        if(i % 5000 == 0)
+                            System.out.println("-- sent " + i);
                     }
                 }
                 catch(Exception e) {
@@ -179,11 +194,11 @@ public class TUNNELDeadLockTest extends TestCase {
         Thread routerThread=new Thread(new Runnable() {
             public void run() {
                 try {
-                    new Router(routerPort).start();
+                    new GossipRouter(routerPort).start();
+                    System.out.println("started GossipRouter on port " + routerPort);
                 }
                 catch(Exception e) {
-                    System.err.println("Failed to start the router " +
-                            "on port " + routerPort);
+                    System.err.println("Failed to start the router " + "on port " + routerPort);
                     e.printStackTrace();
                 }
             }
@@ -201,7 +216,7 @@ public class TUNNELDeadLockTest extends TestCase {
             }
             catch(Exception e) {
                 lastConnectException=e;
-                Thread.currentThread().sleep(1000);
+                Thread.sleep(1000);
                 crtms=System.currentTimeMillis();
                 continue;
             }
