@@ -3,13 +3,13 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.154 2005/04/23 20:43:09 belaban Exp $
+Revision: $Id: history.txt,v 1.156 2005/04/25 07:16:14 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
 
 bba         = Bela Ban, bba@cs.cornell.edu
-bela        = Bela Ban, bela@nms.fnc.fujitsu.com
+bela        = Bela Ban, belaban@yahoo.com
 i-scream    = Gianluca Collot, gianlucac@tin.it
 igeorg      = John Georgiadis, i.georgiadis@doc.ic.ac.uk
 jmenard     = Jim Menard (jimm@io.com)
@@ -25,8 +25,8 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
 
 
-Version 2.2.8
--------------
+Version 2.2.8 RC1
+-----------------
 
 - UDP: fixed incorrect marshalling of IpAddresses with additional_data
   (http://jira.jboss.com/jira/browse/JGRP-63)
