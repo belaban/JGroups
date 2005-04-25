@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.16 2005/04/21 15:02:10 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.17 2005/04/25 10:37:22 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -236,8 +236,8 @@ public class RequestCorrelator {
      * the request data
      *
      * @param coll A response collector (usually the object that invokes
-     * this method). Its methods <code>ReceiveResponse</code> and
-     * <code>Suspect</code> will be invoked when a message has been received
+     * this method). Its methods <code>receiveResponse()</code> and
+     * <code>suspect()</code> will be invoked when a message has been received
      * or a member is suspected, respectively.
      */
     public void sendRequest(long id, List dest_mbrs, Message msg, RspCollector coll) {
@@ -615,7 +615,7 @@ public class RequestCorrelator {
             retval = request_handler.handle(req);
         }
         catch(Throwable t) {
-            if(log.isErrorEnabled()) log.error("error invoking method, exception=" + t.toString());
+            if(log.isErrorEnabled()) log.error("error invoking method", t);
             retval=t;
         }
 
@@ -623,7 +623,7 @@ public class RequestCorrelator {
             return;
 
         if (transport == null) {
-            if(log.isErrorEnabled()) log.error("failure sending " + "response; no transport available");
+            if(log.isErrorEnabled()) log.error("failure sending response; no transport available");
             return;
         }
 
