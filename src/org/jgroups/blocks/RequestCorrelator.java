@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.17 2005/04/25 10:37:22 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.18 2005/04/25 15:14:18 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -73,9 +73,9 @@ public class RequestCorrelator {
 
     /**
      * This field is used only if deadlock detection is enabled.
-     * It sets the calling stack for to that for the currently running request
+     * It sets the calling stack to the currently running request
      */
-    protected final CallStackSetter call_stack_setter=null;
+    protected CallStackSetter call_stack_setter=null;
 
     /** Process items on the queue concurrently (Scheduler). The default is to wait until the processing of an item
      * has completed before fetching the next item from the queue. Note that setting this to true
@@ -347,8 +347,10 @@ public class RequestCorrelator {
     void startScheduler() {
         if(scheduler == null) {
             scheduler=new Scheduler();
-            if(call_stack_setter != null)
+            if(deadlock_detection && call_stack_setter == null) {
+                call_stack_setter=new CallStackSetter();
                 scheduler.setListener(call_stack_setter);
+            }
             if(concurrent_processing)
                 scheduler.setConcurrentProcessing(concurrent_processing);
             scheduler.start();
@@ -448,9 +450,9 @@ public class RequestCorrelator {
 
         hdr=(Header)tmpHdr;
         if(hdr.corrName == null || !hdr.corrName.equals(name)) {
-            if(log.isDebugEnabled()) {
-                log.debug("name of request correlator header (" +
-                        hdr.corrName + ") is different from ours (" + name + "). Msg not accepted, passed up");
+            if(log.isTraceEnabled()) {
+                log.trace("name of request correlator header (" +
+                          hdr.corrName + ") is different from ours (" + name + "). Msg not accepted, passed up");
             }
             return (true);
         }
@@ -459,15 +461,15 @@ public class RequestCorrelator {
         // request (was addressed to other members)
         dests=hdr.dest_mbrs;
         if(dests != null && local_addr != null && !dests.contains(local_addr)) {
-            if(log.isDebugEnabled()) {
-                log.debug("discarded request from " + msg.getSrc() +
-                        " as we are not part of destination list (local_addr=" + local_addr + ", hdr=" + hdr + ')');
+            if(log.isTraceEnabled()) {
+                log.trace("discarded request from " + msg.getSrc() +
+                          " as we are not part of destination list (local_addr=" + local_addr + ", hdr=" + hdr + ')');
             }
             return false;
         }
 
         if(log.isTraceEnabled()) {
-            log.trace("header is " + hdr);
+            log.trace("from " + msg.getSrc() + ", header is " + hdr);
         }
 
         // [Header.REQ]:
@@ -499,14 +501,15 @@ public class RequestCorrelator {
                     stack=hdr.callStack;
                     if(hdr.rsp_expected && stack != null && local_addr != null) {
                         if(stack.contains(local_addr)) {
+                            if(log.isTraceEnabled())
+                                log.trace("call stack=" + hdr.callStack + " contains " + local_addr +
+                                          ": adding request to priority queue");
                             scheduler.addPrio(req);
                             break;
                         }
                     }
-                    else {
-                        scheduler.add(req);
-                        break;
-                    }
+                    scheduler.add(req);
+                    break;
                 }
 
                 handleRequest(msg);
@@ -749,6 +752,8 @@ public class RequestCorrelator {
             ret.append(type == REQ ? "REQ" : type == RSP ? "RSP" : "<unknown>");
             ret.append(", id=" + id);
             ret.append(", rsp_expected=" + rsp_expected + ']');
+            if(callStack != null)
+                ret.append(", call stack=" + callStack);
             if(dest_mbrs != null)
                 ret.append(", dest_mbrs=").append(dest_mbrs);
             return ret.toString();
