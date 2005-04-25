@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.157 2005/04/25 10:38:45 belaban Exp $
+Revision: $Id: history.txt,v 1.158 2005/04/25 15:09:24 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -27,6 +27,10 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
 Version 2.2.8 RC1
 -----------------
+
+- Fixed problem with deadlock detection (e.g. in RpcDispatcher). Caller always passed new call stack,
+  rather than adding to existing call stack
+  (bela April 25 2005)
 
 - Removed xerces JARs
   (bela April 25 2005)
