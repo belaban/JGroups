@@ -14,7 +14,7 @@ import java.util.LinkedList;
 
 /**
  * @author Bela Ban Feb 12, 2004
- * @version $Id: MessageSerializationTest2.java,v 1.10 2005/04/24 11:46:03 belaban Exp $
+ * @version $Id: MessageSerializationTest2.java,v 1.12 2005/04/25 07:08:56 belaban Exp $
  */
 public class MessageSerializationTest2 {
     Message msg;
@@ -61,11 +61,12 @@ public class MessageSerializationTest2 {
                 " msgs = " + total + "ms \n(" + msgs_per_sec + " msgs/sec, time_per_msg=" + time_per_msg + " ms)");
 
         LinkedList l_ser=null, l_stream=null;
-        if(use_serialization)
-            l_ser=serializeMessage();
 
         if(use_streamable)
             l_stream=marshalMessages();
+
+        if(use_serialization)
+            l_ser=serializeMessage();
 
         if(l_ser != null && l_stream != null)
             printDiffs(l_ser, l_stream);
@@ -161,7 +162,6 @@ public class MessageSerializationTest2 {
         for(Enumeration en=my_list.elements(); en.hasMoreElements();) {
             Message tmp=(Message)en.nextElement();
             tmp.writeTo(dos);
-            System.out.println("size=" + msg.size());
         }
 
         dos.close();
