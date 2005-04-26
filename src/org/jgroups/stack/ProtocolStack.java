@@ -1,4 +1,4 @@
-// $Id: ProtocolStack.java,v 1.17 2005/04/20 20:25:49 belaban Exp $
+// $Id: ProtocolStack.java,v 1.18 2005/04/26 20:08:40 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -257,6 +257,14 @@ public class ProtocolStack extends Protocol implements Transport {
         down(new Event(Event.STOP));
         stop_promise.getResult(5000);
         stopped=true;
+    }
+
+    /**
+     * Not needed anymore, just left in here for backwards compatibility with JBoss AS
+     * @deprecated
+     */
+    public void flushEvents() {
+
     }
 
     public void stopInternal() {
