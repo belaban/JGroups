@@ -1,10 +1,11 @@
-// $Id: PingHeader.java,v 1.9 2005/04/15 13:17:02 belaban Exp $
+// $Id: PingHeader.java,v 1.10 2005/04/26 15:22:13 belaban Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.Header;
 import org.jgroups.Global;
 import org.jgroups.util.Streamable;
+import org.jgroups.util.Util;
 
 import java.io.*;
 
@@ -61,21 +62,11 @@ public class PingHeader extends Header implements Streamable {
 
     public void writeTo(DataOutputStream outstream) throws IOException {
         outstream.writeByte(type);
-        if(arg != null) {
-            outstream.write(1);
-            arg.writeTo(outstream);
-        }
-        else {
-            outstream.write(0);
-        }
+        Util.writeStreamable(arg, outstream);
     }
 
     public void readFrom(DataInputStream instream) throws IOException, IllegalAccessException, InstantiationException {
         type=instream.readByte();
-        int b=instream.read();
-        if(b == 1) {
-            arg=new PingRsp();
-            arg.readFrom(instream);
-        }
+        arg=(PingRsp)Util.readStreamable(PingRsp.class, instream);
     }
 }
