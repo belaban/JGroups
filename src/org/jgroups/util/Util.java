@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.35 2005/04/23 14:19:21 belaban Exp $
+// $Id: Util.java,v 1.36 2005/04/26 15:22:14 belaban Exp $
 
 package org.jgroups.util;
 
@@ -169,18 +169,17 @@ public class Util {
 
     public static void writeStreamable(Streamable obj, DataOutputStream out) throws IOException {
         if(obj == null) {
-            out.write(0);
+            out.writeBoolean(false);
             return;
         }
-        out.write(1);
+        out.writeBoolean(true);
         obj.writeTo(out);
     }
 
 
     public static Streamable readStreamable(Class clazz, DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
         Streamable retval=null;
-        int b=in.read();
-        if(b == 0)
+        if(in.readBoolean() == false)
             return null;
         retval=(Streamable)clazz.newInstance();
         retval.readFrom(in);
