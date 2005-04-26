@@ -1,16 +1,7 @@
-// $Id: RELEASE_INSTRUCTIONS,v 1.1 2003/09/09 01:24:04 belaban Exp $
+// $Id: RELEASE_INSTRUCTIONS,v 1.2 2005/04/26 13:45:09 belaban Exp $
 
 	       Things to do before packaging a release
 	       ---------------------------------------
-
-
-- Set Trace.debug=false. This will not generate certain trace
-  statements in the class files
-
-- [Optionally] Make Trace.trace final and set it to false. Comment out
-  all assignments to Trace.trace. This will remove ALL tracing code,
-  so we won't be able to enable tracing at runtime. However,
-  JavaGroups will be faster.
 
 - Remove all "// +++ remove" statements
 

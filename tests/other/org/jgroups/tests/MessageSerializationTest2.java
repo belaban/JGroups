@@ -14,7 +14,7 @@ import java.util.LinkedList;
 
 /**
  * @author Bela Ban Feb 12, 2004
- * @version $Id: MessageSerializationTest2.java,v 1.12 2005/04/25 07:08:56 belaban Exp $
+ * @version $Id: MessageSerializationTest2.java,v 1.13 2005/04/26 13:45:10 belaban Exp $
  */
 public class MessageSerializationTest2 {
     Message msg;
@@ -22,7 +22,7 @@ public class MessageSerializationTest2 {
     long start, stop, total;
     double msgs_per_sec, time_per_msg;
     List my_list=new List();
-    int num=10000;
+    int num=50000;
     ObjectOutputStream out;
     ExposedByteArrayOutputStream output;
     ByteArrayInputStream input;
@@ -203,7 +203,7 @@ public class MessageSerializationTest2 {
     }
 
     public static void main(String[] args) {
-        int num=10000;
+        int num=50000;
         boolean use_serialization=true, use_streamable=true, use_additional_data=false, add_headers=true;
 
         for(int i=0; i < args.length; i++) {
