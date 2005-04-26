@@ -15,8 +15,8 @@
 </h1>
 JGroups comes in a binary and a source version: the binary version
 is <b>JGroups-2.x.x.bin.zip</b>, the source version is <b>JGroups-2.x.x.src.zip</b>
-. The binary version contains the JGroups JAR file, plus the Xerces
-parser which is needed by JGroups. The source version contains all
+. The binary version contains the JGroups JAR file, plus a number of
+JARs needed by JGroups. The source version contains all
 source
 files, plus several JAR files needed by JGroups, e.g. ANT to build
 JGroups from source.<br>
@@ -24,7 +24,8 @@ JGroups from source.<br>
 <h3> Requirements</h3>
 <ul>
   <li> JGroups 2.1.x and higher requires JDK 1.3 (or higher). There
-is no JNI code present so it should run on all platforms. JDK 1.4 is
+is no JNI code present so it should run on all platforms. JDKs 1.4 and
+1.5 are
 fine
 too.</li>
   <li> An XML parser is required for configuration of JGroups if
@@ -32,10 +33,8 @@ you want the ability to use XML configuration files for class mapping,
 and to read protocol stack specifications in XML format. Not using an
 XML parser will result in slower serialization and limit you to use
 only
-plain protocol stack configuration strings. <br>
-Note that there is an XML parser shipped with JGroups in the <tt>lib</tt>
-directory. Add the JAR files <tt>xercesimpl-2.1.0.jar</tt> and <tt>xercesxmlapi-2.1.0.jar</tt>
-to your CLASSPATH. Note that any other JAXP compliant XML parser can
+plain protocol stack configuration strings. Note that any other JAXP
+compliant XML parser can
 be used.</li>
   <li>If you want to generate HTML-based test reports from the
 unittests, then xalan.jar needs to be in the CLASSPATH (also available
@@ -50,7 +49,9 @@ The binary version contains<br>
   <li>jgroups-all.jar: the JGroups library including the demos</li>
   <li>CREDITS: list of contributors</li>
   <li>INSTALL.html: this file</li>
-  <li>commons-logging.jar<br>
+  <li>commons-logging.jar</li>
+  <li>concurrent.jar</li>
+  <li>log4j.jar<br>
   </li>
 </ol>
 We no longer ship the Xerces JARs. To run JGroups you have to have an
@@ -82,13 +83,15 @@ org.jgroups.protocols.JMS protocol</li>
 test cases</li>
     <li><a href="http://xml.apache.org">xalan.jar</a> : to format the
 output of the JUnit tests using an XSLT converter to HTML</li>
-    <li>xercesimpl-2.1.0.jar: the Xerces parser implementation (see <a
- href="http://xml.apache.org"> http://xml.apache.org</a> )</li>
-    <li>xercesxmlapi-2.1.0.jar: the Xerces parser APIs</li>
+    <li>concurrent.jar</li>
+    <li>commons-logging.jar</li>
+    <li>log4j.jar</li>
+    <li>etc<br>
+    </li>
   </ol>
 </ol>
 <br>
-<h3>Building JGroups with the ANT build system (source distribution
+<h3>Building JGroups&nbsp; (source distribution
 only)</h3>
 <ol>
   <li>Unzip the source distribution, e.g. unzip JGroups-2.1.x.src.zip.
@@ -113,8 +116,6 @@ directory:<br>
       <li><tt>jgroups-core.jar</tt> - the core JGroups libraries</li>
       <li><tt>jgroups-all.jar</tt> - the complete JGroups libraries
 including demos and unit tests</li>
-      <li><tt>jgroups-test.jar</tt> - the JGroups test libraries</li>
-      <li><tt>jgroups-demo.jar</tt> - the JGroups demo libraries</li>
     </ul>
   </li>
   <li>The <b>CLASSPATH </b>now has to be set accordingly: the
@@ -123,7 +124,7 @@ following directories and/or JARs have to be included:</li>
     <li><b>&lt;JGroups rootdir&gt;/classes</b></li>
     <li><b>&lt;JGroups rootdir&gt;/conf</b></li>
     <li>All needed JAR files in <b>&lt;JGroups rootdir&gt;/lib</b>. To
-simple run JGroups, the Xerces JARs are sufficient. To build from
+build from
 sources, the two Ant JARs are required. To run unit tests, the JUnit
 (and
 possibly the Xalan) JARs are needed.<br>
@@ -146,10 +147,16 @@ file in yourhome directory.<br>
 <h3> Testing your Setup</h3>
 To see whether your system can find the JGroups classes, execute the
 following command:
-<pre><b>java org.jgroups.Version</b></pre>
+<pre><b>java org.jgroups.Version<br></b></pre>
+<br>
+or<br>
+<b><br>
+java -jar jgroups-all.jar<br>
+<br>
+</b><br>
 You should see the following output (more or less) if the class is
 found:
-<pre><br>Version:        2.2<br>CVS:            $Id: INSTALL.html,v 1.3 2004/06/26 02:06:00 belaban Exp $<br>History:        (see doc/history.txt for details)<br><br><br><br></pre>
+<pre><br>Version:        2.2.8 RC1<br>CVS:            $Id: INSTALL.html,v 1.4 2005/04/26 12:57:27 belaban Exp $<br>History:        (see doc/history.txt for details)<br><br><br><br></pre>
 <h3> Running a Demo Program</h3>
 To test whether JGroups works okay on your machine, run
 <pre><b>java org.jgroups.demos.Draw</b></pre>
