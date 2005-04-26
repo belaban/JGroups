@@ -1,0 +1,72 @@
+
+Release Notes JGroups 2.2.8
+===========================
+
+Version: $Id: ReleaseNotes-2.2.8.txt,v 1.1 2005/04/26 13:45:09 belaban Exp $
+Author: Bela Ban
+
+
+Fast Message marshalling
+------------------------
+- Replaced Externalizable for Message with Streamable, resulting in much faster marshalling and
+  reduced size of marshalled messages, allowing for more messages to be sent / second
+- org.jgroups.tests.MessageSerializationTest2 can be used to compare Externalizable with
+  Streamable:
+- For 50000 messages, size reduction is almost 50%, marshalling 150% faster and unmarshalling 650% faster
+  flags="-Xmx500M -Xms500M -XX:NewRatio=1 -XX:+AggressiveHeap -verbose:gc
+         -XX:+DisableExplicitGC -XX:ThreadStackSize=32 -XX:CompileThreshold=100"
+  java $flags org.jgroups.tests.MessageSerializationTest2 -num 100000 -add_headers false
+    serialized size=8588935, streamable size=5788899, streamable is 48 percent smaller
+    serialized write=831, streamable write=331, streamable write is 151 percent faster
+    serialized read=1352, streamable read=180, streamable read is 651 percent faster
+
+Performance numbers
+-------------------
+- Real tests will be produced in 2.2.9, using org.jgroups.tests.perf.Test
+- With JGroups/conf/fc-fast-minimalthreads.xml, I got ca 5000 1K messages on my laptop:
+  (2 members, 1 sender, 1 receiver, 1 CPU laptop, 20000 1K msgs, 100Mbps switch)
+  - April 20 2005: **5006** msgs/sec (on 192.168.5.1):
+    -Xmx500M -Xms500M -XX:NewRatio=1 -XX:+AggressiveHeap -verbose:gc -XX:+DisableExplicitGC
+    -XX:ThreadStackSize=32 -XX:CompileThreshold=100:
+    combined: num_msgs_expected=20000, num_msgs_received=20000 (loss rate=0%), received=20MB,
+    time=3995ms, msgs/sec=5006.26, throughput=5.01MB/sec
+
+UDP
+----------
+- bind_to_all_interfaces="true" now allows to listen for multicast messages on *all* available interfaces.
+  This requires 1.4, under 1.3 the default interface will be selected
+
+MPING
+-----
+- MPING allows for a combination where node discovery in a cluster uses multicast, but the real transport uses
+  TCP. This is an addition to TCP:TCPPING and TCP:TCPGOSSIP. Example (short version of JGroups/conf/mping.xml):
+<config>
+    <TCP bind_addr="192.168.5.1"
+         start_port="7800" sock_conn_timeout="500"
+         loopback="true"/>
+    <MPING timeout="2000"
+           bind_to_all_interfaces="true"
+           mcast_addr="228.8.8.8"
+           mcast_port="7500"
+           ip_ttl="8"
+           num_initial_members="2"
+           num_ping_requests="1"/>
+    <FD timeout="2000" max_tries="3"/>
+    <pbcast.NAKACK gc_lag="50" retransmit_timeout="600,1200,2400,4800" max_xmit_size="60000"/>
+    <pbcast.STABLE stability_delay="1000" desired_avg_gossip="20000"
+                   down_thread="false" max_bytes="0" up_thread="false"/>
+    <pbcast.GMS print_local_addr="true" join_timeout="5000" join_retry_timeout="2000" shun="true"/>
+</config>
+
+Concurrent startup
+------------------
+- When multiple members are started simultaneously, and no other member is running yet,
+  they form singleton groups, and merge after some time.
+  The new version avoids this merge, so merging occurs only after network partitions now, never
+  on concurrent startup of initial members
+
+
+
+
+
+
