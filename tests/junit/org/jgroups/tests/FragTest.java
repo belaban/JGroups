@@ -1,4 +1,4 @@
-// $Id: FragTest.java,v 1.6 2005/04/13 08:20:10 belaban Exp $
+// $Id: FragTest.java,v 1.7 2005/04/29 08:37:08 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -33,12 +33,6 @@ public class FragTest extends TestCase {
     }
 
 
-    public void setUp() {
-    }
-
-    public void tearDown() {
-
-    }
 
 
     private Message createBigMessage(int size) {
