@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.31 2005/04/14 16:12:49 belaban Exp $
+// $Id: JChannel.java,v 1.32 2005/04/29 14:50:19 belaban Exp $
 
 package org.jgroups;
 
@@ -24,7 +24,7 @@ import java.util.Vector;
  * protocol stack
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.31 $
+ * @version $Revision: 1.32 $
  */
 public class JChannel extends Channel {
 
@@ -813,7 +813,7 @@ public class JChannel extends Channel {
         Message msg;
 
         /*if the queue is not available, there is no point in
-         *processing the message at all*/
+        *processing the message at all*/
         if(mq == null) {
             if(log.isErrorEnabled()) log.error("message queue is null");
             return;
@@ -821,101 +821,100 @@ public class JChannel extends Channel {
 
         switch(type) {
 
-            case Event.MSG:
-                msg=(Message)evt.getArg();
-                if(!receive_local_msgs) {  // discard local messages (sent by myself to me)
-                    if(local_addr != null && msg.getSrc() != null)
-                        if(local_addr.equals(msg.getSrc()))
-                            return;
-                }
-                break;
+        case Event.MSG:
+            msg=(Message)evt.getArg();
+            if(!receive_local_msgs) {  // discard local messages (sent by myself to me)
+                if(local_addr != null && msg.getSrc() != null)
+                    if(local_addr.equals(msg.getSrc()))
+                        return;
+            }
+            break;
 
-            case Event.VIEW_CHANGE:
-                my_view=(View)evt.getArg();
+        case Event.VIEW_CHANGE:
+            my_view=(View)evt.getArg();
 
-                // crude solution to bug #775120: if we get our first view *before* the CONNECT_OK,
-                // we simply set the state to connected
-                if(connected == false) {
-                    connected=true;
-                    connect_promise.setResult(Boolean.TRUE);
-                }
-
-                // unblock queueing of messages due to previous BLOCK event:
-                down(new Event(Event.STOP_QUEUEING));
-                if(!receive_views)  // discard if client has not set receving views to on
-                    return;
-                //if(connected == false)
-                //  my_view=(View)evt.getArg();
-                break;
-
-            case Event.SUSPECT:
-                if(!receive_suspects)
-                    return;
-                break;
-
-            case Event.GET_APPLSTATE:  // return the application's state
-                if(!receive_get_states) {  // if not set to handle state transfers, send null state
-                    down(new Event(Event.GET_APPLSTATE_OK, null));
-                    return;
-                }
-                break;
-
-            case Event.CONFIG:
-                HashMap config=(HashMap)evt.getArg();
-                if(config != null && config.containsKey("state_transfer"))
-                    state_transfer_supported=((Boolean)config.get("state_transfer")).booleanValue();
-                break;
-
-            case Event.BLOCK:
-                // If BLOCK is received by application, then we trust the application to not send
-                // any more messages until a VIEW_CHANGE is received. Otherwise (BLOCKs are disabled),
-                // we queue any messages sent until the next VIEW_CHANGE (they will be sent in the
-                // next view)
-
-                if(!receive_blocks) {  // discard if client has not set 'receiving blocks' to 'on'
-                    down(new Event(Event.BLOCK_OK));
-                    down(new Event(Event.START_QUEUEING));
-                    return;
-                }
-                break;
-
-            case Event.CONNECT_OK:
+            // crude solution to bug #775120: if we get our first view *before* the CONNECT_OK,
+            // we simply set the state to connected
+            if(connected == false) {
+                connected=true;
                 connect_promise.setResult(Boolean.TRUE);
-                break;
+            }
 
-            case Event.DISCONNECT_OK:
-                disconnect_promise.setResult(Boolean.TRUE);
-                break;
+            // unblock queueing of messages due to previous BLOCK event:
+            down(new Event(Event.STOP_QUEUEING));
+            if(!receive_views)  // discard if client has not set receving views to on
+                return;
+            //if(connected == false)
+            //  my_view=(View)evt.getArg();
+            break;
 
-            case Event.GET_STATE_OK:
-                try {
-                    mq.add(new Event(Event.STATE_RECEIVED, evt.getArg()));
-                }
-                catch(Exception e) {
-                }
-                state_promise.setResult(evt.getArg());
-                break;
+        case Event.SUSPECT:
+            if(!receive_suspects)
+                return;
+            break;
 
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr_promise.setResult(evt.getArg());
-                break;
+        case Event.GET_APPLSTATE:  // return the application's state
+            if(!receive_get_states) {  // if not set to handle state transfers, send null state
+                down(new Event(Event.GET_APPLSTATE_OK, null));
+                return;
+            }
+            break;
 
-            case Event.EXIT:
-                handleExit(evt);
-                return;  // no need to pass event up; already done in handleExit()
+        case Event.CONFIG:
+            HashMap config=(HashMap)evt.getArg();
+            if(config != null && config.containsKey("state_transfer"))
+                state_transfer_supported=((Boolean)config.get("state_transfer")).booleanValue();
+            break;
 
-            case Event.BLOCK_SEND: // emitted by FLOW_CONTROL
-                if(log.isInfoEnabled()) log.info("received BLOCK_SEND");
-                block_sending.set(Boolean.TRUE);
-                break;
+        case Event.BLOCK:
+            // If BLOCK is received by application, then we trust the application to not send
+            // any more messages until a VIEW_CHANGE is received. Otherwise (BLOCKs are disabled),
+            // we queue any messages sent until the next VIEW_CHANGE (they will be sent in the
+            // next view)
 
-            case Event.UNBLOCK_SEND:  // emitted by FLOW_CONTROL
-                if(log.isInfoEnabled()) log.info("received UNBLOCK_SEND");
-                block_sending.set(Boolean.FALSE);
-                break;
+            if(!receive_blocks) {  // discard if client has not set 'receiving blocks' to 'on'
+                down(new Event(Event.BLOCK_OK));
+                down(new Event(Event.START_QUEUEING));
+                return;
+            }
+            break;
 
-            default:
-                break;
+        case Event.CONNECT_OK:
+            connect_promise.setResult(Boolean.TRUE);
+            break;
+
+        case Event.DISCONNECT_OK:
+            disconnect_promise.setResult(Boolean.TRUE);
+            break;
+
+        case Event.GET_STATE_OK:
+            Object state=evt.getArg();
+            if(state != null) {
+                try {mq.add(new Event(Event.STATE_RECEIVED, evt.getArg()));} catch(Exception e) {}
+            }
+            state_promise.setResult(evt.getArg());
+            break;
+
+        case Event.SET_LOCAL_ADDRESS:
+            local_addr_promise.setResult(evt.getArg());
+            break;
+
+        case Event.EXIT:
+            handleExit(evt);
+            return;  // no need to pass event up; already done in handleExit()
+
+        case Event.BLOCK_SEND: // emitted by FLOW_CONTROL
+            if(log.isInfoEnabled()) log.info("received BLOCK_SEND");
+            block_sending.set(Boolean.TRUE);
+            break;
+
+        case Event.UNBLOCK_SEND:  // emitted by FLOW_CONTROL
+            if(log.isInfoEnabled()) log.info("received UNBLOCK_SEND");
+            block_sending.set(Boolean.FALSE);
+            break;
+
+        default:
+            break;
         }
 
 
