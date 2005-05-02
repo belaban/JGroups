@@ -1,5 +1,3 @@
-// $Id: Chat.java,v 1.9 2005/05/02 12:23:25 belaban Exp $
-
 package org.jgroups.demos;
 
 
@@ -12,12 +10,15 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
+import java.util.LinkedList;
+import java.util.Iterator;
+import java.io.*;
 
 
 /**
  * Simple chat demo
  * @author Bela Ban
- * @version $Id: Chat.java,v 1.9 2005/05/02 12:23:25 belaban Exp $
+ * @version $Id: Chat.java,v 1.10 2005/05/02 12:41:02 belaban Exp $
  */
 public class Chat implements MouseListener, WindowListener, MessageListener, MembershipListener {
     Channel channel;
@@ -32,10 +33,16 @@ public class Chat implements MouseListener, WindowListener, MessageListener, Mem
     JButton leaveButton;
     JButton sendButton;
     JButton clearButton;
+    String username=null;
+    LinkedList history=new LinkedList();
 
 
     public Chat(String props) {
         this.props=props;
+        try {
+            username=System.getProperty("user.name");
+        }
+        catch(Throwable t) {}
     }
 
 
@@ -98,9 +105,12 @@ public class Chat implements MouseListener, WindowListener, MessageListener, Mem
         try {
             channel=new JChannel(props);
             channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
+            channel.setOpt(Channel.AUTO_GETSTATE, Boolean.TRUE);
+            channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
             System.out.println("Connecting to " + group_name);
             channel.connect(group_name);
             ad=new PullPushAdapter(channel, this, this);
+            channel.getState(null, 5000);
         }
         catch(Exception e) {
             ta.append(e.toString());
@@ -110,6 +120,12 @@ public class Chat implements MouseListener, WindowListener, MessageListener, Mem
         mainFrame.setBounds(new Rectangle(580, 480));
         mainFrame.setVisible(true);
         mainFrame.show();
+        if(history.size() > 0) {
+            for(Iterator it=history.iterator(); it.hasNext();) {
+                String s=(String)it.next();
+                ta.append(s + "\n");
+            }
+        }
     }
 
 
@@ -121,7 +137,8 @@ public class Chat implements MouseListener, WindowListener, MessageListener, Mem
 
         try {
             o=msg.getObject();
-            ta.append(o.toString() + " [" + msg.getSrc() + "]\n");
+            ta.append(o + " [" + msg.getSrc() + "]\n");
+            history.add(o);
         }
         catch(Exception e) {
             ta.append("Chat.receive(): " + e);
@@ -129,10 +146,30 @@ public class Chat implements MouseListener, WindowListener, MessageListener, Mem
     }
 
     public byte[] getState() {
-        return null;
+        try {
+            ByteArrayOutputStream output=new ByteArrayOutputStream();
+            ObjectOutputStream out=new ObjectOutputStream(output);
+            out.writeObject(history);
+            out.flush();
+            byte[] retval=output.toByteArray();
+            out.close();
+            return retval;
+        }
+        catch(IOException e) {
+            return null;
+        }
     }
 
     public void setState(byte[] state) {
+        ByteArrayInputStream input=new ByteArrayInputStream(state);
+        try {
+            ObjectInputStream in=new ObjectInputStream(input);
+            LinkedList newList=(LinkedList)in.readObject();
+            history=newList;
+        }
+        catch(Exception e) {
+            e.printStackTrace();
+        }
     }
 
     /* ----------------- End of Interface MessageListener --------------- */
@@ -149,12 +186,10 @@ public class Chat implements MouseListener, WindowListener, MessageListener, Mem
 
 
     public void suspect(Address suspected_mbr) {
-
     }
 
 
     public void block() {
-
     }
 
     /* --------------- End of Interface MembershipListener -------------- */
@@ -185,7 +220,7 @@ public class Chat implements MouseListener, WindowListener, MessageListener, Mem
 
     private void handleSend() {
         try {
-            Message msg=new Message(null, null, tf.getText());
+            Message msg=new Message(null, null, username + ": " + tf.getText());
             channel.send(msg);
         }
         catch(Exception e) {
