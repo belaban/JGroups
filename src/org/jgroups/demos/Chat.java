@@ -1,4 +1,4 @@
-// $Id: Chat.java,v 1.8 2005/03/10 15:19:54 belaban Exp $
+// $Id: Chat.java,v 1.9 2005/05/02 12:23:25 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -17,7 +17,7 @@ import java.awt.event.WindowListener;
 /**
  * Simple chat demo
  * @author Bela Ban
- * @version $Id: Chat.java,v 1.8 2005/03/10 15:19:54 belaban Exp $
+ * @version $Id: Chat.java,v 1.9 2005/05/02 12:23:25 belaban Exp $
  */
 public class Chat implements MouseListener, WindowListener, MessageListener, MembershipListener {
     Channel channel;
@@ -174,6 +174,7 @@ public class Chat implements MouseListener, WindowListener, MessageListener, Mem
             System.out.print("Closing the channel");
             channel.close();
             System.out.println(" -- done");
+            System.exit(0);
         }
         catch(Exception e) {
             e.printStackTrace();
