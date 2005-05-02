@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.158 2005/04/25 15:09:24 belaban Exp $
+Revision: $Id: history.txt,v 1.159 2005/05/02 10:48:21 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -25,8 +25,11 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
 
 
-Version 2.2.8 RC1
------------------
+Version 2.2.8
+-------------
+
+- Created branch JGROUPS_2_2_8
+  (bela April 29 2005)
 
 - Fixed problem with deadlock detection (e.g. in RpcDispatcher). Caller always passed new call stack,
   rather than adding to existing call stack

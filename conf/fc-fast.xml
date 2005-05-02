@@ -3,7 +3,8 @@
 <!-- input file: fc-fast.old.xml -->
 
 <config>
-    <UDP mcast_send_buf_size="10000000"
+    <UDP bind_addr="192.168.5.1"
+        mcast_send_buf_size="10000000"
         mcast_port="45566"
         ucast_recv_buf_size="10000000"
         mcast_addr="228.8.8.8"

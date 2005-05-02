@@ -7,6 +7,7 @@ import junit.framework.TestCase;
 import junit.framework.TestSuite;
 
 import java.util.HashMap;
+import java.util.Set;
 
 import org.jgroups.*;
 import org.jgroups.util.Util;
@@ -15,10 +16,10 @@ import org.jgroups.util.Util;
 /**
  * Tests correct state transfer while other members continue sending messages to the group
  * @author Bela Ban
- * @version $Id: StateTransferTest.java,v 1.1 2005/04/29 10:28:53 belaban Exp $
+ * @version $Id: StateTransferTest.java,v 1.2 2005/05/02 10:48:21 belaban Exp $
  */
 public class StateTransferTest extends TestCase {
-    final int NUM=10;
+    final int NUM=10000;
     final int NUM_THREADS=2;
     final String props="fc-fast.xml";
 
@@ -39,7 +40,7 @@ public class StateTransferTest extends TestCase {
         }
 
         for(int i=0; i < workers.length; i++) {
-            workers[i]=new Worker(maps[i], start);
+            workers[i]=new Worker(i, maps[i], start);
             start+=NUM;
         }
 
@@ -58,10 +59,22 @@ public class StateTransferTest extends TestCase {
             worker.stop();
         }
 
-        log("hashmaps:\n");
+        log("\n\nhashmaps:\n");
         for(int i=0; i < maps.length; i++) {
             HashMap map=maps[i];
             log("#" + (i+1) + ": " + map.size() + " elements");
+        }
+
+        int size=maps[0].size();
+        for(int i=0; i < maps.length; i++) {
+            HashMap map=maps[i];
+            assertEquals(map.size(), size);
+        }
+
+        Set keys=maps[0].keySet();
+        for(int i=0; i < maps.length; i++) {
+            HashMap map=maps[i];
+            assertTrue(map.keySet().containsAll(keys));
         }
     }
 
@@ -73,11 +86,13 @@ public class StateTransferTest extends TestCase {
         JChannel ch;
         Thread   t, receiver;
         int      start_num=0;
+        int      id;
 
 
-        public Worker(HashMap m, int start_num) {
+        public Worker(int id, HashMap m, int start_num) {
             this.m=m;
             this.start_num=start_num;
+            this.id=id;
         }
 
         void start() throws Exception {
@@ -95,9 +110,10 @@ public class StateTransferTest extends TestCase {
             }
 
             receiver=new Receiver(m, ch);
+            receiver.setName("Receiver #" + id);
             receiver.start();
 
-            t=new Thread(this, "worker #" + start_num);
+            t=new Thread(this, "worker #" + id);
             t.start();
         }
 
@@ -143,7 +159,7 @@ public class StateTransferTest extends TestCase {
             Object[] data;
             int num_received=0, to_be_received=NUM * NUM_THREADS;
 
-            log("Receiver thread started, m has " + m.size() + " elements");
+            log("Receiver thread started");
             while(ch.isConnected()) {
                 try {
                     obj=ch.receive(0);
@@ -151,7 +167,7 @@ public class StateTransferTest extends TestCase {
                         data=(Object[])((Message)obj).getObject();
                         m.put(data[0], data[1]);
                         num_received++;
-                        if(num_received % 1 == 0)
+                        if(num_received % 1000 == 0)
                             log("received " + num_received);
                         if(m.size() >= to_be_received) {
                             log("DONE: received " + m.size() + " messages");
