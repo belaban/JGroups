@@ -1,3 +1,4 @@
+// $Id: STATE_TRANSFER_Test.java,v 1.2 2005/05/04 04:25:28 wenbo Exp $
 package org.jgroups.protocols;
 
 import junit.framework.Test;
