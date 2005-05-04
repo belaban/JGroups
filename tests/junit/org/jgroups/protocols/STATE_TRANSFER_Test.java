@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER_Test.java,v 1.2 2005/05/04 04:25:28 wenbo Exp $
+// $Id: STATE_TRANSFER_Test.java,v 1.3 2005/05/04 04:30:09 wenbo Exp $
 package org.jgroups.protocols;
 
 import junit.framework.Test;
@@ -18,13 +18,11 @@ import org.jgroups.Message;
 import org.jgroups.util.Util;
 
 /**
- * It's an attemp to setup Junit test cast template for Protocol regression. <p>
- * <p/>
- * Two processes are started, and the coord. keeps sending msg of a counter. The 2nd
+ * It's an attemp to setup Junit test case template for Protocol regression. <p>
+ * Two "processes" are started, and the coord. keeps sending msg of a counter. The 2nd
  * process joins the grp and get the state from the coordinator. The subsequent msgs
  * after the setState will be validated to ensure the total ordering of msg delivery. <p>
- * <p/>
- * This should cover the fix introduced by rev. 11/12.
+ * This should cover the fix introduced by rev. 1.12
  *
  * @author Wenbo Zhu
  * @version 1.0
