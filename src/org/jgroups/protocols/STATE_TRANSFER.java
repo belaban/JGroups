@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.11 2005/04/03 07:23:10 wenbo Exp $
+// $Id: STATE_TRANSFER.java,v 1.12 2005/05/04 01:04:28 wenbo Exp $
 
 package org.jgroups.protocols;
 
@@ -364,9 +364,8 @@ public class STATE_TRANSFER extends Protocol implements RequestHandler {
         StateTransferRequest r=new StateTransferRequest(StateTransferRequest.MAKE_COPY, local_addr);
         Vector dests=new Vector(11);
 
-        for(int i=0; i < members.size(); i++)  // don't add myself twice in dests !
-//            if(!local_addr.equals(members.elementAt(i)))    - this will prevent the local delivery
-                dests.addElement(members.elementAt(i));
+        for(int i=0; i < members.size(); i++)   
+             dests.addElement(members.elementAt(i));
 
         if(dests.size() == 0)
             return;
