@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.159 2005/05/02 10:48:21 belaban Exp $
+Revision: $Id: history.txt,v 1.160 2005/05/10 14:27:28 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -21,6 +21,18 @@ whizkid_bay = Mandar Shinde (whizkid_bay@users.sf.net)
 ovidiuf     = Ovidiu Feodorov (ovidiuf@users.sf.net)
 romuald     = Romuald du Song
 yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
+
+
+
+
+Version 2.2.9
+-------------
+
+
+
+- Fixed STATE_TRANSFER stuck in Channel.queue bug (http://jira.jboss.com/jira/browse/JGRP-80)
+  (bela May 10 2005)
+
 
 
 
