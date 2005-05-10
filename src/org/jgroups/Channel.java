@@ -1,4 +1,4 @@
-// $Id: Channel.java,v 1.6 2004/07/30 04:41:11 jiwils Exp $
+// $Id: Channel.java,v 1.7 2005/05/10 14:25:56 belaban Exp $
 
 package org.jgroups;
 
@@ -123,6 +123,10 @@ public abstract class Channel implements Transport {
      */
     public int getNumMessages() {
         return -1;
+    }
+
+    public String dumpQueue() {
+        return "";
     }
 
 
