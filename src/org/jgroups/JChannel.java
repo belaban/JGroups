@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.32 2005/04/29 14:50:19 belaban Exp $
+// $Id: JChannel.java,v 1.33 2005/05/10 14:25:58 belaban Exp $
 
 package org.jgroups;
 
@@ -17,6 +17,7 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Vector;
+import java.util.Iterator;
 
 /**
  * JChannel is a pure Java implementation of Channel
@@ -24,7 +25,7 @@ import java.util.Vector;
  * protocol stack
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.32 $
+ * @version $Revision: 1.33 $
  */
 public class JChannel extends Channel {
 
@@ -461,6 +462,10 @@ public class JChannel extends Channel {
     }
 
 
+    public String dumpQueue() {
+        return Util.dumpQueue(mq);
+    }
+
     /**
      * implementation of the Transport interface.<BR>
      * Sends a message through the protocol stack<BR>
@@ -889,10 +894,14 @@ public class JChannel extends Channel {
 
         case Event.GET_STATE_OK:
             Object state=evt.getArg();
-            if(state != null) {
-                try {mq.add(new Event(Event.STATE_RECEIVED, evt.getArg()));} catch(Exception e) {}
+            state_promise.setResult(state);
+            if(up_handler != null) {
+                up_handler.up(evt);
+                return;
             }
-            state_promise.setResult(evt.getArg());
+            if(state != null) {
+                try {mq.add(new Event(Event.STATE_RECEIVED, state));} catch(Exception e) {}
+            }
             break;
 
         case Event.SET_LOCAL_ADDRESS:
