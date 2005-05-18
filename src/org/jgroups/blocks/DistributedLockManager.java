@@ -143,6 +143,12 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
         if (lock == null)
             // check if this holds...
             return true;
+        else if (!decree.managerId.equals(id)) {
+            // If another manager tries to release the decree it is possible
+            //  that a merge of two splitted nets occured. 
+            // In this case, we tell the other manager to release the lock
+            return true;
+        } 
         else
             return lock.requester.equals(decree.requester);
     }
@@ -173,6 +179,13 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
 
         if(localLock == null) {
             // no lock exist
+            return true;
+        }
+        else if (!lockDecree.managerId.equals(id)) {
+            // If another manager tries to release the decree it is possible
+            // that a merge of two splitted nets occured. 
+            // In this case, we tell the other manager to release the lock,
+            // but don't release our local version
             return true;
         }
         else if(localLock.requester.equals(lockDecree.requester)) {
