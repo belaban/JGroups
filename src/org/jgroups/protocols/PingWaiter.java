@@ -12,7 +12,7 @@ import java.util.Vector;
 /**
  * Class that waits for n PingRsp'es, or m milliseconds to return the initial membership
  * @author Bela Ban
- * @version $Id: PingWaiter.java,v 1.6 2005/03/31 08:31:47 belaban Exp $
+ * @version $Id: PingWaiter.java,v 1.7 2005/05/19 06:21:49 belaban Exp $
  */
 public class PingWaiter implements Runnable {
     Thread              t=null;
@@ -45,9 +45,12 @@ public class PingWaiter implements Runnable {
         if(ping_sender != null)
             ping_sender.stop();
         if(t != null) {
-            Thread tmp=t;
+            // Thread tmp=t;
             t=null;
-            tmp.interrupt();
+            // tmp.interrupt();
+            synchronized(rsps) {
+                rsps.notifyAll();
+            }
         }
     }
 
