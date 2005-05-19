@@ -5,9 +5,9 @@ package org.jgroups;
 
 
 public class Version {
-    public static final String version="2.2.8 RC1";
-    public static byte[] version_id={'0', '2', '2', '8', 'r', 'c', '1'};
-    public static final String cvs="$Id: Version.java,v 1.18 2005/04/25 07:16:15 belaban Exp $";
+    public static final String version="2.2.9 alpha";
+    public static byte[] version_id={'0', '2', '2', '9', 'a', 'l', 'p', 'h', 'a'};
+    public static final String cvs="$Id: Version.java,v 1.19 2005/05/19 16:11:20 belaban Exp $";
 
     public static void main(String[] args) {
         System.out.println("\nVersion: \t" + version);
