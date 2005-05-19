@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.162 2005/05/19 07:50:46 belaban Exp $
+Revision: $Id: history.txt,v 1.163 2005/05/19 07:57:46 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -29,7 +29,7 @@ Version 2.2.9
 -------------
 
 - Fixed http://jira.jboss.com/jira/browse/JGRP-79 (problems with nulling src addresses on
-  loopback adapter in Windows)
+  loopback adapter in Windows). See JGroups/docs/NullingSrcAddresses.txt for details.
   (bela May 19 2005)
 
 - Fixed problem with PingWaiter/PingSender in applets (http://jira.jboss.com/jira/browse/JGRP-86)
