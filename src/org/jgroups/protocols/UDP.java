@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.76 2005/04/23 20:39:17 belaban Exp $
+// $Id: UDP.java,v 1.77 2005/05/19 07:49:39 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -185,7 +185,14 @@ public class UDP extends Protocol implements Runnable {
     static final String IGNORE_BIND_ADDRESS_PROPERTY="ignore.bind.address";
 
 
+    /** Usually, src addresses are nulled, and the receiver simply sets them to the address of the sender. However,
+     * for multiple addresses on a Windows loopback device, this doesn't work
+     * (see http://jira.jboss.com/jira/browse/JGRP-79 and the JGroups wiki for details). This must be the same
+     * value for all members of the same group. Default is true, for performance reasons */
+    boolean null_src_addresses=true;
+
     final int VERSION_LENGTH=Version.getLength();
+
 
 
 
@@ -562,6 +569,12 @@ public class UDP extends Protocol implements Runnable {
             props.remove("use_addr_translation");
         }
 
+        str=props.getProperty("null_src_addresses");
+        if(str != null) {
+            null_src_addresses=Boolean.valueOf(str).booleanValue();
+            props.remove("null_src_addresses");
+        }
+
         if(props.size() > 0) {
             System.err.println("UDP.setProperties(): the following properties are not recognized:");
             props.list(System.out);
@@ -916,7 +929,8 @@ public class UDP extends Protocol implements Runnable {
         msg.setDest(null);
         if(!dest.isMulticastAddress()) { // unicast
             if(src != null) {
-                msg.setSrc(new IpAddress(src.getPort(), false)); // null the host part, leave the port
+                if(null_src_addresses)
+                    msg.setSrc(new IpAddress(src.getPort(), false)); // null the host part, leave the port
                 if(src.getAdditionalData() != null)
                     ((IpAddress)msg.getSrc()).setAdditionalData(src.getAdditionalData());
             }
@@ -926,7 +940,8 @@ public class UDP extends Protocol implements Runnable {
         }
         else {  // multicast
             if(src != null) {
-                msg.setSrc(new IpAddress(src.getPort(), false));
+                if(null_src_addresses)
+                    msg.setSrc(new IpAddress(src.getPort(), false));  // null the host part, leave the port
                 if(src.getAdditionalData() != null)
                     ((IpAddress)msg.getSrc()).setAdditionalData(src.getAdditionalData());
             }
