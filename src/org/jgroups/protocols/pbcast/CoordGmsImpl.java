@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.21 2005/04/15 13:16:59 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.22 2005/05/20 14:04:09 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -306,7 +306,7 @@ public class CoordGmsImpl extends GmsImpl {
         // contains either leaving mbrs or suspected mbrs
         if(log.isDebugEnabled()) log.debug("mbr=" + mbr);
         if(!gms.members.contains(mbr)) {
-            if(log.isErrorEnabled()) log.error("mbr " + mbr + " is not a member !");
+            if(log.isTraceEnabled()) log.trace("mbr " + mbr + " is not a member !");
             return;
         }
 
