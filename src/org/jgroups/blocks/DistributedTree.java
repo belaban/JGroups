@@ -1,4 +1,4 @@
-// $Id: DistributedTree.java,v 1.12 2005/02/19 13:23:34 belaban Exp $
+// $Id: DistributedTree.java,v 1.13 2005/05/20 08:51:15 mark_riley99 Exp $
 
 package org.jgroups.blocks;
 
@@ -27,8 +27,8 @@ public class DistributedTree implements MessageListener, MembershipListener {
     final Vector listeners=new Vector();
     final Vector view_listeners=new Vector();
     final Vector members=new Vector();
-    Channel channel=null;
-    RpcDispatcher disp=null;
+    protected Channel channel=null;
+    protected RpcDispatcher disp=null;
     String groupname="DistributedTreeGroup";
     String channel_properties="UDP(mcast_addr=228.1.2.3;mcast_port=45566;ip_ttl=0):" +
             "PING(timeout=5000;num_initial_members=6):" +
@@ -180,13 +180,28 @@ public class DistributedTree implements MessageListener, MembershipListener {
     }
 
     public void add(String fqn, Serializable element) {
+        add(fqn, element, 0);
+    }
+
+    /** resets an existing node, useful after a merge when you want to tell other 
+     *  members of your state, but do not wish to remove and then add as two separate calls */
+    public void reset(String fqn, Serializable element) 
+    {
+        reset(fqn, element, 0);
+    }
+
+    public void remove(String fqn) {
+        remove(fqn, 0);
+    }
+
+    public void add(String fqn, Serializable element, int timeout) {
         //Changes done by <aos>
         //if true, propagate action to the group
         if(send_message == true) {
             try {
 				MethodCall call = new MethodCall("_add", new Object[] {fqn, element}, 
                     new String[] {String.class.getName(), Serializable.class.getName()});
-                disp.callRemoteMethods(null, call, GroupRequest.GET_ALL, 0);
+                disp.callRemoteMethods(null, call, GroupRequest.GET_ALL, timeout);
             }
             catch(Exception ex) {
                 if(log.isErrorEnabled()) log.error("exception=" + ex);
@@ -197,14 +212,34 @@ public class DistributedTree implements MessageListener, MembershipListener {
         }
     }
 
+    /** resets an existing node, useful after a merge when you want to tell other 
+     *  members of your state, but do not wish to remove and then add as two separate calls */
+    public void reset(String fqn, Serializable element, int timeout) 
+    {
+        //Changes done by <aos>
+        //if true, propagate action to the group
+        if(send_message == true) {
+            try {
+				MethodCall call = new MethodCall("_reset", new Object[] {fqn, element}, 
+                    new String[] {String.class.getName(), Serializable.class.getName()});
+                disp.callRemoteMethods(null, call, GroupRequest.GET_ALL, timeout);
+            }
+            catch(Exception ex) {
+                if(log.isErrorEnabled()) log.error("exception=" + ex);
+            }
+        }
+        else {
+            _add(fqn, element);
+        }
+    }
 
-    public void remove(String fqn) {
+    public void remove(String fqn, int timeout) {
         //Changes done by <aos>
         //if true, propagate action to the group
         if(send_message == true) {
             try {
             	MethodCall call = new MethodCall("_remove", new Object[] {fqn}, new String[] {String.class.getName()});
-                disp.callRemoteMethods(null, call, GroupRequest.GET_ALL, 0);
+                disp.callRemoteMethods(null, call, GroupRequest.GET_ALL, timeout);
             }
             catch(Exception ex) {
                 if(log.isErrorEnabled()) log.error("exception=" + ex);
@@ -236,13 +271,17 @@ public class DistributedTree implements MessageListener, MembershipListener {
 
 
     public void set(String fqn, Serializable element) {
+		set(fqn, element, 0);
+    }
+
+    public void set(String fqn, Serializable element, int timeout) {
 		//Changes done by <aos>
 		//if true, propagate action to the group
         if(send_message == true) {
             try {
 				MethodCall call = new MethodCall("_set", new Object[] {fqn, element}, 
                     new String[] {String.class.getName(), Serializable.class.getName()});
-                disp.callRemoteMethods(null, call, GroupRequest.GET_ALL, 0);
+                disp.callRemoteMethods(null, call, GroupRequest.GET_ALL, timeout);
             }
             catch(Exception ex) {
                 if(log.isErrorEnabled()) log.error("exception=" + ex);
@@ -394,6 +433,21 @@ public class DistributedTree implements MessageListener, MembershipListener {
         if(n == null) {
             if(log.isErrorEnabled()) log.error("node " + fqn + " not found");
             return;
+        }
+        old_el=n.element;
+        n.element=element;
+        notifyNodeModified(fqn, old_el, element);
+    }
+
+    /** similar to set, but does not error if node does not exist, but rather does an add instead */
+    public void _reset(String fqn, Serializable element) {
+        Node n;
+        Serializable old_el=null;
+
+        if(fqn == null || element == null) return;
+        n=findNode(fqn);
+        if(n == null) {
+            _add(fqn, element);
         }
         old_el=n.element;
         n.element=element;
