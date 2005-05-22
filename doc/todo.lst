@@ -1,4 +1,4 @@
-$Id: todo.lst,v 1.20 2004/12/24 14:15:37 belaban Exp $
+$Id: todo.lst,v 1.21 2005/05/22 21:29:48 belaban Exp $
 
 
 
@@ -35,9 +35,6 @@ $Id: todo.lst,v 1.20 2004/12/24 14:15:37 belaban Exp $
 
 - Support for IPv6 addresses
 
-- TCP: instead of sending to each receiver in turn, use 1 queue/thread per receiver. This prevents
-  the server from hanging of a receiver hangs
-
 - Convert TUNNEL, TCP, GossipRouter to Streamable
 
 - Logical IpAddress: use any number of NICs, and fail over between
@@ -45,9 +42,6 @@ $Id: todo.lst,v 1.20 2004/12/24 14:15:37 belaban Exp $
 
 - TCPPING: make generic, e.g. STATIC_PING. Can apply to UDP transport
   as well.
-
-- Retain only n messages (bounded storage) in NAKACK/NakReceiverWindow rather than unlimited. Discard
-  newest messages when buffer is full
 
 - Add pinging over socket established by FD_SOCK
 
@@ -59,9 +53,6 @@ $Id: todo.lst,v 1.20 2004/12/24 14:15:37 belaban Exp $
 - org.javagroups.tests.Bsh: use Channel with only unicast properties
   to connect to remote member(s). Advantage is that we can include
   fragmentation. todo: add connect(Address) to Channel.
-
-- UDP should bind to *all* available network interfaces for receiving
-  messages (JDK 1.4 specific)
 
 - NAKACK: send xmits also to other members if no response from
   original sender (e.g. because it crashed). All members therefore
@@ -86,18 +77,8 @@ $Id: todo.lst,v 1.20 2004/12/24 14:15:37 belaban Exp $
   the message, M can be retransmitted to the members who did not
   receive the message.
 
-- Handle MergeViews in DistributedHashtable, ReplicatedHashtable etc
-
-- FD: add similar mechanism as for FD_SOCK to accommodate for lost
-  SUSPECT broadcasts
-
-- FD_SOCK: use membership to establish logical failure detection ring,
-  rather than multicast
-
 - Replace List/Queue/Stack with equivalent classes in java.util or
   Trove (trove4j.sf.net). Use concurrent.jar
-
-- Change GroupRequest: wait(10000) --> wait()
 
 - ThreadPool: should release unused threads after some time.
   --> Replace ThreadPool with Executor in concurrent.util
@@ -134,34 +115,8 @@ $Id: todo.lst,v 1.20 2004/12/24 14:15:37 belaban Exp $
     message, LP will rerieve the real address and forward the message
     to the correct member.
 
-- Make JUnit tests out of Ack*Windows in ./stack
-
-- NakReceiverWindow: make storing of *delivered* (delivered_msgs)
-  messages optional. The pbcast version of NAKACK for example requests
-  retransmission only from the sender directly, therefore we don't
-  need the delivered messages.
-
 - Multiplexer building block. Allows multiple building blocks on top
   of the same channel (could extend PullPushAdaptor)
-
-- Integrate group membership with PBCAST ? No pbcast.GMS needed ?
-
-- NAKACK/NakReceiverWindow:
-  - NakReceiverWindow.Retransmitter.remove(): linear search for
-    removable element plus linear removal: 2 linear access patterns !
-    Replace with log(n) access pattern, e.g. TreeMap
-  - updateHighestSeqno(): linear search
-
-- ReplicatedTree:
-  - Add mounting functionality (mounts another RT into an existing
-    node)
-  - Replicated file system on top of Replicated Tree. Nodes are
-    directories/files, and hashtable data is contents, creation time
-    etc. A FileReader/FileWriter subclass can be written which uses a
-    RT instead of the file system.
-
-- NAKACK: add functionality to xmit missing messages in batches
-  (already impemented in pbcast.NAKACK)
 
 - Make building blocks work over the same protocol stack
   (Channel). E.g. register building blocks with PullPushAdaptor,
@@ -174,12 +129,6 @@ $Id: todo.lst,v 1.20 2004/12/24 14:15:37 belaban Exp $
 
 - pbcast.STATE_TRANSFER: allow for multiple chunks of state data due
   to large states
-
-- ThreadPool: instead of allocating threads in a static array, make
-  the array grow and shrink, allowing to return unused threads to the
-  system resources
-
-- Make the max. number of threads in Scheduler user-defined
 
 - Debugging tool: shows layers with number of messages in each
   layer. Instrumentation of protocol layer should be as non-instrusive
@@ -201,24 +150,9 @@ $Id: todo.lst,v 1.20 2004/12/24 14:15:37 belaban Exp $
 - Multiple Routers communicating with IP MCAST; clients connect via
   TCP. Tunnels through links that don't support IPMCAST.
 
-- Gugielmo Lichter: use freelist for 'new Element()' in Queue.java
-- (and List.java (bela) !!)
-- Gugielmo Lichter: TOTAL.java: Class SavedMessages uses a Vector, whereas a linked list would be
-  a lot faster.
-- Gugielmo Lichter:  Class MessageAcks stores acks as a Vector, whereas a Hashtable might
-  work better.
-- Gugielmo Lichter: In the same class, the method GetLowestSeqAcks scans the whole
-  Vector to find the smallest cumulative ack. Perhaps storing the
-  acks as a an ordered linked list as well as a Hashtable might
-  be more efficient.
-
 - Replace TimedWriter with TimedExecutor; more generic API for timed
   executions. Current implementation is hacked for writing to a file
   and creating a socket.
-
-- MethodCall.findMethod(): better matching of supplied arguments with
-  formal parameters ! Dispatching not only according to type of
-  receiver, but also types of arguments ! (CLOS, Ada)
 
 - Adapter classes making use of Channel assume the channel is already
   connected when starting. However, if this is not the case, they
@@ -231,9 +165,6 @@ $Id: todo.lst,v 1.20 2004/12/24 14:15:37 belaban Exp $
   maintains a socket (UDP or TCP) and allows clients to send/mcast
   messages and read messages sent to the group via the socket. This
   way, clients do not have to join the group.
-
-- QUEUE: unblock queue after n seconds of blocking. We might just have
-  forgotten to unblock it, and the whole process hangs !
 
 - Distributed Shell: a number of xterm windows, each on a different
   machine. The screen is split: the upper half is for commands that
@@ -254,6 +185,38 @@ $Id: todo.lst,v 1.20 2004/12/24 14:15:37 belaban Exp $
 				 Done
 				 ----
 
+
+- April 2005 (bela)
+  Retain only n messages (bounded storage) in NAKACK/NakReceiverWindow rather than unlimited. Discard
+  newest messages when buffer is full
+
+- April 2005 (bela)
+  TCP: instead of sending to each receiver in turn, use 1 queue/thread per receiver. This prevents
+  the server from hanging of a receiver hangs
+
+- March 2005 (bela)
+  FD: add similar mechanism as for FD_SOCK to accommodate for lost
+  SUSPECT broadcasts
+- FD_SOCK: use membership to establish logical failure detection ring,
+  rather than multicast
+
+
+- Feb 2005 (bela)
+  NAKACK/NakReceiverWindow:
+  - NakReceiverWindow.Retransmitter.remove(): linear search for
+    removable element plus linear removal: 2 linear access patterns !
+    Replace with log(n) access pattern, e.g. TreeMap
+  - updateHighestSeqno(): linear search
+
+- Feb 2005 (bela)
+  NakReceiverWindow: make storing of *delivered* (delivered_msgs)
+  messages optional. The pbcast version of NAKACK for example requests
+  retransmission only from the sender directly, therefore we don't
+  need the delivered messages.
+
+- Feb 2005 (bela)
+  UDP should bind to *all* available network interfaces for receiving
+  messages (JDK 1.4 specific)
 
 - Oct 6 2004 (bela)
   FD_SOCK problem on multi-homed systems
@@ -861,6 +824,11 @@ $Id: todo.lst,v 1.20 2004/12/24 14:15:37 belaban Exp $
 			       --------
 
 
+
+
+- May 2005 (bela)
+  Handle MergeViews in DistributedHashtable, ReplicatedHashtable etc
+  --> these classes are deprecated, not maintained anymore
 
 - 2003 (bela)
   Since message IDs are ever increasing with PBCAST, we have to reset
