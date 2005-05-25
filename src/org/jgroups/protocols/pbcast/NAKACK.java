@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.42 2005/05/25 14:32:40 belaban Exp $
+// $Id: NAKACK.java,v 1.43 2005/05/25 15:39:13 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -584,8 +584,17 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
                 m=(Message)sent_msgs.get(new Long(i)); // no need to synchronize
             if(m == null) {
                 if(log.isErrorEnabled()) {
-                    log.error("(requester=" + xmit_requester + ", local_addr=" + this.local_addr + ") message " +
-                              original_sender + "::" + i + " not found in " + (win == null? "sent" : "received") + " msgs");
+                    StringBuffer sb=new StringBuffer();
+                    sb.append("(requester=").append(xmit_requester).append(", local_addr=").append(this.local_addr);
+                    sb.append(") message ").append(original_sender).append("::").append(i);
+                    sb.append(" not found in ").append((win == null? "sent" : "received")).append(" msgs. ");
+                    if(win != null) {
+                        sb.append("Received messages: ").append(win.toString());
+                    }
+                    else {
+                        sb.append("Sent messages: ").append(printSentMsgs());
+                    }
+                    log.error(sb.toString());
                 }
                 continue;
             }
@@ -1012,7 +1021,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
         NakAckHeader hdr;
         Message retransmit_msg;
 
-        if(xmit_from_random_member) {
+        if(xmit_from_random_member && !local_addr.equals(sender)) {
             Address random_member=(Address)Util.pickRandomElement(members);
             if(random_member != null && !local_addr.equals(random_member)) {
                 sender=random_member;
