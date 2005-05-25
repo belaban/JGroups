@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.41 2005/05/25 12:56:07 belaban Exp $
+// $Id: NAKACK.java,v 1.42 2005/05/25 14:32:40 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -364,7 +364,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
                     }
                     return;
                 }
-                handleXmitReq(msg.getSrc(), hdr.range.low, hdr.range.high);
+                handleXmitReq(msg.getSrc(), hdr.range.low, hdr.range.high, hdr.sender);
                 return;
 
             case NakAckHeader.XMIT_RSP:
@@ -544,30 +544,48 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
      * message into multiple, smaller-chunked messages. But in most cases this still yields fewer messages than if each
      * requested message was retransmitted separately.
      *
-     * @param dest        The sender of the XMIT_REQ, we have to send the requested copy of the message to this address
+     * @param xmit_requester        The sender of the XMIT_REQ, we have to send the requested copy of the message to this address
      * @param first_seqno The first sequence number to be retransmitted (<= last_seqno)
      * @param last_seqno  The last sequence number to be retransmitted (>= first_seqno)
+     * @param original_sender The member who originally sent the messsage. Guaranteed to be non-null
      */
-    void handleXmitReq(Address dest, long first_seqno, long last_seqno) {
+    void handleXmitReq(Address xmit_requester, long first_seqno, long last_seqno, Address original_sender) {
         Message m, tmp;
         LinkedList list;
         long size=0, marker=first_seqno, len;
+        NakReceiverWindow win=null;
 
-        if(log.isTraceEnabled())
-            log.trace(local_addr + ": received xmit request for " + dest + " [" + first_seqno + " - " + last_seqno + ']');
+        if(log.isTraceEnabled()) {
+            StringBuffer sb=new StringBuffer();
+            sb.append(local_addr).append(": received xmit request from ").append(xmit_requester).append(" for ");
+            sb.append(original_sender).append(" [").append(first_seqno).append(" - ").append(last_seqno).append("]");
+            log.trace(sb.toString());
+        }
 
         if(first_seqno > last_seqno) {
             if(log.isErrorEnabled())
                 log.error("first_seqno (" + first_seqno + ") > last_seqno (" + last_seqno + "): not able to retransmit");
             return;
         }
+
+        if(!local_addr.equals(original_sender)) {
+            // retransmit from received messages table
+            win=(NakReceiverWindow)received_msgs.get(original_sender);
+        }
+        else {
+            // retransmit from sent messages table
+        }
+
         list=new LinkedList();
         for(long i=first_seqno; i <= last_seqno; i++) {
-            m=(Message)sent_msgs.get(new Long(i)); // no need to synchronize
+            if(win != null)
+                m=win.get(i);
+            else
+                m=(Message)sent_msgs.get(new Long(i)); // no need to synchronize
             if(m == null) {
                 if(log.isErrorEnabled()) {
-                    log.error("(requester=" + dest + ", local_addr=" + this.local_addr + ") message with " +
-                            "seqno=" + i + " not found in sent_msgs ! sent_msgs=" + printSentMsgs());
+                    log.error("(requester=" + xmit_requester + ", local_addr=" + this.local_addr + ") message " +
+                              original_sender + "::" + i + " not found in " + (win == null? "sent" : "received") + " msgs");
                 }
                 continue;
             }
@@ -578,8 +596,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
 
                 // size has reached max_xmit_size. go ahead and send message (excluding the current message)
                 if(log.isTraceEnabled())
-                    log.trace("xmitting msgs [" + marker + '-' + (i - 1) + "] to " + dest);
-                sendXmitRsp(dest, (LinkedList)list.clone(), marker, i - 1);
+                    log.trace("xmitting msgs [" + marker + '-' + (i - 1) + "] to " + xmit_requester);
+                sendXmitRsp(xmit_requester, (LinkedList)list.clone(), marker, i - 1);
                 marker=i;
                 list.clear();
                 // fixed Dec 15 2003 (bela, patch from Joel Dice (dicej)), see explanantion under
@@ -592,15 +610,15 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
             else {
                 tmp=m;
             }
-            tmp.setDest(dest);
+            tmp.setDest(xmit_requester);
             tmp.setSrc(local_addr);
             list.add(tmp);
         }
 
         if(list.size() > 0) {
             if(log.isTraceEnabled())
-                log.trace("xmitting msgs [" + marker + '-' + last_seqno + "] to " + dest);
-            sendXmitRsp(dest, (LinkedList)list.clone(), marker, last_seqno);
+                log.trace("xmitting msgs [" + marker + '-' + last_seqno + "] to " + xmit_requester);
+            sendXmitRsp(xmit_requester, (LinkedList)list.clone(), marker, last_seqno);
             list.clear();
         }
     }
@@ -992,18 +1010,22 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
      */
     public void retransmit(long first_seqno, long last_seqno, Address sender) {
         NakAckHeader hdr;
-        Message retransmit_msg=new Message(sender, null, null);
+        Message retransmit_msg;
 
+        if(xmit_from_random_member) {
+            Address random_member=(Address)Util.pickRandomElement(members);
+            if(random_member != null && !local_addr.equals(random_member)) {
+                sender=random_member;
+                if(log.isTraceEnabled())
+                    log.trace("picked random member " + random_member + " to send XMIT request to");
+            }
+        }
+
+        retransmit_msg=new Message(sender, null, null);
         if(log.isTraceEnabled())
             log.trace(local_addr + ": sending XMIT_REQ ([" + first_seqno + ", " + last_seqno + "]) to " + sender);
-        //
-        //  if(log.isDebugEnabled()) log.debug("TRACE.special()", "XMIT: " + first_seqno + " - " + last_seqno + ", sender=" + sender);
 
-        //for(long i=first_seqno; i <= last_seqno; i++) {
-        //  addXmitRequest(sender, i);
-        //}
-
-        hdr=new NakAckHeader(NakAckHeader.XMIT_REQ, first_seqno, last_seqno);
+        hdr=new NakAckHeader(NakAckHeader.XMIT_REQ, first_seqno, last_seqno, sender);
         retransmit_msg.putHeader(name, hdr);
         passDown(new Event(Event.MSG, retransmit_msg));
     }
