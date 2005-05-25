@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.40 2005/04/20 11:18:33 belaban Exp $
+// $Id: NAKACK.java,v 1.41 2005/05/25 12:56:07 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -42,6 +42,12 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
      * message, the sender only retransmits once.
      */
     private boolean use_mcast_xmit=false;
+
+    /**
+     * Ask a random member for retransmission of a missing message. If set to true, discard_delivered_msgs will be
+     * set to false
+     */
+    private boolean xmit_from_random_member=false;
 
 
     /**
@@ -420,10 +426,23 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
             props.remove("discard_delivered_msgs");
         }
 
+        str=props.getProperty("xmit_from_random_member");
+        if(str != null) {
+            xmit_from_random_member=Boolean.valueOf(str).booleanValue();
+            props.remove("xmit_from_random_member");
+        }
+
         str=props.getProperty("max_xmit_buf_size");
         if(str != null) {
             max_xmit_buf_size=Integer.parseInt(str);
             props.remove("max_xmit_buf_size");
+        }
+
+        if(xmit_from_random_member) {
+            if(discard_delivered_msgs) {
+                discard_delivered_msgs=false;
+                log.warn("xmit_from_random_member set to true: changed discard_delivered_msgs to false");
+            }
         }
 
         if(props.size() > 0) {

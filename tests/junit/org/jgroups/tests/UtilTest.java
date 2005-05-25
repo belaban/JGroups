@@ -1,4 +1,4 @@
-// $Id: UtilTest.java,v 1.5 2004/10/08 12:17:16 belaban Exp $
+// $Id: UtilTest.java,v 1.6 2005/05/25 12:56:09 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -35,12 +35,6 @@ public class UtilTest extends TestCase {
     }
 
 
-    public void setUp() {
-
-    }
-
-    public void tearDown() {
-    }
 
 
     public void testWriteStreamable() throws IOException, IllegalAccessException, InstantiationException {
@@ -193,6 +187,20 @@ public class UtilTest extends TestCase {
         assertTrue(Util.match(a,e));
         assertTrue(Util.match(c,c));
         assertFalse(Util.match(c, a));
+    }
+
+
+    public void testPickRandomElement() {
+        Vector v=new Vector();
+        for(int i=0; i < 10; i++) {
+            v.add(new Integer(i));
+        }
+
+        Integer el;
+        for(int i=0; i < 10000; i++) {
+            el=(Integer)Util.pickRandomElement(v);
+            assertTrue(el.intValue() >= 0 && el.intValue() < 10);
+        }
     }
 
 
