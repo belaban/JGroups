@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.36 2005/04/26 15:22:14 belaban Exp $
+// $Id: Util.java,v 1.37 2005/05/25 12:56:08 belaban Exp $
 
 package org.jgroups.util;
 
@@ -854,6 +854,14 @@ public class Util {
         }
 
         return ret;
+    }
+
+
+    public static Object pickRandomElement(Vector list) {
+        if(list == null) return null;
+        int size=list.size();
+        int index=(int)((Math.random() * size * 10) % size);
+        return list.get(index);
     }
 
 
