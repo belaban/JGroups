@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindow.java,v 1.20 2005/04/18 15:31:37 belaban Exp $
+// $Id: NakReceiverWindow.java,v 1.21 2005/05/25 12:25:15 belaban Exp $
 
 
 package org.jgroups.stack;
@@ -639,6 +639,34 @@ public class NakReceiverWindow {
             log.error("failed acquiring read lock", e);
             return null;
         }
+    }
+
+    /**
+     * Returns the message from received_msgs or delivered_msgs
+     * @param seqno
+     * @return
+     */
+    public Message get(long sequence_num) {
+        Message msg;
+        Long seqno=new Long(sequence_num);
+        try {
+            lock.readLock().acquire();
+            try {
+                msg=(Message)delivered_msgs.get(seqno);
+                if(msg != null)
+                    return msg;
+                msg=(Message)received_msgs.get(seqno);
+                if(msg != null)
+                    return msg;
+            }
+            finally {
+                lock.readLock().release();
+            }
+        }
+        catch(InterruptedException e) {
+            log.error("failed acquiring read lock", e);
+        }
+        return null;
     }
 
 

@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindowTest.java,v 1.4 2005/04/08 12:58:46 belaban Exp $
+// $Id: NakReceiverWindowTest.java,v 1.5 2005/05/25 12:25:15 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -17,17 +17,12 @@ public class NakReceiverWindowTest extends TestCase {
         super(name);
     }
 
-    public void setUp() {
-    }
-
-    public void tearDown() {
-    }
-
 
     public void test1() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(null, 1);
         assertTrue(win.getLowestSeen() == 0);
         assertTrue(win.getHighestSeen() == 0);
+        assertNull(win.get(23));
     }
 
     public void test2() throws Exception {
@@ -39,11 +34,13 @@ public class NakReceiverWindowTest extends TestCase {
     public void test3() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(null, 1);
         win.add(1, new Message());
+        assertNotNull(win.get(1));
         assertTrue(win.getLowestSeen() == 1);
         assertTrue(win.getHighestSeen() == 1);
         win.add(2, new Message());
         assertTrue(win.getLowestSeen() == 1);
         assertTrue(win.getHighestSeen() == 2);
+        assertNotNull(win.get(2));
     }
 
     public void test4() throws Exception {
@@ -66,6 +63,8 @@ public class NakReceiverWindowTest extends TestCase {
         win.add(101, new Message());
         win.add(100, new Message());
         while((win.remove()) != null) ;
+        assertNotNull(win.get(100));
+        assertNotNull(win.get(101));
         assertTrue(win.getLowestSeen() == 100);
         assertTrue(win.getHighestSeen() == 101);
     }
@@ -79,6 +78,7 @@ public class NakReceiverWindowTest extends TestCase {
         win.stable(4);
         assertTrue(win.getLowestSeen() == 1);
         assertTrue(win.getHighestSeen() == 4);
+        assertNotNull(win.get(2));
     }
 
 
@@ -106,6 +106,7 @@ public class NakReceiverWindowTest extends TestCase {
         win.add(6, new Message());
         while((win.remove()) != null) ;
         win.stable(6);
+        assertNull(win.get(2));
 
         //System.out.println(win);
         //System.out.println("highest received=" + win.getHighestReceived() +
