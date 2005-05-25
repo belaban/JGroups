@@ -1,10 +1,11 @@
-// $Id: NakAckHeader.java,v 1.10 2005/04/20 11:13:18 belaban Exp $
+// $Id: NakAckHeader.java,v 1.11 2005/05/25 14:32:40 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
 
 import org.jgroups.Header;
 import org.jgroups.Global;
+import org.jgroups.Address;
 import org.jgroups.util.Range;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
@@ -21,6 +22,7 @@ public class NakAckHeader extends Header implements Streamable {
     byte  type=0;
     long  seqno=-1;        // seqno of regular message (MSG)
     Range range=null;      // range of msgs to be retransmitted (XMIT_REQ) or retransmitted (XMIT_RSP)
+    Address sender;        // the original sender of the message (for XMIT_REQ)
 
 
     public NakAckHeader() {
@@ -44,11 +46,18 @@ public class NakAckHeader extends Header implements Streamable {
     }
 
 
+    public NakAckHeader(byte type, long low, long high, Address sender) {
+        this(type, low, high);
+        this.sender=sender;
+    }
+
     public long size() {
         // type (1 byte) + seqno (8 bytes) + presence (1 byte)
         int retval=Global.BYTE_SIZE + Global.LONG_SIZE + Global.BYTE_SIZE;
         if(range != null)
             retval+= (2 * Global.LONG_SIZE); // presence byte, plus 2 times 8 bytes for seqno
+        if(sender != null)
+            retval+=sender.size();
         return retval;
     }
 
@@ -62,6 +71,7 @@ public class NakAckHeader extends Header implements Streamable {
         }
         else
             out.writeBoolean(false);
+        out.writeObject(sender);
     }
 
 
@@ -74,24 +84,28 @@ public class NakAckHeader extends Header implements Streamable {
             range=new Range();
             range.readExternal(in);
         }
+        sender=(Address)in.readObject();
     }
 
     public void writeTo(DataOutputStream out) throws IOException {
         out.writeByte(type);
         out.writeLong(seqno);
         Util.writeStreamable(range, out);
+        Util.writeAddress(sender, out);
     }
 
     public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
         type=in.readByte();
         seqno=in.readLong();
         range=(Range)Util.readStreamable(Range.class, in);
+        sender=Util.readAddress(in);
     }
 
 
     public NakAckHeader copy() {
         NakAckHeader ret=new NakAckHeader(type, seqno);
         ret.range=range;
+        ret.sender=sender;
         return ret;
     }
 
@@ -114,6 +128,7 @@ public class NakAckHeader extends Header implements Streamable {
         StringBuffer ret=new StringBuffer();
         ret.append("[NAKACK: ").append(type2Str(type)).append(", seqno=").append(seqno);
         ret.append(", range=").append(range);
+        if(sender != null) ret.append(", sender=" + sender);
         ret.append(']');
         return ret.toString();
     }
