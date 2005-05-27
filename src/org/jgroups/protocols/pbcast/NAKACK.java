@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.43 2005/05/25 15:39:13 belaban Exp $
+// $Id: NAKACK.java,v 1.44 2005/05/27 22:01:41 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -554,6 +554,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
         LinkedList list;
         long size=0, marker=first_seqno, len;
         NakReceiverWindow win=null;
+        boolean      amISender; // am I the original sender ?
 
         if(log.isTraceEnabled()) {
             StringBuffer sb=new StringBuffer();
@@ -568,31 +569,29 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
             return;
         }
 
-        if(!local_addr.equals(original_sender)) {
-            // retransmit from received messages table
+        amISender=local_addr.equals(original_sender);
+        if(!amISender)
             win=(NakReceiverWindow)received_msgs.get(original_sender);
-        }
-        else {
-            // retransmit from sent messages table
-        }
 
         list=new LinkedList();
         for(long i=first_seqno; i <= last_seqno; i++) {
-            if(win != null)
-                m=win.get(i);
-            else
+            if(amISender) {
                 m=(Message)sent_msgs.get(new Long(i)); // no need to synchronize
+            }
+            else {
+                m=win != null? win.get(i) : null;
+            }
             if(m == null) {
                 if(log.isErrorEnabled()) {
                     StringBuffer sb=new StringBuffer();
                     sb.append("(requester=").append(xmit_requester).append(", local_addr=").append(this.local_addr);
                     sb.append(") message ").append(original_sender).append("::").append(i);
-                    sb.append(" not found in ").append((win == null? "sent" : "received")).append(" msgs. ");
+                    sb.append(" not found in ").append((amISender? "sent" : "received")).append(" msgs. ");
                     if(win != null) {
-                        sb.append("Received messages: ").append(win.toString());
+                        sb.append("Received messages from " + original_sender + ": ").append(win.toString());
                     }
                     else {
-                        sb.append("Sent messages: ").append(printSentMsgs());
+                        sb.append("\nSent messages: ").append(printSentMsgs());
                     }
                     log.error(sb.toString());
                 }
@@ -619,8 +618,10 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
             else {
                 tmp=m;
             }
-            tmp.setDest(xmit_requester);
-            tmp.setSrc(local_addr);
+            // tmp.setDest(xmit_requester);
+            // tmp.setSrc(local_addr);
+            if(tmp.getSrc() == null)
+                tmp.setSrc(local_addr);
             list.add(tmp);
         }
 
@@ -1020,21 +1021,21 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
     public void retransmit(long first_seqno, long last_seqno, Address sender) {
         NakAckHeader hdr;
         Message retransmit_msg;
+        Address dest=sender; // to whom do we send the XMIT request ?
 
         if(xmit_from_random_member && !local_addr.equals(sender)) {
             Address random_member=(Address)Util.pickRandomElement(members);
             if(random_member != null && !local_addr.equals(random_member)) {
-                sender=random_member;
+                dest=random_member;
                 if(log.isTraceEnabled())
-                    log.trace("picked random member " + random_member + " to send XMIT request to");
+                    log.trace("picked random member " + dest + " to send XMIT request to");
             }
         }
 
-        retransmit_msg=new Message(sender, null, null);
-        if(log.isTraceEnabled())
-            log.trace(local_addr + ": sending XMIT_REQ ([" + first_seqno + ", " + last_seqno + "]) to " + sender);
-
         hdr=new NakAckHeader(NakAckHeader.XMIT_REQ, first_seqno, last_seqno, sender);
+        retransmit_msg=new Message(dest, null, null);
+        if(log.isTraceEnabled())
+            log.trace(local_addr + ": sending XMIT_REQ ([" + first_seqno + ", " + last_seqno + "]) to " + dest);
         retransmit_msg.putHeader(name, hdr);
         passDown(new Event(Event.MSG, retransmit_msg));
     }

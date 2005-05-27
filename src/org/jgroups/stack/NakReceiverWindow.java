@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindow.java,v 1.21 2005/05/25 12:25:15 belaban Exp $
+// $Id: NakReceiverWindow.java,v 1.22 2005/05/27 22:01:43 belaban Exp $
 
 
 package org.jgroups.stack;
@@ -185,6 +185,9 @@ public class NakReceiverWindow {
     public void add(long seqno, Message msg) {
         long old_tail;
 
+        // if(log.isTraceEnabled())
+           // log.trace("win: " + toString());
+
         try {
             lock.writeLock().acquire();
             try {
@@ -279,12 +282,6 @@ public class NakReceiverWindow {
             lock.writeLock().acquire();
             try {
                 while(received_msgs.size() > 0) {
-                    if(log.isTraceEnabled()) {
-                        StringBuffer sb=new StringBuffer("received msgs=");
-                        sb.append(received_msgs.size()).append(", max_xmit_buf_size=").append(max_xmit_buf_size);
-                        log.trace(sb.toString());
-                    }
-
                     key=(Long)received_msgs.firstKey();
                     retval=(Message)received_msgs.get(key);
                     if(retval != null) { // message exists and is ready for delivery
