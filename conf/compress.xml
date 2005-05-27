@@ -18,6 +18,6 @@
 
     <!-- min_size: the min size of a message payload (number of bytes) before compression kicks in -->
     <!-- compression_level: 0: no compression (faster) - 9: best compression (slower) -->
-    <COMPRESS min_size="500" compression_level="9"/>
+    <COMPRESS min_size="10" compression_level="9"/>
     <pbcast.STATE_TRANSFER />
 </config>
