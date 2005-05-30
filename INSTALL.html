@@ -23,11 +23,12 @@ JGroups from source.<br>
 <br>
 <h3> Requirements</h3>
 <ul>
-  <li> JGroups 2.1.x and higher requires JDK 1.3 (or higher). There
-is no JNI code present so it should run on all platforms. JDKs 1.4 and
-1.5 are
-fine
-too.</li>
+  <li>JGroups 2.2.8 has a version that runs on JDK 1.3, and one that
+requires 1.4 or higher.<br>
+  </li>
+  <li>From JGroups 2.2.9 on, the required JDK is 1.4 or higher. There
+is no JNI code present so it should run on all platforms.<br>
+  </li>
   <li> An XML parser is required for configuration of JGroups if
 you want the ability to use XML configuration files for class mapping,
 and to read protocol stack specifications in XML format. Not using an
@@ -35,7 +36,9 @@ XML parser will result in slower serialization and limit you to use
 only
 plain protocol stack configuration strings. Note that any other JAXP
 compliant XML parser can
-be used.</li>
+be used. This is only relevant for JDK 1.3; higher JDKs come with an
+XML parser.<br>
+  </li>
   <li>If you want to generate HTML-based test reports from the
 unittests, then xalan.jar needs to be in the CLASSPATH (also available
 in the lib
@@ -69,6 +72,9 @@ somewhere in your CLASSPATH.<br>
 <h3>Installing the source distribution</h3>
 The source version consists of the following directories:<br>
 <ol>
+  <li>src: the sources</li>
+  <li>test: unit and stress tests<br>
+  </li>
   <li>conf: configuration files needed by JGroups, plus default
 protocol stack definitions</li>
   <li>doc: documentation</li>
@@ -94,8 +100,8 @@ output of the JUnit tests using an XSLT converter to HTML</li>
 <h3>Building JGroups&nbsp; (source distribution
 only)</h3>
 <ol>
-  <li>Unzip the source distribution, e.g. unzip JGroups-2.1.x.src.zip.
-This will create the JGroups-2.1.x directory (root directory) under the
+  <li>Unzip the source distribution, e.g. unzip JGroups-2.x.x.src.zip.
+This will create the JGroups-2.x.x directory (root directory) under the
 current directory.<br>
   </li>
   <li> cd to the root directory</li>
@@ -106,9 +112,7 @@ javac (e.g. jikes)<br>
   <li> On UNIX systems use <tt>build.sh</tt>, on Windows <tt>build.bat:
 $&gt; <b>./build.sh compile</b></tt></li>
   <li> This will compile all Java files (into the <tt>classes</tt>
-directory). Note that if you want to compile all JDK 1.4-only classes
-use
-.<b>/build.sh compile-1.4</b> instead.&nbsp;</li>
+directory).</li>
   <li>To generate the JARs:&nbsp;<tt>$&gt; <b>./build.sh jar</b></tt></li>
   <li>This will generate the following JAR files in the <tt>dist</tt>
 directory:<br>
@@ -127,7 +131,7 @@ following directories and/or JARs have to be included:</li>
 build from
 sources, the two Ant JARs are required. To run unit tests, the JUnit
 (and
-possibly the Xalan) JARs are needed.<br>
+possibly Xalan) JARs are needed.<br>
     </li>
   </ol>
   <li>To generate JavaDocs simple run $&gt; &nbsp;.<b>/<tt>build.sh
@@ -149,14 +153,14 @@ To see whether your system can find the JGroups classes, execute the
 following command:
 <pre><b>java org.jgroups.Version<br></b></pre>
 <br>
-or<br>
+or (from JGroups 2.2.8 on)<br>
 <b><br>
 java -jar jgroups-all.jar<br>
 <br>
 </b><br>
 You should see the following output (more or less) if the class is
 found:
-<pre><br>Version:        2.2.8 RC1<br>CVS:            $Id: INSTALL.html,v 1.4 2005/04/26 12:57:27 belaban Exp $<br>History:        (see doc/history.txt for details)<br><br><br><br></pre>
+<pre><br>Version:        2.2.8 RC1<br>CVS:            $Id: INSTALL.html,v 1.5 2005/05/30 09:14:53 belaban Exp $<br>History:        (see doc/history.txt for details)<br><br><br><br></pre>
 <h3> Running a Demo Program</h3>
 To test whether JGroups works okay on your machine, run
 <pre><b>java org.jgroups.demos.Draw</b></pre>
@@ -216,7 +220,7 @@ setup IP multicast correctly. If you <b>are</b> the system
 administrator, look
 for another job :-)
 <p>Other means of getting help: there is a public forum on <a
- href="http://javagroups.sf.net"> javagroups.sf.net</a> for questions.
+ href="http://jira.jboss.com/jira/browse/JGRP">JIRA</a> for questions.
 Also consider subscribing to the javagroups-users mailing list to
 discuss such and other problems.&nbsp;</p>
 <p><br>
@@ -292,13 +296,13 @@ details on the subject.<br>
 </p>
 <h3> I have discovered a bug !</h3>
 If you think that you discovered a bug, submit a bug report on <a
- href="http://javagroups.sf.net"> javagroups.sf.net</a> or send email
+ href="http://jira.jboss.com/jira/browse/JGRP">JIRA</a> or send email
 to javagroups-developers if you're unsure about it. Please include the
 following information:
 <ul>
   <li> Version of JGroups (j<tt>ava org.jgroups.Version</tt>)</li>
   <li> Platform (e.g. Solaris 8)</li>
-  <li> Version of JDK (e.g. JDK 1.3.1)</li>
+  <li> Version of JDK (e.g. JDK 1.4.2_07)</li>
   <li> Stack trace. Use kill -3 PID on UNIX systems or CTRL-BREAK on
 windows machines</li>
   <li> Small program that reproduces the bug</li>
