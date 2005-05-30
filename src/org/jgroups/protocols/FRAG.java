@@ -1,4 +1,4 @@
-// $Id: FRAG.java,v 1.21 2005/04/20 13:50:05 belaban Exp $
+// $Id: FRAG.java,v 1.22 2005/05/30 13:50:43 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -28,7 +28,7 @@ import java.util.*;
  * multicast messages.
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.21 2005/04/20 13:50:05 belaban Exp $
+ * @version $Id: FRAG.java,v 1.22 2005/05/30 13:50:43 belaban Exp $
  */
 public class FRAG extends Protocol {
     private int frag_size=8192;  // conservative value
@@ -62,8 +62,7 @@ public class FRAG extends Protocol {
         }
 
         if(props.size() > 0) {
-            System.err.println("FRAG.setProperties(): the following properties are not recognized:");
-            props.list(System.out);
+            log.error("FRAG.setProperties(): the following properties are not recognized: " + props);
             return false;
         }
         return true;
