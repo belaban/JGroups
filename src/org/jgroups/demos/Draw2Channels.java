@@ -1,4 +1,4 @@
-// $Id: Draw2Channels.java,v 1.8 2005/05/30 14:31:02 belaban Exp $
+// $Id: Draw2Channels.java,v 1.9 2005/05/30 16:14:40 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -167,7 +167,7 @@ public class Draw2Channels implements ActionListener {
 	    draw.go();
 	}
 	catch(Exception e) {
-	    log.error(e);
+	    System.err.println(e);
 	    System.exit(0);
 	}
     }
@@ -235,7 +235,7 @@ public class Draw2Channels implements ActionListener {
 	    }
 	}
 	catch(Exception e) {
-	    log.error(e);
+	    System.err.println(e);
 	    return;
 	}
     }
@@ -315,20 +315,20 @@ public class Draw2Channels implements ActionListener {
 		    ClearPanel();
 		    continue;
 		default:
-		    log.error("***** Draw2Channels.run(): received invalid draw command " + comm.mode);
+		    System.err.println("***** Draw2Channels.run(): received invalid draw command " + comm.mode);
 		    break;
 		}
 
 	    }
 	    catch(ChannelNotConnected not) {
-		log.error("Draw2Channels: " + not);
+		System.err.println("Draw2Channels: " + not);
 		break;
 	    }
 	    catch(ChannelClosed closed) {
 		break;
 	    }
 	    catch(Exception e) {
-		log.error(e);
+		System.err.println(e);
 		continue;
 	    }
 	}
@@ -360,7 +360,7 @@ public class Draw2Channels implements ActionListener {
 	    data_channel.send(new Message(null, null, out.toByteArray()));
 	}
 	catch(Exception ex) {
-	    log.error(ex);
+	    System.err.println(ex);
 	}
     }
 
@@ -380,13 +380,13 @@ public class Draw2Channels implements ActionListener {
 		    control_channel.close();
 		}
 		catch(Exception ex) {
-		    log.error(ex);
+		    System.err.println(ex);
 		}
 		try {
 		    data_channel.close();
 		}
 		catch(Exception ex) {
-		    log.error(ex);
+		    System.err.println(ex);
 		}
 	    }
 	    mainFrame.setVisible(false);
@@ -456,7 +456,7 @@ public class Draw2Channels implements ActionListener {
 		Thread.yield(); // gives the repainter some breath
 	    }
 	    catch(Exception ex) {
-		log.error(ex);
+		System.err.println(ex);
 	    }
 	}
 	
@@ -528,7 +528,7 @@ public class Draw2Channels implements ActionListener {
 		    return;
 		}
 		catch(Exception e) {
-		    log.error("Draw2Channels.ControlReceiver.run(): " + e);
+		    System.err.println("Draw2Channels.ControlReceiver.run(): " + e);
 		    break;
 		}
 	    }	    
@@ -596,20 +596,20 @@ public class Draw2Channels implements ActionListener {
 			clearPanel();
 			continue;
 		    default:
-			log.error("***** Draw2Channels.run(): received invalid draw command " + comm.mode);
+			System.err.println("***** Draw2Channels.run(): received invalid draw command " + comm.mode);
 			break;
 		    }
 
 		}
 		catch(ChannelNotConnectedException not) {
-		    log.error("Draw2Channels: " + not);
+		    System.err.println("Draw2Channels: " + not);
 		    break;
 		}
 		catch(ChannelClosedException closed) {
 		    break;
 		}
 		catch(Exception e) {
-		    log.error(e);
+		    System.err.println(e);
 		    continue;
 	    }
 	    }	    

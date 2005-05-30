@@ -20,7 +20,7 @@ import java.util.Properties;
 public class PersistenceFactory
 {
 
-    protected final Log log=LogFactory.getLog(this.getClass());
+    protected final static Log log=LogFactory.getLog(PersistenceFactory.class);
 
     /**
      * Default private constructor// does nothing

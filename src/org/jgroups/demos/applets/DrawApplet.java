@@ -1,4 +1,4 @@
-// $Id: DrawApplet.java,v 1.4 2005/05/30 14:31:01 belaban Exp $
+// $Id: DrawApplet.java,v 1.5 2005/05/30 16:14:36 belaban Exp $
 
 package org.jgroups.demos.applets;
 
@@ -15,6 +15,8 @@ import java.io.DataOutputStream;
 import java.util.Random;
 import java.util.Vector;
 import org.jgroups.*;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 
 
@@ -36,18 +38,19 @@ public class DrawApplet extends Applet implements Runnable, MouseMotionListener,
     private int                    red=0, green=0, blue=0;
     private Color                  default_color=null;
 
-    private final ChannelFactory         factory=new JChannelFactory();
+    private final ChannelFactory   factory=new JChannelFactory();
     private String                 props="TUNNEL(router_host=janet;router_port=12002):" + 
 	                                 "PING(gossip_host=janet;gossip_port=12002):" +
 	                                 "FD:STABLE:NAKACK:UNICAST:FRAG:FLUSH:GMS:VIEW_ENFORCER:QUEUE";
 
-    private final Vector                 members=new Vector();
+    private final Vector           members=new Vector();
     private boolean                fl=true;
-    
+    Log                            log=LogFactory.getLog(getClass());
 
 
- 
-    
+
+
+
     public void init() {
 	System.out.println("INIT");
 	setLayout(new BorderLayout());

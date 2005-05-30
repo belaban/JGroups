@@ -1,4 +1,4 @@
-// $Id: Gossip.java,v 1.7 2005/05/30 14:31:02 belaban Exp $
+// $Id: Gossip.java,v 1.8 2005/05/30 16:14:40 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -116,7 +116,7 @@ public class Gossip implements Runnable, WindowListener, ActionListener, Channel
             gossip.go();
         }
         catch(Exception e) {
-            log.error(e);
+            System.err.println(e);
             System.exit(0);
         }
     }
@@ -165,7 +165,7 @@ public class Gossip implements Runnable, WindowListener, ActionListener, Channel
             leave_button.setForeground(Color.blue);
         }
         catch(Exception e) {
-            log.error(e);
+            System.err.println(e);
             return;
         }
     }
@@ -265,21 +265,21 @@ public class Gossip implements Runnable, WindowListener, ActionListener, Channel
                         clearPanel();
                         continue;
                     default:
-                        log.error("***** Gossip.run(): received invalid draw command " + comm.mode);
+                        System.err.println("***** Gossip.run(): received invalid draw command " + comm.mode);
                         break;
                 }
 
             }
             catch(ChannelNotConnectedException not) {
-                log.error("Gossip: " + not);
+                System.err.println("Gossip: " + not);
                 break;
             }
             catch(ChannelClosedException closed) {
-                log.error("Gossip: channel was closed");
+                System.err.println("Gossip: channel was closed");
                 break;
             }
             catch(Exception e) {
-                log.error(e);
+                System.err.println(e);
                 continue; // break;
             }
         }
@@ -346,7 +346,7 @@ public class Gossip implements Runnable, WindowListener, ActionListener, Channel
             }
         }
         catch(Exception ex) {
-            log.error(ex);
+            System.err.println(ex);
         }
     }
 
@@ -365,7 +365,7 @@ public class Gossip implements Runnable, WindowListener, ActionListener, Channel
             channel.send(new Message(null, null, out.toByteArray()));
         }
         catch(Exception ex) {
-            log.error(ex);
+            System.err.println(ex);
         }
     }
 
@@ -408,7 +408,7 @@ public class Gossip implements Runnable, WindowListener, ActionListener, Channel
                         channel.close();
                     }
                     catch(Exception ex) {
-                        log.error(ex);
+                        System.err.println(ex);
                     }
                     mainFrame.setVisible(false);
                     System.exit(0);

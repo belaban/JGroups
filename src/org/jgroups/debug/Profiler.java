@@ -1,6 +1,9 @@
-// $Id: Profiler.java,v 1.5 2005/05/30 14:31:01 belaban Exp $
+// $Id: Profiler.java,v 1.6 2005/05/30 16:14:35 belaban Exp $
 
 package org.jgroups.debug;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import java.io.FileOutputStream;
 import java.io.OutputStream;
@@ -32,6 +35,7 @@ public class Profiler {
 
     private static OutputStream os=null;
     private static final Hashtable entries=new Hashtable();
+    private static Log log=LogFactory.getLog(Profiler.class);
 
 
     public Profiler() {

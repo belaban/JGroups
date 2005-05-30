@@ -1,4 +1,4 @@
-// $Id: QueueTest.java,v 1.14 2005/05/30 14:31:32 belaban Exp $
+// $Id: QueueTest.java,v 1.15 2005/05/30 16:15:05 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -110,7 +110,7 @@ public class QueueTest extends TestCase {
             System.out.println("Took " + (stop - start) + " msecs");
         }
         catch(Exception ex) {
-            log.error(ex);
+            System.err.println(ex);
             assertTrue(false);
         }
     }
@@ -408,7 +408,7 @@ public class QueueTest extends TestCase {
             queue.add(new Long(99));
         }
         catch(Exception ex) {
-            log.error(ex);
+            System.err.println(ex);
         }
 
         Util.sleep(5000);
@@ -417,7 +417,7 @@ public class QueueTest extends TestCase {
             queue.add(new Long(100));
         }
         catch(Exception ex) {
-            log.error(ex);
+            System.err.println(ex);
         }
 
         Util.sleep(1000);
@@ -454,7 +454,7 @@ public class QueueTest extends TestCase {
 		}
 		catch (Exception ex)
 		{
-			log.error(ex);
+			System.err.println(ex);
 		}
 
 		Util.sleep(5000);
@@ -465,7 +465,7 @@ public class QueueTest extends TestCase {
 		}
 		catch (Exception ex)
 		{
-			log.error(ex);
+			System.err.println(ex);
 		}
 
 		Util.sleep(1000);
@@ -523,7 +523,7 @@ public class QueueTest extends TestCase {
 			}
 			catch (Exception ex)
 			{
-				log.error(ex);
+				System.err.println(ex);
 			}
 		}
 
@@ -626,7 +626,7 @@ public class QueueTest extends TestCase {
                 readers[i].join(300);
             }
             catch(Exception ex) {
-                log.error(ex);
+                System.err.println(ex);
             }
         }
 
@@ -667,7 +667,7 @@ public class QueueTest extends TestCase {
 			}
 			catch (QueueClosedException closed)
 			{
-				log.error("Thread #" + rank + ": queue was closed");
+				System.err.println("Thread #" + rank + ": queue was closed");
 			}
 		}
 
@@ -690,7 +690,7 @@ public class QueueTest extends TestCase {
                 // System.out.println("Thread #" + rank + " removed element (" + retval + ")");
             }
             catch(QueueClosedException closed) {
-                log.error("Thread #" + rank + ": queue was closed");
+                System.err.println("Thread #" + rank + ": queue was closed");
             }
         }
 
@@ -726,7 +726,7 @@ public class QueueTest extends TestCase {
 				}
 				catch (QueueClosedException closed)
 				{
-					log.error("Thread #" + rank + ": queue was closed");
+					System.err.println("Thread #" + rank + ": queue was closed");
 					finished = true;
 				}
 				catch (TimeoutException e)
@@ -768,7 +768,7 @@ public class QueueTest extends TestCase {
                     running=false;
                 }
                 catch(Throwable t) {
-                    log.error("QueueTest.Writer.run(): exception=" + t);
+                    System.err.println("QueueTest.Writer.run(): exception=" + t);
                 }
             }
             writes[rank]=num_writes;
@@ -812,7 +812,7 @@ public class QueueTest extends TestCase {
                     running=false;
                 }
                 catch(Throwable t) {
-                    log.error("QueueTest.Reader.run(): exception=" + t);
+                    System.err.println("QueueTest.Reader.run(): exception=" + t);
                 }
             }
             reads[rank]=num_reads;

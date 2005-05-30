@@ -1,4 +1,4 @@
-// $Id: FragTestUnicast.java,v 1.6 2005/05/30 14:31:36 belaban Exp $
+// $Id: FragTestUnicast.java,v 1.7 2005/05/30 16:15:11 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -133,7 +133,7 @@ public class FragTestUnicast {
 			}
 		}
 		catch(Exception e) {
-		    log.error(e);
+		    System.err.println(e);
 		}
 	    }
 	
@@ -197,7 +197,7 @@ public class FragTestUnicast {
 	    new FragTestUnicast(defaultChar , default_mode, MSG_SIZE, num_msgs, timeout, frag_size).start();
 	}
 	catch(Exception e) {
-	    log.error(e);
+	    System.err.println(e);
 	}
     }
 

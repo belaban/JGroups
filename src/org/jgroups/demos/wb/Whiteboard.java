@@ -1,4 +1,4 @@
-// $Id: Whiteboard.java,v 1.4 2005/05/30 14:31:02 belaban Exp $
+// $Id: Whiteboard.java,v 1.5 2005/05/30 16:14:37 belaban Exp $
 
 package org.jgroups.demos.wb;
 
@@ -6,6 +6,8 @@ import org.jgroups.*;
 import org.jgroups.blocks.*;
 import org.jgroups.blocks.GroupRequest;
 import org.jgroups.blocks.RpcDispatcher;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import java.applet.Applet;
 import java.awt.*;
@@ -28,8 +30,9 @@ public class Whiteboard extends Applet implements ActionListener, MessageListene
     private Label                  mbr_label;
     private final Font             default_font=new Font("Helvetica",Font.PLAIN,12);
     private String                 props=null;
-    public static final String            groupname="WbGrp";
+    public static final String     groupname="WbGrp";
     private boolean                application=false;
+    Log                            log=LogFactory.getLog(getClass());
 
 
     public void receive(Message m) {

@@ -14,7 +14,7 @@ import java.util.*;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: TcpTransport.java,v 1.6 2005/05/30 14:31:41 belaban Exp $
+ * @version $Id: TcpTransport.java,v 1.7 2005/05/30 16:15:16 belaban Exp $
  */
 public class TcpTransport implements Transport {
     Receiver         receiver=null;
@@ -130,7 +130,7 @@ public class TcpTransport implements Transport {
                          connections[i]=new Connection(addr);
                      }
                      catch(ConnectException connect_ex) {
-                         log.error("Failed to connect to " + addr + ':' + srv_port);
+                         System.err.println("Failed to connect to " + addr + ':' + srv_port);
                          throw connect_ex;
                      }
                      catch(Exception all_others) {

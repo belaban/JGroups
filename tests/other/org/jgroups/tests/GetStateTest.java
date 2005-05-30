@@ -1,4 +1,4 @@
-// $Id: GetStateTest.java,v 1.7 2005/05/30 14:31:36 belaban Exp $
+// $Id: GetStateTest.java,v 1.8 2005/05/30 16:15:11 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -69,7 +69,7 @@ public class GetStateTest implements Runnable {
 		update.setBuffer(Util.objectToByteBuffer(new Integer(index)));
 	    }
 	    catch(Exception e) {
-		log.error(e);
+		System.err.println(e);
 	    }
 	    System.out.println("Sending update for index " + index);
 	    channel.send(update);
@@ -104,7 +104,7 @@ public class GetStateTest implements Runnable {
 			System.out.println("Contents of buffer was no Integer !");
 		    }
 		    catch(Exception e) {
-			// log.error(e);
+			// System.err.println(e);
 		    }
 		    
 		}
@@ -138,7 +138,7 @@ public class GetStateTest implements Runnable {
 	    new GetStateTest().start();
 	}
 	catch(Exception e) {
-	    log.error(e);
+	    System.err.println(e);
 	}
     }
 

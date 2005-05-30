@@ -1,4 +1,4 @@
-// $Id: GossipRouter.java,v 1.12 2005/05/30 14:31:28 belaban Exp $
+// $Id: GossipRouter.java,v 1.13 2005/05/30 16:14:44 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -1123,7 +1123,7 @@ public class GossipRouter {
             router.start();
         }
         catch(Exception e) {
-            log.error(e);
+            System.err.println(e);
         }
     }
 

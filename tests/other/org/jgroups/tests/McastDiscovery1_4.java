@@ -1,4 +1,4 @@
-// $Id: McastDiscovery1_4.java,v 1.4 2005/05/30 14:31:37 belaban Exp $
+// $Id: McastDiscovery1_4.java,v 1.5 2005/05/30 16:15:11 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -17,7 +17,7 @@ import java.util.*;
  * After n responses or m milliseconds, the sender terminates and computes the network interfaces which should be used.
  * The network interface is the intersection of the interface variable of all ACKs received.
  * @author Bela Ban July 26 2002
- * @version $Revision: 1.4 $
+ * @version $Revision: 1.5 $
  */
 public class McastDiscovery1_4 {
     int ttl = 32;
@@ -201,7 +201,7 @@ public class McastDiscovery1_4 {
                         rsp_packet = new DatagramPacket(buf, buf.length, req.sender_addr);
                         sock.send(rsp_packet);
                     } catch (Exception ex) {
-                        log.error("McastReceiver.run(): " + ex + ", rsp_packet=" +
+                        System.err.println("McastReceiver.run(): " + ex + ", rsp_packet=" +
                                 rsp_packet.getSocketAddress() + ", length=" + rsp_packet.getLength() + " bytes");
                         ex.printStackTrace();
                     }
@@ -241,7 +241,7 @@ public class McastDiscovery1_4 {
                         if (!l.contains(responder_addr))
                             l.add(responder_addr);
                     } catch (Exception ex) {
-                        log.error("UcastReceiver.run(): " + ex);
+                        System.err.println("UcastReceiver.run(): " + ex);
                     }
                 }
             }
@@ -297,7 +297,7 @@ public class McastDiscovery1_4 {
                 packet = new DatagramPacket(buf, buf.length, mcast_addr, mcast_port);
                 mcast_sock.send(packet);
             } catch (Exception ex) {
-                log.error("McastDiscovery1_4.sendDiscoveryRequest(): " + ex);
+                System.err.println("McastDiscovery1_4.sendDiscoveryRequest(): " + ex);
             }
         }
 

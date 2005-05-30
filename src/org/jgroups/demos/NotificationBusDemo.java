@@ -1,4 +1,4 @@
-// $Id: NotificationBusDemo.java,v 1.5 2005/05/30 14:31:02 belaban Exp $
+// $Id: NotificationBusDemo.java,v 1.6 2005/05/30 16:14:40 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -6,6 +6,8 @@ package org.jgroups.demos;
 
 import org.jgroups.Address;
 import org.jgroups.blocks.NotificationBus;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -24,8 +26,9 @@ public class NotificationBusDemo implements NotificationBus.Consumer {
     NotificationBus bus=null;
     BufferedReader  in=null;
     String          line;
-    final long            timeout=0;
-    final Vector          cache=null;
+    final long      timeout=0;
+    final Vector    cache=null;
+    Log             log=LogFactory.getLog(getClass());
 
 
 

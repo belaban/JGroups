@@ -1,4 +1,4 @@
-// $Id: McastSenderTest1_4.java,v 1.5 2005/05/30 14:31:37 belaban Exp $
+// $Id: McastSenderTest1_4.java,v 1.6 2005/05/30 16:15:11 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -13,7 +13,7 @@ import java.util.Vector;
    Same as McastSenderTest, but uses all available interfaces (including loopback) to send the packets
    @see McastReceiverTest
    @author Bela Ban
-   @version $Revision: 1.5 $
+   @version $Revision: 1.6 $
  */
 public class McastSenderTest1_4 {
 
@@ -67,13 +67,13 @@ public class McastSenderTest1_4 {
 
 	    if(use_all_interfaces) {
 		if(!is1_4()) {
-		    log.error("-use_all_interfaces flag requires JDK 1.4 or greater");
+		    System.err.println("-use_all_interfaces flag requires JDK 1.4 or greater");
 		    return;
 		}
 	    }	    
 	}
 	catch(Exception ex) {
-	    log.error(ex);
+	    System.err.println(ex);
 	    return;
 	}
 
@@ -128,7 +128,7 @@ public class McastSenderTest1_4 {
 	    }
 	}
 	catch(Exception e) {
-	    log.error(e);
+	    System.err.println(e);
 	}
     }
     
@@ -142,7 +142,7 @@ public class McastSenderTest1_4 {
 		    sockets[i].send(packet);
 	    }
 	    catch(Exception ex) {
-		log.error("McastSenderTest1_4.send(): " + ex);
+		System.err.println("McastSenderTest1_4.send(): " + ex);
 	    }
 	}
     }
@@ -192,7 +192,7 @@ public class McastSenderTest1_4 {
 				       packet.getPort() + ": " + new String(packet.getData()));
 		}
 		catch(Exception e) {
-		    log.error(e);
+		    System.err.println(e);
 		    break;
 		}
 	    }

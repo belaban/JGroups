@@ -1,4 +1,4 @@
-// $Id: InterruptTest.java,v 1.4 2005/05/30 14:31:32 belaban Exp $
+// $Id: InterruptTest.java,v 1.5 2005/05/30 16:15:05 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -114,7 +114,7 @@ public class InterruptTest extends TestCase {
             Thread.sleep(msecs);
         }
         catch(Exception ex) {
-            log.error("InterruptTest.sleep(): " + ex);
+            System.err.println("InterruptTest.sleep(): " + ex);
         }
     }
 
@@ -162,7 +162,7 @@ public class InterruptTest extends TestCase {
                 Thread.sleep(TIMEOUT);
             }
             catch(InterruptedException ex) {
-                log.error("InterruptTest.SleeperThread.runSleep(): " + ex);
+                System.err.println("InterruptTest.SleeperThread.runSleep(): " + ex);
             }
         }
 
@@ -173,7 +173,7 @@ public class InterruptTest extends TestCase {
                     mutex.wait();
                 }
                 catch(InterruptedException ex) {
-                    log.error("InterruptTest.SleeperThread.runWait(): " + ex);
+                    System.err.println("InterruptTest.SleeperThread.runWait(): " + ex);
                 }
             }
         }
@@ -183,7 +183,7 @@ public class InterruptTest extends TestCase {
                 System.in.read();
             }
             catch(Exception ex) {
-                log.error("InterruptTest.SleeperThread.runRead(): " + ex);
+                System.err.println("InterruptTest.SleeperThread.runRead(): " + ex);
             }
         }
 
@@ -201,7 +201,7 @@ public class InterruptTest extends TestCase {
             }
             catch(Exception e) {
                 //System.out.println("** receive(): done, exception=" + e);
-                log.error(e);
+                System.err.println(e);
             }
         }
     }

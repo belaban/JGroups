@@ -1,4 +1,4 @@
-// $Id: GraphPanel.java,v 1.4 2005/05/30 14:31:02 belaban Exp $
+// $Id: GraphPanel.java,v 1.5 2005/05/30 16:14:37 belaban Exp $
 
 
 package org.jgroups.demos.wb;
@@ -12,6 +12,8 @@ import java.util.Vector;
 import org.jgroups.*;
 import org.jgroups.blocks.*;
 import org.jgroups.util.Util;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 
 
@@ -31,6 +33,7 @@ public class GraphPanel extends Panel implements MouseListener, MouseMotionListe
     static final Color    selectColor = Color.pink;
     final Color    nodeColor = new Color(250, 220, 100);
     final Font     default_font=new Font("Helvetica",Font.PLAIN,12);
+    Log            log=LogFactory.getLog(getClass());
 
 
 

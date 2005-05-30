@@ -1,4 +1,4 @@
-// $Id: GroupRequestPull.java,v 1.7 2005/05/30 14:31:37 belaban Exp $
+// $Id: GroupRequestPull.java,v 1.8 2005/05/30 16:15:11 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -89,7 +89,7 @@ public class GroupRequestPull implements MessageListener, MembershipListener, Tr
         Message  rsp;
 
         if(hdr == null) {
-            log.error("GroupRequestPull.receive(): header for " + HDRNAME + " was null");
+            System.err.println("GroupRequestPull.receive(): header for " + HDRNAME + " was null");
             return;
         }
         if(hdr.type == MyHeader.RESPONSE) {
@@ -105,11 +105,11 @@ public class GroupRequestPull implements MessageListener, MembershipListener, Tr
                 adapter.send(rsp);
             }
             catch(Exception ex) {
-                log.error("GroupRequestPull.receive(): failure sending response: " + ex);
+                System.err.println("GroupRequestPull.receive(): failure sending response: " + ex);
             }
         }
         else {
-            log.error("GroupRequestPull.receive(): header type of " + hdr.type + " not known");
+            System.err.println("GroupRequestPull.receive(): header type of " + hdr.type + " not known");
         }
     }
 
@@ -155,7 +155,7 @@ public class GroupRequestPull implements MessageListener, MembershipListener, Tr
     /** Used by GroupRequest to send messages */ 
     public void send(Message msg) throws Exception {
 	if(adapter == null) {
-	    log.error("GroupRequestPull.send(): adapter is null, cannot send message");
+	    System.err.println("GroupRequestPull.send(): adapter is null, cannot send message");
 	}
 	else
 	    adapter.send(msg); 

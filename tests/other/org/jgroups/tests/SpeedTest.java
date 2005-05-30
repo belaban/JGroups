@@ -1,4 +1,4 @@
-// $Id: SpeedTest.java,v 1.17 2005/05/30 14:31:37 belaban Exp $
+// $Id: SpeedTest.java,v 1.18 2005/05/30 16:15:12 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -29,7 +29,7 @@ import java.net.MulticastSocket;
  * to be increased even further). If running with -jg option and Util.sleep() is commented out, there will
  * probably be packet loss, which will be repaired (by means of retransmission) by JGroups.
  * @author Bela Ban
- * @version $Id: SpeedTest.java,v 1.17 2005/05/30 14:31:37 belaban Exp $
+ * @version $Id: SpeedTest.java,v 1.18 2005/05/30 16:15:12 belaban Exp $
  */
 public class SpeedTest {
     static long start, stop;
@@ -329,7 +329,7 @@ public class SpeedTest {
                         break;
                 }
                 catch(Exception ex) {
-                    log.error(ex);
+                    System.err.println(ex);
                 }
             }
             stop=System.currentTimeMillis();

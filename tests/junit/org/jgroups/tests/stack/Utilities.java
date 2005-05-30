@@ -1,9 +1,11 @@
-// $Id: Utilities.java,v 1.7 2005/05/30 14:31:32 belaban Exp $
+// $Id: Utilities.java,v 1.8 2005/05/30 16:15:04 belaban Exp $
 
 package org.jgroups.tests.stack;
 
 import org.jgroups.stack.GossipRouter;
 import org.jgroups.stack.GossipServer;
+import org.apache.commons.logging.LogFactory;
+import org.apache.commons.logging.Log;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -15,10 +17,12 @@ import java.net.Socket;
  * Utility functions shared by stack tests.
  *
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Revision: 1.7 $
+ * @version $Revision: 1.8 $
  * @since 2.2.1
  */
 public class Utilities {
+
+    static Log log=LogFactory.getLog(Utilities.class);
 
 
     private static GossipRouter gossipRouter=null;
@@ -64,7 +68,6 @@ public class Utilities {
                     String msg=
                             "Failed to start the router on port " + routerPort;
                     log.error(msg);
-                    e.printStackTrace();
                     gossipRouter=null;
                 }
             }
@@ -228,7 +231,7 @@ public class Utilities {
      * Stops the GossipServer.
      *
      * @deprecated Since 2.2.1 GossipServer shouldn't be used anymore. The
-     *             GossipRouter can server Gossip requests too.
+     *             GossipRouter can serve Gossip requests too.
      */
     public static void stopGossipServer(int port) throws Exception {
     }

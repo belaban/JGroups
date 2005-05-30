@@ -1,4 +1,4 @@
-// $Id: QuoteServer.java,v 1.6 2005/05/30 14:31:02 belaban Exp $
+// $Id: QuoteServer.java,v 1.7 2005/05/30 16:14:40 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -6,6 +6,8 @@ package org.jgroups.demos;
 import org.jgroups.*;
 import org.jgroups.blocks.RpcDispatcher;
 import org.jgroups.util.Util;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import java.util.Date;
 import java.util.Enumeration;
@@ -36,6 +38,7 @@ public class QuoteServer implements MembershipListener, MessageListener {
     RpcDispatcher disp;
     static final String channel_name="Quotes";
     final int num_members=1;
+    Log            log=LogFactory.getLog(getClass());
     //String          props="UDP:PING:FD:STABLE:NAKACK:UNICAST:FRAG:FLUSH:GMS:"+
     //                  "VIEW_ENFORCER:STATE_TRANSFER:QUEUE";
 

@@ -1,4 +1,4 @@
-// $Id: DistributedTreeDemo.java,v 1.7 2005/05/30 14:31:02 belaban Exp $
+// $Id: DistributedTreeDemo.java,v 1.8 2005/05/30 16:14:40 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -112,7 +112,7 @@ class MyNode extends DefaultMutableTreeNode {
 	for(int i=0; i < getChildCount(); i++) {
 	    child=(MyNode)getChildAt(i);
 	    if(child.name == null) {
-		log.error("MyNode.findChild(" + relative_name + "): child.name is null");
+		System.err.println("MyNode.findChild(" + relative_name + "): child.name is null");
 		continue;
 	    }
 		
@@ -493,7 +493,7 @@ public class DistributedTreeDemo extends Frame implements WindowListener,
 	    demo.setVisible(true);
 	}
 	catch(Exception ex) {
-	    log.error(ex);
+	    System.err.println(ex);
 	}
     }  
 }

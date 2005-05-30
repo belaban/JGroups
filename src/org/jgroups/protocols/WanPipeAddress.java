@@ -1,9 +1,11 @@
-// $Id: WanPipeAddress.java,v 1.7 2005/05/30 14:31:24 belaban Exp $
+// $Id: WanPipeAddress.java,v 1.8 2005/05/30 16:14:43 belaban Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.Address;
 import org.jgroups.util.Util;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import java.io.*;
 
@@ -13,6 +15,7 @@ import java.io.*;
  */
 public class WanPipeAddress implements Address {
     String logical_name=null;
+    static final Log log=LogFactory.getLog(WanPipeAddress.class);
 
 
     // Used only by Externalization

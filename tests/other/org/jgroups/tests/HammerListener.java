@@ -62,7 +62,7 @@ public class HammerListener implements ChannelListener, MembershipListener {
 
         }              
         catch (org.jgroups.ChannelException ce) {
-            log.error("Channel Error"+ ce);
+            System.err.println("Channel Error"+ ce);
         }
     }
 

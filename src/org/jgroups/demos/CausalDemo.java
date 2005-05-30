@@ -1,7 +1,9 @@
-// $Id: CausalDemo.java,v 1.5 2005/05/30 14:31:02 belaban Exp $
+// $Id: CausalDemo.java,v 1.6 2005/05/30 16:14:40 belaban Exp $
 package org.jgroups.demos;
 
 import org.jgroups.*;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import java.io.Serializable;
 import java.util.Random;
@@ -24,10 +26,10 @@ import java.util.Vector;
 public class CausalDemo implements Runnable
 {
    private Channel channel;
-   private Thread mythread;
    private final Vector alphabet = new Vector();
    private boolean starter = false;
    private int doneCount=0;
+   private Log log=LogFactory.getLog(getClass());
 
    private final String props = "UDP(mcast_addr=228.8.8.8;mcast_port=45566;ip_ttl=32;" +
            "mcast_send_buf_size=150000;mcast_recv_buf_size=80000):" +
@@ -184,7 +186,7 @@ public class CausalDemo implements Runnable
       }
       catch (Exception e)
       {
-         log.error(e);
+         System.err.println(e);
       }
 
    }

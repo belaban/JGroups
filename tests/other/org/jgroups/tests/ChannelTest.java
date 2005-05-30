@@ -1,4 +1,4 @@
-// $Id: ChannelTest.java,v 1.4 2005/05/30 14:31:36 belaban Exp $
+// $Id: ChannelTest.java,v 1.5 2005/05/30 16:15:11 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -51,7 +51,7 @@ public class ChannelTest implements Runnable {
                 break;
             }
             catch(Exception e) {
-                log.error(e);
+                System.err.println(e);
             }
         }
     }
@@ -64,7 +64,7 @@ public class ChannelTest implements Runnable {
             test.start();
         }
         catch(Exception e) {
-            log.error(e);
+            System.err.println(e);
         }
     }
 

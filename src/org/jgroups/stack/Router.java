@@ -1,4 +1,4 @@
-// $Id: Router.java,v 1.6 2005/05/30 14:31:28 belaban Exp $
+// $Id: Router.java,v 1.7 2005/05/30 16:14:44 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -556,7 +556,7 @@ public class Router {
             System.out.println("Listening on port " + port + " and bound to address " + address);
         }
         catch(Exception e) {
-            log.error(e);
+            System.err.println(e);
         }
     }
 

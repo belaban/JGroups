@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindowStressTest.java,v 1.7 2005/05/30 14:31:37 belaban Exp $
+// $Id: NakReceiverWindowStressTest.java,v 1.8 2005/05/30 16:15:11 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -84,7 +84,7 @@ public class NakReceiverWindowStressTest implements Retransmitter.RetransmitComm
 
         i=((Long)msg.getObject()).longValue();
         if(prev_value + 1 != i) {
-            log.error("** processMessage(): removed seqno (" + i + ") is not 1 greater than " +
+            System.err.println("** processMessage(): removed seqno (" + i + ") is not 1 greater than " +
                     "previous value (" + prev_value + ')');
             System.exit(0);
         }
@@ -104,7 +104,7 @@ public class NakReceiverWindowStressTest implements Retransmitter.RetransmitComm
                 System.in.read();
             }
             catch(Exception ex) {
-                log.error(ex);
+                System.err.println(ex);
             }
             System.exit(0);
         }

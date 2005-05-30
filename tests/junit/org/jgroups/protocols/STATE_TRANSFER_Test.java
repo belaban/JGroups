@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER_Test.java,v 1.4 2005/05/30 14:31:30 belaban Exp $
+// $Id: STATE_TRANSFER_Test.java,v 1.5 2005/05/30 16:14:46 belaban Exp $
 package org.jgroups.protocols;
 
 import junit.framework.Test;
@@ -117,12 +117,12 @@ public class STATE_TRANSFER_Test extends TestCase {
                   try {
                      tmp = channel.receive(0);
                      if (tmp instanceof ExitEvent) {
-                        log.error("-- received EXIT, waiting for ChannelReconnected callback");
+                        System.err.println("-- received EXIT, waiting for ChannelReconnected callback");
                         break;
                      }
                      if (tmp instanceof GetStateEvent) {
                         synchronized (Coordinator.this) {
-                           log.error("--  GetStateEvent, cnt=" + cnt);
+                           System.err.println("--  GetStateEvent, cnt=" + cnt);
                            channel.returnState(Util.objectToByteBuffer(new Integer(cnt)));
                         }
                         continue;
@@ -132,7 +132,7 @@ public class STATE_TRANSFER_Test extends TestCase {
                   } catch (ChannelClosedException closed) {
                      break;
                   } catch (Exception e) {
-                     log.error(e);
+                     System.err.println(e);
                      continue;
                   }
                }
@@ -149,7 +149,7 @@ public class STATE_TRANSFER_Test extends TestCase {
                   try {
                      synchronized (Coordinator.this) {
                         channel.send(null, null, new Integer(++cnt));
-                        log.error("send cnt=" + cnt);
+                        System.err.println("send cnt=" + cnt);
                      }
                      Thread.sleep(1000);
                   } catch (ChannelNotConnectedException not) {
@@ -157,7 +157,7 @@ public class STATE_TRANSFER_Test extends TestCase {
                   } catch (ChannelClosedException closed) {
                      break;
                   } catch (Exception e) {
-                     log.error(e);
+                     System.err.println(e);
                      continue;
                   }
                }
@@ -195,7 +195,7 @@ public class STATE_TRANSFER_Test extends TestCase {
             }
             if (tmp instanceof SetStateEvent) {
                cnt = ((Integer) Util.objectFromByteBuffer(((SetStateEvent) tmp).getArg())).intValue();
-               log.error("--  SetStateEvent, cnt=" + cnt);
+               System.err.println("--  SetStateEvent, cnt=" + cnt);
                continue;
             }
             if ( tmp instanceof Message ) {
@@ -210,7 +210,7 @@ public class STATE_TRANSFER_Test extends TestCase {
          } catch (ChannelClosedException closed) {
             break;
          } catch (Exception e) {
-            log.error(e);
+            System.err.println(e);
             continue;
          }
       }

@@ -1,4 +1,4 @@
-// $Id: ConnectionTableTest1_4.java,v 1.6 2005/05/30 14:31:36 belaban Exp $
+// $Id: ConnectionTableTest1_4.java,v 1.7 2005/05/30 16:15:11 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -65,7 +65,7 @@ public class ConnectionTableTest1_4 implements ConnectionTable1_4.Receiver, Conn
                 ct.send(msg);
             }
             catch(Exception e) {
-                log.error(e);
+                System.err.println(e);
             }
         }
         ct.stop();
@@ -115,7 +115,7 @@ public class ConnectionTableTest1_4 implements ConnectionTable1_4.Receiver, Conn
             }
         }
         catch(Exception ex) {
-            log.error("ConnectionTableTest1_4.main(): " + ex);
+            System.err.println("ConnectionTableTest1_4.main(): " + ex);
             ex.printStackTrace();
         }
     }

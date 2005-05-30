@@ -1,4 +1,4 @@
-// $Id: ConnectionTableTest.java,v 1.6 2005/05/30 14:31:36 belaban Exp $
+// $Id: ConnectionTableTest.java,v 1.7 2005/05/30 16:15:11 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -65,7 +65,7 @@ public class ConnectionTableTest implements ConnectionTable.Receiver, Connection
                 ct.send(msg);
             }
             catch(Exception e) {
-                log.error(e);
+                System.err.println(e);
             }
         }
         ct.stop();
@@ -115,7 +115,7 @@ public class ConnectionTableTest implements ConnectionTable.Receiver, Connection
             }
         }
         catch(Exception ex) {
-            log.error("ConnectionTableTest.main(): " + ex);
+            System.err.println("ConnectionTableTest.main(): " + ex);
         }
     }
 

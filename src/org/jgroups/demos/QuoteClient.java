@@ -1,4 +1,4 @@
-// $Id: QuoteClient.java,v 1.7 2005/05/30 14:31:02 belaban Exp $
+// $Id: QuoteClient.java,v 1.8 2005/05/30 16:14:40 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -65,7 +65,7 @@ public class QuoteClient extends Frame implements WindowListener, ActionListener
             channel.connect(channel_name);
         }
         catch(Exception e) {
-            log.error("QuoteClient(): " + e);
+            System.err.println("QuoteClient(): " + e);
         }
         addWindowListener(this);
     }

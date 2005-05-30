@@ -194,7 +194,7 @@ public class HashtableTest {
 	    }
 	}
 	catch(Exception ex) {
-	    log.error(ex);
+	    System.err.println(ex);
 	}
     }
 
