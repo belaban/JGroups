@@ -1,7 +1,7 @@
 <!--
 Describes the version(s) of the libraries JBossCache depends on
 Author: Bela Ban
-Version: $Id: dependencies.xml,v 1.1 2005/05/30 10:46:54 belaban Exp $
+Version: $Id: dependencies.xml,v 1.2 2005/05/30 10:47:24 belaban Exp $
  -->
 
 <dependencies>
@@ -89,7 +89,7 @@ Version: $Id: dependencies.xml,v 1.1 2005/05/30 10:46:54 belaban Exp $
     <lib name="xalan">
         <jar>xalan.jar</jar>
         <version>2.4.D1</version>
-        <description></description>
+        <description>Used to generate HTML test reports</description>
     </lib>
 
 </dependencies>
