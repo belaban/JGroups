@@ -1,4 +1,4 @@
-// $Id: VIEW_ENFORCER.java,v 1.3 2004/04/23 19:36:13 belaban Exp $
+// $Id: VIEW_ENFORCER.java,v 1.4 2005/05/30 14:31:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -41,7 +41,7 @@ public class VIEW_ENFORCER extends Protocol {
                 if(new_members == null || new_members.size() == 0)
                     break;
                 if(local_addr == null) {
-                    System.err.println("VIEW_ENFORCER.up(VIEW_CHANGE): local address is null; cannot check " +
+                    log.error("VIEW_ENFORCER.up(VIEW_CHANGE): local address is null; cannot check " +
                             "whether I'm a member of the group; discarding view change");
                     return;
                 }

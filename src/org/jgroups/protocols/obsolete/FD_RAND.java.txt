@@ -1,4 +1,4 @@
-// $Id: FD_RAND.java.txt,v 1.2 2004/04/23 19:36:11 belaban Exp $
+// $Id: FD_RAND.java.txt,v 1.3 2005/05/30 14:31:05 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -86,7 +86,7 @@ public class FD_RAND extends Protocol implements Runnable {
 	    num_tries=new Integer(str).intValue();
 	    props.remove("num_tries");
 	    if(num_tries < 1) {
-		System.err.println("FD_RAND.setProperties(): propertiy 'num_tries' must be at least 1 ! " +
+		log.error("FD_RAND.setProperties(): propertiy 'num_tries' must be at least 1 ! " +
 				   "Setting it to 1");
 		num_tries=1;
 	    }
@@ -94,8 +94,8 @@ public class FD_RAND extends Protocol implements Runnable {
 
 
 	if(props.size() > 0) {
-	    System.err.println("FD_RAND.setProperties(): the following properties are not recognized:");
-	    props.list(System.out);
+	    log.error("FD_RAND.setProperties(): the following properties are not recognized: " + props);
+	    
 	    return false;
 	}
 	return true;
@@ -141,7 +141,7 @@ public class FD_RAND extends Protocol implements Runnable {
 		hdr=(FdRandHeader)msg.removeHeader();
 	    }
 	    catch(Exception e) {
-		System.err.println("FD_RAND.up(): " + e);
+		log.error("FD_RAND.up(): " + e);
 	    }
 
 	    switch(hdr.type) {

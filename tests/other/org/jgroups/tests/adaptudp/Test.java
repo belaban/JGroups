@@ -120,10 +120,10 @@ public class Test {
                     log_interval).initialize();
         }
         catch(FileNotFoundException notFound) {
-            System.err.println("File not found.\n" + notFound);
+            log.error("File not found.\n" + notFound);
         }
         catch(IOException ioError) {
-            System.err.println(ioError);
+            log.error(ioError);
         }
         catch(Exception ex) {
             ex.printStackTrace();

@@ -1,4 +1,4 @@
-// $Id: WANPIPE.java,v 1.6 2004/09/23 16:29:43 belaban Exp $
+// $Id: WANPIPE.java,v 1.7 2005/05/30 14:31:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -142,7 +142,7 @@ public class WANPIPE extends Protocol implements LogicalLink.Receiver {
 	    msg=(Message)Util.objectFromByteBuffer(buf);
 	}
 	catch(Exception e) {
-	    System.err.println("WANPIPE.receive(): " + e);
+	    log.error("WANPIPE.receive(): " + e);
 	    return;
 	}
 	
@@ -156,7 +156,7 @@ public class WANPIPE extends Protocol implements LogicalLink.Receiver {
 	    ch_name=hdr.group_addr;
 
 	if(group_addr == null) {
-	     System.err.println("WANPIPE.receive(): group address in header was null, discarded");
+	     log.error("WANPIPE.receive(): group address in header was null, discarded");
 	    return;
 	}
 
@@ -212,17 +212,17 @@ public class WANPIPE extends Protocol implements LogicalLink.Receiver {
 	}
 
 	if(name == null || name.length() == 0) {
-	    System.err.println("WANPIPE.setProperties(): 'name' must be set");
+	    log.error("WANPIPE.setProperties(): 'name' must be set");
 	    return false;
 	}
 	if(links.size() == 0) {
-	    System.err.println("WANPIPE.setProperties(): no links specified (at least 1 link must be present)");
+	    log.error("WANPIPE.setProperties(): no links specified (at least 1 link must be present)");
 	    return false;
 	}
 
 	if(props.size() > 0) {
-	    System.err.println("WANPIPE.setProperties(): the following properties are not recognized:");
-	    props.list(System.out);
+	    log.error("WANPIPE.setProperties(): the following properties are not recognized: " + props);
+
 	    return false;
 	}
 	return true;
@@ -249,7 +249,7 @@ public class WANPIPE extends Protocol implements LogicalLink.Receiver {
 
 	    index=src.indexOf('@');
 	    if(index == -1) {
-		System.err.println("WANPIPE.parseLinks(): local address " + src + " must have a @ separator");
+		log.error("WANPIPE.parseLinks(): local address " + src + " must have a @ separator");
 		return false;
 	    }
 	    info.local_addr=src.substring(0, index);
@@ -257,7 +257,7 @@ public class WANPIPE extends Protocol implements LogicalLink.Receiver {
 
 	    index=dst.indexOf('@');
 	    if(index == -1) {
-		System.err.println("WANPIPE.parseLinks(): remote address " + dst + " must have a @ separator");
+		log.error("WANPIPE.parseLinks(): remote address " + dst + " must have a @ separator");
 		return false;
 	    }
 	    info.remote_addr=dst.substring(0, index);
@@ -307,7 +307,7 @@ public class WANPIPE extends Protocol implements LogicalLink.Receiver {
 	    buf=Util.objectToByteBuffer(msg);
 	}
 	catch(Exception e) {
-	    System.err.println("WANPIPE.sendUnicastMessage(): " + e);
+	    log.error("WANPIPE.sendUnicastMessage(): " + e);
 	    return;
 	}
 	
@@ -315,15 +315,15 @@ public class WANPIPE extends Protocol implements LogicalLink.Receiver {
 	    pipe.send(buf);
 	}
 	catch(LogicalLink.AllLinksDown links_down) {
-	    System.err.println("WANPIPE.sendUnicastMessage(): WAN pipe has no currently operational " +
+	    log.error("WANPIPE.sendUnicastMessage(): WAN pipe has no currently operational " +
 			       "link to send message. Discarding it.");
 	}
 	catch(LogicalLink.NoLinksAvailable no_links) {
-	    System.err.println("WANPIPE.sendUnicastMessage(): WAN pipe has no physical links configured;" +
+	    log.error("WANPIPE.sendUnicastMessage(): WAN pipe has no physical links configured;" +
 			       " cannot send message");
 	}
 	catch(Exception e) {
-	    System.err.println("WANPIPE.sendUnicastMessage(): " + e);
+	    log.error("WANPIPE.sendUnicastMessage(): " + e);
 	}
     }
 

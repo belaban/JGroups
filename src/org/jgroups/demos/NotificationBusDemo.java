@@ -1,4 +1,4 @@
-// $Id: NotificationBusDemo.java,v 1.4 2004/09/23 16:29:35 belaban Exp $
+// $Id: NotificationBusDemo.java,v 1.5 2005/05/30 14:31:02 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -52,12 +52,12 @@ public class NotificationBusDemo implements NotificationBus.Consumer {
 		    bus.sendNotification(line);
 		}
 		catch(Exception e) {
-		    System.err.println(e);
+		    log.error(e);
 		}
 	    }
 	}
 	catch(Exception ex) {
-	    System.err.println(ex);
+	    log.error(ex);
 	}
 	finally {
 	    if(bus != null)

@@ -1,4 +1,4 @@
-// $Id: NakackTest.java,v 1.5 2005/04/23 12:43:03 belaban Exp $
+// $Id: NakackTest.java,v 1.6 2005/05/30 14:31:32 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -108,7 +108,7 @@ public class NakackTest extends TestCase {
             msg=(Message)evt.getArg();
             sender=msg.getSrc();
             if(sender == null) {
-                System.err.println("NakackTest.CheckNoGaps.up(): sender is null; discarding msg");
+                log.error("NakackTest.CheckNoGaps.up(): sender is null; discarding msg");
                 return;
             }
             s=(Long)senders.get(sender);
@@ -137,11 +137,11 @@ public class NakackTest extends TestCase {
                 }
                 else {
                     // error, terminate test
-                    System.err.println("FAIL: received msg #" + received_seqno);
+                    log.error("FAIL: received msg #" + received_seqno);
                 }
             }
             catch(Exception ex) {
-                System.err.println("NakackTest.CheckNoGaps.up(): " + ex);
+                log.error("NakackTest.CheckNoGaps.up(): " + ex);
             }
 
         }

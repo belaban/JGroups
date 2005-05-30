@@ -1,4 +1,4 @@
-// $Id: DistributedHashtableTest.java,v 1.5 2004/07/05 14:15:11 belaban Exp $
+// $Id: DistributedHashtableTest.java,v 1.6 2005/05/30 14:31:36 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -91,7 +91,7 @@ public class DistributedHashtableTest implements Runnable {
                     " ms, size=" + ht.size() + " [" + num_per_sec + " / sec]");
         }
         catch(Exception ex) {
-            System.err.println(ex);
+            log.error(ex);
         }
     }
 
@@ -131,7 +131,7 @@ public class DistributedHashtableTest implements Runnable {
                     "ms, size=" + ht.size() + " [" + num_per_sec + " / sec]");
         }
         catch(Exception ex) {
-            System.err.println(ex);
+            log.error(ex);
         }
     }
 
@@ -211,7 +211,7 @@ public class DistributedHashtableTest implements Runnable {
             test.eventLoop();
         }
         catch(Exception ex) {
-            System.err.println(ex);
+            log.error(ex);
         }
     }
 

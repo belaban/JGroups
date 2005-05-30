@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.17 2005/04/20 20:25:45 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.18 2005/05/30 14:31:06 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -208,9 +208,8 @@ public class STATE_TRANSFER extends Protocol {
         super.setProperties(props);
 
         if(props.size() > 0) {
-            System.err.println("STATE_TRANSFER.setProperties(): the following " +
-                    "properties are not recognized:");
-            props.list(System.out);
+            log.error("STATE_TRANSFER.setProperties(): the following properties are not recognized: " + props);
+
             return false;
         }
         return true;

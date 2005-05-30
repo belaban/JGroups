@@ -1,4 +1,4 @@
-// $Id: TUNNELDeadLockTest.java,v 1.6 2005/04/25 08:55:36 belaban Exp $
+// $Id: TUNNELDeadLockTest.java,v 1.7 2005/05/30 14:31:32 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -23,7 +23,7 @@ import java.net.Socket;
  * under heavy load.
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
- * @version $Revision: 1.6 $
+ * @version $Revision: 1.7 $
  * @see TUNNELDeadLockTest#testStress
  */
 public class TUNNELDeadLockTest extends TestCase {
@@ -122,11 +122,11 @@ public class TUNNELDeadLockTest extends TestCase {
                     }
                 }
                 catch(TimeoutException e) {
-                    System.err.println("Timeout receiving from the channel. " + receivedCnt +
+                    log.error("Timeout receiving from the channel. " + receivedCnt +
                             " msgs received so far.");
                 }
                 catch(Exception e) {
-                    System.err.println("Error receiving data");
+                    log.error("Error receiving data");
                     e.printStackTrace();
                 }
             }
@@ -143,7 +143,7 @@ public class TUNNELDeadLockTest extends TestCase {
                     }
                 }
                 catch(Exception e) {
-                    System.err.println("Error sending data over ...");
+                    log.error("Error sending data over ...");
                     e.printStackTrace();
                 }
             }
@@ -198,7 +198,7 @@ public class TUNNELDeadLockTest extends TestCase {
                     System.out.println("started GossipRouter on port " + routerPort);
                 }
                 catch(Exception e) {
-                    System.err.println("Failed to start the router " + "on port " + routerPort);
+                    log.error("Failed to start the router " + "on port " + routerPort);
                     e.printStackTrace();
                 }
             }

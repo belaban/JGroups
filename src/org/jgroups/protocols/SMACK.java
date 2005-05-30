@@ -1,4 +1,4 @@
-// $Id: SMACK.java,v 1.8 2004/09/23 16:29:42 belaban Exp $
+// $Id: SMACK.java,v 1.9 2005/05/30 14:31:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -46,7 +46,7 @@ import java.util.Vector;
  * </ul>
  * Advantage of this protocol: no group membership necessary, fast.
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.8 $
+ * @version $Revision: 1.9 $
  * todo: initial mcast to announce new member (for view change)
  * todo: fix membershop bug: start a, b, kill b, restart b: b will be suspected by a
  */
@@ -103,8 +103,8 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
 
 
         if(props.size() > 0) {
-            System.err.println("SMACK.setProperties(): the following properties are not recognized:");
-            props.list(System.out);
+            log.error("SMACK.setProperties(): the following properties are not recognized: " + props);
+
             return false;
         }
         return true;

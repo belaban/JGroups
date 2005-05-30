@@ -1,4 +1,4 @@
-// $Id: GraphPanel.java,v 1.3 2004/09/23 16:29:34 belaban Exp $
+// $Id: GraphPanel.java,v 1.4 2005/05/30 14:31:02 belaban Exp $
 
 
 package org.jgroups.demos.wb;
@@ -88,7 +88,7 @@ public class GraphPanel extends Panel implements MouseListener, MouseMotionListe
 	Object a;
 
 	if(addr == null) {
-	    System.err.println("removeNode(): address of node to be removed is null !");
+	    log.error("removeNode(): address of node to be removed is null !");
 	    return;
 	}
 
@@ -252,7 +252,7 @@ public class GraphPanel extends Panel implements MouseListener, MouseMotionListe
 	    wb.disp.callRemoteMethods(null, call, GroupRequest.GET_ALL, 0);
 	}
 	catch(Exception ex) {
-	    System.err.println(ex);
+	    log.error(ex);
 	}
 	
 	pick = null;
@@ -279,7 +279,7 @@ public class GraphPanel extends Panel implements MouseListener, MouseMotionListe
 	    wb.disp.callRemoteMethods(null, call, GroupRequest.GET_ALL, 0);
 	}
 	catch(Exception e) {
-	    System.err.println(e);
+	    log.error(e);
 	}
 	repaint();
     }

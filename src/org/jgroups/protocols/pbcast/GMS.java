@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.29 2005/04/20 20:25:44 belaban Exp $
+// $Id: GMS.java,v 1.30 2005/05/30 14:31:05 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -703,8 +703,8 @@ public class GMS extends Protocol {
         }
 
         if(props.size() > 0) {
-            System.err.println("GMS.setProperties(): the following properties are not recognized:");
-            props.list(System.out);
+            log.error("GMS.setProperties(): the following properties are not recognized: " + props);
+            
             return false;
         }
         return true;

@@ -1,4 +1,4 @@
-// $Id: McastReceiverTest.java,v 1.4 2004/07/05 14:15:11 belaban Exp $
+// $Id: McastReceiverTest.java,v 1.5 2005/05/30 14:31:37 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -18,7 +18,7 @@ import java.net.MulticastSocket;
  test whether IPMCAST works between different subnets.
  @see McastSenderTest
  @author Bela Ban
- @version $Revision: 1.4 $
+ @version $Revision: 1.5 $
  */
 public class McastReceiverTest {
 
@@ -57,7 +57,7 @@ public class McastReceiverTest {
                 mcast_addr=InetAddress.getByName("224.0.0.150");
         }
         catch(Exception ex) {
-            System.err.println(ex);
+            log.error(ex);
             return;
         }
 
@@ -84,7 +84,7 @@ public class McastReceiverTest {
 
         }
         catch(Exception e) {
-            System.err.println(e);
+            log.error(e);
         }
 
     }

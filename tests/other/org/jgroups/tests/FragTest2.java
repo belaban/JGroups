@@ -1,4 +1,4 @@
-// $Id: FragTest2.java,v 1.6 2005/04/13 10:02:56 belaban Exp $
+// $Id: FragTest2.java,v 1.7 2005/05/30 14:31:36 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -88,7 +88,7 @@ public class FragTest2 {
                     }
                 }
                 catch(Exception e) {
-                    System.err.println(e);
+                    log.error(e);
                 }
             }
 
@@ -149,7 +149,7 @@ public class FragTest2 {
             new FragTest2(defaultChar, default_mode, MSG_SIZE, num_msgs, timeout, frag_size).start();
         }
         catch(Exception e) {
-            System.err.println(e);
+            log.error(e);
         }
     }
 

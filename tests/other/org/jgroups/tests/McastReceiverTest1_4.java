@@ -1,4 +1,4 @@
-// $Id: McastReceiverTest1_4.java,v 1.4 2004/07/05 14:15:11 belaban Exp $
+// $Id: McastReceiverTest1_4.java,v 1.5 2005/05/30 14:31:37 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -19,7 +19,7 @@ import java.util.Enumeration;
    This class compiles and runs only under JDK 1.4 or higher
    @see McastSenderTest
    @author Bela Ban
-   @version $Revision: 1.4 $
+   @version $Revision: 1.5 $
  */
 public class McastReceiverTest1_4 {
 
@@ -59,13 +59,13 @@ public class McastReceiverTest1_4 {
 		mcast_addr=InetAddress.getByName("224.0.0.150");
 	}
 	catch(Exception ex) {
-	    System.err.println(ex);
+	    log.error(ex);
 	    return;
 	}
 
 	if(use_all_interfaces) {
 	    if(!is1_4()) {
-		System.err.println("-use_all_interfaces flag requires JDK 1.4 or greater");
+		log.error("-use_all_interfaces flag requires JDK 1.4 or greater");
 		return;
 	    }
 	}
@@ -89,7 +89,7 @@ public class McastReceiverTest1_4 {
 	    }
 	}
 	catch(Exception e) {
-	    System.err.println(e);
+	    log.error(e);
 	}
 
     }
@@ -142,7 +142,7 @@ public class McastReceiverTest1_4 {
                                ':' + packet.getPort() + ']');
 		}
 		catch(Exception ex) {
-		    System.err.println("Receiver terminated: " + ex);
+		    log.error("Receiver terminated: " + ex);
 		    break;
 		}
 	    }

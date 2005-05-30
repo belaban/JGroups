@@ -1,4 +1,4 @@
-// $Id: MERGE.java,v 1.7 2004/12/31 14:10:38 belaban Exp $
+// $Id: MERGE.java,v 1.8 2005/05/30 14:31:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -74,8 +74,8 @@ public class MERGE extends Protocol implements Runnable {
             client=new RouterStub(router_host, router_port);
 
         if(props.size() > 0) {
-            System.err.println("MERGE.setProperties(): the following properties are not recognized:");
-            props.list(System.out);
+            log.error("MERGE.setProperties(): the following properties are not recognized: " + props);
+
             return false;
         }
         return true;

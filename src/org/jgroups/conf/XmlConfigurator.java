@@ -1,4 +1,4 @@
-// $Id: XmlConfigurator.java,v 1.12 2004/09/23 16:29:14 belaban Exp $
+// $Id: XmlConfigurator.java,v 1.13 2005/05/30 14:31:00 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -477,7 +477,7 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
             System.out.println('\n' + output);
         }
         else {
-            System.err.println("no input file given");
+            log.error("no input file given");
         }
     }
 

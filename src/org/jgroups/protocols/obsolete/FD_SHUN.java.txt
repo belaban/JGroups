@@ -1,4 +1,4 @@
-// $Id: FD_SHUN.java.txt,v 1.2 2004/04/23 19:36:11 belaban Exp $
+// $Id: FD_SHUN.java.txt,v 1.3 2005/05/30 14:31:05 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -96,8 +96,8 @@ public class FD_SHUN extends Protocol implements Runnable {
 	    props.remove("max_tries");
 	}
 	if(props.size() > 0) {
-	    System.err.println("FD_SHUN.setProperties(): the following properties are not recognized:");
-	    props.list(System.out);
+	    log.error("FD_SHUN.setProperties(): the following properties are not recognized: " + props);
+	    
 	    return false;
 	}
 	return true;
@@ -170,7 +170,7 @@ public class FD_SHUN extends Protocol implements Runnable {
 		    if(invalid_pingers.containsKey(hb_sender)) {
 			num_pings=((Integer)invalid_pingers.get(hb_sender)).intValue();
 			if(num_pings >= max_tries) {
-			    System.err.println("** FD_SHUN.up(HEARTBEAT): sender " + hb_sender +
+			    log.error("** FD_SHUN.up(HEARTBEAT): sender " + hb_sender +
 					       " is not member in " + members + " ! Telling it to leave group");
 			    hb_ack=new Message(msg.getSrc(), null, null);
 			    tmp_hdr=new FdHeaderShun(FdHeaderShun.NOT_MEMBER);
@@ -314,7 +314,7 @@ public class FD_SHUN extends Protocol implements Runnable {
 	    tmp.interrupt();
 	    try {tmp.join(timeout);} catch(Exception ex) {}
 	    if(tmp.isAlive())
-		System.err.println("**** FD_SHUN.stop(): interrupted pinger thread is still alive !");
+		log.error("**** FD_SHUN.stop(): interrupted pinger thread is still alive !");
 	}
 	pinger=null;
     }

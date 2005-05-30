@@ -1,4 +1,4 @@
-// $Id: FLUSH.java,v 1.8 2004/09/23 16:29:41 belaban Exp $
+// $Id: FLUSH.java,v 1.9 2005/05/30 14:31:07 belaban Exp $
 
 
 
@@ -427,8 +427,8 @@ public class FLUSH extends RpcProtocol {
 	}
 
 	if(props.size() > 0) {
-	    System.err.println("EXAMPLE.setProperties(): these properties are not recognized:");
-	    props.list(System.out);
+	    log.error("EXAMPLE.setProperties(): these properties are not recognized: " + props);
+
 	    return false;
 	}
 	return true;

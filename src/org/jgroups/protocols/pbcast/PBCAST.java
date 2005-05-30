@@ -1,4 +1,4 @@
-// $Id: PBCAST.java,v 1.10 2004/09/23 16:29:38 belaban Exp $
+// $Id: PBCAST.java,v 1.11 2005/05/30 14:31:06 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -331,8 +331,8 @@ public class PBCAST extends Protocol implements Runnable {
         }
 
         if(props.size() > 0) {
-            System.err.println("PBCAST.setProperties(): the following properties are not recognized:");
-            props.list(System.out);
+            log.error("PBCAST.setProperties(): the following properties are not recognized: " + props);
+            
             return false;
         }
         return true;

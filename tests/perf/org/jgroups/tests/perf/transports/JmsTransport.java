@@ -10,7 +10,7 @@ import java.util.Properties;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: JmsTransport.java,v 1.1 2004/01/24 16:54:27 belaban Exp $
+ * @version $Id: JmsTransport.java,v 1.2 2005/05/30 14:31:41 belaban Exp $
  */
 public class JmsTransport implements Transport, MessageListener {
     Receiver          receiver=null;
@@ -91,7 +91,7 @@ public class JmsTransport implements Transport, MessageListener {
     public void onMessage(Message message) {
         Object sender=null;
         if(message == null || !(message instanceof BytesMessage)) {
-            System.err.println("JmsTransport.onMessage(): received a non BytesMessage (" + message + "), discarding");
+            log.error("JmsTransport.onMessage(): received a non BytesMessage (" + message + "), discarding");
             return;
         }
         BytesMessage msg=(BytesMessage)message;

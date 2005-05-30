@@ -1,4 +1,4 @@
-// $Id: PARTITIONER.java,v 1.4 2004/09/23 16:29:42 belaban Exp $
+// $Id: PARTITIONER.java,v 1.5 2005/05/30 14:31:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -40,8 +40,8 @@ public class PARTITIONER extends Protocol {
 
         super.setProperties(props);
         if(props.size() > 0) {
-            System.err.println("EXAMPLE.setProperties(): these properties are not recognized:");
-            props.list(System.out);
+            log.error("EXAMPLE.setProperties(): these properties are not recognized: " + props);
+
             return false;
         }
         return true;

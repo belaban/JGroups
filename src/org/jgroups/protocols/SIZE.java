@@ -1,4 +1,4 @@
-// $Id: SIZE.java,v 1.12 2005/01/24 13:03:05 belaban Exp $
+// $Id: SIZE.java,v 1.13 2005/05/30 14:31:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -68,8 +68,8 @@ public class SIZE extends Protocol {
         }
 
         if(props.size() > 0) {
-            System.err.println("the following properties are not recognized:");
-            props.list(System.out);
+            log.error("the following properties are not recognized: " + props);
+
             return false;
         }
         return true;

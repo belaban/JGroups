@@ -1,4 +1,4 @@
-// $Id: ProtocolTester.java,v 1.4 2004/09/23 16:29:16 belaban Exp $
+// $Id: ProtocolTester.java,v 1.5 2005/05/30 14:31:01 belaban Exp $
 
 package org.jgroups.debug;
 
@@ -114,7 +114,7 @@ public class ProtocolTester {
             t.stop();
         }
         catch(Exception ex) {
-            System.err.println(ex);
+            log.error(ex);
         }
     }
 

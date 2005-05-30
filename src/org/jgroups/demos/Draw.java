@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.10 2005/01/28 14:18:32 belaban Exp $
+// $Id: Draw.java,v 1.11 2005/05/30 14:31:02 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -264,20 +264,20 @@ public class Draw implements ActionListener, ChannelListener {
                     clearPanel();
                     continue;
                 default:
-                    System.err.println("***** Draw.run(): received invalid draw command " + comm.mode);
+                    log.error("***** Draw.run(): received invalid draw command " + comm.mode);
                     break;
                 }
 
             }
             catch(ChannelNotConnectedException not) {
-                System.err.println("Draw: " + not);
+                log.error("Draw: " + not);
                 break;
             }
             catch(ChannelClosedException closed) {
                 break;
             }
             catch(Exception e) {
-                System.err.println(e);
+                log.error(e);
                 continue;
             }
         }
@@ -309,7 +309,7 @@ public class Draw implements ActionListener, ChannelListener {
             channel.send(new Message(null, null, out.toByteArray()));
         }
         catch(Exception ex) {
-            System.err.println(ex);
+            log.error(ex);
         }
     }
 
@@ -329,7 +329,7 @@ public class Draw implements ActionListener, ChannelListener {
                     channel.close();
                 }
                 catch(Exception ex) {
-                    System.err.println(ex);
+                    log.error(ex);
                 }
             }
             mainFrame.setVisible(false);
@@ -428,7 +428,7 @@ public class Draw implements ActionListener, ChannelListener {
                 Thread.yield(); // gives the repainter some breath
             }
             catch(Exception ex) {
-                System.err.println(ex);
+                log.error(ex);
             }
         }
 

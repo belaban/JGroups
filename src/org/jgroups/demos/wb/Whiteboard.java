@@ -1,4 +1,4 @@
-// $Id: Whiteboard.java,v 1.3 2004/09/22 10:34:09 belaban Exp $
+// $Id: Whiteboard.java,v 1.4 2005/05/30 14:31:02 belaban Exp $
 
 package org.jgroups.demos.wb;
 
@@ -115,7 +115,7 @@ public class Whiteboard extends Applet implements ActionListener, MessageListene
             System.out.println("INIT()");
             channel.getState(null, 0);
         } catch (Exception e) {
-            System.err.println("Whiteboard.init(): " + e);
+            log.error("Whiteboard.init(): " + e);
         }
         panel.my_addr = channel.getLocalAddress();
 
@@ -137,7 +137,7 @@ public class Whiteboard extends Applet implements ActionListener, MessageListene
 				MethodCall call = new MethodCall("removeNode", new Object[] {panel.my_addr}, new String[] {Object.class.getName()}); 
                 disp.callRemoteMethods(null, call, GroupRequest.GET_ALL, 0);
             } catch (Exception e) {
-                System.err.println(e);
+                log.error(e);
             }
             channel.close();
             disp = null;
@@ -168,7 +168,7 @@ public class Whiteboard extends Applet implements ActionListener, MessageListene
                     System.exit(0);
                 }
             } catch (Exception ex) {
-                System.err.println(ex);
+                log.error(ex);
             }
 
         } else

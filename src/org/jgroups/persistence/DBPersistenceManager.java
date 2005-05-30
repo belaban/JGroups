@@ -106,7 +106,7 @@ public class DBPersistenceManager implements PersistenceManager {
         this.closeConnection(conn);
         createDBTables();
         retrieveAll(); // work around to make sure, no duplicates are created.
-        System.err.println(" Done constructing DB Persist Manager");
+        log.error(" Done constructing DB Persist Manager");
     }
 
 
@@ -125,7 +125,7 @@ public class DBPersistenceManager implements PersistenceManager {
     public void save(Serializable key, Serializable val) throws CannotPersistException {
         // checking if this is update or new entry
         if(!entryExists(key)) {
-            System.err.println(" entry doesnt exist for " + key.toString());
+            log.error(" entry doesnt exist for " + key.toString());
             try {
                 addNewEntry(key, val);
                 list.add(key.toString());
@@ -147,7 +147,7 @@ public class DBPersistenceManager implements PersistenceManager {
             keyStr=key.toString();
             byte[] keyBytes=getBytes(key);
             byte[] valBytes=getBytes(val);
-            System.err.println(" value is " + val);
+            log.error(" value is " + val);
             //use simple execute, do not create prepared statement
             prepStat=conn.prepareStatement(updateStat);
             prepStat.setString(3, keyStr);
@@ -401,7 +401,7 @@ public class DBPersistenceManager implements PersistenceManager {
             //prepStat.setBinaryStream(valStream);
             prepStat.executeQuery();
             conn.commit();
-            System.err.println(" executing insert " + insertStat);
+            log.error(" executing insert " + insertStat);
         }
         catch(Throwable t) {
             //conn.rollback();
@@ -649,7 +649,7 @@ public class DBPersistenceManager implements PersistenceManager {
         try {
 
             stat=conn.createStatement();
-            System.err.println(" executing query for oracle " + createTable);
+            log.error(" executing query for oracle " + createTable);
             stat.executeQuery(createTable);
         }
         catch(Throwable t) {

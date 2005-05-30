@@ -1,4 +1,4 @@
-// $Id: QuoteServer.java,v 1.5 2004/09/23 16:29:35 belaban Exp $
+// $Id: QuoteServer.java,v 1.6 2005/05/30 14:31:02 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -81,7 +81,7 @@ public class QuoteServer implements MembershipListener, MessageListener {
             System.out.println("Ready to serve requests");
         }
         catch(Exception e) {
-            System.err.println("QuoteServer.start() : " + e);
+            log.error("QuoteServer.start() : " + e);
             System.exit(-1);
         }
     }

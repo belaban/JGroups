@@ -4,7 +4,7 @@
 // replacing SecretKey with SecretKey
 
 
-// $Id: ENCRYPT1_4.java,v 1.6 2004/09/23 16:29:41 belaban Exp $
+// $Id: ENCRYPT1_4.java,v 1.7 2005/05/30 14:31:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -142,7 +142,7 @@ public static class EncryptHeader extends org.jgroups.Header {
         }
         if(props.size() > 0) {
 
-		if(log.isErrorEnabled()) log.error("these properties are not recognized:"+ props);
+		if(log.isErrorEnabled()) log.error("these properties are not recognized: " + props);
             return false;
         }
 

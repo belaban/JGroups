@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.17 2005/04/20 20:25:47 belaban Exp $
+// $Id: MERGE2.java,v 1.18 2005/05/30 14:31:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -91,8 +91,8 @@ public class MERGE2 extends Protocol {
         }
 
         if(props.size() > 0) {
-            System.err.println("MERGE2.setProperties(): the following properties are not recognized:");
-            props.list(System.out);
+            log.error("MERGE2.setProperties(): the following properties are not recognized: " + props);
+
             return false;
         }
         return true;

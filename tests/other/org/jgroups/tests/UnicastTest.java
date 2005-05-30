@@ -1,4 +1,4 @@
-// $Id: UnicastTest.java,v 1.5 2005/02/07 08:38:25 belaban Exp $
+// $Id: UnicastTest.java,v 1.6 2005/05/30 14:31:37 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -107,7 +107,7 @@ public class UnicastTest implements Runnable {
 
                         if(data instanceof StartData) {
                             if(started) {
-                                System.err.println("UnicastTest.run(): received START data, but am already processing data");
+                                log.error("UnicastTest.run(): received START data, but am already processing data");
                                 continue;
                             }
                             else {
@@ -122,7 +122,7 @@ public class UnicastTest implements Runnable {
                             if(data instanceof Value) {
                                 tmp=((Value)data).value;
                                 if(current_value + 1 != tmp) {
-                                    System.err.println("-- message received (" + tmp + ") is not 1 greater than " + current_value);
+                                    log.error("-- message received (" + tmp + ") is not 1 greater than " + current_value);
                                 }
                                 else {
                                     current_value++;
@@ -144,19 +144,19 @@ public class UnicastTest implements Runnable {
                     }
             }
             catch(ChannelNotConnectedException not_connected) {
-                System.err.println(not_connected);
+                log.error(not_connected);
                 break;
             }
             catch(ChannelClosedException closed_ex) {
-                System.err.println(closed_ex);
+                log.error(closed_ex);
                 break;
             }
             catch(TimeoutException timeout) {
-                System.err.println(timeout);
+                log.error(timeout);
                 break;
             }
             catch(Throwable t) {
-                System.err.println(t);
+                log.error(t);
                 started=false;
                 current_value=0;
                 tmp=0;
@@ -208,7 +208,7 @@ public class UnicastTest implements Runnable {
         Value val=new Value(1);
 
         if(receiver == null) {
-            System.err.println("UnicastTest.sendMessages(): receiver is null, cannot send messages");
+            log.error("UnicastTest.sendMessages(): receiver is null, cannot send messages");
             return;
         }
 
@@ -251,7 +251,7 @@ public class UnicastTest implements Runnable {
             return Long.parseLong(tmp);
         }
         catch(Exception e) {
-            System.err.println("UnicastTest.getNumberOfMessages(): " + e);
+            log.error("UnicastTest.getNumberOfMessages(): " + e);
             return 0;
         }
     }
@@ -279,7 +279,7 @@ public class UnicastTest implements Runnable {
             return (Address)mbrs.elementAt(index); // index out of bounds caught below
         }
         catch(Exception e) {
-            System.err.println("UnicastTest.getReceiver(): " + e);
+            log.error("UnicastTest.getReceiver(): " + e);
             return null;
         }
     }
@@ -341,7 +341,7 @@ public class UnicastTest implements Runnable {
             test.eventLoop();
         }
         catch(Exception ex) {
-            System.err.println(ex);
+            log.error(ex);
         }
     }
 

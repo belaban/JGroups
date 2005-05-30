@@ -206,7 +206,7 @@ public class Test implements Receiver {
                         }
                     }
                     else {
-                        System.err.println("-- sender " + sender + " not found in senders hashmap");
+                        log.error("-- sender " + sender + " not found in senders hashmap");
                     }
                     break;
 
@@ -220,7 +220,7 @@ public class Test implements Receiver {
                     break;
 
                 default:
-                    System.err.println("received invalid data type: " + payload[0]);
+                    log.error("received invalid data type: " + payload[0]);
                     break;
             }
         }
@@ -274,7 +274,7 @@ public class Test implements Receiver {
             }
         }
         else {
-            System.err.println("-- sender " + sender + " not found in senders hashmap");
+            log.error("-- sender " + sender + " not found in senders hashmap");
         }
     }
 

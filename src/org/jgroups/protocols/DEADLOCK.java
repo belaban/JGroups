@@ -1,4 +1,4 @@
-// $Id: DEADLOCK.java,v 1.5 2004/09/23 16:29:41 belaban Exp $
+// $Id: DEADLOCK.java,v 1.6 2005/05/30 14:31:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -111,7 +111,7 @@ public class DEADLOCK extends RpcProtocol {
         if(_corr != null)
             _corr.setDeadlockDetection(true);
         else
-            System.err.println("Cannot set deadlock detection in corr, as it is null !");
+            log.error("Cannot set deadlock detection in corr, as it is null !");
         frame=new MyFrame(getName(), this);
         frame.show();
     }

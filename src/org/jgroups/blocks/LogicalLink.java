@@ -1,4 +1,4 @@
-// $Id: LogicalLink.java,v 1.3 2004/09/23 16:29:11 belaban Exp $
+// $Id: LogicalLink.java,v 1.4 2005/05/30 14:31:00 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -56,7 +56,7 @@ public class LogicalLink implements Link.Receiver {
     public void addLink(String local_addr, int local_port, String remote_addr, int remote_port) {
 	Link new_link=new Link(local_addr, local_port, remote_addr, remote_port, this);
 	if(links.contains(new_link))
-	    System.err.println("LogicalLink.add(): link " + new_link + " is already present");
+	    log.error("LogicalLink.add(): link " + new_link + " is already present");
 	else
 	    links.addElement(new_link);
     }
@@ -67,7 +67,7 @@ public class LogicalLink implements Link.Receiver {
 			long timeout, long hb_interval) {
 	Link new_link=new Link(local_addr, local_port, remote_addr, remote_port, timeout, hb_interval, this);
 	if(links.contains(new_link))
-	    System.err.println("LogicalLink.add(): link " + new_link + " is already present");
+	    log.error("LogicalLink.add(): link " + new_link + " is already present");
 	else
 	    links.addElement(new_link);
     }
@@ -115,7 +115,7 @@ public class LogicalLink implements Link.Receiver {
 		tmp.start();
 	    }
 	    catch(Exception ex) {
-		System.err.println("LogicalLink.start(): could not create physical link, reason: " + ex);
+		log.error("LogicalLink.start(): could not create physical link, reason: " + ex);
 	    }
 	}
     }
@@ -138,7 +138,7 @@ public class LogicalLink implements Link.Receiver {
 	int     link_used=0;
 
 	if(buf == null || buf.length == 0) {
-	    System.err.println("LogicalLink.send(): buf is null or empty");
+	    log.error("LogicalLink.send(): buf is null or empty");
 	    return false;
 	}
 
@@ -274,7 +274,7 @@ public class LogicalLink implements Link.Receiver {
 	ll.setReceiver(new MyReceiver());
 
 	if(args.length % 4 != 0 || args.length == 0) {
-	    System.err.println("\nLogicalLink <link+>\nwhere <link> is " +
+	    log.error("\nLogicalLink <link+>\nwhere <link> is " +
 			       "<local host> <local port> <remote host> <remote port>\n");
 	    return;
 	}
@@ -291,7 +291,7 @@ public class LogicalLink implements Link.Receiver {
 	    ll.start();
 	}
 	catch(Exception e) {
-	    System.err.println("LogicalLink.main(): " + e);
+	    log.error("LogicalLink.main(): " + e);
 	}
 	
 	BufferedReader in= new BufferedReader(new InputStreamReader(System.in));	    
@@ -302,7 +302,7 @@ public class LogicalLink implements Link.Receiver {
 		ll.send(line.getBytes());
 	    }
 	    catch(Exception e) {
-		System.err.println(e);
+		log.error(e);
 	    }
 	}
 	

@@ -1,4 +1,4 @@
-// $Id: LargeState.java,v 1.9 2004/07/05 14:15:11 belaban Exp $
+// $Id: LargeState.java,v 1.10 2005/05/30 14:31:37 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -154,7 +154,7 @@ public class LargeState {
             new LargeState().start(provider, size, props);
         }
         catch(Exception e) {
-            System.err.println(e);
+            log.error(e);
         }
     }
 

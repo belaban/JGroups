@@ -1,4 +1,4 @@
-// $Id: ViewIdTest.java,v 1.2 2004/03/30 06:47:31 belaban Exp $
+// $Id: ViewIdTest.java,v 1.3 2005/05/30 14:31:32 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -28,7 +28,7 @@ public class ViewIdTest extends TestCase {
 	    v3=(ViewId)v1.clone();
 	}
 	catch(Exception e) {
-	    System.err.println("ViewIdTest.setUp(): " + e);
+	    log.error("ViewIdTest.setUp(): " + e);
 	}
     }
 

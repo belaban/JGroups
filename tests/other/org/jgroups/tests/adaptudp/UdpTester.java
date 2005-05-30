@@ -127,7 +127,7 @@ public class UdpTester {
                             }
                             break;
                         default:
-                            System.err.println("don't recognize request with type=" + req.type);
+                            log.error("don't recognize request with type=" + req.type);
                             break;
                     }
                 }

@@ -1,4 +1,4 @@
-// $Id: GossipClient.java,v 1.8 2004/12/31 14:34:35 belaban Exp $
+// $Id: GossipClient.java,v 1.9 2005/05/30 14:31:28 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -284,7 +284,7 @@ public class GossipClient {
                     gossip_hosts.addElement(new IpAddress(ip_addr, port));
                 }
                 catch(Exception ex) {
-                    System.err.println(ex);
+                    log.error(ex);
                 }
                 continue;
             }
@@ -309,12 +309,12 @@ public class GossipClient {
         }
 
         if(gossip_hosts.size() == 0) {
-            System.err.println("At least 1 GossipServer has to be given");
+            log.error("At least 1 GossipServer has to be given");
             return;
         }
 
         if(!register && !get) {
-            System.err.println("Neither get nor register command given, will not do anything");
+            log.error("Neither get nor register command given, will not do anything");
             return;
         }
 
@@ -322,7 +322,7 @@ public class GossipClient {
 
         }
         catch(Throwable ex) {
-            System.err.println("GossipClient.main(): error initailizing JGroups Trace: " + ex);
+            log.error("GossipClient.main(): error initailizing JGroups Trace: " + ex);
         }
 
         try {
@@ -339,7 +339,7 @@ public class GossipClient {
             }
         }
         catch(Exception ex) {
-            System.err.println(ex);
+            log.error(ex);
         }
         if(!keep_running)
             gossip_client.stop();

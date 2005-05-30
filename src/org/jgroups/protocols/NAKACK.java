@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.11 2005/03/11 06:59:49 belaban Exp $
+// $Id: NAKACK.java,v 1.12 2005/05/30 14:31:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -479,8 +479,8 @@ public class NAKACK extends Protocol {
         }
 
         if(props.size() > 0) {
-            System.err.println("NAKACK.setProperties(): these properties are not recognized:");
-            props.list(System.out);
+            log.error("NAKACK.setProperties(): these properties are not recognized: " + props);
+
             return false;
         }
         return true;

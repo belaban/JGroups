@@ -1,4 +1,4 @@
-// $Id: AUTOCONF.java,v 1.11 2005/04/07 15:03:20 belaban Exp $
+// $Id: AUTOCONF.java,v 1.12 2005/05/30 14:31:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -72,8 +72,7 @@ public class AUTOCONF extends Protocol {
         }
 
         if(props.size() > 0) {
-            System.err.println("AUTOCONF.setProperties(): the following properties are not recognized:");
-            props.list(System.out);
+            log.error("AUTOCONF.setProperties(): the following properties are not recognized: " + props);
             return false;
         }
         return true;

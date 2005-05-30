@@ -1,4 +1,4 @@
-// $Id: UNIFORM.java.txt,v 1.2 2004/04/23 19:36:11 belaban Exp $
+// $Id: UNIFORM.java.txt,v 1.3 2005/05/30 14:31:05 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -97,8 +97,8 @@ public class UNIFORM extends Protocol implements RequestHandler, Transport {
 	    props.remove("trace");
 	}
 	if(props.size() > 0) {
-	    System.err.println("UNIFORM.setProperties(): the following properties are not recognized:");
-	    props.list(System.out);
+	    log.error("UNIFORM.setProperties(): the following properties are not recognized: " + props);
+	    
 	    return false;
 	}
 	return true;
@@ -262,7 +262,7 @@ public class UNIFORM extends Protocol implements RequestHandler, Transport {
 		removeFromDelivered(msg.getSrc(), hdr.id);
 		return new Integer(UniformHeader.GC_OK);
 	    default:
-		System.err.println("UNIFORM.handle(): UniformHeader.type " + hdr.type + " not known");
+		log.error("UNIFORM.handle(): UniformHeader.type " + hdr.type + " not known");
 		break;
 	    }
 	}
@@ -301,13 +301,13 @@ public class UNIFORM extends Protocol implements RequestHandler, Transport {
 
 	val_pending=(Hashtable)pending.get(sender);
 	if(val_pending == null) {
-	    System.err.println("UNIFORM.moveFromPendingToDelivered(): value for " + 
+	    log.error("UNIFORM.moveFromPendingToDelivered(): value for " +
 			       sender + " not found !");
 	    return null;
 	}
 	msg=(Message)val_pending.get(key);
 	if(msg == null) {
-	    System.err.println("UNIFORM.moveFromPendingToDelivered(): value for " + sender + ":" + 
+	    log.error("UNIFORM.moveFromPendingToDelivered(): value for " + sender + ":" +
 			       key + " not found !");
 	    return null;
 	}

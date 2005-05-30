@@ -1,4 +1,4 @@
-// $Id: PIGGYBACK.java,v 1.8 2004/09/23 16:29:42 belaban Exp $
+// $Id: PIGGYBACK.java,v 1.9 2005/05/30 14:31:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -128,8 +128,8 @@ public class PIGGYBACK extends Protocol {
         }
 
         if(props.size() > 0) {
-            System.err.println("PIGGYBACK.setProperties(): these properties are not recognized:");
-            props.list(System.out);
+            log.error("PIGGYBACK.setProperties(): these properties are not recognized: " + props);
+
             return false;
         }
         return true;

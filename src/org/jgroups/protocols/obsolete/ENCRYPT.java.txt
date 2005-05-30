@@ -1,4 +1,4 @@
-// $Id: ENCRYPT.java.txt,v 1.2 2004/04/23 19:36:11 belaban Exp $
+// $Id: ENCRYPT.java.txt,v 1.3 2005/05/30 14:31:05 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -104,8 +104,8 @@ public class ENCRYPT extends Protocol {
 	    props.remove("symAlgorithm");
 	}
 	if (props.size() > 0) {
-	    System.err.println("ENCRYPT.setProperties(): these properties are not recognized:");
-	    props.list(System.out);
+	    log.error("ENCRYPT.setProperties(): these properties are not recognized: " + props);
+
 	    return false;
 	}
 
@@ -388,7 +388,7 @@ public class ENCRYPT extends Protocol {
 	    key = KeyFac.generateSecret((KeySpec)desKeySpec);
 	}
 	catch(Exception e){
-	    System.err.println(e);
+	    log.error(e);
 	}
 	return key;
     }
@@ -401,7 +401,7 @@ public class ENCRYPT extends Protocol {
 	    pubKey = KeyFac.generatePublic((KeySpec)x509KeySpec);
 	}
 	catch(Exception e){
-	    System.err.println(e);
+	    log.error(e);
 	}
 	return pubKey;
     }

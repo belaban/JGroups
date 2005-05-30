@@ -1,4 +1,4 @@
-// $Id: Stack.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+// $Id: Stack.java,v 1.2 2005/05/30 14:31:29 belaban Exp $
 
 package org.jgroups.util;
 
@@ -90,7 +90,7 @@ public class Stack extends List {
 //  	    System.out.println(st2.dump());
 //  	}
 //  	catch(Exception e) {
-//  	    System.err.println(e);
+//  	    log.error(e);
 //  	}
 
 	

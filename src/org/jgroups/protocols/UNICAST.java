@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.20 2005/04/20 13:56:02 belaban Exp $
+// $Id: UNICAST.java,v 1.21 2005/05/30 14:31:23 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -114,8 +114,8 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         }
 
         if(props.size() > 0) {
-            System.err.println("UNICAST.setProperties(): these properties are not recognized:");
-            props.list(System.out);
+            log.error("UNICAST.setProperties(): these properties are not recognized: " + props);
+
             return false;
         }
 

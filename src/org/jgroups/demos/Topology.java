@@ -1,4 +1,4 @@
-// $Id: Topology.java,v 1.4 2004/09/23 16:29:35 belaban Exp $
+// $Id: Topology.java,v 1.5 2005/05/30 14:31:02 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -238,7 +238,7 @@ public class Topology extends Frame implements WindowListener, MembershipListene
             top.start();
         }
         catch(Exception e) {
-            System.err.println(e);
+            log.error(e);
             e.printStackTrace();
             System.exit(0);
         }

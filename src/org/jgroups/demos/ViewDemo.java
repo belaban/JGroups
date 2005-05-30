@@ -1,4 +1,4 @@
-// $Id: ViewDemo.java,v 1.7 2005/04/23 14:36:40 belaban Exp $
+// $Id: ViewDemo.java,v 1.8 2005/05/30 14:31:02 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -112,7 +112,7 @@ public class ViewDemo implements MembershipListener {
             t.start(props, use_additional_data);
         }
         catch(Exception e) {
-            System.err.println(e);
+            log.error(e);
         }
     }
 

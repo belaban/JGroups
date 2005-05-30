@@ -1,4 +1,4 @@
-// $Id: Ping.java,v 1.5 2005/04/20 20:25:50 belaban Exp $
+// $Id: Ping.java,v 1.6 2005/05/30 14:31:37 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -50,7 +50,7 @@ public class Ping implements UpHandler {
             channel.down(Event.FIND_INITIAL_MBRS_EVT);
         }
         catch(Exception e) {
-            System.err.println("Ping.go(): " + e);
+            log.error("Ping.go(): " + e);
             System.exit(1);
         }
     }
@@ -103,7 +103,7 @@ public class Ping implements UpHandler {
 
         System.out.println("");
         if(votes.size() > 1)
-            System.err.println("*** Found more than 1 coordinator !");
+            log.error("*** Found more than 1 coordinator !");
 
         printVotes(votes);
     }
@@ -161,7 +161,7 @@ public class Ping implements UpHandler {
             ping.go(groupname);
         }
         catch(Exception e) {
-            System.err.println("Ping.main(): " + e);
+            log.error("Ping.main(): " + e);
             System.exit(0);
         }
     }

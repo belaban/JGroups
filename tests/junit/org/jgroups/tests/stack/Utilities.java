@@ -1,4 +1,4 @@
-// $Id: Utilities.java,v 1.6 2005/04/21 15:20:31 belaban Exp $
+// $Id: Utilities.java,v 1.7 2005/05/30 14:31:32 belaban Exp $
 
 package org.jgroups.tests.stack;
 
@@ -15,7 +15,7 @@ import java.net.Socket;
  * Utility functions shared by stack tests.
  *
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Revision: 1.6 $
+ * @version $Revision: 1.7 $
  * @since 2.2.1
  */
 public class Utilities {
@@ -63,7 +63,7 @@ public class Utilities {
                 catch(Exception e) {
                     String msg=
                             "Failed to start the router on port " + routerPort;
-                    System.err.println(msg);
+                    log.error(msg);
                     e.printStackTrace();
                     gossipRouter=null;
                 }
@@ -182,7 +182,7 @@ public class Utilities {
                 catch(Exception e) {
                     String msg=
                             "Failed to start the gossip server on port " + port;
-                    System.err.println(msg);
+                    log.error(msg);
                     e.printStackTrace();
                 }
             }

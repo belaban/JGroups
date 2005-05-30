@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.21 2005/04/23 20:41:39 belaban Exp $
+// $Id: FD.java,v 1.22 2005/05/30 14:31:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -35,7 +35,7 @@ import java.util.Vector;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Revision: 1.21 $
+ * @version $Revision: 1.22 $
  */
 public class FD extends Protocol {
     Address               ping_dest=null;
@@ -92,8 +92,8 @@ public class FD extends Protocol {
         }
 
         if(props.size() > 0) {
-            System.err.println("FD.setProperties(): the following properties are not recognized:");
-            props.list(System.out);
+            log.error("FD.setProperties(): the following properties are not recognized: " + props);
+
             return false;
         }
         return true;

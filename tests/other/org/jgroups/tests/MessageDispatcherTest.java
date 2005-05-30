@@ -1,4 +1,4 @@
-// $Id: MessageDispatcherTest.java,v 1.11 2004/07/29 09:08:52 belaban Exp $
+// $Id: MessageDispatcherTest.java,v 1.12 2005/05/30 14:31:37 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -96,7 +96,7 @@ public class MessageDispatcherTest implements RequestHandler {
             new MessageDispatcherTest().start();
         }
         catch(Exception e) {
-            System.err.println(e);
+            log.error(e);
         }
     }
 }
