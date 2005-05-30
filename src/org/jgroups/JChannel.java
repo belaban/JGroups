@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.33 2005/05/10 14:25:58 belaban Exp $
+// $Id: JChannel.java,v 1.34 2005/05/30 13:50:43 belaban Exp $
 
 package org.jgroups;
 
@@ -17,7 +17,6 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Vector;
-import java.util.Iterator;
 
 /**
  * JChannel is a pure Java implementation of Channel
@@ -25,7 +24,7 @@ import java.util.Iterator;
  * protocol stack
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.33 $
+ * @version $Revision: 1.34 $
  */
 public class JChannel extends Channel {
 
