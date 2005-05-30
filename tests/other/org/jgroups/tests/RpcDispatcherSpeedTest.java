@@ -17,7 +17,7 @@ import java.lang.reflect.Method;
 /**
  * Interactive test for measuring group RPCs using different invocation techniques.
  * @author Bela Ban
- * @version $Revision: 1.7 $
+ * @version $Revision: 1.8 $
  */
 public class RpcDispatcherSpeedTest implements MembershipListener {
     Channel             channel;
@@ -165,7 +165,7 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
         int    num=0;
 
         if(rsps == null || rsps.size() == 0) {
-            System.err.println("response list is empty");
+            log.error("response list is empty");
             return 0.0;
         }
         for(int i=0; i < rsps.size(); i++) {
@@ -175,7 +175,7 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
                 num++;
             }
             else {
-                System.err.println("response " + rsp.getValue() + " invalid");
+                log.error("response " + rsp.getValue() + " invalid");
             }
         }
         return retval / num;
@@ -237,7 +237,7 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
                 else if("signature".equals(m))
                     mode=SIGNATURE;
                 else {
-                    System.err.println("mode " + m + " is invalid");
+                    log.error("mode " + m + " is invalid");
                     help();
                     return;
                 }
@@ -253,7 +253,7 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
             test.start();
         }
         catch(Exception e) {
-            System.err.println(e);
+            log.error(e);
         }
     }
 

@@ -1,4 +1,4 @@
-// $Id: SendDialog.java,v 1.2 2004/09/23 16:29:34 belaban Exp $
+// $Id: SendDialog.java,v 1.3 2005/05/30 14:31:02 belaban Exp $
 
 package org.jgroups.demos.wb;
 
@@ -83,7 +83,7 @@ public class SendDialog extends Dialog implements ActionListener {
 			disp.callRemoteMethods(null, call, GroupRequest.GET_ALL, 0);
 	}
 	catch(Exception ex) {
-	    System.err.println(ex);
+	    log.error(ex);
 	}
 	
 	dispose();

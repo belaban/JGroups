@@ -1,4 +1,4 @@
-// $Id: FD_PROB.java,v 1.6 2004/09/23 16:29:41 belaban Exp $
+// $Id: FD_PROB.java,v 1.7 2005/05/30 14:31:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -26,7 +26,7 @@ import java.util.Vector;
  * for timeout seconds, Q will be suspected.<p>
  * This protocol can be used both with a PBCAST *and* regular stacks.
  * @author Bela Ban 1999
- * @version $Revision: 1.6 $
+ * @version $Revision: 1.7 $
  */
 public class FD_PROB extends Protocol implements Runnable {
     Address local_addr=null;
@@ -67,8 +67,8 @@ public class FD_PROB extends Protocol implements Runnable {
         }
 
         if(props.size() > 0) {
-            System.err.println("FD_PROB.setProperties(): the following properties are not recognized:");
-            props.list(System.out);
+            log.error("FD_PROB.setProperties(): the following properties are not recognized: " + props);
+
             return false;
         }
         return true;

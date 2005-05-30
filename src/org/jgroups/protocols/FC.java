@@ -1,4 +1,4 @@
-// $Id: FC.java,v 1.20 2005/04/20 20:25:46 belaban Exp $
+// $Id: FC.java,v 1.21 2005/05/30 14:31:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -18,7 +18,7 @@ import java.util.*;
  * Note that this protocol must be located towards the top of the stack, or all down_threads from JChannel to this
  * protocol must be set to false ! This is in order to block JChannel.send()/JChannel.down().
  * @author Bela Ban
- * @version $Revision: 1.20 $
+ * @version $Revision: 1.21 $
  */
 public class FC extends Protocol {
 
@@ -96,8 +96,8 @@ public class FC extends Protocol {
             min_credits=(long)((double)max_credits * min_threshold);
 
         if(props.size() > 0) {
-            System.err.println("FC.setProperties(): the following properties are not recognized:");
-            props.list(System.out);
+            log.error("FC.setProperties(): the following properties are not recognized: " + props);
+
             return false;
         }
         return true;

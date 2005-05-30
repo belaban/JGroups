@@ -1,4 +1,4 @@
-// $Id: UserInfoDialog.java,v 1.3 2004/09/23 16:29:34 belaban Exp $
+// $Id: UserInfoDialog.java,v 1.4 2005/05/30 14:31:02 belaban Exp $
 
 package org.jgroups.demos.wb;
 
@@ -62,7 +62,7 @@ public class UserInfoDialog extends Dialog implements ActionListener {
 		dispose();
 	}
 	else
-	    System.err.println("UserInfoDialog.actionPerfomed(): unknown action " + 
+	    log.error("UserInfoDialog.actionPerfomed(): unknown action " +
 			       e.getActionCommand());	
     }
 

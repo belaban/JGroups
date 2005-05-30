@@ -1,4 +1,4 @@
-// $Id: WanPipeAddress.java,v 1.6 2005/04/15 13:17:02 belaban Exp $
+// $Id: WanPipeAddress.java,v 1.7 2005/05/30 14:31:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -41,17 +41,17 @@ public class WanPipeAddress implements Address {
      */
     public int compareTo(Object other) throws ClassCastException {
         if(other == null) {
-            System.err.println("WanPipeAddress.compareTo(): other address is null !");
+            log.error("WanPipeAddress.compareTo(): other address is null !");
             return -1;
         }
 
         if(!(other instanceof WanPipeAddress)) {
-            System.err.println("WanPipeAddress.compareTo(): other address is not of type WanPipeAddress !");
+            log.error("WanPipeAddress.compareTo(): other address is not of type WanPipeAddress !");
             return -1;
         }
 
         if(((WanPipeAddress)other).logical_name == null) {
-            System.err.println("WanPipeAddress.compareTo(): other address is null !");
+            log.error("WanPipeAddress.compareTo(): other address is null !");
             return -1;
         }
 

@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.12 2005/05/04 01:04:28 wenbo Exp $
+// $Id: STATE_TRANSFER.java,v 1.13 2005/05/30 14:31:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -135,9 +135,8 @@ public class STATE_TRANSFER extends Protocol implements RequestHandler {
         }
 
         if(props.size() > 0) {
-            System.err.println("STATE_TRANSFER.setProperties(): the following " +
-                    "properties are not recognized:");
-            props.list(System.out);
+            log.error("STATE_TRANSFER.setProperties(): the following properties are not recognized: " + props);
+
             return false;
         }
         return true;

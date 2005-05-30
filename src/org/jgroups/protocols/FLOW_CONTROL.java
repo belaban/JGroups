@@ -1,4 +1,4 @@
-// $Id: FLOW_CONTROL.java,v 1.6 2004/09/23 16:29:41 belaban Exp $
+// $Id: FLOW_CONTROL.java,v 1.7 2005/05/30 14:31:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -89,7 +89,7 @@ public class FLOW_CONTROL extends MessageProtocol implements Runnable {
                 if((_msgsSentAfterFCreq >= _fwdMarginSize) && !isBlockState) {
 
                     if(log.isInfoEnabled()) log.info("ACTION BLOCK");
-                    System.err.println("0;" + System.currentTimeMillis() + ';' + _windowSize);
+                    log.error("0;" + System.currentTimeMillis() + ';' + _windowSize);
                     passUp(new Event(Event.BLOCK_SEND));
                     isBlockState=true;
                 }
@@ -212,8 +212,8 @@ public class FLOW_CONTROL extends MessageProtocol implements Runnable {
 
 
         if(props.size() > 0) {
-            System.err.println("FLOW_CONTROL.setProperties(): the following properties are not recognized:");
-            props.list(System.out);
+            log.error("FLOW_CONTROL.setProperties(): the following properties are not recognized: " + props);
+
             return false;
         }
         return true;
@@ -266,7 +266,7 @@ public class FLOW_CONTROL extends MessageProtocol implements Runnable {
 
             if(log.isWarnEnabled()) log.warn("ACTION UNBLOCK");
             passUp(new Event(Event.UNBLOCK_SEND));
-            System.err.println("1;" + System.currentTimeMillis() + ';' + _windowSize);
+            log.error("1;" + System.currentTimeMillis() + ';' + _windowSize);
             isBlockState=false;
         }
 

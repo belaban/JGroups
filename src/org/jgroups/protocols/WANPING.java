@@ -1,4 +1,4 @@
-// $Id: WANPING.java,v 1.9 2005/01/04 08:18:31 belaban Exp $
+// $Id: WANPING.java,v 1.10 2005/05/30 14:31:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -41,7 +41,7 @@ public class WANPING extends Discovery {
         }
 
         if(initial_hosts == null || initial_hosts.size() == 0) {
-            System.err.println("WANPING.setProperties(): hosts to contact for initial membership " +
+            log.error("WANPING.setProperties(): hosts to contact for initial membership " +
                                "not specified. Cannot determine coordinator !");
             return false;
         }
@@ -83,7 +83,7 @@ public class WANPING extends Discovery {
                 tmp.add(t.trim());
             }
             catch(NumberFormatException e) {
-                System.err.println("WANPING.createInitialHosts(): " + e);
+                log.error("WANPING.createInitialHosts(): " + e);
             }
         }
         return tmp;

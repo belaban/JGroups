@@ -1,6 +1,6 @@
 
 
-//$Id: ENCRYPT.java,v 1.8 2005/04/11 14:34:13 steview Exp $
+//$Id: ENCRYPT.java,v 1.9 2005/05/30 14:31:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -400,7 +400,7 @@ final Map keyMap = new WeakHashMap();
 		{
 
 			if (log.isErrorEnabled())
-				log.error("these properties are not recognized:" + props);
+				log.error("these properties are not recognized: " + props);
 			return false;
 		}
 

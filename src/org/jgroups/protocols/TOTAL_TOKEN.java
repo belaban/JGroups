@@ -1,4 +1,4 @@
-//$Id: TOTAL_TOKEN.java,v 1.8 2004/09/23 16:29:42 belaban Exp $
+//$Id: TOTAL_TOKEN.java,v 1.9 2005/05/30 14:31:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -49,7 +49,7 @@ import java.util.*;
  *
  *
  *@author Vladimir Blagojevic vladimir@cs.yorku.ca
- *@version $Revision: 1.8 $
+ *@version $Revision: 1.9 $
  *
  *@see org.jgroups.protocols.ring.RingNodeFlowControl
  *@see org.jgroups.protocols.ring.RingNode
@@ -251,8 +251,8 @@ public class TOTAL_TOKEN extends RpcProtocol
 
       if (props.size() > 0)
       {
-         System.err.println("UDP.setProperties(): the following properties are not recognized:");
-         props.list(System.out);
+         log.error("UDP.setProperties(): the following properties are not recognized: " + props);
+
          return false;
       }
       return true;

@@ -1,4 +1,4 @@
-// $Id: DELAY.java,v 1.5 2004/07/05 14:17:15 belaban Exp $
+// $Id: DELAY.java,v 1.6 2005/05/30 14:31:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -45,8 +45,8 @@ public class DELAY extends Protocol {
         }
 
         if(props.size() > 0) {
-            System.err.println("DELAY.setProperties(): these properties are not recognized:");
-            props.list(System.out);
+            log.error("DELAY.setProperties(): these properties are not recognized: " + props);
+
             return false;
         }
         return true;

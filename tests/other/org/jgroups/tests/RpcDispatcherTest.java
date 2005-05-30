@@ -1,4 +1,4 @@
-// $Id: RpcDispatcherTest.java,v 1.8 2004/09/07 12:07:31 belaban Exp $
+// $Id: RpcDispatcherTest.java,v 1.9 2005/05/30 14:31:37 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -77,7 +77,7 @@ public class RpcDispatcherTest {
             new RpcDispatcherTest().start(num, interval);
         }
         catch(Exception e) {
-            System.err.println(e);
+            log.error(e);
         }
     }
 

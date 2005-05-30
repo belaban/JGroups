@@ -1,4 +1,4 @@
-// $Id: VERIFY_SUSPECT.java,v 1.13 2005/04/22 15:57:25 belaban Exp $
+// $Id: VERIFY_SUSPECT.java,v 1.14 2005/05/30 14:31:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -59,8 +59,8 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         }
 
         if(props.size() > 0) {
-            System.err.println("VERIFY_SUSPECT.setProperties(): the following properties are not recognized:");
-            props.list(System.out);
+            log.error("VERIFY_SUSPECT.setProperties(): the following properties are not recognized: " + props);
+
             return false;
         }
         return true;

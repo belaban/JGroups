@@ -1,4 +1,4 @@
-// $Id: PerfHeader.java,v 1.6 2005/04/20 06:31:17 belaban Exp $
+// $Id: PerfHeader.java,v 1.7 2005/05/30 14:31:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -262,7 +262,7 @@ public class PerfHeader extends Header {
         if(tmp == null) return null;
         entry=(PerfEntry)tmp.get(prot_name);
         if(entry == null)
-            System.err.println("PerfHeader.getEntry(): protocol \"" + prot_name + "\" not found");
+            log.error("PerfHeader.getEntry(): protocol \"" + prot_name + "\" not found");
         return entry;
     }
 
@@ -343,7 +343,7 @@ public class PerfHeader extends Header {
             System.out.println(hdr2.printContents(true));
         }
         catch(Exception ex) {
-            System.err.println(ex);
+            log.error(ex);
         }
 
 

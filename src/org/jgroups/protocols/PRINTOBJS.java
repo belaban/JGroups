@@ -1,4 +1,4 @@
-// $Id: PRINTOBJS.java,v 1.3 2004/03/30 06:47:21 belaban Exp $
+// $Id: PRINTOBJS.java,v 1.4 2005/05/30 14:31:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -43,7 +43,7 @@ public class PRINTOBJS extends Protocol {
                 return;
             }
             catch(Exception e) {
-                System.err.println(e);
+                log.error(e);
             }
 
             System.out.println("------------ PRINTOBJS (received) ----------------------");
@@ -84,7 +84,7 @@ public class PRINTOBJS extends Protocol {
                 return;
             }
             catch(Exception e) {
-                System.err.println(e);
+                log.error(e);
             }
 
             System.out.println("------------ PRINTOBJS (sent) --------------------------");

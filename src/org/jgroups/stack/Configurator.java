@@ -1,4 +1,4 @@
-// $Id: Configurator.java,v 1.10 2005/04/23 12:44:06 belaban Exp $
+// $Id: Configurator.java,v 1.11 2005/05/30 14:31:28 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -647,7 +647,7 @@ public class Configurator {
 
     public static void main(String args[]) {
         if(args.length != 1) {
-            System.err.println("Configurator <string>");
+            log.error("Configurator <string>");
             System.exit(0);
         }
         String config_str=args[0];
@@ -668,10 +668,10 @@ public class Configurator {
             // conf.stopProtocolStackInternal(protocol_stack);
         }
         catch(Exception e) {
-            System.err.println(e);
+            log.error(e);
         }
 
-        System.err.println(protocols);
+        log.error(protocols);
     }
 
 

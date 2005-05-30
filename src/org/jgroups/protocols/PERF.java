@@ -1,4 +1,4 @@
-// $Id: PERF.java,v 1.8 2005/04/20 06:31:17 belaban Exp $
+// $Id: PERF.java,v 1.9 2005/05/30 14:31:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -30,7 +30,7 @@ import java.util.Vector;
  * </ol>
  *
  * @author Bela Ban Oct 2001
- * @version $Revision: 1.8 $
+ * @version $Revision: 1.9 $
  */
 public class PERF extends Protocol {
     boolean             details=false;
@@ -57,8 +57,8 @@ public class PERF extends Protocol {
             props.remove("details");
         }
         if(props.size() > 0) {
-            System.err.println("PERF.setProperties(): these properties are not recognized:");
-            props.list(System.out);
+            log.error("PERF.setProperties(): these properties are not recognized: " + props);
+
             return false;
         }
         return true;
@@ -145,7 +145,7 @@ public class PERF extends Protocol {
         String pname=null;
 
         if(protocols == null) {
-            System.err.println("PERF.initializeMessage(): 'protocols' variable is null");
+            log.error("PERF.initializeMessage(): 'protocols' variable is null");
             return;
         }
 

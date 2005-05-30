@@ -127,7 +127,7 @@ public class LeaseFactoryService extends AbstractService {
      * according to their needs.
      */
     protected void incorrectStateReceived(Object incorrectState) {
-	System.err.println("Incorrect state received : " + incorrectState);
+	log.error("Incorrect state received : " + incorrectState);
     }
     
     /**
@@ -543,7 +543,7 @@ public class LeaseFactoryService extends AbstractService {
 		    break;
 		    
 		default :
-		    System.err.println("Incorrect type " + header.getType());
+		    log.error("Incorrect type " + header.getType());
 	    }
         }
 

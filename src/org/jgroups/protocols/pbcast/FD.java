@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.6 2005/04/12 10:39:53 belaban Exp $
+// $Id: FD.java,v 1.7 2005/05/30 14:31:05 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -70,8 +70,8 @@ public class FD extends Protocol implements Runnable {
         }
 
         if(props.size() > 0) {
-            System.err.println("FD.setProperties(): the following properties are not recognized:");
-            props.list(System.out);
+            log.error("FD.setProperties(): the following properties are not recognized: " + props);
+            
             return false;
         }
         return true;

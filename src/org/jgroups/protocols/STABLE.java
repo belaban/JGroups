@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.7 2004/09/23 16:29:42 belaban Exp $
+// $Id: STABLE.java,v 1.8 2005/05/30 14:31:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -176,9 +176,8 @@ public class STABLE extends RpcProtocol {
         }
 
         if(props.size() > 0) {
-            System.err.println("STABLE.setProperties(): these properties " +
-                    "are not recognized:");
-            props.list(System.out);
+            log.error("STABLE.setProperties(): these properties are not recognized: " + props);
+
             return false;
         }
         return true;

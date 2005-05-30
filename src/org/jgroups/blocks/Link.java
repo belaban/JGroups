@@ -1,4 +1,4 @@
-// $Id: Link.java,v 1.5 2004/09/23 16:29:11 belaban Exp $
+// $Id: Link.java,v 1.6 2005/05/30 14:31:00 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -127,7 +127,7 @@ public class Link implements Runnable {
 	    return false;
 	}
 	if(!established) { // will be set by ConnectionEstablisher when connection has been set up
-	    if(trace) System.err.println("Link.send(): connection not established, discarding message");
+	    if(trace) log.error("Link.send(): connection not established, discarding message");
 	    return false;
 	}
 
@@ -137,7 +137,7 @@ public class Link implements Runnable {
 	    return true;
 	}
 	catch(Exception ex) {  // either IOException or EOFException (subclass if IOException)
-	    if(trace) System.err.println("Link.send1(): sending failed; retrying");
+	    if(trace) log.error("Link.send1(): sending failed; retrying");
 	    return retry(buf);
 	}
     }
@@ -195,7 +195,7 @@ public class Link implements Runnable {
 		}
 		else {
 		    if(trace) 
-			System.err.println("Link.run(): rejected connection request from " + 
+			log.error("Link.run(): rejected connection request from " +
 					   peer + ':' + peer_port + ". Address not specified as peer in link !");
 		    closeIncomingConnection();  // only close incoming connection
 		    continue;
@@ -622,7 +622,7 @@ public class Link implements Runnable {
 
 
 	if(args.length != 4) {
-	    System.err.println("\nLink <local host> <local port> <remote host> <remote port>\n");
+	    log.error("\nLink <local host> <local port> <remote host> <remote port>\n");
 	    return;
 	}
 	local=args[0];
@@ -644,7 +644,7 @@ public class Link implements Runnable {
 	    }
 	}
 	catch(Exception e) {
-	    System.err.println(e);
+	    log.error(e);
 	}
     }
 }

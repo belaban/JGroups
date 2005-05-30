@@ -1,4 +1,4 @@
-// $Id: TimedWriter.java,v 1.3 2004/07/05 14:17:35 belaban Exp $
+// $Id: TimedWriter.java,v 1.4 2005/05/30 14:31:29 belaban Exp $
 
 package org.jgroups.util;
 
@@ -139,7 +139,7 @@ public class TimedWriter {
     public synchronized void write(OutputStream out, byte[] buf, long timeout)
 	throws Exception, Timeout, InterruptedException {
 	if(out == null || buf == null) {
-	    System.err.println("TimedWriter.write(): output stream or buffer is null, ignoring write");
+	    log.error("TimedWriter.write(): output stream or buffer is null, ignoring write");
 	    return;
 	}
 
@@ -170,7 +170,7 @@ public class TimedWriter {
     public synchronized void write(OutputStream out, int i, long timeout) 
 	throws Exception, Timeout, InterruptedException {
 	if(out == null) {
-	    System.err.println("TimedWriter.write(): output stream is null, ignoring write");
+	    log.error("TimedWriter.write(): output stream is null, ignoring write");
 	    return;
 	}
 
@@ -238,7 +238,7 @@ public class TimedWriter {
 	Socket       sock=null ;
 	
 	if(args.length != 3) {
-	    System.err.println("TimedWriter <local host> <remote host> <remote port>");
+	    log.error("TimedWriter <local host> <remote host> <remote port>");
 	    return;
 	}
 
@@ -248,7 +248,7 @@ public class TimedWriter {
 	    port=Integer.parseInt(args[2]);
 	}
 	catch(Exception e) {
-	    System.err.println("Could find host " + remote);
+	    log.error("Could find host " + remote);
 	    return;
 	}
 
@@ -262,10 +262,10 @@ public class TimedWriter {
 		}
 	    }
 	    catch(TimedWriter.Timeout timeout) {
-		System.err.println("Timed out creating socket");
+		log.error("Timed out creating socket");
 	    }
 	    catch(Exception io_ex) {
-		System.err.println("Connection could not be created, retrying");
+		log.error("Connection could not be created, retrying");
 		Util.sleep(2000);
 	    }
 	}

@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.77 2005/05/19 07:49:39 belaban Exp $
+// $Id: UDP.java,v 1.78 2005/05/30 14:31:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -576,8 +576,8 @@ public class UDP extends Protocol implements Runnable {
         }
 
         if(props.size() > 0) {
-            System.err.println("UDP.setProperties(): the following properties are not recognized:");
-            props.list(System.out);
+            log.error("UDP.setProperties(): the following properties are not recognized: " + props);
+
             return false;
         }
 

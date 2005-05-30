@@ -1,4 +1,4 @@
-// $Id: HTOTAL.java,v 1.1 2005/04/05 14:35:09 belaban Exp $
+// $Id: HTOTAL.java,v 1.2 2005/05/30 14:31:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -17,7 +17,7 @@ import java.util.Vector;
  * to a coordinator who then forwards it to its neighbor on the right, who then forwards it to its neighbor to the right
  * etc.
  * @author Bela Ban
- * @version $Id: HTOTAL.java,v 1.1 2005/04/05 14:35:09 belaban Exp $
+ * @version $Id: HTOTAL.java,v 1.2 2005/05/30 14:31:07 belaban Exp $
  */
 public class HTOTAL extends Protocol {
     Address coord=null;
@@ -87,8 +87,8 @@ public class HTOTAL extends Protocol {
         }
 
         if(props.size() > 0) {
-            System.err.println("TCP.setProperties(): the following properties are not recognized:");
-            props.list(System.out);
+            log.error("TCP.setProperties(): the following properties are not recognized: " + props);
+
             return false;
         }
         return true;

@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.22 2005/04/18 13:55:15 belaban Exp $
+// $Id: FD_SOCK.java,v 1.23 2005/05/30 14:31:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -121,8 +121,8 @@ public class FD_SOCK extends Protocol implements Runnable {
         }
 
         if(props.size() > 0) {
-            System.err.println("FD_SOCK.setProperties(): the following properties are not recognized:");
-            props.list(System.out);
+            log.error("FD_SOCK.setProperties(): the following properties are not recognized: " + props);
+
             return false;
         }
         return true;

@@ -44,11 +44,11 @@ public class HammerSender {
 
         catch(java.lang.NoSuchMethodException nsme)
         {
-            System.err.println("No Such method:"+ nsme);
+            log.error("No Such method:"+ nsme);
         }
         catch(Exception e)
         {
-            System.err.println("Error:"+ e);
+            log.error("Error:"+ e);
         }
     }
 
@@ -70,7 +70,7 @@ public class HammerSender {
             channel.connect("BOSGroup");
         }
         catch (org.jgroups.ChannelException ce) {
-            System.err.println("Channel Error"+ ce);
+            log.error("Channel Error"+ ce);
         }
     }
 

@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.37 2005/05/25 12:56:08 belaban Exp $
+// $Id: Util.java,v 1.38 2005/05/30 14:31:29 belaban Exp $
 
 package org.jgroups.util;
 
@@ -1251,7 +1251,7 @@ public class Util {
 		    continue;
 		}
 		catch(Exception ex) {
-		    System.err.println(ex);
+		    log.error(ex);
 		    return;
 		}
 	    }
@@ -1270,7 +1270,7 @@ public class Util {
 	    System.in.read();
 	}
 	catch(Exception ex) {
-	    System.err.println(ex);
+	    log.error(ex);
 	}
     }
     */

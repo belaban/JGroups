@@ -1,4 +1,4 @@
-// $Id: FD_PID.java,v 1.6 2004/09/23 16:29:41 belaban Exp $
+// $Id: FD_PID.java,v 1.7 2005/05/30 14:31:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -84,8 +84,8 @@ public class FD_PID extends Protocol {
         }
 
         if(props.size() > 0) {
-            System.err.println("FD_PID.setProperties(): the following properties are not recognized:");
-            props.list(System.out);
+            log.error("FD_PID.setProperties(): the following properties are not recognized: " + props);
+
             return false;
         }
         return true;

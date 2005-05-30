@@ -1,4 +1,4 @@
-// $Id: ViewId.java,v 1.8 2004/10/07 15:46:29 belaban Exp $
+// $Id: ViewId.java,v 1.9 2005/05/30 14:31:30 belaban Exp $
 
 package org.jgroups;
 
@@ -93,13 +93,7 @@ public class ViewId implements Externalizable, Comparable, Cloneable, Streamable
         if(!(other instanceof ViewId)) {
             throw new ClassCastException("ViewId.compareTo(): view id is not comparable with different Objects");
         }
-        try {
-            return id > ((ViewId)other).id ? 1 : id < ((ViewId)other).id ? -1 : 0;
-        }
-        catch(NullPointerException e) {
-            System.err.println("ViewId.compareTo(): " + e);
-            throw e;
-        }
+        return id > ((ViewId)other).id ? 1 : id < ((ViewId)other).id ? -1 : 0;
     }
 
     /**

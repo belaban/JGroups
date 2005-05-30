@@ -1,4 +1,4 @@
-// $Id: TotalOrder.java,v 1.7 2004/09/23 16:29:35 belaban Exp $
+// $Id: TotalOrder.java,v 1.8 2005/05/30 14:31:02 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -52,7 +52,7 @@ public class TotalOrder extends Frame {
 
 
     void error(String s) {
-	System.err.println(s);
+	log.error(s);
     }
 
 
@@ -123,7 +123,7 @@ public class TotalOrder extends Frame {
 			    Object tmp=msg.getObject();
 
 			    if(!(tmp instanceof TotOrderRequest)) {
-				System.err.println("tmp is " + tmp.getClass() + ": " + tmp);
+				log.error("tmp is " + tmp.getClass() + ": " + tmp);
 				if(tmp instanceof Message) {
 				    System.out.print("Hdrs are ");
 				    ((Message)tmp).printObjectHeaders();
@@ -136,7 +136,7 @@ public class TotalOrder extends Frame {
 			    processRequest(req);
 			}
 			catch(Exception e) {
-			    System.err.println(e);
+			    log.error(e);
 			}
 		    }
 		    else if(o instanceof GetStateEvent) {
@@ -426,7 +426,7 @@ public class TotalOrder extends Frame {
 	    g.show();
 	}
 	catch(Exception e) {
-	    System.err.println(e);
+	    log.error(e);
 	}
     }
 
@@ -613,7 +613,7 @@ class MyCanvas extends Canvas {
 	    }
 	}
 	catch(Exception e) {
-	    System.err.println(e);
+	    log.error(e);
 	    return;
 	}
     }

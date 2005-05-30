@@ -1,4 +1,4 @@
-// $Id: AckSenderWindowTest.java,v 1.3 2005/01/28 12:17:31 belaban Exp $
+// $Id: AckSenderWindowTest.java,v 1.4 2005/05/30 14:31:32 belaban Exp $
 package org.jgroups.tests;
 
 
@@ -71,7 +71,7 @@ public class AckSenderWindowTest extends TestCase {
 	    if(diff >= delta) off=true;
 
 	    if(off) {
-		System.err.println("#" + seqno + ": " + this + ": (" + "entry is more than " + 
+		log.error("#" + seqno + ": " + this + ": (" + "entry is more than " +
 				   PERCENTAGE_OFF + " percentage off ");
 		return false;
 	    }
@@ -156,7 +156,7 @@ public class AckSenderWindowTest extends TestCase {
 	}
 	
 	if(num_non_correct_entries > 0)
-	    System.err.println("Number of incorrect retransmission timeouts: " + num_non_correct_entries);
+	    log.error("Number of incorrect retransmission timeouts: " + num_non_correct_entries);
 	assertTrue(num_non_correct_entries == 0);
 	win.reset();
     }

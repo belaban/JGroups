@@ -1,4 +1,4 @@
-// $Id: TOTAL_OLD.java,v 1.7 2004/09/23 16:29:42 belaban Exp $
+// $Id: TOTAL_OLD.java,v 1.8 2005/05/30 14:31:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -72,13 +72,13 @@ class SavedMessages {
 		    index++;
 		}
 	    } catch ( java.lang.ClassCastException e ) {
-		System.err.println( "Error: (TOTAL_OLD) SavedMessages.insertMessage() - ClassCastException: could not cast element of \"messages\" to an Entry (index " + index + ')' );
+		log.error( "Error: (TOTAL_OLD) SavedMessages.insertMessage() - ClassCastException: could not cast element of \"messages\" to an Entry (index " + index + ')' );
 		return;
 	    }
 
 	    // check that the sequences aren't the same (don't want duplicates)
 	    if ( this_seq == seq ) {
-		System.err.println( "SavedMessages.insertMessage() - sequence " + seq + " already exists in saved messages. Message NOT saved." );
+		log.error( "SavedMessages.insertMessage() - sequence " + seq + " already exists in saved messages. Message NOT saved." );
 		return;
 	    }
 
@@ -104,7 +104,7 @@ class SavedMessages {
 		    index++;
 		}
 	    } catch ( java.lang.ClassCastException e ) {
-		System.err.println( "Error: (TOTAL_OLD) SavedMessages.getMessage() - ClassCastException: could not cast element of \"messages\" to an Entry (index " + index + ')' );
+		log.error( "Error: (TOTAL_OLD) SavedMessages.getMessage() - ClassCastException: could not cast element of \"messages\" to an Entry (index " + index + ')' );
 		return null;
 	    }
 	    // determine if we found the specified sequence
@@ -121,7 +121,7 @@ class SavedMessages {
 
 		    return ret_val;
 		} else {
-		    System.err.println( "Error: (TOTAL_OLD) SavedMessages.getMessage() - could not cast element of \"messages\" to an Entry (index " + index + ')' );
+		    log.error( "Error: (TOTAL_OLD) SavedMessages.getMessage() - could not cast element of \"messages\" to an Entry (index " + index + ')' );
 		    return null;
 		} // if ( temp_obj instanceof Entry )
 	    } else {
@@ -166,7 +166,7 @@ class SavedMessages {
 		    messages.removeElementAt(0);
 		    return ret_val;
 		} else {
-		    System.err.println( "Error: (TOTAL_OLD) SavedMessages.getFirstMessage() - could not cast element of \"messages\" to an Entry" );
+		    log.error( "Error: (TOTAL_OLD) SavedMessages.getFirstMessage() - could not cast element of \"messages\" to an Entry" );
 		    return null;
 		} // if ( temp_obj instanceof Entry )
 	    }
@@ -203,7 +203,7 @@ class SavedMessages {
 		if ( temp_obj instanceof Entry ) {
 		    return ((Entry) temp_obj).getSeq();
 		} else {
-		    System.err.println( "Error: (TOTAL_OLD) SavedMessages.getFirstSeq() - could not cast element of \"messages\" to an Entry " );
+		    log.error( "Error: (TOTAL_OLD) SavedMessages.getFirstSeq() - could not cast element of \"messages\" to an Entry " );
 		    return -1;
 		}
 	    }
@@ -299,7 +299,7 @@ class MessageAcks {
 	    if ( temp_obj instanceof Address ) {
 		acks.addElement( new Entry( (Address) temp_obj ) );
 	    } else {
-		System.err.println( "Error: (TOTAL_OLD) MessageAcks.reset() - could not cast element of \"members\" to an Address object" );
+		log.error( "Error: (TOTAL_OLD) MessageAcks.reset() - could not cast element of \"members\" to an Address object" );
 		return;
 	    }
 	}
@@ -330,7 +330,7 @@ class MessageAcks {
 			return this_entry;
 		    }
 		} else {
-		    System.err.println( "Error: (TOTAL_OLD) MessageAcks.getEntry() - could not cast element of \"acks\" to an Entry" );
+		    log.error( "Error: (TOTAL_OLD) MessageAcks.getEntry() - could not cast element of \"acks\" to an Entry" );
 		} // if ( temp_obj instanceof Entry )
 	    }
 
@@ -409,7 +409,7 @@ class MessageAcks {
 			ret_val = this_seq;
 		    }
 		} else {
-		    System.err.println( "Error: (TOTAL_OLD) MessageAcks.getLowestSeqAck() - could not cast element of \"acks\" to an Entry (index=" + i + ')' );
+		    log.error( "Error: (TOTAL_OLD) MessageAcks.getLowestSeqAck() - could not cast element of \"acks\" to an Entry (index=" + i + ')' );
 		    return -1;
 		}
 	    }
@@ -572,7 +572,7 @@ public class TOTAL_OLD extends Protocol {
 	    if ( temp_obj instanceof Address ) {
 		local_addr = (Address) temp_obj;
 	    } else {
-		System.err.println( "Error: Total.up() - could not cast local address to an Address object" );
+		log.error( "Error: Total.up() - could not cast local address to an Address object" );
 	    }
 	    break;
 
@@ -618,7 +618,7 @@ public class TOTAL_OLD extends Protocol {
 			    if ( temp_obj instanceof Address ) {
 				ack_history.setSeq( (Address) temp_obj, hdr.seq_id );
 			    } else {
-				System.err.println( "Error: TOTAL_OLD.Up() - could not cast source of message to an Address object (case TotalHeader.TOTAL_CUM_SEQ_ACK)" );
+				log.error( "Error: TOTAL_OLD.Up() - could not cast source of message to an Address object (case TotalHeader.TOTAL_CUM_SEQ_ACK)" );
 			    }
 			}
 			break;
@@ -632,14 +632,14 @@ public class TOTAL_OLD extends Protocol {
 
 		    default:
 			// unrecognized header type - discard message
-			System.err.println( "Error: TOTAL_OLD.up() - unrecognized TotalHeader in message - " + hdr.toString() );
+			log.error( "Error: TOTAL_OLD.up() - unrecognized TotalHeader in message - " + hdr.toString() );
 			return;  // don't let it call passUp()
 		    } // switch( hdr.total_header_type )
 		} else {
-		    System.err.println( "Error: TOTAL_OLD.up() - could not cast message header to TotalHeader (case Event.MSG)" );
+		    log.error( "Error: TOTAL_OLD.up() - could not cast message header to TotalHeader (case Event.MSG)" );
 		}  // if ( temp_obj instanceof TotalHeader )
 	    } else {
-		System.err.println( "Error: TOTAL_OLD.up() - could not cast argument of Event to a Message (case Event.MSG)" );
+		log.error( "Error: TOTAL_OLD.up() - could not cast argument of Event to a Message (case Event.MSG)" );
 	    }  // if ( temp_obj instanceof Address )
 
             //System.out.println("The message is " + msg);
@@ -673,7 +673,7 @@ public class TOTAL_OLD extends Protocol {
 	    //   TOTAL_NEW_VIEW message to the group
 	    if ( isSequencer() ) {
 		// we are the sequencer in this new view
-		 System.err.println( "TOTAL_OLD.up() - I am the sequencer of this new view" );
+		 log.error( "TOTAL_OLD.up() - I am the sequencer of this new view" );
 
 		// we need to keep track of acknowledgements messages
 		ack_history = new MessageAcks( members );
@@ -716,13 +716,13 @@ public class TOTAL_OLD extends Protocol {
 	if ( lowest_seq_stored < next_seq_id ) {
 	    // it is bad to have messages stored that have a lower sequence id than what
 	    //   we are expecting
-	    System.err.println( "Error: TOTAL_OLD.passUpMessages() - next expected sequence id (" + next_seq_id + ") is greater than the sequence id of a stored message (" + lowest_seq_stored + ')' );
+	    log.error( "Error: TOTAL_OLD.passUpMessages() - next expected sequence id (" + next_seq_id + ") is greater than the sequence id of a stored message (" + lowest_seq_stored + ')' );
 	    return 0;
 	} else if ( next_seq_id == lowest_seq_stored ) {
 	    // we can pass this first message up the Protocol Stack
 	    Message msg = queued_messages.getFirstMessage();
 	    if ( msg == null ) {
-		System.err.println( "Error: TOTAL_OLD.passUpMessages() - unexpected null Message retrieved from stored messages" );
+		log.error( "Error: TOTAL_OLD.passUpMessages() - unexpected null Message retrieved from stored messages" );
 		return 0;
 	    }
 	    passUp( new Event( Event.MSG, msg ) );
@@ -736,8 +736,8 @@ public class TOTAL_OLD extends Protocol {
 	    // all messages stored have sequence ids greater than expected
 	    if ( queued_messages.getSize() > 10 ) {
 		 {
-		    System.err.println( "WARNING: TOTAL_OLD.passUpMessages() - more than 10 messages saved" );
-		    System.err.println( "Dropping sequence id: " + next_seq_id );
+		    log.error( "WARNING: TOTAL_OLD.passUpMessages() - more than 10 messages saved" );
+		    log.error( "Dropping sequence id: " + next_seq_id );
 		}
 		next_seq_id++;
 		return passUpMessages();
@@ -759,7 +759,7 @@ public class TOTAL_OLD extends Protocol {
 	/* store the message anyway, hopefully we'll get a TOTAL_NEW_VIEW message later
 	if ( next_seq < 0 ) {
 	    // don't know what sequence id to expect
-	     System.err.println( "TOTAL_OLD.handleBCastMessage() - received broadcast message but don't know what sequence id to expect" );
+	     log.error( "TOTAL_OLD.handleBCastMessage() - received broadcast message but don't know what sequence id to expect" );
 	    return;
 	}
 	*/
@@ -777,7 +777,7 @@ public class TOTAL_OLD extends Protocol {
 	int num_passed = passUpMessages();
 // TODO: this if is temporary (debug)
 if ( num_passed > 1 )
-	 System.err.println( "TOTAL_OLD.handleBCastMessage() - " + num_passed + " message(s) passed up the Protocol Stack" );
+	 log.error( "TOTAL_OLD.handleBCastMessage() - " + num_passed + " message(s) passed up the Protocol Stack" );
 
         /* this is handles by the retransmission thread now
 	// see if we may need to issue any resend requests
@@ -786,13 +786,13 @@ if ( num_passed > 1 )
 	    //Object sequencer = msg.makeReply().getSrc();  // test (debug)
 	    if ( sequencer == null ) {
 		// couldn't get the sequencer of the group
-		System.err.println( "TOTAL_OLD.handleBCastMessage() - couldn't determine sequencer to send a TOTAL_RESEND request" );
+		log.error( "TOTAL_OLD.handleBCastMessage() - couldn't determine sequencer to send a TOTAL_RESEND request" );
 		return;
 	    }
 
 	    if ( local_addr == null ) {
 		// don't know local address, can't set source of message
-		System.err.println( "TOTAL_OLD.handleBCastMessage() - do not know local address so cannot send resend request for message " + seq );
+		log.error( "TOTAL_OLD.handleBCastMessage() - do not know local address so cannot send resend request for message " + seq );
 		return;
 	    }
 
@@ -811,7 +811,7 @@ if ( num_passed > 1 )
 		Message resend_msg = new Message( sequencer, local_addr, null );
 		resend_msg.putHeader(getName(),  new TotalHeader( TotalHeader.TOTAL_RESEND, resend_seq ) );
 		passDown( new Event( Event.MSG, resend_msg ) );
-		 System.err.println( "TOTAL_OLD.handleBCastMessage() - resend requested for message " + resend_seq );
+		 log.error( "TOTAL_OLD.handleBCastMessage() - resend requested for message " + resend_seq );
 	    }
 	}
 	*/
@@ -826,7 +826,7 @@ if ( num_passed > 1 )
     private synchronized void handleRequestMessage( Message msg ) {
 	if ( next_seq_id_to_assign < 0 ) {
 	    // we cannot assign a valid sequence id
-	    System.err.println( "Error: TOTAL_OLD.handleRequestMessage() - cannot handle request... do not know what sequence id to assign" );
+	    log.error( "Error: TOTAL_OLD.handleRequestMessage() - cannot handle request... do not know what sequence id to assign" );
 	    return;
 	}
 
@@ -847,7 +847,7 @@ if ( num_passed > 1 )
 	 {
 	    Object header = msg_copy.getHeader(getName());
 	    if ( !(header instanceof TotalHeader) ) {
-		System.err.println( "Error: TOTAL_OLD.handleRequestMessage() - BAD: stored message that did not contain a TotalHeader - " + next_seq_id_to_assign );
+		log.error( "Error: TOTAL_OLD.handleRequestMessage() - BAD: stored message that did not contain a TotalHeader - " + next_seq_id_to_assign );
 	    }
 	} //
 	// end debug
@@ -864,7 +864,7 @@ if ( num_passed > 1 )
      * respond to a request to resend a message with the specified sequence id
      */
     private synchronized void handleResendRequest( Message msg, long seq ) {
-	 System.err.println( "TOTAL_OLD.handleRequestMessage() - received resend request for message " + seq );
+	 log.error( "TOTAL_OLD.handleRequestMessage() - received resend request for message " + seq );
 
 	/* just rebroadcast for now because i can't get the source - this is bad (TODO: fix this) 
 	Object requester = msg.makeReply().getSrc();  // Address? of requester - test (debug)
@@ -873,23 +873,23 @@ if ( num_passed > 1 )
 	if ( temp_obj instanceof Address ) {
 	    Address requester = (Address) temp_obj;
 	} else {
-	    System.err.println( "Error: TOTAL_OLD.handleResendRequest() - could not cast source of message to an Address" );
+	    log.error( "Error: TOTAL_OLD.handleResendRequest() - could not cast source of message to an Address" );
 	    return;
 	}
 	* /
 	if ( requester == null ) {
 	    // don't know who to send this back to
-	    System.err.println( "TOTAL_OLD.handleResendRequest() - do not know who requested this resend request for sequence " + seq );
+	    log.error( "TOTAL_OLD.handleResendRequest() - do not know who requested this resend request for sequence " + seq );
 	    return;
 	}
 	*/
 	Address requester = null;
-// System.err.println( "TOTAL_OLD: got here - 1" );
+// log.error( "TOTAL_OLD: got here - 1" );
 	Message resend_msg = ack_history.getMessage( seq );
-// System.err.println( "TOTAL_OLD: got here - 2" );
+// log.error( "TOTAL_OLD: got here - 2" );
 	if ( resend_msg == null ) {
 	    // couldn't find this message in the history
-	    System.err.println( "TOTAL_OLD.handleResendRequest() - could not find the message " + seq + " in the history to resend" );
+	    log.error( "TOTAL_OLD.handleResendRequest() - could not find the message " + seq + " in the history to resend" );
 	    return;
 	}
 	resend_msg.setDest( requester );
@@ -900,15 +900,15 @@ if ( num_passed > 1 )
 	 {
 	    Object header = resend_msg.getHeader(getName());
 	    if ( header instanceof TotalHeader ) {
-		//System.err.println( "TOTAL_OLD: resend msg GOOD (header is TotalHeader) - " + seq );
+		//log.error( "TOTAL_OLD: resend msg GOOD (header is TotalHeader) - " + seq );
 	    } else {
-		System.err.println( "TOTAL_OLD: resend msg BAD (header is NOT a TotalHeader) - " + seq );
+		log.error( "TOTAL_OLD: resend msg BAD (header is NOT a TotalHeader) - " + seq );
 	    }
 	} //
 	// end debug
 
 	passDown( new Event( Event.MSG, resend_msg ) );
-	 System.err.println( "TOTAL_OLD.handleResendRequest() - responded to resend request for message " + seq );
+	 log.error( "TOTAL_OLD.handleResendRequest() - responded to resend request for message " + seq );
     }
 
 
@@ -924,7 +924,7 @@ if ( num_passed > 1 )
 
         case Event.VIEW_CHANGE:
 	    // this will probably never happen
-	    System.err.println( "NOTE: VIEW_CHANGE Event going down through " + PROTOCOL_NAME );
+	    log.error( "NOTE: VIEW_CHANGE Event going down through " + PROTOCOL_NAME );
 
             Vector new_members=((View)evt.getArg()).getMembers();
             synchronized(members) {
@@ -968,7 +968,7 @@ if ( num_passed > 1 )
 		    msg.putHeader(getName(),  new TotalHeader( TotalHeader.TOTAL_UNICAST, -1 ) );  // sequence id in header is irrelevant
 		}
 	    } else {
-		System.err.println( "Error: TOTAL_OLD.down() - could not cast argument of Event to a Message (case Event.MSG)" );
+		log.error( "Error: TOTAL_OLD.down() - could not cast argument of Event to a Message (case Event.MSG)" );
 	    } // if ( temp_obj instanceof Message )
             break;
             
@@ -990,14 +990,14 @@ if ( num_passed > 1 )
     private boolean isSequencer() {
 	if ( local_addr == null ) {
 	    // don't know my own local address
-	    System.err.println( "TOTAL_OLD.isSequencer() - local address unknown!" );
+	    log.error( "TOTAL_OLD.isSequencer() - local address unknown!" );
 	    return false;
 	}
 
 	synchronized( members ) {
 	    if ( members.size() == 0 ) {
 		// there are no members listed for the group (not even myself)
-		System.err.println( "TOTAL_OLD.isSequencer() - no members!" );
+		log.error( "TOTAL_OLD.isSequencer() - no members!" );
 		return false;
 	    }
 
@@ -1006,7 +1006,7 @@ if ( num_passed > 1 )
 		Address seq_addr = (Address) temp_obj;
 		return local_addr.equals(seq_addr);
 	    } else {
-		System.err.println( "Error: TOTAL_OLD.isSequencer() - could not cast element of \"members\" to an Address" );
+		log.error( "Error: TOTAL_OLD.isSequencer() - could not cast element of \"members\" to an Address" );
 		return false;
 	    } // if ( temp_obj instanceof Address )
 	}
@@ -1029,14 +1029,14 @@ if ( num_passed > 1 )
     protected Address getSequencer() {
 	synchronized( members ) {
 	    if ( members.size() == 0 ) {
-		System.err.println( "TOTAL_OLD.getSequencer() - no members" );
+		log.error( "TOTAL_OLD.getSequencer() - no members" );
 		return null;
 	    } else {
 		Object temp_obj = members.elementAt(0);
 		if ( temp_obj instanceof Address ) {
 		    return (Address) temp_obj;
 		} else {
-		    System.err.println( "Error: TOTAL_OLD.getSequencer() - could not cast first element of \"members\" to an Address" );
+		    log.error( "Error: TOTAL_OLD.getSequencer() - could not cast first element of \"members\" to an Address" );
 		    return null;
 		}
 	    }
@@ -1105,7 +1105,7 @@ if ( num_passed > 1 )
 
 	    default:
 		// this type is unknown
-		System.err.println( "Error: TotalHeader.TotalHeader() - unknown TotalHeader type given: " + type );
+		log.error( "Error: TotalHeader.TotalHeader() - unknown TotalHeader type given: " + type );
 		total_header_type = -1;
 		break;
 	    }
@@ -1216,7 +1216,7 @@ class TotalRetransmissionThread extends Thread {
 	    prot_ptr = parent_prot;
 	} else {
 	    // parent thread not specified
-	    System.err.println( "Error: TotalRetransmissionThread.TotalRetransmissionThread() - given parent protocol reference is null\n  (FATAL ERROR - TOTAL_OLD protocol will not function properly)" );
+	    log.error( "Error: TotalRetransmissionThread.TotalRetransmissionThread() - given parent protocol reference is null\n  (FATAL ERROR - TOTAL_OLD protocol will not function properly)" );
 
 	    // prevent the run method from doing any work
 	    is_running = false;
@@ -1250,7 +1250,7 @@ class TotalRetransmissionThread extends Thread {
 	prot_ptr.passDown( new Event( Event.MSG, resend_msg ) );
 
 	// debug
-	System.err.println( "TotalRetransmissionThread.resend() - resend requested for message " + seq_id );
+	log.error( "TotalRetransmissionThread.resend() - resend requested for message " + seq_id );
     }
 
 
@@ -1272,7 +1272,7 @@ class TotalRetransmissionThread extends Thread {
 	    long next_seq_id = prot_ptr.getNextSeqID();     // next sequence id expected from the group
 	    if ( (next_seq_id < first_seq_id) ) {  // TODO: handle case to resend TOTAL_NEW_VIEW message
 		// there are messages that we received out of order
-		//System.err.println( "DEBUG (TotalRetransmissionThread) - there are messages queued" ); // debug
+		//log.error( "DEBUG (TotalRetransmissionThread) - there are messages queued" ); // debug
 
 		// see if it is time to send a request
 		long time_now = System.currentTimeMillis();
@@ -1280,7 +1280,7 @@ class TotalRetransmissionThread extends Thread {
 		     (time_now > (last_retrans_request_time + resend_timeout)) ||
 		     (last_retrans_request_time < 0) ) {
 		    // send a resend request to the sequencer
-		    //System.err.println( "DEBUG (TotalRetransmissionThread) - sending resend requests" ); // debug
+		    //log.error( "DEBUG (TotalRetransmissionThread) - sending resend requests" ); // debug
 		    Address sequencer = prot_ptr.getSequencer();
 		    if ( sequencer == null ) {
 			System.out.println( "Error: (TOTAL_OLD) TotalRetransmissionThread.checkForResend() - could not determine sequencer to send a TOTAL_RESEND request" );
@@ -1315,7 +1315,7 @@ class TotalRetransmissionThread extends Thread {
     public void run() {
 	while( is_running ) {
 	    // resend any requests if necessary
-	    //System.err.println( "DEBUG (TotalRetransmissionThread) - heartbeat" ); // debug
+	    //log.error( "DEBUG (TotalRetransmissionThread) - heartbeat" ); // debug
 	    checkForResend();
 
 	    // wait before check again

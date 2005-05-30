@@ -42,8 +42,8 @@ public class SHUFFLE extends Protocol implements Runnable {
         }
 
         if(props.size() > 0) {
-            System.err.println("DUMMY.setProperties(): these properties are not recognized:");
-            props.list(System.out);
+            log.error("DUMMY.setProperties(): these properties are not recognized: " + props);
+
             return false;
         }
         return true;

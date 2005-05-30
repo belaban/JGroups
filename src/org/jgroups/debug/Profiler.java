@@ -1,4 +1,4 @@
-// $Id: Profiler.java,v 1.4 2004/09/23 16:29:16 belaban Exp $
+// $Id: Profiler.java,v 1.5 2005/05/30 14:31:01 belaban Exp $
 
 package org.jgroups.debug;
 
@@ -39,7 +39,7 @@ public class Profiler {
             os=new FileOutputStream("profiler.dat");
         }
         catch(Exception e) {
-            System.err.println(e);
+            log.error(e);
         }
     }
 
@@ -52,7 +52,7 @@ public class Profiler {
             os=new FileOutputStream(filename);
         }
         catch(Exception e) {
-            System.err.println(e);
+            log.error(e);
         }
     }
 
@@ -70,7 +70,7 @@ public class Profiler {
     public static void stop(String call_name) {
         Entry e=(Entry)entries.get(call_name);
         if(e == null) {
-            System.err.println("Profiler.stop(): entry for " + call_name + " not found");
+            log.error("Profiler.stop(): entry for " + call_name + " not found");
             return;
         }
         e.stop_time=System.currentTimeMillis();
@@ -82,7 +82,7 @@ public class Profiler {
         String key;
         Entry val;
         if(os == null) {
-            System.err.println("Profiler.dump(): output file is null");
+            log.error("Profiler.dump(): output file is null");
             return;
         }
         try {
@@ -90,7 +90,7 @@ public class Profiler {
             os.write("-----------------------------------------------------------------\n\n".getBytes());
         }
         catch(Exception e) {
-            System.err.println(e);
+            log.error(e);
         }
         for(Enumeration e=entries.keys(); e.hasMoreElements();) {
             key=(String)e.nextElement();
@@ -100,7 +100,7 @@ public class Profiler {
                           val.tot_time + ' ' + trim(val.avg) + '\n').getBytes());
             }
             catch(Exception ex) {
-                System.err.println(ex);
+                log.error(ex);
             }
         }
     }
@@ -143,7 +143,7 @@ public class Profiler {
             Profiler.dump();
         }
         catch(Exception e) {
-            System.err.println(e);
+            log.error(e);
         }
     }
 }

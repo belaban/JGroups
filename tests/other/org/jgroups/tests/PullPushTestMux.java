@@ -1,4 +1,4 @@
-// $Id: PullPushTestMux.java,v 1.4 2004/03/30 06:47:34 belaban Exp $
+// $Id: PullPushTestMux.java,v 1.5 2005/05/30 14:31:37 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -59,7 +59,7 @@ public class PullPushTestMux implements MessageListener {
 	while((c=choice()) != 'q') {
 	    c-=48;
 	    if(c < 0 || c > 9) {
-		System.err.println("Choose between 0 and 9");
+		log.error("Choose between 0 and 9");
 		continue;
 	    }
 	    if(c == 0)
@@ -100,7 +100,7 @@ public class PullPushTestMux implements MessageListener {
 	    t.start();
 	}
 	catch(Exception e) {
-	    System.err.println(e);
+	    log.error(e);
 	}
     }
 

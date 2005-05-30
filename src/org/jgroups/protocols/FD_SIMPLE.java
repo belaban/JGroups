@@ -1,4 +1,4 @@
-// $Id: FD_SIMPLE.java,v 1.7 2004/09/23 16:29:41 belaban Exp $
+// $Id: FD_SIMPLE.java,v 1.8 2005/05/30 14:31:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -23,7 +23,7 @@ import java.util.Vector;
  * suspected. When a message or a heartbeat are received, the counter is reset to 0.
  *
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.7 $
+ * @version $Revision: 1.8 $
  */
 public class FD_SIMPLE extends Protocol {
     Address local_addr=null;
@@ -68,8 +68,8 @@ public class FD_SIMPLE extends Protocol {
         }
 
         if(props.size() > 0) {
-            System.err.println("FD_SIMPLE.setProperties(): the following properties are not recognized:");
-            props.list(System.out);
+            log.error("FD_SIMPLE.setProperties(): the following properties are not recognized: " + props);
+
             return false;
         }
         return true;

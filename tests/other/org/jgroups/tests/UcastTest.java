@@ -1,4 +1,4 @@
-// $Id: UcastTest.java,v 1.3 2004/07/05 14:15:11 belaban Exp $
+// $Id: UcastTest.java,v 1.4 2005/05/30 14:31:37 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -12,7 +12,7 @@ import java.util.StringTokenizer;
 
 /**
    @author Bela Ban
-   @version $Revision: 1.3 $
+   @version $Revision: 1.4 $
  */
 public class UcastTest {
 
@@ -44,7 +44,7 @@ public class UcastTest {
 		    continue;
 		}
 		catch(Exception e) {
-		    System.err.println(e);
+		    log.error(e);
 		    help();
 		    return;
 		}
@@ -56,7 +56,7 @@ public class UcastTest {
 		    receiver_port=Integer.parseInt(args[++i]);
 		}
 		catch(Exception e) {
-		    System.err.println(e);
+		    log.error(e);
 		    help();
 		    return;
 		}
@@ -84,7 +84,7 @@ public class UcastTest {
 	    }
 	}
 	catch(Exception e) {
-	    System.err.println(e);
+	    log.error(e);
 	}
 
     }
@@ -107,7 +107,7 @@ public class UcastTest {
 		sock.send(packet);
 	    }
 	    catch(Exception e) {
-		System.err.println(e);
+		log.error(e);
 		break;
 	    }
 	}
@@ -141,7 +141,7 @@ public class UcastTest {
 		    dst_port=Integer.parseInt(tok.nextToken());
 		}
 		catch(Exception e) {
-		    System.err.println(e);
+		    log.error(e);
 		    continue;
 		}
 		sb=new StringBuffer();
@@ -156,7 +156,7 @@ public class UcastTest {
 		sock.send(packet);
 	    }
 	    catch(Exception e) {
-		System.err.println(e);
+		log.error(e);
 		break;
 	    }
 	}
@@ -185,7 +185,7 @@ public class UcastTest {
 				       packet.getPort() + ": " + new String(packet.getData()));
 		}
 		catch(Exception e) {
-		    System.err.println(e);
+		    log.error(e);
 		    break;
 		}
 	    }

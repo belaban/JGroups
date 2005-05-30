@@ -1,4 +1,4 @@
-// $Id: CausalDemo.java,v 1.4 2004/09/23 16:29:35 belaban Exp $
+// $Id: CausalDemo.java,v 1.5 2005/05/30 14:31:02 belaban Exp $
 package org.jgroups.demos;
 
 import org.jgroups.*;
@@ -153,7 +153,7 @@ public class CausalDemo implements Runnable
          }
          catch (Exception e)
          {
-            System.err.println(e);
+            log.error(e);
          }
       }
 
@@ -184,7 +184,7 @@ public class CausalDemo implements Runnable
       }
       catch (Exception e)
       {
-         System.err.println(e);
+         log.error(e);
       }
 
    }

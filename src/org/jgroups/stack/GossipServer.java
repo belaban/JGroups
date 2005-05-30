@@ -1,4 +1,4 @@
-// $Id: GossipServer.java,v 1.7 2004/09/23 16:29:53 belaban Exp $
+// $Id: GossipServer.java,v 1.8 2005/05/30 14:31:28 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -337,7 +337,7 @@ public class GossipServer {
 
         }
         catch(Throwable ex) {
-            System.err.println("GossipServer.main(): " + ex);
+            log.error("GossipServer.main(): " + ex);
         }
 
         try {
@@ -345,7 +345,7 @@ public class GossipServer {
             gossip_server.run();
         }
         catch(Exception e) {
-            System.err.println("GossipServer.main(): " + e);
+            log.error("GossipServer.main(): " + e);
         }
     }
 

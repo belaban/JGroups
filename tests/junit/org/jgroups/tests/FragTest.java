@@ -1,4 +1,4 @@
-// $Id: FragTest.java,v 1.7 2005/04/29 08:37:08 belaban Exp $
+// $Id: FragTest.java,v 1.8 2005/05/30 14:31:32 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -98,7 +98,7 @@ public class FragTest extends TestCase {
             msg=(Message)evt.getArg();
             sender=msg.getSrc();
             if(sender == null) {
-                System.err.println("FragTest.FragReceiver.up(): sender is null; discarding msg");
+                log.error("FragTest.FragReceiver.up(): sender is null; discarding msg");
                 return;
             }
             System.out.println("Received msg from " + sender + " [" + msg.getLength() + " bytes]");

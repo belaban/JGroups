@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.44 2005/05/27 22:01:41 belaban Exp $
+// $Id: NAKACK.java,v 1.45 2005/05/30 14:31:06 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -402,7 +402,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
         if(str != null) {
             gc_lag=Integer.parseInt(str);
             if(gc_lag < 1) {
-                System.err.println("NAKACK.setProperties(): gc_lag has to be at least 1");
+                log.error("NAKACK.setProperties(): gc_lag has to be at least 1");
                 return false;
             }
             props.remove("gc_lag");
@@ -446,8 +446,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
         }
 
         if(props.size() > 0) {
-            System.err.println("NAKACK.setProperties(): these properties are not recognized:");
-            props.list(System.out);
+            log.error("NAKACK.setProperties(): these properties are not recognized: " + props);
+            
             return false;
         }
         return true;

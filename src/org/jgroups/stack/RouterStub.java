@@ -1,4 +1,4 @@
-// $Id: RouterStub.java,v 1.11 2005/04/25 09:07:12 belaban Exp $
+// $Id: RouterStub.java,v 1.12 2005/05/30 14:31:28 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -394,7 +394,7 @@ public class RouterStub {
 
         }
         catch(Exception ex) {
-            System.err.println(ex);
+            log.error(ex);
         }
         finally {
             stub.disconnect();

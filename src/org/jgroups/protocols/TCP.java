@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.21 2005/04/20 20:25:47 belaban Exp $
+// $Id: TCP.java,v 1.22 2005/05/30 14:31:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -335,8 +335,8 @@ public class TCP extends Protocol implements ConnectionTable.Receiver {
         }
 
         if(props.size() > 0) {
-            System.err.println("TCP.setProperties(): the following properties are not recognized:");
-            props.list(System.out);
+            log.error("TCP.setProperties(): the following properties are not recognized: " + props);
+
             return false;
         }
         return true;

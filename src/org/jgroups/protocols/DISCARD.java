@@ -1,4 +1,4 @@
-// $Id: DISCARD.java,v 1.6 2004/09/23 16:29:41 belaban Exp $
+// $Id: DISCARD.java,v 1.7 2005/05/30 14:31:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -64,8 +64,8 @@ public class DISCARD extends Protocol
 
       if (props.size() > 0)
       {
-         System.err.println("DISCARD.setProperties(): these properties are not recognized:");
-         props.list(System.out);
+         log.error("DISCARD.setProperties(): these properties are not recognized: " + props);
+
          return false;
       }
       return true;

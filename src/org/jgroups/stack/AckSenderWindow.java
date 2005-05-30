@@ -1,4 +1,4 @@
-// $Id: AckSenderWindow.java,v 1.10 2005/01/28 12:19:52 belaban Exp $
+// $Id: AckSenderWindow.java,v 1.11 2005/05/30 14:31:28 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -379,7 +379,7 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
             System.out.println("ack(14)");
             System.out.println(win);
         } catch (Exception e) {
-            System.err.println(e);
+            log.error(e);
         }
     }
 
