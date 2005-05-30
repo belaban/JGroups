@@ -1,6 +1,6 @@
 package org.jgroups.tests;
 
-// $Id: SpeedTest1_4.java,v 1.9 2005/05/30 14:31:37 belaban Exp $
+// $Id: SpeedTest1_4.java,v 1.10 2005/05/30 16:15:12 belaban Exp $
 
 
 import org.jgroups.Channel;
@@ -213,7 +213,7 @@ public class SpeedTest1_4 {
             }
         }
         catch(Exception ex) {
-            log.error(ex);
+            System.err.println(ex);
         }
     }
 
@@ -338,7 +338,7 @@ public class SpeedTest1_4 {
                         break;
                 }
                 catch(Exception ex) {
-                    log.error("receiver: " + ex);
+                    System.err.println("receiver: " + ex);
                 }
             }
             stop=System.currentTimeMillis();

@@ -1,4 +1,4 @@
-// $Id: UnicastTest2.java,v 1.6 2005/05/30 14:31:37 belaban Exp $
+// $Id: UnicastTest2.java,v 1.7 2005/05/30 16:15:12 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -99,13 +99,13 @@ public class UnicastTest2 implements Runnable {
 			}
 			else {
 			    // error
-			    log.error("UnicastTest2.start(): first seqno must be 1");
+			    System.err.println("UnicastTest2.start(): first seqno must be 1");
 			}
 
 		    }
 		    else {
 			if(info.msgno -1 != myinfo.msgno) {
-			    log.error("UnicastTest2.start(): received msg " + info.sender + ':' +
+			    System.err.println("UnicastTest2.start(): received msg " + info.sender + ':' +
 					       info.msgno + ", but last received was " +
 					       myinfo.sender + ':' + myinfo.msgno);
 			}
@@ -121,15 +121,15 @@ public class UnicastTest2 implements Runnable {
 		    ;
 	    }
 	    catch(ChannelClosedException closed) {
-		log.error("Channel closed");
+		System.err.println("Channel closed");
 		break;
 	    }
 	    catch(ChannelNotConnectedException not_conn) {
-		log.error("Channel not connected");
+		System.err.println("Channel not connected");
 		break;
 	    }
 	    catch(Exception e) {
-		log.error(e);
+		System.err.println(e);
 	    }
 	}
 
@@ -174,14 +174,14 @@ public class UnicastTest2 implements Runnable {
 		Thread.sleep(500);
 	    }
 	    catch(ChannelClosedException closed) {
-		log.error(closed);
+		System.err.println(closed);
 		break;
 	    }
 	    catch(ChannelNotConnectedException not_conn) {
-		log.error(not_conn);
+		System.err.println(not_conn);
 	    }
 	    catch(Exception e) {
-		log.error(e);
+		System.err.println(e);
 	    }
 	}
 	System.out.println("UnicastTest2Info.run(): writer thread terminated");
@@ -196,7 +196,7 @@ public class UnicastTest2 implements Runnable {
 	    new UnicastTest2().start();
 	}
 	catch(Exception e) {
-	    log.error(e);
+	    System.err.println(e);
 	}
     }
 

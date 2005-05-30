@@ -1,4 +1,4 @@
-// $Id: RpcDispatcherStressTest.java,v 1.7 2005/05/30 14:31:37 belaban Exp $
+// $Id: RpcDispatcherStressTest.java,v 1.8 2005/05/30 16:15:12 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -179,7 +179,7 @@ public class RpcDispatcherStressTest implements MembershipListener {
             new RpcDispatcherStressTest().start(props, num_threads, interval, discard_local);
         }
         catch(Exception e) {
-            log.error(e);
+            System.err.println(e);
         }
     }
 

@@ -142,7 +142,7 @@ public class LeaseFactoryClientTest extends TestCase {
             System.in.read();
         }
         catch(Exception ex) {
-            log.error(ex);
+            System.err.println(ex);
         }
     }
 

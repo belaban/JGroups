@@ -1,4 +1,4 @@
-// $Id: RpcDispatcherBlocking.java,v 1.7 2005/05/30 14:31:37 belaban Exp $
+// $Id: RpcDispatcherBlocking.java,v 1.8 2005/05/30 16:15:12 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -122,7 +122,7 @@ public class RpcDispatcherBlocking implements MembershipListener {
             new RpcDispatcherBlocking(props, timeout).start();
         }
         catch(Exception ex) {
-            log.error(ex);
+            System.err.println(ex);
         }
     }
 

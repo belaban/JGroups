@@ -1,4 +1,4 @@
-// $Id: MessageDispatcherTestAsync.java,v 1.9 2005/05/30 14:31:37 belaban Exp $
+// $Id: MessageDispatcherTestAsync.java,v 1.10 2005/05/30 16:15:11 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -84,7 +84,7 @@ public class MessageDispatcherTestAsync implements RequestHandler {
 
     public void mcast(int num) throws IOException {
         if(!done_submitted) {
-            log.error("Must submit 'done' (press 'd') before mcasting new message");
+            System.err.println("Must submit 'done' (press 'd') before mcasting new message");
             return;
         }
         for(int i=0; i < num; i++) {
@@ -174,7 +174,7 @@ public class MessageDispatcherTestAsync implements RequestHandler {
             }
         }
         catch(Exception e) {
-            log.error(e);
+            System.err.println(e);
         }
     }
 

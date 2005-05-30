@@ -5,7 +5,7 @@ import java.net.*;
 /**
  * @author Bela Ban Dec 19
  * @author 2003
- * @version $Id: McastLoopbackTest1_4.java,v 1.3 2005/05/30 14:31:37 belaban Exp $
+ * @version $Id: McastLoopbackTest1_4.java,v 1.4 2005/05/30 16:15:11 belaban Exp $
  */
 public class McastLoopbackTest1_4 {
 
@@ -26,7 +26,7 @@ public class McastLoopbackTest1_4 {
         try {
             bind_interface=NetworkInterface.getByInetAddress(InetAddress.getByName(args[0]));
             if(bind_interface == null) {
-                log.error("bind interface " + args[0] + " not found");
+                System.err.println("bind interface " + args[0] + " not found");
                 return;
             }
 

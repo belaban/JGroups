@@ -120,10 +120,10 @@ public class Test {
                     log_interval, srv_sock, nodes).initialize();
         }
         catch(FileNotFoundException notFound) {
-            log.error("File not found.\n" + notFound);
+            System.err.println("File not found.\n" + notFound);
         }
         catch(IOException ioError) {
-            log.error(ioError);
+            System.err.println(ioError);
         }
         catch(Exception ex) {
             ex.printStackTrace();

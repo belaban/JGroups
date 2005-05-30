@@ -1,8 +1,11 @@
-// $Id: TimedWriter.java,v 1.4 2005/05/30 14:31:29 belaban Exp $
+// $Id: TimedWriter.java,v 1.5 2005/05/30 16:14:45 belaban Exp $
 
 package org.jgroups.util;
 
 
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -27,6 +30,7 @@ public class TimedWriter {
     boolean       completed=true;
     Exception     write_ex=null;
     Socket        sock=null;
+    static Log    log=LogFactory.getLog(TimedWriter.class);
 
 
     class Timeout extends Exception {
@@ -202,8 +206,7 @@ public class TimedWriter {
 	IOException. */
     public synchronized Socket createSocket(InetAddress local, InetAddress remote, int port, long timeout) 
 	throws Exception, Timeout, InterruptedException {
-	Socket ret=null;
-	
+
 	try {
 	    this.timeout=timeout;
 	    completed=false;
@@ -231,44 +234,44 @@ public class TimedWriter {
 
 
     public static void main(String[] args) {
-	TimedWriter  w=new TimedWriter();
-	InetAddress  local=null;
-	InetAddress  remote=null;
-	int          port=0;
-	Socket       sock=null ;
-	
-	if(args.length != 3) {
-	    log.error("TimedWriter <local host> <remote host> <remote port>");
-	    return;
-	}
+        TimedWriter  w=new TimedWriter();
+        InetAddress  local=null;
+        InetAddress  remote=null;
+        int          port=0;
+        Socket       sock=null ;
 
-	try {
-	    local=InetAddress.getByName(args[0]);
-	    remote=InetAddress.getByName(args[1]);
-	    port=Integer.parseInt(args[2]);
-	}
-	catch(Exception e) {
-	    log.error("Could find host " + remote);
-	    return;
-	}
+        if(args.length != 3) {
+            log.error("TimedWriter <local host> <remote host> <remote port>");
+            return;
+        }
 
-	while(true) {
-	    
-	    try {
-		sock=w.createSocket(local, remote, port, 3000);
-		if(sock != null) {
-		    System.out.println("Connection created");
-		    return;
-		}
-	    }
-	    catch(TimedWriter.Timeout timeout) {
-		log.error("Timed out creating socket");
-	    }
-	    catch(Exception io_ex) {
-		log.error("Connection could not be created, retrying");
-		Util.sleep(2000);
-	    }
-	}
+        try {
+            local=InetAddress.getByName(args[0]);
+            remote=InetAddress.getByName(args[1]);
+            port=Integer.parseInt(args[2]);
+        }
+        catch(Exception e) {
+            log.error("Could find host " + remote);
+            return;
+        }
+
+        while(true) {
+
+            try {
+                sock=w.createSocket(local, remote, port, 3000);
+                if(sock != null) {
+                    System.out.println("Connection created");
+                    return;
+                }
+            }
+            catch(TimedWriter.Timeout t) {
+                log.error("Timed out creating socket");
+            }
+            catch(Exception io_ex) {
+                log.error("Connection could not be created, retrying");
+                Util.sleep(2000);
+            }
+        }
 
     }
 }

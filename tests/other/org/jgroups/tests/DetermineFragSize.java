@@ -10,7 +10,7 @@ import java.net.InetAddress;
  * FRAG.frag_size and NAKACK.max_xmit_size
  * @author Bela Ban Dec 11
  * @author 2003
- * @version $Id: DetermineFragSize.java,v 1.3 2005/05/30 14:31:36 belaban Exp $
+ * @version $Id: DetermineFragSize.java,v 1.4 2005/05/30 16:15:11 belaban Exp $
  */
 public class DetermineFragSize {
 
@@ -30,7 +30,7 @@ public class DetermineFragSize {
             local_addr=InetAddress.getLocalHost();
         }
         catch(Exception ex) {
-            log.error("failed creating DatagramSocket: " + ex);
+            System.err.println("failed creating DatagramSocket: " + ex);
             return lower;
         }
 

@@ -1,4 +1,4 @@
-//$Id: TotalTokenDemo.java,v 1.9 2005/05/30 14:31:02 belaban Exp $
+//$Id: TotalTokenDemo.java,v 1.10 2005/05/30 16:14:40 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -37,7 +37,7 @@ import java.util.Vector;
  *
  *@author Vladimir Blagojevic vladimir@cs.yorku.ca
  *@author Ivan Bilenjkij  ivan@ibossa.com
- *@version $Revision: 1.9 $
+ *@version $Revision: 1.10 $
  *
  *@see org.jgroups.protocols.TOTAL_TOKEN
  *
@@ -73,7 +73,7 @@ public class TotalTokenDemo extends JFrame implements Runnable
         }
         catch (ChannelException e)
         {
-            log.error("Could not create channel, exiting ....");
+            System.err.println("Could not create channel, exiting ....");
             e.printStackTrace(System.err);
         }
 

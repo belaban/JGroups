@@ -1,9 +1,11 @@
-// $Id: Link.java,v 1.6 2005/05/30 14:31:00 belaban Exp $
+// $Id: Link.java,v 1.7 2005/05/30 16:14:33 belaban Exp $
 
 package org.jgroups.blocks;
 
 import org.jgroups.util.TimedWriter;
 import org.jgroups.util.Util;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import java.io.*;
 import java.net.InetAddress;
@@ -41,15 +43,15 @@ public class Link implements Runnable {
     boolean                stop=false;
     boolean                trace=false;
     Thread                 receiver_thread=null;
-    final long                   receiver_thread_join_timeout=2000;
+    final long             receiver_thread_join_timeout=2000;
     Receiver               receiver=null;
-    static final int              HB_PACKET=-99;
+    static final int       HB_PACKET=-99;
     Heartbeat              hb=null;
     long                   timeout=10000;  // if no heartbeat was received for timeout msecs, assume peer is dead
     long                   hb_interval=3000;        // send a heartbeat every n msecs
-    final Object                 outgoing_mutex=new Object();  // sync on creation and closing of outgoing socket
+    final Object           outgoing_mutex=new Object();  // sync on creation and closing of outgoing socket
     TimedWriter            writer=null;
-
+    Log                    log=LogFactory.getLog(getClass());
 
 
     public interface Receiver {
@@ -446,18 +448,18 @@ public class Link implements Runnable {
      */
     class Heartbeat implements Runnable {
 	Thread       thread=null;
-	long         timeout=10000;         // time to wait for heartbeats from peer, if not received -> boom !
-	long         hb_interval=3000; // {send a heartbeat | try to create connection} every 3 secs
+	long         hb_timeout=10000;         // time to wait for heartbeats from peer, if not received -> boom !
+	long         interval=3000; // {send a heartbeat | try to create connection} every 3 secs
 	boolean      stop_hb=false;
 	long         last_hb=System.currentTimeMillis();
 	boolean      missed_hb=false;
-	final TimedWriter  writer=new TimedWriter();
+	final TimedWriter  timed_writer=new TimedWriter();
 
 
 
 	public Heartbeat(long timeout, long hb_interval) {
-	    this.timeout=timeout;
-	    this.hb_interval=hb_interval;
+	    this.hb_timeout=timeout;
+	    this.interval=hb_interval;
 	}
 
 
@@ -482,7 +484,7 @@ public class Link implements Runnable {
 		stop_hb=true;
 		missed_hb=false;
 		thread.interrupt();
-		try {thread.join(timeout+1000);} catch(Exception e) {}
+		try {thread.join(hb_timeout+1000);} catch(Exception e) {}
 		thread=null;
 	    }
 	}
@@ -527,8 +529,8 @@ public class Link implements Runnable {
 		    // 1. Send heartbeat (use timed write)
 		    if(outstream != null) {
 			try {
-			    writer.write(outstream, HB_PACKET, 1500);
-			    Thread.sleep(hb_interval);
+			    timed_writer.write(outstream, HB_PACKET, 1500);
+			    Thread.sleep(interval);
 			}
 			catch(Exception io_ex) {       // IOException and TimedWriter.Timeout
 			    closeOutgoingConnection(); // sets established to false
@@ -544,14 +546,14 @@ public class Link implements Runnable {
 		    curr_time=System.currentTimeMillis();
 		    diff=curr_time - last_hb;
 
-		    if(curr_time - last_hb > hb_interval) {
-			num_missed_hbs=(curr_time - last_hb) / hb_interval;
+		    if(curr_time - last_hb > interval) {
+			num_missed_hbs=(curr_time - last_hb) / interval;
 			if(receiver != null)
 			    receiver.missedHeartbeat(local, local_port, remote, remote_port, (int)num_missed_hbs);
 			missed_hb=true;
 		    }
 
-		    if(diff >= timeout) {
+		    if(diff >= hb_timeout) {
 			if(trace) System.out.println("###### Link.Heartbeat.run(): no heartbeat receveived for " + 
 						     diff + " msecs. Closing connections. #####");
 			closeConnections(); // close both incoming *and* outgoing connections
@@ -563,7 +565,7 @@ public class Link implements Runnable {
 			    continue;
 			}			
 			try {
-			    outgoing=writer.createSocket(local, remote, remote_port, hb_interval);
+			    outgoing=timed_writer.createSocket(local, remote, remote_port, interval);
 			    outstream=new DataOutputStream(outgoing.getOutputStream());
 			    if(receiver != null) receiver.linkUp(local, local_port, remote, remote_port);
 			    established=true;
@@ -574,7 +576,7 @@ public class Link implements Runnable {
 			    continue;
 			}
 			catch(Exception ex) {         // IOException, TimedWriter.Timeout
-			    Util.sleep(hb_interval);  // returns when done or interrupted
+			    Util.sleep(interval);  // returns when done or interrupted
 			}
 		    }
 		}
@@ -622,7 +624,7 @@ public class Link implements Runnable {
 
 
 	if(args.length != 4) {
-	    log.error("\nLink <local host> <local port> <remote host> <remote port>\n");
+	    System.err.println("\nLink <local host> <local port> <remote host> <remote port>\n");
 	    return;
 	}
 	local=args[0];
@@ -644,7 +646,7 @@ public class Link implements Runnable {
 	    }
 	}
 	catch(Exception e) {
-	    log.error(e);
+	    System.err.println(e);
 	}
     }
 }

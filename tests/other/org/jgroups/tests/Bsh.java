@@ -1,4 +1,4 @@
-// $Id: Bsh.java,v 1.7 2005/05/30 14:31:36 belaban Exp $
+// $Id: Bsh.java,v 1.8 2005/05/30 16:15:11 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -120,7 +120,7 @@ public class Bsh {
             obj=ch.receive(timeout);
 
             if(obj == null || !(obj instanceof Message)) {
-                log.error("<-- " + obj);
+                System.err.println("<-- " + obj);
             }
             else {
                 result=((Message)obj).getObject();
@@ -130,7 +130,7 @@ public class Bsh {
             // System.out.println("** " + ch.getNumMessages() + " are waiting");
         }
         catch(Throwable t) {
-            log.error("Bsh.sendAndReceive(): " + t);
+            System.err.println("Bsh.sendAndReceive(): " + t);
         }
     }
 

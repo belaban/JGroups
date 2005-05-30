@@ -1,4 +1,4 @@
-// $Id: DrawRepl.java,v 1.5 2005/05/30 14:31:02 belaban Exp $
+// $Id: DrawRepl.java,v 1.6 2005/05/30 16:14:40 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -68,7 +68,7 @@ public class DrawRepl implements MouseMotionListener, WindowListener, ActionList
 	    channel.connect(groupname);
 	}
 	catch(Exception e) {
-	    log.error(e);
+	    System.err.println(e);
 	    System.exit(0);
 	}
     }
@@ -131,7 +131,7 @@ public class DrawRepl implements MouseMotionListener, WindowListener, ActionList
 	else if (src instanceof MenuComponent)
  	    ((MenuComponent)src).dispatchEvent(evt);
  	else
- 	    log.error("++++++++++");
+ 	    System.err.println("++++++++++");
     }
     
 
@@ -169,7 +169,7 @@ public class DrawRepl implements MouseMotionListener, WindowListener, ActionList
 	AWTEvent   copy_evt=null;
 	Component  src=findComponent(mainFrame, comp_name);
 	if(src == null) {
-	    log.error("processEvent(): src is null");
+	    System.err.println("processEvent(): src is null");
 	    return;
 	}
 
@@ -177,7 +177,7 @@ public class DrawRepl implements MouseMotionListener, WindowListener, ActionList
 
 	copy_evt=copyEvent(src, evt);
 	if(copy_evt == null) {
-	    log.error("copy_evt is NULL");
+	    System.err.println("copy_evt is NULL");
 	    return;
 	}
 	dispatch(src, copy_evt);
@@ -190,7 +190,7 @@ public class DrawRepl implements MouseMotionListener, WindowListener, ActionList
 // 				    new Integer(dim.width), 0, 0);
 // 	    }
 // 	    catch(Exception e) {
-// 		log.error(e);
+// 		System.err.println(e);
 // 	    }
 // 	}
     }
@@ -210,7 +210,7 @@ public class DrawRepl implements MouseMotionListener, WindowListener, ActionList
 		AWTEvent evt=event_queue.getNextEvent();
 		Object obj=evt.getSource();
 		if(obj == null) {
-		    log.error("src is NULL");
+		    System.err.println("src is NULL");
 		    continue;
 		}		
 
@@ -219,7 +219,7 @@ public class DrawRepl implements MouseMotionListener, WindowListener, ActionList
 		else if(obj instanceof MenuComponent)
 		    comp_name=((MenuComponent)obj).getName();
 		else {
-		    log.error("src is of type " + obj.getClass().getName());
+		    System.err.println("src is of type " + obj.getClass().getName());
 		    continue;
 		}
 
@@ -234,7 +234,7 @@ public class DrawRepl implements MouseMotionListener, WindowListener, ActionList
 		dispatcher.callRemoteMethods(null, call, GroupRequest.GET_NONE, 0);
 	    }
 	    catch(Exception e) {
-		log.error(e);
+		System.err.println(e);
 	    }
 	}
     }

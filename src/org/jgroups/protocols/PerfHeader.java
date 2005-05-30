@@ -1,4 +1,4 @@
-// $Id: PerfHeader.java,v 1.7 2005/05/30 14:31:07 belaban Exp $
+// $Id: PerfHeader.java,v 1.8 2005/05/30 16:14:43 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -6,6 +6,8 @@ import org.jgroups.Header;
 import org.jgroups.Message;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import java.io.*;
 import java.util.HashMap;
@@ -34,6 +36,7 @@ public class PerfHeader extends Header {
     final static String classname="org.jgroups.protocols.PerfHeader";
     static long size=0;
     private static Message msg2;
+    static Log            log=LogFactory.getLog(PerfHeader.class);
 
 
     static {

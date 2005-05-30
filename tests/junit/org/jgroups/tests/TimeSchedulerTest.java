@@ -1,4 +1,4 @@
-// $Id: TimeSchedulerTest.java,v 1.4 2005/05/30 14:31:32 belaban Exp $
+// $Id: TimeSchedulerTest.java,v 1.5 2005/05/30 16:15:05 belaban Exp $
 package org.jgroups.tests;
 
 
@@ -108,7 +108,7 @@ public class TimeSchedulerTest extends TestCase {
         }
 
         if(num_non_correct_entries > 0)
-            log.error("Number of incorrect retransmission timeouts: " + num_non_correct_entries);
+            System.err.println("Number of incorrect retransmission timeouts: " + num_non_correct_entries);
         else {
             for(long i=0; i < NUM_MSGS; i++) {
                 entry=(Entry)msgs.get(new Long(i));
@@ -209,7 +209,7 @@ public class TimeSchedulerTest extends TestCase {
             if(diff >= delta) off=true;
 
             if(off) {
-                log.error("#" + seqno + ": " + this + ": (" + "entry is more than " +
+                System.err.println("#" + seqno + ": " + this + ": (" + "entry is more than " +
                                    PERCENTAGE_OFF + " percentage off ");
                 return false;
             }

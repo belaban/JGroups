@@ -32,7 +32,7 @@ import java.util.*;
  * the unicast routing caches should ensure that unicasts are only sent via 1 interface in almost all cases.
  * 
  * @author Bela Ban Oct 2003
- * @version $Id: UDP1_4.java,v 1.22 2005/05/30 14:31:07 belaban Exp $
+ * @version $Id: UDP1_4.java,v 1.23 2005/05/30 16:14:43 belaban Exp $
  * todo: sending of dummy packets
  */
 public class UDP1_4 extends Protocol implements  Receiver {
@@ -1391,7 +1391,7 @@ public class UDP1_4 extends Protocol implements  Receiver {
             }
             catch(Exception e) {
                 e.printStackTrace();
-                log.error("MyReceiver: problem sending response to " + sender);
+                System.err.println("MyReceiver: problem sending response to " + sender);
             }
         }
     }

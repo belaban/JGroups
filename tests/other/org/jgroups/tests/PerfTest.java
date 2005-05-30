@@ -1,4 +1,4 @@
-// $Id: PerfTest.java,v 1.7 2005/05/30 14:31:37 belaban Exp $
+// $Id: PerfTest.java,v 1.8 2005/05/30 16:15:11 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -247,7 +247,7 @@ public class PerfTest implements MessageListener, MembershipListener{
         Address  sender=msg.getSrc();
         MyHeader hdr=(MyHeader)msg.removeHeader(HDRNAME);
         if(hdr == null) {
-            log.error("-- error: header was null");
+            System.err.println("-- error: header was null");
             return;
         }
         switch(hdr.type) {
@@ -267,7 +267,7 @@ public class PerfTest implements MessageListener, MembershipListener{
             case MyHeader.DATA:
                 Entry entry=(Entry)data.get(sender);
                 if(entry == null) {
-                    log.error("-- received a message from " + sender + ", who is not in the list");
+                    System.err.println("-- received a message from " + sender + ", who is not in the list");
                 }
                 else {
                     entry.add(hdr.seqno);

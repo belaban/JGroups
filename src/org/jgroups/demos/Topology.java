@@ -1,4 +1,4 @@
-// $Id: Topology.java,v 1.5 2005/05/30 14:31:02 belaban Exp $
+// $Id: Topology.java,v 1.6 2005/05/30 16:14:40 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -28,7 +28,7 @@ import java.util.Vector;
  */
 public class Topology extends Frame implements WindowListener, MembershipListener {
     private final Vector members=new Vector();
-    private final Font font;
+    private final Font myFont;
     private final FontMetrics fm;
     private final Color node_color=new Color(250, 220, 100);
     private boolean coordinator=false;
@@ -43,7 +43,7 @@ public class Topology extends Frame implements WindowListener, MembershipListene
         addWindowListener(this);
         //g=getGraphics();
         fm=getFontMetrics(new Font("Helvetica", Font.PLAIN, 12));
-        font=new Font("Helvetica", Font.PLAIN, 12);
+        myFont=new Font("Helvetica", Font.PLAIN, 12);
 
     }
 
@@ -105,7 +105,7 @@ public class Topology extends Frame implements WindowListener, MembershipListene
         }
 
         g.drawRect(10, 30, box.width - 20, box.height - 60);
-        g.setFont(font);
+        g.setFont(myFont);
 
         for(int i=0; i < members.size(); i++) {
             label=members.elementAt(i).toString();
@@ -238,7 +238,7 @@ public class Topology extends Frame implements WindowListener, MembershipListene
             top.start();
         }
         catch(Exception e) {
-            log.error(e);
+            System.err.println(e);
             e.printStackTrace();
             System.exit(0);
         }
