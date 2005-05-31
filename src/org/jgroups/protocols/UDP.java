@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.78 2005/05/30 14:31:07 belaban Exp $
+// $Id: UDP.java,v 1.79 2005/05/31 18:49:19 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -505,10 +505,10 @@ public class UDP extends Protocol implements Runnable {
             props.remove("loopback");
         }
 
-        str=props.getProperty("discard_incompatibe_packets");
+        str=props.getProperty("discard_incompatible_packets");
         if(str != null) {
             discard_incompatible_packets=Boolean.valueOf(str).booleanValue();
-            props.remove("discard_incompatibe_packets");
+            props.remove("discard_incompatible_packets");
         }
 
         // this is deprecated, just left for compatibility (use use_incoming_packet_handler)
