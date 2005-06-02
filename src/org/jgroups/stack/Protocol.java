@@ -1,4 +1,4 @@
-// $Id: Protocol.java,v 1.25 2005/04/20 20:25:49 belaban Exp $
+// $Id: Protocol.java,v 1.26 2005/06/02 13:30:21 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -221,6 +221,15 @@ public abstract class Protocol {
 
     public Properties getProperties() {
         return props;
+    }
+
+
+    public boolean upThreadEnabled() {
+        return up_thread;
+    }
+
+    public boolean downThreadEnabled() {
+        return down_thread;
     }
 
 
