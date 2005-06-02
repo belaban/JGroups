@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.23 2005/04/21 13:33:38 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.24 2005/06/02 09:17:57 belaban Exp $ -->
 
-<project name="JGroups" default="compile-1.4" basedir=".">
+<project name="JGroups" default="compile" basedir=".">
     <description>
         build.xml file for JGroups. Needs Ant (jakarta.apache.org) to run
     </description>
@@ -54,35 +54,12 @@
         <mkdir dir="${dist.dir}/pg/html"/>
         <mkdir dir="${dist.dir}/pg/pdf"/>
         <mkdir dir="${javadoc.dir}"/>
-        <!-- If jikes is available we use it. Otherwise javac will be used -->
-        <!-- available property="build.compiler" value="jikes"  filepath="${env.PATH}" file="jikes"/ -->
     </target>
 
 
     <target name="compile"
         depends="prepare"
-        description="Compiles are Java files (excluding files dependent on JDK 1.4">
-        <javac destdir="${compile.dir}"
-            classpathref="jg.classpath"
-            debug="on"
-            deprecation="off"
-            optimize="off"
-            listfiles="false"
-            includes="org/jgroups/**">
-            <src path="${src.dir}"/>
-            <src path="${tests.dir}"/>
-            <src path="${junit.dir}"/>
-            <src path="${stress.dir}"/>
-            <src path="${perf.dir}"/>
-            <exclude name="**/obsolete/**"/>
-            <exclude name="**/*1_4*"/>
-            <exclude name="**/*1_5*"/>
-        </javac>
-    </target>
-
-    <target name="compile-1.4"
-        depends="prepare"
-        description="Compiles are Java files (including files dependent on JDK 1.4)">
+        description="Compiles are Java files">
         <javac destdir="${compile.dir}"
             source="1.4"
             classpathref="jg.classpath"
@@ -130,12 +107,6 @@
                 jgroups-core.jar">
     </target>
 
-    <target name="jar-1.4"
-        description="Compiles for 1.4 and creates JAR files in the ./dist directory"
-        depends="compile-1.4,
-                jgroups-all.jar,
-                jgroups-core.jar">
-    </target>
 
     <target name="jar-1.5"
         description="Compiles for 1.5 and creates JAR files in the ./dist directory"
@@ -265,10 +236,6 @@
     <target name="all"
         depends="jar,javadoc"
         description="Compiles all files, creates JARs and Javadoc documentation"/>
-
-    <target name="all-1.4"
-        depends="jar-1.4,javadoc"
-        description="Compiles all files (for 1.4), creates JARs and Javadoc documentation"/>
 
     <target name="all-1.5"
         depends="jar-1.5,javadoc"
