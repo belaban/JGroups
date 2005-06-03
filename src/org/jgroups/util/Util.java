@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.39 2005/06/03 07:42:14 belaban Exp $
+// $Id: Util.java,v 1.40 2005/06/03 07:44:23 belaban Exp $
 
 package org.jgroups.util;
 
@@ -989,7 +989,7 @@ public class Util {
      * @param obj
      * @return The loaded class, or null if class could not be loaded
      */
-    public static Class loadClass(String clname, Object obj) {
+    public static Class loadClass(String clname, Class clazz) {
         Class cl=null;
         ClassLoader loader;
         try {
@@ -1006,7 +1006,7 @@ public class Util {
                 loader=null;
             }
         }
-        loader=obj != null? obj.getClass().getClassLoader() : null;
+        loader=clazz != null? clazz.getClassLoader() : null;
         if(loader != null) {
             try {
                 return loader.loadClass(clname);
