@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.38 2005/05/30 14:31:29 belaban Exp $
+// $Id: Util.java,v 1.39 2005/06/03 07:42:14 belaban Exp $
 
 package org.jgroups.util;
 
@@ -470,6 +470,10 @@ public class Util {
                     Event event=(Event)o;
                     int type=event.getType();
                     s=Event.type2String(type);
+                    if(type == Event.VIEW_CHANGE)
+                        s+=" " + event.getArg();
+                    if(type == Event.MSG)
+                        s+=" " + event.getArg();
 
                     if(type == Event.MSG) {
                         s+="[";
@@ -511,7 +515,7 @@ public class Util {
                 else {
                     s=o.toString();
                 }
-                sb.append(s).append(" ");
+                sb.append(s).append("\n");
             }
         }
         return sb.toString();
@@ -975,6 +979,42 @@ public class Util {
             if(log.isErrorEnabled()) log.error("exception+" + ex);
             return 0;
         }
+    }
+
+
+    /**
+     * Tries to load a class from the thread's context classloader first, then from an object's
+     * classloader (if not null).
+     * @param clname
+     * @param obj
+     * @return The loaded class, or null if class could not be loaded
+     */
+    public static Class loadClass(String clname, Object obj) {
+        Class cl=null;
+        ClassLoader loader;
+        try {
+            loader=Thread.currentThread().getContextClassLoader();
+        }
+        catch(Throwable t) {
+            loader=null;
+        }
+        if(loader != null) {
+            try {
+                return loader.loadClass(clname);
+            }
+            catch(ClassNotFoundException e) {
+                loader=null;
+            }
+        }
+        loader=obj != null? obj.getClass().getClassLoader() : null;
+        if(loader != null) {
+            try {
+                return loader.loadClass(clname);
+            }
+            catch(ClassNotFoundException e) {
+            }
+        }
+        return cl;
     }
 
 
