@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.79 2005/05/31 18:49:19 belaban Exp $
+// $Id: UDP.java,v 1.80 2005/06/03 08:49:18 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -193,7 +193,7 @@ public class UDP extends Protocol implements Runnable {
 
     final int VERSION_LENGTH=Version.getLength();
 
-
+    long num_msgs_sent=0, num_msgs_received=0, num_bytes_sent=0, num_bytes_received=0;
 
 
 
@@ -218,6 +218,11 @@ public class UDP extends Protocol implements Runnable {
             last_ports_used=new BoundedList(num_last_ports);
         return last_ports_used;
     }
+
+    public long getNumMessagesSent()     {return num_msgs_sent;}
+    public long getNumMessagesReceived() {return num_msgs_received;}
+    public long getNumBytesSent()        {return num_bytes_sent;}
+    public long getNumBytesReceived()    {return num_bytes_received;}
 
     /* ----------------------- Receiving of MCAST UDP packets ------------------------ */
 
@@ -753,6 +758,9 @@ public class UDP extends Protocol implements Runnable {
         if(dst == null)
             dst=mcast_addr;
 
+        num_msgs_received++;
+        num_bytes_received+=msg.getLength();
+
         // discard my own multicast loopback copy
         if(loopback) {
             Address src=msg.getSrc();
@@ -867,6 +875,8 @@ public class UDP extends Protocol implements Runnable {
 
         // packet=new DatagramPacket(data, data.length, dest, port);
         packet=new DatagramPacket(buf.getBuf(), buf.getOffset(), buf.getLength(), dest, port);
+        num_msgs_sent++;
+        num_bytes_sent+=buf.getLength();
         if(dest.isMulticastAddress() && mcast_send_sock != null) { // mcast_recv_sock might be null if ip_mcast is false
             mcast_send_sock.send(packet);
         }
@@ -1314,41 +1324,6 @@ public class UDP extends Protocol implements Runnable {
     }
 
 
-
-    /**
-     * Workaround for the problem encountered in certains JDKs that a thread listening on a socket
-     * cannot be interrupted. Therefore we just send a dummy datagram packet so that the thread 'wakes up'
-     * and realizes it has to terminate. Should be removed when all JDKs support Thread.interrupt() on
-     * reads. Uses sock t send dummy packet, so this socket has to be still alive.
-     * @param dest The destination host. Will be local host if null
-     * @param port The destination port
-     */
-//    private void sendDummyPacket(InetAddress dest, int port) {
-//        DatagramPacket packet;
-//        byte[] buf={0};
-//
-//        if(dest == null) {
-//            try {
-//                dest=InetAddress.getLocalHost();
-//            }
-//            catch(Exception e) {
-//            }
-//        }
-//
-//        if(log.isTraceEnabled()) log.trace("sending packet to " + dest + ':' + port);
-//
-//        if(sock == null || dest == null) {
-//            if(log.isWarnEnabled()) log.warn("sock was null or dest was null, cannot send dummy packet");
-//            return;
-//        }
-//        packet=new DatagramPacket(buf, buf.length, dest, port);
-//        try {
-//            sock.send(packet);
-//        }
-//        catch(Throwable e) {
-//            if(log.isErrorEnabled()) log.error("exception sending dummy packet to " + dest + ':' + port + ": " + e);
-//        }
-//    }
 
 
     /**
