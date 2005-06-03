@@ -9,7 +9,7 @@ import javax.management.MBeanServerFactory;
 
 /**
  * @author Bela Ban
- * @version $Id: JmxTest.java,v 1.1 2005/06/03 08:53:52 belaban Exp $
+ * @version $Id: JmxTest.java,v 1.2 2005/06/03 08:54:54 belaban Exp $
  */
 public class JmxTest {
     MBeanServer server;
@@ -24,7 +24,7 @@ public class JmxTest {
                 props=args[++i];
                 continue;
             }
-            System.out.println("JmxTest1_5 [-props <props>]");
+            System.out.println("JmxTest [-props <props>]");
         }
 
         try {

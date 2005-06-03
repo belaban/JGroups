@@ -29,8 +29,7 @@
     blocks         Building blocks
     debug	   Debugging functionality
     demos	   All the demos
-    log		   The current tracing facility. Will be replaced by
-		   JDK 1.4 logging API    
+    jmx/        The JMX instrumentation code  
     protocols/	   The main protocol branch (including virtual synchrony)
       pbcast	   The PBCAST protocol branch
     stack          Functionality related to the protocol stack
