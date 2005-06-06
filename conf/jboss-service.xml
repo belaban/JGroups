@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<server>
+
+    <!--
+    A bunch of JGroups channels which can be used by other services
+    Author: Bela Ban
+    Version: $Id: jboss-service.xml,v 1.1 2005/06/06 13:55:20 belaban Exp $
+    -->
+
+    <mbean code="org.jgroups.jmx.JChannel" name="jgroups:name=DemoChannel">
+        <attribute name="ObjectName">jgroups:name=DemoChannel</attribute>
+        <attribute name="ReceiveViewEvents">true</attribute>
+        <attribute name="ReceiveSuspectEvents">true</attribute>
+        <attribute name="ReceiveStateEvents">true</attribute>
+        <attribute name="ReceiveLocalMessages">true</attribute>
+        <attribute name="AutoReconnect">true</attribute>
+        <attribute name="AutoGetState">true</attribute>
+
+        <attribute name="ClusterName">DemoChannel</attribute>
+        <attribute name="ClusterConfig">
+            <config>
+                <!-- UDP: if you have a multihomed machine,
+                set the bind_addr attribute to the appropriate NIC IP address -->
+                <!-- UDP: On Windows machines, because of the media sense feature
+                being broken with multicast (even after disabling media sense)
+                set the loopback attribute to true -->
+                <UDP mcast_addr="230.8.8.8" mcast_port="56677"
+                    ip_ttl="32" ip_mcast="true"
+                    mcast_send_buf_size="80000" mcast_recv_buf_size="150000"
+                    ucast_send_buf_size="80000" ucast_recv_buf_size="150000"
+                    loopback="false"/>
+                <PING timeout="2000" num_initial_members="3"
+                    up_thread="false" down_thread="false"/>
+                <MERGE2 min_interval="10000" max_interval="20000"/>
+                <FD shun="true" up_thread="true" down_thread="true"/>
+                <VERIFY_SUSPECT timeout="1500"
+                    up_thread="false" down_thread="false"/>
+                <pbcast.NAKACK gc_lag="50" retransmit_timeout="600,1200,2400,4800"
+                    max_xmit_size="8192" up_thread="false" down_thread="false"/>
+                <UNICAST timeout="600,1200,2400" window_size="100" min_threshold="10"
+                    down_thread="false"/>
+                <pbcast.STABLE desired_avg_gossip="20000"
+                    up_thread="false" down_thread="false"/>
+                <FRAG frag_size="8192"
+                    down_thread="false" up_thread="false"/>
+                <pbcast.GMS join_timeout="5000" join_retry_timeout="2000"
+                    shun="true" print_local_addr="true"/>
+                <pbcast.STATE_TRANSFER up_thread="false" down_thread="false"/>
+            </config>
+        </attribute>
+
+    </mbean>
+
+</server>
