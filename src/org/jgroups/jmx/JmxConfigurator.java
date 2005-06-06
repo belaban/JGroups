@@ -10,7 +10,7 @@ import java.util.Vector;
 
 /**
  * @author Bela Ban
- * @version $Id: JmxConfigurator.java,v 1.1 2005/06/03 08:49:17 belaban Exp $
+ * @version $Id: JmxConfigurator.java,v 1.2 2005/06/06 15:33:59 belaban Exp $
  */
 public class JmxConfigurator {
     static final Log log=LogFactory.getLog(JmxConfigurator.class);
@@ -52,7 +52,6 @@ public class JmxConfigurator {
         org.jgroups.stack.Protocol prot;
         for(int i=0; i < protocols.size(); i++) {
             prot=(org.jgroups.stack.Protocol)protocols.get(i);
-            // System.out.println(prot);
             org.jgroups.jmx.Protocol p=findProtocol(prot);
             if(p == null)
                 p=new org.jgroups.jmx.Protocol(prot);
@@ -61,14 +60,20 @@ public class JmxConfigurator {
         }
     }
 
-    public static void unregisterProtocols(MBeanServer server, org.jgroups.JChannel channel, String channel_name) throws Exception {
+    public static void unregisterProtocols(MBeanServer server, org.jgroups.JChannel channel, String channel_name) {
         ProtocolStack stack=channel.getProtocolStack();
         Vector protocols=stack.getProtocols();
         org.jgroups.stack.Protocol prot;
+        ObjectName prot_name=null;
         for(int i=0; i < protocols.size(); i++) {
             prot=(org.jgroups.stack.Protocol)protocols.get(i);
-            ObjectName prot_name=new ObjectName(channel_name + ",protocol=" + prot.getName());
-            server.unregisterMBean(prot_name);
+            try {
+                prot_name=new ObjectName(channel_name + ",protocol=" + prot.getName());
+                server.unregisterMBean(prot_name);
+            }
+            catch(Throwable e) {
+                log.error("failed to unregister " + prot_name, e);
+            }
         }
     }
 

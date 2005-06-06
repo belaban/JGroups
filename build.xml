@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.24 2005/06/02 09:17:57 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.25 2005/06/06 15:34:15 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -122,7 +122,7 @@
             basedir="${compile.dir}"
             manifest="${conf.dir}/manifest.mf"
             includes="org/jgroups/**">
-            <fileset dir="${conf.dir}" includes="*.dtd, *.xml"/>
+            <fileset dir="${conf.dir}" includes="*.dtd, *.xml" excludes="jboss-service.xml" />
         </jar>
     </target>
 
@@ -136,7 +136,7 @@
                       org/jgroups/tests/**,
                       org/jgroups/**/*Test.class,
                       org/jgroups/**/*Test\$*.class">
-            <fileset dir="${conf.dir}" includes="*.dtd, *.xml"/>
+            <fileset dir="${conf.dir}" includes="*.dtd, *.xml" excludes="jboss-service.xml"/>
         </jar>
     </target>
 
@@ -152,7 +152,23 @@
                       org/jgroups/**/*Test\$*.class">
             <metainf dir="${src.dir}/org/jgroups/stack"
                 includes="jboss-service.xml"/>
-            <fileset dir="${conf.dir}" includes="*.dtd, *.xml"/>
+            <fileset dir="${conf.dir}" includes="*.dtd, *.xml" excludes="jboss-service.xml"/>
+        </jar>
+    </target>
+
+
+    <target name="jgroups-service" depends="jar"
+        description="Creates the service archive used to deploy a JGroups channel as a JBoss MBean">
+        <jar jarfile="${dist.dir}/jgroups-service.sar"
+            basedir="${compile.dir}"
+            includes="org/jgroups/**"
+            excludes="org/jgroups/demos/**,
+                      org/jgroups/tests/**,
+                      org/jgroups/**/*Test.class,
+                      org/jgroups/**/*Test\$*.class">
+            <metainf dir="${conf.dir}"
+                includes="jboss-service.xml"/>
+            <fileset dir="${conf.dir}" includes="*.dtd, *.xml" excludes="jboss-service.xml"/>
         </jar>
     </target>
 

@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.80 2005/06/03 08:49:18 belaban Exp $
+// $Id: UDP.java,v 1.81 2005/06/06 15:34:08 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -209,9 +209,12 @@ public class UDP extends Protocol implements Runnable {
      * debug only
      */
     public String toString() {
-        return "Protocol UDP(local address: " + local_addr + ')';
+        return "UDP(local address: " + local_addr + ')';
     }
 
+    public void resetStats() {
+        num_msgs_sent=num_msgs_received=num_bytes_sent=num_bytes_received=0;
+    }
 
     BoundedList getLastPortsUsed() {
         if(last_ports_used == null)
@@ -758,8 +761,10 @@ public class UDP extends Protocol implements Runnable {
         if(dst == null)
             dst=mcast_addr;
 
-        num_msgs_received++;
-        num_bytes_received+=msg.getLength();
+        if(stats) {
+            num_msgs_received++;
+            num_bytes_received+=msg.getLength();
+        }
 
         // discard my own multicast loopback copy
         if(loopback) {
@@ -875,8 +880,10 @@ public class UDP extends Protocol implements Runnable {
 
         // packet=new DatagramPacket(data, data.length, dest, port);
         packet=new DatagramPacket(buf.getBuf(), buf.getOffset(), buf.getLength(), dest, port);
-        num_msgs_sent++;
-        num_bytes_sent+=buf.getLength();
+        if(stats) {
+            num_msgs_sent++;
+            num_bytes_sent+=buf.getLength();
+        }
         if(dest.isMulticastAddress() && mcast_send_sock != null) { // mcast_recv_sock might be null if ip_mcast is false
             mcast_send_sock.send(packet);
         }

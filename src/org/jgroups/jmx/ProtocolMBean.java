@@ -7,12 +7,15 @@ import java.util.Vector;
 
 /**
  * @author Bela Ban
- * @version $Id: ProtocolMBean.java,v 1.1 2005/06/03 08:49:18 belaban Exp $
+ * @version $Id: ProtocolMBean.java,v 1.2 2005/06/06 15:33:59 belaban Exp $
  */
 public interface ProtocolMBean {
     String getName();
     String getPropertiesAsString();
     void setProperties(Properties p);
+    boolean getStatsEnabled();
+    void setStatsEnabled(boolean flag);
+    void resetStats();
     boolean getUpThread();
     boolean getDownThread();
     int getUpEvents();
