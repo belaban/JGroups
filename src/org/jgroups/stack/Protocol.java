@@ -1,4 +1,4 @@
-// $Id: Protocol.java,v 1.27 2005/06/06 14:19:14 belaban Exp $
+// $Id: Protocol.java,v 1.28 2005/06/06 15:34:11 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -241,6 +241,14 @@ public abstract class Protocol {
 
     public boolean statsEnabled() {
         return stats;
+    }
+
+    public void enableStats(boolean flag) {
+        stats=flag;
+    }
+
+    public void resetStats() {
+        ;
     }
 
 

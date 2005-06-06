@@ -14,7 +14,7 @@ import java.io.Serializable;
 
 /**
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.1 2005/06/03 08:49:17 belaban Exp $
+ * @version $Id: JChannel.java,v 1.2 2005/06/06 15:33:59 belaban Exp $
  */
 public class JChannel implements JChannelMBean {
     /** Ref to the original JGroups channel */
@@ -46,6 +46,11 @@ public class JChannel implements JChannelMBean {
 
     public JChannel(org.jgroups.JChannel channel) {
         this.channel=channel;
+    }
+
+    //void jbossInternalLifecycle(String method) throws Exception;
+    public org.jgroups.JChannel getChannel() {
+        return channel;
     }
 
     public String getVersion() {
@@ -122,7 +127,7 @@ public class JChannel implements JChannelMBean {
         setGroupName(cluster_name);
     }
 
-    public boolean getReceiveViews() {
+    public boolean getReceiveViewEvents() {
         return receive_views;
     }
 
@@ -213,17 +218,29 @@ public class JChannel implements JChannelMBean {
 
     public void destroy() {
         MBeanServer server=(MBeanServer)MBeanServerFactory.findMBeanServer(null).get(0);
-        try {
-            JmxConfigurator.unregisterProtocols(server, channel, getObjectName());
-        }
-        catch(Exception e) {
-            log.error("failed unregistering protocols", e);
-        }
+        JmxConfigurator.unregisterProtocols(server, channel, getObjectName());
         if(channel != null) {
             channel.close();
             channel=null;
         }
     }
+
+//    public void jbossInternalLifecycle(String method) throws Exception {
+//        System.out.println("method: " + method);
+//        if (method == null)
+//            throw new IllegalArgumentException("Null method name");
+//
+//        if (method.equals("create"))
+//            create();
+//        else if (method.equals("start"))
+//            start();
+//        else if (method.equals("stop"))
+//            stop();
+//        else if (method.equals("destroy"))
+//            destroy();
+//        else
+//            throw new IllegalArgumentException("Unknown lifecyle method " + method);
+//    }
 
 
     public View getView() {

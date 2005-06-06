@@ -7,13 +7,16 @@ import java.io.Serializable;
 
 /**
  * @author Bela Ban
- * @version $Id: JChannelMBean.java,v 1.1 2005/06/03 08:49:17 belaban Exp $
+ * @version $Id: JChannelMBean.java,v 1.2 2005/06/06 15:33:59 belaban Exp $
  */
 public interface JChannelMBean {
     void create() throws Exception;
     void start() throws Exception;
     void stop();
     void destroy();
+
+    //void jbossInternalLifecycle(String method) throws Exception;
+    org.jgroups.JChannel getChannel();
 
     String getProperties();
     void setProperties(String props);
@@ -32,7 +35,7 @@ public interface JChannelMBean {
     String getClusterName();
     void setClusterName(String cluster_name);
 
-    boolean getReceiveViews();
+    boolean getReceiveViewEvents();
     void setReceiveViewEvents(boolean flag);
 
     boolean getReceiveSuspectEvents();

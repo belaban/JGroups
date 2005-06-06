@@ -1,4 +1,4 @@
-// $Id: NakAckHeader.java,v 1.11 2005/05/25 14:32:40 belaban Exp $
+// $Id: NakAckHeader.java,v 1.12 2005/06/06 15:34:08 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -127,7 +127,8 @@ public class NakAckHeader extends Header implements Streamable {
     public String toString() {
         StringBuffer ret=new StringBuffer();
         ret.append("[NAKACK: ").append(type2Str(type)).append(", seqno=").append(seqno);
-        ret.append(", range=").append(range);
+        if(range != null)
+            ret.append(", range=").append(range);
         if(sender != null) ret.append(", sender=" + sender);
         ret.append(']');
         return ret.toString();

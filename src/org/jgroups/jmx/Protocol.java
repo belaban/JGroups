@@ -4,12 +4,11 @@ import org.jgroups.stack.ProtocolObserver;
 import org.jgroups.util.Util;
 
 import java.util.Properties;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.Vector;
 
 /**
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.1 2005/06/03 08:49:17 belaban Exp $
+ * @version $Id: Protocol.java,v 1.2 2005/06/06 15:33:59 belaban Exp $
  */
 public class Protocol implements ProtocolMBean {
     org.jgroups.stack.Protocol prot;
@@ -46,6 +45,18 @@ public class Protocol implements ProtocolMBean {
         prot.setProperties(p);
     }
 
+    public boolean getStatsEnabled() {
+        return prot.statsEnabled();
+    }
+
+    public void setStatsEnabled(boolean flag) {
+        prot.enableStats(flag);
+    }
+
+    public void resetStats() {
+        prot.resetStats();
+    }
+
     public boolean getUpThread() {
         return prot.upThreadEnabled();
     }
@@ -75,19 +86,23 @@ public class Protocol implements ProtocolMBean {
     }
 
     public String requiredUpServices() {
-        return prot.requiredUpServices().toString();
+        Vector ret=prot.requiredUpServices();
+        return ret != null? prot.requiredUpServices().toString() : "<empty>";
     }
 
     public String requiredDownServices() {
-        return prot.requiredDownServices().toString();
+        Vector ret=prot.requiredDownServices();
+        return ret != null? prot.requiredDownServices().toString() : "<empty>";
     }
 
     public String providedUpServices() {
-        return prot.providedUpServices().toString();
+        Vector ret=prot.providedUpServices();
+        return ret != null? prot.providedUpServices().toString() : "<empty>";
     }
 
     public String providedDownServices() {
-        return prot.providedDownServices().toString();
+        Vector ret=prot.providedDownServices();
+        return ret != null? prot.providedDownServices().toString() : "<empty>";
     }
 
     public void create() throws Exception {

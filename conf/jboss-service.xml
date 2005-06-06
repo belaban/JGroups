@@ -6,9 +6,8 @@
     <!--
     A bunch of JGroups channels which can be used by other services
     Author: Bela Ban
-    Version: $Id: jboss-service.xml,v 1.1 2005/06/06 13:55:20 belaban Exp $
+    Version: $Id: jboss-service.xml,v 1.2 2005/06/06 15:33:53 belaban Exp $
     -->
-
     <mbean code="org.jgroups.jmx.JChannel" name="jgroups:name=DemoChannel">
         <attribute name="ObjectName">jgroups:name=DemoChannel</attribute>
         <attribute name="ReceiveViewEvents">true</attribute>
@@ -50,7 +49,6 @@
                 <pbcast.STATE_TRANSFER up_thread="false" down_thread="false"/>
             </config>
         </attribute>
-
     </mbean>
 
 </server>
