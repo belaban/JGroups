@@ -1,4 +1,4 @@
-// $Id: Protocol.java,v 1.26 2005/06/02 13:30:21 belaban Exp $
+// $Id: Protocol.java,v 1.27 2005/06/06 14:19:14 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -168,6 +168,7 @@ public abstract class Protocol {
     private final static long  THREAD_JOIN_TIMEOUT=1000;
     protected boolean          down_thread=true;  // determines whether the down_handler thread should be started
     protected boolean          up_thread=true;    // determines whether the up_handler thread should be started
+    protected boolean          stats=true;  // determines whether to collect statistics (and expose them via JMX)
     protected final Log        log=LogFactory.getLog(this.getClass());
 
 
@@ -215,6 +216,12 @@ public abstract class Protocol {
             props.remove("up_thread_prio");
         }
 
+        str=props.getProperty("stats");
+        if(str != null) {
+            stats=Boolean.valueOf(str).booleanValue();
+            props.remove("stats");
+        }
+
         return setProperties(props);
     }
 
@@ -230,6 +237,10 @@ public abstract class Protocol {
 
     public boolean downThreadEnabled() {
         return down_thread;
+    }
+
+    public boolean statsEnabled() {
+        return stats;
     }
 
 
