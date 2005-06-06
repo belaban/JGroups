@@ -1,12 +1,10 @@
-$Id: todo.lst,v 1.21 2005/05/22 21:29:48 belaban Exp $
+$Id: todo.lst,v 1.22 2005/06/06 07:47:57 belaban Exp $
 
 
 
 
 			      Todo List
 			      ---------
-
-- 2.2.8: UDP/TCP doesn't work with 127.0.0.1 (works with 2.2.7)
 
 - Make TUNNEL/GossipRouter use Streamable, plus GossipRouter should use a ConnectionTable
 
@@ -54,20 +52,7 @@ $Id: todo.lst,v 1.21 2005/05/22 21:29:48 belaban Exp $
   to connect to remote member(s). Advantage is that we can include
   fragmentation. todo: add connect(Address) to Channel.
 
-- NAKACK: send xmits also to other members if no response from
-  original sender (e.g. because it crashed). All members therefore
-  have to respond to an xmit request by not only searching the
-  sent-table, but also the received-table. Requires that members store
-  *received* messages as well, not just *sent* messages.
-  - Send xmit request to
-    (a) sender (default)
-    (b) random member
-    (c) all members using multicast. Staggered replies, when 1 member sends response,
-        other members suppress reply
-
 - SMACK: introduce negative acks (currently positive acks). This should be configurable.
-
-- Add exception chaining (only available in JDK 1.4)
 
 - TOTAL protocol: when B mcasts a message M, it will be unicast to
   coord A first, who then mcasts it on behalf of B. However, when A
@@ -86,8 +71,6 @@ $Id: todo.lst,v 1.21 2005/05/22 21:29:48 belaban Exp $
 - Modify all building blocks to run on top of
   PullPushAdapter. Multiple building blocks should be able to run on
   the same PPA.
-
-- Check for ifconfig down/up, CTRL-Z/fg and pull-the-plug use cases
 
 - Correct implementation of merging protocol for
   org.javagroups.protocols.GMS: current merge protocol is simplistic
@@ -116,10 +99,10 @@ $Id: todo.lst,v 1.21 2005/05/22 21:29:48 belaban Exp $
     to the correct member.
 
 - Multiplexer building block. Allows multiple building blocks on top
-  of the same channel (could extend PullPushAdaptor)
+  of the same channel (could extend PullPushAdapter)
 
 - Make building blocks work over the same protocol stack
-  (Channel). E.g. register building blocks with PullPushAdaptor,
+  (Channel). E.g. register building blocks with PullPushAdapter,
   mux/demux messages.
 
 - Documentation (DocBook ?)
@@ -185,6 +168,23 @@ $Id: todo.lst,v 1.21 2005/05/22 21:29:48 belaban Exp $
 				 Done
 				 ----
 
+
+
+
+- Add exception chaining (only available in JDK 1.4)
+
+- NAKACK: send xmits also to other members if no response from
+  original sender (e.g. because it crashed). All members therefore
+  have to respond to an xmit request by not only searching the
+  sent-table, but also the received-table. Requires that members store
+  *received* messages as well, not just *sent* messages.
+  - Send xmit request to
+    (a) sender (default)
+    (b) random member
+    (c) all members using multicast. Staggered replies, when 1 member sends response,
+        other members suppress reply
+
+- 2.2.8: UDP/TCP doesn't work with 127.0.0.1 (works with 2.2.7)
 
 - April 2005 (bela)
   Retain only n messages (bounded storage) in NAKACK/NakReceiverWindow rather than unlimited. Discard
