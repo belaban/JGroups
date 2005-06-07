@@ -8,7 +8,7 @@ import java.util.Vector;
 
 /**
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.3 2005/06/07 10:17:27 belaban Exp $
+ * @version $Id: Protocol.java,v 1.4 2005/06/07 12:29:51 belaban Exp $
  */
 public class Protocol implements ProtocolMBean {
     org.jgroups.stack.Protocol prot;
@@ -55,6 +55,10 @@ public class Protocol implements ProtocolMBean {
 
     public void resetStats() {
         prot.resetStats();
+    }
+
+    public String printStats() {
+        return null;
     }
 
     public boolean getUpThread() {
