@@ -14,7 +14,7 @@ import java.io.Serializable;
 
 /**
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.2 2005/06/06 15:33:59 belaban Exp $
+ * @version $Id: JChannel.java,v 1.3 2005/06/07 10:17:27 belaban Exp $
  */
 public class JChannel implements JChannelMBean {
     /** Ref to the original JGroups channel */
@@ -196,6 +196,23 @@ public class JChannel implements JChannelMBean {
         if(channel != null)
             channel.setOpt(Channel.AUTO_GETSTATE, new Boolean(flag));
     }
+
+    public boolean getStatsEnabled() {
+        return channel.statsEnabled();
+    }
+
+    public void setStatsEnabled(boolean flag) {
+        channel.enableStats(flag);
+    }
+
+    public void resetStats() {
+        channel.resetStats();
+    }
+
+    public long getSentMessages() {return channel.getSentMessages();}
+    public long getSentBytes() {return channel.getSentBytes();}
+    public long getReceivedMessages() {return channel.getReceivedMessages();}
+    public long getReceivedBytes() {return channel.getReceivedBytes();}
 
 
     public void create() throws Exception {

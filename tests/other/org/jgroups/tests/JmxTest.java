@@ -1,21 +1,19 @@
 package org.jgroups.tests;
 
 import org.jgroups.JChannel;
-import org.jgroups.View;
 import org.jgroups.Message;
+import org.jgroups.View;
 import org.jgroups.jmx.JmxConfigurator;
-import org.jgroups.jmx.JChannelMBean;
 import org.jgroups.util.Util;
 
 import javax.management.MBeanServer;
 import javax.management.MBeanServerFactory;
 import javax.management.ObjectName;
-import javax.management.MalformedObjectNameException;
 import java.util.ArrayList;
 
 /**
  * @author Bela Ban
- * @version $Id: JmxTest.java,v 1.4 2005/06/06 15:34:13 belaban Exp $
+ * @version $Id: JmxTest.java,v 1.5 2005/06/07 10:17:29 belaban Exp $
  */
 public class JmxTest {
     MBeanServer server;

@@ -1,19 +1,23 @@
-// $Id: Draw.java,v 1.12 2005/05/30 16:14:40 belaban Exp $
+// $Id: Draw.java,v 1.13 2005/06/07 10:17:20 belaban Exp $
 
 
 package org.jgroups.demos;
 
 
 import org.jgroups.*;
+import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.debug.Debugger;
 import org.jgroups.util.Util;
 
 import javax.swing.*;
+import javax.management.MBeanServerFactory;
+import javax.management.MBeanServer;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 import java.util.Random;
+import java.util.ArrayList;
 
 
 
@@ -40,13 +44,12 @@ public class Draw implements ActionListener, ChannelListener {
     private final Color                  draw_color=selectColor();
     private final Color background_color=Color.white;
     boolean                        no_channel=false;
+    boolean                        jmx;
 
 
-
-
-
-    public Draw(String props, boolean debug, boolean cummulative, boolean no_channel) throws Exception {
+    public Draw(String props, boolean debug, boolean cummulative, boolean no_channel, boolean jmx) throws Exception {
         this.no_channel=no_channel;
+        this.jmx=jmx;
         if(no_channel)
             return;
 
@@ -70,6 +73,7 @@ public class Draw implements ActionListener, ChannelListener {
        boolean          debug=false;
        boolean          cummulative=false;
        boolean          no_channel=false;
+       boolean          jmx=false;
 
         for(int i=0; i < args.length; i++) {
             if("-help".equals(args[i])) {
@@ -92,6 +96,11 @@ public class Draw implements ActionListener, ChannelListener {
                 no_channel=true;
                 continue;
             }
+            if("-jmx".equals(args[i])) {
+                jmx=true;
+                continue;
+            }
+
             help();
             return;
         }
@@ -115,7 +124,7 @@ public class Draw implements ActionListener, ChannelListener {
 
 
         try {
-            draw=new Draw(props, debug, cummulative, no_channel);
+            draw=new Draw(props, debug, cummulative, no_channel, jmx);
             draw.go();
         }
         catch(Throwable e) {
@@ -147,6 +156,15 @@ public class Draw implements ActionListener, ChannelListener {
     public void go() throws Exception {
         if(!no_channel) {
             channel.connect(groupname);
+            if(jmx) {
+                ArrayList servers=MBeanServerFactory.findMBeanServer(null);
+                if(servers == null || servers.size() == 0) {
+                    throw new Exception("No MBeanServers found;" +
+                                        "\nJmxTest needs to be run with an MBeanServer present, or inside JDK 5");
+                }
+                MBeanServer server=(MBeanServer)servers.get(0);
+                JmxConfigurator.registerChannel(channel, server, "JGroups:channel=" + channel.getChannelName() , true);
+            }
         }
         mainFrame=new JFrame();
         mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

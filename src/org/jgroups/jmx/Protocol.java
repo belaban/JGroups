@@ -8,7 +8,7 @@ import java.util.Vector;
 
 /**
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.2 2005/06/06 15:33:59 belaban Exp $
+ * @version $Id: Protocol.java,v 1.3 2005/06/07 10:17:27 belaban Exp $
  */
 public class Protocol implements ProtocolMBean {
     org.jgroups.stack.Protocol prot;
@@ -65,13 +65,13 @@ public class Protocol implements ProtocolMBean {
         return prot.downThreadEnabled();
     }
 
-    public int getUpEvents() {
-        return prot.getUpQueue().size();
-    }
-
-    public int getDownEvents() {
-        return prot.getDownQueue().size();
-    }
+//    public int getUpEvents() {
+//        return prot.getUpQueue().size();
+//    }
+//
+//    public int getDownEvents() {
+//        return prot.getDownQueue().size();
+//    }
 
     public String dumpUpQueue() {
         return Util.dumpQueue(prot.getUpQueue());
