@@ -4,14 +4,14 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.Address;
+import org.jgroups.View;
 
-import java.util.Properties;
-import java.util.HashMap;
+import java.util.*;
 
 /**
  * Provides various stats
  * @author Bela Ban
- * @version $Id: STATS.java,v 1.1 2005/06/07 09:03:20 belaban Exp $
+ * @version $Id: STATS.java,v 1.2 2005/06/07 10:17:27 belaban Exp $
  */
 public class STATS extends Protocol {
     long sent_msgs, sent_bytes, sent_ucasts, sent_mcasts, received_ucasts, received_mcasts;
@@ -71,6 +71,9 @@ public class STATS extends Protocol {
             Message msg=(Message)evt.getArg();
             updateStats(msg, UP);
         }
+        else if(evt.getType() == Event.VIEW_CHANGE) {
+            handleViewChange((View)evt.getArg());
+        }
         passUp(evt);
     }
 
@@ -81,12 +84,42 @@ public class STATS extends Protocol {
             Message msg=(Message)evt.getArg();
             updateStats(msg, DOWN);
         }
+        else if(evt.getType() == Event.VIEW_CHANGE) {
+            handleViewChange((View)evt.getArg());
+        }
         passDown(evt);
     }
 
 
     public String printStats() {
-        return null;
+        Map.Entry entry;
+        Object key, val;
+        StringBuffer sb=new StringBuffer();
+        sb.append("sent:\n");
+        for(Iterator it=sent.entrySet().iterator(); it.hasNext();) {
+            entry=(Map.Entry)it.next();
+            key=entry.getKey();
+            if(key == null) key="<mcast dest>";
+            val=entry.getValue();
+            sb.append(key).append(": ").append(val).append("\n");
+        }
+        sb.append("\nreceived:\n");
+        for(Iterator it=received.entrySet().iterator(); it.hasNext();) {
+            entry=(Map.Entry)it.next();
+            key=entry.getKey();
+            val=entry.getValue();
+            sb.append(key).append(": ").append(val).append("\n");
+        }
+
+        return sb.toString();
+    }
+
+    private void handleViewChange(View view) {
+        Vector members=view.getMembers();
+        Set tmp=new LinkedHashSet(members);
+        tmp.add(null); // for null destination (= mcast)
+        sent.keySet().retainAll(tmp);
+        received.keySet().retainAll(tmp);
     }
 
     private void updateStats(Message msg, short direction) {
@@ -126,37 +159,22 @@ public class STATS extends Protocol {
             }
         }
 
-        Address key=direction == UP? dest : src;
+        Address key=direction == UP? src : dest;
         map=direction == UP? received : sent;
         Entry entry=(Entry)map.get(key);
         if(entry == null) {
             entry=new Entry();
             map.put(key, entry);
         }
-
-        if(direction == UP) { // received
-            entry.received_msgs++;
-            entry.received_bytes+=length;
-            if(mcast) {
-                entry.received_mcasts++;
-                entry.received_mcast_bytes+=length;
-            }
-            else {
-                entry.received_ucasts++;
-                entry.received_ucast_bytes+=length;
-            }
+        entry.msgs++;
+        entry.bytes+=length;
+        if(mcast) {
+            entry.mcasts++;
+            entry.mcast_bytes+=length;
         }
-        else {                // sent
-            entry.sent_msgs++;
-            entry.sent_bytes+=length;
-            if(mcast) {
-                entry.sent_mcasts++;
-                entry.sent_mcast_bytes+=length;
-            }
-            else {
-                entry.sent_ucasts++;
-                entry.sent_ucast_bytes+=length;
-            }
+        else {
+            entry.ucasts++;
+            entry.ucast_bytes+=length;
         }
     }
 
@@ -164,8 +182,15 @@ public class STATS extends Protocol {
 
 
     static class Entry {
-        long sent_msgs, sent_bytes, sent_ucasts, sent_mcasts, received_ucasts, received_mcasts;
-        long received_msgs, received_bytes, sent_ucast_bytes, sent_mcast_bytes, received_ucast_bytes, received_mcast_bytes;
+        long msgs, bytes, ucasts, mcasts, ucast_bytes, mcast_bytes;
+
+        public String toString() {
+            StringBuffer sb=new StringBuffer();
+            sb.append(msgs).append(" (").append(bytes).append(" bytes)");
+            sb.append(": ").append(ucasts).append(" ucasts (").append(ucast_bytes).append(" bytes), ");
+            sb.append(mcasts).append(" mcasts (").append(mcast_bytes).append(" bytes)");
+            return sb.toString();
+        }
     }
 
 

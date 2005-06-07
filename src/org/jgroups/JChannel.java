@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.34 2005/05/30 13:50:43 belaban Exp $
+// $Id: JChannel.java,v 1.35 2005/06/07 10:17:28 belaban Exp $
 
 package org.jgroups;
 
@@ -24,7 +24,7 @@ import java.util.Vector;
  * protocol stack
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.34 $
+ * @version $Revision: 1.35 $
  */
 public class JChannel extends Channel {
 
@@ -114,6 +114,13 @@ public class JChannel extends Channel {
     private byte[] additional_data=null;
 
     protected final Log log=LogFactory.getLog(getClass());
+
+    /** Collect statistics */
+    protected boolean stats=true;
+
+    protected long sent_msgs=0, received_msgs=0, sent_bytes=0, received_bytes=0;
+
+
 
     /**
      * Constructs a <code>JChannel</code> instance with the protocol stack
@@ -273,6 +280,23 @@ public class JChannel extends Channel {
     public String getProperties() {
         return props;
     }
+
+    public boolean statsEnabled() {
+        return stats;
+    }
+
+    public void enableStats(boolean stats) {
+        this.stats=stats;
+    }
+
+    public void resetStats() {
+        sent_msgs=received_msgs=sent_bytes=received_bytes=0;
+    }
+
+    public long getSentMessages() {return sent_msgs;}
+    public long getSentBytes() {return sent_bytes;}
+    public long getReceivedMessages() {return received_msgs;}
+    public long getReceivedBytes() {return received_bytes;}
 
 
     /**
@@ -476,6 +500,10 @@ public class JChannel extends Channel {
     public void send(Message msg) throws ChannelNotConnectedException, ChannelClosedException {
         checkClosed();
         checkNotConnected();
+        if(stats) {
+            sent_msgs++;
+            sent_bytes+=msg.getLength();
+        }
         down(new Event(Event.MSG, msg));
     }
 
@@ -520,6 +548,12 @@ public class JChannel extends Channel {
             evt=(timeout <= 0) ? (Event)mq.remove() : (Event)mq.remove(timeout);
             retval=getEvent(evt);
             evt=null;
+            if(stats) {
+                if(retval != null && retval instanceof Message) {
+                    received_msgs++;
+                    received_bytes+=((Message)retval).getLength();
+                }
+            }
             return retval;
         }
         catch(QueueClosedException queue_closed) {

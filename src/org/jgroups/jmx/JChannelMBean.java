@@ -7,7 +7,7 @@ import java.io.Serializable;
 
 /**
  * @author Bela Ban
- * @version $Id: JChannelMBean.java,v 1.2 2005/06/06 15:33:59 belaban Exp $
+ * @version $Id: JChannelMBean.java,v 1.3 2005/06/07 10:17:27 belaban Exp $
  */
 public interface JChannelMBean {
     void create() throws Exception;
@@ -62,6 +62,13 @@ public interface JChannelMBean {
     Address getLocalAddress();
     String getLocalAddressAsString();
     void setChannelListener(ChannelListener channel_listener);
+    boolean getStatsEnabled();
+    void setStatsEnabled(boolean flag);
+    void resetStats();
+    long getSentMessages();
+    long getSentBytes();
+    long getReceivedMessages();
+    long getReceivedBytes();
 
     boolean isOpen();
 
