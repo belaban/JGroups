@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.45 2005/05/30 14:31:06 belaban Exp $
+// $Id: NAKACK.java,v 1.46 2005/06/07 13:28:28 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -77,6 +77,10 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
     private boolean leaving=false;
     private TimeScheduler timer=null;
     static final String name="NAKACK";
+
+    long xmit_reqs_received, xmit_reqs_sent, xmit_rsps_received, xmit_rsps_sent, missing_msgs_received;
+
+
 
 
 //    public static final HashMap xmit_stats=new HashMap(); // sender - HashMap(seqno - XmitStat)
@@ -178,6 +182,19 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
 
     public String getName() {
         return name;
+    }
+
+    public long getXmitRequestsReceived() {return xmit_reqs_received;}
+    public long getXmitRequestsSent() {return xmit_reqs_sent;}
+    public long getXmitResponsesReceived() {return xmit_rsps_received;}
+    public long getXmitResponsesSent() {return xmit_rsps_sent;}
+
+    public void resetStats() {
+        xmit_reqs_received=xmit_reqs_sent=xmit_rsps_received=xmit_rsps_sent=missing_msgs_received=0;
+    }
+
+    public String printStats() {
+        return null; // todo
     }
 
 
@@ -569,6 +586,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
             return;
         }
 
+        if(stats)
+            xmit_reqs_received+=last_seqno - first_seqno +1;
+
         amISender=local_addr.equals(original_sender);
         if(!amISender)
             win=(NakReceiverWindow)received_msgs.get(original_sender);
@@ -644,6 +664,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
         if(use_mcast_xmit)
             dest=null;
 
+        if(stats)
+            xmit_rsps_sent+=xmit_list.size();
+
         try {
             buf=Util.msgListToByteBuffer(xmit_list);
             Message msg=new Message(dest, null, buf.getBuf(), buf.getOffset(), buf.getLength());
@@ -670,6 +693,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
         try {
             list=Util.byteBufferToMessageList(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
             if(list != null) {
+                if(stats)
+                    xmit_rsps_received+=list.size();
                 for(Iterator it=list.iterator(); it.hasNext();) {
                     m=(Message)it.next();
                     up(new Event(Event.MSG, m));
@@ -1038,6 +1063,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand 
             log.trace(local_addr + ": sending XMIT_REQ ([" + first_seqno + ", " + last_seqno + "]) to " + dest);
         retransmit_msg.putHeader(name, hdr);
         passDown(new Event(Event.MSG, retransmit_msg));
+        if(stats)
+            xmit_reqs_sent+=last_seqno - first_seqno +1;
     }
 
 
