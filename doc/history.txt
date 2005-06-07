@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.165 2005/05/30 14:30:59 belaban Exp $
+Revision: $Id: history.txt,v 1.166 2005/06/07 10:27:31 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -27,6 +27,13 @@ yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 
 Version 2.2.9
 -------------
+
+- Added STATS protocol, provides stats via JMX
+  (bela June 7 2005)
+
+- Added org.jgroups.jmx package, contains various adapters to expose channel and protocols
+  via JMX. Added jmxri.jar (can be removed once JDK 5 is baseline)
+  (bela June 1 2005)
 
 - Replaced System.err.println() with log.error() in setProperties() of all protocols
   (bela May 30 2005)
