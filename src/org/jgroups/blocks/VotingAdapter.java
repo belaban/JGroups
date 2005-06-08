@@ -28,8 +28,10 @@ import java.util.Set;
  * on the consensus type specified during voting.
  * 
  * @author Roman Rokytskyy (rrokytskyy@acm.org)
+ * @author Robert Schaffar-Taurok (robert@fusion.at)
+ * @version $Id: VotingAdapter.java,v 1.8 2005/06/08 15:56:54 publicnmi Exp $
  */
-public class VotingAdapter implements MessageListener, MembershipListener {
+public class VotingAdapter implements MessageListener, MembershipListener, VoteResponseProcessor {
     
     /**
      * This consensus type means that at least one positive vote is required
@@ -82,6 +84,15 @@ public class VotingAdapter implements MessageListener, MembershipListener {
      * facilities for communication.
      */
     public boolean vote(Object decree, int consensusType, long timeout)
+	throws ChannelException {
+        return vote(decree, consensusType, timeout, null);
+    }
+
+    /**
+     * Performs actual voting on the VoteChannel using the JGroups
+     * facilities for communication.
+     */
+    public boolean vote(Object decree, int consensusType, long timeout, VoteResponseProcessor voteResponseProcessor)
 	throws ChannelException
     {
         if (closed)
@@ -108,18 +119,20 @@ public class VotingAdapter implements MessageListener, MembershipListener {
             MethodCall methodCall = new MethodCall(method, new Object[] {decree});
 
 
-                if(log.isDebugEnabled()) log.debug("Calling remote methods...");
+            if(log.isDebugEnabled()) log.debug("Calling remote methods...");
     
             // vote
             RspList responses = rpcDispatcher.callRemoteMethods(
 									 null, methodCall, mode, timeout);
                 
 
-                if(log.isDebugEnabled()) log.debug("Checking responses.");
+            if(log.isDebugEnabled()) log.debug("Checking responses.");
 
+            if (voteResponseProcessor == null) {
+                voteResponseProcessor = this;
+            } 
 
-            return processResponses(responses, consensusType);
-            
+            return voteResponseProcessor.processResponses(responses, consensusType, decree);
         } catch(NoSuchMethodException nsmex) {
             
             // UPS!!! How can this happen?!
@@ -133,6 +146,7 @@ public class VotingAdapter implements MessageListener, MembershipListener {
         } 
     }
 
+    
     /**
      * Processes the response list and makes a decision according to the
      * type of the consensus for current voting.
@@ -140,7 +154,7 @@ public class VotingAdapter implements MessageListener, MembershipListener {
      * Note: we do not support voting in case of Byzantine failures, i.e.
      * when the node responds with the fault message.
      */
-    private boolean processResponses(RspList responses, int consensusType)
+    public boolean processResponses(RspList responses, int consensusType, Object decree)
 	throws ChannelException 
     {
         if (responses == null) {
@@ -317,7 +331,23 @@ public class VotingAdapter implements MessageListener, MembershipListener {
      * @throws ChannelException if something went wrong.
      */
     public boolean vote(Object decree, long timeout) throws ChannelException {
-        return vote(decree, VOTE_ALL, timeout);
+        return vote(decree, timeout, null);
+    }
+    
+    /**
+     * Vote on the specified decree requiring all nodes to vote.
+     * 
+     * @param decree decree on which nodes should vote.
+     * @param timeout time during which nodes can vote.
+     * @param voteResponseProcessor processor which will be called for every response that is received.
+     * 
+     * @return <code>true</code> if nodes agreed on a decree, otherwise 
+     * <code>false</code>
+     * 
+     * @throws ChannelException if something went wrong.
+     */
+    public boolean vote(Object decree, long timeout, VoteResponseProcessor voteResponseProcessor) throws ChannelException {
+        return vote(decree, VOTE_ALL, timeout, voteResponseProcessor);
     }
 
     /**
@@ -387,7 +417,6 @@ public class VotingAdapter implements MessageListener, MembershipListener {
 	default : return "UNKNOWN";
         }
     }
-
 
     /**
      * This class represents the result of local voting. It contains a 

@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.166 2005/06/07 10:27:31 belaban Exp $
+Revision: $Id: history.txt,v 1.167 2005/06/08 15:56:55 publicnmi Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -21,6 +21,7 @@ whizkid_bay = Mandar Shinde (whizkid_bay@users.sf.net)
 ovidiuf     = Ovidiu Feodorov (ovidiuf@users.sf.net)
 romuald     = Romuald du Song
 yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
+publicnmi	= Robert Schaffar-Taurok (robert@fusion.at)
 
 
 
@@ -52,7 +53,8 @@ Version 2.2.9
 - Fixed STATE_TRANSFER stuck in Channel.queue bug (http://jira.jboss.com/jira/browse/JGRP-80)
   (bela May 10 2005)
 
-
+- Added support for multiple locked locks to the DistributedLockManager.
+  (publicnmi Jun 08 2005)
 
 
 
