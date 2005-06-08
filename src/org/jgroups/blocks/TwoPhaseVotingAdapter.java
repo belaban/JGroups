@@ -10,6 +10,8 @@ import org.jgroups.ChannelException;
  * changes are canceled in "abort" phase. 
  * 
  * @author Roman Rokytskyy (rrokytskyy@acm.org)
+ * @author Robert Schaffar-Taurok (robert@fusion.at)
+ * @version $Id: TwoPhaseVotingAdapter.java,v 1.4 2005/06/08 15:56:54 publicnmi Exp $
  */
 public class TwoPhaseVotingAdapter {
 
@@ -43,19 +45,27 @@ public class TwoPhaseVotingAdapter {
      * group member remains in the same state as others.
      */
     public boolean vote(Object decree, long timeout) throws ChannelException {
+        return vote(decree, timeout, null);
+    }
+
+    /**
+     * Performs the two-phase voting on the decree. After the voting each
+     * group member remains in the same state as others.
+     */
+    public boolean vote(Object decree, long timeout, VoteResponseProcessor voteResponseProcessor) throws ChannelException {
         // wrap real decree
         TwoPhaseWrapper wrappedDecree = new TwoPhaseWrapper(decree);
 
         // check the decree acceptance
         try {
-            if (voteChannel.vote(wrappedDecree, timeout / 3)) {
+            if (voteChannel.vote(wrappedDecree, timeout / 3, voteResponseProcessor)) {
                 wrappedDecree.commit();
 
                 // try to commit decree
-                if (!voteChannel.vote(wrappedDecree, timeout / 3)) {
+                if (!voteChannel.vote(wrappedDecree, timeout / 3, voteResponseProcessor)) {
                     // strange, should fail during prepare... abort all
                     wrappedDecree.abort();
-                    voteChannel.vote(wrappedDecree, timeout / 3);
+                    voteChannel.vote(wrappedDecree, timeout / 3, voteResponseProcessor);
                     return false;
                 } else
                         return true;
@@ -63,16 +73,24 @@ public class TwoPhaseVotingAdapter {
             } else {
                 // somebody is not accepting the decree... abort
                 wrappedDecree.abort();
-                voteChannel.vote(wrappedDecree, timeout / 3);
+                voteChannel.vote(wrappedDecree, timeout / 3, voteResponseProcessor);
                 return false;
             }
         } catch(ChannelException chex) {
             wrappedDecree.abort();
-            voteChannel.vote(wrappedDecree, timeout / 3 );
+            voteChannel.vote(wrappedDecree, timeout / 3, voteResponseProcessor);
             throw chex;
         }
     }
  
+    
+    /**
+     * @return Returns the voteChannel.
+     */
+    public VotingAdapter getVoteChannel() {
+        return voteChannel;
+    }
+    
     public static class TwoPhaseVoteWrapper implements VotingListener {
     
         private final TwoPhaseVotingListener listener;

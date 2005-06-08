@@ -3,6 +3,10 @@ package org.jgroups.blocks;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.ChannelException;
+import org.jgroups.blocks.VotingAdapter.FailureVoteResult;
+import org.jgroups.blocks.VotingAdapter.VoteResult;
+import org.jgroups.util.Rsp;
+import org.jgroups.util.RspList;
 
 import java.io.Serializable;
 import java.util.HashMap;
@@ -12,8 +16,16 @@ import java.util.HashMap;
  * consistent on all participating nodes.
  * 
  * @author Roman Rokytskyy (rrokytskyy@acm.org)
+ * @author Robert Schaffar-Taurok (robert@fusion.at)
+ * @version $Id: DistributedLockManager.java,v 1.6 2005/06/08 15:56:54 publicnmi Exp $
  */
-public class DistributedLockManager implements TwoPhaseVotingListener, LockManager {
+public class DistributedLockManager implements TwoPhaseVotingListener, LockManager, VoteResponseProcessor {
+    /**
+     * Definitions for the implementation of the VoteResponseProcessor
+     */
+    private static final int PROCESS_CONTINUE = 0;
+    private static final int PROCESS_SKIP = 1;
+    private static final int PROCESS_BREAK = 2;
 
     /**
      * This parameter means that lock acquisition expires after 5 seconds.
@@ -217,23 +229,59 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
     /**
      * Unlocks an object with <code>lockId</code> on behalf of the specified
      * <code>owner</code>.
+     * 
+     * since 2.2.9 this method is only a wrapper for 
+     * unlock(Object lockId, Object owner, boolean releaseMultiLocked).
+     * Use that with releaseMultiLocked set to true if you want to be able to
+     * release multiple locked locks (for example after a merge)
+     * 
      * @param lockId <code>long</code> representing the object to be unlocked.
      * @param owner object that releases the lock.
      *
      * @throws LockNotReleasedException when the lock cannot be released.
      * @throws ClassCastException if lockId or owner are not serializable.
+     * 
      */
     public void unlock(Object lockId, Object owner)
         throws LockNotReleasedException, ChannelException
+    {
+        try {
+            unlock(lockId, owner, false);
+        } catch (LockMultiLockedException e) {
+            // This should never happen when releaseMultiLocked is false
+            log.error("Caught MultiLockedException but releaseMultiLocked is false", e);
+        }
+    }
+
+    /**
+     * Unlocks an object with <code>lockId</code> on behalf of the specified
+     * <code>owner</code>.
+     * @param lockId <code>long</code> representing the object to be unlocked.
+     * @param owner object that releases the lock.
+     * @param releaseMultiLocked releases also multiple locked locks. (eg. locks that are locked by another DLM after a merge)
+     *
+     * @throws LockNotReleasedException when the lock cannot be released.
+     * @throws ClassCastException if lockId or owner are not serializable.
+     * @throws LockMultiLockedException if releaseMultiLocked is true and a multiple locked lock has been released.
+     */
+    public void unlock(Object lockId, Object owner, boolean releaseMultiLocked)
+        throws LockNotReleasedException, ChannelException, LockMultiLockedException
     {
 
         if (!(lockId instanceof Serializable) || !(owner instanceof Serializable))
             throw new ClassCastException("DistributedLockManager " +
                 "works only with serializable objects.");
 
-            
-        boolean released = votingAdapter.vote(
-            new ReleaseLockDecree(lockId, owner, id), VOTE_TIMEOUT);
+        ReleaseLockDecree releaseLockDecree = new ReleaseLockDecree(lockId, owner, id);
+        boolean released = false;
+        if (releaseMultiLocked) {
+            released = votingAdapter.vote(releaseLockDecree, VOTE_TIMEOUT, this);
+            if (releaseLockDecree.isMultipleLocked()) {
+                throw new LockMultiLockedException("Lock was also locked by other DistributedLockManager(s)");
+            }
+        } else {
+            released = votingAdapter.vote(releaseLockDecree, VOTE_TIMEOUT);
+        }
         
         if (!released)
             throw new LockNotReleasedException("Lock cannot be unlocked.");
@@ -321,6 +369,20 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
             } else
                 // we were unable to aquire local lock
                 return false;
+        } else
+        if (decree instanceof MultiLockDecree) {
+            // Here we abuse the voting mechanism for notifying the other lockManagers of multiple locked objects.
+            MultiLockDecree multiLockDecree = (MultiLockDecree)decree;
+            
+            if(log.isDebugEnabled()) {
+                log.debug("Marking " + multiLockDecree.getKey() + " as multilocked");
+            }
+
+            LockDecree lockDecree = (LockDecree)heldLocks.get(multiLockDecree.getKey());
+            if (lockDecree != null) {
+                lockDecree.setMultipleLocked(true);
+            }
+            return true;
         }
 
         // we should not be here
@@ -371,6 +433,9 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
                 return true;
             } else
                 return false;
+        } else
+        if (decree instanceof MultiLockDecree) {
+            return true;
         }
 
         // we should not be here
@@ -415,6 +480,138 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
 
     }
 
+    
+    /**
+     * Processes the response list and votes like the default processResponses method with the consensusType VOTE_ALL
+     * If the result of the voting is false, but this DistributedLockManager owns the lock, the result is changed to
+     * true and the lock is released, but marked as multiple locked. (only in the prepare state to reduce traffic)
+     * <p>
+     * Note: we do not support voting in case of Byzantine failures, i.e.
+     * when the node responds with the fault message.
+     */
+    public boolean processResponses(RspList responses, int consensusType, Object decree) throws ChannelException {
+        if (responses == null) {
+            return false;
+        }
+
+        int totalPositiveVotes = 0;
+        int totalNegativeVotes = 0;
+
+        for (int i = 0; i < responses.size(); i++) {
+            Rsp response = (Rsp) responses.elementAt(i);
+
+            switch (checkResponse(response)) {
+                case PROCESS_SKIP:
+                    continue;
+                case PROCESS_BREAK:
+                    return false;
+            }
+
+            VoteResult result = (VoteResult) response.getValue();
+
+            totalPositiveVotes += result.getPositiveVotes();
+            totalNegativeVotes += result.getNegativeVotes();
+        }
+
+        boolean voteResult = (totalNegativeVotes == 0 && totalPositiveVotes > 0);
+
+        if (decree instanceof TwoPhaseVotingAdapter.TwoPhaseWrapper) {
+            TwoPhaseVotingAdapter.TwoPhaseWrapper wrappedDecree = (TwoPhaseVotingAdapter.TwoPhaseWrapper)decree;
+            if (wrappedDecree.isPrepare()) {
+	            Object unwrappedDecree = wrappedDecree.getDecree();
+	            if (unwrappedDecree instanceof ReleaseLockDecree) {
+	                ReleaseLockDecree releaseLockDecree = (ReleaseLockDecree)unwrappedDecree;
+	                LockDecree lock = null;
+	                if ((lock = (LockDecree)heldLocks.get(releaseLockDecree.getKey())) != null) {
+	                    // If there is a local lock...
+	                    if (!voteResult) {
+	                        // ... and another DLM voted negatively, but this DLM owns the lock
+	                        // we inform the other node, that it's lock is multiple locked
+	                        if (informLockingNodes(releaseLockDecree)) {
+	                        
+		                        // we set the local lock to multiple locked
+		                        lock.setMultipleLocked(true);
+		                        
+		                        voteResult = true;
+	                        }
+	                    }
+	                    if (lock.isMultipleLocked()) {
+	                        //... and the local lock is marked as multilocked
+	                        // we mark the releaseLockDecree als multiple locked for evaluation when unlock returns
+	                        releaseLockDecree.setMultipleLocked(true);
+	                    }
+	                }
+	            }
+            }
+        }
+
+        return voteResult;
+    }
+
+    /**
+     * This method checks the response and says the processResponses() method
+     * what to do.
+     * @return PROCESS_CONTINUE to continue calculating votes,
+     * PROCESS_BREAK to stop calculating votes from the nodes,
+     * PROCESS_SKIP to skip current response.
+     * @throws ChannelException when the response is fatal to the
+     * current voting process.
+     */
+    private int checkResponse(Rsp response) throws ChannelException {
+
+        if (!response.wasReceived()) {
+
+            if (log.isDebugEnabled())
+                log.debug("Response from node " + response.getSender() + " was not received.");
+
+            throw new ChannelException("Node " + response.getSender() + " failed to respond.");
+        }
+
+        if (response.wasSuspected()) {
+
+            if (log.isDebugEnabled())
+                log.debug("Node " + response.getSender() + " was suspected.");
+
+            return PROCESS_SKIP;
+        }
+
+        Object object = response.getValue();
+
+        // we received exception/error, something went wrong
+        // on one of the nodes... and we do not handle such faults
+        if (object instanceof Throwable) {
+            throw new ChannelException("Node " + response.getSender() + " is faulty.");
+        }
+
+        if (object == null) {
+            return PROCESS_SKIP;
+        }
+
+        // it is always interesting to know the class that caused failure...
+        if (!(object instanceof VoteResult)) {
+            String faultClass = object.getClass().getName();
+
+            // ...but we do not handle byzantine faults
+            throw new ChannelException("Node " + response.getSender() + " generated fault (class " + faultClass + ')');
+        }
+
+        // what if we received the response from faulty node?
+        if (object instanceof FailureVoteResult) {
+
+            if (log.isErrorEnabled())
+                log.error(((FailureVoteResult) object).getReason());
+
+            return PROCESS_BREAK;
+        }
+
+        // everything is fine :)
+        return PROCESS_CONTINUE;
+    }
+    
+    private boolean informLockingNodes(ReleaseLockDecree releaseLockDecree) throws ChannelException {
+        return votingAdapter.vote(new MultiLockDecree(releaseLockDecree), VOTE_TIMEOUT);
+    }
+    
     /**
      * This class represents the lock
      */
@@ -425,6 +622,8 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
         protected final Object managerId;
 
         protected boolean commited;
+        
+        private boolean multipleLocked = false;
 
         private LockDecree(Object lockId, Object requester, Object managerId) {
             this.lockId = lockId;
@@ -444,7 +643,18 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
 
         public void commit() { this.commited = true; }
 
-
+        /**
+         * @return Returns the multipleLocked.
+         */
+        public boolean isMultipleLocked() {
+            return multipleLocked;
+        }
+        /**
+         * @param multipleLocked The multipleLocked to set.
+         */
+        public void setMultipleLocked(boolean multipleLocked) {
+            this.multipleLocked = multipleLocked;
+        }
         /**
          * This is hashcode from the java.lang.Long class.
          */
@@ -468,10 +678,6 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
      */
     public static class AcquireLockDecree extends LockDecree {
         private final long creationTime;
-
-        private AcquireLockDecree(LockDecree lockDecree) {
-            this(lockDecree.lockId, lockDecree.requester, lockDecree.managerId);
-        }
 
         private AcquireLockDecree(Object lockId, Object requester, Object managerId) {
             super(lockId, requester, managerId);
@@ -500,6 +706,19 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
     public static class ReleaseLockDecree extends LockDecree {
         ReleaseLockDecree(Object lockId, Object requester, Object managerId) {
             super(lockId, requester, managerId);
+        }
+    }
+    
+    /**
+     * This class represents the lock that has to be marked as multilocked 
+     */
+    public static class MultiLockDecree extends LockDecree {
+        MultiLockDecree(Object lockId, Object requester, Object managerId) {
+            super(lockId, requester, managerId);
+        }
+
+        MultiLockDecree(ReleaseLockDecree releaseLockDecree) {
+            super(releaseLockDecree.lockId, releaseLockDecree.requester, releaseLockDecree.managerId);
         }
     }
 }

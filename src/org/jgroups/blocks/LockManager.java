@@ -7,6 +7,8 @@ import org.jgroups.ChannelException;
  * obtaining and releasing locks on objects.
  * 
  * @author Roman Rokytskyy (rrokytskyy@acm.org)
+ * @author Robert Schaffar-Taurok (robert@fusion.at)
+ * @version $Id: LockManager.java,v 1.2 2005/06/08 15:56:54 publicnmi Exp $
  */
 public interface LockManager {
     
@@ -36,6 +38,11 @@ public interface LockManager {
     /**
      * Release lock on <code>obj</code> owned by specified <code>owner</code>.
      *
+     * since 2.2.9 this method is only a wrapper for 
+     * unlock(Object lockId, Object owner, boolean releaseMultiLocked).
+     * Use that with releaseMultiLocked set to true if you want to be able to
+     * release multiple locked locks (for example after a merge)
+     * 
      * @param obj obj to lock, usually not full object but object's ID.
      * @param owner object identifying entity that will own the lock.
      *
@@ -51,6 +58,30 @@ public interface LockManager {
      */
     void unlock(Object obj, Object owner)
     throws LockNotReleasedException, ClassCastException, ChannelException;
+
+    /**
+     * Release lock on <code>obj</code> owned by specified <code>owner</code>.
+     *
+     * @param obj obj to lock, usually not full object but object's ID.
+     * @param owner object identifying entity that will own the lock.
+     * @param releaseMultiLocked force unlocking of the lock if the local
+     * lockManager owns the lock even if another lockManager owns the same lock
+     *
+     * @throws LockOwnerMismatchException if lock is owned by another object.
+     *
+     * @throws ClassCastException if <code>obj</code> and/or
+     * <code>owner</code> is not of type that implementation expects to get
+     * (for example, when distributed lock manager obtains non-serializable
+     * <code>obj</code> or <code>owner</code>).
+     * 
+     * @throws ChannelException if something bad happened to communication
+     * channel.
+     * 
+     * @throws LockMultiLockedException if the lock was unlocked, but another
+     * node already held the lock
+     */
+    void unlock(Object obj, Object owner, boolean releaseMultiLocked)
+    throws LockNotReleasedException, ClassCastException, ChannelException, LockMultiLockedException;
 
     
 }

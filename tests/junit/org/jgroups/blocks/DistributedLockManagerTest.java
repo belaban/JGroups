@@ -1,10 +1,20 @@
 package org.jgroups.blocks;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.util.HashMap;
+
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.jgroups.JChannel;
 
+/**
+ * Testcase for the DistributedLockManager
+ * 
+ * @author Robert Schaffar-Taurok (robert@fusion.at)
+ * @version $Id: DistributedLockManagerTest.java,v 1.3 2005/06/08 15:56:53 publicnmi Exp $
+ */
 public class DistributedLockManagerTest extends TestCase {
 
     public static final String SERVER_PROTOCOL_STACK = ""
@@ -115,6 +125,54 @@ public class DistributedLockManagerTest extends TestCase {
         
         lockManager1.unlock("obj2", "owner2");
         
+    }
+
+    public void testMultiLock() throws Exception {
+        lockManager1.lock("obj1", "owner1", 10000);
+        
+        // Override private members and simulate the errorcase which is, when two lockManagers have locked the same object
+        // This can happen after a merge
+        Class acquireLockDecreeClass = Class.forName("org.jgroups.blocks.DistributedLockManager$AcquireLockDecree");
+        Constructor acquireLockDecreeConstructor = acquireLockDecreeClass.getDeclaredConstructor(new Class[] {Object.class, Object.class, Object.class});
+        acquireLockDecreeConstructor.setAccessible(true);
+        Object acquireLockDecree = acquireLockDecreeConstructor.newInstance(new Object[] {"obj1", "owner2", "2"});
+        
+        Field heldLocksField = lockManager2.getClass().getDeclaredField("heldLocks");
+        heldLocksField.setAccessible(true);
+        HashMap heldLocks = (HashMap)heldLocksField.get(lockManager2);
+        heldLocks.put("obj1", acquireLockDecree);
+        
+        // Both lockManagers hold a lock on obj1 now
+
+        try {
+            lockManager1.unlock("obj1", "owner1", true);
+            assertTrue("obj1 should throw a lockMultiLockedException upon release.", false);
+        } catch (LockMultiLockedException e) {
+            // everything is ok
+        }
+        
+        try {
+            lockManager1.lock("obj1", "owner1", 10000);
+            assertTrue("obj1 should throw a LockNotGrantedException because it is still locked by lockManager2.", false);
+        } catch (LockNotGrantedException e) {
+            // everything is ok
+        }
+        
+        try {
+            lockManager2.unlock("obj1", "owner2", true);
+            assertTrue("obj1 should throw a lockMultiLockedException upon release.", false);
+        } catch (LockMultiLockedException e) {
+            // everything is ok
+        }
+        
+        // Everything should be unlocked now
+        try {
+            lockManager1.lock("obj1", "owner1", 10000);
+        } catch (LockNotGrantedException e) {
+            assertTrue("obj1 should be unlocked", false);
+        }
+
+        lockManager1.unlock("obj1", "owner1", true);
     }
 
     public static void main(String[] args) {
