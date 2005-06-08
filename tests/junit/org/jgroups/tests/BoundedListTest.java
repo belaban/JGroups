@@ -1,4 +1,4 @@
-// $Id: BoundedListTest.java,v 1.1 2003/11/21 06:53:05 belaban Exp $
+// $Id: BoundedListTest.java,v 1.2 2005/06/08 11:24:17 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -14,12 +14,14 @@ public class BoundedListTest extends TestCase {
         super(name);
     }
 
-    public void setUp() {
+    public void setUp() throws Exception {
+        super.setUp();
         l=new BoundedList(3);
     }
 
 
-    public void tearDown() {
+    public void tearDown() throws Exception {
+        super.tearDown();
         l.removeAll();
         l=null;
     }
