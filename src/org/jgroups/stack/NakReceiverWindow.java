@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindow.java,v 1.22 2005/05/27 22:01:43 belaban Exp $
+// $Id: NakReceiverWindow.java,v 1.23 2005/06/08 12:36:42 belaban Exp $
 
 
 package org.jgroups.stack;
@@ -49,15 +49,9 @@ import java.util.*;
  */
 public class NakReceiverWindow {
 
-
-
-
-//    HashMap xmits=new HashMap(); // Long (seqno)/ XmitEntry
-//
-//    class XmitEntry {
-//        long created=System.currentTimeMillis();
-//        long received;
-//    }
+    public interface Listener {
+        void missingMessageReceived(long seqno, Message msg);
+    }
 
 
     /** The big read/write lock */
@@ -99,6 +93,8 @@ public class NakReceiverWindow {
     /** if not set, no retransmitter thread will be started. Useful if
      * protocols do their own retransmission (e.g PBCAST) */
     private Retransmitter retransmitter=null;
+
+    private Listener listener=null;
 
     protected static final Log log=LogFactory.getLog(NakReceiverWindow.class);
 
@@ -168,6 +164,10 @@ public class NakReceiverWindow {
         this.max_xmit_buf_size=max_xmit_buf_size;
     }
 
+    public void setListener(Listener l) {
+        this.listener=l;
+    }
+
 
     /**
      * Adds a message according to its sequence number (ordered).
@@ -184,9 +184,6 @@ public class NakReceiverWindow {
      */
     public void add(long seqno, Message msg) {
         long old_tail;
-
-        // if(log.isTraceEnabled())
-           // log.trace("win: " + toString());
 
         try {
             lock.writeLock().acquire();
@@ -223,13 +220,15 @@ public class NakReceiverWindow {
                     if(retransmitter != null) {
                         retransmitter.add(old_tail, seqno - 1);
                     }
-                    // finally received missing message
                 }
-                else if(seqno < tail) {
+                else if(seqno < tail) { // finally received missing message
                     if(log.isTraceEnabled()) {
                         StringBuffer sb=new StringBuffer("added missing msg ");
                         sb.append(msg.getSrc()).append('#').append(seqno);
                         log.trace(sb.toString());
+                    }
+                    if(listener != null) {
+                        try {listener.missingMessageReceived(seqno, msg);} catch(Throwable t) {}
                     }
 
                     Object val=received_msgs.get(new Long(seqno));
