@@ -1,4 +1,4 @@
-// $Id: GossipServer.java,v 1.9 2005/05/30 16:14:44 belaban Exp $
+// $Id: GossipServer.java,v 1.10 2005/06/09 18:31:02 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -28,6 +28,7 @@ import java.util.*;
  * if a telnet connected to it.<p>
  * Requires JDK >= 1.3 due to the use of Timer
  * @author Bela Ban Oct 4 2001
+ * @deprecated Use GossipRouter instead
  */
 public class GossipServer {
     final Hashtable groups=new Hashtable();  // groupname - vector of Entry's
@@ -84,7 +85,7 @@ public class GossipServer {
                 }
                 input.close();
                 sock.close();
-                looping=false;
+                // looping=false;
             }
             catch(Exception ex) {
                 if(log.isErrorEnabled()) log.error("exception=" + ex);
