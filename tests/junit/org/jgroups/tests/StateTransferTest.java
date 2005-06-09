@@ -16,7 +16,7 @@ import org.jgroups.util.Util;
 /**
  * Tests correct state transfer while other members continue sending messages to the group
  * @author Bela Ban
- * @version $Id: StateTransferTest.java,v 1.2 2005/05/02 10:48:21 belaban Exp $
+ * @version $Id: StateTransferTest.java,v 1.3 2005/06/09 09:05:15 belaban Exp $
  */
 public class StateTransferTest extends TestCase {
     final int NUM=10000;
@@ -68,7 +68,7 @@ public class StateTransferTest extends TestCase {
         int size=maps[0].size();
         for(int i=0; i < maps.length; i++) {
             HashMap map=maps[i];
-            assertEquals(map.size(), size);
+            assertEquals(size, map.size());
         }
 
         Set keys=maps[0].keySet();
