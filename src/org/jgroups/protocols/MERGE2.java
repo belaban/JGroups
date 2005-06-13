@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.18 2005/05/30 14:31:07 belaban Exp $
+// $Id: MERGE2.java,v 1.19 2005/06/13 11:55:31 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -56,6 +56,22 @@ public class MERGE2 extends Protocol {
 
     public String getName() {
         return "MERGE2";
+    }
+
+    public long getMinInterval() {
+        return min_interval;
+    }
+
+    public void setMinInterval(long i) {
+        min_interval=i;
+    }
+
+    public long getMaxInterval() {
+        return max_interval;
+    }
+
+    public void setMaxInterval(long l) {
+        max_interval=l;
     }
 
 
