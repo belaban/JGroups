@@ -58,6 +58,6 @@ Best result with perf.Test (2 members, 1 sender, laptop, 20000 1K msgs
                 join_retry_timeout="2000" shun="true"/>
     <FC max_credits="2000000" down_thread="false" up_thread="false"
         min_threshold="0.20"/>
-    <FRAG frag_size="60000" down_thread="false" up_thread="true"/>
+    <FRAG2 frag_size="60000" down_thread="false" up_thread="true"/>
     <pbcast.STATE_TRANSFER down_thread="false" up_thread="false"/>
 </config>
