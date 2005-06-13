@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.31 2005/06/08 21:34:58 belaban Exp $
+// $Id: GMS.java,v 1.32 2005/06/13 15:50:38 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -11,10 +11,7 @@ import org.jgroups.util.Util;
 import org.jgroups.util.Streamable;
 
 import java.io.*;
-import java.util.Hashtable;
-import java.util.Iterator;
-import java.util.Properties;
-import java.util.Vector;
+import java.util.*;
 
 
 
@@ -62,6 +59,11 @@ public class GMS extends Protocol {
     /** Keeps track of old members (up to num_prev_mbrs) */
     BoundedList               prev_members=null;
 
+    int num_views=0;
+
+    /** Stores the last 20 views */
+    BoundedList               prev_views=new BoundedList(20);
+
     static final String       name="GMS";
 
 
@@ -73,6 +75,48 @@ public class GMS extends Protocol {
 
     public String getName() {
         return name;
+    }
+
+    public String getView() {return view_id != null? view_id.toString() : "null";}
+    public int getNumberOfViews() {return num_views;}
+    public String getLocalAddress() {return local_addr != null? local_addr.toString() : "null";}
+    public String getMembers() {return members != null? members.toString() : "[]";}
+    public int getNumMembers() {return members != null? members.size() : 0;}
+    public long getJoinTimeout() {return join_timeout;}
+    public void setJoinTimeout(long t) {join_timeout=t;}
+    public long getJoinRetryTimeout() {return join_retry_timeout;}
+    public void setJoinRetryTimeout(long t) {join_retry_timeout=t;}
+    public boolean isShun() {return shun;}
+    public void setShun(boolean s) {shun=s;}
+    public String printPreviousMembers() {
+        StringBuffer sb=new StringBuffer();
+        if(prev_members != null) {
+            for(Enumeration en=prev_members.elements(); en.hasMoreElements();) {
+                sb.append(en.nextElement()).append("\n");
+            }
+        }
+        return sb.toString();
+    }
+    public String printPreviousViews() {
+        StringBuffer sb=new StringBuffer();
+        for(Enumeration en=prev_views.elements(); en.hasMoreElements();) {
+            sb.append(en.nextElement()).append("\n");
+        }
+        return sb.toString();
+    }
+
+    public boolean isCoordinator() {
+        Address coord=determineCoordinator();
+        if(coord != null && local_addr != null && local_addr.equals(coord))
+            return true;
+        return false;
+    }
+
+
+    public void resetStats() {
+        super.resetStats();
+        num_views=0;
+        prev_views.removeAll();
     }
 
 
@@ -318,6 +362,10 @@ public class GMS extends Protocol {
         Vector mbrs=new_view.getMembers();
 
         if(log.isDebugEnabled()) log.debug("[local_addr=" + local_addr + "] view is " + new_view);
+        if(stats) {
+            num_views++;
+            prev_views.add(new_view);
+        }
 
         // Discards view with id lower than our own. Will be installed without check if first view
         if(view_id != null) {
