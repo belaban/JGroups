@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.81 2005/06/06 15:34:08 belaban Exp $
+// $Id: UDP.java,v 1.82 2005/06/13 11:47:05 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -226,6 +226,20 @@ public class UDP extends Protocol implements Runnable {
     public long getNumMessagesReceived() {return num_msgs_received;}
     public long getNumBytesSent()        {return num_bytes_sent;}
     public long getNumBytesReceived()    {return num_bytes_received;}
+    public String getBindAddress() {return bind_addr != null? bind_addr.toString() : "null";}
+    public void setBindAddress(String bind_addr) throws UnknownHostException {
+        this.bind_addr=InetAddress.getByName(bind_addr);
+    }
+    public boolean getBindToAllInterfaces() {return bind_to_all_interfaces;}
+    public void setBindToAllInterfaces(boolean flag) {this.bind_to_all_interfaces=flag;}
+    public boolean isDiscardIncompatiblePackets() {return discard_incompatible_packets;}
+    public void setDiscardIncompatiblePackets(boolean flag) {discard_incompatible_packets=flag;}
+    public boolean isEnableBundling() {return enable_bundling;}
+    public void setEnableBundling(boolean flag) {enable_bundling=flag;}
+    public int getMaxBundleSize() {return max_bundle_size;}
+    public void setMaxBundleSize(int size) {max_bundle_size=size;}
+    public long getMaxBundleTimeout() {return max_bundle_timeout;}
+    public void setMaxBundleTimeout(long timeout) {max_bundle_timeout=timeout;}
 
     /* ----------------------- Receiving of MCAST UDP packets ------------------------ */
 
