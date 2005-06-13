@@ -1,20 +1,14 @@
-// $Id: FD.java,v 1.22 2005/05/30 14:31:07 belaban Exp $
+// $Id: FD.java,v 1.23 2005/06/13 12:44:07 belaban Exp $
 
 package org.jgroups.protocols;
 
 
 import org.jgroups.*;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.Marshaller;
-import org.jgroups.util.TimeScheduler;
-import org.jgroups.util.Streamable;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import java.io.*;
-import java.util.Hashtable;
-import java.util.Iterator;
-import java.util.Properties;
-import java.util.Vector;
+import java.util.*;
 
 
 
@@ -35,7 +29,7 @@ import java.util.Vector;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Revision: 1.22 $
+ * @version $Revision: 1.23 $
  */
 public class FD extends Protocol {
     Address               ping_dest=null;
@@ -54,18 +48,39 @@ public class FD extends Protocol {
     TimeScheduler         timer=null;
     Monitor               monitor=null;  // task that performs the actual monitoring for failure detection
     private final Object  monitor_mutex=new Object();
+    private int           num_heartbeats=0;
+    private int           num_suspect_events=0;
 
     /** Transmits SUSPECT message until view change or UNSUSPECT is received */
     final Broadcaster     bcast_task=new Broadcaster();
     final static String   name="FD";
 
+    BoundedList           suspect_history=new BoundedList(20);
 
 
 
 
 
-    public String getName() {
-        return name;
+    public String getName() {return name;}
+    public String getLocalAddress() {return local_addr != null? local_addr.toString() : "null";}
+    public String getMembers() {return members != null? members.toString() : "null";}
+    public String getPingableMembers() {return pingable_mbrs != null? pingable_mbrs.toString() : "null";}
+    public String getPingDest() {return ping_dest != null? ping_dest.toString() : "null";}
+    public int getNumberOfHeartbeatsSent() {return num_heartbeats;}
+    public int getNumSuspectEventsGenerated() {return num_suspect_events;}
+    public long getTimeout() {return timeout;}
+    public void setTimeout(long timeout) {this.timeout=timeout;}
+    public int getMaxTries() {return max_tries;}
+    public void setMaxTries(int max_tries) {this.max_tries=max_tries;}
+    public int getCurrentNumTries() {return num_tries;}
+    public boolean isShun() {return shun;}
+    public void setShun(boolean flag) {this.shun=flag;}
+    public String printSuspectHistory() {
+        StringBuffer sb=new StringBuffer();
+        for(Enumeration en=suspect_history.elements(); en.hasMoreElements();) {
+            sb.append(new Date()).append(": ").append(en.nextElement()).append("\n");
+        }
+        return sb.toString();
     }
 
 
@@ -97,6 +112,11 @@ public class FD extends Protocol {
             return false;
         }
         return true;
+    }
+
+    public void resetStats() {
+        num_heartbeats=num_suspect_events=0;
+        suspect_history.removeAll();
     }
 
 
@@ -481,6 +501,7 @@ public class FD extends Protocol {
             if(log.isDebugEnabled())
                 log.debug("sending are-you-alive msg to " + ping_dest + " (own address=" + local_addr + ')');
             passDown(new Event(Event.MSG, hb_req));
+            num_heartbeats++;
 
             // 2. If the time of the last heartbeat is > timeout and max_tries heartbeat messages have not been
             //    received, then broadcast a SUSPECT message. Will be handled by coordinator, which may install
@@ -496,7 +517,9 @@ public class FD extends Protocol {
                     // broadcast a SUSPECT message to all members - loop until
                     // unsuspect or view change is received
                     bcast_task.addSuspectedMember(ping_dest);
+                    num_suspect_events++;
                     num_tries=0;
+                    suspect_history.add(ping_dest);
                 }
                 else {
                     if(log.isDebugEnabled())
