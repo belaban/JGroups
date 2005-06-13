@@ -1,4 +1,4 @@
-// $Id: GossipRouter.java,v 1.13 2005/05/30 16:14:44 belaban Exp $
+// $Id: GossipRouter.java,v 1.14 2005/06/13 06:38:53 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -1089,32 +1089,28 @@ public class GossipRouter {
 
         for(int i=0; i < args.length; i++) {
             arg=args[i];
-            if("-help".equals(arg)) {
-                System.out.println();
-                System.out.println("GossipRouter [-port <port>] [-bindaddress <address>] [options]");
-                System.out.println("Options: ");
-                System.out.println("        -expiry <msecs>   - Time until a gossip cache entry expires.");
-                System.out.println("        -timeout <msecs>  - Number of millisecs the router waits to receive");
-                System.out.println("                            a gossip request after connection was established;");
-                System.out.println("                            upon expiration, the router initiates the routing");
-                System.out.println("                            protocol on the connection.");
-                return;
+            if("-port".equals(arg)) {
+                port=Integer.parseInt(args[++i]);
+                continue;
             }
-            else if("-port".equals(arg)) {
-                    port=Integer.parseInt(args[++i]);
-            }
-            else if("-bindaddress".equals(arg)) {
+            if("-bindaddress".equals(arg)) {
                 address=args[++i];
+                continue;
             }
-            else if("-expiry".equals(arg)) {
+            if("-expiry".equals(arg)) {
                 expiry=Long.parseLong(args[++i]);
+                continue;
             }
-            else if("-timeout".equals(arg)) {
+            if("-timeout".equals(arg)) {
                 timeout=Long.parseLong(args[++i]);
+                continue;
             }
-            else if("-rtimeout".equals(arg)) {
+            if("-rtimeout".equals(arg)) {
                 routingTimeout=Long.parseLong(args[++i]);
+                continue;
             }
+            help();
+            return;
         }
         System.out.println("GossipRouter is starting...");
 
@@ -1125,6 +1121,17 @@ public class GossipRouter {
         catch(Exception e) {
             System.err.println(e);
         }
+    }
+
+    static void help() {
+        System.out.println();
+        System.out.println("GossipRouter [-port <port>] [-bindaddress <address>] [options]");
+        System.out.println("Options: ");
+        System.out.println("        -expiry <msecs>   - Time until a gossip cache entry expires.");
+        System.out.println("        -timeout <msecs>  - Number of millisecs the router waits to receive");
+        System.out.println("                            a gossip request after connection was established;");
+        System.out.println("                            upon expiration, the router initiates the routing");
+        System.out.println("                            protocol on the connection.");
     }
 
 
