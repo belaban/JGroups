@@ -7,7 +7,7 @@ import java.util.Vector;
 
 /**
  * @author Bela Ban
- * @version $Id: ProtocolMBean.java,v 1.4 2005/06/07 12:29:51 belaban Exp $
+ * @version $Id: ProtocolMBean.java,v 1.5 2005/06/13 15:50:38 belaban Exp $
  */
 public interface ProtocolMBean {
     String getName();
@@ -19,16 +19,7 @@ public interface ProtocolMBean {
     String printStats();
     boolean getUpThread();
     boolean getDownThread();
-    String dumpUpQueue();
-    String dumpDownQueue();
     void setObserver(ProtocolObserver observer);
-
-    String requiredUpServices();
-    String requiredDownServices();
-    String providedUpServices();
-    String providedDownServices();
-
-
     void create() throws Exception;
     void start() throws Exception;
     void stop();
