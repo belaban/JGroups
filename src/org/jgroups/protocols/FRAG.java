@@ -1,4 +1,4 @@
-// $Id: FRAG.java,v 1.23 2005/06/13 14:29:29 belaban Exp $
+// $Id: FRAG.java,v 1.24 2005/06/13 14:53:48 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -28,7 +28,7 @@ import java.util.*;
  * multicast messages.
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.23 2005/06/13 14:29:29 belaban Exp $
+ * @version $Id: FRAG.java,v 1.24 2005/06/13 14:53:48 belaban Exp $
  */
 public class FRAG extends Protocol {
     private int frag_size=8192;  // conservative value
@@ -149,8 +149,6 @@ public class FRAG extends Protocol {
         case Event.MSG:
             Message msg=(Message)evt.getArg();
             Object obj=msg.getHeader(name);
-
-
             if(obj != null && obj instanceof FragHeader) { // needs to be defragmented
                 unfragment(msg); // Unfragment and possibly pass up
                 return;
