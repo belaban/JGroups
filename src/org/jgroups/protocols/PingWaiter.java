@@ -12,7 +12,7 @@ import java.util.Vector;
 /**
  * Class that waits for n PingRsp'es, or m milliseconds to return the initial membership
  * @author Bela Ban
- * @version $Id: PingWaiter.java,v 1.8 2005/06/13 11:10:50 belaban Exp $
+ * @version $Id: PingWaiter.java,v 1.9 2005/06/13 11:27:41 belaban Exp $
  */
 public class PingWaiter implements Runnable {
     Thread              t=null;
@@ -30,6 +30,16 @@ public class PingWaiter implements Runnable {
         this.parent=parent;
         this.ping_sender=ping_sender;
     }
+
+
+    void setTimeout(long timeout) {
+        this.timeout=timeout;
+    }
+
+    void setNumRsps(int num) {
+        this.num_rsps=num;
+    }
+
 
 
     public synchronized void start() {
