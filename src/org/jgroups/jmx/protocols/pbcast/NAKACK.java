@@ -4,12 +4,22 @@ import org.jgroups.jmx.Protocol;
 
 /**
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.3 2005/06/08 12:36:41 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.4 2005/06/13 07:09:42 belaban Exp $
  */
 public class NAKACK extends Protocol implements NAKACKMBean {
     org.jgroups.protocols.pbcast.NAKACK p;
 
     public NAKACK() {
+    }
+
+    public NAKACK(org.jgroups.stack.Protocol p) {
+        super(p);
+        this.p=(org.jgroups.protocols.pbcast.NAKACK)p;
+    }
+
+    public void attachProtocol(org.jgroups.stack.Protocol p) {
+        super.attachProtocol(p);
+        this.p=(org.jgroups.protocols.pbcast.NAKACK)p;
     }
 
     public int getGcLag() {
@@ -58,16 +68,6 @@ public class NAKACK extends Protocol implements NAKACKMBean {
 
     public void setMaxXmitSize(long max_xmit_size) {
         p.setMaxXmitSize(max_xmit_size);
-    }
-
-    public NAKACK(org.jgroups.stack.Protocol p) {
-        super(p);
-        this.p=(org.jgroups.protocols.pbcast.NAKACK)p;
-    }
-
-    public void attachProtocol(org.jgroups.stack.Protocol p) {
-        super.attachProtocol(p);
-        this.p=(org.jgroups.protocols.pbcast.NAKACK)p;
     }
 
     public long getXmitRequestsReceived() {
