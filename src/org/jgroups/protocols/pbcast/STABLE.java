@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.21 2005/06/13 07:49:20 belaban Exp $
+// $Id: STABLE.java,v 1.22 2005/06/13 13:49:17 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -80,6 +80,9 @@ public class STABLE extends Protocol {
     ResumeTask          resume_task=null;
     final Object        resume_task_mutex=new Object();
 
+    /** Number of gossip messages */
+    int                 num_gossips=0;
+
 
     public String getName() {
         return name;
@@ -99,6 +102,13 @@ public class STABLE extends Protocol {
 
     public void setMaxBytes(long max_bytes) {
         this.max_bytes=max_bytes;
+    }
+
+    public int getNumberOfGossipMessages() {return num_gossips;}
+
+    public void resetStats() {
+        super.resetStats();
+        num_gossips=0;
     }
 
 
@@ -725,6 +735,7 @@ public class STABLE extends Protocol {
             }
             initialize();
             sendStableMessage();
+            num_gossips++;
             num_gossip_runs--;
             if(num_gossip_runs <= 0) {
                 if(log.isTraceEnabled())
