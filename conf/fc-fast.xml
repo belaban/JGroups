@@ -44,7 +44,7 @@
     <FC max_credits="1000000"
         down_thread="false"
         min_threshold="0.10"/>
-    <FRAG frag_size="60000" down_thread="false" up_thread="true"/>
+    <FRAG2 frag_size="60000" down_thread="false" up_thread="true"/>
     <COMPRESS down_thread="false"
         min_size="500"
         compression_level="3"
