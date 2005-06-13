@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.20 2005/05/30 14:31:06 belaban Exp $
+// $Id: STABLE.java,v 1.21 2005/06/13 07:49:20 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -83,6 +83,22 @@ public class STABLE extends Protocol {
 
     public String getName() {
         return name;
+    }
+
+    public long getDesiredAverageGossip() {
+        return desired_avg_gossip;
+    }
+
+    public void setDesiredAverageGossip(long gossip_interval) {
+        desired_avg_gossip=gossip_interval;
+    }
+
+    public long getMaxBytes() {
+        return max_bytes;
+    }
+
+    public void setMaxBytes(long max_bytes) {
+        this.max_bytes=max_bytes;
     }
 
 
@@ -289,6 +305,9 @@ public class STABLE extends Protocol {
     }
 
 
+    public void runMessageGarbageCollection() {
+        sendStableMessage();
+    }
 
 
 
