@@ -1,4 +1,4 @@
-// $Id: FRAG.java,v 1.22 2005/05/30 13:50:43 belaban Exp $
+// $Id: FRAG.java,v 1.23 2005/06/13 14:29:29 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -28,7 +28,7 @@ import java.util.*;
  * multicast messages.
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.22 2005/05/30 13:50:43 belaban Exp $
+ * @version $Id: FRAG.java,v 1.23 2005/06/13 14:29:29 belaban Exp $
  */
 public class FRAG extends Protocol {
     private int frag_size=8192;  // conservative value
@@ -42,11 +42,22 @@ public class FRAG extends Protocol {
     private final Vector                members=new Vector(11);
     private final static String         name="FRAG";
 
+    long num_sent_msgs=0;
+    long num_sent_frags=0;
+    long num_received_msgs=0;
+    long num_received_frags=0;
+
 
     public String getName() {
         return name;
     }
 
+    public int getFragSize() {return frag_size;}
+    public void setFragSize(int s) {frag_size=s;}
+    public long getNumberOfSentMessages() {return num_sent_msgs;}
+    public long getNumberOfSentFragments() {return num_sent_frags;}
+    public long getNumberOfReceivedMessages() {return num_received_msgs;}
+    public long getNumberOfReceivedFragments() {return num_received_frags;}
 
     /**
      * Setup the Protocol instance acording to the configuration string
@@ -68,6 +79,11 @@ public class FRAG extends Protocol {
         return true;
     }
 
+    public void resetStats() {
+        super.resetStats();
+        num_sent_msgs=num_sent_frags=num_received_msgs=num_received_frags=0;
+    }
+
 
     /**
      * Fragment a packet if larger than frag_size (add a header). Otherwise just pass down. Only
@@ -76,47 +92,48 @@ public class FRAG extends Protocol {
     public void down(Event evt) {
         switch(evt.getType()) {
 
-            case Event.MSG:
-                Message msg=(Message)evt.getArg();
-                long size=msg.size();
-                if(size > frag_size) {
-                    if(log.isTraceEnabled()) {
-                        StringBuffer sb=new StringBuffer("message size is ");
-                        sb.append(size).append(", will fragment (frag_size=").append(frag_size).append(')');
-                        log.trace(sb.toString());
-                    }
-                    fragment(msg);  // Fragment and pass down
-                    return;
+        case Event.MSG:
+            Message msg=(Message)evt.getArg();
+            long size=msg.size();
+            num_sent_msgs++;
+            if(size > frag_size) {
+                if(log.isTraceEnabled()) {
+                    StringBuffer sb=new StringBuffer("message size is ");
+                    sb.append(size).append(", will fragment (frag_size=").append(frag_size).append(')');
+                    log.trace(sb.toString());
                 }
-                break;
-
-            case Event.VIEW_CHANGE:
-                //don't do anything if this dude is sending out the view change
-                //we are receiving a view change,
-                //in here we check for the
-                View view=(View)evt.getArg();
-                Vector new_mbrs=view.getMembers(), left_mbrs;
-                Address mbr;
-
-                left_mbrs=Util.determineLeftMembers(members, new_mbrs);
-                members.clear();
-                members.addAll(new_mbrs);
-
-                for(int i=0; i < left_mbrs.size(); i++) {
-                    mbr=(Address)left_mbrs.elementAt(i);
-                    //the new view doesn't contain the sender, he must have left,
-                    //hence we will clear all his fragmentation tables
-                    fragment_list.remove(mbr);
-                    if(log.isTraceEnabled())
-                        log.trace("[VIEW_CHANGE] removed " + mbr + " from fragmentation table");
-                }
-                break;
-
-            case Event.CONFIG:
-                passDown(evt);
-                if(log.isDebugEnabled()) log.debug("received CONFIG event: " + evt.getArg());
-                handleConfigEvent((HashMap)evt.getArg());
+                fragment(msg);  // Fragment and pass down
                 return;
+            }
+            break;
+
+        case Event.VIEW_CHANGE:
+            //don't do anything if this dude is sending out the view change
+            //we are receiving a view change,
+            //in here we check for the
+            View view=(View)evt.getArg();
+            Vector new_mbrs=view.getMembers(), left_mbrs;
+            Address mbr;
+
+            left_mbrs=Util.determineLeftMembers(members, new_mbrs);
+            members.clear();
+            members.addAll(new_mbrs);
+
+            for(int i=0; i < left_mbrs.size(); i++) {
+                mbr=(Address)left_mbrs.elementAt(i);
+                //the new view doesn't contain the sender, he must have left,
+                //hence we will clear all his fragmentation tables
+                fragment_list.remove(mbr);
+                if(log.isTraceEnabled())
+                    log.trace("[VIEW_CHANGE] removed " + mbr + " from fragmentation table");
+            }
+            break;
+
+        case Event.CONFIG:
+            passDown(evt);
+            if(log.isDebugEnabled()) log.debug("received CONFIG event: " + evt.getArg());
+            handleConfigEvent((HashMap)evt.getArg());
+            return;
         }
 
         passDown(evt);  // Pass on to the layer below us
@@ -129,21 +146,25 @@ public class FRAG extends Protocol {
     public void up(Event evt) {
         switch(evt.getType()) {
 
-            case Event.MSG:
-                Message msg=(Message)evt.getArg();
-                Object obj=msg.getHeader(name);
+        case Event.MSG:
+            Message msg=(Message)evt.getArg();
+            Object obj=msg.getHeader(name);
 
-                if(obj != null && obj instanceof FragHeader) { // needs to be defragmented
-                    unfragment(msg); // Unfragment and possibly pass up
-                    return;
-                }
-                break;
 
-            case Event.CONFIG:
-                passUp(evt);
-                if(log.isDebugEnabled()) log.debug("received CONFIG event: " + evt.getArg());
-                handleConfigEvent((HashMap)evt.getArg());
+            if(obj != null && obj instanceof FragHeader) { // needs to be defragmented
+                unfragment(msg); // Unfragment and possibly pass up
                 return;
+            }
+            else {
+                num_received_msgs++;
+            }
+            break;
+
+        case Event.CONFIG:
+            passUp(evt);
+            if(log.isDebugEnabled()) log.debug("received CONFIG event: " + evt.getArg());
+            handleConfigEvent((HashMap)evt.getArg());
+            return;
         }
 
         passUp(evt); // Pass up to the layer above us by default
@@ -182,6 +203,7 @@ public class FRAG extends Protocol {
             buffer=bos.getRawBuffer();
             fragments=Util.fragmentBuffer(buffer, frag_size, bos.size());
             num_frags=fragments.length;
+            num_sent_frags+=num_frags;
 
             if(log.isTraceEnabled()) {
                 StringBuffer sb=new StringBuffer();
@@ -234,6 +256,7 @@ public class FRAG extends Protocol {
                 frag_table=fragment_list.get(sender);
             }
         }
+        num_received_frags++;
         m=frag_table.add(hdr.id, hdr.frag_id, hdr.num_frags, msg.getBuffer());
         if(m != null) {
             try {
@@ -243,6 +266,7 @@ public class FRAG extends Protocol {
                 assembled_msg.readFrom(in);
                 if(log.isTraceEnabled()) log.trace("assembled_msg is " + assembled_msg);
                 assembled_msg.setSrc(sender); // needed ? YES, because fragments have a null src !!
+                num_received_msgs++;
                 passUp(new Event(Event.MSG, assembled_msg));
             }
             catch(Exception e) {
