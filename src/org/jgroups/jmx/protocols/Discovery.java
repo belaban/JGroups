@@ -2,9 +2,11 @@ package org.jgroups.jmx.protocols;
 
 import org.jgroups.jmx.Protocol;
 
+import java.util.Vector;
+
 /**
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.1 2005/06/08 15:17:30 belaban Exp $
+ * @version $Id: Discovery.java,v 1.2 2005/06/13 11:10:49 belaban Exp $
  */
 public class Discovery extends Protocol implements DiscoveryMBean {
     org.jgroups.protocols.Discovery p;
@@ -46,4 +48,11 @@ public class Discovery extends Protocol implements DiscoveryMBean {
         p.setNumPingRequests(num_ping_requests);
     }
 
+    public Vector findInitialMembers() {
+        return p.findInitialMembers();
+    }
+
+    public String findInitialMembersAsString() {
+        return p.findInitialMembersAsString();
+    }
 }

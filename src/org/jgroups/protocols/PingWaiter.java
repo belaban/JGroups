@@ -12,7 +12,7 @@ import java.util.Vector;
 /**
  * Class that waits for n PingRsp'es, or m milliseconds to return the initial membership
  * @author Bela Ban
- * @version $Id: PingWaiter.java,v 1.7 2005/05/19 06:21:49 belaban Exp $
+ * @version $Id: PingWaiter.java,v 1.8 2005/06/13 11:10:50 belaban Exp $
  */
 public class PingWaiter implements Runnable {
     Thread              t=null;
@@ -85,9 +85,14 @@ public class PingWaiter implements Runnable {
 
 
     public void run() {
+        Vector responses=findInitialMembers();
+        if(parent != null)
+            parent.passUp(new Event(Event.FIND_INITIAL_MBRS_OK, responses));
+    }
+
+
+    public Vector findInitialMembers() {
         long start_time, time_to_wait;
-
-
 
         synchronized(rsps) {
             if(rsps.size() > 0) {
@@ -95,17 +100,17 @@ public class PingWaiter implements Runnable {
                     log.trace("clearing old responses: " + rsps);
                 rsps.clear();
             }
-            
+
             ping_sender.start();
 
             start_time=System.currentTimeMillis();
             time_to_wait=timeout;
 
             try {
-                while(rsps.size() < num_rsps && time_to_wait > 0 && t != null && Thread.currentThread().equals(t)) {
+                while(rsps.size() < num_rsps && time_to_wait > 0 && t != null) {
                     if(log.isTraceEnabled()) // +++ remove
-                        log.trace("waiting for initial members: time_to_wait=" + time_to_wait +
-                                  ", got " + rsps.size() + " rsps");
+                        log.trace(new StringBuffer("waiting for initial members: time_to_wait=").append(time_to_wait)
+                                  .append(", got ").append(rsps.size()).append(" rsps"));
 
                     try {
                         rsps.wait(time_to_wait);
@@ -118,17 +123,15 @@ public class PingWaiter implements Runnable {
                     }
                     time_to_wait=timeout - (System.currentTimeMillis() - start_time);
                 }
-                if(log.isDebugEnabled())
-                    log.debug("initial mbrs are " + rsps);
+                if(log.isTraceEnabled())
+                    log.trace(new StringBuffer("initial mbrs are ").append(rsps));
+                return new Vector(rsps);
             }
             finally {
-                // 3. Send response
                 if(ping_sender != null)
                     ping_sender.stop();
-
-                if(parent != null)
-                    parent.passUp(new Event(Event.FIND_INITIAL_MBRS_OK, new Vector(rsps)));
             }
         }
     }
+
 }

@@ -23,7 +23,7 @@ import java.util.*;
  * <li>num_ping_requests - the number of GET_MBRS_REQ messages to be sent (min=1), distributed over timeout ms
  * </ul>
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.8 2005/06/08 15:17:43 belaban Exp $
+ * @version $Id: Discovery.java,v 1.9 2005/06/13 11:10:50 belaban Exp $
  */
 public abstract class Discovery extends Protocol {
     final Vector  members=new Vector(11);
@@ -156,6 +156,26 @@ public abstract class Discovery extends Protocol {
         is_server=false;
         if(ping_waiter != null)
             ping_waiter.stop();
+    }
+
+    /**
+     * Finds the initial membership
+     * @return Vector<PingRsp>
+     */
+    public Vector findInitialMembers() {
+        return ping_waiter != null? ping_waiter.findInitialMembers() : null;
+    }
+
+    public String findInitialMembersAsString() {
+        Vector results=findInitialMembers();
+        if(results == null || results.size() == 0) return "<empty>";
+        PingRsp rsp;
+        StringBuffer sb=new StringBuffer();
+        for(Iterator it=results.iterator(); it.hasNext();) {
+            rsp=(PingRsp)it.next();
+            sb.append(rsp).append("\n");
+        }
+        return sb.toString();
     }
 
 
