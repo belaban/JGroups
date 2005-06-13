@@ -4,11 +4,13 @@ import org.jgroups.jmx.ProtocolMBean;
 
 /**
  * @author Bela Ban
- * @version $Id: FRAGMBean.java,v 1.2 2005/06/13 14:53:48 belaban Exp $
+ * @version $Id: FRAG2MBean.java,v 1.1 2005/06/13 14:53:48 belaban Exp $
  */
-public interface FRAGMBean extends ProtocolMBean {
+public interface FRAG2MBean extends ProtocolMBean {
     int getFragSize();
     void setFragSize(int s);
+    int getOverhead();
+    void setOverhead(int o);
     long getNumberOfSentMessages();
     long getNumberOfSentFragments();
     long getNumberOfReceivedMessages();
