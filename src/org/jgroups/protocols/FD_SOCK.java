@@ -1,14 +1,11 @@
-// $Id: FD_SOCK.java,v 1.23 2005/05/30 14:31:07 belaban Exp $
+// $Id: FD_SOCK.java,v 1.24 2005/06/13 13:06:20 belaban Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.Promise;
-import org.jgroups.util.TimeScheduler;
-import org.jgroups.util.Util;
-import org.jgroups.util.Streamable;
+import org.jgroups.util.*;
 
 import java.io.*;
 import java.net.ServerSocket;
@@ -16,6 +13,7 @@ import java.net.Socket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.*;
+import java.util.List;
 
 
 /**
@@ -63,16 +61,31 @@ public class FD_SOCK extends Protocol implements Runnable {
     final Object        sock_mutex=new Object();           // for access to ping_sock, ping_input
     TimeScheduler       timer=null;
     final BroadcastTask bcast_task=new BroadcastTask();    // to transmit SUSPECT message (until view change)
-    boolean              regular_sock_close=false;         // used by interruptPingerThread() when new ping_dest is computed
+    boolean             regular_sock_close=false;         // used by interruptPingerThread() when new ping_dest is computed
+    int                 num_suspect_events=0;
     private static final int NORMAL_TEMINATION=9;
     private static final int ABNORMAL_TEMINATION=-1;
     private static final String name="FD_SOCK";
+
+    BoundedList          suspect_history=new BoundedList(20);
 
 
     public String getName() {
         return name;
     }
 
+    public String getLocalAddress() {return local_addr != null? local_addr.toString() : "null";}
+    public String getMembers() {return members != null? members.toString() : "null";}
+    public String getPingableMembers() {return pingable_mbrs != null? pingable_mbrs.toString() : "null";}
+    public String getPingDest() {return ping_dest != null? ping_dest.toString() : "null";}
+    public int getNumSuspectEventsGenerated() {return num_suspect_events;}
+    public String printSuspectHistory() {
+        StringBuffer sb=new StringBuffer();
+        for(Enumeration en=suspect_history.elements(); en.hasMoreElements();) {
+            sb.append(new Date()).append(": ").append(en.nextElement()).append("\n");
+        }
+        return sb.toString();
+    }
 
     public boolean setProperties(Properties props) {
         String str, tmp=null;
@@ -141,6 +154,12 @@ public class FD_SOCK extends Protocol implements Runnable {
         bcast_task.removeAll();
         stopPingerThread();
         stopServerSocket();
+    }
+
+    public void resetStats() {
+        super.resetStats();
+        num_suspect_events=0;
+        suspect_history.removeAll();
     }
 
 
@@ -560,8 +579,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
         if(suspected_mbr == null) return;
 
-        if(log.isDebugEnabled()) log.debug("suspecting " + suspected_mbr +
-                " (own address is " + local_addr + ')');
+        if(log.isTraceEnabled()) log.trace("suspecting " + suspected_mbr + " (own address is " + local_addr + ')');
 
         // 1. Send a SUSPECT message right away; the broadcast task will take some time to send it (sleeps first)
         hdr=new FdHeader(FdHeader.SUSPECT);
@@ -574,6 +592,10 @@ public class FD_SOCK extends Protocol implements Runnable {
         // 2. Add to broadcast task and start latter (if not yet running). The task will end when
         //    suspected members are removed from the membership
         bcast_task.addSuspectedMember(suspected_mbr);
+        if(stats) {
+            num_suspect_events++;
+            suspect_history.add(suspected_mbr);
+        }
     }
 
 
