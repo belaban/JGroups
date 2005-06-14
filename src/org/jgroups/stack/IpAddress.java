@@ -1,4 +1,4 @@
-// $Id: IpAddress.java,v 1.23 2005/04/20 13:55:14 belaban Exp $
+// $Id: IpAddress.java,v 1.24 2005/06/14 16:15:22 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -6,11 +6,9 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.Global;
-import org.jgroups.util.Util;
 
 import java.io.*;
 import java.net.InetAddress;
-import java.util.HashMap;
 
 
 
@@ -23,12 +21,8 @@ public class IpAddress implements Address {
     private InetAddress             ip_addr=null;
     private int                     port=0;
     private byte[]                  additional_data=null;
-    protected static final HashMap  sAddrCache=new HashMap();
     protected static final Log      log=LogFactory.getLog(IpAddress.class);
-
-    static boolean resolve_dns=false;
-    static final  char[] digits = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'};
-    static final boolean jdk_14=Util.getJavaVersion() >= 14;
+    static boolean                  resolve_dns=false;
 
 
     static {
@@ -210,63 +204,7 @@ public class IpAddress implements Address {
     }
 
 
-    /**   
-     * Converts 4 byte address representation into a char array   
-     * of length 7-15, depending on the actual address, i.e XXX.XXX.XXX.XXX   
-     * and returns a String representation of that address.   
-     *   
-     * @param address 4 byte array representing address   
-     *   
-     */   
-    private static final String addressToString(byte[] address) {   
-        int q,r = 0;   
-        int charPos = 15;   
-        char[] buf = new char[15];   
-        char dot = '.';   
-        
-        int i = address[3] & 0xFF;   
-        for(;;) {   
-            q = (i * 52429) >>> (19);   
-            r = i - ((q << 3) + (q << 1));   
-            buf[--charPos] = digits[r];   
-            i = q;   
-            if (i == 0) break;   
-        }   
-        buf[--charPos] = dot;   
-        i = address[2] & 0xFF;   
-        for (;;) {   
-            q = (i * 52429) >>> (19);   
-            r = i - ((q << 3) + (q << 1));   
-            buf[--charPos] = digits[r];   
-            i = q;   
-            if (i == 0) break;   
-        }   
-        buf[--charPos] = dot;   
-        
-        i = address[1] & 0xFF;   
-        for (;;) {   
-            q = (i * 52429) >>> (19);   
-            r = i - ((q << 3) + (q << 1));   
-            buf[--charPos] = digits[r];   
-            i = q;   
-            if (i == 0) break;   
-        }   
-        
-        buf[--charPos] = dot;   
-        i = address[0] & 0xFF;   
-        
-        for (;;) {   
-            q = (i * 52429) >>> (19);   
-            r = i - ((q << 3) + (q << 1));   
-            buf[--charPos] = digits[r];   
-            i = q;   
-            if (i == 0) break;   
-        }   
-        return new String(buf, charPos, 15 - charPos);   
-    } 
-    
-
-    public void writeExternal(ObjectOutput out) throws IOException {   
+    public void writeExternal(ObjectOutput out) throws IOException {
         byte[] address = ip_addr.getAddress();   
         out.write(address);   
         out.writeInt(port);
@@ -292,10 +230,7 @@ public class IpAddress implements Address {
         //then read the port
         port = in.readInt();
         //look up an instance in the cache
-        if(jdk_14)
-            this.ip_addr=InetAddress.getByAddress(a);
-        else
-            this.ip_addr = getIpAddress(a);
+        this.ip_addr=InetAddress.getByAddress(a);
         len=in.readInt();
         if(len > 0) {
             additional_data=new byte[len];
@@ -326,9 +261,7 @@ public class IpAddress implements Address {
     }
 
     public void readFrom(DataInputStream in) throws IOException {
-        int len;
-
-        len=in.readShort();
+        int len=in.readShort();
         if(len > 0) {
             //read the four bytes
             byte[] a = new byte[len];
@@ -337,10 +270,7 @@ public class IpAddress implements Address {
             // 4 bytes one at a time
             in.readFully(a);
             //look up an instance in the cache
-            if(jdk_14)
-                this.ip_addr=InetAddress.getByAddress(a);
-            else
-                this.ip_addr = getIpAddress(a);
+            this.ip_addr=InetAddress.getByAddress(a);
         }
         //then read the port
         port=in.readInt();
@@ -368,67 +298,7 @@ public class IpAddress implements Address {
             ret.additional_data=new byte[additional_data.length];
             System.arraycopy(additional_data, 0, ret.additional_data, 0, additional_data.length);
         }
-
         return ret;
-    }
-
-
-    protected static InetAddress getIpAddress(byte[] addr) {
-        try {
-            HashKey key = new HashKey(addr);
-            InetAddress result;
-
-            synchronized(sAddrCache) {
-                result=(InetAddress)sAddrCache.get(key);
-                if(result == null) {
-                    result = java.net.InetAddress.getByName(addressToString(addr));
-                    sAddrCache.put(key,result);
-                }
-            }
-            return result;
-        }
-        catch (Exception x) {
-            x.printStackTrace();
-            if(log.isErrorEnabled()) log.error(x.getMessage());
-        }
-        return null;
-        
-    } 
-    
-    static class HashKey {   
-        private final byte[] mIpAddress;
-
-        public HashKey(byte[] ipaddress) {            
-            if (ipaddress == null)
-                mIpAddress = new byte[0];
-            else
-                mIpAddress = ipaddress;
-        }
-        
-        public int hashCode() {
-            if(mIpAddress.length > 0)
-                return (int)mIpAddress[0];
-            else
-                return 0;
-        }
-        
-        public byte[] getIpBytes() {
-            return mIpAddress;
-        }
-        
-        public boolean equals(Object o) {
-            if (o != null && o instanceof HashKey) {
-                byte[] other = ((HashKey)o).getIpBytes();
-                if ( other.length != mIpAddress.length )
-                    return false;
-                boolean result = true;
-                for ( int i=0; i<other.length && result; i++ )
-                    result = result & (other[i] == mIpAddress[i]);
-                return result;
-            }
-            else
-                return false;
-        }
     }
 
 
