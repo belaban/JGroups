@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.82 2005/06/13 11:47:05 belaban Exp $
+// $Id: UDP.java,v 1.83 2005/06/14 16:00:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -1119,7 +1119,7 @@ public class UDP extends Protocol implements Runnable {
             tmp_addr=InetAddress.getByName(mcast_addr_name);
             mcast_addr=new IpAddress(tmp_addr, mcast_port);
 
-            if(bind_to_all_interfaces && Util.getJavaVersion() >= 14) {
+            if(bind_to_all_interfaces) {
                 bindToAllInterfaces(mcast_recv_sock, mcast_addr.getIpAddress());
             }
             else {
