@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.18 2005/05/30 14:31:06 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.19 2005/06/14 08:36:50 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -32,6 +32,9 @@ public class STATE_TRANSFER extends Protocol {
     Digest         digest=null;
     final HashMap  map=new HashMap(); // to store configuration information
     long           start, stop; // to measure state transfer time
+    int            num_state_reqs=0;
+    long           num_bytes_sent=0;
+    double         avg_state_size=0;
     final static   String name="STATE_TRANSFER";
 
 
@@ -40,6 +43,9 @@ public class STATE_TRANSFER extends Protocol {
         return name;
     }
 
+    public int getNumberOfStateRequests() {return num_state_reqs;}
+    public long getNumberOfStateBytesSent() {return num_bytes_sent;}
+    public double getAverageStateSize() {return avg_state_size;}
 
     public Vector requiredDownServices() {
         Vector retval=new Vector();
@@ -48,6 +54,24 @@ public class STATE_TRANSFER extends Protocol {
         return retval;
     }
 
+    public void resetStats() {
+        super.resetStats();
+        num_state_reqs=0;
+        num_bytes_sent=0;
+        avg_state_size=0;
+    }
+
+
+    public boolean setProperties(Properties props) {
+        super.setProperties(props);
+
+        if(props.size() > 0) {
+            log.error("STATE_TRANSFER.setProperties(): the following properties are not recognized: " + props);
+
+            return false;
+        }
+        return true;
+    }
 
     public void init() throws Exception {
         map.put("state_transfer", Boolean.TRUE);
@@ -187,6 +211,12 @@ public class STATE_TRANSFER extends Protocol {
                                 "but there is no digest !");
                     else
                         digest=digest.copy();
+                    if(stats) {
+                        num_state_reqs++;
+                        if(state != null)
+                            num_bytes_sent+=state.length;
+                        avg_state_size=num_bytes_sent / num_state_reqs;
+                    }
                     for(Enumeration e=state_requesters.elements(); e.hasMoreElements();) {
                         requester=(Address)e.nextElement();
                         state_rsp=new Message(requester, null, state); // put the state into state_rsp.buffer
@@ -204,16 +234,7 @@ public class STATE_TRANSFER extends Protocol {
     }
 
 
-    public boolean setProperties(Properties props) {
-        super.setProperties(props);
 
-        if(props.size() > 0) {
-            log.error("STATE_TRANSFER.setProperties(): the following properties are not recognized: " + props);
-
-            return false;
-        }
-        return true;
-    }
 
 
 
