@@ -1,4 +1,4 @@
-// $Id: ConfiguratorFactory.java,v 1.14 2004/09/23 16:29:14 belaban Exp $
+// $Id: ConfiguratorFactory.java,v 1.15 2005/06/14 16:24:22 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -19,6 +19,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 import java.util.Properties;
+import java.security.AccessControlException;
 
 /**
  * The ConfigurationFactory is a factory that returns a protocol stack configurator.
@@ -347,6 +348,9 @@ public class ConfiguratorFactory {
             }
             catch(FileNotFoundException fnfe) {
                 // the properties string is likely not a file
+            }
+            catch(AccessControlException access_ex) {
+                // fixes http://jira.jboss.com/jira/browse/JGRP-94
             }
         }
 
