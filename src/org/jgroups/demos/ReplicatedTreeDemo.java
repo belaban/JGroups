@@ -1,4 +1,4 @@
-// $Id: ReplicatedTreeDemo.java,v 1.6 2004/09/23 16:29:35 belaban Exp $
+// $Id: ReplicatedTreeDemo.java,v 1.7 2005/06/14 08:36:49 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -622,6 +622,7 @@ public class ReplicatedTreeDemo {
     public static void main(String args[]) {
         ReplicatedTree tree;
         String start_directory=null;
+        boolean jmx=false;
 
         String props="UDP(mcast_addr=224.0.0.36;mcast_port=55566;ip_ttl=32;" +
                 "mcast_send_buf_size=150000;mcast_recv_buf_size=80000):" +
@@ -648,12 +649,16 @@ public class ReplicatedTreeDemo {
                 start_directory=args[++i];
                 continue;
             }
+            if("-jmx".equals(args[i])) {
+                jmx=true;
+                continue;
+            }
             help();
             return;
         }
 
         try {
-            tree=new ReplicatedTree("ReplicatedTreeDemo-Group", props, 10000);
+            tree=new ReplicatedTree("ReplicatedTreeDemo-Group", props, 10000, jmx);
             new ReplicatedTreeView(tree, tree.getLocalAddress());
             // demo.setVisible(true);
 
@@ -680,7 +685,7 @@ public class ReplicatedTreeDemo {
 
     static void help() {
         System.out.println("ReplicatedTreeView [-help] " +
-                "[-props <channel properties>] [-start_directory <dirname>]");
+                "[-props <channel properties>] [-start_directory <dirname>] [-jmx]");
     }
 
     static void populateTree(ReplicatedTree tree, String dir) {

@@ -1,4 +1,4 @@
-// $Id: ReplicatedTree.java,v 1.9 2005/02/19 13:23:34 belaban Exp $
+// $Id: ReplicatedTree.java,v 1.10 2005/06/14 08:36:48 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -6,10 +6,13 @@ package org.jgroups.blocks;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
+import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.util.Queue;
 import org.jgroups.util.QueueClosedException;
 import org.jgroups.util.Util;
 
+import javax.management.MBeanServerFactory;
+import javax.management.MBeanServer;
 import java.io.Serializable;
 import java.util.*;
 
@@ -35,6 +38,7 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
     String groupname="ReplicatedTree-Group";
     final Vector members=new Vector();
     long state_fetch_timeout=10000;
+    boolean jmx=false;
 
     protected final Log log=LogFactory.getLog(this.getClass());
 
@@ -87,6 +91,27 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
         this.state_fetch_timeout=state_fetch_timeout;
         channel=new JChannel(this.props);
         channel.connect(this.groupname);
+        start();
+    }
+
+    public ReplicatedTree(String groupname, String props, long state_fetch_timeout, boolean jmx) throws Exception {
+        if(groupname != null)
+            this.groupname=groupname;
+        if(props != null)
+            this.props=props;
+        this.jmx=jmx;
+        this.state_fetch_timeout=state_fetch_timeout;
+        channel=new JChannel(this.props);
+        channel.connect(this.groupname);
+        if(jmx) {
+            ArrayList servers=MBeanServerFactory.findMBeanServer(null);
+            if(servers == null || servers.size() == 0) {
+                throw new Exception("No MBeanServers found;" +
+                                    "\nJmxTest needs to be run with an MBeanServer present, or inside JDK 5");
+            }
+            MBeanServer server=(MBeanServer)servers.get(0);
+            JmxConfigurator.registerChannel(channel, server, "JGroups:channel=" + channel.getChannelName() , true);
+        }
         start();
     }
 
@@ -921,10 +946,6 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
         String s=null;
 
         private StringHolder() {
-        }
-
-        private StringHolder(String s) {
-            this.s=s;
         }
 
         void setValue(String s) {
