@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.23 2005/04/18 09:54:44 belaban Exp $
+// $Id: ConnectionTable.java,v 1.24 2005/06/14 09:51:07 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -217,6 +217,10 @@ public class ConnectionTable implements Runnable {
 
     public void setSocketConnectionTimeout(int sock_conn_timeout) {
         this.sock_conn_timeout=sock_conn_timeout;
+    }
+
+    public int getNumConnections() {
+        return conns.size();
     }
 
     /** Sends a message to a unicast destination. The destination has to be set
