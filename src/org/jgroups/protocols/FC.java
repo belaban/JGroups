@@ -1,4 +1,4 @@
-// $Id: FC.java,v 1.21 2005/05/30 14:31:07 belaban Exp $
+// $Id: FC.java,v 1.22 2005/06/14 09:23:17 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -18,7 +18,7 @@ import java.util.*;
  * Note that this protocol must be located towards the top of the stack, or all down_threads from JChannel to this
  * protocol must be set to false ! This is in order to block JChannel.send()/JChannel.down().
  * @author Bela Ban
- * @version $Revision: 1.21 $
+ * @version $Revision: 1.22 $
  */
 public class FC extends Protocol {
 
@@ -60,12 +60,85 @@ public class FC extends Protocol {
 
     long start_blocking=0, stop_blocking=0;
 
+    int num_blockings=0, num_replenishments=0;
+    long total_time_blocking=0;
+
 
 
 
     public String getName() {
         return name;
     }
+
+    public void resetStats() {
+        super.resetStats();
+        num_blockings=num_replenishments=0;
+        total_time_blocking=0;
+    }
+
+    public long getMaxCredits() {
+        return max_credits;
+    }
+
+    public void setMaxCredits(long max_credits) {
+        this.max_credits=max_credits;
+    }
+
+    public double getMinThreshold() {
+        return min_threshold;
+    }
+
+    public void setMinThreshold(double min_threshold) {
+        this.min_threshold=min_threshold;
+    }
+
+    public long getMinCredits() {
+        return min_credits;
+    }
+
+    public void setMinCredits(long min_credits) {
+        this.min_credits=min_credits;
+    }
+
+    public boolean isBlocked() {
+        Object obj=blocking.get();
+        return obj != null && obj instanceof Boolean && ((Boolean)obj).booleanValue();
+    }
+
+    public int getNumberOfBlockings() {
+        return num_blockings;
+    }
+
+    public long getTotalTimeBlocked() {
+        return total_time_blocking;
+    }
+
+    public int getNumberOfReplenishmentsReceived() {
+        return num_replenishments;
+    }
+
+    public String printSenderCredits() {
+        return printMap(sent);
+    }
+
+    public String printReceiverCredits() {
+        return printMap(received);
+    }
+
+    public String printCredits() {
+        StringBuffer sb=new StringBuffer();
+        sb.append("senders:\n").append(printMap(sent)).append("\n\nreceivers:\n").append(printMap(received));
+        return sb.toString();
+    }
+
+
+
+    public void unblock() {
+        synchronized(sent) {
+            unblockSender();
+        }
+    }
+
 
 
     public boolean setProperties(Properties props) {
@@ -140,6 +213,7 @@ public class FC extends Protocol {
                 FcHeader hdr=(FcHeader)msg.removeHeader(name);
                 if(hdr != null) {
                     if(hdr.type == FcHeader.REPLENISH) {
+                        num_replenishments++;
                         handleCredit(msg.getSrc());
                         return; // don't pass message up
                     }
@@ -224,6 +298,7 @@ public class FC extends Protocol {
                     log.trace("blocking due to insufficient credits, creditors=\n" + printCreditors());
                 start_blocking=System.currentTimeMillis();
                 blocking.set(Boolean.TRUE);
+                num_blockings++;
                 blocking.waitUntil(Boolean.FALSE);  // waits on 'sent'
             }
         }
@@ -291,6 +366,7 @@ public class FC extends Protocol {
     private void printBlockTime() {
         stop_blocking=System.currentTimeMillis();
         long diff=stop_blocking - start_blocking;
+        total_time_blocking+=diff;
         stop_blocking=start_blocking=0;
         if(log.isTraceEnabled())
             log.trace("blocking time was " + diff + "ms");
@@ -416,39 +492,19 @@ public class FC extends Protocol {
         }
     }
 
+    private String printMap(Map m) {
+        Map.Entry entry;
+        StringBuffer sb=new StringBuffer();
+        for(Iterator it=m.entrySet().iterator(); it.hasNext();) {
+            entry=(Map.Entry)it.next();
+            sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
+        }
+        return sb.toString();
+    }
 
 
-//    private String dumpSentMessages() {
-//        StringBuffer sb=new StringBuffer();
-//        for(Iterator it=sent.entrySet().iterator(); it.hasNext();) {
-//            Map.Entry entry=(Map.Entry)it.next();
-//            sb.append(entry.getKey()).append(": ").append(entry.getValue()).append('\n');
-//        }
-//        return sb.toString();
-//    }
 
-//    private String dumpReceivedMessages() {
-//        Map tmp;
-//
-//        synchronized(received) {
-//            tmp=(Map)received.clone();
-//        }
-//        StringBuffer sb=new StringBuffer();
-//        for(Iterator it=tmp.entrySet().iterator(); it.hasNext();) {
-//            Map.Entry entry=(Map.Entry)it.next();
-//            sb.append(entry.getKey()).append(": ").append(entry.getValue()).append('\n');
-//        }
-//        return sb.toString();
-//    }
 
-//    private String dumpMessages() {
-//        StringBuffer sb=new StringBuffer();
-//        sb.append("sent:\n").append(sent).append('\n');
-//        synchronized(received) {
-//            sb.append("received:\n").append(received).append('\n');
-//        }
-//        return sb.toString();
-//    }
 
     public static class FcHeader extends Header implements Streamable {
         public static final byte REPLENISH = 1;
