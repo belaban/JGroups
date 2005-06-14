@@ -4,10 +4,9 @@ import org.jgroups.jmx.Protocol;
 
 /**
  * @author Bela Ban
- * @version $Id: PING.java,v 1.1 2005/06/08 15:17:30 belaban Exp $
+ * @version $Id: PING.java,v 1.2 2005/06/14 09:51:08 belaban Exp $
  */
 public class PING extends Discovery implements PINGMBean {
-    org.jgroups.protocols.PING p;
 
     public PING() {
     }

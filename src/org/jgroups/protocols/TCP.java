@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.22 2005/05/30 14:31:07 belaban Exp $
+// $Id: TCP.java,v 1.23 2005/06/14 09:51:08 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -66,6 +66,8 @@ public class TCP extends Protocol implements ConnectionTable.Receiver {
     static final String    name="TCP";
     static final String    IGNORE_BIND_ADDRESS_PROPERTY="ignore.bind.address";
 
+    int num_msgs_sent=0, num_msgs_received=0;
+
 
     public TCP() {
     }
@@ -78,6 +80,28 @@ public class TCP extends Protocol implements ConnectionTable.Receiver {
         return "TCP";
     }
 
+    public long getNumMessagesSent()     {return num_msgs_sent;}
+    public long getNumMessagesReceived() {return num_msgs_received;}
+    public int getOpenConnections()      {return ct.getNumConnections();}
+    public InetAddress getBindAddr() {return bind_addr;}
+    public void setBindAddr(InetAddress bind_addr) {this.bind_addr=bind_addr;}
+    public int getStartPort() {return start_port;}
+    public void setStartPort(int start_port) {this.start_port=start_port;}
+    public int getEndPort() {return end_port;}
+    public void setEndPort(int end_port) {this.end_port=end_port;}
+    public long getReaperInterval() {return reaper_interval;}
+    public void setReaperInterval(long reaper_interval) {this.reaper_interval=reaper_interval;}
+    public long getConnExpireTime() {return conn_expire_time;}
+    public void setConnExpireTime(long conn_expire_time) {this.conn_expire_time=conn_expire_time;}
+    public boolean isLoopback() {return loopback;}
+    public void setLoopback(boolean loopback) {this.loopback=loopback;}
+    public String printConnections()     {return ct.toString();}
+
+
+    public void resetStats() {
+        super.resetStats();
+        num_msgs_sent=num_msgs_received=0;
+    }
 
     protected final Vector getMembers() {
         return members;
@@ -153,6 +177,7 @@ public class TCP extends Protocol implements ConnectionTable.Receiver {
         }
 
         msg=(Message)evt.getArg();
+        num_msgs_sent++;
 
         if(group_addr != null) { // added patch sent by Roland Kurmann (bela March 20 2003)
             /* Add header (includes channel name) */
@@ -196,6 +221,7 @@ public class TCP extends Protocol implements ConnectionTable.Receiver {
             observer.up(evt, up_queue.size());
 
         if(log.isTraceEnabled()) log.trace("received msg " + msg);
+        num_msgs_received++;
 
         hdr=(TcpHeader)msg.removeHeader(name);
 
