@@ -6,7 +6,7 @@ import java.util.Vector;
 
 /**
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.2 2005/06/13 11:10:49 belaban Exp $
+ * @version $Id: Discovery.java,v 1.3 2005/06/14 10:10:10 belaban Exp $
  */
 public class Discovery extends Protocol implements DiscoveryMBean {
     org.jgroups.protocols.Discovery p;
@@ -46,6 +46,10 @@ public class Discovery extends Protocol implements DiscoveryMBean {
 
     public void setNumPingRequests(int num_ping_requests) {
         p.setNumPingRequests(num_ping_requests);
+    }
+
+    public int getNumberOfDiscoveryRequestsSent() {
+        return p.getNumberOfDiscoveryRequestsSent();
     }
 
     public Vector findInitialMembers() {

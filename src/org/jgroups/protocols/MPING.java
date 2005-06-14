@@ -19,7 +19,7 @@ import java.util.Enumeration;
  * back via the regular transport (e.g. TCP) to the sender (discovery request contained sender's regular address,
  * e.g. 192.168.0.2:7800).
  * @author Bela Ban
- * @version $Id: MPING.java,v 1.8 2005/04/13 13:03:46 belaban Exp $
+ * @version $Id: MPING.java,v 1.9 2005/06/14 10:10:12 belaban Exp $
  */
 public class MPING extends PING implements Runnable {
     MulticastSocket     mcast_sock=null;
@@ -38,6 +38,46 @@ public class MPING extends PING implements Runnable {
 
     public String getName() {
         return "MPING";
+    }
+
+    public InetAddress getBindAddr() {
+        return bind_addr;
+    }
+
+    public void setBindAddr(InetAddress bind_addr) {
+        this.bind_addr=bind_addr;
+    }
+
+    public boolean isBindToAllInterfaces() {
+        return bind_to_all_interfaces;
+    }
+
+    public void setBindToAllInterfaces(boolean bind_to_all_interfaces) {
+        this.bind_to_all_interfaces=bind_to_all_interfaces;
+    }
+
+    public int getTTL() {
+        return ip_ttl;
+    }
+
+    public void setTTL(int ip_ttl) {
+        this.ip_ttl=ip_ttl;
+    }
+
+    public InetAddress getMcastAddr() {
+        return mcast_addr;
+    }
+
+    public void setMcastAddr(InetAddress mcast_addr) {
+        this.mcast_addr=mcast_addr;
+    }
+
+    public int getMcastPort() {
+        return mcast_port;
+    }
+
+    public void setMcastPort(int mcast_port) {
+        this.mcast_port=mcast_port;
     }
 
 
