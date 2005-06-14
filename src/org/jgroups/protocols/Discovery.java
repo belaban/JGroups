@@ -23,7 +23,7 @@ import java.util.*;
  * <li>num_ping_requests - the number of GET_MBRS_REQ messages to be sent (min=1), distributed over timeout ms
  * </ul>
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.10 2005/06/13 11:27:32 belaban Exp $
+ * @version $Id: Discovery.java,v 1.11 2005/06/14 10:10:12 belaban Exp $
  */
 public abstract class Discovery extends Protocol {
     final Vector  members=new Vector(11);
@@ -38,6 +38,8 @@ public abstract class Discovery extends Protocol {
 
     /** Number of GET_MBRS_REQ messages to be sent (min=1), distributed over timeout ms */
     int           num_ping_requests=2;
+
+    int           num_discovery_requests=0;
 
 
     public abstract String getName();
@@ -89,6 +91,10 @@ public abstract class Discovery extends Protocol {
 
     public void setNumPingRequests(int num_ping_requests) {
         this.num_ping_requests=num_ping_requests;
+    }
+
+    public int getNumberOfDiscoveryRequestsSent() {
+        return num_discovery_requests;
     }
 
 
@@ -147,6 +153,11 @@ public abstract class Discovery extends Protocol {
             return false;
         }
         return true;
+    }
+
+    public void resetStats() {
+        super.resetStats();
+        num_discovery_requests=0;
     }
 
     public void start() throws Exception {
@@ -295,6 +306,7 @@ public abstract class Discovery extends Protocol {
 
         case Event.FIND_INITIAL_MBRS:   // sent by GMS layer, pass up a GET_MBRS_OK event
             // sends the GET_MBRS_REQ to all members, waits 'timeout' ms or until 'num_initial_members' have been retrieved
+            num_discovery_requests++;
             ping_waiter.start();
             break;
 
