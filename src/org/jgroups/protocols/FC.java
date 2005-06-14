@@ -1,11 +1,11 @@
-// $Id: FC.java,v 1.22 2005/06/14 09:23:17 belaban Exp $
+// $Id: FC.java,v 1.23 2005/06/14 13:20:05 belaban Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.*;
+import org.jgroups.stack.Protocol;
 import org.jgroups.util.CondVar;
 import org.jgroups.util.Streamable;
-import org.jgroups.stack.Protocol;
 
 import java.io.*;
 import java.util.*;
@@ -18,7 +18,7 @@ import java.util.*;
  * Note that this protocol must be located towards the top of the stack, or all down_threads from JChannel to this
  * protocol must be set to false ! This is in order to block JChannel.send()/JChannel.down().
  * @author Bela Ban
- * @version $Revision: 1.22 $
+ * @version $Revision: 1.23 $
  */
 public class FC extends Protocol {
 
@@ -28,12 +28,14 @@ public class FC extends Protocol {
     /** HashMap<Address,Long>: keys are members, values are credits left. For each send, the
      * number of credits is decremented by the message size */
     final HashMap sent=new HashMap(11);
+    // final Map sent=new ConcurrentHashMap(11);
 
     /** HashMap<Address,Long>: keys are members, values are credits left (in bytes).
      * For each receive, the credits for the sender are decremented by the size of the received message.
      * When the credits are 0, we refill and send a CREDIT message to the sender. Sender blocks until CREDIT
      * is received after reaching <tt>min_credits</tt> credits. */
     final HashMap received=new HashMap(11);
+    // final Map received=new ConcurrentHashMap(11);
 
     /** We cache the membership */
     final Vector members=new Vector(11);
@@ -413,7 +415,7 @@ public class FC extends Protocol {
      * @param dest
      * @return Whether the required credits could successfully be subtracted from the credits left
      */
-    private boolean decrementCredit(HashMap map, Address dest, long credits_required) {
+    private boolean decrementCredit(Map map, Address dest, long credits_required) {
         long    credits_left, new_credits_left;
         Long    tmp=(Long)map.get(dest);
 
