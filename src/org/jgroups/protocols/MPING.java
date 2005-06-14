@@ -1,15 +1,14 @@
 package org.jgroups.protocols;
 
-import org.jgroups.Message;
 import org.jgroups.Event;
+import org.jgroups.Message;
 import org.jgroups.util.Buffer;
 import org.jgroups.util.ExposedByteArrayOutputStream;
-import org.jgroups.util.Util;
 
 import java.io.*;
 import java.net.*;
-import java.util.Properties;
 import java.util.Enumeration;
+import java.util.Properties;
 
 /**
  * Uses its own IP multicast socket to send and receive discovery requests/responses. Can be used in
@@ -19,7 +18,7 @@ import java.util.Enumeration;
  * back via the regular transport (e.g. TCP) to the sender (discovery request contained sender's regular address,
  * e.g. 192.168.0.2:7800).
  * @author Bela Ban
- * @version $Id: MPING.java,v 1.9 2005/06/14 10:10:12 belaban Exp $
+ * @version $Id: MPING.java,v 1.10 2005/06/14 16:00:24 belaban Exp $
  */
 public class MPING extends PING implements Runnable {
     MulticastSocket     mcast_sock=null;
@@ -153,12 +152,10 @@ public class MPING extends PING implements Runnable {
 
 
     public void start() throws Exception {
-        int jdk_version=Util.getJavaVersion();
-
         mcast_sock=new MulticastSocket(mcast_port);
         mcast_sock.setTimeToLive(ip_ttl);
 
-        if(bind_to_all_interfaces && jdk_version >= 14) {
+        if(bind_to_all_interfaces) {
             bindToAllInterfaces();
             // interface for outgoing packets
             if(bind_addr != null)

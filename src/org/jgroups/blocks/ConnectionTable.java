@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.24 2005/06/14 09:51:07 belaban Exp $
+// $Id: ConnectionTable.java,v 1.25 2005/06/14 16:00:23 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -60,13 +60,8 @@ public class ConnectionTable implements Runnable {
     int                 sock_conn_timeout=1000;      // max time in millis to wait for Socket.connect() to return
     ThreadGroup         thread_group=null;
     protected final Log log=LogFactory.getLog(getClass());
-    static int          javaVersion=0;
     final byte[]        cookie={'b', 'e', 'l', 'a'};
 
-
-    static {
-        javaVersion=Util.getJavaVersion();
-    }
 
 
     /** Used for message reception */
@@ -272,18 +267,12 @@ public class ConnectionTable implements Runnable {
             conn=(Connection)conns.get(dest);
             if(conn == null) {
                 // changed by bela Jan 18 2004: use the bind address for the client sockets as well
-
-                if(javaVersion >= 14) {
-                    SocketAddress tmpBindAddr=new InetSocketAddress(bind_addr, 0);
-                    InetAddress tmpDest=((IpAddress)dest).getIpAddress();
-                    SocketAddress destAddr=new InetSocketAddress(tmpDest, ((IpAddress)dest).getPort());
-                    sock=new Socket();
-                    sock.bind(tmpBindAddr);
-                    sock.connect(destAddr, sock_conn_timeout);
-                }
-                else {
-                    sock=new Socket(((IpAddress)dest).getIpAddress(), ((IpAddress)dest).getPort(), bind_addr, 0);
-                }
+                SocketAddress tmpBindAddr=new InetSocketAddress(bind_addr, 0);
+                InetAddress tmpDest=((IpAddress)dest).getIpAddress();
+                SocketAddress destAddr=new InetSocketAddress(tmpDest, ((IpAddress)dest).getPort());
+                sock=new Socket();
+                sock.bind(tmpBindAddr);
+                sock.connect(destAddr, sock_conn_timeout);
 
                 try {
                     sock.setSendBufferSize(send_buf_size);
@@ -502,7 +491,7 @@ public class ConnectionTable implements Runnable {
             }
             catch(BindException bind_ex) {
                 if (start_port==end_port) throw new BindException("No available port to bind to");
-                if(bind_addr != null && javaVersion >= 14) {
+                if(bind_addr != null) {
                     NetworkInterface nic=NetworkInterface.getByInetAddress(bind_addr);
                     if(nic == null)
                         throw new BindException("bind_addr " + bind_addr + " is not a valid interface");
