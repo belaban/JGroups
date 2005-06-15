@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.24 2005/06/13 13:06:20 belaban Exp $
+// $Id: FD_SOCK.java,v 1.25 2005/06/15 12:09:30 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -27,8 +27,8 @@ import java.util.List;
  * will take place between 2 peers as long as they are alive (i.e. have their server sockets open).
  * The disadvantage is that hung servers or crashed routers will not cause sockets to be closed, therefore
  * they won't be detected.
- * The FD_SOCK protocol will work for groups where members are on different hosts, but its main usage is when
- * all group members are on the same host.<p> The costs involved are 2 additional threads: one that
+ * The FD_SOCK protocol will work for groups where members are on different hosts<p>
+ * The costs involved are 2 additional threads: one that
  * monitors the client side of the socket connection (to monitor a peer) and another one that manages the
  * server socket. However, those threads will be idle as long as both peers are running.
  * @author Bela Ban May 29 2001
