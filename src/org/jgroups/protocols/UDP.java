@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.84 2005/06/15 07:37:33 belaban Exp $
+// $Id: UDP.java,v 1.85 2005/06/15 13:21:54 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -758,7 +758,7 @@ public class UDP extends Protocol implements Runnable {
             inp=new DataInputStream(inp_stream);
 
             if(enable_bundling) {
-                l=bufferToList(inp, dest, sender, port);
+                l=bufferToList(inp, dest);
                 for(Enumeration en=l.elements(); en.hasMoreElements();) {
                     msg=(Message)en.nextElement();
                     try {
@@ -953,7 +953,7 @@ public class UDP extends Protocol implements Runnable {
      * @return
      * @throws IOException
      */
-    Buffer messageToBuffer(Message msg, IpAddress dest, IpAddress src) throws IOException {
+    private Buffer messageToBuffer(Message msg, IpAddress dest, IpAddress src) throws IOException {
         Buffer retval;
         DataOutputStream out=null;
 
@@ -974,7 +974,7 @@ public class UDP extends Protocol implements Runnable {
     }
 
 
-    void nullAddresses(Message msg, IpAddress dest, IpAddress src) {
+    private void nullAddresses(Message msg, IpAddress dest, IpAddress src) {
         msg.setDest(null);
         if(!dest.isMulticastAddress()) { // unicast
             if(src != null) {
@@ -997,13 +997,13 @@ public class UDP extends Protocol implements Runnable {
         }
     }
 
-    void revertAddresses(Message msg, IpAddress dest, IpAddress src) {
+    private void revertAddresses(Message msg, IpAddress dest, IpAddress src) {
         msg.setDest(dest);
         msg.setSrc(src);
     }
 
 
-    Message bufferToMessage(DataInputStream instream, IpAddress dest, InetAddress sender, int port)
+    private Message bufferToMessage(DataInputStream instream, IpAddress dest, InetAddress sender, int port)
             throws IOException, IllegalAccessException, InstantiationException {
         Message msg=new Message();
         msg.readFrom(instream);
@@ -1012,7 +1012,7 @@ public class UDP extends Protocol implements Runnable {
     }
 
 
-    void setAddresses(Message msg, IpAddress dest, InetAddress sender, int port) {
+    private void setAddresses(Message msg, IpAddress dest, InetAddress sender, int port) {
         // set the destination address
         if(msg.getDest() == null && dest != null)
             msg.setDest(dest);
@@ -1032,21 +1032,56 @@ public class UDP extends Protocol implements Runnable {
         }
     }
 
-    Buffer listToBuffer(List l, IpAddress dest) throws IOException {
+//    Buffer listToBuffer(List l, IpAddress dest) throws IOException {
+//        Buffer retval=null;
+//        IpAddress src;
+//        Message msg;
+//        int len=l != null? l.size() : 0;
+//        DataOutputStream out=null;
+//        out_stream.reset();
+//        out_stream.write(Version.version_id, 0, Version.version_id.length); // write the version
+//        try {
+//            out=new DataOutputStream(out_stream);
+//            out.writeInt(len);
+//            for(Enumeration en=l.elements(); en.hasMoreElements();) {
+//                msg=(Message)en.nextElement();
+//                src=(IpAddress)msg.getSrc();
+//                nullAddresses(msg, dest, src);
+//                msg.writeTo(out);
+//                revertAddresses(msg, dest, src);
+//            }
+//            out.flush();
+//            retval=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
+//            return retval;
+//        }
+//        finally {
+//            Util.closeOutputStream(out);
+//        }
+//    }
+
+
+    private Buffer listToBuffer(List l, IpAddress dest) throws IOException {
         Buffer retval=null;
         IpAddress src;
         Message msg;
         int len=l != null? l.size() : 0;
+        boolean src_written=false;
         DataOutputStream out=null;
         out_stream.reset();
         out_stream.write(Version.version_id, 0, Version.version_id.length); // write the version
         try {
             out=new DataOutputStream(out_stream);
             out.writeInt(len);
+
             for(Enumeration en=l.elements(); en.hasMoreElements();) {
                 msg=(Message)en.nextElement();
                 src=(IpAddress)msg.getSrc();
-                nullAddresses(msg, dest, src);
+                if(!src_written) {
+                    Util.writeAddress(src, out);
+                    src_written=true;
+                }
+                msg.setDest(null);
+                msg.setSrc(null);
                 msg.writeTo(out);
                 revertAddresses(msg, dest, src);
             }
@@ -1059,21 +1094,22 @@ public class UDP extends Protocol implements Runnable {
         }
     }
 
-
-
-    List bufferToList(DataInputStream instream, IpAddress dest, InetAddress sender, int port)
+    private List bufferToList(DataInputStream instream, IpAddress dest)
             throws IOException, IllegalAccessException, InstantiationException {
         List            l=new List();
         DataInputStream in=null;
         int             len;
         Message         msg;
+        Address         src;
 
         try {
             len=instream.readInt();
+            src=Util.readAddress(instream);
             for(int i=0; i < len; i++) {
                 msg=new Message();
                 msg.readFrom(instream);
-                setAddresses(msg, dest, sender, port);
+                msg.setDest(dest);
+                msg.setSrc(src);
                 l.add(msg);
             }
             return l;
@@ -1082,6 +1118,29 @@ public class UDP extends Protocol implements Runnable {
             Util.closeInputStream(in);
         }
     }
+
+
+//    List bufferToList(DataInputStream instream, IpAddress dest, InetAddress sender, int port)
+//            throws IOException, IllegalAccessException, InstantiationException {
+//        List            l=new List();
+//        DataInputStream in=null;
+//        int             len;
+//        Message         msg;
+//
+//        try {
+//            len=instream.readInt();
+//            for(int i=0; i < len; i++) {
+//                msg=new Message();
+//                msg.readFrom(instream);
+//                setAddresses(msg, dest, sender, port);
+//                l.add(msg);
+//            }
+//            return l;
+//        }
+//        finally {
+//            Util.closeInputStream(in);
+//        }
+//    }
 
 
 
