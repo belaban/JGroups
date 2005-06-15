@@ -32,7 +32,7 @@ import java.util.*;
  * the unicast routing caches should ensure that unicasts are only sent via 1 interface in almost all cases.
  * 
  * @author Bela Ban Oct 2003
- * @version $Id: UDP1_4.java,v 1.23 2005/05/30 16:14:43 belaban Exp $
+ * @version $Id: UDP1_4.java,v 1.24 2005/06/15 21:08:00 belaban Exp $
  * todo: sending of dummy packets
  */
 public class UDP1_4 extends Protocol implements  Receiver {
@@ -133,8 +133,6 @@ public class UDP1_4 extends Protocol implements  Receiver {
     protected static Log mylog=LogFactory.getLog(UDP1_4.class);
 
 
-    final int VERSION_LENGTH=Version.getLength();
-
     /** Number of bytes to allocate to receive a packet. Needs to be set to be higher than frag_size
      * (handle CONFIG event)
      */
@@ -172,13 +170,6 @@ public class UDP1_4 extends Protocol implements  Receiver {
 
         if(mylog.isTraceEnabled())
             mylog.trace("received " + len + " bytes from " + sender);
-
-        if(Version.compareTo(packet.getData()) == false) {
-            if(mylog.isWarnEnabled()) mylog.warn("packet from " + sender + " has different version (" +
-                    Version.printVersionId(data, Version.version_id.length) +
-                    ") from ours (" + Version.printVersionId(Version.version_id) +
-                    "). This may cause problems");
-        }
 
         if(use_packet_handler && packet_queue != null) {
             byte[] tmp=new byte[len];
@@ -281,7 +272,7 @@ public class UDP1_4 extends Protocol implements  Receiver {
         StringBuffer sb=new StringBuffer();
         sb.append(local_addr).append(" (").append(group_name).append(')');
         sb.append(" [").append(mcast_addr).append("]\n");
-        sb.append("Version=").append(Version.version).append(", cvs=\"").append(Version.cvs).append("\"\n");
+        sb.append("Version=").append(Version.description).append(", cvs=\"").append(Version.cvs).append("\"\n");
         sb.append("physical addresses: ").append(local_addr.getPhysicalAddresses()).append('\n');
         sb.append("members: ").append(members).append('\n');
 
@@ -605,11 +596,20 @@ public class UDP1_4 extends Protocol implements  Receiver {
         UdpHeader            hdr=null;
         Event                evt;
         Address              dst, src;
+        short                version;
 
         try {
             // skip the first n bytes (default: 4), this is the version info
-            inp_stream=new ByteArrayInputStream(data, VERSION_LENGTH, data.length - VERSION_LENGTH);
+            inp_stream=new ByteArrayInputStream(data);
             inp=new ObjectInputStream(inp_stream);
+            version=inp.readShort();
+
+            if(Version.compareTo(version) == false) {
+                if(mylog.isWarnEnabled())
+                    mylog.warn("packet from " + sender + " has different version (" + version +
+                               ") from ours (" + Version.version + "). This may cause problems");
+            }
+
             msg=new Message();
             msg.readExternal(inp);
             dst=msg.getDest();
@@ -714,8 +714,8 @@ public class UDP1_4 extends Protocol implements  Receiver {
         }
 
         out_stream.reset();
-        out_stream.write(Version.version_id, 0, Version.version_id.length); // write the version
         out=new ObjectOutputStream(out_stream);
+        out.writeShort(Version.version);
         msg.writeExternal(out);
         out.flush(); // needed if out buffers its output to out_stream
         buf=out_stream.toByteArray();
@@ -945,7 +945,7 @@ public class UDP1_4 extends Protocol implements  Receiver {
         MulticastSocket mcast_sock=null;
 
         /** Local port of the mcast_sock */
-        SocketAddress local_addr=null;
+        SocketAddress localAddr=null;
 
         /** The receiver which handles incoming packets */
         Receiver receiver=null;
@@ -1006,15 +1006,15 @@ public class UDP1_4 extends Protocol implements  Receiver {
             mcast_sock.setTimeToLive(ip_ttl);
             System.out.println("ttl=" + mcast_sock.getTimeToLive());
             mcast_sock.setNetworkInterface(this.bind_interface); // for outgoing multicasts
-            local_addr=mcast_sock.getLocalSocketAddress();
-            System.out.println("-- local_addr=" + local_addr);
+            localAddr=mcast_sock.getLocalSocketAddress();
+            System.out.println("-- local_addr=" + localAddr);
             System.out.println("-- mcast_sock: send_bufsize=" + mcast_sock.getSendBufferSize() +
                     ", recv_bufsize=" + mcast_sock.getReceiveBufferSize());
         }
 
 
         public SocketAddress getLocalAddress() {
-            return local_addr;
+            return localAddr;
         }
 
         public NetworkInterface getBindInterface() {
@@ -1029,7 +1029,7 @@ public class UDP1_4 extends Protocol implements  Receiver {
                 if(mylog.isWarnEnabled()) mylog.warn("connector thread is already running");
                 return;
             }
-            t=new Thread(this, "ConnectorThread for " + local_addr);
+            t=new Thread(this, "ConnectorThread for " + localAddr);
             t.setDaemon(true);
             t.start();
 
@@ -1065,10 +1065,10 @@ public class UDP1_4 extends Protocol implements  Receiver {
                     packet.setData(receive_buffer, 0, receive_buffer.length);
                     ConnectorTable.receivePacket(packet, mcast_sock, receiver);
                 }
-                catch(Throwable t) {
-                    if(t == null || mcast_sock == null || mcast_sock.isClosed())
+                catch(Throwable th) {
+                    if(th == null || mcast_sock == null || mcast_sock.isClosed())
                         break;
-                    if(mylog.isErrorEnabled()) mylog.error("[" + local_addr + "] exception=" + t);
+                    if(mylog.isErrorEnabled()) mylog.error("[" + localAddr + "] exception=" + th);
                     Util.sleep(300); // so we don't get into 100% cpu spinning (should NEVER happen !)
                 }
             }
@@ -1080,7 +1080,7 @@ public class UDP1_4 extends Protocol implements  Receiver {
 
         public String toString() {
             StringBuffer sb=new StringBuffer();
-            sb.append("local_addr=").append(local_addr).append(", mcast_group=");
+            sb.append("local_addr=").append(localAddr).append(", mcast_group=");
             return sb.toString();
         }
 
@@ -1123,7 +1123,7 @@ public class UDP1_4 extends Protocol implements  Receiver {
         MulticastSocket mcast_sock=null;
 
         /** The multicast address which mcast_sock will join (e.g. 230.1.2.3:7500) */
-        InetSocketAddress mcast_addr=null;
+        InetSocketAddress mcastAddr=null;
 
         Receiver receiver=null;
 
@@ -1143,7 +1143,7 @@ public class UDP1_4 extends Protocol implements  Receiver {
                               int receive_buffer_size, int receive_sock_buf_size,
                               boolean ip_mcast, Receiver receiver) throws IOException {
             this.receiver=receiver;
-            this.mcast_addr=mcast_addr;
+            this.mcastAddr=mcast_addr;
             this.receive_buffer=new byte[receive_buffer_size];
 
             if(ip_mcast) {
@@ -1213,10 +1213,10 @@ public class UDP1_4 extends Protocol implements  Receiver {
                 try {
                     receivePacket(p, mcast_sock, this);
                 }
-                catch(Throwable t) {
-                    if(t == null || mcast_sock == null || mcast_sock.isClosed())
+                catch(Throwable th) {
+                    if(th == null || mcast_sock == null || mcast_sock.isClosed())
                         break;
-                    if(mylog.isErrorEnabled()) mylog.error("exception=" + t);
+                    if(mylog.isErrorEnabled()) mylog.error("exception=" + th);
                     Util.sleep(300); // so we don't get into 100% cpu spinning (should NEVER happen !)
                 }
             }
@@ -1305,9 +1305,9 @@ public class UDP1_4 extends Protocol implements  Receiver {
 
             // 1. join the group on this interface
             if(mcast_sock != null) {
-                mcast_sock.joinGroup(mcast_addr, ni);
+                mcast_sock.joinGroup(mcastAddr, ni);
 
-                    if(mylog.isInfoEnabled()) mylog.info("joining " + mcast_addr + " on interface " + ni);
+                    if(mylog.isInfoEnabled()) mylog.info("joining " + mcastAddr + " on interface " + ni);
             }
 
             // 2. create a new Connector

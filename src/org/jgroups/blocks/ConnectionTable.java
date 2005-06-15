@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.25 2005/06/14 16:00:23 belaban Exp $
+// $Id: ConnectionTable.java,v 1.26 2005/06/15 21:07:59 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -732,8 +732,9 @@ public class ConnectionTable implements Runnable {
          */
         Address readPeerAddress(Socket client_sock) throws Exception {
             Address     client_peer_addr=null;
-            byte[]      version, buf, input_cookie=new byte[cookie.length];
+            byte[]      buf, input_cookie=new byte[cookie.length];
             int         len=0, client_port=client_sock != null? client_sock.getPort() : 0;
+            short       version;
             InetAddress client_addr=client_sock != null? client_sock.getInetAddress() : null;
 
             if(in != null) {
@@ -745,14 +746,13 @@ public class ConnectionTable implements Runnable {
                     throw new SocketException("ConnectionTable.Connection.readPeerAddress(): cookie sent by " +
                                               client_peer_addr + " does not match own cookie; terminating connection");
                 // then read the version
-                version=new byte[Version.version_id.length];
-                in.read(version, 0, version.length);
+                version=in.readShort();
 
                 if(Version.compareTo(version) == false) {
                     if(log.isWarnEnabled()) log.warn("packet from " + client_addr + ':' + client_port +
                                " has different version (" +
-                               Version.printVersionId(version, Version.version_id.length) +
-                               ") from ours (" + Version.printVersionId(Version.version_id) +
+                               version +
+                               ") from ours (" + Version.printVersion() +
                                "). This may cause problems");
                 }
 
@@ -788,7 +788,7 @@ public class ConnectionTable implements Runnable {
                     out.write(cookie, 0, cookie.length);
 
                     // write the version
-                    out.write(Version.version_id, 0, Version.version_id.length);
+                    out.writeShort(Version.version);
 
                     // write the length of the buffer
                     out.writeInt(buf.length);

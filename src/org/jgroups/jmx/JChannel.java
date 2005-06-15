@@ -14,7 +14,7 @@ import java.io.Serializable;
 
 /**
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.3 2005/06/07 10:17:27 belaban Exp $
+ * @version $Id: JChannel.java,v 1.4 2005/06/15 21:08:00 belaban Exp $
  */
 public class JChannel implements JChannelMBean {
     /** Ref to the original JGroups channel */
@@ -54,7 +54,7 @@ public class JChannel implements JChannelMBean {
     }
 
     public String getVersion() {
-        return Version.printVersion();
+        return Version.printDescription();
     }
 
     public String getProperties() {
