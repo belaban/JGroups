@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.30 2005/04/20 14:02:08 belaban Exp $
+// $Id: Message.java,v 1.31 2005/06/15 08:57:15 belaban Exp $
 
 package org.jgroups;
 
@@ -6,11 +6,11 @@ package org.jgroups;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.conf.ClassConfigurator;
+import org.jgroups.stack.IpAddress;
 import org.jgroups.util.ContextObjectInputStream;
 import org.jgroups.util.Marshaller;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
-import org.jgroups.stack.IpAddress;
 
 import java.io.*;
 import java.util.HashMap;
@@ -41,8 +41,8 @@ public class Message implements Externalizable, Streamable {
     /** The number of bytes in the buffer (usually buf.length is buf != null) */
     protected transient int     length=0;
 
-    /** HashMap<String,Header> */
-    protected HashMap headers=null;
+    /** Map<String,Header> */
+    protected Map headers=null;
 
     protected static final Log log=LogFactory.getLog(Message.class);
 
@@ -243,7 +243,7 @@ public class Message implements Externalizable, Streamable {
 
     /**
      * Nulls all fields of this message so that the message can be reused. Removes all headers from the
-     * stack, but keeps the stack
+     * hashmap, but keeps the hashmap
      */
     public void reset() {
         dest_addr=src_addr=null;
@@ -293,22 +293,10 @@ public class Message implements Externalizable, Streamable {
 
             // change bela Feb 26 2004: we don't resolve the reference
             retval.setBuffer(buf, offset, length);
-
-
-            /*
-            byte[] new_buf;
-            if(offset > 0 || length != buf.length) { // resolve reference to subset by copying subset into new buffer
-                new_buf=new byte[length];
-                System.arraycopy(buf, offset, new_buf, 0, length);
-            }
-            else
-                new_buf=buf;
-            retval.setBuffer(new_buf);
-            */
         }
 
         if(headers != null)
-            retval.headers=(HashMap)headers.clone();
+            retval.headers=createHeaders(headers);
         return retval;
     }
 
@@ -335,8 +323,9 @@ public class Message implements Externalizable, Streamable {
         else
             ret.append(src_addr);
 
-        if(headers != null && headers.size() > 0)
-            ret.append(" (" + headers.size() + " headers)");
+        int size;
+        if(headers != null && (size=headers.size()) > 0)
+            ret.append(" (" + size + " headers)");
 
         ret.append(", size = ");
         if(buf != null && length > 0)
@@ -484,7 +473,7 @@ public class Message implements Externalizable, Streamable {
         }
 
         len=in.readInt();
-        if(len > 0) headers=new HashMap(11);
+        if(len > 0) headers=createHeaders(11);
         while(len-- > 0) {
             key=in.readUTF();
             value=Marshaller.read(in);
@@ -569,8 +558,9 @@ public class Message implements Externalizable, Streamable {
         }
 
         // 5. headers
-        if(headers != null && headers.size() > 0) {
-            out.writeInt(headers.size());
+        int size;
+        if(headers != null && (size=headers.size()) > 0) {
+            out.writeInt(size);
             for(Iterator it=headers.entrySet().iterator(); it.hasNext();) {
                 entry=(Map.Entry)it.next();
                 out.writeUTF((String)entry.getKey());
@@ -656,13 +646,13 @@ public class Message implements Externalizable, Streamable {
 
     /* ----------------------------------- Private methods ------------------------------- */
 
-    HashMap headers() {
-        return headers != null ? headers : (headers=new HashMap(11));
+    private Map headers() {
+        return headers != null ? headers : (headers=createHeaders(11));
     }
 
 
-    HashMap headers(int len) {
-        return headers != null ? headers : (headers=new HashMap(len));
+    private Map headers(int len) {
+        return headers != null ? headers : (headers=createHeaders(len));
     }
 
     private void writeHeader(Header value, DataOutputStream out) throws IOException {
@@ -741,6 +731,15 @@ public class Message implements Externalizable, Streamable {
         }
 
         return hdr;
+    }
+
+    private Map createHeaders(int size) {
+        return new HashMap(size);
+    }
+
+
+    private Map createHeaders(Map m) {
+        return new HashMap(m);
     }
 
     /* ------------------------------- End of Private methods ---------------------------- */
