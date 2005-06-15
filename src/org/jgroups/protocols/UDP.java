@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.83 2005/06/14 16:00:24 belaban Exp $
+// $Id: UDP.java,v 1.84 2005/06/15 07:37:33 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -60,6 +60,18 @@ public class UDP extends Protocol implements Runnable {
 
     /** IP multicast socket for <em>sending</em> multicast packets */
     MulticastSocket mcast_send_sock=null;
+
+    /**
+     * Traffic class for sending unicast and multicast datagrams.
+     * Valid values are (check {@link #DatagramSocket.setTrafficClass(int)}  for details):
+     * <UL>
+     * <LI><CODE>IPTOS_LOWCOST (0x02)</CODE>, <b>decimal 2</b></LI>
+     * <LI><CODE>IPTOS_RELIABILITY (0x04)</CODE><, <b>decimal 4</b>/LI>
+     * <LI><CODE>IPTOS_THROUGHPUT (0x08)</CODE>, <b>decimal 8</b></LI>
+     * <LI><CODE>IPTOS_LOWDELAY (0x10)</CODE>, <b>decimal</b> 16</LI>
+     * </UL>
+     */
+    int             tos=0; // valid values: 2, 4, 8, 16
 
     /** The address (host and port) of this member */
     IpAddress       local_addr=null;
@@ -495,6 +507,12 @@ public class UDP extends Protocol implements Runnable {
         if(str != null) {
             ip_ttl=Integer.parseInt(str);
             props.remove("ip_ttl");
+        }
+
+        str=props.getProperty("tos");
+        if(str != null) {
+            tos=Integer.parseInt(str);
+            props.remove("tos");
         }
 
         str=props.getProperty("mcast_send_buf_size");
@@ -1102,6 +1120,14 @@ public class UDP extends Protocol implements Runnable {
         else {
             sock=createEphemeralDatagramSocket();
         }
+        if(tos > 0) {
+            try {
+                sock.setTrafficClass(tos);
+            }
+            catch(SocketException e) {
+                log.warn("traffic class of " + tos + " could not be set, will be ignored", e);
+            }
+        }
 
         if(sock == null)
             throw new Exception("UDP.createSocket(): sock is null");
@@ -1133,7 +1159,15 @@ public class UDP extends Protocol implements Runnable {
             mcast_send_sock.setTimeToLive(ip_ttl);
             if(bind_addr != null)
                 mcast_send_sock.setInterface(bind_addr);
-            // mcast_send_sock.setTrafficClass(0x08); // high throughput; should investigate when baseline is JDK 1.4
+
+            if(tos > 0) {
+                try {
+                    mcast_send_sock.setTrafficClass(tos); // high throughput
+                }
+                catch(SocketException e) {
+                    log.warn("traffic class of " + tos + " could not be set, will be ignored", e);
+                }
+            }
         }
 
         setBufferSizes();
