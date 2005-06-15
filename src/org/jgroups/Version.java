@@ -5,63 +5,27 @@ package org.jgroups;
 
 
 public class Version {
-    public static final String version="2.2.9 alpha";
-    public static byte[] version_id={'2', '2', '9', 'a'};
-    public static final String cvs="$Id: Version.java,v 1.20 2005/06/15 11:47:02 belaban Exp $";
+    public static final String description="2.2.9 alpha";
+    public static final short version=229;
+    public static final String cvs="$Id: Version.java,v 1.21 2005/06/15 21:08:01 belaban Exp $";
 
     public static void main(String[] args) {
-        System.out.println("\nVersion: \t" + version);
+        System.out.println("\nVersion: \t" + description);
         System.out.println("CVS: \t\t" + cvs);
         System.out.println("History: \t(see doc/history.txt for details)\n");
     }
 
 
+    public static String printDescription() {
+        return "JGroups " + description + "[ " + cvs + "]";
+    }
+
+
     public static String printVersion() {
-        return "JGroups " + version + "[ " + cvs + "]";
+        return new Short(version).toString();
     }
 
-    public static String printVersionId(byte[] v, int len) {
-        StringBuffer sb=new StringBuffer();
-        if(v != null) {
-            if(len <= 0)
-                len=v.length;
-            for(int i=0; i < len; i++)
-                sb.append((char)v[i]);
-        }
-        return sb.toString();
+    public static boolean compareTo(short v) {
+        return version == v;
     }
-
-       public static String printVersionId(byte[] v) {
-        StringBuffer sb=new StringBuffer();
-        if(v != null) {
-            for(int i=0; i < v.length; i++)
-                sb.append((char)v[i]);
-        }
-        return sb.toString();
-    }
-
-    /**
-     * Don't use this method; used by unit testing only.
-     * @param v
-     */
-    public static void setVersion(byte[] v) {
-        version_id=v;
-    }
-
-    public static boolean compareTo(byte[] v) {
-        if(v == null)
-            return false;
-        if(v.length < version_id.length)
-            return false;
-        for(int i=0; i < version_id.length; i++) {
-            if(version_id[i] != v[i])
-                return false;
-        }
-        return true;
-    }
-
-    public static int getLength() {
-        return version_id.length;
-    }
-
 }

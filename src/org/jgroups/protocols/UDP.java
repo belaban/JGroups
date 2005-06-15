@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.85 2005/06/15 13:21:54 belaban Exp $
+// $Id: UDP.java,v 1.86 2005/06/15 21:08:00 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -203,8 +203,6 @@ public class UDP extends Protocol implements Runnable {
      * value for all members of the same group. Default is true, for performance reasons */
     boolean null_src_addresses=true;
 
-    final int VERSION_LENGTH=Version.getLength();
-
     long num_msgs_sent=0, num_msgs_received=0, num_bytes_sent=0, num_bytes_received=0;
 
 
@@ -293,21 +291,22 @@ public class UDP extends Protocol implements Runnable {
                                              "Use the FRAG protocol and make its frag_size lower than " + receive_buf.length);
                 }
 
-                if(Version.compareTo(data) == false) {
-                    if(log.isWarnEnabled()) {
-                        StringBuffer sb=new StringBuffer();
-                        sb.append("packet from ").append(sender_addr).append(':').append(sender_port);
-                        sb.append(" has different version (").append(Version.printVersionId(data, Version.version_id.length));
-                        sb.append(") from ours (").append(Version.printVersionId(Version.version_id)).append("). ");
-                        if(discard_incompatible_packets)
-                            sb.append("Packet is discarded");
-                        else
-                            sb.append("This may cause problems");
-                        log.warn(sb.toString());
-                    }
-                    if(discard_incompatible_packets)
-                        continue;
-                }
+
+//                if(Version.compareTo(data) == false) {
+//                    if(log.isWarnEnabled()) {
+//                        StringBuffer sb=new StringBuffer();
+//                        sb.append("packet from ").append(sender_addr).append(':').append(sender_port);
+//                        sb.append(" has different version (").append(Version.printVersion());
+//                        sb.append(") from ours (").append(Version.printVersion()).append("). ");
+//                        if(discard_incompatible_packets)
+//                            sb.append("Packet is discarded");
+//                        else
+//                            sb.append("This may cause problems");
+//                        log.warn(sb.toString());
+//                    }
+//                    if(discard_incompatible_packets)
+//                        continue;
+//                }
 
                 if(use_incoming_packet_handler) {
                     tmp=new byte[len];
@@ -356,7 +355,7 @@ public class UDP extends Protocol implements Runnable {
         StringBuffer sb=new StringBuffer();
         sb.append(local_addr).append(" (").append(channel_name).append(')');
         sb.append(" [").append(mcast_addr_name).append(':').append(mcast_port).append("]\n");
-        sb.append("Version=").append(Version.version).append(", cvs=\"").append(Version.cvs).append("\"\n");
+        sb.append("Version=").append(Version.description).append(", cvs=\"").append(Version.cvs).append("\"\n");
         sb.append("bound to ").append(bind_addr).append(':').append(bind_port).append('\n');
         sb.append("members: ").append(members).append('\n');
 
@@ -751,11 +750,29 @@ public class UDP extends Protocol implements Runnable {
         DataInputStream      inp=null;
         Message              msg=null;
         List                 l;  // used if bundling is enabled
+        short                version;
 
         try {
             // skip the first n bytes (default: 4), this is the version info
-            inp_stream=new ByteArrayInputStream(data, VERSION_LENGTH, data.length - VERSION_LENGTH);
+            inp_stream=new ByteArrayInputStream(data);
             inp=new DataInputStream(inp_stream);
+            version=inp.readShort();
+
+            if(Version.compareTo(version) == false) {
+                if(log.isWarnEnabled()) {
+                    StringBuffer sb=new StringBuffer();
+                    sb.append("packet from ").append(sender).append(':').append(port);
+                    sb.append(" has different version (").append(version);
+                    sb.append(") from ours (").append(Version.printVersion()).append("). ");
+                    if(discard_incompatible_packets)
+                        sb.append("Packet is discarded");
+                    else
+                        sb.append("This may cause problems");
+                    log.warn(sb.toString());
+                }
+                if(discard_incompatible_packets)
+                    return;
+            }
 
             if(enable_bundling) {
                 l=bufferToList(inp, dest);
@@ -958,9 +975,10 @@ public class UDP extends Protocol implements Runnable {
         DataOutputStream out=null;
 
         out_stream.reset();
-        out_stream.write(Version.version_id, 0, Version.version_id.length); // write the version
+
         try {
             out=new DataOutputStream(out_stream);
+            out.writeShort(Version.version); // write the version
             nullAddresses(msg, dest, src);
             msg.writeTo(out);
             revertAddresses(msg, dest, src);
@@ -1068,9 +1086,10 @@ public class UDP extends Protocol implements Runnable {
         boolean src_written=false;
         DataOutputStream out=null;
         out_stream.reset();
-        out_stream.write(Version.version_id, 0, Version.version_id.length); // write the version
+
         try {
             out=new DataOutputStream(out_stream);
+            out.writeShort(Version.version);
             out.writeInt(len);
 
             for(Enumeration en=l.elements(); en.hasMoreElements();) {
@@ -1651,21 +1670,21 @@ public class UDP extends Protocol implements Runnable {
                                       "Use the FRAG protocol and make its frag_size lower than " + receive_buf.length);
                     }
 
-                    if(Version.compareTo(data) == false) {
-                        if(log.isWarnEnabled()) {
-                            StringBuffer sb=new StringBuffer();
-                            sb.append("packet from ").append(sender_addr).append(':').append(sender_port);
-                            sb.append(" has different version (").append(Version.printVersionId(data, Version.version_id.length));
-                            sb.append(") from ours (").append(Version.printVersionId(Version.version_id)).append("). ");
-                            if(discard_incompatible_packets)
-                                sb.append("Packet is discarded");
-                            else
-                                sb.append("This may cause problems");
-                            log.warn(sb.toString());
-                        }
-                        if(discard_incompatible_packets)
-                            continue;
-                    }
+//                    if(Version.compareTo(data) == false) {
+//                        if(log.isWarnEnabled()) {
+//                            StringBuffer sb=new StringBuffer();
+//                            sb.append("packet from ").append(sender_addr).append(':').append(sender_port);
+//                            sb.append(" has different version (").append(Version.printVersion());
+//                            sb.append(") from ours (").append(Version.printVersion()).append("). ");
+//                            if(discard_incompatible_packets)
+//                                sb.append("Packet is discarded");
+//                            else
+//                                sb.append("This may cause problems");
+//                            log.warn(sb.toString());
+//                        }
+//                        if(discard_incompatible_packets)
+//                            continue;
+//                    }
 
                     if(use_incoming_packet_handler) {
                         tmp=new byte[len];
