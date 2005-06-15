@@ -1,15 +1,19 @@
 package org.jgroups.tests.perf.transports;
 
 import org.jgroups.*;
+import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.tests.perf.Receiver;
 import org.jgroups.tests.perf.Transport;
 
+import javax.management.MBeanServerFactory;
+import javax.management.MBeanServer;
 import java.util.Properties;
+import java.util.ArrayList;
 
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: JGroupsTransport.java,v 1.3 2004/03/30 06:47:36 belaban Exp $
+ * @version $Id: JGroupsTransport.java,v 1.4 2005/06/15 08:29:45 belaban Exp $
  */
 public class JGroupsTransport implements Transport, Runnable {
     Properties config=null;
@@ -18,6 +22,7 @@ public class JGroupsTransport implements Transport, Runnable {
     String     props=null;
     String     group_name="PerfGroup";
     Receiver   receiver=null;
+    boolean    jmx=false;
 
     public JGroupsTransport() {
 
@@ -30,11 +35,21 @@ public class JGroupsTransport implements Transport, Runnable {
     public void create(Properties properties) throws Exception {
         this.config=properties;
         props=config.getProperty("props");
+        jmx=new Boolean(this.config.getProperty("jmx")).booleanValue();
         channel=new JChannel(props);
     }
 
     public void start() throws Exception {
         channel.connect(group_name);
+        if(jmx) {
+            ArrayList servers=MBeanServerFactory.findMBeanServer(null);
+            if(servers == null || servers.size() == 0) {
+                throw new Exception("No MBeanServers found;" +
+                                    "\nneeds to be run with an MBeanServer present, or inside JDK 5");
+            }
+            MBeanServer server=(MBeanServer)servers.get(0);
+            JmxConfigurator.registerChannel(channel, server, "PerfTest:channel=" + channel.getChannelName() , true);
+        }
         t=new Thread(this, "JGroupsTransport receiver thread");
         t.start();
     }
@@ -79,8 +94,8 @@ public class JGroupsTransport implements Transport, Runnable {
                         try {
                             receiver.receive(sender, payload);
                         }
-                        catch(Throwable t) {
-                            t.printStackTrace();
+                        catch(Throwable tt) {
+                            tt.printStackTrace();
                         }
                     }
                 }

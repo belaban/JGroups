@@ -52,6 +52,7 @@ public class Test implements Receiver {
 
     long            counter=1;
     long            msg_size=1000;
+    boolean         jmx=false;
 
 
 
@@ -123,6 +124,7 @@ public class Test implements Receiver {
             sb.append(" [KB/sec]\n");
             if(log.isInfoEnabled()) log.info(sb.toString());
         }
+        jmx=new Boolean(this.config.getProperty("jmx")).booleanValue();
 
         String transport_name=this.config.getProperty("transport");
         transport=(Transport)Thread.currentThread().getContextClassLoader().loadClass(transport_name).newInstance();
@@ -543,6 +545,16 @@ public class Test implements Receiver {
                     t.wait();
                 }
                 Util.sleep(2000);
+            }
+            if(t.jmx) {
+                System.out.println("jmx=true: not terminating");
+                if(t != null) {
+                    t.stop();
+                    t=null;
+                }
+                while(true) {
+                    Util.sleep(60000);
+                }
             }
         }
         catch(Exception e) {
