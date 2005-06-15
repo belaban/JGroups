@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.22 2005/06/13 13:49:17 belaban Exp $
+// $Id: STABLE.java,v 1.23 2005/06/15 08:13:20 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -519,6 +519,7 @@ public class STABLE extends Protocol {
                           " (num_gossip_runs=" + num_gossip_runs + ", max_gossip_runs=" + max_gossip_runs + ')');
             hdr=new StableHeader(StableHeader.STABLE_GOSSIP, d);
             msg.putHeader(name, hdr);
+            num_gossips++;
             passDown(new Event(Event.MSG, msg));
         }
     }
@@ -735,7 +736,6 @@ public class STABLE extends Protocol {
             }
             initialize();
             sendStableMessage();
-            num_gossips++;
             num_gossip_runs--;
             if(num_gossip_runs <= 0) {
                 if(log.isTraceEnabled())
