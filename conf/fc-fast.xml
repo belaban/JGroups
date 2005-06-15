@@ -6,6 +6,7 @@
     <UDP bind_addr="localhost"
         mcast_send_buf_size="10000000"
         mcast_port="45566"
+        tos="16"
         ucast_recv_buf_size="10000000"
         mcast_addr="228.8.8.8"
         bind_to_all_interfaces="true"
