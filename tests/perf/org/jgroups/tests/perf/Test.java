@@ -56,6 +56,7 @@ public class Test implements Receiver {
 
 
 
+
     public void start(Properties c, boolean verbose) throws Exception {
         String          config_file="config.txt";
         BufferedReader  fileReader;
@@ -245,7 +246,7 @@ public class Test implements Receiver {
             info.num_msgs_received++;
             counter++;
             info.total_bytes_received+=num_bytes;
-            if(info.num_msgs_received % 1000 == 0)
+            if(info.num_msgs_received % log_interval == 0)
                 System.out.println("-- received " + info.num_msgs_received +
                                    " messages from " + sender);
 
@@ -304,7 +305,7 @@ public class Test implements Receiver {
         long total_msgs=0;
         int msgSize=Integer.parseInt(config.getProperty("msg_size"));
         int num_msgs=Integer.parseInt(config.getProperty("num_msgs"));
-        int logInterval=Integer.parseInt(config.getProperty("log_interval"));
+        // int logInterval=Integer.parseInt(config.getProperty("log_interval"));
         // boolean gnuplot_output=Boolean.getBoolean(config.getProperty("gnuplot_output", "false"));
         byte[] buf=new byte[msgSize];
         for(int k=0; k < msgSize; k++)
@@ -314,10 +315,10 @@ public class Test implements Receiver {
         for(int i=0; i < num_msgs; i++) {
             transport.send(null, payload);
             total_msgs++;
-            if(total_msgs % 1000 == 0) {
+            if(total_msgs % log_interval == 0) {
                 System.out.println("++ sent " + total_msgs);
             }
-            if(total_msgs % logInterval == 0) {
+            if(total_msgs % log_interval == 0) {
                 //if(gnuplot_output == false)
                 //  if(log.isInfoEnabled()) log.info(dumpStats(total_msgs));
             }
