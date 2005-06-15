@@ -24,7 +24,8 @@ Best result with perf.Test (2 members, 1 sender, laptop, 20000 1K msgs
 <config>
     <UDP bind_addr="192.168.5.1"
          mcast_port="45566" 
-         mcast_addr="228.8.8.8" 
+         mcast_addr="228.8.8.8"
+         tos="16"
          ucast_recv_buf_size="20000000"
          ucast_send_buf_size="640000"
          mcast_recv_buf_size="25000000" 
