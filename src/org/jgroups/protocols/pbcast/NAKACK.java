@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.47 2005/06/08 12:36:42 belaban Exp $
+// $Id: NAKACK.java,v 1.48 2005/06/22 13:04:03 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -865,8 +865,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         for(int i=0; i < d.size(); i++) {
             sender=d.senderAt(i);
             if(sender == null) {
-                if(log.isErrorEnabled()) {
-                    log.error("sender at index " + i + " in digest is null");
+                if(log.isWarnEnabled()) {
+                    log.warn("sender at index " + i + " in digest is null");
                 }
                 continue;
             }
@@ -898,8 +898,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         for(int i=0; i < d.size(); i++) {
             sender=d.senderAt(i);
             if(sender == null) {
-                if(log.isErrorEnabled()) {
-                    log.error("sender at index " + i + " in digest is null");
+                if(log.isWarnEnabled()) {
+                    log.warn("sender at index " + i + " in digest is null");
                 }
                 continue;
             }
