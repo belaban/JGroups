@@ -1,6 +1,6 @@
 
 // Author: Bela Ban
-// $Id: MarshalingFormat.txt,v 1.1 2005/06/22 16:26:26 belaban Exp $
+// $Id: MarshalingFormat.txt,v 1.2 2005/06/22 16:38:30 belaban Exp $
 
 
 Binary format for marshalled messages
@@ -40,3 +40,6 @@ Notes:
 - In most cases, we don't need to send the dest address, because the sender knows whether the message
   was received on the unicast or multicast socket, and can thus set the dest address in an incoming
   message to its own local address, or multicast address
+
+- This is currently as used by UDP. Once we move to Transport (e.g. including TCP), this needs to be
+  revisited. Currently (2.2.8), TCP uses externalization, *not* Streamable.
