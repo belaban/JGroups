@@ -1,0 +1,42 @@
+
+// Author: Bela Ban
+// $Id: MarshalingFormat.txt,v 1.1 2005/06/22 16:26:26 belaban Exp $
+
+
+Binary format for marshalled messages
+=====================================
+
+An org.jgroups.Message is marshalled to a byte stream as follows.
+
+- version ID: short (2 bytes). 2.2.7 is represented as 227, 2.2.8.1 as 2281
+- single message (false) or list of messages (true): boolean (byte)
+  If single message --> SingleMessage, else MessageList
+
+SingleMessage:
+- leading: byte. Has bits set for null src and dest addresses, buf and headers
+- src address: Address
+- [length of buf]: int
+- [buf]: byte[] array
+- [Headers]: list of headers --> Headers
+
+
+MessageList:
+- length: int. Number of messages in the list
+- src address: Address
+- 1-m Messages: --> SingleMessage, but with null src and dest addresses
+
+
+
+Headers:
+- length: int. Number of headers
+- For each Header:
+  - Key: string.
+  - Header
+
+
+
+Notes:
+
+- In most cases, we don't need to send the dest address, because the sender knows whether the message
+  was received on the unicast or multicast socket, and can thus set the dest address in an incoming
+  message to its own local address, or multicast address
