@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.13 2005/06/07 10:17:20 belaban Exp $
+// $Id: Draw.java,v 1.14 2005/06/22 14:48:46 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -29,7 +29,7 @@ import java.util.ArrayList;
  */
 public class Draw implements ActionListener, ChannelListener {
     private final ByteArrayOutputStream  out=new ByteArrayOutputStream();
-    private final String                 groupname="DrawGroupDemo";
+    String                         groupname="DrawGroupDemo";
     private JChannel               channel=null;
     private int                    member_size=1;
     Debugger                       debugger=null;
@@ -63,8 +63,14 @@ public class Draw implements ActionListener, ChannelListener {
     }
 
 
+    public String getGroupName() {
+        return groupname;
+    }
 
-
+    public void setGroupName(String groupname) {
+        if(groupname != null)
+            this.groupname=groupname;
+    }
 
 
    public static void main(String[] args) {
@@ -74,6 +80,7 @@ public class Draw implements ActionListener, ChannelListener {
        boolean          cummulative=false;
        boolean          no_channel=false;
        boolean          jmx=false;
+       String           group_name=null;
 
         for(int i=0; i < args.length; i++) {
             if("-help".equals(args[i])) {
@@ -98,6 +105,10 @@ public class Draw implements ActionListener, ChannelListener {
             }
             if("-jmx".equals(args[i])) {
                 jmx=true;
+                continue;
+            }
+            if("-groupname".equals(args[i])) {
+                group_name=args[++i];
                 continue;
             }
 
@@ -125,6 +136,8 @@ public class Draw implements ActionListener, ChannelListener {
 
         try {
             draw=new Draw(props, debug, cummulative, no_channel, jmx);
+            if(group_name != null)
+                draw.setGroupName(group_name);
             draw.go();
         }
         catch(Throwable e) {
@@ -135,7 +148,8 @@ public class Draw implements ActionListener, ChannelListener {
 
 
     static void help() {
-        System.out.println("\nDraw [-help] [-debug] [-cummulative] [-no_channel] [-props <protocol stack definition>]");
+        System.out.println("\nDraw [-help] [-debug] [-cummulative] [-no_channel] [-props <protocol stack definition>]" +
+                           " [-groupname <name>]");
         System.out.println("-debug: brings up a visual debugger");
         System.out.println("-no_channel: doesn't use JGroups at all, any drawing will be relected on the " +
                            "whiteboard directly");
