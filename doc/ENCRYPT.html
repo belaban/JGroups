@@ -121,7 +121,7 @@ security.provider.6=org.bouncycastle.jce.provider.BouncyCastleProvider<br>
   at any point in the JGroup stack - it will encrypt all Events of a type MSG that 
   have a non-null message buffer. The format of the JGroup XML entry in this form is:<p>
   <b>
-  &lt;ENCRYPT1_4 key_store_name="defaultStore.keystore" store_password="changeit" alias="myKey"/&gt;<br>
+  &lt;ENCRYPT key_store_name="defaultStore.keystore" store_password="changeit" alias="myKey"/&gt;<br>
   </b><p>
   An example bare-bones.xml file showing the keystore version can be found in the conf 
   directory in a file called <b>EncryptKeyStore.xml</b> - you will need to generate a keystore - see the KeyStoreGenerator file in the demo directory or use the makeKeystore target in the build file.<br>
@@ -161,17 +161,17 @@ To test the usage of the protocol use any demo and change the xml config file to
 Starting up an application using the keystore option will result in an output similar to:
 <p>
 <blockquote>
-04-Aug-2004 21:11:38 org.jgroups.protocols.ENCRYPT1_4 setProperties<br>
+04-Aug-2004 21:11:38 org.jgroups.protocols.ENCRYPT setProperties<br>
 INFO: key_store_name used is defaultStore1_4.keystore<br>
-04-Aug-2004 21:11:38 org.jgroups.protocols.ENCRYPT1_4 setProperties<br>
+04-Aug-2004 21:11:38 org.jgroups.protocols.ENCRYPT setProperties<br>
 INFO: store_password used is not null<br>
-04-Aug-2004 21:11:39 org.jgroups.protocols.ENCRYPT1_4 setProperties<br>
+04-Aug-2004 21:11:39 org.jgroups.protocols.ENCRYPT setProperties<br>
 INFO: key_password used is same as store_password<br>
-04-Aug-2004 21:11:39 org.jgroups.protocols.ENCRYPT1_4 setProperties<br>
+04-Aug-2004 21:11:39 org.jgroups.protocols.ENCRYPT setProperties<br>
 INFO: alias used is myKey<br>
-04-Aug-2004 21:11:39 org.jgroups.protocols.ENCRYPT1_4 initSymCiphers<br>
+04-Aug-2004 21:11:39 org.jgroups.protocols.ENCRYPT initSymCiphers<br>
 INFO:  Initializing symmetric ciphers<br>
-04-Aug-2004 21:11:39 org.jgroups.protocols.ENCRYPT1_4 initSymCiphers<br>
+04-Aug-2004 21:11:39 org.jgroups.protocols.ENCRYPT initSymCiphers<br>
 INFO:  Initialized symmetric ciphers with secret key version �;ٺ�8=fԱ;qe2�<br>
 </blockquote>
 If you want to confirm the encryption/decryption messages then set the logging level to debug 
@@ -180,20 +180,20 @@ for the protocol.
 <p>
 If you are using the encryption without a keystore you should see output similar to:
 <blockquote>
-05-Aug-2004 13:43:52 org.jgroups.protocols.ENCRYPT1_4 initSymKey<br>
+05-Aug-2004 13:43:52 org.jgroups.protocols.ENCRYPT initSymKey<br>
 INFO:  Symmetric key generated<br>
-05-Aug-2004 13:43:53 org.jgroups.protocols.ENCRYPT1_4 initKeyPair<br>
+05-Aug-2004 13:43:53 org.jgroups.protocols.ENCRYPT initKeyPair<br>
 INFO:  asym algo initialized<br>
-05-Aug-2004 13:43:53 org.jgroups.protocols.ENCRYPT1_4 initSymCiphers<br>
+05-Aug-2004 13:43:53 org.jgroups.protocols.ENCRYPT initSymCiphers<br>
 INFO:  Initializing symmetric ciphers<br>
-05-Aug-2004 13:43:53 org.jgroups.protocols.ENCRYPT1_4 initSymCiphers<br>
+05-Aug-2004 13:43:53 org.jgroups.protocols.ENCRYPT initSymCiphers<br>
 INFO:  Initialized symmetric ciphers with secret key version �~6��Ɨ/h%ڤĹ<br>
 ................<br>
 Later in the output you should see logging identifying that the JGroups peer has become the
 keyServer - this will be the same peer that is the group coordinator.<p>
-05-Aug-2004 13:43:55 org.jgroups.protocols.ENCRYPT1_4 up<br>
+05-Aug-2004 13:43:55 org.jgroups.protocols.ENCRYPT up<br>
 INFO: handling view change event<br>
-05-Aug-2004 13:43:55 org.jgroups.protocols.ENCRYPT1_4 becomeKeyServer<br>
+05-Aug-2004 13:43:55 org.jgroups.protocols.ENCRYPT becomeKeyServer<br>
 INFO: I have become key server<br>
 
 </blockquote>
