@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.86 2005/06/15 21:08:00 belaban Exp $
+// $Id: UDP.java,v 1.87 2005/06/23 07:30:44 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -751,6 +751,7 @@ public class UDP extends Protocol implements Runnable {
         Message              msg=null;
         List                 l;  // used if bundling is enabled
         short                version;
+        boolean              is_message_list;
 
         try {
             // skip the first n bytes (default: 4), this is the version info
@@ -774,7 +775,8 @@ public class UDP extends Protocol implements Runnable {
                     return;
             }
 
-            if(enable_bundling) {
+            is_message_list=inp.readBoolean();
+            if(is_message_list) {
                 l=bufferToList(inp, dest);
                 for(Enumeration en=l.elements(); en.hasMoreElements();) {
                     msg=(Message)en.nextElement();
@@ -782,7 +784,8 @@ public class UDP extends Protocol implements Runnable {
                         handleMessage(msg);
                     }
                     catch(Throwable t) {
-                        if(log.isErrorEnabled()) log.error("failure: " + t.toString());
+                        if(log.isErrorEnabled())
+                            log.error("failed unmarshalling message list", t);
                     }
                 }
             }
@@ -979,6 +982,7 @@ public class UDP extends Protocol implements Runnable {
         try {
             out=new DataOutputStream(out_stream);
             out.writeShort(Version.version); // write the version
+            out.writeBoolean(false); // single message, *not* a list of messages
             nullAddresses(msg, dest, src);
             msg.writeTo(out);
             revertAddresses(msg, dest, src);
@@ -1090,6 +1094,7 @@ public class UDP extends Protocol implements Runnable {
         try {
             out=new DataOutputStream(out_stream);
             out.writeShort(Version.version);
+            out.writeBoolean(true);
             out.writeInt(len);
 
             for(Enumeration en=l.elements(); en.hasMoreElements();) {
