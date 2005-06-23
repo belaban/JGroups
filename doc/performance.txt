@@ -1,8 +1,11 @@
 
-// $Id: performance.txt,v 1.1 2005/04/18 10:27:09 belaban Exp $
+// $Id: performance.txt,v 1.2 2005/06/23 07:34:30 belaban Exp $
 
 Tips and tricks
 ---------------
 
 - Use the flags -Xmx500M and -Xms500M, set them to the same initial value
 - Use -verbose:gc to track garbage collections
+- Use the log4j.properties file shipped with JGroups. Using simply "org.jgroups=warn"
+  seems to throttle the sender a few nanosecs to get some better perf. Have to
+  investigate further
