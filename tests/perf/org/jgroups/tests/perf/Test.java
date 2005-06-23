@@ -317,8 +317,6 @@ public class Test implements Receiver {
             total_msgs++;
             if(total_msgs % log_interval == 0) {
                 System.out.println("++ sent " + total_msgs);
-            }
-            if(total_msgs % log_interval == 0) {
                 //if(gnuplot_output == false)
                 //  if(log.isInfoEnabled()) log.info(dumpStats(total_msgs));
             }
