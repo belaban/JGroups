@@ -1,6 +1,6 @@
 
 // Author: Bela Ban
-// $Id: MarshalingFormat.txt,v 1.2 2005/06/22 16:38:30 belaban Exp $
+// $Id: MarshalingFormat.txt,v 1.3 2005/06/23 06:32:16 belaban Exp $
 
 
 Binary format for marshalled messages
@@ -23,7 +23,7 @@ SingleMessage:
 MessageList:
 - length: int. Number of messages in the list
 - src address: Address
-- 1-m Messages: --> SingleMessage, but with null src and dest addresses
+- 1-m Messages: --> SingleMessage, but with no src and dest addresses
 
 
 
