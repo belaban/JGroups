@@ -1,4 +1,4 @@
-// $Id: NBMessageForm_NIO.java,v 1.1 2005/06/23 13:07:19 belaban Exp $
+// $Id: NBMessageForm_NIO.java,v 1.2 2005/06/23 13:07:52 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -19,7 +19,9 @@ public class NBMessageForm_NIO
 	int messageSize = 0;
 	boolean w_in_p = false;
 	SocketChannel channel = null;
-	
+
+
+
 	public NBMessageForm_NIO(int dataBuffSize, SocketChannel ch)
 	{
 		headerBuffer = ByteBuffer.allocate(HEADER_SIZE);
