@@ -1,4 +1,4 @@
-// $Id: Proxy1_4.java,v 1.7 2004/09/23 16:29:56 belaban Exp $
+// $Id: Proxy.java,v 1.1 2005/06/23 13:31:09 belaban Exp $
 
 package org.jgroups.util;
 
@@ -42,7 +42,7 @@ import java.util.*;
  * <pre>
  * java -Djavax.net.ssl.keyStore=/home/bela/.keystore -Djavax.net.ssl.keyStorePassword=<passwd>
  *      -Djavax.net.ssl.trustStore=/home/bela/.keystore -Djavax.net.ssl.trustStorePassword=<passwd>
- *      org.jgroups.util.Proxy1_4 -file /home/bela/map.properties
+ *      org.jgroups.util.Proxy -file /home/bela/map.properties
  * </pre>
  * Start client as follows:
  * <pre>
@@ -65,7 +65,7 @@ import java.util.*;
  * todo Check whether SSLSocket.getChannel() or SSLServerSocket.getChannel() works
  * @author Bela Ban
  */
-public class Proxy1_4 {
+public class Proxy {
     InetAddress    local=null, remote=null;
     int            local_port=0, remote_port=0;
     static boolean verbose=false;
@@ -78,16 +78,16 @@ public class Proxy1_4 {
 
 
 
-    public Proxy1_4(InetAddress local, int local_port, InetAddress remote, int remote_port, boolean verbose, boolean debug) {
+    public Proxy(InetAddress local, int local_port, InetAddress remote, int remote_port, boolean verbose, boolean debug) {
         this.local=local;
         this.local_port=local_port;
         this.remote=remote;
         this.remote_port=remote_port;
-        Proxy1_4.verbose=verbose;
-        Proxy1_4.debug=debug;
+        Proxy.verbose=verbose;
+        Proxy.debug=debug;
     }
 
-    public Proxy1_4(InetAddress local, int local_port, InetAddress remote, int remote_port,
+    public Proxy(InetAddress local, int local_port, InetAddress remote, int remote_port,
                     boolean verbose, boolean debug, String mapping_file) {
         this(local, local_port, remote, remote_port, verbose, debug);
         this.mapping_file=mapping_file;
@@ -189,17 +189,17 @@ public class Proxy1_4 {
                         src=(InetSocketAddress) key.attachment();
                         in_sock=srv_sock.accept(); // accept request
                         if (verbose)
-                            log("Proxy1_4.loop()", "accepted connection from " + toString(in_sock));
+                            log("Proxy.loop()", "accepted connection from " + toString(in_sock));
                         dest=(InetSocketAddress) mappings.get(src);
                         // find corresponding dest
                         if (dest == null) {
                             in_sock.close();
-                            log("Proxy1_4.loop()", "did not find a destination host for " + src);
+                            log("Proxy.loop()", "did not find a destination host for " + src);
                             continue;
                         }
                         else {
                             if (verbose)
-                                log("Proxy1_4.loop()", "relaying traffic from " + toString(src) + " to " + toString(dest));
+                                log("Proxy.loop()", "relaying traffic from " + toString(src) + " to " + toString(dest));
                         }
 
                         // establish connection to destination host
@@ -216,7 +216,7 @@ public class Proxy1_4 {
                 }
             }
             catch (Exception ex) {
-                log("Proxy1_4.loop()", "exception: " + ex);
+                log("Proxy.loop()", "exception: " + ex);
             }
         }
     }
@@ -229,7 +229,7 @@ public class Proxy1_4 {
     //            executor.execute(r);
     //        }
     //        catch (Exception ex) {
-    //            log("Proxy1_4.handleConnection()", "exception: " + ex);
+    //            log("Proxy.handleConnection()", "exception: " + ex);
     //        }
     //        finally {
     //            close(in_sock, out_sock);
@@ -241,7 +241,7 @@ public class Proxy1_4 {
             _handleConnection(in, out);
         }
         catch (Exception ex) {
-            log("Proxy1_4.handleConnection()", "exception: " + ex);
+            log("Proxy.handleConnection()", "exception: " + ex);
         }
     }
     
@@ -269,7 +269,7 @@ public class Proxy1_4 {
                                 tmp=(SocketChannel) key.channel();
                                 if (tmp == null) {
                                     log(
-                                        "Proxy1_4._handleConnection()",
+                                        "Proxy._handleConnection()",
                                         "attachment is null, continuing");
                                     continue;
                                 }
@@ -382,7 +382,7 @@ public class Proxy1_4 {
         sb.append("\n[PROXY] ").append(from);
         sb.append(" to ").append(to);
         sb.append(" (").append(num_bytes).append(" bytes)");
-        // log("Proxy1_4.relay()", sb.toString());
+        // log("Proxy.relay()", sb.toString());
         return sb.toString();
     }
     
@@ -412,7 +412,7 @@ public class Proxy1_4 {
                 continue;
             index=line.indexOf('=');
             if (index == -1)
-                throw new Exception("Proxy1_4.populateMappings(): detected no '=' character in " + line);
+                throw new Exception("Proxy.populateMappings(): detected no '=' character in " + line);
             key=new URI(line.substring(0, index));
             ssl_key=key.getScheme().trim().equals(HTTPS);
 
@@ -470,7 +470,7 @@ public class Proxy1_4 {
     }
 
     public static void main(String[] args) {
-        Proxy1_4    p;
+        Proxy    p;
         InetAddress local=null, remote=null;
         int         local_port=0, remote_port=0;
         String      tmp, tmp_addr, tmp_port;
@@ -538,7 +538,7 @@ public class Proxy1_4 {
             if (local == null)
                 local=InetAddress.getLocalHost();
 
-            p=new Proxy1_4(local, local_port, remote, remote_port, verbose, debug, mapping_file);
+            p=new Proxy(local, local_port, remote, remote_port, verbose, debug, mapping_file);
             p.start();
         }
         catch (Throwable ex) {
@@ -547,7 +547,7 @@ public class Proxy1_4 {
     }
 
     static void help() {
-        System.out.println("Proxy1_4 [-help] [-local <local address>] [-local_port <port>] "
+        System.out.println("Proxy [-help] [-local <local address>] [-local_port <port>] "
                            + "[-remote <remote address>] [-remote_port <port>] [-verbose] "
                            + "[-file <mapping file>] [-debug]");
     }
@@ -631,7 +631,7 @@ public class Proxy1_4 {
 
                         //sb.append("forwarding ").append(num).append(" bytes from ").append(toString(in_sock));
                         //sb.append(" to ").append(toString(out_sock));
-                        // log("Proxy1_4.Relayer.run()", sb.toString());
+                        // log("Proxy.Relayer.run()", sb.toString());
                         log(printRelayedData(toString(in_sock), toString(out_sock), num));
                     }
                     if (debug) {
@@ -647,7 +647,7 @@ public class Proxy1_4 {
                 
             }            
             catch (Exception ex) {
-                log("Proxy1_4.Relayer.run(): [" + name + "] exception=" + ex + ", in_sock=" +
+                log("Proxy.Relayer.run(): [" + name + "] exception=" + ex + ", in_sock=" +
                     in_sock + ", out_sock=" + out_sock);
             }
             finally {
@@ -657,7 +657,7 @@ public class Proxy1_4 {
 
         public void start() {
             if(t == null) {
-                t=new Thread(this, "Proxy1_4.Relayer");
+                t=new Thread(this, "Proxy.Relayer");
                 t.setDaemon(true);
                 t.start();
             }
@@ -765,7 +765,7 @@ public class Proxy1_4 {
                     conn.start();
                 }
                 catch (Exception e) {
-                    log("Proxy1_4.SSLServerSocketAcceptor.run(): exception=" + e);
+                    log("Proxy.SSLServerSocketAcceptor.run(): exception=" + e);
                     break;
                 }
             }

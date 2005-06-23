@@ -21,4 +21,4 @@ else
 fi
 
 
-java -cp $CP org.jgroups.util.GetNetworkInterfaces1_4
+java -cp $CP org.jgroups.util.GetNetworkInterfaces

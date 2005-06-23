@@ -3,7 +3,7 @@ package org.jgroups.protocols;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
-import org.jgroups.stack.LogicalAddress1_4;
+import org.jgroups.stack.LogicalAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Queue;
 import org.jgroups.util.QueueClosedException;
@@ -20,24 +20,24 @@ import java.util.*;
  * interfaces). Note that this class only works under JDK 1.4 and higher.<br/>
  * For each of the interfaces listed we create a Listener, which listens on the group multicast address and creates
  * a unicast datagram socket. The address of this member is determined at startup time, and is the host name plus
- * a timestamp (LogicalAddress1_4). It does not change during the lifetime of the process. The LogicalAddress1_4 contains
+ * a timestamp (LogicalAddress). It does not change during the lifetime of the process. The LogicalAddress contains
  * a list of all unicast socket addresses to which we can send back unicast messages. When we send a message, the
  * Listener adds the sender's return address. When we receive a message, we add that address to our routing cache, which
  * contains logical addresses and physical addresses. When we need to send a unicast address, we first check whether
  * the logical address has a physical address associated with it in the cache. If so, we send a message to that address.
- * If not, we send the unicast message to <em>all</em> physical addresses contained in the LogicalAddress1_4.<br/>
- * UDP1_4 guarantees that - in scenarios with multiple subnets and multi-homed machines - members do see each other.
+ * If not, we send the unicast message to <em>all</em> physical addresses contained in the LogicalAddress.<br/>
+ * UDP_NIO guarantees that - in scenarios with multiple subnets and multi-homed machines - members do see each other.
  * There is some overhead in multicasting the same message on multiple interfaces, and potentially sending a unicast
  * on multiple interfaces as well, but the advantage is that we don't need stuff like bind_addr any longer. Plus,
  * the unicast routing caches should ensure that unicasts are only sent via 1 interface in almost all cases.
  * 
  * @author Bela Ban Oct 2003
- * @version $Id: UDP1_4.java,v 1.24 2005/06/15 21:08:00 belaban Exp $
+ * @version $Id: UDP_NIO.java,v 1.1 2005/06/23 13:31:08 belaban Exp $
  * todo: sending of dummy packets
  */
-public class UDP1_4 extends Protocol implements  Receiver {
+public class UDP_NIO extends Protocol implements  Receiver {
 
-    static final String name="UDP1_4";
+    static final String name="UDP_NIO";
 
     /** Maintains a list of Connectors, one for each interface we're listening on */
     ConnectorTable ct=null;
@@ -52,10 +52,10 @@ public class UDP1_4 extends Protocol implements  Receiver {
     InetSocketAddress mcast_addr=null;
 
     /** The address of this member. Valid for the lifetime of the JVM in which this member runs */
-    LogicalAddress1_4 local_addr=new LogicalAddress1_4(null, null);
+    LogicalAddress local_addr=new LogicalAddress(null, null);
 
     /** Logical address without list of physical addresses */
-    LogicalAddress1_4 local_addr_canonical=local_addr.copy();
+    LogicalAddress local_addr_canonical=local_addr.copy();
 
     /** Pre-allocated byte stream. Used for serializing datagram packets */
     ByteArrayOutputStream out_stream=new ByteArrayOutputStream(65535);
@@ -130,7 +130,7 @@ public class UDP1_4 extends Protocol implements  Receiver {
      */
     PacketHandler packet_handler=null;
 
-    protected static Log mylog=LogFactory.getLog(UDP1_4.class);
+    protected static Log mylog=LogFactory.getLog(UDP_NIO.class);
 
 
     /** Number of bytes to allocate to receive a packet. Needs to be set to be higher than frag_size
@@ -145,7 +145,7 @@ public class UDP1_4 extends Protocol implements  Receiver {
      * Public constructor. creates the UDP protocol, and initializes the
      * state variables, does however not start any sockets or threads
      */
-    public UDP1_4() {
+    public UDP_NIO() {
     }
 
     /**
@@ -206,7 +206,7 @@ public class UDP1_4 extends Protocol implements  Receiver {
 //                mcast_sock.receive(packet);
 //                len=packet.getLength();
 //                if(len == 1 && packet.getData()[0] == 0) {
-//                    if(log.isTraceEnabled()) if(log.isInfoEnabled()) log.info("UDP1_4.run()", "received dummy packet");
+//                    if(log.isTraceEnabled()) if(log.isInfoEnabled()) log.info("UDP_NIO.run()", "received dummy packet");
 //                    continue;
 //                }
 //
@@ -219,16 +219,16 @@ public class UDP1_4 extends Protocol implements  Receiver {
 //                }
 //
 //                if(log.isTraceEnabled())
-//                    if(log.isInfoEnabled()) log.info("UDP1_4.receive()", "received (mcast) " + packet.getLength() + " bytes from " +
+//                    if(log.isInfoEnabled()) log.info("UDP_NIO.receive()", "received (mcast) " + packet.getLength() + " bytes from " +
 //                            packet.getAddress() + ":" + packet.getPort() + " (size=" + len + " bytes)");
 //                if(len > receive_buf.length) {
-//                    if(log.isErrorEnabled()) log.error("UDP1_4.run()", "size of the received packet (" + len + ") is bigger than " +
+//                    if(log.isErrorEnabled()) log.error("UDP_NIO.run()", "size of the received packet (" + len + ") is bigger than " +
 //                            "allocated buffer (" + receive_buf.length + "): will not be able to handle packet. " +
 //                            "Use the FRAG protocol and make its frag_size lower than " + receive_buf.length);
 //                }
 //
 //                if(Version.compareTo(packet.getData()) == false) {
-//                    if(log.isWarnEnabled()) log.warn("UDP1_4.run()",
+//                    if(log.isWarnEnabled()) log.warn("UDP_NIO.run()",
 //                            "packet from " + packet.getAddress() + ":" + packet.getPort() +
 //                            " has different version (" +
 //                            Version.printVersionId(packet.getData(), Version.version_id.length) +
@@ -244,16 +244,16 @@ public class UDP1_4 extends Protocol implements  Receiver {
 //                } else
 //                    handleIncomingUdpPacket(packet.getData());
 //            } catch(SocketException sock_ex) {
-//                 if(log.isInfoEnabled()) log.info("UDP1_4.run()", "multicast socket is closed, exception=" + sock_ex);
+//                 if(log.isInfoEnabled()) log.info("UDP_NIO.run()", "multicast socket is closed, exception=" + sock_ex);
 //                break;
 //            } catch(InterruptedIOException io_ex) { // thread was interrupted
 //                ; // go back to top of loop, where we will terminate loop
 //            } catch(Throwable ex) {
-//                if(log.isErrorEnabled()) log.error("UDP1_4.run()", "exception=" + ex + ", stack trace=" + Util.printStackTrace(ex));
+//                if(log.isErrorEnabled()) log.error("UDP_NIO.run()", "exception=" + ex + ", stack trace=" + Util.printStackTrace(ex));
 //                Util.sleep(1000); // so we don't get into 100% cpu spinning (should NEVER happen !)
 //            }
 //        }
-//         if(log.isInfoEnabled()) log.info("UDP1_4.run()", "multicast thread terminated");
+//         if(log.isInfoEnabled()) log.info("UDP_NIO.run()", "multicast thread terminated");
 //    }
 
     void handleDiagnosticProbe(SocketAddress sender) {
@@ -488,7 +488,7 @@ public class UDP1_4 extends Protocol implements  Receiver {
         }
 
         if(props.size() > 0) {
-            log.error("UDP1_4.setProperties(): the following properties are not recognized: " + props);
+            log.error("UDP_NIO.setProperties(): the following properties are not recognized: " + props);
 
             return false;
         }
@@ -618,7 +618,7 @@ public class UDP1_4 extends Protocol implements  Receiver {
                 if(mylog.isErrorEnabled()) mylog.error("sender's address is null");
             }
             else {
-                ((LogicalAddress1_4)src).setPrimaryPhysicalAddress(sender);
+                ((LogicalAddress)src).setPrimaryPhysicalAddress(sender);
             }
 
             // discard my own multicast loopback copy
@@ -772,17 +772,17 @@ public class UDP1_4 extends Protocol implements  Receiver {
 //            }
 //        }
 //
-//        if(log.isTraceEnabled()) if(log.isInfoEnabled()) log.info("UDP1_4.sendDummyPacket()", "sending packet to " + dest + ":" + port);
+//        if(log.isTraceEnabled()) if(log.isInfoEnabled()) log.info("UDP_NIO.sendDummyPacket()", "sending packet to " + dest + ":" + port);
 //
 //        if(ucast_sock == null || dest == null) {
-//            if(log.isWarnEnabled()) log.warn("UDP1_4.sendDummyPacket()", "send_sock was null or dest was null, cannot send dummy packet");
+//            if(log.isWarnEnabled()) log.warn("UDP_NIO.sendDummyPacket()", "send_sock was null or dest was null, cannot send dummy packet");
 //            return;
 //        }
 //        packet=new DatagramPacket(buf, buf.length, dest, port);
 //        try {
 //            ucast_sock.send(packet);
 //        } catch(Throwable e) {
-//            if(log.isErrorEnabled()) log.error("UDP1_4.sendDummyPacket()", "exception sending dummy packet to " +
+//            if(log.isErrorEnabled()) log.error("UDP_NIO.sendDummyPacket()", "exception sending dummy packet to " +
 //                    dest + ":" + port + ": " + e);
 //        }
 //    }
@@ -906,7 +906,7 @@ public class UDP1_4 extends Protocol implements  Receiver {
 
         void start() {
             if(t == null) {
-                t=new Thread(this, "UDP1_4.PacketHandler thread");
+                t=new Thread(this, "UDP_NIO.PacketHandler thread");
                 t.setDaemon(true);
                 t.start();
             }
@@ -1023,7 +1023,7 @@ public class UDP1_4 extends Protocol implements  Receiver {
 
         public void start() throws Exception {
             if(mcast_sock == null)
-                throw new Exception("UDP1_4.Connector.start(): connector has been stopped (start() cannot be called)");
+                throw new Exception("UDP_NIO.Connector.start(): connector has been stopped (start() cannot be called)");
 
             if(t != null && t.isAlive()) {
                 if(mylog.isWarnEnabled()) mylog.warn("connector thread is already running");
@@ -1254,7 +1254,7 @@ public class UDP1_4 extends Protocol implements  Receiver {
                 return;
             dest=msg.getAddress();
             if(dest == null)
-                throw new IOException("UDP1_4.ConnectorTable.send(): destination address is null");
+                throw new IOException("UDP_NIO.ConnectorTable.send(): destination address is null");
 
             if(dest.isMulticastAddress()) {
                 // send to all Connectors
@@ -1293,7 +1293,7 @@ public class UDP1_4 extends Protocol implements  Receiver {
 
             NetworkInterface ni=NetworkInterface.getByInetAddress(InetAddress.getByName(bind_interface));
             if(ni == null)
-                throw new IOException("UDP1_4.ConnectorTable.listenOn(): bind interface for " +
+                throw new IOException("UDP_NIO.ConnectorTable.listenOn(): bind interface for " +
                         bind_interface + " not found");
 
             Connector tmp=findConnector(ni);
@@ -1426,7 +1426,7 @@ public class UDP1_4 extends Protocol implements  Receiver {
 
 
     static void help() {
-        System.out.println("UDP1_4 [-help] [-bind_addrs <list of interfaces>]");
+        System.out.println("UDP_NIO [-help] [-bind_addrs <list of interfaces>]");
     }
 
 
