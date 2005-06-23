@@ -1,6 +1,6 @@
 package org.jgroups.tests;
 
-// $Id: SpeedTest1_4.java,v 1.10 2005/05/30 16:15:12 belaban Exp $
+// $Id: SpeedTest_NIO.java,v 1.1 2005/06/23 13:31:10 belaban Exp $
 
 
 import org.jgroups.Channel;
@@ -30,7 +30,7 @@ import java.nio.ByteBuffer;
  * 
  * @author Bela Ban
  */
-public class SpeedTest1_4 {
+public class SpeedTest_NIO {
     static long start, stop;
 
 

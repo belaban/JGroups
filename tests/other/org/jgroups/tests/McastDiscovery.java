@@ -1,4 +1,4 @@
-// $Id: McastDiscovery1_4.java,v 1.5 2005/05/30 16:15:11 belaban Exp $
+// $Id: McastDiscovery.java,v 1.1 2005/06/23 13:31:10 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -17,9 +17,9 @@ import java.util.*;
  * After n responses or m milliseconds, the sender terminates and computes the network interfaces which should be used.
  * The network interface is the intersection of the interface variable of all ACKs received.
  * @author Bela Ban July 26 2002
- * @version $Revision: 1.5 $
+ * @version $Revision: 1.1 $
  */
-public class McastDiscovery1_4 {
+public class McastDiscovery {
     int ttl = 32;
     List handlers = new ArrayList();
     InetAddress mcast_addr = null;
@@ -54,7 +54,7 @@ public class McastDiscovery1_4 {
     }
 
 
-    public McastDiscovery1_4(InetAddress mcast_addr, int mcast_port, long interval, int ttl) {
+    public McastDiscovery(InetAddress mcast_addr, int mcast_port, long interval, int ttl) {
         this.mcast_addr = mcast_addr;
         this.mcast_port = mcast_port;
         this.interval = interval;
@@ -297,7 +297,7 @@ public class McastDiscovery1_4 {
                 packet = new DatagramPacket(buf, buf.length, mcast_addr, mcast_port);
                 mcast_sock.send(packet);
             } catch (Exception ex) {
-                System.err.println("McastDiscovery1_4.sendDiscoveryRequest(): " + ex);
+                System.err.println("McastDiscovery.sendDiscoveryRequest(): " + ex);
             }
         }
 
@@ -338,7 +338,7 @@ public class McastDiscovery1_4 {
         }
 
         try {
-            new McastDiscovery1_4(InetAddress.getByName(mcast_addr), mcast_port, interval, ttl).start();
+            new McastDiscovery(InetAddress.getByName(mcast_addr), mcast_port, interval, ttl).start();
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -346,7 +346,7 @@ public class McastDiscovery1_4 {
 
 
     static void help() {
-        System.out.println("McastDiscovery1_4 [-mcast_addr <multicast address>] [-mcast_port <port>]" +
+        System.out.println("McastDiscovery [-mcast_addr <multicast address>] [-mcast_port <port>]" +
                 " [-interval <time between mcasts (msecs)>] [-ttl <ttl>]");
     }
 

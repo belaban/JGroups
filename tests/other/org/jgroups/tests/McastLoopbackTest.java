@@ -5,9 +5,9 @@ import java.net.*;
 /**
  * @author Bela Ban Dec 19
  * @author 2003
- * @version $Id: McastLoopbackTest1_4.java,v 1.4 2005/05/30 16:15:11 belaban Exp $
+ * @version $Id: McastLoopbackTest.java,v 1.3 2005/06/23 13:31:10 belaban Exp $
  */
-public class McastLoopbackTest1_4 {
+public class McastLoopbackTest {
 
     public static void main(String[] args) {
         byte[] recv_buf=new byte[1024], send_buf="Bela Ban".getBytes();

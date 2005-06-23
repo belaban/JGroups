@@ -5,7 +5,7 @@ package org.jgroups.tests;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
-import org.jgroups.stack.LogicalAddress1_4;
+import org.jgroups.stack.LogicalAddress;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -13,23 +13,20 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
 
-public class LogicalAddressTest1_4 extends TestCase {
-    LogicalAddress1_4 a, b, c;
+public class LogicalAddressTest extends TestCase {
+    LogicalAddress a, b, c;
 
 
-    public LogicalAddressTest1_4(String name) {
+    public LogicalAddressTest(String name) {
         super(name);
     }
 
 
-    public void setUp() throws CloneNotSupportedException {
-        a=new LogicalAddress1_4("host1", null);
-        b=new LogicalAddress1_4("host1", null);
-        c=(LogicalAddress1_4)a.clone();
-    }
-
-    public void tearDown() {
-
+    public void setUp() throws Exception {
+        super.setUp();
+        a=new LogicalAddress("host1", null);
+        b=new LogicalAddress("host1", null);
+        c=(LogicalAddress)a.clone();
     }
 
 
@@ -59,7 +56,7 @@ public class LogicalAddressTest1_4 extends TestCase {
         byte[] buf=null;
         ByteArrayInputStream bis=null;
         ObjectInputStream ois;
-        LogicalAddress1_4 a2, b2;
+        LogicalAddress a2, b2;
 
         a.setAdditionalData(null);
         b.setAdditionalData("Bela Ban".getBytes());
@@ -70,8 +67,8 @@ public class LogicalAddressTest1_4 extends TestCase {
         buf=bos.toByteArray();
         bis=new ByteArrayInputStream(buf);
         ois=new ObjectInputStream(bis);
-        a2=(LogicalAddress1_4)ois.readObject();
-        b2=(LogicalAddress1_4)ois.readObject();
+        a2=(LogicalAddress)ois.readObject();
+        b2=(LogicalAddress)ois.readObject();
 
         assertTrue(a.equals(a2));
         assertTrue(b.equals(b2));
@@ -87,7 +84,7 @@ public class LogicalAddressTest1_4 extends TestCase {
         byte[] buf=null;
         ByteArrayInputStream bis=null;
         ObjectInputStream ois;
-        LogicalAddress1_4 a2, b2, c2;
+        LogicalAddress a2, b2, c2;
 
         oos.writeObject(a);
         oos.writeObject(b);
@@ -96,9 +93,9 @@ public class LogicalAddressTest1_4 extends TestCase {
         buf=bos.toByteArray();
         bis=new ByteArrayInputStream(buf);
         ois=new ObjectInputStream(bis);
-        a2=(LogicalAddress1_4)ois.readObject();
-        b2=(LogicalAddress1_4)ois.readObject();
-        c2=(LogicalAddress1_4)ois.readObject();
+        a2=(LogicalAddress)ois.readObject();
+        b2=(LogicalAddress)ois.readObject();
+        c2=(LogicalAddress)ois.readObject();
 
         assertTrue(a.equals(a2));
         assertTrue(b.equals(b2));
@@ -108,7 +105,7 @@ public class LogicalAddressTest1_4 extends TestCase {
 
 
     public static Test suite() {
-        TestSuite s=new TestSuite(LogicalAddressTest1_4.class);
+        TestSuite s=new TestSuite(LogicalAddressTest.class);
         return s;
     }
 
