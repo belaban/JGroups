@@ -1,15 +1,18 @@
-// $Id: Util.java,v 1.40 2005/06/03 07:44:23 belaban Exp $
+// $Id: Util.java,v 1.41 2005/06/23 12:53:43 belaban Exp $
 
 package org.jgroups.util;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.jgroups.*;
+import org.jgroups.Address;
+import org.jgroups.ChannelException;
+import org.jgroups.Event;
+import org.jgroups.Message;
+import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.FD;
 import org.jgroups.protocols.PingHeader;
 import org.jgroups.protocols.UdpHeader;
 import org.jgroups.protocols.pbcast.NakAckHeader;
-import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.stack.IpAddress;
 
 import java.io.*;
@@ -17,6 +20,8 @@ import java.net.BindException;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.ServerSocket;
+import java.nio.ByteBuffer;
+import java.nio.channels.WritableByteChannel;
 import java.util.*;
 
 
@@ -928,6 +933,44 @@ public class Util {
             out.write(buf);
         }
     }
+
+    /*
+    * if we were to register for OP_WRITE and send the remaining data on
+    * readyOps for this channel we have to either block the caller thread or
+    * queue the message buffers that may arrive while waiting for OP_WRITE.
+    * Instead of the above approach this method will continuously write to the
+    * channel until the buffer sent fully.
+    */
+    public static void writeFully(ByteBuffer buf, WritableByteChannel out) throws IOException {
+        int written = 0;
+        int toWrite = buf.limit();
+        while (written < toWrite) {
+            written += out.write(buf);
+        }
+    }
+
+//    /* double writes are not required.*/
+//	public static void doubleWriteBuffer(
+//		ByteBuffer buf,
+//		WritableByteChannel out)
+//		throws Exception
+//	{
+//		if (buf.limit() > 1)
+//		{
+//			int actualLimit = buf.limit();
+//			buf.limit(1);
+//			writeFully(buf,out);
+//			buf.limit(actualLimit);
+//			writeFully(buf,out);
+//		}
+//		else
+//		{
+//			buf.limit(0);
+//			writeFully(buf,out);
+//			buf.limit(1);
+//			writeFully(buf,out);
+//		}
+//	}
 
 
     public static long sizeOf(String classname) {
