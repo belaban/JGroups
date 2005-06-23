@@ -1,18 +1,18 @@
-// $Id: ConnectionTableTest1_4.java,v 1.7 2005/05/30 16:15:11 belaban Exp $
+// $Id: ConnectionTableTest_NIO.java,v 1.1 2005/06/23 13:09:16 belaban Exp $
 
 package org.jgroups.tests;
 
 import org.jgroups.Address;
 import org.jgroups.Message;
-import org.jgroups.blocks.ConnectionTable1_4;
+import org.jgroups.blocks.ConnectionTableNIO;
 import org.jgroups.stack.IpAddress;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
 
-public class ConnectionTableTest1_4 implements ConnectionTable1_4.Receiver, ConnectionTable1_4.ConnectionListener {
-    ConnectionTable1_4 ct=null;
+public class ConnectionTableTest_NIO implements ConnectionTableNIO.Receiver, ConnectionTableNIO.ConnectionListener {
+    ConnectionTableNIO ct=null;
     String dst_host=null;
     int dst_port=0;
 
@@ -38,9 +38,9 @@ public class ConnectionTableTest1_4 implements ConnectionTable1_4.Receiver, Conn
         Message msg;
 
         if(reaper_interval > 0 || conn_expire_time > 0)
-            ct=new ConnectionTable1_4(local_port, reaper_interval, conn_expire_time);
+            ct=new ConnectionTableNIO(local_port, reaper_interval, conn_expire_time);
         else
-            ct=new ConnectionTable1_4(local_port);
+            ct=new ConnectionTableNIO(local_port);
         ct.addConnectionListener(this);
         this.dst_host=dst_host;
         this.dst_port=dst_port;
@@ -108,21 +108,21 @@ public class ConnectionTableTest1_4 implements ConnectionTable1_4.Receiver, Conn
             if(reaper_interval > 0 || conn_expire_time > 0) {
                 if(reaper_interval <= 0) reaper_interval=60000;
                 if(conn_expire_time <= 0) conn_expire_time=300000;
-                new ConnectionTableTest1_4().start(local_port, host, port, reaper_interval, conn_expire_time);
+                new ConnectionTableTest_NIO().start(local_port, host, port, reaper_interval, conn_expire_time);
             }
             else {
-                new ConnectionTableTest1_4().start(local_port, host, port, 0, 0);
+                new ConnectionTableTest_NIO().start(local_port, host, port, 0, 0);
             }
         }
         catch(Exception ex) {
-            System.err.println("ConnectionTableTest1_4.main(): " + ex);
+            System.err.println("ConnectionTableTest_NIO.main(): " + ex);
             ex.printStackTrace();
         }
     }
 
 
     static void help() {
-        System.out.println("ConnectionTableTest1_4 [-help] [-local_port <port>] [-remote_host <host>] " +
+        System.out.println("ConnectionTableTest_NIO [-help] [-local_port <port>] [-remote_host <host>] " +
                            "[-remote_port <port>] [-reaper_interval <interval (msecs)>] " +
                            "[-conn_expire_time <time (msecs)>]");
     }
