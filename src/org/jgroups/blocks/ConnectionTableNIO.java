@@ -1,4 +1,4 @@
-// $Id: ConnectionTable1_4.java,v 1.10 2005/06/23 12:53:41 belaban Exp $
+// $Id: ConnectionTableNIO.java,v 1.1 2005/06/23 13:09:16 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -30,7 +30,7 @@ import java.util.Set;
  *
  * @author Bela Ban
  */
-public class ConnectionTable1_4 extends ConnectionTable implements Runnable {
+public class ConnectionTableNIO extends ConnectionTable implements Runnable {
 
     private ServerSocketChannel srv_sock_ch=null;
     private Selector selector=null;
@@ -40,7 +40,7 @@ public class ConnectionTable1_4 extends ConnectionTable implements Runnable {
      * @param srv_port
      * @throws Exception
      */
-    public ConnectionTable1_4(int srv_port) throws Exception {
+    public ConnectionTableNIO(int srv_port) throws Exception {
         super(srv_port);
     }
 
@@ -50,7 +50,7 @@ public class ConnectionTable1_4 extends ConnectionTable implements Runnable {
      * @param conn_expire_time
      * @throws Exception
      */
-    public ConnectionTable1_4(int srv_port, long reaper_interval,
+    public ConnectionTableNIO(int srv_port, long reaper_interval,
                               long conn_expire_time) throws Exception {
         super(srv_port, reaper_interval, conn_expire_time);
     }
@@ -63,7 +63,7 @@ public class ConnectionTable1_4 extends ConnectionTable implements Runnable {
      * @param max_port
      * @throws Exception
      */
-    public ConnectionTable1_4(Receiver r, InetAddress bind_addr, InetAddress external_addr, int srv_port, int max_port)
+    public ConnectionTableNIO(Receiver r, InetAddress bind_addr, InetAddress external_addr, int srv_port, int max_port)
             throws Exception {
         super(r, bind_addr, external_addr, srv_port, max_port);
     }
@@ -78,7 +78,7 @@ public class ConnectionTable1_4 extends ConnectionTable implements Runnable {
      * @param conn_expire_time
      * @throws Exception
      */
-    public ConnectionTable1_4(Receiver r, InetAddress bind_addr, InetAddress external_addr, int srv_port, int max_port,
+    public ConnectionTableNIO(Receiver r, InetAddress bind_addr, InetAddress external_addr, int srv_port, int max_port,
                               long reaper_interval, long conn_expire_time) throws Exception {
         super(r, bind_addr, external_addr, srv_port, max_port, reaper_interval, conn_expire_time);
     }
@@ -254,7 +254,7 @@ public class ConnectionTable1_4 extends ConnectionTable implements Runnable {
         private static final int HEADER_SIZE=4;
         private static final int DEFAULT_BUFF_SIZE=256;
         final ByteBuffer headerBuffer=ByteBuffer.allocate(HEADER_SIZE);
-        NBMessageForm1_4 nioMsgReader=null;
+        NBMessageForm_NIO nioMsgReader=null;
 
         Connection(SocketChannel s, Address peer_addr) {
             super(s.socket(), peer_addr);
@@ -266,7 +266,7 @@ public class ConnectionTable1_4 extends ConnectionTable implements Runnable {
             out=null;
             try {
                 sock_ch.configureBlocking(false);
-                nioMsgReader=new NBMessageForm1_4(DEFAULT_BUFF_SIZE, sock_ch);
+                nioMsgReader=new NBMessageForm_NIO(DEFAULT_BUFF_SIZE, sock_ch);
                 sock_ch.register(selector, SelectionKey.OP_READ, this);
             }
             catch(IOException e) {
@@ -329,7 +329,7 @@ public class ConnectionTable1_4 extends ConnectionTable implements Runnable {
             }
         }
 
-        NBMessageForm1_4 getNIOMsgReader() {
+        NBMessageForm_NIO getNIOMsgReader() {
             return nioMsgReader;
         }
     }
