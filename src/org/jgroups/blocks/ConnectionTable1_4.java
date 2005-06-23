@@ -1,4 +1,4 @@
-// $Id: ConnectionTable1_4.java,v 1.9 2005/03/23 15:42:40 belaban Exp $
+// $Id: ConnectionTable1_4.java,v 1.10 2005/06/23 12:53:41 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -6,7 +6,6 @@ import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
-import org.jgroups.util.Util1_4;
 
 import java.io.IOException;
 import java.net.*;
@@ -305,9 +304,9 @@ public class ConnectionTable1_4 extends ConnectionTable implements Runnable {
                 headerBuffer.clear();
                 headerBuffer.putInt(buffie.length);
                 headerBuffer.flip();
-                Util1_4.writeFully(headerBuffer, sock_ch);
+                Util.writeFully(headerBuffer, sock_ch);
                 ByteBuffer sendBuffer=ByteBuffer.wrap(buffie);
-                Util1_4.writeFully(sendBuffer, sock_ch);
+                Util.writeFully(sendBuffer, sock_ch);
             }
             catch(Exception ex) {
 
