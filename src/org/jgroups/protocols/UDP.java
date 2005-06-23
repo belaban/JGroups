@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.87 2005/06/23 07:30:44 belaban Exp $
+// $Id: UDP.java,v 1.88 2005/06/23 12:06:03 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -226,7 +226,7 @@ public class UDP extends Protocol implements Runnable {
         num_msgs_sent=num_msgs_received=num_bytes_sent=num_bytes_received=0;
     }
 
-    BoundedList getLastPortsUsed() {
+    private BoundedList getLastPortsUsed() {
         if(last_ports_used == null)
             last_ports_used=new BoundedList(num_last_ports);
         return last_ports_used;
@@ -291,23 +291,6 @@ public class UDP extends Protocol implements Runnable {
                                              "Use the FRAG protocol and make its frag_size lower than " + receive_buf.length);
                 }
 
-
-//                if(Version.compareTo(data) == false) {
-//                    if(log.isWarnEnabled()) {
-//                        StringBuffer sb=new StringBuffer();
-//                        sb.append("packet from ").append(sender_addr).append(':').append(sender_port);
-//                        sb.append(" has different version (").append(Version.printVersion());
-//                        sb.append(") from ours (").append(Version.printVersion()).append("). ");
-//                        if(discard_incompatible_packets)
-//                            sb.append("Packet is discarded");
-//                        else
-//                            sb.append("This may cause problems");
-//                        log.warn(sb.toString());
-//                    }
-//                    if(discard_incompatible_packets)
-//                        continue;
-//                }
-
                 if(use_incoming_packet_handler) {
                     tmp=new byte[len];
                     System.arraycopy(data, 0, tmp, 0, len);
@@ -332,13 +315,8 @@ public class UDP extends Protocol implements Runnable {
         if(log.isDebugEnabled()) log.debug("multicast thread terminated");
     }
 
-//    private void printPacket(DatagramPacket packet) {
-//        StringBuffer sb=new StringBuffer();
-//        sb.append(packet.getAddress()).append(":").append(packet.getPort());
-//        System.out.println("packet: " + sb.toString());
-//    }
 
-    void handleDiagnosticProbe(InetAddress sender, int port) {
+    private void handleDiagnosticProbe(InetAddress sender, int port) {
         try {
             byte[] diag_rsp=getDiagResponse().getBytes();
             DatagramPacket rsp=new DatagramPacket(diag_rsp, 0, diag_rsp.length, sender, port);
@@ -351,7 +329,7 @@ public class UDP extends Protocol implements Runnable {
         }
     }
 
-    String getDiagResponse() {
+    private String getDiagResponse() {
         StringBuffer sb=new StringBuffer();
         sb.append(local_addr).append(" (").append(channel_name).append(')');
         sb.append(" [").append(mcast_addr_name).append(':').append(mcast_port).append("]\n");
@@ -421,7 +399,6 @@ public class UDP extends Protocol implements Runnable {
      * @return true if no other properties are left.
      *         false if the properties still have data in them, ie ,
      *         properties are left over and not handled by the protocol stack
-     *
      */
     public boolean setProperties(Properties props) {
         String str;
@@ -731,7 +708,7 @@ public class UDP extends Protocol implements Runnable {
      * retransmission, when the original sender has crashed, or in a FLUSH protocol when we
      * have to return all unstable messages with the FLUSH_OK response.
      */
-    void setSourceAddress(Message msg) {
+    private void setSourceAddress(Message msg) {
         if(msg.getSrc() == null)
             msg.setSrc(local_addr);
     }
@@ -959,7 +936,7 @@ public class UDP extends Protocol implements Runnable {
                                true); // copy for outgoing queue if outgoing queue handler is enabled
             }
             catch(Exception e) {
-                if(log.isDebugEnabled()) log.debug("exception=" + e);
+                if(log.isErrorEnabled()) log.error("failed sending multiple messages", e);
             }
         }
     }
@@ -973,13 +950,12 @@ public class UDP extends Protocol implements Runnable {
      * @return
      * @throws IOException
      */
-    private Buffer messageToBuffer(Message msg, IpAddress dest, IpAddress src) throws IOException {
+    private Buffer messageToBuffer(Message msg, IpAddress dest, IpAddress src) throws Exception {
         Buffer retval;
         DataOutputStream out=null;
 
-        out_stream.reset();
-
         try {
+            out_stream.reset();
             out=new DataOutputStream(out_stream);
             out.writeShort(Version.version); // write the version
             out.writeBoolean(false); // single message, *not* a list of messages
@@ -1026,7 +1002,7 @@ public class UDP extends Protocol implements Runnable {
 
 
     private Message bufferToMessage(DataInputStream instream, IpAddress dest, InetAddress sender, int port)
-            throws IOException, IllegalAccessException, InstantiationException {
+            throws Exception {
         Message msg=new Message();
         msg.readFrom(instream);
         setAddresses(msg, dest, sender, port);
@@ -1054,35 +1030,9 @@ public class UDP extends Protocol implements Runnable {
         }
     }
 
-//    Buffer listToBuffer(List l, IpAddress dest) throws IOException {
-//        Buffer retval=null;
-//        IpAddress src;
-//        Message msg;
-//        int len=l != null? l.size() : 0;
-//        DataOutputStream out=null;
-//        out_stream.reset();
-//        out_stream.write(Version.version_id, 0, Version.version_id.length); // write the version
-//        try {
-//            out=new DataOutputStream(out_stream);
-//            out.writeInt(len);
-//            for(Enumeration en=l.elements(); en.hasMoreElements();) {
-//                msg=(Message)en.nextElement();
-//                src=(IpAddress)msg.getSrc();
-//                nullAddresses(msg, dest, src);
-//                msg.writeTo(out);
-//                revertAddresses(msg, dest, src);
-//            }
-//            out.flush();
-//            retval=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
-//            return retval;
-//        }
-//        finally {
-//            Util.closeOutputStream(out);
-//        }
-//    }
 
 
-    private Buffer listToBuffer(List l, IpAddress dest) throws IOException {
+    private Buffer listToBuffer(List l, IpAddress dest) throws Exception {
         Buffer retval=null;
         IpAddress src;
         Message msg;
@@ -1118,8 +1068,7 @@ public class UDP extends Protocol implements Runnable {
         }
     }
 
-    private List bufferToList(DataInputStream instream, IpAddress dest)
-            throws IOException, IllegalAccessException, InstantiationException {
+    private List bufferToList(DataInputStream instream, IpAddress dest) throws Exception {
         List            l=new List();
         DataInputStream in=null;
         int             len;
@@ -1142,29 +1091,6 @@ public class UDP extends Protocol implements Runnable {
             Util.closeInputStream(in);
         }
     }
-
-
-//    List bufferToList(DataInputStream instream, IpAddress dest, InetAddress sender, int port)
-//            throws IOException, IllegalAccessException, InstantiationException {
-//        List            l=new List();
-//        DataInputStream in=null;
-//        int             len;
-//        Message         msg;
-//
-//        try {
-//            len=instream.readInt();
-//            for(int i=0; i < len; i++) {
-//                msg=new Message();
-//                msg.readFrom(instream);
-//                setAddresses(msg, dest, sender, port);
-//                l.add(msg);
-//            }
-//            return l;
-//        }
-//        finally {
-//            Util.closeInputStream(in);
-//        }
-//    }
 
 
 
@@ -1278,7 +1204,7 @@ public class UDP extends Protocol implements Runnable {
 
     /** Creates a DatagramSocket with a random port. Because in certain operating systems, ports are reused,
      * we keep a list of the n last used ports, and avoid port reuse */
-    DatagramSocket createEphemeralDatagramSocket() throws SocketException {
+    private DatagramSocket createEphemeralDatagramSocket() throws SocketException {
         DatagramSocket tmp=null;
         int localPort=0;
         while(true) {
@@ -1310,7 +1236,7 @@ public class UDP extends Protocol implements Runnable {
      * @return DatagramSocket The newly created socket
      * @throws Exception
      */
-    DatagramSocket createDatagramSocketWithBindPort() throws Exception {
+    private DatagramSocket createDatagramSocketWithBindPort() throws Exception {
         DatagramSocket tmp=null;
         // 27-6-2003 bgooren, find available port in range (start_port, start_port+port_range)
         int rcv_port=bind_port, max_port=bind_port + port_range;
@@ -1336,8 +1262,8 @@ public class UDP extends Protocol implements Runnable {
     }
 
 
-    String dumpSocketInfo() throws Exception {
-        StringBuffer sb=new StringBuffer();
+    private String dumpSocketInfo() throws Exception {
+        StringBuffer sb=new StringBuffer(128);
         sb.append("local_addr=").append(local_addr);
         sb.append(", mcast_addr=").append(mcast_addr);
         sb.append(", bind_addr=").append(bind_addr);
@@ -1667,29 +1593,14 @@ public class UDP extends Protocol implements Runnable {
                     len=packet.getLength();
                     data=packet.getData();
                     if(log.isTraceEnabled())
-                        log.trace("received (ucast) " + len + " bytes from " + sender_addr + ':' + sender_port);
+                        log.trace(new StringBuffer("received (ucast) ").append(len).append(" bytes from ").
+                                  append(sender_addr).append(':').append(sender_port));
                     if(len > receive_buf.length) {
                         if(log.isErrorEnabled())
                             log.error("size of the received packet (" + len + ") is bigger than allocated buffer (" +
                                       receive_buf.length + "): will not be able to handle packet. " +
                                       "Use the FRAG protocol and make its frag_size lower than " + receive_buf.length);
                     }
-
-//                    if(Version.compareTo(data) == false) {
-//                        if(log.isWarnEnabled()) {
-//                            StringBuffer sb=new StringBuffer();
-//                            sb.append("packet from ").append(sender_addr).append(':').append(sender_port);
-//                            sb.append(" has different version (").append(Version.printVersion());
-//                            sb.append(") from ours (").append(Version.printVersion()).append("). ");
-//                            if(discard_incompatible_packets)
-//                                sb.append("Packet is discarded");
-//                            else
-//                                sb.append("This may cause problems");
-//                            log.warn(sb.toString());
-//                        }
-//                        if(discard_incompatible_packets)
-//                            continue;
-//                    }
 
                     if(use_incoming_packet_handler) {
                         tmp=new byte[len];
@@ -1901,12 +1812,6 @@ public class UDP extends Protocol implements Runnable {
                     log.error("failure in bundling", ex);
                 }
             }
-//            if(log.isTraceEnabled()) {
-//                StringBuffer sb=new StringBuffer("size_exceeded=").append(size_exceeded).append(", time_reached=");
-//                sb.append(time_reached).append(", bytes received=").append(total_bytes);
-//                sb.append(", time waited=").append(waited_time).append(")");
-//                log.trace(sb.toString());
-//            }
             return leftover;
         }
 
@@ -1970,8 +1875,8 @@ public class UDP extends Protocol implements Runnable {
                             }
                         }
                     }
-                    catch(IOException e) {
-                        if(log.isErrorEnabled()) log.error("exception sending msg (to dest=" + dst + "): " + e);
+                    catch(Exception e) {
+                        if(log.isErrorEnabled()) log.error("exception sending msg (to dest=" + dst + ")", e);
                     }
                 }
                 msgs.clear();
