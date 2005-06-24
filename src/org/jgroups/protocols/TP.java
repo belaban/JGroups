@@ -2,14 +2,16 @@ package org.jgroups.protocols;
 
 
 import org.jgroups.*;
-import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.List;
 import org.jgroups.util.*;
-import org.jgroups.util.Queue;
+import org.jgroups.util.List;
 
-import java.io.*;
-import java.net.*;
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.net.DatagramPacket;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.*;
 
 
@@ -40,7 +42,7 @@ import java.util.*;
  * The {@link #receive(org.jgroups.Address, java.net.InetAddress, int, byte[])} method must
  * be called by subclasses when a unicast or multicast message has been received
  * @author Bela Ban
- * @version $Id: TP.java,v 1.2 2005/06/24 11:20:41 belaban Exp $
+ * @version $Id: TP.java,v 1.3 2005/06/24 13:13:05 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -134,11 +136,6 @@ public abstract class TP extends Protocol {
     static final String IGNORE_BIND_ADDRESS_PROPERTY="ignore.bind.address";
 
 
-    /** Usually, src addresses are nulled, and the receiver simply sets them to the address of the sender. However,
-     * for multiple addresses on a Windows loopback device, this doesn't work
-     * (see http://jira.jboss.com/jira/browse/JGRP-79 and the JGroups wiki for details). This must be the same
-     * value for all members of the same group. Default is true, for performance reasons */
-    boolean null_src_addresses=true;
 
     long num_msgs_sent=0, num_msgs_received=0, num_bytes_sent=0, num_bytes_received=0;
 
@@ -203,7 +200,14 @@ public abstract class TP extends Protocol {
      * @throws Throwable
      */
     public abstract void sendToSingleMember(Address dest, byte[] data, int offset, int length) throws Exception;
+
     public abstract String getInfo();
+
+    public abstract void preMarshalling(Message msg, Address dest, Address src);
+
+    public abstract void postMarshalling(Message msg, Address dest, Address src);
+
+    public abstract void postUnmarshalling(Message msg, Address dest, Address src);
 
 
 
@@ -395,12 +399,6 @@ public abstract class TP extends Protocol {
             props.remove("use_addr_translation");
         }
 
-        str=props.getProperty("null_src_addresses");
-        if(str != null) {
-            null_src_addresses=Boolean.valueOf(str).booleanValue();
-            props.remove("null_src_addresses");
-        }
-
         if(enable_bundling) {
             if(use_outgoing_packet_handler == false)
                 if(log.isWarnEnabled()) log.warn("enable_bundling is true; setting use_outgoing_packet_handler=true");
@@ -448,7 +446,7 @@ public abstract class TP extends Protocol {
         }
 
         Message msg=(Message)evt.getArg();
-        if(channel_name != null) {
+        if(header != null) {
             // added patch by Roland Kurmann (March 20 2003)
             // msg.putHeader(name, new TpHeader(channel_name));
             msg.putHeader(name, header);
@@ -573,7 +571,6 @@ public abstract class TP extends Protocol {
             inp_stream=new ByteArrayInputStream(data);
             inp=new DataInputStream(inp_stream);
             version=inp.readShort();
-
             if(Version.compareTo(version) == false) {
                 if(log.isWarnEnabled()) {
                     StringBuffer sb=new StringBuffer();
@@ -667,7 +664,10 @@ public abstract class TP extends Protocol {
             }
         }
         else {
-            if(log.isErrorEnabled()) log.error("message does not have a TP header");
+            if(log.isTraceEnabled())
+                log.trace(new StringBuffer("message does not have a transport header, msg is ").append(msg).
+                          append(", headers are ").append(msg.getHeaders()).append(", will be discarded"));
+            return;
         }
         passUp(evt);
     }
@@ -678,6 +678,10 @@ public abstract class TP extends Protocol {
         Buffer   buf;
         Address  src=msg.getSrc();
 
+        // Needs to be synchronized because we can have possible concurrent access, e.g.
+        // Discovery uses a separate thread to send out discovery messages
+        // We would *not* need to sync between send(), OutgoingPacketHandler and BundlingOutgoingPacketHandler,
+        // because only *one* of them is enabled
         synchronized(out_stream) {
             buf=messageToBuffer(msg, dest, src);
             doSend(buf, dest);
@@ -709,18 +713,15 @@ public abstract class TP extends Protocol {
     private Buffer messageToBuffer(Message msg, Address dest, Address src) throws Exception {
         Buffer retval;
         DataOutputStream out=null;
-        boolean isIpAddress;
 
         try {
             out_stream.reset();
             out=new DataOutputStream(out_stream);
             out.writeShort(Version.version); // write the version
             out.writeBoolean(false); // single message, *not* a list of messages
-            if(isIpAddress=src != null && src instanceof IpAddress)
-                nullAddresses(msg, (IpAddress)dest, (IpAddress)src);
+            preMarshalling(msg, dest, src);  // allows for optimization by subclass
             msg.writeTo(out);
-            if(isIpAddress)
-                revertAddresses(msg, dest, src);
+            postMarshalling(msg, dest, src); // allows for optimization by subclass
             out.flush();
             retval=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
             return retval;
@@ -733,63 +734,16 @@ public abstract class TP extends Protocol {
     private Message bufferToMessage(DataInputStream instream, Address dest, Address sender) throws Exception {
         Message msg=new Message();
         msg.readFrom(instream);
-        setAddresses(msg, dest, sender);
+        postUnmarshalling(msg, dest, sender); // allows for optimization by subclass
         return msg;
     }
 
 
-    private void nullAddresses(Message msg, IpAddress dest, IpAddress src) {
-        msg.setDest(null);
-        if(dest == null || dest.isMulticastAddress()) { // multicast
-            if(src != null) {
-                if(null_src_addresses)
-                    msg.setSrc(new IpAddress(src.getPort(), false));  // null the host part, leave the port
-                if(src.getAdditionalData() != null)
-                    ((IpAddress)msg.getSrc()).setAdditionalData(src.getAdditionalData());
-            }
-        }
-        else {  // unicast
-            if(src != null) {
-                if(null_src_addresses)
-                    msg.setSrc(new IpAddress(src.getPort(), false)); // null the host part, leave the port
-                if(src.getAdditionalData() != null)
-                    ((IpAddress)msg.getSrc()).setAdditionalData(src.getAdditionalData());
-            }
-            else {
-                msg.setSrc(null);
-            }
-        }
-    }
-
-    private void revertAddresses(Message msg, Address dest, Address src) {
+    void revertAddresses(Message msg, Address dest, Address src) {
         msg.setDest(dest);
         msg.setSrc(src);
     }
 
-
-
-
-
-    private void setAddresses(Message msg, Address dest, Address sender) {
-        // set the destination address
-        if(msg.getDest() == null && dest != null)
-            msg.setDest(dest);
-
-        // set the source address if not set
-        IpAddress src_addr=(IpAddress)msg.getSrc();
-        if(src_addr == null) {
-            msg.setSrc(sender);
-        }
-        else {
-            byte[] tmp_additional_data=src_addr.getAdditionalData();
-            if(src_addr.getIpAddress() == null) {
-                IpAddress tmp=new IpAddress(((IpAddress)sender).getIpAddress(), src_addr.getPort());
-                msg.setSrc(tmp);
-            }
-            if(tmp_additional_data != null)
-                ((IpAddress)msg.getSrc()).setAdditionalData(tmp_additional_data);
-        }
-    }
 
 
 

@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.32 2005/06/13 15:50:38 belaban Exp $
+// $Id: GMS.java,v 1.33 2005/06/24 13:13:04 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -609,7 +609,7 @@ public class GMS extends Protocol {
                 return;  // don't pass up
 
             case Event.CONNECT_OK:     // sent by someone else, but WE are responsible for sending this !
-            case Event.DISCONNECT_OK:  // dito (e.g. sent by UDP layer). Don't send up the stack
+            case Event.DISCONNECT_OK:  // dito (e.g. sent by TP layer). Don't send up the stack
                 return;
 
 
