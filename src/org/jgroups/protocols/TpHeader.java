@@ -11,7 +11,7 @@ import java.io.*;
 /**
  * Generic transport header, used by TP
  * @author Bela Ban
- * @Version $Id: TpHeader.java,v 1.1 2005/06/24 07:15:50 belaban Exp $
+ * @Version $Id: TpHeader.java,v 1.2 2005/06/24 11:20:41 belaban Exp $
  */
 public class TpHeader extends Header implements Streamable {
     public String channel_name=null;
@@ -27,7 +27,7 @@ public class TpHeader extends Header implements Streamable {
     }
 
     public String toString() {
-        return "[TP:channel_name=" + channel_name + ']';
+        return "[channel_name=" + channel_name + ']';
     }
 
 
