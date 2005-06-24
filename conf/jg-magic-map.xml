@@ -283,5 +283,11 @@
         <preload>true</preload>
         <magic-number>55</magic-number>
     </class>
+    <class>
+        <description>TP Header</description>
+        <class-name>org.jgroups.protocols.TpHeader</class-name>
+        <preload>true</preload>
+        <magic-number>56</magic-number>
+    </class>
 
 </magic-number-class-mapping>
