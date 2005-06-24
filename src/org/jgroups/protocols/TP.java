@@ -29,7 +29,6 @@ import java.util.*;
  * <ul>
  * <li>{@link #sendToAllMembers(byte[])}
  * <li>{@link #sendToSingleMember(org.jgroups.Address, byte[])}
- * <li>{@link #getLocalAddress()}
  * <li>{@link #init()}
  * <li>{@link #start()}: subclasses <em>must</em> call super.start() <em>after</em> they initialize themselves
  * (e.g. created their sockets). The local address must also have been set, so that {@link #getLocalAddress()} returns
@@ -37,11 +36,11 @@ import java.util.*;
  * <li>{@link #stop()}: subclasses <em>must</em> call super.stop() after they deinitialized themselves
  * <li>{@link #destroy()}
  * </ul>
- * The create() or start() method has to create a local address, which needs to be returned by getLocalAddress().</br>
+ * The create() or start() method has to create a local address..</br>
  * The {@link #receive(org.jgroups.Address, java.net.InetAddress, int, byte[])} method must
  * be called by subclasses when a unicast or multicast message has been received
  * @author Bela Ban
- * @version $Id: TP.java,v 1.1 2005/06/24 07:15:50 belaban Exp $
+ * @version $Id: TP.java,v 1.2 2005/06/24 11:20:41 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -65,7 +64,7 @@ public abstract class TP extends Protocol {
     /** The members of this group (updated when a member joins or leaves) */
     final Vector    members=new Vector(11);
 
-    /** Pre-allocated byte stream. Used for serializing datagram packets. Will grow as needed */
+    /** Pre-allocated byte stream. Used for marshalling messages. Will grow as needed */
     final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(1024);
 
 
@@ -130,8 +129,7 @@ public abstract class TP extends Protocol {
 
     TpHeader header;
 
-    /** The name of this protocol */
-    static final String    name="TP";
+    final String name=getName();
 
     static final String IGNORE_BIND_ADDRESS_PROPERTY="ignore.bind.address";
 
@@ -158,7 +156,7 @@ public abstract class TP extends Protocol {
      * debug only
      */
     public String toString() {
-        return "TP(local address: " + local_addr + ')';
+        return name + "(local address: " + local_addr + ')';
     }
 
     public void resetStats() {
@@ -198,14 +196,13 @@ public abstract class TP extends Protocol {
     /**
      * Send to all members in the group. UDP would use an IP multicast message, whereas TCP would send N
      * messages, one for each member
-     * @param dest
+     * @param dest Must be a non-null unicast address
      * @param data The data to be sent. This is not a copy, so don't modify it
      * @param offset
      * @param length
      * @throws Throwable
      */
     public abstract void sendToSingleMember(Address dest, byte[] data, int offset, int length) throws Exception;
-    public abstract Address getLocalAddress();
     public abstract String getInfo();
 
 
@@ -231,9 +228,6 @@ public abstract class TP extends Protocol {
 
     /*------------------------------ Protocol interface ------------------------------ */
 
-    public String getName() {
-        return name;
-    }
 
 
     public void init() throws Exception {
@@ -265,7 +259,7 @@ public abstract class TP extends Protocol {
 
 
     public void stop() {
-        stopPacketHandlers();  // will close sockets, closeSockets() is not really needed anymore, but...
+        stopPacketHandlers();
     }
 
 
@@ -407,11 +401,6 @@ public abstract class TP extends Protocol {
             props.remove("null_src_addresses");
         }
 
-        if(props.size() > 0) {
-            log.error("TP.setProperties(): the following properties are not recognized: " + props);
-            return false;
-        }
-
         if(enable_bundling) {
             if(use_outgoing_packet_handler == false)
                 if(log.isWarnEnabled()) log.warn("enable_bundling is true; setting use_outgoing_packet_handler=true");
@@ -481,7 +470,7 @@ public abstract class TP extends Protocol {
         // If multicast message, loopback a copy directly to us (but still multicast). Once we receive this,
         // we will discard our own multicast message
         Address dest=msg.getDest();
-        if(loopback && (dest.equals(local_addr) || dest.isMulticastAddress())) {
+        if(loopback && (dest == null || dest.equals(local_addr) || dest.isMulticastAddress())) {
             Message copy=msg.copy();
             // copy.removeHeader(name); // we don't remove the header
             copy.setSrc(local_addr);
@@ -542,8 +531,10 @@ public abstract class TP extends Protocol {
             }
         }
 
+        boolean mcast=dest == null || dest.isMulticastAddress();
         if(log.isTraceEnabled()){
-            StringBuffer sb=new StringBuffer("received (mcast) ");
+            StringBuffer sb=new StringBuffer("received (");
+            sb.append(mcast? "mcast)" : "ucast)");
             sb.append(len).append(" bytes from ").append(src).append(" (size=").append(len).append(" bytes)");
             log.trace(sb.toString());
         }
@@ -749,7 +740,15 @@ public abstract class TP extends Protocol {
 
     private void nullAddresses(Message msg, IpAddress dest, IpAddress src) {
         msg.setDest(null);
-        if(!dest.isMulticastAddress()) { // unicast
+        if(dest == null || dest.isMulticastAddress()) { // multicast
+            if(src != null) {
+                if(null_src_addresses)
+                    msg.setSrc(new IpAddress(src.getPort(), false));  // null the host part, leave the port
+                if(src.getAdditionalData() != null)
+                    ((IpAddress)msg.getSrc()).setAdditionalData(src.getAdditionalData());
+            }
+        }
+        else {  // unicast
             if(src != null) {
                 if(null_src_addresses)
                     msg.setSrc(new IpAddress(src.getPort(), false)); // null the host part, leave the port
@@ -758,14 +757,6 @@ public abstract class TP extends Protocol {
             }
             else {
                 msg.setSrc(null);
-            }
-        }
-        else {  // multicast
-            if(src != null) {
-                if(null_src_addresses)
-                    msg.setSrc(new IpAddress(src.getPort(), false));  // null the host part, leave the port
-                if(src.getAdditionalData() != null)
-                    ((IpAddress)msg.getSrc()).setAdditionalData(src.getAdditionalData());
             }
         }
     }
@@ -792,7 +783,8 @@ public abstract class TP extends Protocol {
         else {
             byte[] tmp_additional_data=src_addr.getAdditionalData();
             if(src_addr.getIpAddress() == null) {
-                msg.setSrc(sender);
+                IpAddress tmp=new IpAddress(((IpAddress)sender).getIpAddress(), src_addr.getPort());
+                msg.setSrc(tmp);
             }
             if(tmp_additional_data != null)
                 ((IpAddress)msg.getSrc()).setAdditionalData(tmp_additional_data);
