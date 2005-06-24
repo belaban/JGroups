@@ -1,12 +1,9 @@
-// $Id: UDP.java,v 1.89 2005/06/24 11:20:41 belaban Exp $
+// $Id: UDP.java,v 1.90 2005/06/24 13:13:05 belaban Exp $
 
 package org.jgroups.protocols;
 
 
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Version;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.BoundedList;
 import org.jgroups.util.Util;
@@ -111,6 +108,13 @@ public class UDP extends TP implements Runnable {
     int             ucast_recv_buf_size=64000;
 
 
+    /** Usually, src addresses are nulled, and the receiver simply sets them to the address of the sender. However,
+     * for multiple addresses on a Windows loopback device, this doesn't work
+     * (see http://jira.jboss.com/jira/browse/JGRP-79 and the JGroups wiki for details). This must be the same
+     * value for all members of the same group. Default is true, for performance reasons */
+    boolean null_src_addresses=true;
+
+
 
     /**
      * public constructor. creates the UDP protocol, and initializes the
@@ -196,6 +200,12 @@ public class UDP extends TP implements Runnable {
         if(str != null) {
             ucast_recv_buf_size=Integer.parseInt(str);
             props.remove("ucast_recv_buf_size");
+        }
+
+        str=props.getProperty("null_src_addresses");
+        if(str != null) {
+            null_src_addresses=Boolean.valueOf(str).booleanValue();
+            props.remove("null_src_addresses");
         }
 
         if(props.size() > 0) {
@@ -290,6 +300,18 @@ public class UDP extends TP implements Runnable {
 
     public void sendToSingleMember(Address dest, byte[] data, int offset, int length) throws Exception {
         _send(((IpAddress)dest).getIpAddress(), ((IpAddress)dest).getPort(), false, data, offset, length);
+    }
+
+    public void preMarshalling(Message msg, Address dest, Address src) {
+        nullAddresses(msg, (IpAddress)dest, (IpAddress)src);
+    }
+
+    public void postMarshalling(Message msg, Address dest, Address src) {
+        revertAddresses(msg, dest, src);
+    }
+
+    public void postUnmarshalling(Message msg, Address dest, Address src) {
+        setAddresses(msg, (IpAddress)dest, (IpAddress)src);
     }
 
     private void _send(InetAddress dest, int port, boolean mcast, byte[] data, int offset, int length) throws Exception {
@@ -762,6 +784,42 @@ public class UDP extends TP implements Runnable {
     }
 
 
+    private void nullAddresses(Message msg, IpAddress dest, IpAddress src) {
+        msg.setDest(null);
+
+        if(src != null) {
+            if(null_src_addresses)
+                msg.setSrc(new IpAddress(src.getPort(), false));  // null the host part, leave the port
+            if(src.getAdditionalData() != null)
+                ((IpAddress)msg.getSrc()).setAdditionalData(src.getAdditionalData());
+        }
+        else if(dest != null && !dest.isMulticastAddress()) { // unicast
+            msg.setSrc(null);
+        }
+    }
+
+    private void setAddresses(Message msg, IpAddress dest, IpAddress sender) {
+        // set the destination address
+        if(msg.getDest() == null && dest != null)
+            msg.setDest(dest);
+
+        // set the source address if not set
+        IpAddress src_addr=(IpAddress)msg.getSrc();
+        if(src_addr == null) {
+            msg.setSrc(sender);
+        }
+        else {
+            byte[] tmp_additional_data=src_addr.getAdditionalData();
+            if(src_addr.getIpAddress() == null) {
+                IpAddress tmp=new IpAddress(sender.getIpAddress(), src_addr.getPort());
+                msg.setSrc(tmp);
+            }
+            if(tmp_additional_data != null)
+                ((IpAddress)msg.getSrc()).setAdditionalData(tmp_additional_data);
+        }
+    }
+
+
 
     /* ----------------------------- End of Private Methods ---------------------------------------- */
 
@@ -803,7 +861,7 @@ public class UDP extends TP implements Runnable {
             DatagramPacket  packet;
             byte            receive_buf[]=new byte[65535];
             int             len;
-            byte[]          data, tmp;
+            byte[]          data;
             InetAddress     sender_addr;
             int             sender_port;
             Address         sender;
@@ -845,8 +903,5 @@ public class UDP extends TP implements Runnable {
             if(log.isDebugEnabled()) log.debug("unicast receiver thread terminated");
         }
     }
-
-
-
 
 }
