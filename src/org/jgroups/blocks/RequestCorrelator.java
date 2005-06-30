@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.18 2005/04/25 15:14:18 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.19 2005/06/30 15:39:57 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -701,7 +701,7 @@ public class RequestCorrelator {
     /**
      * The header for <tt>RequestCorrelator</tt> messages
      */
-    public static class Header extends org.jgroups.Header {
+    public static final class Header extends org.jgroups.Header {
         public static final int REQ = 0;
         public static final int RSP = 1;
 
