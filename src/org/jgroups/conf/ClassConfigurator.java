@@ -1,18 +1,15 @@
-// $Id: ClassConfigurator.java,v 1.11 2005/04/23 12:43:52 belaban Exp $
+// $Id: ClassConfigurator.java,v 1.12 2005/06/30 16:04:02 belaban Exp $
 
 package org.jgroups.conf;
 
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.jgroups.util.Util;
 import org.jgroups.ChannelException;
+import org.jgroups.util.Util;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.TreeMap;
 import java.io.ObjectStreamClass;
+import java.util.*;
 
 /**
  * This class will be replaced with the class that read info
@@ -33,10 +30,10 @@ public class ClassConfigurator {
 
     //this is where we store magic numbers
     private final Map classMap=new HashMap(); // key=Class, value=magic number
-    private final Map magicMap=new TreeMap(); // key=magic number, value=Class
+    private final Map magicMap=new HashMap(); // key=magic number, value=Class
 
     /** Map<Integer,ObjectStreamClass> */
-    private final Map streamMapId=new TreeMap();
+    private final Map streamMapId=new HashMap();
 
     /** Map<ObjectStreamClass, Integer> */
     private final Map streamMapClass=new HashMap();
@@ -180,11 +177,12 @@ public class ClassConfigurator {
 
     public String printMagicMap() {
         StringBuffer sb=new StringBuffer();
-        Map.Entry entry;
+        Integer key;
+        SortedSet keys=new TreeSet(magicMap.keySet());
 
-        for(Iterator it=magicMap.entrySet().iterator(); it.hasNext();) {
-            entry=(Map.Entry)it.next();
-            sb.append(entry.getKey()).append(":\t").append(entry.getValue()).append('\n');
+        for(Iterator it=keys.iterator(); it.hasNext();) {
+            key=(Integer)it.next();
+            sb.append(key).append(":\t").append(magicMap.get(key)).append('\n');
         }
         return sb.toString();
     }
