@@ -1,4 +1,4 @@
-// $Id: NBMessageForm_NIO.java,v 1.2 2005/06/23 13:07:52 belaban Exp $
+// $Id: NBMessageForm_NIO.java,v 1.3 2005/06/30 15:38:43 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -9,6 +9,7 @@ import java.nio.channels.SocketChannel;
 /**
  * NBMessageForm - Message form for non-blocking message reads.
  * @author akbollu
+ * @author Bela Ban
  */
 public class NBMessageForm_NIO
 {
@@ -28,41 +29,52 @@ public class NBMessageForm_NIO
 		dataBuffer = ByteBuffer.allocate(dataBuffSize);
 		channel = ch;
 	}
-	
-	public ByteBuffer readCompleteMsgBuffer() throws IOException
-	{
-		if (!w_in_p)
-		{
-			int rt = channel.read(headerBuffer);
-			if ( (rt == 0) || (rt == -1) )
-			{
-				channel.close();
-				return null;
-			}
-			if (rt == HEADER_SIZE)
-			{
-				headerBuffer.flip();
-				messageSize = headerBuffer.getInt();
-				if(dataBuffer.capacity() < messageSize)
-				{
-					dataBuffer = ByteBuffer.allocate(messageSize);
-				}
-				w_in_p = true;
-			}
-		}
-		else
-		{
-			//rt == 0 need not be checked twice in the same event
-			channel.read(dataBuffer);
-			if(isComplete())
-			{	
-				dataBuffer.flip();
-				return dataBuffer;
-			}
-		}
-		return null;
-	}
-	
+
+
+
+    public ByteBuffer readCompleteMsgBuffer() throws IOException
+    {
+
+        int rt;
+
+        try {
+            rt = channel.read(headerBuffer);
+            if ( (rt == 0) || (rt == -1) )
+            {
+                channel.close();
+                return null;
+            }
+            if (rt == HEADER_SIZE)
+            {
+                headerBuffer.flip();
+                messageSize = headerBuffer.getInt();
+                if(dataBuffer.capacity() < messageSize)
+                {
+                    dataBuffer = ByteBuffer.allocate(messageSize);
+                }
+            }
+            else {
+                return null;
+            }
+        }
+        catch(IOException ex) {
+            channel.close();
+            throw ex;
+        }
+
+
+        //rt == 0 need not be checked twice in the same event
+        channel.read(dataBuffer);
+        if(isComplete())
+        {
+            dataBuffer.flip();
+            return dataBuffer;
+        }
+        return null;
+    }
+
+
+
 	public void reset()
 	{
 		dataBuffer.clear();
