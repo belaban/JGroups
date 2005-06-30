@@ -42,7 +42,7 @@ import java.util.*;
  * The {@link #receive(org.jgroups.Address, java.net.InetAddress, int, byte[])} method must
  * be called by subclasses when a unicast or multicast message has been received
  * @author Bela Ban
- * @version $Id: TP.java,v 1.3 2005/06/24 13:13:05 belaban Exp $
+ * @version $Id: TP.java,v 1.4 2005/06/30 15:33:34 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -518,13 +518,12 @@ public abstract class TP extends Protocol {
 
 
 
-    void receive(Address dest, Address src, byte[] data) {
+    void receive(Address dest, Address sender, byte[] data, int offset, int length) {
         if(data == null) return;
 
-        int len=data.length;
-        if(len == 4) {  // received a diagnostics probe
-            if(data[0] == 'd' && data[1] == 'i' && data[2] == 'a' && data[3] == 'g') {
-                handleDiagnosticProbe(src);
+        if(length == 4) {  // received a diagnostics probe
+            if(data[offset] == 'd' && data[offset+1] == 'i' && data[offset+2] == 'a' && data[offset+3] == 'g') {
+                handleDiagnosticProbe(sender);
                 return;
             }
         }
@@ -532,23 +531,22 @@ public abstract class TP extends Protocol {
         boolean mcast=dest == null || dest.isMulticastAddress();
         if(log.isTraceEnabled()){
             StringBuffer sb=new StringBuffer("received (");
-            sb.append(mcast? "mcast)" : "ucast)");
-            sb.append(len).append(" bytes from ").append(src).append(" (size=").append(len).append(" bytes)");
+            sb.append(mcast? "mcast)" : "ucast) ").append(length).append(" bytes from ").append(sender);
             log.trace(sb.toString());
         }
 
         try {
             if(use_incoming_packet_handler) {
-                byte[] tmp=new byte[len];
-                System.arraycopy(data, 0, tmp, 0, len);
-                incoming_queue.add(new IncomingQueueEntry(dest, src, tmp));
+                byte[] tmp=new byte[length];
+                System.arraycopy(data, offset, tmp, 0, length);
+                incoming_queue.add(new IncomingQueueEntry(dest, sender, tmp, offset, length));
             }
             else
-                handleIncomingPacket(dest, src, data);
+                handleIncomingPacket(dest, sender, data, offset, length);
         }
         catch(Throwable t) {
             if(log.isErrorEnabled())
-                log.error(new StringBuffer("failed handling data (").append(len).append(" bytes from ").append(src), t);
+                log.error(new StringBuffer("failed handling data from ").append(sender), t);
         }
     }
 
@@ -559,7 +557,7 @@ public abstract class TP extends Protocol {
      * Correction (bela April 19 2005): we access no instance variables, all vars are allocated on the stack, so
      * this method should be reentrant: removed 'synchronized' keyword
      */
-    private void handleIncomingPacket(Address dest, Address sender, byte[] data) {
+    private void handleIncomingPacket(Address dest, Address sender, byte[] data, int offset, int length) {
         ByteArrayInputStream inp_stream=null;
         DataInputStream      inp=null;
         Message              msg;
@@ -568,7 +566,7 @@ public abstract class TP extends Protocol {
         boolean              is_message_list;
 
         try {
-            inp_stream=new ByteArrayInputStream(data);
+            inp_stream=new ByteArrayInputStream(data, offset, length);
             inp=new DataInputStream(inp_stream);
             version=inp.readShort();
             if(Version.compareTo(version) == false) {
@@ -892,15 +890,14 @@ public abstract class TP extends Protocol {
         Address   dest=null;
         Address   sender=null;
         byte[]    buf;
+        int       offset, length;
 
-        public IncomingQueueEntry(Address dest, Address sender, byte[] buf) {
+        public IncomingQueueEntry(Address dest, Address sender, byte[] buf, int offset, int length) {
             this.dest=dest;
             this.sender=sender;
             this.buf=buf;
-        }
-
-        public IncomingQueueEntry(byte[] buf) {
-            this.buf=buf;
+            this.offset=offset;
+            this.length=length;
         }
     }
 
@@ -915,19 +912,17 @@ public abstract class TP extends Protocol {
         Thread t=null;
 
         public void run() {
-            byte[] data;
             IncomingQueueEntry entry;
-
             while(incoming_queue != null && incoming_packet_handler != null) {
                 try {
                     entry=(IncomingQueueEntry)incoming_queue.remove();
-                    data=entry.buf;
+                    handleIncomingPacket(entry.dest, entry.sender, entry.buf, entry.offset, entry.length);
                 }
                 catch(QueueClosedException closed_ex) {
                     if(log.isDebugEnabled()) log.debug("packet_handler thread terminating");
                     break;
                 }
-                handleIncomingPacket(entry.dest, entry.sender, data);
+
             }
         }
 
