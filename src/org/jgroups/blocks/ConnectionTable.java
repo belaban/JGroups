@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.26 2005/06/15 21:07:59 belaban Exp $
+// $Id: ConnectionTable.java,v 1.27 2005/06/30 15:35:12 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -6,7 +6,6 @@ import EDU.oswego.cs.dl.util.concurrent.LinkedQueue;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
-import org.jgroups.Message;
 import org.jgroups.Version;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
@@ -37,6 +36,7 @@ public class ConnectionTable implements Runnable {
     Receiver            receiver=null;
     ServerSocket        srv_sock=null;
     boolean             reuse_addr=false;
+    boolean             use_send_queues=true;
     InetAddress         bind_addr=null;
 
     /**
@@ -66,7 +66,7 @@ public class ConnectionTable implements Runnable {
 
     /** Used for message reception */
     public interface Receiver {
-        void receive(Message msg);
+        void receive(Address sender, byte[] data, int offset, int length);
     }
 
 
@@ -218,17 +218,16 @@ public class ConnectionTable implements Runnable {
         return conns.size();
     }
 
-    /** Sends a message to a unicast destination. The destination has to be set
-     * @param msg The message to send
-     * @throws SocketException Thrown if connection cannot be established
-     */
-    public void send(Message msg) throws SocketException {
-        Address dest=msg != null ? msg.getDest() : null;
-        Connection conn;
+    public boolean getUseSendQueues() {return use_send_queues;}
+    public void setUseSendQueues(boolean flag) {this.use_send_queues=flag;}
 
+
+
+    public void send(Address dest, byte[] data, int offset, int length) throws Exception {
+        Connection conn;
         if(dest == null) {
             if(log.isErrorEnabled())
-                log.error("msg is null or message's destination is null");
+                log.error("destination is null");
             return;
         }
 
@@ -237,18 +236,13 @@ public class ConnectionTable implements Runnable {
             conn=getConnection(dest);
             if(conn == null) return;
         }
-        catch(SocketException sock_ex) {
-            // log.error("exception sending message to " + dest, sock_ex);
-            throw sock_ex;
-        }
         catch(Throwable ex) {
-            if(log.isInfoEnabled()) log.info("connection to " + dest + " could not be established: " + ex);
-            throw new SocketException(ex.toString());
+            throw new Exception("connection to " + dest + " could not be established", ex);
         }
 
         // 2. Send the message using that connection
         try {
-            conn.send(msg);
+            conn.send(data, offset, length);
         }
         catch(Throwable ex) {
             if(log.isTraceEnabled())
@@ -442,10 +436,10 @@ public class ConnectionTable implements Runnable {
      * Calls the receiver callback. We serialize access to this method because it may be called concurrently
      * by several Connection handler threads. Therefore the receiver doesn't need to synchronize.
      */
-    public void receive(Message msg) {
+    public void receive(Address sender, byte[] data, int offset, int length) {
         if(receiver != null) {
             synchronized(recv_mutex) {
-                receiver.receive(msg);
+                receiver.receive(sender, data, offset, length);
             }
         }
         else
@@ -545,7 +539,7 @@ public class ConnectionTable implements Runnable {
         final long       POLL_TIMEOUT=30000;
 
 
-        String getSockAddress() {
+        private String getSockAddress() {
             if(sock_addr != null)
                 return sock_addr;
             if(sock != null) {
@@ -557,51 +551,7 @@ public class ConnectionTable implements Runnable {
             return sock_addr;
         }
 
-        class Sender implements Runnable {
-            Thread senderThread;
-            private boolean running=false;
 
-            void start() {
-                if(senderThread == null || !senderThread.isAlive()) {
-                    senderThread=new Thread(thread_group, this, "ConnectionTable.Connection.Sender [" + getSockAddress() + "]");
-                    senderThread.setDaemon(true);
-                    senderThread.start();
-                    running=true;
-                    if(log.isTraceEnabled())
-                        log.trace("ConnectionTable.Connection.Sender thread started");
-                }
-            }
-
-            void stop() {
-                if(senderThread != null) {
-                    senderThread.interrupt();
-                    senderThread=null;
-                    running=false;
-                }
-            }
-
-            boolean isRunning() {
-                return running && senderThread != null;
-            }
-
-            public void run() {
-                Message msg;
-                while(senderThread != null && senderThread.equals(Thread.currentThread())) {
-                    try {
-                        msg=(Message)send_queue.poll(POLL_TIMEOUT);
-                        if(msg == null)
-                            break;
-                        _send(msg);
-                    }
-                    catch(InterruptedException e) {
-                        break;
-                    }
-                }
-                running=false;
-                if(log.isTraceEnabled())
-                    log.trace("ConnectionTable.Connection.Sender thread terminated");
-            }
-        }
 
 
         Connection(Socket s, Address peer_addr) {
@@ -625,6 +575,8 @@ public class ConnectionTable implements Runnable {
         void setPeerAddress(Address peer_addr) {
             this.peer_addr=peer_addr;
         }
+
+        Address getPeerAddress() {return peer_addr;}
 
         void updateLastAccessed() {
             last_access=System.currentTimeMillis();
@@ -650,28 +602,33 @@ public class ConnectionTable implements Runnable {
         }
 
 
-        void send(Message msg) {
-            try {
-                send_queue.put(msg);
-                if(!sender.isRunning())
-                    sender.start();
+        void send(byte[] data, int offset, int length) {
+            if(use_send_queues) {
+                try {
+                    send_queue.put(new Entry(data, offset, length));
+                    if(!sender.isRunning())
+                        sender.start();
+                }
+                catch(InterruptedException e) {
+                    log.error("failed adding message to send_queue", e);
+                }
             }
-            catch(InterruptedException e) {
-                log.error("failed adding message to send_queue", e);
-            }
+            else
+                _send(data, offset, length);
         }
 
-        private void _send(Message msg) {
+
+        private void _send(byte[] data, int offset, int length) {
             synchronized(send_mutex) {
                 try {
-                    doSend(msg);
+                    doSend(data, offset, length);
                     updateLastAccessed();
                 }
                 catch(IOException io_ex) {
                     if(log.isWarnEnabled())
                         log.warn("peer closed connection, trying to re-establish connection and re-send msg");
                     try {
-                        doSend(msg);
+                        doSend(data, offset, length);
                         updateLastAccessed();
                     }
                     catch(IOException io_ex2) {
@@ -681,46 +638,28 @@ public class ConnectionTable implements Runnable {
                          if(log.isErrorEnabled()) log.error("exception is " + ex2);
                     }
                 }
-                catch(Exception ex) {
+                catch(Throwable ex) {
                      if(log.isErrorEnabled()) log.error("exception is " + ex);
                 }
             }
         }
 
 
-        void doSend(Message msg) throws Exception {
-            IpAddress dst_addr=(IpAddress)msg.getDest();
-            byte[]    buffie=null;
-
-            if(dst_addr == null || dst_addr.getIpAddress() == null) {
-                if(log.isErrorEnabled()) log.error("the destination address is null; aborting send");
-                return;
-            }
-
+        void doSend(byte[] data, int offset, int length) throws Exception {
             try {
-                // set the source address if not yet set
-                if(msg.getSrc() == null)
-                    msg.setSrc(local_addr);
-
-                buffie=Util.objectToByteBuffer(msg);
-                if(buffie.length <= 0) {
-                    if(log.isErrorEnabled()) log.error("buffer.length is 0. Will not send message");
-                    return;
-                }
-
                 // we're using 'double-writes', sending the buffer to the destination in 2 pieces. this would
                 // ensure that, if the peer closed the connection while we were idle, we would get an exception.
                 // this won't happen if we use a single write (see Stevens, ch. 5.13).
                 if(out != null) {
-                    out.writeInt(buffie.length); // write the length of the data buffer first
-                    Util.doubleWrite(buffie, out);
+                    out.writeInt(length); // write the length of the data buffer first
+                    Util.doubleWrite(data, offset, length, out);
                     out.flush();  // may not be very efficient (but safe)
                 }
             }
             catch(Exception ex) {
                 if(log.isErrorEnabled())
-                    log.error("failure sending to " + dst_addr, ex);
-                remove(dst_addr);
+                    log.error("failure sending to " + peer_addr, ex);
+                remove(peer_addr);
                 throw ex;
             }
         }
@@ -732,8 +671,8 @@ public class ConnectionTable implements Runnable {
          */
         Address readPeerAddress(Socket client_sock) throws Exception {
             Address     client_peer_addr=null;
-            byte[]      buf, input_cookie=new byte[cookie.length];
-            int         len=0, client_port=client_sock != null? client_sock.getPort() : 0;
+            byte[]      input_cookie=new byte[cookie.length];
+            int         client_port=client_sock != null? client_sock.getPort() : 0;
             short       version;
             InetAddress client_addr=client_sock != null? client_sock.getInetAddress() : null;
 
@@ -749,20 +688,14 @@ public class ConnectionTable implements Runnable {
                 version=in.readShort();
 
                 if(Version.compareTo(version) == false) {
-                    if(log.isWarnEnabled()) log.warn("packet from " + client_addr + ':' + client_port +
-                               " has different version (" +
-                               version +
-                               ") from ours (" + Version.printVersion() +
-                               "). This may cause problems");
+                    if(log.isWarnEnabled())
+                        log.warn(new StringBuffer("packet from ").append(client_addr).append(':').append(client_port).
+                               append(" has different version (").append(version).append(") from ours (").
+                                 append(Version.version).append("). This may cause problems"));
                 }
+                client_peer_addr=new IpAddress();
+                client_peer_addr.readFrom(in);
 
-                // read the length of the address
-                len=in.readInt();
-
-                // finally read the address itself
-                buf=new byte[len];
-                in.readFully(buf, 0, len);
-                client_peer_addr=(Address)Util.objectFromByteBuffer(buf);
                 updateLastAccessed();
             }
             return client_peer_addr;
@@ -774,27 +707,18 @@ public class ConnectionTable implements Runnable {
          * the receiver will reject the connection and close it.
          */
         void sendLocalAddress(Address local_addr) {
-            byte[] buf;
-
             if(local_addr == null) {
                 if(log.isWarnEnabled()) log.warn("local_addr is null");
                 return;
             }
             if(out != null) {
                 try {
-                    buf=Util.objectToByteBuffer(local_addr);
-
                     // write the cookie
                     out.write(cookie, 0, cookie.length);
 
                     // write the version
                     out.writeShort(Version.version);
-
-                    // write the length of the buffer
-                    out.writeInt(buf.length);
-
-                    // and finally write the buffer itself
-                    out.write(buf, 0, buf.length);
+                    local_addr.writeTo(out);
                     out.flush(); // needed ?
                     updateLastAccessed();
                 }
@@ -827,8 +751,7 @@ public class ConnectionTable implements Runnable {
 
 
         public void run() {
-            Message msg;
-            byte[] buf=new byte[256];
+            byte[] buf=new byte[256]; // start with 256, increase as we go
             int len=0;
 
             while(receiverThread != null && receiverThread.equals(Thread.currentThread())) {
@@ -842,8 +765,7 @@ public class ConnectionTable implements Runnable {
                         buf=new byte[len];
                     in.readFully(buf, 0, len);
                     updateLastAccessed();
-                    msg=(Message)Util.objectFromByteBuffer(buf);
-                    receive(msg); // calls receiver.receiver(msg)
+                    receive(peer_addr, buf, 0, len); // calls receiver.receiver(msg)
                 }
                 catch(OutOfMemoryError mem_ex) {
                     if(log.isWarnEnabled()) log.warn("dropped invalid message, closing connection");
@@ -923,6 +845,66 @@ public class ConnectionTable implements Runnable {
                 in=null;
             }
         }
+
+
+        class Entry {
+            byte[] data;
+            int offset, length;
+
+            public Entry(byte[] data, int offset, int length) {
+                this.data=data;
+                this.offset=offset;
+                this.length=length;
+            }
+        }
+
+
+        class Sender implements Runnable {
+            Thread senderThread;
+            private boolean running=false;
+
+            void start() {
+                if(senderThread == null || !senderThread.isAlive()) {
+                    senderThread=new Thread(thread_group, this, "ConnectionTable.Connection.Sender [" + getSockAddress() + "]");
+                    senderThread.setDaemon(true);
+                    senderThread.start();
+                    running=true;
+                    if(log.isTraceEnabled())
+                        log.trace("ConnectionTable.Connection.Sender thread started");
+                }
+            }
+
+            void stop() {
+                if(senderThread != null) {
+                    senderThread.interrupt();
+                    senderThread=null;
+                    running=false;
+                }
+            }
+
+            boolean isRunning() {
+                return running && senderThread != null;
+            }
+
+            public void run() {
+                Entry entry;
+                while(senderThread != null && senderThread.equals(Thread.currentThread())) {
+                    try {
+                        entry=(Entry)send_queue.poll(POLL_TIMEOUT);
+                        if(entry != null)
+                            _send(entry.data, entry.offset, entry.length);
+                    }
+                    catch(InterruptedException e) {
+                        break;
+                    }
+                }
+                running=false;
+                if(log.isTraceEnabled())
+                    log.trace("ConnectionTable.Connection.Sender thread terminated");
+            }
+        }
+
+
     }
 
 
