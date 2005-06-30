@@ -1,9 +1,8 @@
-// $Id: ConnectionTableTest_NIO.java,v 1.1 2005/06/23 13:09:16 belaban Exp $
+// $Id: ConnectionTableTest_NIO.java,v 1.2 2005/06/30 15:35:45 belaban Exp $
 
 package org.jgroups.tests;
 
 import org.jgroups.Address;
-import org.jgroups.Message;
 import org.jgroups.blocks.ConnectionTableNIO;
 import org.jgroups.stack.IpAddress;
 
@@ -17,10 +16,11 @@ public class ConnectionTableTest_NIO implements ConnectionTableNIO.Receiver, Con
     int dst_port=0;
 
 
-    public void receive(Message m) {
-        String s=(String)m.getObject();
-        System.out.println("<-- " + s + " (from " + m.getSrc() + ')');
+    public void receive(Address sender, byte[] data, int offset, int length) {
+        String s=new String(data, offset, length);
+        System.out.println("<-- " + s + " (from " + sender + ')');
     }
+
 
     public void connectionOpened(Address peer_addr) {
         System.out.println("** Connection to " + peer_addr + " opened");
@@ -34,8 +34,8 @@ public class ConnectionTableTest_NIO implements ConnectionTableNIO.Receiver, Con
     public void start(int local_port, String dst_host, int dst_port,
                       long reaper_interval, long conn_expire_time) throws Exception {
         BufferedReader in;
+        Address dest;
         String line;
-        Message msg;
 
         if(reaper_interval > 0 || conn_expire_time > 0)
             ct=new ConnectionTableNIO(local_port, reaper_interval, conn_expire_time);
@@ -44,28 +44,30 @@ public class ConnectionTableTest_NIO implements ConnectionTableNIO.Receiver, Con
         ct.addConnectionListener(this);
         this.dst_host=dst_host;
         this.dst_port=dst_port;
+        dest=new IpAddress(dst_host, dst_port);
         ct.setReceiver(this);
 
         // System.out.println("**local addr is " + ct.getLocalAddress());
 
         in=new BufferedReader(new InputStreamReader(System.in));
+        byte[] data;
         while(true) {
             try {
                 System.out.print("> ");
                 System.out.flush();
                 line=in.readLine();
-                if(line.startsWith("quit".toLowerCase()) ||
+                if(line == null || line.startsWith("quit".toLowerCase()) ||
                         line.startsWith("exit".toLowerCase()))
                     break;
                 if(line.startsWith("conns")) {
                     System.out.println(ct);
                     continue;
                 }
-                msg=new Message(new IpAddress(dst_host, dst_port), null, line);
-                ct.send(msg);
+                data=line.getBytes();
+                ct.send(dest, data, 0, data.length);
             }
             catch(Exception e) {
-                System.err.println(e);
+                e.printStackTrace();
             }
         }
         ct.stop();

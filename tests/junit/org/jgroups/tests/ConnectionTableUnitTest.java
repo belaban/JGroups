@@ -1,14 +1,11 @@
-// $Id: ConnectionTableUnitTest.java,v 1.3 2004/03/30 06:47:31 belaban Exp $
+// $Id: ConnectionTableUnitTest.java,v 1.4 2005/06/30 15:36:41 belaban Exp $
 
 package org.jgroups.tests;
 
 
 import junit.framework.TestCase;
 import org.jgroups.Address;
-import org.jgroups.Message;
 import org.jgroups.blocks.ConnectionTable;
-
-import java.net.SocketException;
 
 
 /**
@@ -25,6 +22,7 @@ public class ConnectionTableUnitTest extends TestCase {
     }
 
     protected void setUp() throws Exception {
+        super.setUp();
         ct1=new ConnectionTable(port1);
         log("address of ct1: " + ct1.getLocalAddress());
         ct2=new ConnectionTable(port2);
@@ -32,6 +30,7 @@ public class ConnectionTableUnitTest extends TestCase {
     }
 
     public void tearDown() throws Exception {
+        super.tearDown();
         if(ct1 != null) {
             ct1.stop();
             ct1=null;
@@ -46,6 +45,24 @@ public class ConnectionTableUnitTest extends TestCase {
         assertNotSame(ct1.getLocalAddress(), ct2.getLocalAddress());
     }
 
+    public void testSendToNullReceiver() throws Exception {
+        byte[]  data=new byte[0];
+        ct1.send(null, data, 0, data.length);
+    }
+
+    public void testSendEmptyData() throws Exception {
+        byte[]  data=new byte[0];
+        Address myself=ct1.getLocalAddress();
+
+        ct1.setUseSendQueues(false);
+        ct1.send(myself, data, 0, data.length);
+    }
+
+    public void testSendNullData() throws Exception {
+        Address myself=ct1.getLocalAddress();
+        ct1.send(myself, null, 0, 0);
+    }
+
 
     public void testSendToSelf() throws Exception {
         long       NUM=1000, total_time;
@@ -53,9 +70,10 @@ public class ConnectionTableUnitTest extends TestCase {
         MyReceiver r=new MyReceiver(ct1, NUM, false);
 
         ct1.setReceiver(r);
+        ct1.setUseSendQueues(false);
 
         for(int i=0; i < NUM; i++) {
-            ct1.send(new Message(myself, null, null));
+            ct1.send(myself, null, 0, 0);
         }
         log("sent " + NUM + " msgs");
         r.waitForCompletion();
@@ -74,7 +92,7 @@ public class ConnectionTableUnitTest extends TestCase {
         ct2.setReceiver(r);
 
         for(int i=0; i < NUM; i++) {
-            ct1.send(new Message(other, null, null));
+            ct1.send(other, null, 0, 0);
         }
         log("sent " + NUM + " msgs");
         r.waitForCompletion();
@@ -96,7 +114,7 @@ public class ConnectionTableUnitTest extends TestCase {
         ct2.setReceiver(r2);
 
         for(int i=0; i < NUM; i++) {
-            ct1.send(new Message(other, null, null));
+            ct1.send(other, null, 0, 0);
         }
         log("sent " + NUM + " msgs");
         r1.waitForCompletion();
@@ -143,17 +161,18 @@ public class ConnectionTableUnitTest extends TestCase {
             return num_expected;
         }
 
-        public void receive(Message msg) {
-            Address sender=msg.getSrc();
+
+        public void receive(Address sender, byte[] data, int offset, int length) {
             num_received++;
             if(num_received % modulo == 0)
                 log("received msg# " + num_received);
             if(send_response) {
                 if(ct != null) {
                     try {
-                        ct.send(new Message(sender, null, null));
+                        byte[] rsp=new byte[0];
+                        ct.send(sender, rsp, 0, 0);
                     }
-                    catch(SocketException e) {
+                    catch(Exception e) {
                         e.printStackTrace();
                     }
                 }
@@ -168,6 +187,7 @@ public class ConnectionTableUnitTest extends TestCase {
                 }
             }
         }
+
 
         public void waitForCompletion() {
             synchronized(this) {
