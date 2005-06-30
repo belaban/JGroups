@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.90 2005/06/24 13:13:05 belaban Exp $
+// $Id: UDP.java,v 1.91 2005/06/30 15:34:01 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -154,11 +154,18 @@ public class UDP extends TP implements Runnable {
             props.remove("mcast_addr");
         }
 
+        str=System.getProperty("jboss.partition.udpGroup");
+        if(str != null)
+            mcast_addr_name=str;
+
         str=props.getProperty("mcast_port");
         if(str != null) {
             mcast_port=Integer.parseInt(str);
             props.remove("mcast_port");
         }
+        str=System.getProperty("jboss.partition.udpPort");
+        if(str != null)
+            mcast_port=Integer.parseInt(str);
 
         str=props.getProperty("ip_mcast");
         if(str != null) {
@@ -231,7 +238,7 @@ public class UDP extends TP implements Runnable {
     public void run() {
         DatagramPacket  packet;
         byte            receive_buf[]=new byte[65535];
-        int             len, sender_port;
+        int             offset, len, sender_port;
         byte[]          data;
         InetAddress     sender_addr;
         Address         sender;
@@ -245,6 +252,7 @@ public class UDP extends TP implements Runnable {
                 mcast_recv_sock.receive(packet);
                 sender_addr=packet.getAddress();
                 sender_port=packet.getPort();
+                offset=packet.getOffset();
                 len=packet.getLength();
                 data=packet.getData();
                 sender=new IpAddress(sender_addr, sender_port);
@@ -256,7 +264,7 @@ public class UDP extends TP implements Runnable {
                                   "Use the FRAG protocol and make its frag_size lower than " + receive_buf.length);
                 }
 
-                receive(mcast_addr, sender, data);
+                receive(mcast_addr, sender, data, offset, len);
             }
             catch(SocketException sock_ex) {
                  if(log.isTraceEnabled()) log.trace("multicast socket is closed, exception=" + sock_ex);
@@ -860,7 +868,7 @@ public class UDP extends TP implements Runnable {
         public void run() {
             DatagramPacket  packet;
             byte            receive_buf[]=new byte[65535];
-            int             len;
+            int             offset, len;
             byte[]          data;
             InetAddress     sender_addr;
             int             sender_port;
@@ -875,6 +883,7 @@ public class UDP extends TP implements Runnable {
                     sock.receive(packet);
                     sender_addr=packet.getAddress();
                     sender_port=packet.getPort();
+                    offset=packet.getOffset();
                     len=packet.getLength();
                     data=packet.getData();
                     sender=new IpAddress(sender_addr, sender_port);
@@ -885,7 +894,7 @@ public class UDP extends TP implements Runnable {
                                       receive_buf.length + "): will not be able to handle packet. " +
                                       "Use the FRAG protocol and make its frag_size lower than " + receive_buf.length);
                     }
-                    receive(local_addr, sender, data);
+                    receive(local_addr, sender, data, offset, len);
                 }
                 catch(SocketException sock_ex) {
                     if(log.isDebugEnabled()) log.debug("unicast receiver socket is closed, exception=" + sock_ex);
