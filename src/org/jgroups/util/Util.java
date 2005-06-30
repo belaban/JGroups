@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.41 2005/06/23 12:53:43 belaban Exp $
+// $Id: Util.java,v 1.42 2005/06/30 15:38:20 belaban Exp $
 
 package org.jgroups.util;
 
@@ -931,6 +931,23 @@ public class Util {
         else {
             out.write(buf, 0, 0);
             out.write(buf);
+        }
+    }
+
+
+    /**
+     Makes sure that we detect when a peer connection is in the closed state (not closed while we send data,
+     but before we send data). 2 writes ensure that, if the peer closed the connection, the first write
+     will send the peer from FIN to RST state, and the second will cause a signal (IOException).
+     */
+    public static void doubleWrite(byte[] buf, int offset, int length, OutputStream out) throws Exception {
+        if(length > 1) {
+            out.write(buf, offset, 1);
+            out.write(buf, offset+1, length - 1);
+        }
+        else {
+            out.write(buf, offset, 0);
+            out.write(buf, offset, length);
         }
     }
 
