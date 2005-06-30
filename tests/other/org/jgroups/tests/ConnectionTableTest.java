@@ -1,9 +1,8 @@
-// $Id: ConnectionTableTest.java,v 1.7 2005/05/30 16:15:11 belaban Exp $
+// $Id: ConnectionTableTest.java,v 1.8 2005/06/30 15:35:57 belaban Exp $
 
 package org.jgroups.tests;
 
 import org.jgroups.Address;
-import org.jgroups.Message;
 import org.jgroups.blocks.ConnectionTable;
 import org.jgroups.stack.IpAddress;
 
@@ -17,10 +16,11 @@ public class ConnectionTableTest implements ConnectionTable.Receiver, Connection
     int dst_port=0;
 
 
-    public void receive(Message m) {
-        String s=(String)m.getObject();
-        System.out.println("<-- " + s + " (from " + m.getSrc() + ')');
+    public void receive(Address sender, byte[] data, int offset, int length) {
+        String s=new String(data, offset, length);
+        System.out.println("<-- " + s + " (from " + sender + ')');
     }
+
 
     public void connectionOpened(Address peer_addr) {
         System.out.println("** Connection to " + peer_addr + " opened");
@@ -35,7 +35,8 @@ public class ConnectionTableTest implements ConnectionTable.Receiver, Connection
                       long reaper_interval, long conn_expire_time) throws Exception {
         BufferedReader in;
         String line;
-        Message msg;
+        Address dest;
+        byte[]  data;
 
         if(reaper_interval > 0 || conn_expire_time > 0)
             ct=new ConnectionTable(local_port, reaper_interval, conn_expire_time);
@@ -61,8 +62,9 @@ public class ConnectionTableTest implements ConnectionTable.Receiver, Connection
                     System.out.println(ct);
                     continue;
                 }
-                msg=new Message(new IpAddress(dst_host, dst_port), null, line);
-                ct.send(msg);
+                dest=new IpAddress(dst_host, dst_port);
+                data=line.getBytes();
+                ct.send(dest, data, 0, data.length);
             }
             catch(Exception e) {
                 System.err.println(e);

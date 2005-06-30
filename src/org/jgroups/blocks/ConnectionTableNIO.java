@@ -1,9 +1,8 @@
-// $Id: ConnectionTableNIO.java,v 1.1 2005/06/23 13:09:16 belaban Exp $
+// $Id: ConnectionTableNIO.java,v 1.2 2005/06/30 15:37:09 belaban Exp $
 
 package org.jgroups.blocks;
 
 import org.jgroups.Address;
-import org.jgroups.Message;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
 
@@ -32,9 +31,9 @@ import java.util.Set;
  */
 public class ConnectionTableNIO extends ConnectionTable implements Runnable {
 
-    private ServerSocketChannel srv_sock_ch=null;
-    private Selector selector=null;
-    private ArrayList pendingSocksList=null;
+    private ServerSocketChannel srv_sock_ch;
+    private Selector selector;
+    private ArrayList pendingSocksList=new ArrayList();
 
     /**
      * @param srv_port
@@ -93,9 +92,8 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
         synchronized(conns) {
             conn=(Connection)conns.get(dest);
             if(conn == null) {
-                InetSocketAddress destAddress=
-                        new InetSocketAddress(((IpAddress)dest).getIpAddress(),
-                                ((IpAddress)dest).getPort());
+                InetSocketAddress destAddress=new InetSocketAddress(((IpAddress)dest).getIpAddress(),
+                                                                    ((IpAddress)dest).getPort());
                 sock_ch=SocketChannel.open(destAddress);
                 conn=new Connection(sock_ch, dest);
                 conn.sendLocalAddress(local_addr);
@@ -134,7 +132,7 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
     public void run() {
         Socket client_sock;
         Connection conn=null;
-        Address peer_addr;
+        Address peer_addr=null;
 
         while(srv_sock_ch != null) {
             try {
@@ -143,18 +141,13 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
                     for(Iterator i=readyKeys.iterator(); i.hasNext();) {
                         SelectionKey key=(SelectionKey)i.next();
                         i.remove();
-                        if((key.readyOps() & SelectionKey.OP_ACCEPT)
-                                == SelectionKey.OP_ACCEPT) {
-                            ServerSocketChannel readyChannel=
-                                    (ServerSocketChannel)key.channel();
-
-                            SocketChannel client_sock_ch=
-                                    readyChannel.accept();
+                        if((key.readyOps() & SelectionKey.OP_ACCEPT) == SelectionKey.OP_ACCEPT) {
+                            ServerSocketChannel readyChannel=(ServerSocketChannel)key.channel();
+                            SocketChannel client_sock_ch=readyChannel.accept();
                             client_sock=client_sock_ch.socket();
 
                             if(log.isInfoEnabled())
-                                log.info("accepted connection, client_sock="
-                                        + client_sock);
+                                log.info("accepted connection, client_sock=" + client_sock);
 
                             conn=new Connection(client_sock_ch, null);
                             // will call receive(msg)
@@ -165,10 +158,8 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
 
                             synchronized(conns) {
                                 if(conns.containsKey(peer_addr)) {
-
                                     if(log.isWarnEnabled())
-                                        log.warn(peer_addr
-                                                + " is already there, will terminate connection");
+                                        log.warn(peer_addr + " is already there, will terminate connection");
                                     conn.destroy();
                                     return;
                                 }
@@ -177,17 +168,16 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
                             conn.init();
                             notifyConnectionOpened(peer_addr);
                         }
-                        else
-                            if(
-                                    (key.readyOps() & SelectionKey.OP_READ)
-                                    == SelectionKey.OP_READ) {
+                        else {
+                            if((key.readyOps() & SelectionKey.OP_READ) == SelectionKey.OP_READ) {
                                 conn=(Connection)key.attachment();
                                 ByteBuffer buff=conn.getNIOMsgReader().readCompleteMsgBuffer();
                                 if(buff != null) {
-                                    receive((Message)Util.objectFromByteBuffer(buff.array()));
+                                    receive(conn.getPeerAddress(), buff.array(), buff.arrayOffset(), buff.limit());
                                     conn.getNIOMsgReader().reset();
                                 }
                             }
+                        }
                     }
                 }
                 else {
@@ -200,30 +190,38 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
                      */
                     synchronized(conns) {
                         Connection pendingConnection;
-                        while((pendingSocksList.size() > 0) && (null != (pendingConnection=(Connection)pendingSocksList.remove(0)))) {
+                        while((pendingSocksList.size() > 0) &&
+                                (null != (pendingConnection=(Connection)pendingSocksList.remove(0)))) {
                             pendingConnection.init();
                         }
                     }
                 }
             }
-            catch(SocketException sock_ex) {
+            catch(IOException sock_ex) {
                 if(log.isInfoEnabled()) log.info("exception is " + sock_ex);
-                if(conn != null)
+                if(conn != null) {
+                    Address peerAddr=conn != null? conn.getPeerAddress() : null;
                     conn.destroy();
+                    if(peerAddr != null)
+                        conns.remove(peerAddr);
+                }
                 if(srv_sock == null)
                     break; // socket was closed, therefore stop
             }
             catch(Throwable ex) {
-
                 if(log.isWarnEnabled()) log.warn("exception is " + ex);
+                if(srv_sock == null)
+                    break;
             }
         }
+        if(log.isTraceEnabled())
+            log.trace("acceptor thread terminated");
     }
 
     /**
      * Finds first available port starting at start_port and returns server socket. Sets srv_port
      */
-    protected ServerSocket createServerSocket(int start_port) throws Exception {
+    protected ServerSocket createServerSocket(int start_port, int end_port) throws Exception {
         this.selector=Selector.open();
         srv_sock_ch=ServerSocketChannel.open();
         srv_sock_ch.configureBlocking(false);
@@ -235,6 +233,7 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
                     srv_sock_ch.socket().bind(new InetSocketAddress(bind_addr, start_port), backlog);
             }
             catch(BindException bind_ex) {
+                if (start_port==end_port) throw new BindException("No available port to bind to");
                 start_port++;
                 continue;
             }
@@ -244,10 +243,10 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
             srv_port=start_port;
             break;
         }
-        pendingSocksList=new ArrayList();
         srv_sock_ch.register(this.selector, SelectionKey.OP_ACCEPT);
         return srv_sock_ch.socket();
     }
+
 
     class Connection extends ConnectionTable.Connection {
         private SocketChannel sock_ch=null;
@@ -281,42 +280,23 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
             nioMsgReader=null;
         }
 
-        void doSend(Message msg) throws Exception {
-            IpAddress dst_addr=(IpAddress)msg.getDest();
-            byte[] buffie=null;
-
-            if(dst_addr == null || dst_addr.getIpAddress() == null) {
-                if(log.isErrorEnabled()) log.error("the destination address is null; aborting send");
-                return;
-            }
-
+        void doSend(byte[] buffie, int offset, int length) throws Exception {
             try {
-                // set the source address if not yet set
-                if(msg.getSrc() == null)
-                    msg.setSrc(local_addr);
-
-                buffie=Util.objectToByteBuffer(msg);
-                if(buffie.length <= 0) {
-                    if(log.isErrorEnabled()) log.error("buffer.length is 0. Will not send message");
-                    return;
-                }
-
                 headerBuffer.clear();
-                headerBuffer.putInt(buffie.length);
+                headerBuffer.putInt(length);
                 headerBuffer.flip();
                 Util.writeFully(headerBuffer, sock_ch);
-                ByteBuffer sendBuffer=ByteBuffer.wrap(buffie);
+                ByteBuffer sendBuffer=ByteBuffer.wrap(buffie, offset, length);
                 Util.writeFully(sendBuffer, sock_ch);
             }
             catch(Exception ex) {
-
                 if(log.isErrorEnabled())
-                    log.error("to " + dst_addr + ", exception is " + ex + ", stack trace:\n" +
-                            Util.printStackTrace(ex));
-                remove(dst_addr);
+                    log.error("failed sending message", ex);
                 throw ex;
             }
         }
+
+
 
         void closeSocket() {
             if(sock != null) {
@@ -329,7 +309,7 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
             }
         }
 
-        NBMessageForm_NIO getNIOMsgReader() {
+        final NBMessageForm_NIO getNIOMsgReader() {
             return nioMsgReader;
         }
     }
