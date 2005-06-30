@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.31 2005/06/15 08:57:15 belaban Exp $
+// $Id: Message.java,v 1.32 2005/06/30 16:27:09 belaban Exp $
 
 package org.jgroups;
 
@@ -697,7 +697,7 @@ public class Message implements Externalizable, Streamable {
 
 
     private Header readHeader(DataInputStream in) throws IOException {
-        Header            hdr=null;
+        Header            hdr;
         boolean           use_magic_number=in.readBoolean();
         int               magic_number;
         String            classname;
