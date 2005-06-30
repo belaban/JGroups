@@ -1,6 +1,7 @@
 package org.jgroups.tests.perf;
 
 import org.jgroups.util.Util;
+import org.jgroups.Version;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -96,7 +97,7 @@ public class Test implements Receiver {
             Map.Entry entry=(Map.Entry)it.next();
             sb.append(entry.getKey()).append(":\t").append(entry.getValue()).append('\n');
         }
-        sb.append('\n');
+        sb.append("JGroups version: ").append(Version.printVersion()).append('\n');
         System.out.println("Configuration is: " + sb);
 
         log.info(sb.toString());
