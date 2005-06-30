@@ -1,13 +1,14 @@
-// $Id: ConnectionTable.java,v 1.27 2005/06/30 15:35:12 belaban Exp $
+// $Id: ConnectionTable.java,v 1.28 2005/06/30 16:26:35 belaban Exp $
 
 package org.jgroups.blocks;
 
-import EDU.oswego.cs.dl.util.concurrent.LinkedQueue;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.Version;
 import org.jgroups.stack.IpAddress;
+import org.jgroups.util.Queue;
+import org.jgroups.util.QueueClosedException;
 import org.jgroups.util.Util;
 
 import java.io.DataInputStream;
@@ -534,7 +535,7 @@ public class ConnectionTable implements Runnable {
         Address          peer_addr=null;           // address of the 'other end' of the connection
         final Object     send_mutex=new Object();  // serialize sends
         long             last_access=System.currentTimeMillis(); // last time a message was sent or received
-        LinkedQueue      send_queue=new LinkedQueue();
+        Queue            send_queue=new Queue();
         Sender           sender=new Sender();
         final long       POLL_TIMEOUT=30000;
 
@@ -605,11 +606,11 @@ public class ConnectionTable implements Runnable {
         void send(byte[] data, int offset, int length) {
             if(use_send_queues) {
                 try {
-                    send_queue.put(new Entry(data, offset, length));
+                    send_queue.add(new Entry(data, offset, length));
                     if(!sender.isRunning())
                         sender.start();
                 }
-                catch(InterruptedException e) {
+                catch(QueueClosedException e) {
                     log.error("failed adding message to send_queue", e);
                 }
             }
@@ -890,11 +891,11 @@ public class ConnectionTable implements Runnable {
                 Entry entry;
                 while(senderThread != null && senderThread.equals(Thread.currentThread())) {
                     try {
-                        entry=(Entry)send_queue.poll(POLL_TIMEOUT);
+                        entry=(Entry)send_queue.remove();
                         if(entry != null)
                             _send(entry.data, entry.offset, entry.length);
                     }
-                    catch(InterruptedException e) {
+                    catch(QueueClosedException e) {
                         break;
                     }
                 }
