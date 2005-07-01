@@ -45,7 +45,7 @@ Best result with perf.Test (2 members, 1 sender, laptop, 20000 1K msgs
          mcast_send_buf_size="640000" 
          loopback="false" 
          max_bundle_size="64000" 
-         max_bundle_timeout="20" 
+         max_bundle_timeout="30"
          use_incoming_packet_handler="true" 
          use_outgoing_packet_handler="false" 
          ip_ttl="2" 
