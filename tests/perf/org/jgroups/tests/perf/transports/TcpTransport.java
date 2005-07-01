@@ -3,18 +3,16 @@ package org.jgroups.tests.perf.transports;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.tests.perf.Receiver;
 import org.jgroups.tests.perf.Transport;
+import org.jgroups.util.Util;
 
 import java.io.*;
-import java.net.ConnectException;
-import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.net.*;
 import java.util.*;
 
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: TcpTransport.java,v 1.7 2005/05/30 16:15:16 belaban Exp $
+ * @version $Id: TcpTransport.java,v 1.8 2005/07/01 08:05:12 belaban Exp $
  */
 public class TcpTransport implements Transport {
     Receiver         receiver=null;
@@ -61,7 +59,7 @@ public class TcpTransport implements Transport {
 
 
     public void start() throws Exception {
-        srv_sock=new ServerSocket(srv_port, 50, bind_addr);
+        srv_sock=Util.createServerSocket(bind_addr, srv_port);
         local_addr=new IpAddress(srv_sock.getInetAddress(), srv_sock.getLocalPort());
         ct.init();
 
@@ -111,37 +109,34 @@ public class TcpTransport implements Transport {
 
 
     class ConnectionTable {
-         List nodes;
-         Connection[] connections;
+        /** List<InetSocketAddress> */
+        List myNodes;
+        Connection[] connections;
 
-         ConnectionTable(List nodes) throws Exception {
-             this.nodes=nodes;
-             connections=new Connection[nodes.size()];
-         }
+        ConnectionTable(List nodes) throws Exception {
+            this.myNodes=nodes;
+            connections=new Connection[nodes.size()];
+        }
 
 
-         void init() throws Exception {
-             int i=0;
+        void init() throws Exception {
+            int i=0;
 
-             for(Iterator it=nodes.iterator(); it.hasNext();) {
-                 InetAddress addr=(InetAddress)it.next();
-                 if(connections[i] == null) {
-                     try {
-                         connections[i]=new Connection(addr);
-                     }
-                     catch(ConnectException connect_ex) {
-                         System.err.println("Failed to connect to " + addr + ':' + srv_port);
-                         throw connect_ex;
-                     }
-                     catch(Exception all_others) {
-                         throw all_others;
-                     }
-                     System.out.println("-- connected to " +addr);
-                     System.out.flush();
-                 }
-                 i++;
-             }
-         }
+            for(Iterator it=myNodes.iterator(); it.hasNext();) {
+                InetSocketAddress addr=(InetSocketAddress)it.next();
+                if(connections[i] == null) {
+                    try {
+                        connections[i]=new Connection(addr);
+                        System.out.println("-- connected to " +addr);
+                        System.out.flush();
+                    }
+                    catch(Exception all_others) {
+                        throw all_others;
+                    }
+                }
+                i++;
+            }
+        }
 
          // todo: parallelize
          void writeMessage(byte[] msg) throws Exception {
@@ -162,7 +157,7 @@ public class TcpTransport implements Transport {
 
          public String toString() {
              StringBuffer sb=new StringBuffer();
-             for(Iterator it=nodes.iterator(); it.hasNext();) {
+             for(Iterator it=myNodes.iterator(); it.hasNext();) {
                  InetAddress inetAddress=(InetAddress)it.next();
                  sb.append(inetAddress).append(' ');
              }
@@ -171,15 +166,33 @@ public class TcpTransport implements Transport {
      }
 
      class Connection {
-         Socket sock;
+         Socket sock=null;
          DataOutputStream out;
+         InetSocketAddress addr;
 
-         Connection(InetAddress addr) throws Exception {
-             sock=new Socket(addr, srv_port);
-             out=new DataOutputStream(new BufferedOutputStream(sock.getOutputStream()));
+         Connection(InetSocketAddress addr) {
+             this.addr=addr;
+             if(!createSocket())
+                 System.err.println("Failed to connect to " + addr);
+         }
+
+         boolean createSocket() {
+             try {
+                 sock=new Socket(addr.getAddress(), addr.getPort());
+                 out=new DataOutputStream(new BufferedOutputStream(sock.getOutputStream()));
+                 return true;
+             }
+             catch(IOException ex) {
+                 return false;
+             }
          }
 
          void writeMessage(byte[] msg) throws Exception {
+             if(sock == null) {
+                 if(!createSocket()) {
+                     return;
+                 }
+             }
              out.writeInt(msg.length);
              out.write(msg, 0, msg.length);
              out.flush();
@@ -190,7 +203,6 @@ public class TcpTransport implements Transport {
                  sock.close();
              }
              catch(Exception ex) {
-
              }
          }
      }
@@ -214,14 +226,14 @@ public class TcpTransport implements Transport {
                     byte[] buf=new byte[len];
                     in.readFully(buf, 0, len);
                     if(receiver != null)
-                        receiver.receive(sock.getInetAddress(), buf);
+                        receiver.receive(sock.getRemoteSocketAddress(), buf);
                 }
                 catch(EOFException eof) {
                     break;
                 }
                 catch(Exception ex) {
                     if(sock == null) return;
-                    ex.printStackTrace();
+                    // ex.printStackTrace();
                 }
             }
         }
@@ -232,10 +244,8 @@ public class TcpTransport implements Transport {
                 sock=null;
             }
             catch(Exception ex) {
-
             }
         }
-
     }
 
 
@@ -243,13 +253,22 @@ public class TcpTransport implements Transport {
     public List parseCommaDelimitedList(String s) throws Exception {
         List retval=new ArrayList();
         StringTokenizer tok;
-        InetAddress host;
+        String hostname, tmp;
+        int    port;
+        InetSocketAddress addr;
+        int index;
 
         if(s == null) return null;
         tok=new StringTokenizer(s, ",");
         while(tok.hasMoreTokens()) {
-            host=InetAddress.getByName(tok.nextToken());
-            retval.add(host);
+            tmp=tok.nextToken();
+            index=tmp.indexOf(':');
+            if(index == -1)
+                throw new Exception("host must be in format <host:port>, was " + tmp);
+            hostname=tmp.substring(0, index);
+            port=Integer.parseInt(tmp.substring(index+1));
+            addr=new InetSocketAddress(hostname, port);
+            retval.add(addr);
         }
         return retval;
     }

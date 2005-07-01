@@ -24,7 +24,7 @@ public class Test implements Receiver {
     /** HashMap<Object,MemberInfo> members. Keys=member addresses, value=MemberInfo */
     HashMap         senders=new HashMap();
 
-    /** Keeps track of members */
+    /** Keeps track of members. ArrayList<SocketAddress> */
     ArrayList       members=new ArrayList();
 
     /** Set when first message is received */
@@ -155,6 +155,11 @@ public class Test implements Receiver {
 
     public void receive(Object sender, byte[] payload) {
         Data d;
+
+        if(payload == null || payload.length == 0) {
+            System.err.println("payload is incorrect");
+            return;
+        }
 
         try {
             int type=payload[0];
@@ -474,17 +479,23 @@ public class Test implements Receiver {
 
 
     void runDiscoveryPhase() throws Exception {
-        Data d=new Data(Data.DISCOVERY_REQ);
-        transport.send(null, generatePayload(d, null));
+        sendDiscoveryRequest();
         sendDiscoveryResponse();
 
         synchronized(this.members) {
             System.out.println("-- waiting for " + num_members + " members to join");
             while(this.members.size() < num_members) {
-                this.members.wait();
-                System.out.println("-- members: " + this.members.size());
+                this.members.wait(2000);
+                sendDiscoveryRequest();
+                sendDiscoveryResponse();
             }
+            System.out.println("-- members: " + this.members.size());
         }
+    }
+
+    void sendDiscoveryRequest() throws Exception {
+        Data d=new Data(Data.DISCOVERY_REQ);
+        transport.send(null, generatePayload(d, null));
     }
 
     void sendDiscoveryResponse() throws Exception {
