@@ -42,7 +42,7 @@ import java.util.*;
  * The {@link #receive(org.jgroups.Address, java.net.InetAddress, int, byte[])} method must
  * be called by subclasses when a unicast or multicast message has been received
  * @author Bela Ban
- * @version $Id: TP.java,v 1.4 2005/06/30 15:33:34 belaban Exp $
+ * @version $Id: TP.java,v 1.5 2005/07/01 16:27:51 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -315,12 +315,6 @@ public abstract class TP extends Protocol {
         if(str != null) {
             bind_port=Integer.parseInt(str);
             props.remove("bind_port");
-        }
-
-		str=props.getProperty("start_port");
-        if(str != null) {
-            bind_port=Integer.parseInt(str);
-            props.remove("start_port");
         }
 
 		str=props.getProperty("port_range");
