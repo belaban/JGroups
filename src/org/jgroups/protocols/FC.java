@@ -1,4 +1,4 @@
-// $Id: FC.java,v 1.24 2005/07/01 12:40:30 belaban Exp $
+// $Id: FC.java,v 1.25 2005/07/01 12:50:34 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -19,7 +19,7 @@ import java.util.*;
  * Note that this protocol must be located towards the top of the stack, or all down_threads from JChannel to this
  * protocol must be set to false ! This is in order to block JChannel.send()/JChannel.down().
  * @author Bela Ban
- * @version $Revision: 1.24 $
+ * @version $Revision: 1.25 $
  */
 public class FC extends Protocol {
 
@@ -194,19 +194,20 @@ public class FC extends Protocol {
 
     public void down(final Event evt) {
         switch(evt.getType()) {
-            case Event.VIEW_CHANGE:
-                // this has to be run in a separate thread because waitUntilEnoughCreditsAvailable() might block,
-                // and the view change could potentially unblock it
-                new Thread() {
-                    public void run() {
-                        handleViewChange(((View)evt.getArg()).getMembers());
-                    }
-                }.start();
-                break;
-            case Event.MSG:
-                // blocks until enought credits are available to send message
-                waitUntilEnoughCreditsAvailable(evt);
-                return;
+        case Event.VIEW_CHANGE:
+            // this has to be run in a separate thread because waitUntilEnoughCreditsAvailable() might block,
+            // and the view change could potentially unblock it
+            new Thread() {
+                public void run() {
+                    handleViewChange(((View)evt.getArg()).getMembers());
+                }
+            }.start();
+            break;
+        case Event.MSG:
+            passDown(evt); // let this one go, but block on the next message if not sufficient credit
+            // blocks until enought credits are available to send message
+            waitUntilEnoughCreditsAvailable((Message)evt.getArg());
+            return;
         }
         passDown(evt); // this could potentially use the lower protocol's thread which may block
     }
@@ -249,7 +250,6 @@ public class FC extends Protocol {
             if(log.isTraceEnabled())
                 log.trace("received replenishment message from " + src + ", old credit was " + sent.get(src) +
                           ", new credits are " + max_credits + ". Creditors are\n" + printCreditors());
-
             sent.put(src, new Long(max_credits));
             if(creditors.size() > 0) {  // we are blocked because we expect credit from one or more members
                 removeCreditor(src);
@@ -268,6 +268,7 @@ public class FC extends Protocol {
     void adjustCredit(Message msg) {
         Address src=msg.getSrc();
         long    size=Math.max(24, msg.getLength());
+        boolean send_credits=false;
 
         if(src == null) {
             if(log.isErrorEnabled()) log.error("src is null");
@@ -278,10 +279,12 @@ public class FC extends Protocol {
             // if(log.isTraceEnabled()) log.trace("credit for " + src + " is " + received.get(src));
             if(decrementCredit(received, src, size, min_credits) == false) {
                 received.put(src, new Long(max_credits));
-                // not enough credits left
-                if(log.isTraceEnabled()) log.trace("sending replenishment message to " + src);
-                sendCredit(src);
+                send_credits=true; // not enough credits left
             }
+        }
+        if(send_credits) {
+            if(log.isTraceEnabled()) log.trace("sending replenishment message to " + src);
+            sendCredit(src);
         }
     }
 
@@ -301,12 +304,9 @@ public class FC extends Protocol {
      * @param evt Guaranteed to be a Message
      * @return
      */
-    void waitUntilEnoughCreditsAvailable(Event evt) {
-        Message msg=(Message)evt.getArg();
-
+    void waitUntilEnoughCreditsAvailable(Message msg) {
         // not enough credits, block until replenished with credits
         synchronized(sent) { // 'sent' is the same lock as blocking.getLock()...
-            passDown(evt); // let this one go, but block on the next message if not sufficient credit
             if(decrMessage(msg) == false) {
                 if(log.isTraceEnabled())
                     log.trace("blocking due to insufficient credits, creditors=\n" + printCreditors());
