@@ -1,4 +1,4 @@
-// $Id: FC.java,v 1.25 2005/07/01 12:50:34 belaban Exp $
+// $Id: FC.java,v 1.26 2005/07/01 13:05:11 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -19,7 +19,7 @@ import java.util.*;
  * Note that this protocol must be located towards the top of the stack, or all down_threads from JChannel to this
  * protocol must be set to false ! This is in order to block JChannel.send()/JChannel.down().
  * @author Bela Ban
- * @version $Revision: 1.25 $
+ * @version $Revision: 1.26 $
  */
 public class FC extends Protocol {
 
@@ -245,11 +245,11 @@ public class FC extends Protocol {
 
     void handleCredit(Address src) {
         if(src == null) return;
-
+        if(log.isTraceEnabled())
+            log.trace(new StringBuffer("received replenishment message from ").append(src).append(", old credit was ").
+                      append(sent.get(src)).append(", new credits are ").append(max_credits).
+                      append(". Creditors are\n").append(printCreditors()));
         synchronized(sent) {
-            if(log.isTraceEnabled())
-                log.trace("received replenishment message from " + src + ", old credit was " + sent.get(src) +
-                          ", new credits are " + max_credits + ". Creditors are\n" + printCreditors());
             sent.put(src, new Long(max_credits));
             if(creditors.size() > 0) {  // we are blocked because we expect credit from one or more members
                 removeCreditor(src);
@@ -372,7 +372,6 @@ public class FC extends Protocol {
         // **********************************************************************
         // always called with 'sent' lock acquired, so we don't need to sync here
         // **********************************************************************
-        if(log.isTraceEnabled()) log.trace("setting blocking=false");
         blocking.set(Boolean.FALSE);
         printBlockTime();
     }
@@ -384,7 +383,7 @@ public class FC extends Protocol {
         last_blockings.add(new Long(diff));
         stop_blocking=start_blocking=0;
         if(log.isTraceEnabled())
-            log.trace("blocking time was " + diff + "ms");
+            log.trace("setting blocking=false, blocking time was " + diff + "ms");
     }
 
     private String printCreditors() {
@@ -405,8 +404,7 @@ public class FC extends Protocol {
     }
 
     private void removeCreditor(Address mbr) {
-        if(mbr != null)
-            creditors.remove(mbr);
+        creditors.remove(mbr);
     }
 
     private long getCredits(Map map, Address mbr) {
