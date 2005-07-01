@@ -1,4 +1,4 @@
-// $Id: FC.java,v 1.23 2005/06/14 13:20:05 belaban Exp $
+// $Id: FC.java,v 1.24 2005/07/01 12:40:30 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -6,6 +6,7 @@ import org.jgroups.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.CondVar;
 import org.jgroups.util.Streamable;
+import org.jgroups.util.BoundedList;
 
 import java.io.*;
 import java.util.*;
@@ -18,7 +19,7 @@ import java.util.*;
  * Note that this protocol must be located towards the top of the stack, or all down_threads from JChannel to this
  * protocol must be set to false ! This is in order to block JChannel.send()/JChannel.down().
  * @author Bela Ban
- * @version $Revision: 1.23 $
+ * @version $Revision: 1.24 $
  */
 public class FC extends Protocol {
 
@@ -65,6 +66,8 @@ public class FC extends Protocol {
     int num_blockings=0, num_replenishments=0;
     long total_time_blocking=0;
 
+    final BoundedList last_blockings=new BoundedList(50);
+
 
 
 
@@ -76,6 +79,7 @@ public class FC extends Protocol {
         super.resetStats();
         num_blockings=num_replenishments=0;
         total_time_blocking=0;
+        last_blockings.removeAll();
     }
 
     public long getMaxCredits() {
@@ -115,6 +119,10 @@ public class FC extends Protocol {
         return total_time_blocking;
     }
 
+    public double getAverageTimeBlocked() {
+        return total_time_blocking / num_blockings;
+    }
+
     public int getNumberOfReplenishmentsReceived() {
         return num_replenishments;
     }
@@ -131,6 +139,10 @@ public class FC extends Protocol {
         StringBuffer sb=new StringBuffer();
         sb.append("senders:\n").append(printMap(sent)).append("\n\nreceivers:\n").append(printMap(received));
         return sb.toString();
+    }
+
+    public String showLastBlockingTimes() {
+        return last_blockings.toString();
     }
 
 
@@ -263,8 +275,8 @@ public class FC extends Protocol {
         }
 
         synchronized(received) {
-            if(log.isTraceEnabled()) log.trace("credit for " + src + " is " + received.get(src));
-            if(decrementCredit(received, src, size) == false) {
+            // if(log.isTraceEnabled()) log.trace("credit for " + src + " is " + received.get(src));
+            if(decrementCredit(received, src, size, min_credits) == false) {
                 received.put(src, new Long(max_credits));
                 // not enough credits left
                 if(log.isTraceEnabled()) log.trace("sending replenishment message to " + src);
@@ -298,8 +310,8 @@ public class FC extends Protocol {
             if(decrMessage(msg) == false) {
                 if(log.isTraceEnabled())
                     log.trace("blocking due to insufficient credits, creditors=\n" + printCreditors());
-                start_blocking=System.currentTimeMillis();
                 blocking.set(Boolean.TRUE);
+                start_blocking=System.currentTimeMillis();
                 num_blockings++;
                 blocking.waitUntil(Boolean.FALSE);  // waits on 'sent'
             }
@@ -330,8 +342,8 @@ public class FC extends Protocol {
         dest=msg.getDest();
         size=Math.max(24, msg.getLength());
         if(dest != null && !dest.isMulticastAddress()) { // unicast destination
-            if(log.isTraceEnabled()) log.trace("credit for " + dest + " is " + sent.get(dest));
-            if(decrementCredit(sent, dest, size)) {
+            // if(log.isTraceEnabled()) log.trace("credit for " + dest + " is " + sent.get(dest));
+            if(decrementCredit(sent, dest, size, 0)) {
                 return true;
             }
             else {
@@ -342,8 +354,8 @@ public class FC extends Protocol {
         else {                 // multicast destination
             for(Iterator it=members.iterator(); it.hasNext();) {
                 dest=(Address)it.next();
-                if(log.isTraceEnabled()) log.trace("credit for " + dest + " is " + sent.get(dest));
-                if(decrementCredit(sent, dest, size) == false) {
+                // if(log.isTraceEnabled()) log.trace("credit for " + dest + " is " + sent.get(dest));
+                if(decrementCredit(sent, dest, size, 0) == false) {
                     addCreditor(dest);
                     success=false;
                 }
@@ -369,6 +381,7 @@ public class FC extends Protocol {
         stop_blocking=System.currentTimeMillis();
         long diff=stop_blocking - start_blocking;
         total_time_blocking+=diff;
+        last_blockings.add(new Long(diff));
         stop_blocking=start_blocking=0;
         if(log.isTraceEnabled())
             log.trace("blocking time was " + diff + "ms");
@@ -415,30 +428,69 @@ public class FC extends Protocol {
      * @param dest
      * @return Whether the required credits could successfully be subtracted from the credits left
      */
-    private boolean decrementCredit(Map map, Address dest, long credits_required) {
+//    private boolean decrementCredit(Map map, Address dest, long credits_required) {
+//        long    credits_left, new_credits_left;
+//        Long    tmp=(Long)map.get(dest);
+//
+//        if(tmp != null) {
+//            credits_left=tmp.longValue();
+//            new_credits_left=Math.max(0, credits_left - credits_required);
+//            map.put(dest, new Long(new_credits_left));
+//
+//            if(new_credits_left >= min_credits + credits_required) {
+//                return true;
+//            }
+//            else {
+//                if(log.isTraceEnabled()) {
+//                    StringBuffer sb=new StringBuffer();
+//                    sb.append("not enough credits left for ").append(dest).append(": left=").append(new_credits_left);
+//                    sb.append(", required+min_credits=").append((credits_required +min_credits)).append(", required=");
+//                    sb.append(credits_required).append(", min_credits=").append(min_credits);
+//                    log.trace(sb.toString());
+//                }
+//                return false;
+//            }
+//        }
+//        return true;
+//    }
+
+
+
+    /**
+     * Find the credits associated with <tt>dest</tt> and decrement its credits by credits_required. If the remaining
+     * value is less than or equal to 0, return false, else return true. Note that we will always subtract the credits.
+     * @param map
+     * @param dest
+     * @param credits_required Number of bytes required
+     * @param minimal_credits For the receiver: add minimal credits to check whether credits need to be sent
+     * @return Whether the required credits could successfully be subtracted from the credits left
+     */
+    private boolean decrementCredit(Map map, Address dest, long credits_required, long minimal_credits) {
         long    credits_left, new_credits_left;
         Long    tmp=(Long)map.get(dest);
+        boolean success;
 
-        if(tmp != null) {
-            credits_left=tmp.longValue();
-            new_credits_left=Math.max(0, credits_left - credits_required);
-            map.put(dest, new Long(new_credits_left));
+        if(tmp == null)
+            return true;
 
-            if(new_credits_left >= min_credits + credits_required) {
-                return true;
-            }
-            else {
-                if(log.isTraceEnabled()) {
-                    StringBuffer sb=new StringBuffer();
-                    sb.append("not enough credits left for ").append(dest).append(": left=").append(new_credits_left);
-                    sb.append(", required+min_credits=").append((credits_required +min_credits)).append(", required=");
-                    sb.append(credits_required).append(", min_credits=").append(min_credits);
-                    log.trace(sb.toString());
-                }
-                return false;
-            }
+        credits_left=tmp.longValue();
+        success=credits_left > (credits_required + minimal_credits);
+        new_credits_left=Math.max(0, credits_left - credits_required);
+        map.put(dest, new Long(new_credits_left));
+
+        if(success) {
+            return true;
         }
-        return true;
+        else {
+            if(log.isTraceEnabled()) {
+                StringBuffer sb=new StringBuffer();
+                sb.append("not enough credits left for ").append(dest).append(": left=").append(new_credits_left);
+                sb.append(", required+min_credits=").append((credits_required +min_credits)).append(", required=");
+                sb.append(credits_required).append(", min_credits=").append(min_credits);
+                log.trace(sb.toString());
+            }
+            return false;
+        }
     }
 
 

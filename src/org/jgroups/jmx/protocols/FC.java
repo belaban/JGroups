@@ -4,7 +4,7 @@ import org.jgroups.jmx.Protocol;
 
 /**
  * @author Bela Ban
- * @version $Id: FC.java,v 1.1 2005/06/14 09:23:16 belaban Exp $
+ * @version $Id: FC.java,v 1.2 2005/07/01 12:40:29 belaban Exp $
  */
 public class FC extends Protocol implements FCMBean {
     org.jgroups.protocols.FC p;
@@ -58,6 +58,10 @@ public class FC extends Protocol implements FCMBean {
         return p.getTotalTimeBlocked();
     }
 
+    public double getAverageTimeBlocked() {
+        return p.getAverageTimeBlocked();
+    }
+
     public int getNumberOfReplenishmentsReceived() {
         return p.getNumberOfReplenishmentsReceived();
     }
@@ -72,6 +76,10 @@ public class FC extends Protocol implements FCMBean {
 
     public String printCredits() {
         return p.printCredits();
+    }
+
+    public String showLastBlockingTimes() {
+        return p.showLastBlockingTimes();
     }
 
     public void unblock() {
