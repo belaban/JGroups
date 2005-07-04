@@ -5,6 +5,7 @@ import org.jgroups.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 import org.jgroups.util.List;
+import org.jgroups.util.Queue;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
@@ -42,7 +43,7 @@ import java.util.*;
  * The {@link #receive(org.jgroups.Address, java.net.InetAddress, int, byte[])} method must
  * be called by subclasses when a unicast or multicast message has been received
  * @author Bela Ban
- * @version $Id: TP.java,v 1.5 2005/07/01 16:27:51 belaban Exp $
+ * @version $Id: TP.java,v 1.6 2005/07/04 13:18:24 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
