@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.30 2005/07/04 08:31:45 belaban Exp $
+// $Id: ConnectionTable.java,v 1.31 2005/07/04 13:17:55 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -540,6 +540,8 @@ public class ConnectionTable implements Runnable {
         Address          peer_addr=null;           // address of the 'other end' of the connection
         final Object     send_mutex=new Object();  // serialize sends
         long             last_access=System.currentTimeMillis(); // last time a message was sent or received
+
+        /** Queue<byte[]> of data to be sent to the peer of this connection */
         Queue            send_queue=new Queue();
         Sender           sender=new Sender();
         final long       POLL_TIMEOUT=30000;
@@ -611,7 +613,11 @@ public class ConnectionTable implements Runnable {
         void send(byte[] data, int offset, int length) {
             if(use_send_queues) {
                 try {
-                    send_queue.add(new Entry(data, offset, length));
+                    // we need to copy the byte[] buffer here because the original buffer might get changed
+                    // in the meantime
+                    byte[] tmp=new byte[length];
+                    System.arraycopy(data, offset, tmp, 0, length);
+                    send_queue.add(tmp);
                     if(!sender.isRunning())
                         sender.start();
                 }
@@ -853,18 +859,6 @@ public class ConnectionTable implements Runnable {
         }
 
 
-        class Entry {
-            byte[] data;
-            int offset, length;
-
-            public Entry(byte[] data, int offset, int length) {
-                this.data=data;
-                this.offset=offset;
-                this.length=length;
-            }
-        }
-
-
         class Sender implements Runnable {
             Thread senderThread;
             private boolean running=false;
@@ -893,12 +887,12 @@ public class ConnectionTable implements Runnable {
             }
 
             public void run() {
-                Entry entry;
+                byte[] data;
                 while(senderThread != null && senderThread.equals(Thread.currentThread())) {
                     try {
-                        entry=(Entry)send_queue.remove();
-                        if(entry != null)
-                            _send(entry.data, entry.offset, entry.length);
+                        data=(byte[])send_queue.remove();
+                        if(data != null)
+                            _send(data, 0, data.length);
                     }
                     catch(QueueClosedException e) {
                         break;
