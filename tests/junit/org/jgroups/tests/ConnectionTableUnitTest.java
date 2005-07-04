@@ -1,4 +1,4 @@
-// $Id: ConnectionTableUnitTest.java,v 1.4 2005/06/30 15:36:41 belaban Exp $
+// $Id: ConnectionTableUnitTest.java,v 1.5 2005/07/04 18:07:00 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -13,7 +13,6 @@ import org.jgroups.blocks.ConnectionTable;
 public class ConnectionTableUnitTest extends TestCase {
     ConnectionTable ct1, ct2;
     final int       port1=5555, port2=6666;
-
 
 
 
@@ -90,6 +89,7 @@ public class ConnectionTableUnitTest extends TestCase {
         MyReceiver r=new MyReceiver(ct2, NUM, false);
 
         ct2.setReceiver(r);
+        // ct1.setUseSendQueues(false);
 
         for(int i=0; i < NUM; i++) {
             ct1.send(other, null, 0, 0);

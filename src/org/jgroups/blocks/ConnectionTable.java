@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.32 2005/07/04 15:03:29 belaban Exp $
+// $Id: ConnectionTable.java,v 1.33 2005/07/04 18:06:58 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -61,6 +61,7 @@ public class ConnectionTable implements Runnable {
     int                 sock_conn_timeout=1000;      // max time in millis to wait for Socket.connect() to return
     ThreadGroup         thread_group=null;
     protected final Log log=LogFactory.getLog(getClass());
+    final static        byte[] NULL_DATA={};
     final byte[]        cookie={'b', 'e', 'l', 'a'};
 
 
@@ -86,6 +87,13 @@ public class ConnectionTable implements Runnable {
      */
     public ConnectionTable(int srv_port) throws Exception {
         this.srv_port=srv_port;
+        start();
+    }
+
+
+    public ConnectionTable(InetAddress bind_addr, int srv_port) throws Exception {
+        this.srv_port=srv_port;
+        this.bind_addr=bind_addr;
         start();
     }
 
@@ -246,6 +254,7 @@ public class ConnectionTable implements Runnable {
             conn.send(data, offset, length);
         }
         catch(Throwable ex) {
+            ex.printStackTrace();
             if(log.isTraceEnabled())
                 log.trace("sending msg to " + dest + " failed (" + ex.getClass().getName() + "); removing from connection table");
             remove(dest);
@@ -539,7 +548,6 @@ public class ConnectionTable implements Runnable {
         /** Queue<byte[]> of data to be sent to the peer of this connection */
         Queue            send_queue=new Queue();
         Sender           sender=new Sender();
-        final long       POLL_TIMEOUT=30000;
 
 
         private String getSockAddress() {
@@ -608,11 +616,15 @@ public class ConnectionTable implements Runnable {
         void send(byte[] data, int offset, int length) {
             if(use_send_queues) {
                 try {
-                    // we need to copy the byte[] buffer here because the original buffer might get changed
-                    // in the meantime
-                    byte[] tmp=new byte[length];
-                    System.arraycopy(data, offset, tmp, 0, length);
-                    send_queue.add(tmp);
+                    if(data != null) {
+                        // we need to copy the byte[] buffer here because the original buffer might get changed
+                        // in the meantime
+                        byte[] tmp=new byte[length];
+                        System.arraycopy(data, offset, tmp, 0, length);
+                        send_queue.add(tmp);}
+                    else {
+                        send_queue.add(NULL_DATA);
+                    }
                     if(!sender.isRunning())
                         sender.start();
                 }
@@ -886,8 +898,9 @@ public class ConnectionTable implements Runnable {
                 while(senderThread != null && senderThread.equals(Thread.currentThread())) {
                     try {
                         data=(byte[])send_queue.remove();
-                        if(data != null)
-                            _send(data, 0, data.length);
+                        if(data == null)
+                            continue;
+                        _send(data, 0, data.length);
                     }
                     catch(QueueClosedException e) {
                         break;
