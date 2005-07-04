@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.91 2005/06/30 15:34:01 belaban Exp $
+// $Id: UDP.java,v 1.92 2005/07/04 15:03:30 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -738,48 +738,10 @@ public class UDP extends TP implements Runnable {
     }
 
 
-    void handleDownEvent(Event evt) {
-        switch(evt.getType()) {
 
-        case Event.TMP_VIEW:
-        case Event.VIEW_CHANGE:
-            synchronized(members) {
-                members.removeAllElements();
-                Vector tmpvec=((View)evt.getArg()).getMembers();
-                for(int i=0; i < tmpvec.size(); i++)
-                    members.addElement(tmpvec.elementAt(i));
-            }
-            break;
-
-        case Event.GET_LOCAL_ADDRESS:   // return local address -> Event(SET_LOCAL_ADDRESS, local)
-            passUp(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
-            break;
-
-        case Event.CONNECT:
-            channel_name=(String)evt.getArg();
-
-            // removed March 18 2003 (bela), not needed (handled by GMS)
-            // changed July 2 2003 (bela): we discard CONNECT_OK at the GMS level anyway, this might
-            // be needed if we run without GMS though
-            passUp(new Event(Event.CONNECT_OK));
-            break;
-
-        case Event.DISCONNECT:
-            passUp(new Event(Event.DISCONNECT_OK));
-            break;
-
-        case Event.CONFIG:
-            if(log.isDebugEnabled()) log.debug("received CONFIG event: " + evt.getArg());
-            handleConfigEvent((HashMap)evt.getArg());
-            break;
-        }
-    }
-
-
-    void handleConfigEvent(HashMap map) {
+    protected void handleConfigEvent(HashMap map) {
+        super.handleConfigEvent(map);
         if(map == null) return;
-        if(map.containsKey("additional_data"))
-            additional_data=(byte[])map.get("additional_data");
         if(map.containsKey("send_buf_size")) {
             mcast_send_buf_size=((Integer)map.get("send_buf_size")).intValue();
             ucast_send_buf_size=mcast_send_buf_size;

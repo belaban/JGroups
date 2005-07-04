@@ -43,7 +43,7 @@ import java.util.*;
  * The {@link #receive(org.jgroups.Address, java.net.InetAddress, int, byte[])} method must
  * be called by subclasses when a unicast or multicast message has been received
  * @author Bela Ban
- * @version $Id: TP.java,v 1.6 2005/07/04 13:18:24 belaban Exp $
+ * @version $Id: TP.java,v 1.7 2005/07/04 15:03:30 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -828,16 +828,15 @@ public abstract class TP extends Protocol {
     }
 
 
-    private void handleDownEvent(Event evt) {
+    protected void handleDownEvent(Event evt) {
         switch(evt.getType()) {
 
         case Event.TMP_VIEW:
         case Event.VIEW_CHANGE:
             synchronized(members) {
-                members.removeAllElements();
+                members.clear();
                 Vector tmpvec=((View)evt.getArg()).getMembers();
-                for(int i=0; i < tmpvec.size(); i++)
-                    members.addElement(tmpvec.elementAt(i));
+                members.addAll(tmpvec);
             }
             break;
 
@@ -867,7 +866,7 @@ public abstract class TP extends Protocol {
     }
 
 
-    private void handleConfigEvent(HashMap map) {
+    protected void handleConfigEvent(HashMap map) {
         if(map == null) return;
         if(map.containsKey("additional_data"))
             additional_data=(byte[])map.get("additional_data");

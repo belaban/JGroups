@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.31 2005/07/04 13:17:55 belaban Exp $
+// $Id: ConnectionTable.java,v 1.32 2005/07/04 15:03:29 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -236,11 +236,6 @@ public class ConnectionTable implements Runnable {
         try {
             conn=getConnection(dest);
             if(conn == null) return;
-        }
-        catch(IOException timeout) {
-            if(log.isTraceEnabled())
-                log.trace("failed connecting to " + dest);
-            return;
         }
         catch(Throwable ex) {
             throw new Exception("connection to " + dest + " could not be established", ex);

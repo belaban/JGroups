@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.24 2005/06/30 15:34:34 belaban Exp $
+// $Id: TCP.java,v 1.25 2005/07/04 15:03:30 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -12,7 +12,6 @@ import org.jgroups.stack.IpAddress;
 import org.jgroups.util.BoundedList;
 
 import java.net.InetAddress;
-import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.Properties;
 import java.util.Vector;
@@ -179,6 +178,18 @@ public class TCP extends TP implements ConnectionTable.Receiver {
         super.stop();
     }
 
+
+    protected void handleDownEvent(Event evt) {
+        super.handleDownEvent(evt);
+        if(evt.getType() == Event.VIEW_CHANGE) {
+            suspected_mbrs.removeAll();
+        }
+        else if(evt.getType() == Event.UNSUSPECT) {
+            suspected_mbrs.removeElement(evt.getArg());
+        }
+    }
+    
+
    /**
     * @param reaperInterval
     * @param connExpireTime
@@ -230,22 +241,23 @@ public class TCP extends TP implements ConnectionTable.Receiver {
 
     public void sendToSingleMember(Address dest, byte[] data, int offset, int length) throws Exception {
         if(log.isTraceEnabled()) log.trace("dest=" + dest + " (" + data.length + " bytes)");
-        try {
-            if(skip_suspected_members) {
-                if(suspected_mbrs.contains(dest)) {
-                    if(log.isTraceEnabled()) log.trace("will not send unicast message to " + dest +
-                                                       " as it is currently suspected");
-                    return;
-                }
+        if(skip_suspected_members) {
+            if(suspected_mbrs.contains(dest)) {
+                if(log.isTraceEnabled())
+                    log.trace("will not send unicast message to " + dest + " as it is currently suspected");
+                return;
             }
-            if(dest.equals(local_addr)) {
-                if(!loopback) // if loopback, we discard the message (was already looped back)
-                    receive(dest, data, offset, length); // else we loop it back here
-            }
-            else
-                ct.send(dest, data, offset, length);
         }
-        catch(SocketException e) {
+
+        if(dest.equals(local_addr)) {
+            if(!loopback) // if loopback, we discard the message (was already looped back)
+                receive(dest, data, offset, length); // else we loop it back here
+            return;
+        }
+        try {
+            ct.send(dest, data, offset, length);
+        }
+        catch(Exception e) {
             if(members.contains(dest)) {
                 if(!suspected_mbrs.contains(dest)) {
                     suspected_mbrs.add(dest);
@@ -254,6 +266,7 @@ public class TCP extends TP implements ConnectionTable.Receiver {
             }
         }
     }
+
 
     public String getInfo() {
         StringBuffer sb=new StringBuffer();
