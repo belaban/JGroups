@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.29 2005/07/01 15:39:04 belaban Exp $
+// $Id: ConnectionTable.java,v 1.30 2005/07/04 08:31:45 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -771,7 +771,7 @@ public class ConnectionTable implements Runnable {
                         buf=new byte[len];
                     in.readFully(buf, 0, len);
                     updateLastAccessed();
-                    receive(peer_addr, buf, 0, len); // calls receiver.receiver(msg)
+                    receive(peer_addr, buf, 0, len); // calls receiver.receive(msg)
                 }
                 catch(OutOfMemoryError mem_ex) {
                     if(log.isWarnEnabled()) log.warn("dropped invalid message, closing connection");
