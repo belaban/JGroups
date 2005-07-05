@@ -1,4 +1,4 @@
-// $Id: MessageTest.java,v 1.10 2005/04/25 08:27:42 belaban Exp $
+// $Id: MessageTest.java,v 1.11 2005/07/05 11:01:44 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -6,6 +6,7 @@ import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.jgroups.Message;
+import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Range;
 import org.jgroups.util.Util;
 
@@ -252,6 +253,51 @@ public class MessageTest extends TestCase {
         assertEquals(5, r.low);
         assertEquals(5, r.high);
     }
+
+
+    public void testSizeNullMessage() throws Exception {
+        Message msg=new Message();
+        _testSize(msg);
+    }
+
+    public void testSizeMessageWithDest() throws Exception {
+        Message msg=new Message(new IpAddress("127.0.0.1", 3333), null, null);
+        _testSize(msg);
+    }
+
+    public void testSizeMessageWithSrc() throws Exception {
+        Message msg=new Message(null, new IpAddress("127.0.0.1", 4444), null);
+        _testSize(msg);
+    }
+
+    public void testSizeMessageWithDestAndSrc() throws Exception {
+        Message msg=new Message(new IpAddress("127.0.0.1", 3333), new IpAddress("127.0.0.1", 4444), null);
+        _testSize(msg);
+    }
+
+    public void testSizeMessageWithBuffer() throws Exception {
+        Message msg=new Message(null, null, "bela".getBytes());
+        _testSize(msg);
+    }
+
+    public void testSizeMessageWithBuffer2() throws Exception {
+        Message msg=new Message(null, null, new byte[]{'b', 'e', 'l', 'a'});
+        _testSize(msg);
+    }
+
+    public void testSizeMessageWithBuffer3() throws Exception {
+        Message msg=new Message(null, null, "bela");
+        _testSize(msg);
+    }
+
+    private void _testSize(Message msg) throws Exception {
+        long size=msg.size();
+        byte[] serialized_form=Util.streamableToByteBuffer(msg);
+        System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
+        assertEquals(size, serialized_form.length);
+    }
+
+
 
     public static Test suite() {
         TestSuite s=new TestSuite(MessageTest.class);
