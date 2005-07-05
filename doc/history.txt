@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.168 2005/06/14 10:22:12 belaban Exp $
+Revision: $Id: history.txt,v 1.169 2005/07/05 08:31:57 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -28,6 +28,9 @@ publicnmi	= Robert Schaffar-Taurok (robert@fusion.at)
 
 Version 2.2.9
 -------------
+
+- Refactored UDP and TCP into extending a common transport (TP)
+  (bela July 4 2005)
 
 - Completed first version of JMX instrumentation
   (bela June 14 2005)
