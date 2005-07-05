@@ -1,4 +1,4 @@
-// $Id: MessageTest.java,v 1.11 2005/07/05 11:01:44 belaban Exp $
+// $Id: MessageTest.java,v 1.12 2005/07/05 11:12:35 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -6,6 +6,8 @@ import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.jgroups.Message;
+import org.jgroups.conf.ClassConfigurator;
+import org.jgroups.protocols.UdpHeader;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Range;
 import org.jgroups.util.Util;
@@ -289,6 +291,23 @@ public class MessageTest extends TestCase {
         Message msg=new Message(null, null, "bela");
         _testSize(msg);
     }
+
+    public void testSizeMessageWithAdditionalData() throws Exception {
+        IpAddress dest=new IpAddress("127.0.0.1", 5555);
+        dest.setAdditionalData("bela".getBytes());
+        Message msg=new Message(dest, null, null);
+        _testSize(msg);
+    }
+
+
+    public void testSizeMessageWithDestAndSrcAndHeaders() throws Exception {
+        ClassConfigurator conf=ClassConfigurator.getInstance(true);
+        Message msg=new Message(new IpAddress("127.0.0.1", 3333), new IpAddress("127.0.0.1", 4444), "bela".getBytes());
+        UdpHeader udp_hdr=new UdpHeader("DemoChannel");
+        msg.putHeader("UDP", udp_hdr);
+        _testSize(msg);
+    }
+
 
     private void _testSize(Message msg) throws Exception {
         long size=msg.size();
