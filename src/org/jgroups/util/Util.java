@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.42 2005/06/30 15:38:20 belaban Exp $
+// $Id: Util.java,v 1.43 2005/07/05 11:01:25 belaban Exp $
 
 package org.jgroups.util;
 
@@ -90,6 +90,34 @@ public class Util {
             out_stream.reset();
             ObjectOutputStream out=new ObjectOutputStream(out_stream);
             out.writeObject(obj);
+            result=out_stream.toByteArray();
+            out.close();
+        }
+        return result;
+    }
+
+
+     public static Streamable streamableFromByteBuffer(Class cl, byte[] buffer) throws Exception {
+        synchronized(mutex) {
+            if(buffer == null) return null;
+            Streamable retval=null;
+            ByteArrayInputStream in_stream=new ByteArrayInputStream(buffer);
+            DataInputStream in=new DataInputStream(in_stream); // changed Nov 29 2004 (bela)
+            retval=(Streamable)cl.newInstance();
+            retval.readFrom(in);
+            in.close();
+            if(retval == null)
+                return null;
+            return retval;
+        }
+    }
+
+    public static byte[] streamableToByteBuffer(Streamable obj) throws Exception {
+        byte[] result=null;
+        synchronized(out_stream) {
+            out_stream.reset();
+            DataOutputStream out=new DataOutputStream(out_stream);
+            obj.writeTo(out);
             result=out_stream.toByteArray();
             out.close();
         }
