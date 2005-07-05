@@ -1,4 +1,4 @@
-// $Id: RouterTest.java,v 1.8 2005/04/25 08:25:49 belaban Exp $
+// $Id: RouterTest.java,v 1.9 2005/07/05 08:38:59 belaban Exp $
 
 package org.jgroups.tests.stack;
 
@@ -28,7 +28,7 @@ import java.util.Random;
  * may timeout.
  *
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Revision: 1.8 $
+ * @version $Revision: 1.9 $
  * @since 2.2.1
  */
 public class RouterTest extends TestCase {
@@ -524,7 +524,7 @@ public class RouterTest extends TestCase {
         Thread.sleep(1000);
 
         // send a series of stress routing requests to all members
-        final int count=100000; // total number of messages to be sent
+        final int count=50000; // total number of messages to be sent
         int timeout=120; // nr of secs to wait for all messages to arrrive
 
         final boolean[] received=new boolean[count];
