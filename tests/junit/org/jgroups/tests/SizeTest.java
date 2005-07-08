@@ -1,4 +1,4 @@
-// $Id: SizeTest.java,v 1.1 2005/07/08 11:28:26 belaban Exp $$
+// $Id: SizeTest.java,v 1.2 2005/07/08 12:19:43 belaban Exp $$
 
 package org.jgroups.tests;
 
@@ -8,6 +8,7 @@ import junit.framework.TestSuite;
 import org.jgroups.ChannelException;
 import org.jgroups.Header;
 import org.jgroups.View;
+import org.jgroups.Address;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.FD;
@@ -69,8 +70,6 @@ public class SizeTest extends TestCase {
     }
 
     public void testFdHeaders() throws Exception {
-        // FD_SOCK.FdHeader
-
         FD.FdHeader hdr=new FD.FdHeader(FD.FdHeader.HEARTBEAT_ACK);
         _testSize(hdr);
 
@@ -141,7 +140,33 @@ public class SizeTest extends TestCase {
         digest.add(addr, 102, 104, 105);
         hdr=new STATE_TRANSFER.StateHeader(STATE_TRANSFER.StateHeader.STATE_RSP, addr, 322649, digest);
         _testSize(hdr);
-     }
+    }
+
+    public void testIpAddress() throws Exception {
+        IpAddress addr=new IpAddress();
+        _testSize(addr);
+    }
+
+    public void testIpAddress1() throws Exception {
+        IpAddress addr=new IpAddress("127.0.0.1", 5555);
+        _testSize(addr);
+    }
+
+    public void testIpAddress2() throws Exception {
+        IpAddress addr=new IpAddress(3456);
+        _testSize(addr);
+    }
+
+    public void testIpAddress3() throws Exception {
+        IpAddress addr=new IpAddress(5555, false);
+        _testSize(addr);
+    }
+
+    public void testIpAddressWithAdditionalData() throws Exception {
+        IpAddress addr=new IpAddress(5555, false);
+        addr.setAdditionalData("bela".getBytes());
+        _testSize(addr);
+    }
 
 
     private void _testSize(Header hdr) throws Exception {
@@ -151,6 +176,13 @@ public class SizeTest extends TestCase {
         assertEquals(serialized_form.length, size);
     }
 
+
+     private void _testSize(Address addr) throws Exception {
+        long size=addr.size();
+        byte[] serialized_form=Util.streamableToByteBuffer(addr);
+        System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
+        assertEquals(serialized_form.length, size);
+    }
 
 
 
