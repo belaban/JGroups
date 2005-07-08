@@ -1,4 +1,4 @@
-// $Id: MessageTest.java,v 1.12 2005/07/05 11:12:35 belaban Exp $
+// $Id: MessageTest.java,v 1.13 2005/07/08 11:28:26 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -8,6 +8,9 @@ import junit.framework.TestSuite;
 import org.jgroups.Message;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.UdpHeader;
+import org.jgroups.protocols.TpHeader;
+import org.jgroups.protocols.PingHeader;
+import org.jgroups.protocols.pbcast.NakAckHeader;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Range;
 import org.jgroups.util.Util;
@@ -301,11 +304,21 @@ public class MessageTest extends TestCase {
 
 
     public void testSizeMessageWithDestAndSrcAndHeaders() throws Exception {
-        ClassConfigurator conf=ClassConfigurator.getInstance(true);
+        ClassConfigurator.getInstance(true);
         Message msg=new Message(new IpAddress("127.0.0.1", 3333), new IpAddress("127.0.0.1", 4444), "bela".getBytes());
+        addHeaders(msg);
+        _testSize(msg);
+    }
+
+    private void addHeaders(Message msg) {
         UdpHeader udp_hdr=new UdpHeader("DemoChannel");
         msg.putHeader("UDP", udp_hdr);
-        _testSize(msg);
+        TpHeader tp_hdr=new TpHeader("DemoChannel2");
+        msg.putHeader("TP", tp_hdr);
+        PingHeader ping_hdr=new PingHeader(PingHeader.GET_MBRS_REQ, null);
+        msg.putHeader("PING", ping_hdr);
+        NakAckHeader nak_hdr=new NakAckHeader(NakAckHeader.XMIT_REQ, 100, 104);
+        msg.putHeader("NAKACK", nak_hdr);
     }
 
 

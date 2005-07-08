@@ -1,4 +1,4 @@
-// $Id: NakAckHeader.java,v 1.12 2005/06/06 15:34:08 belaban Exp $
+// $Id: NakAckHeader.java,v 1.13 2005/07/08 11:28:25 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -55,7 +55,7 @@ public class NakAckHeader extends Header implements Streamable {
         // type (1 byte) + seqno (8 bytes) + presence (1 byte)
         int retval=Global.BYTE_SIZE + Global.LONG_SIZE + Global.BYTE_SIZE;
         if(range != null)
-            retval+= (2 * Global.LONG_SIZE); // presence byte, plus 2 times 8 bytes for seqno
+            retval+=Global.BYTE_SIZE + (2 * Global.LONG_SIZE); // presence byte, plus 2 times 8 bytes for seqno
         if(sender != null)
             retval+=sender.size();
         return retval;

@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.24 2005/06/13 13:06:20 belaban Exp $
+// $Id: FD.java,v 1.25 2005/07/08 11:28:25 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -29,7 +29,7 @@ import java.util.*;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Revision: 1.24 $
+ * @version $Revision: 1.25 $
  */
 public class FD extends Protocol {
     Address               ping_dest=null;
@@ -354,10 +354,10 @@ public class FD extends Protocol {
 
 
     public static class FdHeader extends Header implements Streamable {
-        static final byte HEARTBEAT=0;
-        static final byte HEARTBEAT_ACK=1;
-        static final byte SUSPECT=2;
-        static final byte NOT_MEMBER=3;  // received as response by pinged mbr when we are not a member
+        public static final byte HEARTBEAT=0;
+        public static final byte HEARTBEAT_ACK=1;
+        public static final byte SUSPECT=2;
+        public static final byte NOT_MEMBER=3;  // received as response by pinged mbr when we are not a member
 
 
         byte    type=HEARTBEAT;
@@ -369,8 +369,14 @@ public class FD extends Protocol {
         public FdHeader() {
         } // used for externalization
 
-        FdHeader(byte type) {
+        public FdHeader(byte type) {
             this.type=type;
+        }
+
+        public FdHeader(byte type, Vector mbrs, Address from) {
+            this(type);
+            this.mbrs=mbrs;
+            this.from=from;
         }
 
 
