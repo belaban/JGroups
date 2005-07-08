@@ -1,4 +1,4 @@
-// $Id: Digest.java,v 1.8 2004/10/08 12:09:10 belaban Exp $
+// $Id: Digest.java,v 1.9 2005/07/08 11:28:25 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -145,27 +145,27 @@ public class Digest implements Externalizable, Streamable {
      * If the sender doesn not exist, a new entry will be added (provided there is enough space)
      */
     public void merge(Address sender, long low_seqno, long high_seqno, long high_seqno_seen) {
-        int index;
+        int i;
         long my_low_seqno, my_high_seqno, my_high_seqno_seen;
         if(sender == null) {
             if(log.isErrorEnabled()) log.error("sender == null");
             return;
         }
-        index=getIndex(sender);
-        if(index == -1) {
+        i=getIndex(sender);
+        if(i == -1) {
             add(sender, low_seqno, high_seqno, high_seqno_seen);
             return;
         }
 
-        my_low_seqno=lowSeqnoAt(index);
-        my_high_seqno=highSeqnoAt(index);
-        my_high_seqno_seen=highSeqnoSeenAt(index);
+        my_low_seqno=lowSeqnoAt(i);
+        my_high_seqno=highSeqnoAt(i);
+        my_high_seqno_seen=highSeqnoSeenAt(i);
         if(low_seqno < my_low_seqno)
-            setLowSeqnoAt(index, low_seqno);
+            setLowSeqnoAt(i, low_seqno);
         if(high_seqno > my_high_seqno)
-            setHighSeqnoAt(index, high_seqno);
+            setHighSeqnoAt(i, high_seqno);
         if(high_seqno_seen > my_high_seqno_seen)
-            setHighSeqnoSeenAt(index, high_seqno_seen);
+            setHighSeqnoSeenAt(i, high_seqno_seen);
     }
 
 
@@ -292,27 +292,27 @@ public class Digest implements Externalizable, Streamable {
 
     public long highSeqnoAt(Address sender) {
         long ret=-1;
-        int index;
+        int i;
 
         if(sender == null) return ret;
-        index=getIndex(sender);
-        if(index == -1)
+        i=getIndex(sender);
+        if(i == -1)
             return ret;
         else
-            return high_seqnos[index];
+            return high_seqnos[i];
     }
 
 
     public long highSeqnoSeenAt(Address sender) {
         long ret=-1;
-        int index;
+        int i;
 
         if(sender == null) return ret;
-        index=getIndex(sender);
-        if(index == -1)
+        i=getIndex(sender);
+        if(i == -1)
             return ret;
         else
-            return high_seqnos_seen[index];
+            return high_seqnos_seen[i];
     }
 
     public void setLowSeqnoAt(int index, long low_seqno) {
@@ -342,19 +342,19 @@ public class Digest implements Externalizable, Streamable {
 
 
     public void setHighSeqnoAt(Address sender, long high_seqno) {
-        int index=getIndex(sender);
-        if(index < 0)
+        int i=getIndex(sender);
+        if(i < 0)
             return;
         else
-            setHighSeqnoAt(index, high_seqno);
+            setHighSeqnoAt(i, high_seqno);
     }
 
     public void setHighSeqnoSeenAt(Address sender, long high_seqno_seen) {
-        int index=getIndex(sender);
-        if(index < 0)
+        int i=getIndex(sender);
+        if(i < 0)
             return;
         else
-            setHighSeqnoSeenAt(index, high_seqno_seen);
+            setHighSeqnoSeenAt(i, high_seqno_seen);
     }
 
 

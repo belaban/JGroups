@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.19 2005/06/14 08:36:50 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.20 2005/07/08 11:28:25 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -6,10 +6,10 @@ import org.jgroups.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.StateTransferInfo;
 import org.jgroups.util.List;
+import org.jgroups.util.Util;
+import org.jgroups.util.Streamable;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.*;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Properties;
@@ -317,13 +317,13 @@ public class STATE_TRANSFER extends Protocol {
      * be stored in the header itself, but in the message's buffer.
      *
      */
-    public static class StateHeader extends Header {
-        static final int STATE_REQ=1;
-        static final int STATE_RSP=2;
+    public static class StateHeader extends Header implements Streamable {
+        public static final byte STATE_REQ=1;
+        public static final byte STATE_RSP=2;
 
         Address sender=null;   // sender of state STATE_REQ or STATE_RSP
         long id=0;          // state transfer ID (to separate multiple state transfers at the same time)
-        int type=0;
+        byte type=0;
         Digest my_digest=null;   // digest of sender (if type is STATE_RSP)
 
 
@@ -331,7 +331,7 @@ public class STATE_TRANSFER extends Protocol {
         } // for externalization
 
 
-        public StateHeader(int type, Address sender, long id, Digest digest) {
+        public StateHeader(byte type, Address sender, long id, Digest digest) {
             this.type=type;
             this.sender=sender;
             this.id=id;
@@ -392,7 +392,7 @@ public class STATE_TRANSFER extends Protocol {
         public void writeExternal(ObjectOutput out) throws IOException {
             out.writeObject(sender);
             out.writeLong(id);
-            out.writeInt(type);
+            out.writeByte(type);
             out.writeObject(my_digest);
         }
 
@@ -400,8 +400,24 @@ public class STATE_TRANSFER extends Protocol {
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             sender=(Address)in.readObject();
             id=in.readLong();
-            type=in.readInt();
+            type=in.readByte();
             my_digest=(Digest)in.readObject();
+        }
+
+
+
+        public void writeTo(DataOutputStream out) throws IOException {
+            out.writeByte(type);
+            out.writeLong(id);
+            Util.writeAddress(sender, out);
+            Util.writeStreamable(my_digest, out);
+        }
+
+        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+            type=in.readByte();
+            id=in.readLong();
+            sender=Util.readAddress(in);
+            my_digest=(Digest)Util.readStreamable(Digest.class, in);
         }
 
     }

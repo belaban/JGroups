@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.22 2005/06/13 13:59:33 belaban Exp $
+// $Id: UNICAST.java,v 1.23 2005/07/08 11:28:26 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -420,8 +420,8 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
 
     public static class UnicastHeader extends Header implements Streamable {
-        static final byte DATA=0;
-        static final byte DATA_ACK=1;
+        public static final byte DATA=0;
+        public static final byte DATA_ACK=1;
 	
         byte    type=DATA;
         long    seqno=0;   // First msg is 0

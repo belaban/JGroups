@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.25 2005/06/15 12:09:30 belaban Exp $
+// $Id: FD_SOCK.java,v 1.26 2005/07/08 11:28:26 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -711,11 +711,11 @@ public class FD_SOCK extends Protocol implements Runnable {
 
 
     public static class FdHeader extends Header implements Streamable {
-        static final byte SUSPECT=10;
-        static final byte WHO_HAS_SOCK=11;
-        static final byte I_HAVE_SOCK=12;
-        static final byte GET_CACHE=13; // sent by joining member to coordinator
-        static final byte GET_CACHE_RSP=14; // sent by coordinator to joining member in response to GET_CACHE
+        public static final byte SUSPECT=10;
+        public static final byte WHO_HAS_SOCK=11;
+        public static final byte I_HAVE_SOCK=12;
+        public static final byte GET_CACHE=13; // sent by joining member to coordinator
+        public static final byte GET_CACHE_RSP=14; // sent by coordinator to joining member in response to GET_CACHE
 
 
         byte      type=SUSPECT;

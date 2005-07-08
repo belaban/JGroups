@@ -1,8 +1,13 @@
-// $Id: Header.java,v 1.7 2005/04/24 11:45:40 belaban Exp $
+// $Id: Header.java,v 1.8 2005/07/08 11:28:26 belaban Exp $
 
 package org.jgroups;
 
+import org.jgroups.util.Streamable;
+
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.Externalizable;
+import java.io.IOException;
 
 
 /**
@@ -28,6 +33,14 @@ public abstract class Header implements Externalizable {
     public long size() {
         return HDR_OVERHEAD;
     }
+
+//    public void writeTo(DataOutputStream out) throws IOException {
+//        ;
+//    }
+//
+//    public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+//        ;
+//    }
 
 
     public String toString() {

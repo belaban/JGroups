@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.23 2005/06/15 08:13:20 belaban Exp $
+// $Id: STABLE.java,v 1.24 2005/07/08 11:28:25 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -623,8 +623,8 @@ public class STABLE extends Protocol {
 
 
     public static class StableHeader extends Header implements Streamable {
-        static final int STABLE_GOSSIP=1;
-        static final int STABILITY=2;
+        public static final int STABLE_GOSSIP=1;
+        public static final int STABILITY=2;
 
         int type=0;
         // Digest digest=new Digest();  // used for both STABLE_GOSSIP and STABILITY message
@@ -634,7 +634,7 @@ public class STABLE extends Protocol {
         } // used for externalizable
 
 
-        StableHeader(int type, Digest digest) {
+        public StableHeader(int type, Digest digest) {
             this.type=type;
             this.stableDigest=digest;
         }
