@@ -1,4 +1,4 @@
-// $Id: IpAddress.java,v 1.24 2005/06/14 16:15:22 belaban Exp $
+// $Id: IpAddress.java,v 1.25 2005/07/08 12:19:42 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -23,7 +23,7 @@ public class IpAddress implements Address {
     private byte[]                  additional_data=null;
     protected static final Log      log=LogFactory.getLog(IpAddress.class);
     static boolean                  resolve_dns=false;
-
+    transient int                   size=-1;
 
     static {
         /* Trying to get value of resolve_dns. PropertyPermission not granted if
@@ -66,6 +66,7 @@ public class IpAddress implements Address {
     private void setAddressToLocalHost() {
         try {
             ip_addr=InetAddress.getLocalHost();  // get first NIC found (on multi-homed systems)
+            // size=size();
         }
         catch(Exception e) {
             if(log.isWarnEnabled()) log.warn("exception: " + e);
@@ -105,6 +106,7 @@ public class IpAddress implements Address {
      */
     public void setAdditionalData(byte[] additional_data) {
         this.additional_data = additional_data;
+        size=size();
     }
 
 
@@ -285,11 +287,16 @@ public class IpAddress implements Address {
     }
 
     public int size() {
-        // length + 4 bytes for IPv4 address + 4 bytes for port + 1 for additional_data available
-        int size=Global.SHORT_SIZE + (2*Global.INT_SIZE) + Global.BYTE_SIZE;
+        if(size >= 0)
+            return size;
+        // length + 4 bytes for port + 1 for additional_data available
+        int tmp_size=Global.SHORT_SIZE + Global.INT_SIZE + Global.BYTE_SIZE;
+        if(ip_addr != null)
+            tmp_size+=ip_addr.getAddress().length; // 4 bytes for IPv4
         if(additional_data != null)
-            size+=additional_data.length+Global.INT_SIZE;
-        return size;
+            tmp_size+=additional_data.length+Global.INT_SIZE;
+        size=tmp_size;
+        return tmp_size;
     }
 
     public Object clone() throws CloneNotSupportedException {

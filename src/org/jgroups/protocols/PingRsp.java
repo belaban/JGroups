@@ -1,4 +1,4 @@
-// $Id: PingRsp.java,v 1.7 2005/04/15 13:17:02 belaban Exp $
+// $Id: PingRsp.java,v 1.8 2005/07/08 12:19:42 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -45,6 +45,7 @@ public class PingRsp implements Serializable, Streamable {
 
     public int size() {
         int retval=Global.BYTE_SIZE *3; // for is_server, plus 2 presence bytes
+        retval+=2 * Global.BYTE_SIZE;   // 1 boolean for each address: IpAddress or other address ?
         if(own_addr != null)
             retval+=own_addr.size();
         if(coord_addr != null)
@@ -65,7 +66,8 @@ public class PingRsp implements Serializable, Streamable {
     }
 
     public String toString() {
-        return "[own_addr=" + own_addr + ", coord_addr=" + coord_addr + ", is_server=" + is_server + ']';
+        return new StringBuffer("[own_addr=").append(own_addr).append(", coord_addr=").append(coord_addr).
+                append(", is_server=").append(is_server).append(']').toString();
     }
 
     public void writeTo(DataOutputStream outstream) throws IOException {
