@@ -1,10 +1,12 @@
-// $Id: MembershipListener.java,v 1.2 2004/09/21 14:13:19 belaban Exp $
+// $Id: MembershipListener.java,v 1.3 2005/07/11 12:45:36 belaban Exp $
 
 package org.jgroups;
 
 
 
-
+/**
+ * Callbacks for membership notifications, used e.g. in {@link #PullPushAdapter}
+ */ 
 public interface MembershipListener {
     
 
