@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.25 2005/07/08 11:28:25 belaban Exp $
+// $Id: FD.java,v 1.26 2005/07/11 13:44:33 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -29,7 +29,7 @@ import java.util.*;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Revision: 1.25 $
+ * @version $Revision: 1.26 $
  */
 public class FD extends Protocol {
     Address               ping_dest=null;
@@ -424,47 +424,38 @@ public class FD extends Protocol {
             from=(Address)Marshaller.read(in);
         }
 
-        public void writeTo(DataOutputStream out) throws IOException {
-            out.writeByte(type);
-            out.writeInt(mbrs != null? mbrs.size() : 0);
-            if(mbrs != null) {
-                for(Iterator it=mbrs.iterator(); it.hasNext();) {
-                    Address address=(Address)it.next();
-                    Util.writeAddress(address, out);
-                }
-            }
-            Util.writeAddress(from, out);
-        }
-
 
         public long size() {
-            int retval=Global.BYTE_SIZE;
+            int retval=Global.BYTE_SIZE; // type
             Address addr;
+            retval+=Global.SHORT_SIZE; // size of mbrs (-1 == null)
             if(mbrs != null) {
-                retval+=Global.INT_SIZE; // size()
                 for(Iterator it=mbrs.iterator(); it.hasNext();) {
                     addr=(Address)it.next();
                     if(addr != null)
-                        retval+=addr.size() + Global.BYTE_SIZE; // presence
+                        retval+=addr.size() +
+                                Global.BYTE_SIZE + // for decision IpAddress or other address
+                                Global.BYTE_SIZE;  // null addr
                 }
             }
             retval+=Global.BYTE_SIZE; // presence byte for 'from'
             if(from != null)
-                retval+=from.size();
+                retval+=from.size() + Global.BYTE_SIZE; // IpAddress or other address
             return retval;
         }
 
+
+        public void writeTo(DataOutputStream out) throws IOException {
+            out.writeByte(type);
+            Util.writeAddressVector(mbrs, out);
+            Util.writeAddress(from, out);
+        }
+
+
+
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
             type=in.readByte();
-            int size=in.readInt();
-            if(size > 0) {
-                if(mbrs == null)
-                    mbrs=new Vector();
-                for(int i=0; i < size; i++) {
-                    Address addr=Util.readAddress(in);
-                    mbrs.add(addr);
-                }
-            }
+            mbrs=Util.readAddressVector(in);
             from=Util.readAddress(in);
         }
 

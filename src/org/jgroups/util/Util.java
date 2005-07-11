@@ -1,13 +1,10 @@
-// $Id: Util.java,v 1.43 2005/07/05 11:01:25 belaban Exp $
+// $Id: Util.java,v 1.44 2005/07/11 13:44:34 belaban Exp $
 
 package org.jgroups.util;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.jgroups.Address;
-import org.jgroups.ChannelException;
-import org.jgroups.Event;
-import org.jgroups.Message;
+import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.FD;
 import org.jgroups.protocols.PingHeader;
@@ -124,6 +121,13 @@ public class Util {
         return result;
     }
 
+    public static int size(Address addr) {
+        int retval=Global.BYTE_SIZE; // presence byte
+        if(addr != null)
+            retval+=addr.size() + Global.BYTE_SIZE; // plus type of address
+        return retval;
+    }
+
 
     public static void writeAddress(Address addr, DataOutputStream out) throws IOException {
         if(addr == null) {
@@ -198,6 +202,48 @@ public class Util {
         // write the data itself
         addr.writeTo(out);
     }
+
+    /**
+     *
+     * @param v A Vector<Address>
+     * @param out
+     * @throws IOException
+     */
+    public static void writeAddressVector(Vector v, DataOutputStream out) throws IOException {
+        if(v == null) {
+            out.writeShort(-1);
+            return;
+        }
+        out.writeShort(v.size());
+        Address addr;
+        for(Iterator it=v.iterator(); it.hasNext();) {
+            addr=(Address)it.next();
+            Util.writeAddress(addr, out);
+        }
+    }
+
+
+
+    /**
+     *
+     * @param in
+     * @return Vector<Address>
+     * @throws IOException
+     * @throws IllegalAccessException
+     * @throws InstantiationException
+     */
+    public static Vector readAddressVector(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        short length=in.readShort();
+        if(length < 0) return null;
+        Vector retval=new Vector();
+        Address addr;
+        for(int i=0; i < length; i++) {
+            addr=Util.readAddress(in);
+            retval.add(addr);
+        }
+        return retval;
+    }
+
 
 
     public static void writeStreamable(Streamable obj, DataOutputStream out) throws IOException {
