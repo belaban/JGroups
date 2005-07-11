@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.26 2005/07/08 11:28:26 belaban Exp $
+// $Id: FD_SOCK.java,v 1.27 2005/07/11 13:44:33 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -734,6 +734,21 @@ public class FD_SOCK extends Protocol implements Runnable {
             this.type=type;
         }
 
+        public FdHeader(byte type, Address mbr) {
+            this.type=type;
+            this.mbr=mbr;
+        }
+
+        public FdHeader(byte type, Vector mbrs) {
+            this.type=type;
+            this.mbrs=mbrs;
+        }
+
+        public FdHeader(byte type, Hashtable cachedAddrs) {
+            this.type=type;
+            this.cachedAddrs=cachedAddrs;
+        }
+
 
         public String toString() {
             StringBuffer sb=new StringBuffer();
@@ -782,6 +797,36 @@ public class FD_SOCK extends Protocol implements Runnable {
             sock_addr=(IpAddress) in.readObject();
             cachedAddrs=(Hashtable) in.readObject();
             mbrs=(Vector) in.readObject();
+        }
+
+        public long size() {
+            long retval=Global.BYTE_SIZE; // type
+            retval+=Util.size(mbr);
+            retval+=Util.size(sock_addr);
+
+            retval+=Global.INT_SIZE; // cachedAddrs size
+            Map.Entry entry;
+            Address key;
+            IpAddress val;
+            if(cachedAddrs != null) {
+                for(Iterator it=cachedAddrs.entrySet().iterator(); it.hasNext();) {
+                    entry=(Map.Entry)it.next();
+                    if((key=(Address)entry.getKey()) != null)
+                        retval+=Util.size(key);
+                    retval+=Global.BYTE_SIZE; // presence for val
+                    if((val=(IpAddress)entry.getValue()) != null)
+                        retval+=val.size();
+                }
+            }
+
+            retval+=Global.INT_SIZE; // mbrs size
+            if(mbrs != null) {
+                for(int i=0; i < mbrs.size(); i++) {
+                    retval+=Util.size((Address)mbrs.elementAt(i));
+                }
+            }
+
+            return retval;
         }
 
         public void writeTo(DataOutputStream out) throws IOException {

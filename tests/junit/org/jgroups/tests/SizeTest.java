@@ -1,4 +1,4 @@
-// $Id: SizeTest.java,v 1.2 2005/07/08 12:19:43 belaban Exp $$
+// $Id: SizeTest.java,v 1.3 2005/07/11 13:44:34 belaban Exp $$
 
 package org.jgroups.tests;
 
@@ -23,6 +23,7 @@ import org.jgroups.util.Util;
 import org.jgroups.util.Streamable;
 
 import java.util.Vector;
+import java.util.Hashtable;
 
 
 /**
@@ -74,14 +75,31 @@ public class SizeTest extends TestCase {
         _testSize(hdr);
 
         IpAddress a1=new IpAddress("127.0.0.1", 5555);
+        IpAddress a2=new IpAddress("127.0.0.1", 6666);
         Vector suspects=new Vector();
         suspects.add(a1);
+        suspects.add(a2);
         hdr=new FD.FdHeader(FD.FdHeader.SUSPECT, suspects, a1);
         _testSize(hdr);
 
         FD_SOCK.FdHeader sockhdr=new FD_SOCK.FdHeader(FD_SOCK.FdHeader.GET_CACHE);
         _testSize(sockhdr);
+
+        sockhdr=new FD_SOCK.FdHeader(FD_SOCK.FdHeader.SUSPECT, new IpAddress("127.0.0.1", 5555));
+        _testSize(sockhdr);
+
+        sockhdr=new FD_SOCK.FdHeader(FD_SOCK.FdHeader.SUSPECT, suspects);
+        _testSize(sockhdr);
+
+
+        Hashtable cache=new Hashtable();
+        cache.put(a1, a2);
+        cache.put(a2, a1);
+        sockhdr=new FD_SOCK.FdHeader(FD_SOCK.FdHeader.SUSPECT, cache);
+        _testSize(sockhdr);
     }
+
+
 
     public void testUnicastHeader() throws Exception {
         UNICAST.UnicastHeader hdr=new UNICAST.UnicastHeader(UNICAST.UnicastHeader.DATA, 322649);
@@ -167,6 +185,7 @@ public class SizeTest extends TestCase {
         addr.setAdditionalData("bela".getBytes());
         _testSize(addr);
     }
+
 
 
     private void _testSize(Header hdr) throws Exception {
