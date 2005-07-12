@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.20 2005/07/08 11:28:25 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.21 2005/07/12 11:45:40 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -321,9 +321,10 @@ public class STATE_TRANSFER extends Protocol {
         public static final byte STATE_REQ=1;
         public static final byte STATE_RSP=2;
 
-        Address sender=null;   // sender of state STATE_REQ or STATE_RSP
+
         long id=0;          // state transfer ID (to separate multiple state transfers at the same time)
         byte type=0;
+        Address sender=null;   // sender of state STATE_REQ or STATE_RSP
         Digest my_digest=null;   // digest of sender (if type is STATE_RSP)
 
 
@@ -418,6 +419,18 @@ public class STATE_TRANSFER extends Protocol {
             id=in.readLong();
             sender=Util.readAddress(in);
             my_digest=(Digest)Util.readStreamable(Digest.class, in);
+        }
+
+        public long size() {
+            long retval=Global.LONG_SIZE + Global.BYTE_SIZE; // id and type
+
+            retval+=Util.size(sender);
+
+            retval+=Global.BYTE_SIZE; // presence byte for my_digest
+            if(my_digest != null)
+                retval+=my_digest.serializedSize();
+
+            return retval;
         }
 
     }

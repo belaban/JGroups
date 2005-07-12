@@ -1,13 +1,10 @@
-// $Id: GmsImpl.java,v 1.6 2004/10/05 15:30:06 belaban Exp $
+// $Id: GmsImpl.java,v 1.7 2005/07/12 11:45:40 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Membership;
-import org.jgroups.View;
+import org.jgroups.*;
 
 import java.util.Vector;
 
@@ -30,10 +27,10 @@ public abstract class GmsImpl {
     public abstract void      unsuspect(Address mbr);
 
     public void               merge(Vector other_coords)                           {;} // only processed by coord
-    public void               handleMergeRequest(Address sender, Object merge_id)  {;} // only processed by coords
-    public void               handleMergeResponse(MergeData data, Object merge_id) {;} // only processed by coords
-    public void               handleMergeView(MergeData data, Object merge_id)     {;} // only processed by coords
-    public void               handleMergeCancelled(Object merge_id)                {;} // only processed by coords
+    public void               handleMergeRequest(Address sender, ViewId merge_id)  {;} // only processed by coords
+    public void               handleMergeResponse(MergeData data, ViewId merge_id) {;} // only processed by coords
+    public void               handleMergeView(MergeData data, ViewId merge_id)     {;} // only processed by coords
+    public void               handleMergeCancelled(ViewId merge_id)                {;} // only processed by coords
 
     public abstract JoinRsp   handleJoin(Address mbr);
     public abstract void      handleLeave(Address mbr, boolean suspected);

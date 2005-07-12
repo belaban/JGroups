@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.22 2005/05/20 14:04:09 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.23 2005/07/12 11:45:40 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -6,7 +6,6 @@ package org.jgroups.protocols.pbcast;
 import org.jgroups.*;
 import org.jgroups.util.TimeScheduler;
 
-import java.io.Serializable;
 import java.util.Iterator;
 import java.util.Vector;
 
@@ -23,7 +22,7 @@ public class CoordGmsImpl extends GmsImpl {
     private final MergeTask  merge_task=new MergeTask();
     private final Vector     merge_rsps=new Vector(11);
     // for MERGE_REQ/MERGE_RSP correlation, contains MergeData elements
-    private Serializable     merge_id=null;
+    private ViewId           merge_id=null;
 
     private Address          merge_leader=null;
 
@@ -36,7 +35,7 @@ public class CoordGmsImpl extends GmsImpl {
     }
 
 
-    void setMergeId(Serializable merge_id) {
+    void setMergeId(ViewId merge_id) {
         this.merge_id=merge_id;
         if(this.merge_id != null) {
             stopMergeCanceller();
@@ -136,7 +135,7 @@ public class CoordGmsImpl extends GmsImpl {
      * Get the view and digest and send back both (MergeData) in the form of a MERGE_RSP to the sender.
      * If a merge is already in progress, send back a MergeData with the merge_rejected field set to true.
      */
-    public void handleMergeRequest(Address sender, Object merge_id) {
+    public void handleMergeRequest(Address sender, ViewId merge_id) {
         Digest digest;
         View view;
 
@@ -150,7 +149,7 @@ public class CoordGmsImpl extends GmsImpl {
             return;
         }
         merging=true;
-        setMergeId((Serializable)merge_id);
+        setMergeId(merge_id);
         if(log.isDebugEnabled()) log.debug("sender=" + sender + ", merge_id=" + merge_id);
         digest=gms.getDigest();
         view=new View(gms.view_id.copy(), gms.members.getMembers());
@@ -158,7 +157,7 @@ public class CoordGmsImpl extends GmsImpl {
     }
 
 
-    MergeData getMergeResponse(Address sender, Object merge_id) {
+    private MergeData getMergeResponse(Address sender, ViewId merge_id) {
         Digest         digest;
         View           view;
         MergeData      retval;
@@ -174,7 +173,7 @@ public class CoordGmsImpl extends GmsImpl {
             return retval;
         }
         merging=true;
-        setMergeId((Serializable)merge_id);
+        setMergeId(merge_id);
         if(log.isDebugEnabled()) log.debug("sender=" + sender + ", merge_id=" + merge_id);
 
         digest=gms.getDigest();
@@ -186,7 +185,7 @@ public class CoordGmsImpl extends GmsImpl {
     }
 
 
-    public void handleMergeResponse(MergeData data, Object merge_id) {
+    public void handleMergeResponse(MergeData data, ViewId merge_id) {
         if(data == null) {
             if(log.isErrorEnabled()) log.error("merge data is null");
             return;
@@ -223,7 +222,7 @@ public class CoordGmsImpl extends GmsImpl {
      * If merge_id != this.merge_id --> discard
      * Else cast the view/digest to all members of this group.
      */
-    public void handleMergeView(MergeData data, Object merge_id) {
+    public void handleMergeView(MergeData data, ViewId merge_id) {
         if(merge_id == null
                 || this.merge_id == null
                 || !this.merge_id.equals(merge_id)) {
@@ -235,7 +234,7 @@ public class CoordGmsImpl extends GmsImpl {
         merge_id=null;
     }
 
-    public void handleMergeCancelled(Object merge_id) {
+    public void handleMergeCancelled(ViewId merge_id) {
         if(merge_id != null
                 && this.merge_id != null
                 && this.merge_id.equals(merge_id)) {
@@ -453,7 +452,7 @@ public class CoordGmsImpl extends GmsImpl {
     /**
      * Generates a unique merge id by taking the local address and the current time
      */
-    Serializable generateMergeId() {
+    ViewId generateMergeId() {
         return new ViewId(gms.local_addr, System.currentTimeMillis());
         // we're (ab)using ViewId as a merge id
     }
@@ -604,7 +603,7 @@ public class CoordGmsImpl extends GmsImpl {
         gms.passDown(new Event(Event.MSG, msg));
     }
 
-    void sendMergeCancelledMessage(Vector coords, Serializable merge_id) {
+    private void sendMergeCancelledMessage(Vector coords, ViewId merge_id) {
         Message msg;
         GMS.GmsHeader hdr;
         Address coord;

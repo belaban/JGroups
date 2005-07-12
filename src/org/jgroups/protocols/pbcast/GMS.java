@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.33 2005/06/24 13:13:04 belaban Exp $
+// $Id: GMS.java,v 1.34 2005/07/12 11:45:40 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -812,48 +812,48 @@ public class GMS extends Protocol {
 
 
     public static class GmsHeader extends Header implements Streamable {
-        public static final int JOIN_REQ=1;
-        public static final int JOIN_RSP=2;
-        public static final int LEAVE_REQ=3;
-        public static final int LEAVE_RSP=4;
-        public static final int VIEW=5;
-        public static final int MERGE_REQ=6;
-        public static final int MERGE_RSP=7;
-        public static final int INSTALL_MERGE_VIEW=8;
-        public static final int CANCEL_MERGE=9;
+        public static final byte JOIN_REQ=1;
+        public static final byte JOIN_RSP=2;
+        public static final byte LEAVE_REQ=3;
+        public static final byte LEAVE_RSP=4;
+        public static final byte VIEW=5;
+        public static final byte MERGE_REQ=6;
+        public static final byte MERGE_RSP=7;
+        public static final byte INSTALL_MERGE_VIEW=8;
+        public static final byte CANCEL_MERGE=9;
 
-        int type=0;
+        byte type=0;
         View view=null;            // used when type=VIEW or MERGE_RSP or INSTALL_MERGE_VIEW
         Address mbr=null;             // used when type=JOIN_REQ or LEAVE_REQ
         JoinRsp join_rsp=null;        // used when type=JOIN_RSP
         Digest my_digest=null;          // used when type=MERGE_RSP or INSTALL_MERGE_VIEW
-        Serializable merge_id=null;        // used when type=MERGE_REQ or MERGE_RSP or INSTALL_MERGE_VIEW or CANCEL_MERGE
+        ViewId merge_id=null;        // used when type=MERGE_REQ or MERGE_RSP or INSTALL_MERGE_VIEW or CANCEL_MERGE
         boolean merge_rejected=false; // used when type=MERGE_RSP
 
 
         public GmsHeader() {
         } // used for Externalization
 
-        public GmsHeader(int type) {
+        public GmsHeader(byte type) {
             this.type=type;
         }
 
 
         /** Used for VIEW header */
-        public GmsHeader(int type, View view) {
+        public GmsHeader(byte type, View view) {
             this.type=type;
             this.view=view;
         }
 
 
         /** Used for JOIN_REQ or LEAVE_REQ header */
-        public GmsHeader(int type, Address mbr) {
+        public GmsHeader(byte type, Address mbr) {
             this.type=type;
             this.mbr=mbr;
         }
 
         /** Used for JOIN_RSP header */
-        public GmsHeader(int type, JoinRsp join_rsp) {
+        public GmsHeader(byte type, JoinRsp join_rsp) {
             this.type=type;
             this.join_rsp=join_rsp;
         }
@@ -863,42 +863,41 @@ public class GMS extends Protocol {
             StringBuffer sb=new StringBuffer("GmsHeader");
             sb.append('[' + type2String(type) + ']');
             switch(type) {
+            case JOIN_REQ:
+                sb.append(": mbr=" + mbr);
+                break;
 
-                case JOIN_REQ:
-                    sb.append(": mbr=" + mbr);
-                    break;
+            case JOIN_RSP:
+                sb.append(": join_rsp=" + join_rsp);
+                break;
 
-                case JOIN_RSP:
-                    sb.append(": join_rsp=" + join_rsp);
-                    break;
+            case LEAVE_REQ:
+                sb.append(": mbr=" + mbr);
+                break;
 
-                case LEAVE_REQ:
-                    sb.append(": mbr=" + mbr);
-                    break;
+            case LEAVE_RSP:
+                break;
 
-                case LEAVE_RSP:
-                    break;
+            case VIEW:
+                sb.append(": view=" + view);
+                break;
 
-                case VIEW:
-                    sb.append(": view=" + view);
-                    break;
+            case MERGE_REQ:
+                sb.append(": merge_id=" + merge_id);
+                break;
 
-                case MERGE_REQ:
-                    sb.append(": merge_id=" + merge_id);
-                    break;
+            case MERGE_RSP:
+                sb.append(": view=" + view + ", digest=" + my_digest + ", merge_rejected=" + merge_rejected +
+                          ", merge_id=" + merge_id);
+                break;
 
-                case MERGE_RSP:
-                    sb.append(": view=" + view + ", digest=" + my_digest + ", merge_rejected=" + merge_rejected +
-                              ", merge_id=" + merge_id);
-                    break;
+            case INSTALL_MERGE_VIEW:
+                sb.append(": view=" + view + ", digest=" + my_digest);
+                break;
 
-                case INSTALL_MERGE_VIEW:
-                    sb.append(": view=" + view + ", digest=" + my_digest);
-                    break;
-
-                case CANCEL_MERGE:
-                    sb.append(", <merge cancelled>, merge_id=" + merge_id);
-                    break;
+            case CANCEL_MERGE:
+                sb.append(", <merge cancelled>, merge_id=" + merge_id);
+                break;
             }
             return sb.toString();
         }
@@ -906,32 +905,32 @@ public class GMS extends Protocol {
 
         public static String type2String(int type) {
             switch(type) {
-                case JOIN_REQ:
-                    return "JOIN_REQ";
-                case JOIN_RSP:
-                    return "JOIN_RSP";
-                case LEAVE_REQ:
-                    return "LEAVE_REQ";
-                case LEAVE_RSP:
-                    return "LEAVE_RSP";
-                case VIEW:
-                    return "VIEW";
-                case MERGE_REQ:
-                    return "MERGE_REQ";
-                case MERGE_RSP:
-                    return "MERGE_RSP";
-                case INSTALL_MERGE_VIEW:
-                    return "INSTALL_MERGE_VIEW";
-                case CANCEL_MERGE:
-                    return "CANCEL_MERGE";
-                default:
-                    return "<unknown>";
+            case JOIN_REQ:
+                return "JOIN_REQ";
+            case JOIN_RSP:
+                return "JOIN_RSP";
+            case LEAVE_REQ:
+                return "LEAVE_REQ";
+            case LEAVE_RSP:
+                return "LEAVE_RSP";
+            case VIEW:
+                return "VIEW";
+            case MERGE_REQ:
+                return "MERGE_REQ";
+            case MERGE_RSP:
+                return "MERGE_RSP";
+            case INSTALL_MERGE_VIEW:
+                return "INSTALL_MERGE_VIEW";
+            case CANCEL_MERGE:
+                return "CANCEL_MERGE";
+            default:
+                return "<unknown>";
             }
         }
 
 
         public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeInt(type);
+            out.writeByte(type);
             out.writeObject(view);
             out.writeObject(mbr);
             out.writeObject(join_rsp);
@@ -942,34 +941,57 @@ public class GMS extends Protocol {
 
 
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            type=in.readInt();
+            type=in.readByte();
             view=(View)in.readObject();
             mbr=(Address)in.readObject();
             join_rsp=(JoinRsp)in.readObject();
             my_digest=(Digest)in.readObject();
-            merge_id=(Serializable)in.readObject();
+            merge_id=(ViewId)in.readObject();
             merge_rejected=in.readBoolean();
         }
 
 
         public void writeTo(DataOutputStream out) throws IOException {
-            out.writeInt(type);
+            out.writeByte(type);
             Util.writeStreamable(view, out);
             Util.writeAddress(mbr, out);
             Util.writeStreamable(join_rsp, out);
             Util.writeStreamable(my_digest, out);
-            Util.writeStreamable((Streamable)merge_id, out); // kludge: we know merge_id is a ViewId
+            Util.writeStreamable(merge_id, out); // kludge: we know merge_id is a ViewId
             out.writeBoolean(merge_rejected);
         }
 
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
-            type=in.readInt();
+            type=in.readByte();
             view=(View)Util.readStreamable(View.class, in);
             mbr=Util.readAddress(in);
             join_rsp=(JoinRsp)Util.readStreamable(JoinRsp.class, in);
             my_digest=(Digest)Util.readStreamable(Digest.class, in);
-            merge_id=(Serializable)Util.readStreamable(ViewId.class, in);
+            merge_id=(ViewId)Util.readStreamable(ViewId.class, in);
             merge_rejected=in.readBoolean();
+        }
+
+        public long size() {
+            long retval=Global.BYTE_SIZE *2; // type + merge_rejected
+
+            retval+=Global.BYTE_SIZE; // presence view
+            if(view != null)
+                retval+=view.serializedSize();
+
+            retval+=Util.size(mbr);
+
+            retval+=Global.BYTE_SIZE; // presence of join_rsp
+            if(join_rsp != null)
+                retval+=join_rsp.serializedSize();
+
+            retval+=Global.BYTE_SIZE; // presence for my_digest
+            if(my_digest != null)
+                retval+=my_digest.serializedSize();
+
+            retval+=Global.BYTE_SIZE; // presence for merge_id
+            if(merge_id != null)
+                retval+=merge_id.serializedSize();
+            return retval;
         }
 
     }

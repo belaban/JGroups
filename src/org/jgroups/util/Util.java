@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.44 2005/07/11 13:44:34 belaban Exp $
+// $Id: Util.java,v 1.45 2005/07/12 11:45:42 belaban Exp $
 
 package org.jgroups.util;
 
@@ -121,6 +121,19 @@ public class Util {
         return result;
     }
 
+
+    public static byte[] collectionToByteBuffer(Collection c) throws Exception {
+        byte[] result=null;
+        synchronized(out_stream) {
+            out_stream.reset();
+            DataOutputStream out=new DataOutputStream(out_stream);
+            Util.writeAddresses(c, out);
+            result=out_stream.toByteArray();
+            out.close();
+        }
+        return result;
+    }
+
     public static int size(Address addr) {
         int retval=Global.BYTE_SIZE; // presence byte
         if(addr != null)
@@ -204,12 +217,12 @@ public class Util {
     }
 
     /**
-     *
-     * @param v A Vector<Address>
+     * Writes a Vector of Addresses. Can contain 65K addresses at most
+     * @param v A Collection<Address>
      * @param out
      * @throws IOException
      */
-    public static void writeAddressVector(Vector v, DataOutputStream out) throws IOException {
+    public static void writeAddresses(Collection v, DataOutputStream out) throws IOException {
         if(v == null) {
             out.writeShort(-1);
             return;
@@ -222,20 +235,19 @@ public class Util {
         }
     }
 
-
-
     /**
      *
      * @param in
-     * @return Vector<Address>
+     * @param Class The type of Collection, e.g. Vector.class
+     * @return Collection<Address>
      * @throws IOException
      * @throws IllegalAccessException
      * @throws InstantiationException
      */
-    public static Vector readAddressVector(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+    public static Collection readAddresses(DataInputStream in, Class cl) throws IOException, IllegalAccessException, InstantiationException {
         short length=in.readShort();
         if(length < 0) return null;
-        Vector retval=new Vector();
+        Collection retval=(Collection)cl.newInstance();
         Address addr;
         for(int i=0; i < length; i++) {
             addr=Util.readAddress(in);
@@ -243,6 +255,22 @@ public class Util {
         }
         return retval;
     }
+
+
+    /**
+     * Returns the marshalled size of a Collection of Addresses. <em>Assumes elements are of the same type !</em>
+     * @param addrs Collection<Address>
+     * @return
+     */
+    public static long size(Collection addrs) {
+        int retval=Global.SHORT_SIZE; // number of elements
+        if(addrs != null && addrs.size() > 0) {
+            Address addr=(Address)addrs.iterator().next();
+            retval+=size(addr) * addrs.size();
+        }
+        return retval;
+    }
+
 
 
 
