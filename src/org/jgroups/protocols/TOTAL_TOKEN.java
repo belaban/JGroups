@@ -1,4 +1,4 @@
-//$Id: TOTAL_TOKEN.java,v 1.9 2005/05/30 14:31:07 belaban Exp $
+//$Id: TOTAL_TOKEN.java,v 1.10 2005/07/12 09:27:26 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -49,7 +49,7 @@ import java.util.*;
  *
  *
  *@author Vladimir Blagojevic vladimir@cs.yorku.ca
- *@version $Revision: 1.9 $
+ *@version $Revision: 1.10 $
  *
  *@see org.jgroups.protocols.ring.RingNodeFlowControl
  *@see org.jgroups.protocols.ring.RingNode
@@ -329,7 +329,11 @@ public class TOTAL_TOKEN extends RpcProtocol
             return false;
          case Event.SET_DIGEST:
             Digest receivedDigest = (Digest) evt.getArg();
-            myAru = receivedDigest.highSeqnoAt(0);
+
+          // changed by bela July 12 2005, not sure if this is correct, don't know what the original author
+          // intended to do here
+            // myAru = receivedDigest.highSeqnoAt(0);
+            myAru = receivedDigest.highSeqnoAt(localAddress);
             return false;
 
          case Event.VIEW_CHANGE:
