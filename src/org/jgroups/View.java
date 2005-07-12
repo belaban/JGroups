@@ -1,4 +1,4 @@
-// $Id: View.java,v 1.7 2005/04/20 10:32:36 belaban Exp $
+// $Id: View.java,v 1.8 2005/07/12 11:45:42 belaban Exp $
 
 package org.jgroups;
 
@@ -188,46 +188,36 @@ public class View implements Externalizable, Cloneable, Streamable {
     public void writeTo(DataOutputStream out) throws IOException {
         // vid
         if(vid != null) {
-            out.write(1);
+            out.writeBoolean(true);
             vid.writeTo(out);
         }
         else
-            out.write(0);
+            out.writeBoolean(false);
 
         // members:
-        if(members != null) {
-            out.write(1);
-            out.writeInt(members.size());
-            for(Iterator it=members.iterator(); it.hasNext();) {
-                Address addr=(Address)it.next();
-                Util.writeAddress(addr, out);
-            }
-        }
-        else
-            out.write(0);
+        Util.writeAddresses(members, out);
     }
 
 
     public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
-        int b;
+        boolean b;
         // vid:
-        b=in.read();
-        if(b == 1) {
+        b=in.readBoolean();
+        if(b) {
             vid=new ViewId();
             vid.readFrom(in);
         }
 
         // members:
-        b=in.read();
-        if(b == 1) {
-            b=in.readInt();
-            members=new Vector(b);
-            Address addr;
-            for(int i=0; i < b; i++) {
-                addr=Util.readAddress(in);
-                members.add(addr);
-            }
-        }
+        members=(Vector)Util.readAddresses(in, Vector.class);
+    }
+
+    public int serializedSize() {
+        int retval=Global.BYTE_SIZE; // presence for vid
+        if(vid != null)
+            retval+=vid.serializedSize();
+        retval+=Util.size(members);
+        return retval;
     }
 
 

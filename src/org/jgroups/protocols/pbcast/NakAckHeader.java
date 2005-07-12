@@ -1,4 +1,4 @@
-// $Id: NakAckHeader.java,v 1.14 2005/07/08 12:37:31 belaban Exp $
+// $Id: NakAckHeader.java,v 1.15 2005/07/12 11:45:40 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -51,15 +51,7 @@ public class NakAckHeader extends Header implements Streamable {
         this.sender=sender;
     }
 
-    public long size() {
-        // type (1 byte) + seqno (8 bytes) + range presence (1 byte) + sender presence (1 byte)
-        int retval=Global.BYTE_SIZE + Global.LONG_SIZE + 2 * Global.BYTE_SIZE;
-        if(range != null)
-            retval+=Global.BYTE_SIZE + (2 * Global.LONG_SIZE); // presence byte, plus 2 times 8 bytes for seqno
-        if(sender != null)
-            retval+=sender.size();
-        return retval;
-    }
+
 
 
     public void writeExternal(ObjectOutput out) throws IOException {
@@ -99,6 +91,17 @@ public class NakAckHeader extends Header implements Streamable {
         seqno=in.readLong();
         range=(Range)Util.readStreamable(Range.class, in);
         sender=Util.readAddress(in);
+    }
+
+    public long size() {
+        // type (1 byte) + seqno (8 bytes)
+        int retval=Global.BYTE_SIZE + Global.LONG_SIZE;
+
+        retval+=Global.BYTE_SIZE; // presence for range
+        if(range != null)
+            retval+=2 * Global.LONG_SIZE; // 2 times 8 bytes for seqno
+        retval+=Util.size(sender);
+        return retval;
     }
 
 

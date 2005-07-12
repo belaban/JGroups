@@ -1,14 +1,11 @@
-// $Id: SizeTest.java,v 1.3 2005/07/11 13:44:34 belaban Exp $$
+// $Id: SizeTest.java,v 1.4 2005/07/12 11:45:43 belaban Exp $$
 
 package org.jgroups.tests;
 
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
-import org.jgroups.ChannelException;
-import org.jgroups.Header;
-import org.jgroups.View;
-import org.jgroups.Address;
+import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.FD;
@@ -24,6 +21,7 @@ import org.jgroups.util.Streamable;
 
 import java.util.Vector;
 import java.util.Hashtable;
+import java.util.Collection;
 
 
 /**
@@ -118,6 +116,56 @@ public class SizeTest extends TestCase {
         _testSize(hdr);
     }
 
+    public void testAddressVector() throws Exception {
+        Vector v=new Vector();
+        _testSize(v);
+        v.add(new IpAddress(1111));
+        _testSize(v);
+        v.add(new IpAddress(2222));
+        _testSize(v);
+    }
+
+    public void testViewId() throws Exception {
+        ViewId vid=new ViewId();
+        _testSize(vid);
+
+        vid=new ViewId(new IpAddress(5555));
+        _testSize(vid);
+
+        vid=new ViewId(new IpAddress(5555), 322649);
+        _testSize(vid);
+    }
+
+    public void testView() throws Exception {
+        View v=new View();
+        _testSize(v);
+
+        ViewId vid=new ViewId(new IpAddress(1111), 322649);
+        Vector mbrs=new Vector();
+        v=new View(vid, mbrs);
+        _testSize(v);
+        mbrs.add(new IpAddress(3333));
+        _testSize(v);
+        mbrs.add(new IpAddress(1111));
+        _testSize(v);
+    }
+
+    public void testJoinRsp() throws Exception {
+        JoinRsp rsp;
+        Vector members=new Vector();
+
+        members.add(new IpAddress(1111));
+        members.add(new IpAddress(2222));
+        View v=new View(new IpAddress(1234), 322649, members);
+        Digest d=new Digest(3);
+        d.add(new IpAddress(3524), 1,2,3);
+        d.add(new IpAddress(1324), 3,4,5);
+        rsp=new JoinRsp();
+        _testSize(rsp);
+        rsp=new JoinRsp(v, d);
+        _testSize(rsp);
+    }
+
     public void testGmsHeader() throws Exception {
         IpAddress addr=new IpAddress("127.0.0.1", 5555);
         GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.JOIN_REQ, addr);
@@ -155,7 +203,7 @@ public class SizeTest extends TestCase {
         _testSize(hdr);
         Digest digest=new Digest(2);
         digest.add(addr, 100, 200, 205);
-        digest.add(addr, 102, 104, 105);
+        digest.add(new IpAddress(2314), 102, 104, 105);
         hdr=new STATE_TRANSFER.StateHeader(STATE_TRANSFER.StateHeader.STATE_RSP, addr, 322649, digest);
         _testSize(hdr);
     }
@@ -186,8 +234,6 @@ public class SizeTest extends TestCase {
         _testSize(addr);
     }
 
-
-
     private void _testSize(Header hdr) throws Exception {
         long size=hdr.size();
         byte[] serialized_form=Util.streamableToByteBuffer((Streamable)hdr);
@@ -203,6 +249,34 @@ public class SizeTest extends TestCase {
         assertEquals(serialized_form.length, size);
     }
 
+
+    private void _testSize(ViewId vid) throws Exception {
+        long size=vid.serializedSize();
+        byte[] serialized_form=Util.streamableToByteBuffer(vid);
+        System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
+        assertEquals(serialized_form.length, size);
+    }
+
+    private void _testSize(View v) throws Exception {
+        long size=v.serializedSize();
+        byte[] serialized_form=Util.streamableToByteBuffer(v);
+        System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
+        assertEquals(serialized_form.length, size);
+    }
+
+    private void _testSize(Collection coll) throws Exception {
+        long size=Util.size(coll);
+        byte[] serialized_form=Util.collectionToByteBuffer(coll);
+        System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
+        assertEquals(serialized_form.length, size);
+    }
+
+    private void _testSize(JoinRsp rsp) throws Exception {
+        long size=rsp.serializedSize();
+        byte[] serialized_form=Util.streamableToByteBuffer(rsp);
+        System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
+        assertEquals(serialized_form.length, size);
+    }
 
 
 

@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.26 2005/07/11 13:44:33 belaban Exp $
+// $Id: FD.java,v 1.27 2005/07/12 11:45:41 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -29,7 +29,7 @@ import java.util.*;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Revision: 1.26 $
+ * @version $Revision: 1.27 $
  */
 public class FD extends Protocol {
     Address               ping_dest=null;
@@ -427,27 +427,15 @@ public class FD extends Protocol {
 
         public long size() {
             int retval=Global.BYTE_SIZE; // type
-            Address addr;
-            retval+=Global.SHORT_SIZE; // size of mbrs (-1 == null)
-            if(mbrs != null) {
-                for(Iterator it=mbrs.iterator(); it.hasNext();) {
-                    addr=(Address)it.next();
-                    if(addr != null)
-                        retval+=addr.size() +
-                                Global.BYTE_SIZE + // for decision IpAddress or other address
-                                Global.BYTE_SIZE;  // null addr
-                }
-            }
-            retval+=Global.BYTE_SIZE; // presence byte for 'from'
-            if(from != null)
-                retval+=from.size() + Global.BYTE_SIZE; // IpAddress or other address
+            retval+=Util.size(mbrs);
+            retval+=Util.size(from);
             return retval;
         }
 
 
         public void writeTo(DataOutputStream out) throws IOException {
             out.writeByte(type);
-            Util.writeAddressVector(mbrs, out);
+            Util.writeAddresses(mbrs, out);
             Util.writeAddress(from, out);
         }
 
@@ -455,7 +443,7 @@ public class FD extends Protocol {
 
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
             type=in.readByte();
-            mbrs=Util.readAddressVector(in);
+            mbrs=(Vector)Util.readAddresses(in, Vector.class);
             from=Util.readAddress(in);
         }
 

@@ -1,4 +1,4 @@
-// $Id: ViewId.java,v 1.9 2005/05/30 14:31:30 belaban Exp $
+// $Id: ViewId.java,v 1.10 2005/07/12 11:45:42 belaban Exp $
 
 package org.jgroups;
 
@@ -15,7 +15,7 @@ import java.io.*;
  */
 public class ViewId implements Externalizable, Comparable, Cloneable, Streamable {
     Address coord_addr=null;   // Address of the issuer of this view
-    long id=0;              // Lamport time of the view
+    long id=0;                 // Lamport time of the view
 
 
     public ViewId() { // used for externalization
@@ -133,6 +133,12 @@ public class ViewId implements Externalizable, Comparable, Cloneable, Streamable
     public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
         coord_addr=Util.readAddress(in);
         id=in.readLong();
+    }
+
+    public int serializedSize() {
+        int retval=Global.LONG_SIZE; // for the id
+        retval+=Util.size(coord_addr);
+        return retval;
     }
 
 }
