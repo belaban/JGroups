@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.169 2005/07/05 08:31:57 belaban Exp $
+Revision: $Id: history.txt,v 1.170 2005/07/12 10:14:12 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -28,6 +28,9 @@ publicnmi	= Robert Schaffar-Taurok (robert@fusion.at)
 
 Version 2.2.9
 -------------
+
+- Changed org.jgroups.protocols.pbcast.Digest to use a HashMap rather than arrays
+  (bela July 12 2005)
 
 - Refactored UDP and TCP into extending a common transport (TP)
   (bela July 4 2005)
