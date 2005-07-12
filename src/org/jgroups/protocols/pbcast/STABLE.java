@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.24 2005/07/08 11:28:25 belaban Exp $
+// $Id: STABLE.java,v 1.25 2005/07/12 10:14:50 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -13,6 +13,8 @@ import org.jgroups.util.Streamable;
 import java.io.*;
 import java.util.Properties;
 import java.util.Vector;
+import java.util.Iterator;
+import java.util.Map;
 
 
 
@@ -37,7 +39,7 @@ import java.util.Vector;
 public class STABLE extends Protocol {
     Address             local_addr=null;
     final Vector        mbrs=new Vector();
-    final Digest        digest=new Digest();          // keeps track of the highest seqnos from all members
+    final Digest        digest=new Digest(10);        // keeps track of the highest seqnos from all members
     final Promise       digest_promise=new Promise(); // for fetching digest (from NAKACK layer)
     final Vector        heard_from=new Vector();      // keeps track of who we already heard from (STABLE_GOSSIP msgs)
     long                digest_timeout=60000;         // time to wait until digest is received (from NAKACK)
@@ -325,7 +327,7 @@ public class STABLE extends Protocol {
 
     void initialize() {
         synchronized(digest) {
-            digest.reset(mbrs.size());
+            digest.clear();
             for(int i=0; i < mbrs.size(); i++)
                 digest.add((Address)mbrs.elementAt(i), -1, -1);
             heard_from.removeAllElements();
@@ -424,7 +426,7 @@ public class STABLE extends Protocol {
      maximum of all seqnos will be taken to trigger possible retransmission of last missing seqno (see DESIGN
      for details).
      */
-    void handleStableGossip(Address sender, Digest d) {
+    private void handleStableGossip(Address sender, Digest d) {
         Address mbr;
         long highest_seqno, my_highest_seqno;
         long highest_seen_seqno, my_highest_seen_seqno;
@@ -435,35 +437,40 @@ public class STABLE extends Protocol {
         }
 
         if(suspended) {
-            if(log.isDebugEnabled()) {
-                log.debug("STABLE message will not be handled as suspended=" + suspended);
+            if(log.isTraceEnabled()) {
+                log.trace("STABLE message will not be handled as suspended=" + suspended);
             }
             return;
         }
 
-        if(log.isDebugEnabled()) log.debug("received digest " + printStabilityDigest(d) + " from " + sender);
+        if(log.isTraceEnabled())
+            log.trace(new StringBuffer("received digest from ").append(sender).append(": ").append(d));
         if(!heard_from.contains(sender)) {  // already received gossip from sender; discard it
-            if(log.isDebugEnabled()) log.debug("already received gossip from " + sender);
+            if(log.isTraceEnabled()) log.trace("already received gossip from " + sender);
             return;
         }
 
         // we won't handle the gossip d, if d's members don't match the membership in my own digest,
         // this is part of the fix for the NAKACK problem (bugs #943480 and #938584)
         if(!this.digest.sameSenders(d)) {
-            if(log.isDebugEnabled()) {
-                log.debug("received digest from " + sender + " (digest=" + d + ") which does not match my own digest ("+
+            if(log.isTraceEnabled()) {
+                log.trace("received digest from " + sender + " (digest=" + d + ") which does not match my own digest ("+
                         this.digest + "): ignoring digest and re-initializing own digest");
             }
             initialize();
             return;
         }
 
-        for(int i=0; i < d.size(); i++) {
-            mbr=d.senderAt(i);
-            highest_seqno=d.highSeqnoAt(i);
-            highest_seen_seqno=d.highSeqnoSeenAt(i);
-            if(digest.getIndex(mbr) == -1) {
-                if(log.isDebugEnabled()) log.debug("sender " + mbr + " not found in stability vector");
+        Map.Entry entry;
+        org.jgroups.protocols.pbcast.Digest.Entry val;
+        for(Iterator it=d.senders.entrySet().iterator(); it.hasNext();) {
+            entry=(Map.Entry)it.next();
+            mbr=(Address)entry.getKey();
+            val=(org.jgroups.protocols.pbcast.Digest.Entry)entry.getValue();
+            highest_seqno=val.high_seqno;
+            highest_seen_seqno=val.high_seqno_seen;
+            if(!digest.contains(mbr)) {
+                if(log.isTraceEnabled()) log.trace("sender " + mbr + " not found in stability vector");
                 continue;
             }
 
@@ -490,7 +497,7 @@ public class STABLE extends Protocol {
 
         heard_from.removeElement(sender);
         if(heard_from.size() == 0) {
-            if(log.isDebugEnabled()) log.debug("sending stability msg " + printStabilityDigest(digest));
+            if(log.isTraceEnabled()) log.trace("sending stability msg " + digest);
             sendStabilityMessage(digest.copy());
             initialize();
         }
@@ -598,21 +605,6 @@ public class STABLE extends Protocol {
     }
 
 
-    String printStabilityDigest(Digest d) {
-        StringBuffer sb=new StringBuffer();
-        boolean first=true;
-
-        if(d != null) {
-            for(int i=0; i < d.size(); i++) {
-                if(!first)
-                    sb.append(", ");
-                else
-                    first=false;
-                sb.append(d.senderAt(i) + "#" + d.highSeqnoAt(i) + " (" + d.highSeqnoSeenAt(i) + ')');
-            }
-        }
-        return sb.toString();
-    }
 
     /* ------------------------------------End of Private Methods ------------------------------------- */
 
@@ -679,6 +671,13 @@ public class STABLE extends Protocol {
                 stableDigest=new Digest();
                 stableDigest.readExternal(in);
             }
+        }
+
+        public long size() {
+            long retval=Global.INT_SIZE + Global.BYTE_SIZE; // type + presence for digest
+            if(stableDigest != null)
+                retval+=stableDigest.serializedSize();
+            return retval;
         }
 
         public void writeTo(DataOutputStream out) throws IOException {

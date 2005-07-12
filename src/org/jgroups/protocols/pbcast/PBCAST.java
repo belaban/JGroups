@@ -1,4 +1,4 @@
-// $Id: PBCAST.java,v 1.11 2005/05/30 14:31:06 belaban Exp $
+// $Id: PBCAST.java,v 1.12 2005/07/12 10:14:50 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -13,10 +13,7 @@ import org.jgroups.util.Queue;
 import org.jgroups.util.QueueClosedException;
 import org.jgroups.util.Util;
 
-import java.util.Enumeration;
-import java.util.Hashtable;
-import java.util.Properties;
-import java.util.Vector;
+import java.util.*;
 
 
 /**
@@ -352,7 +349,7 @@ public class PBCAST extends Protocol implements Runnable {
         Address sender=m.getSrc();
         NakReceiverWindow win=null;
         Message tmpmsg;
-        long seqno=hdr.seqno;
+        long tmp_seqno=hdr.seqno;
 
         if(sender == null) {
             if(log.isErrorEnabled()) log.error("sender is null");
@@ -363,8 +360,8 @@ public class PBCAST extends Protocol implements Runnable {
             win=(NakReceiverWindow) digest.get(sender);
             if(win == null) {
                 if(log.isWarnEnabled()) log.warn("NakReceiverWindow for sender " + sender +
-                                                       " not found. Creating new NakReceiverWindow starting at seqno=" + seqno);
-                win=new NakReceiverWindow(sender, seqno);
+                                                       " not found. Creating new NakReceiverWindow starting at seqno=" + tmp_seqno);
+                win=new NakReceiverWindow(sender, tmp_seqno);
                 digest.put(sender, win);
             }
 
@@ -374,7 +371,7 @@ public class PBCAST extends Protocol implements Runnable {
             // header are *copied* into delivered_msgs when a message is removed from NakReceiverWindow).
             // *************************************
             m.putHeader(getName(), hdr);
-            win.add(seqno, m);
+            win.add(tmp_seqno, m);
 
 
                 if(log.isInfoEnabled()) log.info("receiver window for " + sender + " is " + win);
@@ -385,18 +382,15 @@ public class PBCAST extends Protocol implements Runnable {
                 passUp(new Event(Event.MSG, tmpmsg));
             }
 
-
             // Garbage collect messages if singleton member (because then we won't receive any gossips, triggering
             // garbage collection)
             if(members.size() == 1) {
-                seqno=Math.max(seqno - gc_lag, 0);
-                if(seqno <= 0) {
+                tmp_seqno=Math.max(tmp_seqno - gc_lag, 0);
+                if(tmp_seqno <= 0) {
                 }
                 else {
-
-                        if(log.isInfoEnabled()) log.info("deleting messages < " +
-                                                               seqno + " from " + sender);
-                    win.stable(seqno);
+                    if(log.isTraceEnabled()) log.trace("deleting messages < " + tmp_seqno + " from " + sender);
+                    win.stable(tmp_seqno);
                 }
             }
         }
@@ -435,8 +429,8 @@ public class PBCAST extends Protocol implements Runnable {
      */
     void setDigest(Digest d) {
         NakReceiverWindow win;
-        Address sender;
-        long seqno=1;
+
+        long tmp_seqno=1;
 
         synchronized(digest) {
             for(Enumeration e=digest.elements(); e.hasMoreElements();) {
@@ -444,16 +438,22 @@ public class PBCAST extends Protocol implements Runnable {
                 win.reset();
             }
             digest.clear();
-            for(int i=0; i < d.size(); i++) {
-                sender=d.senderAt(i);
-                seqno=d.highSeqnoAt(i);
+
+
+            Map.Entry entry;
+            Address sender;
+            org.jgroups.protocols.pbcast.Digest.Entry val;
+            for(Iterator it=d.senders.entrySet().iterator(); it.hasNext();) {
+                entry=(Map.Entry)it.next();
+                sender=(Address)entry.getKey();
                 if(sender == null) {
                     if(log.isErrorEnabled()) log.error("cannot set item because sender is null");
                     continue;
                 }
-                digest.put(sender, new NakReceiverWindow(sender, seqno + 1)); // next to expect, digest had *last* seen !
+                val=(org.jgroups.protocols.pbcast.Digest.Entry)entry.getValue();
+                tmp_seqno=val.high_seqno;
+                digest.put(sender, new NakReceiverWindow(sender, tmp_seqno + 1)); // next to expect, digest had *last* seen !
             }
-
         }
     }
 
@@ -588,7 +588,6 @@ public class PBCAST extends Protocol implements Runnable {
         long my_low=0, my_high=0, their_low, their_high;
         Hashtable ht=null;
         Digest their_digest;
-        Address sender=null;
         NakReceiverWindow win;
         Message msg;
         Address dest;
@@ -596,17 +595,13 @@ public class PBCAST extends Protocol implements Runnable {
         PbcastHeader hdr;
         List missing_msgs; // list of missing messages (for retransmission) (List of Longs)
 
-
-
-            if(log.isInfoEnabled()) log.info("(from " + local_addr +
-                                                ") received gossip " + gossip.shortForm() + " from " + gossip.sender);
-
+        if(log.isTraceEnabled())
+            log.trace("(from " + local_addr + ") received gossip " + gossip.shortForm() + " from " + gossip.sender);
 
         if(gossip == null || gossip.digest == null) {
             if(log.isWarnEnabled()) log.warn("gossip is null or digest is null");
             return;
         }
-
 
         /* 1. If gossip sender is null, we cannot ask it for missing messages anyway, so discard gossip ! */
         if(gossip.sender == null) {
@@ -614,7 +609,6 @@ public class PBCAST extends Protocol implements Runnable {
                                                  "don't know where to send XMIT_REQ to. Discarding gossip");
             return;
         }
-
 
         /* 2. Don't process the gossip if the sender of the gossip is not a member anymore. If it is a newly
            joined member, discard it as well (we can't tell the difference). When the new member will be
@@ -651,11 +645,16 @@ public class PBCAST extends Protocol implements Runnable {
         /* 5. Compare their digest against ours. Find out if some messages in the their digest are
            not in our digest. If yes, put them in the 'ht' hashtable for retransmission */
         their_digest=gossip.digest;
-        for(int i=0; i < their_digest.size(); i++) {
-            sender=their_digest.senderAt(i);
-            their_low=their_digest.lowSeqnoAt(i);
-            their_high=their_digest.highSeqnoAt(i);
 
+        Map.Entry entry;
+        Address sender;
+        org.jgroups.protocols.pbcast.Digest.Entry val;
+        for(Iterator it=their_digest.senders.entrySet().iterator(); it.hasNext();) {
+            entry=(Map.Entry)it.next();
+            sender=(Address)entry.getKey();
+            val=(org.jgroups.protocols.pbcast.Digest.Entry)entry.getValue();
+            their_low=val.low_seqno;
+            their_high=val.high_seqno;
             if(their_low == 0 && their_high == 0)
                 continue; // won't have any messages for this sender, don't even re-send
 
@@ -822,28 +821,32 @@ public class PBCAST extends Protocol implements Runnable {
     }
 
 
-    void garbageCollect(Digest gc) {
+    void garbageCollect(Digest d) {
         Address sender;
-        long seqno;
+        long tmp_seqno;
         NakReceiverWindow win;
+        Map.Entry entry;
+        org.jgroups.protocols.pbcast.Digest.Entry val;
 
-        for(int i=0; i < gc.size(); i++) {
-            sender=gc.senderAt(i);
-            win=(NakReceiverWindow) digest.get(sender);
+        for(Iterator it=d.senders.entrySet().iterator(); it.hasNext();) {
+            entry=(Map.Entry)it.next();
+            sender=(Address)entry.getKey();
+            val=(org.jgroups.protocols.pbcast.Digest.Entry)entry.getValue();
+            win=(NakReceiverWindow)digest.get(sender);
             if(win == null) {
                 if(log.isDebugEnabled()) log.debug("sender " + sender +
-                                                       " not found in our message digest, skipping");
+                                                   " not found in our message digest, skipping");
                 continue;
             }
-            seqno=gc.highSeqnoAt(i);
-            seqno=Math.max(seqno - gc_lag, 0);
-            if(seqno <= 0) {
+            tmp_seqno=val.high_seqno;
+            tmp_seqno=Math.max(tmp_seqno - gc_lag, 0);
+            if(tmp_seqno <= 0) {
                 continue;
             }
 
-                if(log.isInfoEnabled()) log.info("(from " + local_addr +
-                                                      ") GC: deleting messages < " + seqno + " from " + sender);
-            win.stable(seqno);
+            if(log.isTraceEnabled()) log.trace("(from " + local_addr +
+                                               ") GC: deleting messages < " + tmp_seqno + " from " + sender);
+            win.stable(tmp_seqno);
         }
     }
 
@@ -915,11 +918,11 @@ public class PBCAST extends Protocol implements Runnable {
      */
     private class GossipHandler implements Runnable {
         Thread t=null;
-        final Queue gossip_queue;
+        final Queue queue;
 
 
         GossipHandler(Queue q) {
-            gossip_queue=q;
+            queue=q;
         }
 
 
@@ -937,8 +940,8 @@ public class PBCAST extends Protocol implements Runnable {
             if(t != null && t.isAlive()) {
                 tmp=t;
                 t=null;
-                if(gossip_queue != null)
-                    gossip_queue.close(false); // don't flush elements
+                if(queue != null)
+                    queue.close(false); // don't flush elements
                 tmp.interrupt();
             }
             t=null;
@@ -951,9 +954,9 @@ public class PBCAST extends Protocol implements Runnable {
             List xmit_msgs;
             byte[] data;
 
-            while(t != null && gossip_queue != null) {
+            while(t != null && queue != null) {
                 try {
-                    entry=(GossipEntry) gossip_queue.remove();
+                    entry=(GossipEntry) queue.remove();
                     hdr=entry.hdr;
                     if(hdr == null) {
                         if(log.isErrorEnabled()) log.error("gossip entry has no PbcastHeader");
