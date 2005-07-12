@@ -1,9 +1,10 @@
-// $Id: JoinRsp.java,v 1.5 2004/10/08 13:04:37 belaban Exp $
+// $Id: JoinRsp.java,v 1.6 2005/07/12 11:22:59 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
 
 import org.jgroups.View;
+import org.jgroups.Global;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
@@ -43,6 +44,15 @@ public class JoinRsp implements Serializable, Streamable {
     public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
         view=(View)Util.readStreamable(View.class, in);
         digest=(Digest)Util.readStreamable(Digest.class, in);
+    }
+
+    public int serializedSize() {
+        int retval=Global.BYTE_SIZE * 2; // presence for view and digest
+        if(view != null)
+            retval+=view.serializedSize();
+        if(digest != null)
+            retval+=digest.serializedSize();
+        return retval;
     }
 
     public String toString() {
