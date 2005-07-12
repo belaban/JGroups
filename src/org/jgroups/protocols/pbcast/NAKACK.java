@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.48 2005/06/22 13:04:03 belaban Exp $
+// $Id: NAKACK.java,v 1.49 2005/07/12 10:14:49 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -850,28 +850,35 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * Creates a NakReceiverWindow for each sender in the digest according to the sender's seqno. If NRW already exists,
      * reset it.
      */
-    void setDigest(Digest d) {
-        Address sender;
-        NakReceiverWindow win;
-        long initial_seqno;
-
-        clear();
+    private void setDigest(Digest d) {
         if(d == null || d.senders == null) {
             if(log.isErrorEnabled()) {
                 log.error("digest or digest.senders is null");
             }
             return;
         }
-        for(int i=0; i < d.size(); i++) {
-            sender=d.senderAt(i);
-            if(sender == null) {
+
+        clear();
+
+        Map.Entry entry;
+        Address sender;
+        org.jgroups.protocols.pbcast.Digest.Entry val;
+        long initial_seqno;
+        NakReceiverWindow win;
+
+        for(Iterator it=d.senders.entrySet().iterator(); it.hasNext();) {
+            entry=(Map.Entry)it.next();
+            sender=(Address)entry.getKey();
+            val=(org.jgroups.protocols.pbcast.Digest.Entry)entry.getValue();
+
+            if(sender == null || val == null) {
                 if(log.isWarnEnabled()) {
-                    log.warn("sender at index " + i + " in digest is null");
+                    log.warn("sender or value is null");
                 }
                 continue;
             }
-            initial_seqno=d.highSeqnoAt(i);
-            win=createNakReceiverWindow(sender,  initial_seqno);
+            initial_seqno=val.high_seqno;
+            win=createNakReceiverWindow(sender, initial_seqno);
             synchronized(received_msgs) {
                 received_msgs.put(sender, win);
             }
@@ -885,25 +892,31 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * exists, create one with the initial seqno set to the seqno of the member in the digest.
      */
     void mergeDigest(Digest d) {
-        Address sender;
-        NakReceiverWindow win;
-        long initial_seqno;
-
         if(d == null || d.senders == null) {
             if(log.isErrorEnabled()) {
                 log.error("digest or digest.senders is null");
             }
             return;
         }
-        for(int i=0; i < d.size(); i++) {
-            sender=d.senderAt(i);
-            if(sender == null) {
+
+        Map.Entry entry;
+        Address sender;
+        org.jgroups.protocols.pbcast.Digest.Entry val;
+        NakReceiverWindow win;
+        long initial_seqno;
+
+        for(Iterator it=d.senders.entrySet().iterator(); it.hasNext();) {
+            entry=(Map.Entry)it.next();
+            sender=(Address)entry.getKey();
+            val=(org.jgroups.protocols.pbcast.Digest.Entry)entry.getValue();
+
+            if(sender == null || val == null) {
                 if(log.isWarnEnabled()) {
-                    log.warn("sender at index " + i + " in digest is null");
+                    log.warn("sender or value is null");
                 }
                 continue;
             }
-            initial_seqno=d.highSeqnoAt(i);
+            initial_seqno=val.high_seqno;
             synchronized(received_msgs) {
                 win=(NakReceiverWindow)received_msgs.get(sender);
                 if(win == null) {
@@ -922,7 +935,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         }
     }
 
-    NakReceiverWindow createNakReceiverWindow(Address sender, long initial_seqno) {
+
+    private NakReceiverWindow createNakReceiverWindow(Address sender, long initial_seqno) {
         NakReceiverWindow win=new NakReceiverWindow(sender, this, initial_seqno, timer);
         win.setRetransmitTimeouts(retransmit_timeout);
         win.setDiscardDeliveredMessages(discard_delivered_msgs);
@@ -1010,9 +1024,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * NakReceiverWindow corresponding to P which are <= seqno at digest[P].
      */
     void stable(Digest d) {
-        long tmp_seqno;
         NakReceiverWindow recv_win;
-        Address sender;
         long my_highest_rcvd;        // highest seqno received in my digest for a sender P
         long stability_highest_rcvd; // highest seqno received in the stability vector for a sender P
 
@@ -1022,15 +1034,24 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             return;
         }
 
-        if(log.isDebugEnabled()) {
-            log.debug("received digest " + d);
+        if(log.isTraceEnabled()) {
+            log.trace("received digest " + d);
         }
 
-        for(int i=0; i < d.size(); i++) {
-            sender=d.senderAt(i);
-            tmp_seqno=d.highSeqnoAt(i);
+        Map.Entry entry;
+        Address sender;
+        org.jgroups.protocols.pbcast.Digest.Entry val;
+        long high_seqno_delivered, high_seqno_received;
+
+        for(Iterator it=d.senders.entrySet().iterator(); it.hasNext();) {
+            entry=(Map.Entry)it.next();
+            sender=(Address)entry.getKey();
             if(sender == null)
                 continue;
+            val=(org.jgroups.protocols.pbcast.Digest.Entry)entry.getValue();
+            high_seqno_delivered=val.high_seqno;
+            high_seqno_received=val.high_seqno_seen;
+
 
             // check whether the last seqno received for a sender P in the stability vector is > last seqno
             // received for P in my digest. if yes, request retransmission (see "Last Message Dropped" topic
@@ -1040,7 +1061,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             }
             if(recv_win != null) {
                 my_highest_rcvd=recv_win.getHighestReceived();
-                stability_highest_rcvd=d.highSeqnoSeenAt(i);
+                stability_highest_rcvd=high_seqno_received;
 
                 if(stability_highest_rcvd >= 0 && stability_highest_rcvd > my_highest_rcvd) {
                     if(log.isTraceEnabled()) {
@@ -1052,19 +1073,19 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 }
             }
 
-            tmp_seqno-=gc_lag;
-            if(tmp_seqno < 0) {
+            high_seqno_delivered-=gc_lag;
+            if(high_seqno_delivered < 0) {
                 continue;
             }
 
             if(log.isTraceEnabled())
-                log.trace("deleting msgs <= " + tmp_seqno + " from " + sender);
+                log.trace("deleting msgs <= " + high_seqno_delivered + " from " + sender);
 
             // garbage collect from sent_msgs if sender was myself
             if(sender.equals(local_addr)) {
                 synchronized(sent_msgs) {
                     // gets us a subset from [lowest seqno - seqno]
-                    SortedMap stable_keys=sent_msgs.headMap(new Long(tmp_seqno));
+                    SortedMap stable_keys=sent_msgs.headMap(new Long(high_seqno_delivered));
                     if(stable_keys != null) {
                         stable_keys.clear(); // this will modify sent_msgs directly
                     }
@@ -1074,7 +1095,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             // delete *delivered* msgs that are stable
             // recv_win=(NakReceiverWindow)received_msgs.get(sender);
             if(recv_win != null)
-                recv_win.stable(tmp_seqno);  // delete all messages with seqnos <= seqno
+                recv_win.stable(high_seqno_delivered);  // delete all messages with seqnos <= seqno
         }
     }
 
@@ -1151,13 +1172,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
     void removeAll() {
         NakReceiverWindow win;
-
-//        if(log.isTraceEnabled()) {
-//            if(sent_msgs.size() > 0 && received_msgs.size() > 0) {
-//                String contents=dumpContents();
-//                log.trace("contents for " + local_addr + ":\n" + contents);
-//            }
-//        }
 
         synchronized(sent_msgs) {
             sent_msgs.clear();

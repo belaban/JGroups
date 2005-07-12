@@ -1,14 +1,19 @@
-// $Id: Digest.java,v 1.9 2005/07/08 11:28:25 belaban Exp $
+// $Id: Digest.java,v 1.10 2005/07/12 10:14:49 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
+import org.jgroups.Global;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
 import java.io.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 
 
 /**
@@ -25,19 +30,19 @@ import java.io.*;
  * @author Bela Ban
  */
 public class Digest implements Externalizable, Streamable {
-    Address[] senders=null;
-    long[]    low_seqnos=null;       // lowest seqnos seen
-    long[]    high_seqnos=null;      // highest seqnos seen so far *that are deliverable*, initially 0
-    long[]    high_seqnos_seen=null; // highest seqnos seen so far (not necessarily deliverable), initially -1
-    int       index=0;               // current index of where next member is added
+    /** HashMap<Address, Entry> */
+    HashMap senders=null;
     protected static final Log log=LogFactory.getLog(Digest.class);
+
+
+
 
 
     public Digest() {
     } // used for externalization
 
     public Digest(int size) {
-        reset(size);
+        senders=new HashMap(size);
     }
 
 
@@ -45,92 +50,72 @@ public class Digest implements Externalizable, Streamable {
         if(obj == null)
             return false;
         Digest other=(Digest)obj;
-        if(sameSenders(other) == false)
-            return false;
-
-        if(!Util.match(low_seqnos, other.low_seqnos))
-            return false;
-        if(!Util.match(high_seqnos, other.high_seqnos))
-            return false;
-        if(!Util.match(high_seqnos_seen, other.high_seqnos_seen))
-            return false;
-
-        return true;
+        if(senders == null && other.senders == null)
+            return true;
+        return senders.equals(other.senders);
     }
 
 
 
 
     public void add(Address sender, long low_seqno, long high_seqno) {
-        if(index >= senders.length) {
-            if(log.isErrorEnabled()) log.error("index " + index +
-                    " out of bounds, please create new Digest if you want more members !");
-            return;
-        }
-        if(sender == null) {
-            if(log.isErrorEnabled()) log.error("sender is null, will not add it !");
-            return;
-        }
-        senders[index]=sender;
-        low_seqnos[index]=low_seqno;
-        high_seqnos[index]=high_seqno;
-        high_seqnos_seen[index]=-1;
-        index++;
+        add(sender, low_seqno, high_seqno, -1);
     }
 
 
     public void add(Address sender, long low_seqno, long high_seqno, long high_seqno_seen) {
-        if(index >= senders.length) {
-            if(log.isErrorEnabled()) log.error("index " + index +
-                    " out of bounds, please create new Digest if you want more members !");
+        add(sender, new Entry(low_seqno, high_seqno, high_seqno_seen));
+    }
+
+    private void add(Address sender, Entry entry) {
+        if(sender == null || entry == null) {
+            if(log.isErrorEnabled())
+                log.error("sender (" + sender + ") or entry (" + entry + ")is null, will not add entry");
             return;
         }
-        if(sender == null) {
-            if(log.isErrorEnabled()) log.error("sender is null, will not add it !");
-            return;
-        }
-        senders[index]=sender;
-        low_seqnos[index]=low_seqno;
-        high_seqnos[index]=high_seqno;
-        high_seqnos_seen[index]=high_seqno_seen;
-        index++;
+        Object retval=senders.put(sender, entry);
+        if(retval != null && log.isWarnEnabled())
+            log.warn("entry for " + sender + " was overwritten with " + entry);
     }
 
 
     public void add(Digest d) {
-        Address sender;
-        long low_seqno, high_seqno, high_seqno_seen;
-
         if(d != null) {
-            for(int i=0; i < d.size(); i++) {
-                sender=d.senderAt(i);
-                low_seqno=d.lowSeqnoAt(i);
-                high_seqno=d.highSeqnoAt(i);
-                high_seqno_seen=d.highSeqnoSeenAt(i);
-                add(sender, low_seqno, high_seqno, high_seqno_seen);
+            Map.Entry entry;
+            Address key;
+            Entry val;
+            for(Iterator it=d.senders.entrySet().iterator(); it.hasNext();) {
+                entry=(Map.Entry)it.next();
+                key=(Address)entry.getKey();
+                val=(Entry)entry.getValue();
+                add(key, val.low_seqno, val.high_seqno, val.high_seqno_seen);
             }
         }
     }
 
+    public Entry get(Address sender) {
+        return (Entry)senders.get(sender);
+    }
 
     /**
      * Adds a digest to this digest. This digest must have enough space to add the other digest; otherwise an error
      * message will be written. For each sender in the other digest, the merge() method will be called.
      */
     public void merge(Digest d) {
-        Address sender;
-        long low_seqno, high_seqno, high_seqno_seen;
-
         if(d == null) {
             if(log.isErrorEnabled()) log.error("digest to be merged with is null");
             return;
         }
-        for(int i=0; i < d.size(); i++) {
-            sender=d.senderAt(i);
-            low_seqno=d.lowSeqnoAt(i);
-            high_seqno=d.highSeqnoAt(i);
-            high_seqno_seen=d.highSeqnoSeenAt(i);
-            merge(sender, low_seqno, high_seqno, high_seqno_seen);
+        Map.Entry entry;
+        Address sender;
+        Entry val;
+        for(Iterator it=d.senders.entrySet().iterator(); it.hasNext();) {
+            entry=(Map.Entry)it.next();
+            sender=(Address)entry.getKey();
+            val=(Entry)entry.getValue();
+            if(val != null) {
+                merge(sender, val.low_seqno, val.high_seqno, val.high_seqno_seen);
+            }
         }
     }
 
@@ -145,43 +130,28 @@ public class Digest implements Externalizable, Streamable {
      * If the sender doesn not exist, a new entry will be added (provided there is enough space)
      */
     public void merge(Address sender, long low_seqno, long high_seqno, long high_seqno_seen) {
-        int i;
-        long my_low_seqno, my_high_seqno, my_high_seqno_seen;
         if(sender == null) {
             if(log.isErrorEnabled()) log.error("sender == null");
             return;
         }
-        i=getIndex(sender);
-        if(i == -1) {
+        Entry entry=(Entry)senders.get(sender);
+        if(entry == null) {
             add(sender, low_seqno, high_seqno, high_seqno_seen);
-            return;
         }
-
-        my_low_seqno=lowSeqnoAt(i);
-        my_high_seqno=highSeqnoAt(i);
-        my_high_seqno_seen=highSeqnoSeenAt(i);
-        if(low_seqno < my_low_seqno)
-            setLowSeqnoAt(i, low_seqno);
-        if(high_seqno > my_high_seqno)
-            setHighSeqnoAt(i, high_seqno);
-        if(high_seqno_seen > my_high_seqno_seen)
-            setHighSeqnoSeenAt(i, high_seqno_seen);
+        else {
+            if(low_seqno < entry.low_seqno)
+                entry.low_seqno=low_seqno;
+            if(high_seqno > entry.high_seqno)
+                entry.high_seqno=high_seqno;
+            if(high_seqno_seen > entry.high_seqno_seen)
+                entry.high_seqno_seen=high_seqno_seen;
+        }
     }
 
-
-    public int getIndex(Address sender) {
-        int ret=-1;
-
-        if(sender == null) return ret;
-        for(int i=0; i < senders.length; i++)
-            if(sender.equals(senders[i]))
-                return i;
-        return ret;
-    }
 
 
     public boolean contains(Address sender) {
-        return getIndex(sender) != -1;
+        return senders.containsKey(sender);
     }
 
 
@@ -191,47 +161,29 @@ public class Digest implements Externalizable, Streamable {
      * @return
      */
     public boolean sameSenders(Digest other) {
-        Address a1, a2;
         if(other == null) return false;
         if(this.senders == null || other.senders == null) return false;
-        if(this.senders.length != other.senders.length) return false;
-        for(int i=0; i < this.senders.length; i++) {
-            a1=this.senders[i];
-            a2=other.senders[i];
-            if(a1 == null && a2 == null) continue;
-            if(a1 != null && a2 != null && a1.equals(a2))
-                continue;
-            else
-                return false;
-        }
-        return true;
+        if(this.senders.size() != other.senders.size()) return false;
+
+        Set my_senders=senders.keySet(), other_senders=other.senders.keySet();
+        return my_senders.equals(other_senders);
     }
+
 
     /** Increment the sender's high_seqno by 1 */
     public void incrementHighSeqno(Address sender) {
-        if(sender == null) return;
-        for(int i=0; i < senders.length; i++) {
-            if(senders[i] != null && senders[i].equals(sender)) {
-                high_seqnos[i]=high_seqnos[i] + 1;
-                break;
-            }
-        }
+        Entry entry=(Entry)senders.get(sender);
+        if(entry == null)
+            return;
+        entry.high_seqno++;
     }
 
 
     public int size() {
-        return senders.length;
+        return senders.size();
     }
 
 
-    public Address senderAt(int index) {
-        if(index < size())
-            return senders[index];
-        else {
-            if(log.isErrorEnabled()) log.error("index " + index + " is out of bounds");
-            return null;
-        }
-    }
 
 
     /**
@@ -239,136 +191,66 @@ public class Digest implements Externalizable, Streamable {
      * but it is still in the digest. Resetting its seqnos ensures that no-one will request a message
      * retransmission from the dead member.
      */
-    public void resetAt(int index) {
-        if(index < size()) {
-            low_seqnos[index]=0;
-            high_seqnos[index]=0;
-            high_seqnos_seen[index]=-1;
-        }
+    public void resetAt(Address sender) {
+        Entry entry=(Entry)senders.get(sender);
+        if(entry != null)
+            entry.reset();
+    }
+
+
+    public void clear() {
+        senders.clear();
+    }
+
+    public long lowSeqnoAt(Address sender) {
+        Entry entry=(Entry)senders.get(sender);
+        if(entry == null)
+            return -1;
         else
-            if(log.isErrorEnabled()) log.error("index " + index + " is out of bounds");
-    }
-
-
-    public void reset(int size) {
-        senders=new Address[size];
-        low_seqnos=new long[size];
-        high_seqnos=new long[size];
-        high_seqnos_seen=new long[size];
-        for(int i=0; i < size; i++)
-            high_seqnos_seen[i]=-1;
-        index=0;
-    }
-
-
-    public long lowSeqnoAt(int index) {
-        if(index < size())
-            return low_seqnos[index];
-        else {
-            if(log.isErrorEnabled()) log.error("index " + index + " is out of bounds");
-            return 0;
-        }
-    }
-
-
-    public long highSeqnoAt(int index) {
-        if(index < size())
-            return high_seqnos[index];
-        else {
-            if(log.isErrorEnabled()) log.error("index " + index + " is out of bounds");
-            return 0;
-        }
-    }
-
-    public long highSeqnoSeenAt(int index) {
-        if(index < size())
-            return high_seqnos_seen[index];
-        else {
-            if(log.isErrorEnabled()) log.error("index " + index + " is out of bounds");
-            return 0;
-        }
+            return entry.low_seqno;
     }
 
 
     public long highSeqnoAt(Address sender) {
-        long ret=-1;
-        int i;
-
-        if(sender == null) return ret;
-        i=getIndex(sender);
-        if(i == -1)
-            return ret;
+        Entry entry=(Entry)senders.get(sender);
+        if(entry == null)
+            return -1;
         else
-            return high_seqnos[i];
+            return entry.high_seqno;
     }
 
 
     public long highSeqnoSeenAt(Address sender) {
-        long ret=-1;
-        int i;
-
-        if(sender == null) return ret;
-        i=getIndex(sender);
-        if(i == -1)
-            return ret;
+        Entry entry=(Entry)senders.get(sender);
+        if(entry == null)
+            return -1;
         else
-            return high_seqnos_seen[i];
-    }
-
-    public void setLowSeqnoAt(int index, long low_seqno) {
-        if(index < size()) {
-            low_seqnos[index]=low_seqno;
-        }
-        else
-            if(log.isErrorEnabled()) log.error("index " + index + " is out of bounds");
-    }
-
-
-    public void setHighSeqnoAt(int index, long high_seqno) {
-        if(index < size()) {
-            high_seqnos[index]=high_seqno;
-        }
-        else
-            if(log.isErrorEnabled()) log.error("index " + index + " is out of bounds");
-    }
-
-    public void setHighSeqnoSeenAt(int index, long high_seqno_seen) {
-        if(index < size()) {
-            high_seqnos_seen[index]=high_seqno_seen;
-        }
-        else
-            if(log.isErrorEnabled()) log.error("index " + index + " is out of bounds");
+            return entry.high_seqno_seen;
     }
 
 
     public void setHighSeqnoAt(Address sender, long high_seqno) {
-        int i=getIndex(sender);
-        if(i < 0)
-            return;
-        else
-            setHighSeqnoAt(i, high_seqno);
+        Entry entry=(Entry)senders.get(sender);
+        if(entry != null)
+            entry.high_seqno=high_seqno;
     }
 
     public void setHighSeqnoSeenAt(Address sender, long high_seqno_seen) {
-        int i=getIndex(sender);
-        if(i < 0)
-            return;
-        else
-            setHighSeqnoSeenAt(i, high_seqno_seen);
+        Entry entry=(Entry)senders.get(sender);
+        if(entry != null)
+            entry.high_seqno_seen=high_seqno_seen;
     }
 
 
     public Digest copy() {
-        Digest ret=new Digest(senders.length);
-
-        // changed due to JDK bug (didn't work under JDK 1.4.{1,2} under Linux, JGroups bug #791718
-        // ret.senders=(Address[])senders.clone();
-        if(senders != null)
-            System.arraycopy(senders, 0, ret.senders, 0, senders.length);
-
-        ret.low_seqnos=(long[])low_seqnos.clone();
-        ret.high_seqnos=(long[])high_seqnos.clone();
-        ret.high_seqnos_seen=(long[])high_seqnos_seen.clone();
+        Digest ret=new Digest(senders.size());
+        Map.Entry entry;
+        Entry tmp;
+        for(Iterator it=senders.entrySet().iterator(); it.hasNext();) {
+            entry=(Map.Entry)it.next();
+            tmp=(Entry)entry.getValue();
+            ret.add((Address)entry.getKey(), tmp.low_seqno, tmp.high_seqno, tmp.high_seqno_seen);
+        }
         return ret;
     }
 
@@ -377,7 +259,14 @@ public class Digest implements Externalizable, Streamable {
         StringBuffer sb=new StringBuffer();
         boolean first=true;
         if(senders == null) return "[]";
-        for(int i=0; i < senders.length; i++) {
+        Map.Entry entry;
+        Address key;
+        Entry val;
+
+        for(Iterator it=senders.entrySet().iterator(); it.hasNext();) {
+            entry=(Map.Entry)it.next();
+            key=(Address)entry.getKey();
+            val=(Entry)entry.getValue();
             if(!first) {
                 sb.append(", ");
             }
@@ -385,10 +274,10 @@ public class Digest implements Externalizable, Streamable {
                 sb.append('[');
                 first=false;
             }
-            sb.append(senders[i]).append(": ").append('[').append(low_seqnos[i]).append(" : ");
-            sb.append(high_seqnos[i]);
-            if(high_seqnos_seen[i] >= 0)
-                sb.append(" (").append(high_seqnos_seen[i]).append(")]");
+            sb.append(key).append(": ").append('[').append(val.low_seqno).append(" : ");
+            sb.append(val.high_seqno);
+            if(val.high_seqno_seen >= 0)
+                sb.append(" (").append(val.high_seqno_seen).append(")]");
         }
         sb.append(']');
         return sb.toString();
@@ -398,7 +287,14 @@ public class Digest implements Externalizable, Streamable {
     public String printHighSeqnos() {
         StringBuffer sb=new StringBuffer();
         boolean first=true;
-        for(int i=0; i < senders.length; i++) {
+        Map.Entry entry;
+        Address key;
+        Entry val;
+
+        for(Iterator it=senders.entrySet().iterator(); it.hasNext();) {
+            entry=(Map.Entry)it.next();
+            key=(Address)entry.getKey();
+            val=(Entry)entry.getValue();
             if(!first) {
                 sb.append(", ");
             }
@@ -406,9 +302,7 @@ public class Digest implements Externalizable, Streamable {
                 sb.append('[');
                 first=false;
             }
-            sb.append(senders[i]);
-            sb.append('#');
-            sb.append(high_seqnos[i]);
+            sb.append(key).append("#").append(val.high_seqno);
         }
         sb.append(']');
         return sb.toString();
@@ -416,9 +310,16 @@ public class Digest implements Externalizable, Streamable {
 
 
     public String printHighSeqnosSeen() {
-        StringBuffer sb=new StringBuffer();
+       StringBuffer sb=new StringBuffer();
         boolean first=true;
-        for(int i=0; i < senders.length; i++) {
+        Map.Entry entry;
+        Address key;
+        Entry val;
+
+        for(Iterator it=senders.entrySet().iterator(); it.hasNext();) {
+            entry=(Map.Entry)it.next();
+            key=(Address)entry.getKey();
+            val=(Entry)entry.getValue();
             if(!first) {
                 sb.append(", ");
             }
@@ -426,9 +327,7 @@ public class Digest implements Externalizable, Streamable {
                 sb.append('[');
                 first=false;
             }
-            sb.append(senders[i]);
-            sb.append('#');
-            sb.append(high_seqnos_seen[i]);
+            sb.append(key).append("#").append(val.high_seqno_seen);
         }
         sb.append(']');
         return sb.toString();
@@ -437,119 +336,96 @@ public class Digest implements Externalizable, Streamable {
 
     public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(senders);
-
-        if(low_seqnos == null)
-            out.writeInt(0);
-        else {
-            out.writeInt(low_seqnos.length);
-            for(int i=0; i < low_seqnos.length; i++)
-                out.writeLong(low_seqnos[i]);
-        }
-
-        if(high_seqnos == null)
-            out.writeInt(0);
-        else {
-            out.writeInt(high_seqnos.length);
-            for(int i=0; i < high_seqnos.length; i++)
-                out.writeLong(high_seqnos[i]);
-        }
-
-        if(high_seqnos_seen == null)
-            out.writeInt(0);
-        else {
-            out.writeInt(high_seqnos_seen.length);
-            for(int i=0; i < high_seqnos_seen.length; i++)
-                out.writeLong(high_seqnos_seen[i]);
-        }
-
-        out.writeInt(index);
     }
 
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        int num;
-
-        senders=(Address[])in.readObject();
-
-        num=in.readInt();
-        if(num == 0)
-            low_seqnos=null;
-        else {
-            low_seqnos=new long[num];
-            for(int i=0; i < low_seqnos.length; i++)
-                low_seqnos[i]=in.readLong();
-        }
-
-
-        num=in.readInt();
-        if(num == 0)
-            high_seqnos=null;
-        else {
-            high_seqnos=new long[num];
-            for(int i=0; i < high_seqnos.length; i++)
-                high_seqnos[i]=in.readLong();
-        }
-
-        num=in.readInt();
-        if(num == 0)
-            high_seqnos_seen=null;
-        else {
-            high_seqnos_seen=new long[num];
-            for(int i=0; i < high_seqnos_seen.length; i++)
-                high_seqnos_seen[i]=in.readLong();
-        }
-
-        index=in.readInt();
+        senders=(HashMap)in.readObject();
     }
 
     public void writeTo(DataOutputStream out) throws IOException {
-        out.writeInt(senders == null? 0 : senders.length);
-        for(int i=0; i < senders.length; i++) {
-            Address sender=senders[i];
-            Util.writeAddress(sender, out);
-        }
-        writeArray(low_seqnos, out);
-        writeArray(high_seqnos, out);
-        writeArray(high_seqnos_seen, out);
-        out.writeInt(index);
-    }
-
-    private void writeArray(long[] arr, DataOutputStream out) throws IOException {
-        int len=arr != null? arr.length : 0;
-        out.writeInt(len);
-        if(len > 0) {
-            for(int i=0; i < arr.length; i++) {
-                out.writeLong(arr[i]);
-            }
+        out.writeShort(senders.size());
+        Map.Entry entry;
+        Address key;
+        Entry val;
+        for(Iterator it=senders.entrySet().iterator(); it.hasNext();) {
+            entry=(Map.Entry)it.next();
+            key=(Address)entry.getKey();
+            val=(Entry)entry.getValue();
+            Util.writeAddress(key, out);
+            out.writeLong(val.low_seqno);
+            out.writeLong(val.high_seqno);
+            out.writeLong(val.high_seqno_seen);
         }
     }
 
-    private long[] readArray(DataInputStream in) throws IOException {
-        int b=in.readInt();
-        if(b == 0)
-            return null;
-        long[] retval=new long[b];
-        for(int i=0; i < b; i++)
-            retval[i]=in.readLong();
+
+    public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        short size=in.readShort();
+        senders=new HashMap(size);
+        Address key;
+        for(int i=0; i < size; i++) {
+            key=Util.readAddress(in);
+            add(key, in.readLong(), in.readLong(), in.readLong());
+        }
+    }
+
+
+    public long serializedSize() {
+        long retval=Global.SHORT_SIZE; // number of elements in 'senders'
+        if(senders.size() > 0) {
+            Address addr=(Address)senders.keySet().iterator().next();
+            int len=addr.size() +
+                    2 * Global.BYTE_SIZE; // presence byte, IpAddress vs other address
+            len+=3 * Global.LONG_SIZE; // 3 longs in one Entry
+            retval+=len * senders.size();
+        }
+
         return retval;
     }
 
-    public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
-        int b=in.readInt();
-        if(b > 0) {
-            senders=new Address[b];
-            Address sender;
-            for(int i=0; i < b; i++) {
-                sender=Util.readAddress(in);
-                senders[i]=sender;
+
+
+
+    /**
+     * Class keeping track of the lowest and highest sequence numbers delivered, and the highest
+     * sequence numbers received, per member
+     */
+    public static class Entry {
+        public long low_seqno, high_seqno, high_seqno_seen=-1;
+
+        public Entry(long low_seqno, long high_seqno, long high_seqno_seen) {
+            this.low_seqno=low_seqno;
+            this.high_seqno=high_seqno;
+            this.high_seqno_seen=high_seqno_seen;
+        }
+
+        public Entry(long low_seqno, long high_seqno) {
+            this.low_seqno=low_seqno;
+            this.high_seqno=high_seqno;
+        }
+
+        public Entry(Entry other) {
+            if(other != null) {
+                low_seqno=other.low_seqno;
+                high_seqno=other.high_seqno;
+                high_seqno_seen=other.high_seqno_seen;
             }
         }
-        low_seqnos=readArray(in);
-        high_seqnos=readArray(in);
-        high_seqnos_seen=readArray(in);
-        index=in.readInt();
+
+        public boolean equals(Object obj) {
+            Entry other=(Entry)obj;
+            return low_seqno == other.low_seqno && high_seqno == other.high_seqno && high_seqno_seen == other.high_seqno_seen;
+        }
+
+        public String toString() {
+            return new StringBuffer("low=").append(low_seqno).append(", high=").append(high_seqno).
+                    append(", highest seen=").append(high_seqno_seen).toString();
+        }
+
+        public void reset() {
+            low_seqno=high_seqno=0;
+            high_seqno_seen=-1;
+        }
     }
-
-
-
 }
