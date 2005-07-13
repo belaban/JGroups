@@ -43,7 +43,7 @@ import java.util.*;
  * The {@link #receive(org.jgroups.Address, java.net.InetAddress, int, byte[])} method must
  * be called by subclasses when a unicast or multicast message has been received
  * @author Bela Ban
- * @version $Id: TP.java,v 1.8 2005/07/13 06:43:34 belaban Exp $
+ * @version $Id: TP.java,v 1.9 2005/07/13 08:20:53 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -76,6 +76,12 @@ public abstract class TP extends Protocol {
      * when the real copy arrives - it will be discarded. Useful for Window
      * media (non)sense */
     boolean         loopback=true;
+
+    /** Use a separate queue (plus a dedicated thread) for loopbacks */
+    boolean         loopback_queue=false;
+
+    /** Thread handling the loopback queue */
+    LoopbackHandler loopback_handler=null;
 
 
     /** Discard packets with a different version. Usually minor version differences are okay. Setting this property
@@ -258,6 +264,10 @@ public abstract class TP extends Protocol {
      * Creates the unicast and multicast sockets and starts the unicast and multicast receiver threads
      */
     public void start() throws Exception {
+        if(loopback_queue) {
+            loopback_handler=new LoopbackHandler();
+            loopback_handler.start();
+        }
         startPacketHandlers();
         passUp(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
     }
@@ -265,6 +275,9 @@ public abstract class TP extends Protocol {
 
     public void stop() {
         stopPacketHandlers();
+        if(loopback_handler != null) {
+            loopback_handler.stop();
+        }
     }
 
 
@@ -328,6 +341,12 @@ public abstract class TP extends Protocol {
         if(str != null) {
             loopback=Boolean.valueOf(str).booleanValue();
             props.remove("loopback");
+        }
+
+        str=props.getProperty("loopback_queue");
+        if(str != null) {
+            loopback_queue=Boolean.valueOf(str).booleanValue();
+            props.remove("loopback_queue");
         }
 
         str=props.getProperty("discard_incompatible_packets");
@@ -398,6 +417,11 @@ public abstract class TP extends Protocol {
             if(use_outgoing_packet_handler == false)
                 if(log.isWarnEnabled()) log.warn("enable_bundling is true; setting use_outgoing_packet_handler=true");
             use_outgoing_packet_handler=true;
+        }
+
+        if(loopback_queue && loopback == false) {
+            log.warn("loopback_queue is enabled, but loopback is false: setting loopback to true");
+            loopback=true;
         }
 
         return true;
@@ -474,8 +498,11 @@ public abstract class TP extends Protocol {
                This allows e.g. PerfObserver to get the time of reception of a message */
             if(observer != null)
                 observer.up(evt, up_queue.size());
-            if(log.isTraceEnabled()) log.trace(new StringBuffer("looped back message ").append(copy));
-            passUp(evt);
+            if(log.isTraceEnabled()) log.trace(new StringBuffer("looping back message ").append(copy));
+            if(loopback_queue)
+                loopback_handler.add(evt);
+            else
+                passUp(evt);
             if(dest != null && !dest.isMulticastAddress())
                 return;
         }
@@ -1159,6 +1186,52 @@ public abstract class TP extends Protocol {
     }
 
 
+    private class LoopbackHandler implements Runnable {
+        private Queue queue=null;
+        private Thread thread=null;
+
+
+        void add(Event evt) {
+            try {
+                queue.add(evt);
+            }
+            catch(QueueClosedException e) {
+                log.error("failed adding message to queue", e);
+            }
+        }
+
+        void start() {
+            queue=new Queue();
+            thread=new Thread(this, "LoopbackHandler");
+            thread.setDaemon(true);
+            thread.start();
+        }
+
+        void stop() {
+            if(thread != null && thread.isAlive()) {
+                queue.close(false);
+            }
+        }
+
+        public void run() {
+            Event evt;
+            while(thread != null && Thread.currentThread().equals(thread)) {
+                try {
+                    evt=(Event)queue.remove();
+                    passUp(evt);
+                }
+                catch(QueueClosedException e) {
+                    break;
+                }
+                catch(Throwable t) {
+                    if(log.isErrorEnabled())
+                        log.error("failed passing up message", t);
+                }
+            }
+            if(log.isTraceEnabled())
+                log.trace("LoopbackHandler thread terminated");
+        }
+    }
 
 
 }
