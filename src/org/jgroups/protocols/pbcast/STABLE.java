@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.26 2005/07/13 15:15:35 belaban Exp $
+// $Id: STABLE.java,v 1.27 2005/07/13 19:57:59 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -328,8 +328,10 @@ public class STABLE extends Protocol {
     void initialize() {
         synchronized(digest) {
             digest.clear();
-            for(int i=0; i < mbrs.size(); i++)
+            for(int i=0; i < mbrs.size(); i++) {
                 digest.add((Address)mbrs.elementAt(i), -1, -1);
+                // digest.add((Address)mbrs.elementAt(i), 0, 0);
+            }
             heard_from.removeAllElements();
             heard_from.addAll(mbrs);
         }
@@ -430,6 +432,7 @@ public class STABLE extends Protocol {
         Address mbr;
         long highest_seqno, my_highest_seqno;
         long highest_seen_seqno, my_highest_seen_seqno;
+        boolean my_own_gossip=false;
 
         if(d == null || sender == null) {
             if(log.isErrorEnabled()) log.error("digest or sender is null");
@@ -461,23 +464,25 @@ public class STABLE extends Protocol {
             return;
         }
 
+        my_own_gossip=local_addr != null && local_addr.equals(sender);
+
         Map.Entry entry;
         org.jgroups.protocols.pbcast.Digest.Entry val;
         for(Iterator it=d.senders.entrySet().iterator(); it.hasNext();) {
             entry=(Map.Entry)it.next();
             mbr=(Address)entry.getKey();
-            val=(org.jgroups.protocols.pbcast.Digest.Entry)entry.getValue();
-            highest_seqno=val.high_seqno;
-            highest_seen_seqno=val.high_seqno_seen;
             if(!digest.contains(mbr)) {
                 if(log.isTraceEnabled()) log.trace("sender " + mbr + " not found in stability vector");
                 continue;
             }
+            val=(org.jgroups.protocols.pbcast.Digest.Entry)entry.getValue();
+            highest_seqno=val.high_seqno;
+            highest_seen_seqno=val.high_seqno_seen;
 
             // compute the minimum of the highest seqnos deliverable (for garbage collection)
             my_highest_seqno=digest.highSeqnoAt(mbr);
             if(my_highest_seqno < 0) {
-                if(highest_seqno >= 0)
+                if(highest_seqno >= 0 && my_own_gossip)
                     digest.setHighSeqnoAt(mbr, highest_seqno);
             }
             else {
