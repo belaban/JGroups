@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.25 2005/06/06 15:34:15 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.26 2005/07/13 12:16:04 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -184,7 +184,7 @@
             author="true"
             version="true"
             use="true"
-            bottom="Copyright &#169; 1998-2005 www.jgroups.org . All Rights Reserved."
+            bottom="Copyright &#169; 1998-2005 Bela Ban . All Rights Reserved."
 			useexternalfile="yes"
             />
     </target>
