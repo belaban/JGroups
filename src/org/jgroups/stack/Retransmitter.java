@@ -1,4 +1,4 @@
-// $Id: Retransmitter.java,v 1.7 2005/05/30 14:31:28 belaban Exp $
+// $Id: Retransmitter.java,v 1.8 2005/07/13 07:18:09 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -26,7 +26,7 @@ import java.util.ListIterator;
  *
  * @author John Giorgiadis
  * @author Bela Ban
- * @version $Revision: 1.7 $
+ * @version $Revision: 1.8 $
  */
 public class Retransmitter {
 
@@ -36,12 +36,12 @@ public class Retransmitter {
     /** Default retransmit thread suspend timeout (ms) */
     private static final long SUSPEND_TIMEOUT=2000;
 
-    private Address           sender=null;
-    private final LinkedList        msgs=new LinkedList();
-    private RetransmitCommand cmd=null;
-    private boolean           retransmitter_owned;
-    private TimeScheduler     retransmitter=null;
-    protected static final Log log=LogFactory.getLog(Retransmitter.class);
+    private Address              sender=null;
+    private final LinkedList     msgs=new LinkedList();
+    private RetransmitCommand    cmd=null;
+    private boolean              retransmitter_owned;
+    private TimeScheduler        retransmitter=null;
+    protected static final Log   log=LogFactory.getLog(Retransmitter.class);
 
 
     /** Retransmit command (see Gamma et al.) used to retrieve missing messages */
@@ -179,7 +179,7 @@ public class Retransmitter {
                 for(ListIterator it=msgs.listIterator(); it.hasNext();) {
                     entry=(Entry)it.next();
                     entry.cancel();
-            }
+                }
             }
             msgs.clear();
         }
@@ -187,7 +187,9 @@ public class Retransmitter {
 
 
     public String toString() {
-        return (msgs.size() + " messages to retransmit: (" + msgs.toString() + ')');
+        synchronized(msgs) {
+            return new StringBuffer(msgs.size()).append(" messages to retransmit: (").append(msgs.toString()).append(')').toString();
+        }
     }
 
 
