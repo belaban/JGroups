@@ -1,7 +1,8 @@
-// $Id: Digest.java,v 1.10 2005/07/12 10:14:49 belaban Exp $
+// $Id: Digest.java,v 1.11 2005/07/13 06:43:33 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
+import EDU.oswego.cs.dl.util.concurrent.ConcurrentReaderHashMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
@@ -10,7 +11,6 @@ import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
 import java.io.*;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -30,8 +30,8 @@ import java.util.Set;
  * @author Bela Ban
  */
 public class Digest implements Externalizable, Streamable {
-    /** HashMap<Address, Entry> */
-    HashMap senders=null;
+    /** Map<Address, Entry> */
+    Map    senders=null;
     protected static final Log log=LogFactory.getLog(Digest.class);
 
 
@@ -42,7 +42,7 @@ public class Digest implements Externalizable, Streamable {
     } // used for externalization
 
     public Digest(int size) {
-        senders=new HashMap(size);
+        senders=createSenders(size);
     }
 
 
@@ -340,7 +340,7 @@ public class Digest implements Externalizable, Streamable {
 
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        senders=(HashMap)in.readObject();
+        senders=(Map)in.readObject();
     }
 
     public void writeTo(DataOutputStream out) throws IOException {
@@ -362,7 +362,7 @@ public class Digest implements Externalizable, Streamable {
 
     public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
         short size=in.readShort();
-        senders=new HashMap(size);
+        senders=createSenders(size);
         Address key;
         for(int i=0; i < size; i++) {
             key=Util.readAddress(in);
@@ -380,11 +380,12 @@ public class Digest implements Externalizable, Streamable {
             len+=3 * Global.LONG_SIZE; // 3 longs in one Entry
             retval+=len * senders.size();
         }
-
         return retval;
     }
 
-
+    private Map createSenders(int size) {
+        return new ConcurrentReaderHashMap(size);
+    }
 
 
     /**

@@ -3,13 +3,16 @@ package org.jgroups.tests;
 //import gnu.trove.TLongObjectHashMap;
 //import gnu.trove.THashMap;
 
+import EDU.oswego.cs.dl.util.concurrent.ConcurrentReaderHashMap;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Bela Ban
- * @version $Id: HashMapTest.java,v 1.1 2005/04/14 04:49:32 belaban Exp $
+ * @version $Id: HashMapTest.java,v 1.2 2005/07/13 06:43:35 belaban Exp $
  */
 public class HashMapTest {
 
@@ -22,6 +25,7 @@ public class HashMapTest {
                 continue;
             }
             System.out.println("HashMapTest [-num <num>] [-help]");
+            return;
         }
         HashMapTest t=new HashMapTest();
         t.start(new HashMap(), num);
@@ -31,6 +35,16 @@ public class HashMapTest {
         System.out.println("");
         t.start(new HashMap(), num);
         t.start(new TreeMap(), num);
+
+
+        System.out.println("");
+        t.start(new HashMap(), num);
+        t.start(new ConcurrentReaderHashMap(), num);
+
+
+        System.out.println("");
+        t.start(new HashMap(), num);
+        t.start(new ConcurrentHashMap(), num);
         //t.start2(new TLongObjectHashMap(), num);
         //t.start3(new THashMap(), num);
     }

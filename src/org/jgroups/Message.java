@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.33 2005/07/04 08:34:51 belaban Exp $
+// $Id: Message.java,v 1.34 2005/07/13 06:43:34 belaban Exp $
 
 package org.jgroups;
 
@@ -18,6 +18,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 
+import EDU.oswego.cs.dl.util.concurrent.ConcurrentReaderHashMap;
+
 
 /**
  * A Message encapsulates data sent to members of a group. It contains among other things the
@@ -33,7 +35,7 @@ public class Message implements Externalizable, Streamable {
     protected Address src_addr=null;
 
     /** The payload */
-    private byte[]  buf=null;
+    private byte[]    buf=null;
 
     /** The index into the payload (usually 0) */
     protected transient int     offset=0;
@@ -701,7 +703,7 @@ public class Message implements Externalizable, Streamable {
     }
 
     private Map createHeaders(int size) {
-        return new HashMap(size);
+        return new ConcurrentReaderHashMap(size);
     }
 
 
