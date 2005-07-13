@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.23 2005/07/08 11:28:26 belaban Exp $
+// $Id: UNICAST.java,v 1.24 2005/07/13 07:34:45 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -44,8 +44,13 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     // if UNICAST is used without GMS, don't consult the membership on retransmit() if use_gms=false
     // default is true
     boolean          use_gms=true;
+
+    /** @deprecated Not used anymore */
     int              window_size=-1;               // sliding window: max number of msgs in table (disabled by default)
+
+    /** @deprecated Not used anymore */
     int              min_threshold=-1;             // num under which table has to fall before we resume adding msgs
+
     final static String name="UNICAST";
 
 
@@ -110,12 +115,14 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         if(str != null) {
             window_size=Integer.parseInt(str);
             props.remove("window_size");
+            log.error("window_size is deprecated and will be ignored");
         }
 
         str=props.getProperty("min_threshold");
         if(str != null) {
             min_threshold=Integer.parseInt(str);
             props.remove("min_threshold");
+            log.error("min_threshold is deprecated and will be ignored");
         }
 
         str=props.getProperty("use_gms");
@@ -127,16 +134,6 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         if(props.size() > 0) {
             log.error("UNICAST.setProperties(): these properties are not recognized: " + props);
 
-            return false;
-        }
-
-        // Some sanity checks
-        if((window_size > 0 && min_threshold <= 0) || (window_size <= 0 && min_threshold > 0)) {
-            log.error("window_size and min_threshold have to be both set if one of them is set");
-            return false;
-        }
-        if(window_size > 0 && min_threshold > 0 && window_size < min_threshold) {
-            log.error("min_threshold (" + min_threshold + ") has to be less than window_size (" + window_size + ')');
             return false;
         }
         return true;
@@ -226,8 +223,6 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             if (entry.sent_msgs == null) { // first msg to peer 'dst'
                 hdr.first = true;
                 entry.sent_msgs = new AckSenderWindow(this, timeout, this);
-                if (window_size > 0)
-                    entry.sent_msgs.setWindowSize(window_size, min_threshold);
             }
             msg.putHeader(name, hdr);
             if(log.isTraceEnabled()) log.trace("[" + local_addr + "] --> DATA(" + dst + ": #" +
