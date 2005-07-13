@@ -42,6 +42,12 @@ Best result with perf.Test (2 members, 1 sender, laptop, 20000 1K msgs
                  -XX:ThreadStackSize=32 -XX:CompileThreshold=100:
                  combined: num_msgs_expected=20000, num_msgs_received=20000 (loss rate=0%), received=20MB,
                  time=3355ms, msgs/sec=5961.25, throughput=5.96MB/sec
+                 
+- July 13 2005: **6200** msgs/sec (on 192.168.5.1):
+                 -Xmx500M -Xms500M -XX:NewRatio=1 -XX:+AggressiveHeap -verbose:gc -XX:+DisableExplicitGC
+                 -XX:ThreadStackSize=32 -XX:CompileThreshold=100:
+                 combined: num_msgs_expected=20000, num_msgs_received=20000 (loss rate=0%), received=20MB,
+                 time=3215ms, msgs/sec=6220.84, throughput=6.22MB/sec
  -->
 <config>
     <UDP bind_addr="192.168.5.1"
