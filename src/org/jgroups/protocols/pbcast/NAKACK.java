@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.49 2005/07/12 10:14:49 belaban Exp $
+// $Id: NAKACK.java,v 1.50 2005/07/13 15:15:34 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -1035,7 +1035,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         }
 
         if(log.isTraceEnabled()) {
-            log.trace("received digest " + d);
+            log.trace("received stable digest " + d);
         }
 
         Map.Entry entry;
