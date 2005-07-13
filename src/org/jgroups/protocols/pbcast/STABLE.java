@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.25 2005/07/12 10:14:50 belaban Exp $
+// $Id: STABLE.java,v 1.26 2005/07/13 15:15:35 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -581,7 +581,7 @@ public class STABLE extends Protocol {
 
         if(suspended) {
             if(log.isDebugEnabled()) {
-                log.debug("STABILITY message will not be handled as suspened=" + suspended);
+                log.debug("STABILITY message will not be handled as suspended=" + suspended);
             }
             return;
         }
