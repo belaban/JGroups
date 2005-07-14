@@ -1,4 +1,4 @@
-// $Id: ViewDemo.java,v 1.9 2005/05/30 16:14:40 belaban Exp $
+// $Id: ViewDemo.java,v 1.10 2005/07/14 16:05:13 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -64,7 +64,7 @@ public class ViewDemo implements MembershipListener {
     public static void main(String args[]) {
         ViewDemo t=new ViewDemo();
         boolean use_additional_data=false;
-        String props="UDP(mcast_addr=224.0.0.35;mcast_port=45566;ip_ttl=32;" +
+        String props="UDP(mcast_addr=228.5.5.5;mcast_port=45566;ip_ttl=32;" +
                 "mcast_send_buf_size=150000;mcast_recv_buf_size=80000):" +
                 "PING(timeout=2000;num_initial_members=3):" +
                 "MERGE2(min_interval=5000;max_interval=10000):" +
