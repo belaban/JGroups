@@ -1,4 +1,4 @@
-// $Id: Digest.java,v 1.11 2005/07/13 06:43:33 belaban Exp $
+// $Id: Digest.java,v 1.12 2005/07/14 11:58:47 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -95,6 +95,16 @@ public class Digest implements Externalizable, Streamable {
 
     public Entry get(Address sender) {
         return (Entry)senders.get(sender);
+    }
+
+    public boolean set(Address sender, long low_seqno, long high_seqno, long high_seqno_seen) {
+        Entry entry=(Entry)senders.get(sender);
+        if(entry == null)
+            return false;
+        entry.low_seqno=low_seqno;
+        entry.high_seqno=high_seqno;
+        entry.high_seqno_seen=high_seqno_seen;
+        return true;
     }
 
     /**
