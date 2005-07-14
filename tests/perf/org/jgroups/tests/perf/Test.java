@@ -58,7 +58,7 @@ public class Test implements Receiver {
 
 
 
-    public void start(Properties c, boolean verbose) throws Exception {
+    public void start(Properties c, boolean verbose, boolean jmx) throws Exception {
         String          config_file="config.txt";
         BufferedReader  fileReader;
         String          line;
@@ -126,8 +126,10 @@ public class Test implements Receiver {
             sb.append(" [KB/sec]\n");
             if(log.isInfoEnabled()) log.info(sb.toString());
         }
-        jmx=new Boolean(this.config.getProperty("jmx")).booleanValue();
-
+        if(jmx) {
+            this.config.setProperty("jmx", "true");
+        }
+        this.jmx=new Boolean(this.config.getProperty("jmx")).booleanValue();
         String transport_name=this.config.getProperty("transport");
         transport=(Transport)Thread.currentThread().getContextClassLoader().loadClass(transport_name).newInstance();
         transport.create(this.config);
@@ -510,7 +512,7 @@ public class Test implements Receiver {
 
     public static void main(String[] args) {
         Properties config=new Properties();
-        boolean sender=false, verbose=false;
+        boolean sender=false, verbose=false, jmx=false;
         Test t=null;
 
         for(int i=0; i < args.length; i++) {
@@ -538,13 +540,17 @@ public class Test implements Receiver {
                 verbose=true;
                 continue;
             }
+            if("-jmx".equals(args[i])) {
+                jmx=true;
+                continue;
+            }
             help();
             return;
         }
 
         try {
             t=new Test();
-            t.start(config, verbose);
+            t.start(config, verbose, jmx);
             t.runDiscoveryPhase();
             if(sender) {
                 t.sendMessages();
@@ -579,7 +585,8 @@ public class Test implements Receiver {
 
 
     static void help() {
-        System.out.println("Test [-help] ([-sender] | [-receiver]) [-config <config file>] [-props <stack config>] [-verbose]");
+        System.out.println("Test [-help] ([-sender] | [-receiver]) " +
+                           "[-config <config file>] [-props <stack config>] [-verbose] [-jmx]");
     }
 
 
