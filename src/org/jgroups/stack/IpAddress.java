@@ -1,4 +1,4 @@
-// $Id: IpAddress.java,v 1.25 2005/07/08 12:19:42 belaban Exp $
+// $Id: IpAddress.java,v 1.26 2005/07/15 10:05:18 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -157,8 +157,7 @@ public class IpAddress implements Address {
 
 
     public int hashCode() {
-        int retval=ip_addr != null ? ip_addr.hashCode() + port : port;
-        return retval;
+        return ip_addr != null ? ip_addr.hashCode() + port : port;
     }
 
 
