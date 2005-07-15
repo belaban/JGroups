@@ -4,15 +4,16 @@ package org.jgroups.tests;
 //import gnu.trove.THashMap;
 
 import EDU.oswego.cs.dl.util.concurrent.ConcurrentReaderHashMap;
+import EDU.oswego.cs.dl.util.concurrent.ConcurrentHashMap;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.concurrent.ConcurrentHashMap;
+
 
 /**
  * @author Bela Ban
- * @version $Id: HashMapTest.java,v 1.3 2005/07/15 08:48:53 belaban Exp $
+ * @version $Id: HashMapTest.java,v 1.4 2005/07/15 16:38:25 belaban Exp $
  */
 public class HashMapTest {
 
