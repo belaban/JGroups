@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.34 2005/07/13 06:43:34 belaban Exp $
+// $Id: Message.java,v 1.35 2005/07/15 05:27:21 belaban Exp $
 
 package org.jgroups;
 
@@ -475,7 +475,7 @@ public class Message implements Externalizable, Streamable {
         }
 
         len=in.readInt();
-        if(len > 0) headers=createHeaders(11);
+        if(len > 0) headers=createHeaders(len);
         while(len-- > 0) {
             key=in.readUTF();
             value=Marshaller.read(in);
@@ -546,7 +546,7 @@ public class Message implements Externalizable, Streamable {
         // 5. headers
         int size;
         if(headers != null && (size=headers.size()) > 0) {
-            out.writeInt(size);
+            out.writeShort(size);
             for(Iterator it=headers.entrySet().iterator(); it.hasNext();) {
                 entry=(Map.Entry)it.next();
                 out.writeUTF((String)entry.getKey());
@@ -597,7 +597,7 @@ public class Message implements Externalizable, Streamable {
 
         // 4. headers
         if((leading & HDRS_SET) == HDRS_SET) {
-            len=in.readInt();
+            len=in.readShort();
             headers(len);
             for(int i=0; i < len; i++) {
                 hdr_name=in.readUTF();
@@ -708,7 +708,7 @@ public class Message implements Externalizable, Streamable {
 
 
     private Map createHeaders(Map m) {
-        return new HashMap(m);
+        return new ConcurrentReaderHashMap(m);
     }
 
     /* ------------------------------- End of Private methods ---------------------------- */
