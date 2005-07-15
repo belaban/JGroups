@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.28 2005/07/15 09:34:57 belaban Exp $
+// $Id: STABLE.java,v 1.29 2005/07/15 15:03:41 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -211,7 +211,7 @@ public class STABLE extends Protocol {
                     if(log.isTraceEnabled()) {
                         StringBuffer sb=new StringBuffer("max_bytes has been reached (max_bytes=");
                         sb.append(max_bytes).append(", number of bytes received=");
-                        sb.append(num_bytes_received).append("): sending STABLE message");
+                        sb.append(num_bytes_received).append("): triggers stable msg");
                         log.trace(sb.toString());
                     }
                     // asks the NAKACK protocol for the current digest, reply event is GET_DIGEST_STABLE_OK (arg=digest)
@@ -220,16 +220,16 @@ public class STABLE extends Protocol {
                 }
             }
 
-            obj=msg.getHeader(name);
-            if(obj == null || !(obj instanceof StableHeader))
-                break;
+
             hdr=(StableHeader)msg.removeHeader(name);
+            if(hdr == null)
+                break;
             switch(hdr.type) {
             case StableHeader.STABLE_GOSSIP:
                 handleStableGossip(msg.getSrc(), hdr.stableDigest);
                 break;
             case StableHeader.STABILITY:
-                handleStabilityMessage(hdr.stableDigest);
+                handleStabilityMessage(hdr.stableDigest, msg.getSrc());
                 break;
             default:
                 if(log.isErrorEnabled()) log.error("StableHeader type " + hdr.type + " not known");
@@ -414,8 +414,15 @@ public class STABLE extends Protocol {
         }
     }
 
-    private void removeFromHeardFromList(Address mbr) {
-        heard_from.remove(mbr); // Vector is already synchronized for a single operation
+    private boolean removeFromHeardFromList(Address mbr) {
+        synchronized(heard_from) {
+            heard_from.remove(mbr);
+            if(heard_from.size() == 0) {
+                resetHeardFromList(this.mbrs);
+                return true;
+            }
+        }
+        return false;
     }
 
 
@@ -514,32 +521,17 @@ public class STABLE extends Protocol {
         }
 
         if(suspended) {
-            if(log.isTraceEnabled()) {
+            if(log.isTraceEnabled())
                 log.trace("STABLE message will not be handled as I'm suspended");
-            }
             return;
         }
-
-        // if(local_addr.equals(sender))
-           //  return; // don't need to update myself from myself
 
         if(log.isTraceEnabled())
-            log.trace(new StringBuffer("received digest from ").append(sender).append(": ").append(d));
+            log.trace(new StringBuffer("received stable msg from ").append(sender).append(": ").append(d.printHighSeqnos()));
         if(!heard_from.contains(sender)) {  // already received gossip from sender; discard it
-            if(log.isTraceEnabled()) log.trace("already received gossip from " + sender);
+            if(log.isTraceEnabled()) log.trace("already received stable msg from " + sender);
             return;
         }
-
-        // we won't handle the gossip d, if d's members don't match the membership in my own digest,
-        // this is part of the fix for the NAKACK problem (bugs #943480 and #938584)
-//        if(!this.digest.sameSenders(d)) {
-//            if(log.isTraceEnabled()) {
-//                log.trace("received digest from " + sender + " (digest=" + d + ") which does not match my own digest ("+
-//                        this.digest + "): ignoring digest and re-initializing own digest");
-//            }
-//            resetHeardFromList(mbrs);
-//            return;
-//        }
 
         Digest copy;
         synchronized(digest) {
@@ -551,11 +543,9 @@ public class STABLE extends Protocol {
             copy=digest.copy();
         }
 
-        removeFromHeardFromList(sender);
-        if(heard_from.size() == 0) {
-            if(log.isTraceEnabled()) log.trace("sending stability msg " + copy);
+        boolean was_last=removeFromHeardFromList(sender);
+        if(was_last) {
             sendStabilityMessage(copy);
-            resetHeardFromList(mbrs);
         }
     }
 
@@ -574,7 +564,7 @@ public class STABLE extends Protocol {
 
         if(d != null && d.size() > 0) {
             if(log.isTraceEnabled())
-                log.trace(new StringBuffer("mcasting STABLE msg, digest=").append(d));
+                log.trace("sending stable msg " + d.printHighSeqnos());
             Message msg=new Message(); // mcast message
             StableHeader hdr=new StableHeader(StableHeader.STABLE_GOSSIP, d);
             msg.putHeader(name, hdr);
@@ -606,20 +596,21 @@ public class STABLE extends Protocol {
     }
 
 
-    void handleStabilityMessage(Digest d) {
+    void handleStabilityMessage(Digest d, Address sender) {
         if(d == null) {
-            if(log.isErrorEnabled()) log.error("stability vector is null");
+            if(log.isErrorEnabled()) log.error("stability digest is null");
             return;
         }
 
         if(suspended) {
             if(log.isDebugEnabled()) {
-                log.debug("STABILITY message will not be handled as suspended=" + suspended);
+                log.debug("stability message will not be handled as I'm suspended");
             }
             return;
         }
 
-        if(log.isDebugEnabled()) log.debug("stability vector is " + d.printHighSeqnos());
+        if(log.isTraceEnabled())
+            log.trace(new StringBuffer("received stability msg from ").append(sender).append(": ").append(d.printHighSeqnos()));
         stopStabilityTask();
 
         // we won't handle the gossip d, if d's members don't match the membership in my own digest,
@@ -832,6 +823,7 @@ public class STABLE extends Protocol {
                 msg=new Message();
                 hdr=new StableHeader(StableHeader.STABILITY, d);
                 msg.putHeader(STABLE.name, hdr);
+                if(log.isTraceEnabled()) log.trace("sending stability msg " + d.printHighSeqnos());
                 passDown(new Event(Event.MSG, msg));
                 d=null;
             }
