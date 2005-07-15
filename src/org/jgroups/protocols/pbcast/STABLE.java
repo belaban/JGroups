@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.29 2005/07/15 15:03:41 belaban Exp $
+// $Id: STABLE.java,v 1.30 2005/07/15 16:33:31 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -197,7 +197,6 @@ public class STABLE extends Protocol {
     public void up(Event evt) {
         Message msg;
         StableHeader hdr;
-        Header obj;
         int type=evt.getType();
 
         switch(type) {
@@ -246,12 +245,15 @@ public class STABLE extends Protocol {
             break;
 
         case Event.GET_DIGEST_STABLE_OK:
-            Digest d=(Digest)evt.getArg(), copy;
+            Digest d=(Digest)evt.getArg(), copy=null;
             synchronized(digest) {
-                updateFromOwnDigest(d);
-                copy=digest.copy();
+                int num_elements_expected=digest.size(), num_elements_updated;
+                num_elements_updated=updateLocalDigest(d, local_addr);
+                if(num_elements_updated == num_elements_expected)
+                    copy=digest.copy();
             }
-            sendStableMessage(copy);
+            if(copy != null)
+                sendStableMessage(copy);
             break;
         }
 
@@ -327,39 +329,11 @@ public class STABLE extends Protocol {
         }
     }
 
-    /**
-     * Updates own digest (this.digest) with latest digest from NAKACK, received as with GET_DIGEST_STABLE_OK.
-     * Runs with a lock on digest already acquired
-     * @param latest_digest
-     */
-    private void updateFromOwnDigest(Digest latest_digest) {
-        if(latest_digest == null || latest_digest.size() == 0)
-            return;
 
-        Map.Entry entry;
-        org.jgroups.protocols.pbcast.Digest.Entry val;
-        Address mbr;
-
-        for(Iterator it=latest_digest.senders.entrySet().iterator(); it.hasNext();) {
-            entry=(Map.Entry)it.next();
-            mbr=(Address)entry.getKey();
-            val=(org.jgroups.protocols.pbcast.Digest.Entry)entry.getValue();
-            if(!digest.contains(mbr)) {
-                digest.add(mbr, val.low_seqno, val.high_seqno,  val.high_seqno_seen);
-            }
-            else {
-                digest.set(mbr, val.low_seqno, val.high_seqno,  val.high_seqno_seen);
-            }
-        }
-        StringBuffer sb=new StringBuffer("\nmy [").append(local_addr).append("] digest after updating from NAKACK: ").
-                append(digest).append("\n");
-        if(log.isTraceEnabled()) // todo: remove
-            log.trace(sb);
-    }
 
     /** Update my own digest from a digest received by somebody else. Returns the number of elements updated
      *  Needs to be called with a lock on digest */
-    private int updateFromOtherDigest(Digest d, Address sender) {
+    private int updateLocalDigest(Digest d, Address sender) {
         if(d == null || d.size() == 0)
             return 0;
 
@@ -376,22 +350,22 @@ public class STABLE extends Protocol {
         for(Iterator it=d.senders.entrySet().iterator(); it.hasNext();) {
             entry=(Map.Entry)it.next();
             mbr=(Address)entry.getKey();
-            if(!digest.contains(mbr)) {
-                if(log.isTraceEnabled()) log.trace("sender " + mbr + " not found in my digest");
-                continue;
-            }
             val=(org.jgroups.protocols.pbcast.Digest.Entry)entry.getValue();
-            highest_seqno=val.high_seqno;
-            highest_seen_seqno=val.high_seqno_seen;
+            if(!digest.contains(mbr)) {
+                digest.add(mbr, val.low_seqno, val.high_seqno,  val.high_seqno_seen);
+            }
+            else {
+                highest_seqno=val.high_seqno;
+                highest_seen_seqno=val.high_seqno_seen;
 
-            // compute the minimum of the highest seqnos deliverable (for garbage collection)
-            my_highest_seqno=digest.highSeqnoAt(mbr);
-            digest.setHighSeqnoAt(mbr, Math.min(my_highest_seqno, highest_seqno));
+                // compute the minimum of the highest seqnos deliverable (for garbage collection)
+                my_highest_seqno=digest.highSeqnoAt(mbr);
+                digest.setHighSeqnoAt(mbr, Math.min(my_highest_seqno, highest_seqno));
 
-            // compute the maximum of the highest seqnos seen (for retransmission of last missing message)
-            my_highest_seen_seqno=digest.highSeqnoSeenAt(mbr);
-            digest.setHighSeqnoSeenAt(mbr, Math.max(my_highest_seen_seqno, highest_seen_seqno));
-
+                // compute the maximum of the highest seqnos seen (for retransmission of last missing message)
+                my_highest_seen_seqno=digest.highSeqnoSeenAt(mbr);
+                digest.setHighSeqnoSeenAt(mbr, Math.max(my_highest_seen_seqno, highest_seen_seqno));
+            }
             num_elements_updated++;
         }
 
@@ -402,6 +376,7 @@ public class STABLE extends Protocol {
 
         return num_elements_updated;
     }
+
 
 
     private void resetHeardFromList(Vector new_members) {
@@ -536,7 +511,7 @@ public class STABLE extends Protocol {
         Digest copy;
         synchronized(digest) {
             int num_elements_expected=digest.size(), num_elements_updated;
-            num_elements_updated=updateFromOtherDigest(d, sender);
+            num_elements_updated=updateLocalDigest(d, sender);
             // we can only remove the sender from heard_from if *all* elements of my digest were updated
             if(num_elements_updated != num_elements_expected)
                 return;
