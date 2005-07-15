@@ -14,7 +14,7 @@ import java.util.LinkedList;
 
 /**
  * @author Bela Ban Feb 12, 2004
- * @version $Id: MessageSerializationTest2.java,v 1.13 2005/04/26 13:45:10 belaban Exp $
+ * @version $Id: MessageSerializationTest2.java,v 1.14 2005/07/15 09:35:00 belaban Exp $
  */
 public class MessageSerializationTest2 {
     Message msg;
@@ -186,7 +186,7 @@ public class MessageSerializationTest2 {
         int b=dis.readInt();
         Message tmp;
         for(int i=0; i < b; i++) {
-            tmp=new Message();
+            tmp=new Message(false);
             tmp.readFrom(dis);
             l2.add(tmp);
         }

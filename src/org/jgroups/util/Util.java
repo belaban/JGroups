@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.45 2005/07/12 11:45:42 belaban Exp $
+// $Id: Util.java,v 1.46 2005/07/15 09:34:59 belaban Exp $
 
 package org.jgroups.util;
 
@@ -433,7 +433,7 @@ public class Util {
         Message msg;
         retval=new LinkedList();
         for(int i=0; i < size; i++) {
-            msg=new Message();
+            msg=new Message(false); // don't create headers, readFrom() will do this
             msg.readFrom(in);
             retval.add(msg);
         }

@@ -43,7 +43,7 @@ import java.util.*;
  * The {@link #receive(org.jgroups.Address, java.net.InetAddress, int, byte[])} method must
  * be called by subclasses when a unicast or multicast message has been received
  * @author Bela Ban
- * @version $Id: TP.java,v 1.11 2005/07/13 18:38:15 belaban Exp $
+ * @version $Id: TP.java,v 1.12 2005/07/15 09:34:58 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -752,7 +752,7 @@ public abstract class TP extends Protocol {
     }
 
     private Message bufferToMessage(DataInputStream instream, Address dest, Address sender) throws Exception {
-        Message msg=new Message();
+        Message msg=new Message(false); // don't create headers, readFrom() will do this
         msg.readFrom(instream);
         postUnmarshalling(msg, dest, sender); // allows for optimization by subclass
         return msg;
@@ -814,7 +814,7 @@ public abstract class TP extends Protocol {
             len=instream.readInt();
             src=Util.readAddress(instream);
             for(int i=0; i < len; i++) {
-                msg=new Message();
+                msg=new Message(false); // don't create headers, readFrom() will do this
                 msg.readFrom(instream);
                 msg.setDest(dest);
                 msg.setSrc(src);
