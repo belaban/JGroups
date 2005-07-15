@@ -1,4 +1,4 @@
-// $Id: StreamableTest.java,v 1.2 2005/01/05 10:39:29 belaban Exp $
+// $Id: StreamableTest.java,v 1.3 2005/07/15 09:35:00 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -61,7 +61,7 @@ public class StreamableTest extends TestCase {
         DataInputStream in=new DataInputStream(input);
         Message m3, m4;
 
-        m3=new Message();
+        m3=new Message(false);
         m3.readFrom(in);
 
         assertEquals(4, m3.getLength());

@@ -1,4 +1,4 @@
-// $Id: RouterStub.java,v 1.12 2005/05/30 14:31:28 belaban Exp $
+// $Id: RouterStub.java,v 1.13 2005/07/15 09:34:58 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -302,7 +302,7 @@ public class RouterStub {
             else {
                 buf=new byte[len];
                 input.readFully(buf, 0, len);
-                ret=new Message();
+                ret=new Message(false);
                 ByteArrayInputStream tmp=new ByteArrayInputStream(buf);
                 DataInputStream in=new DataInputStream(tmp);
                 ret.readFrom(in);

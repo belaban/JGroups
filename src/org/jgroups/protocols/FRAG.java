@@ -1,4 +1,4 @@
-// $Id: FRAG.java,v 1.24 2005/06/13 14:53:48 belaban Exp $
+// $Id: FRAG.java,v 1.25 2005/07/15 09:34:58 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -28,7 +28,7 @@ import java.util.*;
  * multicast messages.
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.24 2005/06/13 14:53:48 belaban Exp $
+ * @version $Id: FRAG.java,v 1.25 2005/07/15 09:34:58 belaban Exp $
  */
 public class FRAG extends Protocol {
     private int frag_size=8192;  // conservative value
@@ -260,7 +260,7 @@ public class FRAG extends Protocol {
             try {
                 bis=new ByteArrayInputStream(m);
                 in=new DataInputStream(bis);
-                assembled_msg=new Message();
+                assembled_msg=new Message(false);
                 assembled_msg.readFrom(in);
                 if(log.isTraceEnabled()) log.trace("assembled_msg is " + assembled_msg);
                 assembled_msg.setSrc(sender); // needed ? YES, because fragments have a null src !!
