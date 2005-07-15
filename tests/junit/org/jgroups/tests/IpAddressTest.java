@@ -1,4 +1,4 @@
-// $Id: IpAddressTest.java,v 1.12 2005/04/19 10:52:16 belaban Exp $
+// $Id: IpAddressTest.java,v 1.13 2005/07/15 10:05:48 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -126,6 +126,48 @@ public class IpAddressTest extends TestCase {
         assertTrue(d.compareTo(a) > 0);
     }
 
+
+    public void testCompareTime() {
+        final int NUM=1000000;
+        _testCompareTime(a, a, NUM);
+        _testCompareTime(a, b, NUM);
+        _testCompareTime(a, c, NUM);
+        _testCompareTime(a, d, NUM);
+    }
+
+
+    private void _testCompareTime(IpAddress one, IpAddress two, int num) {
+        int rc=-99;
+        long start=System.currentTimeMillis(), stop;
+        for(int x=0; x < num; x++) {
+            rc=one.compareTo(two);
+        }
+        stop=System.currentTimeMillis();
+        long diff=stop-start;
+        System.out.println("calling compareTo(" + one + ", " + two + ") " + num + " times took " +
+                           diff + "ms, result=" + rc);
+    }
+
+
+    public void testHashcode() {
+        int hcode_a=a.hashCode();
+        int hcode_b=b.hashCode();
+        assertEquals(hcode_a, hcode_b);
+    }
+
+
+    public void testHashcodeTime() {
+        int hash=-1;
+        final int NUM=10000000;
+
+        long start=System.currentTimeMillis(), stop;
+        for(int x=0; x < NUM; x++) {
+            hash=a.hashCode();
+        }
+        stop=System.currentTimeMillis();
+        long diff=stop-start;
+        System.out.println("taking the hash code of " + a + "(" + hash + ") took " + diff + "ms");
+    }
 
     public void testExternalization() throws Exception {
         ByteArrayOutputStream bos=new ByteArrayOutputStream();
