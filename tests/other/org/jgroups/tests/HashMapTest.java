@@ -12,12 +12,12 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Bela Ban
- * @version $Id: HashMapTest.java,v 1.2 2005/07/13 06:43:35 belaban Exp $
+ * @version $Id: HashMapTest.java,v 1.3 2005/07/15 08:48:53 belaban Exp $
  */
 public class HashMapTest {
 
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         int num=10000;
         for(int i=0; i < args.length; i++) {
             if(args[i].equals("-num")) {
@@ -28,25 +28,27 @@ public class HashMapTest {
             return;
         }
         HashMapTest t=new HashMapTest();
-        t.start(new HashMap(), num);
-        t.start(new TreeMap(), num);
-        //t.start2(new TLongObjectHashMap(), num);
-        //t.start3(new THashMap(), num);
-        System.out.println("");
-        t.start(new HashMap(), num);
-        t.start(new TreeMap(), num);
+        Class[] classes=new Class[]{HashMap.class, TreeMap.class, ConcurrentReaderHashMap.class, ConcurrentHashMap.class};
+        Map[] maps=new Map[classes.length];
+
+        System.out.println("\nTesting creation times");
+        for(int i=0; i < classes.length; i++) {
+            t.testCreation(classes[i], num);
+        }
+
+        for(int i=0; i < classes.length; i++)
+            maps[i]=(Map)classes[i].newInstance();
 
 
-        System.out.println("");
-        t.start(new HashMap(), num);
-        t.start(new ConcurrentReaderHashMap(), num);
+        System.out.println("\nTesting insertion times");
+        for(int i=0; i < maps.length; i++) {
+            t.testPut(maps[i], num);
+        }
 
-
-        System.out.println("");
-        t.start(new HashMap(), num);
-        t.start(new ConcurrentHashMap(), num);
-        //t.start2(new TLongObjectHashMap(), num);
-        //t.start3(new THashMap(), num);
+        System.out.println("\nTesting retrieval times");
+        for(int i=0; i < maps.length; i++) {
+            t.testGet(maps[i], num);
+        }
     }
 
    /* private void start3(THashMap m, int num) {
@@ -75,7 +77,19 @@ public class HashMapTest {
         m.clear();
     }*/
 
-    private void start(Map m, int num) {
+    private void testCreation(Class cl, int num) throws IllegalAccessException, InstantiationException {
+        long start, stop;
+
+        start=System.currentTimeMillis();
+        for(int i=0; i < num; i++) {
+            cl.newInstance();
+        }
+
+        stop=System.currentTimeMillis();
+        System.out.println("Took " + (stop-start) + "ms to create " + num + " instances of " + cl.getName());
+    }
+
+    private void testPut(Map m, int num) {
         long start, stop;
 
         start=System.currentTimeMillis();
@@ -85,6 +99,21 @@ public class HashMapTest {
 
         stop=System.currentTimeMillis();
         System.out.println("Took " + (stop-start) + "ms to insert " + m.size() + " elements into " + m.getClass().getName());
-        m.clear();
+    }
+
+
+    private void testGet(Map m, int num) throws Exception {
+        long start, stop;
+        Object retval;
+
+        start=System.currentTimeMillis();
+        for(int i=0; i < num; i++) {
+            retval=m.get(new Long(i));
+            if(retval == null)
+                throw new Exception("retval for " + i + " is null");
+        }
+
+        stop=System.currentTimeMillis();
+        System.out.println("Took " + (stop-start) + "ms to insert " + m.size() + " elements into " + m.getClass().getName());
     }
 }
