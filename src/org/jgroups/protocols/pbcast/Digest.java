@@ -1,4 +1,4 @@
-// $Id: Digest.java,v 1.12 2005/07/14 11:58:47 belaban Exp $
+// $Id: Digest.java,v 1.13 2005/07/16 12:12:45 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -84,6 +84,21 @@ public class Digest implements Externalizable, Streamable {
             Map.Entry entry;
             Address key;
             Entry val;
+            for(Iterator it=d.senders.entrySet().iterator(); it.hasNext();) {
+                entry=(Map.Entry)it.next();
+                key=(Address)entry.getKey();
+                val=(Entry)entry.getValue();
+                add(key, val.low_seqno, val.high_seqno, val.high_seqno_seen);
+            }
+        }
+    }
+
+    public void replace(Digest d) {
+        if(d != null) {
+            Map.Entry entry;
+            Address key;
+            Entry val;
+            clear();
             for(Iterator it=d.senders.entrySet().iterator(); it.hasNext();) {
                 entry=(Map.Entry)it.next();
                 key=(Address)entry.getKey();
@@ -249,6 +264,14 @@ public class Digest implements Externalizable, Streamable {
         Entry entry=(Entry)senders.get(sender);
         if(entry != null)
             entry.high_seqno_seen=high_seqno_seen;
+    }
+
+    public void setHighestDeliveredAndSeenSeqnos(Address sender, long high_seqno, long high_seqno_seen) {
+        Entry entry=(Entry)senders.get(sender);
+        if(entry != null) {
+            entry.high_seqno=high_seqno;
+            entry.high_seqno_seen=high_seqno_seen;
+        }
     }
 
 
