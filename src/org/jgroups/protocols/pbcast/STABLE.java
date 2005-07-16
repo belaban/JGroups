@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.30 2005/07/15 16:33:31 belaban Exp $
+// $Id: STABLE.java,v 1.31 2005/07/16 13:20:42 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -36,6 +36,7 @@ public class STABLE extends Protocol {
     Address             local_addr=null;
     final Vector        mbrs=new Vector();
     final Digest        digest=new Digest(10);        // keeps track of the highest seqnos from all members
+    final Digest        latest_local_digest=new Digest(10); // keeps track of the latest digests received from NAKACK
     final Vector        heard_from=new Vector();      // keeps track of who we already heard from (STABLE_GOSSIP msgs)
 
     /** Sends a STABLE gossip every 20 seconds on average. 0 disables gossipping of STABLE messages */
@@ -64,6 +65,8 @@ public class STABLE extends Protocol {
     /** When true, don't take part in garbage collection protocol: neither send STABLE messages nor
      * handle STABILITY messages */
     boolean             suspended=false;
+
+    boolean             initialized=false;
 
     /** Max time we should hold off on message garbage collection. This is a second line of defense in case
      * we get a SUSPEND_STABLE, but forget to send a corresponding RESUME_STABLE (which should never happen !)
@@ -225,7 +228,7 @@ public class STABLE extends Protocol {
                 break;
             switch(hdr.type) {
             case StableHeader.STABLE_GOSSIP:
-                handleStableGossip(msg.getSrc(), hdr.stableDigest);
+                handleStableMessage(msg.getSrc(), hdr.stableDigest);
                 break;
             case StableHeader.STABILITY:
                 handleStabilityMessage(hdr.stableDigest, msg.getSrc());
@@ -246,14 +249,23 @@ public class STABLE extends Protocol {
 
         case Event.GET_DIGEST_STABLE_OK:
             Digest d=(Digest)evt.getArg(), copy=null;
-            synchronized(digest) {
-                int num_elements_expected=digest.size(), num_elements_updated;
-                num_elements_updated=updateLocalDigest(d, local_addr);
-                if(num_elements_updated == num_elements_expected)
+
+            synchronized(latest_local_digest) {
+                latest_local_digest.replace(d);
+                if(heard_from.contains(local_addr))
                     copy=digest.copy();
             }
+
+//            synchronized(digest) {
+//                boolean success=updateLocalDigest(d, local_addr, true);
+//                if(!success)
+//                    break;
+//                copy=digest.copy();
+//            }
+
             if(copy != null)
                 sendStableMessage(copy);
+
             break;
         }
 
@@ -303,23 +315,32 @@ public class STABLE extends Protocol {
         Vector tmp=v.getMembers();
         mbrs.clear();
         mbrs.addAll(tmp);
-        synchronized(digest) {
+        adjustSenders(digest, tmp);
+        adjustSenders(latest_local_digest, tmp);
+        resetDigest(tmp);
+        if(!initialized)
+            initialized=true;
+    }
+
+
+    /** Digest and members are guaranteed to be non-null */
+    private void adjustSenders(Digest d, Vector members) {
+        synchronized(d) {
             // 1. remove all members from digest who are not in the view
-            Iterator it=digest.senders.keySet().iterator();
+            Iterator it=d.senders.keySet().iterator();
             Address mbr;
             while(it.hasNext()) {
                 mbr=(Address)it.next();
-                if(!tmp.contains(mbr))
+                if(!members.contains(mbr))
                     it.remove();
             }
             // 2. add members to digest which are in the new view but not in the digest
-            for(int i=0; i < tmp.size(); i++) {
-                mbr=(Address)tmp.get(i);
-                if(!digest.contains(mbr))
-                    digest.add(mbr, -1, -1);
+            for(int i=0; i < members.size(); i++) {
+                mbr=(Address)members.get(i);
+                if(!d.contains(mbr))
+                    d.add(mbr, -1, -1);
             }
         }
-        resetHeardFromList(tmp);
     }
 
 
@@ -331,61 +352,83 @@ public class STABLE extends Protocol {
 
 
 
-    /** Update my own digest from a digest received by somebody else. Returns the number of elements updated
+    /** Update my own digest from a digest received by somebody else. Returns whether the update was successful.
      *  Needs to be called with a lock on digest */
-    private int updateLocalDigest(Digest d, Address sender) {
+    private boolean updateLocalDigest(Digest d, Address sender) {
         if(d == null || d.size() == 0)
-            return 0;
+            return false;
 
+        if(!initialized) {
+            if(log.isTraceEnabled())
+                log.trace("STABLE message will not be handled as I'm not yet initialized");
+            return false;
+        }
+
+//        if(self) {
+//            if(heard_from.contains(sender)) {
+//                resetHeardFromList(mbrs);
+//                digest.replace(d);
+//                if(log.isTraceEnabled())
+//                    log.trace("initialized digest from " + d);
+//                return true;
+//            }
+//            else
+//                return false;
+//        }
+
+        if(!digest.sameSenders(d)) {
+            if(log.isTraceEnabled())
+                log.trace(new StringBuffer("received a digest ").append(d.printHighSeqnos()).append(" from ").
+                          append(sender).append(" which has different members than mine (").
+                          append(digest.printHighSeqnos()).append("), discarding it and resetting heard_from list"));
+            // to avoid sending incorrect stability/stable msgs, we simply reset our heard_from list, see DESIGN
+            resetDigest(mbrs);
+            return false;
+        }
+
+        StringBuffer sb=null;
+        if(log.isTraceEnabled())
+            sb=new StringBuffer("my [").append(local_addr).append("] digest before: ").append(digest).
+                    append("\ndigest from ").append(sender).append(": ").append(d).append("\n");
         Address mbr;
-        long highest_seqno, my_highest_seqno;
-        long highest_seen_seqno, my_highest_seen_seqno;
+        long highest_seqno, my_highest_seqno, new_highest_seqno;
+        long highest_seen_seqno, my_highest_seen_seqno, new_highest_seen_seqno;
         Map.Entry entry;
         org.jgroups.protocols.pbcast.Digest.Entry val;
-        int num_elements_updated=0;
-
-        StringBuffer sb=new StringBuffer("my [").append(local_addr).append("] digest before: ").append(digest).
-                append("\ndigest from ").append(sender).append(": ").append(d).append("\n");
-
         for(Iterator it=d.senders.entrySet().iterator(); it.hasNext();) {
             entry=(Map.Entry)it.next();
             mbr=(Address)entry.getKey();
             val=(org.jgroups.protocols.pbcast.Digest.Entry)entry.getValue();
-            if(!digest.contains(mbr)) {
-                digest.add(mbr, val.low_seqno, val.high_seqno,  val.high_seqno_seen);
-            }
-            else {
-                highest_seqno=val.high_seqno;
-                highest_seen_seqno=val.high_seqno_seen;
+            highest_seqno=val.high_seqno;
+            highest_seen_seqno=val.high_seqno_seen;
 
-                // compute the minimum of the highest seqnos deliverable (for garbage collection)
-                my_highest_seqno=digest.highSeqnoAt(mbr);
-                digest.setHighSeqnoAt(mbr, Math.min(my_highest_seqno, highest_seqno));
+            // compute the minimum of the highest seqnos deliverable (for garbage collection)
+            my_highest_seqno=digest.highSeqnoAt(mbr);
+            // compute the maximum of the highest seqnos seen (for retransmission of last missing message)
+            my_highest_seen_seqno=digest.highSeqnoSeenAt(mbr);
 
-                // compute the maximum of the highest seqnos seen (for retransmission of last missing message)
-                my_highest_seen_seqno=digest.highSeqnoSeenAt(mbr);
-                digest.setHighSeqnoSeenAt(mbr, Math.max(my_highest_seen_seqno, highest_seen_seqno));
-            }
-            num_elements_updated++;
+            new_highest_seqno=Math.min(my_highest_seqno, highest_seqno);
+            new_highest_seen_seqno=Math.max(my_highest_seen_seqno, highest_seen_seqno);
+            digest.setHighestDeliveredAndSeenSeqnos(mbr, new_highest_seqno, new_highest_seen_seqno);
         }
-
-        sb.append("\nmy [").append(local_addr).append("] digest after: ").append(digest).append("\n");
-        sb.append("\n").append(num_elements_updated).append(" elements were updated\n");
-        if(log.isTraceEnabled()) // todo: remove
+        if(log.isTraceEnabled()) {
+            sb.append("\nmy [").append(local_addr).append("] digest after: ").append(digest).append("\n");
             log.trace(sb);
-
-        return num_elements_updated;
+        }
+        return true;
     }
 
 
 
-    private void resetHeardFromList(Vector new_members) {
+    private void resetDigest(Vector new_members) {
         if(new_members == null || new_members.size() == 0)
             return;
         synchronized(heard_from) {
             heard_from.clear();
             heard_from.addAll(new_members);
-            // heard_from.remove(local_addr); // I don't need to hear from myself
+        }
+        synchronized(digest) {
+            digest.replace(latest_local_digest);
         }
     }
 
@@ -393,7 +436,7 @@ public class STABLE extends Protocol {
         synchronized(heard_from) {
             heard_from.remove(mbr);
             if(heard_from.size() == 0) {
-                resetHeardFromList(this.mbrs);
+                resetDigest(this.mbrs);
                 return true;
             }
         }
@@ -489,9 +532,15 @@ public class STABLE extends Protocol {
      maximum of all seqnos will be taken to trigger possible retransmission of last missing seqno (see DESIGN
      for details).
      */
-    private void handleStableGossip(Address sender, Digest d) {
+    private void handleStableMessage(Address sender, Digest d) {
         if(d == null || sender == null) {
             if(log.isErrorEnabled()) log.error("digest or sender is null");
+            return;
+        }
+
+        if(!initialized) {
+            if(log.isTraceEnabled())
+                log.trace("STABLE message will not be handled as I'm not yet initialized");
             return;
         }
 
@@ -510,10 +559,8 @@ public class STABLE extends Protocol {
 
         Digest copy;
         synchronized(digest) {
-            int num_elements_expected=digest.size(), num_elements_updated;
-            num_elements_updated=updateLocalDigest(d, sender);
-            // we can only remove the sender from heard_from if *all* elements of my digest were updated
-            if(num_elements_updated != num_elements_expected)
+            boolean success=updateLocalDigest(d, sender);
+            if(!success) // we can only remove the sender from heard_from if *all* elements of my digest were updated
                 return;
             copy=digest.copy();
         }
@@ -577,6 +624,12 @@ public class STABLE extends Protocol {
             return;
         }
 
+        if(!initialized) {
+            if(log.isTraceEnabled())
+                log.trace("STABLE message will not be handled as I'm not yet initialized");
+            return;
+        }
+
         if(suspended) {
             if(log.isDebugEnabled()) {
                 log.debug("stability message will not be handled as I'm suspended");
@@ -595,9 +648,10 @@ public class STABLE extends Protocol {
                 log.debug("received digest (digest=" + d + ") which does not match my own digest ("+
                         this.digest + "): ignoring digest and re-initializing own digest");
             }
-            resetHeardFromList(mbrs);
             return;
         }
+
+        resetDigest(mbrs);
 
         // pass STABLE event down the stack, so NAKACK can garbage collect old messages
         passDown(new Event(Event.STABLE, d));
