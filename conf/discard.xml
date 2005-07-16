@@ -2,7 +2,7 @@
 <!--
 Discards 10% of all outgoing packets
 Author: Bela Ban
-Version: $Id: discard.xml,v 1.1 2005/07/16 08:55:31 belaban Exp $
+Version: $Id: discard.xml,v 1.2 2005/07/16 09:03:06 belaban Exp $
  -->
 <config>
     <UDP bind_addr="192.168.5.1"
@@ -24,6 +24,8 @@ Version: $Id: discard.xml,v 1.1 2005/07/16 08:55:31 belaban Exp $
     <DISCARD down="0.1"/>
     <PING timeout="2000"
           down_thread="false" up_thread="false" num_initial_members="3"/>
+    <MERGE2 max_interval="10000"
+        min_interval="5000"/>
     <FD_SOCK down_thread="false" up_thread="false"/>
     <pbcast.NAKACK max_xmit_size="60000"
                    use_mcast_xmit="false" gc_lag="50" 
