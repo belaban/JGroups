@@ -1,4 +1,4 @@
-$Id: DESIGN,v 1.2 2003/11/22 00:12:43 belaban Exp $
+$Id: DESIGN,v 1.3 2005/07/16 10:21:02 belaban Exp $
 
 			    Design Issues
 			    =============
@@ -127,7 +127,7 @@ identity. Similar scheme as the one used for sending messages.
 
 
 
-Handling of received gossips (PBCAST.HandleGossip() method)
+Handling of received gossips (PBCAST.handleGossip() method)
 -----------------------------------------------------------
 
 First make sure that the sender of the gossip is not null. If it was
@@ -439,4 +439,40 @@ Reception of MergeView:
 - If not coord anymore: become participant
 - Send VIEW_CHANGE (with MergeView as parameter) up the stack
 - Set merging to false
+
+
+
+
+pbcast.STABLE protocol
+----------------------
+
+- Every member maintains a digest: the highest seqno *delivered* for each member, e.g.
+  A:22, B:2, C:19. This means the highest delivered messages were 22 for A, 2 for B and 19 for C.
+  Note that the highest delivered message is always <= the highest *see* (or *received*) message
+- Periodically (or after having received a certain number of bytes), every member multicasts its digest
+- When another member receives the digest, it updates its own digest such that the minimum of its own
+  seqnos per member and the seqnos from the other digest becomes the new seqnos
+- Every member also maintains a heard_from list, which is initialized to all members
+- When a digest is received, we update our own digest, then remove the sender from the heard_from list
+- When the heard_from list is empty, because we have heard from all the members, we send our digest as
+  a *stability* message. This is done in a randomly staggered fashion so that we can avoid everyone
+  sending their stability digest at the same time. When a member receives a stability digest, it cancels
+  the sending of its own stability digest
+- When a member receives a STABILITY message, it can be sure that everyone agreed on it, and therefore
+  removes all seqnos <= the ones in the stability digest
+- One problem is that everyone needs to agree, we cannot have unilateral action. The result could be that
+  someone removes messages from its store that have not yet been seen by everyone, therefore it cannot
+  serve those messages when a retransmission is requested
+  One way in which this can happen is as follows:
+  - 2 members: A,B
+  - A receives a stable message from  B, and removes B from its heard_from list
+  - A sets its own digest, but this time it has 3 members ! (A,B,C)
+  - A removes itself from the heard_from list, and since that list is now empty, it sends a
+    stability message {A,B,C}. However, B has *not* agreed on C's highest delivered seqnos, so this is
+    unilateral action and may cause the above problem.
+    Solution: when any member receives a digest that doesn't have the exact same members,
+    it does the following:
+    - Reset the heard_from list
+    - This will ensure that (a) no stable message is sent and (b) no stability message is sent
+
 
