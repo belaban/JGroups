@@ -43,7 +43,7 @@ import java.util.*;
  * The {@link #receive(org.jgroups.Address, java.net.InetAddress, int, byte[])} method must
  * be called by subclasses when a unicast or multicast message has been received
  * @author Bela Ban
- * @version $Id: TP.java,v 1.12 2005/07/15 09:34:58 belaban Exp $
+ * @version $Id: TP.java,v 1.13 2005/07/16 08:52:09 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -940,7 +940,7 @@ public abstract class TP extends Protocol {
                     handleIncomingPacket(entry.dest, entry.sender, entry.buf, entry.offset, entry.length);
                 }
                 catch(QueueClosedException closed_ex) {
-                    if(log.isDebugEnabled()) log.debug("packet_handler thread terminating");
+                    if(log.isTraceEnabled()) log.trace("packet_handler thread terminating");
                     break;
                 }
 
