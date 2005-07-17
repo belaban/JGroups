@@ -1,9 +1,9 @@
-// $Id: Command.java,v 1.1 2003/09/09 01:24:12 belaban Exp $
+// $Id: Command.java,v 1.2 2005/07/17 11:33:58 chrislott Exp $
 
 package org.jgroups.util;
 
 /**
-  * The Command patttern (se Gamma et al.). Implementations would provide their
+  * The Command patttern (see Gamma et al.). Implementations would provide their
   * own <code>execute</code> method.
   * @author Bela Ban
   */

@@ -1,4 +1,4 @@
-// $Id: DistributedQueue.java,v 1.15 2005/02/25 07:06:07 belaban Exp $
+// $Id: DistributedQueue.java,v 1.16 2005/07/17 11:36:40 chrislott Exp $
 package org.jgroups.blocks;
 
 import org.apache.commons.logging.Log;
@@ -13,7 +13,7 @@ import java.util.*;
 
 /**
  * Provides the abstraction of a java.util.LinkedList that is replicated at several
- * locations. Any change to the list (reset, add, remove etc) will transparently be
+ * locations. Any change to the list (reset, add, remove, etc.) will transparently be
  * propagated to all replicas in the group. All read-only methods will always access the
  * local replica.<p>
  * Both keys and values added to the list <em>must be serializable</em>, the reason

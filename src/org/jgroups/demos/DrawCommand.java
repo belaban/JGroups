@@ -1,10 +1,14 @@
-// $Id: DrawCommand.java,v 1.3 2004/09/23 16:29:35 belaban Exp $
+// $Id: DrawCommand.java,v 1.4 2005/07/17 11:36:42 chrislott Exp $
 
 package org.jgroups.demos;
 
 import java.io.Serializable;
 
-
+/**
+ * Encapsulates information about a draw command.
+ * Used by the {@link Draw} and other demos.
+ *
+ */
 public class DrawCommand implements Serializable {
     static final int DRAW=1;
     static final int CLEAR=2;

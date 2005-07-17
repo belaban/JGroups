@@ -9,9 +9,9 @@ import java.io.*;
 
 
 /**
- * Generic transport header, used by TP
+ * Generic transport header, used by TP.
  * @author Bela Ban
- * @Version $Id: TpHeader.java,v 1.2 2005/06/24 11:20:41 belaban Exp $
+ * @version $Id: TpHeader.java,v 1.3 2005/07/17 11:36:15 chrislott Exp $
  */
 public class TpHeader extends Header implements Streamable {
     public String channel_name=null;

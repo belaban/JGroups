@@ -30,20 +30,19 @@ import java.util.*;
  * </ul>
  * A subclass has to override
  * <ul>
- * <li>{@link #sendToAllMembers(byte[])}
- * <li>{@link #sendToSingleMember(org.jgroups.Address, byte[])}
+ * <li>{@link #sendToAllMembers(byte[], int, int)}
+ * <li>{@link #sendToSingleMember(org.jgroups.Address, byte[], int, int)}
  * <li>{@link #init()}
  * <li>{@link #start()}: subclasses <em>must</em> call super.start() <em>after</em> they initialize themselves
- * (e.g. created their sockets). The local address must also have been set, so that {@link #getLocalAddress()} returns
- * a non-null address.
+ * (e.g., created their sockets). 
  * <li>{@link #stop()}: subclasses <em>must</em> call super.stop() after they deinitialized themselves
  * <li>{@link #destroy()}
  * </ul>
- * The create() or start() method has to create a local address..</br>
- * The {@link #receive(org.jgroups.Address, java.net.InetAddress, int, byte[])} method must
- * be called by subclasses when a unicast or multicast message has been received
+ * The create() or start() method has to create a local address.<br>
+ * The {@link #receive(Address, Address, byte[], int, int)} method must
+ * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.13 2005/07/16 08:52:09 belaban Exp $
+ * @version $Id: TP.java,v 1.14 2005/07/17 11:36:15 chrislott Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -149,8 +148,8 @@ public abstract class TP extends Protocol {
 
 
     /**
-     * public constructor. creates the TP protocol, and initializes the
-     * state variables, does however not start any sockets or threads
+     * Creates the TP protocol, and initializes the
+     * state variables, does however not start any sockets or threads.
      */
     public TP() {
         ;
@@ -430,8 +429,9 @@ public abstract class TP extends Protocol {
 
 
     /**
-     * DON'T REMOVE ! This prevents the up-handler thread to be created, which essentially is superfluous:
+     * This prevents the up-handler thread to be created, which essentially is superfluous:
      * messages are received from the network rather than from a layer below.
+     * DON'T REMOVE ! 
      */
     public void startUpHandler() {
         ;
@@ -538,9 +538,17 @@ public abstract class TP extends Protocol {
             msg.setSrc(local_addr);
     }
 
-
-
-    protected void receive(Address dest, Address sender, byte[] data, int offset, int length) {
+    /**
+     * Subclasses must call this method when a unicast or multicast message has been received.
+     * Declared final so subclasses cannot override this method.
+     * 
+     * @param dest
+     * @param sender
+     * @param data
+     * @param offset
+     * @param length
+     */
+    protected final void receive(Address dest, Address sender, byte[] data, int offset, int length) {
         if(data == null) return;
 
         if(length == 4) {  // received a diagnostics probe

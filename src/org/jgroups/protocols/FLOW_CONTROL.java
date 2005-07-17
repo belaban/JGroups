@@ -1,4 +1,4 @@
-// $Id: FLOW_CONTROL.java,v 1.7 2005/05/30 14:31:07 belaban Exp $
+// $Id: FLOW_CONTROL.java,v 1.8 2005/07/17 11:36:15 chrislott Exp $
 
 package org.jgroups.protocols;
 
@@ -27,13 +27,14 @@ import java.util.Properties;
  * FCInfo(flow control info) from all the receivers is gathered at the sender, and current RTT
  * is computed. If the current RTT is greater than estimated RTT window size and margin are reduced,
  * otherwise they are increased.
- * <br>
+ * <p>
  * Horizontal interaction is initiated by the sender with the other group members.
- * <br>
+ * <p>
  * <em>Note: A reliable transport layer is required for this protocol to function properly.</em>
- * With little effort this can be made completely independent.<br/>
- * todo: handle view changes (e.g. members {A,B,C}, blocked on C, and C crashes --> unblock
- * todo: block on down() instead of sending BLOCK_SEND
+ * With little effort this can be made completely independent.
+ * <p>
+ * @todo Handle view changes (e.g., members {A,B,C}, blocked on C, and C crashes --&gt; unblock).
+ * <br> Also block on down() instead of sending BLOCK_SEND.
  *
  * @author Ananda Bollu
  */

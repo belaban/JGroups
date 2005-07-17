@@ -140,9 +140,8 @@ public abstract class AbstractService implements MembershipListener {
     }
 
     /**
-     * This method is called when new view is installed. We make local copy
-     * of view members. If any other information is needed, it can be accessed
-     * via {@link #getChannel()} method.
+     * This method is called when new view is installed. We make a local copy
+     * of view members. 
      *
      * @param view new view that was accepted.
      */
@@ -184,8 +183,8 @@ public abstract class AbstractService implements MembershipListener {
     }
     
     /**
-     * Stop standalone thread started with {@link start()} method. If no thread
-     * were started this method does nothing.
+     * Stops standalone thread started with {@link #start()} method. If no thread
+     * was started this method does nothing.
      */
     public void stop() {
 	if (!runThread)

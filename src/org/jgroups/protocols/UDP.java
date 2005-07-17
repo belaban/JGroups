@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.92 2005/07/04 15:03:30 belaban Exp $
+// $Id: UDP.java,v 1.93 2005/07/17 11:36:15 chrislott Exp $
 
 package org.jgroups.protocols;
 
@@ -21,18 +21,21 @@ import java.util.*;
  * be multicast (to all group members), whereas point-to-point messages
  * (msg.dest != null) will be unicast to a single member. Uses a multicast and
  * a unicast socket.<p>
- * The following properties are being read by the UDP protocol<p>
- * param mcast_addr - the multicast address to use default is 228.8.8.8<br>
- * param mcast_port - (int) the port that the multicast is sent on default is 7600<br>
- * param ip_mcast - (boolean) flag whether to use IP multicast - default is true<br>
- * param ip_ttl - Set the default time-to-live for multicast packets sent out on this
- * socket. default is 32<br>
- * param use_packet_handler - If set, the mcast and ucast receiver threads just put
+ * The following properties are read by the UDP protocol:
+ * <ul>
+ * <li> param mcast_addr - the multicast address to use; default is 228.8.8.8.
+ * <li> param mcast_port - (int) the port that the multicast is sent on; default is 7600
+ * <li> param ip_mcast - (boolean) flag whether to use IP multicast; default is true.
+ * <li> param ip_ttl - the default time-to-live for multicast packets sent out on this
+ * socket; default is 32.
+ * <li> param use_packet_handler - boolean, defaults to false.  
+ * If set, the mcast and ucast receiver threads just put
  * the datagram's payload (a byte buffer) into a queue, from where a separate thread
  * will dequeue and handle them (unmarshal and pass up). This frees the receiver
  * threads from having to do message unmarshalling; this time can now be spent
  * receiving packets. If you have lots of retransmissions because of network
- * input buffer overflow, consider setting this property to true (default is false).
+ * input buffer overflow, consider setting this property to true.
+ * </ul>
  * @author Bela Ban
  */
 public class UDP extends TP implements Runnable {
@@ -117,8 +120,8 @@ public class UDP extends TP implements Runnable {
 
 
     /**
-     * public constructor. creates the UDP protocol, and initializes the
-     * state variables, does however not start any sockets or threads
+     * Creates the UDP protocol, and initializes the
+     * state variables, does however not start any sockets or threads.
      */
     public UDP() {
         ;
@@ -127,12 +130,14 @@ public class UDP extends TP implements Runnable {
 
 
     /**
-     * Setup the Protocol instance acording to the configuration string
-     * The following properties are being read by the UDP protocol
-     * param mcast_addr - the multicast address to use default is 228.8.8.8
-     * param mcast_port - (int) the port that the multicast is sent on default is 7600
-     * param ip_mcast - (boolean) flag whether to use IP multicast - default is true
-     * param ip_ttl - Set the default time-to-live for multicast packets sent out on this socket. default is 32
+     * Setup the Protocol instance acording to the configuration string.
+     * The following properties are read by the UDP protocol:
+     * <ul>
+     * <li> param mcast_addr - the multicast address to use default is 228.8.8.8
+     * <li> param mcast_port - (int) the port that the multicast is sent on default is 7600
+     * <li> param ip_mcast - (boolean) flag whether to use IP multicast - default is true
+     * <li> param ip_ttl - Set the default time-to-live for multicast packets sent out on this socket. default is 32
+     * </ul>
      * @return true if no other properties are left.
      *         false if the properties still have data in them, ie ,
      *         properties are left over and not handled by the protocol stack

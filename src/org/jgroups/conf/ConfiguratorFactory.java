@@ -1,4 +1,4 @@
-// $Id: ConfiguratorFactory.java,v 1.15 2005/06/14 16:24:22 belaban Exp $
+// $Id: ConfiguratorFactory.java,v 1.16 2005/07/17 11:36:41 chrislott Exp $
 
 package org.jgroups.conf;
 
@@ -66,9 +66,9 @@ public class ConfiguratorFactory {
 
     /**
      * Returns a protocol stack configurator based on the XML configuration
-     * provided at the specified URL.
+     * provided by the specified File.
      *
-     * @param url a URL pointing to a JGroups XML configuration.
+     * @param file a File with a JGroups XML configuration.
      *
      * @return a <code>ProtocolStackConfigurator</code> containing the stack
      *         configuration.

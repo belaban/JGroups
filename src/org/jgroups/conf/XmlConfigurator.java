@@ -1,4 +1,4 @@
-// $Id: XmlConfigurator.java,v 1.13 2005/05/30 14:31:00 belaban Exp $
+// $Id: XmlConfigurator.java,v 1.14 2005/07/17 11:36:41 chrislott Exp $
 
 package org.jgroups.conf;
 
@@ -76,7 +76,7 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
     /**
      *
      * @param convert If false: print old plain output, else print new XML format
-     * @return
+     * @return String with protocol stack in specified format
      */
     public String getProtocolStackString(boolean convert) {
         StringBuffer buf=new StringBuffer();

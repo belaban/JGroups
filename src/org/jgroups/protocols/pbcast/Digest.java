@@ -1,4 +1,4 @@
-// $Id: Digest.java,v 1.13 2005/07/16 12:12:45 belaban Exp $
+// $Id: Digest.java,v 1.14 2005/07/17 11:35:04 chrislott Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -17,12 +17,13 @@ import java.util.Set;
 
 
 /**
- * A message digest, which is used e.g. by the PBCAST layer for gossiping (also used by NAKACK for
+ * A message digest, which is used by the PBCAST layer for gossiping (also used by NAKACK for
  * keeping track of current seqnos for all members). It contains pairs of senders and a range of seqnos
  * (low and high), where each sender is associated with its highest and lowest seqnos seen so far.  That
  * is, the lowest seqno which was not yet garbage-collected and the highest that was seen so far and is
  * deliverable (or was already delivered) to the application.  A range of [0 - 0] means no messages have
- * been received yet. <p> April 3 2001 (bela): Added high_seqnos_seen member. It is used to disseminate
+ * been received yet. 
+ * <p> April 3 2001 (bela): Added high_seqnos_seen member. It is used to disseminate
  * information about the last (highest) message M received from a sender P. Since we might be using a
  * negative acknowledgment message numbering scheme, we would never know if the last message was
  * lost. Therefore we periodically gossip and include the last message seqno. Members who haven't seen
@@ -181,9 +182,9 @@ public class Digest implements Externalizable, Streamable {
 
 
     /**
-     * Compares two digests and returns true if the senders are the same, otherwise false
+     * Compares two digests and returns true if the senders are the same, otherwise false.
      * @param other
-     * @return
+     * @return True if senders are the same, otherwise false.
      */
     public boolean sameSenders(Digest other) {
         if(other == null) return false;
@@ -195,7 +196,9 @@ public class Digest implements Externalizable, Streamable {
     }
 
 
-    /** Increment the sender's high_seqno by 1 */
+    /** 
+     * Increments the sender's high_seqno by 1.
+     */
     public void incrementHighSeqno(Address sender) {
         Entry entry=(Entry)senders.get(sender);
         if(entry == null)

@@ -32,8 +32,8 @@ import java.util.*;
  * the unicast routing caches should ensure that unicasts are only sent via 1 interface in almost all cases.
  * 
  * @author Bela Ban Oct 2003
- * @version $Id: UDP_NIO.java,v 1.1 2005/06/23 13:31:08 belaban Exp $
- * todo: sending of dummy packets
+ * @version $Id: UDP_NIO.java,v 1.2 2005/07/17 11:36:16 chrislott Exp $
+ * @todo Sending of dummy packets.
  */
 public class UDP_NIO extends Protocol implements  Receiver {
 
@@ -142,8 +142,8 @@ public class UDP_NIO extends Protocol implements  Receiver {
 
 
     /**
-     * Public constructor. creates the UDP protocol, and initializes the
-     * state variables, does however not start any sockets or threads
+     * Creates the UDP_NIO protocol, and initializes the
+     * state variables, does however not start any sockets or threads.
      */
     public UDP_NIO() {
     }
@@ -344,13 +344,14 @@ public class UDP_NIO extends Protocol implements  Receiver {
 
 
     /**
-     * Setup the Protocol instance acording to the configuration string
-     * The following properties are being read by the UDP protocol
-     * param mcast_addr - the multicast address to use default is 224.0.0.200
-     * param mcast_port - (int) the port that the multicast is sent on default is 7500
-     * param ip_mcast - (boolean) flag whether to use IP multicast - default is true
-     * param ip_ttl - Set the default time-to-live for multicast packets sent out on this socket. default is 32
-     * 
+     * Setup the Protocol instance acording to the configuration string.
+     * The following properties are being read by the UDP protocol:
+     * <ul>
+     * <li> param mcast_addr - the multicast address to use default is 224.0.0.200
+     * <li> param mcast_port - (int) the port that the multicast is sent on default is 7500
+     * <li> param ip_mcast - (boolean) flag whether to use IP multicast - default is true
+     * <li> param ip_ttl - Set the default time-to-live for multicast packets sent out on this socket. default is 32
+     * </ul>
      * @return true if no other properties are left.
      *         false if the properties still have data in them, ie ,
      *         properties are left over and not handled by the protocol stack
@@ -497,8 +498,9 @@ public class UDP_NIO extends Protocol implements  Receiver {
 
 
     /**
-     * DON'T REMOVE ! This prevents the up-handler thread to be created, which essentially is superfluous:
+     * This prevents the up-handler thread to be created, which essentially is superfluous:
      * messages are received from the network rather than from a layer below.
+     * DON'T REMOVE ! 
      */
     public void startUpHandler() {
         ;

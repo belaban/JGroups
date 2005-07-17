@@ -1,4 +1,4 @@
-// $Id: JMS.java,v 1.11 2005/04/15 13:17:02 belaban Exp $ 
+// $Id: JMS.java,v 1.12 2005/07/17 11:36:15 chrislott Exp $ 
 
 package org.jgroups.protocols;
 
@@ -532,8 +532,7 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
          * Current implementation uses a hash mark <code>'#'</code> to determine
          * if the address is a unicast or multicast. Therefore, this character is
          * considered as reserved and is not allowed in the <code>address</code>
-         * parameter passed to the {@link #JMSAddress(String, boolean)} 
-         * constructor.
+         * parameter passed to this constructor.
          * 
          * @param address string representing the address of the node connected
          * to the JMS topic, usually, a value of 
@@ -577,7 +576,7 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
          * Get the node address.
          * 
          * @return node address in the form passed to the constructor
-         * {@link #JMSAddress(String, boolean)}.
+         * {@link #JMS.JMSAddress(String, boolean)}.
          */
         public String getAddress() { return address; }
 

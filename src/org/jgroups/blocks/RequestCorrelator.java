@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.19 2005/06/30 15:39:57 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.20 2005/07/17 11:36:40 chrislott Exp $
 
 package org.jgroups.blocks;
 
@@ -29,7 +29,7 @@ import java.util.List;
  * the corresponding entry may be removed.
  * <p>
  * <code>RequestCorrelator</code> can be installed at both client and server
- * sides, it can also switch roles dynamically, i.e. send a request and at
+ * sides, it can also switch roles dynamically; i.e., send a request and at
  * the same time process an incoming request (when local delivery is enabled,
  * this is actually the default).
  * <p>
@@ -378,7 +378,7 @@ public class RequestCorrelator {
 
 
     /**
-     * <tt>Event.SUSPECT</tt> event received from a layer below
+     * <tt>Event.SUSPECT</tt> event received from a layer below.
      * <p>
      * All response collectors currently registered will
      * be notified that <code>mbr</code> may have crashed, so they won't
@@ -404,7 +404,7 @@ public class RequestCorrelator {
 
 
     /**
-     * <tt>Event.VIEW_CHANGE</tt> event received from a layer below
+     * <tt>Event.VIEW_CHANGE</tt> event received from a layer below.
      * <p>
      * Mark all responses from members that are not in new_view as
      * NOT_RECEIVED.

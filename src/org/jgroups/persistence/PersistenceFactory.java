@@ -3,7 +3,7 @@ package org.jgroups.persistence;
 /**
  * @author Mandar Shinde
  * This class is the factory to get access to any DB based or file based
- * implementation. None of the implemenations should expose directly
+ * implementation. None of the implementations should expose directly
  * to user for migration purposes
  */
 

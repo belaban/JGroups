@@ -1,4 +1,4 @@
-//$Id: TOTAL_TOKEN.java,v 1.10 2005/07/12 09:27:26 belaban Exp $
+//$Id: TOTAL_TOKEN.java,v 1.11 2005/07/17 11:36:15 chrislott Exp $
 
 package org.jgroups.protocols;
 
@@ -22,7 +22,7 @@ import java.util.*;
 /**
  * <p>
  * Total order implementation based on <a href="http://citeseer.nj.nec.com/amir95totem.html">
- * The Totem Single-Ring Ordering and Membership Protocol</a>
+ * The Totem Single-Ring Ordering and Membership Protocol</a>.
  * <p>
  *
  * <p>
@@ -49,7 +49,7 @@ import java.util.*;
  *
  *
  *@author Vladimir Blagojevic vladimir@cs.yorku.ca
- *@version $Revision: 1.10 $
+ *@version $Revision: 1.11 $
  *
  *@see org.jgroups.protocols.ring.RingNodeFlowControl
  *@see org.jgroups.protocols.ring.RingNode

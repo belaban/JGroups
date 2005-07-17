@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindow.java,v 1.23 2005/06/08 12:36:42 belaban Exp $
+// $Id: NakReceiverWindow.java,v 1.24 2005/07/17 11:34:20 chrislott Exp $
 
 
 package org.jgroups.stack;
@@ -428,7 +428,7 @@ public class NakReceiverWindow {
 
 
     /**
-     * Returns the highest deliverable seqno, e.g. for 1,2,3,5,6 it would
+     * Returns the highest deliverable seqno; e.g., for 1,2,3,5,6 it would
      * be 3.
      *
      * @see NakReceiverWindow#getHighestReceived
@@ -501,8 +501,8 @@ public class NakReceiverWindow {
 
     /**
      * Returns the highest sequence number received so far (which may be
-     * higher than the highest seqno <em>delivered</em> so far, e.g. for
-     * 1,2,3,5,6 it would be 6
+     * higher than the highest seqno <em>delivered</em> so far; e.g., for
+     * 1,2,3,5,6 it would be 6.
      *
      * @see NakReceiverWindow#getHighestSeen
      */
@@ -638,9 +638,9 @@ public class NakReceiverWindow {
     }
 
     /**
-     * Returns the message from received_msgs or delivered_msgs
-     * @param seqno
-     * @return
+     * Returns the message from received_msgs or delivered_msgs.
+     * @param sequence_num
+     * @return Message from received_msgs or delivered_msgs.
      */
     public Message get(long sequence_num) {
         Message msg;

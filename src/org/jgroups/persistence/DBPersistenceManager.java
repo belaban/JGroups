@@ -116,10 +116,10 @@ public class DBPersistenceManager implements PersistenceManager {
 
 
     /**
-     * Save new NV pair as serializable objects or if already exist; store
-     * new state
-     * @param Serializable;
-     * @param Serializable;
+     * Saves NV pair as serializable object; 
+     * creates if new, stores new state if already exists.
+     * @param key
+     * @param val
      * @exception CannotPersistException;
      */
     public void save(Serializable key, Serializable val) throws CannotPersistException {
@@ -177,9 +177,8 @@ public class DBPersistenceManager implements PersistenceManager {
 
 
     /**
-     * Used to remove existing entry
-     * @param Serializable; key
-     * @return Serializable; value
+     * Removes existing entry.
+     * @param key
      * @exception CannotRemoveException;
      */
     public Serializable remove(Serializable key) throws CannotRemoveException {
@@ -248,8 +247,8 @@ public class DBPersistenceManager implements PersistenceManager {
 
 
     /**
-     * Used to save all row entries for the map in to DB
-     * @param Map;
+     * Saves all row entries for the map to DB.
+     * @param map
      * @exception CannotPersistException;
      */
     public synchronized void saveAll(Map map) throws CannotPersistException {

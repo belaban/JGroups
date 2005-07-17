@@ -1,4 +1,4 @@
-// $Id: AUTOCONF.java,v 1.12 2005/05/30 14:31:07 belaban Exp $
+// $Id: AUTOCONF.java,v 1.13 2005/07/17 11:36:15 chrislott Exp $
 
 package org.jgroups.protocols;
 
@@ -17,8 +17,10 @@ import java.util.Properties;
  * Senses the network configuration when it is initialized (in init()) and sends a CONFIG event up
  * and down the stack. The CONFIG event contains a hashmap, with strings as keys (e.g. "frag_size")
  * and Objects as values. Certain protocols can set some of their properties when receiving the CONFIG
- * event.<br>
- * This protocol should be placed above the transport protocol (e.g. UDP). It is not needed for TCP.<br>
+ * event.
+ * <p>
+ * This protocol should be placed above the transport protocol (e.g. UDP). It is not needed for TCP.
+ * <p>
  * Example: senses the network send and receive buffers, plus the max size of a message to be sent and
  * generates a CONFIG event containing "frag_size", "send_buf_size" and "receive_buf_size" keys.
  * 
@@ -112,7 +114,7 @@ public class AUTOCONF extends Protocol {
 
     /**
      * Tries to find out the max number of bytes in a DatagramPacket we can send by sending increasingly
-     * larger packets, until there is an exception (e.g. java.io.IOException: message too long)
+     * larger packets, until there is an exception (e.g., java.io.IOException: message too long).
      */
     public int senseMaxFragSize() {
         int max_send=32000;

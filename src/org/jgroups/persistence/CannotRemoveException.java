@@ -11,8 +11,8 @@ public class CannotRemoveException extends Exception
 {
 
     /**
-     * @param Throwable;
-     * @param String; implementor filling in runtime reason
+     * @param t
+     * @param reason implementor-specified runtime reason
      */
     public CannotRemoveException(Throwable t, String reason)
     {

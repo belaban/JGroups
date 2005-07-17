@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.8 2005/05/30 14:31:07 belaban Exp $
+// $Id: STABLE.java,v 1.9 2005/07/17 11:36:15 chrislott Exp $
 
 package org.jgroups.protocols;
 
@@ -15,7 +15,7 @@ import java.util.Vector;
 
 
 /**
- * Computes the broadcast messages that are stable, i.e. have been received
+ * Computes the broadcast messages that are stable; i.e., that have been received
  * by all members. Sends STABLE events up the stack when this is the case.
  * Uses a probabilistic scheme to do so, as described in:<br>
  * GSGC: An Efficient Gossip-Style Garbage Collection Scheme for Scalable

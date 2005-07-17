@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.33 2005/07/04 18:06:58 belaban Exp $
+// $Id: ConnectionTable.java,v 1.34 2005/07/17 11:36:40 chrislott Exp $
 
 package org.jgroups.blocks;
 
@@ -28,8 +28,9 @@ import java.util.Vector;
  * connection.  For incoming messages, one server socket is created at startup. For each new incoming
  * client connecting, a new thread from a thread pool is allocated and listens for incoming messages
  * until the socket is closed by the peer.<br>Sockets/threads with no activity will be killed
- * after some time.<br> Incoming messages from any of the sockets can be received by setting the
- * message listener.
+ * after some time.
+ * <p>
+ * Incoming messages from any of the sockets can be received by setting the message listener.
  * @author Bela Ban
  */
 public class ConnectionTable implements Runnable {
@@ -66,14 +67,14 @@ public class ConnectionTable implements Runnable {
 
 
 
-    /** Used for message reception */
+    /** Used for message reception. */
     public interface Receiver {
         void receive(Address sender, byte[] data, int offset, int length);
     }
 
 
 
-    /** Used to be notified about connection establishment and teardown */
+    /** Used to be notified about connection establishment and teardown. */
     public interface ConnectionListener {
         void connectionOpened(Address peer_addr);
         void connectionClosed(Address peer_addr);
@@ -145,8 +146,7 @@ public class ConnectionTable implements Runnable {
      * ConnectionTable including a connection reaper. Connections that have been idle for more than conn_expire_time
      * milliseconds will be closed and removed from the connection table. On next access they will be re-created.
      *
-     * @param srv_port The port on which the server will listen.If this port is reserved, the next
-     *                 free port will be taken (incrementing srv_port).
+     * @param r The Receiver 
      * @param bind_addr The host name or IP address of the interface to which the server socket will bind.
      *                  This is interesting only in multi-homed systems. If bind_addr is null, the
      *		        server socket will bind to the first available interface (e.g. /dev/hme0 on

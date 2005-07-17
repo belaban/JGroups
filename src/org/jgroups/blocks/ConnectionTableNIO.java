@@ -1,4 +1,4 @@
-// $Id: ConnectionTableNIO.java,v 1.2 2005/06/30 15:37:09 belaban Exp $
+// $Id: ConnectionTableNIO.java,v 1.3 2005/07/17 11:36:40 chrislott Exp $
 
 package org.jgroups.blocks;
 
@@ -24,8 +24,9 @@ import java.util.Set;
  * connection.  For incoming messages, one server socket is created at startup. For each new incoming
  * client connecting, a new thread from a thread pool is allocated and listens for incoming messages
  * until the socket is closed by the peer.<br>Sockets/threads with no activity will be killed
- * after some time.<br> Incoming messages from any of the sockets can be received by setting the
- * message listener.
+ * after some time.
+ * <p>
+ * Incoming messages from any of the sockets can be received by setting the message listener.
  *
  * @author Bela Ban
  */

@@ -1,4 +1,4 @@
-// $Id: ThreadPool.java,v 1.8 2004/09/23 16:29:56 belaban Exp $
+// $Id: ThreadPool.java,v 1.9 2005/07/17 11:33:58 chrislott Exp $
 
 package org.jgroups.util;
 
@@ -13,8 +13,7 @@ import org.apache.commons.logging.LogFactory;
  * and returned, unless the pool limit is reached, in which case <code>null</code> is returned.
  * Creates threads only as needed, up to the MAX_NUM limit. However, does not shrink the pool
  * when more threads become available than are used.
- * todo: Shrink thread pool if threads are unused after some configurable time
- * 
+ * @todo Shrink thread pool if threads are unused after some configurable time.
  * @author Bela Ban
  */
 public class ThreadPool {

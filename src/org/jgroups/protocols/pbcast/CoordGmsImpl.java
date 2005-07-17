@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.23 2005/07/12 11:45:40 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.24 2005/07/17 11:35:03 chrislott Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -219,7 +219,7 @@ public class CoordGmsImpl extends GmsImpl {
     }
 
     /**
-     * If merge_id != this.merge_id --> discard
+     * If merge_id is not equal to this.merge_id then discard.
      * Else cast the view/digest to all members of this group.
      */
     public void handleMergeView(MergeData data, ViewId merge_id) {
