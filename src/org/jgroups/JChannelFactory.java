@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.3 2004/09/22 10:34:16 belaban Exp $
+// $Id: JChannelFactory.java,v 1.4 2005/07/17 11:38:05 chrislott Exp $
 
 package org.jgroups;
 
@@ -14,6 +14,7 @@ import org.jgroups.conf.ProtocolStackConfigurator;
 /**
  * JChannelFactory creates pure Java implementations of the <code>Channel</code>
  * interface.
+ * See {@link JChannel} for a discussion of channel properties.
  */
 public class JChannelFactory implements ChannelFactory {
     private ProtocolStackConfigurator _configuration;

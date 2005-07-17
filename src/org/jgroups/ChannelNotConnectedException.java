@@ -1,8 +1,10 @@
-// $Id: ChannelNotConnectedException.java,v 1.1 2003/09/09 01:24:07 belaban Exp $
+// $Id: ChannelNotConnectedException.java,v 1.2 2005/07/17 11:38:05 chrislott Exp $
 
 package org.jgroups;
 
-
+/**
+ * Thrown if an operation is attemped on an unconnected channel.
+ */
 public class ChannelNotConnectedException extends ChannelException {
 
     public ChannelNotConnectedException() {

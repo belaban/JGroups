@@ -1,4 +1,4 @@
-// $Id: View.java,v 1.8 2005/07/12 11:45:42 belaban Exp $
+// $Id: View.java,v 1.9 2005/07/17 11:38:05 chrislott Exp $
 
 package org.jgroups;
 
@@ -8,14 +8,13 @@ import org.jgroups.util.Util;
 
 import java.io.*;
 import java.util.Vector;
-import java.util.Iterator;
 
 
 /**
- * A view is a local representation of the current membership of a group
- * Only one view is installed in a channel at a time
- * Views contain the address of its creator, an ID and a list of member addresses
- * These adresses are ordered, and the first address is always the coordinator of the view
+ * A view is a local representation of the current membership of a group.
+ * Only one view is installed in a channel at a time.
+ * Views contain the address of its creator, an ID and a list of member addresses.
+ * These adresses are ordered, and the first address is always the coordinator of the view.
  * This way, each member of the group knows who the new coordinator will be if the current one
  * crashes or leaves the group.
  * The views are sent between members using the VIEW_CHANGE event.

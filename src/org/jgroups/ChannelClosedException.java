@@ -1,8 +1,10 @@
-// $Id: ChannelClosedException.java,v 1.2 2003/11/27 21:36:46 belaban Exp $
+// $Id: ChannelClosedException.java,v 1.3 2005/07/17 11:38:05 chrislott Exp $
 
 package org.jgroups;
 
-
+/**
+ * Thrown if an operation is attemped on a closed channel.
+ */
 public class ChannelClosedException extends ChannelException {
 
     public ChannelClosedException() {

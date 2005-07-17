@@ -1,11 +1,13 @@
-// $Id: TimeoutException.java,v 1.2 2005/01/07 22:44:46 ovidiuf Exp $
+// $Id: TimeoutException.java,v 1.3 2005/07/17 11:38:05 chrislott Exp $
 
 package org.jgroups;
 
 import java.util.List;
 
 
-
+/**
+ * Thrown if members fail to respond in time.
+ */
 public class TimeoutException extends Exception {
     List failed_mbrs=null; // members that failed responding
 
