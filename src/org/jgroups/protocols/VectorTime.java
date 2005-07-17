@@ -1,4 +1,4 @@
-// $Id: VectorTime.java,v 1.4 2005/04/12 06:14:35 belaban Exp $
+// $Id: VectorTime.java,v 1.5 2005/07/17 11:36:15 chrislott Exp $
 
 
 package org.jgroups.protocols;
@@ -13,7 +13,7 @@ import java.util.*;
  * Vector timestamp used in CAUSAL order protocol stack
  *
  * @author Vladimir Blagojevic vladimir@cs.yorku.ca
- * @version $Revision: 1.4 $
+ * @version $Revision: 1.5 $
  */
 public class VectorTime
 {
@@ -105,8 +105,8 @@ public class VectorTime
    }
 
    /**
-    * Returns minimal lightweigth representation of this Vector Time
-    * suitable for network transport
+    * Returns a minimal lightweight representation of this Vector Time
+    * suitable for network transport.
     * @return lightweight representation of this VectorTime in the
     * form of TransportedVectorTime object
     */
@@ -117,13 +117,14 @@ public class VectorTime
 
    /**
     *<p>
+    *Maxes this VectorTime with the specified TransportedVectorTime.
     *Updates this VectorTime as follows:
     *</p>
     *<p>
     *    for every k:1...n VT(pj)[k] == max(VT(mi)[k],VT(pj)[k])
     *</p>
     *
-    * @param other TrasnportedVectorTime that is max-ed with this VectorTime
+    * @param other TransportedVectorTime that is max-ed with this VectorTime
     */
    public void max(TransportedVectorTime other)
    {

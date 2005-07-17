@@ -10,7 +10,7 @@ import java.util.Vector;
 
 /**
  * @author Bela Ban
- * @version $Id: JmxConfigurator.java,v 1.2 2005/06/06 15:33:59 belaban Exp $
+ * @version $Id: JmxConfigurator.java,v 1.3 2005/07/17 11:36:42 chrislott Exp $
  */
 public class JmxConfigurator {
     static final Log log=LogFactory.getLog(JmxConfigurator.class);
@@ -23,7 +23,7 @@ public class JmxConfigurator {
      * @param server
      * @param name Has to be a JMX ObjectName, e.g. DefaultDomain:type=MyChannel
      * @param register_protocols
-     * @return
+     * @return org.jgroups.jmx.JChannel for the specified org.jgroups.JChannel
      */
     public static org.jgroups.jmx.JChannel registerChannel(org.jgroups.JChannel channel,
                                                            MBeanServer server, String name,

@@ -2,26 +2,25 @@ package org.jgroups.service.lease;
 
 /**
  * <code>LeaseFactory</code> is responsible for granting new leases, renewing
- * existing leases and canceling leases when it is no longer needed. For batch
- * purposes, <code>LeaseFactory</code> creates instances of {@link LeaseGroup}.
+ * existing leases and canceling leases when it is no longer needed. 
  *
  * @author Roman Rokytskyy (rrokytskyy@acm.org)
  */
 public interface LeaseFactory {
     /**
      * This constant represents arbitrary duration. When passed to
-     * {@link LeaseFactory#newLease(Object, long, boolean)}, implementation
+     * {@link LeaseFactory#newLease(Object, Object, long, boolean)}, implementation
      * grants lease for a duration that best fits leased resource.
      */
-    long DURATION_ANY = -1;
+    public final long DURATION_ANY = -1;
 
     /**
      * This constant represents maximum possible duration. When passed to
-     * {@link LeaseFactory#newLease(Object, long, boolean)}, implementation
+     * {@link LeaseFactory#newLease(Object, Object, long, boolean)}, implementation
      * usually will grant lease for a maximum possible duration for leased
      * resource.
      */
-    long DURATION_FOREVER = Long.MAX_VALUE;
+    public final long DURATION_FOREVER = Long.MAX_VALUE;
 
     /**
      * Obtain new lease. When client wants to access to resource that is
@@ -37,7 +36,7 @@ public interface LeaseFactory {
      * 
      * @param tenant unique identifier of entity that requests lease.
      *
-     * @param leaseDuration duration of lease in milliseconds.
+     * @param requestedDuration duration of lease in milliseconds.
      *
      * @param isAbsolute specified if lease duration is absolute or relative.
      *
@@ -53,11 +52,11 @@ public interface LeaseFactory {
      * Renew existing lease. This method extends lease duration from now for
      * a specified duration. If <code>existingLease</code> has expired, an
      * exception is thrown. In this case client has to use
-     * {@link #newLease(Object, long, boolean)} method to obtain a lease.
+     * {@link #newLease(Object, Object, long, boolean)} method to obtain a lease.
      *
-     * @param leaseTarget unique identifier of resource to be leased.
+     * @param existingLease unique identifier of resource to be leased.
      *
-     * @param leaseDuration duration of lease in milliseconds.
+     * @param requestedDuration duration of lease in milliseconds.
      *
      * @param isAbsolute specified if lease duration is absolute or relative.
      *

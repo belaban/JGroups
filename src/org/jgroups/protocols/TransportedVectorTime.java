@@ -1,4 +1,4 @@
-// $Id: TransportedVectorTime.java,v 1.3 2004/12/01 10:17:50 belaban Exp $
+// $Id: TransportedVectorTime.java,v 1.4 2005/07/17 11:36:15 chrislott Exp $
 
 package org.jgroups.protocols;
 
@@ -13,7 +13,7 @@ import java.io.Serializable;
  * Lighweight representation of the VectorTime clock suitable for network transport
  *
  * @author Vladimir Blagojevic vladimir@cs.yorku.ca
- * @version $Revision: 1.3 $
+ * @version $Revision: 1.4 $
  */
 public class TransportedVectorTime implements Serializable
 {
@@ -88,8 +88,8 @@ public class TransportedVectorTime implements Serializable
    }
 
    /**
-    *Returns a message associated with this vector timestamp
-    * @returnMessage associated with this vector timestamp
+    * Returns a message associated with this vector timestamp.
+    * @return Message associated with this vector timestamp
     */
    public Message getAssociatedMessage()
    {
@@ -99,8 +99,8 @@ public class TransportedVectorTime implements Serializable
 
    /**
     *<p>
-    *Checks if this TransportedVectorTime is less than equal from the given
-    *other TransportedVectorTimeas follows:
+    *Checks if this TransportedVectorTime is less than or equal to the the specified TransportedVectorTime.
+    *The check is done as follows:
     *</p>
     * <p>
     * VT1<=VT2 iff for every i:1..k VT1[i]<=VT2[i]
@@ -126,13 +126,13 @@ public class TransportedVectorTime implements Serializable
 
    /**
     * <p>
-    * Checks if this TransportedVectorTimeis equal to given TransportedVectorTime
-    * as follows:
+    * Checks if this TransportedVectorTimeis equal to the specified TransportedVectorTime.
+    * The check is done as follows:
     * </p>
     * <p>
     *  VT1==VT2 iff for every i:1..k VT1[i]==VT2[i]
     * @param other TransportedVectorTimebeing compared with this.
-    * @return true if the above given equation is true, false otherwise
+    * @return true if the equation given above is true, false otherwise
     */
    public boolean equals(TransportedVectorTime other)
    {

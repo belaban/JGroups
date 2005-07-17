@@ -1,4 +1,4 @@
-// $Id: Promise.java,v 1.9 2005/04/25 08:35:44 belaban Exp $
+// $Id: Promise.java,v 1.10 2005/07/17 11:33:58 chrislott Exp $
 
 package org.jgroups.util;
 
@@ -82,9 +82,9 @@ public class Promise {
     }
 
     /**
-     * Returns the result, but never throws a TimeoutException; returns null instead
+     * Returns the result, but never throws a TimeoutException; returns null instead.
      * @param timeout
-     * @return
+     * @return Object
      */
     public Object getResult(long timeout) {
         try {

@@ -1,4 +1,4 @@
-// $Id: RpcDispatcher.java,v 1.15 2005/01/20 02:01:12 ovidiuf Exp $
+// $Id: RpcDispatcher.java,v 1.16 2005/07/17 11:36:40 chrislott Exp $
 
 package org.jgroups.blocks;
 
@@ -25,8 +25,14 @@ import java.util.Iterator;
 
 
 /**
- * Dispatches and receives remote group method calls. Is the equivalent of RpcProtocol
- * on the application rather than protocol level.
+ * This class allows a programmer to invoke remote methods in all (or single) 
+ * group members and optionally wait for the return value(s). 
+ * An application will typically create a channel and layer the
+ * RpcDispatcher building block on top of it, which allows it to 
+ * dispatch remote methods (client role) and at the same time be 
+ * called by other members (server role).
+ * This class is derived from MessageDispatcher. 
+*  Is the equivalent of RpcProtocol on the application rather than protocol level.
  * @author Bela Ban
  */
 public class RpcDispatcher extends MessageDispatcher implements ChannelListener {

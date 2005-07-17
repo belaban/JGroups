@@ -1,4 +1,4 @@
-// $Id: ReplicatedHashtable.java,v 1.9 2005/02/19 13:23:34 belaban Exp $
+// $Id: ReplicatedHashtable.java,v 1.10 2005/07/17 11:36:40 chrislott Exp $
 
 package org.jgroups.blocks;
 
@@ -28,7 +28,7 @@ import java.util.*;
  * but uses plain asynchronous messages instead.
  * @author Bela Ban
  * @author <a href="mailto:aolias@yahoo.com">Alfonso Olias-Sanz</a>
- * todo: implement putAll() [similar to DistributedHashtable]
+ * @todo implement putAll() [similar to DistributedHashtable].
  * @deprecated This class is unsupported; use JBossCache instead: http://www.jboss.com/products/jbosscache
  */
 public class ReplicatedHashtable extends Hashtable implements MessageListener, MembershipListener {

@@ -1,4 +1,4 @@
-// $Id: ReplicationReceiver.java,v 1.1 2003/09/09 01:24:08 belaban Exp $
+// $Id: ReplicationReceiver.java,v 1.2 2005/07/17 11:36:40 chrislott Exp $
 
 
 package org.jgroups.blocks;
@@ -17,7 +17,7 @@ public interface ReplicationReceiver {
 
     /**
      * Receives data sent by a sender to all group members and applies update to locally replicated data. This is 
-     * the result of a {@link ReplicationManager#send} call.
+     * the result of a {@link org.jgroups.blocks.ReplicationManager#send} call.
      * 
      * @param transaction The transaction under which all locks will be acquired. Will be null if no locks are used (e.g.
      *                    <code>use_locks</code> is null).
@@ -36,7 +36,7 @@ public interface ReplicationReceiver {
      *                           means to never release the lock until commit() or rollback() are called.
      * @param use_locks Whether to use locking or not. If this value is false, all lock-related arguments will be
      *                  ignored, regardless of whether they are non-null.
-     * @return Object A return value, the semantics of which are determined by caller of {@link ReplicationManager.send}
+     * @return Object A return value, the semantics of which are determined by caller of {@link org.jgroups.blocks.ReplicationManager#send}
      *                and the receiver. If no special value should be returned, null can be returned. Note that in the
      *                latter case, null is still treated as a response (in the synchronous call).
      * @exception LockingException Thrown when a lock on a resource cannot be acquired

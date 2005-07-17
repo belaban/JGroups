@@ -1,4 +1,4 @@
-// $Id: Topology.java,v 1.6 2005/05/30 16:14:40 belaban Exp $
+// $Id: Topology.java,v 1.7 2005/07/17 11:36:42 chrislott Exp $
 
 
 package org.jgroups.demos;
@@ -23,7 +23,7 @@ import java.util.Vector;
  * A nice demo is to start a number of Topology instances at the same time. All of them will be blue (all are
  * coordinators since they don't find each other). Then the MERGE2 protocol sets in and only one will retain
  * its coordinator role.
- * todo: needs to be ported to Swing
+ * @todo Needs to be ported to Swing.
  * @author Bela Ban
  */
 public class Topology extends Frame implements WindowListener, MembershipListener {

@@ -1,4 +1,4 @@
-// $Id: DISCARD.java,v 1.7 2005/05/30 14:31:07 belaban Exp $
+// $Id: DISCARD.java,v 1.8 2005/07/17 11:36:15 chrislott Exp $
 
 package org.jgroups.protocols;
 
@@ -13,7 +13,7 @@ import java.util.Vector;
 
 
 /**
- Discards up or down messages based on a percentage, e.g. setting property 'up' to 0.1 causes 10%
+ Discards up or down messages based on a percentage; e.g., setting property 'up' to 0.1 causes 10%
  of all up messages to be discarded. Setting 'down' or 'up' to 0 causes no loss, whereas 1 discards
  all messages (not very useful).
  */

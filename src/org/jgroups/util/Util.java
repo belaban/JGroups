@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.46 2005/07/15 09:34:59 belaban Exp $
+// $Id: Util.java,v 1.47 2005/07/17 11:33:58 chrislott Exp $
 
 package org.jgroups.util;
 
@@ -238,8 +238,8 @@ public class Util {
     /**
      *
      * @param in
-     * @param Class The type of Collection, e.g. Vector.class
-     * @return Collection<Address>
+     * @param cl The type of Collection, e.g. Vector.class
+     * @return Collection of Address objects
      * @throws IOException
      * @throws IllegalAccessException
      * @throws InstantiationException
@@ -258,9 +258,10 @@ public class Util {
 
 
     /**
-     * Returns the marshalled size of a Collection of Addresses. <em>Assumes elements are of the same type !</em>
+     * Returns the marshalled size of a Collection of Addresses. 
+     * <em>Assumes elements are of the same type !</em>
      * @param addrs Collection<Address>
-     * @return
+     * @return long size
      */
     public static long size(Collection addrs) {
         int retval=Global.SHORT_SIZE; // number of elements
@@ -398,9 +399,9 @@ public class Util {
 
 
     /**
-       * Marshalls a list of messages
+       * Marshalls a list of messages.
        * @param xmit_list LinkedList<Message>
-       * @return
+       * @return Buffer
        * @throws IOException
        */
     public static Buffer msgListToByteBuffer(LinkedList xmit_list) throws IOException {
@@ -1022,7 +1023,7 @@ public class Util {
 
     /**
      Makes sure that we detect when a peer connection is in the closed state (not closed while we send data,
-     but before we send data). 2 writes ensure that, if the peer closed the connection, the first write
+     but before we send data). Two writes ensure that, if the peer closed the connection, the first write
      will send the peer from FIN to RST state, and the second will cause a signal (IOException).
      */
     public static void doubleWrite(byte[] buf, OutputStream out) throws Exception {
@@ -1039,7 +1040,7 @@ public class Util {
 
     /**
      Makes sure that we detect when a peer connection is in the closed state (not closed while we send data,
-     but before we send data). 2 writes ensure that, if the peer closed the connection, the first write
+     but before we send data). Two writes ensure that, if the peer closed the connection, the first write
      will send the peer from FIN to RST state, and the second will cause a signal (IOException).
      */
     public static void doubleWrite(byte[] buf, int offset, int length, OutputStream out) throws Exception {
@@ -1053,7 +1054,7 @@ public class Util {
         }
     }
 
-    /*
+    /**
     * if we were to register for OP_WRITE and send the remaining data on
     * readyOps for this channel we have to either block the caller thread or
     * queue the message buffers that may arrive while waiting for OP_WRITE.
@@ -1148,8 +1149,8 @@ public class Util {
      * Tries to load a class from the thread's context classloader first, then from an object's
      * classloader (if not null).
      * @param clname
-     * @param obj
-     * @return The loaded class, or null if class could not be loaded
+     * @param clazz
+     * @return The loaded class, or null if class could not be loaded.
      */
     public static Class loadClass(String clname, Class clazz) {
         Class cl=null;
@@ -1219,7 +1220,8 @@ public class Util {
 
 
     /**
-     E.g. 2000,4000,8000
+     * Parses comma-delimited longs; e.g., 2000,4000,8000.
+     * Returns array of long, or null.
      */
     public static long[] parseCommaDelimitedLongs(String s) {
         StringTokenizer tok;

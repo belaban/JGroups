@@ -1,4 +1,4 @@
-// $Id: ClassConfigurator.java,v 1.12 2005/06/30 16:04:02 belaban Exp $
+// $Id: ClassConfigurator.java,v 1.13 2005/07/17 11:36:41 chrislott Exp $
 
 package org.jgroups.conf;
 
@@ -13,7 +13,7 @@ import java.util.*;
 
 /**
  * This class will be replaced with the class that read info
- * from the magic number configurator that reads info from the xml file.<br>
+ * from the magic number configurator that reads info from the xml file.
  * The name and the relative path of the magic number map file can be specified
  * as value of the property <code>org.jgroups.conf.magicNumberFile</code>.
  * It must be relative to one of the classpath elements, to allow the

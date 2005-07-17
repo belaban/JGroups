@@ -1,4 +1,4 @@
-// $Id: PullPushAdapter.java,v 1.13 2005/04/21 14:50:12 belaban Exp $
+// $Id: PullPushAdapter.java,v 1.14 2005/07/17 11:36:40 chrislott Exp $
 
 package org.jgroups.blocks;
 
@@ -19,10 +19,10 @@ import java.util.List;
 
 
 /**
- * Allows a client of <em>Channel</em> to be notified when messages have been received
+ * Allows a client of {@link org.jgroups.Channel} to be notified when messages have been received
  * instead of having to actively poll the channel for new messages. Typically used in the
  * client role (receive()). As this class does not implement interface
- * <code>Transport</code>, but <b>uses</b> it for receiving messages, an underlying object
+ * {@link org.jgroups.Transport}, but <b>uses</b> it for receiving messages, an underlying object
  * has to be used to send messages (e.g. the channel on which an object of this class relies).<p>
  * Multiple MembershipListeners can register with the PullPushAdapter; when a view is received, they
  * will all be notified. There is one main message listener which sends and receives message. In addition,
@@ -101,7 +101,7 @@ public class PullPushAdapter implements Runnable, ChannelListener {
     }
 
     /**
-     * Sends a message to the group - listeners to this identifier will receive the messages
+     * Sends a message to the group - listeners to this identifier will receive the messages.
      * @param identifier the key that the proper listeners are listenting on 
      * @param msg the Message to be sent
      * @see #registerListener
@@ -120,7 +120,7 @@ public class PullPushAdapter implements Runnable, ChannelListener {
     }
 
     /**
-     * sends a message with no identifier , listener member will get this message on the other group members
+     * Sends a message with no identifier; listener member will get this message on the other group members.
      * @param msg the Message to be sent
      * @throws Exception
      */
@@ -136,9 +136,11 @@ public class PullPushAdapter implements Runnable, ChannelListener {
 
     
     /**
-     * sets a listener to messages with a given identifier messages sent with this identifier in there header will be routed to this listener
-     * <b>note: there could be only one listener for one identifier, if you want to register a different listener to an already registered identifier then unregister first</b> 
-     * @param identifier - messages sent on the group with this object will be receive by this listener 
+     * Sets a listener to messages with a given identifier.
+     * Messages sent with this identifier in their headers will be routed to this listener.
+     * <b>Note: there can be only one listener for one identifier;
+     * if you want to register a different listener to an already registered identifier, then unregister first.</b> 
+     * @param identifier - messages sent on the group with this object will be received by this listener 
      * @param l - the listener that will get the message
      */
     public void registerListener(Serializable identifier, MessageListener l) {
@@ -156,7 +158,7 @@ public class PullPushAdapter implements Runnable, ChannelListener {
     }
     
     /**
-     * removes a listener to a given identifier from the listeners map
+     * Removes a message listener to a given identifier from the message listeners map.
      * @param identifier - the key to whom we do not want to listen any more
      */
     public void unregisterListener(Serializable identifier) {

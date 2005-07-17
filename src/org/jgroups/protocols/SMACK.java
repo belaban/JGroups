@@ -1,4 +1,4 @@
-// $Id: SMACK.java,v 1.9 2005/05/30 14:31:07 belaban Exp $
+// $Id: SMACK.java,v 1.10 2005/07/17 11:36:15 chrislott Exp $
 
 package org.jgroups.protocols;
 
@@ -46,9 +46,9 @@ import java.util.Vector;
  * </ul>
  * Advantage of this protocol: no group membership necessary, fast.
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.9 $
- * todo: initial mcast to announce new member (for view change)
- * todo: fix membershop bug: start a, b, kill b, restart b: b will be suspected by a
+ * @version $Revision: 1.10 $
+ * @todo Initial mcast to announce new member (for view change).
+ * <BR> Fix membershop bug: start a, b, kill b, restart b: b will be suspected by a.
  */
 public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCommand {
     long[]                 timeout={1000,2000,3000};  // retransmit timeouts (for AckMcastSenderWindow)

@@ -1,4 +1,4 @@
-// $Id: AckMcastSenderWindow.java,v 1.8 2004/09/23 16:29:53 belaban Exp $
+// $Id: AckMcastSenderWindow.java,v 1.9 2005/07/17 11:34:20 chrislott Exp $
 
 package org.jgroups.stack;
 
@@ -33,7 +33,7 @@ import java.util.*;
  *
  * @author Bela Ban June 9 1999
  * @author John Georgiadis May 8 2001
- * @version $Revision: 1.8 $
+ * @version $Revision: 1.9 $
  */
 public class AckMcastSenderWindow {
     /**
@@ -228,7 +228,7 @@ public class AckMcastSenderWindow {
      * Create and <b>start</b> the retransmitter
      *
      * @param cmd the callback object for retranmissions
-     * @param retransmit_timeout the interval between two consecutive
+     * @param retransmit_intervals the interval between two consecutive
      * retransmission attempts
      * @param sched the external scheduler to use to schedule retransmissions
      *
@@ -258,7 +258,7 @@ public class AckMcastSenderWindow {
      * Create and <b>start</b> the retransmitter
      *
      * @param cmd the callback object for retranmissions
-     * @param retransmit_timeout the interval between two consecutive
+     * @param retransmit_intervals the interval between two consecutive
      * retransmission attempts
      *
      * @throws IllegalArgumentException if <code>cmd</code> is null

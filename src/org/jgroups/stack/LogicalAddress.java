@@ -1,4 +1,4 @@
-// $Id: LogicalAddress.java,v 1.8 2005/06/23 13:31:09 belaban Exp $
+// $Id: LogicalAddress.java,v 1.9 2005/07/17 11:34:20 chrislott Exp $
 
 package org.jgroups.stack;
 
@@ -118,7 +118,7 @@ public class LogicalAddress implements Address {
     }
 
     /**
-     * For internal use only ! Don't use this method !
+     * For internal use only. Don't use this method!
      * @param addr
      */
     public void addPhysicalAddress(SocketAddress addr) {
@@ -131,7 +131,7 @@ public class LogicalAddress implements Address {
     }
 
     /**
-     * For internal use only ! Don't use this method !
+     * For internal use only. Don't use this method !
      * @param addr
      */
     public void removePhysicalAddress(SocketAddress addr) {
@@ -140,7 +140,7 @@ public class LogicalAddress implements Address {
     }
 
     /**
-     * For internal use only ! Don't use this method !
+     * For internal use only. Don't use this method !
      */
     public void removeAllPhysicalAddresses() {
         if(physical_addrs != null)

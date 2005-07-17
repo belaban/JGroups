@@ -1,9 +1,8 @@
-// $Id: CAUSAL.java,v 1.7 2005/07/01 15:21:17 publicnmi Exp $
+// $Id: CAUSAL.java,v 1.8 2005/07/17 11:36:15 chrislott Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.*;
-import org.jgroups.blocks.MethodCall;
 import org.jgroups.stack.Protocol;
 
 import java.io.IOException;
@@ -17,7 +16,7 @@ import java.util.Vector;
 
 
 /** <p>
- * Implements casual ordering layer using vector clocks
+ * Implements casual ordering layer using vector clocks.
  * </p>
  * <p>
  * Causal protocol layer guarantees that if message m0 multicasted
@@ -63,7 +62,7 @@ import java.util.Vector;
  *    for every k:1...n VT(pj)[k] == max(VT(mi)[k],VT(pj)[k])
  *</p>
  *  @author Vladimir Blagojevic vladimir@cs.yorku.ca
- *  @version $Revision: 1.7 $
+ *  @version $Revision: 1.8 $
  *
  **/
 

@@ -120,10 +120,12 @@ public class FilePersistenceManager implements PersistenceManager
     }
 
     /**
+     * Turns the values into Floats to enable
+     * {@link org.jgroups.demos.DistributedHashtableDemo} to work. 
      * Subclasses should override this method to convert the incoming map
-     * of string/string key/value pairs into the types they want.  This
-     * implementation turns the values into Floats to enable
-     * {@link org.jgroups.demos.DistributedHashtableDemo} to work.
+     * of string/string key/value pairs into the types they want.  
+     * @param in
+     * @return Map
      */
     protected Map filterLoadedValues(Map in)
     {

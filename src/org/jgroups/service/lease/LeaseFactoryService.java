@@ -37,7 +37,7 @@ import java.util.Map;
  * determine correctly best-fit lease duration and uses fixed duration of 10
  * seconds, maximum duration is 60 seconds. Note, these durations apply only
  * cases when lease term was not explicitly specified 
- * ({@link LeaseFactory.DURATION_ANY} or {@link LeaseFactory.DURATION_FOREVER}
+ * ({@link LeaseFactory#DURATION_ANY} or {@link LeaseFactory#DURATION_FOREVER}
  * used as lease term). Subclasses might use more intelligent algorithm to 
  * determine lease duration and lease request conflicts using semantics of
  * underlying resource.
@@ -94,14 +94,15 @@ public class LeaseFactoryService extends AbstractService {
     /**
      * Get name of this service.
      * 
-     * @return value of {@link LEASE_SERVICE_NAME} constant.
+     * @return value of {@link #LEASE_SERVICE_NAME} constant.
      */
     public String getName() {
 	return LEASE_SERVICE_NAME;
     }
     
     /**
-     * Get best-fit duration leases with duration {@link LeaseFactory.DURATION_ANY}.
+     * Gets best-fit duration leases with duration 
+     * {@link org.jgroups.service.lease.LeaseFactory#DURATION_ANY}.
      * Value returned by this method is absolute expiration time.
      * 
      * @return <code>System.currentTimeMillis() + DEFAULT_BEST_FIT_DURATION;</code>
@@ -112,7 +113,7 @@ public class LeaseFactoryService extends AbstractService {
 
     /**
      * Get best-fit duration leases with duration 
-     * {@link LeaseFactory.DURATION_FOREVER}.
+     * {@link org.jgroups.service.lease.LeaseFactory#DURATION_FOREVER}.
      * Value returned by this method is absolute expiration time.
      * 
      * @return <code>System.currentTimeMillis() + MAXIMUM_DURATION;</code>

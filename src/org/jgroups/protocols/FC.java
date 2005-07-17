@@ -1,4 +1,4 @@
-// $Id: FC.java,v 1.26 2005/07/01 13:05:11 belaban Exp $
+// $Id: FC.java,v 1.27 2005/07/17 11:36:15 chrislott Exp $
 
 package org.jgroups.protocols;
 
@@ -15,11 +15,12 @@ import java.util.*;
  * Simple flow control protocol based on a credit system. Each sender has a number of credits (bytes
  * to send). When the credits have been exhausted, the sender blocks. Each receiver also keeps track of
  * how many credits it has received from a sender. When credits for a sender fall below a threshold,
- * the receiver sends more credits to the sender. Works for both unicast and multicast messages.<br>
+ * the receiver sends more credits to the sender. Works for both unicast and multicast messages.
+ * <p>
  * Note that this protocol must be located towards the top of the stack, or all down_threads from JChannel to this
  * protocol must be set to false ! This is in order to block JChannel.send()/JChannel.down().
  * @author Bela Ban
- * @version $Revision: 1.26 $
+ * @version $Revision: 1.27 $
  */
 public class FC extends Protocol {
 

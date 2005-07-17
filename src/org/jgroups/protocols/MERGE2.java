@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.19 2005/06/13 11:55:31 belaban Exp $
+// $Id: MERGE2.java,v 1.20 2005/07/17 11:36:15 chrislott Exp $
 
 package org.jgroups.protocols;
 
@@ -17,7 +17,7 @@ import java.util.Vector;
 
 
 /**
- * Protocol to discover subgroups, e.g. existing due to a network partition (that healed). Example: group
+ * Protocol to discover subgroups; e.g., existing due to a network partition (that healed). Example: group
  * {p,q,r,s,t,u,v,w} is split into 3 subgroups {p,q}, {r,s,t,u} and {v,w}. This protocol will eventually send
  * a MERGE event with the coordinators of each subgroup up the stack: {p,r,v}. Note that - depending on the time
  * of subgroup discovery - there could also be 2 MERGE events, which first join 2 of the subgroups, and then the
@@ -129,7 +129,8 @@ public class MERGE2 extends Protocol {
 
 
     /**
-     * DON'T REMOVE ! This prevents the up-handler thread to be created, which is not needed in the protocol.
+     * This prevents the up-handler thread to be created, which is not needed in the protocol.
+     * DON'T REMOVE ! 
      */
     public void startUpHandler() {
         ;
@@ -137,7 +138,8 @@ public class MERGE2 extends Protocol {
 
 
     /**
-     * DON'T REMOVE ! This prevents the down-handler thread to be created, which is not needed in the protocol.
+     * This prevents the down-handler thread to be created, which is not needed in the protocol.
+     * DON'T REMOVE ! 
      */
     public void startDownHandler() {
         ;

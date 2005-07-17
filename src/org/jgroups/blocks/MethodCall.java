@@ -18,52 +18,52 @@ import java.util.Iterator;
 
 
 /**
- * A method call is the JavaGroup representation of a remote method.
+ * A method call is the JGroups representation of a remote method.
  * It includes the name of the method (case sensitive) and a list of arguments.
  * A method call is serializable and can be passed over the wire.
  * @author Bela Ban
- * @version $Revision: 1.16 $
+ * @version $Revision: 1.17 $
  */
 public class MethodCall implements Externalizable {
 
     static final long serialVersionUID=7873471327078957662L;
 
-    /** the name of the method, case sensitive */
+    /** The name of the method, case sensitive. */
     protected String method_name=null;
 
-    /** the arguments of the method */
+    /** The arguments of the method. */
     protected Object[] args=null;
 
-    /** the class types, e.g. new Class[]{String.class, int.class} */
+    /** The class types, e.g., new Class[]{String.class, int.class}. */
     protected Class[] types=null;
 
-    /** the signature, e.g. new String[]{String.class.getName(), int.class.getName()} */
+    /** The signature, e.g., new String[]{String.class.getName(), int.class.getName()}. */
     protected String[] signature=null;
 
-    /** the Method of the call */
+    /** The Method of the call. */
     protected Method method=null;
 
     protected static final Log log=LogFactory.getLog(MethodCall.class);
 
-    /** which mode to use */
+    /** Which mode to use. */
     protected short mode=OLD;
 
-    /** infer the method from the arguments */
+    /** Infer the method from the arguments. */
     protected static final short OLD=1;
 
-    /** explicitly ship the method, caller has to determine method himself */
+    /** Explicitly ship the method, caller has to determine method himself. */
     protected static final short METHOD=2;
 
-    /** use class information */
+    /** Use class information. */
     protected static final short TYPES=3;
 
-    /** provide a signature, similar to JMX */
+    /** Provide a signature, similar to JMX. */
     protected static final short SIGNATURE=4;
 
 
     /**
-     * creates an empty method call, this is always invalid, until
-     * <code>setName()</code> has been called
+     * Creates an empty method call, this is always invalid, until
+     * <code>setName()</code> has been called.
      */
     public MethodCall() {
     }

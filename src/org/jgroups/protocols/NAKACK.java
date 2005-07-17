@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.12 2005/05/30 14:31:07 belaban Exp $
+// $Id: NAKACK.java,v 1.13 2005/07/17 11:36:15 chrislott Exp $
 
 package org.jgroups.protocols;
 
@@ -392,7 +392,7 @@ public class NAKACK extends Protocol {
         final_v=new Vector(v.size());
 
         // weed out duplicates
-        /** todo Check!!!!! */
+        //TODO Check!!!!!
         for(int i=0; i < v.size(); i++) {
             boolean present=false;
             m1=(Message)v.elementAt(i);

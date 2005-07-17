@@ -12,8 +12,8 @@ public class CannotCreateSchemaException extends Exception
 {
 
     /**
-     * @param Throwable;
-     * @param String; implementor filling in runtime reason
+     * @param t
+     * @param reason implementor-specified runtime reason
      */
     public CannotCreateSchemaException(Throwable t, String reason)
     {
@@ -22,7 +22,7 @@ public class CannotCreateSchemaException extends Exception
     }
 
     /**
-     * @return String;
+     * @return String
      */
     public String toString()
     {

@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.38 2005/04/25 15:36:04 belaban Exp $
+// $Id: MessageDispatcher.java,v 1.39 2005/07/17 11:36:40 chrislott Exp $
 
 package org.jgroups.blocks;
 
@@ -13,8 +13,21 @@ import java.util.Vector;
 
 
 /**
- * Used on top of channel to implement group requests. Client's <code>handle()</code> method is called when request is
- * received. Is the equivalent of RpcProtocol on the application instead of protocol level.
+ * Provides synchronous and asynchronous message sending with request-response 
+ * correlation; i.e., matching responses with the original request. 
+ * It also offers push-style message reception (by internally using the PullPushAdapter). 
+ * <p>
+ * Channels are simple patterns to asynchronously send a receive messages. 
+ * However, a significant number of communication patterns in group communication 
+ * require synchronous communication. For example, a sender would like to send a 
+ * message to the group and wait for all responses. Or another application would 
+ * like to send a message to the group and wait only until the majority of the 
+ * receivers have sent a response, or until a timeout occurred.  MessageDispatcher 
+ * offers a combination of the above pattern with other patterns.
+ * <p>
+ * Used on top of channel to implement group requests. Client's <code>handle()</code> 
+ * method is called when request is received. Is the equivalent of RpcProtocol on 
+ * the application instead of protocol level.
  *
  * @author Bela Ban
  */

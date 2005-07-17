@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.31 2005/07/16 13:20:42 belaban Exp $
+// $Id: STABLE.java,v 1.32 2005/07/17 11:35:03 chrislott Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -16,7 +16,7 @@ import java.util.*;
 
 
 /**
- * Computes the broadcast messages that are stable, i.e. have been received by all members. Sends
+ * Computes the broadcast messages that are stable; i.e., have been received by all members. Sends
  * STABLE events up the stack when this is the case. This allows NAKACK to garbage collect messages that
  * have been seen by all members.<p>
  * Works as follows: periodically we mcast our highest seqnos (seen for each member) to the group.

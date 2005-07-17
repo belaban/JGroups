@@ -1,4 +1,4 @@
-// $Id: GossipClient.java,v 1.10 2005/05/30 16:14:44 belaban Exp $
+// $Id: GossipClient.java,v 1.11 2005/07/17 11:34:20 chrislott Exp $
 
 package org.jgroups.stack;
 
@@ -17,8 +17,9 @@ import java.util.*;
 /**
  * Local stub for clients to access one (or more) GossipServers. Will use proprietary protocol
  * (using GossipData PDUs) based on TCP to connect to GossipServer.<p>
- * Requires JDK >= 1.3 due to the use of Timer<p>
- * todo: make access to multiple GossipServer concurrent (1 thread/GossipServer)
+ * Requires JDK >= 1.3 due to the use of Timer.
+ * 
+ * @todo Make access to multiple GossipServer concurrent (1 thread/GossipServer).
  * @author Bela Ban Oct 4 2001
  */
 public class GossipClient {
@@ -135,8 +136,8 @@ public class GossipClient {
 
 
     /**
-     * Registers the group|mbr with *all* GossipServers
-     * todo Parallelize GossipServer access
+     * Registers the group|mbr with *all* GossipServers.
+     * @todo Parallelize GossipServer access
      */
     void _register(String group, Address mbr) {
         Socket sock;

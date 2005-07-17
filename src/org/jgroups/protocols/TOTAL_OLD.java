@@ -1,4 +1,4 @@
-// $Id: TOTAL_OLD.java,v 1.9 2005/05/30 16:14:43 belaban Exp $
+// $Id: TOTAL_OLD.java,v 1.10 2005/07/17 11:36:15 chrislott Exp $
 
 package org.jgroups.protocols;
 
@@ -560,7 +560,7 @@ public class TOTAL_OLD extends Protocol {
 
 
     /**
-     * returns the next sequence id expected to be received in this view
+     * @return the next sequence id expected to be received in this view
      */
     protected long getNextSeqID() {
         return next_seq_id;
@@ -568,9 +568,9 @@ public class TOTAL_OLD extends Protocol {
 
 
     /**
-     * returns the sequence id of the "first" queued message
-     * (i.e. the lowest seq id queued)
-     * returns -1 if no messages are queued
+     * Returns the sequence id of the "first" queued message
+     * (i.e., the lowest seq id queued).
+     * @return the sequence id of the queued message, or -1 if no messages are queued.
      */
     protected long getFirstQueuedSeqID() {
         return queued_messages.getFirstSeq();
@@ -1103,24 +1103,22 @@ public class TOTAL_OLD extends Protocol {
 
         // TODO: finish commenting meaning of seq_id for different header types
         /**
-         * seq_id
-         * for TOTAL_BCAST messages, seq_id is used to determine the order of messages
-         * in the view. seq_id is expected to increment by one for each new message
+         * For TOTAL_BCAST messages, seq_id is used to determine the order of messages
+         * in the view. The seq_id is expected to increment by one for each new message
          * sent in the current view. this sequence id is reset with each new view.
          * the GMS layer should make sure that messages sent in one view are not
          * received in another view.
-         * for TOTAL_REQUEST messages, seq_id is not used
-         * for TOTAL_NEW_VIEW, seq_id is the sequence id that the sequencer of this
+         * For TOTAL_REQUEST messages, seq_id is not used.
+         * For TOTAL_NEW_VIEW, seq_id is the sequence id that the sequencer of this
          * view will use for the first message broadcast to the group
-         * (i.e. the expected sequence id is "reset" to this value)
-         * for TOTAL_NEW_VIEW_ACK,
-         * for TOTAL_CUM_SEQ_ACK messages, the seq_id is the cumulative sequence id
-         * that the sender has received
-         * for TOTAL_SEQ_ACK messages, seq_id is the sequence id that is being acknowledged
-         * for TOTAL_RESEND, seq_id is the sequence id to be sent again
+         * (i.e. the expected sequence id is "reset" to this value).
+         * For TOTAL_NEW_VIEW_ACK, ..
+         * For TOTAL_CUM_SEQ_ACK messages, the seq_id is the cumulative sequence id
+         * that the sender has received.
+         * For TOTAL_SEQ_ACK messages, seq_id is the sequence id that is being acknowledged.
+         * For TOTAL_RESEND, seq_id is the sequence id to be sent again.
          */
         public long seq_id;  // see use above (varies between types of headers)
-
 
         public TotalHeader() {
         } // used for externalization

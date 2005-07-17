@@ -1,4 +1,4 @@
-// $Id: NotificationBus.java,v 1.8 2004/09/23 16:29:11 belaban Exp $
+// $Id: NotificationBus.java,v 1.9 2005/07/17 11:36:40 chrislott Exp $
 
 package org.jgroups.blocks;
 
@@ -14,8 +14,14 @@ import java.util.Vector;
 
 
 /**
- * Class for dissemination of notifications. Producers can send notifications to all registered consumers.
- * Provides hooks to implement shared group state (cache).
+ * This class provides notification sending and handling capability. 
+ * Producers can send notifications to all registered consumers.
+ * Provides hooks to implement shared group state, which allows an
+ * application programmer to maintain a local cache which is replicated 
+ * by all instances. NotificationBus sits on 
+ * top of a channel, however it creates its channel itself, so the 
+ * application programmers do not have to provide their own channel. 
+ *
  * @author Bela Ban
  */
 public class NotificationBus implements MessageListener, MembershipListener {
@@ -77,15 +83,21 @@ public class NotificationBus implements MessageListener, MembershipListener {
 
 
     /**
-     Returns a reference to the real membership: don't modify. If you need to modify, make a copy first !
+     * Returns a reference to the real membership: don't modify. 
+     * If you need to modify, make a copy first !
+     * @return Vector of Address objects
      */
     public Vector getMembership() {
         return members;
     }
 
 
-    /** Used to operate on the underlying channel directly, e.g. perform operations that are not
-     provided using only NotificationBus. Should be used sparingly */
+    /** 
+     * Answers the Channel.
+     * Used to operate on the underlying channel directly, e.g. perform operations that are not
+     * provided using only NotificationBus. Should be used sparingly.
+     * @return underlying Channel
+     */
     public Channel getChannel() {
         return channel;
     }

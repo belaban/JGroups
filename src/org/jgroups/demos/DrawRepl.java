@@ -1,4 +1,4 @@
-// $Id: DrawRepl.java,v 1.6 2005/05/30 16:14:40 belaban Exp $
+// $Id: DrawRepl.java,v 1.7 2005/07/17 11:36:42 chrislott Exp $
 
 package org.jgroups.demos;
 
@@ -22,10 +22,11 @@ import java.util.Random;
 
 
 /**
- * NOT SUPPORTED !
+ *
  * Replicates the whiteboard demo by intercepting central AWT event queue and mcasting events to
  * all members. Not very useful in all cases, e.g. when the "Leave" button is pressed, and this event
  * is broadcast to all members, all members will leave ! This demo would clearly benefit from more work !
+ * NOT SUPPORTED !
  */
 public class DrawRepl implements MouseMotionListener, WindowListener, ActionListener,
 				 Runnable {

@@ -11,8 +11,8 @@ public class CannotPersistException extends Exception
 {
 
     /**
-     * @param Throwable;
-     * @param String; implementor filling in runtime reason
+     * @param t
+     * @param reason implementor-specified runtime reason
      */
     public CannotPersistException(Throwable t, String reason)
     {

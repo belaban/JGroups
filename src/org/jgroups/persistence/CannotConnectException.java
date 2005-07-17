@@ -12,8 +12,8 @@ public class CannotConnectException extends Exception
 {
 
     /**
-     * @param Exception;
-     * @param String; implementor filling in runtime reason
+     * @param t
+     * @param reason implementor-specified runtime reason
      */
     public CannotConnectException(Exception t, String reason)
     {
@@ -22,8 +22,8 @@ public class CannotConnectException extends Exception
     }
 
     /**
-     * @param Throwable;
-     * @param String; implementor filling in runtime reason
+     * @param t
+      * @param reason implementor-specified runtime reason
      */
     public CannotConnectException(Throwable t, String reason)
     {	
