@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.32 2005/07/17 11:35:03 chrislott Exp $
+// $Id: STABLE.java,v 1.33 2005/07/17 16:24:56 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -252,8 +252,8 @@ public class STABLE extends Protocol {
 
             synchronized(latest_local_digest) {
                 latest_local_digest.replace(d);
-                if(heard_from.contains(local_addr))
-                    copy=digest.copy();
+                //if(heard_from.contains(local_addr))
+                copy=digest.copy();
             }
 
 //            synchronized(digest) {
