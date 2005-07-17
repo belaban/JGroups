@@ -1,4 +1,4 @@
-// $Id: Channel.java,v 1.7 2005/05/10 14:25:56 belaban Exp $
+// $Id: Channel.java,v 1.8 2005/07/17 11:38:05 chrislott Exp $
 
 package org.jgroups;
 
@@ -13,7 +13,7 @@ import java.util.Vector;
  A channel represents a group communication endpoint (like BSD datagram sockets). A
  client joins a group by connecting the channel to a group address and leaves it by
  disconnecting. Messages sent over the channel are received by all group members that
- are connected to the same group (that is, all member that have the same group
+ are connected to the same group (that is, all members that have the same group
  address).<p>
 
  The FSM for a channel is roughly as follows: a channel is created
@@ -32,7 +32,7 @@ import java.util.Vector;
  constructor. Each implementation of a channel must provide a subclass of
  <code>Channel</code> and an implementation of <code>ChannelFactory</code>.  <p>
  Various degrees of sophistication in message exchange can be achieved using building
- blocks on top of channels, e.g. light-weight groups, synchronous message invocation,
+ blocks on top of channels; e.g., light-weight groups, synchronous message invocation,
  or remote method calls. Channels are on the same abstraction level as sockets, and
  should really be simple to use. Higher-level abstractions are all built on top of
  channels.
@@ -82,7 +82,7 @@ public abstract class Channel implements Transport {
 
 
     /**
-     Destroys the channel and its associated resources (e.g. the protocol stack). After a channel
+     Destroys the channel and its associated resources (e.g., the protocol stack). After a channel
      has been closed, invoking methods on it throws the <code>ChannelClosed</code> exception
      (or results in a null operation). It is a null operation if the channel is already closed.<p>
      If the channel is connected to a group, <code>disconnec()t</code> will be called first.
@@ -101,7 +101,8 @@ public abstract class Channel implements Transport {
 
 
     /**
-     Determines whether the channel is open, ie. the protocol stack has been created (may not be connected though).
+     Determines whether the channel is open; 
+     i.e., the protocol stack has been created (may not be connected though).
      */
     abstract public boolean isOpen();
 
@@ -174,7 +175,7 @@ public abstract class Channel implements Transport {
 
 
     /** Receives a message, a view change or a block event. By using <code>setOpt</code>, the
-     type of objects to be received can be determined (e.g. not views and blocks, just
+     type of objects to be received can be determined (e.g., not views and blocks, just
      messages).
 
      The possible types returned can be:
@@ -188,10 +189,9 @@ public abstract class Channel implements Transport {
      returned using <code>ReturnState</code>.
      <li><code>SetStateEvent</code>. The state of a single/all members as requested previously
      by having called <code>Channel.getState(s).
-     <li><code>ExitEvent</code>. Signals that this member was forced to leave the group (e.g. caused
-     by the member being suspected. The member can rejoin the group by calling
-     open(). If the AUTO_RECONNECT is set (see setOpt()), the reconnect will be
-     done automatically.
+     <li><code>ExitEvent</code>. Signals that this member was forced to leave the group 
+     (e.g., caused by the member being suspected.) The member can rejoin the group by calling
+     open(). If the AUTO_RECONNECT is set (see setOpt()), the reconnect will be done automatically.
      </ol>
      The <code>instanceof</code> operator can be used to discriminate between different types
      returned.

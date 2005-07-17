@@ -1,11 +1,6 @@
-// $Id: ChannelException.java,v 1.5 2005/05/30 13:50:43 belaban Exp $
+// $Id: ChannelException.java,v 1.6 2005/07/17 11:38:05 chrislott Exp $
 
 package org.jgroups;
-
-import java.io.PrintStream;
-import java.io.PrintWriter;
-
-import java.util.StringTokenizer;
 
 /**
  * This class represents the super class for all exception types thrown by

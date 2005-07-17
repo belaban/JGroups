@@ -1,4 +1,4 @@
-// $Id: Membership.java,v 1.7 2004/09/23 16:30:00 belaban Exp $
+// $Id: Membership.java,v 1.8 2005/07/17 11:38:05 chrislott Exp $
 
 package org.jgroups;
 
@@ -11,8 +11,9 @@ import java.util.*;
 
 /**
  * Class to keep track of Addresses.
- * The member ship object holds a vector of Address object that are in the same membership
- * Each unique address can only exist once, ie, doing Membership.add(existing_address) will be ignored
+ * The membership object holds a vector of Address objects that are in the same membership.
+ * Each unique address can only exist once; i.e., doing Membership.add(existing_address) 
+ * will be ignored.
  */
 public class Membership implements Cloneable {
     /* private vector to hold all the addresses */

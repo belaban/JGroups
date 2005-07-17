@@ -1,8 +1,10 @@
-// $Id: SuspectedException.java,v 1.1 2003/09/09 01:24:08 belaban Exp $
+// $Id: SuspectedException.java,v 1.2 2005/07/17 11:38:05 chrislott Exp $
 
 package org.jgroups;
 
-
+/**
+ * Thrown if a message is sent to a suspected member.
+ */
 public class SuspectedException extends Exception {
     Object suspect=null;
 

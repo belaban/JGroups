@@ -1,7 +1,11 @@
-// $Id: SuspectEvent.java,v 1.2 2004/09/23 16:30:00 belaban Exp $
+// $Id: SuspectEvent.java,v 1.3 2005/07/17 11:38:05 chrislott Exp $
 
 package org.jgroups;
 
+/**
+ * Represents a suspect event.
+ * Gives access to the suspected member.
+ */
 public class SuspectEvent {
     final Object suspected_mbr;
 

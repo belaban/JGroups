@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.36 2005/07/15 09:34:59 belaban Exp $
+// $Id: Message.java,v 1.37 2005/07/17 11:38:05 chrislott Exp $
 
 package org.jgroups;
 
@@ -23,7 +23,8 @@ import java.util.Map;
  * A Message encapsulates data sent to members of a group. It contains among other things the
  * address of the sender, the destination address, a payload (byte buffer) and a list of
  * headers. Headers are added by protocols on the sender side and removed by protocols
- * on the receiver's side.<br/>
+ * on the receiver's side.
+ * <p>
  * The byte buffer can point to a reference, and we can subset it using index and length. However,
  * when the message is serialized, we only write the bytes between index and length.
  * @author Bela Ban
@@ -38,7 +39,7 @@ public class Message implements Externalizable, Streamable {
     /** The index into the payload (usually 0) */
     protected transient int     offset=0;
 
-    /** The number of bytes in the buffer (usually buf.length is buf != null) */
+    /** The number of bytes in the buffer (usually buf.length is buf not equal to null). */
     protected transient int     length=0;
 
     /** Map<String,Header> */
@@ -162,8 +163,8 @@ public class Message implements Externalizable, Streamable {
     }
 
     /**
-     * Returns a copy of the buffer if offset and length are used, otherwise a reference
-     * @return
+     * Returns a copy of the buffer if offset and length are used, otherwise a reference.
+     * @return byte array with a copy of the buffer.
      */
     public byte[] getBuffer() {
         if(buf == null)
@@ -289,7 +290,7 @@ public class Message implements Externalizable, Streamable {
      * Create a copy of the message. If offset and length are used (to refer to another buffer), the copy will
      * contain only the subset offset and length point to, copying the subset into the new copy.
      * @param copy_buffer
-     * @return
+     * @return Message with specified data
      */
     public Message copy(boolean copy_buffer) {
         Message retval=new Message(false);
@@ -486,8 +487,8 @@ public class Message implements Externalizable, Streamable {
     /* ----------------------------------- Interface Streamable  ------------------------------- */
 
     /**
-     * Streams all members (dest and src addresses, buffer and headers to the output stream
-     * @param outstream
+     * Streams all members (dest and src addresses, buffer and headers) to the output stream.
+     * @param out
      * @throws IOException
      */
     public void writeTo(DataOutputStream out) throws IOException {

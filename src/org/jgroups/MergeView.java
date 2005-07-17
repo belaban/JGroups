@@ -1,4 +1,4 @@
-// $Id: MergeView.java,v 1.2 2004/09/15 17:41:03 belaban Exp $
+// $Id: MergeView.java,v 1.3 2005/07/17 11:38:05 chrislott Exp $
 
 
 package org.jgroups;
@@ -10,7 +10,15 @@ import java.util.Vector;
 
 
 /**
- * A view that is sent as result of a merge.
+ * A view that is sent as a result of a merge.
+ * Whenever a group splits into subgroups, e.g., due to a network partition, 
+ * and later the subgroups merge back together, a MergeView instead of a View 
+ * will be received by the application. The MergeView class is a subclass of 
+ * View and contains as additional instance variable: the list of views that 
+ * were merged. For example, if the group denoted by view V1:(p,q,r,s,t) 
+ * splits into subgroups V2:(p,q,r) and V2:(s,t), the merged view might be 
+ * V3:(p,q,r,s,t). In this case the MergeView would contain a list of 2 views: 
+ * V2:(p,q,r) and V2:(s,t).
  */
 public class MergeView extends View {
     protected Vector subgroups=null; // subgroups that merged into this single view (a list of Views)

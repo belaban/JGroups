@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.35 2005/06/07 10:17:28 belaban Exp $
+// $Id: JChannel.java,v 1.36 2005/07/17 11:38:05 chrislott Exp $
 
 package org.jgroups;
 
@@ -19,12 +19,54 @@ import java.util.Map;
 import java.util.Vector;
 
 /**
- * JChannel is a pure Java implementation of Channel
+ * JChannel is a pure Java implementation of Channel.
  * When a JChannel object is instantiated it automatically sets up the
- * protocol stack
+ * protocol stack.
+ * <p>
+ * <B>Properties</B>
+ * <P>
+ * Properties are used to configure a channel, and are accepted in 
+ * several forms; the String form is described here.
+ * A property string consists of a number of properties separated by 
+ * colons.  For example:
+ * <p>
+ * <pre>"&lt;prop1&gt;(arg1=val1):&lt;prop2&gt;(arg1=val1;arg2=val2):&lt;prop3&gt;:&lt;propn&gt;"</pre>
+ * <p>
+ * Each property relates directly to a protocol layer, which is 
+ * implemented as a Java class. When a protocol stack is to be created 
+ * based on the above property string, the first property becomes the 
+ * bottom-most layer, the second one will be placed on the first, etc.: 
+ * the stack is created from the bottom to the top, as the string is 
+ * parsed from left to right. Each property has to be the name of a 
+ * Java class that resides in the 
+ * {@link org.jgroups.protocols} package. 
+ * <p>
+ * Note that only the base name has to be given, not the fully specified 
+ * class name (e.g., UDP instead of org.jgroups.protocols.UDP).
+ * <p>
+ * Each layer may have 0 or more arguments, which are specified as a 
+ * list of name/value pairs in parentheses directly after the property. 
+ * In the example above, the first protocol layer has 1 argument, 
+ * the second 2, the third none. When a layer is created, these 
+ * properties (if there are any) will be set in a layer by invoking 
+ * the layer's setProperties() method
+ * <p>
+ * As an example the property string below instructs JGroups to create 
+ * a JChannel with protocols UDP, PING, FD and GMS:<p>
+ * <pre>"UDP(mcast_addr=228.10.9.8;mcast_port=5678):PING:FD:GMS"</pre>
+ * <p>
+ * The UDP protocol layer is at the bottom of the stack, and it 
+ * should use mcast address 228.10.9.8. and port 5678 rather than 
+ * the default IP multicast address and port. The only other argument 
+ * instructs FD to output debug information while executing. 
+ * Property UDP refers to a class {@link org.jgroups.protocols.UDP}, 
+ * which is subsequently loaded and an instance of which is created as protocol layer. 
+ * If any of these classes are not found, an exception will be thrown and 
+ * the construction of the stack will be aborted. 
+ * 
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.35 $
+ * @version $Revision: 1.36 $
  */
 public class JChannel extends Channel {
 
@@ -59,7 +101,7 @@ public class JChannel extends Channel {
     /*the protocol stack, used to send and receive messages from the protocol stack*/
     private ProtocolStack prot_stack=null;
 
-    /** Thread responsible for closing a channel and potentially reconnecting to it (e.g. when shunned) */
+    /** Thread responsible for closing a channel and potentially reconnecting to it (e.g., when shunned). */
     protected CloserThread closer=null;
 
     /** To wait until a local address has been assigned */
@@ -225,8 +267,8 @@ public class JChannel extends Channel {
      * parameter. an example of this parameter is<BR>
      * "UDP:PING:FD:STABLE:NAKACK:UNICAST:FRAG:FLUSH:GMS:VIEW_ENFORCER:STATE_TRANSFER:QUEUE"<BR>
      * Other examples can be found in the ./conf directory<BR>
-     * @param properties the protocol stack setup, if null, the default protocol stack will be used
-     * @param properties the properties can also be a java.net.URL object or a string that is a URL spec.
+     * @param properties the protocol stack setup; if null, the default protocol stack will be used.
+     * 					 The properties can also be a java.net.URL object or a string that is a URL spec.
      *                   The JChannel will validate any URL object and String object to see if they are a URL.
      *                   In case of the parameter being a url, the JChannel will try to load the xml from there.
      *                   In case properties is a org.w3c.dom.Element, the ConfiguratorFactory will parse the
@@ -309,13 +351,13 @@ public class JChannel extends Channel {
 
 
     /**
-     * Connects the channel to a group.<BR>
-     * If the channel is already connected, an error message will be printed to the error log<BR>
-     * If the channel is closed a ChannelClosed exception will be thrown<BR>
-     * This method starts the protocol stack by calling ProtocolStack.start<BR>
-     * then it sends an Event.CONNECT event down the stack and waits to receive a CONNECT_OK event<BR>
-     * Once the CONNECT_OK event arrives from the protocol stack, any channel listeners are notified<BR>
-     * and the channel is considered connected<BR>
+     * Connects the channel to a group.
+     * If the channel is already connected, an error message will be printed to the error log.
+     * If the channel is closed a ChannelClosed exception will be thrown.
+     * This method starts the protocol stack by calling ProtocolStack.start,
+     * then it sends an Event.CONNECT event down the stack and waits to receive a CONNECT_OK event.
+     * Once the CONNECT_OK event arrives from the protocol stack, any channel listeners are notified
+     * and the channel is considered connected.
      *
      * @param channel_name A <code>String</code> denoting the group name. Cannot be null.
      * @exception ChannelException The protocol stack cannot be started
@@ -432,7 +474,7 @@ public class JChannel extends Channel {
 
 
     /**
-     * Destroys the channel.<BR>
+     * Destroys the channel.
      * After this method has been called, the channel us unusable.<BR>
      * This operation will disconnect the channel and close the channel receive queue immediately<BR>
      */
@@ -442,11 +484,13 @@ public class JChannel extends Channel {
 
 
     /**
-     * Opens the channel.<BR>
-     * this does the following actions<BR>
-     * 1. Resets the receiver queue by calling Queue.reset<BR>
-     * 2. Sets up the protocol stack by calling ProtocolStack.setup<BR>
-     * 3. Sets the closed flag to false.<BR>
+     * Opens the channel.
+     * This does the following actions:
+     * <ol>
+     * <li> Resets the receiver queue by calling Queue.reset
+     * <li> Sets up the protocol stack by calling ProtocolStack.setup
+     * <li> Sets the closed flag to false
+     * </ol>
      */
     public synchronized void open() throws ChannelException {
         if(!closed)
@@ -490,8 +534,9 @@ public class JChannel extends Channel {
     }
 
     /**
-     * implementation of the Transport interface.<BR>
-     * Sends a message through the protocol stack<BR>
+     * Sends a message through the protocol stack.
+     * Implements the Transport interface.
+     * 
      * @param msg the message to be sent through the protocol stack,
      *        the destination of the message is specified inside the message itself
      * @exception ChannelNotConnectedException
@@ -605,8 +650,10 @@ public class JChannel extends Channel {
 
 
     /**
-     * returns the current view.<BR>
-     * if the channel is not connected or if it is closed it will return null<BR>
+     * Returns the current view.
+     * <BR>
+     * If the channel is not connected or if it is closed it will return null.
+     * <BR>
      * @return returns the current group view, or null if the channel is closed or disconnected
      */
     public View getView() {
@@ -633,18 +680,20 @@ public class JChannel extends Channel {
 
 
     /**
-     * sets a channel option
-     * the options can be either
-     * <PRE>
-     *     Channel.BLOCK
-     *     Channel.VIEW
-     *     Channel.SUSPECT
-     *     Channel.LOCAL
-     *     Channel.GET_STATE_EVENTS
-     *     Channel.AUTO_RECONNECT
-     *     Channel.AUTO_GETSTATE
-     * </PRE>
-     * There are certain dependencies between the options that you can set, I will try to describe them here<BR>
+     * Sets a channel option.  The options can be one of the following:
+     * <UL>
+     * <LI>    Channel.BLOCK
+     * <LI>    Channel.VIEW
+     * <LI>    Channel.SUSPECT
+     * <LI>    Channel.LOCAL
+     * <LI>    Channel.GET_STATE_EVENTS
+     * <LI>    Channel.AUTO_RECONNECT
+     * <LI>    Channel.AUTO_GETSTATE
+     * </UL>
+     * <P>
+     * There are certain dependencies between the options that you can set,
+     * I will try to describe them here.
+     * <P>
      * Option: Channel.VIEW option<BR>
      * Value:  java.lang.Boolean<BR>
      * Result: set to true the JChannel will receive VIEW change events<BR>
@@ -825,7 +874,7 @@ public class JChannel extends Channel {
 
     /**
      * Called by the application is response to receiving a <code>getState()</code> object when
-     * calling <code>receive()</code>.<br>
+     * calling <code>receive()</code>.
      * When the application receives a getState() message on the receive() method,
      * it should call returnState() to reply with the state of the application
      * @param state The state of the application as a byte buffer
