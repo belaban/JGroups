@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.26 2005/07/13 12:16:04 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.27 2005/07/17 11:25:33 chrislott Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -176,7 +176,7 @@
     <!-- generate java doc -->
     <target name="javadoc"
         depends="prepare"
-        description="Create Javadoc documentation in the ./doc/javadoc directory">
+        description="Create Javadoc documentation in the ./dist/javadoc directory">
         <javadoc packagenames="${javadoc.packages}"
             sourcepath="${src.dir}"
             destdir="${javadoc.dir}"
@@ -184,9 +184,13 @@
             author="true"
             version="true"
             use="true"
-            bottom="Copyright &#169; 1998-2005 Bela Ban . All Rights Reserved."
+            bottom="Copyright &#169; 1998-2005 Bela Ban. All Rights Reserved."
 			useexternalfile="yes"
-            />
+			doctitle="JGroups"
+			overview="${src.dir}/org/jgroups/overview.html">
+			<!-- The tag option for Javadoc is available in Java 1.4 or later. -->
+			<tag name="todo" description="To do:"/>
+			</javadoc>
     </target>
 
     <!-- Create the programmer's guide in the dist directory -->
