@@ -14,7 +14,7 @@ import java.util.Iterator;
 /**
  * Tests one or more protocols independently. Look at org.jgroups.tests.FCTest for an example of how to use it.
  * @author Bela Ban
- * @version $Id: Simulator.java,v 1.1 2004/09/23 16:29:16 belaban Exp $
+ * @version $Id: Simulator.java,v 1.2 2005/07/17 23:02:37 chrislott Exp $
  */
 public class Simulator {
     private Protocol[] protStack=null;
@@ -27,7 +27,7 @@ public class Simulator {
     private Thread recv_thread;
 
 
-    /** HashMap<Address,Simulator> */
+    /** HashMap from Address to Simulator. */
     public static HashMap addrTable=new HashMap();
     private Address local_addr=null;
     private View view;
