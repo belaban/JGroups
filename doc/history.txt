@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.171 2005/07/15 09:34:55 belaban Exp $
+Revision: $Id: history.txt,v 1.172 2005/07/17 11:45:34 chrislott Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -29,6 +29,10 @@ publicnmi	= Robert Schaffar-Taurok (robert@fusion.at)
 Version 2.2.9
 -------------
 
+- Improved javadoc: copied portions of User's Guide to doc comments in source files,
+  fixed javadoc warnings; added project and package overviews; tweaked build target. 
+  (chrislott July 17 2005)
+  
 - Headers are now always created in a Message, because we always add at least 1 header
   to a message
   (bela July 15 2005)
