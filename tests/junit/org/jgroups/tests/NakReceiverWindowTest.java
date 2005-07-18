@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindowTest.java,v 1.5 2005/05/25 12:25:15 belaban Exp $
+// $Id: NakReceiverWindowTest.java,v 1.6 2005/07/18 13:01:55 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -114,6 +114,28 @@ public class NakReceiverWindowTest extends TestCase {
         //   "\nhighest_delivered=" + win.getHighestDelivered());
         assertTrue(win.getLowestSeen() == 4);
         assertTrue(win.getHighestSeen() == 4);
+    }
+
+
+    public void testHighestSeen() throws Exception {
+        NakReceiverWindow win=new NakReceiverWindow(null, 1);
+        win.add(1, new Message());
+        win.add(2, new Message());
+        win.add(3, new Message());
+        win.add(4, new Message());
+        assertEquals(win.getHighestSeen(), 4);
+        win.add(10, new Message());
+        assertEquals(win.getHighestSeen(), 4);
+        assertEquals(win.getHighestReceived(), 10);
+        System.out.println("win: " + win);
+        win.add(9, new Message());
+        win.add(7, new Message());
+        win.add(8, new Message());
+        win.add(6, new Message());
+        win.add(5, new Message());
+        System.out.println("win: " + win);
+        while((win.remove()) != null) ;
+        assertEquals(win.getHighestSeen(), 10);
     }
 
 
