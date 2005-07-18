@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindow.java,v 1.24 2005/07/17 11:34:20 chrislott Exp $
+// $Id: NakReceiverWindow.java,v 1.25 2005/07/18 14:26:47 belaban Exp $
 
 
 package org.jgroups.stack;
@@ -202,7 +202,14 @@ public class NakReceiverWindow {
                 if(seqno == tail) {
                     received_msgs.put(new Long(seqno), msg);
                     tail++;
-                    highest_seen=seqno;
+                    if(highest_seen+2 == tail) {
+                        highest_seen++;
+                    }
+                    else {
+                       updateHighestSeen();
+                    }
+
+                    // highest_seen=seqno;
                 }
                 // gap detected
                 // i. add placeholders, creating gaps
@@ -223,9 +230,7 @@ public class NakReceiverWindow {
                 }
                 else if(seqno < tail) { // finally received missing message
                     if(log.isTraceEnabled()) {
-                        StringBuffer sb=new StringBuffer("added missing msg ");
-                        sb.append(msg.getSrc()).append('#').append(seqno);
-                        log.trace(sb.toString());
+                        log.trace(new StringBuffer("added missing msg ").append(msg.getSrc()).append('#').append(seqno));
                     }
                     if(listener != null) {
                         try {listener.missingMessageReceived(seqno, msg);} catch(Throwable t) {}
