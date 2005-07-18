@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindowTest.java,v 1.7 2005/07/18 13:27:00 belaban Exp $
+// $Id: NakReceiverWindowTest.java,v 1.8 2005/07/18 14:23:35 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -27,8 +27,8 @@ public class NakReceiverWindowTest extends TestCase {
 
     public void test2() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(null, 100);
-        assertTrue(win.getLowestSeen() == 0);
-        assertTrue(win.getHighestSeen() == 0);
+        assertEquals(0, win.getLowestSeen());
+        assertEquals(0, win.getHighestSeen());
     }
 
     public void test3() throws Exception {
@@ -97,6 +97,26 @@ public class NakReceiverWindowTest extends TestCase {
     }
 
 
+    public void testAdd() throws Exception {
+        NakReceiverWindow win=new NakReceiverWindow(null, 0);
+        assertEquals(0, win.getHighestSeen());
+        win.add(0, new Message());
+        assertEquals(0, win.getHighestSeen());
+        win.add(1, new Message());
+        assertEquals(1, win.getHighestSeen());
+        win.add(2, new Message());
+        win.add(3, new Message());
+        win.add(4, new Message());
+        assertEquals(4, win.getHighestSeen());
+        win.add(6, new Message());
+        assertEquals(4, win.getHighestSeen());
+        win.add(5, new Message());
+        assertEquals(6, win.getHighestSeen());
+        while(win.remove() != null) ;
+        assertEquals(6, win.getHighestSeen());
+    }
+
+
     public void test9() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(null, 1);
         win.add(1, new Message());
@@ -139,10 +159,6 @@ public class NakReceiverWindowTest extends TestCase {
     }
 
 
-    /**
-     *
-     * @throws Exception
-     */
     public void testMissingMessages() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(null, 1);
         win.add(1, new Message());
@@ -154,6 +170,98 @@ public class NakReceiverWindowTest extends TestCase {
     }
 
 
+    public void testMissingMessages2() throws Exception {
+        NakReceiverWindow win=new NakReceiverWindow(null, 1);
+        win.add(1, new Message());
+        win.add(5, new Message());
+        assertEquals(1, win.getHighestSeen());
+        win.add(8, new Message());
+        assertEquals(1, win.getHighestSeen());
+        win.add(9, new Message());
+        assertEquals(1, win.getHighestSeen());
+        System.out.println("win: " + win);
+    }
+
+
+    public void testMissingMessages3() throws Exception {
+        NakReceiverWindow win=new NakReceiverWindow(null, 1);
+        win.add(1, new Message());
+        win.add(5, new Message());
+        assertEquals(1, win.getHighestSeen());
+        win.add(8, new Message());
+        assertEquals(1, win.getHighestSeen());
+        win.add(9, new Message());
+        assertEquals(1, win.getHighestSeen());
+        System.out.println("win: " + win);
+        win.add(2, new Message());
+        assertEquals(2, win.getHighestSeen());
+        win.add(3, new Message());
+        win.add(4, new Message());
+        assertEquals(5, win.getHighestSeen());
+        win.add(7, new Message());
+        assertEquals(5, win.getHighestSeen());
+        win.add(6, new Message());
+        assertEquals(9, win.getHighestSeen());
+        win.add(10, new Message());
+        assertEquals(10, win.getHighestSeen());
+        win.add(11, new Message());
+        assertEquals(11, win.getHighestSeen());
+        System.out.println("win: " + win);
+    }
+
+
+    public void testMissingMessages4() throws Exception {
+        NakReceiverWindow win=new NakReceiverWindow(null, 101);
+        win.add(101, new Message());
+        win.add(105, new Message());
+        assertEquals(101, win.getHighestSeen());
+        win.add(108, new Message());
+        assertEquals(101, win.getHighestSeen());
+        win.add(109, new Message());
+        assertEquals(101, win.getHighestSeen());
+        System.out.println("win: " + win);
+        win.add(102, new Message());
+        assertEquals(102, win.getHighestSeen());
+        win.add(103, new Message());
+        win.add(104, new Message());
+        assertEquals(105, win.getHighestSeen());
+        win.add(107, new Message());
+        assertEquals(105, win.getHighestSeen());
+        win.add(106, new Message());
+        assertEquals(109, win.getHighestSeen());
+        win.add(110, new Message());
+        assertEquals(110, win.getHighestSeen());
+        win.add(110, new Message());
+        assertEquals(110, win.getHighestSeen());
+        System.out.println("win: " + win);
+    }
+
+
+    public void testMissingMessages5() throws Exception {
+        NakReceiverWindow win=new NakReceiverWindow(null, 101);
+        win.add(101, new Message());
+        assertEquals(101, win.getHighestSeen());
+        win.add(108, new Message());
+        assertEquals(101, win.getHighestSeen());
+        win.add(109, new Message());
+        assertEquals(101, win.getHighestSeen());
+        System.out.println("win: " + win);
+        win.add(102, new Message());
+        assertEquals(102, win.getHighestSeen());
+        win.add(103, new Message());
+        win.add(104, new Message());
+        assertEquals(104, win.getHighestSeen());
+        win.add(107, new Message());
+        assertEquals(104, win.getHighestSeen());
+        win.add(106, new Message());
+        win.add(105, new Message());
+        assertEquals(109, win.getHighestSeen());
+        win.add(110, new Message());
+        assertEquals(110, win.getHighestSeen());
+        win.add(110, new Message());
+        assertEquals(110, win.getHighestSeen());
+        System.out.println("win: " + win);
+    }
 
     public void test10() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(null, 1);
