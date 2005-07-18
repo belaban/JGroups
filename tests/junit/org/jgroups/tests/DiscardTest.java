@@ -1,4 +1,4 @@
-// $Id: DiscardTest.java,v 1.1 2005/07/16 09:28:42 belaban Exp $
+// $Id: DiscardTest.java,v 1.2 2005/07/18 08:52:35 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -16,7 +16,7 @@ import org.jgroups.View;
  * Tests the NAKACK (retransmission) and STABLE (garbage collection) protocols
  * by discarding 10% of all network-bound messages
  * @author Bela Ban
- * @version $Id: DiscardTest.java,v 1.1 2005/07/16 09:28:42 belaban Exp $
+ * @version $Id: DiscardTest.java,v 1.2 2005/07/18 08:52:35 belaban Exp $
  */
 public class DiscardTest extends TestCase {
     JChannel ch1, ch2;
@@ -79,7 +79,7 @@ public class DiscardTest extends TestCase {
         long received_msgs=0;
         Object obj;
         while(true) {
-            obj=ch1.receive(0);
+            obj=ch1.receive(5000);
             if(obj instanceof Message) {
                 received_msgs++;
                 if(received_msgs % 1000 == 0)
@@ -94,7 +94,7 @@ public class DiscardTest extends TestCase {
         System.out.println("receiving messages on ch2");
         received_msgs=0;
         while(true) {
-            obj=ch2.receive(0);
+            obj=ch2.receive(5000);
             if(obj instanceof Message) {
                 received_msgs++;
                 if(received_msgs % 1000 == 0)
