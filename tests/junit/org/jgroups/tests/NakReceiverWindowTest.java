@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindowTest.java,v 1.6 2005/07/18 13:01:55 belaban Exp $
+// $Id: NakReceiverWindowTest.java,v 1.7 2005/07/18 13:27:00 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -137,6 +137,22 @@ public class NakReceiverWindowTest extends TestCase {
         while((win.remove()) != null) ;
         assertEquals(win.getHighestSeen(), 10);
     }
+
+
+    /**
+     *
+     * @throws Exception
+     */
+    public void testMissingMessages() throws Exception {
+        NakReceiverWindow win=new NakReceiverWindow(null, 1);
+        win.add(1, new Message());
+        win.add(5, new Message());
+        assertEquals(1, win.getHighestSeen());
+        win.add(6, new Message());
+        assertEquals(1, win.getHighestSeen());
+        System.out.println("win: " + win);
+    }
+
 
 
     public void test10() throws Exception {
