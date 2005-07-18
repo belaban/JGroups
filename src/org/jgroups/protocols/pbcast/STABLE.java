@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.33 2005/07/17 16:24:56 belaban Exp $
+// $Id: STABLE.java,v 1.34 2005/07/18 14:27:17 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -222,7 +222,6 @@ public class STABLE extends Protocol {
                 }
             }
 
-
             hdr=(StableHeader)msg.removeHeader(name);
             if(hdr == null)
                 break;
@@ -238,6 +237,19 @@ public class STABLE extends Protocol {
             }
             return;  // don't pass STABLE or STABILITY messages up the stack
 
+        case Event.GET_DIGEST_STABLE_OK:
+            Digest d=(Digest)evt.getArg(), copy;
+
+            synchronized(latest_local_digest) {
+                latest_local_digest.replace(d);
+                // copy=digest.copy();
+            }
+            if(log.isTraceEnabled())
+                log.trace("setting latest_local_digest from NAKACK: " + d.printHighSeqnos());
+            sendStableMessage(d);
+            // sendStableMessage(copy);
+            break;
+
         case Event.VIEW_CHANGE:
             View view=(View)evt.getArg();
             handleViewChange(view);
@@ -245,27 +257,6 @@ public class STABLE extends Protocol {
 
         case Event.SET_LOCAL_ADDRESS:
             local_addr=(Address)evt.getArg();
-            break;
-
-        case Event.GET_DIGEST_STABLE_OK:
-            Digest d=(Digest)evt.getArg(), copy=null;
-
-            synchronized(latest_local_digest) {
-                latest_local_digest.replace(d);
-                //if(heard_from.contains(local_addr))
-                copy=digest.copy();
-            }
-
-//            synchronized(digest) {
-//                boolean success=updateLocalDigest(d, local_addr, true);
-//                if(!success)
-//                    break;
-//                copy=digest.copy();
-//            }
-
-            if(copy != null)
-                sendStableMessage(copy);
-
             break;
         }
 
@@ -364,18 +355,6 @@ public class STABLE extends Protocol {
             return false;
         }
 
-//        if(self) {
-//            if(heard_from.contains(sender)) {
-//                resetHeardFromList(mbrs);
-//                digest.replace(d);
-//                if(log.isTraceEnabled())
-//                    log.trace("initialized digest from " + d);
-//                return true;
-//            }
-//            else
-//                return false;
-//        }
-
         if(!digest.sameSenders(d)) {
             if(log.isTraceEnabled())
                 log.trace(new StringBuffer("received a digest ").append(d.printHighSeqnos()).append(" from ").
@@ -389,7 +368,7 @@ public class STABLE extends Protocol {
         StringBuffer sb=null;
         if(log.isTraceEnabled())
             sb=new StringBuffer("my [").append(local_addr).append("] digest before: ").append(digest).
-                    append("\ndigest from ").append(sender).append(": ").append(d).append("\n");
+                    append("\ndigest from ").append(sender).append(": ").append(d);
         Address mbr;
         long highest_seqno, my_highest_seqno, new_highest_seqno;
         long highest_seen_seqno, my_highest_seen_seqno, new_highest_seen_seqno;
@@ -427,11 +406,24 @@ public class STABLE extends Protocol {
             heard_from.clear();
             heard_from.addAll(new_members);
         }
+
+        Digest copy_of_latest;
+        synchronized(latest_local_digest) {
+            copy_of_latest=latest_local_digest.copy();
+        }
         synchronized(digest) {
-            digest.replace(latest_local_digest);
+            digest.replace(copy_of_latest);
+            if(log.isTraceEnabled())
+                log.trace("resetting digest from NAKACK: " + copy_of_latest.printHighSeqnos());
         }
     }
 
+    /**
+     * Removes mbr from heard_from and returns true if this was the last member, otherwise false.
+     * Resets the heard_from list (populates with membership)
+     * @param mbr
+     * @return
+     */
     private boolean removeFromHeardFromList(Address mbr) {
         synchronized(heard_from) {
             heard_from.remove(mbr);
