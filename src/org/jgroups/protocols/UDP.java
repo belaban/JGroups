@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.93 2005/07/17 11:36:15 chrislott Exp $
+// $Id: UDP.java,v 1.94 2005/07/18 14:44:50 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -545,7 +545,7 @@ public class UDP extends TP implements Runnable {
 
             // Cannot listen at all, throw an Exception
             if(rcv_port >= max_port + 1) { // +1 due to the increment above
-                throw new Exception("UDP.createSockets(): cannot list on any port in range " +
+                throw new Exception("UDP.createSockets(): cannot listen on any port in range " +
                         bind_port + '-' + (bind_port + port_range));
             }
         }
