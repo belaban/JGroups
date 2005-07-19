@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.35 2005/07/19 07:30:47 belaban Exp $
+// $Id: STABLE.java,v 1.36 2005/07/19 08:20:44 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -205,9 +205,10 @@ public class STABLE extends Protocol {
                         log.trace(new StringBuffer("max_bytes has been reached (").append(max_bytes).
                                   append(", bytes received=").append(num_bytes_received).append("): triggers stable msg"));
                     }
+                    num_bytes_received=0;
                     // asks the NAKACK protocol for the current digest, reply event is GET_DIGEST_STABLE_OK (arg=digest)
                     passDown(new Event(Event.GET_DIGEST_STABLE));
-                    num_bytes_received=0;
+
                 }
             }
 
