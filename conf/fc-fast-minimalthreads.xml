@@ -74,10 +74,10 @@ Best result with perf.Test (2 members, 1 sender, laptop, 20000 1K msgs
     <!--VERIFY_SUSPECT timeout="1500" down_thread="false"/-->
     <pbcast.NAKACK max_xmit_size="60000"
                    use_mcast_xmit="false" gc_lag="50" 
-                   retransmit_timeout="20,300,600,1200,2400,4800"
+                   retransmit_timeout="50,100,200,300,600,1200,2400,4800"
                    down_thread="false" up_thread="false"
                    discard_delivered_msgs="true"/>
-    <UNICAST timeout="300,600,1200,2400,3600" 
+    <UNICAST timeout="100,200,300,600,1200,2400,3600"
              down_thread="false" up_thread="false"/>
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000" 
                    down_thread="false" up_thread="false"
