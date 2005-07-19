@@ -1,4 +1,4 @@
-// $Id: FC.java,v 1.27 2005/07/17 11:36:15 chrislott Exp $
+// $Id: FC.java,v 1.28 2005/07/19 11:38:47 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -20,7 +20,7 @@ import java.util.*;
  * Note that this protocol must be located towards the top of the stack, or all down_threads from JChannel to this
  * protocol must be set to false ! This is in order to block JChannel.send()/JChannel.down().
  * @author Bela Ban
- * @version $Revision: 1.27 $
+ * @version $Revision: 1.28 $
  */
 public class FC extends Protocol {
 
@@ -592,6 +592,10 @@ public class FC extends Protocol {
 
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
             type=in.readByte();
+        }
+
+        public String toString() {
+            return "REPLENISH";
         }
 
     }
