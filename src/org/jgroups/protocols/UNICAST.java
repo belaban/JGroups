@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.24 2005/07/13 07:34:45 belaban Exp $
+// $Id: UNICAST.java,v 1.25 2005/07/19 11:12:46 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -195,22 +195,18 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
 
     public void down(Event evt) {
-        Message msg;
-        Object dst, mbr;
-        Entry entry;
-        UnicastHeader hdr;
-
         switch (evt.getType()) {
 
         case Event.MSG: // Add UnicastHeader, add to AckSenderWindow and pass down
-            msg = (Message) evt.getArg();
-            dst = msg.getDest();
+            Message msg = (Message) evt.getArg();
+            Object dst = msg.getDest();
 
             /* only handle unicast messages */
             if (dst == null || ((Address) dst).isMulticastAddress()) {
                 break;
             }
 
+            Entry entry;
             synchronized(connections) {
                 entry = (Entry) connections.get(dst);
                 if (entry == null) {
@@ -219,7 +215,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 }
             }
 
-            hdr = new UnicastHeader(UnicastHeader.DATA, entry.sent_msgs_seqno);
+            UnicastHeader hdr = new UnicastHeader(UnicastHeader.DATA, entry.sent_msgs_seqno);
             if (entry.sent_msgs == null) { // first msg to peer 'dst'
                 hdr.first = true;
                 entry.sent_msgs = new AckSenderWindow(this, timeout, this);
@@ -254,6 +250,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             // Remove all connections for members that left between the current view and the new view
             // See DESIGN for details
             if (use_gms && left_members.size() > 0) {
+                Object mbr;
                 for (int i = 0; i < left_members.size(); i++) {
                     mbr = left_members.elementAt(i);
                     removeConnection(mbr);
@@ -347,7 +344,8 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         Message  m;
 
         if(log.isTraceEnabled())
-            log.trace("[" + local_addr + "] <-- DATA(" + sender + ": #" + seqno + ", first=" + first);
+            log.trace(new StringBuffer("[").append(local_addr).append("] <-- DATA(").append(sender).
+                      append(": #").append(seqno).append(", first=").append(first));
 
         synchronized(connections) {
             entry=(Entry)connections.get(sender);
@@ -363,11 +361,11 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             else {
                 if(operational) {
                     if(log.isWarnEnabled())
-                        log.warn("[" + local_addr + "] seqno " + seqno + " from " +
-                                sender + " is not tagged as the first message sent by " + sender +
+                        log.warn("[" + local_addr + "] seqno " + seqno + " from " + sender +
+                                 " is not tagged as the first message sent by " + sender +
                                 "; however, the table for received messages from " + sender +
-                                " is still null ! We probably haven't received the first message from "
-                                + sender + " ! Discarding message (operational=" + operational + ')');
+                                " is null. We probably haven't received the first message from "
+                                + sender + " Discarding message (headers=" + msg.getHeaders() + ")");
                     return;
                 }
             }
@@ -383,14 +381,14 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     }
 
 
-
-
     /** Add the ACK to hashtable.sender.sent_msgs */
     private void handleAckReceived(Object sender, long seqno) {
         Entry           entry;
         AckSenderWindow win;
 
-        if(log.isTraceEnabled()) log.trace("[" + local_addr + "] <-- ACK(" + sender + ": #" + seqno + ')');
+        if(log.isTraceEnabled())
+            log.trace(new StringBuffer("[").append(local_addr).append("] <-- ACK(").append(sender).
+                      append(": #").append(seqno).append(')'));
         synchronized(connections) {
             entry=(Entry)connections.get(sender);
         }
