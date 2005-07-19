@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.34 2005/07/18 14:27:17 belaban Exp $
+// $Id: STABLE.java,v 1.35 2005/07/19 07:30:47 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -50,8 +50,6 @@ public class STABLE extends Protocol {
     StableTask          stable_task=null;             // bcasts periodic STABLE message (added to timer below)
     final Object        stable_task_mutex=new Object(); // to sync on stable_task
     TimeScheduler       timer=null;                   // to send periodic STABLE msgs (and STABILITY messages)
-    // int                 max_gossip_runs=3;            // max. number of times the StableTask runs before terminating
-    // int                 num_gossip_runs=max_gossip_runs; // this number is decremented (max_gossip_runs doesn't change)
     static final String name="STABLE";
 
     /** Total amount of bytes from incoming messages (default = 0 = disabled). When exceeded, a STABLE
@@ -68,19 +66,12 @@ public class STABLE extends Protocol {
 
     boolean             initialized=false;
 
-    /** Max time we should hold off on message garbage collection. This is a second line of defense in case
-     * we get a SUSPEND_STABLE, but forget to send a corresponding RESUME_STABLE (which should never happen !)
-     * The consequence of a missing RESUME_STABLE would be that the group doesn't garbage collect stable
-     * messages anymore, eventually, with a lot of traffic, every member would accumulate messages and run
-     * out of memory !
-     */
-    // long                max_suspend_time=600000;
-
     ResumeTask          resume_task=null;
     final Object        resume_task_mutex=new Object();
 
     /** Number of gossip messages */
     int                 num_gossips=0;
+
 
 
     public String getName() {
@@ -211,10 +202,8 @@ public class STABLE extends Protocol {
                 num_bytes_received+=size;
                 if(num_bytes_received >= max_bytes) {
                     if(log.isTraceEnabled()) {
-                        StringBuffer sb=new StringBuffer("max_bytes has been reached (max_bytes=");
-                        sb.append(max_bytes).append(", number of bytes received=");
-                        sb.append(num_bytes_received).append("): triggers stable msg");
-                        log.trace(sb.toString());
+                        log.trace(new StringBuffer("max_bytes has been reached (").append(max_bytes).
+                                  append(", bytes received=").append(num_bytes_received).append("): triggers stable msg"));
                     }
                     // asks the NAKACK protocol for the current digest, reply event is GET_DIGEST_STABLE_OK (arg=digest)
                     passDown(new Event(Event.GET_DIGEST_STABLE));
@@ -238,16 +227,13 @@ public class STABLE extends Protocol {
             return;  // don't pass STABLE or STABILITY messages up the stack
 
         case Event.GET_DIGEST_STABLE_OK:
-            Digest d=(Digest)evt.getArg(), copy;
-
+            Digest d=(Digest)evt.getArg();
             synchronized(latest_local_digest) {
                 latest_local_digest.replace(d);
-                // copy=digest.copy();
             }
             if(log.isTraceEnabled())
                 log.trace("setting latest_local_digest from NAKACK: " + d.printHighSeqnos());
             sendStableMessage(d);
-            // sendStableMessage(copy);
             break;
 
         case Event.VIEW_CHANGE:
@@ -259,7 +245,6 @@ public class STABLE extends Protocol {
             local_addr=(Address)evt.getArg();
             break;
         }
-
         passUp(evt);
     }
 
