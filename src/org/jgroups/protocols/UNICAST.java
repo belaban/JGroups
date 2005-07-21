@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.25 2005/07/19 11:12:46 belaban Exp $
+// $Id: UNICAST.java,v 1.26 2005/07/21 18:43:52 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -361,11 +361,10 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             else {
                 if(operational) {
                     if(log.isWarnEnabled())
-                        log.warn("[" + local_addr + "] seqno " + seqno + " from " + sender +
-                                 " is not tagged as the first message sent by " + sender +
-                                "; however, the table for received messages from " + sender +
+                        log.warn("seqno " + seqno + " from " + sender + " is not tagged as the first message sent by " +
+                                 sender + "; however, the table for received messages from " + sender +
                                 " is null. We probably haven't received the first message from "
-                                + sender + " Discarding message (headers=" + msg.getHeaders() + ")");
+                                + sender + ". Discarding message (headers=" + msg.getHeaders() + ")");
                     return;
                 }
             }
