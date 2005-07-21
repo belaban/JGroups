@@ -17,7 +17,7 @@ import java.lang.reflect.Method;
 /**
  * Interactive test for measuring group RPCs using different invocation techniques.
  * @author Bela Ban
- * @version $Revision: 1.9 $
+ * @version $Revision: 1.10 $
  */
 public class RpcDispatcherSpeedTest implements MembershipListener {
     Channel             channel;
@@ -43,8 +43,8 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
         this.mode=mode;
     }
 
-    public long measure(long start_time) throws Exception {
-        return System.currentTimeMillis() - start_time;
+    public long measure() throws Exception {
+        return System.currentTimeMillis();
     }
 
 
@@ -83,79 +83,68 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
 
     void invokeRpcs(int num, int mode) throws Exception {
         RspList rsp_list;
-        Long    start_time;
-        long    total_time=0;
+        long    start, stop;
         int     show=num/10;
 
         if(show <=0) show=1;
+        start=System.currentTimeMillis();
         switch(mode) {
-            case OLD:
-                System.out.println("-- invoking " + num + " methods using mode=OLD");
-                for(int i=1; i <= num; i++) {
-                    start_time=new Long(System.currentTimeMillis());
-                    rsp_list=disp.callRemoteMethods(null,
-                                                    "measure",
-                                                    new Object[] {start_time},
-                                                    new Class[]{long.class},
-                                                    GroupRequest.GET_ALL, TIMEOUT);
-                    total_time+=getAverage(rsp_list);
-                    if(i % show == 0)
-                        System.out.println(i);
-                }
-                printStats(total_time, num);
-                break;
+        case OLD:
+            System.out.println("-- invoking " + num + " methods using mode=OLD");
+            for(int i=1; i <= num; i++) {
+                rsp_list=disp.callRemoteMethods(null,
+                                                "measure",
+                                                new Object[] {},
+                                                new Class[]{},
+                                                GroupRequest.GET_ALL, TIMEOUT);
+                if(i % show == 0)
+                    System.out.println(i);
+            }
+            break;
 
-            case METHOD:
-                System.out.println("-- invoking " + num + " methods using mode=METHOD");
-                Method method=getClass().getMethod("measure", new Class[]{long.class});
-                MethodCall method_call;
-                for(int i=1; i <= num; i++) {
-                    start_time=new Long(System.currentTimeMillis());
-                    method_call=new MethodCall(method, new Object[]{start_time});
-                    rsp_list=disp.callRemoteMethods(null, method_call, GroupRequest.GET_ALL,
-                                                    TIMEOUT);
-                    total_time+=getAverage(rsp_list);
-                    if(i % show == 0)
-                        System.out.println(i);
-                }
-                printStats(total_time, num);
-                break;
+        case METHOD:
+            System.out.println("-- invoking " + num + " methods using mode=METHOD");
+            Method method=getClass().getMethod("measure", new Class[]{});
+            MethodCall method_call;
+            for(int i=1; i <= num; i++) {
+                method_call=new MethodCall(method, new Object[]{});
+                rsp_list=disp.callRemoteMethods(null, method_call, GroupRequest.GET_ALL,
+                                                TIMEOUT);
+                if(i % show == 0)
+                    System.out.println(i);
+            }
+            break;
 
-                case TYPES:
-                System.out.println("-- invoking " + num + " methods using mode=TYPES");
-                for(int i=1; i <= num; i++) {
-                    start_time=new Long(System.currentTimeMillis());
-                    rsp_list=disp.callRemoteMethods(null, "measure",
-                                                    new Object[]{start_time},
-                                                    new Class[]{LONG_CLASS},
-                                                    GroupRequest.GET_ALL,
-                                                    TIMEOUT);
-                    total_time+=getAverage(rsp_list);
-                    if(i % show == 0)
-                        System.out.println(i);
-                }
-                printStats(total_time, num);
-                break;
+        case TYPES:
+            System.out.println("-- invoking " + num + " methods using mode=TYPES");
+            for(int i=1; i <= num; i++) {
+                rsp_list=disp.callRemoteMethods(null, "measure",
+                                                new Object[]{},
+                                                new Class[]{},
+                                                GroupRequest.GET_ALL,
+                                                TIMEOUT);
+                if(i % show == 0)
+                    System.out.println(i);
+            }
+            break;
 
-            case SIGNATURE:
-                System.out.println("-- invoking " + num + " methods using mode=SIGNATURE");
-                for(int i=1; i <= num; i++) {
-                    start_time=new Long(System.currentTimeMillis());
-                    rsp_list=disp.callRemoteMethods(null, "measure",
-                                                    new Object[]{start_time},
-                                                    new String[]{LONG},
-                                                    GroupRequest.GET_ALL,
-                                                    TIMEOUT);
-                    total_time+=getAverage(rsp_list);
-                    if(i % show == 0)
-                        System.out.println(i);
-                }
-                printStats(total_time, num);
-                break;
-            default:
-                break;
+        case SIGNATURE:
+            System.out.println("-- invoking " + num + " methods using mode=SIGNATURE");
+            for(int i=1; i <= num; i++) {
+                rsp_list=disp.callRemoteMethods(null, "measure",
+                                                new Object[]{},
+                                                new String[]{LONG},
+                                                GroupRequest.GET_ALL,
+                                                TIMEOUT);
+                if(i % show == 0)
+                    System.out.println(i);
+            }
+            break;
+        default:
+            break;
         }
-
+        stop=System.currentTimeMillis();
+        printStats(stop-start, num);
     }
 
 
