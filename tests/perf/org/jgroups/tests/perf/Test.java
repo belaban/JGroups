@@ -9,6 +9,8 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.util.*;
 
+import EDU.oswego.cs.dl.util.concurrent.ConcurrentReaderHashMap;
+
 /**  You start the test by running this class.
  * Use parameters -Xbatch -Xconcurrentio (Solaris specific)
  * @author Bela Ban (belaban@yahoo.com)
@@ -21,8 +23,8 @@ public class Test implements Receiver {
     Transport       transport=null;
     Object          local_addr=null;
 
-    /** HashMap<Object,MemberInfo> members. Keys=member addresses, value=MemberInfo */
-    HashMap         senders=new HashMap();
+    /** Map<Object,MemberInfo> members. Keys=member addresses, value=MemberInfo */
+    Map             senders=new ConcurrentReaderHashMap(10);
 
     /** Keeps track of members. ArrayList<SocketAddress> */
     ArrayList       members=new ArrayList();
@@ -39,8 +41,8 @@ public class Test implements Receiver {
 
     boolean         all_received=false;
 
-    /** HashMap<Object, HashMap>. A hashmap of senders, each value is the 'senders' hashmap */
-    HashMap         results=new HashMap();
+    /** Map<Object, Map>. A hashmap of senders, each value is the 'senders' hashmap */
+    Map             results=new HashMap();
 
     /** Dump info in gnuplot format */
     boolean         gnuplot_output=false;
@@ -255,8 +257,8 @@ public class Test implements Receiver {
             counter++;
             info.total_bytes_received+=num_bytes;
             if(info.num_msgs_received % log_interval == 0)
-                System.out.println("-- received " + info.num_msgs_received +
-                                   " messages from " + sender);
+                System.out.println(new StringBuffer("-- received ").append(info.num_msgs_received).
+                                   append(" messages from ").append(sender));
 
             if(counter % log_interval == 0) {
                 if(log.isInfoEnabled()) log.info(dumpStats(counter));
@@ -289,10 +291,10 @@ public class Test implements Receiver {
         }
     }
 
-    void sendResults() throws Exception {
+    private void sendResults() throws Exception {
         Data d=new Data(Data.RESULTS);
         byte[] buf;
-        d.results=(HashMap)this.senders.clone();
+        d.results=new ConcurrentReaderHashMap(this.senders);
         buf=generatePayload(d, null);
         transport.send(null, buf);
     }
@@ -325,8 +327,6 @@ public class Test implements Receiver {
             total_msgs++;
             if(total_msgs % log_interval == 0) {
                 System.out.println("++ sent " + total_msgs);
-                //if(gnuplot_output == false)
-                //  if(log.isInfoEnabled()) log.info(dumpStats(total_msgs));
             }
         }
     }
@@ -372,17 +372,17 @@ public class Test implements Receiver {
     }
 
 
-    void dumpResults() {
+    private void dumpResults() {
         Object      member;
         Map.Entry   entry;
-        HashMap     map;
+        Map         map;
         StringBuffer sb=new StringBuffer();
         sb.append("\n-- results:\n\n");
 
         for(Iterator it=results.entrySet().iterator(); it.hasNext();) {
             entry=(Map.Entry)it.next();
             member=entry.getKey();
-            map=(HashMap)entry.getValue();
+            map=(Map)entry.getValue();
             sb.append("-- results from ").append(member).append(":\n");
             dump(map, sb);
             sb.append('\n');
@@ -392,13 +392,13 @@ public class Test implements Receiver {
     }
 
 
-    void dumpSenders() {
+    private void dumpSenders() {
         StringBuffer sb=new StringBuffer();
         dump(this.senders, sb);
         System.out.println(sb.toString());
     }
 
-    void dump(HashMap map, StringBuffer sb) {
+    private void dump(Map map, StringBuffer sb) {
         Map.Entry  entry;
         Object     mySender;
         MemberInfo mi;

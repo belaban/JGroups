@@ -1,4 +1,4 @@
-// $Id: MethodCallTest.java,v 1.9 2005/02/19 12:33:34 ovidiuf Exp $
+// $Id: MethodCallTest.java,v 1.10 2005/07/22 08:59:57 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -18,7 +18,7 @@ import org.jgroups.blocks.MethodCall;
 /**
  * @author Bela Ban belaban@yahoo.com
  * @author <a href="mailto:ovidiu@jboss.org">Ovidiu Feodorov</a>
- * @version $Revision: 1.9 $
+ * @version $Revision: 1.10 $
  **/
 
 public class MethodCallTest extends TestCase {
@@ -29,14 +29,6 @@ public class MethodCallTest extends TestCase {
         super(name);
     }
 
-
-    public void setUp() {
-
-    }
-
-    public void tearDown() {
-        
-    }
 
 
 

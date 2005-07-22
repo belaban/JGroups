@@ -1,4 +1,4 @@
-// $Id: RpcDispatcher.java,v 1.16 2005/07/17 11:36:40 chrislott Exp $
+// $Id: RpcDispatcher.java,v 1.17 2005/07/22 08:59:57 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -20,6 +20,7 @@ import java.util.Vector;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.lang.reflect.Method;
 
 
 
@@ -36,9 +37,10 @@ import java.util.Iterator;
  * @author Bela Ban
  */
 public class RpcDispatcher extends MessageDispatcher implements ChannelListener {
-    protected Object     server_obj=null;
-    protected Marshaller marshaller=null;
-    protected List       additionalChannelListeners=null;
+    protected Object        server_obj=null;
+    protected Marshaller    marshaller=null;
+    protected List          additionalChannelListeners=null;
+    protected MethodLookup  method_lookup=null;
 
 
     public RpcDispatcher(Channel channel, MessageListener l, MembershipListener l2, Object server_obj) {
@@ -99,6 +101,14 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
 
     public Object getServerObject() {return server_obj;}
 
+    public MethodLookup getMethodLookup() {
+        return method_lookup;
+    }
+
+    public void setMethodLookup(MethodLookup method_lookup) {
+        this.method_lookup=method_lookup;
+    }
+
 
     public RspList castMessage(Vector dests, Message msg, int mode, long timeout) {
         if(log.isErrorEnabled()) log.error("this method should not be used with " +
@@ -157,8 +167,6 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         if(log.isTraceEnabled()) log.trace("responses: " + retval);
         return retval;
     }
-
-
 
 
 
@@ -239,6 +247,16 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         try {
             if(log.isTraceEnabled())
                 log.trace("[sender=" + req.getSrc() + "], method_call: " + method_call);
+
+            if(method_call.getMode() == MethodCall.ID) {
+                if(method_lookup == null)
+                    throw new Exception("MethodCall uses ID=" + method_call.getId() + ", but method_lookup has not been set");
+                Method m=method_lookup.findMethod(method_call.getId());
+                if(m == null)
+                    throw new Exception("no method foudn for " + method_call.getId());
+                method_call.setMethod(m);
+            }
+            
             return method_call.invoke(server_obj);
         }
         catch(Throwable x) {
