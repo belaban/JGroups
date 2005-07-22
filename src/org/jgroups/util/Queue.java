@@ -1,4 +1,4 @@
-// $Id: Queue.java,v 1.22 2005/04/11 12:54:56 belaban Exp $
+// $Id: Queue.java,v 1.23 2005/07/22 15:53:39 belaban Exp $
 
 package org.jgroups.util;
 
@@ -539,7 +539,7 @@ public class Queue {
 
 
     /** Doesn't need to be synchronized; is always called from synchronized methods */
-    void decrementSize() {
+    final private void decrementSize() {
         size--;
         if(size < 0)
             size=0;
