@@ -1,4 +1,4 @@
-// $Id: GroupRequest.java,v 1.11 2005/01/13 01:06:53 belaban Exp $
+// $Id: GroupRequest.java,v 1.12 2005/07/22 11:10:28 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -39,7 +39,7 @@ import java.util.Vector;
  * to do so.<p>
  * <b>Requirements</b>: lossless delivery, e.g. acknowledgment-based message confirmation.
  * @author Bela Ban
- * @version $Revision: 1.11 $
+ * @version $Revision: 1.12 $
  */
 public class GroupRequest implements RspCollector, Command {
     /** return only first response */
@@ -394,12 +394,12 @@ public class GroupRequest implements RspCollector, Command {
         for(int i=0; i < received.length; i++)
             ret.append(receivedToString(received[i]) + " ");
         if(suspects.size() > 0)
-            ret.append("\nsuspects: " + suspects);
-        ret.append("\nrequest_msg: " + request_msg);
-        ret.append("\nrsp_mode: " + rsp_mode);
-        ret.append("\ndone: " + done);
-        ret.append("\ntimeout: " + timeout);
-        ret.append("\nexpected_mbrs: " + expected_mbrs);
+            ret.append("\nsuspects: ").append(suspects);
+        ret.append("\nrequest_msg: ").append(request_msg);
+        ret.append("\nrsp_mode: ").append(rsp_mode);
+        ret.append("\ndone: ").append(done);
+        ret.append("\ntimeout: ").append(timeout);
+        ret.append("\nexpected_mbrs: ").append(expected_mbrs);
         ret.append("\n]");
         return ret.toString();
     }
@@ -457,7 +457,7 @@ public class GroupRequest implements RspCollector, Command {
         }
 
         try {
-           if(log.isTraceEnabled()) log.trace("sending request (id=" + req_id + ')');
+           if(log.isTraceEnabled()) log.trace(new StringBuffer("sending request (id=").append(req_id).append(')'));
             if(corr != null) {
                 java.util.List tmp=members != null? members : null;
                 corr.sendRequest(req_id, tmp, request_msg, rsp_mode == GET_NONE? null : this);

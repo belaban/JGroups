@@ -1,4 +1,4 @@
-// $Id: Rsp.java,v 1.2 2005/01/20 02:04:13 ovidiuf Exp $
+// $Id: Rsp.java,v 1.3 2005/07/22 11:10:30 belaban Exp $
 
 package org.jgroups.util;
 
@@ -60,8 +60,8 @@ public class Rsp
 
     public String toString()
     {
-        return "sender=" + sender + ", retval=" + retval + ", received=" +
-            received + ", suspected=" + suspected;
+        return new StringBuffer("sender=").append(sender).append(", retval=").append(retval).append(", received=").
+                append(received).append(", suspected=").append(suspected).toString();
     }
 }
 
