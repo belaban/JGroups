@@ -1,4 +1,4 @@
-// $Id: TimeSchedulerTest.java,v 1.5 2005/05/30 16:15:05 belaban Exp $
+// $Id: TimeSchedulerTest.java,v 1.6 2005/07/22 07:57:38 belaban Exp $
 package org.jgroups.tests;
 
 
@@ -30,11 +30,13 @@ public class TimeSchedulerTest extends TestCase {
     }
 
 
-    public void setUp() {
+    public void setUp() throws Exception {
+        super.setUp();
         timer=new TimeScheduler();
     }
 
-    public void tearDown() {
+    public void tearDown() throws Exception {
+        super.tearDown();
         try {
             timer.stop();
         }
@@ -72,6 +74,74 @@ public class TimeSchedulerTest extends TestCase {
 //        System.out.println("adding new task at " + System.currentTimeMillis());
 //        timer.add(t, false);
 //        Util.sleep(12000);
+//    }
+
+
+    class MyTask implements TimeScheduler.Task {
+        boolean done=false;
+        private long timeout=0;
+
+        MyTask(long timeout) {
+            this.timeout=timeout;
+        }
+
+        public boolean cancelled() {
+            return done;
+        }
+
+        public long nextInterval() {
+            return timeout;
+        }
+
+        public void run() {
+            System.out.println(System.currentTimeMillis() + ": this is MyTask running - done");
+            done=true;
+        }
+    }
+
+    public void test2Tasks() {
+        int size;
+
+        System.out.println(System.currentTimeMillis() + ": adding task");
+        timer.add(new MyTask(500));
+        size=timer.size();
+        System.out.println("queue size=" + size);
+        assertEquals(size, 1);
+        Util.sleep(1000);
+        size=timer.size();
+        System.out.println("queue size=" + size);
+        assertEquals(size, 0);
+
+        Util.sleep(1500);
+        System.out.println(System.currentTimeMillis() + ": adding task");
+        timer.add(new MyTask(500));
+
+        System.out.println(System.currentTimeMillis() + ": adding task");
+        timer.add(new MyTask(500));
+
+        System.out.println(System.currentTimeMillis() + ": adding task");
+        timer.add(new MyTask(500));
+
+        size=timer.size();
+        System.out.println("queue size=" + size);
+        assertEquals(size, 3);
+
+        Util.sleep(1000);
+        size=timer.size();
+        System.out.println("queue size=" + size);
+        assertEquals(size, 0);
+    }
+
+
+//    public void testMultipleTasks() {
+//        timer.setSuspendInterval(5000);
+//        for(int i=0; i < 10; i++) {
+//            timer.add(new MyTask(1));
+//            Util.sleep(1000);
+//        }
+//        Util.sleep(100);
+//        assertEquals(timer.size(), 0);
+//        Util.sleep(60000);
 //    }
 
 
