@@ -16,7 +16,7 @@ import java.lang.reflect.Method;
 /**
  * Interactive test for measuring group RPCs using different invocation techniques.
  * @author Bela Ban
- * @version $Revision: 1.11 $
+ * @version $Revision: 1.12 $
  */
 public class RpcDispatcherSpeedTest implements MembershipListener {
     Channel             channel;
@@ -58,6 +58,7 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
 
     public void start() throws Exception {
         channel=new JChannel(props);
+        channel.setOpt(Channel.LOCAL, Boolean.FALSE);
         disp=new RpcDispatcher(channel, null, this, this,
                 false, // no deadlock detection
                 false); // no concurrent processing on incoming method calls
@@ -87,13 +88,8 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
             t.printStackTrace(System.err);
         }
         finally {
-            System.out.println("Closing channel");
             channel.close();
-            System.out.println("Closing channel: -- done");
-
-            System.out.println("Stopping dispatcher");
             disp.stop();
-            System.out.println("Stopping dispatcher: -- done");
         }
     }
 
@@ -101,6 +97,8 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
     void invokeRpcs(int num, int mode) throws Exception {
         long    start, stop;
         int     show=num/10;
+        Method measure_method=getClass().getMethod("measure", new Class[]{});
+        MethodCall measure_method_call=new MethodCall(measure_method, new Object[]{});
 
         if(show <=0) show=1;
         start=System.currentTimeMillis();
@@ -120,12 +118,8 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
 
         case METHOD:
             System.out.println("-- invoking " + num + " methods using mode=METHOD");
-            Method method=getClass().getMethod("measure", new Class[]{});
-            MethodCall method_call;
             for(int i=1; i <= num; i++) {
-                method_call=new MethodCall(method, new Object[]{});
-                disp.callRemoteMethods(null, method_call, GroupRequest.GET_ALL,
-                                       TIMEOUT);
+                disp.callRemoteMethods(null, measure_method_call, GroupRequest.GET_ALL, TIMEOUT);
                 if(i % show == 0)
                     System.out.println(i);
             }
@@ -158,9 +152,9 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
             break;
         case ID:
             System.out.println("-- invoking " + num + " methods using mode=ID");
-            method_call=new MethodCall((short)0, null);
+            measure_method_call=new MethodCall((short)0, null);
             for(int i=1; i <= num; i++) {
-                disp.callRemoteMethods(null, method_call, GroupRequest.GET_ALL, TIMEOUT);
+                disp.callRemoteMethods(null, measure_method_call, GroupRequest.GET_ALL, TIMEOUT);
                 if(i % show == 0)
                     System.out.println(i);
             }

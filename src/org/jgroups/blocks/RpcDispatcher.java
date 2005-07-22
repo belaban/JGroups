@@ -1,4 +1,4 @@
-// $Id: RpcDispatcher.java,v 1.17 2005/07/22 08:59:57 belaban Exp $
+// $Id: RpcDispatcher.java,v 1.18 2005/07/22 11:10:29 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -140,20 +140,19 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
 
 
     public RspList callRemoteMethods(Vector dests, MethodCall method_call, int mode, long timeout) {
-        byte[]   buf=null;
-        Message  msg=null;
-        RspList  retval=null;
-
-        if(log.isTraceEnabled())
-            log.trace("dests=" + dests + ", method_call=" + method_call + ", mode=" + mode + ", timeout=" + timeout);
-
         if(dests != null && dests.size() == 0) {
             // don't send if dest list is empty
             if(log.isTraceEnabled())
-                log.trace("destination list is non-null and empty: no need to send message");
+                log.trace(new StringBuffer("destination list of ").append(method_call.getName()).
+                          append("() is empty: no need to send message"));
             return new RspList();
         }
 
+        if(log.isTraceEnabled())
+            log.trace(new StringBuffer("dests=").append(dests).append(", method_call=").append(method_call).
+                      append(", mode=").append(mode).append(", timeout=").append(timeout));
+
+        byte[] buf;
         try {
             buf=marshaller != null? marshaller.objectToByteBuffer(method_call) : Util.objectToByteBuffer(method_call);
         }
@@ -162,8 +161,8 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
             return null;
         }
 
-        msg=new Message(null, null, buf);
-        retval=super.castMessage(dests, msg, mode, timeout);
+        Message msg=new Message(null, null, buf);
+        RspList  retval=super.castMessage(dests, msg, mode, timeout);
         if(log.isTraceEnabled()) log.trace("responses: " + retval);
         return retval;
     }
