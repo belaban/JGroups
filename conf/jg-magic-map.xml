@@ -205,7 +205,12 @@
         <preload>true</preload>
         <magic-number>34</magic-number>
     </class>
-
+    <class>
+        <description>(Description goes here)</description>
+        <class-name>org.jgroups.blocks.RequestCorrelator$Header</class-name>
+        <preload>true</preload>
+        <magic-number>35</magic-number>
+    </class>
      <class>
         <description>PingRsp</description>
         <class-name>org.jgroups.protocols.PingRsp</class-name>
