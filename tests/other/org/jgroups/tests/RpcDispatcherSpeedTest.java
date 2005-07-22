@@ -4,9 +4,8 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.blocks.GroupRequest;
 import org.jgroups.blocks.MethodCall;
+import org.jgroups.blocks.MethodLookup;
 import org.jgroups.blocks.RpcDispatcher;
-import org.jgroups.util.Rsp;
-import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
 
 import java.lang.reflect.Method;
@@ -17,7 +16,7 @@ import java.lang.reflect.Method;
 /**
  * Interactive test for measuring group RPCs using different invocation techniques.
  * @author Bela Ban
- * @version $Revision: 1.10 $
+ * @version $Revision: 1.11 $
  */
 public class RpcDispatcherSpeedTest implements MembershipListener {
     Channel             channel;
@@ -30,17 +29,26 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
     static final int    METHOD=2;
     static final int    TYPES=3;
     static final int    SIGNATURE=4;
+    static final int    ID=5;
     static final long   TIMEOUT=10000;
     static final Class  LONG_CLASS=long.class;
     static final String LONG=long.class.getName();
+    final Method[] METHODS=new Method[1];
 
 
 
-    public RpcDispatcherSpeedTest(String props, boolean server, int num, int mode) {
+
+    public RpcDispatcherSpeedTest(String props, boolean server, int num, int mode) throws NoSuchMethodException {
         this.props=props;
         this.server=server;
         this.num=num;
         this.mode=mode;
+        initMethods();
+    }
+
+    void initMethods() throws NoSuchMethodException {
+        Class cl=this.getClass();
+        METHODS[0]=cl.getMethod("measure", null);
     }
 
     public long measure() throws Exception {
@@ -53,6 +61,15 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
         disp=new RpcDispatcher(channel, null, this, this,
                 false, // no deadlock detection
                 false); // no concurrent processing on incoming method calls
+        // disp.setConcurrentProcessing(true);
+
+        disp.setMethodLookup(new MethodLookup() {
+
+            public Method findMethod(short id) {
+                return METHODS[0];
+            }
+        });
+
         channel.connect("RpcDispatcherSpeedTestGroup");
 
         try {
@@ -82,7 +99,6 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
 
 
     void invokeRpcs(int num, int mode) throws Exception {
-        RspList rsp_list;
         long    start, stop;
         int     show=num/10;
 
@@ -92,11 +108,11 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
         case OLD:
             System.out.println("-- invoking " + num + " methods using mode=OLD");
             for(int i=1; i <= num; i++) {
-                rsp_list=disp.callRemoteMethods(null,
-                                                "measure",
-                                                new Object[] {},
-                                                new Class[]{},
-                                                GroupRequest.GET_ALL, TIMEOUT);
+                disp.callRemoteMethods(null,
+                                       "measure",
+                                       new Object[] {},
+                                       new Class[]{},
+                                       GroupRequest.GET_ALL, TIMEOUT);
                 if(i % show == 0)
                     System.out.println(i);
             }
@@ -108,8 +124,8 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
             MethodCall method_call;
             for(int i=1; i <= num; i++) {
                 method_call=new MethodCall(method, new Object[]{});
-                rsp_list=disp.callRemoteMethods(null, method_call, GroupRequest.GET_ALL,
-                                                TIMEOUT);
+                disp.callRemoteMethods(null, method_call, GroupRequest.GET_ALL,
+                                       TIMEOUT);
                 if(i % show == 0)
                     System.out.println(i);
             }
@@ -118,11 +134,11 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
         case TYPES:
             System.out.println("-- invoking " + num + " methods using mode=TYPES");
             for(int i=1; i <= num; i++) {
-                rsp_list=disp.callRemoteMethods(null, "measure",
-                                                new Object[]{},
-                                                new Class[]{},
-                                                GroupRequest.GET_ALL,
-                                                TIMEOUT);
+                disp.callRemoteMethods(null, "measure",
+                                       new Object[]{},
+                                       new Class[]{},
+                                       GroupRequest.GET_ALL,
+                                       TIMEOUT);
                 if(i % show == 0)
                     System.out.println(i);
             }
@@ -131,11 +147,20 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
         case SIGNATURE:
             System.out.println("-- invoking " + num + " methods using mode=SIGNATURE");
             for(int i=1; i <= num; i++) {
-                rsp_list=disp.callRemoteMethods(null, "measure",
-                                                new Object[]{},
-                                                new String[]{LONG},
-                                                GroupRequest.GET_ALL,
-                                                TIMEOUT);
+                disp.callRemoteMethods(null, "measure",
+                                       new Object[]{},
+                                       new String[]{},
+                                       GroupRequest.GET_ALL,
+                                       TIMEOUT);
+                if(i % show == 0)
+                    System.out.println(i);
+            }
+            break;
+        case ID:
+            System.out.println("-- invoking " + num + " methods using mode=ID");
+            method_call=new MethodCall((short)0, null);
+            for(int i=1; i <= num; i++) {
+                disp.callRemoteMethods(null, method_call, GroupRequest.GET_ALL, TIMEOUT);
                 if(i % show == 0)
                     System.out.println(i);
             }
@@ -148,27 +173,6 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
     }
 
 
-    double getAverage(RspList rsps) {
-        Rsp    rsp;
-        double retval=0;
-        int    num=0;
-
-        if(rsps == null || rsps.size() == 0) {
-            System.err.println("response list is empty");
-            return 0.0;
-        }
-        for(int i=0; i < rsps.size(); i++) {
-            rsp=(Rsp)rsps.elementAt(i);
-            if(rsp.getValue() != null && rsp.getValue() instanceof Long) {
-                retval+=((Long)rsp.getValue()).longValue();
-                num++;
-            }
-            else {
-                System.err.println("response " + rsp.getValue() + " invalid");
-            }
-        }
-        return retval / num;
-    }
 
     void printStats(long total_time, int num) {
         double throughput=((double)num)/((double)total_time/1000.0);
@@ -225,6 +229,9 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
                     mode=TYPES;
                 else if("signature".equals(m))
                     mode=SIGNATURE;
+                else if("ID".equals(m) || "id".equals(m)) {
+                    mode=ID;
+                }
                 else {
                     System.err.println("mode " + m + " is invalid");
                     help();
@@ -249,6 +256,6 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
     static void help() {
         System.out.println("RpcDispatcherSpeedTest [-help] [-props <props>] " +
                            "[-server] [-num <number of calls>] [-mode <mode>]");
-        System.out.println("mode can be either 'old', 'method', 'types' or 'signature'");
+        System.out.println("mode can be either 'old', 'method', 'types', signature' or 'id'");
     }
 }

@@ -205,12 +205,6 @@
         <preload>true</preload>
         <magic-number>34</magic-number>
     </class>
-    <class>
-        <description>Array of Address</description>
-        <class-name>[Lorg.jgroups.Address;</class-name>
-        <preload>true</preload>
-        <magic-number>35</magic-number>
-    </class>
      <class>
         <description>PingRsp</description>
         <class-name>org.jgroups.protocols.PingRsp</class-name>

@@ -4,13 +4,13 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Data sent around between members
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: Data.java,v 1.6 2004/07/05 14:15:21 belaban Exp $
+ * @version $Id: Data.java,v 1.7 2005/07/22 08:59:58 belaban Exp $
  */
 public class Data implements Externalizable {
     final static int DISCOVERY_REQ = 1;
@@ -31,7 +31,7 @@ public class Data implements Externalizable {
     byte[]  payload=null; // used with DATA
     boolean sender=false; // used with DISCOVERY_RSP
     long    num_msgs=0;   // used with DISCOVERY_RSP
-    HashMap results=null; // used with RESULTS
+    Map     results=null; // used with RESULTS
 
     public int getType() {
         return type;
@@ -67,43 +67,10 @@ public class Data implements Externalizable {
         num_msgs=in.readLong();
         boolean results_available=in.readBoolean();
         if(results_available)
-            results=(HashMap)in.readObject();
+            results=(Map)in.readObject();
     }
 
-//    public byte[] write() throws Exception {
-//        byte[] retval=null;
-//        switch(type) {
-//            case DISCOVERY_REQ: return new byte[]{DISCOVERY_REQ};
-//            case DISCOVERY_RSP:
-//                byte[] tmp=Util.objectToByteBuffer(new Long(num_msgs));
-//                retval=new byte[tmp.length +1];
-//                retval[0]=DISCOVERY_RSP;
-//                System.arraycopy(tmp, 0, retval, 1, tmp.length);
-//                return retval;
-//            case DATA:
-//                retval=new byte[payload.length +1];
-//                retval[0]=DATA;
-//                System.arraycopy(payload, 0, retval, 1, payload.length);
-//                return retval;
-//            default: return new byte[]{(byte)type};
-//        }
-//    }
-//
-//    public void read(byte[] buf) throws Exception {
-//        type=buf[0];
-//        switch(type) {
-//            case DISCOVERY_REQ:
-//                break;
-//            case DISCOVERY_RSP:
-//                break;
-//            case DATA:
-//                payload=new byte[buf.length-1];
-//                System.arraycopy(buf, 1, payload, 0, buf.length -1);
-//                break;
-//            default:
-//                break;
-//        }
-//    }
+
 
     public String toString() {
         StringBuffer sb=new StringBuffer();

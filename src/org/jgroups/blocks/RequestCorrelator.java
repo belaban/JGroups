@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.20 2005/07/17 11:36:40 chrislott Exp $
+// $Id: RequestCorrelator.java,v 1.21 2005/07/22 08:59:56 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -612,7 +612,7 @@ public class RequestCorrelator {
 
         if(log.isTraceEnabled())
             log.trace("calling (" + (request_handler != null? request_handler.getClass().getName() : "null") +
-                    ") with request " + hdr.id);
+                      ") with request " + hdr.id);
 
         try {
             retval = request_handler.handle(req);
@@ -660,22 +660,11 @@ public class RequestCorrelator {
                 ((Transport)transport).send(rsp);
             else
                 if(log.isErrorEnabled()) log.error("transport object has to be either a " +
-                            "Transport or a Protocol, however it is a " + transport.getClass());
+                                                   "Transport or a Protocol, however it is a " + transport.getClass());
         }
         catch(Throwable e) {
-            if(log.isErrorEnabled()) log.error(throwableToString(e));
+            if(log.isErrorEnabled()) log.error("failed sending the response", e);
         }
-    }
-
-
-    /**
-     * Convert exception stack trace to string
-     */
-    private String throwableToString(Throwable ex) {
-        StringWriter sw = new StringWriter();
-        PrintWriter  pw = new PrintWriter(sw);
-        ex.printStackTrace(pw);
-        return(sw.toString());
     }
 
 
