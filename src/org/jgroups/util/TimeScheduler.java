@@ -1,4 +1,4 @@
-// $Id: TimeScheduler.java,v 1.5 2004/09/23 16:29:56 belaban Exp $
+// $Id: TimeScheduler.java,v 1.6 2005/07/22 07:58:44 belaban Exp $
 
 package org.jgroups.util;
 
@@ -203,13 +203,8 @@ public class TimeScheduler {
     /**
      * Default suspend interval (ms)
      */
-    private static final long SUSPEND_INTERVAL=2000;
-    /**
-     * Regular wake-up intervals for scheduler, in case all tasks have been
-     * cancelled and we are still waiting on the schedule time of the task
-     * at the top
-     */
-    private static final long TICK_INTERVAL=1000;
+    private static final long SUSPEND_INTERVAL=30000;
+
 
     /**
      * Thread is running
@@ -430,6 +425,15 @@ public class TimeScheduler {
     }
 
 
+    public void setSuspendInterval(long s) {
+        this.suspend_interval=s;
+    }
+
+    public long getSuspendInterval() {
+        return suspend_interval;
+    }
+
+
     /**
      * Add a task for execution at adjustable intervals
      *
@@ -475,6 +479,14 @@ public class TimeScheduler {
      */
     public void add(Task t) {
         add(t, true);
+    }
+
+    /**
+     * Returns the number of tasks currently in the queue
+     * @return
+     */
+    public int size() {
+        return queue.size();
     }
 
 
