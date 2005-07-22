@@ -1,4 +1,4 @@
-// $Id: SizeTest.java,v 1.4 2005/07/12 11:45:43 belaban Exp $$
+// $Id: SizeTest.java,v 1.5 2005/07/22 15:37:41 belaban Exp $$
 
 package org.jgroups.tests;
 
@@ -6,6 +6,7 @@ import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.jgroups.*;
+import org.jgroups.blocks.RequestCorrelator;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.FD;
@@ -19,9 +20,11 @@ import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
 import org.jgroups.util.Streamable;
 
-import java.util.Vector;
-import java.util.Hashtable;
-import java.util.Collection;
+import java.util.*;
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
 
 
 /**
@@ -232,6 +235,53 @@ public class SizeTest extends TestCase {
         IpAddress addr=new IpAddress(5555, false);
         addr.setAdditionalData("bela".getBytes());
         _testSize(addr);
+    }
+
+
+    public void testRequestCorrelatorHeader() throws Exception {
+        RequestCorrelator.Header hdr;
+
+        hdr=new RequestCorrelator.Header(RequestCorrelator.Header.REQ, 322649, false, "HelloWorld");
+        _testSize(hdr);
+
+        hdr=new RequestCorrelator.Header(RequestCorrelator.Header.RSP, 322649, true, "bla");
+        java.util.List l=new LinkedList();
+        l.add(new IpAddress(1111));
+        l.add(new IpAddress(2222));
+        hdr.dest_mbrs=l;
+        hdr.callStack=new Stack();
+        hdr.callStack.push(new IpAddress(2222));
+        hdr.callStack.push(new IpAddress(3333));
+        _testSize(hdr);
+
+        hdr=new RequestCorrelator.Header(RequestCorrelator.Header.RSP, 322649, true, "bla");
+        hdr.callStack=new Stack();
+        hdr.callStack.push(new IpAddress(2222));
+        hdr.callStack.push(new IpAddress(3333));
+
+        ByteArrayOutputStream output=new ByteArrayOutputStream();
+        DataOutputStream out=new DataOutputStream(output);
+        hdr.writeTo(out);
+        out.flush();
+
+        byte[] buf=output.toByteArray();
+        out.close();
+
+        ByteArrayInputStream input=new ByteArrayInputStream(buf);
+        DataInputStream in=new DataInputStream(input);
+
+        hdr=new RequestCorrelator.Header();
+        hdr.readFrom(in);
+        System.out.println("call stack is " + hdr.callStack);
+
+        Address tmp=(Address)hdr.callStack.pop();
+        assertEquals(tmp, new IpAddress(3333));
+        tmp=(Address)hdr.callStack.pop();
+        assertEquals(tmp, new IpAddress(2222));
+        assertEquals(hdr.id, 322649);
+        assertTrue(hdr.rsp_expected);
+        assertEquals(hdr.corrName, "bla");
+        assertEquals(hdr.type, RequestCorrelator.Header.RSP);
     }
 
     private void _testSize(Header hdr) throws Exception {

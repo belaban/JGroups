@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.22 2005/07/22 11:10:28 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.23 2005/07/22 15:37:38 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -9,12 +9,12 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.Scheduler;
 import org.jgroups.util.SchedulerListener;
 import org.jgroups.util.Util;
+import org.jgroups.util.Streamable;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
+
+import EDU.oswego.cs.dl.util.concurrent.ConcurrentReaderHashMap;
 
 
 
@@ -42,7 +42,7 @@ public class RequestCorrelator {
     protected Object transport=null;
 
     /** The table of pending requests (keys=Long (request IDs), values=<tt>RequestEntry</tt>) */
-    protected final HashMap requests=new HashMap();
+    protected final Map requests=new ConcurrentReaderHashMap();
 
     /** The handler for the incoming requests. It is called from inside the
      * dispatcher thread */
@@ -393,9 +393,7 @@ public class RequestCorrelator {
         if(log.isDebugEnabled()) log.debug("suspect=" + mbr);
 
         // copy so we don't run into bug #761804 - Bela June 27 2003
-        synchronized(requests) {
-            copy=new ArrayList(requests.values());
-        }
+        copy=new ArrayList(requests.values());
         for(Iterator it=copy.iterator(); it.hasNext();) {
             entry=(RequestEntry)it.next();
             if(entry.coll != null)
@@ -416,9 +414,7 @@ public class RequestCorrelator {
         ArrayList    copy;
 
         // copy so we don't run into bug #761804 - Bela June 27 2003
-        synchronized(requests) {
-            copy=new ArrayList(requests.values());
-        }
+        copy=new ArrayList(requests.values());
         for(Iterator it=copy.iterator(); it.hasNext();) {
             entry=(RequestEntry)it.next();
             if(entry.coll != null)
@@ -564,9 +560,7 @@ public class RequestCorrelator {
         // changed by bela Feb 28 2003 (bug fix for 690606)
         // changed back to use synchronization by bela June 27 2003 (bug fix for #761804),
         // we can do this because we now copy for iteration (viewChange() and suspect())
-        synchronized(requests) {
-            requests.remove(id_obj);
-        }
+        requests.remove(id_obj);
     }
 
 
@@ -579,9 +573,7 @@ public class RequestCorrelator {
         Long id_obj = new Long(id);
         RequestEntry entry;
 
-        synchronized(requests) {
-            entry=(RequestEntry)requests.get(id_obj);
-        }
+        entry=(RequestEntry)requests.get(id_obj);
         return((entry != null)? entry.coll:null);
     }
 
@@ -685,23 +677,24 @@ public class RequestCorrelator {
     /**
      * The header for <tt>RequestCorrelator</tt> messages
      */
-    public static final class Header extends org.jgroups.Header {
-        public static final int REQ = 0;
-        public static final int RSP = 1;
+    public static final class Header extends org.jgroups.Header implements Streamable {
+        public static final byte REQ = 0;
+        public static final byte RSP = 1;
 
         /** Type of header: request or reply */
-        public int type=REQ;
+        public byte type=REQ;
         /**
          * The id of this request to distinguish among other requests from
-         * the same <tt>RequestCorrelator</tt>
-         */
+         * the same <tt>RequestCorrelator</tt> */
         public long id=0;
+
         /** msg is synchronous if true */
         public boolean rsp_expected=true;
+
         /** The unique name of the associated <tt>RequestCorrelator</tt> */
         public String corrName=null;
 
-        /** Contains senders (e.g. P --> Q --> R) */
+        /** Stack<Address>. Contains senders (e.g. P --> Q --> R) */
         public java.util.Stack callStack=null;
 
         /** Contains a list of members who should receive the request (others will drop). Ignored if null */
@@ -719,13 +712,12 @@ public class RequestCorrelator {
          * originating from the same correlator
          * @param rsp_expected whether it's a sync or async request
          * @param name the name of the <tt>RequestCorrelator</tt> from which
-         * this header originates
          */
-        public Header(int type, long id, boolean rsp_expected, String name) {
+        public Header(byte type, long id, boolean rsp_expected, String name) {
             this.type         = type;
             this.id           = id;
             this.rsp_expected = rsp_expected;
-            this.corrName         = name;
+            this.corrName     = name;
         }
 
         /**
@@ -744,11 +736,8 @@ public class RequestCorrelator {
         }
 
 
-        /**
-         * Write out the header to the given stream
-         */
         public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeInt(type);
+            out.writeByte(type);
             out.writeLong(id);
             out.writeBoolean(rsp_expected);
             if(corrName != null) {
@@ -763,12 +752,8 @@ public class RequestCorrelator {
         }
 
 
-        /**
-         * Read the header from the given stream
-         */
-        public void readExternal(ObjectInput in)
-            throws IOException, ClassNotFoundException {
-            type         = in.readInt();
+        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            type         = in.readByte();
             id           = in.readLong();
             rsp_expected = in.readBoolean();
             if(in.readBoolean())
@@ -776,6 +761,82 @@ public class RequestCorrelator {
             callStack   = (java.util.Stack)in.readObject();
             dest_mbrs=(java.util.List)in.readObject();
         }
+
+        public void writeTo(DataOutputStream out) throws IOException {
+            out.writeByte(type);
+            out.writeLong(id);
+            out.writeBoolean(rsp_expected);
+
+            if(corrName != null) {
+                out.writeBoolean(true);
+                out.writeUTF(corrName);
+            }
+            else {
+                out.writeBoolean(false);
+            }
+
+            if(callStack != null) {
+                out.writeBoolean(true);
+                out.writeShort(callStack.size());
+                Address mbr;
+                for(int i=0; i < callStack.size(); i++) {
+                    mbr=(Address)callStack.elementAt(i);
+                    Util.writeAddress(mbr, out);
+                }
+            }
+            else {
+                out.writeBoolean(false);
+            }
+
+            Util.writeAddresses(dest_mbrs, out);
+        }
+
+        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+            boolean present;
+            type=in.readByte();
+            id=in.readLong();
+            rsp_expected=in.readBoolean();
+
+            present=in.readBoolean();
+            if(present)
+                corrName=in.readUTF();
+
+            present=in.readBoolean();
+            if(present) {
+                callStack=new Stack();
+                short len=in.readShort();
+                Address tmp;
+                for(short i=0; i < len; i++) {
+                    tmp=Util.readAddress(in);
+                    callStack.add(tmp);
+                }
+            }
+
+            dest_mbrs=(List)Util.readAddresses(in, java.util.LinkedList.class);
+        }
+
+        public long size() {
+            long retval=Global.BYTE_SIZE // type
+                    + Global.LONG_SIZE // id
+                    + Global.BYTE_SIZE; // rsp_expected
+
+            retval+=Global.BYTE_SIZE; // presence for corrName
+            if(corrName != null)
+                retval+=corrName.length() +2; // UTF
+
+            retval+=Global.BYTE_SIZE; // presence
+            if(callStack != null) {
+                retval+=Global.SHORT_SIZE; // number of elements
+                if(callStack.size() > 0) {
+                    Address mbr=(Address)callStack.firstElement();
+                    retval+=callStack.size() * (Util.size(mbr));
+                }
+            }
+
+            retval+=Util.size(dest_mbrs);
+            return retval;
+        }
+
     }
 
 
