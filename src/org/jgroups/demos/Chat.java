@@ -2,6 +2,7 @@ package org.jgroups.demos;
 
 
 import org.jgroups.*;
+import org.jgroups.util.Util;
 import org.jgroups.blocks.PullPushAdapter;
 
 import javax.swing.*;
@@ -18,7 +19,7 @@ import java.io.*;
 /**
  * Simple chat demo
  * @author Bela Ban
- * @version $Id: Chat.java,v 1.10 2005/05/02 12:41:02 belaban Exp $
+ * @version $Id: Chat.java,v 1.11 2005/07/25 16:24:16 belaban Exp $
  */
 public class Chat implements MouseListener, WindowListener, MessageListener, MembershipListener {
     Channel channel;
@@ -147,25 +148,16 @@ public class Chat implements MouseListener, WindowListener, MessageListener, Mem
 
     public byte[] getState() {
         try {
-            ByteArrayOutputStream output=new ByteArrayOutputStream();
-            ObjectOutputStream out=new ObjectOutputStream(output);
-            out.writeObject(history);
-            out.flush();
-            byte[] retval=output.toByteArray();
-            out.close();
-            return retval;
+            return Util.objectToByteBuffer(history);
         }
-        catch(IOException e) {
+        catch(Exception e) {
             return null;
         }
     }
 
     public void setState(byte[] state) {
-        ByteArrayInputStream input=new ByteArrayInputStream(state);
         try {
-            ObjectInputStream in=new ObjectInputStream(input);
-            LinkedList newList=(LinkedList)in.readObject();
-            history=newList;
+            history=(LinkedList)Util.objectFromByteBuffer(state);
         }
         catch(Exception e) {
             e.printStackTrace();
