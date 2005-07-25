@@ -5,7 +5,7 @@ import java.io.InputStream;
 
 /**
  * @author Bela Ban
- * @version $Id: ExposedBufferedInputStream.java,v 1.1 2005/07/25 15:53:36 belaban Exp $
+ * @version $Id: ExposedBufferedInputStream.java,v 1.2 2005/07/25 16:39:48 belaban Exp $
  */
 public class ExposedBufferedInputStream extends BufferedInputStream {
     /**

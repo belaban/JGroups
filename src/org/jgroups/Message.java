@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.37 2005/07/17 11:38:05 chrislott Exp $
+// $Id: Message.java,v 1.38 2005/07/25 16:39:48 belaban Exp $
 
 package org.jgroups;
 
@@ -643,7 +643,7 @@ public class Message implements Externalizable, Streamable {
         }
         finally {
             if(oos != null)
-                oos.close();
+                oos.close(); // this is a no-op on ByteArrayOutputStream
         }
     }
 
@@ -678,10 +678,9 @@ public class Message implements Externalizable, Streamable {
             throw new IOException("failed read header: " + ex.toString());
         }
         finally {
-            if(ois != null)
-                ois.close();
+            // if(ois != null) // we cannot close this because other readers depend on it
+               // ois.close();
         }
-
         return hdr;
     }
 
