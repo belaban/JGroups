@@ -1,13 +1,17 @@
 package org.jgroups.util;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import java.io.BufferedInputStream;
 import java.io.InputStream;
 
 /**
  * @author Bela Ban
- * @version $Id: ExposedBufferedInputStream.java,v 1.2 2005/07/25 16:39:48 belaban Exp $
+ * @version $Id: ExposedBufferedInputStream.java,v 1.3 2005/07/25 16:57:31 belaban Exp $
  */
 public class ExposedBufferedInputStream extends BufferedInputStream {
+    private final static Log log=LogFactory.getLog(ExposedBufferedInputStream.class);
     /**
      * Creates a <code>BufferedInputStream</code>
      * and saves its  argument, the input stream
@@ -39,8 +43,15 @@ public class ExposedBufferedInputStream extends BufferedInputStream {
     public void reset(int size) {
         count=pos=marklimit=0;
         markpos=-1;
-        if(size > buf.length) {
-            buf=new byte[size];
+        if(buf != null) {
+            if(size > buf.length) {
+                buf=new byte[size];
+            }
+        }
+        else {
+            buf=new byte[4096];
+            if(log.isWarnEnabled())
+                log.warn("output stream was closed, re-creating it (please don't close it)");
         }
     }
 }
