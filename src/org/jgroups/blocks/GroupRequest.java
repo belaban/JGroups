@@ -1,4 +1,4 @@
-// $Id: GroupRequest.java,v 1.13 2005/07/22 15:53:37 belaban Exp $
+// $Id: GroupRequest.java,v 1.14 2005/07/25 11:49:27 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -11,8 +11,10 @@ import org.jgroups.Transport;
 import org.jgroups.View;
 import org.jgroups.util.Command;
 import org.jgroups.util.RspList;
+import org.jgroups.util.Rsp;
 
-import java.util.Vector;
+import java.util.*;
+
 
 
 
@@ -39,7 +41,7 @@ import java.util.Vector;
  * to do so.<p>
  * <b>Requirements</b>: lossless delivery, e.g. acknowledgment-based message confirmation.
  * @author Bela Ban
- * @version $Revision: 1.13 $
+ * @version $Revision: 1.14 $
  */
 public class GroupRequest implements RspCollector, Command {
     /** return only first response */
@@ -60,13 +62,10 @@ public class GroupRequest implements RspCollector, Command {
     /** return no response (async call) */
     public static final int GET_NONE=6;
 
-    private static final short NOT_RECEIVED=0;
-    private static final short RECEIVED=1;
-    private static final short SUSPECTED=2;
 
-    private Address membership[]=null; // current membership
-    private Object responses[]=null;   // responses corresponding to membership
-    private short received[]=null;     // status of response for each mbr (see above)
+    /** Map<Address, Rsp>. Maps requests and responses */
+    private final Map requests=new HashMap();
+
 
     /** bounded queue of suspected members */
     private final Vector suspects=new Vector();
@@ -82,16 +81,15 @@ public class GroupRequest implements RspCollector, Command {
 
     protected int rsp_mode=GET_ALL;
     protected boolean done=false;
-    protected final Object rsp_mutex=new Object();
     protected long timeout=0;
     protected int expected_mbrs=0;
 
-    protected static final Log log=LogFactory.getLog(GroupRequest.class);
+    private static final Log log=LogFactory.getLog(GroupRequest.class);
 
     /** to generate unique request IDs (see getRequestId()) */
     private static long last_req_id=1;
 
-    protected long req_id=-1; // request ID for this request
+    private long req_id=-1; // request ID for this request
 
 
     /**
@@ -178,40 +176,15 @@ public class GroupRequest implements RspCollector, Command {
             if(log.isErrorEnabled()) log.error("both corr and transport are null, cannot send group request");
             return false;
         }
-        synchronized(rsp_mutex) {
-            done=false;
-            retval=doExecute(timeout);
-            if(retval == false && log.isTraceEnabled())
-                log.trace("call did not execute correctly, request is " + toString());
-            done=true;
-            return retval;
-        }
+        done=false;
+        retval=doExecute(timeout);
+        if(retval == false && log.isTraceEnabled())
+            log.trace("call did not execute correctly, request is " + toString());
+        done=true;
+        return retval;
     }
 
 
-    /**
-     * Resets the group request, so it can be reused for another execution.
-     */
-    public void reset(Message m, int mode, long timeout) {
-        synchronized(rsp_mutex) {
-            done=false;
-            request_msg=m;
-            rsp_mode=mode;
-            this.timeout=timeout;
-            rsp_mutex.notifyAll();
-        }
-    }
-
-
-    public void reset(Message m, final Vector members, int rsp_mode, long timeout, int expected_rsps) {
-        synchronized(rsp_mutex) {
-            reset(m, rsp_mode, timeout);
-            reset(members);
-            // suspects.removeAllElements(); // bela Aug 23 2002: made suspects bounded
-            this.expected_mbrs=expected_rsps;
-            rsp_mutex.notifyAll();
-        }
-    }
 
     /**
      * This method sets the <code>membership</code> variable to the value of
@@ -221,24 +194,27 @@ public class GroupRequest implements RspCollector, Command {
      */
     public void reset(Vector mbrs) {
         if(mbrs != null) {
-            int size=mbrs.size();
-            membership=new Address[size];
-            responses=new Object[size];
-            received=new short[size];
-            for(int i=0; i < size; i++) {
-                membership[i]=(Address)mbrs.elementAt(i);
-                responses[i]=null;
-                received[i]=NOT_RECEIVED;
+            Address mbr;
+            synchronized(requests) {
+                requests.clear();
+                for(int i=0; i < mbrs.size(); i++) {
+                    mbr=(Address)mbrs.elementAt(i);
+                    requests.put(mbr, new Rsp(mbr));
+                }
             }
             // maintain local membership
-            this.members.clear();
-            this.members.addAll(mbrs);
+            synchronized(this.members) {
+                this.members.clear();
+                this.members.addAll(mbrs);
+            }
         }
         else {
-            if(membership != null) {
-                for(int i=0; i < membership.length; i++) {
-                    responses[i]=null;
-                    received[i]=NOT_RECEIVED;
+            synchronized(requests) {
+                Rsp rsp;
+                for(Iterator it=requests.values().iterator(); it.hasNext();) {
+                    rsp=(Rsp)it.next();
+                    rsp.setReceived(false);
+                    rsp.setValue(null);
                 }
             }
         }
@@ -252,7 +228,7 @@ public class GroupRequest implements RspCollector, Command {
      * <code>execute()</code> returns.
      */
     public void receiveResponse(Message m) {
-        Address sender=m.getSrc(), mbr;
+        Address sender=m.getSrc();
         Object val=null;
         if(done) {
             if(log.isWarnEnabled()) log.warn("command is done; cannot add response !");
@@ -270,18 +246,17 @@ public class GroupRequest implements RspCollector, Command {
                 if(log.isErrorEnabled()) log.error("exception=" + e);
             }
         }
-        synchronized(rsp_mutex) {
-            for(int i=0; i < membership.length; i++) {
-                mbr=membership[i];
-                if(mbr.equals(sender)) {
-                    if(received[i] == NOT_RECEIVED) {
-                        responses[i]=val;
-                        received[i]=RECEIVED;
-                       if(log.isTraceEnabled())
-                          log.trace("received response for request " + req_id + ", sender=" + sender + ", val=" + val);
-                        rsp_mutex.notifyAll(); // wakes up execute()
-                        break;
-                    }
+
+        synchronized(requests) {
+            Rsp rsp=(Rsp)requests.get(sender);
+            if(rsp != null) {
+                if(rsp.wasReceived() == false) {
+                    rsp.setValue(val);
+                    rsp.setReceived(true);
+                    if(log.isTraceEnabled())
+                        log.trace(new StringBuffer("received response for request ").append(req_id).append(", sender=").
+                                  append(sender).append(", val=").append(val));
+                    requests.notifyAll(); // wakes up execute()
                 }
             }
         }
@@ -295,17 +270,19 @@ public class GroupRequest implements RspCollector, Command {
      * (where available). It is used to exclude faulty members from the response list.
      */
     public void suspect(Address suspected_member) {
-        Address mbr;
-        synchronized(rsp_mutex) { // modify 'suspects' and 'responses' array
-            for(int i=0; i < membership.length; i++) {
-                mbr=membership[i];
-                if(mbr.equals(suspected_member)) {
-                    addSuspect(suspected_member);
-                    responses[i]=null;
-                    received[i]=SUSPECTED;
-                    rsp_mutex.notifyAll();
-                    break;
-                }
+        Rsp rsp;
+
+        if(suspected_member == null)
+            return;
+
+        addSuspect(suspected_member);
+
+        synchronized(requests) {
+            rsp=(Rsp)requests.get(suspected_member);
+            if(rsp != null) {
+                rsp.setSuspected(true);
+                rsp.setValue(null);
+                requests.notifyAll();
             }
         }
     }
@@ -331,21 +308,31 @@ public class GroupRequest implements RspCollector, Command {
     public void viewChange(View new_view) {
         Address mbr;
         Vector mbrs=new_view != null? new_view.getMembers() : null;
-        if(membership == null || membership.length == 0 || mbrs == null)
+        if(requests == null || requests.size() == 0 || mbrs == null)
             return;
 
-        synchronized(rsp_mutex) {
+        synchronized(this.members) {
             this.members.clear();
             this.members.addAll(mbrs);
-            for(int i=0; i < membership.length; i++) {
-                mbr=membership[i];
+        }
+
+        Map.Entry entry;
+        Rsp rsp;
+        boolean modified=false;
+        synchronized(requests) {
+            for(Iterator it=requests.entrySet().iterator(); it.hasNext();) {
+                entry=(Map.Entry)it.next();
+                mbr=(Address)entry.getKey();
                 if(!mbrs.contains(mbr)) {
                     addSuspect(mbr);
-                    responses[i]=null;
-                    received[i]=SUSPECTED;
+                    rsp=(Rsp)entry.getValue();
+                    rsp.setValue(null);
+                    rsp.setSuspected(true);
+                    modified=true;
                 }
             }
-            rsp_mutex.notifyAll();
+            if(modified)
+                requests.notifyAll();
         }
     }
 
@@ -356,23 +343,9 @@ public class GroupRequest implements RspCollector, Command {
 
     /** Returns the results as a RspList */
     public RspList getResults() {
-        RspList retval=new RspList();
-        Address sender;
-        synchronized(rsp_mutex) {
-            for(int i=0; i < membership.length; i++) {
-                sender=membership[i];
-                switch(received[i]) {
-                    case SUSPECTED:
-                        retval.addSuspect(sender);
-                        break;
-                    case RECEIVED:
-                        retval.addRsp(sender, responses[i]);
-                        break;
-                    case NOT_RECEIVED:
-                        retval.addNotReceived(sender);
-                        break;
-                }
-            }
+        synchronized(requests) {
+            Collection rsps=requests.values();
+            RspList retval=new RspList(rsps);
             return retval;
         }
     }
@@ -382,15 +355,18 @@ public class GroupRequest implements RspCollector, Command {
         StringBuffer ret=new StringBuffer();
         ret.append("[GroupRequest:\n");
         ret.append("req_id=").append(req_id).append('\n');
-        ret.append("members: ");
-        for(int i=0; i < membership.length; i++)
-            ret.append(membership[i] + " ");
-        ret.append("\nresponses: ");
-        for(int i=0; i < responses.length; i++)
-            ret.append(responses[i] + " ");
-        ret.append("\nreceived: ");
-        for(int i=0; i < received.length; i++)
-            ret.append(receivedToString(received[i]) + " ");
+
+        Map.Entry entry;
+        Address mbr;
+        Rsp rsp;
+        synchronized(requests) {
+            for(Iterator it=requests.entrySet().iterator(); it.hasNext();) {
+                entry=(Map.Entry)it.next();
+                mbr=(Address)entry.getKey();
+                rsp=(Rsp)entry.getValue();
+                ret.append(mbr).append(": ").append(rsp).append("\n");
+            }
+        }
         if(suspects.size() > 0)
             ret.append("\nsuspects: ").append(suspects);
         ret.append("\nrequest_msg: ").append(request_msg);
@@ -421,7 +397,7 @@ public class GroupRequest implements RspCollector, Command {
 
     /* --------------------------------- Private Methods -------------------------------------*/
 
-    protected int determineMajority(int i) {
+    private int determineMajority(int i) {
         return i < 2? i : (i / 2) + 1;
     }
 
@@ -436,26 +412,25 @@ public class GroupRequest implements RspCollector, Command {
     }
 
     /** This method runs with rsp_mutex locked (called by <code>execute()</code>). */
-    protected boolean doExecute(long timeout) {
+    private boolean doExecute(long timeout) {
         long start_time=0;
-        Address mbr, suspect;
+        Address suspect;
         req_id=getRequestId();
         reset(null); // clear 'responses' array
-        if(suspects != null) { // mark all suspects in 'received' array
-            for(int i=0; i < suspects.size(); i++) {
+
+        synchronized(requests) {
+            for(int i=0; i < suspects.size(); i++) {  // mark all suspects in 'received' array
                 suspect=(Address)suspects.elementAt(i);
-                for(int j=0; j < membership.length; j++) {
-                    mbr=membership[j];
-                    if(mbr.equals(suspect)) {
-                        received[j]=SUSPECTED;
-                        break; // we can break here because we ensure there are no duplicate members
-                    }
+                Rsp rsp=(Rsp)requests.get(suspect);
+                if(rsp != null) {
+                    rsp.setSuspected(true);
+                    break; // we can break here because we ensure there are no duplicate members
                 }
             }
         }
 
         try {
-           if(log.isTraceEnabled()) log.trace(new StringBuffer("sending request (id=").append(req_id).append(')'));
+            if(log.isTraceEnabled()) log.trace(new StringBuffer("sending request (id=").append(req_id).append(')'));
             if(corr != null) {
                 java.util.List tmp=members != null? members : null;
                 corr.sendRequest(req_id, tmp, request_msg, rsp_mode == GET_NONE? null : this);
@@ -472,57 +447,72 @@ public class GroupRequest implements RspCollector, Command {
             return false;
         }
 
-        if(timeout <= 0) {
-            while(true) { /* Wait for responses: */
-                adjustMembership(); // may not be necessary, just to make sure...
-                if(getResponses()) {
-                    if(corr != null) {
-                        corr.done(req_id);
+        synchronized(requests) {
+            if(timeout <= 0) {
+                while(true) { /* Wait for responses: */
+                    adjustMembership(); // may not be necessary, just to make sure...
+                    if(responsesComplete()) {
+                        if(corr != null) {
+                            corr.done(req_id);
+                        }
+                        if(log.isTraceEnabled()) {
+                            log.trace("received all responses: " + toString());
+                        }
+                        return true;
                     }
-                    if(log.isTraceEnabled()) {
-                        log.trace("received all responses: " + toString());
-                    }
-                    return true;
-                }
-                try {
-                    rsp_mutex.wait();
-                }
-                catch(Exception e) {
-                }
-            }
-        }
-        else {
-            start_time=System.currentTimeMillis();
-            while(timeout > 0) { /* Wait for responses: */
-                if(getResponses()) {
-                    if(corr != null)
-                        corr.done(req_id);
-                   if(log.isTraceEnabled()) log.trace("received all responses: " + toString());
-                    return true;
-                }
-                timeout=timeout - (System.currentTimeMillis() - start_time);
-                if(timeout > 0) {
                     try {
-                        rsp_mutex.wait(timeout);
+                        requests.wait();
                     }
                     catch(Exception e) {
-                        //e.printStackTrace();
                     }
                 }
             }
-            if(corr != null) {
-                corr.done(req_id);
+            else {
+                start_time=System.currentTimeMillis();
+                while(timeout > 0) { /* Wait for responses: */
+                    if(responsesComplete()) {
+                        if(corr != null)
+                            corr.done(req_id);
+                        if(log.isTraceEnabled()) log.trace("received all responses: " + toString());
+                        return true;
+                    }
+                    timeout=timeout - (System.currentTimeMillis() - start_time);
+                    if(timeout > 0) {
+                        try {
+                            requests.wait(timeout);
+                        }
+                        catch(Exception e) {
+                        }
+                    }
+                }
+                if(corr != null) {
+                    corr.done(req_id);
+                }
+                return false;
             }
-            return false;
         }
     }
 
-    protected boolean getResponses() {
-        int num_not_received=getNum(NOT_RECEIVED);
-        int num_received=getNum(RECEIVED);
-        int num_suspected=getNum(SUSPECTED);
-        int num_total=membership.length;
+    private boolean responsesComplete() {
+        int num_received=0, num_not_received=0, num_suspected=0, num_total=requests.size();
         int majority=determineMajority(num_total);
+
+        Rsp rsp;
+        for(Iterator it=requests.values().iterator(); it.hasNext();) {
+            rsp=(Rsp)it.next();
+            if(rsp.wasReceived()) {
+                num_received++;
+            }
+            else {
+                if(rsp.wasSuspected()) {
+                    num_suspected++;
+                }
+                else {
+                    num_not_received++;
+                }
+            }
+        }
+
         switch(rsp_mode) {
             case GET_FIRST:
                 if(num_received > 0)
@@ -546,7 +536,7 @@ public class GroupRequest implements RspCollector, Command {
             case GET_N:
                 if(expected_mbrs >= num_total) {
                     rsp_mode=GET_ALL;
-                    return getResponses();
+                    return responsesComplete();
                 }
                 if(num_received >= expected_mbrs) {
                     return true;
@@ -567,30 +557,8 @@ public class GroupRequest implements RspCollector, Command {
         return false;
     }
 
-    /** Return number of elements of a certain type in array 'received'. Type can be RECEIVED,
-     NOT_RECEIVED or SUSPECTED */
-    int getNum(int type) {
-        int retval=0;
-        for(int i=0; i < received.length; i++)
-            if(received[i] == type)
-                retval++;
-        return retval;
-    }
 
 
-
-   private String receivedToString(int r) {
-       switch(r) {
-       case RECEIVED:
-           return "RECEIVED";
-       case NOT_RECEIVED:
-           return "NOR_RECEIVED";
-       case SUSPECTED:
-           return "SUSPECTED";
-       default:
-           return "n/a";
-       }
-   }
 
 
     /**
@@ -604,19 +572,21 @@ public class GroupRequest implements RspCollector, Command {
      * This call requires exclusive access to rsp_mutex (called by getResponses() which has
      * a the rsp_mutex locked, so this should not be a problem).
      */
-    void adjustMembership() {
-        Address mbr;
-        if(membership == null || membership.length == 0) {
-            // if(log.isWarnEnabled()) log.warn("GroupRequest.adjustMembership()", "membership is null");
+    private void adjustMembership() {
+        if(requests.size() == 0)
             return;
-        }
-        for(int i=0; i < membership.length; i++) {
-            mbr=membership[i];
-            if((this.members != null && !this.members.contains(mbr))
-                    || suspects.contains(mbr)) {
+
+        Map.Entry entry;
+        Address mbr;
+        Rsp rsp;
+        for(Iterator it=requests.entrySet().iterator(); it.hasNext();) {
+            entry=(Map.Entry)it.next();
+            mbr=(Address)entry.getKey();
+            if((!this.members.contains(mbr)) || suspects.contains(mbr)) {
                 addSuspect(mbr);
-                responses[i]=null;
-                received[i]=SUSPECTED;
+                rsp=(Rsp)entry.getValue();
+                rsp.setValue(null);
+                rsp.setSuspected(true);
             }
         }
     }
@@ -625,7 +595,7 @@ public class GroupRequest implements RspCollector, Command {
      * Adds a member to the 'suspects' list. Removes oldest elements from 'suspects' list
      * to keep the list bounded ('max_suspects' number of elements)
      */
-    void addSuspect(Address suspected_mbr) {
+    private void addSuspect(Address suspected_mbr) {
         if(!suspects.contains(suspected_mbr)) {
             suspects.addElement(suspected_mbr);
             while(suspects.size() >= max_suspects && suspects.size() > 0)
