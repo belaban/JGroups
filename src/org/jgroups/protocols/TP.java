@@ -7,9 +7,7 @@ import org.jgroups.util.*;
 import org.jgroups.util.List;
 import org.jgroups.util.Queue;
 
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.*;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -42,7 +40,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.14 2005/07/17 11:36:15 chrislott Exp $
+ * @version $Id: TP.java,v 1.15 2005/07/25 16:39:47 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -68,6 +66,12 @@ public abstract class TP extends Protocol {
 
     /** Pre-allocated byte stream. Used for marshalling messages. Will grow as needed */
     final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(1024);
+    final ExposedBufferedOutputStream  buf_out_stream=new ExposedBufferedOutputStream(out_stream, 1024);
+    final ExposedDataOutputStream      dos=new ExposedDataOutputStream(buf_out_stream);
+
+    final ExposedByteArrayInputStream  in_stream=new ExposedByteArrayInputStream(new byte[]{'0'});
+    final ExposedBufferedInputStream   buf_in_stream=new ExposedBufferedInputStream(in_stream);
+    final DataInputStream              dis=new DataInputStream(buf_in_stream);
 
 
     /** If true, messages sent to self are treated specially: unicast messages are
@@ -588,35 +592,39 @@ public abstract class TP extends Protocol {
      * this method should be reentrant: removed 'synchronized' keyword
      */
     private void handleIncomingPacket(Address dest, Address sender, byte[] data, int offset, int length) {
-        ByteArrayInputStream inp_stream=null;
-        DataInputStream      inp=null;
-        Message              msg;
-        List                 l;  // used if bundling is enabled
+        Message              msg=null;
+        List                 l=null;  // used if bundling is enabled
         short                version;
         boolean              is_message_list;
 
         try {
-            inp_stream=new ByteArrayInputStream(data, offset, length);
-            inp=new DataInputStream(inp_stream);
-            version=inp.readShort();
-            if(Version.compareTo(version) == false) {
-                if(log.isWarnEnabled()) {
-                    StringBuffer sb=new StringBuffer();
-                    sb.append("packet from ").append(sender).append(" has different version (").append(version);
-                    sb.append(") from ours (").append(Version.printVersion()).append("). ");
+            synchronized(in_stream) {
+                in_stream.setData(data, offset, length);
+                buf_in_stream.reset(length);
+                version=dis.readShort();
+                if(Version.compareTo(version) == false) {
+                    if(log.isWarnEnabled()) {
+                        StringBuffer sb=new StringBuffer();
+                        sb.append("packet from ").append(sender).append(" has different version (").append(version);
+                        sb.append(") from ours (").append(Version.printVersion()).append("). ");
+                        if(discard_incompatible_packets)
+                            sb.append("Packet is discarded");
+                        else
+                            sb.append("This may cause problems");
+                        log.warn(sb);
+                    }
                     if(discard_incompatible_packets)
-                        sb.append("Packet is discarded");
-                    else
-                        sb.append("This may cause problems");
-                    log.warn(sb);
+                        return;
                 }
-                if(discard_incompatible_packets)
-                    return;
+
+                is_message_list=dis.readBoolean();
+                if(is_message_list)
+                    l=bufferToList(dis, dest);
+                else
+                    msg=bufferToMessage(dis, dest, sender);
             }
 
-            is_message_list=inp.readBoolean();
             if(is_message_list) {
-                l=bufferToList(inp, dest);
                 for(Enumeration en=l.elements(); en.hasMoreElements();) {
                     msg=(Message)en.nextElement();
                     try {
@@ -629,17 +637,12 @@ public abstract class TP extends Protocol {
                 }
             }
             else {
-                msg=bufferToMessage(inp, dest, sender);
                 handleMessage(msg);
             }
         }
         catch(Throwable t) {
             if(log.isErrorEnabled())
                 log.error("failed unmarshalling message", t);
-        }
-        finally {
-            Util.closeInputStream(inp);
-            Util.closeInputStream(inp_stream);
         }
     }
 
@@ -740,23 +743,17 @@ public abstract class TP extends Protocol {
      */
     private Buffer messageToBuffer(Message msg, Address dest, Address src) throws Exception {
         Buffer retval;
-        DataOutputStream out=null;
-
-        try {
-            out_stream.reset();
-            out=new DataOutputStream(out_stream);
-            out.writeShort(Version.version); // write the version
-            out.writeBoolean(false); // single message, *not* a list of messages
-            preMarshalling(msg, dest, src);  // allows for optimization by subclass
-            msg.writeTo(out);
-            postMarshalling(msg, dest, src); // allows for optimization by subclass
-            out.flush();
-            retval=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
-            return retval;
-        }
-        finally {
-            Util.closeOutputStream(out);
-        }
+        out_stream.reset();
+        buf_out_stream.reset(out_stream.getCapacity());
+        dos.reset();
+        dos.writeShort(Version.version); // write the version
+        dos.writeBoolean(false); // single message, *not* a list of messages
+        preMarshalling(msg, dest, src);  // allows for optimization by subclass
+        msg.writeTo(dos);
+        postMarshalling(msg, dest, src); // allows for optimization by subclass
+        dos.flush();
+        retval=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
+        return retval;
     }
 
     private Message bufferToMessage(DataInputStream instream, Address dest, Address sender) throws Exception {
@@ -781,34 +778,28 @@ public abstract class TP extends Protocol {
         Message msg;
         int len=l != null? l.size() : 0;
         boolean src_written=false;
-        DataOutputStream out=null;
         out_stream.reset();
+        buf_out_stream.reset(out_stream.getCapacity());
+        dos.reset();
+        dos.writeShort(Version.version);
+        dos.writeBoolean(true);
+        dos.writeInt(len);
 
-        try {
-            out=new DataOutputStream(out_stream);
-            out.writeShort(Version.version);
-            out.writeBoolean(true);
-            out.writeInt(len);
-
-            for(Enumeration en=l.elements(); en.hasMoreElements();) {
-                msg=(Message)en.nextElement();
-                src=msg.getSrc();
-                if(!src_written) {
-                    Util.writeAddress(src, out);
-                    src_written=true;
-                }
-                msg.setDest(null);
-                msg.setSrc(null);
-                msg.writeTo(out);
-                revertAddresses(msg, dest, src);
+        for(Enumeration en=l.elements(); en.hasMoreElements();) {
+            msg=(Message)en.nextElement();
+            src=msg.getSrc();
+            if(!src_written) {
+                Util.writeAddress(src, dos);
+                src_written=true;
             }
-            out.flush();
-            retval=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
-            return retval;
+            msg.setDest(null);
+            msg.setSrc(null);
+            msg.writeTo(dos);
+            revertAddresses(msg, dest, src);
         }
-        finally {
-            Util.closeOutputStream(out);
-        }
+        dos.flush();
+        retval=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
+        return retval;
     }
 
     private List bufferToList(DataInputStream instream, Address dest) throws Exception {
