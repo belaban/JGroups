@@ -1,4 +1,4 @@
-// $Id: FC.java,v 1.30 2005/07/26 14:45:51 belaban Exp $
+// $Id: FC.java,v 1.31 2005/07/26 17:48:01 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -11,6 +11,8 @@ import org.jgroups.util.BoundedList;
 import java.io.*;
 import java.util.*;
 
+import EDU.oswego.cs.dl.util.concurrent.ConcurrentReaderHashMap;
+
 /**
  * Simple flow control protocol based on a credit system. Each sender has a number of credits (bytes
  * to send). When the credits have been exhausted, the sender blocks. Each receiver also keeps track of
@@ -20,7 +22,7 @@ import java.util.*;
  * Note that this protocol must be located towards the top of the stack, or all down_threads from JChannel to this
  * protocol must be set to false ! This is in order to block JChannel.send()/JChannel.down().
  * @author Bela Ban
- * @version $Revision: 1.30 $
+ * @version $Revision: 1.31 $
  */
 public class FC extends Protocol {
 
@@ -29,14 +31,14 @@ public class FC extends Protocol {
 
     /** HashMap<Address,Long>: keys are members, values are credits left. For each send, the
      * number of credits is decremented by the message size */
-    final HashMap sent=new HashMap(11);
+    final Map sent=new HashMap(11);
     // final Map sent=new ConcurrentHashMap(11);
 
     /** HashMap<Address,Long>: keys are members, values are credits left (in bytes).
      * For each receive, the credits for the sender are decremented by the size of the received message.
      * When the credits are 0, we refill and send a CREDIT message to the sender. Sender blocks until CREDIT
      * is received after reaching <tt>min_credits</tt> credits. */
-    final HashMap received=new HashMap(11);
+    final Map received=new ConcurrentReaderHashMap(11);
     // final Map received=new ConcurrentHashMap(11);
 
     /** We cache the membership */
@@ -282,17 +284,17 @@ public class FC extends Protocol {
 
 
 
-    void handleCredit(Address src) {
+    private void handleCredit(Address src) {
         if(src == null) return;
         if(log.isTraceEnabled())
-            log.trace(new StringBuffer("received replenishment message from ").append(src).append(", old credit was ").
+            log.trace(new StringBuffer("received credit from ").append(src).append(", old credit was ").
                       append(sent.get(src)).append(", new credits are ").append(max_credits).
                       append(". Creditors are\n").append(printCreditors()));
         synchronized(sent) {
             sent.put(src, new Long(max_credits));
             if(creditors.size() > 0) {  // we are blocked because we expect credit from one or more members
                 removeCreditor(src);
-                if(creditors.size() == 0 && blocking.get().equals(Boolean.TRUE)) {
+                if(creditors.size() == 0) {
                     unblockSender(); // triggers sent.notifyAll()...
                 }
             }
@@ -314,11 +316,9 @@ public class FC extends Protocol {
             return;
         }
 
-        synchronized(received) {
-            if(decrementCredit(received, src, size, min_credits) == false) {
-                received.put(src, new Long(max_credits));
-                send_credits=true; // not enough credits left
-            }
+        if(decrementCredit(received, src, size, min_credits) == false) {
+            received.put(src, new Long(max_credits));
+            send_credits=true; // not enough credits left
         }
         if(send_credits) {
             if(log.isTraceEnabled()) log.trace("sending replenishment message to " + src);
@@ -349,6 +349,7 @@ public class FC extends Protocol {
      * @return
      */
     private void waitUntilEnoughCreditsAvailable(Message msg) {
+        boolean timeout_occurred=false;
         // not enough credits, block until replenished with credits
         synchronized(sent) { // 'sent' is the same lock as blocking.getLock()...
             if(decrMessage(msg) == false) {
@@ -361,15 +362,18 @@ public class FC extends Protocol {
                     blocking.waitUntilWithTimeout(Boolean.FALSE, max_block_time);  // waits on 'sent'
                 }
                 catch(TimeoutException e) {
-                    if(log.isTraceEnabled())
-                        log.trace("timeout occurred waiting on credits; sending credit request to " + creditors);
-                    List tmp=new ArrayList(creditors);
-                    Address mbr;
-                    for(Iterator it=tmp.iterator(); it.hasNext();) {
-                        mbr=(Address)it.next();
-                        sendCreditRequest(mbr);
-                    }
+                    timeout_occurred=true;
                 }
+            }
+        }
+        if(timeout_occurred) {
+            if(log.isTraceEnabled())
+                log.trace("timeout occurred waiting for credits; sending credit request to " + creditors);
+            List tmp=new ArrayList(creditors);
+            Address mbr;
+            for(Iterator it=tmp.iterator(); it.hasNext();) {
+                mbr=(Address)it.next();
+                sendCreditRequest(mbr);
             }
         }
     }
