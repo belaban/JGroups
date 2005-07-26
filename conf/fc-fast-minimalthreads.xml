@@ -58,7 +58,8 @@ Best result with perf.Test (2 members, 1 sender, laptop, 20000 1K msgs
          ucast_send_buf_size="640000"
          mcast_recv_buf_size="25000000" 
          mcast_send_buf_size="640000" 
-         loopback="false" 
+         loopback="false"
+         loopback_queue="false"
          discard_incompatible_packets="true"
          max_bundle_size="64000"
          max_bundle_timeout="30"
@@ -74,20 +75,20 @@ Best result with perf.Test (2 members, 1 sender, laptop, 20000 1K msgs
     <FD_SOCK down_thread="false" up_thread="false"/>
     <!--VERIFY_SUSPECT timeout="1500" down_thread="false"/-->
     <pbcast.NAKACK max_xmit_size="60000"
-                   use_mcast_xmit="false" gc_lag="50" 
-                   retransmit_timeout="50,100,200,300,600,1200,2400,4800"
+                   use_mcast_xmit="false" gc_lag="0"
+                   retransmit_timeout="100,200,300,600,1200,2400,4800"
                    down_thread="false" up_thread="false"
                    discard_delivered_msgs="true"/>
     <UNICAST timeout="100,200,300,600,1200,2400,3600"
              down_thread="false" up_thread="false"/>
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000" 
                    down_thread="false" up_thread="false"
-                   max_bytes="500000"/>
+                   max_bytes="400000"/>
     <pbcast.GMS print_local_addr="true" join_timeout="3000" 
                 down_thread="false" up_thread="false"
                 join_retry_timeout="2000" shun="true"/>
     <FC max_credits="2000000" down_thread="false" up_thread="false"
-        min_threshold="0.20"/>
+        min_threshold="0.10"/>
     <!-- FRAG2 frag_size="60000" down_thread="false" up_thread="true"/ -->
     <!-- pbcast.STATE_TRANSFER down_thread="false" up_thread="false"/ -->
 </config>
