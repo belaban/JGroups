@@ -1,4 +1,4 @@
-// $Id: ProtocolStack.java,v 1.19 2005/07/22 07:58:07 belaban Exp $
+// $Id: ProtocolStack.java,v 1.20 2005/07/26 11:15:21 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -7,10 +7,7 @@ import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.util.Promise;
 import org.jgroups.util.TimeScheduler;
 
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Vector;
+import java.util.*;
 
 
 
@@ -66,6 +63,26 @@ public class ProtocolStack extends Protocol implements Transport {
             p=p.getDownProtocol();
         }
         return v;
+    }
+
+    /**
+     *
+     * @return Map<String,Map<key,val>>
+     */
+    public Map dumpStats() {
+        Protocol p;
+        Map retval=new HashMap(), tmp;
+        String prot_name;
+
+        p=top_prot;
+        while(p != null) {
+            prot_name=p.getName();
+            tmp=p.dumpStats();
+            if(prot_name != null && tmp != null)
+                retval.put(prot_name, tmp);
+            p=p.getDownProtocol();
+        }
+        return retval;
     }
 
 

@@ -11,10 +11,11 @@ import org.apache.commons.logging.LogFactory;
 import javax.management.MBeanServer;
 import javax.management.MBeanServerFactory;
 import java.io.Serializable;
+import java.util.Map;
 
 /**
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.4 2005/06/15 21:08:00 belaban Exp $
+ * @version $Id: JChannel.java,v 1.5 2005/07/26 11:15:19 belaban Exp $
  */
 public class JChannel implements JChannelMBean {
     /** Ref to the original JGroups channel */
@@ -203,6 +204,10 @@ public class JChannel implements JChannelMBean {
 
     public void setStatsEnabled(boolean flag) {
         channel.enableStats(flag);
+    }
+
+    public Map dumpStats() {
+        return channel.dumpStats();
     }
 
     public void resetStats() {
