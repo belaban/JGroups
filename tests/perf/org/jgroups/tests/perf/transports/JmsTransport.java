@@ -6,11 +6,12 @@ import org.jgroups.tests.perf.Transport;
 import javax.jms.*;
 import javax.naming.InitialContext;
 import java.util.Properties;
+import java.util.Map;
 
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: JmsTransport.java,v 1.3 2005/05/30 16:15:16 belaban Exp $
+ * @version $Id: JmsTransport.java,v 1.4 2005/07/26 11:50:21 belaban Exp $
  */
 public class JmsTransport implements Transport, MessageListener {
     Receiver          receiver=null;
@@ -74,6 +75,10 @@ public class JmsTransport implements Transport, MessageListener {
 
     public void setReceiver(Receiver r) {
         this.receiver=r;
+    }
+
+    public Map dumpStats() {
+        return null;
     }
 
     public void send(Object destination, byte[] payload) throws Exception {
