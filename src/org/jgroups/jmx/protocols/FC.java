@@ -4,7 +4,7 @@ import org.jgroups.jmx.Protocol;
 
 /**
  * @author Bela Ban
- * @version $Id: FC.java,v 1.2 2005/07/01 12:40:29 belaban Exp $
+ * @version $Id: FC.java,v 1.3 2005/07/26 14:45:50 belaban Exp $
  */
 public class FC extends Protocol implements FCMBean {
     org.jgroups.protocols.FC p;
@@ -64,6 +64,10 @@ public class FC extends Protocol implements FCMBean {
 
     public int getNumberOfReplenishmentsReceived() {
         return p.getNumberOfReplenishmentsReceived();
+    }
+
+    public int getNumberOfCreditRequests() {
+        return p.getNumberOfCreditRequests();
     }
 
     public String printSenderCredits() {
