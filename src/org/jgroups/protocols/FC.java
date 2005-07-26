@@ -1,4 +1,4 @@
-// $Id: FC.java,v 1.29 2005/07/26 11:30:13 belaban Exp $
+// $Id: FC.java,v 1.30 2005/07/26 14:45:51 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -20,7 +20,7 @@ import java.util.*;
  * Note that this protocol must be located towards the top of the stack, or all down_threads from JChannel to this
  * protocol must be set to false ! This is in order to block JChannel.send()/JChannel.down().
  * @author Bela Ban
- * @version $Revision: 1.29 $
+ * @version $Revision: 1.30 $
  */
 public class FC extends Protocol {
 
@@ -49,6 +49,12 @@ public class FC extends Protocol {
      * be received before continuing sending */
     long max_credits=50000;
 
+    /** Max time (in milliseconds) to block. If credit hasn't been received after max_block_time, we send
+     * a REPLENISHMENT request to the members from which we expect credits. A value <= 0 means to
+     * wait forever.
+     */
+    long max_block_time=5000;
+
     /** If credits fall below this limit, we send more credits to the sender. (We also send when
      * credits are exhausted (0 credits left)) */
     double min_threshold=0.25;
@@ -64,10 +70,13 @@ public class FC extends Protocol {
 
     long start_blocking=0, stop_blocking=0;
 
-    int num_blockings=0, num_replenishments=0;
+    int num_blockings=0, num_replenishments=0, num_credit_requests=0;
     long total_time_blocking=0;
 
     final BoundedList last_blockings=new BoundedList(50);
+
+    final static FcHeader REPLENISH_HDR=new FcHeader(FcHeader.REPLENISH);
+    final static FcHeader CREDIT_REQUEST_HDR=new FcHeader(FcHeader.CREDIT_REQUEST);
 
 
 
@@ -78,7 +87,7 @@ public class FC extends Protocol {
 
     public void resetStats() {
         super.resetStats();
-        num_blockings=num_replenishments=0;
+        num_blockings=num_replenishments=num_credit_requests=0;
         total_time_blocking=0;
         last_blockings.removeAll();
     }
@@ -126,6 +135,10 @@ public class FC extends Protocol {
 
     public int getNumberOfReplenishmentsReceived() {
         return num_replenishments;
+    }
+
+    public int getNumberOfCreditRequests() {
+        return num_credit_requests;
     }
 
     public String printSenderCredits() {
@@ -195,6 +208,12 @@ public class FC extends Protocol {
         if(!min_credits_set)
             min_credits=(long)((double)max_credits * min_threshold);
 
+        str=props.getProperty("max_block_time");
+        if(str != null) {
+            max_block_time=Long.parseLong(str);
+            props.remove("max_block_time");
+        }
+
         if(props.size() > 0) {
             log.error("FC.setProperties(): the following properties are not recognized: " + props);
 
@@ -243,8 +262,15 @@ public class FC extends Protocol {
                     if(hdr.type == FcHeader.REPLENISH) {
                         num_replenishments++;
                         handleCredit(msg.getSrc());
-                        return; // don't pass message up
                     }
+                    if(hdr.type == FcHeader.CREDIT_REQUEST) {
+                        num_credit_requests++;
+                        Address sender=msg.getSrc();
+                        if(log.isTraceEnabled())
+                            log.trace("received credit request from " + sender + ": sending credits");
+                        sendCredit(sender);
+                    }
+                    return; // don't pass message up
                 }
                 else {
                     adjustCredit(msg);
@@ -278,7 +304,7 @@ public class FC extends Protocol {
      * Check whether sender has enough credits left. If not, send him some more
      * @param msg
      */
-    void adjustCredit(Message msg) {
+    private void adjustCredit(Message msg) {
         Address src=msg.getSrc();
         long    size=Math.max(24, msg.getLength());
         boolean send_credits=false;
@@ -289,7 +315,6 @@ public class FC extends Protocol {
         }
 
         synchronized(received) {
-            // if(log.isTraceEnabled()) log.trace("credit for " + src + " is " + received.get(src));
             if(decrementCredit(received, src, size, min_credits) == false) {
                 received.put(src, new Long(max_credits));
                 send_credits=true; // not enough credits left
@@ -303,12 +328,18 @@ public class FC extends Protocol {
 
 
 
-    void sendCredit(Address dest) {
+    private void sendCredit(Address dest) {
         Message  msg=new Message(dest, null, null);
-        FcHeader hdr=new FcHeader(FcHeader.REPLENISH);
-        msg.putHeader(name, hdr);
+        msg.putHeader(name, REPLENISH_HDR);
         passDown(new Event(Event.MSG, msg));
     }
+
+    private void sendCreditRequest(Address dest) {
+        Message  msg=new Message(dest, null, null);
+        msg.putHeader(name, CREDIT_REQUEST_HDR);
+        passDown(new Event(Event.MSG, msg));
+    }
+
 
 
     /**
@@ -317,7 +348,7 @@ public class FC extends Protocol {
      * @param evt Guaranteed to be a Message
      * @return
      */
-    void waitUntilEnoughCreditsAvailable(Message msg) {
+    private void waitUntilEnoughCreditsAvailable(Message msg) {
         // not enough credits, block until replenished with credits
         synchronized(sent) { // 'sent' is the same lock as blocking.getLock()...
             if(decrMessage(msg) == false) {
@@ -326,7 +357,19 @@ public class FC extends Protocol {
                 blocking.set(Boolean.TRUE);
                 start_blocking=System.currentTimeMillis();
                 num_blockings++;
-                blocking.waitUntil(Boolean.FALSE);  // waits on 'sent'
+                try {
+                    blocking.waitUntilWithTimeout(Boolean.FALSE, max_block_time);  // waits on 'sent'
+                }
+                catch(TimeoutException e) {
+                    if(log.isTraceEnabled())
+                        log.trace("timeout occurred waiting on credits; sending credit request to " + creditors);
+                    List tmp=new ArrayList(creditors);
+                    Address mbr;
+                    for(Iterator it=tmp.iterator(); it.hasNext();) {
+                        mbr=(Address)it.next();
+                        sendCreditRequest(mbr);
+                    }
+                }
             }
         }
     }
@@ -572,7 +615,9 @@ public class FC extends Protocol {
 
 
     public static class FcHeader extends Header implements Streamable {
-        public static final byte REPLENISH = 1;
+        public static final byte REPLENISH      = 1;
+        public static final byte CREDIT_REQUEST = 2; // the sender of the message is the requester
+
         byte  type = REPLENISH;
 
         public FcHeader() {
@@ -583,12 +628,9 @@ public class FC extends Protocol {
             this.type=type;
         }
 
-
-
         public long size() {
             return Global.BYTE_SIZE;
         }
-
 
         public void writeExternal(ObjectOutput out) throws IOException {
             out.writeByte(type);
@@ -607,9 +649,12 @@ public class FC extends Protocol {
         }
 
         public String toString() {
-            return "REPLENISH";
+            switch(type) {
+            case REPLENISH: return "REPLENISH";
+            case CREDIT_REQUEST: return "CREDIT_REQUEST";
+            default: return "<invalid type>";
+            }
         }
-
     }
 
 
