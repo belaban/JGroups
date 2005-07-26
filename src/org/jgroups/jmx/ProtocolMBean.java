@@ -4,10 +4,11 @@ import org.jgroups.stack.ProtocolObserver;
 
 import java.util.Properties;
 import java.util.Vector;
+import java.util.Map;
 
 /**
  * @author Bela Ban
- * @version $Id: ProtocolMBean.java,v 1.5 2005/06/13 15:50:38 belaban Exp $
+ * @version $Id: ProtocolMBean.java,v 1.6 2005/07/26 11:15:19 belaban Exp $
  */
 public interface ProtocolMBean {
     String getName();
@@ -17,6 +18,7 @@ public interface ProtocolMBean {
     void setStatsEnabled(boolean flag);
     void resetStats();
     String printStats();
+    Map dumpStats();
     boolean getUpThread();
     boolean getDownThread();
     void setObserver(ProtocolObserver observer);

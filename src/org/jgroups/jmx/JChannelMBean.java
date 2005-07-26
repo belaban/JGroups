@@ -4,10 +4,11 @@ import org.jgroups.*;
 import org.w3c.dom.Element;
 
 import java.io.Serializable;
+import java.util.Map;
 
 /**
  * @author Bela Ban
- * @version $Id: JChannelMBean.java,v 1.3 2005/06/07 10:17:27 belaban Exp $
+ * @version $Id: JChannelMBean.java,v 1.4 2005/07/26 11:15:19 belaban Exp $
  */
 public interface JChannelMBean {
     void create() throws Exception;
@@ -56,6 +57,7 @@ public interface JChannelMBean {
     boolean getAutoGetState();
     void setAutoGetState(boolean flag);
 
+    Map dumpStats();
 
     View getView();
     String getViewAsString();

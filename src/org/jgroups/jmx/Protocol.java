@@ -1,14 +1,13 @@
 package org.jgroups.jmx;
 
 import org.jgroups.stack.ProtocolObserver;
-import org.jgroups.util.Util;
 
 import java.util.Properties;
-import java.util.Vector;
+import java.util.Map;
 
 /**
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.6 2005/06/13 15:50:38 belaban Exp $
+ * @version $Id: Protocol.java,v 1.7 2005/07/26 11:15:19 belaban Exp $
  */
 public class Protocol implements ProtocolMBean {
     org.jgroups.stack.Protocol prot;
@@ -51,6 +50,10 @@ public class Protocol implements ProtocolMBean {
 
     public String printStats() {
         return prot.printStats();
+    }
+
+    public Map dumpStats() {
+        return prot.dumpStats();
     }
 
     public boolean getUpThread() {

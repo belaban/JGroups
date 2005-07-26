@@ -1,4 +1,4 @@
-// $Id: Protocol.java,v 1.29 2005/06/08 12:36:42 belaban Exp $
+// $Id: Protocol.java,v 1.30 2005/07/26 11:15:21 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -12,6 +12,7 @@ import org.jgroups.util.Util;
 
 import java.util.Properties;
 import java.util.Vector;
+import java.util.Map;
 
 
 
@@ -252,6 +253,10 @@ public abstract class Protocol {
     }
 
     public String printStats() {
+        return null;
+    }
+
+    public Map dumpStats() {
         return null;
     }
 

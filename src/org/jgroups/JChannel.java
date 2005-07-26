@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.36 2005/07/17 11:38:05 chrislott Exp $
+// $Id: JChannel.java,v 1.37 2005/07/26 11:15:22 belaban Exp $
 
 package org.jgroups;
 
@@ -66,7 +66,7 @@ import java.util.Vector;
  * 
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.36 $
+ * @version $Revision: 1.37 $
  */
 public class JChannel extends Channel {
 
@@ -532,6 +532,31 @@ public class JChannel extends Channel {
     public String dumpQueue() {
         return Util.dumpQueue(mq);
     }
+
+    /**
+     * Returns a map of statistics of the various protocols and of the channel itself.
+     * @return Map<String,Map>. A map where the keys are the protocols ("channel" pseudo key is
+     * used for the channel itself") and the values are property maps.
+     */
+    public Map dumpStats() {
+        Map retval=prot_stack.dumpStats();
+        if(retval != null) {
+            Map tmp=dumpChannelStats();
+            if(tmp != null)
+                retval.put("channel", tmp);
+        }
+        return retval;
+    }
+
+    private Map dumpChannelStats() {
+        Map retval=new HashMap();
+        retval.put("sent_msgs", new Long(sent_msgs));
+        retval.put("sent_bytes", new Long(sent_bytes));
+        retval.put("received_msgs", new Long(received_msgs));
+        retval.put("received_bytes", new Long(received_bytes));
+        return retval;
+    }
+
 
     /**
      * Sends a message through the protocol stack.
