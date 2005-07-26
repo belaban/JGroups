@@ -1,4 +1,4 @@
-// $Id: FC.java,v 1.28 2005/07/19 11:38:47 belaban Exp $
+// $Id: FC.java,v 1.29 2005/07/26 11:30:13 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -20,7 +20,7 @@ import java.util.*;
  * Note that this protocol must be located towards the top of the stack, or all down_threads from JChannel to this
  * protocol must be set to false ! This is in order to block JChannel.send()/JChannel.down().
  * @author Bela Ban
- * @version $Revision: 1.28 $
+ * @version $Revision: 1.29 $
  */
 public class FC extends Protocol {
 
@@ -121,7 +121,7 @@ public class FC extends Protocol {
     }
 
     public double getAverageTimeBlocked() {
-        return total_time_blocking / num_blockings;
+        return num_blockings == 0? num_blockings : total_time_blocking / num_blockings;
     }
 
     public int getNumberOfReplenishmentsReceived() {
@@ -140,6 +140,18 @@ public class FC extends Protocol {
         StringBuffer sb=new StringBuffer();
         sb.append("senders:\n").append(printMap(sent)).append("\n\nreceivers:\n").append(printMap(received));
         return sb.toString();
+    }
+
+    public Map dumpStats() {
+        Map retval=super.dumpStats();
+        if(retval == null)
+            retval=new HashMap();
+        retval.put("senders", printMap(sent));
+        retval.put("receivers", printMap(received));
+        retval.put("num_blockings", new Integer(getNumberOfBlockings()));
+        retval.put("avg_time_blocked", new Double(getAverageTimeBlocked()));
+        retval.put("num_replenishments", new Integer(getNumberOfReplenishmentsReceived()));
+        return retval;
     }
 
     public String showLastBlockingTimes() {

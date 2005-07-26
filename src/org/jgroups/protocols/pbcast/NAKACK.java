@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.51 2005/07/15 09:34:56 belaban Exp $
+// $Id: NAKACK.java,v 1.52 2005/07/26 11:30:12 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -252,7 +252,29 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         return true;
     }
 
+    public Map dumpStats() {
+        Map retval=super.dumpStats();
+        if(retval == null)
+            retval=new HashMap();
 
+        retval.put("sent_msgs", printSentMsgs());
+
+        StringBuffer sb=new StringBuffer();
+        Map.Entry entry;
+        Address addr;
+        Object w;
+        synchronized(received_msgs) {
+            for(Iterator it=received_msgs.entrySet().iterator(); it.hasNext();) {
+                entry=(Map.Entry)it.next();
+                addr=(Address)entry.getKey();
+                w=entry.getValue();
+                sb.append(addr).append(": ").append(w.toString()).append('\n');
+            }
+        }
+
+        retval.put("received_msgs", sb.toString());
+        return retval;        
+    }
 
     public String printStats() {
         Map.Entry entry;
