@@ -12,7 +12,7 @@ import java.util.*;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: TcpTransport.java,v 1.8 2005/07/01 08:05:12 belaban Exp $
+ * @version $Id: TcpTransport.java,v 1.9 2005/07/26 11:50:21 belaban Exp $
  */
 public class TcpTransport implements Transport {
     Receiver         receiver=null;
@@ -99,6 +99,10 @@ public class TcpTransport implements Transport {
 
     public void setReceiver(Receiver r) {
         this.receiver=r;
+    }
+
+    public Map dumpStats() {
+        return null;
     }
 
     public void send(Object destination, byte[] payload) throws Exception {

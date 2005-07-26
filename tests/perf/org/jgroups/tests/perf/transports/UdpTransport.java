@@ -11,11 +11,12 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.util.Properties;
+import java.util.Map;
 
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: UdpTransport.java,v 1.5 2004/10/04 20:43:39 belaban Exp $
+ * @version $Id: UdpTransport.java,v 1.6 2005/07/26 11:50:21 belaban Exp $
  */
 public class UdpTransport implements Transport {
     Receiver         receiver=null;
@@ -90,6 +91,10 @@ public class UdpTransport implements Transport {
 
     public void setReceiver(Receiver r) {
         this.receiver=r;
+    }
+
+    public Map dumpStats() {
+        return null;
     }
 
     public void send(Object destination, byte[] payload) throws Exception {

@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.172 2005/07/17 11:45:34 chrislott Exp $
+Revision: $Id: history.txt,v 1.173 2005/07/26 11:50:10 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -28,6 +28,17 @@ publicnmi	= Robert Schaffar-Taurok (robert@fusion.at)
 
 Version 2.2.9
 -------------
+
+- Added JChannel.dumpStats(): returns information about the various protocols, and the channel itself,
+  as a map. Currenty, only NAKACK, TP and FC have implementations
+  (bela July 26 2005)
+
+- Eliminated creation of 3 input and 2 output streams *per message* in TP. These streams are now
+  created at TP startup and simply reset when a message is to be received or sent
+  (bela July 25 2005) 
+
+- Improved performance of RpcDispatcher, MethodCall (is now Stremable), added unit tests
+  (bela July 25 2005)
 
 - Improved javadoc: copied portions of User's Guide to doc comments in source files,
   fixed javadoc warnings; added project and package overviews; tweaked build target. 

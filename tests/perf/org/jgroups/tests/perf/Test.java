@@ -47,6 +47,8 @@ public class Test implements Receiver {
     /** Dump info in gnuplot format */
     boolean         gnuplot_output=false;
 
+    boolean         dump_transport_stats=false;
+
     /** Log every n msgs received (if gnuplot_output == true) */
     long            log_interval=1000;
 
@@ -111,6 +113,9 @@ public class Test implements Receiver {
         String tmp2=this.config.getProperty("gnuplot_output", "false");
         if(Boolean.valueOf(tmp2).booleanValue())
             this.gnuplot_output=true;
+        tmp2=this.config.getProperty("dump_transport_stats", "false");
+        if(Boolean.valueOf(tmp2).booleanValue())
+            this.dump_transport_stats=true;
         tmp2=this.config.getProperty("log_interval");
         if(tmp2 != null)
             log_interval=Long.parseLong(tmp2);
@@ -439,7 +444,26 @@ public class Test implements Receiver {
             sb.append(", total_mem=").append(Runtime.getRuntime().totalMemory() / 1000.0).append('\n');
 
         dumpThroughput(sb, received_msgs);
+
+        if(dump_transport_stats) {
+            Map stats=transport.dumpStats();
+            if(stats != null) {
+                print(stats, sb);
+            }
+        }
         return sb.toString();
+    }
+
+    private void print(Map stats, StringBuffer sb) {
+        sb.append("\ntransport stats:\n");
+        Map.Entry entry;
+        Object key, val;
+        for(Iterator it=stats.entrySet().iterator(); it.hasNext();) {
+            entry=(Map.Entry)it.next();
+            key=entry.getKey();
+            val=entry.getValue();
+            sb.append(key).append(": ").append(val).append("\n");
+        }
     }
 
     void dumpThroughput(StringBuffer sb, long received_msgs) {

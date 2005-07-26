@@ -9,11 +9,12 @@ import javax.management.MBeanServerFactory;
 import javax.management.MBeanServer;
 import java.util.Properties;
 import java.util.ArrayList;
+import java.util.Map;
 
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: JGroupsTransport.java,v 1.4 2005/06/15 08:29:45 belaban Exp $
+ * @version $Id: JGroupsTransport.java,v 1.5 2005/07/26 11:50:21 belaban Exp $
  */
 public class JGroupsTransport implements Transport, Runnable {
     Properties config=null;
@@ -70,6 +71,10 @@ public class JGroupsTransport implements Transport, Runnable {
 
     public void setReceiver(Receiver r) {
         this.receiver=r;
+    }
+
+    public Map dumpStats() {
+        return channel != null? channel.dumpStats() : null;
     }
 
     public void send(Object destination, byte[] payload) throws Exception {
