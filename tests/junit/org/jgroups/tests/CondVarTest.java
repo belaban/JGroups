@@ -1,4 +1,4 @@
-// $Id: CondVarTest.java,v 1.2 2004/09/23 16:30:01 belaban Exp $
+// $Id: CondVarTest.java,v 1.3 2005/07/26 18:36:00 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -10,6 +10,8 @@ import org.jgroups.util.Util;
 import org.jgroups.util.CondVar;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.HashMap;
+import java.util.Map;
 
 
 /**
@@ -68,6 +70,44 @@ public class CondVarTest extends TestCase {
         cond.waitUntilWithTimeout(Boolean.TRUE,  2000);
     }
 
+    public void testDoubleLocking() throws org.jgroups.TimeoutException {
+        final Map m=new HashMap();
+        final CondVar c=new CondVar("bla", Boolean.FALSE, m);
+
+        new Thread() {
+            public void run() {
+                Util.sleep(1000);
+                _setValue(m, c);
+            }
+        }.start();
+
+        _enterMonitor(m, c);
+    }
+
+    private void _setValue(Map m, CondVar c) {
+        log("acquiring m");
+        synchronized(m) {
+            log("acquired m. setting c");
+            c.set(Boolean.TRUE);
+            log("set c. released c");
+        }
+        log("released m");
+    }
+
+    private void _enterMonitor(final Map m, final CondVar c) throws org.jgroups.TimeoutException {
+        log("acquiring m");
+        synchronized(m) {
+            log("acquired m. acquiring and waiting on c");
+            c.waitUntilWithTimeout(Boolean.TRUE, 10000);
+            log("released c");
+        }
+        log("released m");
+    }
+
+
+    private void log(String msg) {
+        System.out.println(System.currentTimeMillis() + " " + Thread.currentThread() + " - " + msg);
+    }
 
     public void testStressOnGet() {
         long start, stop;
