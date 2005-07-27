@@ -6,7 +6,7 @@ import java.text.NumberFormat;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: MemberInfo.java,v 1.3 2004/01/24 16:56:35 belaban Exp $
+ * @version $Id: MemberInfo.java,v 1.4 2005/07/27 09:03:18 belaban Exp $
  */
 public class MemberInfo implements Serializable {
     public  long start=0;
@@ -43,7 +43,7 @@ public class MemberInfo implements Serializable {
         loss_rate=missing_msgs >= num_msgs_expected? 100.0 : (100.0 / num_msgs_expected) * missing_msgs;
         sb.append("num_msgs_expected=").append(num_msgs_expected).append(", num_msgs_received=");
         sb.append(num_msgs_received);
-        sb.append(" (loss rate=").append(f.format(loss_rate)).append("%)");
+        sb.append(" (loss rate=").append(loss_rate).append("%)");
         if(mb_received > 0)
             sb.append(", received=").append(f.format(mb_received)).append("MB");
         else
