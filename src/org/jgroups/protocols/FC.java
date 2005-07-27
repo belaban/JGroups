@@ -1,4 +1,4 @@
-// $Id: FC.java,v 1.31 2005/07/26 17:48:01 belaban Exp $
+// $Id: FC.java,v 1.32 2005/07/27 07:41:38 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -22,7 +22,7 @@ import EDU.oswego.cs.dl.util.concurrent.ConcurrentReaderHashMap;
  * Note that this protocol must be located towards the top of the stack, or all down_threads from JChannel to this
  * protocol must be set to false ! This is in order to block JChannel.send()/JChannel.down().
  * @author Bela Ban
- * @version $Revision: 1.31 $
+ * @version $Revision: 1.32 $
  */
 public class FC extends Protocol {
 
@@ -265,7 +265,7 @@ public class FC extends Protocol {
                         num_replenishments++;
                         handleCredit(msg.getSrc());
                     }
-                    if(hdr.type == FcHeader.CREDIT_REQUEST) {
+                    else if(hdr.type == FcHeader.CREDIT_REQUEST) {
                         num_credit_requests++;
                         Address sender=msg.getSrc();
                         if(log.isTraceEnabled())
@@ -349,7 +349,7 @@ public class FC extends Protocol {
      * @return
      */
     private void waitUntilEnoughCreditsAvailable(Message msg) {
-        boolean timeout_occurred=false;
+        boolean looping=true;
         // not enough credits, block until replenished with credits
         synchronized(sent) { // 'sent' is the same lock as blocking.getLock()...
             if(decrMessage(msg) == false) {
@@ -358,22 +358,22 @@ public class FC extends Protocol {
                 blocking.set(Boolean.TRUE);
                 start_blocking=System.currentTimeMillis();
                 num_blockings++;
-                try {
-                    blocking.waitUntilWithTimeout(Boolean.FALSE, max_block_time);  // waits on 'sent'
+                while(looping) {
+                    try {
+                        blocking.waitUntilWithTimeout(Boolean.FALSE, max_block_time);  // waits on 'sent'
+                        looping=false;
+                    }
+                    catch(TimeoutException e) {
+                        if(log.isTraceEnabled())
+                            log.trace("timeout occurred waiting for credits; sending credit request to " + creditors);
+                        List tmp=new ArrayList(creditors);
+                        Address mbr;
+                        for(Iterator it=tmp.iterator(); it.hasNext();) {
+                            mbr=(Address)it.next();
+                            sendCreditRequest(mbr);
+                        }
+                    }
                 }
-                catch(TimeoutException e) {
-                    timeout_occurred=true;
-                }
-            }
-        }
-        if(timeout_occurred) {
-            if(log.isTraceEnabled())
-                log.trace("timeout occurred waiting for credits; sending credit request to " + creditors);
-            List tmp=new ArrayList(creditors);
-            Address mbr;
-            for(Iterator it=tmp.iterator(); it.hasNext();) {
-                mbr=(Address)it.next();
-                sendCreditRequest(mbr);
             }
         }
     }
@@ -402,7 +402,6 @@ public class FC extends Protocol {
         dest=msg.getDest();
         size=Math.max(24, msg.getLength());
         if(dest != null && !dest.isMulticastAddress()) { // unicast destination
-            // if(log.isTraceEnabled()) log.trace("credit for " + dest + " is " + sent.get(dest));
             if(decrementCredit(sent, dest, size, 0)) {
                 return true;
             }
@@ -414,7 +413,6 @@ public class FC extends Protocol {
         else {                 // multicast destination
             for(Iterator it=members.iterator(); it.hasNext();) {
                 dest=(Address)it.next();
-                // if(log.isTraceEnabled()) log.trace("credit for " + dest + " is " + sent.get(dest));
                 if(decrementCredit(sent, dest, size, 0) == false) {
                     addCreditor(dest);
                     success=false;
@@ -469,48 +467,8 @@ public class FC extends Protocol {
 
     private long getCredits(Map map, Address mbr) {
         Long tmp=(Long)map.get(mbr);
-        if(tmp == null) {
-            map.put(mbr, new Long(max_credits));
-            return max_credits;
-        }
-        return tmp.longValue();
+        return tmp != null? tmp.longValue() : -1;
     }
-
-
-
-
-
-    /**
-     * Find the credits associated with <tt>dest</tt> and decrement its credits by the message size.
-     * @param map
-     * @param dest
-     * @return Whether the required credits could successfully be subtracted from the credits left
-     */
-//    private boolean decrementCredit(Map map, Address dest, long credits_required) {
-//        long    credits_left, new_credits_left;
-//        Long    tmp=(Long)map.get(dest);
-//
-//        if(tmp != null) {
-//            credits_left=tmp.longValue();
-//            new_credits_left=Math.max(0, credits_left - credits_required);
-//            map.put(dest, new Long(new_credits_left));
-//
-//            if(new_credits_left >= min_credits + credits_required) {
-//                return true;
-//            }
-//            else {
-//                if(log.isTraceEnabled()) {
-//                    StringBuffer sb=new StringBuffer();
-//                    sb.append("not enough credits left for ").append(dest).append(": left=").append(new_credits_left);
-//                    sb.append(", required+min_credits=").append((credits_required +min_credits)).append(", required=");
-//                    sb.append(credits_required).append(", min_credits=").append(min_credits);
-//                    log.trace(sb.toString());
-//                }
-//                return false;
-//            }
-//        }
-//        return true;
-//    }
 
 
 
