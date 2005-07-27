@@ -1,4 +1,4 @@
-// $Id: FC.java,v 1.32 2005/07/27 07:41:38 belaban Exp $
+// $Id: FC.java,v 1.33 2005/07/27 09:36:55 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -22,7 +22,7 @@ import EDU.oswego.cs.dl.util.concurrent.ConcurrentReaderHashMap;
  * Note that this protocol must be located towards the top of the stack, or all down_threads from JChannel to this
  * protocol must be set to false ! This is in order to block JChannel.send()/JChannel.down().
  * @author Bela Ban
- * @version $Revision: 1.32 $
+ * @version $Revision: 1.33 $
  */
 public class FC extends Protocol {
 
@@ -284,16 +284,26 @@ public class FC extends Protocol {
 
 
 
-    private void handleCredit(Address src) {
-        if(src == null) return;
-        if(log.isTraceEnabled())
-            log.trace(new StringBuffer("received credit from ").append(src).append(", old credit was ").
-                      append(sent.get(src)).append(", new credits are ").append(max_credits).
-                      append(". Creditors are\n").append(printCreditors()));
+    private void handleCredit(Address sender) {
+        if(sender == null) return;
+        StringBuffer sb=null;
+
         synchronized(sent) {
-            sent.put(src, new Long(max_credits));
+            if(log.isTraceEnabled()) {
+                Long old_credit=(Long)sent.get(sender);
+                sb=new StringBuffer();
+                sb.append("received credit from ").append(sender).append(", old credit was ").
+                        append(old_credit).append(", new credits are ").append(max_credits).
+                        append(".\nCreditors before are: ").append(printCreditors());
+            }
+
+            sent.put(sender, new Long(max_credits));
             if(creditors.size() > 0) {  // we are blocked because we expect credit from one or more members
-                removeCreditor(src);
+                removeCreditor(sender);
+                if(log.isTraceEnabled()) {
+                    sb.append("\nCreditors after removal of ").append(sender).append(" are: ").append(printCreditors());
+                    log.trace(sb.toString());
+                }
                 if(creditors.size() == 0) {
                     unblockSender(); // triggers sent.notifyAll()...
                 }
@@ -449,9 +459,11 @@ public class FC extends Protocol {
         // always called with 'sent' lock acquired, so we don't need to sync here
         // **********************************************************************
         StringBuffer sb=new StringBuffer();
+        if(creditors.size() ==0)
+            return "<empty>";
         for(Iterator it=creditors.iterator(); it.hasNext();) {
             Address creditor=(Address)it.next();
-            sb.append(creditor).append(": ").append(getCredits(sent, creditor)).append(" credits\n");
+            sb.append(creditor).append(": ").append(getCredits(sent, creditor)).append(" credits ");
         }
         return sb.toString();
     }
@@ -465,9 +477,8 @@ public class FC extends Protocol {
         creditors.remove(mbr);
     }
 
-    private long getCredits(Map map, Address mbr) {
-        Long tmp=(Long)map.get(mbr);
-        return tmp != null? tmp.longValue() : -1;
+    private Long getCredits(Map map, Address mbr) {
+        return (Long)map.get(mbr);
     }
 
 
