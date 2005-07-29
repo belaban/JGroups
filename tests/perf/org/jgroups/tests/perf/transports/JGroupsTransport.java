@@ -14,7 +14,7 @@ import java.util.Properties;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: JGroupsTransport.java,v 1.6 2005/07/29 08:59:37 belaban Exp $
+ * @version $Id: JGroupsTransport.java,v 1.7 2005/07/29 14:21:13 belaban Exp $
  */
 public class JGroupsTransport implements Transport, Runnable {
     Properties config=null;
@@ -114,9 +114,6 @@ public class JGroupsTransport implements Transport, Runnable {
             }
             catch(TimeoutException e) {
                 e.printStackTrace();
-            }
-            catch(Throwable t) {
-
             }
         }
     }
