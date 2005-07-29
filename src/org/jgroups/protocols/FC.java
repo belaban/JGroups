@@ -1,4 +1,4 @@
-// $Id: FC.java,v 1.34 2005/07/29 07:07:54 belaban Exp $
+// $Id: FC.java,v 1.35 2005/07/29 10:34:26 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -22,7 +22,7 @@ import EDU.oswego.cs.dl.util.concurrent.ConcurrentReaderHashMap;
  * Note that this protocol must be located towards the top of the stack, or all down_threads from JChannel to this
  * protocol must be set to false ! This is in order to block JChannel.send()/JChannel.down().
  * @author Bela Ban
- * @version $Revision: 1.34 $
+ * @version $Revision: 1.35 $
  */
 public class FC extends Protocol {
 
@@ -65,8 +65,8 @@ public class FC extends Protocol {
      * override the above computation */
     long min_credits=0;
 
-    /** Current mode. True if channel was sent a BLOCK_SEND event, false if UNBLOCK_EVENT was sent */
-    CondVar blocking=new CondVar("blocking", Boolean.FALSE, sent); // we're using the sender's map as sync
+    /** Current blocking. True if blocking, else false */
+    CondVar blocking=new CondVar("blocking", Boolean.FALSE);
 
     static final String name="FC";
 
@@ -79,7 +79,6 @@ public class FC extends Protocol {
 
     final static FcHeader REPLENISH_HDR=new FcHeader(FcHeader.REPLENISH);
     final static FcHeader CREDIT_REQUEST_HDR=new FcHeader(FcHeader.CREDIT_REQUEST);
-
 
 
 
@@ -176,9 +175,7 @@ public class FC extends Protocol {
 
 
     public void unblock() {
-        synchronized(sent) {
-            unblockSender();
-        }
+        unblockSender();
     }
 
 
@@ -229,16 +226,33 @@ public class FC extends Protocol {
         unblock();
     }
 
+
+    /**
+     * We need to receive view changes concurrent to messages on the down events: a message might blocks, e.g.
+     * because we don't have enough credits to send to member P. However, if member P crashed, we need to unblock !
+     * @param evt
+     */
+    protected void receiveDownEvent(Event evt) {
+        if(evt.getType() == Event.VIEW_CHANGE) {
+            View v=(View)evt.getArg();
+            Vector mbrs=v.getMembers();
+            handleViewChange(mbrs);
+        }
+        super.receiveDownEvent(evt);
+    }
+
     public void down(final Event evt) {
         switch(evt.getType()) {
         case Event.VIEW_CHANGE:
             // this has to be run in a separate thread because waitUntilEnoughCreditsAvailable() might block,
             // and the view change could potentially unblock it
-            new Thread() {
-                public void run() {
-                    handleViewChange(((View)evt.getArg()).getMembers());
-                }
-            }.start();
+            // doesn't work ! Because we're not even getting the VIEW event if the MSG event blocks !
+            // This was moved to receiveDownEvent() above, which is concurrent to down(MSG). bela July 29 2005
+//            new Thread() {
+//                public void run() {
+//                    handleViewChange(((View)evt.getArg()).getMembers());
+//                }
+//            }.start();
             break;
         case Event.MSG:
             passDown(evt); // let this one go, but block on the next message if not sufficient credit
@@ -290,6 +304,7 @@ public class FC extends Protocol {
     private void handleCredit(Address sender) {
         if(sender == null) return;
         StringBuffer sb=null;
+        boolean unblock=false;
 
         synchronized(sent) {
             if(log.isTraceEnabled()) {
@@ -308,10 +323,12 @@ public class FC extends Protocol {
                     log.trace(sb.toString());
                 }
                 if(creditors.size() == 0) {
-                    unblockSender(); // triggers sent.notifyAll()...
+                    unblock=true;
                 }
             }
         }
+        if(unblock) // moved this outside of the 'sent' synchronized block
+            unblockSender();
     }
 
 
@@ -362,29 +379,31 @@ public class FC extends Protocol {
      * @return
      */
     private void waitUntilEnoughCreditsAvailable(Message msg) {
-        boolean looping=true;
         // not enough credits, block until replenished with credits
+        boolean rc;
         synchronized(sent) { // 'sent' is the same lock as blocking.getLock()...
-            if(decrMessage(msg) == false) {
-                if(log.isTraceEnabled())
-                    log.trace("blocking due to insufficient credits, creditors=\n" + printCreditors());
-                blocking.set(Boolean.TRUE);
-                start_blocking=System.currentTimeMillis();
-                num_blockings++;
-                while(looping) {
-                    try {
-                        blocking.waitUntilWithTimeout(Boolean.FALSE, max_block_time);  // waits on 'sent'
-                        looping=false;
-                    }
-                    catch(TimeoutException e) {
-                        if(log.isTraceEnabled())
-                            log.trace("timeout occurred waiting for credits; sending credit request to " + creditors);
-                        List tmp=new ArrayList(creditors);
-                        Address mbr;
-                        for(Iterator it=tmp.iterator(); it.hasNext();) {
-                            mbr=(Address)it.next();
-                            sendCreditRequest(mbr);
-                        }
+            rc=decrMessage(msg);
+        }
+
+        if(rc == false) {
+            if(log.isTraceEnabled())
+                log.trace("blocking due to insufficient credits");
+            blocking.set(Boolean.TRUE);
+            start_blocking=System.currentTimeMillis();
+            num_blockings++;
+            while(true) {
+                try {
+                    blocking.waitUntilWithTimeout(Boolean.FALSE, max_block_time);  // waits on 'sent'
+                    break;
+                }
+                catch(TimeoutException e) {
+                    if(log.isTraceEnabled())
+                        log.trace("timeout occurred waiting for credits; sending credit request to " + creditors);
+                    List tmp=new ArrayList(creditors);
+                    Address mbr;
+                    for(Iterator it=tmp.iterator(); it.hasNext();) {
+                        mbr=(Address)it.next();
+                        sendCreditRequest(mbr);
                     }
                 }
             }
@@ -440,14 +459,6 @@ public class FC extends Protocol {
 
     /** If message queueing is enabled, sends queued messages and unlocks sender (if successful) */
     private void unblockSender() {
-        // **********************************************************************
-        // always called with 'sent' lock acquired, so we don't need to sync here
-        // **********************************************************************
-        blocking.set(Boolean.FALSE);
-        printBlockTime();
-    }
-
-    private void printBlockTime() {
         stop_blocking=System.currentTimeMillis();
         long diff=stop_blocking - start_blocking;
         total_time_blocking+=diff;
@@ -455,7 +466,9 @@ public class FC extends Protocol {
         stop_blocking=start_blocking=0;
         if(log.isTraceEnabled())
             log.trace("setting blocking=false, blocking time was " + diff + "ms");
+        blocking.set(Boolean.FALSE);
     }
+
 
     private String printCreditors() {
         // **********************************************************************
@@ -547,6 +560,7 @@ public class FC extends Protocol {
             }
         }
 
+        boolean unblock=false;
         synchronized(sent) {
             // add members not in membership to sent hashmap (with full credits)
             for(int i=0; i < mbrs.size(); i++) {
@@ -561,8 +575,6 @@ public class FC extends Protocol {
                     it.remove(); // modified the underlying map
             }
 
-
-
             // remove all creditors which are not in the new view
             for(Iterator it=creditors.iterator(); it.hasNext();) {
                 Address creditor=(Address) it.next();
@@ -571,9 +583,11 @@ public class FC extends Protocol {
             }
 
             if(log.isTraceEnabled()) log.trace("creditors are\n" + printCreditors());
-            if(creditors.size() == 0 && blocking.get().equals(Boolean.TRUE))
-                unblockSender();
+            if(creditors.size() == 0)
+                unblock=true;
         }
+        if(unblock)
+            unblockSender();
     }
 
     private String printMap(Map m) {
