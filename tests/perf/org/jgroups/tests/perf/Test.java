@@ -9,6 +9,7 @@ import org.jgroups.util.Util;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.util.*;
+import java.text.NumberFormat;
 
 /**  You start the test by running this class.
  * Use parameters -Xbatch -Xconcurrentio (Solaris specific)
@@ -69,6 +70,13 @@ public class Test implements Receiver {
     long            msg_size=1000;
     boolean         jmx=false;
 
+    transient static  NumberFormat f;
+
+    static {
+        f=NumberFormat.getNumberInstance();
+        f.setGroupingUsed(false);
+        f.setMaximumFractionDigits(2);
+    }
 
 
 
@@ -392,21 +400,15 @@ public class Test implements Receiver {
         Object      member;
         Map.Entry   entry;
         MemberInfo  val;
+        double      combined_msgs_sec, tmp=0;
         StringBuffer sb=new StringBuffer();
         sb.append("\n-- results:\n");
-        MemberInfo combined=new MemberInfo(0);
-        combined.start = Long.MAX_VALUE;
-        combined.stop = Long.MIN_VALUE;
-        combined.num_msgs_expected=this.num_msgs_expected;
-        combined.num_msgs_received=this.num_msgs_received;
-        combined.total_bytes_received=this.num_bytes_received;
 
         for(Iterator it=final_results.entrySet().iterator(); it.hasNext();) {
             entry=(Map.Entry)it.next();
             member=entry.getKey();
             val=(MemberInfo)entry.getValue();
-            combined.start=Math.min(combined.start, val.start);
-            combined.stop=Math.max(combined.stop, val.stop);
+            tmp+=val.getMessageSec();
             sb.append("\n").append(member);
             if(member.equals(local_addr))
                 sb.append(" (myself)");
@@ -414,7 +416,9 @@ public class Test implements Receiver {
             sb.append(val);
             sb.append('\n');
         }
-        sb.append("\ncombined: ").append(combined).append('\n');
+        combined_msgs_sec=tmp / final_results.size();
+        sb.append("\ncombined: ").append(f.format(combined_msgs_sec)).
+                append(" msgs/sec averaged over all receivers\n");
         System.out.println(sb.toString());
         if(log.isInfoEnabled()) log.info(sb.toString());
     }
@@ -622,8 +626,9 @@ public class Test implements Receiver {
             e.printStackTrace();
         }
         finally {
-            if(t != null)
+            if(t != null) {
                 t.stop();
+            }
         }
     }
 

@@ -15,7 +15,7 @@ import java.util.Map;
 
 /**
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.5 2005/07/26 11:15:19 belaban Exp $
+ * @version $Id: JChannel.java,v 1.6 2005/07/29 08:59:36 belaban Exp $
  */
 public class JChannel implements JChannelMBean {
     /** Ref to the original JGroups channel */
@@ -322,6 +322,10 @@ public class JChannel implements JChannelMBean {
 
     public void close() {
         channel.close();
+    }
+
+    public void shutdown() {
+        channel.shutdown();
     }
 
     public void send(Message msg) throws ChannelNotConnectedException, ChannelClosedException {

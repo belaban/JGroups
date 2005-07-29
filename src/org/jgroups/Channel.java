@@ -1,4 +1,4 @@
-// $Id: Channel.java,v 1.9 2005/07/26 11:15:22 belaban Exp $
+// $Id: Channel.java,v 1.10 2005/07/29 08:59:37 belaban Exp $
 
 package org.jgroups;
 
@@ -89,6 +89,10 @@ public abstract class Channel implements Transport {
      If the channel is connected to a group, <code>disconnec()t</code> will be called first.
      */
     abstract public void close();
+
+
+    /** Shuts down the channel without disconnecting if connected, stops all the threads */
+    abstract void shutdown();
 
 
     /**

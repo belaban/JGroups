@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.37 2005/07/26 11:15:22 belaban Exp $
+// $Id: JChannel.java,v 1.38 2005/07/29 08:59:37 belaban Exp $
 
 package org.jgroups;
 
@@ -66,7 +66,7 @@ import java.util.Vector;
  * 
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.37 $
+ * @version $Revision: 1.38 $
  */
 public class JChannel extends Channel {
 
@@ -482,6 +482,11 @@ public class JChannel extends Channel {
         _close(true, true); // by default disconnect before closing channel and close mq
     }
 
+
+    /** Shuts down the channel without disconnecting */
+    public synchronized void shutdown() {
+        _close(false, true); // by default disconnect before closing channel and close mq
+    }
 
     /**
      * Opens the channel.
@@ -1228,14 +1233,16 @@ public class JChannel extends Channel {
     /**
      * Disconnects and closes the channel.
      * This method does the folloing things
-     * 1. Calls <code>this.disconnect</code> if the disconnect parameter is true
-     * 2. Calls <code>Queue.close</code> on mq if the close_mq parameter is true
-     * 3. Calls <code>ProtocolStack.stop</code> on the protocol stack
-     * 4. Calls <code>ProtocolStack.destroy</code> on the protocol stack
-     * 5. Sets the channel closed and channel connected flags to true and false
-     * 6. Notifies any channel listener of the channel close operation
+     * <ol>
+     * <li>Calls <code>this.disconnect</code> if the disconnect parameter is true
+     * <li>Calls <code>Queue.close</code> on mq if the close_mq parameter is true
+     * <li>Calls <code>ProtocolStack.stop</code> on the protocol stack
+     * <li>Calls <code>ProtocolStack.destroy</code> on the protocol stack
+     * <li>Sets the channel closed and channel connected flags to true and false
+     * <li>Notifies any channel listener of the channel close operation
+     * </ol>
      */
-    void _close(boolean disconnect, boolean close_mq) {
+    private void _close(boolean disconnect, boolean close_mq) {
         if(closed)
             return;
 

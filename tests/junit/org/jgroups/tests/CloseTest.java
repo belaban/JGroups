@@ -1,10 +1,11 @@
-// $Id: CloseTest.java,v 1.2 2004/03/30 06:47:31 belaban Exp $
+// $Id: CloseTest.java,v 1.3 2005/07/29 08:59:37 belaban Exp $
 
 package org.jgroups.tests;
 
 import junit.framework.TestCase;
 import org.jgroups.ChannelClosedException;
 import org.jgroups.JChannel;
+import org.jgroups.ChannelException;
 import org.jgroups.util.Util;
 
 
@@ -104,6 +105,22 @@ public class CloseTest extends TestCase {
             channel.open();
         }
         channel.close();
+    }
+
+    public void testShutdown() throws Exception {
+        System.out.println("-- creating channel --");
+        channel=new JChannel(props);
+        System.out.println("-- connecting channel --");
+        channel.connect("bla");
+        System.out.println("-- shutting down channel --");
+        channel.shutdown();
+
+        Thread threads[]=new Thread[Thread.activeCount()];
+        Thread.enumerate(threads);
+        System.out.println("-- active threads:");
+        for(int i=0; i < threads.length; i++)
+            System.out.println(threads[i]);
+        assertTrue(threads.length < 5);
     }
 
     public static void main(String[] args) {

@@ -5,16 +5,16 @@ import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.tests.perf.Receiver;
 import org.jgroups.tests.perf.Transport;
 
-import javax.management.MBeanServerFactory;
 import javax.management.MBeanServer;
-import java.util.Properties;
+import javax.management.MBeanServerFactory;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Properties;
 
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: JGroupsTransport.java,v 1.5 2005/07/26 11:50:21 belaban Exp $
+ * @version $Id: JGroupsTransport.java,v 1.6 2005/07/29 08:59:37 belaban Exp $
  */
 public class JGroupsTransport implements Transport, Runnable {
     Properties config=null;
@@ -57,10 +57,11 @@ public class JGroupsTransport implements Transport, Runnable {
 
     public void stop() {
         if(channel != null) {
-            channel.disconnect(); // will cause thread to terminate anyways
+            channel.shutdown(); // will cause thread to terminate anyways
         }
         t=null;
     }
+
 
     public void destroy() {
         if(channel != null) {
@@ -113,6 +114,9 @@ public class JGroupsTransport implements Transport, Runnable {
             }
             catch(TimeoutException e) {
                 e.printStackTrace();
+            }
+            catch(Throwable t) {
+
             }
         }
     }
