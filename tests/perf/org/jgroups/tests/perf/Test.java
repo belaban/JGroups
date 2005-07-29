@@ -607,10 +607,10 @@ public class Test implements Receiver {
                 int i=0;
                 while(t.allReceived() == false) {
                     t.wait(2000);
-                    i++;
-                    if(i > 5 && i % 10 == 0) {
-                        t.dumpSenders();
-                    }
+//                    i++;
+//                    if(i > 5 && i % 10 == 0) {
+//                        t.dumpSenders();
+//                    }
                 }
             }
             if(t.jmx) {
