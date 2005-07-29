@@ -1,0 +1,16 @@
+
+Author: Bela Ban
+Version: $id$
+
+A typical protocol in JGroups can be assured that only up() and down() methods can be called concurrently,
+however up() and up() methods, and down() and down() methods cannot be called concurrently. This is due
+to JGroups using an up and down queue, and 1 thread per queue continually dequeues messages and invokes up() or down().
+However, with the introduction of down_thread=false and up_thread=false, we don't use queues anymore. If, in this case,
+we have multiple threads calling Channel.send() concurrently, then the above guarantee cannot be provided anymore.
+As a result, down() in any given protocol *can* now be called concurrently, by different threads, and so each protocol
+has to be made thread safe (reentrant).
+
+The focus here has to be on the down() side; multiple threads can call send() simultaneously.
+However, the up() methods are probably not much of a problem because they are called by a single
+thread (the receiver thread). We *cannot* use a thread pool for receiving messages, as this would
+violate the ordering previously established.
