@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.52 2005/07/26 11:30:12 belaban Exp $
+// $Id: NAKACK.java,v 1.53 2005/07/29 15:20:04 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -528,8 +528,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
     /* --------------------------------- Private Methods --------------------------------------- */
 
-    long getNextSeqno() {
-        return seqno++; // no need for synchronization; access to seqno is serialized anyway
+    synchronized long getNextSeqno() {
+        return seqno++;
     }
 
 
