@@ -1,4 +1,4 @@
-// $Id: FRAG2.java,v 1.17 2005/06/13 14:53:48 belaban Exp $
+// $Id: FRAG2.java,v 1.18 2005/07/29 15:40:26 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -27,7 +27,7 @@ import java.util.*;
  * size addition for headers and src and dest address is minimal when the transport finally has to serialize the
  * message, so we add a constant (1000 bytes).
  * @author Bela Ban
- * @version $Id: FRAG2.java,v 1.17 2005/06/13 14:53:48 belaban Exp $
+ * @version $Id: FRAG2.java,v 1.18 2005/07/29 15:40:26 belaban Exp $
  */
 public class FRAG2 extends Protocol {
 
@@ -66,6 +66,9 @@ public class FRAG2 extends Protocol {
     public long getNumberOfReceivedFragments() {return num_received_frags;}
 
 
+    synchronized int getNextId() {
+        return curr_id++;
+    }
 
     /** Setup the Protocol instance acording to the configuration string */
     public boolean setProperties(Properties props) {
@@ -120,7 +123,9 @@ public class FRAG2 extends Protocol {
         case Event.MSG:
             Message msg=(Message)evt.getArg();
             long size=msg.getLength();
-            num_sent_msgs++;
+            synchronized(this) {
+                num_sent_msgs++;
+            }
             if(size > frag_size) {
                 if(log.isTraceEnabled()) {
                     StringBuffer sb=new StringBuffer("message's buffer size is ");
@@ -213,7 +218,7 @@ public class FRAG2 extends Protocol {
         FragHeader         hdr;
         Message            frag_msg=null;
         Address            dest=msg.getDest();
-        long               id=curr_id++; // used as seqnos
+        long               id=getNextId(); // used as seqnos
         int                num_frags=0;
         StringBuffer       sb;
         Range              r;
@@ -222,7 +227,9 @@ public class FRAG2 extends Protocol {
             buffer=msg.getBuffer();
             fragments=Util.computeFragOffsets(buffer, frag_size);
             num_frags=fragments.size();
-            num_sent_frags+=num_frags;
+            synchronized(this) {
+                num_sent_frags+=num_frags;
+            }
 
             if(log.isTraceEnabled()) {
                 sb=new StringBuffer("fragmenting packet to ");
