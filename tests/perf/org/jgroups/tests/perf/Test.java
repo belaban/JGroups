@@ -604,8 +604,14 @@ public class Test implements Receiver {
                 t.sendMessages();
             }
             synchronized(t) {
-                while(t.allReceived() == false)
+                int i=0;
+                while(t.allReceived() == false) {
                     t.wait(2000);
+                    i++;
+                    if(i > 5 && i % 10 == 0) {
+                        t.dumpSenders();
+                    }
+                }
             }
             if(t.jmx) {
                 System.out.println("jmx=true: not terminating");
