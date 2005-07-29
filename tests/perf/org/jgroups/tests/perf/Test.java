@@ -262,6 +262,19 @@ public class Test implements Receiver {
         num_msgs_received++;
         num_bytes_received+=num_bytes;
 
+        if(num_msgs_received >= num_msgs_expected) {
+            if(stop == 0)
+                stop=System.currentTimeMillis();
+            all_received=true;
+        }
+
+        if(num_msgs_received % log_interval == 0)
+            System.out.println(new StringBuffer("-- received ").append(num_msgs_received).append(" messages"));
+
+        if(counter % log_interval == 0) {
+            if(log.isInfoEnabled()) log.info(dumpStats(counter));
+        }
+
         MemberInfo info=(MemberInfo)this.senders.get(sender);
         if(info != null) {
             if(info.start == 0)
@@ -269,30 +282,20 @@ public class Test implements Receiver {
             info.num_msgs_received++;
             counter++;
             info.total_bytes_received+=num_bytes;
-            if(info.num_msgs_received % log_interval == 0)
-                System.out.println(new StringBuffer("-- received ").append(info.num_msgs_received).
-                                   append(" messages from ").append(sender));
-
-            if(counter % log_interval == 0) {
-                if(log.isInfoEnabled()) log.info(dumpStats(counter));
-            }
-
             if(info.num_msgs_received >= info.num_msgs_expected) {
                 info.done=true;
                 if(info.stop == 0)
                     info.stop=System.currentTimeMillis();
-                if(allReceived()) {
-                    all_received=true;
-                    if(stop == 0)
-                        stop=System.currentTimeMillis();
-                    publisher.start();
-                    if(!this.sender)
-                       dumpSenders();
-                }
             }
         }
         else {
             log.error("-- sender " + sender + " not found in senders hashmap");
+        }
+
+        if(all_received) {
+            if(!this.sender)
+                dumpSenders();
+            publisher.start();
         }
     }
 
@@ -320,14 +323,7 @@ public class Test implements Receiver {
     }
 
     boolean allReceived() {
-        MemberInfo mi;
-
-        for(Iterator it=this.senders.values().iterator(); it.hasNext();) {
-            mi=(MemberInfo)it.next();
-            if(mi.done == false)
-                return false;
-        }
-        return true;
+        return all_received;
     }
 
 
@@ -608,8 +604,8 @@ public class Test implements Receiver {
                 t.sendMessages();
             }
             synchronized(t) {
-                if(t.allReceived() == false)
-                    t.wait();
+                while(t.allReceived() == false)
+                    t.wait(2000);
             }
             if(t.jmx) {
                 System.out.println("jmx=true: not terminating");
