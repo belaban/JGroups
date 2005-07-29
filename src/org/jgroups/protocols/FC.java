@@ -1,4 +1,4 @@
-// $Id: FC.java,v 1.33 2005/07/27 09:36:55 belaban Exp $
+// $Id: FC.java,v 1.34 2005/07/29 07:07:54 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -22,7 +22,7 @@ import EDU.oswego.cs.dl.util.concurrent.ConcurrentReaderHashMap;
  * Note that this protocol must be located towards the top of the stack, or all down_threads from JChannel to this
  * protocol must be set to false ! This is in order to block JChannel.send()/JChannel.down().
  * @author Bela Ban
- * @version $Revision: 1.33 $
+ * @version $Revision: 1.34 $
  */
 public class FC extends Protocol {
 
@@ -224,7 +224,10 @@ public class FC extends Protocol {
         return true;
     }
 
-
+    public void stop() {
+        super.stop();
+        unblock();
+    }
 
     public void down(final Event evt) {
         switch(evt.getType()) {
