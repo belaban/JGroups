@@ -1,26 +1,34 @@
 package org.jgroups.tests.perf;
 
-import java.io.Serializable;
+import org.jgroups.util.Streamable;
+
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.text.NumberFormat;
 
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: MemberInfo.java,v 1.4 2005/07/27 09:03:18 belaban Exp $
+ * @version $Id: MemberInfo.java,v 1.5 2005/07/29 07:20:24 belaban Exp $
  */
-public class MemberInfo implements Serializable {
+public class MemberInfo implements Streamable {
     public  long start=0;
     public  long stop=0;
     public  long num_msgs_expected=0;
     public  long num_msgs_received=0;
     boolean done=false;
     long    total_bytes_received=0;
-    static  NumberFormat f;
+
+    transient static  NumberFormat f;
 
     static {
         f=NumberFormat.getNumberInstance();
         f.setGroupingUsed(false);
         f.setMaximumFractionDigits(2);
+    }
+
+    public MemberInfo() {
     }
 
     public MemberInfo(long num_msgs_expected) {
@@ -55,5 +63,24 @@ public class MemberInfo implements Serializable {
         else
             sb.append(", throughput=").append(f.format(throughput_kb)).append("KB/sec");
         return sb.toString();
+    }
+
+    public void writeTo(DataOutputStream out) throws IOException {
+        out.writeLong(start);
+        out.writeLong(stop);
+        out.writeLong(num_msgs_expected);
+        out.writeLong(num_msgs_received);
+        out.writeBoolean(done);
+        out.writeLong(total_bytes_received);
+    }
+
+    public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        start=in.readLong();
+        stop=in.readLong();
+        num_msgs_expected=in.readLong();
+        num_msgs_received=in.readLong();
+        done=in.readBoolean();
+        total_bytes_received=in.readLong();
+
     }
 }

@@ -1,15 +1,14 @@
 package org.jgroups.tests.perf;
 
-import org.jgroups.util.Util;
-import org.jgroups.Version;
+import EDU.oswego.cs.dl.util.concurrent.ConcurrentReaderHashMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jgroups.Version;
+import org.jgroups.util.Util;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.util.*;
-
-import EDU.oswego.cs.dl.util.concurrent.ConcurrentReaderHashMap;
 
 /**  You start the test by running this class.
  * Use parameters -Xbatch -Xconcurrentio (Solaris specific)
@@ -29,6 +28,7 @@ public class Test implements Receiver {
     /** Keeps track of members. ArrayList<SocketAddress> */
     ArrayList       members=new ArrayList();
 
+
     /** Set when first message is received */
     long            start=0;
 
@@ -36,13 +36,23 @@ public class Test implements Receiver {
     long            stop=0;
 
     int             num_members=0;
+    int             num_senders=0;
+    long            num_msgs_expected=0;
+
+    long            num_msgs_received=0;  // from everyone
+    long            num_bytes_received=0; // from everyone
 
     Log             log=LogFactory.getLog(getClass());
 
     boolean         all_received=false;
+    boolean         final_results_received=false;
 
-    /** Map<Object, Map>. A hashmap of senders, each value is the 'senders' hashmap */
+    /** Map<Object, MemberInfo>. A hashmap of senders, each value is the 'senders' hashmap */
     Map             results=new HashMap();
+
+    ResultsPublisher publisher=new ResultsPublisher();
+
+    List            heard_from=new ArrayList();
 
     /** Dump info in gnuplot format */
     boolean         gnuplot_output=false;
@@ -108,6 +118,9 @@ public class Test implements Receiver {
 
         props=this.config.getProperty("props");
         num_members=Integer.parseInt(this.config.getProperty("num_members"));
+        num_senders=Integer.parseInt(this.config.getProperty("num_senders"));
+        long num_msgs=Long.parseLong(this.config.getProperty("num_msgs"));
+        this.num_msgs_expected=num_senders * num_msgs;
         sender=Boolean.valueOf(this.config.getProperty("sender")).booleanValue();
         msg_size=Long.parseLong(this.config.getProperty("msg_size"));
         String tmp2=this.config.getProperty("gnuplot_output", "false");
@@ -163,8 +176,6 @@ public class Test implements Receiver {
     }
 
     public void receive(Object sender, byte[] payload) {
-        Data d;
-
         if(payload == null || payload.length == 0) {
             System.err.println("payload is incorrect");
             return;
@@ -180,66 +191,51 @@ public class Test implements Receiver {
 
             byte[] tmp=new byte[payload.length-1];
             System.arraycopy(payload, 1, tmp, 0, tmp.length);
-            d=(Data)Util.objectFromByteBuffer(tmp);
+            Data d=(Data)Util.streamableFromByteBuffer(Data.class, tmp);
 
             switch(d.getType()) {
-                case Data.DISCOVERY_REQ:
-                    sendDiscoveryResponse();
-                    break;
-                case Data.DISCOVERY_RSP:
-                    synchronized(this.members) {
-                        if(!this.members.contains(sender)) {
-                            this.members.add(sender);
-                            System.out.println("-- " + sender + " joined");
-                            if(d.sender) {
-                                synchronized(this.members) {
-                                    if(!this.senders.containsKey(sender)) {
-                                        this.senders.put(sender, new MemberInfo(d.num_msgs));
-                                    }
+            case Data.DISCOVERY_REQ:
+                sendDiscoveryResponse();
+                break;
+            case Data.DISCOVERY_RSP:
+                synchronized(this.members) {
+                    if(!this.members.contains(sender)) {
+                        this.members.add(sender);
+                        System.out.println("-- " + sender + " joined");
+                        if(d.sender) {
+                            synchronized(this.members) {
+                                if(!this.senders.containsKey(sender)) {
+                                    this.senders.put(sender, new MemberInfo(d.num_msgs));
                                 }
                             }
-                            this.members.notify();
                         }
+                        this.members.notify();
                     }
-                    break;
+                }
+                break;
 
-                case Data.DONE:
-                    if(all_received)
-                        return;
-                    MemberInfo mi=(MemberInfo)this.senders.get(sender);
-                    if(mi != null) {
-                        mi.done=true;
-                        if(mi.stop == 0)
-                            mi.stop=System.currentTimeMillis();
-                        if(allReceived()) {
-                            all_received=true;
-                            if(stop == 0)
-                                stop=System.currentTimeMillis();
-                            sendResults();
-                            if(!this.sender)
-                                dumpSenders();
-                            synchronized(this) {
-                                this.notify();
-                            }
-                        }
-                    }
-                    else {
-                        log.error("-- sender " + sender + " not found in senders hashmap");
-                    }
-                    break;
+            case Data.FINAL_RESULTS:
+                publisher.stop();
+                if(!final_results_received) {
+                    dumpResults(d.results);
+                    final_results_received=true;
+                }
+                synchronized(this) {
+                    this.notify();
+                }
+                break;
 
-                case Data.RESULTS:
-                    synchronized(results) {
-                        if(!results.containsKey(sender)) {
-                            results.put(sender, d.results);
-                            results.notify();
-                        }
-                    }
-                    break;
+            case Data.RESULTS:
+                results.put(sender, d.result);
+                heard_from.remove(sender);
+                if(heard_from.size() == 0) {
+                    sendFinalResults();
+                }
+                break;
 
-                default:
-                    log.error("received invalid data type: " + payload[0]);
-                    break;
+            default:
+                log.error("received invalid data type: " + payload[0]);
+                break;
             }
         }
         catch(Exception e) {
@@ -254,6 +250,10 @@ public class Test implements Receiver {
             start=System.currentTimeMillis();
             last_dump=start;
         }
+
+        num_msgs_received++;
+        num_bytes_received+=num_bytes;
+
         MemberInfo info=(MemberInfo)this.senders.get(sender);
         if(info != null) {
             if(info.start == 0)
@@ -277,17 +277,9 @@ public class Test implements Receiver {
                     all_received=true;
                     if(stop == 0)
                         stop=System.currentTimeMillis();
-                    try {
-                        sendResults();
-                    }
-                    catch(Exception e) {
-                        e.printStackTrace();
-                    }
+                    publisher.start();
                     if(!this.sender)
-                        dumpSenders();
-                    synchronized(this) {
-                        this.notify();
-                    }
+                       dumpSenders();
                 }
             }
         }
@@ -299,7 +291,22 @@ public class Test implements Receiver {
     private void sendResults() throws Exception {
         Data d=new Data(Data.RESULTS);
         byte[] buf;
-        d.results=new ConcurrentReaderHashMap(this.senders);
+        MemberInfo info=new MemberInfo(num_msgs_expected);
+        info.done=true;
+        info.num_msgs_received=num_msgs_received;
+        info.start=start;
+        info.stop=stop;
+        info.total_bytes_received=this.num_bytes_received;
+        d.result=info;
+        buf=generatePayload(d, null);
+        transport.send(null, buf);
+    }
+
+
+    private void sendFinalResults() throws Exception {
+        Data d=new Data(Data.FINAL_RESULTS);
+        byte[] buf;
+        d.results=new ConcurrentReaderHashMap(this.results);
         buf=generatePayload(d, null);
         transport.send(null, buf);
     }
@@ -338,7 +345,7 @@ public class Test implements Receiver {
 
 
     byte[] generatePayload(Data d, byte[] buf) throws Exception {
-        byte[] tmp=buf != null? buf : Util.objectToByteBuffer(d);
+        byte[] tmp=buf != null? buf : Util.streamableToByteBuffer(d);
         byte[] payload=new byte[tmp.length +1];
         payload[0]=intToByte(d.getType());
         System.arraycopy(tmp, 0, payload, 1, tmp.length);
@@ -350,48 +357,64 @@ public class Test implements Receiver {
             case Data.DATA: return 1;
             case Data.DISCOVERY_REQ: return 2;
             case Data.DISCOVERY_RSP: return 3;
-            case Data.DONE: return 4;
-            case Data.RESULTS: return 5;
+            case Data.RESULTS: return 4;
+            case Data.FINAL_RESULTS: return 5;
             default: return 0;
         }
     }
 
 
-    void fetchResults() throws Exception {
-        System.out.println("-- sent all messages. Asking receivers if they received all messages\n");
 
-        int expected_responses=this.members.size();
+//    private void dumpResults(Map final_results) {
+//        Object      member;
+//        Map.Entry   entry;
+//        Map         map;
+//        StringBuffer sb=new StringBuffer();
+//        sb.append("\n-- results:\n\n");
+//
+//        for(Iterator it=final_results.entrySet().iterator(); it.hasNext();) {
+//            entry=(Map.Entry)it.next();
+//            member=entry.getKey();
+//            map=(Map)entry.getValue();
+//            sb.append("-- results from ").append(member);
+//            if(member.equals(local_addr))
+//                sb.append(" (myself)");
+//            sb.append(":\n");
+//            dump(map, sb);
+//            sb.append('\n');
+//        }
+//        System.out.println(sb.toString());
+//        if(log.isInfoEnabled()) log.info(sb.toString());
+//    }
 
-        // now send DONE message (periodically re-send to make up for message loss over unreliable transport)
-        // when all results have been received, dump stats and exit
-        Data d2=new Data(Data.DONE);
-        byte[] tmp=generatePayload(d2, null);
-        System.out.println("-- fetching results (from " + expected_responses + " members)");
-        synchronized(this.results) {
-            while((results.size()) < expected_responses) {
-                transport.send(null, tmp);
-                this.results.wait(1000);
-            }
-        }
-        System.out.println("-- received all responses");
-    }
 
-
-    private void dumpResults() {
+    private void dumpResults(Map final_results) {
         Object      member;
         Map.Entry   entry;
-        Map         map;
+        MemberInfo  val;
         StringBuffer sb=new StringBuffer();
-        sb.append("\n-- results:\n\n");
+        sb.append("\n-- results:\n");
+        MemberInfo combined=new MemberInfo(0);
+        combined.start = Long.MAX_VALUE;
+        combined.stop = Long.MIN_VALUE;
+        combined.num_msgs_expected=this.num_msgs_expected;
+        combined.num_msgs_received=this.num_msgs_received;
+        combined.total_bytes_received=this.num_bytes_received;
 
-        for(Iterator it=results.entrySet().iterator(); it.hasNext();) {
+        for(Iterator it=final_results.entrySet().iterator(); it.hasNext();) {
             entry=(Map.Entry)it.next();
             member=entry.getKey();
-            map=(Map)entry.getValue();
-            sb.append("-- results from ").append(member).append(":\n");
-            dump(map, sb);
+            val=(MemberInfo)entry.getValue();
+            combined.start=Math.min(combined.start, val.start);
+            combined.stop=Math.max(combined.stop, val.stop);
+            sb.append("\n").append(member);
+            if(member.equals(local_addr))
+                sb.append(" (myself)");
+            sb.append(":\n");
+            sb.append(val);
             sb.append('\n');
         }
+        sb.append("\ncombined: ").append(combined).append('\n');
         System.out.println(sb.toString());
         if(log.isInfoEnabled()) log.info(sb.toString());
     }
@@ -411,6 +434,7 @@ public class Test implements Receiver {
         combined.start = Long.MAX_VALUE;
         combined.stop = Long.MIN_VALUE;
 
+        sb.append("\n-- local results:\n");
         for(Iterator it2=map.entrySet().iterator(); it2.hasNext();) {
             entry=(Map.Entry)it2.next();
             mySender=entry.getKey();
@@ -422,11 +446,10 @@ public class Test implements Receiver {
             combined.total_bytes_received+=mi.total_bytes_received;
             sb.append("sender: ").append(mySender).append(": ").append(mi).append('\n');
         }
-        sb.append("\ncombined: ").append(combined).append('\n');
     }
 
 
-    String dumpStats(long received_msgs) {
+    private String dumpStats(long received_msgs) {
         StringBuffer sb=new StringBuffer();
         if(gnuplot_output)
             sb.append(received_msgs).append(' ');
@@ -466,7 +489,7 @@ public class Test implements Receiver {
         }
     }
 
-    void dumpThroughput(StringBuffer sb, long received_msgs) {
+    private void dumpThroughput(StringBuffer sb, long received_msgs) {
         double tmp;
         long   current=System.currentTimeMillis();
 
@@ -515,6 +538,7 @@ public class Test implements Receiver {
                 sendDiscoveryRequest();
                 sendDiscoveryResponse();
             }
+            heard_from.addAll(members);
             System.out.println("-- members: " + this.members.size());
         }
     }
@@ -578,14 +602,10 @@ public class Test implements Receiver {
             t.runDiscoveryPhase();
             if(sender) {
                 t.sendMessages();
-                t.fetchResults();
-                t.dumpResults();
             }
-            else {
-                synchronized(t) {
+            synchronized(t) {
+                if(t.allReceived() == false)
                     t.wait();
-                }
-                Util.sleep(2000);
             }
             if(t.jmx) {
                 System.out.println("jmx=true: not terminating");
@@ -611,6 +631,41 @@ public class Test implements Receiver {
     static void help() {
         System.out.println("Test [-help] ([-sender] | [-receiver]) " +
                            "[-config <config file>] [-props <stack config>] [-verbose] [-jmx]");
+    }
+
+
+    private class ResultsPublisher implements Runnable {
+        final long interval=1000;
+        boolean running=true;
+        Thread t;
+
+        void start() {
+            if(t == null) {
+                t=new Thread(this, "ResultsPublisher");
+                t.setDaemon(true);
+                t.start();
+            }
+        }
+
+        void stop() {
+            if(t != null && t.isAlive()) {
+                Thread tmp=t;
+                t=null;
+                tmp.interrupt();
+            }
+        }
+
+        public void run() {
+            try {
+                while(t != null) {
+                    sendResults();
+                    Util.sleep(interval);
+                }
+            }
+            catch(Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 
 
