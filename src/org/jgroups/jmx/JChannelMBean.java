@@ -8,7 +8,7 @@ import java.util.Map;
 
 /**
  * @author Bela Ban
- * @version $Id: JChannelMBean.java,v 1.4 2005/07/26 11:15:19 belaban Exp $
+ * @version $Id: JChannelMBean.java,v 1.5 2005/07/29 08:59:36 belaban Exp $
  */
 public interface JChannelMBean {
     void create() throws Exception;
@@ -89,6 +89,8 @@ public interface JChannelMBean {
     void disconnect();
 
     void close();
+
+    void shutdown();
 
     void send(Message msg) throws ChannelNotConnectedException, ChannelClosedException;
 
