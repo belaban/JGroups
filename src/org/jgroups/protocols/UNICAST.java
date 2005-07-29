@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.28 2005/07/26 08:37:52 belaban Exp $
+// $Id: UNICAST.java,v 1.29 2005/07/29 15:03:44 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -214,22 +214,25 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 }
             }
 
-            UnicastHeader hdr = new UnicastHeader(UnicastHeader.DATA, entry.sent_msgs_seqno);
-            if (entry.sent_msgs == null) { // first msg to peer 'dst'
-                hdr.first = true;
-                entry.sent_msgs=new AckSenderWindow(this, timeout, this);
+            synchronized(entry) {
+                UnicastHeader hdr=new UnicastHeader(UnicastHeader.DATA, entry.sent_msgs_seqno);
+                if(entry.sent_msgs == null) { // first msg to peer 'dst'
+                    hdr.first=true;
+                    entry.sent_msgs=new AckSenderWindow(this, timeout, this);
+                }
+                msg.putHeader(name, hdr);
+                if(log.isTraceEnabled())
+                    log.trace(new StringBuffer("[").append(local_addr).append("] --> DATA(").append(dst).append(": #").
+                              append(entry.sent_msgs_seqno).append(", first=").append(hdr.first).append(')'));
+
+                if(Global.copy)
+                    entry.sent_msgs.add(entry.sent_msgs_seqno, msg.copy());  // add *including* UnicastHeader
+                else
+                    entry.sent_msgs.add(entry.sent_msgs_seqno, msg);         // add *including* UnicastHeader
+
+                entry.sent_msgs_seqno++;
             }
-            msg.putHeader(name, hdr);
-            if(log.isTraceEnabled())
-                log.trace(new StringBuffer("[").append(local_addr).append("] --> DATA(").append(dst).append(": #").
-                          append(entry.sent_msgs_seqno).append(", first=").append(hdr.first).append(')'));
 
-            if (Global.copy)
-                entry.sent_msgs.add(entry.sent_msgs_seqno, msg.copy());  // add *including* UnicastHeader
-            else
-                entry.sent_msgs.add(entry.sent_msgs_seqno, msg);         // add *including* UnicastHeader
-
-            entry.sent_msgs_seqno++;
             msg=null;
             return; // AckSenderWindow will send message for us
 
@@ -360,24 +363,26 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             }
         }
 
-        if(entry.received_msgs == null) {
-            if(first)
-                entry.received_msgs=new AckReceiverWindow(seqno);
-            else {
-                if(operational) {
-                    if(log.isWarnEnabled())
-                        log.warn(sender + "#" + seqno + " is not tagged as the first message sent by " + sender +
-                                 "; however, the table for received messages from " + sender + " is null. We probably " +
-                                 "haven't received the first message from " + sender + ". Discarding message: " +
-                                 msg.toString() + ", headers (excluding UnicastHeader): " + msg.getHeaders());
-                    return;
+        synchronized(entry) {
+            if(entry.received_msgs == null) {
+                if(first)
+                    entry.received_msgs=new AckReceiverWindow(seqno);
+                else {
+                    if(operational) {
+                        if(log.isWarnEnabled())
+                            log.warn(sender + "#" + seqno + " is not tagged as the first message sent by " + sender +
+                                     "; however, the table for received messages from " + sender + " is null. We probably " +
+                                     "haven't received the first message from " + sender + ". Discarding message: " +
+                                     msg.toString() + ", headers (excluding UnicastHeader): " + msg.getHeaders());
+                        return;
+                    }
                 }
             }
         }
 
         if(entry.received_msgs != null) {
             entry.received_msgs.add(seqno, msg);
-        
+
             // Try to remove (from the AckReceiverWindow) as many messages as possible as pass them up
             while((m=entry.received_msgs.remove()) != null)
                 passUp(new Event(Event.MSG, m));

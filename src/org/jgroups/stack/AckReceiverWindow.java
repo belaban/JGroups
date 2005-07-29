@@ -1,4 +1,4 @@
-// $Id: AckReceiverWindow.java,v 1.9 2005/01/28 09:53:08 belaban Exp $
+// $Id: AckReceiverWindow.java,v 1.10 2005/07/29 15:03:45 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -22,10 +22,10 @@ import java.util.HashMap;
  * @author Bela Ban
  */
 public class AckReceiverWindow {
-    final long initial_seqno;
-    long next_to_remove=0;
-    final HashMap msgs=new HashMap();  // keys: seqnos (Long), values: Messages
-    static final Log log=LogFactory.getLog(AckReceiverWindow.class);
+    final long        initial_seqno;
+    long              next_to_remove=0;
+    final HashMap     msgs=new HashMap();  // keys: seqnos (Long), values: Messages
+    static final Log  log=LogFactory.getLog(AckReceiverWindow.class);
 
 
     public AckReceiverWindow(long initial_seqno) {
@@ -40,7 +40,9 @@ public class AckReceiverWindow {
                 log.trace("discarded msg with seqno=" + seqno + " (next msg to receive is " + next_to_remove + ')');
             return;
         }
-        msgs.put(new Long(seqno), msg);
+        synchronized(msgs) {
+            msgs.put(new Long(seqno), msg);
+        }
     }
 
 
@@ -50,16 +52,22 @@ public class AckReceiverWindow {
      * removed in order.
      */
     public Message remove() {
-        Message retval=(Message)msgs.remove(new Long(next_to_remove));
-        if(retval != null)
-            next_to_remove++;
+        Message retval;
+
+        synchronized(msgs) {
+            retval=(Message)msgs.remove(new Long(next_to_remove));
+            if(retval != null)
+                next_to_remove++;
+        }
         return retval;
     }
 
 
     public void reset() {
-        msgs.clear();
-        next_to_remove=initial_seqno;
+        synchronized(msgs) {
+            msgs.clear();
+            next_to_remove=initial_seqno;
+        }
     }
 
     public int size() {
