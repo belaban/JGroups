@@ -159,7 +159,7 @@ public class Test implements Receiver {
         }
         this.jmx=new Boolean(this.config.getProperty("jmx")).booleanValue();
         String transport_name=this.config.getProperty("transport");
-        transport=(Transport)Thread.currentThread().getContextClassLoader().loadClass(transport_name).newInstance();
+        transport=(Transport)Util.loadClass(transport_name, this.getClass()).newInstance();
         transport.create(this.config);
         transport.setReceiver(this);
         transport.start();

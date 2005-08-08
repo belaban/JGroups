@@ -1,4 +1,4 @@
-// $Id: Configurator.java,v 1.12 2005/05/30 16:14:44 belaban Exp $
+// $Id: Configurator.java,v 1.13 2005/08/08 14:58:34 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -6,6 +6,7 @@ package org.jgroups.stack;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Event;
+import org.jgroups.util.Util;
 
 import java.util.Properties;
 import java.util.StringTokenizer;
@@ -437,7 +438,7 @@ public class Configurator {
                 ret.append("\nProvides to above: " + printUpProvides());
 
             if(down_provides != null)
-                ret.append("\nProvides to below: " + printDownProvides());
+                ret.append("\nProvides to below: ").append(printDownProvides());
             return ret.toString();
         }
 
@@ -558,64 +559,24 @@ public class Configurator {
             if(protocol_name == null)
                 return null;
 
-            // SL: we use the context classloader to be able to work correctly in
-            // complex classloaders environments
-            // FH: The context class loader doesn't work in Tomcat
-            ClassLoader loader=Thread.currentThread().getContextClassLoader();
-            // When invoked from C++ getContextClassLoader returns null
-            // see http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4489399
-            //so:
-            if(loader == null){
-            	loader = ClassLoader.getSystemClassLoader();
+            String defaultProtocolName=protocol_prefix + '.' + protocol_name;
+            Class clazz=null;
+
+            clazz=Util.loadClass(defaultProtocolName, this.getClass());
+            if(clazz == null) {
+                clazz=Util.loadClass(protocol_name, this.getClass());
+                if(clazz == null) {
+                    throw new Exception("unable to load class for protocol " + protocol_name +
+                            " (either as an absolute - " + protocol_name + " - or relative - " +
+                            defaultProtocolName + " - package name)!");
+                }
             }
+
             try {
-                String defaultProtocolName=protocol_prefix + '.' + protocol_name;
-                Class clazz=null;
-
-                // first try to load the class in the default package
-                //
-                try {
-                    clazz=loader.loadClass(defaultProtocolName);
-                }
-                catch(ClassNotFoundException cnfe) {
-                    //try using another class loader
-                    try {
-                        // loader=this.getClass().getClassLoader();
-                        loader=Thread.currentThread().getContextClassLoader();
-                        clazz=loader.loadClass(defaultProtocolName);
-                    }
-                    catch(Exception ignore) {
-                    }
-                    // unable to find it in the default package... guess
-                    // it is an absolute package name
-                    // try two class loaders, first the same one that
-                    // loaded this class, then try the
-                    try {
-                        // loader=this.getClass().getClassLoader();
-                        loader=Thread.currentThread().getContextClassLoader();
-                        if(clazz == null) clazz=loader.loadClass(protocol_name);
-                    }
-                    catch(Exception ignore) {
-                    }
-                    //
-                    try {
-                        loader=Thread.currentThread().getContextClassLoader();
-                        if(clazz == null) clazz=loader.loadClass(protocol_name);
-                    }
-                    catch(ClassNotFoundException cnfe2) {
-                        throw new Exception("Configurator.ProtocolConfiguration.createLayer(): " +
-                                            "unable to load class for protocol " + protocol_name +
-                                            " (either as an absolute - " + protocol_name +
-                                            " - or relative - " + defaultProtocolName +
-                                            " - package name)!");
-                    }
-                }
-
                 retval=(Protocol)clazz.newInstance();
 
                 if(retval == null)
-                    throw new Exception("Configurator.ProtocolConfiguration.createLayer(): " +
-                                        "creation of instance for protocol " + protocol_name + "failed !");
+                    throw new Exception("creation of instance for protocol " + protocol_name + "failed !");
                 retval.setProtocolStack(prot_stack);
                 if(properties != null)
                     if(!retval.setPropertiesInternal(properties))
