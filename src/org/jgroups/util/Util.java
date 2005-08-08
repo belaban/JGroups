@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.51 2005/08/08 12:29:38 chrislott Exp $
+// $Id: Util.java,v 1.52 2005/08/08 12:36:01 chrislott Exp $
 
 package org.jgroups.util;
 
@@ -1148,8 +1148,9 @@ public class Util {
     /**
      * Tries to load the class from the current thread's context class loader. If
      * not successful, tries to load the class from the current instance.
-     * @param classname
-     * @param cl
+     * @param classname Desired class.
+     * @param clazz Class object used to obtain a class loader
+     * 				if no context class loader is available.
      * @return Class, or null on failure.
      */
     public static Class loadClass(String classname, Class clazz) {

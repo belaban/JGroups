@@ -1,4 +1,4 @@
-// $Id: TimeScheduler.java,v 1.6 2005/07/22 07:58:44 belaban Exp $
+// $Id: TimeScheduler.java,v 1.7 2005/08/08 12:36:01 chrislott Exp $
 
 package org.jgroups.util;
 
@@ -482,8 +482,8 @@ public class TimeScheduler {
     }
 
     /**
-     * Returns the number of tasks currently in the queue
-     * @return
+     * Answers the number of tasks currently in the queue.
+     * @return The number of tasks currently in the queue.
      */
     public int size() {
         return queue.size();
