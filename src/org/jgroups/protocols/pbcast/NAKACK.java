@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.54 2005/08/08 09:49:01 belaban Exp $
+// $Id: NAKACK.java,v 1.55 2005/08/08 09:57:06 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -76,23 +76,27 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
     private boolean leaving=false;
     private TimeScheduler timer=null;
-    static final String name="NAKACK";
+    private static final String name="NAKACK";
 
-    long xmit_reqs_received, xmit_reqs_sent, xmit_rsps_received, xmit_rsps_sent, missing_msgs_received;
+    private long xmit_reqs_received;
+    private long xmit_reqs_sent;
+    private long xmit_rsps_received;
+    private long xmit_rsps_sent;
+    private long missing_msgs_received;
 
     /** Captures stats on XMIT_REQS, XMIT_RSPS per sender */
-    HashMap sent=new HashMap();
+    private HashMap sent=new HashMap();
 
     /** Captures stats on XMIT_REQS, XMIT_RSPS per receiver */
-    HashMap received=new HashMap();
+    private HashMap received=new HashMap();
 
-    int stats_list_size=20;
+    private int stats_list_size=20;
 
     /** BoundedList<XmitRequest>. Keeps track of the last stats_list_size XMIT requests */
-    BoundedList receive_history;
+    private BoundedList receive_history;
 
     /** BoundedList<MissingMessage>. Keeps track of the last stats_list_size missing messages received */
-    BoundedList send_history;
+    private BoundedList send_history;
 
 
 
@@ -528,7 +532,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
     /* --------------------------------- Private Methods --------------------------------------- */
 
-    synchronized long getNextSeqno() {
+    private synchronized long getNextSeqno() {
         return seqno++;
     }
 
@@ -538,7 +542,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * store a copy of the message, but a reference ! This saves us a lot of memory. However, this also means that a
      * message should not be changed after storing it in the sent-table ! See protocols/DESIGN for details.
      */
-    private final void send(Event evt, Message msg) {
+    private void send(Event evt, Message msg) {
         long msg_id=getNextSeqno();
         if(log.isTraceEnabled())
             log.trace("sending msg #" + msg_id);
@@ -560,7 +564,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * Finds the corresponding NakReceiverWindow and adds the message to it (according to seqno). Then removes as many
      * messages as possible from the NRW and passes them up the stack. Discards messages from non-members.
      */
-    void handleMessage(Message msg, NakAckHeader hdr) {
+    private void handleMessage(Message msg, NakAckHeader hdr) {
         NakReceiverWindow win;
         Message msg_to_deliver;
         Address sender=msg.getSrc();
@@ -619,7 +623,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * @param last_seqno  The last sequence number to be retransmitted (>= first_seqno)
      * @param original_sender The member who originally sent the messsage. Guaranteed to be non-null
      */
-    void handleXmitReq(Address xmit_requester, long first_seqno, long last_seqno, Address original_sender) {
+    private void handleXmitReq(Address xmit_requester, long first_seqno, long last_seqno, Address original_sender) {
         Message m, tmp;
         LinkedList list;
         long size=0, marker=first_seqno, len;
@@ -708,7 +712,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         }
     }
 
-    void updateStats(HashMap map, Address key, int req, int rsp, int missing) {
+    private static void updateStats(HashMap map, Address key, int req, int rsp, int missing) {
         Entry entry=(Entry)map.get(key);
         if(entry == null) {
             entry=new Entry();
@@ -719,7 +723,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         entry.missing_msgs_rcvd+=missing;
     }
 
-    void sendXmitRsp(Address dest, LinkedList xmit_list, long first_seqno, long last_seqno) {
+    private void sendXmitRsp(Address dest, LinkedList xmit_list, long first_seqno, long last_seqno) {
         Buffer buf;
         if(xmit_list == null || xmit_list.size() == 0) {
             if(log.isErrorEnabled())
@@ -746,7 +750,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     }
 
 
-    void handleXmitRsp(Message msg) {
+    private void handleXmitRsp(Message msg) {
         LinkedList list;
         Message m;
 
@@ -783,7 +787,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * Remove old members from NakReceiverWindows and add new members (starting seqno=0). Essentially removes all
      * entries from received_msgs that are not in <code>members</code>
      */
-    void adjustReceivers() {
+    private void adjustReceivers() {
         Address sender;
         NakReceiverWindow win;
 
@@ -817,7 +821,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     /**
      * Returns a message digest: for each member P the highest seqno received from P is added to the digest.
      */
-    Digest getDigest() {
+    private Digest getDigest() {
         Digest digest;
         Address sender;
         Range range;
@@ -844,11 +848,11 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * highest seqno <em>seen</em> is added. The max of all highest seqnos seen will be used (in STABLE) to determine
      * whether the last seqno from a sender was received (see "Last Message Dropped" topic in DESIGN).
      */
-    Digest getDigestHighestDeliveredMsgs() {
+    private Digest getDigestHighestDeliveredMsgs() {
         Digest digest;
         Address sender;
         Range range;
-        long high_seqno_seen=0;
+        long high_seqno_seen;
 
         digest=new Digest(members.size());
         for(int i=0; i < members.size(); i++) {
@@ -912,7 +916,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * already exists, sets its seqno to be the max of the seqno and the seqno of the member in the digest. If no entry
      * exists, create one with the initial seqno set to the seqno of the member in the digest.
      */
-    void mergeDigest(Digest d) {
+    private void mergeDigest(Digest d) {
         if(d == null || d.senders == null) {
             if(log.isErrorEnabled()) {
                 log.error("digest or digest.senders is null");
@@ -976,7 +980,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      *                     *received* will be returned. E.g. for [+3 +4 +5 -6 +7 +8], the highest_seqno_received is 8,
      *                     whereas the higheset_seqno_seen (deliverable) is 5.
      */
-    Range getLowestAndHighestSeqno(Address sender, boolean stop_at_gaps) {
+    private Range getLowestAndHighestSeqno(Address sender, boolean stop_at_gaps) {
         Range r=null;
         NakReceiverWindow win;
 
@@ -1010,7 +1014,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * (doesn't take gaps into account). If we are the sender, we will return the highest seqno <em>sent</em> rather
      * then <em>received</em>
      */
-    long getHighSeqnoSeen(Address sender) {
+    private long getHighSeqnoSeen(Address sender) {
         NakReceiverWindow win;
         long ret=0;
 
@@ -1044,7 +1048,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * for each sender P in the digest and its highest seqno seen SEQ, garbage collect all delivered_msgs in the
      * NakReceiverWindow corresponding to P which are <= seqno at digest[P].
      */
-    void stable(Digest d) {
+    private void stable(Digest d) {
         NakReceiverWindow recv_win;
         long my_highest_rcvd;        // highest seqno received in my digest for a sender P
         long stability_highest_rcvd; // highest seqno received in the stability vector for a sender P
@@ -1172,7 +1176,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     }
     /* ------------------- End of Interface NakReceiverWindow.Listener ------------------- */
 
-    void clear() {
+    private void clear() {
         NakReceiverWindow win;
 
         // changed April 21 2004 (bela): SourceForge bug# 938584. We cannot delete our own messages sent between
@@ -1191,7 +1195,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     }
 
 
-    void removeAll() {
+    private void removeAll() {
         NakReceiverWindow win;
 
         synchronized(sent_msgs) {
@@ -1240,7 +1244,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     }
 
 
-    void handleConfigEvent(HashMap map) {
+    private void handleConfigEvent(HashMap map) {
         if(map == null) {
             return;
         }
@@ -1269,7 +1273,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         long    seq, timestamp=System.currentTimeMillis();
         Address xmit_dest;       // destination to which XMIT_REQ is sent, usually the original sender
 
-        public XmitRequest(Address original_sender, long seqno, Address xmit_dest) {
+        XmitRequest(Address original_sender, long seqno, Address xmit_dest) {
             this.original_sender=original_sender;
             this.xmit_dest=xmit_dest;
             this.seq=seqno;
@@ -1287,7 +1291,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         Address original_sender;
         long    seq, timestamp=System.currentTimeMillis();
 
-        public MissingMessage(Address original_sender, long seqno) {
+        MissingMessage(Address original_sender, long seqno) {
             this.original_sender=original_sender;
             this.seq=seqno;
         }
