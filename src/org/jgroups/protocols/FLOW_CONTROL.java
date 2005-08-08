@@ -1,4 +1,4 @@
-// $Id: FLOW_CONTROL.java,v 1.8 2005/07/17 11:36:15 chrislott Exp $
+// $Id: FLOW_CONTROL.java,v 1.9 2005/08/08 12:45:42 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -272,20 +272,19 @@ public class FLOW_CONTROL extends MessageProtocol implements Runnable {
         }
 
 
-        {
-            if(log.isWarnEnabled()) log.warn("estimatedTimeout = " + _estimatedRTT);
-            if(log.isWarnEnabled()) log.warn("window size = " + _windowSize + " forward margin size = " + _fwdMarginSize);
-        }
+        if(log.isWarnEnabled()) log.warn("estimatedTimeout = " + _estimatedRTT);
+        if(log.isWarnEnabled()) log.warn("window size = " + _windowSize + " forward margin size = " + _fwdMarginSize);
 
         return rspList;
     }
 
 
     /* use this instead of Integer. */
-    private class FCInfo implements Serializable {
+    private static class FCInfo implements Serializable {
         int _curValue;
+        private static final long serialVersionUID = -8365016426836017979L;
 
-        public FCInfo() {
+        FCInfo() {
         }
 
         public void increment(int i) {

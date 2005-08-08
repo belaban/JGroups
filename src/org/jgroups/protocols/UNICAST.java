@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.29 2005/07/29 15:03:44 belaban Exp $
+// $Id: UNICAST.java,v 1.30 2005/08/08 12:45:46 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -302,8 +302,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
     /** Returns random initial sequence number between 1 and 100 */
     static long getInitialSeqno() {
-        long ret=(long)((Math.random() * 100) % 100);
-        return ret;
+        return (long)((Math.random() * 100) % 100);
     }
 
 

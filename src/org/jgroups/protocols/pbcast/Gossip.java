@@ -1,4 +1,4 @@
-// $Id: Gossip.java,v 1.4 2004/09/15 16:21:10 belaban Exp $
+// $Id: Gossip.java,v 1.5 2005/08/08 12:45:38 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -14,6 +14,7 @@ public class Gossip implements Serializable {
     Digest digest=null;
     Vector not_seen=null;     // members who haven't seen this specific gossip yet
     Vector seen=new Vector(11); // members who have seen the gossip already
+    private static final long serialVersionUID = 7954243278668401185L;
 
 
     public Gossip(Address obj, long id) {

@@ -1,4 +1,4 @@
-// $Id: FRAG.java,v 1.25 2005/07/15 09:34:58 belaban Exp $
+// $Id: FRAG.java,v 1.26 2005/08/08 12:45:42 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -28,7 +28,7 @@ import java.util.*;
  * multicast messages.
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.25 2005/07/15 09:34:58 belaban Exp $
+ * @version $Id: FRAG.java,v 1.26 2005/08/08 12:45:42 belaban Exp $
  */
 public class FRAG extends Protocol {
     private int frag_size=8192;  // conservative value
@@ -236,7 +236,7 @@ public class FRAG extends Protocol {
      * 5. Pass msg up the stack
      */
     private void unfragment(Message msg) {
-        FragmentationTable   frag_table=null;
+        FragmentationTable   frag_table;
         Address              sender=msg.getSrc();
         Message              assembled_msg;
         FragHeader           hdr=(FragHeader)msg.removeHeader(name);
@@ -409,7 +409,7 @@ public class FRAG extends Protocol {
         private final Hashtable h=new Hashtable(11);  // keys: frag_ids, vals: Entrys
 
 
-        public FragmentationTable(Address sender) {
+        FragmentationTable(Address sender) {
             this.sender=sender;
         }
 

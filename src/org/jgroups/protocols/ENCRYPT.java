@@ -1,36 +1,10 @@
 
 
-//$Id: ENCRYPT.java,v 1.9 2005/05/30 14:31:07 belaban Exp $
+//$Id: ENCRYPT.java,v 1.10 2005/08/08 12:45:42 belaban Exp $
 
 package org.jgroups.protocols;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.security.InvalidKeyException;
-import java.security.KeyFactory;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.PublicKey;
-import java.security.SecureRandom;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
-import java.security.spec.X509EncodedKeySpec;
-import java.util.Map;
-import java.util.Properties;
-import java.util.WeakHashMap;
-
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.KeyGenerator;
-import javax.crypto.NoSuchPaddingException;
-import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
-
+import EDU.oswego.cs.dl.util.concurrent.LinkedQueue;
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
@@ -38,7 +12,16 @@ import org.jgroups.View;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.QueueClosedException;
 
-import EDU.oswego.cs.dl.util.concurrent.LinkedQueue;
+import javax.crypto.*;
+import javax.crypto.spec.SecretKeySpec;
+import java.io.IOException;
+import java.io.InputStream;
+import java.security.*;
+import java.security.cert.CertificateException;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.Map;
+import java.util.Properties;
+import java.util.WeakHashMap;
 
 
 /**
@@ -173,9 +156,8 @@ public class ENCRYPT extends Protocol {
 			// TODO Auto-generated method stub
 			if (obj instanceof EncryptHeader)
 			{
-				boolean res = ((((EncryptHeader) obj).getType() == type) && ((((EncryptHeader) obj)
-						.getVersion() == version)));
-				return res;
+                return ((((EncryptHeader) obj).getType() == type) && ((((EncryptHeader) obj)
+                        .getVersion() == version)));
 			}
 			return false;
 		}
@@ -276,7 +258,7 @@ final Map keyMap = new WeakHashMap();
 	 * GetAlgorithm: Get the algorithm name from "algorithm/mode/padding"
 	 *  taken from original ENCRYPT file
 	 */
-	private String getAlgorithm(String s)
+	private static String getAlgorithm(String s)
 	{
 		int index = s.indexOf("/");
 		if (index == -1)
@@ -588,7 +570,7 @@ final Map keyMap = new WeakHashMap();
 
 
 	/** Just remove if you don't need to reset any state */
-	public void reset()
+	public static void reset()
 	{
 	}
 
@@ -660,8 +642,7 @@ final Map keyMap = new WeakHashMap();
 		if (log.isDebugEnabled())
 			log.debug("passing event up " +evt);
 		passUp(evt);
-		return;
-	}
+    }
 
 
 	private synchronized void handleViewChange(Event evt){
@@ -1243,7 +1224,7 @@ final Map keyMap = new WeakHashMap();
 	 * simple helper method so we can see the format of the byte arrays in a
 	 * readable form could be better to use Base64 but will do for now
 	 */
-	private String formatArray(byte[] array)
+	private static String formatArray(byte[] array)
 	{
 		StringBuffer buf = new StringBuffer();
 		for (int i = 0; i < array.length; i++)

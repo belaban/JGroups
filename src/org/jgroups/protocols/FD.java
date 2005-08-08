@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.27 2005/07/12 11:45:41 belaban Exp $
+// $Id: FD.java,v 1.28 2005/08/08 12:45:42 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -29,7 +29,7 @@ import java.util.*;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Revision: 1.27 $
+ * @version $Revision: 1.28 $
  */
 public class FD extends Protocol {
     Address               ping_dest=null;
@@ -178,7 +178,7 @@ public class FD extends Protocol {
 
     public void up(Event evt) {
         Message msg;
-        FdHeader hdr=null;
+        FdHeader hdr;
         Object sender, tmphdr;
 
         switch(evt.getType()) {
@@ -470,7 +470,7 @@ public class FD extends Protocol {
 
         public void run() {
             Message hb_req;
-            long not_heard_from=0; // time in msecs we haven't heard from ping_dest
+            long not_heard_from; // time in msecs we haven't heard from ping_dest
 
             if(ping_dest == null) {
                 if(log.isWarnEnabled())
@@ -616,11 +616,11 @@ public class FD extends Protocol {
 
     private class BroadcastTask implements TimeScheduler.Task {
         boolean cancelled=false;
-        private Vector suspected_members=null;
+        private final Vector suspected_members=new Vector();
 
 
-        public BroadcastTask(Vector suspected_members) {
-            this.suspected_members=suspected_members;
+        BroadcastTask(Vector suspected_members) {
+            this.suspected_members.addAll(suspected_members);
         }
 
         public void stop() {

@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.7 2004/09/23 16:29:41 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.8 2005/08/08 12:45:42 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -70,12 +70,12 @@ public class CoordGmsImpl extends GmsImpl {
      *                     only has a single element
      */
     public void merge(Vector other_coords) {
-        View new_view=null;
+        View new_view;
         Address other_coord=other_coords != null? (Address)other_coords.elementAt(0) : null;
 
-         if(log.isInfoEnabled()) log.info("other_coord = " + other_coord);
+        if(log.isInfoEnabled()) log.info("other_coord = " + other_coord);
         try {
-            MethodCall call=new MethodCall("handleMerge", new Object[]{gms.view_id, gms.members.getMembers()},
+            MethodCall call=new MethodCall("handleMerge", new Object[]{gms.view_id, gms.mbrs.getMembers()},
                     new String[]{ViewId.class.getName(), Vector.class.getName()});
             new_view=(View)gms.callRemoteMethod(other_coord, call, GroupRequest.GET_ALL, 0);
         }
@@ -90,10 +90,10 @@ public class CoordGmsImpl extends GmsImpl {
         }
 
         //Flushing my old view
-        gms.flush(gms.members.getMembers(), null);
+        gms.flush(gms.mbrs.getMembers(), null);
         MethodCall call=new MethodCall("handleViewChange", new Object[]{new_view.getVid(), new_view.getMembers()},
                 new String[]{ViewId.class.getName(), Vector.class.getName()});
-        gms.callRemoteMethods(gms.members.getMembers(), call, GroupRequest.GET_ALL, 0);
+        gms.callRemoteMethods(gms.mbrs.getMembers(), call, GroupRequest.GET_ALL, 0);
         gms.becomeParticipant();
          if(log.isInfoEnabled()) log.info("merge done");
     }
@@ -107,7 +107,7 @@ public class CoordGmsImpl extends GmsImpl {
             if(log.isErrorEnabled()) log.error("cannot join myself !");
             return false;
         }
-        if(gms.members.contains(mbr)) {
+        if(gms.mbrs.contains(mbr)) {
             if(log.isWarnEnabled()) log.warn("member " + mbr + " already present !");
             return true;  // already joined
         }
@@ -124,7 +124,7 @@ public class CoordGmsImpl extends GmsImpl {
      */
     public synchronized void handleLeave(Address mbr, boolean suspected) {
         Vector v=new Vector(1);  // contains either leaving mbrs or suspected mbrs
-        if(!gms.members.contains(mbr)) {
+        if(!gms.mbrs.contains(mbr)) {
              if(log.isErrorEnabled()) log.error("mbr " + mbr + " is not a member !");
             return;
         }
@@ -167,7 +167,7 @@ public class CoordGmsImpl extends GmsImpl {
 
         //Check that the views are disjoint otherwire return null (means MERGE_DENIED)
         for(Iterator i=other_mbrs.iterator(); i.hasNext();) {
-            if(gms.members.contains((Address)i.next())) {
+            if(gms.mbrs.contains((Address)i.next())) {
                 gms.passDown(new Event(Event.MERGE_DENIED));
                 return null;
             }
@@ -175,19 +175,19 @@ public class CoordGmsImpl extends GmsImpl {
 
         //Compute new View
         ViewId vid=new ViewId(gms.local_addr, Math.max(other_vid.getId() + 1, gms.ltime + 1));
-        HashSet members=new HashSet(gms.members.getMembers());
+        HashSet members=new HashSet(gms.mbrs.getMembers());
         members.addAll(other_mbrs);
         Vector new_mbrs=new Vector(members);
         Collections.sort(new_mbrs);
         View new_view=new View(vid, new_mbrs);
 
         //Flush my view
-        gms.flush(gms.members.getMembers(), null);
+        gms.flush(gms.mbrs.getMembers(), null);
 
         //Install new view
         MethodCall call=new MethodCall("handleViewChange", new Object[]{vid, new_mbrs},
                 new String[]{ViewId.class.getName(), Vector.class.getName()});
-        gms.callRemoteMethods(gms.members.getMembers(), call, GroupRequest.GET_ALL, 0);
+        gms.callRemoteMethods(gms.mbrs.getMembers(), call, GroupRequest.GET_ALL, 0);
         return new_view;
     }
 

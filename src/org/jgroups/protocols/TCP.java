@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.25 2005/07/04 15:03:30 belaban Exp $
+// $Id: TCP.java,v 1.26 2005/08/08 12:45:43 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -202,7 +202,7 @@ public class TCP extends TP implements ConnectionTable.Receiver {
     */
    protected ConnectionTable getConnectionTable(long reaperInterval, long connExpireTime, InetAddress bindAddress,
                                                 InetAddress externalAddress, int startPort, int endPort) throws Exception {
-       ConnectionTable cTable=null;
+       ConnectionTable cTable;
        if(reaperInterval == 0 && connExpireTime == 0) {
            cTable=new ConnectionTable(this, bindAddress, externalAddress, startPort, endPort);
        }

@@ -1,4 +1,4 @@
-// $Id: TransportedVectorTime.java,v 1.4 2005/07/17 11:36:15 chrislott Exp $
+// $Id: TransportedVectorTime.java,v 1.5 2005/08/08 12:45:45 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -13,7 +13,7 @@ import java.io.Serializable;
  * Lighweight representation of the VectorTime clock suitable for network transport
  *
  * @author Vladimir Blagojevic vladimir@cs.yorku.ca
- * @version $Revision: 1.4 $
+ * @version $Revision: 1.5 $
  */
 public class TransportedVectorTime implements Serializable
 {
@@ -31,13 +31,14 @@ public class TransportedVectorTime implements Serializable
     * Message associated with this vector clock
     */
    private transient Message m;
+    private static final long serialVersionUID = 5857647322589533545L;
 
-   /**
-    *
-    */
-   public TransportedVectorTime()
-   {
-   }
+    /**
+     *
+     */
+    public TransportedVectorTime()
+    {
+    }
 
    /**
     * Constructs TransportedVectorTime with sender index and vector values
@@ -115,13 +116,12 @@ public class TransportedVectorTime implements Serializable
       int[] a = values;
       for (int k = 0; k < a.length; k++)
       {
-
-         if (a[k] <= b[k])
-            continue;
-         else
-            return false;
+          if (a[k] <= b[k])
+              return true;
+          else
+              return false;
       }
-      return true;
+       return true;
    }
 
    /**
@@ -134,10 +134,10 @@ public class TransportedVectorTime implements Serializable
     * @param other TransportedVectorTimebeing compared with this.
     * @return true if the equation given above is true, false otherwise
     */
-   public boolean equals(TransportedVectorTime other)
+   public boolean equals(Object other)
    {
       int a [] = getValues();
-      int b [] = other.getValues();
+      int b [] = ((TransportedVectorTime)other).getValues();
 
       for (int i = 0; i < a.length; i++)
          if (a[i] != b[i]) return false;

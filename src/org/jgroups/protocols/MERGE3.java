@@ -1,4 +1,4 @@
-// $Id: MERGE3.java,v 1.7 2005/07/17 11:36:15 chrislott Exp $
+// $Id: MERGE3.java,v 1.8 2005/08/08 12:45:43 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -102,7 +102,6 @@ public class MERGE3 extends Protocol {
      * DON'T REMOVE ! 
      */
     public void startUpHandler() {
-        ;
     }
 
 
@@ -111,7 +110,6 @@ public class MERGE3 extends Protocol {
      * DON'T REMOVE ! 
      */
     public void startDownHandler() {
-        ;
     }
 
 
@@ -156,7 +154,7 @@ public class MERGE3 extends Protocol {
 
 
     public void down(Event evt) {
-        Vector tmp=null;
+        Vector tmp;
         Address coord;
 
         switch(evt.getType()) {
@@ -214,8 +212,7 @@ public class MERGE3 extends Protocol {
      * Returns a random value within [min_interval - max_interval]
      */
     long computeInterval() {
-        long retval=min_interval + Util.random(max_interval - min_interval);
-        return retval;
+        return min_interval + Util.random(max_interval - min_interval);
     }
 
 

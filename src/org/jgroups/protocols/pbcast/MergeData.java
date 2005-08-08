@@ -1,4 +1,4 @@
-// $Id: MergeData.java,v 1.3 2004/09/06 13:55:40 belaban Exp $
+// $Id: MergeData.java,v 1.4 2005/08/08 12:45:38 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -28,7 +28,6 @@ public class MergeData implements Externalizable {
      * Empty constructor needed for externalization
      */
     public MergeData() {
-        ;
     }
 
     public MergeData(Address sender, View view, Digest digest) {

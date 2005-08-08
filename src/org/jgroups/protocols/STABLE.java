@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.9 2005/07/17 11:36:15 chrislott Exp $
+// $Id: STABLE.java,v 1.10 2005/08/08 12:45:43 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -566,8 +566,7 @@ public class STABLE extends RpcProtocol {
                 highest_seqnos_mutex.wait(highest_seqnos_timeout);
             }
             catch(InterruptedException e) {
-
-                    if(log.isErrorEnabled()) log.error("Interrupted while waiting for highest seqnos from NAKACK");
+                if(log.isErrorEnabled()) log.error("Interrupted while waiting for highest seqnos from NAKACK");
             }
         }
     }
@@ -696,7 +695,7 @@ public class STABLE extends RpcProtocol {
         private int next=0;
         private long[] times;
 
-        public Times(long[] times) {
+        Times(long[] times) {
             if(times.length == 0)
                 throw new IllegalArgumentException("times");
             this.times=times;
@@ -726,7 +725,7 @@ public class STABLE extends RpcProtocol {
         private final Times intervals;
         private boolean cancelled=false;
 
-        public Task(Times intervals) {
+        Task(Times intervals) {
             this.intervals=intervals;
         }
 

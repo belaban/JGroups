@@ -1,4 +1,4 @@
-// $Id: MERGE.java,v 1.8 2005/05/30 14:31:07 belaban Exp $
+// $Id: MERGE.java,v 1.9 2005/08/08 12:45:43 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -27,7 +27,7 @@ import java.util.Vector;
  * @author Gianluca Collot, Jan 2001
  */
 public class MERGE extends Protocol implements Runnable {
-    Vector members=new Vector();
+    final Vector members=new Vector();
     Address local_addr=null;
     String group_addr=null;
     final String groupname=null;
@@ -186,15 +186,15 @@ public class MERGE extends Protocol implements Runnable {
 
             case Event.VIEW_CHANGE:
                 merging=false;
-                members=((View)evt.getArg()).getMembers();
-                if((members == null) || (members.size() == 0)) {
-                    if(log.isFatalEnabled()) log.fatal("received VIEW_CHANGE with null or empty vector");
-                    System.exit(6);
+                synchronized(members) {
+                    members.clear();
+                    members.addAll(((View)evt.getArg()).getMembers());
+                    if((members == null) || (members.size() == 0)) {
+                        if(log.isFatalEnabled()) log.fatal("received VIEW_CHANGE with null or empty vector");
+                        System.exit(6);
+                    }
                 }
-                if(members.elementAt(0).equals(local_addr))
-                    is_coord=true;
-                else
-                    is_coord=false;
+                is_coord=members.elementAt(0).equals(local_addr);
                 passDown(evt);
                 if(is_coord) {
                     if(log.isInfoEnabled()) log.info("start sending Hellos");

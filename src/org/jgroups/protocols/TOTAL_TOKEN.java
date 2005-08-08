@@ -1,4 +1,4 @@
-//$Id: TOTAL_TOKEN.java,v 1.11 2005/07/17 11:36:15 chrislott Exp $
+//$Id: TOTAL_TOKEN.java,v 1.12 2005/08/08 12:45:44 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -49,7 +49,7 @@ import java.util.*;
  *
  *
  *@author Vladimir Blagojevic vladimir@cs.yorku.ca
- *@version $Revision: 1.11 $
+ *@version $Revision: 1.12 $
  *
  *@see org.jgroups.protocols.ring.RingNodeFlowControl
  *@see org.jgroups.protocols.ring.RingNode
@@ -423,11 +423,9 @@ public class TOTAL_TOKEN extends RpcProtocol
          recoveryLeader = localAddress.equals(liveMembers.first());
       }
 
-      {
-         if(log.isInfoEnabled()) log.info("live memebers are " + liveMembers);
-         if(log.isInfoEnabled()) log.info("I am recovery leader?" + recoveryLeader);
-      }
-      return recoveryLeader;
+       if(log.isInfoEnabled()) log.info("live memebers are " + liveMembers);
+       if(log.isInfoEnabled()) log.info("I am recovery leader?" + recoveryLeader);
+       return recoveryLeader;
 
    }
 
@@ -491,11 +489,9 @@ public class TOTAL_TOKEN extends RpcProtocol
       if (isRecoveryLeader && state == RECOVERY_STATE)
       {
 
-         {
-            if(log.isInfoEnabled()) log.info("I am starting recovery now");
-         }
+          if(log.isInfoEnabled()) log.info("I am starting recovery now");
 
-         Vector m = new Vector(liveMembersInRecovery);
+          Vector m = new Vector(liveMembersInRecovery);
 
           RspList list=callRemoteMethods(m, "getAllReceivedUpTo", new Object[]{}, new Class[]{}, GroupRequest.GET_ALL, 0);
          //RspList list = callRemoteMethods(m, "getAllReceivedUpTo", GroupRequest.GET_ALL, 0);
@@ -513,17 +509,13 @@ public class TOTAL_TOKEN extends RpcProtocol
             // callRemoteMethods(m, "getAllReceivedUpTo", GroupRequest.GET_ALL, 0);
             myAllReceivedUpTosConfirm = list.getResults();
 
-            {
-               if(log.isInfoEnabled()) log.info("myAllReceivedUpto values are" + myAllReceivedUpTos);
-               if(log.isInfoEnabled()) log.info("myAllReceivedUpto confirm values are " + myAllReceivedUpTosConfirm);
-            }
+             if(log.isInfoEnabled()) log.info("myAllReceivedUpto values are" + myAllReceivedUpTos);
+             if(log.isInfoEnabled()) log.info("myAllReceivedUpto confirm values are " + myAllReceivedUpTosConfirm);
          }
 
 
-         {
-            if(log.isInfoEnabled()) log.info("myAllReceivedUpto stabilized values are" + myAllReceivedUpTos);
-            if(log.isInfoEnabled()) log.info("installing transitional view to repair the ring...");
-         }
+          if(log.isInfoEnabled()) log.info("myAllReceivedUpto stabilized values are" + myAllReceivedUpTos);
+          if(log.isInfoEnabled()) log.info("installing transitional view to repair the ring...");
 
           callRemoteMethods(m, "installTransitionalView", new Object[]{m}, new String[]{Vector.class.getName()},
                             GroupRequest.GET_ALL, 0);
@@ -534,10 +526,8 @@ public class TOTAL_TOKEN extends RpcProtocol
          if (xmits.size() > 1)
          {
 
-            {
-               if(log.isInfoEnabled()) log.info("VS not satisfied, injecting recovery token...");
-            }
-            long aru = ((Long) xmits.firstElement()).longValue();
+             if(log.isInfoEnabled()) log.info("VS not satisfied, injecting recovery token...");
+             long aru = ((Long) xmits.firstElement()).longValue();
             long highest = ((Long) xmits.lastElement()).longValue();
 
             injectToken = new RingToken(RingToken.RECOVERY);
@@ -551,10 +541,8 @@ public class TOTAL_TOKEN extends RpcProtocol
          else
          {
 
-            {
-               if(log.isInfoEnabled()) log.info("VS satisfied, injecting operational token...");
-            }
-            injectToken = new RingToken();
+             if(log.isInfoEnabled()) log.info("VS satisfied, injecting operational token...");
+             injectToken = new RingToken();
             long sequence = ((Long) xmits.firstElement()).longValue();
             injectToken.setHighestSequence(sequence);
             injectToken.setAllReceivedUpto(sequence);
@@ -685,32 +673,28 @@ public class TOTAL_TOKEN extends RpcProtocol
       Set deliverySet = receivedMessagesQueue.tailMap(new Long(myAru + 1)).entrySet();
 
 
-      {
-         if(log.isInfoEnabled()) log.info("hole getting plugged, prior muAru " + myAru);
-      }
+       if(log.isInfoEnabled()) log.info("hole getting plugged, prior muAru " + myAru);
 
 
-      for (Iterator iterator = deliverySet.iterator();inOrder && iterator.hasNext();)
-      {
-         entry = (Map.Entry) iterator.next();
-         long nextInQueue = ((Long) entry.getKey()).longValue();
-         if (lastDelivered + 1 == nextInQueue)
-         {
-            Message m = (Message) entry.getValue();
-            passUp(new Event(Event.MSG, m));
-            lastDelivered++;
-         }
-         else
-         {
-            inOrder = false;
-         }
-      }
+       for (Iterator iterator = deliverySet.iterator();inOrder && iterator.hasNext();)
+       {
+          entry = (Map.Entry) iterator.next();
+          long nextInQueue = ((Long) entry.getKey()).longValue();
+          if (lastDelivered + 1 == nextInQueue)
+          {
+             Message m = (Message) entry.getValue();
+             passUp(new Event(Event.MSG, m));
+             lastDelivered++;
+          }
+          else
+          {
+             inOrder = false;
+          }
+       }
 
 
-      {
-         if(log.isInfoEnabled()) log.info("hole getting plugged, post muAru " + lastDelivered);
-      }
-      return lastDelivered;
+       if(log.isInfoEnabled()) log.info("hole getting plugged, post muAru " + lastDelivered);
+       return lastDelivered;
    }
 
    /**
@@ -850,13 +834,11 @@ public class TOTAL_TOKEN extends RpcProtocol
    {
 
 
-      {
-         if(log.isInfoEnabled()) log.info(token.toString());
-         if(log.isDebugEnabled()) log.debug(getState());
-      }
+       if(log.isInfoEnabled()) log.info(token.toString());
+       if(log.isDebugEnabled()) log.debug(getState());
 
 
-      flowControl.setBacklog(newMessagesQueue.size());
+       flowControl.setBacklog(newMessagesQueue.size());
       flowControl.updateWindow(token);
 
 
@@ -897,13 +879,11 @@ public class TOTAL_TOKEN extends RpcProtocol
          allowedToBroadcast -= rebroadcastCount;
 
 
-         {
-            if(log.isInfoEnabled()) log.info("myAllReceivedUpto" + myAru);
-            if(log.isInfoEnabled()) log.info("allowedToBroadcast" + allowedToBroadcast);
-            if(log.isInfoEnabled()) log.info("newMessagesQueue.size()" + newMessagesQueue.size());
-         }
+          if(log.isInfoEnabled()) log.info("myAllReceivedUpto" + myAru);
+          if(log.isInfoEnabled()) log.info("allowedToBroadcast" + allowedToBroadcast);
+          if(log.isInfoEnabled()) log.info("newMessagesQueue.size()" + newMessagesQueue.size());
 
-         tokensAru = token.getAllReceivedUpto();
+          tokensAru = token.getAllReceivedUpto();
 
          if (myAru < tokensAru ||
                  localAddress.equals(token.getAruId()) ||
@@ -961,11 +941,9 @@ public class TOTAL_TOKEN extends RpcProtocol
          if (rebroadCastCount > 0)
          {
 
-            {
-               if(log.isInfoEnabled()) log.info("rebroadcasting " + rbl);
-            }
+             if(log.isInfoEnabled()) log.info("rebroadcasting " + rbl);
 
-            Long s = null;
+             Long s = null;
             for (Iterator iterator = rbl.iterator(); iterator.hasNext();)
             {
                s = (Long) iterator.next();
@@ -1040,11 +1018,9 @@ public class TOTAL_TOKEN extends RpcProtocol
          }
 
 
-         {
-            if(log.isDebugEnabled()) log.debug("cutting queue first key " + m.firstKey()
-                        + " cut at " + upToSeq + " last key " + m.lastKey());
-         }
-         SortedMap stable = m.headMap(new Long(upToSeq));
+          if(log.isDebugEnabled()) log.debug("cutting queue first key " + m.firstKey()
+                      + " cut at " + upToSeq + " last key " + m.lastKey());
+          SortedMap stable = m.headMap(new Long(upToSeq));
          stable.clear();
       }
    }
@@ -1115,11 +1091,7 @@ public class TOTAL_TOKEN extends RpcProtocol
 
       private boolean isRecoveryCompleted(RingToken token)
       {
-         if (liveMembersInRecovery.equals(token.getRecoveredMembers()))
-         {
-            return true;
-         }
-         return false;
+          return liveMembersInRecovery.equals(token.getRecoveredMembers());
       }
 
       public void run()

@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.24 2005/07/17 11:35:03 chrislott Exp $
+// $Id: CoordGmsImpl.java,v 1.25 2005/08/08 12:45:37 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -79,7 +79,6 @@ public class CoordGmsImpl extends GmsImpl {
     }
 
     public void handleLeaveResponse() {
-        ; // safely ignore this
     }
 
     public void suspect(Address mbr) {
@@ -191,11 +190,12 @@ public class CoordGmsImpl extends GmsImpl {
             return;
         }
         if(merge_id == null || this.merge_id == null) {
-            if(log.isErrorEnabled()) log.error("merge_id ("
+            if(log.isErrorEnabled())
+                log.error("merge_id ("
                     + merge_id
                     + ") or this.merge_id ("
                     + this.merge_id
-                    + ") == null (sender="
+                    + ") is null (sender="
                     + data.getSender()
                     + ").");
             return;
@@ -231,7 +231,7 @@ public class CoordGmsImpl extends GmsImpl {
         }
         gms.castViewChange(data.view, data.digest);
         merging=false;
-        merge_id=null;
+        // this.merge_id=null;
     }
 
     public void handleMergeCancelled(ViewId merge_id) {
@@ -263,7 +263,7 @@ public class CoordGmsImpl extends GmsImpl {
      */
     public synchronized JoinRsp handleJoin(Address mbr) {
         Vector new_mbrs=new Vector(1);
-        View v=null;
+        View v;
         Digest d, tmp;
 
         if(log.isDebugEnabled()) log.debug("mbr=" + mbr);
@@ -397,8 +397,8 @@ public class CoordGmsImpl extends GmsImpl {
         Message msg;
         GMS.GmsHeader hdr;
         Address coord;
-        long curr_time, time_to_wait=0, end_time;
-        int num_rsps_expected=0;
+        long curr_time, time_to_wait, end_time;
+        int num_rsps_expected;
 
         if(coords == null || coords.size() <= 1) {
             if(log.isErrorEnabled()) log.error("coords == null or size <= 1");
@@ -468,15 +468,15 @@ public class CoordGmsImpl extends GmsImpl {
      *          not to be null and to contain at least 1 member.
      */
     MergeData consolidateMergeData(Vector v) {
-        MergeData ret=null;
+        MergeData ret;
         MergeData tmp_data;
         long logical_time=0; // for new_vid
         ViewId new_vid, tmp_vid;
         MergeView new_view;
         View tmp_view;
         Membership new_mbrs=new Membership();
-        int num_mbrs=0;
-        Digest new_digest=null;
+        int num_mbrs;
+        Digest new_digest;
         Address new_coord;
         Vector subgroups=new Vector(11);
         // contains a list of Views, each View is a subgroup
@@ -676,7 +676,7 @@ public class CoordGmsImpl extends GmsImpl {
          * Runs the merge protocol as a leader
          */
         public void run() {
-            MergeData combined_merge_data=null;
+            MergeData combined_merge_data;
 
             if(merging == true) {
                 if(log.isWarnEnabled()) log.warn("merge is already in progress, terminating");
@@ -733,7 +733,7 @@ public class CoordGmsImpl extends GmsImpl {
         private long timeout;
         private boolean cancelled=false;
 
-        public MergeCanceller(Object my_merge_id, long timeout) {
+        MergeCanceller(Object my_merge_id, long timeout) {
             this.my_merge_id=my_merge_id;
             this.timeout=timeout;
         }

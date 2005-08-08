@@ -1,4 +1,4 @@
-// $Id: EXAMPLE.java,v 1.3 2004/09/23 16:29:41 belaban Exp $
+// $Id: EXAMPLE.java,v 1.4 2005/08/08 12:45:42 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -13,9 +13,10 @@ import java.util.Vector;
 
 
 class ExampleHeader implements Serializable {
+    private static final long serialVersionUID = -8802317525466899597L;
     // your variables
 
-    public ExampleHeader() {
+    ExampleHeader() {
     }
 
     public String toString() {
@@ -39,7 +40,7 @@ public class EXAMPLE extends Protocol {
 
 
     /** Just remove if you don't need to reset any state */
-    public void reset() {}
+    public static void reset() {}
 
 
 

@@ -1,4 +1,4 @@
-// $Id: TOTAL.java,v 1.10 2005/04/08 08:10:54 belaban Exp $
+// $Id: TOTAL.java,v 1.11 2005/08/08 12:45:44 belaban Exp $
 package org.jgroups.protocols;
 
 
@@ -198,7 +198,7 @@ public class TOTAL extends Protocol {
      * <code>AckSenderWindow</code> when a retransmission should occur
      */
     private class Command implements AckSenderWindow.RetransmitCommand {
-        public Command() {
+        Command() {
         }
 
         public void retransmit(long seqNo, Message msg) {

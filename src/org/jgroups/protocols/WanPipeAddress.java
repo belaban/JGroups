@@ -1,4 +1,4 @@
-// $Id: WanPipeAddress.java,v 1.8 2005/05/30 16:14:43 belaban Exp $
+// $Id: WanPipeAddress.java,v 1.9 2005/08/08 12:45:46 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -63,7 +63,7 @@ public class WanPipeAddress implements Address {
 
 
     public boolean equals(Object obj) {
-        return compareTo(obj) == 0 ? true : false;
+        return compareTo(obj) == 0;
     }
 
 

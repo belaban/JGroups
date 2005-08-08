@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.13 2005/07/17 11:36:16 chrislott Exp $
+// $Id: TUNNEL.java,v 1.14 2005/08/08 12:45:44 belaban Exp $
 
 
 package org.jgroups.protocols;
@@ -104,7 +104,6 @@ public class TUNNEL extends Protocol implements Runnable {
      * DON'T REMOVE ! 
      */
     public void startUpHandler() {
-        ;
     }
 
     /** Setup the Protocol instance acording to the configuration string */

@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.94 2005/07/18 14:44:50 belaban Exp $
+// $Id: UDP.java,v 1.95 2005/08/08 12:45:45 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -124,7 +124,6 @@ public class UDP extends TP implements Runnable {
      * state variables, does however not start any sockets or threads.
      */
     public UDP() {
-        ;
     }
 
 
@@ -276,7 +275,6 @@ public class UDP extends TP implements Runnable {
                 break;
             }
             catch(InterruptedIOException io_ex) { // thread was interrupted
-                ; // go back to top of loop, where we will terminate loop
             }
             catch(Throwable ex) {
                 if(log.isErrorEnabled())
@@ -391,7 +389,7 @@ public class UDP extends TP implements Runnable {
      * in the JDK port (see DESIGN).
      */
     private void createSockets() throws Exception {
-        InetAddress tmp_addr=null;
+        InetAddress tmp_addr;
 
         // bind_addr not set, try to assign one by default. This is needed on Windows
 
@@ -496,7 +494,7 @@ public class UDP extends TP implements Runnable {
     /** Creates a DatagramSocket with a random port. Because in certain operating systems, ports are reused,
      * we keep a list of the n last used ports, and avoid port reuse */
     private DatagramSocket createEphemeralDatagramSocket() throws SocketException {
-        DatagramSocket tmp=null;
+        DatagramSocket tmp;
         int localPort=0;
         while(true) {
             tmp=new DatagramSocket(localPort, bind_addr); // first time localPort is 0
@@ -508,7 +506,6 @@ public class UDP extends TP implements Runnable {
                     log.debug("local port " + localPort + " already seen in this session; will try to get other port");
                 try {tmp.close();} catch(Throwable e) {}
                 localPort++;
-                continue;
             }
             else {
                 getLastPortsUsed().add(new Integer(localPort));
@@ -868,7 +865,6 @@ public class UDP extends TP implements Runnable {
                     break;
                 }
                 catch(InterruptedIOException io_ex) { // thread was interrupted
-                    ; // go back to top of loop, where we will terminate loop
                 }
                 catch(Throwable ex) {
                     if(log.isErrorEnabled())

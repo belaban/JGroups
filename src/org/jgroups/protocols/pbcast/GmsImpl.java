@@ -1,4 +1,4 @@
-// $Id: GmsImpl.java,v 1.7 2005/07/12 11:45:40 belaban Exp $
+// $Id: GmsImpl.java,v 1.8 2005/08/08 12:45:38 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -26,17 +26,17 @@ public abstract class GmsImpl {
     public abstract void      suspect(Address mbr);
     public abstract void      unsuspect(Address mbr);
 
-    public void               merge(Vector other_coords)                           {;} // only processed by coord
-    public void               handleMergeRequest(Address sender, ViewId merge_id)  {;} // only processed by coords
-    public void               handleMergeResponse(MergeData data, ViewId merge_id) {;} // only processed by coords
-    public void               handleMergeView(MergeData data, ViewId merge_id)     {;} // only processed by coords
-    public void               handleMergeCancelled(ViewId merge_id)                {;} // only processed by coords
+    public void               merge(Vector other_coords)                           {} // only processed by coord
+    public void               handleMergeRequest(Address sender, ViewId merge_id)  {} // only processed by coords
+    public void               handleMergeResponse(MergeData data, ViewId merge_id) {} // only processed by coords
+    public void               handleMergeView(MergeData data, ViewId merge_id)     {} // only processed by coords
+    public void               handleMergeCancelled(ViewId merge_id)                {} // only processed by coords
 
     public abstract JoinRsp   handleJoin(Address mbr);
     public abstract void      handleLeave(Address mbr, boolean suspected);
     public abstract void      handleViewChange(View new_view, Digest digest);
     public abstract void      handleSuspect(Address mbr);
-    public          void      handleExit() {;}
+    public          void      handleExit() {}
 
     public boolean            handleUpEvent(Event evt) {return true;}
     public boolean            handleDownEvent(Event evt) {return true;}

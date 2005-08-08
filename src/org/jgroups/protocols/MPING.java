@@ -4,6 +4,7 @@ import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.util.Buffer;
 import org.jgroups.util.ExposedByteArrayOutputStream;
+import org.jgroups.util.Util;
 
 import java.io.*;
 import java.net.*;
@@ -18,7 +19,7 @@ import java.util.Properties;
  * back via the regular transport (e.g. TCP) to the sender (discovery request contained sender's regular address,
  * e.g. 192.168.0.2:7800).
  * @author Bela Ban
- * @version $Id: MPING.java,v 1.10 2005/06/14 16:00:24 belaban Exp $
+ * @version $Id: MPING.java,v 1.11 2005/08/08 12:45:43 belaban Exp $
  */
 public class MPING extends PING implements Runnable {
     MulticastSocket     mcast_sock=null;
@@ -225,20 +226,24 @@ public class MPING extends PING implements Runnable {
     void sendMcastDiscoveryRequest(Message msg) {
         Buffer           buf;
         DatagramPacket   packet;
+        DataOutputStream out=null;
 
         try {
             if(msg.getSrc() == null)
                 msg.setSrc(local_addr);
             out_stream.reset();
-            DataOutputStream out=new DataOutputStream(out_stream);
+            out=new DataOutputStream(out_stream);
             msg.writeTo(out);
-            out.close(); // flushes contents to out_stream
+            out.flush(); // flushes contents to out_stream
             buf=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
             packet=new DatagramPacket(buf.getBuf(), buf.getOffset(), buf.getLength(), mcast_addr, mcast_port);
             mcast_sock.send(packet);
         }
         catch(IOException ex) {
             log.error("failed sending discovery request", ex);
+        }
+        finally {
+            Util.closeOutputStream(out);
         }
     }
 
@@ -249,7 +254,7 @@ public class MPING extends PING implements Runnable {
         byte[]               data;
         ByteArrayInputStream inp_stream=null;
         DataInputStream      inp=null;
-        Message              msg=null;
+        Message              msg;
 
         while(mcast_sock != null && receiver != null && Thread.currentThread().equals(receiver)) {
             packet.setData(receive_buf, 0, receive_buf.length);

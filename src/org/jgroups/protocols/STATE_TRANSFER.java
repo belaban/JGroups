@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.13 2005/05/30 14:31:07 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.14 2005/08/08 12:45:43 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -27,9 +27,10 @@ class StateTransferRequest implements Serializable {
 
     int type=0;
     final Object arg;
+    private static final long serialVersionUID = -7734608266762273116L;
 
 
-    public StateTransferRequest(int type, Object arg) {
+    StateTransferRequest(int type, Object arg) {
         this.type=type;
         this.arg=arg;
     }
@@ -183,7 +184,7 @@ public class STATE_TRANSFER extends Protocol implements RequestHandler {
 
     public void down(Event evt) {
         Object coord, state;
-        Vector event_list=null;
+        Vector event_list;
         StateTransferInfo info;
 
 

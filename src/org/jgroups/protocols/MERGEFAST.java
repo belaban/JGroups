@@ -73,11 +73,7 @@ public class MERGEFAST extends Protocol {
         if(local_addr == null)
             return;
         mbrs=v.getMembers();
-        if(mbrs != null && mbrs.size() > 0 && local_addr.equals(mbrs.firstElement())) {
-            is_coord=true;
-        }
-        else
-            is_coord=false;
+        is_coord=mbrs != null && mbrs.size() > 0 && local_addr.equals(mbrs.firstElement());
     }
 
     /**

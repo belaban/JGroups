@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.34 2005/07/12 11:45:40 belaban Exp $
+// $Id: GMS.java,v 1.35 2005/08/08 12:45:38 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -107,9 +107,7 @@ public class GMS extends Protocol {
 
     public boolean isCoordinator() {
         Address coord=determineCoordinator();
-        if(coord != null && local_addr != null && local_addr.equals(coord))
-            return true;
-        return false;
+        return coord != null && local_addr != null && local_addr.equals(coord);
     }
 
 
@@ -224,9 +222,9 @@ public class GMS extends Protocol {
      */
     public View getNextView(Vector new_mbrs, Vector old_mbrs, Vector suspected_mbrs) {
         Vector mbrs;
-        long vid=0;
+        long vid;
         View v;
-        Membership tmp_mbrs=null;
+        Membership tmp_mbrs;
         Address tmp_mbr;
 
         synchronized(members) {
@@ -452,16 +450,14 @@ public class GMS extends Protocol {
 
     /** Checks whether the potential_new_coord would be the new coordinator (2nd in line) */
     protected boolean wouldBeNewCoordinator(Address potential_new_coord) {
-        Address new_coord=null;
+        Address new_coord;
 
         if(potential_new_coord == null) return false;
 
         synchronized(members) {
             if(members.size() < 2) return false;
             new_coord=(Address)members.elementAt(1);  // member at 2nd place
-            if(new_coord != null && new_coord.equals(potential_new_coord))
-                return true;
-            return false;
+            return new_coord != null && new_coord.equals(potential_new_coord);
         }
     }
 
@@ -519,7 +515,7 @@ public class GMS extends Protocol {
     /** Sends down a GET_DIGEST event and waits for the GET_DIGEST_OK response, or
      timeout, whichever occurs first */
     public Digest getDigest() {
-        Digest ret=null;
+        Digest ret;
 
         synchronized(digest_mutex) {
             digest=null;

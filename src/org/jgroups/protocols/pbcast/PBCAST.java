@@ -1,4 +1,4 @@
-// $Id: PBCAST.java,v 1.12 2005/07/12 10:14:50 belaban Exp $
+// $Id: PBCAST.java,v 1.13 2005/08/08 12:45:38 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -673,7 +673,6 @@ public class PBCAST extends Protocol implements Runnable {
             if(my_high < their_high) {
                 // changed by Bela (June 26 2003) - replaced my_high with my_low (not tested though !)
                 if(my_low + 1 < their_low) {
-                    ;
                 }
                 else {
                     missing_msgs=win.getMissingMessages(my_high, their_high);
@@ -748,9 +747,7 @@ public class PBCAST extends Protocol implements Runnable {
             return;
         }
 
-         {
-            if(log.isInfoEnabled()) log.info("retransmission requests are " + printXmitReqs(xmit_reqs));
-        }
+        if(log.isInfoEnabled()) log.info("retransmission requests are " + printXmitReqs(xmit_reqs));
         for(Enumeration e=xmit_reqs.keys(); e.hasMoreElements();) {
             sender=(Address) e.nextElement();
             win=(NakReceiverWindow) digest.get(sender);
