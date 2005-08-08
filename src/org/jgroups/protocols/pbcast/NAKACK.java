@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.53 2005/07/29 15:20:04 belaban Exp $
+// $Id: NAKACK.java,v 1.54 2005/08/08 09:49:01 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -663,7 +663,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                     sb.append(") message ").append(original_sender).append("::").append(i);
                     sb.append(" not found in ").append((amISender? "sent" : "received")).append(" msgs. ");
                     if(win != null) {
-                        sb.append("Received messages from " + original_sender + ": ").append(win.toString());
+                        sb.append("Received messages from ").append(original_sender).append(": ").append(win.toString());
                     }
                     else {
                         sb.append("\nSent messages: ").append(printSentMsgs());
@@ -1214,7 +1214,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         Address addr;
         Object w;
 
-        ret.append("\nsent_msgs: " + printSentMsgs());
+       ret.append("\nsent_msgs: ").append(printSentMsgs());
         ret.append("\nreceived_msgs:\n");
         synchronized(received_msgs) {
             for(Iterator it=received_msgs.entrySet().iterator(); it.hasNext();) {
