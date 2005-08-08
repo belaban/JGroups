@@ -1,4 +1,4 @@
-// $Id: View.java,v 1.9 2005/07/17 11:38:05 chrislott Exp $
+// $Id: View.java,v 1.10 2005/08/08 09:48:06 belaban Exp $
 
 package org.jgroups;
 
@@ -167,7 +167,7 @@ public class View implements Externalizable, Cloneable, Streamable {
 
     public String toString() {
         StringBuffer ret=new StringBuffer(64);
-        ret.append(vid + " " + members);
+        ret.append(vid).append(" ").append(members);
         return ret.toString();
     }
 

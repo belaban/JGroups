@@ -1,13 +1,8 @@
-// $Id: Header.java,v 1.8 2005/07/08 11:28:26 belaban Exp $
+// $Id: Header.java,v 1.9 2005/08/08 09:47:19 belaban Exp $
 
 package org.jgroups;
 
-import org.jgroups.util.Streamable;
-
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.Externalizable;
-import java.io.IOException;
 
 
 /**
