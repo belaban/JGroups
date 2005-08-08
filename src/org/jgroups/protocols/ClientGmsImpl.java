@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.9 2005/04/20 20:25:46 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.10 2005/08/08 12:45:41 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -25,7 +25,7 @@ import java.util.Vector;
  * tell the client what its initial membership is.
  * 
  * @author Bela Ban
- * @version $Revision: 1.9 $
+ * @version $Revision: 1.10 $
  */
 public class ClientGmsImpl extends GmsImpl {
     final Vector initial_mbrs=new Vector(7);
@@ -57,7 +57,7 @@ public class ClientGmsImpl extends GmsImpl {
      * @param mbr Our own address (assigned through SET_LOCAL_ADDRESS)
      */
     public void join(Address mbr) {
-        Address coord=null;
+        Address coord;
         Event view_evt;
 
         while(!joined) {
@@ -76,9 +76,9 @@ public class ClientGmsImpl extends GmsImpl {
                 }
                 joined=true;
                 gms.view_id=new ViewId(mbr);       // create singleton view with mbr as only member
-                gms.members.add(mbr);
+                gms.mbrs.add(mbr);
                 view_evt=new Event(Event.VIEW_CHANGE,
-                        gms.makeView(gms.members.getMembers(), gms.view_id));
+                        gms.makeView(gms.mbrs.getMembers(), gms.view_id));
                 gms.passDown(view_evt);
                 gms.passUp(view_evt);
                 gms.becomeCoordinator();
@@ -188,7 +188,6 @@ public class ClientGmsImpl extends GmsImpl {
      */
     public void handleSuspect(Address mbr) {
         wrongMethod("handleSuspect");
-        return;
     }
 
 
@@ -281,13 +280,11 @@ public class ClientGmsImpl extends GmsImpl {
             }
         }
 
-         {
-            if(votes.size() > 1)
-                if(log.isWarnEnabled()) log.warn("there was more than 1 candidate for coordinator: " + votes);
-            else
-                if(log.isInfoEnabled()) log.info("election results: " + votes);
-        }
-	
+        if(votes.size() > 1)
+            if(log.isWarnEnabled()) log.warn("there was more than 1 candidate for coordinator: " + votes);
+        else
+            if(log.isInfoEnabled()) log.info("election results: " + votes);
+
 
         // determine who got the most votes
         most_votes=0;

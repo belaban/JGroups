@@ -1,4 +1,4 @@
-// $Id: JMS.java,v 1.12 2005/07/17 11:36:15 chrislott Exp $ 
+// $Id: JMS.java,v 1.13 2005/08/08 12:45:43 belaban Exp $ 
 
 package org.jgroups.protocols;
 
@@ -542,7 +542,7 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
          * @param isMCast <code>true</code> if the address is multicast address,
          * otherwise - <code>false</code>.
          */
-        public JMSAddress(String address, boolean isMCast) {
+        JMSAddress(String address, boolean isMCast) {
             this.address = address;
             this.isMCast = isMCast;
         }
@@ -550,7 +550,7 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
         /**
          * Empty constructor to allow externalization work.
          */
-        public JMSAddress() {
+        JMSAddress() {
         }
 
         /**
@@ -562,7 +562,7 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
          * 
          * @param str string used to reconstruct the instance.
          */
-        public JMSAddress(String str) {
+        JMSAddress(String str) {
             if (str.startsWith("#")) {
                 address = str.substring(1);
                 isMCast = false;

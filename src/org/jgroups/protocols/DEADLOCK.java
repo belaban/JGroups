@@ -1,4 +1,4 @@
-// $Id: DEADLOCK.java,v 1.6 2005/05/30 14:31:07 belaban Exp $
+// $Id: DEADLOCK.java,v 1.7 2005/08/08 12:45:42 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -163,11 +163,9 @@ public class DEADLOCK extends RpcProtocol {
 
 
     /** Returns a random integer value between 1 and 10 */
-    public int getResult() {
-
-	System.out.println("<-- getResult()");
-
-	return (int)((Math.random() * 10) % 10) + 1;
+    public static int getResult() {
+        System.out.println("<-- getResult()");
+        return (int)((Math.random() * 10) % 10) + 1;
     }
 
 

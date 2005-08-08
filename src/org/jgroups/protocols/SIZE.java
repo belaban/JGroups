@@ -1,9 +1,10 @@
-// $Id: SIZE.java,v 1.13 2005/05/30 14:31:07 belaban Exp $
+// $Id: SIZE.java,v 1.14 2005/08/08 12:45:43 belaban Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.Event;
 import org.jgroups.Message;
+import org.jgroups.util.Util;
 import org.jgroups.stack.Protocol;
 
 import java.io.ByteArrayOutputStream;
@@ -144,7 +145,7 @@ public class SIZE extends Protocol {
 
 
     int sizeOf(Message msg) {
-        DataOutputStream out;
+        DataOutputStream out=null;
 
         synchronized(out_stream) {
             try {
@@ -156,6 +157,9 @@ public class SIZE extends Protocol {
             }
             catch(Exception e) {
                 return 0;
+            }
+            finally {
+                Util.closeOutputStream(out);
             }
         }
     }

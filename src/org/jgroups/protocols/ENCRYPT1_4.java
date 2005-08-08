@@ -4,7 +4,7 @@
 // replacing SecretKey with SecretKey
 
 
-// $Id: ENCRYPT1_4.java,v 1.7 2005/05/30 14:31:07 belaban Exp $
+// $Id: ENCRYPT1_4.java,v 1.8 2005/08/08 12:45:42 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -92,7 +92,7 @@ public static class EncryptHeader extends org.jgroups.Header {
     /*
      * GetAlgorithm: Get the algorithm name from "algorithm/mode/padding"
      */
-    private String getAlgorithm(String s) {
+    private static String getAlgorithm(String s) {
         int index=s.indexOf("/");
         if(index == -1)
             return s;
@@ -171,7 +171,7 @@ public static class EncryptHeader extends org.jgroups.Header {
     }
 
     /** Just remove if you don't need to reset any state */
-    public void reset() {
+    public static void reset() {
     }
 
     public void up(Event evt) {
@@ -196,7 +196,7 @@ public static class EncryptHeader extends org.jgroups.Header {
 		
 		// this check is required, to prevent keyServer= false when adding itself
 		if (!keyServer)
-		    keyServer=member.size() > 0 ? false : true;
+		    keyServer=member.size() <= 0;
 		
                 if(member != null && member.size() > 0)
                     keyServerAddr=((PingRsp) member.firstElement()).coord_addr;
@@ -263,7 +263,7 @@ public static class EncryptHeader extends org.jgroups.Header {
                             // store the this client to notReady list using client's address
                             notReady.addElement(msg.getSrc());
                             // store the client's public key for temporary
-                            PublicKey pubKey=generatePubKey(msg.getBuffer());
+                            PublicKey tmpPubKey=generatePubKey(msg.getBuffer());
 
 				if(log.isDebugEnabled()) log.debug("Generated requestors public key");
 
@@ -276,7 +276,7 @@ public static class EncryptHeader extends org.jgroups.Header {
                             passDown(new Event(Event.MSG, newMsg));
 
 			    // my changes (MANDAR)
-			    rsa.init(Cipher.ENCRYPT_MODE, pubKey);			    
+			    rsa.init(Cipher.ENCRYPT_MODE, tmpPubKey);
 			    byte[] encryptedKey = rsa.doFinal(desKey.getEncoded());
 
 				if(log.isDebugEnabled()) log.debug(" Generated encoded key which only client can decode");
@@ -393,135 +393,135 @@ public static class EncryptHeader extends org.jgroups.Header {
         boolean leave=false;
 
 
-	    if(log.isInfoEnabled()) log.info("down:evt is " + evt + ':' + evt.getType());
+        if(log.isInfoEnabled()) log.info("down:evt is " + evt + ':' + evt.getType());
 
         switch(evt.getType()) {
 	    
-            case Event.VIEW_CHANGE:
+        case Event.VIEW_CHANGE:
 
-		    if(log.isInfoEnabled()) log.info("View change call, new member coming in");
-                Vector new_members=((View)evt.getArg()).getMembers();
+            if(log.isInfoEnabled()) log.info("View change call, new member coming in");
+            Vector new_members=((View)evt.getArg()).getMembers();
 
-                // member size decreases: member leaves, need a new key
-                if(members.size() > new_members.size()) leave=true;
+            // member size decreases: member leaves, need a new key
+            if(members.size() > new_members.size()) leave=true;
 
-                // copy member list
-                synchronized(members) {
-                    members.removeAllElements();
-                    if(new_members != null && new_members.size() > 0)
-                        for(int i=0; i < new_members.size(); i++)
-                            members.addElement(new_members.elementAt(i));
-                }// end of sync
+            // copy member list
+            synchronized(members) {
+                members.removeAllElements();
+                if(new_members != null && new_members.size() > 0)
+                    for(int i=0; i < new_members.size(); i++)
+                        members.addElement(new_members.elementAt(i));
+            }// end of sync
 
-                // redistribute/regain the new key because old member leaves
-                if(leave) {
-                    // get coordinator address
-                    Object obj=members.firstElement();
+            // redistribute/regain the new key because old member leaves
+            if(leave) {
+                // get coordinator address
+                Object obj=members.firstElement();
 
-                    // if I'm the coordinator/key-server
-                    if(obj.equals(local_addr)) {
-                        //create the new shared key and distribute
-                        keyServer=true;
-                        keyServerAddr=local_addr;
+                // if I'm the coordinator/key-server
+                if(obj.equals(local_addr)) {
+                    //create the new shared key and distribute
+                    keyServer=true;
+                    keyServerAddr=local_addr;
 
-                        // reset shared key
-                        desKey=null;
+                    // reset shared key
+                    desKey=null;
 
-			    if(log.isInfoEnabled()) log.info(" leave caused deskey to be null ");
+                    if(log.isInfoEnabled()) log.info(" leave caused deskey to be null ");
 
-                        try {
-                            //generate new shared key
-                            KeyGenerator keyGen=KeyGenerator.getInstance(getAlgorithm(symAlgorithm));
-                            keyGen.init(symInit);
-                            desKey=keyGen.generateKey();
-                        }
-                        catch(Exception e) {
-                            e.printStackTrace();			    
-                        }
-                    }//end of local_addr == obj
-                    // if I'm not the coordinator/key-server
-                    else {
-                        keyServer=false;
-                        keyServerAddr=(Address)obj;
+                    try {
+                        //generate new shared key
+                        KeyGenerator keyGen=KeyGenerator.getInstance(getAlgorithm(symAlgorithm));
+                        keyGen.init(symInit);
+                        desKey=keyGen.generateKey();
+                    }
+                    catch(Exception e) {
+                        e.printStackTrace();
+                    }
+                }//end of local_addr == obj
+                // if I'm not the coordinator/key-server
+                else {
+                    keyServer=false;
+                    keyServerAddr=(Address)obj;
 
-                        // reset shared key
-                        desKey=null;
+                    // reset shared key
+                    desKey=null;
 
-                        // client send clien's public key to server and request server's public key
-                        newMsg=new Message(keyServerAddr, local_addr, Kpair.getPublic().getEncoded());
+                    // client send clien's public key to server and request server's public key
+                    newMsg=new Message(keyServerAddr, local_addr, Kpair.getPublic().getEncoded());
+                    // making changes (MANDAR)
+                    newMsg.putHeader(EncryptHeader.KEY, new EncryptHeader(EncryptHeader.KEY_REQUEST));
+                    passDown(new Event(Event.MSG, newMsg));
+
+                    if(log.isDebugEnabled()) log.debug("Requesting new key to be part of group");
+                } // end of else
+            }
+            break;
+
+        case Event.MSG:
+            msg= (Message) evt.getArg();
+
+            if(log.isDebugEnabled()) log.debug("Its a message call " + msg);
+            int i;
+		
+            // For Server:
+            // if some members don't have the shared key yet
+            if(!notReady.isEmpty())
+            {
+                System.out.println("not Ready list  :" + notReady.toString());
+                if(msg.getDest() == null) {
+                    for(i=0; i < notReady.size(); i++) {
                         // making changes (MANDAR)
-                        newMsg.putHeader(EncryptHeader.KEY, new EncryptHeader(EncryptHeader.KEY_REQUEST));
+                        newMsg=new Message((Address)notReady.elementAt(i), local_addr, msg.getBuffer());
                         passDown(new Event(Event.MSG, newMsg));
-
-			    if(log.isDebugEnabled()) log.debug("Requesting new key to be part of group");
-                    } // end of else
+                    }
+                    break;
                 }
-                break;
-
-            case Event.MSG:
-                msg= (Message) evt.getArg();
-
-		    if(log.isDebugEnabled()) log.debug("Its a message call " + msg);
-		int i;
+                else
+                {
+                    for(i=0; i < notReady.size(); i++) {
+                        if(msg.getDest().equals(notReady.elementAt(i))) {
+                            passDown(evt);
+                            return;
+                        }// end of if..
+                    }// end of for..
+                }// end of else
+            }
 		
-		// For Server:
-                // if some members don't have the shared key yet
-		if(!notReady.isEmpty()) 
-		    {
-		    System.out.println("not Ready list  :" + notReady.toString());
-		    if(msg.getDest() == null) {
-			for(i=0; i < notReady.size(); i++) {
-			    // making changes (MANDAR)
-			    newMsg=new Message((Address)notReady.elementAt(i), local_addr, msg.getBuffer());
-			    passDown(new Event(Event.MSG, newMsg));
-			}
-			break;
-		    }
-		    else 
-			{
-				for(i=0; i < notReady.size(); i++) {
-				    if(msg.getDest() == notReady.elementAt(i)) {
-					passDown(evt);
-					return;
-				    }// end of if..
-				}// end of for..
-			}// end of else
-		}
-		
-		// I already know the shared key
-		if(desKey != null) 
-		    {
+            // I already know the shared key
+            if(desKey != null)
+            {
 
 
-			    if(log.isInfoEnabled()) log.info("DESkey is not null, I know it ");
-			try 
-			    {
-				// if the message is not empty, encrypt it
-				if(msg.getBuffer() != null) 
-				    {
-					cipher.init(Cipher.ENCRYPT_MODE, desKey);
-					msg.setBuffer(cipher.doFinal(msg.getBuffer()));
-					msg.putHeader(EncryptHeader.KEY, new EncryptHeader(0));
+                if(log.isInfoEnabled()) log.info("DESkey is not null, I know it ");
+                try
+                {
+                    // if the message is not empty, encrypt it
+                    if(msg.getBuffer() != null)
+                    {
+                        cipher.init(Cipher.ENCRYPT_MODE, desKey);
+                        msg.setBuffer(cipher.doFinal(msg.getBuffer()));
+                        msg.putHeader(EncryptHeader.KEY, new EncryptHeader(0));
 
-					    if(log.isInfoEnabled()) log.info(" have DES key , package sent");
-				    }
-				else
-				    {
-					msg.setBuffer(null);
-					msg.putHeader(EncryptHeader.KEY, new EncryptHeader(0));
+                        if(log.isInfoEnabled()) log.info(" have DES key , package sent");
+                    }
+                    else
+                    {
+                        msg.setBuffer(null);
+                        msg.putHeader(EncryptHeader.KEY, new EncryptHeader(0));
 
-					    if(log.isInfoEnabled()) log.info(" buffer null, added header");
-				    }
-			    }catch(Exception e) 
-				{
-				    e.printStackTrace();
-			    }
-		    }
-		break;
-	}// check des key..
+                        if(log.isInfoEnabled()) log.info(" buffer null, added header");
+                    }
+                }catch(Exception e)
+                {
+                    e.printStackTrace();
+                }
+            }
+            break;
+        }// check des key..
 
-	    if(log.isInfoEnabled()) log.info("Pass Down: " + evt.toString());
-	passDown(evt);          // Pass on to the layer below us
+        if(log.isInfoEnabled()) log.info("Pass Down: " + evt.toString());
+        passDown(evt);          // Pass on to the layer below us
     }
 
     private SecretKey decodedKey(byte[] encodedKey) {
@@ -539,15 +539,15 @@ public static class EncryptHeader extends org.jgroups.Header {
     }
 
     private PublicKey generatePubKey(byte[] encodedKey) {
-        PublicKey pubKey=null;
+        PublicKey tmpPubKey=null;
         try {
             KeyFactory KeyFac=KeyFactory.getInstance(getAlgorithm(asymAlgorithm));
             X509EncodedKeySpec x509KeySpec=new X509EncodedKeySpec(encodedKey);
-            pubKey=KeyFac.generatePublic(x509KeySpec);
+            tmpPubKey=KeyFac.generatePublic(x509KeySpec);
         }
         catch(Exception e) {
             e.printStackTrace();
         }
-        return pubKey;
+        return tmpPubKey;
     }
 }

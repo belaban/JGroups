@@ -1,4 +1,4 @@
-// $Id: LOOPBACK.java,v 1.13 2005/04/23 12:41:49 belaban Exp $
+// $Id: LOOPBACK.java,v 1.14 2005/08/08 12:45:43 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -6,12 +6,9 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
-import org.jgroups.View;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
-
-import java.util.Vector;
 
 
 /**
@@ -20,11 +17,8 @@ import java.util.Vector;
 public class LOOPBACK extends Protocol {
     private Address local_addr=null;
     private String group_addr=null;
-    private final Vector members=new Vector();
-
 
     public LOOPBACK() {
-        ;
     }
 
 
@@ -67,7 +61,6 @@ public class LOOPBACK extends Protocol {
      */
     public void down(Event evt) {
         Message msg, rsp;
-        Address dest_addr;
 
         if(log.isTraceEnabled())
             log.trace("event is " + evt + ", group_addr=" + group_addr +
@@ -84,16 +77,6 @@ public class LOOPBACK extends Protocol {
             //rsp.setDest(local_addr);
             //rsp.setSrc(dest_addr != null ? dest_addr : local_addr);
             up(new Event(Event.MSG, rsp));
-            break;
-
-        case Event.TMP_VIEW:
-        case Event.VIEW_CHANGE:
-            synchronized(members) {
-                members.removeAllElements();
-                Vector tmpvec=((View)evt.getArg()).getMembers();
-                for(int i=0; i < tmpvec.size(); i++)
-                    members.addElement(tmpvec.elementAt(i));
-            }
             break;
 
         case Event.GET_LOCAL_ADDRESS:   // return local address -> Event(SET_LOCAL_ADDRESS, local)

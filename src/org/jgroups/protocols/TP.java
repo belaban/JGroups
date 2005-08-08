@@ -40,7 +40,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.16 2005/07/26 11:15:20 belaban Exp $
+ * @version $Id: TP.java,v 1.17 2005/08/08 12:45:44 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -155,8 +155,7 @@ public abstract class TP extends Protocol {
      * Creates the TP protocol, and initializes the
      * state variables, does however not start any sockets or threads.
      */
-    public TP() {
-        ;
+    protected TP() {
     }
 
     /**
@@ -449,7 +448,6 @@ public abstract class TP extends Protocol {
      * DON'T REMOVE ! 
      */
     public void startUpHandler() {
-        ;
     }
 
     /**
@@ -672,7 +670,7 @@ public abstract class TP extends Protocol {
         // discard my own multicast loopback copy
         if(loopback) {
             Address src=msg.getSrc();
-            if((dst == null || (dst != null && dst.isMulticastAddress())) && src != null && local_addr.equals(src)) {
+            if((dst == null || (dst.isMulticastAddress())) && src != null && local_addr.equals(src)) {
                 if(log.isTraceEnabled())
                     log.trace("discarded own loopback multicast packet");
                 return;
@@ -784,7 +782,7 @@ public abstract class TP extends Protocol {
 
 
     private Buffer listToBuffer(List l, Address dest) throws Exception {
-        Buffer retval=null;
+        Buffer retval;
         Address src;
         Message msg;
         int len=l != null? l.size() : 0;
@@ -923,7 +921,7 @@ public abstract class TP extends Protocol {
         byte[]    buf;
         int       offset, length;
 
-        public IncomingQueueEntry(Address dest, Address sender, byte[] buf, int offset, int length) {
+        IncomingQueueEntry(Address dest, Address sender, byte[] buf, int offset, int length) {
             this.dest=dest;
             this.sender=sender;
             this.buf=buf;
@@ -1045,7 +1043,7 @@ public abstract class TP extends Protocol {
 
 
         public void run() {
-            Message msg=null, leftover=null;
+            Message msg, leftover=null;
             long start=0;
             while(outgoing_queue != null) {
                 try {
@@ -1079,8 +1077,8 @@ public abstract class TP extends Protocol {
          */
         private Message waitForMessagesToAccumulate(Message m, Queue q, long max_size, long start_time, long max_time) {
             Message msg, leftover=null;
-            boolean running=true, size_exceeded=false, time_reached=false;
-            long    len, time_to_wait=max_time, waited_time=0;
+            boolean running=true, size_exceeded, time_reached;
+            long    len, time_to_wait=max_time, waited_time;
 
             while(running) {
                 try {
@@ -1105,8 +1103,6 @@ public abstract class TP extends Protocol {
                     }
                 }
                 catch(TimeoutException timeout) {
-                    waited_time=System.currentTimeMillis() - start_time;
-                    time_reached=true;
                     break;
                 }
                 catch(QueueClosedException closed) {

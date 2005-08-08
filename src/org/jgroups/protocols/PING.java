@@ -1,4 +1,4 @@
-// $Id: PING.java,v 1.25 2005/04/26 15:22:12 belaban Exp $
+// $Id: PING.java,v 1.26 2005/08/08 12:45:43 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -151,7 +151,7 @@ public class PING extends Discovery {
     public void sendGetMembersRequest() {
         Message msg;
         PingHeader hdr;
-        Vector gossip_rsps=null;
+        Vector gossip_rsps;
 
         if(client != null) {
             gossip_rsps=client.getMembers(group_addr);
@@ -166,7 +166,7 @@ public class PING extends Discovery {
                 return;
             }
 
-            if(gossip_rsps != null && gossip_rsps.size() > 0) {
+            if(gossip_rsps.size() > 0) {
                 for(int i=0; i < gossip_rsps.size(); i++) {
                     Address dest=(Address)gossip_rsps.elementAt(i);
                     msg=new Message(dest, null, null);  // mcast msg
@@ -181,32 +181,11 @@ public class PING extends Discovery {
             if(initial_hosts != null && initial_hosts.size() > 0) {
                 IpAddress h;
                 List hlist;
-                int numMemberInitialHosts;
-                int numMembers;
-                Address coord;
                 msg=new Message(null, null, null);
                 msg.putHeader(getName(), new PingHeader(PingHeader.GET_MBRS_REQ, null));
-
-                synchronized(members) {
-                    numMembers=members.size();
-                    numMemberInitialHosts=0;
-                    coord=numMembers > 0 ? (Address)members.firstElement() : local_addr;
-                }
                 for(Enumeration en=initial_hosts.elements(); en.hasMoreElements();) {
                     hlist=(List)en.nextElement();
                     boolean isMember=false;
-
-//                    for(Enumeration hen=hlist.elements(); hen.hasMoreElements() && !isMember && numMemberInitialHosts < numMembers;) {
-//                        h=(IpAddress)hen.nextElement();
-//                        if(members_set.contains(h)) {
-//                            //update the initial_members list for this already connected member
-//                            initial_members.add(new PingRsp(h, coord));
-//                            isMember=true;
-//                            numMemberInitialHosts++;
-//                            if(log.isDebugEnabled())
-//                                log.debug("[FIND_INITIAL_MBRS] " + h + " is already a member");
-//                        }
-//                    }
                     for(Enumeration hen=hlist.elements(); hen.hasMoreElements() && !isMember;) {
                         h=(IpAddress)hen.nextElement();
                         msg.setDest(h);

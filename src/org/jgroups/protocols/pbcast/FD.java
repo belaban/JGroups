@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.7 2005/05/30 14:31:05 belaban Exp $
+// $Id: FD.java,v 1.8 2005/08/08 12:45:38 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -118,7 +118,6 @@ public class FD extends Protocol implements Runnable {
                     mbr=(Address)e.nextElement();
                     if(!mbrs.contains(mbr)) {
                         members.remove(mbr);
-                        continue;
                     }
                 }
                 members.remove(local_addr);
@@ -169,7 +168,7 @@ public class FD extends Protocol implements Runnable {
     }
 
     void stopChecker() {
-        Thread tmp=null;
+        Thread tmp;
         synchronized(checker_lock) {
             if(checker != null && checker.isAlive()) {
                 tmp=checker;
@@ -190,7 +189,7 @@ public class FD extends Protocol implements Runnable {
 
     void updateSender(Address mbr) {
         Entry entry;
-        long curr_time=0;
+        long curr_time;
 
         if(mbr == null) {
             if(log.isDebugEnabled()) log.debug("member " + mbr + " not found");

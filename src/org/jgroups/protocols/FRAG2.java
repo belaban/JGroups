@@ -1,4 +1,4 @@
-// $Id: FRAG2.java,v 1.18 2005/07/29 15:40:26 belaban Exp $
+// $Id: FRAG2.java,v 1.19 2005/08/08 12:45:42 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -27,7 +27,7 @@ import java.util.*;
  * size addition for headers and src and dest address is minimal when the transport finally has to serialize the
  * message, so we add a constant (1000 bytes).
  * @author Bela Ban
- * @version $Id: FRAG2.java,v 1.18 2005/07/29 15:40:26 belaban Exp $
+ * @version $Id: FRAG2.java,v 1.19 2005/08/08 12:45:42 belaban Exp $
  */
 public class FRAG2 extends Protocol {
 
@@ -216,10 +216,10 @@ public class FRAG2 extends Protocol {
         List               fragments;
         Event              evt;
         FragHeader         hdr;
-        Message            frag_msg=null;
+        Message            frag_msg;
         Address            dest=msg.getDest();
         long               id=getNextId(); // used as seqnos
-        int                num_frags=0;
+        int                num_frags;
         StringBuffer       sb;
         Range              r;
 
@@ -263,7 +263,7 @@ public class FRAG2 extends Protocol {
      5. Pass msg up the stack
      */
     void unfragment(Message msg) {
-        FragmentationTable frag_table=null;
+        FragmentationTable frag_table;
         Address            sender=msg.getSrc();
         Message            assembled_msg;
         FragHeader         hdr=(FragHeader)msg.removeHeader(name);
@@ -426,7 +426,7 @@ public class FRAG2 extends Protocol {
         private final Hashtable h=new Hashtable(11);  // keys: frag_ids, vals: Entrys
 
 
-        public FragmentationTable(Address sender) {
+        FragmentationTable(Address sender) {
             this.sender=sender;
         }
 
@@ -500,7 +500,7 @@ public class FRAG2 extends Protocol {
              *
              */
             public Message assembleMessage() {
-                Message retval=null;
+                Message retval;
                 byte[]  combined_buffer, tmp;
                 int     combined_length=0, length, offset;
                 Message fragment;

@@ -1,4 +1,4 @@
-// $Id: Digest.java,v 1.14 2005/07/17 11:35:04 chrislott Exp $
+// $Id: Digest.java,v 1.15 2005/08/08 12:45:38 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 

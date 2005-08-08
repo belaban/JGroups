@@ -1,4 +1,4 @@
-//$Id: TcpRingNode.java,v 1.3 2004/09/23 16:29:40 belaban Exp $
+//$Id: TcpRingNode.java,v 1.4 2005/08/08 12:45:41 belaban Exp $
 
 package org.jgroups.protocols.ring;
 
@@ -12,10 +12,7 @@ import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.RpcProtocol;
 import org.jgroups.util.Util;
 
-import java.io.IOException;
-import java.io.InterruptedIOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Vector;
@@ -104,7 +101,7 @@ public class TcpRingNode implements RingNode
       {
          try
          {
-            ((RingToken) token).writeExternal(oos);
+            ((Externalizable)token).writeExternal(oos);
             oos.flush();
             oos.reset();
          }

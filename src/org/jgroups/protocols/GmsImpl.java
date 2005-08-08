@@ -1,4 +1,4 @@
-// $Id: GmsImpl.java,v 1.3 2004/09/23 16:29:41 belaban Exp $
+// $Id: GmsImpl.java,v 1.4 2005/08/08 12:45:43 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -47,7 +47,7 @@ public abstract class GmsImpl {
        are the primary partition.
      */
     protected boolean iWouldBeCoordinator(Vector new_mbrs) {
-	Membership tmp_mbrs=gms.members.copy();
+	Membership tmp_mbrs=gms.mbrs.copy();
 	tmp_mbrs.merge(new_mbrs, null);
 	tmp_mbrs.sort();
 	if(tmp_mbrs.size() <= 0 || gms.local_addr == null)

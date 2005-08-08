@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.21 2005/07/12 11:45:40 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.22 2005/08/08 12:45:39 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -127,7 +127,7 @@ public class STATE_TRANSFER extends Protocol {
             hdr=(StateHeader)msg.removeHeader(name);
             switch(hdr.type) {
             case StateHeader.STATE_REQ:
-                handleStateReq(hdr.sender, hdr.id);
+                handleStateReq(hdr.sender);
                 break;
             case StateHeader.STATE_RSP:
                 handleStateRsp(hdr.sender, hdr.my_digest, msg.getBuffer());
@@ -261,7 +261,7 @@ public class STATE_TRANSFER extends Protocol {
      * instead we just add the sender to the requester list so it will receive the same state when done. If not,
      * we add the sender to the requester list and send a GET_APPLSTATE event up.
      */
-    void handleStateReq(Object sender, long state_id) {
+    void handleStateReq(Object sender) {
         if(sender == null) {
             if(log.isErrorEnabled()) log.error("sender is null !");
             return;
@@ -349,7 +349,7 @@ public class STATE_TRANSFER extends Protocol {
 
 
         public boolean equals(Object o) {
-            StateHeader other=null;
+            StateHeader other;
 
             if(sender != null && o != null) {
                 if(!(o instanceof StateHeader))

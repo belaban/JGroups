@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.13 2005/07/17 11:36:15 chrislott Exp $
+// $Id: NAKACK.java,v 1.14 2005/08/08 12:45:43 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -450,7 +450,6 @@ public class NAKACK extends Protocol {
                 up(new Event(Event.MSG, tmpmsg));
             }
             else if(rc > 0) {
-                ;
             }
             else
             /** todo Maybe messages from previous vids are stored while client */

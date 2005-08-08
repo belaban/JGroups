@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.13 2005/05/30 14:31:07 belaban Exp $
+// $Id: GMS.java,v 1.14 2005/08/08 12:45:43 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -27,7 +27,7 @@ public class GMS extends RpcProtocol implements Runnable {
     private GmsImpl impl=null;
     public Address local_addr=null;
     public String group_addr=null;
-    public final Membership members=new Membership();
+    public final Membership mbrs=new Membership();
     public ViewId view_id=null;
     public long ltime=0;
     public long join_timeout=5000;
@@ -143,7 +143,7 @@ public class GMS extends RpcProtocol implements Runnable {
      */
     public View getNextView(Vector new_mbrs, Vector old_mbrs, Vector suspected_mbrs) {
         Vector mbrs;
-        long vid=0;
+        long vid;
         View v;
         Membership tmp_mbrs;
         Vector mbrs_to_remove=new Vector();
@@ -159,7 +159,7 @@ public class GMS extends RpcProtocol implements Runnable {
         synchronized(view_mutex) {
             vid=Math.max(view_id.getId(), ltime) + 1;
             ltime=vid;
-            tmp_mbrs=members.copy();
+            tmp_mbrs=this.mbrs.copy();
             tmp_mbrs.merge(new_mbrs, mbrs_to_remove);
             mbrs=(Vector)tmp_mbrs.getMembers().clone();
             v=new View(local_addr, vid, mbrs);
@@ -174,7 +174,7 @@ public class GMS extends RpcProtocol implements Runnable {
      * It IS sent to leaving members (before they are allowed to leave).
      */
     Vector computeFlushDestination(Vector suspected_mbrs) {
-        Vector ret=members.getMembers(); // *copy* of current membership
+        Vector ret=mbrs.getMembers(); // *copy* of current membership
         if(suspected_mbrs != null && suspected_mbrs.size() > 0)
             for(int i=0; i < suspected_mbrs.size(); i++)
                 ret.removeElement(suspected_mbrs.elementAt(i));
@@ -187,8 +187,8 @@ public class GMS extends RpcProtocol implements Runnable {
      * members + the leaving members (old_mbrs) + the joining members (new_mbrs) - the suspected
      * members.
      */
-    Vector computeViewDestination(Vector new_mbrs, Vector old_mbrs, Vector suspected_mbrs) {
-        Vector ret=members.getMembers(); // **copy* of current membership
+    private Vector computeViewDestination(Vector new_mbrs, Vector suspected_mbrs) {
+        Vector ret=mbrs.getMembers(); // **copy* of current membership
         Address mbr;
 
         // add new members
@@ -207,7 +207,7 @@ public class GMS extends RpcProtocol implements Runnable {
         if(suspected_mbrs != null) {
             for(int i=0; i < suspected_mbrs.size(); i++) {
                 mbr=(Address)suspected_mbrs.elementAt(i);
-                ret.removeElement(suspected_mbrs.elementAt(i));
+                ret.removeElement(mbr);
             }
         }
         return ret;
@@ -322,7 +322,7 @@ public class GMS extends RpcProtocol implements Runnable {
         View new_view, tmp_view;
         ViewId new_vid;
         Vector flush_dest=computeFlushDestination(suspected_mbrs);  // members to which FLUSH/VIEW is sent
-        Vector view_dest=computeViewDestination(new_mbrs, old_mbrs, suspected_mbrs); // dest for view change
+        Vector view_dest=computeViewDestination(new_mbrs, suspected_mbrs); // dest for view change
 
         // next view: current mbrs + new_mbrs - old_mbrs - suspected_mbrs
         new_view=getNextView(new_mbrs, old_mbrs, suspected_mbrs);
@@ -338,7 +338,7 @@ public class GMS extends RpcProtocol implements Runnable {
            suspected members were removed from view_dest during the previous FLUSH round(s), we
            only need to add the new members.  Send TMP_VIEW event down, this allows
            FLUSH/NAKACK to set membership correctly */
-        view_dest=computeViewDestination(new_mbrs, old_mbrs, suspected_mbrs);
+        view_dest=computeViewDestination(new_mbrs, suspected_mbrs);
         tmp_view=new View(null, view_dest);
 
         Event view_event=new Event(Event.TMP_VIEW, tmp_view); // so the VIEW msg is sent to the correct mbrs
@@ -377,47 +377,32 @@ public class GMS extends RpcProtocol implements Runnable {
 
 
             if(view_id == null) {
-                if(new_view == null) {
-                    if(log.isErrorEnabled()) log.error("view_id and new_view are null !");
-                    return;
-                }
-                else {  // view_id is null, new_view not: just install new_view (we're still a client)
-                    view_id=(ViewId)new_view.clone();
-                }
+                view_id=(ViewId)new_view.clone();
             }
             else {
-                if(new_view == null) {  // this should never happen though !
-                    if(log.isErrorEnabled()) log.error("new_view is null !");
+                rc=new_view.compareTo(view_id);  // rc should always be a positive number
+                if(rc <= 0) {  // don't accept view id lower than our own
+                    if(log.isWarnEnabled()) log.warn("received view <= current view; discarding it ! " +
+                            "(view_id: " + view_id + ", new_view: " + new_view + ')');
                     return;
                 }
-                else {  // both view_id and new_view are not null
-                    rc=new_view.compareTo(view_id);  // rc should always be a positive number
-                    if(rc <= 0) {  // don't accept view id lower than our own
-                         {
-                            if(log.isWarnEnabled()) log.warn("received view <= current view; discarding it ! " +
-                                    "(view_id: " + view_id + ", new_view: " + new_view + ')');
-                        }
-                        return;
+                else {  // the check for vid equality was okay, assign new_view to view_id
+                    if(new_view.getCoordAddress() != null) {
+                        view_id=new ViewId(new_view.getCoordAddress(), new_view.getId());
                     }
-                    else {  // the check for vid equality was okay, assign new_view to view_id
-
-                        if(new_view.getCoordAddress() != null) {
-                            view_id=new ViewId(new_view.getCoordAddress(), new_view.getId());
-                        }
-                        else {
-                            view_id=new ViewId(view_id.getCoordAddress(), new_view.getId());
-                        }
+                    else {
+                        view_id=new ViewId(view_id.getCoordAddress(), new_view.getId());
                     }
                 }
             }
 
             if(mbrs != null && mbrs.size() > 0)
-                members.set(mbrs);
+                this.mbrs.set(mbrs);
 
 
 
             // Send VIEW_CHANGE event up and down the stack:
-            Event view_event=new Event(Event.VIEW_CHANGE, makeView(members.getMembers()));
+            Event view_event=new Event(Event.VIEW_CHANGE, makeView(this.mbrs.getMembers()));
             passDown(view_event); // needed e.g. by failure detector or UDP
             passUp(view_event);
 
@@ -435,8 +420,8 @@ public class GMS extends RpcProtocol implements Runnable {
 
 
     protected Address determineCoordinator() {
-        synchronized(members) {
-            return members != null && members.size() > 0? (Address)members.elementAt(0) : null;
+        synchronized(mbrs) {
+            return mbrs != null && mbrs.size() > 0? (Address)mbrs.elementAt(0) : null;
         }
     }
 
@@ -469,7 +454,7 @@ public class GMS extends RpcProtocol implements Runnable {
     }
 
 
-    public View makeView(Vector mbrs, ViewId vid) {
+    public static View makeView(Vector mbrs, ViewId vid) {
         Address coord=null;
         long id=0;
 
@@ -771,12 +756,12 @@ public class GMS extends RpcProtocol implements Runnable {
     /* ------------------------------- Private Methods --------------------------------- */
 
 
-    void initState() {
+    private void initState() {
         becomeClient();
         impl.init();
         view_id=null;
-        if(members != null)
-            members.clear();
+        if(mbrs != null)
+            mbrs.clear();
     }
 
 

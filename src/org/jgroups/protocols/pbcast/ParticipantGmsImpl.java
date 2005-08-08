@@ -1,4 +1,4 @@
-// $Id: ParticipantGmsImpl.java,v 1.9 2004/09/23 16:29:38 belaban Exp $
+// $Id: ParticipantGmsImpl.java,v 1.10 2005/08/08 12:45:38 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -122,7 +122,7 @@ public class ParticipantGmsImpl extends GmsImpl {
 
 
     public void handleSuspect(Address mbr) {
-        Vector suspects=null;
+        Vector suspects;
 
         if(mbr == null) return;
         if(!suspected_mbrs.contains(mbr))
@@ -153,7 +153,7 @@ public class ParticipantGmsImpl extends GmsImpl {
      * local_addr. Therefore, true is returned.
      */
     boolean wouldIBeCoordinator() {
-        Address new_coord=null;
+        Address new_coord;
         Vector mbrs=gms.members.getMembers(); // getMembers() returns a *copy* of the membership vector
 
         for(int i=0; i < suspected_mbrs.size(); i++)

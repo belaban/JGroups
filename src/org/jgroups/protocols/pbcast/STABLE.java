@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.37 2005/07/19 10:12:55 belaban Exp $
+// $Id: STABLE.java,v 1.38 2005/08/08 12:45:38 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -481,7 +481,6 @@ public class STABLE extends Protocol {
     void startStabilityTask(Digest d, long delay) {
         synchronized(stability_mutex) {
             if(stability_task != null && stability_task.running()) {
-                return;  // already running
             }
             else {
                 stability_task=new StabilitySendTask(d, delay); // runs only once
@@ -789,7 +788,7 @@ public class STABLE extends Protocol {
         long     delay=2000;
 
 
-        public StabilitySendTask(Digest d, long delay) {
+        StabilitySendTask(Digest d, long delay) {
             this.d=d;
             this.delay=delay;
         }

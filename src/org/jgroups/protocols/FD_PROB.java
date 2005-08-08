@@ -1,4 +1,4 @@
-// $Id: FD_PROB.java,v 1.7 2005/05/30 14:31:07 belaban Exp $
+// $Id: FD_PROB.java,v 1.8 2005/08/08 12:45:42 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -26,7 +26,7 @@ import java.util.Vector;
  * for timeout seconds, Q will be suspected.<p>
  * This protocol can be used both with a PBCAST *and* regular stacks.
  * @author Bela Ban 1999
- * @version $Revision: 1.7 $
+ * @version $Revision: 1.8 $
  */
 public class FD_PROB extends Protocol implements Runnable {
     Address local_addr=null;
@@ -257,14 +257,11 @@ public class FD_PROB extends Protocol implements Runnable {
                     if(entry.excluded()) {
                         if(diff >= 2 * timeout) {  // remove members marked as 'excluded' after 2*timeout msecs
                             counters.remove(key);
-
-                                if(log.isInfoEnabled()) log.info("removed " + key);
-                            continue;
+                            if(log.isInfoEnabled()) log.info("removed " + key);
                         }
                     }
                     else {
-
-                            if(log.isInfoEnabled()) log.info("suspecting " + key);
+                        if(log.isInfoEnabled()) log.info("suspecting " + key);
                         passUp(new Event(Event.SUSPECT, key));
                     }
                 }
@@ -383,7 +380,7 @@ public class FD_PROB extends Protocol implements Runnable {
     }
 
 
-    Vector computeExcludedMembers(Vector old_mbrship, Vector new_mbrship) {
+    static Vector computeExcludedMembers(Vector old_mbrship, Vector new_mbrship) {
         Vector ret=new Vector();
         if(old_mbrship == null || new_mbrship == null) return ret;
         for(int i=0; i < old_mbrship.size(); i++)

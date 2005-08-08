@@ -1,4 +1,4 @@
-// $Id: TCPGOSSIP.java,v 1.14 2005/04/20 20:25:47 belaban Exp $
+// $Id: TCPGOSSIP.java,v 1.15 2005/08/08 12:45:44 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -111,6 +111,7 @@ public class TCPGOSSIP extends Discovery {
         if(tmp_mbrs == null || tmp_mbrs.size() == 0) {
             if(log.isErrorEnabled()) log.error("[FIND_INITIAL_MBRS]: gossip client found no members");
             passUp(new Event(Event.FIND_INITIAL_MBRS_OK, EMPTY_VECTOR));
+            return;
         }
         if(log.isTraceEnabled()) log.trace("consolidated mbrs from GossipServer(s) are " + tmp_mbrs);
 
@@ -120,7 +121,7 @@ public class TCPGOSSIP extends Discovery {
         msg.putHeader(name, hdr);
 
         for(int i=0; i < tmp_mbrs.size(); i++) {
-            mbr_addr=(IpAddress)tmp_mbrs.elementAt(i);
+            mbr_addr=(Address)tmp_mbrs.elementAt(i);
             copy=msg.copy();
             copy.setDest(mbr_addr);
             if(log.isTraceEnabled()) log.trace("[FIND_INITIAL_MBRS] sending PING request to " + copy.getDest());

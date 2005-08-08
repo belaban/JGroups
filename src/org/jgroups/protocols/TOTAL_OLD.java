@@ -1,4 +1,4 @@
-// $Id: TOTAL_OLD.java,v 1.10 2005/07/17 11:36:15 chrislott Exp $
+// $Id: TOTAL_OLD.java,v 1.11 2005/08/08 12:45:44 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -31,7 +31,7 @@ class SavedMessages {
         private final Message msg;
         private final long seq;
 
-        public Entry(Message msg, long seq) {
+        Entry(Message msg, long seq) {
             this.msg=msg;
             this.seq=seq;
         }
@@ -53,7 +53,7 @@ class SavedMessages {
     /**
      * Constructor - creates an empty space to store messages
      */
-    public SavedMessages() {
+    SavedMessages() {
         messages=new Vector();
     }
 
@@ -267,12 +267,12 @@ class MessageAcks {
         public final Address addr;
         public long seq;
 
-        public Entry(Address addr, long seq) {
+        Entry(Address addr, long seq) {
             this.addr=addr;
             this.seq=seq;
         }
 
-        public Entry(Address addr) {
+        Entry(Address addr) {
             this.addr=addr;
             this.seq=-1;  // means that no acknowledgements have been made yet
         }
@@ -287,7 +287,7 @@ class MessageAcks {
     /**
      * Constructor - creates a Vector of "Entry"s given a Vector of "Address"es for the members
      */
-    public MessageAcks(Vector members) {
+    MessageAcks(Vector members) {
         acks=new Vector();
 
         // initialize the message history to contain no messages
@@ -682,13 +682,11 @@ public class TOTAL_OLD extends Protocol {
             System.out.println("View Change event passed up to TOTAL_OLD (debug - mms21)");
             View new_view=(View)evt.getArg();
             members=new_view.getMembers();
-            {
-                // print the members of this new view
-                System.out.println("New view members (printed in TOTAL_OLD):");
-                int view_size=members.size();
-                for(int i=0; i < view_size; i++) {
-                    System.out.println("  " + members.elementAt(i).toString());
-                }
+            // print the members of this new view
+            System.out.println("New view members (printed in TOTAL_OLD):");
+            int view_size=members.size();
+            for(int i=0; i < view_size; i++) {
+                System.out.println("  " + members.elementAt(i).toString());
             }
 
             // reset the state for total ordering for this new view
@@ -873,12 +871,10 @@ public class TOTAL_OLD extends Protocol {
         ack_history.addMessage(msg_copy, next_seq_id_to_assign);
 
         // begin debug
-        {
-            Object header=msg_copy.getHeader(getName());
-            if(!(header instanceof TotalHeader)) {
-                log.error("Error: TOTAL_OLD.handleRequestMessage() - BAD: stored message that did not contain a TotalHeader - " + next_seq_id_to_assign);
-            }
-        } //
+        Object header=msg_copy.getHeader(getName());
+        if(!(header instanceof TotalHeader)) {
+            log.error("Error: TOTAL_OLD.handleRequestMessage() - BAD: stored message that did not contain a TotalHeader - " + next_seq_id_to_assign);
+        }
         // end debug
 
         // increment the next sequence id to use
@@ -926,15 +922,13 @@ public class TOTAL_OLD extends Protocol {
         // note: do not need to add a TotalHeader because it should already be a
         //       TOTAL_BCAST message
         // begin debug
-        {
-            Object header=resend_msg.getHeader(getName());
-            if(header instanceof TotalHeader) {
-                //log.error( "TOTAL_OLD: resend msg GOOD (header is TotalHeader) - " + seq );
-            }
-            else {
-                log.error("TOTAL_OLD: resend msg BAD (header is NOT a TotalHeader) - " + seq);
-            }
-        } //
+        Object header=resend_msg.getHeader(getName());
+        if(header instanceof TotalHeader) {
+            //log.error( "TOTAL_OLD: resend msg GOOD (header is TotalHeader) - " + seq );
+        }
+        else {
+            log.error("TOTAL_OLD: resend msg BAD (header is NOT a TotalHeader) - " + seq);
+        }
         // end debug
 
         passDown(new Event(Event.MSG, resend_msg));
@@ -1245,7 +1239,7 @@ class TotalRetransmissionThread extends Thread {
      * creates and initializes a retransmission thread for the
      * specified instance of a TOTAL_OLD protocol
      */
-    public TotalRetransmissionThread(TOTAL_OLD parent_prot) {
+    TotalRetransmissionThread(TOTAL_OLD parent_prot) {
         if(parent_prot != null) {
             prot_ptr=parent_prot;
         }

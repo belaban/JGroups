@@ -1,4 +1,4 @@
-// $Id: DELAY.java,v 1.6 2005/05/30 14:31:07 belaban Exp $
+// $Id: DELAY.java,v 1.7 2005/08/08 12:45:42 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -88,7 +88,7 @@ public class DELAY extends Protocol {
     /**
      * Compute a random number between 0 and n
      */
-    int computeDelay(int n) {
+    static int computeDelay(int n) {
         return (int)((Math.random() * 1000000) % n);
     }
 

@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.18 2005/04/12 18:59:49 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.19 2005/08/08 12:45:37 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -19,7 +19,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.18 $
+ * @version $Revision: 1.19 $
  */
 public class ClientGmsImpl extends GmsImpl {
     private final Vector  initial_mbrs=new Vector(11);
@@ -55,9 +55,9 @@ public class ClientGmsImpl extends GmsImpl {
      * @param mbr Our own address (assigned through SET_LOCAL_ADDRESS)
      */
     public void join(Address mbr) {
-        Address coord=null;
-        JoinRsp rsp=null;
-        Digest tmp_digest=null;
+        Address coord;
+        JoinRsp rsp;
+        Digest tmp_digest;
         leaving=false;
 
         join_promise.reset();
@@ -165,12 +165,10 @@ public class ClientGmsImpl extends GmsImpl {
     }
 
     public void handleLeaveResponse() {
-        ; // safely ignore this
     }
 
 
     public void suspect(Address mbr) {
-        ;
     }
 
     public void unsuspect(Address mbr) {
@@ -222,7 +220,6 @@ public class ClientGmsImpl extends GmsImpl {
     /** Returns immediately. Clients don't handle suspect() requests */
     public void handleSuspect(Address mbr) {
         wrongMethod("handleSuspect");
-        return;
     }
 
 
@@ -352,7 +349,7 @@ public class ClientGmsImpl extends GmsImpl {
 
     void becomeSingletonMember(Address mbr) {
         Digest initial_digest;
-        ViewId view_id=null;
+        ViewId view_id;
         Vector mbrs=new Vector(1);
 
         // set the initial digest (since I'm the first member)

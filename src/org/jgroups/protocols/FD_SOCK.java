@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.27 2005/07/11 13:44:33 belaban Exp $
+// $Id: FD_SOCK.java,v 1.28 2005/08/08 12:45:42 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -176,7 +176,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         case Event.MSG:
             msg=(Message) evt.getArg();
             hdr=(FdHeader) msg.removeHeader(name);
-            if(hdr == null || !(hdr instanceof FdHeader))
+            if(hdr == null)
                 break;  // message did not originate from FD_SOCK layer, just pass up
 
             switch(hdr.type) {
@@ -637,7 +637,7 @@ public class FD_SOCK extends Protocol implements Runnable {
      then by multicasting a request to all members.
      */
     IpAddress fetchPingAddress(Address mbr) {
-        IpAddress ret=null;
+        IpAddress ret;
         Message ping_addr_req;
         FdHeader hdr;
 
@@ -754,13 +754,13 @@ public class FD_SOCK extends Protocol implements Runnable {
             StringBuffer sb=new StringBuffer();
             sb.append(type2String(type));
             if(mbr != null)
-                sb.append(", mbr=" + mbr);
+                sb.append(", mbr=").append(mbr);
             if(sock_addr != null)
-                sb.append(", sock_addr=" + sock_addr);
+                sb.append(", sock_addr=").append(sock_addr);
             if(cachedAddrs != null)
-                sb.append(", cache=" + cachedAddrs);
+                sb.append(", cache=").append(cachedAddrs);
             if(mbrs != null)
-                sb.append(", mbrs=" + mbrs);
+                sb.append(", mbrs=").append(mbrs);
             return sb.toString();
         }
 
@@ -932,7 +932,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
         /** Only accepts 1 client connection at a time (saving threads) */
         public void run() {
-            Socket client_sock=null;
+            Socket client_sock;
             while(acceptor != null && srv_sock != null) {
                 try {
                     if(log.isTraceEnabled()) // +++ remove
@@ -962,13 +962,13 @@ public class FD_SOCK extends Protocol implements Runnable {
         Socket      client_sock=null;
         InputStream in;
         final Object mutex=new Object();
-        List clients=null;
+        List clients=new ArrayList();
 
         ClientConnectionHandler(Socket client_sock, List clients) {
             setName("ClientConnectionHandler");
             setDaemon(true);
             this.client_sock=client_sock;
-            this.clients=clients;
+            this.clients.addAll(clients);
         }
 
         void stopThread() {

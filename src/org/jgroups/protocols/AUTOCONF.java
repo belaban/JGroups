@@ -1,4 +1,4 @@
-// $Id: AUTOCONF.java,v 1.13 2005/07/17 11:36:15 chrislott Exp $
+// $Id: AUTOCONF.java,v 1.14 2005/08/08 12:45:41 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -85,14 +85,12 @@ public class AUTOCONF extends Protocol {
      * Leave empty: no up_thread will be created, but the up_thread of the neighbor below us will be used
      */
     public void startUpHandler() {
-        ;
     }
 
     /**
      * Leave empty: no down_thread will be created, but the down_thread of the neighbor above us will be used
      */
     public void startDownHandler() {
-        ;
     }
 
 
@@ -118,10 +116,10 @@ public class AUTOCONF extends Protocol {
      */
     public int senseMaxFragSize() {
         int max_send=32000;
-        int upper=8192;
+        int upper;
         int lower=0;
         int highest_failed=-1;
-        DatagramSocket sock=null;
+        DatagramSocket sock;
         byte[] buf;
         DatagramPacket packet;
         InetAddress local_addr;
@@ -175,7 +173,7 @@ public class AUTOCONF extends Protocol {
 
 
     void senseMaxSendBufferSize(HashMap map) {
-        DatagramSocket sock=null;
+        DatagramSocket sock;
         int max_size=4096, retval=max_size;
 
         if(map != null && map.containsKey("frag_size)"))
@@ -193,7 +191,6 @@ public class AUTOCONF extends Protocol {
         catch(Throwable ex) {
             if(log.isErrorEnabled()) log.error("failed getting the max send buffer size: " + ex +
                     ". Defaulting to " + retval);
-            return;
         }
         finally {
             map.put("send_buf_size", new Integer(retval));
@@ -203,7 +200,7 @@ public class AUTOCONF extends Protocol {
 
 
     void senseMaxReceiveBufferSize(HashMap map) {
-        DatagramSocket sock=null;
+        DatagramSocket sock;
         int max_size=4096, retval=max_size;
 
         try {
@@ -218,7 +215,6 @@ public class AUTOCONF extends Protocol {
         catch(Throwable ex) {
             if(log.isErrorEnabled()) log.error("failed getting the max send buffer size: " + ex +
                     ". Defaulting to " + retval);
-            return;
         }
         finally {
             map.put("recv_buf_size", new Integer(retval));

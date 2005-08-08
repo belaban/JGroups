@@ -1,4 +1,4 @@
-// $Id: DUMMY.java,v 1.3 2004/09/23 16:29:41 belaban Exp $
+// $Id: DUMMY.java,v 1.4 2005/08/08 12:45:42 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -24,7 +24,7 @@ public class DUMMY extends Protocol {
 
 
     /** Just remove if you don't need to reset any state */
-    public void reset() {}
+    public static void reset() {}
 
 
 

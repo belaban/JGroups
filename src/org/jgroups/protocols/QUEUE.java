@@ -1,4 +1,4 @@
-// $Id: QUEUE.java,v 1.7 2004/09/23 16:29:42 belaban Exp $
+// $Id: QUEUE.java,v 1.8 2005/08/08 12:45:43 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -24,7 +24,7 @@ public class QUEUE extends Protocol {
     final Vector    up_vec=new Vector();
     final Vector    dn_vec=new Vector();
     boolean   queueing_up=false, queueing_dn=false;
-    Observer  observer=null;
+    Observer  my_observer=null;
 
 
     public interface Observer {
@@ -45,7 +45,7 @@ public class QUEUE extends Protocol {
 
     /** Only 1 observer is allowed. More than one might slow down the system. Will be called
 	when an event is queued (up or down) */
-    public void setObserver(Observer observer) {this.observer=observer;}
+    public void setObserver(Observer observer) {this.my_observer=observer;}
 
     public Vector  getUpVector()     {return up_vec;}
     public Vector  getDownVector()   {return dn_vec;}
@@ -110,13 +110,11 @@ public class QUEUE extends Protocol {
 	}
 	
 	if(queueing_up) {
-	     {
-		if(log.isInfoEnabled()) log.info("queued up event " + evt);
-	    }
-	    if(observer != null) {
-		if(observer.addingToUpVector(evt, up_vec.size()) == false)
-		    return;  // discard event (don't queue)
-	    }
+        if(log.isInfoEnabled()) log.info("queued up event " + evt);
+        if(my_observer != null) {
+        if(my_observer.addingToUpVector(evt, up_vec.size()) == false)
+            return;  // discard event (don't queue)
+        }
 	    up_vec.addElement(evt);
 	}
 	else
@@ -160,8 +158,8 @@ public class QUEUE extends Protocol {
 
 		if(log.isInfoEnabled()) log.info("queued down event: " + Util.printEvent(evt));
 
-	    if(observer != null) {
-		if(observer.addingToDownVector(evt, dn_vec.size()) == false)
+	    if(my_observer != null) {
+		if(my_observer.addingToDownVector(evt, dn_vec.size()) == false)
 		    return;  // discard event (don't queue)
 	    }
 	    dn_vec.addElement(evt);

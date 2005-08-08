@@ -1,4 +1,4 @@
-// $Id: BSH.java,v 1.11 2005/07/17 11:36:15 chrislott Exp $
+// $Id: BSH.java,v 1.12 2005/08/08 12:45:41 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -34,7 +34,6 @@ public class BSH extends Protocol {
     Interpreter interpreter=null;
 
     public BSH() {
-        ;
     }
 
     public String getName() {
@@ -44,11 +43,9 @@ public class BSH extends Protocol {
 
 
     public void init() throws Exception {
-        ;
     }
 
     public void start() throws Exception {
-        ;
     }
 
     public void stop() {
@@ -57,17 +54,14 @@ public class BSH extends Protocol {
     }
 
     public void destroy() {
-        ;
     }
 
     /** We have no up handler thread */
     public void startUpHandler() {
-        ;
     }
 
     /** We have no down handler thread */
     public void startDownHandler() {
-        ;
     }
 
     public void up(Event evt) {
@@ -200,7 +194,6 @@ public class BSH extends Protocol {
 
 
         public BshHeader() {
-            ; // used by externalization
         }
 
         public BshHeader(int type) {

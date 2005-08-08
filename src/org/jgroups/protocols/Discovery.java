@@ -23,7 +23,7 @@ import java.util.*;
  * <li>num_ping_requests - the number of GET_MBRS_REQ messages to be sent (min=1), distributed over timeout ms
  * </ul>
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.11 2005/06/14 10:10:12 belaban Exp $
+ * @version $Id: Discovery.java,v 1.12 2005/08/08 12:45:42 belaban Exp $
  */
 public abstract class Discovery extends Protocol {
     final Vector  members=new Vector(11);
@@ -42,11 +42,8 @@ public abstract class Discovery extends Protocol {
     int           num_discovery_requests=0;
 
 
-    public abstract String getName();
-
     /** Called after local_addr was set */
     public void localAddressSet(Address addr) {
-        ;
     }
 
     public abstract void sendGetMembersRequest();
@@ -54,15 +51,12 @@ public abstract class Discovery extends Protocol {
 
     /** Called when CONNECT_OK has been received */
     public void handleConnectOK() {
-        ;
     }
 
     public void handleDisconnect() {
-        ;
     }
 
     public void handleConnect() {
-        ;
     }
 
     public long getTimeout() {
@@ -352,8 +346,8 @@ public abstract class Discovery extends Protocol {
 
 
     protected View makeView(Vector mbrs) {
-        Address coord=null;
-        long id=0;
+        Address coord;
+        long id;
         ViewId view_id=new ViewId(local_addr);
 
         coord=view_id.getCoordAddress();

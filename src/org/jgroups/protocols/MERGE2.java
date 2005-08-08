@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.20 2005/07/17 11:36:15 chrislott Exp $
+// $Id: MERGE2.java,v 1.21 2005/08/08 12:45:43 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -133,7 +133,6 @@ public class MERGE2 extends Protocol {
      * DON'T REMOVE ! 
      */
     public void startUpHandler() {
-        ;
     }
 
 
@@ -142,7 +141,6 @@ public class MERGE2 extends Protocol {
      * DON'T REMOVE ! 
      */
     public void startDownHandler() {
-        ;
     }
 
 
@@ -167,7 +165,7 @@ public class MERGE2 extends Protocol {
 
 
     public void down(Event evt) {
-        Vector mbrs=null;
+        Vector mbrs;
         Address coord;
 
         switch(evt.getType()) {
@@ -254,7 +252,7 @@ public class MERGE2 extends Protocol {
 
         public void run() {
             long interval;
-            Vector coords=null;
+            Vector coords;
             Vector initial_mbrs;
 
             if(log.isDebugEnabled()) log.debug("merge task started as I'm the coordinator");
@@ -298,8 +296,7 @@ public class MERGE2 extends Protocol {
          * Returns a random value within [min_interval - max_interval]
          */
         long computeInterval() {
-            long retval=min_interval + Util.random(max_interval - min_interval);
-            return retval;
+            return min_interval + Util.random(max_interval - min_interval);
         }
 
 

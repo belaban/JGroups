@@ -1,4 +1,4 @@
-//$Id: RingNodeFlowControl.java,v 1.3 2004/09/23 16:29:40 belaban Exp $
+//$Id: RingNodeFlowControl.java,v 1.4 2005/08/08 12:45:41 belaban Exp $
 
 package org.jgroups.protocols.ring;
 
@@ -106,7 +106,7 @@ public class RingNodeFlowControl
          window = initialWindow;
       }
 
-      boolean congested = (token.getRetransmissionRequests().size() > 0)?true:false;
+      boolean congested =(token.getRetransmissionRequests().size() > 0);
 
       if (congested)
       {
