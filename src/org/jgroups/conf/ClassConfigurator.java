@@ -1,4 +1,4 @@
-// $Id: ClassConfigurator.java,v 1.14 2005/08/08 08:38:21 belaban Exp $
+// $Id: ClassConfigurator.java,v 1.15 2005/08/08 09:36:44 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -67,8 +67,9 @@ public class ClassConfigurator {
             ObjectStreamClass objStreamClass;
             ClassMap[] mapping=reader.readMagicNumberMapping();
             if(mapping != null) {
+                Integer m;
                 for(int i=0; i < mapping.length; i++) {
-                    Integer m=new Integer(mapping[i].getMagicNumber());
+                    m=new Integer(mapping[i].getMagicNumber());
                     try {
                         Class clazz=mapping[i].getClassForMap();
                         objStreamClass=ObjectStreamClass.lookup(clazz);

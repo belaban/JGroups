@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.48 2005/08/08 08:38:22 belaban Exp $
+// $Id: Util.java,v 1.49 2005/08/08 09:36:45 belaban Exp $
 
 package org.jgroups.util;
 
@@ -1154,8 +1154,7 @@ public class Util {
      * @return
      */
     public static Class loadClass(String classname, Class clazz) {
-        Class cl=null;
-        ClassLoader loader=null;
+        ClassLoader loader;
 
         try {
             loader=Thread.currentThread().getContextClassLoader();
@@ -1177,7 +1176,7 @@ public class Util {
             }
         }
 
-        return cl;
+        return null;
     }
 
 
