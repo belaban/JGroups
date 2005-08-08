@@ -1,4 +1,4 @@
-// $Id: ClassConfigurator.java,v 1.13 2005/07/17 11:36:41 chrislott Exp $
+// $Id: ClassConfigurator.java,v 1.14 2005/08/08 08:38:21 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -23,7 +23,7 @@ import java.util.*;
  *
  * @author Filip Hanik
  * @author Bela Ban
- * @see org.jgroups.conf.MagicNumberReader
+ * @see MagicNumberReader
  */
 public class ClassConfigurator {
     static ClassConfigurator instance=null;
@@ -49,7 +49,7 @@ public class ClassConfigurator {
         try {
             // make sure we have a class for DocumentBuilderFactory
             // getClass().getClassLoader().loadClass("javax.xml.parsers.DocumentBuilderFactory");
-            Thread.currentThread().getContextClassLoader().loadClass("javax.xml.parsers.DocumentBuilderFactory");
+            Util.loadClass("javax.xml.parsers.DocumentBuilderFactory", this.getClass());
 
             MagicNumberReader reader=new MagicNumberReader();
             
