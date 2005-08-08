@@ -1,4 +1,4 @@
-// $Id: MagicNumberReader.java,v 1.8 2005/04/23 12:44:05 belaban Exp $
+// $Id: MagicNumberReader.java,v 1.9 2005/08/08 14:58:32 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -42,7 +42,7 @@ public class MagicNumberReader {
     public ClassMap[] readMagicNumberMapping() {
         try {
             // InputStream stream=getClass().getClassLoader().getResourceAsStream(mMagicNumberFile);
-            InputStream stream=Thread.currentThread().getContextClassLoader().getResourceAsStream(mMagicNumberFile);
+            InputStream stream=Util.getResourceAsStream(mMagicNumberFile, this.getClass());
             // try to load the map from file even if it is not a Resource in the class path
             if(stream == null) {
                 try {

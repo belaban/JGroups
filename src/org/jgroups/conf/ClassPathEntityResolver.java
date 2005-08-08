@@ -1,4 +1,4 @@
-// $Id: ClassPathEntityResolver.java,v 1.2 2005/04/23 12:44:05 belaban Exp $
+// $Id: ClassPathEntityResolver.java,v 1.3 2005/08/08 14:58:32 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -6,12 +6,13 @@ package org.jgroups.conf;
  * 
  * @author Filip Hanik (<a href="mailto:filip@filip.net">filip@filip.net)
  * @author Bela Ban
- * @version $Id: ClassPathEntityResolver.java,v 1.2 2005/04/23 12:44:05 belaban Exp $
+ * @version $Id: ClassPathEntityResolver.java,v 1.3 2005/08/08 14:58:32 belaban Exp $
  */
 
 import org.xml.sax.EntityResolver;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+import org.jgroups.util.Util;
 
 import java.io.InputStream;
 import java.io.IOException;
@@ -45,7 +46,7 @@ public class ClassPathEntityResolver implements EntityResolver {
         }
         //2. then try to load it from the classpath
         
-        InputStream stream=Thread.currentThread().getContextClassLoader().getResourceAsStream(url);
+        InputStream stream=Util.getResourceAsStream(url, this.getClass());
         if(stream == null) {
             throw new IOException("Could not locate the DTD with name:[" + url + "] in the classpath.");
         }

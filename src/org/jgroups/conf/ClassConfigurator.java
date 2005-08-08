@@ -1,4 +1,4 @@
-// $Id: ClassConfigurator.java,v 1.15 2005/08/08 09:36:44 belaban Exp $
+// $Id: ClassConfigurator.java,v 1.16 2005/08/08 14:58:32 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -135,7 +135,7 @@ public class ClassConfigurator {
     public Class get(String clazzname) {
         try {
             // return ClassConfigurator.class.getClassLoader().loadClass(clazzname);
-            return Thread.currentThread().getContextClassLoader().loadClass(clazzname);
+            return Util.loadClass(clazzname, this.getClass());
         }
         catch(Exception x) {
             if(log.isErrorEnabled()) log.error(Util.getStackTrace(x));

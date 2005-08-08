@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.52 2005/08/08 12:36:01 chrislott Exp $
+// $Id: Util.java,v 1.53 2005/08/08 14:58:35 belaban Exp $
 
 package org.jgroups.util;
 
@@ -258,7 +258,7 @@ public class Util {
 
 
     /**
-     * Returns the marshalled size of a Collection of Addresses. 
+     * Returns the marshalled size of a Collection of Addresses.
      * <em>Assumes elements are of the same type !</em>
      * @param addrs Collection<Address>
      * @return long size
@@ -1097,10 +1097,7 @@ public class Util {
         byte[] data;
 
         try {
-// use thread context class loader
-//
-            ClassLoader loader=Thread.currentThread().getContextClassLoader();
-            inst=loader.loadClass(classname).newInstance();
+            inst=Util.loadClass(classname, null).newInstance();
             data=Util.objectToByteBuffer(inst);
             return data.length;
         }
@@ -1174,6 +1171,50 @@ public class Util {
             }
             catch(Throwable t) {
             }
+        }
+
+        try {
+            loader=ClassLoader.getSystemClassLoader();
+            if(loader != null) {
+                return loader.loadClass(classname);
+            }
+        }
+        catch(Throwable t) {
+        }
+
+        return null;
+    }
+
+
+    public static InputStream getResourceAsStream(String name, Class clazz) {
+        ClassLoader loader;
+
+        try {
+            loader=Thread.currentThread().getContextClassLoader();
+            if(loader != null) {
+                return loader.getResourceAsStream(name);
+            }
+        }
+        catch(Throwable t) {
+        }
+
+        if(clazz != null) {
+            try {
+                loader=clazz.getClassLoader();
+                if(loader != null) {
+                    return loader.getResourceAsStream(name);
+                }
+            }
+            catch(Throwable t) {
+            }
+        }
+        try {
+            loader=ClassLoader.getSystemClassLoader();
+            if(loader != null) {
+                return loader.getResourceAsStream(name);
+            }
+        }
+        catch(Throwable t) {
         }
 
         return null;

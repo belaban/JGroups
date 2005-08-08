@@ -1,19 +1,16 @@
 package org.jgroups.util;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 import java.io.IOException;
-import java.io.ObjectStreamClass;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
+import java.io.ObjectStreamClass;
 import java.util.HashMap;
 
 /**
  * ObjectInputStream which sets a contact classloader for reading bytes into objects. Copied from
  * MarshalledValueInputStream of JBoss
  * @author Bela Ban
- * @version $Id: ContextObjectInputStream.java,v 1.4 2004/09/24 09:00:30 belaban Exp $
+ * @version $Id: ContextObjectInputStream.java,v 1.5 2005/08/08 14:58:35 belaban Exp $
  */
 public class ContextObjectInputStream extends ObjectInputStream {
 
@@ -55,16 +52,13 @@ public class ContextObjectInputStream extends ObjectInputStream {
         }
 
         if(resolvedClass == null) {
-            ClassLoader loader=Thread.currentThread().getContextClassLoader();
-            try {
-                resolvedClass=loader.loadClass(className);
-            }
-            catch(ClassNotFoundException e) {
+            resolvedClass=Util.loadClass(className, this.getClass());
+            if(resolvedClass == null) {
                 /* This is a backport von JDK 1.4's java.io.ObjectInputstream to support
-                 * retrieval of primitive classes (e.g. Boolean.TYPE) in JDK 1.3.
-                 * This is required for org.jgroups.blocks.MethodCall to support primitive
-                 * Argument types in JDK1.3:
-                 */
+                * retrieval of primitive classes (e.g. Boolean.TYPE) in JDK 1.3.
+                * This is required for org.jgroups.blocks.MethodCall to support primitive
+                * Argument types in JDK1.3:
+                */
                 resolvedClass = (Class) primClasses.get(className);
                 if (resolvedClass == null) {
                     

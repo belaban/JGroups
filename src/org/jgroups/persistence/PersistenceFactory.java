@@ -10,6 +10,7 @@ package org.jgroups.persistence;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jgroups.util.Util;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -128,7 +129,7 @@ public class PersistenceFactory
                 String classname=props.getProperty(filePersistMgr);
                 if(classname != null)
                 {
-                    Class cl=Thread.currentThread().getContextClassLoader().loadClass(classname);
+                    Class cl=Util.loadClass(classname, this.getClass());
                     Constructor ctor=cl.getConstructor(new Class[]{String.class});
                     _manager=(PersistenceManager)ctor.newInstance(new Object[]{filePath});
                 }

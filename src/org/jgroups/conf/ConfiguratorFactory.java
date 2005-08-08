@@ -1,4 +1,4 @@
-// $Id: ConfiguratorFactory.java,v 1.16 2005/07/17 11:36:41 chrislott Exp $
+// $Id: ConfiguratorFactory.java,v 1.17 2005/08/08 14:58:32 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -8,6 +8,7 @@ import org.apache.commons.logging.LogFactory;
 
 import org.jgroups.ChannelException;
 import org.jgroups.JChannel;
+import org.jgroups.util.Util;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -262,8 +263,7 @@ public class ConfiguratorFactory {
             // another try - maybe it is a resource, e.g. default.xml
             if(input == null && ((String)properties).endsWith("xml")) {
                 try {
-                    ClassLoader classLoader=Thread.currentThread().getContextClassLoader();
-                    input=classLoader.getResourceAsStream((String)properties);
+                    input=Util.getResourceAsStream((String)properties, ConfiguratorFactory.class);
                 }
                 catch(Throwable ignore) {
                 }
@@ -337,8 +337,7 @@ public class ConfiguratorFactory {
         // Check to see if the properties string is the name of a resource,
         // e.g. default.xml.
         if(configStream == null && properties.endsWith("xml")) {
-            ClassLoader classLoader=Thread.currentThread().getContextClassLoader();
-            configStream=classLoader.getResourceAsStream(properties);
+            configStream=Util.getResourceAsStream(properties, ConfiguratorFactory.class);
         }
 
         // Check to see if the properties string is the name of a file.

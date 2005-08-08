@@ -1,6 +1,6 @@
 
 
-//$Id: ENCRYPT.java,v 1.10 2005/08/08 12:45:42 belaban Exp $
+//$Id: ENCRYPT.java,v 1.11 2005/08/08 14:58:34 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -11,6 +11,7 @@ import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.QueueClosedException;
+import org.jgroups.util.Util;
 
 import javax.crypto.*;
 import javax.crypto.spec.SecretKeySpec;
@@ -429,8 +430,7 @@ final Map keyMap = new WeakHashMap();
 		try
 		{
 			// load in keystore using this thread's classloader
-			inputStream = Thread.currentThread().getContextClassLoader()
-					.getResourceAsStream(keyStoreName);
+			inputStream = Util.getResourceAsStream(keyStoreName, this.getClass());
 			// we can't find a keystore here - 
 			if (inputStream == null)
 			{

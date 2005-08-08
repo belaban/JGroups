@@ -1,6 +1,8 @@
-// $Id: ClassMap.java,v 1.3 2005/04/23 12:44:05 belaban Exp $
+// $Id: ClassMap.java,v 1.4 2005/08/08 14:58:32 belaban Exp $
 
 package org.jgroups.conf;
+
+import org.jgroups.util.Util;
 
 
 /**
@@ -50,7 +52,7 @@ public class ClassMap {
      * Returns the Class object for this class<BR>
      */
     public Class getClassForMap() throws ClassNotFoundException {
-        return Thread.currentThread().getContextClassLoader().loadClass(getClassName());
+        return Util.loadClass(getClassName(), this.getClass());
     }
 
 
