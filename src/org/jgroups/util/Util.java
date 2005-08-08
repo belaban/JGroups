@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.53 2005/08/08 14:58:35 belaban Exp $
+// $Id: Util.java,v 1.54 2005/08/08 15:05:58 belaban Exp $
 
 package org.jgroups.util;
 
@@ -1150,7 +1150,7 @@ public class Util {
      * 				if no context class loader is available.
      * @return Class, or null on failure.
      */
-    public static Class loadClass(String classname, Class clazz) {
+    public static Class loadClass(String classname, Class clazz) throws ClassNotFoundException {
         ClassLoader loader;
 
         try {
@@ -1182,7 +1182,7 @@ public class Util {
         catch(Throwable t) {
         }
 
-        return null;
+        throw new ClassNotFoundException(classname);
     }
 
 

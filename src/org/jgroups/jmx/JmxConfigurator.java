@@ -10,7 +10,7 @@ import java.util.Vector;
 
 /**
  * @author Bela Ban
- * @version $Id: JmxConfigurator.java,v 1.3 2005/07/17 11:36:42 chrislott Exp $
+ * @version $Id: JmxConfigurator.java,v 1.4 2005/08/08 15:05:57 belaban Exp $
  */
 public class JmxConfigurator {
     static final Log log=LogFactory.getLog(JmxConfigurator.class);
@@ -78,7 +78,7 @@ public class JmxConfigurator {
     }
 
 
-    protected static Protocol findProtocol(org.jgroups.stack.Protocol prot) throws IllegalAccessException, InstantiationException {
+    protected static Protocol findProtocol(org.jgroups.stack.Protocol prot) throws IllegalAccessException, InstantiationException, ClassNotFoundException {
         Protocol p;
         String prot_name=prot.getClass().getName();
         String clname=prot_name.replaceFirst("org.jgroups.", "org.jgroups.jmx.");
