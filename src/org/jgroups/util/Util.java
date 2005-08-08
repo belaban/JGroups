@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.47 2005/07/17 11:33:58 chrislott Exp $
+// $Id: Util.java,v 1.48 2005/08/08 08:38:22 belaban Exp $
 
 package org.jgroups.util;
 
@@ -1145,38 +1145,38 @@ public class Util {
     }
 
 
+
     /**
-     * Tries to load a class from the thread's context classloader first, then from an object's
-     * classloader (if not null).
-     * @param clname
-     * @param clazz
-     * @return The loaded class, or null if class could not be loaded.
+     * Tries to load the class from the current thread's context class loader. If
+     * not successful, tries to load the class from the current instance
+     * @param classname
+     * @param cl
+     * @return
      */
-    public static Class loadClass(String clname, Class clazz) {
+    public static Class loadClass(String classname, Class clazz) {
         Class cl=null;
-        ClassLoader loader;
+        ClassLoader loader=null;
+
         try {
             loader=Thread.currentThread().getContextClassLoader();
+            if(loader != null) {
+                return loader.loadClass(classname);
+            }
         }
         catch(Throwable t) {
-            loader=null;
         }
-        if(loader != null) {
+
+        if(clazz != null) {
             try {
-                return loader.loadClass(clname);
+                loader=clazz.getClassLoader();
+                if(loader != null) {
+                    return loader.loadClass(classname);
+                }
             }
-            catch(ClassNotFoundException e) {
-                loader=null;
-            }
-        }
-        loader=clazz != null? clazz.getClassLoader() : null;
-        if(loader != null) {
-            try {
-                return loader.loadClass(clname);
-            }
-            catch(ClassNotFoundException e) {
+            catch(Throwable t) {
             }
         }
+
         return cl;
     }
 
@@ -1436,6 +1436,8 @@ public class Util {
         sb.append("\nTotal mem: ").append(total_mem);
         return sb.toString();
     }
+
+
 
 
     /*
