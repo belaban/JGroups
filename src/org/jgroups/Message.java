@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.38 2005/07/25 16:39:48 belaban Exp $
+// $Id: Message.java,v 1.39 2005/08/08 09:43:50 belaban Exp $
 
 package org.jgroups;
 
@@ -332,7 +332,7 @@ public class Message implements Externalizable, Streamable {
 
         int size;
         if(headers != null && (size=headers.size()) > 0)
-            ret.append(" (" + size + " headers)");
+            ret.append(" (").append(size).append(" headers)");
 
         ret.append(", size = ");
         if(buf != null && length > 0)

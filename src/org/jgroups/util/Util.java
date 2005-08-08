@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.49 2005/08/08 09:36:45 belaban Exp $
+// $Id: Util.java,v 1.50 2005/08/08 09:42:45 belaban Exp $
 
 package org.jgroups.util;
 
@@ -739,7 +739,7 @@ public class Util {
         Thread.enumerate(threads);
         sb.append("------- Threads -------\n");
         for(int i=0; i < threads.length; i++) {
-            sb.append("#" + i + ": " + threads[i] + '\n');
+            sb.append("#").append(i).append(": ").append(threads[i]).append('\n');
         }
         sb.append("------- Threads -------\n");
         return sb.toString();
@@ -752,9 +752,8 @@ public class Util {
      of 248 bytes each and 1 fragment of 32 bytes.
      @return An array of byte buffers (<code>byte[]</code>).
      */
-    public static byte[][] fragmentBuffer(byte[] buf, int frag_size, int length) {
+    public static byte[][] fragmentBuffer(byte[] buf, int frag_size, final int length) {
         byte[] retval[];
-        long total_size=length;
         int accumulated_size=0;
         byte[] fragment;
         int tmp_size=0;
@@ -764,11 +763,11 @@ public class Util {
         num_frags=length % frag_size == 0 ? length / frag_size : length / frag_size + 1;
         retval=new byte[num_frags][];
 
-        while(accumulated_size < total_size) {
-            if(accumulated_size + frag_size <= total_size)
+        while(accumulated_size < length) {
+            if(accumulated_size + frag_size <= length)
                 tmp_size=frag_size;
             else
-                tmp_size=(int)(total_size - accumulated_size);
+                tmp_size=length - accumulated_size;
             fragment=new byte[tmp_size];
             System.arraycopy(buf, accumulated_size, fragment, 0, tmp_size);
             retval[index++]=fragment;
@@ -915,7 +914,7 @@ public class Util {
 
         if(array != null) {
             for(int i=0; i < array.length; i++)
-                ret.append(array[i] + " ");
+                ret.append(array[i]).append(" ");
         }
 
         ret.append(']');
@@ -927,7 +926,7 @@ public class Util {
 
         if(array != null) {
             for(int i=0; i < array.length; i++)
-                ret.append(array[i] + " ");
+                ret.append(array[i]).append(" ");
         }
 
         ret.append(']');
@@ -939,7 +938,7 @@ public class Util {
 
         if(array != null) {
             for(int i=0; i < array.length; i++)
-                ret.append(array[i] + " ");
+                ret.append(array[i]).append(" ");
         }
         ret.append(']');
         return ret.toString();
@@ -1344,7 +1343,6 @@ public class Util {
                     }
                     catch(BindException bind_ex) { // port already used
                         port++;
-                        continue;
                     }
                     catch(Exception ex) {
                         throw ex;
@@ -1360,7 +1358,6 @@ public class Util {
                 }
                 catch(BindException bind_ex) { // port already used
                     port++;
-                    continue;
                 }
                 catch(Exception ex) {
                     throw ex;
