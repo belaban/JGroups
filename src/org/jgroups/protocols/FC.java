@@ -1,17 +1,16 @@
-// $Id: FC.java,v 1.36 2005/07/29 14:21:55 belaban Exp $
+// $Id: FC.java,v 1.37 2005/08/08 09:36:45 belaban Exp $
 
 package org.jgroups.protocols;
 
+import EDU.oswego.cs.dl.util.concurrent.ConcurrentReaderHashMap;
 import org.jgroups.*;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.BoundedList;
 import org.jgroups.util.CondVar;
 import org.jgroups.util.Streamable;
-import org.jgroups.util.BoundedList;
 
 import java.io.*;
 import java.util.*;
-
-import EDU.oswego.cs.dl.util.concurrent.ConcurrentReaderHashMap;
 
 /**
  * Simple flow control protocol based on a credit system. Each sender has a number of credits (bytes
@@ -22,7 +21,7 @@ import EDU.oswego.cs.dl.util.concurrent.ConcurrentReaderHashMap;
  * Note that this protocol must be located towards the top of the stack, or all down_threads from JChannel to this
  * protocol must be set to false ! This is in order to block JChannel.send()/JChannel.down().
  * @author Bela Ban
- * @version $Revision: 1.36 $
+ * @version $Revision: 1.37 $
  */
 public class FC extends Protocol {
 
@@ -49,13 +48,13 @@ public class FC extends Protocol {
 
     /** Max number of bytes to send per receiver until an ack must
      * be received before continuing sending */
-    long max_credits=50000;
+    private long max_credits=50000;
 
     /** Max time (in milliseconds) to block. If credit hasn't been received after max_block_time, we send
      * a REPLENISHMENT request to the members from which we expect credits. A value <= 0 means to
      * wait forever.
      */
-    long max_block_time=5000;
+    private long max_block_time=5000;
 
     /** If credits fall below this limit, we send more credits to the sender. (We also send when
      * credits are exhausted (0 credits left)) */
@@ -63,17 +62,17 @@ public class FC extends Protocol {
 
     /** Computed as <tt>max_credits</tt> times <tt>min_theshold</tt>. If explicitly set, this will
      * override the above computation */
-    long min_credits=0;
+    private long min_credits=0;
 
     /** Current blocking. True if blocking, else false */
-    CondVar blocking=new CondVar("blocking", Boolean.FALSE);
+    private final CondVar blocking=new CondVar("blocking", Boolean.FALSE);
 
     static final String name="FC";
 
-    long start_blocking=0, stop_blocking=0;
+    private long start_blocking=0, stop_blocking=0;
 
-    int num_blockings=0, num_replenishments=0, num_credit_requests=0;
-    long total_time_blocking=0;
+    private int num_blockings=0, num_replenishments=0, num_credit_requests=0;
+    private long total_time_blocking=0;
 
     final BoundedList last_blockings=new BoundedList(50);
 
@@ -162,9 +161,9 @@ public class FC extends Protocol {
             retval=new HashMap();
         retval.put("senders", printMap(sent));
         retval.put("receivers", printMap(received));
-        retval.put("num_blockings", new Integer(getNumberOfBlockings()));
+        retval.put("num_blockings", new Integer(this.num_blockings));
         retval.put("avg_time_blocked", new Double(getAverageTimeBlocked()));
-        retval.put("num_replenishments", new Integer(getNumberOfReplenishmentsReceived()));
+        retval.put("num_replenishments", new Integer(this.num_replenishments));
         return retval;
     }
 
@@ -241,7 +240,7 @@ public class FC extends Protocol {
         super.receiveDownEvent(evt);
     }
 
-    public void down(final Event evt) {
+    public void down(Event evt) {
         switch(evt.getType()) {
         case Event.VIEW_CHANGE:
             // this has to be run in a separate thread because waitUntilEnoughCreditsAvailable() might block,
@@ -529,7 +528,7 @@ public class FC extends Protocol {
         creditors.remove(mbr);
     }
 
-    private Long getCredits(Map map, Address mbr) {
+    private static Long getCredits(Map map, Address mbr) {
         return (Long)map.get(mbr);
     }
 
@@ -626,7 +625,7 @@ public class FC extends Protocol {
             unblockSender();
     }
 
-    private String printMap(Map m) {
+    private static String printMap(Map m) {
         Map.Entry entry;
         StringBuffer sb=new StringBuffer();
         for(Iterator it=m.entrySet().iterator(); it.hasNext();) {
