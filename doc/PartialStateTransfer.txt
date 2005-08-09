@@ -1,5 +1,5 @@
 
-// Version: $Id: PartialStateTransfer.txt,v 1.1 2005/08/09 11:05:24 belaban Exp $
+// Version: $Id: PartialStateTransfer.txt,v 1.2 2005/08/09 11:13:19 belaban Exp $
 // Author: Bela Ban
 
 Partial state transfer
@@ -48,3 +48,16 @@ Solution:
 We cannot use pbcast.STATE_TRANSFER, but have to use a stop-the-world model: when a state is requested, everybody
 stops sending messages (similar to vsync), the (partial) state is transferred, and then everybody continues
 sending messages. This requires (a) a new state transfer protocol and (b) a flush protocol.
+
+The new state transfer protocol sends down a FLUSH event (at the coordinator) before returning the state.
+
+The flush protocol stops everyone from sending and makes sure everyone has the same set of messages before returning.
+On successful state transfer, everyone is allowed to send again.
+
+The FLUSH protocol could be reused for view changes as well (as in vsync).
+
+The connect() method could also be extended to optionally return the state, e.g.
+
+connect(String groupName, boolean fetchState, Object optionalStateId);
+
+This way, we would have to run the FLUSH protocol only one: for the view change *and* the state transfer.
