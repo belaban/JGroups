@@ -1,4 +1,4 @@
-// $Id: FC.java,v 1.37 2005/08/08 09:36:45 belaban Exp $
+// $Id: FC.java,v 1.38 2005/08/10 13:15:40 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -21,7 +21,7 @@ import java.util.*;
  * Note that this protocol must be located towards the top of the stack, or all down_threads from JChannel to this
  * protocol must be set to false ! This is in order to block JChannel.send()/JChannel.down().
  * @author Bela Ban
- * @version $Revision: 1.37 $
+ * @version $Revision: 1.38 $
  */
 public class FC extends Protocol {
 
@@ -325,6 +325,7 @@ public class FC extends Protocol {
                         Address sender=msg.getSrc();
                         if(log.isTraceEnabled())
                             log.trace("received credit request from " + sender + ": sending credits");
+                        received.put(sender, new Long(max_credits));
                         sendCredit(sender);
                         break;
                     default:
@@ -407,7 +408,7 @@ public class FC extends Protocol {
         passDown(new Event(Event.MSG, msg));
     }
 
-    private void sendCreditRequest(Address dest) {
+    private void sendCreditRequest(final Address dest) {
         Message  msg=new Message(dest, null, null);
         msg.putHeader(name, CREDIT_REQUEST_HDR);
         passDown(new Event(Event.MSG, msg));
