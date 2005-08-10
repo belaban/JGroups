@@ -40,7 +40,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.18 2005/08/10 09:22:33 belaban Exp $
+ * @version $Id: TP.java,v 1.19 2005/08/10 23:23:20 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -264,7 +264,7 @@ public abstract class TP extends Protocol {
                 timer=stack != null? stack.timer : null;
                 if(timer == null)
                     throw new Exception("timer could not be retrieved");
-                outgoing_packet_handler=new BundlingOutgoingPacketHandler();
+                outgoing_packet_handler=new BundlingOutgoingPacketHandler2();
             }
             else
                 outgoing_packet_handler=new OutgoingPacketHandler();
@@ -1043,6 +1043,7 @@ public abstract class TP extends Protocol {
      */
     class BundlingOutgoingPacketHandler extends OutgoingPacketHandler {
         long                total_bytes=0;
+        int                 num_msgs=0;
         /** HashMap<Address, List<Message>>. Keys are destinations, values are lists of Messages */
         final HashMap       msgs=new HashMap(11);
 
@@ -1145,6 +1146,7 @@ public abstract class TP extends Protocol {
                     msgs.put(dst, tmp);
                 }
                 tmp.add(msg);
+                num_msgs++;
             }
         }
 
@@ -1164,7 +1166,7 @@ public abstract class TP extends Protocol {
                     start_time=System.currentTimeMillis();
 
                 if(trace) {
-                    StringBuffer sb=new StringBuffer("sending ").append(numMsgs(msgs)).append(" msgs (");
+                    StringBuffer sb=new StringBuffer("sending ").append(num_msgs).append(" msgs (");
                     sb.append(total_bytes).append(" bytes, ").append(stop_time-start_time).append("ms)");
                     sb.append(" to ").append(msgs.size()).append(" destination(s)");
                     if(msgs.size() > 1) sb.append(" (dests=").append(msgs.keySet()).append(")");
@@ -1187,18 +1189,141 @@ public abstract class TP extends Protocol {
                     }
                 }
                 msgs.clear();
+                num_msgs=0;
+            }
+        }
+    }
+
+
+    class BundlingOutgoingPacketHandler2 extends OutgoingPacketHandler {
+        long                count=0;    // current number of bytes accumulated
+        int                 num_msgs=0;
+        /** HashMap<Address, List<Message>>. Keys are destinations, values are lists of Messages */
+        final HashMap       msgs=new HashMap(11);
+
+        long                start=0;
+        long                wait_time=0; // wait for removing messages from the queue
+
+
+
+        private void init() {
+            wait_time=start=count=0;
+        }
+
+        void start() {
+            init();
+            super.start();
+            t.setName("TP.BundlingOutgoingPacketHandler thread");
+        }
+
+
+        public void run() {
+            Message msg;
+            long    length;
+            while(outgoing_queue != null) {
+                try {
+                    msg=(Message)outgoing_queue.remove(wait_time);
+                    length=msg.size();
+                    // length=msg.getLength() + 200;
+                    checkLength(length);
+                    if(start == 0)
+                        start=System.currentTimeMillis();
+
+                    if(length + count >= max_bundle_size) {
+                        bundleAndSend();
+                        count=0;
+                        start=System.currentTimeMillis();
+                    }
+
+                    addMessage(msg);
+
+                    count+=length;
+
+                    wait_time=max_bundle_timeout - (System.currentTimeMillis() - start);
+                    if(wait_time <= 0) {
+                        bundleAndSend();
+                        init();
+                    }
+
+                }
+                catch(QueueClosedException e) {
+                    break;
+                }
+                catch(TimeoutException e) {
+                    bundleAndSend();
+                    init();
+                }
+                catch(Throwable ex) {
+                    log.error("failure in bundling", ex);
+                }
+            }
+            if(trace) log.trace("packet_handler thread terminating");
+        }
+
+
+
+
+        private void checkLength(long len) throws Exception {
+            if(len > max_bundle_size)
+                throw new Exception("TP.BundlingOutgoingPacketHandler.handleMessage(): message size (" + len +
+                                    ") is greater than max bundling size (" + max_bundle_size + "). " +
+                                    "Set the fragmentation/bundle size in FRAG and TP correctly");
+        }
+
+
+        private void addMessage(Message msg) {
+            List    tmp;
+            Address dst=msg.getDest();
+            synchronized(msgs) {
+                tmp=(List)msgs.get(dst);
+                if(tmp == null) {
+                    tmp=new List();
+                    msgs.put(dst, tmp);
+                }
+                tmp.add(msg);
+                num_msgs++;
             }
         }
 
-        private int numMsgs(HashMap map) {
-            Collection values=map.values();
-            List l;
-            int size=0;
-            for(Iterator it=values.iterator(); it.hasNext();) {
-                l=(List)it.next();
-                size+=l.size();
+
+
+        private void bundleAndSend() {
+            Map.Entry      entry;
+            Address        dst;
+            Buffer         buffer;
+            List           l;
+            long           stop_time=System.currentTimeMillis();
+
+            synchronized(msgs) {
+                if(msgs.size() == 0)
+                    return;
+
+                if(trace) {
+                    StringBuffer sb=new StringBuffer("sending ").append(num_msgs).append(" msgs (");
+                    sb.append(count).append(" bytes, ").append(stop_time-start).append("ms)");
+                    sb.append(" to ").append(msgs.size()).append(" destination(s)");
+                    if(msgs.size() > 1) sb.append(" (dests=").append(msgs.keySet()).append(")");
+                    log.trace(sb.toString());
+                }
+                for(Iterator it=msgs.entrySet().iterator(); it.hasNext();) {
+                    entry=(Map.Entry)it.next();
+                    dst=(Address)entry.getKey();
+                    l=(List)entry.getValue();
+                    try {
+                        if(l.size() > 0) {
+                            synchronized(out_stream) {
+                                buffer=listToBuffer(l, dst);
+                                doSend(buffer, dst);
+                            }
+                        }
+                    }
+                    catch(Exception e) {
+                        if(log.isErrorEnabled()) log.error("exception sending msg", e);
+                    }
+                }
+                msgs.clear();
+                num_msgs=0;
             }
-            return size;
         }
     }
 
