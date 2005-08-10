@@ -185,7 +185,7 @@ public class Test implements Receiver {
 
     public void receive(Object sender, byte[] payload) {
         if(payload == null || payload.length == 0) {
-            System.err.println("payload is incorrect");
+            System.err.println("payload is incorrect: " + payload);
             return;
         }
 
