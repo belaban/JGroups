@@ -4,7 +4,7 @@
 Message bundling
 ================
 
-// Version: $Id: Bundling.txt,v 1.1 2005/08/10 22:02:57 belaban Exp $
+// Version: $Id: Bundling.txt,v 1.2 2005/08/10 23:18:42 belaban Exp $
 // Author: Bela Ban
 
 Init:
@@ -29,7 +29,7 @@ On Message:
 - add message
 - set count = count + msg.length
 
-- compute new wait_time: max_bundle_time - current time - start
+- compute new wait_time: max_bundle_time - (current time - start)
 - if wait_time <= 0:
   - send all messages
   - Init()
