@@ -1,4 +1,4 @@
-// $Id: Protocol.java,v 1.30 2005/07/26 11:15:21 belaban Exp $
+// $Id: Protocol.java,v 1.31 2005/08/10 09:20:58 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -8,11 +8,10 @@ import org.apache.commons.logging.LogFactory;
 import org.jgroups.Event;
 import org.jgroups.util.Queue;
 import org.jgroups.util.QueueClosedException;
-import org.jgroups.util.Util;
 
+import java.util.Map;
 import java.util.Properties;
 import java.util.Vector;
-import java.util.Map;
 
 
 
@@ -64,7 +63,6 @@ class UpHandler extends Thread {
             }
             catch(Throwable e) {
                 if(log.isWarnEnabled()) log.warn(getName() + " exception: " + e);
-                e.printStackTrace();
             }
         }
     }
@@ -126,7 +124,6 @@ class DownHandler extends Thread {
             }
             catch(Throwable e) {
                 if(log.isWarnEnabled()) log.warn(getName() + " exception is " + e);
-                e.printStackTrace();
             }
         }
     }
@@ -171,6 +168,8 @@ public abstract class Protocol {
     protected boolean          up_thread=true;    // determines whether the up_handler thread should be started
     protected boolean          stats=true;  // determines whether to collect statistics (and expose them via JMX)
     protected final Log        log=LogFactory.getLog(this.getClass());
+    protected final boolean    trace=log.isTraceEnabled();
+    protected final boolean    warn=log.isWarnEnabled();
 
 
     /**
@@ -380,7 +379,7 @@ public abstract class Protocol {
                     }
                     catch(Throwable t) {
                         if(log.isErrorEnabled()) log.error("priority " + up_thread_prio +
-                                    " could not be set for thread: " + Util.getStackTrace(t));
+                                " could not be set for thread", t);
                     }
                 }
                 up_handler.start();
@@ -401,7 +400,7 @@ public abstract class Protocol {
                     }
                     catch(Throwable t) {
                         if(log.isErrorEnabled()) log.error("priority " + down_thread_prio +
-                                    " could not be set for thread: " + Util.getStackTrace(t));
+                                " could not be set for thread", t);
                     }
                 }
                 down_handler.start();
@@ -520,12 +519,7 @@ public abstract class Protocol {
                 return;
             }
         }
-
-        if(up_prot != null) {
-            up_prot.receiveUpEvent(evt);
-        }
-        else
-            if(log.isErrorEnabled()) log.error("no upper layer available");
+        up_prot.receiveUpEvent(evt);
     }
 
     /**
@@ -538,12 +532,7 @@ public abstract class Protocol {
                 return;
             }
         }
-
-        if(down_prot != null) {
-            down_prot.receiveDownEvent(evt);
-        }
-        else
-            if(log.isErrorEnabled()) log.error("no lower layer available");
+        down_prot.receiveDownEvent(evt);
     }
 
 
