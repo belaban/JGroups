@@ -1,4 +1,4 @@
-// $Id: MessageSerializationTest.java,v 1.9 2005/04/13 13:04:11 belaban Exp $
+// $Id: MessageSerializationTest.java,v 1.10 2005/08/10 11:31:03 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -62,7 +62,7 @@ public class MessageSerializationTest {
         ClassConfigurator.getInstance(true);
         long start=System.currentTimeMillis();
         for(int i=0; i < num; i++) {
-            Message m=new Message(new IpAddress(addr, 5555), new IpAddress(addr, 6666), new byte[256]);
+            Message m=new Message(new IpAddress(addr, 5555), new IpAddress(addr, 6666), new byte[1000]);
             if(add_headers)
                 addHeaders(m);
 
