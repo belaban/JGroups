@@ -40,7 +40,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.17 2005/08/08 12:45:44 belaban Exp $
+ * @version $Id: TP.java,v 1.18 2005/08/10 09:22:33 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -148,7 +148,6 @@ public abstract class TP extends Protocol {
 
 
     long num_msgs_sent=0, num_msgs_received=0, num_bytes_sent=0, num_bytes_received=0;
-
 
 
     /**
@@ -373,7 +372,7 @@ public abstract class TP extends Protocol {
         if(str != null) {
             use_incoming_packet_handler=Boolean.valueOf(str).booleanValue();
             props.remove("use_packet_handler");
-            if(log.isWarnEnabled()) log.warn("'use_packet_handler' is deprecated; use 'use_incoming_packet_handler' instead");
+            if(warn) log.warn("'use_packet_handler' is deprecated; use 'use_incoming_packet_handler' instead");
         }
 
         str=props.getProperty("use_incoming_packet_handler");
@@ -428,7 +427,7 @@ public abstract class TP extends Protocol {
 
         if(enable_bundling) {
             if(use_outgoing_packet_handler == false)
-                if(log.isWarnEnabled()) log.warn("enable_bundling is true; setting use_outgoing_packet_handler=true");
+                if(warn) log.warn("enable_bundling is true; setting use_outgoing_packet_handler=true");
             use_outgoing_packet_handler=true;
         }
 
@@ -484,17 +483,29 @@ public abstract class TP extends Protocol {
             msg.putHeader(name, header);
         }
 
+
+
         // Because we don't call Protocol.passDown(), we notify the observer directly (e.g. PerfObserver).
         // This way, we still have performance numbers for TP
         if(observer != null)
             observer.passDown(evt);
 
         setSourceAddress(msg);
-        if(log.isTraceEnabled()) {
+        if(trace) {
             StringBuffer sb=new StringBuffer("sending msg to ").append(msg.getDest()).
                     append(" (src=").append(msg.getSrc()).append("), headers are ").append(msg.getHeaders());
             log.trace(sb.toString());
         }
+
+
+//        boolean loopback=true;
+//        if(loopback) {
+//            if(msg.getSrc() == null)
+//                msg.setSrc(local_addr);
+//            Message rsp=msg.copy();
+//            passUp(new Event(Event.MSG, rsp));
+//            return;
+//        }
 
         // Don't send if destination is local address. Instead, switch dst and src and put in up_queue.
         // If multicast message, loopback a copy directly to us (but still multicast). Once we receive this,
@@ -511,7 +522,7 @@ public abstract class TP extends Protocol {
                This allows e.g. PerfObserver to get the time of reception of a message */
             if(observer != null)
                 observer.up(evt, up_queue.size());
-            if(log.isTraceEnabled()) log.trace(new StringBuffer("looping back message ").append(copy));
+            if(trace) log.trace(new StringBuffer("looping back message ").append(copy));
             if(loopback_queue)
                 loopback_handler.add(evt);
             else
@@ -572,7 +583,7 @@ public abstract class TP extends Protocol {
         }
 
         boolean mcast=dest == null || dest.isMulticastAddress();
-        if(log.isTraceEnabled()){
+        if(trace){
             StringBuffer sb=new StringBuffer("received (");
             sb.append(mcast? "mcast)" : "ucast) ").append(length).append(" bytes from ").append(sender);
             log.trace(sb.toString());
@@ -612,7 +623,7 @@ public abstract class TP extends Protocol {
                 buf_in_stream.reset(length);
                 version=dis.readShort();
                 if(Version.compareTo(version) == false) {
-                    if(log.isWarnEnabled()) {
+                    if(warn) {
                         StringBuffer sb=new StringBuffer();
                         sb.append("packet from ").append(sender).append(" has different version (").append(version);
                         sb.append(") from ours (").append(Version.printVersion()).append("). ");
@@ -671,14 +682,14 @@ public abstract class TP extends Protocol {
         if(loopback) {
             Address src=msg.getSrc();
             if((dst == null || (dst.isMulticastAddress())) && src != null && local_addr.equals(src)) {
-                if(log.isTraceEnabled())
+                if(trace)
                     log.trace("discarded own loopback multicast packet");
                 return;
             }
         }
 
         evt=new Event(Event.MSG, msg);
-        if(log.isTraceEnabled()) {
+        if(trace) {
             StringBuffer sb=new StringBuffer("message is ").append(msg).append(", headers are ").append(msg.getHeaders());
             log.trace(sb);
         }
@@ -698,13 +709,13 @@ public abstract class TP extends Protocol {
             // message is a diagnosis message (special group name DIAG_GROUP)
             if(ch_name != null && channel_name != null && !channel_name.equals(ch_name) &&
                     !ch_name.equals(Util.DIAG_GROUP)) {
-                if(log.isWarnEnabled()) log.warn("discarded message from different group (" +
+                if(warn) log.warn("discarded message from different group (" +
                                                  ch_name + "). Sender was " + msg.getSrc());
                 return;
             }
         }
         else {
-            if(log.isTraceEnabled())
+            if(trace)
                 log.trace(new StringBuffer("message does not have a transport header, msg is ").append(msg).
                           append(", headers are ").append(msg.getHeaders()).append(", will be discarded"));
             return;
@@ -948,7 +959,7 @@ public abstract class TP extends Protocol {
                     handleIncomingPacket(entry.dest, entry.sender, entry.buf, entry.offset, entry.length);
                 }
                 catch(QueueClosedException closed_ex) {
-                    if(log.isTraceEnabled()) log.trace("packet_handler thread terminating");
+                    if(trace) log.trace("packet_handler thread terminating");
                     break;
                 }
 
@@ -997,7 +1008,7 @@ public abstract class TP extends Protocol {
                 }
                 msg=null; // let's give the poor garbage collector a hand...
             }
-            if(log.isTraceEnabled()) log.trace("packet_handler thread terminating");
+            if(trace) log.trace("packet_handler thread terminating");
         }
 
         protected void handleMessage(Message msg) throws Throwable {
@@ -1061,7 +1072,7 @@ public abstract class TP extends Protocol {
                 }
             }
             bundleAndSend(start);
-            if(log.isTraceEnabled()) log.trace("packet_handler thread terminating");
+            if(trace) log.trace("packet_handler thread terminating");
         }
 
 
@@ -1152,7 +1163,7 @@ public abstract class TP extends Protocol {
                 if(start_time == 0)
                     start_time=System.currentTimeMillis();
 
-                if(log.isTraceEnabled()) {
+                if(trace) {
                     StringBuffer sb=new StringBuffer("sending ").append(numMsgs(msgs)).append(" msgs (");
                     sb.append(total_bytes).append(" bytes, ").append(stop_time-start_time).append("ms)");
                     sb.append(" to ").append(msgs.size()).append(" destination(s)");
@@ -1234,7 +1245,7 @@ public abstract class TP extends Protocol {
                         log.error("failed passing up message", t);
                 }
             }
-            if(log.isTraceEnabled())
+            if(trace)
                 log.trace("LoopbackHandler thread terminated");
         }
     }
