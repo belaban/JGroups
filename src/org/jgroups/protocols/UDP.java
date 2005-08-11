@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.96 2005/08/10 23:19:19 belaban Exp $
+// $Id: UDP.java,v 1.97 2005/08/11 11:17:52 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -326,8 +326,7 @@ public class UDP extends TP implements Runnable {
     }
 
     private void _send(InetAddress dest, int port, boolean mcast, byte[] data, int offset, int length) throws Exception {
-        DatagramPacket  packet;
-        packet=new DatagramPacket(data, offset, length, dest, port);
+        DatagramPacket packet=new DatagramPacket(data, offset, length, dest, port);
         try {
             if(mcast && mcast_send_sock != null) { // mcast_recv_sock might be null if ip_mcast is false
                 mcast_send_sock.send(packet);
