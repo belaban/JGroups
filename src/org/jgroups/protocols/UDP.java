@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.97 2005/08/11 11:17:52 belaban Exp $
+// $Id: UDP.java,v 1.98 2005/08/11 12:43:47 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -271,7 +271,7 @@ public class UDP extends TP implements Runnable {
                 receive(mcast_addr, sender, data, offset, len);
             }
             catch(SocketException sock_ex) {
-                 if(log.isTraceEnabled()) log.trace("multicast socket is closed, exception=" + sock_ex);
+                 if(trace) log.trace("multicast socket is closed, exception=" + sock_ex);
                 break;
             }
             catch(InterruptedIOException io_ex) { // thread was interrupted
@@ -488,7 +488,7 @@ public class UDP extends TP implements Runnable {
                 // if(addr.isLoopbackAddress())
                 // continue;
                 s.joinGroup(tmp_mcast_addr, i);
-                if(log.isTraceEnabled())
+                if(trace)
                     log.trace("joined " + tmp_mcast_addr + " on interface " + i.getName() + " (" + addr + ")");
                 break;
             }
@@ -592,13 +592,13 @@ public class UDP extends TP implements Runnable {
                 sock.setSendBufferSize(ucast_send_buf_size);
             }
             catch(Throwable ex) {
-                if(log.isWarnEnabled()) log.warn("failed setting ucast_send_buf_size in sock: " + ex);
+                if(warn) log.warn("failed setting ucast_send_buf_size in sock: " + ex);
             }
             try {
                 sock.setReceiveBufferSize(ucast_recv_buf_size);
             }
             catch(Throwable ex) {
-                if(log.isWarnEnabled()) log.warn("failed setting ucast_recv_buf_size in sock: " + ex);
+                if(warn) log.warn("failed setting ucast_recv_buf_size in sock: " + ex);
             }
         }
 
@@ -607,14 +607,14 @@ public class UDP extends TP implements Runnable {
                 mcast_recv_sock.setSendBufferSize(mcast_send_buf_size);
             }
             catch(Throwable ex) {
-                if(log.isWarnEnabled()) log.warn("failed setting mcast_send_buf_size in mcast_recv_sock: " + ex);
+                if(warn) log.warn("failed setting mcast_send_buf_size in mcast_recv_sock: " + ex);
             }
 
             try {
                 mcast_recv_sock.setReceiveBufferSize(mcast_recv_buf_size);
             }
             catch(Throwable ex) {
-                if(log.isWarnEnabled()) log.warn("failed setting mcast_recv_buf_size in mcast_recv_sock: " + ex);
+                if(warn) log.warn("failed setting mcast_recv_buf_size in mcast_recv_sock: " + ex);
             }
         }
 
@@ -623,14 +623,14 @@ public class UDP extends TP implements Runnable {
                 mcast_send_sock.setSendBufferSize(mcast_send_buf_size);
             }
             catch(Throwable ex) {
-                if(log.isWarnEnabled()) log.warn("failed setting mcast_send_buf_size in mcast_send_sock: " + ex);
+                if(warn) log.warn("failed setting mcast_send_buf_size in mcast_send_sock: " + ex);
             }
 
             try {
                 mcast_send_sock.setReceiveBufferSize(mcast_recv_buf_size);
             }
             catch(Throwable ex) {
-                if(log.isWarnEnabled()) log.warn("failed setting mcast_recv_buf_size in mcast_send_sock: " + ex);
+                if(warn) log.warn("failed setting mcast_recv_buf_size in mcast_send_sock: " + ex);
             }
         }
 

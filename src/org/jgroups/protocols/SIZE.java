@@ -1,4 +1,4 @@
-// $Id: SIZE.java,v 1.14 2005/08/08 12:45:43 belaban Exp $
+// $Id: SIZE.java,v 1.15 2005/08/11 12:43:47 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -88,20 +88,20 @@ public class SIZE extends Protocol {
             payload_size=msg.getLength();
 
             if(raw_buffer) {
-                if(log.isTraceEnabled())
+                if(trace)
                     log.trace("size of message buffer is " + payload_size + ", " + numHeaders(msg) + " headers");
             }
             else {
                 serialized_size=sizeOf(msg);
                 if(serialized_size > min_size) {
-                    if(log.isTraceEnabled())
+                    if(trace)
                         log.trace("size of serialized message is " + serialized_size +
                                   ", " + numHeaders(msg) + " headers");
 
                 }
             }
             if(print_msg) {
-                if(log.isTraceEnabled())
+                if(trace)
                     log.trace("headers are " + msg.getHeaders() + ", payload size=" + payload_size);
             }
             break;
@@ -122,19 +122,19 @@ public class SIZE extends Protocol {
             payload_size=msg.getLength();
 
             if(raw_buffer) {
-                if(log.isTraceEnabled())
+                if(trace)
                     log.trace("size of message buffer is " + payload_size + ", " + numHeaders(msg) + " headers");
             }
             else {
                 serialized_size=sizeOf(msg);
                 if(serialized_size > min_size) {
-                    if(log.isTraceEnabled())
+                    if(trace)
                         log.trace("size of serialized message is " + serialized_size + ", " + numHeaders(msg) + " headers");
 
                 }
             }
             if(print_msg) {
-                if(log.isTraceEnabled())
+                if(trace)
                     log.trace("headers are " + msg.getHeaders() + ", payload size=" + payload_size);
             }
             break;

@@ -18,7 +18,7 @@ import java.util.zip.Inflater;
  * Compresses the payload of a message. Goal is to reduce the number of messages sent across the wire.
  * Should ideally be layered somewhere above a fragmentation protocol (e.g. FRAG).
  * @author Bela Ban
- * @version $Id: COMPRESS.java,v 1.8 2005/05/30 14:31:07 belaban Exp $
+ * @version $Id: COMPRESS.java,v 1.9 2005/08/11 12:43:47 belaban Exp $
  */
 public class COMPRESS extends Protocol {
 
@@ -92,7 +92,7 @@ public class COMPRESS extends Protocol {
                     inflater.setInput(compressed_payload, msg.getOffset(), msg.getLength());
                     try {
                         inflater.inflate(uncompressed_payload);
-                        if(log.isTraceEnabled())
+                        if(trace)
                             log.trace("uncompressed " + compressed_payload.length + " bytes to " +
                                     original_size + " bytes");
                         msg.setBuffer(uncompressed_payload);
@@ -131,7 +131,7 @@ public class COMPRESS extends Protocol {
                 System.arraycopy(compressed_payload, 0, new_payload, 0, compressed_size);
                 msg.setBuffer(new_payload);
                 msg.putHeader(name, new CompressHeader(length));
-                if(log.isTraceEnabled())
+                if(trace)
                     log.trace("compressed payload from " + length + " bytes to " + compressed_size + " bytes");
             }
         }

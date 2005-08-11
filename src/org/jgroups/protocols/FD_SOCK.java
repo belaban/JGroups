@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.28 2005/08/08 12:45:42 belaban Exp $
+// $Id: FD_SOCK.java,v 1.29 2005/08/11 12:43:47 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -190,7 +190,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                     }
                 }
                 else
-                    if(log.isWarnEnabled()) log.warn("[SUSPECT]: hdr.mbrs == null");
+                    if(warn) log.warn("[SUSPECT]: hdr.mbrs == null");
                 break;
 
                 // If I have the sock for 'hdr.mbr', return it. Otherwise look it up in my cache and return it
@@ -203,7 +203,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                     return;
                 }
 
-                if(log.isTraceEnabled()) log.trace("who-has-sock " + hdr.mbr);
+                if(trace) log.trace("who-has-sock " + hdr.mbr);
 
                 // 1. Try my own address, maybe it's me whose socket is wanted
                 if(local_addr != null && local_addr.equals(hdr.mbr) && srv_sock_addr != null) {
@@ -226,7 +226,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
                 // if(!cache.containsKey(hdr.mbr))
                 cache.put(hdr.mbr, hdr.sock_addr); // update the cache
-                if(log.isTraceEnabled()) log.trace("i-have-sock: " + hdr.mbr + " --> " +
+                if(trace) log.trace("i-have-sock: " + hdr.mbr + " --> " +
                                                    hdr.sock_addr + " (cache is " + cache + ')');
 
                 if(ping_dest != null && hdr.mbr.equals(ping_dest))
@@ -308,7 +308,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                             srv_sock_sent=true;
                         }
                         else
-                            if(log.isWarnEnabled()) log.warn("(VIEW_CHANGE): srv_sock_addr == null");
+                            if(warn) log.warn("(VIEW_CHANGE): srv_sock_addr == null");
                     }
 
                     // 3. Remove all entries in 'cache' which are not in the new membership
@@ -354,7 +354,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         IpAddress ping_addr;
         int max_fetch_tries=10;  // number of times a socket address is to be requested before giving up
 
-        if(log.isTraceEnabled()) log.trace("pinger_thread started"); // +++ remove
+        if(trace) log.trace("pinger_thread started"); // +++ remove
 
         while(pinger_thread != null) {
             tmp_ping_dest=determinePingDest(); // gets the neighbor to our right
@@ -550,7 +550,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                 result=(Hashtable) get_cache_promise.getResult(get_cache_timeout);
                 if(result != null) {
                     cache.putAll(result); // replace all entries (there should be none !) in cache with the new values
-                    if(log.isTraceEnabled()) log.trace("got cache from " + coord + ": cache is " + cache);
+                    if(trace) log.trace("got cache from " + coord + ": cache is " + cache);
                     return;
                 }
                 else {
@@ -579,7 +579,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
         if(suspected_mbr == null) return;
 
-        if(log.isTraceEnabled()) log.trace("suspecting " + suspected_mbr + " (own address is " + local_addr + ')');
+        if(trace) log.trace("suspecting " + suspected_mbr + " (own address is " + local_addr + ')');
 
         // 1. Send a SUSPECT message right away; the broadcast task will take some time to send it (sleeps first)
         hdr=new FdHeader(FdHeader.SUSPECT);
@@ -625,7 +625,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         hdr.sock_addr=addr;
         msg.putHeader(name, hdr);
 
-        if(log.isTraceEnabled()) // +++ remove
+        if(trace) // +++ remove
             log.trace("hdr=" + hdr);
 
         passDown(new Event(Event.MSG, msg));
@@ -935,11 +935,11 @@ public class FD_SOCK extends Protocol implements Runnable {
             Socket client_sock;
             while(acceptor != null && srv_sock != null) {
                 try {
-                    if(log.isTraceEnabled()) // +++ remove
+                    if(trace) // +++ remove
                         log.trace("waiting for client connections on " + srv_sock.getInetAddress() + ":" +
                                   srv_sock.getLocalPort());
                     client_sock=srv_sock.accept();
-                    if(log.isTraceEnabled()) // +++ remove
+                    if(trace) // +++ remove
                         log.trace("accepted connection from " + client_sock.getInetAddress() + ':' + client_sock.getPort());
                     ClientConnectionHandler client_conn_handler=new ClientConnectionHandler(client_sock, clients);
                     synchronized(clients) {

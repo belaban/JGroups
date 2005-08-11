@@ -1,4 +1,4 @@
-// $Id: FC.java,v 1.38 2005/08/10 13:15:40 belaban Exp $
+// $Id: FC.java,v 1.39 2005/08/11 12:43:47 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -21,7 +21,7 @@ import java.util.*;
  * Note that this protocol must be located towards the top of the stack, or all down_threads from JChannel to this
  * protocol must be set to false ! This is in order to block JChannel.send()/JChannel.down().
  * @author Bela Ban
- * @version $Revision: 1.38 $
+ * @version $Revision: 1.39 $
  */
 public class FC extends Protocol {
 
@@ -275,7 +275,7 @@ public class FC extends Protocol {
             synchronized(sent) { // 'sent' is the same lock as blocking.getLock()...
                 rc=decrMessage((Message)evt.getArg());
                 if(rc == false) {
-                    if(log.isTraceEnabled())
+                    if(trace)
                         log.trace("blocking due to insufficient credits");
                     blocking.set(Boolean.TRUE);
                     start_blocking=System.currentTimeMillis();
@@ -323,7 +323,7 @@ public class FC extends Protocol {
                     case FcHeader.CREDIT_REQUEST:
                         num_credit_requests++;
                         Address sender=msg.getSrc();
-                        if(log.isTraceEnabled())
+                        if(trace)
                             log.trace("received credit request from " + sender + ": sending credits");
                         received.put(sender, new Long(max_credits));
                         sendCredit(sender);
@@ -350,7 +350,7 @@ public class FC extends Protocol {
         boolean unblock=false;
 
 
-        if(log.isTraceEnabled()) {
+        if(trace) {
             Long old_credit=(Long)sent.get(sender);
             sb=new StringBuffer();
             sb.append("received credit from ").append(sender).append(", old credit was ").
@@ -362,7 +362,7 @@ public class FC extends Protocol {
             sent.put(sender, new Long(max_credits));
             if(creditors.size() > 0) {  // we are blocked because we expect credit from one or more members
                 removeCreditor(sender);
-                if(log.isTraceEnabled()) {
+                if(trace) {
                     sb.append("\nCreditors after removal of ").append(sender).append(" are: ").append(printCreditors());
                     log.trace(sb.toString());
                 }
@@ -395,7 +395,7 @@ public class FC extends Protocol {
 
         if(decrementCredit(received, src, size, min_credits) == false) {
             received.put(src, new Long(max_credits));
-            if(log.isTraceEnabled()) log.trace("sending replenishment message to " + src);
+            if(trace) log.trace("sending replenishment message to " + src);
             sendCredit(src);
         }
     }
@@ -430,7 +430,7 @@ public class FC extends Protocol {
             }
             catch(TimeoutException e) {
                 List tmp=new ArrayList(creditors);
-                if(log.isTraceEnabled())
+                if(trace)
                     log.trace("timeout occurred waiting for credits; sending credit request to " + tmp +
                               ", creditors are " + printCreditors());
                 Address mbr;
@@ -497,10 +497,10 @@ public class FC extends Protocol {
             total_time_blocking+=diff;
             last_blockings.add(new Long(diff));
             stop_blocking=start_blocking=0;
-            if(log.isTraceEnabled())
+            if(trace)
                 log.trace("setting blocking=false, blocking time was " + diff + "ms");
         }
-        if(log.isTraceEnabled())
+        if(trace)
             log.trace("setting blocking=false");
         blocking.set(Boolean.FALSE);
     }
@@ -561,7 +561,7 @@ public class FC extends Protocol {
             return true;
         }
         else {
-            if(log.isTraceEnabled()) {
+            if(trace) {
                 StringBuffer sb=new StringBuffer();
                 sb.append("not enough credits left for ").append(dest).append(": left=").append(new_credits_left);
                 sb.append(", required+min_credits=").append((credits_required +min_credits)).append(", required=");
@@ -577,7 +577,7 @@ public class FC extends Protocol {
         Address addr;
         if(mbrs == null) return;
 
-        if(log.isTraceEnabled()) log.trace("new membership: " + mbrs);
+        if(trace) log.trace("new membership: " + mbrs);
         members.clear();
         members.addAll(mbrs);
 
@@ -618,7 +618,7 @@ public class FC extends Protocol {
                     creditors.remove(creditor);
             }
 
-            if(log.isTraceEnabled()) log.trace("creditors are\n" + printCreditors());
+            if(trace) log.trace("creditors are\n" + printCreditors());
             if(creditors.size() == 0)
                 unblock=true;
         }

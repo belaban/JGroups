@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.8 2005/08/08 12:45:38 belaban Exp $
+// $Id: FD.java,v 1.9 2005/08/11 12:43:46 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -180,7 +180,7 @@ public class FD extends Protocol implements Runnable {
                 catch(Exception ex) {
                 }
                 if(tmp.isAlive())
-                    if(log.isWarnEnabled()) log.warn("interrupted checker thread is still alive !");
+                    if(warn) log.warn("interrupted checker thread is still alive !");
             }
             checker=null;
         }

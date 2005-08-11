@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.25 2005/08/08 12:45:37 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.26 2005/08/11 12:43:46 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -27,7 +27,6 @@ public class CoordGmsImpl extends GmsImpl {
     private Address          merge_leader=null;
 
     private MergeCanceller   merge_canceller=null;
-
 
 
     public CoordGmsImpl(GMS g) {
@@ -98,12 +97,12 @@ public class CoordGmsImpl extends GmsImpl {
         Membership tmp;
 
         if(merging) {
-            if(log.isWarnEnabled()) log.warn("merge already in progress, discarded MERGE event");
+            if(warn) log.warn("merge already in progress, discarded MERGE event");
             return;
         }
         merge_leader=null;
         if(other_coords == null) {
-            if(log.isWarnEnabled()) log.warn("list of other coordinators is null. Will not start merge.");
+            if(warn) log.warn("list of other coordinators is null. Will not start merge.");
             return;
         }
 
@@ -119,13 +118,13 @@ public class CoordGmsImpl extends GmsImpl {
         merge_leader=(Address)tmp.elementAt(0);
         if(log.isDebugEnabled()) log.debug("coordinators in merge protocol are: " + tmp);
         if(merge_leader.equals(gms.local_addr) || gms.merge_leader) {
-            if(log.isTraceEnabled())
+            if(trace)
                 log.trace("I (" + gms.local_addr + ", merge_leader=" + gms.merge_leader +
                           ") will be the leader. Starting the merge task");
             startMergeTask(other_coords);
         }
         else {
-            if(log.isTraceEnabled()) log.trace("I (" + gms.local_addr + ") am not the merge leader (" +
+            if(trace) log.trace("I (" + gms.local_addr + ") am not the merge leader (" +
                                                merge_leader + "), waiting for merge leader to initiate merge");
         }
     }
@@ -305,7 +304,7 @@ public class CoordGmsImpl extends GmsImpl {
         // contains either leaving mbrs or suspected mbrs
         if(log.isDebugEnabled()) log.debug("mbr=" + mbr);
         if(!gms.members.contains(mbr)) {
-            if(log.isTraceEnabled()) log.trace("mbr " + mbr + " is not a member !");
+            if(trace) log.trace("mbr " + mbr + " is not a member !");
             return;
         }
 
@@ -356,7 +355,7 @@ public class CoordGmsImpl extends GmsImpl {
 
     public void handleSuspect(Address mbr) {
         if(mbr.equals(gms.local_addr)) {
-            if(log.isWarnEnabled()) log.warn("I am the coord and I'm being am suspected -- will probably leave shortly");
+            if(warn) log.warn("I am the coord and I'm being am suspected -- will probably leave shortly");
             return;
         }
         handleLeave(mbr, true); // irregular leave - forced
@@ -679,7 +678,7 @@ public class CoordGmsImpl extends GmsImpl {
             MergeData combined_merge_data;
 
             if(merging == true) {
-                if(log.isWarnEnabled()) log.warn("merge is already in progress, terminating");
+                if(warn) log.warn("merge is already in progress, terminating");
                 return;
             }
 
@@ -697,7 +696,7 @@ public class CoordGmsImpl extends GmsImpl {
                 removeRejectedMergeRequests(coords);
 
                 if(merge_rsps.size() <= 1) {
-                    if(log.isWarnEnabled())
+                    if(warn)
                         log.warn("merge responses from subgroup coordinators <= 1 (" + merge_rsps + "). Cancelling merge");
                     sendMergeCancelledMessage(coords, merge_id);
                     return;
@@ -752,13 +751,13 @@ public class CoordGmsImpl extends GmsImpl {
 
         public void run() {
             if(merge_id != null && my_merge_id.equals(merge_id)) {
-                if(log.isTraceEnabled())
+                if(trace)
                     log.trace("cancelling merge due to timer timeout (" + timeout + " ms)");
                 cancelMerge();
                 cancelled=true;
             }
             else {
-                if(log.isTraceEnabled())
+                if(trace)
                     log.trace("timer kicked in after " + timeout + " ms, but no (or different) merge was in progress: " +
                               "merge_id=" + merge_id + ", my_merge_id=" + my_merge_id);
             }

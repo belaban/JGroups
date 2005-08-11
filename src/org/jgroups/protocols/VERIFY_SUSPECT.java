@@ -1,4 +1,4 @@
-// $Id: VERIFY_SUSPECT.java,v 1.14 2005/05/30 14:31:24 belaban Exp $
+// $Id: VERIFY_SUSPECT.java,v 1.15 2005/08/11 12:43:47 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -51,7 +51,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         if(str != null) {
             num_msgs=Integer.parseInt(str);
             if(num_msgs <= 0) {
-                if(log.isWarnEnabled()) log.warn("num_msgs is invalid (" +
+                if(warn) log.warn("num_msgs is invalid (" +
                         num_msgs + "): setting it to 1");
                 num_msgs=1;
             }
@@ -143,7 +143,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
                     curr_time=System.currentTimeMillis();
                     diff=curr_time - val;
                     if(diff >= timeout) {  // haven't been unsuspected, pass up SUSPECT
-                        if(log.isTraceEnabled())
+                        if(trace)
                             log.trace("diff=" + diff + ", mbr " + mbr + " is dead (passing up SUSPECT event)");
                         passUp(new Event(Event.SUSPECT, mbr));
                         suspects.remove(mbr);
@@ -175,7 +175,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
             if(suspects.containsKey(mbr))
                 return;
             suspects.put(mbr, new Long(System.currentTimeMillis()));
-            if(log.isTraceEnabled()) log.trace("verifying that " + mbr + " is dead");
+            if(trace) log.trace("verifying that " + mbr + " is dead");
             for(int i=0; i < num_msgs; i++) {
                 msg=new Message(mbr, null, null);
                 msg.putHeader(name, new VerifyHeader(VerifyHeader.ARE_YOU_DEAD, local_addr));
@@ -190,7 +190,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         if(mbr == null) return;
         synchronized(suspects) {
             if(suspects.containsKey(mbr)) {
-                if(log.isTraceEnabled()) log.trace("member " + mbr + " is not dead !");
+                if(trace) log.trace("member " + mbr + " is not dead !");
                 suspects.remove(mbr);
                 passDown(new Event(Event.UNSUSPECT, mbr));
                 passUp(new Event(Event.UNSUSPECT, mbr));

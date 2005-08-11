@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.14 2005/08/08 12:45:43 belaban Exp $
+// $Id: NAKACK.java,v 1.15 2005/08/11 12:43:47 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -169,7 +169,7 @@ public class NAKACK extends Protocol {
                         Message ack_msg=new Message(hdr.sender, null, null);
                         NakAckHeader h=new NakAckHeader(NakAckHeader.NAK_ACK_RSP, hdr.seqno, null);
                         if(hdr.sender == null)
-                            if(log.isWarnEnabled()) log.warn("WRAPPED: header's 'sender' field is null; " +
+                            if(warn) log.warn("WRAPPED: header's 'sender' field is null; " +
                                     "cannot send ACK !");
                         ack_msg.putHeader(getName(), h);
                         passDown(new Event(Event.MSG, ack_msg));
@@ -209,12 +209,12 @@ public class NAKACK extends Protocol {
                                 Address my_addr=vid.getCoordAddress(), other_addr=hdr.vid.getCoordAddress();
 
                                 if(my_addr == null || other_addr == null) {
-                                    if(log.isWarnEnabled()) log.warn("my vid or message's vid does not contain " +
+                                    if(warn) log.warn("my vid or message's vid does not contain " +
                                             "a coordinator; discarding message !");
                                     return;
                                 }
                                 if(!my_addr.equals(other_addr)) {
-                                    if(log.isWarnEnabled()) log.warn("creator of own vid (" + my_addr + ")is different from " +
+                                    if(warn) log.warn("creator of own vid (" + my_addr + ")is different from " +
                                             "creator of message's vid (" + other_addr + "); discarding message !");
                                     return;
                                 }
@@ -230,7 +230,7 @@ public class NAKACK extends Protocol {
                                 }
                                 if(rc < 0) {      // message sent in prev. view -> discard !
 
-                                        if(log.isWarnEnabled()) log.warn("message's vid (" + hdr.vid + ") is smaller than " +
+                                        if(warn) log.warn("message's vid (" + hdr.vid + ") is smaller than " +
                                                 "current vid (" + vid + "): message <" + msg.getSrc() + ":#" +
                                                 hdr.seqno + "> is discarded ! Hdr is " + hdr);
                                     return;
@@ -280,7 +280,7 @@ public class NAKACK extends Protocol {
     public void down(Event evt) {
         Message msg;
 
-        if(log.isTraceEnabled())
+        if(trace)
             log.trace("queued_msgs has " + queued_msgs.size() + " messages " +
                     "\n\nnaker:\n" + naker.dumpContents() + "\n\nout_of_bander: " +
                     out_of_bander.dumpContents() + "\n-----------------------------\n");
@@ -418,7 +418,7 @@ public class NAKACK extends Protocol {
                 final_v.addElement(m1);
         }
 
-        if(log.isWarnEnabled()) log.warn("rebroadcasting " + final_v.size() + " messages");
+        if(warn) log.warn("rebroadcasting " + final_v.size() + " messages");
 
         /* Now re-broadcast messages using original NakAckHeader (same seqnos, same sender !) */
         for(int i=0; i < final_v.size(); i++) {
@@ -632,13 +632,13 @@ public class NAKACK extends Protocol {
 
             if(digest == null) {
 
-                    if(log.isWarnEnabled()) log.warn("highest_seqnos is null, cannot compute digest !");
+                    if(warn) log.warn("highest_seqnos is null, cannot compute digest !");
                 return null;
             }
 
             if(highest_seqnos.length != members.size()) {
 
-                    if(log.isWarnEnabled()) log.warn("the mbrship size and the size " +
+                    if(warn) log.warn("the mbrship size and the size " +
                             "of the highest_seqnos array are not equal, cannot compute digest !");
                 return null;
             }
@@ -663,7 +663,7 @@ public class NAKACK extends Protocol {
             own_index=members.indexOf(local_addr);
             if(own_index == -1) {
 
-                    if(log.isWarnEnabled()) log.warn("no own address in highest_seqnos");
+                    if(warn) log.warn("no own address in highest_seqnos");
                 return digest;
             }
             highest_seqno_received=digest.highest_seqnos[own_index];
@@ -725,14 +725,14 @@ public class NAKACK extends Protocol {
             Address sender;
 
             if(members == null || local_addr == null) {
-                 if(log.isWarnEnabled()) log.warn("members or local_addr are null !");
+                 if(warn) log.warn("members or local_addr are null !");
                 return;
             }
             index=members.indexOf(local_addr);
 
             if(index < 0) {
 
-                    if(log.isWarnEnabled()) log.warn("member " + local_addr + " not found in " + members);
+                    if(warn) log.warn("member " + local_addr + " not found in " + members);
                 return;
             }
             seqno=seqnos[index];
@@ -915,7 +915,7 @@ public class NAKACK extends Protocol {
             for(long i=first_seqno; i <= last_seqno; i++) {
                 m=(Message)sent_msgs.get(new Long(i));
                 if(m == null) {
-                    if(log.isWarnEnabled()) log.warn("(to " + dest + "): message with " + "seqno=" + i + " not found !");
+                    if(warn) log.warn("(to " + dest + "): message with " + "seqno=" + i + " not found !");
                     continue;
                 }
 

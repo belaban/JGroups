@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.14 2005/08/08 12:45:44 belaban Exp $
+// $Id: TUNNEL.java,v 1.15 2005/08/11 12:43:47 belaban Exp $
 
 
 package org.jgroups.protocols;
@@ -192,7 +192,7 @@ public class TUNNEL extends Protocol implements Runnable {
                This allows e.g. PerfObserver to get the time of reception of a message */
             if(observer != null)
                 observer.up(evt, up_queue.size());
-            if(log.isTraceEnabled()) log.trace("looped back local message " + copy);
+            if(trace) log.trace("looped back local message " + copy);
             passUp(evt);
             if(dest != null && !dest.isMulticastAddress())
                 return;
@@ -277,7 +277,7 @@ public class TUNNEL extends Protocol implements Runnable {
             Address src=msg.getSrc();
 
             if(dst != null && dst.isMulticastAddress() && src != null && local_addr.equals(src)) {
-                if(log.isTraceEnabled())
+                if(trace)
                     log.trace("discarded own loopback multicast packet");
                 return;
             }

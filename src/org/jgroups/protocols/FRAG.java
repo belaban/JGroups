@@ -1,4 +1,4 @@
-// $Id: FRAG.java,v 1.26 2005/08/08 12:45:42 belaban Exp $
+// $Id: FRAG.java,v 1.27 2005/08/11 12:43:47 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -28,7 +28,7 @@ import java.util.*;
  * multicast messages.
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.26 2005/08/08 12:45:42 belaban Exp $
+ * @version $Id: FRAG.java,v 1.27 2005/08/11 12:43:47 belaban Exp $
  */
 public class FRAG extends Protocol {
     private int frag_size=8192;  // conservative value
@@ -97,7 +97,7 @@ public class FRAG extends Protocol {
             long size=msg.size();
             num_sent_msgs++;
             if(size > frag_size) {
-                if(log.isTraceEnabled()) {
+                if(trace) {
                     StringBuffer sb=new StringBuffer("message size is ");
                     sb.append(size).append(", will fragment (frag_size=").append(frag_size).append(')');
                     log.trace(sb.toString());
@@ -124,7 +124,7 @@ public class FRAG extends Protocol {
                 //the new view doesn't contain the sender, he must have left,
                 //hence we will clear all his fragmentation tables
                 fragment_list.remove(mbr);
-                if(log.isTraceEnabled())
+                if(trace)
                     log.trace("[VIEW_CHANGE] removed " + mbr + " from fragmentation table");
             }
             break;
@@ -203,7 +203,7 @@ public class FRAG extends Protocol {
             num_frags=fragments.length;
             num_sent_frags+=num_frags;
 
-            if(log.isTraceEnabled()) {
+            if(trace) {
                 StringBuffer sb=new StringBuffer();
                 sb.append("fragmenting packet to ").append(dest != null ? dest.toString() : "<all members>");
                 sb.append(" (size=").append(buffer.length).append(") into ").append(num_frags);
@@ -262,7 +262,7 @@ public class FRAG extends Protocol {
                 in=new DataInputStream(bis);
                 assembled_msg=new Message(false);
                 assembled_msg.readFrom(in);
-                if(log.isTraceEnabled()) log.trace("assembled_msg is " + assembled_msg);
+                if(trace) log.trace("assembled_msg is " + assembled_msg);
                 assembled_msg.setSrc(sender); // needed ? YES, because fragments have a null src !!
                 num_received_msgs++;
                 passUp(new Event(Event.MSG, assembled_msg));

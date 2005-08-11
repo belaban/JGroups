@@ -21,12 +21,12 @@ public class TCP_NIO extends TCP
 		} else {
 			if (ri == 0) {
 				ri = 5000;
-				if(log.isWarnEnabled()) log.warn("reaper_interval was 0, set it to "
+				if(warn) log.warn("reaper_interval was 0, set it to "
 						+ ri);
 			}
 			if (cet == 0) {
 				cet = 1000 * 60 * 5;
-				if(log.isWarnEnabled()) log.warn("conn_expire_time was 0, set it to "
+				if(warn) log.warn("conn_expire_time was 0, set it to "
 						+ cet);
 			}
 			ct = new ConnectionTableNIO(this, b_addr, bc_addr, s_port, e_port, ri, cet);

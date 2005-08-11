@@ -1,4 +1,4 @@
-// $Id: FD_SIMPLE.java,v 1.8 2005/05/30 14:31:07 belaban Exp $
+// $Id: FD_SIMPLE.java,v 1.9 2005/08/11 12:43:47 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -23,7 +23,7 @@ import java.util.Vector;
  * suspected. When a message or a heartbeat are received, the counter is reset to 0.
  *
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.8 $
+ * @version $Revision: 1.9 $
  */
 public class FD_SIMPLE extends Protocol {
     Address local_addr=null;
@@ -123,7 +123,7 @@ public class FD_SIMPLE extends Protocol {
                         return;
 
                     default:
-                        if(log.isWarnEnabled()) log.warn("FdHeader type " + hdr.type + " not known");
+                        if(warn) log.warn("FdHeader type " + hdr.type + " not known");
                         return;
                 }
         }
@@ -315,7 +315,7 @@ public class FD_SIMPLE extends Protocol {
 
             dest=getHeartbeatDest();
             if(dest == null) {
-                if(log.isWarnEnabled()) log.warn("heartbeat destination was null, will not send ARE_YOU_ALIVE message");
+                if(warn) log.warn("heartbeat destination was null, will not send ARE_YOU_ALIVE message");
                 return;
             }
 

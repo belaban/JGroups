@@ -1,4 +1,4 @@
-// $Id: Digest.java,v 1.15 2005/08/08 12:45:38 belaban Exp $
+// $Id: Digest.java,v 1.16 2005/08/11 12:43:46 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -34,7 +34,7 @@ public class Digest implements Externalizable, Streamable {
     /** Map<Address, Entry> */
     Map    senders=null;
     protected static final Log log=LogFactory.getLog(Digest.class);
-
+    static final boolean warn=log.isWarnEnabled();
 
 
 
@@ -75,7 +75,7 @@ public class Digest implements Externalizable, Streamable {
             return;
         }
         Object retval=senders.put(sender, entry);
-        if(retval != null && log.isWarnEnabled())
+        if(retval != null && warn)
             log.warn("entry for " + sender + " was overwritten with " + entry);
     }
 

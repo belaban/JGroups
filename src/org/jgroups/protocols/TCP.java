@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.26 2005/08/08 12:45:43 belaban Exp $
+// $Id: TCP.java,v 1.27 2005/08/11 12:43:47 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -209,11 +209,11 @@ public class TCP extends TP implements ConnectionTable.Receiver {
        else {
            if(reaperInterval == 0) {
                reaperInterval=5000;
-               if(log.isWarnEnabled()) log.warn("reaper_interval was 0, set it to " + reaperInterval);
+               if(warn) log.warn("reaper_interval was 0, set it to " + reaperInterval);
            }
            if(connExpireTime == 0) {
                connExpireTime=1000 * 60 * 5;
-               if(log.isWarnEnabled()) log.warn("conn_expire_time was 0, set it to " + connExpireTime);
+               if(warn) log.warn("conn_expire_time was 0, set it to " + connExpireTime);
            }
            cTable=new ConnectionTable(this, bindAddress, externalAddress, startPort, endPort, 
                                       reaperInterval, connExpireTime);
@@ -240,10 +240,10 @@ public class TCP extends TP implements ConnectionTable.Receiver {
     }
 
     public void sendToSingleMember(Address dest, byte[] data, int offset, int length) throws Exception {
-        if(log.isTraceEnabled()) log.trace("dest=" + dest + " (" + data.length + " bytes)");
+        if(trace) log.trace("dest=" + dest + " (" + data.length + " bytes)");
         if(skip_suspected_members) {
             if(suspected_mbrs.contains(dest)) {
-                if(log.isTraceEnabled())
+                if(trace)
                     log.trace("will not send unicast message to " + dest + " as it is currently suspected");
                 return;
             }

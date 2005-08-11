@@ -1,4 +1,4 @@
-// $Id: GmsImpl.java,v 1.4 2005/08/08 12:45:43 belaban Exp $
+// $Id: GmsImpl.java,v 1.5 2005/08/11 12:43:47 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -14,6 +14,7 @@ public abstract class GmsImpl {
     protected GMS          gms=null;
 
     protected final Log log=LogFactory.getLog(getClass());
+    final boolean warn=log.isWarnEnabled();
 
     public abstract void      init(); // initialize variables
     

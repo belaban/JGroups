@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.21 2005/08/08 12:45:43 belaban Exp $
+// $Id: MERGE2.java,v 1.22 2005/08/11 12:43:47 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -283,11 +283,11 @@ public class MERGE2 extends Protocol {
                     }
                 }
                 else {
-                    if(log.isTraceEnabled())
+                    if(trace)
                         log.trace("didn't find multiple coordinators in " + initial_mbrs + ", no need for merge");
                 }
             }
-            if(log.isTraceEnabled())
+            if(trace)
                 log.trace("MERGE2.FindSubgroups thread terminated");
         }
 
