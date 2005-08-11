@@ -12,7 +12,7 @@ import java.util.Vector;
 /**
  * Class that waits for n PingRsp'es, or m milliseconds to return the initial membership
  * @author Bela Ban
- * @version $Id: PingWaiter.java,v 1.10 2005/08/08 12:45:43 belaban Exp $
+ * @version $Id: PingWaiter.java,v 1.11 2005/08/11 12:43:47 belaban Exp $
  */
 public class PingWaiter implements Runnable {
     Thread              t=null;
@@ -22,6 +22,7 @@ public class PingWaiter implements Runnable {
     Protocol            parent=null;
     PingSender          ping_sender;
     protected final Log log=LogFactory.getLog(this.getClass());
+    private boolean     trace=log.isTraceEnabled();
 
 
     public PingWaiter(long timeout, int num_rsps, Protocol parent, PingSender ping_sender) {
@@ -106,8 +107,6 @@ public class PingWaiter implements Runnable {
 
         synchronized(rsps) {
             if(rsps.size() > 0) {
-                if(log.isTraceEnabled())
-                    log.trace("clearing old responses: " + rsps);
                 rsps.clear();
             }
 
@@ -118,7 +117,7 @@ public class PingWaiter implements Runnable {
 
             try {
                 while(rsps.size() < num_rsps && time_to_wait > 0 && t != null) {
-                    if(log.isTraceEnabled()) // +++ remove
+                    if(trace) // +++ remove
                         log.trace(new StringBuffer("waiting for initial members: time_to_wait=").append(time_to_wait)
                                   .append(", got ").append(rsps.size()).append(" rsps"));
 
@@ -132,7 +131,7 @@ public class PingWaiter implements Runnable {
                     }
                     time_to_wait=timeout - (System.currentTimeMillis() - start_time);
                 }
-                if(log.isTraceEnabled())
+                if(trace)
                     log.trace(new StringBuffer("initial mbrs are ").append(rsps));
                 return new Vector(rsps);
             }

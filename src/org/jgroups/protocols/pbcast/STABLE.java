@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.38 2005/08/08 12:45:38 belaban Exp $
+// $Id: STABLE.java,v 1.39 2005/08/11 12:43:46 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -201,7 +201,7 @@ public class STABLE extends Protocol {
                 long size=Math.max(msg.getLength(), 24);
                 num_bytes_received+=size;
                 if(num_bytes_received >= max_bytes) {
-                    if(log.isTraceEnabled()) {
+                    if(trace) {
                         log.trace(new StringBuffer("max_bytes has been reached (").append(max_bytes).
                                   append(", bytes received=").append(num_bytes_received).append("): triggers stable msg"));
                     }
@@ -231,7 +231,7 @@ public class STABLE extends Protocol {
             synchronized(latest_local_digest) {
                 latest_local_digest.replace(d);
             }
-            if(log.isTraceEnabled())
+            if(trace)
                 log.trace("setting latest_local_digest from NAKACK: " + d.printHighSeqnos());
             sendStableMessage(d);
             break;
@@ -335,13 +335,13 @@ public class STABLE extends Protocol {
             return false;
 
         if(!initialized) {
-            if(log.isTraceEnabled())
+            if(trace)
                 log.trace("STABLE message will not be handled as I'm not yet initialized");
             return false;
         }
 
         if(!digest.sameSenders(d)) {
-            if(log.isTraceEnabled())
+            if(trace)
                 log.trace(new StringBuffer("received a digest ").append(d.printHighSeqnos()).append(" from ").
                           append(sender).append(" which has different members than mine (").
                           append(digest.printHighSeqnos()).append("), discarding it and resetting heard_from list"));
@@ -351,7 +351,7 @@ public class STABLE extends Protocol {
         }
 
         StringBuffer sb=null;
-        if(log.isTraceEnabled())
+        if(trace)
             sb=new StringBuffer("my [").append(local_addr).append("] digest before: ").append(digest).
                     append("\ndigest from ").append(sender).append(": ").append(d);
         Address mbr;
@@ -375,7 +375,7 @@ public class STABLE extends Protocol {
             new_highest_seen_seqno=Math.max(my_highest_seen_seqno, highest_seen_seqno);
             digest.setHighestDeliveredAndSeenSeqnos(mbr, new_highest_seqno, new_highest_seen_seqno);
         }
-        if(log.isTraceEnabled()) {
+        if(trace) {
             sb.append("\nmy [").append(local_addr).append("] digest after: ").append(digest).append("\n");
             log.trace(sb);
         }
@@ -398,7 +398,7 @@ public class STABLE extends Protocol {
         }
         synchronized(digest) {
             digest.replace(copy_of_latest);
-            if(log.isTraceEnabled())
+            if(trace)
                 log.trace("resetting digest from NAKACK: " + copy_of_latest.printHighSeqnos());
         }
     }
@@ -434,7 +434,7 @@ public class STABLE extends Protocol {
             stable_task=new StableTask();
             timer.add(stable_task, true); // fixed-rate scheduling
         }
-        if(log.isTraceEnabled())
+        if(trace)
             log.trace("stable task started");
     }
 
@@ -515,21 +515,21 @@ public class STABLE extends Protocol {
         }
 
         if(!initialized) {
-            if(log.isTraceEnabled())
+            if(trace)
                 log.trace("STABLE message will not be handled as I'm not yet initialized");
             return;
         }
 
         if(suspended) {
-            if(log.isTraceEnabled())
+            if(trace)
                 log.trace("STABLE message will not be handled as I'm suspended");
             return;
         }
 
-        if(log.isTraceEnabled())
+        if(trace)
             log.trace(new StringBuffer("received stable msg from ").append(sender).append(": ").append(d.printHighSeqnos()));
         if(!heard_from.contains(sender)) {  // already received gossip from sender; discard it
-            if(log.isTraceEnabled()) log.trace("already received stable msg from " + sender);
+            if(trace) log.trace("already received stable msg from " + sender);
             return;
         }
 
@@ -555,13 +555,13 @@ public class STABLE extends Protocol {
      */
     private void sendStableMessage(Digest d) {
         if(suspended) {
-            if(log.isTraceEnabled())
+            if(trace)
                 log.trace("will not send STABLE message as I'm suspended");
             return;
         }
 
         if(d != null && d.size() > 0) {
-            if(log.isTraceEnabled())
+            if(trace)
                 log.trace("sending stable msg " + d.printHighSeqnos());
             Message msg=new Message(); // mcast message
             StableHeader hdr=new StableHeader(StableHeader.STABLE_GOSSIP, d);
@@ -601,7 +601,7 @@ public class STABLE extends Protocol {
         }
 
         if(!initialized) {
-            if(log.isTraceEnabled())
+            if(trace)
                 log.trace("STABLE message will not be handled as I'm not yet initialized");
             return;
         }
@@ -613,7 +613,7 @@ public class STABLE extends Protocol {
             return;
         }
 
-        if(log.isTraceEnabled())
+        if(trace)
             log.trace(new StringBuffer("received stability msg from ").append(sender).append(": ").append(d.printHighSeqnos()));
         stopStabilityTask();
 
@@ -757,7 +757,7 @@ public class STABLE extends Protocol {
 
         public void run() {
             if(suspended) {
-                if(log.isTraceEnabled())
+                if(trace)
                     log.trace("stable task will not run as suspended=" + suspended);
                 return;
             }
@@ -828,7 +828,7 @@ public class STABLE extends Protocol {
                 msg=new Message();
                 hdr=new StableHeader(StableHeader.STABILITY, d);
                 msg.putHeader(STABLE.name, hdr);
-                if(log.isTraceEnabled()) log.trace("sending stability msg " + d.printHighSeqnos());
+                if(trace) log.trace("sending stability msg " + d.printHighSeqnos());
                 passDown(new Event(Event.MSG, msg));
                 d=null;
             }

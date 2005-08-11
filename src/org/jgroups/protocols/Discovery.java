@@ -23,7 +23,7 @@ import java.util.*;
  * <li>num_ping_requests - the number of GET_MBRS_REQ messages to be sent (min=1), distributed over timeout ms
  * </ul>
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.12 2005/08/08 12:45:42 belaban Exp $
+ * @version $Id: Discovery.java,v 1.13 2005/08/11 12:43:47 belaban Exp $
  */
 public abstract class Discovery extends Protocol {
     final Vector  members=new Vector(11);
@@ -232,7 +232,7 @@ public abstract class Discovery extends Protocol {
 
             case PingHeader.GET_MBRS_REQ:   // return Rsp(local_addr, coord)
                 if(local_addr != null && msg.getSrc() != null && local_addr.equals(msg.getSrc())) {
-                    if(log.isTraceEnabled())
+                    if(trace)
                         log.trace("discarded my own discovery request");
                     return;
                 }
@@ -244,7 +244,7 @@ public abstract class Discovery extends Protocol {
                 rsp_msg=new Message(msg.getSrc(), null, null);
                 rsp_hdr=new PingHeader(PingHeader.GET_MBRS_RSP, ping_rsp);
                 rsp_msg.putHeader(getName(), rsp_hdr);
-                if(log.isTraceEnabled())
+                if(trace)
                     log.trace("received GET_MBRS_REQ from " + msg.getSrc() + ", sending response " + rsp_hdr);
                 passDown(new Event(Event.MSG, rsp_msg));
                 return;
@@ -252,13 +252,13 @@ public abstract class Discovery extends Protocol {
             case PingHeader.GET_MBRS_RSP:   // add response to vector and notify waiting thread
                 rsp=hdr.arg;
 
-                if(log.isTraceEnabled())
+                if(trace)
                     log.trace("received GET_MBRS_RSP, rsp=" + rsp);
                 ping_waiter.addResponse(rsp);
                 return;
 
             default:
-                if(log.isWarnEnabled()) log.warn("got PING header with unknown type (" + hdr.type + ')');
+                if(warn) log.warn("got PING header with unknown type (" + hdr.type + ')');
                 return;
             }
 

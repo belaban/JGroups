@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.14 2005/08/08 12:45:43 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.15 2005/08/11 12:43:47 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -206,7 +206,7 @@ public class STATE_TRANSFER extends Protocol implements RequestHandler {
                 coord=determineCoordinator();
 
                 if(coord == null || coord.equals(local_addr)) {
-                    if(log.isWarnEnabled()) log.warn("GET_STATE: coordinator is null");
+                    if(warn) log.warn("GET_STATE: coordinator is null");
                     event_list=new Vector(1);
                     event_list.addElement(new Event(Event.GET_STATE_OK, null));
                     passUp(new Event(Event.STOP_QUEUEING, event_list));
@@ -256,7 +256,7 @@ public class STATE_TRANSFER extends Protocol implements RequestHandler {
                     if(is_server)
                         return cached_state;
                     else {
-                        if(log.isWarnEnabled()) log.warn("RETURN_STATE: returning null" +
+                        if(warn) log.warn("RETURN_STATE: returning null" +
                                 "as I'm not yet an operational state server !");
                         return null;
                     }

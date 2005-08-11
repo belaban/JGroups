@@ -1,13 +1,13 @@
 package org.jgroups.protocols;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
 import org.jgroups.stack.LogicalAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Queue;
 import org.jgroups.util.QueueClosedException;
 import org.jgroups.util.Util;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import java.io.*;
 import java.net.*;
@@ -32,8 +32,7 @@ import java.util.*;
  * the unicast routing caches should ensure that unicasts are only sent via 1 interface in almost all cases.
  * 
  * @author Bela Ban Oct 2003
- * @version $Id: UDP_NIO.java,v 1.3 2005/08/08 12:45:45 belaban Exp $
- * @todo Sending of dummy packets.
+ * @version $Id: UDP_NIO.java,v 1.4 2005/08/11 12:43:47 belaban Exp $
  */
 public class UDP_NIO extends Protocol implements  Receiver {
 
@@ -130,8 +129,6 @@ public class UDP_NIO extends Protocol implements  Receiver {
      */
     PacketHandler packet_handler=null;
 
-    protected static Log mylog=LogFactory.getLog(UDP_NIO.class);
-
 
     /** Number of bytes to allocate to receive a packet. Needs to be set to be higher than frag_size
      * (handle CONFIG event)
@@ -168,8 +165,8 @@ public class UDP_NIO extends Protocol implements  Receiver {
             }
         }
 
-        if(mylog.isTraceEnabled())
-            mylog.trace("received " + len + " bytes from " + sender);
+        if(trace)
+            log.trace("received " + len + " bytes from " + sender);
 
         if(use_packet_handler && packet_queue != null) {
             byte[] tmp=new byte[len];
@@ -180,7 +177,7 @@ public class UDP_NIO extends Protocol implements  Receiver {
                 return;
             }
             catch(QueueClosedException e) {
-                if(mylog.isWarnEnabled()) mylog.warn("packet queue for packet handler thread is closed");
+                if(warn) log.warn("packet queue for packet handler thread is closed");
                 // pass through to handleIncomingPacket()
             }
         }
@@ -206,7 +203,7 @@ public class UDP_NIO extends Protocol implements  Receiver {
 //                mcast_sock.receive(packet);
 //                len=packet.getLength();
 //                if(len == 1 && packet.getData()[0] == 0) {
-//                    if(log.isTraceEnabled()) if(log.isInfoEnabled()) log.info("UDP_NIO.run()", "received dummy packet");
+//                    if(trace) if(log.isInfoEnabled()) log.info("UDP_NIO.run()", "received dummy packet");
 //                    continue;
 //                }
 //
@@ -218,7 +215,7 @@ public class UDP_NIO extends Protocol implements  Receiver {
 //                    }
 //                }
 //
-//                if(log.isTraceEnabled())
+//                if(trace)
 //                    if(log.isInfoEnabled()) log.info("UDP_NIO.receive()", "received (mcast) " + packet.getLength() + " bytes from " +
 //                            packet.getAddress() + ":" + packet.getPort() + " (size=" + len + " bytes)");
 //                if(len > receive_buf.length) {
@@ -228,7 +225,7 @@ public class UDP_NIO extends Protocol implements  Receiver {
 //                }
 //
 //                if(Version.compareTo(packet.getData()) == false) {
-//                    if(log.isWarnEnabled()) log.warn("UDP_NIO.run()",
+//                    if(warn) log.warn("UDP_NIO.run()",
 //                            "packet from " + packet.getAddress() + ":" + packet.getPort() +
 //                            " has different version (" +
 //                            Version.printVersionId(packet.getData(), Version.version_id.length) +
@@ -261,10 +258,10 @@ public class UDP_NIO extends Protocol implements  Receiver {
             byte[] diag_rsp=getDiagResponse().getBytes();
             DatagramPacket rsp=new DatagramPacket(diag_rsp, 0, diag_rsp.length, sender);
 
-                if(mylog.isInfoEnabled()) mylog.info("sending diag response to " + sender);
+                if(log.isInfoEnabled()) log.info("sending diag response to " + sender);
             ct.send(rsp);
         } catch(Throwable t) {
-            if(mylog.isErrorEnabled()) mylog.error("failed sending diag rsp to " + sender + ", exception=" + t);
+            if(log.isErrorEnabled()) log.error("failed sending diag rsp to " + sender + ", exception=" + t);
         }
     }
 
@@ -302,7 +299,7 @@ public class UDP_NIO extends Protocol implements  Receiver {
      * Creates the unicast and multicast sockets and starts the unicast and multicast receiver threads
      */
     public void start() throws Exception {
-         if(mylog.isInfoEnabled()) mylog.info("creating sockets and starting threads");
+         if(log.isInfoEnabled()) log.info("creating sockets and starting threads");
         if(ct == null) {
             ct=new ConnectorTable(mcast_addr, DEFAULT_RECEIVE_BUFFER_SIZE, mcast_recv_buf_size, ip_mcast, this);
 
@@ -332,7 +329,7 @@ public class UDP_NIO extends Protocol implements  Receiver {
 
 
     public void stop() {
-         if(mylog.isInfoEnabled()) mylog.info("closing sockets and stopping threads");
+         if(log.isInfoEnabled()) log.info("closing sockets and stopping threads");
         if(packet_handler != null)
             packet_handler.stop();
         if(ct != null) {
@@ -473,19 +470,19 @@ public class UDP_NIO extends Protocol implements  Receiver {
                 bind_addrs.add(default_bind_addr);
             }
             catch(SocketException ex) {
-                if(mylog.isErrorEnabled()) mylog.error("failed determining the default bind interface: " + ex);
+                if(log.isErrorEnabled()) log.error("failed determining the default bind interface: " + ex);
             }
         }
         if(exclude_list != null) {
             bind_addrs.removeAll(exclude_list);
         }
         if(bind_addrs.size() == 0) {
-            if(mylog.isErrorEnabled()) mylog.error("no valid bind interface found, unable to listen for network traffic");
+            if(log.isErrorEnabled()) log.error("no valid bind interface found, unable to listen for network traffic");
             return false;
         }
         else {
 
-                if(mylog.isInfoEnabled()) mylog.info("bind interfaces are " + bind_addrs);
+                if(log.isInfoEnabled()) log.info("bind interfaces are " + bind_addrs);
         }
 
         if(props.size() > 0) {
@@ -517,7 +514,7 @@ public class UDP_NIO extends Protocol implements  Receiver {
 
             case Event.CONFIG:
                 passUp(evt);
-                 if(mylog.isInfoEnabled()) mylog.info("received CONFIG event: " + evt.getArg());
+                 if(log.isInfoEnabled()) log.info("received CONFIG event: " + evt.getArg());
                 handleConfigEvent((HashMap)evt.getArg());
                 return;
         }
@@ -566,7 +563,7 @@ public class UDP_NIO extends Protocol implements  Receiver {
             sendUdpMessage(msg); // either unicast (dest != null) or multicast (dest == null)
         }
         catch(Exception e) {
-            if(mylog.isErrorEnabled()) mylog.error("exception=" + e + ", msg=" + msg + ", mcast_addr=" + mcast_addr);
+            if(log.isErrorEnabled()) log.error("exception=" + e + ", msg=" + msg + ", mcast_addr=" + mcast_addr);
         }
     }
 
@@ -606,8 +603,8 @@ public class UDP_NIO extends Protocol implements  Receiver {
             version=inp.readShort();
 
             if(Version.compareTo(version) == false) {
-                if(mylog.isWarnEnabled())
-                    mylog.warn("packet from " + sender + " has different version (" + version +
+                if(warn)
+                    log.warn("packet from " + sender + " has different version (" + version +
                                ") from ours (" + Version.version + "). This may cause problems");
             }
 
@@ -616,7 +613,7 @@ public class UDP_NIO extends Protocol implements  Receiver {
             dst=msg.getDest();
             src=msg.getSrc();
             if(src == null) {
-                if(mylog.isErrorEnabled()) mylog.error("sender's address is null");
+                if(log.isErrorEnabled()) log.error("sender's address is null");
             }
             else {
                 ((LogicalAddress)src).setPrimaryPhysicalAddress(sender);
@@ -624,8 +621,8 @@ public class UDP_NIO extends Protocol implements  Receiver {
 
             // discard my own multicast loopback copy
             if((dst == null || dst.isMulticastAddress()) && src != null && local_addr.equals(src)) {
-                if(mylog.isTraceEnabled())
-                    mylog.trace("discarded own loopback multicast packet");
+                if(trace)
+                    log.trace("discarded own loopback multicast packet");
 
                 // System.out.println("-- discarded " + msg.getObject());
 
@@ -633,8 +630,8 @@ public class UDP_NIO extends Protocol implements  Receiver {
             }
 
             evt=new Event(Event.MSG, msg);
-            if(mylog.isTraceEnabled())
-                mylog.trace("Message is " + msg + ", headers are " + msg.getHeaders());
+            if(trace)
+                log.trace("Message is " + msg + ", headers are " + msg.getHeaders());
 
             /* Because Protocol.up() is never called by this bottommost layer, we call up() directly in the observer.
              * This allows e.g. PerfObserver to get the time of reception of a message */
@@ -643,7 +640,7 @@ public class UDP_NIO extends Protocol implements  Receiver {
 
             hdr=(UdpHeader)msg.removeHeader(name);
         } catch(Throwable e) {
-            if(mylog.isErrorEnabled()) mylog.error("exception=" + Util.getStackTrace(e));
+            if(log.isErrorEnabled()) log.error("exception=" + Util.getStackTrace(e));
             return;
         }
 
@@ -660,7 +657,7 @@ public class UDP_NIO extends Protocol implements  Receiver {
             if(ch_name != null && group_name != null && !group_name.equals(ch_name) &&
                     !ch_name.equals(Util.DIAG_GROUP)) {
 
-                    if(mylog.isWarnEnabled()) mylog.warn("discarded message from different group (" +
+                    if(warn) log.warn("discarded message from different group (" +
                             ch_name + "). Sender was " + msg.getSrc());
                 return;
             }
@@ -688,8 +685,8 @@ public class UDP_NIO extends Protocol implements  Receiver {
             msg.setSrc(src);
         }
 
-        if(mylog.isTraceEnabled())
-            mylog.trace("sending message to " + msg.getDest() +
+        if(trace)
+            log.trace("sending message to " + msg.getDest() +
                     " (src=" + msg.getSrc() + "), headers are " + msg.getHeaders());
 
         // Don't send if destination is local address. Instead, switch dst and src and put in up_queue.
@@ -704,7 +701,7 @@ public class UDP_NIO extends Protocol implements  Receiver {
                This allows e.g. PerfObserver to get the time of reception of a message */
             if(observer != null)
                 observer.up(evt, up_queue.size());
-            if(mylog.isTraceEnabled()) mylog.trace("looped back local message " + copy);
+            if(trace) log.trace("looped back local message " + copy);
 
             // System.out.println("\n-- passing up packet id=" + copy.getObject());
             passUp(evt);
@@ -743,7 +740,7 @@ public class UDP_NIO extends Protocol implements  Receiver {
                 sendUdpMessage(msg);
             }
             catch(Exception e) {
-                if(mylog.isDebugEnabled()) mylog.debug("exception=" + e);
+                if(log.isDebugEnabled()) log.debug("exception=" + e);
             }
         }
     }
@@ -773,10 +770,10 @@ public class UDP_NIO extends Protocol implements  Receiver {
 //            }
 //        }
 //
-//        if(log.isTraceEnabled()) if(log.isInfoEnabled()) log.info("UDP_NIO.sendDummyPacket()", "sending packet to " + dest + ":" + port);
+//        if(trace) if(log.isInfoEnabled()) log.info("UDP_NIO.sendDummyPacket()", "sending packet to " + dest + ":" + port);
 //
 //        if(ucast_sock == null || dest == null) {
-//            if(log.isWarnEnabled()) log.warn("UDP_NIO.sendDummyPacket()", "send_sock was null or dest was null, cannot send dummy packet");
+//            if(warn) log.warn("UDP_NIO.sendDummyPacket()", "send_sock was null or dest was null, cannot send dummy packet");
 //            return;
 //        }
 //        packet=new DatagramPacket(buf, buf.length, dest, port);
@@ -824,7 +821,7 @@ public class UDP_NIO extends Protocol implements  Receiver {
                 break;
 
             case Event.CONFIG:
-                 if(mylog.isInfoEnabled()) mylog.info("received CONFIG event: " + evt.getArg());
+                 if(log.isInfoEnabled()) log.info("received CONFIG event: " + evt.getArg());
                 handleConfigEvent((HashMap)evt.getArg());
                 break;
         }
@@ -897,7 +894,7 @@ public class UDP_NIO extends Protocol implements  Receiver {
                     data=(byte[])arr[0];
                     sender=(SocketAddress)arr[1];
                 } catch(QueueClosedException closed_ex) {
-                     if(mylog.isInfoEnabled()) mylog.info("packet_handler thread terminating");
+                     if(log.isInfoEnabled()) log.info("packet_handler thread terminating");
                     break;
                 }
                 handleIncomingUdpPacket(data, sender);
@@ -956,6 +953,9 @@ public class UDP_NIO extends Protocol implements  Receiver {
 
 
         Queue send_queue=new Queue();
+
+        static final Log mylog=LogFactory.getLog(Connector.class);
+        static final boolean mywarn=mylog.isWarnEnabled();
 
 
         class SenderThread extends Thread {
@@ -1027,7 +1027,7 @@ public class UDP_NIO extends Protocol implements  Receiver {
                 throw new Exception("UDP_NIO.Connector.start(): connector has been stopped (start() cannot be called)");
 
             if(t != null && t.isAlive()) {
-                if(mylog.isWarnEnabled()) mylog.warn("connector thread is already running");
+                if(mywarn) mylog.warn("connector thread is already running");
                 return;
             }
             t=new Thread(this, "ConnectorThread for " + localAddr);
@@ -1136,6 +1136,8 @@ public class UDP_NIO extends Protocol implements  Receiver {
 
         boolean running=false;
 
+        static final Log mylog=LogFactory.getLog(ConnectorTable.class);
+        static final boolean mywarn=mylog.isWarnEnabled();
 
 
 
@@ -1299,7 +1301,7 @@ public class UDP_NIO extends Protocol implements  Receiver {
 
             Connector tmp=findConnector(ni);
             if(tmp != null) {
-                if(mylog.isWarnEnabled()) mylog.warn("connector for interface " + bind_interface +
+                if(mywarn) mylog.warn("connector for interface " + bind_interface +
                         " is already present (will be skipped): " + tmp);
                 return;
             }

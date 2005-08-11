@@ -1,6 +1,6 @@
 
 
-//$Id: ENCRYPT.java,v 1.11 2005/08/08 14:58:34 belaban Exp $
+//$Id: ENCRYPT.java,v 1.12 2005/08/11 12:43:47 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -776,7 +776,7 @@ final Map keyMap = new WeakHashMap();
 			// process it
 			if (suppliedKey)
 			{
-				if (log.isWarnEnabled())
+				if (warn)
 				{
 					log.warn("We received an encrypt header of "
 							+ hdr.getType() + " while in configured mode");

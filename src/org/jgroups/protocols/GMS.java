@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.14 2005/08/08 12:45:43 belaban Exp $
+// $Id: GMS.java,v 1.15 2005/08/11 12:43:47 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -80,7 +80,7 @@ public class GMS extends RpcProtocol implements Runnable {
     public void start() throws Exception {
         super.start();
         if(checkForViewEnforcer(up_prot) == false) {
-            if(log.isWarnEnabled()) log.warn("I need protocol layer " +
+            if(warn) log.warn("I need protocol layer " +
                     "VIEW_ENFORCER above me to discard messages sent to me while I'm " +
                     "not yet a group member ! Otherwise, these messages will be delivered " +
                     "to the application without checking...\n");
@@ -142,7 +142,7 @@ public class GMS extends RpcProtocol implements Runnable {
      * <code>suspected_mbrs</code> removed and <code>new_mbrs</code> added.
      */
     public View getNextView(Vector new_mbrs, Vector old_mbrs, Vector suspected_mbrs) {
-        Vector mbrs;
+        Vector members;
         long vid;
         View v;
         Membership tmp_mbrs;
@@ -161,8 +161,8 @@ public class GMS extends RpcProtocol implements Runnable {
             ltime=vid;
             tmp_mbrs=this.mbrs.copy();
             tmp_mbrs.merge(new_mbrs, mbrs_to_remove);
-            mbrs=(Vector)tmp_mbrs.getMembers().clone();
-            v=new View(local_addr, vid, mbrs);
+            members=(Vector)tmp_mbrs.getMembers().clone();
+            v=new View(local_addr, vid, members);
             return v;
         }
     }
@@ -371,7 +371,7 @@ public class GMS extends RpcProtocol implements Runnable {
             /* Check for self-inclusion: if I'm not part of the new membership, I just discard it.
                This ensures that messages sent in view V1 are only received by members of V1 */
             if(checkSelfInclusion(mbrs) == false) {
-                if(log.isWarnEnabled()) log.warn("I'm not member of " + mbrs + ", discarding");
+                if(warn) log.warn("I'm not member of " + mbrs + ", discarding");
                 return;
             }
 
@@ -382,7 +382,7 @@ public class GMS extends RpcProtocol implements Runnable {
             else {
                 rc=new_view.compareTo(view_id);  // rc should always be a positive number
                 if(rc <= 0) {  // don't accept view id lower than our own
-                    if(log.isWarnEnabled()) log.warn("received view <= current view; discarding it ! " +
+                    if(warn) log.warn("received view <= current view; discarding it ! " +
                             "(view_id: " + view_id + ", new_view: " + new_view + ')');
                     return;
                 }
@@ -514,7 +514,7 @@ public class GMS extends RpcProtocol implements Runnable {
 
     public View handleMerge(ViewId other_vid, Vector other_members) {
         synchronized(impl_mutex) {
-            if(log.isTraceEnabled())
+            if(trace)
             {
                 View v=impl.handleMerge(other_vid, other_members);
                 if(log.isInfoEnabled()) log.info("returning view: " + v);
@@ -746,7 +746,7 @@ public class GMS extends RpcProtocol implements Runnable {
                 break;
             }
             catch(Exception ex) {
-                if(log.isWarnEnabled()) log.warn("exception=" + ex);
+                if(warn) log.warn("exception=" + ex);
             }
         }
     }

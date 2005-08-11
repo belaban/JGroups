@@ -7,7 +7,7 @@ import org.jgroups.util.Util;
 /**
  * Sends num_ping_request GET_MBRS_REQ messages, distributed over timeout ms
  * @author Bela Ban
- * @version $Id: PingSender.java,v 1.4 2005/05/19 06:21:49 belaban Exp $
+ * @version $Id: PingSender.java,v 1.5 2005/08/11 12:43:47 belaban Exp $
  */
 public class PingSender implements Runnable {
     Thread              t=null;
@@ -16,6 +16,7 @@ public class PingSender implements Runnable {
     int                 num_requests=1;
     Discovery           discovery_prot;
     protected final Log log=LogFactory.getLog(this.getClass());
+    protected boolean   trace=log.isTraceEnabled();
 
 
     public PingSender(long timeout, int num_requests, Discovery d) {
@@ -53,7 +54,7 @@ public class PingSender implements Runnable {
         for(int i=0; i < num_requests; i++) {
             if(t == null || !t.equals(Thread.currentThread()))
                 break;
-            if(log.isTraceEnabled())
+            if(trace)
                 log.trace("sending GET_MBRS_REQ");
             discovery_prot.sendGetMembersRequest();
             Util.sleep((long)interval);

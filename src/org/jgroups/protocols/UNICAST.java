@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.30 2005/08/08 12:45:46 belaban Exp $
+// $Id: UNICAST.java,v 1.31 2005/08/11 12:43:47 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -221,7 +221,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                     entry.sent_msgs=new AckSenderWindow(this, timeout, this);
                 }
                 msg.putHeader(name, hdr);
-                if(log.isTraceEnabled())
+                if(trace)
                     log.trace(new StringBuffer("[").append(local_addr).append("] --> DATA(").append(dst).append(": #").
                               append(entry.sent_msgs_seqno).append(", first=").append(hdr.first).append(')'));
 
@@ -258,7 +258,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 for(int i=0; i < left_members.size(); i++) {
                     mbr=left_members.elementAt(i);
                     rc=removeConnection(mbr);
-                    if(rc && log.isTraceEnabled())
+                    if(rc && trace)
                         log.trace("removed " + mbr + " from connection table, members " + left_members + " left");
                 }
             }
@@ -317,7 +317,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
         //          if(use_gms && !members.contains(dst) && !prev_members.contains(dst)) {
         //
-        //                  if(log.isWarnEnabled()) log.warn("UNICAST.retransmit()", "seqno=" + seqno + ":  dest " + dst +
+        //                  if(warn) log.warn("UNICAST.retransmit()", "seqno=" + seqno + ":  dest " + dst +
         //                             " is not member any longer; removing entry !");
         
         //              synchronized(connections) {
@@ -326,7 +326,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         //              return;
         //          }
 	
-        if(log.isTraceEnabled())
+        if(trace)
             log.trace("[" + local_addr + "] --> XMIT(" + dst + ": #" + seqno + ')');
 
 	if(Global.copy)
@@ -350,7 +350,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         Entry    entry;
         Message  m;
 
-        if(log.isTraceEnabled())
+        if(trace)
             log.trace(new StringBuffer("[").append(local_addr).append("] <-- DATA(").append(sender).
                       append(": #").append(seqno).append(", first=").append(first));
 
@@ -368,7 +368,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                     entry.received_msgs=new AckReceiverWindow(seqno);
                 else {
                     if(operational) {
-                        if(log.isWarnEnabled())
+                        if(warn)
                             log.warn(sender + "#" + seqno + " is not tagged as the first message sent by " + sender +
                                      "; however, the table for received messages from " + sender + " is null. We probably " +
                                      "haven't received the first message from " + sender + ". Discarding message: " +
@@ -394,7 +394,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         Entry           entry;
         AckSenderWindow win;
 
-        if(log.isTraceEnabled())
+        if(trace)
             log.trace(new StringBuffer("[").append(local_addr).append("] <-- ACK(").append(sender).
                       append(": #").append(seqno).append(')'));
         synchronized(connections) {
@@ -411,7 +411,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     private void sendAck(Address dst, long seqno) {
         Message ack=new Message(dst, null, null);
         ack.putHeader(name, new UnicastHeader(UnicastHeader.DATA_ACK, seqno));
-        if(log.isTraceEnabled())
+        if(trace)
             log.trace(new StringBuffer("[").append(local_addr).append("] --> ACK(").append(dst).
                       append(": #").append(seqno).append(')'));
         passDown(new Event(Event.MSG, ack));

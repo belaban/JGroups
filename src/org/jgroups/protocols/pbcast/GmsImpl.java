@@ -1,4 +1,4 @@
-// $Id: GmsImpl.java,v 1.8 2005/08/08 12:45:38 belaban Exp $
+// $Id: GmsImpl.java,v 1.9 2005/08/11 12:43:46 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -15,7 +15,9 @@ import java.util.Vector;
 public abstract class GmsImpl {
     protected GMS   gms=null;
     protected final Log   log=LogFactory.getLog(getClass());
-    boolean         leaving=false;
+    final boolean         trace=log.isTraceEnabled();
+    final boolean         warn=log.isWarnEnabled();
+    boolean               leaving=false;
 
     public abstract void      join(Address mbr);
     public abstract void      leave(Address mbr);

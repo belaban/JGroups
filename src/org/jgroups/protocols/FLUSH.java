@@ -1,4 +1,4 @@
-// $Id: FLUSH.java,v 1.9 2005/05/30 14:31:07 belaban Exp $
+// $Id: FLUSH.java,v 1.10 2005/08/11 12:43:47 belaban Exp $
 
 
 
@@ -227,18 +227,18 @@ public class FLUSH extends RpcProtocol {
 	    return digest;
 
 	if(flush_dests == null) {
-	     if(log.isWarnEnabled()) log.warn("flush dest is null, ignoring flush !");
+	     if(warn) log.warn("flush dest is null, ignoring flush !");
 	    return digest;
 	}
 
 	if(flush_dests.size() == 0) {
-	     if(log.isWarnEnabled()) log.warn("flush dest is empty, ignoring flush !");
+	     if(warn) log.warn("flush dest is empty, ignoring flush !");
 	    return digest;
 	}
 
 	if(!flush_dests.contains(local_addr)) {
 
-		if(log.isWarnEnabled()) log.warn("am not in the flush dests, ignoring flush");
+		if(warn) log.warn("am not in the flush dests, ignoring flush");
 	    return digest;
 	}
 

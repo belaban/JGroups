@@ -1,4 +1,4 @@
-// $Id: PIGGYBACK.java,v 1.9 2005/05/30 14:31:07 belaban Exp $
+// $Id: PIGGYBACK.java,v 1.10 2005/08/11 12:43:47 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -93,7 +93,7 @@ public class PIGGYBACK extends Protocol {
                                     " messages of a total size of " + current_size + " bytes");
                     }
                     catch(Exception e) {
-                        if(log.isWarnEnabled()) log.warn("exception is " + e);
+                        if(warn) log.warn("exception is " + e);
                     }
                 }
                 catch(QueueClosedException closed) {
@@ -172,7 +172,7 @@ public class PIGGYBACK extends Protocol {
                         passUp(new Event(Event.MSG, messages.elementAt(i)));
                 }
                 catch(Exception e) {
-                    if(log.isWarnEnabled()) log.warn("piggyback message does not contain a vector of " +
+                    if(warn) log.warn("piggyback message does not contain a vector of " +
                             "piggybacked messages, discarding message ! Exception is " + e);
                     return;
                 }

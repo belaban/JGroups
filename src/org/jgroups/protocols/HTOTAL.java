@@ -1,4 +1,4 @@
-// $Id: HTOTAL.java,v 1.2 2005/05/30 14:31:07 belaban Exp $
+// $Id: HTOTAL.java,v 1.3 2005/08/11 12:43:47 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -17,7 +17,7 @@ import java.util.Vector;
  * to a coordinator who then forwards it to its neighbor on the right, who then forwards it to its neighbor to the right
  * etc.
  * @author Bela Ban
- * @version $Id: HTOTAL.java,v 1.2 2005/05/30 14:31:07 belaban Exp $
+ * @version $Id: HTOTAL.java,v 1.3 2005/08/11 12:43:47 belaban Exp $
  */
 public class HTOTAL extends Protocol {
     Address coord=null;
@@ -159,7 +159,7 @@ public class HTOTAL extends Protocol {
             msg.putHeader(getName(), hdr);
         }
         msg.setDest(destination);
-        if(log.isTraceEnabled())
+        if(trace)
             log.trace("forwarding message to " + destination + ", hdr=" + hdr);
         passDown(new Event(Event.MSG, msg));
     }
@@ -190,7 +190,7 @@ public class HTOTAL extends Protocol {
             }
         }
         neighbor=retval;
-        if(log.isTraceEnabled())
+        if(trace)
             log.trace("coord=" + coord + ", neighbor=" + neighbor);
     }
 

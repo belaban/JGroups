@@ -1,4 +1,4 @@
-// $Id: FD_PID.java,v 1.7 2005/05/30 14:31:07 belaban Exp $
+// $Id: FD_PID.java,v 1.8 2005/08/11 12:43:47 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -96,7 +96,7 @@ public class FD_PID extends Protocol {
         if(stack != null && stack.timer != null)
             timer=stack.timer;
         else {
-            if(log.isWarnEnabled()) log.warn("TimeScheduler in protocol stack is null (or protocol stack is null)");
+            if(warn) log.warn("TimeScheduler in protocol stack is null (or protocol stack is null)");
             return;
         }
 
@@ -197,7 +197,7 @@ public class FD_PID extends Protocol {
                                 start();
                             }
                             catch(Exception ex) {
-                                if(log.isWarnEnabled()) log.warn("exception when calling start(): " + ex);
+                                if(warn) log.warn("exception when calling start(): " + ex);
                             }
                         }
                         break;
@@ -278,7 +278,7 @@ public class FD_PID extends Protocol {
                             own_pid_sent=true;
                         }
                         else
-                            if(log.isWarnEnabled()) log.warn("[VIEW_CHANGE]: local_pid == 0");
+                            if(warn) log.warn("[VIEW_CHANGE]: local_pid == 0");
                     }
 
                     // 3. Remove all entries in 'pids' which are not in the new membership
@@ -301,7 +301,7 @@ public class FD_PID extends Protocol {
                             start();
                         }
                         catch(Exception ex) {
-                            if(log.isWarnEnabled()) log.warn("exception when calling start(): " + ex);
+                            if(warn) log.warn("exception when calling start(): " + ex);
                         }
                     }
                 }
@@ -568,7 +568,7 @@ public class FD_PID extends Protocol {
          */
         public void run() {
             if(ping_dest == null) {
-                if(log.isWarnEnabled()) log.warn("ping_dest is null, skipping ping");
+                if(warn) log.warn("ping_dest is null, skipping ping");
                 return;
             }
 

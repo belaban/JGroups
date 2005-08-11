@@ -1,4 +1,4 @@
-// $Id: PERF.java,v 1.9 2005/05/30 14:31:07 belaban Exp $
+// $Id: PERF.java,v 1.10 2005/08/11 12:43:47 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -30,7 +30,7 @@ import java.util.Vector;
  * </ol>
  *
  * @author Bela Ban Oct 2001
- * @version $Revision: 1.9 $
+ * @version $Revision: 1.10 $
  */
 public class PERF extends Protocol {
     boolean             details=false;
@@ -83,7 +83,7 @@ public class PERF extends Protocol {
             if(hdr != null) {
                 hdr.setEndTime();
                 hdr.setDone(name, PerfHeader.UP); // we do this here because header is removed, so PassUp won't find it
-                if(log.isTraceEnabled())
+                if(trace)
                     log.trace(hdr.printContents(details, protocols) + "\n---------------------------------\n");
             }
             break;

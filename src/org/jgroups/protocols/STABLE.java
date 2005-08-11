@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.10 2005/08/08 12:45:43 belaban Exp $
+// $Id: STABLE.java,v 1.11 2005/08/11 12:43:47 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -271,7 +271,7 @@ public class STABLE extends RpcProtocol {
             if(gossip_seqnos == null || seqnos == null ||
                     seqnos.length != gossip_seqnos.length) {
 
-                    if(log.isWarnEnabled()) log.warn("size of seqnos and gossip_seqnos are not equal ! " +
+                    if(warn) log.warn("size of seqnos and gossip_seqnos are not equal ! " +
                             "Discarding gossip");
                 return;
             }
@@ -451,7 +451,7 @@ public class STABLE extends RpcProtocol {
         synchronized(this) {
             index=mbrs.indexOf(sender);
             if(index < 0) {
-                 if(log.isWarnEnabled()) log.warn("sender " + sender + " not found in mbrs !");
+                 if(warn) log.warn("sender " + sender + " not found in mbrs !");
                 return;
             }
 
@@ -487,7 +487,7 @@ public class STABLE extends RpcProtocol {
         synchronized(this) {
             index=mbrs.indexOf(sender);
             if(index < 0) {
-                 if(log.isWarnEnabled()) log.warn("sender " + sender + " not found in mbrs !");
+                 if(warn) log.warn("sender " + sender + " not found in mbrs !");
                 return;
             }
 
@@ -524,7 +524,7 @@ public class STABLE extends RpcProtocol {
         synchronized(this) {
             gossip_subset=Util.pickSubset(mbrs, subset);
             if(gossip_subset == null || gossip_subset.size() < 1) {
-                 if(log.isWarnEnabled()) log.warn("picked empty subset !");
+                 if(warn) log.warn("picked empty subset !");
                 return;
             }
 

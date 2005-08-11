@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.35 2005/08/08 12:45:38 belaban Exp $
+// $Id: GMS.java,v 1.36 2005/08/11 12:43:46 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -9,6 +9,7 @@ import org.jgroups.util.BoundedList;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 import org.jgroups.util.Streamable;
+import org.apache.commons.logging.Log;
 
 import java.io.*;
 import java.util.*;
@@ -76,6 +77,7 @@ public class GMS extends Protocol {
     public String getName() {
         return name;
     }
+
 
     public String getView() {return view_id != null? view_id.toString() : "null";}
     public int getNumberOfViews() {return num_views;}
@@ -381,7 +383,7 @@ public class GMS extends Protocol {
         /* Check for self-inclusion: if I'm not part of the new membership, I just discard it.
         This ensures that messages sent in view V1 are only received by members of V1 */
         if(checkSelfInclusion(mbrs) == false) {
-            if(log.isWarnEnabled()) log.warn("checkSelfInclusion() failed, " + local_addr +
+            if(warn) log.warn("checkSelfInclusion() failed, " + local_addr +
                     " is not a member of view " + new_view + "; discarding view");
 
             // only shun if this member was previously part of the group. avoids problem where multiple
@@ -389,7 +391,7 @@ public class GMS extends Protocol {
             // {A,B,X}, which would cause Y and Z to be shunned as they are not part of the membership
             // bela Nov 20 2003
             if(shun && local_addr != null && prev_members.contains(local_addr)) {
-                if(log.isWarnEnabled())
+                if(warn)
                     log.warn("I (" + local_addr + ") am being shunned, will leave the group" +
                             " (prev_members are " + prev_members + ')');
                 if(impl != null)

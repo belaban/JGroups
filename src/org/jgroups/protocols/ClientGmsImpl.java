@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.10 2005/08/08 12:45:41 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.11 2005/08/11 12:43:47 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -25,7 +25,7 @@ import java.util.Vector;
  * tell the client what its initial membership is.
  * 
  * @author Bela Ban
- * @version $Revision: 1.10 $
+ * @version $Revision: 1.11 $
  */
 public class ClientGmsImpl extends GmsImpl {
     final Vector initial_mbrs=new Vector(7);
@@ -91,7 +91,7 @@ public class ClientGmsImpl extends GmsImpl {
 
             coord=determineCoord(initial_mbrs);
             if(coord == null) {
-                if(log.isWarnEnabled()) log.warn("could not determine coordinator " +
+                if(warn) log.warn("could not determine coordinator " +
                                                  "from responses " + initial_mbrs);
                 continue;
             }
@@ -170,7 +170,7 @@ public class ClientGmsImpl extends GmsImpl {
             }
         }
         else
-            if(log.isWarnEnabled()) log.warn("am not member of " + mems + ", will not install view");
+            if(warn) log.warn("am not member of " + mems + ", will not install view");
     }
 
 
@@ -281,7 +281,7 @@ public class ClientGmsImpl extends GmsImpl {
         }
 
         if(votes.size() > 1)
-            if(log.isWarnEnabled()) log.warn("there was more than 1 candidate for coordinator: " + votes);
+            if(warn) log.warn("there was more than 1 candidate for coordinator: " + votes);
         else
             if(log.isInfoEnabled()) log.info("election results: " + votes);
 

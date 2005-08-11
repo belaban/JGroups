@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.22 2005/08/08 12:45:39 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.23 2005/08/11 12:43:46 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -109,7 +109,7 @@ public class STATE_TRANSFER extends Protocol {
         case Event.GET_DIGEST_STATE_OK:
             synchronized(state_requesters) {
                 if(digest != null) {
-                    if(log.isWarnEnabled())
+                    if(warn)
                         log.warn("GET_DIGEST_STATE_OK: existing digest is not null, overwriting it !");
                 }
                 digest=(Digest)evt.getArg();
@@ -164,7 +164,7 @@ public class STATE_TRANSFER extends Protocol {
             case Event.GET_STATE:
                 info=(StateTransferInfo)evt.getArg();
                 if(info.type != StateTransferInfo.GET_FROM_SINGLE) {
-                    if(log.isWarnEnabled()) log.warn("[GET_STATE] (info=" + info + "): getting the state from " +
+                    if(warn) log.warn("[GET_STATE] (info=" + info + "): getting the state from " +
                             "all members is not currently supported by pbcast.STATE_TRANSFER, will use " +
                             "coordinator to fetch state instead");
                 }
@@ -202,12 +202,12 @@ public class STATE_TRANSFER extends Protocol {
                 state=(byte[])evt.getArg();
                 synchronized(state_requesters) {
                     if(state_requesters.size() == 0) {
-                        if(log.isWarnEnabled())
+                        if(warn)
                             log.warn("GET_APPLSTATE_OK: received application state, but there are no requesters !");
                         return;
                     }
                     if(digest == null)
-                        if(log.isWarnEnabled()) log.warn("GET_APPLSTATE_OK: received application state, " +
+                        if(warn) log.warn("GET_APPLSTATE_OK: received application state, " +
                                 "but there is no digest !");
                     else
                         digest=digest.copy();
@@ -284,7 +284,7 @@ public class STATE_TRANSFER extends Protocol {
     /** Set the digest and the send the state up to the application */
     void handleStateRsp(Object sender, Digest digest, byte[] state) {
         if(digest == null) {
-            if(log.isWarnEnabled())
+            if(warn)
                 log.warn("digest received from " + sender + " is null, skipping setting digest !");
         }
         else
@@ -299,7 +299,7 @@ public class STATE_TRANSFER extends Protocol {
         passDown(new Event(Event.RESUME_STABLE));
 
         if(state == null) {
-            if(log.isWarnEnabled())
+            if(warn)
                 log.warn("state received from " + sender + " is null, will return null state to application");
         }
         else
