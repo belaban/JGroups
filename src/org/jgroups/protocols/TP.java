@@ -7,7 +7,7 @@ import org.jgroups.util.*;
 import org.jgroups.util.List;
 import org.jgroups.util.Queue;
 
-import java.io.*;
+import java.io.DataInputStream;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -40,7 +40,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.21 2005/08/11 12:43:47 belaban Exp $
+ * @version $Id: TP.java,v 1.22 2005/08/11 15:40:15 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
