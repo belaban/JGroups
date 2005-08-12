@@ -1,4 +1,4 @@
-// $Id: FC.java,v 1.40 2005/08/12 08:32:50 belaban Exp $
+// $Id: FC.java,v 1.41 2005/08/12 11:21:14 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -21,7 +21,7 @@ import java.util.*;
  * Note that this protocol must be located towards the top of the stack, or all down_threads from JChannel to this
  * protocol must be set to false ! This is in order to block JChannel.send()/JChannel.down().
  * @author Bela Ban
- * @version $Revision: 1.40 $
+ * @version $Revision: 1.41 $
  */
 public class FC extends Protocol {
 
@@ -242,22 +242,8 @@ public class FC extends Protocol {
 
     public void down(Event evt) {
         switch(evt.getType()) {
-        case Event.VIEW_CHANGE:
-            // this has to be run in a separate thread because waitUntilEnoughCreditsAvailable() might block,
-            // and the view change could potentially unblock it
-            // doesn't work ! Because we're not even getting the VIEW event if the MSG event blocks !
-            // This was moved to receiveDownEvent() above, which is concurrent to down(MSG). bela July 29 2005
-//            new Thread() {
-//                public void run() {
-//                    handleViewChange(((View)evt.getArg()).getMembers());
-//                }
-//            }.start();
-            break;
         case Event.MSG:
             handleDownMessage(evt);
-            // passDown(evt); // let this one go, but block on the next message if not sufficient credit
-            // blocks until enought credits are available to send message
-            // waitUntilEnoughCreditsAvailable((Message)evt.getArg());
             return;
         }
         passDown(evt); // this could potentially use the lower protocol's thread which may block
@@ -265,8 +251,7 @@ public class FC extends Protocol {
 
 
     private synchronized void handleDownMessage(Event evt) {
-        if(Boolean.TRUE.equals(blocking.get())) {
-            // blocked
+        if(Boolean.TRUE.equals(blocking.get())) { // blocked
             waitUntilEnoughCreditsAvailable();
         }
         else {
@@ -338,13 +323,12 @@ public class FC extends Protocol {
         StringBuffer sb=null;
         boolean unblock=false;
 
-
         if(trace) {
             Long old_credit=(Long)sent.get(sender);
             sb=new StringBuffer();
             sb.append("received credit from ").append(sender).append(", old credit was ").
                     append(old_credit).append(", new credits are ").append(max_credits).
-                    append(".\nCreditors before are: ").append(printCreditors());
+                    append(".\nCreditors before are: ").append(creditors);
         }
 
         synchronized(sent) {
@@ -352,7 +336,7 @@ public class FC extends Protocol {
             if(creditors.size() > 0) {  // we are blocked because we expect credit from one or more members
                 removeCreditor(sender);
                 if(trace) {
-                    sb.append("\nCreditors after removal of ").append(sender).append(" are: ").append(printCreditors());
+                    sb.append("\nCreditors after removal of ").append(sender).append(" are: ").append(creditors);
                     log.trace(sb.toString());
                 }
                 if(creditors.size() == 0) {
@@ -421,7 +405,7 @@ public class FC extends Protocol {
                 List tmp=new ArrayList(creditors);
                 if(trace)
                     log.trace("timeout occurred waiting for credits; sending credit request to " + tmp +
-                              ", creditors are " + printCreditors());
+                              ", creditors are " + creditors);
                 Address mbr;
                 for(Iterator it=tmp.iterator(); it.hasNext();) {
                     mbr=(Address)it.next();
@@ -495,20 +479,6 @@ public class FC extends Protocol {
     }
 
 
-    private String printCreditors() {
-        // **********************************************************************
-        // always called with 'sent' lock acquired, so we don't need to sync here
-        // **********************************************************************
-        StringBuffer sb=new StringBuffer();
-        if(creditors.size() ==0)
-            return "<empty>";
-        for(int i=0; i < creditors.size(); i++) {
-            Address creditor=(Address)creditors.elementAt(i);
-            sb.append(creditor).append(": ").append(getCredits(sent, creditor)).append(" credits ");
-        }
-        return sb.toString();
-    }
-
     private void addCreditor(Address mbr) {
         if(mbr != null && !creditors.contains(mbr))
             creditors.add(mbr);
@@ -518,9 +488,6 @@ public class FC extends Protocol {
         creditors.remove(mbr);
     }
 
-    private static Long getCredits(Map map, Address mbr) {
-        return (Long)map.get(mbr);
-    }
 
 
 
@@ -607,7 +574,7 @@ public class FC extends Protocol {
                     creditors.remove(creditor);
             }
 
-            if(trace) log.trace("creditors are\n" + printCreditors());
+            if(trace) log.trace("creditors are " + creditors);
             if(creditors.size() == 0)
                 unblock=true;
         }
