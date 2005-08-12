@@ -1,4 +1,4 @@
-// Version: $Id: FlowControl.txt,v 1.1 2005/08/12 11:00:43 belaban Exp $
+// Version: $Id: FlowControl.txt,v 1.2 2005/08/12 11:20:12 belaban Exp $
 // Author: Bela Ban
 
 
@@ -41,7 +41,7 @@ On message send:
     - wait on mutex (timeout)
     - if timeout: send credit request to all creditors
 - else
-  - decrement length from all members (if multicast) or specific member (if unicast)
+  - in sent_msgs: decrement length from all members (if multicast) or specific member (if unicast)
   - adjust lowest_credit
 
 - send message
@@ -50,15 +50,25 @@ On message send:
 
 On message receive:
 -------------------
+- length = length of message
+- in received_msgs: subtract length from all members (if multicast) or specific member (if unicast)
+  - for each member M that doesn't have enough credits (credits left <= min_credits):
+    - send credits to M
 
 
-On credit receive:
-------------------
-- 
+On credit receive from P:
+-------------------------
+- in sent_msgs: update credits for P
+- compute lowest_credit
+- remove P from creditors
+- if (lowest_credit > 0 and creditor.size() == 0):
+  - set insufficient_credit = false
+  - notify mutex
 
 
-On credit request receive:
---------------------------
+On credit request receive from P:
+---------------------------------
+- send credits to P
 
 
 On view change:
