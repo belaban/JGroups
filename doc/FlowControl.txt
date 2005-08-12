@@ -1,0 +1,77 @@
+// Version: $Id: FlowControl.txt,v 1.1 2005/08/12 11:00:43 belaban Exp $
+// Author: Bela Ban
+
+
+Flow control (FC)
+=================
+
+
+
+Constants:
+----------
+- max_credits (example 2000000)
+- min_credits (example  200000)
+
+
+Vars:
+-----
+- sent_msgs: Map<Address,Long>, maps destinations to credits
+- received_msgs: Map<Address,Long>, maps receivers to credits
+- running: termination condition
+- insufficient_credit: condition, message sending blocks when true
+- creditors: list of destination for which we current don't have enough credits to send messages
+- lowest_credit: the lowest credits of any destination (sent_msgs)
+- mutex: for blocking of a sender
+
+
+Init:
+-----
+- running = true
+- insufficient_credit = false
+- lowest_credit = max_credits
+
+
+On message send:
+----------------
+- length = length of message
+- if (lowest_credit - length <= 0):
+  - insufficient_credit = true
+  [- determine creditors]
+  - while (insufficient_credit and running):
+    - wait on mutex (timeout)
+    - if timeout: send credit request to all creditors
+- else
+  - decrement length from all members (if multicast) or specific member (if unicast)
+  - adjust lowest_credit
+
+- send message
+
+
+
+On message receive:
+-------------------
+
+
+On credit receive:
+------------------
+- 
+
+
+On credit request receive:
+--------------------------
+
+
+On view change:
+---------------
+- Remove all entries from sent_msgs, received_msgs which are not in the new view
+- Add entries for all members of the new view for which there are currently no entries
+- Set all values in sent_msgs and received_msgs to max_credits
+- Set lowest_credit = max_credits
+- Set insufficient_credit = false
+- Notify mutex
+
+
+On stop:
+--------
+- Set running = false
+- Notify mutex
