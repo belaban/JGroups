@@ -1,4 +1,4 @@
-// Version: $Id: FlowControl.txt,v 1.2 2005/08/12 11:20:12 belaban Exp $
+// Version: $Id: FlowControl.txt,v 1.3 2005/08/15 13:20:19 belaban Exp $
 // Author: Bela Ban
 
 
@@ -51,9 +51,11 @@ On message send:
 On message receive:
 -------------------
 - length = length of message
-- in received_msgs: subtract length from all members (if multicast) or specific member (if unicast)
-  - for each member M that doesn't have enough credits (credits left <= min_credits):
+- sender = sender of message
+- in received_msgs: subtract length from sender M
+  - if M doesn't have enough credits (credits left <= min_credits):
     - send credits to M
+    - replenish credits for M (in received_msgs)
 
 
 On credit receive from P:
@@ -75,11 +77,11 @@ On view change:
 ---------------
 - Remove all entries from sent_msgs, received_msgs which are not in the new view
 - Add entries for all members of the new view for which there are currently no entries
-- Set all values in sent_msgs and received_msgs to max_credits
-- Set lowest_credit = max_credits
-- Set insufficient_credit = false
-- Notify mutex
-
+- Remove all creditors which are not in the new view
+- Compute lowest_credit
+- if (lowest_credit > 0 and creditor.size() == 0):
+  - set insufficient_credit = false
+  - notify mutex
 
 On stop:
 --------
