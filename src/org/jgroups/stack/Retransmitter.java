@@ -1,4 +1,4 @@
-// $Id: Retransmitter.java,v 1.8 2005/07/13 07:18:09 belaban Exp $
+// $Id: Retransmitter.java,v 1.9 2005/08/16 09:55:03 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -8,9 +8,7 @@ import org.jgroups.Address;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.ListIterator;
+import java.util.*;
 
 
 /**
@@ -26,7 +24,7 @@ import java.util.ListIterator;
  *
  * @author John Giorgiadis
  * @author Bela Ban
- * @version $Revision: 1.8 $
+ * @version $Revision: 1.9 $
  */
 public class Retransmitter {
 
@@ -37,7 +35,7 @@ public class Retransmitter {
     private static final long SUSPEND_TIMEOUT=2000;
 
     private Address              sender=null;
-    private final LinkedList     msgs=new LinkedList();
+    private final LinkedList     msgs=new LinkedList();  // List<Entry> of elements to be retransmitted
     private RetransmitCommand    cmd=null;
     private boolean              retransmitter_owned;
     private TimeScheduler        retransmitter=null;
@@ -93,8 +91,6 @@ public class Retransmitter {
      * then the range [last_seqno, first_seqno] is added instead
      * <p>
      * If retransmitter thread is suspended, wake it up
-     * TODO:
-     * Does not check for duplicates !
      */
     public void add(long first_seqno, long last_seqno) {
         Entry e;
@@ -123,13 +119,11 @@ public class Retransmitter {
         synchronized(msgs) {
             for(ListIterator it=msgs.listIterator(); it.hasNext();) {
                 e=(Entry)it.next();
-                synchronized(e) {
-                    if(seqno < e.low || seqno > e.high) continue;
-                    e.remove(seqno);
-                    if(e.low > e.high) {
-                        e.cancel();
-                        it.remove();
-                    }
+                if(seqno < e.low || seqno > e.high) continue;
+                e.remove(seqno);
+                if(e.low > e.high) {
+                    e.cancel();
+                    it.remove();
                 }
                 break;
             }
@@ -188,10 +182,25 @@ public class Retransmitter {
 
     public String toString() {
         synchronized(msgs) {
-            return new StringBuffer(msgs.size()).append(" messages to retransmit: (").append(msgs.toString()).append(')').toString();
+            int size=size();
+            StringBuffer sb=new StringBuffer();
+            sb.append(size).append(" messages to retransmit: ").append(msgs);
+            return sb.toString();
         }
     }
 
+
+    public int size() {
+        int size=0;
+        Entry entry;
+        synchronized(msgs) {
+            for(Iterator it=msgs.iterator(); it.hasNext();) {
+                entry=(Retransmitter.Entry)it.next();
+                size+=entry.size();
+            }
+        }
+        return size;
+    }
 
 
 
@@ -257,15 +266,15 @@ public class Retransmitter {
      * all the groups in this entry are also stored separately
      */
     private class Entry extends Task {
-        public long low;
-        public long high;
-        public final java.util.List list;
+        private long low;
+        private long high;
+        /** List<long[2]> of ranges to be retransmitted */
+        final java.util.List list=new ArrayList();
 
         public Entry(long low, long high, long[] intervals) {
             super(intervals);
             this.low=low;
             this.high=high;
-            list=new ArrayList();
             list.add(new long[]{low, high});
         }
 
@@ -289,10 +298,9 @@ public class Retransmitter {
          */
         public void remove(long seqno) {
             int i;
-            long[] bounds, newBounds;
+            long[] bounds=null, newBounds;
 
-            bounds=null;
-            synchronized(this) {
+            synchronized(list) {
                 for(i=0; i < list.size(); ++i) {
                     bounds=(long[])list.get(i);
                     if(seqno < bounds[0] || seqno > bounds[1]) continue;
@@ -328,25 +336,60 @@ public class Retransmitter {
          */
         public void run() {
             long[] bounds;
+            List copy;
 
-            synchronized(this) {
-                for(int i=0; i < list.size(); ++i) {
-                    bounds=(long[])list.get(i);
+            synchronized(list) {
+                copy=new LinkedList(list);
+            }
+
+            for(Iterator it=copy.iterator(); it.hasNext();) {
+                bounds=(long[])it.next();
+                try {
                     cmd.retransmit(bounds[0], bounds[1], sender);
+                }
+                catch(Throwable t) {
+                    log.error("failure asking " + cmd + " for retransmission", t);
                 }
             }
         }
 
+        int size() {
+            int size=0;
+            long diff;
+            long[] tmp;
+            synchronized(list) {
+                for(Iterator it=list.iterator(); it.hasNext();) {
+                    tmp=(long[])it.next();
+                    diff=tmp[1] - tmp[0] +1;
+                    size+=diff;
+                }
+            }
+
+            return size;
+        }
+
+
         public String toString() {
             StringBuffer sb=new StringBuffer();
-            if(low == high)
-                sb.append(low);
-            else
-                sb.append(low).append(':').append(high);
+            synchronized(list) {
+                long[] range;
+                boolean first=true;
+                for(Iterator it=list.iterator(); it.hasNext();) {
+                    range=(long[])it.next();
+                    if(first) {
+                        first=false;
+                    }
+                    else {
+                        sb.append(", ");
+                    }
+                    sb.append(range[0]).append('-').append(range[1]);
+                }
+            }
+
             return sb.toString();
         }
 
-    } // end class Entry
+    }
 
 
     public static void main(String[] args) {
@@ -359,20 +402,31 @@ public class Retransmitter {
             xmitter.setRetransmitTimeouts(new long[]{1000, 2000, 4000, 8000});
 
             xmitter.add(1, 10);
+            System.out.println("retransmitter: " + xmitter);
             xmitter.remove(1);
+            System.out.println("retransmitter: " + xmitter);
             xmitter.remove(2);
+            System.out.println("retransmitter: " + xmitter);
             xmitter.remove(4);
+            System.out.println("retransmitter: " + xmitter);
 
             Util.sleep(3000);
             xmitter.remove(3);
+            System.out.println("retransmitter: " + xmitter);
 
             Util.sleep(1000);
             xmitter.remove(10);
+            System.out.println("retransmitter: " + xmitter);
             xmitter.remove(8);
+            System.out.println("retransmitter: " + xmitter);
             xmitter.remove(6);
+            System.out.println("retransmitter: " + xmitter);
             xmitter.remove(7);
+            System.out.println("retransmitter: " + xmitter);
             xmitter.remove(9);
+            System.out.println("retransmitter: " + xmitter);
             xmitter.remove(5);
+            System.out.println("retransmitter: " + xmitter);
         }
         catch(Exception e) {
             log.error(e);
