@@ -14,7 +14,7 @@ import java.util.Properties;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: JGroupsTransport.java,v 1.7 2005/07/29 14:21:13 belaban Exp $
+ * @version $Id: JGroupsTransport.java,v 1.8 2005/08/16 10:55:40 belaban Exp $
  */
 public class JGroupsTransport implements Transport, Runnable {
     Properties config=null;
@@ -80,7 +80,8 @@ public class JGroupsTransport implements Transport, Runnable {
 
     public void send(Object destination, byte[] payload) throws Exception {
         Message msg=new Message((Address)destination, null, payload);
-        channel.send(msg);
+        if(channel != null)
+            channel.send(msg);
     }
 
     public void run() {
@@ -91,6 +92,8 @@ public class JGroupsTransport implements Transport, Runnable {
 
         while(t != null) {
             try {
+                if(channel == null)
+                break;
                 obj=channel.receive(0);
                 if(obj instanceof Message) {
                     msg=(Message)obj;
