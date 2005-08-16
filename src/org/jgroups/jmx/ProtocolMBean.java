@@ -2,18 +2,21 @@ package org.jgroups.jmx;
 
 import org.jgroups.stack.ProtocolObserver;
 
-import java.util.Properties;
-import java.util.Vector;
 import java.util.Map;
+import java.util.Properties;
 
 /**
  * @author Bela Ban
- * @version $Id: ProtocolMBean.java,v 1.6 2005/07/26 11:15:19 belaban Exp $
+ * @version $Id: ProtocolMBean.java,v 1.7 2005/08/16 12:58:58 belaban Exp $
  */
 public interface ProtocolMBean {
     String getName();
     String getPropertiesAsString();
     void setProperties(Properties p);
+    boolean isTrace();
+    void setTrace(boolean trace);
+    boolean isWarn();
+    void setWarn(boolean warn);
     boolean getStatsEnabled();
     void setStatsEnabled(boolean flag);
     void resetStats();

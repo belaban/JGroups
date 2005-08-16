@@ -1,4 +1,4 @@
-// $Id: Protocol.java,v 1.32 2005/08/11 12:43:52 belaban Exp $
+// $Id: Protocol.java,v 1.33 2005/08/16 12:58:58 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -168,8 +168,8 @@ public abstract class Protocol {
     protected boolean          up_thread=true;    // determines whether the up_handler thread should be started
     protected boolean          stats=true;  // determines whether to collect statistics (and expose them via JMX)
     protected final Log        log=LogFactory.getLog(this.getClass());
-    protected final boolean    trace=log.isTraceEnabled();
-    protected final boolean    warn=log.isWarnEnabled();
+    protected boolean          trace=log.isTraceEnabled();
+    protected boolean          warn=log.isWarnEnabled();
 
 
     /**
@@ -230,6 +230,22 @@ public abstract class Protocol {
         return props;
     }
 
+
+    public boolean isTrace() {
+        return trace;
+    }
+
+    public void setTrace(boolean trace) {
+        this.trace=trace;
+    }
+
+    public boolean isWarn() {
+        return warn;
+    }
+
+    public void setWarn(boolean warn) {
+        this.warn=warn;
+    }
 
     public boolean upThreadEnabled() {
         return up_thread;
