@@ -7,7 +7,7 @@ import java.util.Map;
 
 /**
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.7 2005/07/26 11:15:19 belaban Exp $
+ * @version $Id: Protocol.java,v 1.8 2005/08/16 12:58:58 belaban Exp $
  */
 public class Protocol implements ProtocolMBean {
     org.jgroups.stack.Protocol prot;
@@ -35,6 +35,23 @@ public class Protocol implements ProtocolMBean {
     public void setProperties(Properties p) {
         prot.setProperties(p);
     }
+
+    public boolean isTrace() {
+        return prot.isTrace();
+    }
+
+    public void setTrace(boolean trace) {
+        prot.setTrace(trace);
+    }
+
+    public boolean isWarn() {
+        return prot.isWarn();
+    }
+
+    public void setWarn(boolean warn) {
+        prot.setWarn(warn);
+    }
+
 
     public boolean getStatsEnabled() {
         return prot.statsEnabled();
