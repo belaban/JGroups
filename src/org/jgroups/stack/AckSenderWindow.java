@@ -1,4 +1,4 @@
-// $Id: AckSenderWindow.java,v 1.12 2005/07/13 07:34:19 belaban Exp $
+// $Id: AckSenderWindow.java,v 1.13 2005/08/17 11:26:56 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -109,7 +109,10 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
 
 
     public String toString() {
-        return msgs.keySet().toString() + " (retransmitter: " + retransmitter.toString() + ')';
+        StringBuffer sb=new StringBuffer();
+        sb.append(msgs.size()).append(" msgs (").append(retransmitter.size()).append(" to retransmit): ")
+                .append(msgs.keySet());
+        return sb.toString();
     }
 
     /* -------------------------------- Retransmitter.RetransmitCommand interface ------------------- */
