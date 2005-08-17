@@ -1,4 +1,4 @@
-// $Id: FC.java,v 1.44 2005/08/17 06:07:51 belaban Exp $
+// $Id: FC.java,v 1.45 2005/08/17 08:12:41 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -22,7 +22,7 @@ import java.util.*;
  * <br/>This is the second simplified implementation of the same model. The algorithm is sketched out in
  * doc/FlowControl.txt
  * @author Bela Ban
- * @version $Revision: 1.44 $
+ * @version $Revision: 1.45 $
  */
 public class FC extends Protocol {
 
@@ -45,6 +45,7 @@ public class FC extends Protocol {
     /** Max number of bytes to send per receiver until an ack must
      * be received before continuing sending */
     private long max_credits=50000;
+    private Long max_credits_constant;
 
     /** Max time (in milliseconds) to block. If credit hasn't been received after max_block_time, we send
      * a REPLENISHMENT request to the members from which we expect credits. A value <= 0 means to
@@ -107,6 +108,7 @@ public class FC extends Protocol {
 
     public void setMaxCredits(long max_credits) {
         this.max_credits=max_credits;
+        max_credits_constant=new Long(this.max_credits);
     }
 
     public double getMinThreshold() {
@@ -200,6 +202,17 @@ public class FC extends Protocol {
     /** Allows to unblock a blocked sender from an external program, e.g. JMX */
     public void unblock() {
         synchronized(mutex) {
+            if(trace)
+                log.trace("unblocking the sender and replenishing all members, creditors are " + creditors);
+
+            Map.Entry entry;
+            for(Iterator it=sent.entrySet().iterator(); it.hasNext();) {
+                entry=(Map.Entry)it.next();
+                entry.setValue(max_credits_constant);
+            }
+
+            lowest_credit=computeLowestCredit(sent);
+            creditors.clear();
             insufficient_credit=false;
             mutex.notifyAll();
         }
@@ -244,6 +257,7 @@ public class FC extends Protocol {
             log.error("FC.setProperties(): the following properties are not recognized: " + props);
             return false;
         }
+        max_credits_constant=new Long(max_credits);
         return true;
     }
 
@@ -308,7 +322,7 @@ public class FC extends Protocol {
                         Address sender=msg.getSrc();
                         if(trace)
                             log.trace("received credit request from " + sender + ": sending credits");
-                        received.put(sender, new Long(max_credits));
+                        received.put(sender, max_credits_constant);
                         sendCredit(sender);
                         break;
                     default:
@@ -447,7 +461,7 @@ public class FC extends Protocol {
                         append(".\nCreditors before are: ").append(creditors);
             }
 
-            sent.put(sender, new Long(max_credits));
+            sent.put(sender, max_credits_constant);
             lowest_credit=computeLowestCredit(sent);
             if(creditors.size() > 0) {  // we are blocked because we expect credit from one or more members
                 creditors.remove(sender);
@@ -487,7 +501,7 @@ public class FC extends Protocol {
             return; // no effect
 
         if(decrementCredit(received, src, length) < min_credits) {
-            received.put(src, new Long(max_credits));
+            received.put(src, max_credits_constant);
             if(trace) log.trace("sending replenishment message to " + src);
             sendCredit(src);
         }
@@ -520,9 +534,9 @@ public class FC extends Protocol {
             for(int i=0; i < mbrs.size(); i++) {
                 addr=(Address) mbrs.elementAt(i);
                 if(!received.containsKey(addr))
-                    received.put(addr, new Long(max_credits));
+                    received.put(addr, max_credits_constant);
                 if(!sent.containsKey(addr))
-                    sent.put(addr, new Long(max_credits));
+                    sent.put(addr, max_credits_constant);
             }
             // remove members that left
             for(Iterator it=received.keySet().iterator(); it.hasNext();) {
