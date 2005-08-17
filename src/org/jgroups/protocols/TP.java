@@ -40,7 +40,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.22 2005/08/11 15:40:15 belaban Exp $
+ * @version $Id: TP.java,v 1.23 2005/08/17 07:32:32 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -184,6 +184,18 @@ public abstract class TP extends Protocol {
     public void setMaxBundleSize(int size) {max_bundle_size=size;}
     public long getMaxBundleTimeout() {return max_bundle_timeout;}
     public void setMaxBundleTimeout(long timeout) {max_bundle_timeout=timeout;}
+    public int getOutgoingQueueSize() {return outgoing_queue != null? outgoing_queue.size() : -1;}
+    public int getIncomingQueueSize() {return incoming_queue != null? incoming_queue.size() : -1;}
+    public Address getLocalAddress() {return local_addr;}
+    public String getChannelName() {return channel_name;}
+    public boolean isLoopback() {return loopback;}
+    public void setLoopback(boolean b) {loopback=b;}
+    public boolean isLoopbackQueue() {return loopback_queue;}
+    public void setLoopbackQueue(boolean b) {loopback_queue=b;}
+    public boolean isUseIncomingPacketHandler() {return use_incoming_packet_handler;}
+    public boolean isUseOutgoingPacketHandler() {return use_outgoing_packet_handler;}
+
+
 
     public Map dumpStats() {
         Map retval=super.dumpStats();
@@ -259,7 +271,7 @@ public abstract class TP extends Protocol {
         if(use_outgoing_packet_handler) {
             outgoing_queue=new Queue();
             if(enable_bundling) {
-                outgoing_packet_handler=new BundlingOutgoingPacketHandler2();
+                outgoing_packet_handler=new BundlingOutgoingPacketHandler();
             }
             else
                 outgoing_packet_handler=new OutgoingPacketHandler();
@@ -938,7 +950,7 @@ public abstract class TP extends Protocol {
 
         public void run() {
             IncomingQueueEntry entry;
-            while(incoming_queue != null && incoming_packet_handler != null) {
+            while(incoming_queue != null) {
                 try {
                     entry=(IncomingQueueEntry)incoming_queue.remove();
                     handleIncomingPacket(entry.dest, entry.sender, entry.buf, entry.offset, entry.length);
@@ -1183,7 +1195,7 @@ public abstract class TP extends Protocol {
 //    }
 //
 
-    private class BundlingOutgoingPacketHandler2 extends OutgoingPacketHandler {
+    private class BundlingOutgoingPacketHandler extends OutgoingPacketHandler {
         /** HashMap<Address, List<Message>>. Keys are destinations, values are lists of Messages */
         final HashMap       msgs=new HashMap(11);
         long                count=0;    // current number of bytes accumulated
@@ -1200,7 +1212,7 @@ public abstract class TP extends Protocol {
         void start() {
             init();
             super.start();
-            t.setName("TP.BundlingOutgoingPacketHandler2 thread");
+            t.setName("TP.BundlingOutgoingPacketHandler thread");
         }
 
 
@@ -1241,7 +1253,7 @@ public abstract class TP extends Protocol {
                     log.error("failure in bundling", ex);
                 }
             }
-            if(trace) log.trace("BundlingOutgoingPacketHandler2 thread terminated");
+            if(trace) log.trace("BundlingOutgoingPacketHandler thread terminated");
         }
 
 
