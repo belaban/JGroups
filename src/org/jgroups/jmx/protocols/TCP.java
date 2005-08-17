@@ -1,14 +1,12 @@
 package org.jgroups.jmx.protocols;
 
-import org.jgroups.jmx.Protocol;
-
 import java.net.InetAddress;
 
 /**
  * @author Bela Ban
- * @version $Id: TCP.java,v 1.1 2005/06/14 09:51:08 belaban Exp $
+ * @version $Id: TCP.java,v 1.2 2005/08/17 07:32:29 belaban Exp $
  */
-public class TCP extends Protocol implements TCPMBean {
+public class TCP extends TP implements TCPMBean {
     org.jgroups.protocols.TCP p;
 
     public TCP() {
@@ -24,13 +22,6 @@ public class TCP extends Protocol implements TCPMBean {
         this.p=(org.jgroups.protocols.TCP)p;
     }
 
-    public long getNumMessagesSent() {
-        return p.getNumMessagesSent();
-    }
-
-    public long getNumMessagesReceived() {
-        return p.getNumMessagesReceived();
-    }
 
     public int getOpenConnections() {
         return p.getOpenConnections();
@@ -74,14 +65,6 @@ public class TCP extends Protocol implements TCPMBean {
 
     public void setConnExpireTime(long conn_expire_time) {
         p.setConnExpireTime(conn_expire_time);
-    }
-
-    public boolean isLoopback() {
-        return p.isLoopback();
-    }
-
-    public void setLoopback(boolean loopback) {
-        p.setLoopback(loopback);
     }
 
     public String printConnections() {

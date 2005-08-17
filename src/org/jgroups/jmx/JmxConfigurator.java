@@ -10,7 +10,7 @@ import java.util.Vector;
 
 /**
  * @author Bela Ban
- * @version $Id: JmxConfigurator.java,v 1.4 2005/08/08 15:05:57 belaban Exp $
+ * @version $Id: JmxConfigurator.java,v 1.5 2005/08/17 07:32:31 belaban Exp $
  */
 public class JmxConfigurator {
     static final Log log=LogFactory.getLog(JmxConfigurator.class);
@@ -50,9 +50,19 @@ public class JmxConfigurator {
         ProtocolStack stack=channel.getProtocolStack();
         Vector protocols=stack.getProtocols();
         org.jgroups.stack.Protocol prot;
+        org.jgroups.jmx.Protocol p=null;
         for(int i=0; i < protocols.size(); i++) {
             prot=(org.jgroups.stack.Protocol)protocols.get(i);
-            org.jgroups.jmx.Protocol p=findProtocol(prot);
+            try {
+                p=findProtocol(prot);
+            }
+            catch(ClassNotFoundException e) {
+                p=null;
+            }
+            catch(Throwable e) {
+                log.error("failed creating a JMX wrapper instance for " + prot, e);
+                p=null;
+            }
             if(p == null)
                 p=new org.jgroups.jmx.Protocol(prot);
             ObjectName prot_name=new ObjectName(channel_name + ",protocol=" + prot.getName());
@@ -78,7 +88,7 @@ public class JmxConfigurator {
     }
 
 
-    protected static Protocol findProtocol(org.jgroups.stack.Protocol prot) throws IllegalAccessException, InstantiationException, ClassNotFoundException {
+    protected static Protocol findProtocol(org.jgroups.stack.Protocol prot) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
         Protocol p;
         String prot_name=prot.getClass().getName();
         String clname=prot_name.replaceFirst("org.jgroups.", "org.jgroups.jmx.");
