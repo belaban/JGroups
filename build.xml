@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.27 2005/07/17 11:25:33 chrislott Exp $ -->
+<!-- $Id: build.xml,v 1.28 2005/08/17 15:59:52 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -17,6 +17,7 @@
     <property name="compile.dir" value="${root.dir}/classes"/>
     <property name="lib.dir" value="${root.dir}/lib"/>
     <property name="dist.dir" value="${root.dir}/dist"/>
+    <property name="tmp.dir" value="${root.dir}/tmp"/>
     <property name="doc.dir" value="${root.dir}/doc"/>
     <property name="javadoc.dir" value="${dist.dir}/javadoc"/>
     <property name="conf.dir" value="${root.dir}/conf"/>
@@ -27,6 +28,7 @@
     <property name="javadoc.packages" value="org.jgroups.*"/>
     <property name="unittest.timeout.low" value="120000"/>
     <property name="unittest.timeout.high" value="280000"/>
+    <property name="version" value="2.2.9alpha"/>
 
 
     <path id="jg.classpath">
@@ -141,6 +143,51 @@
     </target>
 
 
+    <target name="distro" description="Creates the distribution ZIP files in ./dist">
+        <antcall target="src-dist"/>
+        <antcall target="bin-dist"/>
+    </target>
+
+
+    <target name="src-dist" depends="clean">
+        <echo message="Creating source distribution ${dist.dir}/JGroups-${version}.src.zip"/>
+        <mkdir dir="${tmp.dir}/JGroups-${version}.src"/>
+        <copy todir="${tmp.dir}/JGroups-${version}.src">
+            <fileset dir="${root.dir}">
+                <exclude name="*CVS*"/>
+                <exclude name="doc/progguide/**"/>
+                <exclude name="doc/usersguide/**"/>
+            </fileset>
+        </copy>
+
+        <mkdir dir="${dist.dir}"/>
+        <zip zipfile="${dist.dir}/JGroups-${version}.src.zip" basedir="${tmp.dir}" filesonly="true"/>
+        <delete dir="${tmp.dir}" failonerror="false"/>
+    </target>
+
+     <target name="bin-dist" depends="jar">
+         <echo message="Creating binary distribution ${dist.dir}/JGroups-${version}.bin.zip"/>
+         <mkdir dir="${tmp.dir}/JGroups-${version}.bin"/>
+         <copy todir="${tmp.dir}/JGroups-${version}.bin">
+             <fileset dir="${root.dir}">
+                 <include name="CREDITS"/>
+                 <include name="INSTALL.html"/>
+             </fileset>
+             <fileset dir="${lib.dir}">
+                 <include name="commons-logging*.jar"/>
+                 <include name="log4j*.jar"/>
+                 <include name="concurrent*.jar"/>
+                 <include name="jmx*.jar"/>
+             </fileset>
+             <fileset dir="${dist.dir}">
+                 <include name="jgroups-all*.jar"/>
+             </fileset>
+         </copy>
+         <mkdir dir="${dist.dir}"/>
+         <zip zipfile="${dist.dir}/JGroups-${version}.bin.zip" basedir="${tmp.dir}" filesonly="true"/>
+         <delete dir="${tmp.dir}" failonerror="false"/>
+    </target>
+
     <target name="jboss-service"
         description="Creates the service archive used to deploy GossipServer as a JBoss MBean">
         <jar jarfile="${dist.dir}/jgroups-router.sar"
@@ -230,7 +277,7 @@
         description="Removes all class files and the ./dist directory">
         <delete dir="${compile.dir}" failonerror="false"/>
         <delete dir="${dist.dir}" failonerror="false"/>
-        <delete dir="${root.dir}/tmp" failonerror="false"/>
+        <delete dir="${tmp.dir}" failonerror="false"/>
         <delete>
             <fileset dir="${root.dir}" defaultexcludes="no">
                 <include name="**/*~"/>
@@ -293,7 +340,7 @@
         <junit printsummary="yes" timeout="${unittest.timeout.low}" fork="yes">
             <classpath refid="jg.classpath"/>
             <formatter type="brief" usefile="false"/>
-            <batchtest todir="${root.dir}/tmp">
+            <batchtest todir="${tmp.dir}">
                 <fileset dir="${junit.dir}"
                     includes="**/*Test.java"/>
             </batchtest>
@@ -302,26 +349,14 @@
     </target>
 
 
-<!--    <target name="upload"-->
-<!--        description="FTP jgroups-all.jar to host defined in build.properties">-->
-<!--        <ftp server="${ftp.servername}"-->
-<!--            userid="${ftp.userid}"-->
-<!--            password="${ftp.password}"-->
-<!--            remotedir="${ftp.remotedir}"-->
-<!--            verbose="true">-->
-<!--            <fileset dir="${dist.dir}" includes="jgroups-all.jar"/>-->
-<!--        </ftp>-->
-<!--    </target>-->
-
-
     <target name="unittests-xml" depends="compile, makeKeystore">
-        <delete dir="${root.dir}/tmp/tests-results"/>
-        <mkdir dir="${root.dir}/tmp/tests-results"/>
+        <delete dir="${tmp.dir}/tests-results"/>
+        <mkdir dir="${tmp.dir}/tests-results"/>
         <junit printsummary="yes" timeout="${unittest.timeout.low}" fork="yes">
-            <jvmarg value="-Dtests.tmp.dir=${root.dir}/tmp"/>
+            <jvmarg value="-Dtests.tmp.dir=${tmp.dir}"/>
             <classpath refid="jg.classpath"/>
             <formatter type="xml" usefile="true"/>
-            <batchtest todir="${root.dir}/tmp/tests-results">
+            <batchtest todir="${tmp.dir}/tests-results">
                 <fileset dir="${junit.dir}"
                     includes="**/*Test.java"/>
             </batchtest>
@@ -340,14 +375,14 @@
         depends="findxalan,unittests-xml"
         if="xalan.available"
         description="Generates HTML from unit tests (target unitests-xml must have run before)">
-        <delete dir="${root.dir}/tmp/html"/>
-        <mkdir dir="${root.dir}/tmp/html"/>
-        <junitreport todir="${root.dir}/tmp/html">
-            <fileset dir="${root.dir}/tmp/tests-results" includes="**/TEST-*.xml"/>
-            <report todir="${root.dir}/tmp/html"/>
+        <delete dir="${tmp.dir}/html"/>
+        <mkdir dir="${tmp.dir}/html"/>
+        <junitreport todir="${tmp.dir}/html">
+            <fileset dir="${tmp.dir}/tests-results" includes="**/TEST-*.xml"/>
+            <report todir="${tmp.dir}/html"/>
         </junitreport>
         <echo message="********************************************************************"/>
-        <echo message="The unit test report is available in ${root.dir}/tmp/html/index.html"/>
+        <echo message="The unit test report is available in ${tmp.dir}/html/index.html"/>
         <echo message="********************************************************************"/>
     </target>
 </project>
