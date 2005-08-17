@@ -4,10 +4,16 @@ import org.jgroups.jmx.ProtocolMBean;
 
 /**
  * @author Bela Ban
- * @version $Id: UNICASTMBean.java,v 1.1 2005/06/13 13:59:31 belaban Exp $
+ * @version $Id: UNICASTMBean.java,v 1.2 2005/08/17 14:28:06 belaban Exp $
  */
 public interface UNICASTMBean extends ProtocolMBean {
     String getLocalAddress();
     String getMembers();
     String printConnections();
+    long getNumMessagesSent();
+    long getNumMessagesReceived();
+    long getNumBytesSent();
+    long getNumBytesReceived();
+    long getNumAcksSent();
+    long getNumAcksReceived();
 }

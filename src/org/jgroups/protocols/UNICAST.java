@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.32 2005/08/17 12:19:03 belaban Exp $
+// $Id: UNICAST.java,v 1.33 2005/08/17 14:28:06 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -53,31 +53,8 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
     private final static String name="UNICAST";
 
-
-
-
-    private static final class Entry {
-        AckReceiverWindow  received_msgs=null;  // stores all msgs rcvd by a certain peer in seqno-order
-        AckSenderWindow    sent_msgs=null;      // stores (and retransmits) msgs sent by us to a certain peer
-        long               sent_msgs_seqno=getInitialSeqno();  // seqno for msgs sent by us
-
-        void reset() {
-            if(sent_msgs != null)
-                sent_msgs.reset();
-            if(received_msgs != null)
-                received_msgs.reset();
-        }
-
-
-        public String toString() {
-            StringBuffer sb=new StringBuffer();
-            if(sent_msgs != null)
-                sb.append("sent_msgs=" + sent_msgs + '\n');
-            if(received_msgs != null)
-                sb.append("received_msgs=" + received_msgs + '\n');
-            return sb.toString();
-        }
-    }
+    private long num_msgs_sent=0, num_msgs_received=0, num_bytes_sent=0, num_bytes_received=0;
+    private long num_acks_sent=0, num_acks_received=0;
 
 
 
@@ -95,6 +72,34 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
         }
         return sb.toString();
+    }
+
+    public long getNumMessagesSent() {
+        return num_msgs_sent;
+    }
+
+    public long getNumMessagesReceived() {
+        return num_msgs_received;
+    }
+
+    public long getNumBytesSent() {
+        return num_bytes_sent;
+    }
+
+    public long getNumBytesReceived() {
+        return num_bytes_received;
+    }
+
+    public long getNumAcksSent() {
+        return num_acks_sent;
+    }
+
+    public long getNumAcksReceived() {
+        return num_acks_received;
+    }
+
+    public void resetStats() {
+        num_msgs_sent=num_msgs_received=num_bytes_sent=num_bytes_received=num_acks_sent=num_acks_received=0;
     }
 
     public boolean setProperties(Properties props) {
@@ -231,6 +236,8 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                     entry.sent_msgs.add(entry.sent_msgs_seqno, msg);         // add *including* UnicastHeader
 
                 entry.sent_msgs_seqno++;
+                num_msgs_sent++;
+                num_bytes_sent+=msg.getLength();
             }
 
             msg=null;
@@ -329,10 +336,10 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         if(trace)
             log.trace("[" + local_addr + "] --> XMIT(" + dst + ": #" + seqno + ')');
 
-	if(Global.copy)
-	    passDown(new Event(Event.MSG, msg.copy()));
-	else
-	    passDown(new Event(Event.MSG, msg));
+        if(Global.copy)
+            passDown(new Event(Event.MSG, msg.copy()));
+        else
+            passDown(new Event(Event.MSG, msg));
     }
 
 
@@ -349,7 +356,6 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
      */
     private boolean handleDataReceived(Object sender, long seqno, boolean first, Message msg) {
         Entry    entry;
-        Message  m;
 
         if(trace)
             log.trace(new StringBuffer("[").append(local_addr).append("] <-- DATA(").append(sender).
@@ -382,8 +388,11 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         }
 
         entry.received_msgs.add(seqno, msg); // entry.received_msgs is guaranteed to be non-null if we get here
+        num_msgs_received++;
+        num_bytes_received+=msg.getLength();
 
         // Try to remove (from the AckReceiverWindow) as many messages as possible as pass them up
+        Message  m;
         while((m=entry.received_msgs.remove()) != null)
             passUp(new Event(Event.MSG, m));
         return true;
@@ -405,6 +414,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             return;
         win=entry.sent_msgs;
         win.ack(seqno); // removes message from retransmission
+        num_acks_received++;
     }
 
 
@@ -416,6 +426,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             log.trace(new StringBuffer("[").append(local_addr).append("] --> ACK(").append(dst).
                       append(": #").append(seqno).append(')'));
         passDown(new Event(Event.MSG, ack));
+        num_acks_sent++;
     }
 
 
@@ -485,5 +496,28 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         }
     }
     
-    
+    private static final class Entry {
+        AckReceiverWindow  received_msgs=null;  // stores all msgs rcvd by a certain peer in seqno-order
+        AckSenderWindow    sent_msgs=null;      // stores (and retransmits) msgs sent by us to a certain peer
+        long               sent_msgs_seqno=getInitialSeqno();  // seqno for msgs sent by us
+
+        void reset() {
+            if(sent_msgs != null)
+                sent_msgs.reset();
+            if(received_msgs != null)
+                received_msgs.reset();
+        }
+
+
+        public String toString() {
+            StringBuffer sb=new StringBuffer();
+            if(sent_msgs != null)
+                sb.append("sent_msgs=" + sent_msgs + '\n');
+            if(received_msgs != null)
+                sb.append("received_msgs=" + received_msgs + '\n');
+            return sb.toString();
+        }
+    }
+
+
 }
