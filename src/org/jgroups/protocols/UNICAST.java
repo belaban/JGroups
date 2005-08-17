@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.31 2005/08/11 12:43:47 belaban Exp $
+// $Id: UNICAST.java,v 1.32 2005/08/17 12:19:03 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -169,8 +169,8 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             src=msg.getSrc();
             switch(hdr.type) {
             case UnicastHeader.DATA:      // received regular message
-                sendAck(src, hdr.seqno);
-                handleDataReceived(src, hdr.seqno, hdr.first, msg);
+                if(handleDataReceived(src, hdr.seqno, hdr.first, msg))
+                    sendAck(src, hdr.seqno); // only send an ACK if added to the received_msgs table (bela Aug 2006)
                 break;
             case UnicastHeader.DATA_ACK:  // received ACK for previously sent message
                 handleAckReceived(src, hdr.seqno);
@@ -345,8 +345,9 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
      * add message. Set e.received_msgs to the new window. Else just add the message. If first is false,
      * but we don't yet have hashtable.received_msgs, then just discard the message. If first is true, but
      * hashtable.received_msgs already exists, also discard the message (redundant message).
+     * @return Returns true if the message was added to the received_msgs table, otherwise false
      */
-    private void handleDataReceived(Object sender, long seqno, boolean first, Message msg) {
+    private boolean handleDataReceived(Object sender, long seqno, boolean first, Message msg) {
         Entry    entry;
         Message  m;
 
@@ -370,22 +371,22 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                     if(operational) {
                         if(warn)
                             log.warn(sender + "#" + seqno + " is not tagged as the first message sent by " + sender +
-                                     "; however, the table for received messages from " + sender + " is null. We probably " +
-                                     "haven't received the first message from " + sender + ". Discarding message: " +
-                                     msg.toString() + ", headers (excluding UnicastHeader): " + msg.getHeaders());
-                        return;
+                                    "; however, the table for received messages from " + sender + " is null. We probably " +
+                                    "haven't received the first message from " + sender + ". Discarding message: " +
+                                    msg.toString() + ", headers (excluding UnicastHeader): " + msg.getHeaders());
+
                     }
+                    return false;
                 }
             }
         }
 
-        if(entry.received_msgs != null) {
-            entry.received_msgs.add(seqno, msg);
+        entry.received_msgs.add(seqno, msg); // entry.received_msgs is guaranteed to be non-null if we get here
 
-            // Try to remove (from the AckReceiverWindow) as many messages as possible as pass them up
-            while((m=entry.received_msgs.remove()) != null)
-                passUp(new Event(Event.MSG, m));
-        }
+        // Try to remove (from the AckReceiverWindow) as many messages as possible as pass them up
+        while((m=entry.received_msgs.remove()) != null)
+            passUp(new Event(Event.MSG, m));
+        return true;
     }
 
 
