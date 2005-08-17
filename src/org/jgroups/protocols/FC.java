@@ -1,4 +1,4 @@
-// $Id: FC.java,v 1.43 2005/08/16 13:00:51 belaban Exp $
+// $Id: FC.java,v 1.44 2005/08/17 06:07:51 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -22,7 +22,7 @@ import java.util.*;
  * <br/>This is the second simplified implementation of the same model. The algorithm is sketched out in
  * doc/FlowControl.txt
  * @author Bela Ban
- * @version $Revision: 1.43 $
+ * @version $Revision: 1.44 $
  */
 public class FC extends Protocol {
 
@@ -77,7 +77,9 @@ public class FC extends Protocol {
 
     private long start_blocking=0, stop_blocking=0;
 
-    private int num_blockings=0, num_replenishments=0, num_credit_requests=0;
+    private int num_blockings=0;
+    private int num_credit_requests_received=0, num_credit_requests_sent=0;
+    private int num_credit_responses_sent=0, num_credit_responses_received=0;
     private long total_time_blocking=0;
 
     final BoundedList last_blockings=new BoundedList(50);
@@ -93,7 +95,8 @@ public class FC extends Protocol {
 
     public void resetStats() {
         super.resetStats();
-        num_blockings=num_replenishments=num_credit_requests=0;
+        num_blockings=0;
+        num_credit_responses_sent=num_credit_responses_received=num_credit_requests_received=num_credit_requests_sent=0;
         total_time_blocking=0;
         last_blockings.removeAll();
     }
@@ -130,6 +133,14 @@ public class FC extends Protocol {
         return num_blockings;
     }
 
+    public long getMaxBlockTime() {
+        return max_block_time;
+    }
+
+    public void setMaxBlockTime(long t) {
+        max_block_time=t;
+    }
+
     public long getTotalTimeBlocked() {
         return total_time_blocking;
     }
@@ -138,12 +149,20 @@ public class FC extends Protocol {
         return num_blockings == 0? num_blockings : total_time_blocking / num_blockings;
     }
 
-    public int getNumberOfReplenishmentsReceived() {
-        return num_replenishments;
+    public int getNumberOfCreditRequestsReceived() {
+        return num_credit_requests_received;
     }
 
-    public int getNumberOfCreditRequests() {
-        return num_credit_requests;
+    public int getNumberOfCreditRequestsSent() {
+        return num_credit_requests_sent;
+    }
+
+    public int getNumberOfCreditResponsesReceived() {
+        return num_credit_responses_received;
+    }
+
+    public int getNumberOfCreditResponsesSent() {
+        return num_credit_responses_sent;
     }
 
     public String printSenderCredits() {
@@ -168,7 +187,7 @@ public class FC extends Protocol {
         retval.put("receivers", printMap(received));
         retval.put("num_blockings", new Integer(this.num_blockings));
         retval.put("avg_time_blocked", new Double(getAverageTimeBlocked()));
-        retval.put("num_replenishments", new Integer(this.num_replenishments));
+        retval.put("num_replenishments", new Integer(this.num_credit_responses_received));
         return retval;
     }
 
@@ -281,11 +300,11 @@ public class FC extends Protocol {
                 if(hdr != null) {
                     switch(hdr.type) {
                     case FcHeader.REPLENISH:
-                        num_replenishments++;
+                        num_credit_responses_received++;
                         handleCredit(msg.getSrc());
                         break;
                     case FcHeader.CREDIT_REQUEST:
-                        num_credit_requests++;
+                        num_credit_requests_received++;
                         Address sender=msg.getSrc();
                         if(trace)
                             log.trace("received credit request from " + sender + ": sending credits");
@@ -336,6 +355,7 @@ public class FC extends Protocol {
                 long block_time=stop_blocking - start_blocking;
                 if(trace)
                     log.trace("total time blocked: " + block_time + " ms");
+                total_time_blocking+=block_time;
                 last_blockings.add(new Long(block_time));
             }
             else {
@@ -479,12 +499,14 @@ public class FC extends Protocol {
         Message  msg=new Message(dest, null, null);
         msg.putHeader(name, REPLENISH_HDR);
         passDown(new Event(Event.MSG, msg));
+        num_credit_responses_sent++;
     }
 
     private void sendCreditRequest(final Address dest) {
         Message  msg=new Message(dest, null, null);
         msg.putHeader(name, CREDIT_REQUEST_HDR);
         passDown(new Event(Event.MSG, msg));
+        num_credit_requests_sent++;
     }
 
 
