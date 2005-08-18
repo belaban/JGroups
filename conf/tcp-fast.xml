@@ -1,0 +1,38 @@
+<config>
+    <TCP bind_addr="192.168.5.1"
+         recv_buf_size="20000000"
+         send_buf_size="640000"
+         loopback="false"
+         discard_incompatible_packets="true"
+         max_bundle_size="64000"
+         max_bundle_timeout="30"
+         use_incoming_packet_handler="true" 
+         use_outgoing_packet_handler="false" 
+         down_thread="false" up_thread="false"
+         enable_bundling="true"
+         start_port="7800"
+         use_send_queues="false"
+         sock_conn_timeout="300" skip_suspected_members="true"/>
+    <MPING timeout="2000" 
+           num_initial_members="2"
+           mcast_addr="229.6.7.8"
+           bind_addr="192.168.5.1"
+           down_thread="false" up_thread="false"/>
+    <!-- MERGE2 max_interval="100000"
+            down_thread="false" up_thread="false" min_interval="20000"/ -->
+    <FD_SOCK down_thread="false" up_thread="false"/>
+    <!--VERIFY_SUSPECT timeout="1500" down_thread="false"/-->
+    <pbcast.NAKACK max_xmit_size="60000"
+                   use_mcast_xmit="false" gc_lag="10"
+                   retransmit_timeout="100,200,300,600,1200,2400,4800"
+                   down_thread="false" up_thread="false"
+                   discard_delivered_msgs="true"/>
+    <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000" 
+                   down_thread="false" up_thread="false"
+                   max_bytes="400000"/>
+    <pbcast.GMS print_local_addr="true" join_timeout="3000" 
+                down_thread="false" up_thread="false"
+                join_retry_timeout="2000" shun="true"/>
+    <FC max_credits="2000000" down_thread="false" up_thread="false"
+        min_threshold="0.10" max_block_time="1000"/>
+</config>
