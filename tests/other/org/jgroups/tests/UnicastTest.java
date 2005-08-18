@@ -1,4 +1,4 @@
-// $Id: UnicastTest.java,v 1.7 2005/05/30 16:15:12 belaban Exp $
+// $Id: UnicastTest.java,v 1.8 2005/08/18 09:45:25 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -108,7 +108,6 @@ public class UnicastTest implements Runnable {
                         if(data instanceof StartData) {
                             if(started) {
                                 System.err.println("UnicastTest.run(): received START data, but am already processing data");
-                                continue;
                             }
                             else {
                                 started=true;
@@ -126,7 +125,7 @@ public class UnicastTest implements Runnable {
                                 }
                                 else {
                                     current_value++;
-                                    if(current_value % 100 == 0)
+                                    if(current_value % 1000 == 0)
                                         System.out.println("received " + current_value);
                                     if(current_value >= num_values) {
                                         stop=System.currentTimeMillis();
@@ -137,7 +136,6 @@ public class UnicastTest implements Runnable {
                                         started=false;
                                         if(exit_on_end)
                                             System.exit(0);
-                                        continue;
                                     }
                                 }
                             }
@@ -219,7 +217,7 @@ public class UnicastTest implements Runnable {
         for(int i=1; i <= num_msgs; i++) {
             val=new Value(i);
             msg=new Message(receiver, null, val);
-            if(i % 100 == 0)
+            if(i % 1000 == 0)
                 System.out.println("-- sent " + i);
             channel.send(msg);
             if(sleep_time > 0)
