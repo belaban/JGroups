@@ -4,7 +4,7 @@ import org.jgroups.jmx.Protocol;
 
 /**
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.2 2005/08/17 14:28:06 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.3 2005/08/18 12:23:26 belaban Exp $
  */
 public class UNICAST extends Protocol implements UNICASTMBean {
     org.jgroups.protocols.UNICAST p;
@@ -58,5 +58,8 @@ public class UNICAST extends Protocol implements UNICASTMBean {
         return p.getNumAcksReceived();
     }
 
+    public long getNumberOfRetransmitRequestsReceived() {
+        return p.getNumberOfRetransmitRequestsReceived();
+    }
 
 }
