@@ -1,24 +1,24 @@
-// $Id: MethodCallTest.java,v 1.10 2005/07/22 08:59:57 belaban Exp $
+// $Id: MethodCallTest.java,v 1.11 2005/08/18 09:09:15 belaban Exp $
 
 package org.jgroups.tests;
 
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
-
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectOutputStream;
-import java.io.ByteArrayInputStream;
-import java.io.ObjectInputStream;
-import java.lang.reflect.Method;
-
 import org.jgroups.blocks.MethodCall;
+import org.jgroups.util.Util;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.lang.reflect.Method;
 
 
 /**
  * @author Bela Ban belaban@yahoo.com
  * @author <a href="mailto:ovidiu@jboss.org">Ovidiu Feodorov</a>
- * @version $Revision: 1.10 $
+ * @version $Revision: 1.11 $
  **/
 
 public class MethodCallTest extends TestCase {
@@ -392,6 +392,29 @@ public class MethodCallTest extends TestCase {
         TargetSubclass target = new TargetSubclass();
         Object result = methodCall.invoke(target);
         assertEquals("ABC", result);
+    }
+
+
+    public void testMarshalling() throws Exception {
+        MethodCall methodCall = new MethodCall("someMethod",
+                                               new Object[] { "abc" },
+                                               new String[] { "java.lang.String" });
+        methodCall.put("name", "Bela");
+        methodCall.put("id", new Integer(322649));
+
+        System.out.println("methodCall: " + methodCall);
+
+        MethodCall m=marshalAndUnmarshal(methodCall);
+        System.out.println("m: " + m);
+        assertEquals(m.get("name"), "Bela");
+        assertEquals(m.get("id"), new Integer(322649));
+    }
+
+
+    private MethodCall marshalAndUnmarshal(MethodCall m) throws Exception {
+        byte[] buf=Util.objectToByteBuffer(m);
+        MethodCall retval=(MethodCall)Util.objectFromByteBuffer(buf);
+        return retval;
     }
 
 
