@@ -10,11 +10,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Iterator;
-
-
+import java.util.*;
 
 
 /**
@@ -22,7 +18,7 @@ import java.util.Iterator;
  * It includes the name of the method (case sensitive) and a list of arguments.
  * A method call is serializable and can be passed over the wire.
  * @author Bela Ban
- * @version $Revision: 1.18 $
+ * @version $Revision: 1.19 $
  */
 public class MethodCall implements Externalizable {
 
@@ -45,6 +41,9 @@ public class MethodCall implements Externalizable {
 
     /** The Method of the call. */
     protected Method method=null;
+
+    /** To carry arbitrary data with a method call, data needs to be serializable if sent across the wire */
+    protected Map payload=null;
 
     protected static final Log log=LogFactory.getLog(MethodCall.class);
 
@@ -178,6 +177,15 @@ public class MethodCall implements Externalizable {
     }
 
 
+    public synchronized Object put(Object key, Object value) {
+        if(payload == null)
+            payload=new HashMap();
+        return payload.put(key, value);
+    }
+
+    public synchronized Object get(Object key) {
+        return payload != null? payload.get(key) : null;
+    }
 
 
     /**
@@ -247,11 +255,11 @@ public class MethodCall implements Externalizable {
         methods: for(int i = 0; i < methods.length; i++) {
             Method m = methods[i];
             if (!methodName.equals(m.getName())) {
-                continue methods;
+                continue;
             }
             Class[] parameters = m.getParameterTypes();
             if (types.length != parameters.length) {
-                continue methods;
+                continue;
             }
             for(int j = 0; j < types.length; j++) {
                 if (!types[j].equals(parameters[j])) {
@@ -451,6 +459,14 @@ public class MethodCall implements Externalizable {
             if(log.isErrorEnabled()) log.error("mode " + mode + " is invalid");
             break;
         }
+
+        if(payload != null) {
+            out.writeBoolean(true);
+            out.writeObject(payload);
+        }
+        else {
+            out.writeBoolean(false);
+        }
     }
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
@@ -486,6 +502,11 @@ public class MethodCall implements Externalizable {
         default:
             if(log.isErrorEnabled()) log.error("mode " + mode + " is invalid");
             break;
+        }
+
+        boolean payload_available=in.readBoolean();
+        if(payload_available) {
+            payload=(Map)in.readObject();
         }
     }
 
