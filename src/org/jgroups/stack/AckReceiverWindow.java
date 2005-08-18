@@ -1,4 +1,4 @@
-// $Id: AckReceiverWindow.java,v 1.11 2005/08/17 11:26:56 belaban Exp $
+// $Id: AckReceiverWindow.java,v 1.12 2005/08/18 13:27:11 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -8,6 +8,7 @@ import org.apache.commons.logging.LogFactory;
 import org.jgroups.Message;
 
 import java.util.HashMap;
+import java.util.TreeSet;
 
 
 /**
@@ -76,7 +77,12 @@ public class AckReceiverWindow {
 
     public String toString() {
         StringBuffer sb=new StringBuffer();
-        sb.append(msgs.size()).append(" msgs: ").append(msgs.keySet());
+        sb.append(msgs.size()).append(" msgs");
+        TreeSet s=new TreeSet(msgs.keySet());
+        if(s.size() > 0) {
+            sb.append(" [").append(s.first()).append(" - ").append(s.last()).append("]");
+            sb.append(": ").append(s);
+        }
         return sb.toString();
     }
 
