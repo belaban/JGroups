@@ -1,4 +1,4 @@
-// $Id: AckReceiverWindow.java,v 1.14 2005/08/19 10:12:35 belaban Exp $
+// $Id: AckReceiverWindow.java,v 1.15 2005/08/19 12:26:09 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -42,7 +42,9 @@ public class AckReceiverWindow {
                     log.trace("discarded msg with seqno=" + seqno + " (next msg to receive is " + next_to_remove + ')');
                 return;
             }
-            msgs.put(new Long(seqno), msg);
+            Long seq=new Long(seqno);
+            if(!msgs.containsKey(seq))
+                msgs.put(seq, msg);
         }
     }
 
@@ -77,7 +79,7 @@ public class AckReceiverWindow {
 
     public String toString() {
         StringBuffer sb=new StringBuffer();
-        sb.append(msgs.size()).append(" msgs (").append("next_to_remove=").append(next_to_remove).append(")");
+        sb.append(msgs.size()).append(" msgs (").append("next=").append(next_to_remove).append(")");
         TreeSet s=new TreeSet(msgs.keySet());
         if(s.size() > 0) {
             sb.append(" [").append(s.first()).append(" - ").append(s.last()).append("]");
