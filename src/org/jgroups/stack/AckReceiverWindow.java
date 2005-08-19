@@ -1,4 +1,4 @@
-// $Id: AckReceiverWindow.java,v 1.13 2005/08/18 13:38:50 belaban Exp $
+// $Id: AckReceiverWindow.java,v 1.14 2005/08/19 10:12:35 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -77,7 +77,7 @@ public class AckReceiverWindow {
 
     public String toString() {
         StringBuffer sb=new StringBuffer();
-        sb.append(msgs.size()).append(" msgs");
+        sb.append(msgs.size()).append(" msgs (").append("next_to_remove=").append(next_to_remove).append(")");
         TreeSet s=new TreeSet(msgs.keySet());
         if(s.size() > 0) {
             sb.append(" [").append(s.first()).append(" - ").append(s.last()).append("]");

@@ -1,4 +1,4 @@
-// $Id: AckSenderWindow.java,v 1.13 2005/08/17 11:26:56 belaban Exp $
+// $Id: AckSenderWindow.java,v 1.14 2005/08/19 10:12:54 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -10,6 +10,7 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.util.Util;
+import org.jgroups.util.TimeScheduler;
 
 import java.util.Map;
 
@@ -27,7 +28,7 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
     RetransmitCommand   retransmit_command = null;   // called to request XMIT of msg
     final Map           msgs=new ConcurrentReaderHashMap();        // keys: seqnos (Long), values: Messages
     long[]              interval = new long[]{400,800,1200,1600};
-    final Retransmitter retransmitter = new Retransmitter(null, this);
+    final Retransmitter retransmitter;
     Protocol            transport = null; // used to send messages
     static    final Log log=LogFactory.getLog(AckSenderWindow.class);
 
@@ -45,6 +46,7 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
      */
     public AckSenderWindow(RetransmitCommand com) {
         retransmit_command = com;
+        retransmitter = new Retransmitter(null, this);
         retransmitter.setRetransmitTimeouts(interval);
     }
 
@@ -52,6 +54,7 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
     public AckSenderWindow(RetransmitCommand com, long[] interval) {
         retransmit_command = com;
         this.interval = interval;
+        retransmitter = new Retransmitter(null, this);
         retransmitter.setRetransmitTimeouts(interval);
     }
 
@@ -63,6 +66,15 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
         retransmit_command = com;
         this.interval = interval;
         this.transport = transport;
+        retransmitter = new Retransmitter(null, this);
+        retransmitter.setRetransmitTimeouts(interval);
+    }
+
+    public AckSenderWindow(RetransmitCommand com, long[] interval, Protocol transport, TimeScheduler sched) {
+        retransmit_command = com;
+        this.interval = interval;
+        this.transport = transport;
+        retransmitter = new Retransmitter(null, this, sched);
         retransmitter.setRetransmitTimeouts(interval);
     }
 
@@ -197,13 +209,6 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
                 win.ack(i);
         }
         System.out.println(win);
-
-        if (true) {
-            Util.sleep(4000);
-            System.out.println("--done--");
-            return;
-        }
-
 
         win.add(3, new Message());
         win.add(5, new Message());
