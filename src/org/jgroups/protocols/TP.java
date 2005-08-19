@@ -40,7 +40,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.25 2005/08/18 13:42:50 belaban Exp $
+ * @version $Id: TP.java,v 1.26 2005/08/19 16:06:35 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -489,8 +489,6 @@ public abstract class TP extends Protocol {
             // msg.putHeader(name, new TpHeader(channel_name));
             msg.putHeader(name, header);
         }
-
-
 
         // Because we don't call Protocol.passDown(), we notify the observer directly (e.g. PerfObserver).
         // This way, we still have performance numbers for TP
@@ -1041,160 +1039,6 @@ public abstract class TP extends Protocol {
      * <tt>max_bundle_timeout</tt> milliseconds have elapsed, whichever is first. Messages
      * are unbundled at the receiver.
      */
-//    private class BundlingOutgoingPacketHandler extends OutgoingPacketHandler {
-//        long                total_bytes=0;
-//        int                 num_msgs=0;
-//        /** HashMap<Address, List<Message>>. Keys are destinations, values are lists of Messages */
-//        final HashMap       msgs=new HashMap(11);
-//
-//
-//        void start() {
-//            super.start();
-//            t.setName("TP.BundlingOutgoingPacketHandler thread");
-//        }
-//
-//
-//        public void run() {
-//            Message msg, leftover=null;
-//            long start=0;
-//            while(outgoing_queue != null) {
-//                try {
-//                    total_bytes=0;
-//                    msg=leftover != null? leftover : (Message)outgoing_queue.remove(); // blocks until message is available
-//                    start=System.currentTimeMillis();
-//                    leftover=waitForMessagesToAccumulate(msg, outgoing_queue, max_bundle_size, start, max_bundle_timeout);
-//                    bundleAndSend(start);
-//                }
-//                catch(QueueClosedException closed_ex) {
-//                    break;
-//                }
-//                catch(Throwable th) {
-//                    if(log.isErrorEnabled()) log.error("exception sending packet", th);
-//                }
-//            }
-//            bundleAndSend(start);
-//            if(trace) log.trace("BundlingOutgoingPacketHandler thread terminated");
-//        }
-//
-//
-//        /**
-//         * Waits until max_size bytes have accumulated in the queue, or max_time milliseconds have elapsed.
-//         * When a message cannot be added to the ready-to-send bundle, it is returned, so the caller can
-//         * re-submit it again next time.
-//         * @param m
-//         * @param q
-//         * @param max_size
-//         * @param max_time
-//         * @return
-//         */
-//        private Message waitForMessagesToAccumulate(Message m, Queue q, long max_size, long start_time, long max_time) {
-//            Message msg, leftover=null;
-//            boolean running=true, size_exceeded, time_reached;
-//            long    len, time_to_wait=max_time, waited_time;
-//
-//            while(running) {
-//                try {
-//                    msg=m != null? m : (Message)q.remove(time_to_wait);
-//                    m=null; // necessary, otherwise we get 'm' again in subsequent iterations of the same loop !
-//                    len=msg.size();
-//                    checkLength(len);
-//                    waited_time=System.currentTimeMillis() - start_time;
-//                    time_to_wait=max_time - waited_time;
-//                    size_exceeded=total_bytes + len > max_size;
-//                    time_reached=time_to_wait <= 0;
-//
-//                    if(size_exceeded) {
-//                        running=false;
-//                        leftover=msg;
-//                    }
-//                    else {
-//                        addMessage(msg);
-//                        total_bytes+=len;
-//                        if(time_reached)
-//                            running=false;
-//                    }
-//                }
-//                catch(TimeoutException timeout) {
-//                    break;
-//                }
-//                catch(QueueClosedException closed) {
-//                    break;
-//                }
-//                catch(Exception ex) {
-//                    log.error("failure in bundling", ex);
-//                }
-//            }
-//            return leftover;
-//        }
-//
-//
-//        private void checkLength(long len) throws Exception {
-//            if(len > max_bundle_size)
-//                throw new Exception("TP.BundlingOutgoingPacketHandler.handleMessage(): message size (" + len +
-//                                    ") is greater than max bundling size (" + max_bundle_size + "). " +
-//                                    "Set the fragmentation/bundle size in FRAG and TP correctly");
-//        }
-//
-//
-//        private void addMessage(Message msg) {
-//            List    tmp;
-//            Address dst=msg.getDest();
-//            synchronized(msgs) {
-//                tmp=(List)msgs.get(dst);
-//                if(tmp == null) {
-//                    tmp=new List();
-//                    msgs.put(dst, tmp);
-//                }
-//                tmp.add(msg);
-//                num_msgs++;
-//            }
-//        }
-//
-//
-//
-//        private void bundleAndSend(long start_time) {
-//            Map.Entry      entry;
-//            Address        dst;
-//            Buffer         buffer;
-//            List           l;
-//            long           stop_time=System.currentTimeMillis();
-//
-//            synchronized(msgs) {
-//                if(msgs.size() == 0)
-//                    return;
-//                if(start_time == 0)
-//                    start_time=System.currentTimeMillis();
-//
-//                if(trace) {
-//                    StringBuffer sb=new StringBuffer("sending ").append(num_msgs).append(" msgs (");
-//                    sb.append(total_bytes).append(" bytes, ").append(stop_time-start_time).append("ms)");
-//                    sb.append(" to ").append(msgs.size()).append(" destination(s)");
-//                    if(msgs.size() > 1) sb.append(" (dests=").append(msgs.keySet()).append(")");
-//                    log.trace(sb.toString());
-//                }
-//                for(Iterator it=msgs.entrySet().iterator(); it.hasNext();) {
-//                    entry=(Map.Entry)it.next();
-//                    dst=(Address)entry.getKey();
-//                    l=(List)entry.getValue();
-//                    try {
-//                        if(l.size() > 0) {
-//                            synchronized(out_stream) {
-//                                buffer=listToBuffer(l, dst);
-//                                doSend(buffer, dst);
-//                            }
-//                        }
-//                    }
-//                    catch(Exception e) {
-//                        if(log.isErrorEnabled()) log.error("exception sending msg (dest=" + dst + ")", e);
-//                    }
-//                }
-//                msgs.clear();
-//                num_msgs=0;
-//            }
-//        }
-//    }
-//
-
     private class BundlingOutgoingPacketHandler extends OutgoingPacketHandler {
         /** HashMap<Address, List<Message>>. Keys are destinations, values are lists of Messages */
         final HashMap       msgs=new HashMap(11);
@@ -1266,7 +1110,7 @@ public abstract class TP extends Protocol {
         }
 
 
-        private void addMessage(Message msg) {
+        private void addMessage(Message msg) { // no sync needed, never called by multiple threads concurrently
             List    tmp;
             Address dst=msg.getDest();
             tmp=(List)msgs.get(dst);
