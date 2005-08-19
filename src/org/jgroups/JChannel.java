@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.38 2005/07/29 08:59:37 belaban Exp $
+// $Id: JChannel.java,v 1.39 2005/08/19 08:41:22 belaban Exp $
 
 package org.jgroups;
 
@@ -66,7 +66,7 @@ import java.util.Vector;
  * 
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.38 $
+ * @version $Revision: 1.39 $
  */
 public class JChannel extends Channel {
 
@@ -339,7 +339,11 @@ public class JChannel extends Channel {
     public long getSentBytes() {return sent_bytes;}
     public long getReceivedMessages() {return received_msgs;}
     public long getReceivedBytes() {return received_bytes;}
+    public int  getNumberOfTasksInTimer() {return prot_stack != null ? prot_stack.timer.size() : -1;}
 
+    public String dumpTimerQueue() {
+        return prot_stack != null? prot_stack.dumpTimerQueue() : "<n/a";
+    }
 
     /**
      * Returns a pretty-printed form of all the protocols. If include_properties is set,

@@ -1,4 +1,4 @@
-// $Id: ProtocolStack.java,v 1.20 2005/07/26 11:15:21 belaban Exp $
+// $Id: ProtocolStack.java,v 1.21 2005/08/19 08:41:22 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -85,6 +85,9 @@ public class ProtocolStack extends Protocol implements Transport {
         return retval;
     }
 
+    public String dumpTimerQueue() {
+        return timer.dumpTaskQueue();
+    }
 
     /**
      * Prints the names of the protocols, from the bottom to top. If include_properties is true,
