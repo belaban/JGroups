@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.37 2005/08/19 12:47:26 belaban Exp $
+// $Id: UNICAST.java,v 1.38 2005/08/19 16:05:39 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -244,7 +244,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 }
             }
 
-            synchronized(entry) {
+            synchronized(entry) { // threads will only sync if they access the same entry
                 UnicastHeader hdr=new UnicastHeader(UnicastHeader.DATA, entry.sent_msgs_seqno);
                 if(entry.sent_msgs == null) { // first msg to peer 'dst'
                     hdr.first=true;
@@ -395,7 +395,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             }
         }
 
-        synchronized(entry) {
+        synchronized(entry) { // only threads accessing the *same* entry will synchronize, everthing else is concurrent
             if(entry.received_msgs == null) {
                 if(first)
                     entry.received_msgs=new AckReceiverWindow(seqno);
@@ -403,9 +403,9 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                     if(operational) {
                         if(warn)
                             log.warn(sender + "#" + seqno + " is not tagged as the first message sent by " + sender +
-                                    "; however, the table for received messages from " + sender + " is null. We probably " +
-                                    "haven't received the first message from " + sender + ". Discarding message: " +
-                                    msg.toString() + ", headers (excluding UnicastHeader): " + msg.getHeaders());
+                                    " to me (" + local_addr + "); however, the table for received messages from " + sender +
+                                    " is null. We probably haven't received the first message from " + sender +
+                                    ". Discarding message: " + msg + ", headers (excluding UnicastHeader): " + msg.getHeaders());
 
                     }
                     return false;
