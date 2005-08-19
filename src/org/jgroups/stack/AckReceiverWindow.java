@@ -1,4 +1,4 @@
-// $Id: AckReceiverWindow.java,v 1.15 2005/08/19 12:26:09 belaban Exp $
+// $Id: AckReceiverWindow.java,v 1.16 2005/08/19 16:56:47 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -42,9 +42,7 @@ public class AckReceiverWindow {
                     log.trace("discarded msg with seqno=" + seqno + " (next msg to receive is " + next_to_remove + ')');
                 return;
             }
-            Long seq=new Long(seqno);
-            if(!msgs.containsKey(seq))
-                msgs.put(seq, msg);
+            msgs.put(new Long(seqno), msg);
         }
     }
 
@@ -58,9 +56,16 @@ public class AckReceiverWindow {
         Message retval;
 
         synchronized(msgs) {
-            retval=(Message)msgs.remove(new Long(next_to_remove));
+            Long key=new Long(next_to_remove);
+            boolean contains=msgs.containsKey(key); // todo: remove containsKey() once this is debugged
+            retval=(Message)msgs.remove(key);
             if(retval != null)
                 next_to_remove++;
+            else {
+                if(contains) {
+                    log.warn("seqno " + key + " has a null Message associated with it");
+                }
+            }
         }
         return retval;
     }
