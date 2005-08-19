@@ -15,7 +15,7 @@ import java.util.Map;
 
 /**
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.6 2005/07/29 08:59:36 belaban Exp $
+ * @version $Id: JChannel.java,v 1.7 2005/08/19 08:41:22 belaban Exp $
  */
 public class JChannel implements JChannelMBean {
     /** Ref to the original JGroups channel */
@@ -58,6 +58,8 @@ public class JChannel implements JChannelMBean {
         return Version.printDescription();
     }
 
+
+
     public String getProperties() {
         return props;
     }
@@ -72,6 +74,14 @@ public class JChannel implements JChannelMBean {
 
     public void setObjectName(String name) {
         object_name=name;
+    }
+
+    public int getNumberOfTasksInTimer() {
+        return channel.getNumberOfTasksInTimer();
+    }
+
+    public String dumpTimerQueue() {
+        return channel.dumpTimerQueue();
     }
 
     public void setClusterConfig(Element config) {

@@ -1,4 +1,4 @@
-// $Id: TimeScheduler.java,v 1.8 2005/08/19 08:30:45 belaban Exp $
+// $Id: TimeScheduler.java,v 1.9 2005/08/19 08:41:22 belaban Exp $
 
 package org.jgroups.util;
 
@@ -419,6 +419,10 @@ public class TimeScheduler {
 
     public long getSuspendInterval() {
         return suspend_interval;
+    }
+
+    public String dumpTaskQueue() {
+        return queue != null? queue.toString() : "<empty>";
     }
 
 
