@@ -1,4 +1,4 @@
-// $Id: TimeScheduler.java,v 1.7 2005/08/08 12:36:01 chrislott Exp $
+// $Id: TimeScheduler.java,v 1.8 2005/08/19 08:30:45 belaban Exp $
 
 package org.jgroups.util;
 
@@ -6,8 +6,6 @@ package org.jgroups.util;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.Iterator;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -268,16 +266,6 @@ public class TimeScheduler {
     protected static final Log log=LogFactory.getLog(TimeScheduler.class);
 
 
-    /**
-     * Convert exception stack trace to string
-     */
-    private String _toString(Throwable ex) {
-        StringWriter sw=new StringWriter();
-        PrintWriter pw=new PrintWriter(sw);
-        ex.printStackTrace(pw);
-        return (sw.toString());
-    }
-
 
     /**
      * Set the thread state to running, create and start the thread
@@ -285,7 +273,7 @@ public class TimeScheduler {
     private void _start() {
         thread_state=RUN;
 
-// only start if not yet running
+        // only start if not yet running
         if(thread == null || !thread.isAlive()) {
             thread=new Thread(new Loop(), THREAD_NAME);
             thread.setDaemon(true);
@@ -299,7 +287,7 @@ public class TimeScheduler {
     private void _unsuspend() {
         thread_state=RUN;
 
-// only start if not yet running
+        // only start if not yet running
         if(thread == null || !thread.isAlive()) {
             thread=new Thread(new Loop(), THREAD_NAME);
             thread.setDaemon(true);
@@ -395,8 +383,8 @@ public class TimeScheduler {
             try {
                 task.run();
             }
-            catch(Exception ex) {
-                log.error(_toString(ex));
+            catch(Throwable ex) {
+                log.error("failed running task " + task, ex);
             }
         }
     }
