@@ -1,4 +1,4 @@
-// $Id: FC.java,v 1.45 2005/08/17 08:12:41 belaban Exp $
+// $Id: FC.java,v 1.46 2005/08/19 12:26:09 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -22,7 +22,7 @@ import java.util.*;
  * <br/>This is the second simplified implementation of the same model. The algorithm is sketched out in
  * doc/FlowControl.txt
  * @author Bela Ban
- * @version $Revision: 1.45 $
+ * @version $Revision: 1.46 $
  */
 public class FC extends Protocol {
 
@@ -40,7 +40,7 @@ public class FC extends Protocol {
 
 
     /** List of members from whom we expect credits */
-    final Set creditors=new LinkedHashSet(11);
+    final List creditors=new ArrayList(11);
 
     /** Max number of bytes to send per receiver until an ack must
      * be received before continuing sending */
@@ -360,8 +360,8 @@ public class FC extends Protocol {
                     if(insufficient_credit && running) {
                         if(trace)
                             log.trace("timeout occurred waiting for credits; sending credit request to " + creditors);
-                        for(Iterator it=creditors.iterator(); it.hasNext();) {
-                            sendCreditRequest((Address)it.next());
+                        for(int i=0; i < creditors.size(); i++) {
+                            sendCreditRequest((Address)creditors.get(i));
                         }
                     }
                 }
@@ -397,14 +397,18 @@ public class FC extends Protocol {
                 entry=(Map.Entry)it.next();
                 mbr=(Address)entry.getKey();
                 credits=(Long)entry.getValue();
-                if(credits.longValue() < length)
-                    creditors.add(mbr);
+                if(credits.longValue() < length) {
+                    if(!creditors.contains(mbr))
+                        creditors.add(mbr);
+                }
             }
         }
         else {
             credits=(Long)sent.get(dest);
-            if(credits.longValue() < length)
-                creditors.add(dest);
+            if(credits.longValue() < length) {
+                if(!creditors.contains(dest))
+                    creditors.add(dest);
+            }
         }
     }
 
@@ -553,10 +557,10 @@ public class FC extends Protocol {
             }
 
             // remove all creditors which are not in the new view
-            for(Iterator it=creditors.iterator(); it.hasNext();) {
-                Address creditor=(Address)it.next();
+            for(int i=0; i < creditors.size(); i++) {
+                Address creditor=(Address)creditors.get(i);
                 if(!mbrs.contains(creditor))
-                    it.remove();
+                    creditors.remove(creditor);
             }
 
             if(trace) log.trace("creditors are " + creditors);

@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.35 2005/08/19 10:13:09 belaban Exp $
+// $Id: UNICAST.java,v 1.36 2005/08/19 12:26:09 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -45,6 +45,11 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     // default is true
     private boolean          use_gms=true;
 
+    /** Copy downbound messages to myself and send them back up the stack. Turns messages sent to self around even
+     * before hitting the transport
+      */
+    private boolean          loopback=true;
+
     /** @deprecated Not used anymore */
     int              window_size=-1;               // sliding window: max number of msgs in table (disabled by default)
 
@@ -72,6 +77,14 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
         }
         return sb.toString();
+    }
+
+    public boolean isLoopback() {
+        return loopback;
+    }
+
+    public void setLoopback(boolean loopback) {
+        this.loopback=loopback;
     }
 
     public long getNumMessagesSent() {
@@ -182,7 +195,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 if(handleDataReceived(src, hdr.seqno, hdr.first, msg))
                     sendAck(src, hdr.seqno); // only send an ACK if added to the received_msgs table (bela Aug 2006)
                 break;
-            case UnicastHeader.DATA_ACK:  // received ACK for previously sent message
+            case UnicastHeader.ACK:  // received ACK for previously sent message
                 handleAckReceived(src, hdr.seqno);
                 break;
             default:
@@ -215,6 +228,13 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 break;
             }
 
+            if(loopback && dst.equals(local_addr)) {
+                Message copy=msg.copy();
+                copy.setSrc(local_addr);
+                passUp(new Event(Event.MSG, copy));
+                return;
+            }
+
             Entry entry;
             synchronized(connections) {
                 entry=(Entry)connections.get(dst);
@@ -232,7 +252,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 }
                 msg.putHeader(name, hdr);
                 if(trace)
-                    log.trace(new StringBuffer("[").append(local_addr).append("] --> DATA(").append(dst).append(": #").
+                    log.trace(new StringBuffer().append(local_addr).append(" --> DATA(").append(dst).append(": #").
                               append(entry.sent_msgs_seqno).append(", first=").append(hdr.first).append(')'));
 
                 if(Global.copy)
@@ -364,7 +384,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         Entry    entry;
 
         if(trace)
-            log.trace(new StringBuffer("[").append(local_addr).append("] <-- DATA(").append(sender).
+            log.trace(new StringBuffer().append(local_addr).append(" <-- DATA(").append(sender).
                       append(": #").append(seqno).append(", first=").append(first));
 
         synchronized(connections) {
@@ -411,7 +431,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         AckSenderWindow win;
 
         if(trace)
-            log.trace(new StringBuffer("[").append(local_addr).append("] <-- ACK(").append(sender).
+            log.trace(new StringBuffer().append(local_addr).append(" <-- ACK(").append(sender).
                       append(": #").append(seqno).append(')'));
         synchronized(connections) {
             entry=(Entry)connections.get(sender);
@@ -427,9 +447,9 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
     private void sendAck(Address dst, long seqno) {
         Message ack=new Message(dst, null, null);
-        ack.putHeader(name, new UnicastHeader(UnicastHeader.DATA_ACK, seqno));
+        ack.putHeader(name, new UnicastHeader(UnicastHeader.ACK, seqno));
         if(trace)
-            log.trace(new StringBuffer("[").append(local_addr).append("] --> ACK(").append(dst).
+            log.trace(new StringBuffer().append(local_addr).append(" --> ACK(").append(dst).
                       append(": #").append(seqno).append(')'));
         passDown(new Event(Event.MSG, ack));
         num_acks_sent++;
@@ -442,7 +462,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
     public static class UnicastHeader extends Header implements Streamable {
         public static final byte DATA=0;
-        public static final byte DATA_ACK=1;
+        public static final byte ACK=1;
 	
         byte    type=DATA;
         long    seqno=0;   // First msg is 0
@@ -454,7 +474,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         public UnicastHeader() {} // used for externalization
 	
         public UnicastHeader(byte type, long seqno) {
-            this.type=type == DATA_ACK ? DATA_ACK : DATA;
+            this.type=type;
             this.seqno=seqno;
         }
 	
@@ -465,7 +485,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         public static String type2Str(byte t) {
             switch(t) {
                 case DATA: return "DATA";
-                case DATA_ACK: return "DATA_ACK";
+                case ACK: return "ACK";
                 default: return "<unknown>";
             }
         }
