@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.34 2005/08/18 12:23:26 belaban Exp $
+// $Id: UNICAST.java,v 1.35 2005/08/19 10:13:09 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -151,7 +151,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     public void start() throws Exception {
         timer=stack != null ? stack.timer : null;
         if(timer == null)
-            throw new Exception("UNICAST.start(): timer is null");
+            throw new Exception("timer is null");
     }
 
     public void stop() {
@@ -228,7 +228,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 UnicastHeader hdr=new UnicastHeader(UnicastHeader.DATA, entry.sent_msgs_seqno);
                 if(entry.sent_msgs == null) { // first msg to peer 'dst'
                     hdr.first=true;
-                    entry.sent_msgs=new AckSenderWindow(this, timeout, this);
+                    entry.sent_msgs=new AckSenderWindow(this, timeout, this, timer); // use the protocol stack's timer
                 }
                 msg.putHeader(name, hdr);
                 if(trace)
