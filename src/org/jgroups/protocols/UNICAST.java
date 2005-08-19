@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.36 2005/08/19 12:26:09 belaban Exp $
+// $Id: UNICAST.java,v 1.37 2005/08/19 12:47:26 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -48,7 +48,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     /** Copy downbound messages to myself and send them back up the stack. Turns messages sent to self around even
      * before hitting the transport
       */
-    private boolean          loopback=true;
+    private boolean          loopback=false;
 
     /** @deprecated Not used anymore */
     int              window_size=-1;               // sliding window: max number of msgs in table (disabled by default)
