@@ -1,22 +1,16 @@
 package org.jgroups.tests;
 
 
-import EDU.oswego.cs.dl.util.concurrent.FutureResult;
-import EDU.oswego.cs.dl.util.concurrent.TimeoutException;
-import junit.framework.TestCase;
 import junit.framework.Test;
+import junit.framework.TestCase;
 import junit.framework.TestSuite;
-import org.jgroups.util.Util;
-import org.jgroups.util.CondVar;
-import org.jgroups.stack.AckReceiverWindow;
 import org.jgroups.Message;
-
-import java.lang.reflect.InvocationTargetException;
+import org.jgroups.stack.AckReceiverWindow;
 
 
 /**
  * @author Bela Ban
- * @version $Id: AckReceiverWindowTest.java,v 1.1 2005/01/28 09:52:06 belaban Exp $
+ * @version $Id: AckReceiverWindowTest.java,v 1.2 2005/08/21 20:37:50 belaban Exp $
  */
 public class AckReceiverWindowTest extends TestCase {
     AckReceiverWindow win;
