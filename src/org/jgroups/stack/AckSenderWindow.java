@@ -1,4 +1,4 @@
-// $Id: AckSenderWindow.java,v 1.14 2005/08/19 10:12:54 belaban Exp $
+// $Id: AckSenderWindow.java,v 1.15 2005/08/21 21:26:35 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -7,10 +7,9 @@ import EDU.oswego.cs.dl.util.concurrent.ConcurrentReaderHashMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
-import org.jgroups.Event;
 import org.jgroups.Message;
-import org.jgroups.util.Util;
 import org.jgroups.util.TimeScheduler;
+import org.jgroups.util.Util;
 
 import java.util.Map;
 
@@ -29,7 +28,6 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
     final Map           msgs=new ConcurrentReaderHashMap();        // keys: seqnos (Long), values: Messages
     long[]              interval = new long[]{400,800,1200,1600};
     final Retransmitter retransmitter;
-    Protocol            transport = null; // used to send messages
     static    final Log log=LogFactory.getLog(AckSenderWindow.class);
 
 
@@ -58,22 +56,11 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
         retransmitter.setRetransmitTimeouts(interval);
     }
 
-    /**
-     * This constructor whould be used when we want AckSenderWindow to send the message added
-     * by add(), rather then ourselves.
-     */
-    public AckSenderWindow(RetransmitCommand com, long[] interval, Protocol transport) {
-        retransmit_command = com;
-        this.interval = interval;
-        this.transport = transport;
-        retransmitter = new Retransmitter(null, this);
-        retransmitter.setRetransmitTimeouts(interval);
-    }
 
-    public AckSenderWindow(RetransmitCommand com, long[] interval, Protocol transport, TimeScheduler sched) {
+
+    public AckSenderWindow(RetransmitCommand com, long[] interval, TimeScheduler sched) {
         retransmit_command = com;
         this.interval = interval;
-        this.transport = transport;
         retransmitter = new Retransmitter(null, this, sched);
         retransmitter.setRetransmitTimeouts(interval);
     }
@@ -102,8 +89,6 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
             if(!msgs.containsKey(tmp))
                 msgs.put(tmp, msg);
         }
-        if (transport != null)
-            transport.passDown(new Event(Event.MSG, msg));
         retransmitter.add(seqno, seqno);
     }
 
