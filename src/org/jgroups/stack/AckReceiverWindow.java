@@ -1,4 +1,4 @@
-// $Id: AckReceiverWindow.java,v 1.16 2005/08/19 16:56:47 belaban Exp $
+// $Id: AckReceiverWindow.java,v 1.17 2005/08/21 21:26:35 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -23,26 +23,29 @@ import java.util.TreeSet;
  * @author Bela Ban
  */
 public class AckReceiverWindow {
-    final long        initial_seqno;
     long              next_to_remove=0;
     final HashMap     msgs=new HashMap();  // keys: seqnos (Long), values: Messages
     static final Log  log=LogFactory.getLog(AckReceiverWindow.class);
 
 
     public AckReceiverWindow(long initial_seqno) {
-        this.initial_seqno=initial_seqno;
-        next_to_remove=initial_seqno;
+        this.next_to_remove=initial_seqno;
     }
 
 
+    /** Adds a new message. Message cannot be null */
     public void add(long seqno, Message msg) {
+        if(msg == null)
+            throw new IllegalArgumentException("msg must be non-null");
         synchronized(msgs) {
             if(seqno < next_to_remove) {
                 if(log.isTraceEnabled())
                     log.trace("discarded msg with seqno=" + seqno + " (next msg to receive is " + next_to_remove + ')');
                 return;
             }
-            msgs.put(new Long(seqno), msg);
+            Long seq=new Long(seqno);
+            if(!msgs.containsKey(seq)) // todo: replace with atomic action once we have util.concurrent (JDK 5)
+                msgs.put(seq, msg);
         }
     }
 
@@ -57,15 +60,9 @@ public class AckReceiverWindow {
 
         synchronized(msgs) {
             Long key=new Long(next_to_remove);
-            boolean contains=msgs.containsKey(key); // todo: remove containsKey() once this is debugged
             retval=(Message)msgs.remove(key);
             if(retval != null)
                 next_to_remove++;
-            else {
-                if(contains) {
-                    log.warn("seqno " + key + " has a null Message associated with it");
-                }
-            }
         }
         return retval;
     }
@@ -74,7 +71,6 @@ public class AckReceiverWindow {
     public void reset() {
         synchronized(msgs) {
             msgs.clear();
-            next_to_remove=initial_seqno;
         }
     }
 
