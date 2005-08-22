@@ -1,4 +1,4 @@
-// $Id: FCTest.java,v 1.4 2005/04/25 08:30:09 belaban Exp $
+// $Id: FCTest.java,v 1.5 2005/08/22 12:06:04 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -28,9 +28,8 @@ public class FCTest extends TestCase {
     View v;
     Simulator s;
 
-    final int NUM=10000;
     final int SIZE=1000; // bytes
-    final int NUM_MSGS=NUM * 10;
+    final int NUM_MSGS=100000;
 
 
     public FCTest(String name) {
@@ -80,7 +79,7 @@ public class FCTest extends TestCase {
         Util.sleep(1000);
         num_received=r.getNumberOfReceivedMessages();
         System.out.println("-- num received=" + num_received);
-        assertTrue(num_received >= NUM);
+        assertTrue(num_received >= NUM_MSGS);
     }
 
 

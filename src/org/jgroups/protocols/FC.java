@@ -1,4 +1,4 @@
-// $Id: FC.java,v 1.46 2005/08/19 12:26:09 belaban Exp $
+// $Id: FC.java,v 1.47 2005/08/22 12:06:03 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -22,7 +22,7 @@ import java.util.*;
  * <br/>This is the second simplified implementation of the same model. The algorithm is sketched out in
  * doc/FlowControl.txt
  * @author Bela Ban
- * @version $Revision: 1.46 $
+ * @version $Revision: 1.47 $
  */
 public class FC extends Protocol {
 
@@ -350,7 +350,7 @@ public class FC extends Protocol {
         Address dest=msg.getDest();
 
         synchronized(mutex) {
-            if(lowest_credit - length <= 0) {
+            if(lowest_credit <= length) {
                 determineCreditors(dest, length);
                 insufficient_credit=true;
                 num_blockings++;
@@ -397,7 +397,7 @@ public class FC extends Protocol {
                 entry=(Map.Entry)it.next();
                 mbr=(Address)entry.getKey();
                 credits=(Long)entry.getValue();
-                if(credits.longValue() < length) {
+                if(credits.longValue() <= length) {
                     if(!creditors.contains(mbr))
                         creditors.add(mbr);
                 }
@@ -405,7 +405,7 @@ public class FC extends Protocol {
         }
         else {
             credits=(Long)sent.get(dest);
-            if(credits.longValue() < length) {
+            if(credits.longValue() <= length) {
                 if(!creditors.contains(dest))
                     creditors.add(dest);
             }
@@ -504,7 +504,7 @@ public class FC extends Protocol {
         if(length == 0)
             return; // no effect
 
-        if(decrementCredit(received, src, length) < min_credits) {
+        if(decrementCredit(received, src, length) <= min_credits) {
             received.put(src, max_credits_constant);
             if(trace) log.trace("sending replenishment message to " + src);
             sendCredit(src);
