@@ -1,4 +1,4 @@
-// $Id: AckReceiverWindow.java,v 1.17 2005/08/21 21:26:35 belaban Exp $
+// $Id: AckReceiverWindow.java,v 1.18 2005/08/22 14:12:53 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -44,8 +44,15 @@ public class AckReceiverWindow {
                 return;
             }
             Long seq=new Long(seqno);
-            if(!msgs.containsKey(seq)) // todo: replace with atomic action once we have util.concurrent (JDK 5)
+            if(!msgs.containsKey(seq)) { // todo: replace with atomic action once we have util.concurrent (JDK 5)
                 msgs.put(seq, msg);
+                if(log.isTraceEnabled())
+                    log.trace("added seqno=" + seqno); // todo: remove
+            }
+            else {
+                if(log.isTraceEnabled())
+                    log.trace("seqno " + seqno + " already received - dropping it");
+            }
         }
     }
 
@@ -61,8 +68,11 @@ public class AckReceiverWindow {
         synchronized(msgs) {
             Long key=new Long(next_to_remove);
             retval=(Message)msgs.remove(key);
-            if(retval != null)
+            if(retval != null) {
+                if(log.isTraceEnabled())
+                    log.trace("removed seqno=" + next_to_remove);
                 next_to_remove++;
+            }
         }
         return retval;
     }

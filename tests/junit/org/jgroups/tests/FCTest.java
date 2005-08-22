@@ -1,4 +1,4 @@
-// $Id: FCTest.java,v 1.7 2005/08/22 12:39:17 belaban Exp $
+// $Id: FCTest.java,v 1.8 2005/08/22 14:12:54 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -68,20 +68,23 @@ public class FCTest extends TestCase {
         int num_received=0;
         Receiver r=new Receiver();
         s.setReceiver(r);
-        for(int i=0; i < NUM_MSGS; i++) {
+        for(int i=1; i <= NUM_MSGS; i++) {
             Message msg=new Message(null, null, createPayload(SIZE));
             Event evt=new Event(Event.MSG, msg);
             s.send(evt);
             if(i % 1000 == 0)
                 System.out.println("==> " + i);
         }
-        num_received=r.getNumberOfReceivedMessages();
-        System.out.println("-- num received=" + num_received);
-        Util.sleep(1000);
-        num_received=r.getNumberOfReceivedMessages();
-        System.out.println("-- num received=" + num_received);
-        assertTrue(num_received >= NUM_MSGS);
-        System.out.println("Stats:\n" + s.dumpStats());
+        int num_tries=10;
+        while(num_tries > 0) {
+            Util.sleep(1000);
+            num_received=r.getNumberOfReceivedMessages();
+            System.out.println("-- num received=" + num_received + ", stats:\n" + s.dumpStats());
+            if(num_received == NUM_MSGS)
+                break;
+            num_tries--;
+        }
+        assertTrue(num_received == NUM_MSGS);
     }
 
 
