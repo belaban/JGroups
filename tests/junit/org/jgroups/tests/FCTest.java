@@ -1,4 +1,4 @@
-// $Id: FCTest.java,v 1.5 2005/08/22 12:06:04 belaban Exp $
+// $Id: FCTest.java,v 1.6 2005/08/22 12:32:58 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -46,7 +46,7 @@ public class FCTest extends TestCase {
         s=new Simulator();
         s.setLocalAddress(a1);
         s.setView(v);
-        Simulator.addrTable.put(a1, s);
+        s.addMember(a1);
         FC fc=new FC();
         Properties props=new Properties();
         props.setProperty("max_credits", "10000");
@@ -80,6 +80,7 @@ public class FCTest extends TestCase {
         num_received=r.getNumberOfReceivedMessages();
         System.out.println("-- num received=" + num_received);
         assertTrue(num_received >= NUM_MSGS);
+        System.out.println("Stats:\n" + s.dumpStats());
     }
 
 
