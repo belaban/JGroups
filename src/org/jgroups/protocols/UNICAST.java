@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.40 2005/08/22 13:17:12 belaban Exp $
+// $Id: UNICAST.java,v 1.41 2005/08/22 14:12:53 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -108,6 +108,18 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         num_xmit_requests_received=0;
     }
 
+    public Map dumpStats() {
+        Map m=new HashMap();
+        m.put("num_msgs_sent", new Long(num_msgs_sent));
+        m.put("num_msgs_received", new Long(num_msgs_received));
+        m.put("num_bytes_sent", new Long(num_bytes_sent));
+        m.put("num_bytes_received", new Long(num_bytes_received));
+        m.put("num_acks_sent", new Long(num_acks_sent));
+        m.put("num_acks_received", new Long(num_acks_received));
+        m.put("num_xmit_requests_received", new Long(num_xmit_requests_received));
+        return m;
+    }
+
     public boolean setProperties(Properties props) {
         String     str;
         long[]     tmp;
@@ -174,14 +186,14 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             if(dst == null || dst.isMulticastAddress())  // only handle unicast messages
                 break;  // pass up
 
-            hdr=(UnicastHeader)msg.removeHeader(name);
+            hdr=(UnicastHeader)msg.getHeader(name); // changed from removeHeader()
             if(hdr == null) break;
             src=msg.getSrc();
             switch(hdr.type) {
             case UnicastHeader.DATA:      // received regular message
                 handleDataReceived(src, hdr.seqno, msg);
                 sendAck(src, hdr.seqno); // only send an ACK if added to the received_msgs table (bela Aug 2006)
-                break;
+                return; // we pass the deliverable message up in handleDataReceived()
             case UnicastHeader.ACK:  // received ACK for previously sent message
                 handleAckReceived(src, hdr.seqno);
                 break;

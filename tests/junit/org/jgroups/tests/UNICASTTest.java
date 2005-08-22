@@ -1,4 +1,4 @@
-// $Id: UNICASTTest.java,v 1.1 2005/08/22 13:17:13 belaban Exp $
+// $Id: UNICASTTest.java,v 1.2 2005/08/22 14:12:54 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -16,6 +16,7 @@ import org.jgroups.util.Util;
 
 import java.util.Properties;
 import java.util.Vector;
+import java.nio.ByteBuffer;
 
 
 /**
@@ -62,41 +63,55 @@ public class UNICASTTest extends TestCase {
     }
 
 
-    public void testReceptionOfAllMessages() {
+    public void testReceptionOfAllMessages() throws Throwable {
         int num_received=0;
         Receiver r=new Receiver();
         s.setReceiver(r);
         for(int i=1; i <= NUM_MSGS; i++) {
-            Message msg=new Message(a1, null, createPayload(SIZE)); // unicast message
+            Message msg=new Message(a1, null, createPayload(SIZE, i)); // unicast message
             Event evt=new Event(Event.MSG, msg);
             s.send(evt);
             if(i % 1000 == 0)
                 System.out.println("==> " + i);
         }
-        num_received=r.getNumberOfReceivedMessages();
-        System.out.println("-- num received=" + num_received);
-        Util.sleep(1000);
-        num_received=r.getNumberOfReceivedMessages();
-        System.out.println("-- num received=" + num_received);
-        assertTrue(num_received >= NUM_MSGS);
-        System.out.println("Stats:\n" + s.dumpStats());
+        int num_tries=10;
+        while((num_received=r.getNumberOfReceivedMessages()) != NUM_MSGS && num_tries > 0) {
+            if(r.getException() != null)
+            throw r.getException();
+            Util.sleep(3000);
+            // System.out.println("-- num received=" + num_received);
+            num_tries--;
+        }
+        System.out.println("-- num received=" + num_received + ", stats:\n" + s.dumpStats());
+        assertTrue(num_received == NUM_MSGS);
     }
 
 
 
-    private static byte[] createPayload(int size) {
-        byte[] retval=new byte[size];
-        for(int i=0; i < size; i++)
-            retval[i]='0';
-        return retval;
+    private static byte[] createPayload(int size, int seqno) {
+        ByteBuffer buf=ByteBuffer.allocate(size);
+        buf.putInt(seqno);
+        return buf.array();
     }
 
 
+    /** Checks that messages 1 - NUM_MSGS are received in order */
     class Receiver implements Simulator.Receiver {
-        int num_mgs_received=0;
+        int num_mgs_received=0, next=1;
+        Throwable exception=null;
 
         public void receive(Event evt) {
             if(evt.getType() == Event.MSG) {
+                if(exception != null)
+                return;
+                Message msg=(Message)evt.getArg();
+                ByteBuffer buf=ByteBuffer.wrap(msg.getRawBuffer());
+                int seqno=buf.getInt();
+                if(seqno != next) {
+                    exception=new Exception("expected seqno was " + next + ", but received " + seqno);
+                    return;
+                }
+                next++;
                 num_mgs_received++;
                 if(num_mgs_received % 1000 == 0)
                     System.out.println("<== " + num_mgs_received);
@@ -106,9 +121,13 @@ public class UNICASTTest extends TestCase {
         public int getNumberOfReceivedMessages() {
             return num_mgs_received;
         }
+
+        public Throwable getException() {
+            return exception;
+        }
     }
-    
-   
+
+
 
     public static Test suite() {
         TestSuite s=new TestSuite(UNICASTTest.class);
