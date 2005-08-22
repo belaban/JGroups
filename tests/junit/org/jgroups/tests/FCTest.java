@@ -1,4 +1,4 @@
-// $Id: FCTest.java,v 1.6 2005/08/22 12:32:58 belaban Exp $
+// $Id: FCTest.java,v 1.7 2005/08/22 12:39:17 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -51,6 +51,7 @@ public class FCTest extends TestCase {
         Properties props=new Properties();
         props.setProperty("max_credits", "10000");
         props.setProperty("min_credits", "1000");
+        props.setProperty("max_block_time", "1000");
         fc.setProperties(props);
         Protocol[] stack=new Protocol[]{fc};
         s.setProtocolStack(stack);
