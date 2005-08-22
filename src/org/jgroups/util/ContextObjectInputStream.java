@@ -10,7 +10,7 @@ import java.util.HashMap;
  * ObjectInputStream which sets a contact classloader for reading bytes into objects. Copied from
  * MarshalledValueInputStream of JBoss
  * @author Bela Ban
- * @version $Id: ContextObjectInputStream.java,v 1.5 2005/08/08 14:58:35 belaban Exp $
+ * @version $Id: ContextObjectInputStream.java,v 1.6 2005/08/22 06:49:04 belaban Exp $
  */
 public class ContextObjectInputStream extends ObjectInputStream {
 
@@ -20,7 +20,7 @@ public class ContextObjectInputStream extends ObjectInputStream {
      */
     private static final HashMap classCache=new HashMap();
 
-    private static final HashMap primClasses = new HashMap(8, 1.0F);
+    private static final HashMap primClasses = new HashMap(9, 1.0F);
     static {
         primClasses.put("boolean", boolean.class);
         primClasses.put("byte", byte.class);
@@ -52,7 +52,12 @@ public class ContextObjectInputStream extends ObjectInputStream {
         }
 
         if(resolvedClass == null) {
-            resolvedClass=Util.loadClass(className, this.getClass());
+            try {
+                resolvedClass=Util.loadClass(className, this.getClass());
+            }
+            catch(ClassNotFoundException e) {
+                
+            }
             if(resolvedClass == null) {
                 /* This is a backport von JDK 1.4's java.io.ObjectInputstream to support
                 * retrieval of primitive classes (e.g. Boolean.TYPE) in JDK 1.3.
@@ -61,7 +66,7 @@ public class ContextObjectInputStream extends ObjectInputStream {
                 */
                 resolvedClass = (Class) primClasses.get(className);
                 if (resolvedClass == null) {
-                    
+
                     /* Use the super.resolveClass() call which will resolve array
                        classes and primitives. We do not use this by default as this can
                        result in caching of stale values across redeployments.
