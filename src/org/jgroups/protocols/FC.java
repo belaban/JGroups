@@ -1,4 +1,4 @@
-// $Id: FC.java,v 1.47 2005/08/22 12:06:03 belaban Exp $
+// $Id: FC.java,v 1.48 2005/08/22 12:32:58 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -22,7 +22,7 @@ import java.util.*;
  * <br/>This is the second simplified implementation of the same model. The algorithm is sketched out in
  * doc/FlowControl.txt
  * @author Bela Ban
- * @version $Revision: 1.47 $
+ * @version $Revision: 1.48 $
  */
 public class FC extends Protocol {
 
@@ -148,7 +148,7 @@ public class FC extends Protocol {
     }
 
     public double getAverageTimeBlocked() {
-        return num_blockings == 0? num_blockings : total_time_blocking / num_blockings;
+        return num_blockings == 0? 0.0 : total_time_blocking / (double)num_blockings;
     }
 
     public int getNumberOfCreditRequestsReceived() {
@@ -190,6 +190,7 @@ public class FC extends Protocol {
         retval.put("num_blockings", new Integer(this.num_blockings));
         retval.put("avg_time_blocked", new Double(getAverageTimeBlocked()));
         retval.put("num_replenishments", new Integer(this.num_credit_responses_received));
+        retval.put("total_time_blocked", new Long(total_time_blocking));
         return retval;
     }
 
