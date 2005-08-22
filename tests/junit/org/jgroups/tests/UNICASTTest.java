@@ -1,4 +1,4 @@
-// $Id: UNICASTTest.java,v 1.2 2005/08/22 14:12:54 belaban Exp $
+// $Id: UNICASTTest.java,v 1.3 2005/08/22 14:47:48 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -50,7 +50,7 @@ public class UNICASTTest extends TestCase {
         s.addMember(a1);
         UNICAST unicast=new UNICAST();
         Properties props=new Properties();
-        props.setProperty("timeout", "100,200,400,800,1600");
+        props.setProperty("timeout", "100,200,400,800,1000,2000,3000");
         unicast.setProperties(props);
         Protocol[] stack=new Protocol[]{unicast};
         s.setProtocolStack(stack);
