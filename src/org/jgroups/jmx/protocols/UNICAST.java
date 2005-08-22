@@ -4,7 +4,7 @@ import org.jgroups.jmx.Protocol;
 
 /**
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.4 2005/08/19 12:26:09 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.5 2005/08/22 13:17:12 belaban Exp $
  */
 public class UNICAST extends Protocol implements UNICASTMBean {
     org.jgroups.protocols.UNICAST p;
@@ -30,13 +30,6 @@ public class UNICAST extends Protocol implements UNICASTMBean {
         return p.getMembers();
     }
 
-    public boolean isLoopback() {
-        return p.isLoopback();
-    }
-
-    public void setLoopback(boolean loopback) {
-        p.setLoopback(loopback);
-    }
 
     public String printConnections() {
         return p.printConnections();
