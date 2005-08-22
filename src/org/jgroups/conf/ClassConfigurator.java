@@ -1,4 +1,4 @@
-// $Id: ClassConfigurator.java,v 1.16 2005/08/08 14:58:32 belaban Exp $
+// $Id: ClassConfigurator.java,v 1.17 2005/08/22 08:31:25 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -138,7 +138,7 @@ public class ClassConfigurator {
             return Util.loadClass(clazzname, this.getClass());
         }
         catch(Exception x) {
-            if(log.isErrorEnabled()) log.error(Util.getStackTrace(x));
+            if(log.isErrorEnabled()) log.error("failed loading class " + clazzname, x);
         }
         return null;
     }

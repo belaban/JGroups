@@ -1,9 +1,8 @@
-// $Id: Debugger.java,v 1.4 2005/08/08 14:58:33 belaban Exp $
+// $Id: Debugger.java,v 1.5 2005/08/22 08:31:25 belaban Exp $
 
 package org.jgroups.debug;
 
 import org.jgroups.JChannel;
-import org.jgroups.util.Util;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 
@@ -118,16 +117,6 @@ public class Debugger extends JFrame {
         dispose();
     }
 
-
-    JComponent createProtocolView(String protname) {
-        String classname="org.jgroups.debug." + protname + "View";
-        try {
-            return (JComponent)Util.loadClass(classname, this.getClass()).newInstance();
-        }
-        catch(Exception e) {  // ClassNotFoundException
-            return null;
-        }
-    }
 
 
     public static void main(String[] args) {
