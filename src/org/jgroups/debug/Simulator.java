@@ -5,6 +5,7 @@ import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.stack.Protocol;
+import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Queue;
 import org.jgroups.util.QueueClosedException;
 
@@ -14,11 +15,12 @@ import java.util.Iterator;
 /**
  * Tests one or more protocols independently. Look at org.jgroups.tests.FCTest for an example of how to use it.
  * @author Bela Ban
- * @version $Id: Simulator.java,v 1.4 2005/08/22 12:32:58 belaban Exp $
+ * @version $Id: Simulator.java,v 1.5 2005/08/22 13:17:12 belaban Exp $
  */
 public class Simulator {
     private Protocol[] protStack=null;
     private ProtocolAdapter ad=new ProtocolAdapter();
+    ProtocolStack prot_stack=null;
     private Receiver r=null;
     private Protocol top=null, bottom=null;
     private Queue send_queue=new Queue();
@@ -44,9 +46,12 @@ public class Simulator {
         top=protStack[0];
         bottom=this.protStack[this.protStack.length-1];
 
+        prot_stack=new ProtocolStack();
+
         if(protStack.length > 1) {
             for(int i=0; i < protStack.length; i++) {
                 Protocol p1=protStack[i];
+                p1.setProtocolStack(prot_stack);
                 Protocol p2=i+1 >= protStack.length? null : protStack[i+1];
                 if(p2 != null) {
                     p1.setDownProtocol(p2);
@@ -108,6 +113,21 @@ public class Simulator {
             Event view_evt=new Event(Event.VIEW_CHANGE, view);
             bottom.up(view_evt);
             top.down(view_evt);
+        }
+
+        for(int i=0; i < protStack.length; i++) {
+            Protocol p=protStack[i];
+            p.setProtocolStack(prot_stack);
+        }
+
+        for(int i=0; i < protStack.length; i++) {
+            Protocol p=protStack[i];
+            p.init();
+        }
+
+        for(int i=0; i < protStack.length; i++) {
+            Protocol p=protStack[i];
+            p.start();
         }
 
 

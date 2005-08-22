@@ -1,4 +1,4 @@
-// $Id: ProtocolStack.java,v 1.21 2005/08/19 08:41:22 belaban Exp $
+// $Id: ProtocolStack.java,v 1.22 2005/08/22 13:17:13 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -25,7 +25,7 @@ public class ProtocolStack extends Protocol implements Transport {
     private Protocol                top_prot=null;
     private Protocol                bottom_prot=null;
     private final Configurator      conf=new Configurator();
-    private final String            setup_string;
+    private String                  setup_string;
     private JChannel                channel=null;
     private boolean                 stopped=true;
     public final  TimeScheduler     timer=new TimeScheduler(60000);
@@ -48,7 +48,10 @@ public class ProtocolStack extends Protocol implements Transport {
         ClassConfigurator.getInstance(true); // will create the singleton
     }
 
+    /** Only used by Simulator; don't use */
+    public ProtocolStack() {
 
+    }
 
 
     /** Returns all protocols in a list, from top to bottom. <em>These are not copies of protocols,

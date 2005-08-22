@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.39 2005/08/21 21:26:34 belaban Exp $
+// $Id: UNICAST.java,v 1.40 2005/08/22 13:17:12 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -44,11 +44,6 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     // default is true
     private boolean          use_gms=true;
 
-    /** Copy downbound messages to myself and send them back up the stack. Turns messages sent to self around even
-     * before hitting the transport
-      */
-    private boolean          loopback=false;
-
     /** @deprecated Not used anymore */
     int              window_size=-1;               // sliding window: max number of msgs in table (disabled by default)
 
@@ -79,13 +74,6 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         return sb.toString();
     }
 
-    public boolean isLoopback() {
-        return loopback;
-    }
-
-    public void setLoopback(boolean loopback) {
-        this.loopback=loopback;
-    }
 
     public long getNumMessagesSent() {
         return num_msgs_sent;
@@ -225,13 +213,6 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             /* only handle unicast messages */
             if (dst == null || ((Address) dst).isMulticastAddress()) {
                 break;
-            }
-
-            if(loopback && dst.equals(local_addr)) {
-                Message copy=msg.copy();
-                copy.setSrc(local_addr);
-                passUp(new Event(Event.MSG, copy));
-                return;
             }
 
             Entry entry;
