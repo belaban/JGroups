@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.41 2005/08/22 14:12:53 belaban Exp $
+// $Id: UNICAST.java,v 1.42 2005/08/22 14:47:15 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -186,7 +186,9 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             if(dst == null || dst.isMulticastAddress())  // only handle unicast messages
                 break;  // pass up
 
-            hdr=(UnicastHeader)msg.getHeader(name); // changed from removeHeader()
+            // changed from removeHeader(): we cannot remove the header because if we do loopback=true at the
+            // transport level, we will not have the header on retransmit ! (bela Aug 22 2006)
+            hdr=(UnicastHeader)msg.getHeader(name);
             if(hdr == null) break;
             src=msg.getSrc();
             switch(hdr.type) {
