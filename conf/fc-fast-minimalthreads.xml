@@ -79,7 +79,7 @@ Best result with perf.Test (2 members, 1 sender, laptop, 20000 1K msgs
                    retransmit_timeout="100,200,300,600,1200,2400,4800"
                    down_thread="false" up_thread="false"
                    discard_delivered_msgs="true"/>
-    <UNICAST timeout="100,200,300,600,1200,2400,3600"
+    <UNICAST timeout="300,600,1200,2400,3600"
              down_thread="false" up_thread="false"/>
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000" 
                    down_thread="false" up_thread="false"
