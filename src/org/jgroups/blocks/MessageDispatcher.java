@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.39 2005/07/17 11:36:40 chrislott Exp $
+// $Id: MessageDispatcher.java,v 1.40 2005/08/24 12:15:34 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -407,6 +407,7 @@ public class MessageDispatcher implements RequestHandler {
         }
 
         _req=new GroupRequest(msg, corr, real_dests, mode, timeout, 0);
+        _req.setCaller(this.local_addr);
         _req.execute();
 
         return _req.getResults();
@@ -500,6 +501,7 @@ public class MessageDispatcher implements RequestHandler {
         mbrs.addElement(dest);   // dummy membership (of destination address)
 
         _req=new GroupRequest(msg, corr, mbrs, mode, timeout, 0);
+        _req.setCaller(local_addr);
         _req.execute();
 
         if(mode == GroupRequest.GET_NONE) {
