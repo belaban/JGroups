@@ -1,4 +1,4 @@
-// $Id: GroupRequest.java,v 1.14 2005/07/25 11:49:27 belaban Exp $
+// $Id: GroupRequest.java,v 1.15 2005/08/24 12:15:12 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -41,7 +41,7 @@ import java.util.*;
  * to do so.<p>
  * <b>Requirements</b>: lossless delivery, e.g. acknowledgment-based message confirmation.
  * @author Bela Ban
- * @version $Revision: 1.14 $
+ * @version $Revision: 1.15 $
  */
 public class GroupRequest implements RspCollector, Command {
     /** return only first response */
@@ -62,6 +62,7 @@ public class GroupRequest implements RspCollector, Command {
     /** return no response (async call) */
     public static final int GET_NONE=6;
 
+    private Address caller=null;
 
     /** Map<Address, Rsp>. Maps requests and responses */
     private final Map requests=new HashMap();
@@ -164,6 +165,13 @@ public class GroupRequest implements RspCollector, Command {
        this.expected_mbrs=expected_mbrs;
     }
 
+    public Address getCaller() {
+        return caller;
+    }
+
+    public void setCaller(Address caller) {
+        this.caller=caller;
+    }
 
     /**
      * Sends the message. Returns when n responses have been received, or a
@@ -352,9 +360,11 @@ public class GroupRequest implements RspCollector, Command {
 
 
     public String toString() {
-        StringBuffer ret=new StringBuffer();
+        StringBuffer ret=new StringBuffer(128);
         ret.append("[GroupRequest:\n");
         ret.append("req_id=").append(req_id).append('\n');
+        if(caller != null)
+            ret.append("caller=").append(caller).append("\n");
 
         Map.Entry entry;
         Address mbr;
@@ -370,7 +380,7 @@ public class GroupRequest implements RspCollector, Command {
         if(suspects.size() > 0)
             ret.append("\nsuspects: ").append(suspects);
         ret.append("\nrequest_msg: ").append(request_msg);
-        ret.append("\nrsp_mode: ").append(rsp_mode);
+        ret.append("\nrsp_mode: ").append(modeToString(rsp_mode));
         ret.append("\ndone: ").append(done);
         ret.append("\ntimeout: ").append(timeout);
         ret.append("\nexpected_mbrs: ").append(expected_mbrs);
@@ -600,6 +610,18 @@ public class GroupRequest implements RspCollector, Command {
             suspects.addElement(suspected_mbr);
             while(suspects.size() >= max_suspects && suspects.size() > 0)
                 suspects.remove(0); // keeps queue bounded
+        }
+    }
+
+    private String modeToString(int m) {
+        switch(m) {
+            case GET_FIRST: return "GET_FIRST";
+            case GET_ALL: return "GET_ALL";
+            case GET_MAJORITY: return "GET_MAJORITY";
+            case GET_ABS_MAJORITY: return "GET_ABS_MAJORITY";
+            case GET_N: return "GET_N";
+            case GET_NONE: return "GET_NONE";
+            default: return "<unknown> (" + m + ")";
         }
     }
 }
