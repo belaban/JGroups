@@ -1,4 +1,4 @@
-// $Id: DISCARD.java,v 1.8 2005/07/17 11:36:15 chrislott Exp $
+// $Id: DISCARD.java,v 1.9 2005/08/24 12:57:55 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -98,11 +98,11 @@ public class DISCARD extends Protocol
             {
                if (excludeItself && msg.getSrc().equals(localAddress))
                {
-                   if(log.isInfoEnabled()) log.info("excluding itself");
+                   if(log.isTraceEnabled()) log.trace("excluding itself");
                }
                else
                {
-                   if(log.isInfoEnabled()) log.info("dropping message");
+                   if(log.isTraceEnabled()) log.trace("dropping message");
                   return;
                }
             }
@@ -136,11 +136,11 @@ public class DISCARD extends Protocol
 
                if (excludeItself && msg.getSrc().equals(localAddress))
                {
-                   if(log.isInfoEnabled()) log.info("excluding itself");
+                   if(log.isTraceEnabled()) log.trace("excluding itself");
                }
                else
                {
-                   if(log.isInfoEnabled()) log.info("dropping message");
+                   if(log.isTraceEnabled()) log.trace("dropping message");
                   return;
                }
             }
