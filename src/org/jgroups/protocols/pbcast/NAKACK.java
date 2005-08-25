@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.57 2005/08/12 08:42:37 belaban Exp $
+// $Id: NAKACK.java,v 1.58 2005/08/25 10:08:33 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -115,6 +115,18 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     public long getXmitResponsesReceived() {return xmit_rsps_received;}
     public long getXmitResponsesSent() {return xmit_rsps_sent;}
     public long getMissingMessagesReceived() {return missing_msgs_received;}
+
+    public int getPendingRetransmissionRequests() {
+        int num=0;
+        NakReceiverWindow win;
+        synchronized(received_msgs) {
+            for(Iterator it=received_msgs.values().iterator(); it.hasNext();) {
+                win=(NakReceiverWindow)it.next();
+                num+=win.size();
+            }
+        }
+        return num;
+    }
 
     public void resetStats() {
         xmit_reqs_received=xmit_reqs_sent=xmit_rsps_received=xmit_rsps_sent=missing_msgs_received=0;
