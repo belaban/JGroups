@@ -4,10 +4,11 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.Address;
 
 import java.net.UnknownHostException;
+import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: TP.java,v 1.1 2005/08/17 07:32:29 belaban Exp $
+ * @version $Id: TP.java,v 1.2 2005/08/25 14:53:08 belaban Exp $
  */
 public class TP extends org.jgroups.jmx.Protocol implements TPMBean {
     org.jgroups.protocols.TP tp;
@@ -57,12 +58,20 @@ public class TP extends org.jgroups.jmx.Protocol implements TPMBean {
         tp.setBindAddress(bind_address);
     }
 
-    public boolean getBindToAllInterfaces() {
-        return tp.getBindToAllInterfaces();
+    public boolean isReceiveOnAllInterfaces() {
+        return tp.isReceiveOnAllInterfaces();
     }
 
-    public void setBindToAllInterfaces(boolean flag) {
-        tp.setBindToAllInterfaces(flag);
+    public List getReceiveInterfaces() {
+        return tp.getReceiveInterfaces();
+    }
+
+    public boolean isSendOnAllInterfaces() {
+        return tp.isSendOnAllInterfaces();
+    }
+
+    public List getSendInterfaces() {
+        return tp.getSendInterfaces();
     }
 
     public boolean isDiscardIncompatiblePackets() {

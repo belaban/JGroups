@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.98 2005/08/11 12:43:47 belaban Exp $
+// $Id: UDP.java,v 1.99 2005/08/25 14:53:08 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -448,8 +448,13 @@ public class UDP extends TP implements Runnable {
             tmp_addr=InetAddress.getByName(mcast_addr_name);
             mcast_addr=new IpAddress(tmp_addr, mcast_port);
 
-            if(bind_to_all_interfaces) {
-                bindToAllInterfaces(mcast_recv_sock, mcast_addr.getIpAddress());
+            if(receive_on_all_interfaces || (receive_interfaces != null && receive_interfaces.size() > 0)) {
+                List interfaces;
+                if(receive_interfaces != null)
+                    interfaces=receive_interfaces;
+                else
+                    interfaces=getAllAvailableInterfaces();
+                bindToInterfaces(interfaces, mcast_recv_sock, mcast_addr.getIpAddress());
             }
             else {
                 if(bind_addr != null)
@@ -478,21 +483,53 @@ public class UDP extends TP implements Runnable {
     }
 
 
-    private void bindToAllInterfaces(MulticastSocket s, InetAddress mcastAddr) throws IOException {
+//    private void bindToAllInterfaces(MulticastSocket s, InetAddress mcastAddr) throws IOException {
+//        SocketAddress tmp_mcast_addr=new InetSocketAddress(mcastAddr, mcast_port);
+//        Enumeration en=NetworkInterface.getNetworkInterfaces();
+//        while(en.hasMoreElements()) {
+//            NetworkInterface i=(NetworkInterface)en.nextElement();
+//            for(Enumeration en2=i.getInetAddresses(); en2.hasMoreElements();) {
+//                InetAddress addr=(InetAddress)en2.nextElement();
+//                // if(addr.isLoopbackAddress())
+//                // continue;
+//                s.joinGroup(tmp_mcast_addr, i);
+//                if(trace)
+//                    log.trace("joined " + tmp_mcast_addr + " on interface " + i.getName() + " (" + addr + ")");
+//                break;
+//            }
+//        }
+//    }
+
+
+    /**
+     *
+     * @param interfaces List<NetworkInterface>. Guaranteed to have no duplicates
+     * @param s
+     * @param mcastAddr
+     * @throws IOException
+     */
+    private void bindToInterfaces(List interfaces, MulticastSocket s, InetAddress mcastAddr) throws IOException {
         SocketAddress tmp_mcast_addr=new InetSocketAddress(mcastAddr, mcast_port);
-        Enumeration en=NetworkInterface.getNetworkInterfaces();
-        while(en.hasMoreElements()) {
-            NetworkInterface i=(NetworkInterface)en.nextElement();
+        for(Iterator it=interfaces.iterator(); it.hasNext();) {
+            NetworkInterface i=(NetworkInterface)it.next();
             for(Enumeration en2=i.getInetAddresses(); en2.hasMoreElements();) {
                 InetAddress addr=(InetAddress)en2.nextElement();
-                // if(addr.isLoopbackAddress())
-                // continue;
                 s.joinGroup(tmp_mcast_addr, i);
                 if(trace)
                     log.trace("joined " + tmp_mcast_addr + " on interface " + i.getName() + " (" + addr + ")");
                 break;
             }
         }
+    }
+
+    private List getAllAvailableInterfaces() throws SocketException {
+        List retval=new ArrayList(10);
+        NetworkInterface intf;
+        for(Enumeration en=NetworkInterface.getNetworkInterfaces(); en.hasMoreElements();) {
+            intf=(NetworkInterface)en.nextElement();
+            retval.add(intf);
+        }
+        return retval;
     }
 
 
