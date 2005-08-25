@@ -4,7 +4,7 @@ import org.jgroups.jmx.Protocol;
 
 /**
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.4 2005/06/13 07:09:42 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.5 2005/08/25 10:08:33 belaban Exp $
  */
 public class NAKACK extends Protocol implements NAKACKMBean {
     org.jgroups.protocols.pbcast.NAKACK p;
@@ -88,6 +88,10 @@ public class NAKACK extends Protocol implements NAKACKMBean {
 
     public long getMissingMessagesReceived() {
         return p.getMissingMessagesReceived();
+    }
+
+    public int getPendingRetransmissionRequests() {
+        return p.getPendingRetransmissionRequests();
     }
 
     public String printSentMessages() {

@@ -1,4 +1,4 @@
-// $Id: AckSenderWindow.java,v 1.15 2005/08/21 21:26:35 belaban Exp $
+// $Id: AckSenderWindow.java,v 1.16 2005/08/25 10:08:34 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -104,6 +104,9 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
         retransmitter.remove(seqno);
     }
 
+    public int size() {
+        return msgs.size();
+    }
 
     public String toString() {
         StringBuffer sb=new StringBuffer();

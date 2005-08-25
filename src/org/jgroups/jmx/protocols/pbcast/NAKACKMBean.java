@@ -4,7 +4,7 @@ import org.jgroups.jmx.ProtocolMBean;
 
 /**
  * @author Bela Ban
- * @version $Id: NAKACKMBean.java,v 1.3 2005/06/08 12:36:41 belaban Exp $
+ * @version $Id: NAKACKMBean.java,v 1.4 2005/08/25 10:08:33 belaban Exp $
  */
 public interface NAKACKMBean extends ProtocolMBean {
     int getGcLag();
@@ -25,6 +25,7 @@ public interface NAKACKMBean extends ProtocolMBean {
     long getXmitResponsesReceived();
     long getXmitResponsesSent();
     long getMissingMessagesReceived();
+    int getPendingRetransmissionRequests();
     String printSentMessages();
     String printMessages();
 }
