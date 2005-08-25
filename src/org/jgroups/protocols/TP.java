@@ -8,12 +8,8 @@ import org.jgroups.util.List;
 import org.jgroups.util.Queue;
 
 import java.io.DataInputStream;
-import java.net.DatagramPacket;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
+import java.net.*;
 import java.util.*;
-
-
 
 
 /**
@@ -40,7 +36,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.26 2005/08/19 16:06:35 belaban Exp $
+ * @version $Id: TP.java,v 1.27 2005/08/25 14:53:08 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -54,12 +50,35 @@ public abstract class TP extends Protocol {
     /** The interface (NIC) which should be used by this transport */
     InetAddress     bind_addr=null;
 
-    /** The transport should use all available interfaces if true */
+    /** If true, the transport should use all available interfaces to receive multicast messages
+     * @deprecated  Use {@link receive_on_all_interfaces} instead */
     boolean         bind_to_all_interfaces=false;
+
+    /** If true, the transport should use all available interfaces to receive multicast messages */
+    boolean         receive_on_all_interfaces=false;
+
+    /** List<NetworkInterface> of interfaces to receive multicasts on. The multicast receive socket will listen
+     * on all of these interfaces. This is a comma-separated list of IP addresses or interface names. E.g.
+     * "192.168.5.1,eth1,127.0.0.1". Duplicates are discarded; we only bind to an interface once.
+     * If this property is set, it override receive_on_all_interfaces.
+     */
+    java.util.List  receive_interfaces=null;
+
+    /** If true, the transport should use all available interfaces to send multicast messages. This means
+     * the same multicast message is sent N times, so use with care */
+    boolean         send_on_all_interfaces=false;
+
+    /** List<NetworkInterface> of interfaces to send multicasts on. The multicast send socket will send the
+     * same multicast message on all of these interfaces. This is a comma-separated list of IP addresses or
+     * interface names. E.g. "192.168.5.1,eth1,127.0.0.1". Duplicates are discarded.
+     * If this property is set, it override send_on_all_interfaces.
+     */
+    java.util.List  send_interfaces=null;
+
 
     /** The port to which the transport binds. 0 means to bind to any (ephemeral) port */
     int             bind_port=0;
-	int				port_range=1; // 27-6-2003 bgooren, Only try one port by default
+    int				port_range=1; // 27-6-2003 bgooren, Only try one port by default
 
     /** The members of this group (updated when a member joins or leaves) */
     final Vector    members=new Vector(11);
@@ -174,8 +193,14 @@ public abstract class TP extends Protocol {
     public void setBindAddress(String bind_addr) throws UnknownHostException {
         this.bind_addr=InetAddress.getByName(bind_addr);
     }
-    public boolean getBindToAllInterfaces() {return bind_to_all_interfaces;}
-    public void setBindToAllInterfaces(boolean flag) {this.bind_to_all_interfaces=flag;}
+    /** @deprecated Use {@link #isReceiveOnAllInterfaces()} instead */
+    public boolean getBindToAllInterfaces() {return receive_on_all_interfaces;}
+    public void setBindToAllInterfaces(boolean flag) {this.receive_on_all_interfaces=flag;}
+
+    public boolean isReceiveOnAllInterfaces() {return receive_on_all_interfaces;}
+    public java.util.List getReceiveInterfaces() {return receive_interfaces;}
+    public boolean isSendOnAllInterfaces() {return send_on_all_interfaces;}
+    public java.util.List getSendInterfaces() {return send_interfaces;}
     public boolean isDiscardIncompatiblePackets() {return discard_incompatible_packets;}
     public void setDiscardIncompatiblePackets(boolean flag) {discard_incompatible_packets=flag;}
     public boolean isEnableBundling() {return enable_bundling;}
@@ -302,7 +327,7 @@ public abstract class TP extends Protocol {
 
 
     /**
-     * Setup the Protocol instance acording to the configuration string
+     * Setup the Protocol instance according to the configuration string
      * @return true if no other properties are left.
      *         false if the properties still have data in them, ie ,
      *         properties are left over and not handled by the protocol stack
@@ -312,7 +337,7 @@ public abstract class TP extends Protocol {
         String tmp = null;
 
         super.setProperties(props);
-        
+
         // PropertyPermission not granted if running in an untrusted environment with JNLP.
         try {
             tmp=System.getProperty("bind.address");
@@ -322,7 +347,7 @@ public abstract class TP extends Protocol {
         }
         catch (SecurityException ex){
         }
-        
+
         if(tmp != null)
             str=tmp;
         else
@@ -340,8 +365,45 @@ public abstract class TP extends Protocol {
 
         str=props.getProperty("bind_to_all_interfaces");
         if(str != null) {
-            bind_to_all_interfaces=new Boolean(str).booleanValue();
+            receive_on_all_interfaces=new Boolean(str).booleanValue();
             props.remove("bind_to_all_interfaces");
+            log.warn("bind_to_all_interfaces has been deprecated; use receive_on_all_interfaces instead");
+        }
+
+        str=props.getProperty("receive_on_all_interfaces");
+        if(str != null) {
+            receive_on_all_interfaces=new Boolean(str).booleanValue();
+            props.remove("receive_on_all_interfaces");
+        }
+
+        str=props.getProperty("receive_interfaces");
+        if(str != null) {
+            try {
+                receive_interfaces=parseInterfaceList(str);
+                props.remove("receive_interfaces");
+            }
+            catch(Exception e) {
+                log.error("error determining interfaces (" + str + ")", e);
+                return false;
+            }
+        }
+
+        str=props.getProperty("send_on_all_interfaces");
+        if(str != null) {
+            send_on_all_interfaces=new Boolean(str).booleanValue();
+            props.remove("send_on_all_interfaces");
+        }
+
+        str=props.getProperty("send_interfaces");
+        if(str != null) {
+            try {
+                send_interfaces=parseInterfaceList(str);
+                props.remove("send_interfaces");
+            }
+            catch(Exception e) {
+                log.error("error determining interfaces (" + str + ")", e);
+                return false;
+            }
         }
 
         str=props.getProperty("bind_port");
@@ -350,7 +412,7 @@ public abstract class TP extends Protocol {
             props.remove("bind_port");
         }
 
-		str=props.getProperty("port_range");
+        str=props.getProperty("port_range");
         if(str != null) {
             port_range=Integer.parseInt(str);
             props.remove("port_range");
@@ -607,10 +669,10 @@ public abstract class TP extends Protocol {
      * this method should be reentrant: removed 'synchronized' keyword
      */
     private void handleIncomingPacket(Address dest, Address sender, byte[] data, int offset, int length) {
-        Message              msg=null;
-        List                 l=null;  // used if bundling is enabled
-        short                version;
-        boolean              is_message_list;
+        Message                msg=null;
+        List                   l=null;  // used if bundling is enabled
+        short                  version;
+        boolean                is_message_list;
 
         try {
             synchronized(in_stream) {
@@ -819,11 +881,11 @@ public abstract class TP extends Protocol {
     }
 
     private List bufferToList(DataInputStream instream, Address dest) throws Exception {
-        List            l=new List();
-        DataInputStream in=null;
-        int             len;
-        Message         msg;
-        Address         src;
+        List                    l=new List();
+        DataInputStream         in=null;
+        int                     len;
+        Message                 msg;
+        Address                 src;
 
         try {
             len=instream.readInt();
@@ -867,6 +929,59 @@ public abstract class TP extends Protocol {
         // 2. Stop the outgoing packet handler thread
         if(outgoing_packet_handler != null)
             outgoing_packet_handler.stop();
+    }
+
+    /**
+     *
+     * @param s
+     * @return List<NetworkInterface>
+     */
+    private java.util.List parseInterfaceList(String s) throws Exception {
+        java.util.List interfaces=new ArrayList(10);
+        if(s == null)
+            return null;
+
+        StringTokenizer tok=new StringTokenizer(s, ",");
+        String interface_name;
+        NetworkInterface intf;
+
+        while(tok.hasMoreTokens()) {
+            interface_name=tok.nextToken();
+
+            // try by name first (e.g. (eth0")
+            intf=NetworkInterface.getByName(interface_name);
+
+            // next try by IP address or symbolic name
+            if(intf == null)
+                intf=NetworkInterface.getByInetAddress(InetAddress.getByName(interface_name));
+
+            if(intf == null)
+                throw new Exception("interface " + interface_name + " not found");
+            if(interfaces.contains(intf)) {
+                log.warn("did not add interface " + interface_name + " (already present in " + print(interfaces) + ")");
+            }
+            else {
+                interfaces.add(intf);
+            }
+        }
+        return interfaces;
+    }
+
+    private String print(java.util.List interfaces) {
+        StringBuffer sb=new StringBuffer();
+        boolean first=true;
+        NetworkInterface intf;
+        for(Iterator it=interfaces.iterator(); it.hasNext();) {
+            intf=(NetworkInterface)it.next();
+            if(first) {
+                first=false;
+            }
+            else {
+                sb.append(", ");
+            }
+            sb.append(intf.getName());
+        }
+        return sb.toString();
     }
 
 
