@@ -36,7 +36,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.27 2005/08/25 14:53:08 belaban Exp $
+ * @version $Id: TP.java,v 1.28 2005/08/26 11:06:37 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -162,7 +162,8 @@ public abstract class TP extends Protocol {
 
     static final String IGNORE_BIND_ADDRESS_PROPERTY="ignore.bind.address";
 
-
+    static final byte LIST      = 1;  // we have a list of messages rather than a single message when set
+    static final byte MULTICAST = 2;  // message is a multicast (versus a unicast) message when set
 
     long num_msgs_sent=0, num_msgs_received=0, num_bytes_sent=0, num_bytes_received=0;
 
@@ -261,7 +262,9 @@ public abstract class TP extends Protocol {
 
     public abstract void postMarshalling(Message msg, Address dest, Address src);
 
-    public abstract void postUnmarshalling(Message msg, Address dest, Address src);
+    public abstract void postUnmarshalling(Message msg, Address dest, Address src, boolean multicast);
+
+    public abstract void postUnmarshallingList(Message msg, Address dest, boolean multicast);
 
 
 
@@ -672,7 +675,8 @@ public abstract class TP extends Protocol {
         Message                msg=null;
         List                   l=null;  // used if bundling is enabled
         short                  version;
-        boolean                is_message_list;
+        boolean                is_message_list, multicast;
+        byte                   flags;
 
         try {
             synchronized(in_stream) {
@@ -694,11 +698,15 @@ public abstract class TP extends Protocol {
                         return;
                 }
 
-                is_message_list=dis.readBoolean();
+                // is_message_list=dis.readBoolean();
+                flags=dis.readByte();
+                is_message_list=(flags & LIST) == LIST;
+                multicast=(flags & MULTICAST) == MULTICAST;
+
                 if(is_message_list)
-                    l=bufferToList(dis, dest);
+                    l=bufferToList(dis, dest, multicast);
                 else
-                    msg=bufferToMessage(dis, dest, sender);
+                    msg=bufferToMessage(dis, dest, sender, multicast);
             }
 
             if(is_message_list) {
@@ -821,11 +829,19 @@ public abstract class TP extends Protocol {
      */
     private Buffer messageToBuffer(Message msg, Address dest, Address src) throws Exception {
         Buffer retval;
+        boolean multicast=dest == null || dest.isMulticastAddress();
+        byte flags=0;
+
         out_stream.reset();
         buf_out_stream.reset(out_stream.getCapacity());
         dos.reset();
         dos.writeShort(Version.version); // write the version
-        dos.writeBoolean(false); // single message, *not* a list of messages
+
+        if(multicast)
+            flags+=MULTICAST;
+        dos.writeByte(flags);
+        // dos.writeBoolean(false); // single message, *not* a list of messages
+
         preMarshalling(msg, dest, src);  // allows for optimization by subclass
         msg.writeTo(dos);
         postMarshalling(msg, dest, src); // allows for optimization by subclass
@@ -834,19 +850,12 @@ public abstract class TP extends Protocol {
         return retval;
     }
 
-    private Message bufferToMessage(DataInputStream instream, Address dest, Address sender) throws Exception {
+    private Message bufferToMessage(DataInputStream instream, Address dest, Address sender, boolean multicast) throws Exception {
         Message msg=new Message(false); // don't create headers, readFrom() will do this
         msg.readFrom(instream);
-        postUnmarshalling(msg, dest, sender); // allows for optimization by subclass
+        postUnmarshalling(msg, dest, sender, multicast); // allows for optimization by subclass
         return msg;
     }
-
-
-    void revertAddresses(Message msg, Address dest, Address src) {
-        msg.setDest(dest);
-        msg.setSrc(src);
-    }
-
 
 
 
@@ -854,13 +863,22 @@ public abstract class TP extends Protocol {
         Buffer retval;
         Address src;
         Message msg;
+        boolean multicast=dest == null || dest.isMulticastAddress();
+
+        byte flags=0;
         int len=l != null? l.size() : 0;
         boolean src_written=false;
         out_stream.reset();
         buf_out_stream.reset(out_stream.getCapacity());
         dos.reset();
         dos.writeShort(Version.version);
-        dos.writeBoolean(true);
+
+        // dos.writeBoolean(true);
+        flags+=LIST;
+        if(multicast)
+            flags+=MULTICAST;
+        dos.writeByte(flags);
+
         dos.writeInt(len);
 
         for(Enumeration en=l.elements(); en.hasMoreElements();) {
@@ -870,17 +888,17 @@ public abstract class TP extends Protocol {
                 Util.writeAddress(src, dos);
                 src_written=true;
             }
-            msg.setDest(null);
+            // msg.setDest(null);
             msg.setSrc(null);
             msg.writeTo(dos);
-            revertAddresses(msg, dest, src);
+            msg.setSrc(src);
         }
         dos.flush();
         retval=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
         return retval;
     }
 
-    private List bufferToList(DataInputStream instream, Address dest) throws Exception {
+    private List bufferToList(DataInputStream instream, Address dest, boolean multicast) throws Exception {
         List                    l=new List();
         DataInputStream         in=null;
         int                     len;
@@ -893,7 +911,9 @@ public abstract class TP extends Protocol {
             for(int i=0; i < len; i++) {
                 msg=new Message(false); // don't create headers, readFrom() will do this
                 msg.readFrom(instream);
-                msg.setDest(dest);
+
+                // msg.setDest(dest);
+                postUnmarshallingList(msg, dest, multicast);
                 msg.setSrc(src);
                 l.add(msg);
             }
