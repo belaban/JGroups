@@ -36,7 +36,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.29 2005/08/26 11:44:17 belaban Exp $
+ * @version $Id: TP.java,v 1.30 2005/08/26 12:12:53 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -257,10 +257,6 @@ public abstract class TP extends Protocol {
     public abstract void sendToSingleMember(Address dest, byte[] data, int offset, int length) throws Exception;
 
     public abstract String getInfo();
-
-    public abstract void preMarshalling(Message msg, Address dest, Address src);
-
-    public abstract void postMarshalling(Message msg, Address dest, Address src);
 
     public abstract void postUnmarshalling(Message msg, Address dest, Address src, boolean multicast);
 
@@ -560,7 +556,7 @@ public abstract class TP extends Protocol {
         if(observer != null)
             observer.passDown(evt);
 
-        setSourceAddress(msg);
+        setSourceAddress(msg); // very important !! listToBuffer() will fail with a null src address !!
         if(trace) {
             StringBuffer sb=new StringBuffer("sending msg to ").append(msg.getDest()).
                     append(" (src=").append(msg.getSrc()).append("), headers are ").append(msg.getHeaders());
@@ -794,14 +790,13 @@ public abstract class TP extends Protocol {
     /** Internal method to serialize and send a message. This method is not reentrant */
     private void send(Message msg, Address dest, boolean multicast) throws Exception {
         Buffer   buf;
-        Address  src=msg.getSrc();
 
         // Needs to be synchronized because we can have possible concurrent access, e.g.
         // Discovery uses a separate thread to send out discovery messages
         // We would *not* need to sync between send(), OutgoingPacketHandler and BundlingOutgoingPacketHandler,
         // because only *one* of them is enabled
         synchronized(out_stream) {
-            buf=messageToBuffer(msg, dest, src, multicast);
+            buf=messageToBuffer(msg, multicast);
             doSend(buf, dest, multicast);
         }
     }
@@ -828,7 +823,7 @@ public abstract class TP extends Protocol {
      * @return
      * @throws java.io.IOException
      */
-    private Buffer messageToBuffer(Message msg, Address dest, Address src, boolean multicast) throws Exception {
+    private Buffer messageToBuffer(Message msg, boolean multicast) throws Exception {
         Buffer retval;
         byte flags=0;
 
@@ -839,9 +834,9 @@ public abstract class TP extends Protocol {
         if(multicast)
             flags+=MULTICAST;
         dos.writeByte(flags);
-        preMarshalling(msg, dest, src);  // allows for optimization by subclass
+        // preMarshalling(msg, dest, src);  // allows for optimization by subclass
         msg.writeTo(dos);
-        postMarshalling(msg, dest, src); // allows for optimization by subclass
+        // postMarshalling(msg, dest, src); // allows for optimization by subclass
         dos.flush();
         retval=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
         return retval;
@@ -879,9 +874,9 @@ public abstract class TP extends Protocol {
                 Util.writeAddress(src, dos);
                 src_written=true;
             }
-            msg.setSrc(null);
+            // msg.setSrc(null);
             msg.writeTo(dos);
-            msg.setSrc(src);
+            // msg.setSrc(src);
         }
         dos.flush();
         retval=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
