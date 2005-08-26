@@ -36,7 +36,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.28 2005/08/26 11:06:37 belaban Exp $
+ * @version $Id: TP.java,v 1.29 2005/08/26 11:44:17 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -571,7 +571,8 @@ public abstract class TP extends Protocol {
         // If multicast message, loopback a copy directly to us (but still multicast). Once we receive this,
         // we will discard our own multicast message
         Address dest=msg.getDest();
-        if(loopback && (dest == null || dest.equals(local_addr) || dest.isMulticastAddress())) {
+        boolean multicast=dest == null || dest.isMulticastAddress();
+        if(loopback && (multicast || dest.equals(local_addr))) {
             Message copy=msg.copy();
             // copy.removeHeader(name); // we don't remove the header
             copy.setSrc(local_addr);
@@ -587,7 +588,7 @@ public abstract class TP extends Protocol {
                 loopback_handler.add(evt);
             else
                 passUp(evt);
-            if(dest != null && !dest.isMulticastAddress())
+            if(!multicast)
                 return;
         }
 
@@ -595,7 +596,7 @@ public abstract class TP extends Protocol {
             if(use_outgoing_packet_handler)
                 outgoing_queue.add(msg);
             else
-                send(msg, dest);
+                send(msg, dest, multicast);
         }
         catch(Throwable e) {
             if(log.isErrorEnabled()) log.error("failed sending message", e);
@@ -791,7 +792,7 @@ public abstract class TP extends Protocol {
 
 
     /** Internal method to serialize and send a message. This method is not reentrant */
-    private void send(Message msg, Address dest) throws Exception {
+    private void send(Message msg, Address dest, boolean multicast) throws Exception {
         Buffer   buf;
         Address  src=msg.getSrc();
 
@@ -800,18 +801,18 @@ public abstract class TP extends Protocol {
         // We would *not* need to sync between send(), OutgoingPacketHandler and BundlingOutgoingPacketHandler,
         // because only *one* of them is enabled
         synchronized(out_stream) {
-            buf=messageToBuffer(msg, dest, src);
-            doSend(buf, dest);
+            buf=messageToBuffer(msg, dest, src, multicast);
+            doSend(buf, dest, multicast);
         }
     }
 
 
-    private void doSend(Buffer buf, Address dest) throws Exception {
+    private void doSend(Buffer buf, Address dest, boolean multicast) throws Exception {
         if(stats) {
             num_msgs_sent++;
             num_bytes_sent+=buf.getLength();
         }
-        if(dest == null || dest.isMulticastAddress()) // 'null' means send to all group members
+        if(multicast) // 'null' means send to all group members
             sendToAllMembers(buf.getBuf(), buf.getOffset(), buf.getLength());
         else
             sendToSingleMember(dest, buf.getBuf(), buf.getOffset(), buf.getLength());
@@ -827,21 +828,17 @@ public abstract class TP extends Protocol {
      * @return
      * @throws java.io.IOException
      */
-    private Buffer messageToBuffer(Message msg, Address dest, Address src) throws Exception {
+    private Buffer messageToBuffer(Message msg, Address dest, Address src, boolean multicast) throws Exception {
         Buffer retval;
-        boolean multicast=dest == null || dest.isMulticastAddress();
         byte flags=0;
 
         out_stream.reset();
         buf_out_stream.reset(out_stream.getCapacity());
         dos.reset();
         dos.writeShort(Version.version); // write the version
-
         if(multicast)
             flags+=MULTICAST;
         dos.writeByte(flags);
-        // dos.writeBoolean(false); // single message, *not* a list of messages
-
         preMarshalling(msg, dest, src);  // allows for optimization by subclass
         msg.writeTo(dos);
         postMarshalling(msg, dest, src); // allows for optimization by subclass
@@ -859,12 +856,10 @@ public abstract class TP extends Protocol {
 
 
 
-    private Buffer listToBuffer(List l, Address dest) throws Exception {
+    private Buffer listToBuffer(List l, boolean multicast) throws Exception {
         Buffer retval;
         Address src;
         Message msg;
-        boolean multicast=dest == null || dest.isMulticastAddress();
-
         byte flags=0;
         int len=l != null? l.size() : 0;
         boolean src_written=false;
@@ -872,15 +867,11 @@ public abstract class TP extends Protocol {
         buf_out_stream.reset(out_stream.getCapacity());
         dos.reset();
         dos.writeShort(Version.version);
-
-        // dos.writeBoolean(true);
         flags+=LIST;
         if(multicast)
             flags+=MULTICAST;
         dos.writeByte(flags);
-
         dos.writeInt(len);
-
         for(Enumeration en=l.elements(); en.hasMoreElements();) {
             msg=(Message)en.nextElement();
             src=msg.getSrc();
@@ -888,7 +879,6 @@ public abstract class TP extends Protocol {
                 Util.writeAddress(src, dos);
                 src_written=true;
             }
-            // msg.setDest(null);
             msg.setSrc(null);
             msg.writeTo(dos);
             msg.setSrc(src);
@@ -911,8 +901,6 @@ public abstract class TP extends Protocol {
             for(int i=0; i < len; i++) {
                 msg=new Message(false); // don't create headers, readFrom() will do this
                 msg.readFrom(instream);
-
-                // msg.setDest(dest);
                 postUnmarshallingList(msg, dest, multicast);
                 msg.setSrc(src);
                 l.add(msg);
@@ -1146,7 +1134,7 @@ public abstract class TP extends Protocol {
 
         protected void handleMessage(Message msg) throws Throwable {
             Address dest=msg.getDest();
-            send(msg, dest);
+            send(msg, dest, dest == null || dest.isMulticastAddress());
         }
 
 
@@ -1277,16 +1265,18 @@ public abstract class TP extends Protocol {
                     if(msgs.size() > 1) sb.append(" (dests=").append(msgs.keySet()).append(")");
                     log.trace(sb.toString());
                 }
+                boolean multicast;
                 for(Iterator it=msgs.entrySet().iterator(); it.hasNext();) {
                     entry=(Map.Entry)it.next();
                     l=(List)entry.getValue();
                     if(l.size() == 0)
                         continue;
                     dst=(Address)entry.getKey();
+                    multicast=dst == null || dst.isMulticastAddress();
                     synchronized(out_stream) {
                         try {
-                            buffer=listToBuffer(l, dst);
-                            doSend(buffer, dst);
+                            buffer=listToBuffer(l, multicast);
+                            doSend(buffer, dst, multicast);
                         }
                         catch(Throwable e) {
                             if(log.isErrorEnabled()) log.error("exception sending msg", e);
