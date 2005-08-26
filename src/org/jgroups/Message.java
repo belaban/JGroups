@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.40 2005/08/26 11:06:37 belaban Exp $
+// $Id: Message.java,v 1.41 2005/08/26 11:09:45 belaban Exp $
 
 package org.jgroups;
 
@@ -373,8 +373,8 @@ public class Message implements Externalizable, Streamable {
                 + length                              // buffer
                 + (buf != null? Global.INT_SIZE : 0); // if buf != null 4 bytes for length
 
-        if(dest_addr != null)
-            retval+=dest_addr.size();
+        // if(dest_addr != null)
+           // retval+=dest_addr.size();
         if(src_addr != null)
             retval+=(src_addr).size();
 
