@@ -4,7 +4,7 @@ import org.jgroups.jmx.ProtocolMBean;
 
 /**
  * @author Bela Ban
- * @version $Id: FCMBean.java,v 1.5 2005/08/17 06:07:41 belaban Exp $
+ * @version $Id: FCMBean.java,v 1.6 2005/08/26 14:19:09 belaban Exp $
  */
 public interface FCMBean extends ProtocolMBean {
     long getMaxCredits();
@@ -14,15 +14,15 @@ public interface FCMBean extends ProtocolMBean {
     long getMinCredits();
     void setMinCredits(long min_credits);
     boolean isBlocked();
-    int getNumberOfBlockings();
+    int getBlockings();
     long getTotalTimeBlocked();
     long getMaxBlockTime();
     void setMaxBlockTime(long t);
     double getAverageTimeBlocked();
-    int getNumberOfCreditRequestsReceived();
-    int getNumberOfCreditRequestsSent();
-    int getNumberOfCreditResponsesReceived();
-    int getNumberOfCreditResponsesSent();
+    int getCreditRequestsReceived();
+    int getCreditRequestsSent();
+    int getCreditResponsesReceived();
+    int getCreditResponsesSent();
     String printSenderCredits();
     String printReceiverCredits();
     String printCredits();

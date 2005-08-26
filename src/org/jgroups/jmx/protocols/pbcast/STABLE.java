@@ -4,7 +4,7 @@ import org.jgroups.jmx.Protocol;
 
 /**
  * @author Bela Ban
- * @version $Id: STABLE.java,v 1.2 2005/06/13 13:49:15 belaban Exp $
+ * @version $Id: STABLE.java,v 1.3 2005/08/26 14:19:08 belaban Exp $
  */
 public class STABLE extends Protocol implements STABLEMBean {
     org.jgroups.protocols.pbcast.STABLE p;
@@ -38,7 +38,7 @@ public class STABLE extends Protocol implements STABLEMBean {
         p.setMaxBytes(max_bytes);
     }
 
-    public int getNumberOfGossipMessages() {
+    public int getGossipMessages() {
         return p.getNumberOfGossipMessages();
     }
 
