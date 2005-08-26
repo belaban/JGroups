@@ -1,4 +1,4 @@
-// $Id: LOOPBACK.java,v 1.15 2005/08/11 12:43:47 belaban Exp $
+// $Id: LOOPBACK.java,v 1.16 2005/08/26 12:26:33 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -60,8 +60,6 @@ public class LOOPBACK extends Protocol {
      * modified Message to the send queue of the layer below it, by calling Down).
      */
     public void down(Event evt) {
-        Message msg, rsp;
-
         if(trace)
             log.trace("event is " + evt + ", group_addr=" + group_addr +
                       ", time is " + System.currentTimeMillis() + ", hdrs: " + Util.printEvent(evt));
@@ -69,10 +67,11 @@ public class LOOPBACK extends Protocol {
         switch(evt.getType()) {
 
         case Event.MSG:
-            msg=(Message)evt.getArg();
-            if(msg.getSrc() == null)
-                msg.setSrc(local_addr);
-            rsp=msg.copy();
+            Message msg=(Message)evt.getArg();
+            Message rsp=msg.copy();
+            if(rsp.getSrc() == null)
+                rsp.setSrc(local_addr);
+
             //dest_addr=msg.getDest();
             //rsp.setDest(local_addr);
             //rsp.setSrc(dest_addr != null ? dest_addr : local_addr);
