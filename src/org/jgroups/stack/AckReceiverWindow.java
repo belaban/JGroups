@@ -1,4 +1,4 @@
-// $Id: AckReceiverWindow.java,v 1.18 2005/08/22 14:12:53 belaban Exp $
+// $Id: AckReceiverWindow.java,v 1.19 2005/08/26 08:56:33 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -99,6 +99,13 @@ public class AckReceiverWindow {
         return sb.toString();
     }
 
+
+    public String printDetails() {
+        StringBuffer sb=new StringBuffer();
+        sb.append(msgs.size()).append(" msgs (").append("next=").append(next_to_remove).append(")").
+                append(", msgs=" ).append(new TreeSet(msgs.keySet()));
+        return sb.toString();
+    }
 
 
 }
