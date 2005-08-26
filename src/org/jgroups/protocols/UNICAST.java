@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.43 2005/08/25 10:08:34 belaban Exp $
+// $Id: UNICAST.java,v 1.44 2005/08/26 08:57:48 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -265,10 +265,14 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
                 entry.sent_msgs_seqno++;
                 Message tmp=Global.copy? msg.copy() : msg;
-                passDown(new Event(Event.MSG, tmp));
-                entry.sent_msgs.add(seqno, tmp);  // add *including* UnicastHeader, adds to retransmitter
-                num_msgs_sent++;
-                num_bytes_sent+=msg.getLength();
+                try {
+                    passDown(new Event(Event.MSG, tmp));
+                    num_msgs_sent++;
+                    num_bytes_sent+=msg.getLength();
+                }
+                finally {
+                    entry.sent_msgs.add(seqno, tmp);  // add *including* UnicastHeader, adds to retransmitter
+                }
             }
             msg=null;
             return; // AckSenderWindow will send message for us
