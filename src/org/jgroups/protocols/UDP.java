@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.99 2005/08/25 14:53:08 belaban Exp $
+// $Id: UDP.java,v 1.100 2005/08/26 11:06:37 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -318,11 +318,15 @@ public class UDP extends TP implements Runnable {
     }
 
     public void postMarshalling(Message msg, Address dest, Address src) {
-        revertAddresses(msg, dest, src);
+        msg.setSrc(src);
     }
 
-    public void postUnmarshalling(Message msg, Address dest, Address src) {
-        setAddresses(msg, (IpAddress)dest, (IpAddress)src);
+    public void postUnmarshalling(Message msg, Address dest, Address src, boolean multicast) {
+        setAddresses(msg, dest, (IpAddress)src);
+    }
+
+    public void postUnmarshallingList(Message msg, Address dest, boolean multicast) {
+        msg.setDest(dest);
     }
 
     private void _send(InetAddress dest, int port, boolean mcast, byte[] data, int offset, int length) throws Exception {
@@ -799,8 +803,6 @@ public class UDP extends TP implements Runnable {
 
 
     private void nullAddresses(Message msg, IpAddress dest, IpAddress src) {
-        msg.setDest(null);
-
         if(src != null) {
             if(null_src_addresses)
                 msg.setSrc(new IpAddress(src.getPort(), false));  // null the host part, leave the port
@@ -812,10 +814,8 @@ public class UDP extends TP implements Runnable {
         }
     }
 
-    private void setAddresses(Message msg, IpAddress dest, IpAddress sender) {
-        // set the destination address
-        if(msg.getDest() == null && dest != null)
-            msg.setDest(dest);
+    private void setAddresses(Message msg, Address dest, IpAddress sender) {
+        msg.setDest(dest);
 
         // set the source address if not set
         IpAddress src_addr=(IpAddress)msg.getSrc();

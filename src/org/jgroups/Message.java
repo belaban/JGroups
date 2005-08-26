@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.39 2005/08/08 09:43:50 belaban Exp $
+// $Id: Message.java,v 1.40 2005/08/26 11:06:37 belaban Exp $
 
 package org.jgroups;
 
@@ -492,14 +492,14 @@ public class Message implements Externalizable, Streamable {
      * @throws IOException
      */
     public void writeTo(DataOutputStream out) throws IOException {
-        Map.Entry        entry;
-
         byte leading=0;
-        if(dest_addr != null) {
-            leading+=DEST_SET;
-            if(dest_addr instanceof IpAddress)
-                leading+=IPADDR_DEST;
-        }
+
+//        if(dest_addr != null) {
+//            leading+=DEST_SET;
+//            if(dest_addr instanceof IpAddress)
+//                leading+=IPADDR_DEST;
+//        }
+
         if(src_addr != null) {
             leading+=SRC_SET;
             if(src_addr instanceof IpAddress) {
@@ -516,12 +516,12 @@ public class Message implements Externalizable, Streamable {
         out.write(leading);
 
         // 2. dest_addr
-        if(dest_addr != null) {
-            if(dest_addr instanceof IpAddress)
-                dest_addr.writeTo(out);
-            else
-                Util.writeAddress(dest_addr, out);
-        }
+//        if(dest_addr != null) {
+//            if(dest_addr instanceof IpAddress)
+//                dest_addr.writeTo(out);
+//            else
+//                Util.writeAddress(dest_addr, out);
+//        }
 
         // 3. src_addr
         if(src_addr != null) {
@@ -542,6 +542,7 @@ public class Message implements Externalizable, Streamable {
         // 5. headers
         int size=headers.size();
         out.writeShort(size);
+        Map.Entry        entry;
         for(Iterator it=headers.entrySet().iterator(); it.hasNext();) {
             entry=(Map.Entry)it.next();
             out.writeUTF((String)entry.getKey());
@@ -560,15 +561,15 @@ public class Message implements Externalizable, Streamable {
         leading=in.readByte();
 
         // 1. dest_addr
-        if((leading & DEST_SET) == DEST_SET) {
-            if((leading & IPADDR_DEST) == IPADDR_DEST) {
-                dest_addr=new IpAddress();
-                dest_addr.readFrom(in);
-            }
-            else {
-                dest_addr=Util.readAddress(in);
-            }
-        }
+//        if((leading & DEST_SET) == DEST_SET) {
+//            if((leading & IPADDR_DEST) == IPADDR_DEST) {
+//                dest_addr=new IpAddress();
+//                dest_addr.readFrom(in);
+//            }
+//            else {
+//                dest_addr=Util.readAddress(in);
+//            }
+//        }
 
         // 2. src_addr
         if((leading & SRC_SET) == SRC_SET) {

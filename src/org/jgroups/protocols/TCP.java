@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.27 2005/08/11 12:43:47 belaban Exp $
+// $Id: TCP.java,v 1.28 2005/08/26 11:06:37 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -284,9 +284,16 @@ public class TCP extends TP implements ConnectionTable.Receiver {
     public void postMarshalling(Message msg, Address dest, Address src) {
     }
 
-    public void postUnmarshalling(Message msg, Address dest, Address src) {
+    public void postUnmarshalling(Message msg, Address dest, Address src, boolean multicast) {
+        if(multicast)
+            msg.setDest(null);
+        else
+            msg.setDest(dest);
     }
 
+    public void postUnmarshallingList(Message msg, Address dest, boolean multicast) {
+        postUnmarshalling(msg, dest, null, multicast);
+    }
 
 
 }
