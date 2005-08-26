@@ -1,4 +1,4 @@
-// $Id: IpAddress.java,v 1.26 2005/07/15 10:05:18 belaban Exp $
+// $Id: IpAddress.java,v 1.27 2005/08/26 10:18:48 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -89,7 +89,7 @@ public class IpAddress implements Address {
     public int          getPort()                    {return port;}
 
     public boolean      isMulticastAddress() {
-        return ip_addr != null ? ip_addr.isMulticastAddress() : false;
+        return ip_addr != null && ip_addr.isMulticastAddress();
     }
 
     /**
