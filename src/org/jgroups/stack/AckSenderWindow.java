@@ -1,4 +1,4 @@
-// $Id: AckSenderWindow.java,v 1.16 2005/08/25 10:08:34 belaban Exp $
+// $Id: AckSenderWindow.java,v 1.17 2005/08/26 08:56:22 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -12,6 +12,7 @@ import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 
 import java.util.Map;
+import java.util.TreeSet;
 
 
 /**
@@ -110,8 +111,20 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
 
     public String toString() {
         StringBuffer sb=new StringBuffer();
-        sb.append(msgs.size()).append(" msgs (").append(retransmitter.size()).append(" to retransmit): ")
-                .append(msgs.keySet());
+        sb.append(msgs.size()).append(" msgs (").append(retransmitter.size()).append(" to retransmit): ");
+        TreeSet keys=new TreeSet(msgs.keySet());
+        if(keys.size() > 0)
+            sb.append(keys.first()).append(" - ").append(keys.last());
+        else
+            sb.append("[]");
+        return sb.toString();
+    }
+
+
+    public String printDetails() {
+        StringBuffer sb=new StringBuffer();
+        sb.append(msgs.size()).append(" msgs (").append(retransmitter.size()).append(" to retransmit): ").
+                append(new TreeSet(msgs.keySet()));
         return sb.toString();
     }
 
