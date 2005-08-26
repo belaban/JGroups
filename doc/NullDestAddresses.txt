@@ -1,0 +1,20 @@
+
+Nulling of destination addresses for optimized marshalling
+==========================================================
+
+Version: $Id: NullDestAddresses.txt,v 1.1 2005/08/26 09:28:31 belaban Exp $
+Author: Bela Ban
+Date: Aug 26 2005
+
+When we marshall a message (org.jgroups.Message), we can transmit a null value for the destination, because
+the receiver can determine the destination:
+- for UDP: if received on the multicast receive socket, the destination is the multicast address (same as null)
+           if received on the unicast receive socket, the destination is the local_addr (ourself)
+- for TCP: we use the MULTICAST bit set in the 'leading' byte when unmarshalling the message:
+           - if set, we leave the deatination null (= multicast destination)
+           - if not set, we set the destination to the address passed to use from the ConnectionTable
+
+This requires that when marshalling a message, we set the MULTICAST bit based on the destination address !
+
+Note that we *cannot* modify the destination address in the message itself, otherwise retransmissions might fail !
+
