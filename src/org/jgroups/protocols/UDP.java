@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.100 2005/08/26 11:06:37 belaban Exp $
+// $Id: UDP.java,v 1.101 2005/08/26 12:12:53 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -115,7 +115,7 @@ public class UDP extends TP implements Runnable {
      * for multiple addresses on a Windows loopback device, this doesn't work
      * (see http://jira.jboss.com/jira/browse/JGRP-79 and the JGroups wiki for details). This must be the same
      * value for all members of the same group. Default is true, for performance reasons */
-    boolean null_src_addresses=true;
+    // private boolean null_src_addresses=true;
 
 
 
@@ -215,8 +215,9 @@ public class UDP extends TP implements Runnable {
 
         str=props.getProperty("null_src_addresses");
         if(str != null) {
-            null_src_addresses=Boolean.valueOf(str).booleanValue();
+            // null_src_addresses=Boolean.valueOf(str).booleanValue();
             props.remove("null_src_addresses");
+            log.error("null_src_addresses has been deprecated, property will be ignored");
         }
 
         if(props.size() > 0) {
@@ -313,16 +314,9 @@ public class UDP extends TP implements Runnable {
         _send(((IpAddress)dest).getIpAddress(), ((IpAddress)dest).getPort(), false, data, offset, length);
     }
 
-    public void preMarshalling(Message msg, Address dest, Address src) {
-        nullAddresses(msg, (IpAddress)dest, (IpAddress)src);
-    }
-
-    public void postMarshalling(Message msg, Address dest, Address src) {
-        msg.setSrc(src);
-    }
 
     public void postUnmarshalling(Message msg, Address dest, Address src, boolean multicast) {
-        setAddresses(msg, dest, (IpAddress)src);
+        msg.setDest(dest);
     }
 
     public void postUnmarshallingList(Message msg, Address dest, boolean multicast) {
@@ -802,36 +796,36 @@ public class UDP extends TP implements Runnable {
     }
 
 
-    private void nullAddresses(Message msg, IpAddress dest, IpAddress src) {
-        if(src != null) {
-            if(null_src_addresses)
-                msg.setSrc(new IpAddress(src.getPort(), false));  // null the host part, leave the port
-            if(src.getAdditionalData() != null)
-                ((IpAddress)msg.getSrc()).setAdditionalData(src.getAdditionalData());
-        }
-        else if(dest != null && !dest.isMulticastAddress()) { // unicast
-            msg.setSrc(null);
-        }
-    }
+//    private void nullAddresses(Message msg, IpAddress dest, IpAddress src) {
+//        if(src != null) {
+//            if(null_src_addresses)
+//                msg.setSrc(new IpAddress(src.getPort(), false));  // null the host part, leave the port
+//            if(src.getAdditionalData() != null)
+//                ((IpAddress)msg.getSrc()).setAdditionalData(src.getAdditionalData());
+//        }
+//        else if(dest != null && !dest.isMulticastAddress()) { // unicast
+//            msg.setSrc(null);
+//        }
+//    }
 
-    private void setAddresses(Message msg, Address dest, IpAddress sender) {
-        msg.setDest(dest);
-
-        // set the source address if not set
-        IpAddress src_addr=(IpAddress)msg.getSrc();
-        if(src_addr == null) {
-            msg.setSrc(sender);
-        }
-        else {
-            byte[] tmp_additional_data=src_addr.getAdditionalData();
-            if(src_addr.getIpAddress() == null) {
-                IpAddress tmp=new IpAddress(sender.getIpAddress(), src_addr.getPort());
-                msg.setSrc(tmp);
-            }
-            if(tmp_additional_data != null)
-                ((IpAddress)msg.getSrc()).setAdditionalData(tmp_additional_data);
-        }
-    }
+  //  private void setAddresses(Message msg, Address dest) {
+   //     msg.setDest(dest);
+//
+//        // set the source address if not set
+//        IpAddress src_addr=(IpAddress)msg.getSrc();
+//        if(src_addr == null) {
+//            msg.setSrc(sender);
+//        }
+//        else {
+//            byte[] tmp_additional_data=src_addr.getAdditionalData();
+//            if(src_addr.getIpAddress() == null) {
+//                IpAddress tmp=new IpAddress(sender.getIpAddress(), src_addr.getPort());
+//                msg.setSrc(tmp);
+//            }
+//            if(tmp_additional_data != null)
+//                ((IpAddress)msg.getSrc()).setAdditionalData(tmp_additional_data);
+//        }
+ //   }
 
 
 

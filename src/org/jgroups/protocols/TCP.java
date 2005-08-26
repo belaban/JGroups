@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.28 2005/08/26 11:06:37 belaban Exp $
+// $Id: TCP.java,v 1.29 2005/08/26 12:12:53 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -278,11 +278,6 @@ public class TCP extends TP implements ConnectionTable.Receiver {
         return sb.toString();
     }
 
-    public void preMarshalling(Message msg, Address dest, Address src) {
-    }
-
-    public void postMarshalling(Message msg, Address dest, Address src) {
-    }
 
     public void postUnmarshalling(Message msg, Address dest, Address src, boolean multicast) {
         if(multicast)
