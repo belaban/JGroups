@@ -1,4 +1,4 @@
-// $Id: AckReceiverWindow.java,v 1.19 2005/08/26 08:56:33 belaban Exp $
+// $Id: AckReceiverWindow.java,v 1.20 2005/08/26 11:32:44 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -46,8 +46,6 @@ public class AckReceiverWindow {
             Long seq=new Long(seqno);
             if(!msgs.containsKey(seq)) { // todo: replace with atomic action once we have util.concurrent (JDK 5)
                 msgs.put(seq, msg);
-                if(log.isTraceEnabled())
-                    log.trace("added seqno=" + seqno); // todo: remove
             }
             else {
                 if(log.isTraceEnabled())
