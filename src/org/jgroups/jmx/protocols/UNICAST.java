@@ -4,7 +4,7 @@ import org.jgroups.jmx.Protocol;
 
 /**
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.6 2005/08/25 10:08:33 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.7 2005/08/26 14:19:09 belaban Exp $
  */
 public class UNICAST extends Protocol implements UNICASTMBean {
     org.jgroups.protocols.UNICAST p;
@@ -35,35 +35,35 @@ public class UNICAST extends Protocol implements UNICASTMBean {
         return p.printConnections();
     }
 
-    public long getNumMessagesSent() {
+    public long getMessagesSent() {
         return p.getNumMessagesSent();
     }
 
-    public long getNumMessagesReceived() {
+    public long getMessagesReceived() {
         return p.getNumMessagesReceived();
     }
 
-    public long getNumBytesSent() {
+    public long getBytesSent() {
         return p.getNumBytesSent();
     }
 
-    public long getNumBytesReceived() {
+    public long getBytesReceived() {
         return p.getNumBytesReceived();
     }
 
-    public long getNumAcksSent() {
+    public long getAcksSent() {
         return p.getNumAcksSent();
     }
 
-    public long getNumAcksReceived() {
+    public long getAcksReceived() {
         return p.getNumAcksReceived();
     }
 
-    public long getNumberOfRetransmitRequestsReceived() {
+    public long getXmitRequestsReceived() {
         return p.getNumberOfRetransmitRequestsReceived();
     }
 
-    public int getNumberOfUnackedMessages() {
+    public int getUnackedMessages() {
         return p.getNumberOfUnackedMessages();
     }
 

@@ -8,7 +8,7 @@ import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: TP.java,v 1.2 2005/08/25 14:53:08 belaban Exp $
+ * @version $Id: TP.java,v 1.3 2005/08/26 14:19:09 belaban Exp $
  */
 public class TP extends org.jgroups.jmx.Protocol implements TPMBean {
     org.jgroups.protocols.TP tp;
@@ -26,19 +26,19 @@ public class TP extends org.jgroups.jmx.Protocol implements TPMBean {
         tp=(org.jgroups.protocols.TP)p;
     }
 
-    public long getNumMessagesSent() {
+    public long getMessagesSent() {
         return tp.getNumMessagesSent();
     }
 
-    public long getNumMessagesReceived() {
+    public long getMessagesReceived() {
         return tp.getNumMessagesReceived();
     }
 
-    public long getNumBytesSent() {
+    public long getBytesSent() {
         return tp.getNumBytesSent();
     }
 
-    public long getNumBytesReceived() {
+    public long getBytesReceived() {
         return tp.getNumBytesReceived();
     }
 
