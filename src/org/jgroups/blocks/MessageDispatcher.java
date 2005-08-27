@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.40 2005/08/24 12:15:34 belaban Exp $
+// $Id: MessageDispatcher.java,v 1.41 2005/08/27 14:03:17 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -10,6 +10,8 @@ import org.jgroups.util.*;
 
 import java.io.Serializable;
 import java.util.Vector;
+import java.util.Collection;
+import java.util.TreeSet;
 
 
 /**
@@ -39,7 +41,7 @@ public class MessageDispatcher implements RequestHandler {
     protected RequestHandler req_handler=null;
     protected ProtocolAdapter prot_adapter=null;
     protected TransportAdapter transport_adapter=null;
-    protected final Vector members=new Vector();
+    protected final Collection members=new TreeSet();
     protected Address local_addr=null;
     protected boolean deadlock_detection=false;
     protected PullPushAdapter adapter=null;
@@ -247,8 +249,10 @@ public class MessageDispatcher implements RequestHandler {
      */
     private void setMembers(Vector new_mbrs) {
         if(new_mbrs != null) {
-            members.removeAllElements();
-            members.addAll(new_mbrs);
+            synchronized(members) {
+                members.clear();
+                members.addAll(new_mbrs);
+            }
         }
     }
 
@@ -267,11 +271,11 @@ public class MessageDispatcher implements RequestHandler {
         if(corr == null) {
             if(transport_adapter != null) {
                 corr=new RequestCorrelator("MessageDispatcher", transport_adapter,
-                        this, deadlock_detection, local_addr, concurrent_processing);
+                                           this, deadlock_detection, local_addr, concurrent_processing);
             }
             else {
                 corr=new RequestCorrelator("MessageDispatcher", prot_adapter,
-                        this, deadlock_detection, local_addr, concurrent_processing);
+                                           this, deadlock_detection, local_addr, concurrent_processing);
             }
             corr.start();
         }
@@ -376,7 +380,15 @@ public class MessageDispatcher implements RequestHandler {
 
         // we need to clone because we don't want to modify the original
         // (we remove ourselves if LOCAL is false, see below) !
-        real_dests=dests != null ? (Vector) dests.clone() : (members != null ? (Vector) members.clone() : null);
+        // real_dests=dests != null ? (Vector) dests.clone() : (members != null ? new Vector(members) : null);
+        if(dests != null) {
+            real_dests=(Vector)dests.clone();
+        }
+        else {
+            synchronized(members) {
+                real_dests=new Vector(members);
+            }
+        }
 
         // if local delivery is off, then we should not wait for the message from the local member.
         // therefore remove it from the membership
@@ -441,10 +453,18 @@ public class MessageDispatcher implements RequestHandler {
                 log.error("response collector is null (must be non-null)");
             return;
         }
-            
+
         // we need to clone because we don't want to modify the original
         // (we remove ourselves if LOCAL is false, see below) !
-        real_dests=dests != null ? (Vector) dests.clone() : (Vector) members.clone();
+        //real_dests=dests != null ? (Vector) dests.clone() : (Vector) members.clone();
+        if(dests != null) {
+            real_dests=(Vector)dests.clone();
+        }
+        else {
+            synchronized(members) {
+                real_dests=new Vector(members);
+            }
+        }
 
         // if local delivery is off, then we should not wait for the message from the local member.
         // therefore remove it from the membership
@@ -463,7 +483,7 @@ public class MessageDispatcher implements RequestHandler {
                 real_dests.removeElement(local_addr);
             }
         }
-        
+
         // don't even send the message if the destination list is empty
         if(real_dests.size() == 0) {
             if(log.isDebugEnabled())
@@ -653,8 +673,10 @@ public class MessageDispatcher implements RequestHandler {
                     Vector new_mbrs=v.getMembers();
 
                     if(new_mbrs != null) {
-                        members.removeAllElements();
-                        members.addAll(new_mbrs);
+                        synchronized(members) {
+                            members.clear();
+                            members.addAll(new_mbrs);
+                        }
                     }
 
                     if(membership_listener != null) {
@@ -842,9 +864,9 @@ public class MessageDispatcher implements RequestHandler {
 
             Vector new_mbrs=v.getMembers();
             if(new_mbrs != null) {
-                members.removeAllElements();
-                for(int i=0; i < new_mbrs.size(); i++) {
-                    members.addElement(new_mbrs.elementAt(i));
+                synchronized(members) {
+                    members.clear();
+                    members.addAll(new_mbrs);
                 }
             }
 
