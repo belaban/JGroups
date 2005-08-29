@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.101 2005/08/26 12:12:53 belaban Exp $
+// $Id: UDP.java,v 1.102 2005/08/29 08:09:05 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -62,6 +62,9 @@ public class UDP extends TP implements Runnable {
 
     /** IP multicast socket for <em>sending</em> multicast packets */
     MulticastSocket mcast_send_sock=null;
+
+    /** If we have multiple mcast send sockets, e.g. send_interfaces or send_on_all_interfaces enabled */
+    MulticastSocket[] mcast_send_sockets=null;
 
     /**
      * Traffic class for sending unicast and multicast datagrams.
@@ -326,8 +329,26 @@ public class UDP extends TP implements Runnable {
     private void _send(InetAddress dest, int port, boolean mcast, byte[] data, int offset, int length) throws Exception {
         DatagramPacket packet=new DatagramPacket(data, offset, length, dest, port);
         try {
-            if(mcast && mcast_send_sock != null) { // mcast_recv_sock might be null if ip_mcast is false
-                mcast_send_sock.send(packet);
+            if(mcast) {
+                if(mcast_send_sock != null)
+                    mcast_send_sock.send(packet);
+                else {
+                    if(mcast_send_sockets != null) {
+                        MulticastSocket s;
+                        for(int i=0; i < mcast_send_sockets.length; i++) {
+                            s=mcast_send_sockets[i];
+                            try {
+                                s.send(packet);
+                            }
+                            catch(Exception e) {
+                                log.error("failed sending packet on socket " + s);
+                            }
+                        }
+                    }
+                    else {
+                        throw new Exception("both mcast_send_sock and mcast_send_sockets are null");
+                    }
+                }
             }
             else {
                 if(sock != null)
@@ -461,17 +482,44 @@ public class UDP extends TP implements Runnable {
             }
 
             // 3b. Create mcast sender socket
-            mcast_send_sock=new MulticastSocket();
-            mcast_send_sock.setTimeToLive(ip_ttl);
-            if(bind_addr != null)
-                mcast_send_sock.setInterface(bind_addr);
-
-            if(tos > 0) {
-                try {
-                    mcast_send_sock.setTrafficClass(tos); // high throughput
+            if(send_on_all_interfaces || (send_interfaces != null && send_interfaces.size() > 0)) {
+                List interfaces;
+                NetworkInterface intf;
+                if(send_interfaces != null)
+                    interfaces=send_interfaces;
+                else
+                    interfaces=getAllAvailableInterfaces();
+                mcast_send_sockets=new MulticastSocket[interfaces.size()];
+                int index=0;
+                for(Iterator it=interfaces.iterator(); it.hasNext();) {
+                    intf=(NetworkInterface)it.next();
+                    mcast_send_sockets[index]=new MulticastSocket();
+                    mcast_send_sockets[index].setNetworkInterface(intf);
+                    mcast_send_sockets[index].setTimeToLive(ip_ttl);
+                    if(tos > 0) {
+                        try {
+                            mcast_send_sockets[index].setTrafficClass(tos);
+                        }
+                        catch(SocketException e) {
+                            log.warn("traffic class of " + tos + " could not be set, will be ignored", e);
+                        }
+                    }
+                    index++;
                 }
-                catch(SocketException e) {
-                    log.warn("traffic class of " + tos + " could not be set, will be ignored", e);
+            }
+            else {
+                mcast_send_sock=new MulticastSocket();
+                mcast_send_sock.setTimeToLive(ip_ttl);
+                if(bind_addr != null)
+                    mcast_send_sock.setInterface(bind_addr);
+
+                if(tos > 0) {
+                    try {
+                        mcast_send_sock.setTrafficClass(tos); // high throughput
+                    }
+                    catch(SocketException e) {
+                        log.warn("traffic class of " + tos + " could not be set, will be ignored", e);
+                    }
                 }
             }
         }
@@ -617,58 +665,51 @@ public class UDP extends TP implements Runnable {
             sb.append(", send buffer size=").append(mcast_send_sock.getSendBufferSize());
             sb.append(", receive buffer size=").append(mcast_send_sock.getReceiveBufferSize());
         }
+        if(mcast_send_sockets != null) {
+            sb.append("\n").append(mcast_send_sockets.length).append(" mcast send sockets:\n");
+            MulticastSocket s;
+            for(int i=0; i < mcast_send_sockets.length; i++) {
+                s=mcast_send_sockets[i];
+                sb.append(s.getInterface().getHostAddress()).append(':').append(s.getLocalPort());
+                sb.append(", send buffer size=").append(s.getSendBufferSize());
+                sb.append(", receive buffer size=").append(s.getReceiveBufferSize()).append("\n");
+            }
+        }
         return sb.toString();
     }
 
 
     void setBufferSizes() {
-        if(sock != null) {
-            try {
-                sock.setSendBufferSize(ucast_send_buf_size);
-            }
-            catch(Throwable ex) {
-                if(warn) log.warn("failed setting ucast_send_buf_size in sock: " + ex);
-            }
-            try {
-                sock.setReceiveBufferSize(ucast_recv_buf_size);
-            }
-            catch(Throwable ex) {
-                if(warn) log.warn("failed setting ucast_recv_buf_size in sock: " + ex);
+        if(sock != null)
+            setBufferSize(sock, ucast_send_buf_size, ucast_recv_buf_size);
+
+        if(mcast_recv_sock != null)
+            setBufferSize(mcast_recv_sock, mcast_send_buf_size, mcast_recv_buf_size);
+
+        if(mcast_send_sock != null)
+            setBufferSize(mcast_send_sock, mcast_send_buf_size, mcast_recv_buf_size);
+
+        if(mcast_send_sockets != null) {
+            for(int i=0; i < mcast_send_sockets.length; i++) {
+                setBufferSize(mcast_send_sockets[i], mcast_send_buf_size, mcast_recv_buf_size);
             }
         }
+    }
 
-        if(mcast_recv_sock != null) {
-            try {
-                mcast_recv_sock.setSendBufferSize(mcast_send_buf_size);
-            }
-            catch(Throwable ex) {
-                if(warn) log.warn("failed setting mcast_send_buf_size in mcast_recv_sock: " + ex);
-            }
-
-            try {
-                mcast_recv_sock.setReceiveBufferSize(mcast_recv_buf_size);
-            }
-            catch(Throwable ex) {
-                if(warn) log.warn("failed setting mcast_recv_buf_size in mcast_recv_sock: " + ex);
-            }
+    private void setBufferSize(DatagramSocket sock, int send_buf_size, int recv_buf_size) {
+        try {
+            sock.setSendBufferSize(send_buf_size);
+        }
+        catch(Throwable ex) {
+            if(warn) log.warn("failed setting send buffer size of " + send_buf_size + " in " + sock + ": " + ex);
         }
 
-        if(mcast_send_sock != null) {
-            try {
-                mcast_send_sock.setSendBufferSize(mcast_send_buf_size);
-            }
-            catch(Throwable ex) {
-                if(warn) log.warn("failed setting mcast_send_buf_size in mcast_send_sock: " + ex);
-            }
-
-            try {
-                mcast_send_sock.setReceiveBufferSize(mcast_recv_buf_size);
-            }
-            catch(Throwable ex) {
-                if(warn) log.warn("failed setting mcast_recv_buf_size in mcast_send_sock: " + ex);
-            }
+        try {
+            sock.setReceiveBufferSize(recv_buf_size);
         }
-
+        catch(Throwable ex) {
+            if(warn) log.warn("failed setting receive buffer size of " + recv_buf_size + " in " + sock + ": " + ex);
+        }
     }
 
 
@@ -700,14 +741,23 @@ public class UDP extends TP implements Runnable {
         }
 
         if(mcast_send_sock != null) {
-            mcast_send_sock.close(); // this will cause the mcast sender thread to break out of its loop
+            mcast_send_sock.close();
             mcast_send_sock=null;
             if(log.isDebugEnabled()) log.debug("multicast send socket closed");
+        }
+        if(mcast_send_sockets != null) {
+            MulticastSocket s;
+            for(int i=0; i < mcast_send_sockets.length; i++) {
+                s=mcast_send_sockets[i];
+                s.close();
+                if(log.isDebugEnabled()) log.debug("multicast send socket " + s + " closed");
+            }
+            mcast_send_sockets=null;
         }
     }
 
 
-    void closeSocket() {
+    private void closeSocket() {
         if(sock != null) {
             sock.close();
             sock=null;
