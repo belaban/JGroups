@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.41 2005/08/27 14:03:17 belaban Exp $
+// $Id: MessageDispatcher.java,v 1.42 2005/08/29 11:15:45 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -671,14 +671,7 @@ public class MessageDispatcher implements RequestHandler {
                 case Event.VIEW_CHANGE:
                     View v=(View) evt.getArg();
                     Vector new_mbrs=v.getMembers();
-
-                    if(new_mbrs != null) {
-                        synchronized(members) {
-                            members.clear();
-                            members.addAll(new_mbrs);
-                        }
-                    }
-
+                    setMembers(new_mbrs);
                     if(membership_listener != null) {
                         membership_listener.viewAccepted(v);
                     }
@@ -863,13 +856,7 @@ public class MessageDispatcher implements RequestHandler {
             }
 
             Vector new_mbrs=v.getMembers();
-            if(new_mbrs != null) {
-                synchronized(members) {
-                    members.clear();
-                    members.addAll(new_mbrs);
-                }
-            }
-
+            setMembers(new_mbrs);
             if(membership_listener != null) {
                 membership_listener.viewAccepted(v);
             }
