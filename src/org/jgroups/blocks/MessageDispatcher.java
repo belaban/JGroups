@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.42 2005/08/29 11:15:45 belaban Exp $
+// $Id: MessageDispatcher.java,v 1.43 2005/08/29 12:28:26 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -283,16 +283,10 @@ public class MessageDispatcher implements RequestHandler {
             Vector tmp_mbrs=channel.getView() != null ? channel.getView().getMembers() : null;
             setMembers(tmp_mbrs);
         }
-        if(null != prot_adapter) { // null if called from the constructor that uses PullPushAdapter
-            prot_adapter.resume();
-        }
     }
 
 
     public void stop() {
-        if(null != prot_adapter) {
-            prot_adapter.suspend();
-        }
         if(corr != null) {
             corr.stop();
             corr=null;
@@ -599,10 +593,6 @@ public class MessageDispatcher implements RequestHandler {
 
 
     class ProtocolAdapter extends Protocol implements UpHandler {
-        private Thread upProcessingThread=null;
-        private final Queue upQueue=new Queue();
-        private final ReentrantLatch m_upLatch=new ReentrantLatch(false);
-
 
 
         /* ------------------------- Protocol Interface --------------------------- */
@@ -704,79 +694,29 @@ public class MessageDispatcher implements RequestHandler {
 
 
 
-        synchronized void suspend() {
-            m_upLatch.lock();
-            if(upProcessingThread != null) {
-                Thread t=upProcessingThread;
-                upProcessingThread=null;
-                t.interrupt();
-            }
-        }
-
-        synchronized void resume() {
-            m_upLatch.unlock();
-            if(upProcessingThread == null) {
-                startProcessingThread();
-            }
-        }
-
-
-        private void startProcessingThread() {
-            upProcessingThread=new Thread(new Runnable() {
-                public void run() {
-                    Event event=null;
-                    // while(upProcessingThread != null) {
-                    while(Thread.currentThread() == upProcessingThread) { // changed, see bug 998920
-                        try {
-                            event=(Event)upQueue.remove();
-                            m_upLatch.passThrough();
-                            handleUp(event);
-                        }
-                        catch(QueueClosedException ex1) {
-                            break;
-                        }
-                        catch(InterruptedException ex2) {
-                            //this is ok, the 'interrupted' flag is cleared
-                        }
-                    }
-                }
-            });
-            // upProcessingThread.setName("MessageDispatcher thread " + upProcessingThread.hashCode());
-            upProcessingThread.setDaemon(true);
-            upProcessingThread.start();
-        }
-
-
         /**
          * Called by channel (we registered before) when event is received. This is the UpHandler interface.
          */
         public void up(Event evt) {
-            try {
-                upQueue.add(evt);
-            }
-            catch(QueueClosedException ex) {
-                // this is ok
-            }
-        }
-
-        private void handleUp(Event evt) {
             if(corr != null) {
-                corr.receive(evt);
+                corr.receive(evt); // calls passUp()
             }
             else {
-                if(this.log.isErrorEnabled()) { //Something is seriously wrong, correlator should not be null since latch is not locked!
-                    this.log.error("correlator is null, but latch is not locked! Event ignored.");
+                if(log.isErrorEnabled()) { //Something is seriously wrong, correlator should not be null since latch is not locked!
+                    log.error("correlator is null, event will be ignored (evt=" + evt + ")");
                 }
             }
         }
+
+
 
         public void down(Event evt) {
             if(channel != null) {
                 channel.down(evt);
             }
             else
-                if(this.log.isErrorEnabled()) {
-                    this.log.error("channel == null");
+                if(this.log.isWarnEnabled()) {
+                    this.log.warn("channel is null, discarding event " + evt);
                 }
         }
         /* ----------------------- End of Protocol Interface ------------------------ */
