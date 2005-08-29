@@ -1,4 +1,4 @@
-// $Id: StreamableTest.java,v 1.3 2005/07/15 09:35:00 belaban Exp $
+// $Id: StreamableTest.java,v 1.4 2005/08/29 11:52:09 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -170,12 +170,11 @@ public class StreamableTest extends TestCase {
         int length, bufLength;
         byte[] tmp;
         Message msg2;
-        Address dest, src;
+        Address src;
         int num_headers=getNumHeaders(msg);
 
         length=msg.getLength();
         bufLength=getBufLength(msg);
-        dest=msg.getDest();
         src=msg.getSrc();
 
         ByteArrayOutputStream output=new ByteArrayOutputStream();
@@ -195,7 +194,8 @@ public class StreamableTest extends TestCase {
 
         assertEquals(length, msg2.getLength());
         assertEquals(bufLength, getBufLength(msg2));
-        assertTrue(match(dest, msg2.getDest()));
+        // assertTrue(match(dest, msg2.getDest()));
+        assertNull(msg2.getDest()); // we don't marshal the destination address
         assertTrue(match(src, msg2.getSrc()));
         assertEquals(num_headers, getNumHeaders(msg2));
     }
