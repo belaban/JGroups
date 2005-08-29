@@ -1,4 +1,4 @@
-// $Id: FCTest.java,v 1.8 2005/08/22 14:12:54 belaban Exp $
+// $Id: FCTest.java,v 1.9 2005/08/29 12:18:44 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -80,7 +80,7 @@ public class FCTest extends TestCase {
             Util.sleep(1000);
             num_received=r.getNumberOfReceivedMessages();
             System.out.println("-- num received=" + num_received + ", stats:\n" + s.dumpStats());
-            if(num_received == NUM_MSGS)
+            if(num_received >= NUM_MSGS)
                 break;
             num_tries--;
         }
