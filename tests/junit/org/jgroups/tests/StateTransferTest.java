@@ -7,23 +7,23 @@ import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.jgroups.*;
 import org.jgroups.util.Util;
+import org.jgroups.util.Promise;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 
 /**
  * Tests correct state transfer while other members continue sending messages to the group
  * @author Bela Ban
- * @version $Id: StateTransferTest.java,v 1.4 2005/08/31 08:35:00 belaban Exp $
+ * @version $Id: StateTransferTest.java,v 1.5 2005/08/31 12:46:59 belaban Exp $
  */
 public class StateTransferTest extends TestCase {
     final int NUM=10000;
     final int NUM_THREADS=2;
     final String props="fc-fast.xml";
-    Worker[] workers;
-    Map map;
 
 
     public StateTransferTest(String name) {
@@ -32,19 +32,20 @@ public class StateTransferTest extends TestCase {
 
 
     public void testStateTransferWhileSending() throws Exception {
-        workers=new Worker[NUM_THREADS];
-        map=Collections.synchronizedMap(new HashMap(NUM * NUM_THREADS));
-        int start=0;
+        Worker[] workers=new Worker[NUM_THREADS];
+
+        int from=0, to=NUM;
 
         for(int i=0; i < workers.length; i++) {
-            workers[i]=new Worker(i, start);
-            start+=NUM;
+            workers[i]=new Worker(from, to);
+            from+=NUM;
+            to+=NUM;
         }
 
         for(int i=0; i < workers.length; i++) {
             Worker worker=workers[i];
-            Util.sleep(50); // to have threads join the group a bit later and get the state
             worker.start();
+            Util.sleep(50); // to have threads join the group a bit later and get the state
         }
 
         for(int i=0; i < workers.length; i++) {
@@ -56,29 +57,49 @@ public class StateTransferTest extends TestCase {
             worker.stop();
         }
 
-        log("\n\nhashmap has " + map.size() + " elements");
-        assertEquals(NUM * NUM_THREADS, map.size());
+        log("\n\nhashmaps\n");
+        for(int i=0; i < workers.length; i++) {
+            Worker w=workers[i];
+            Map m=w.getMap();
+            log("map has " + m.size() + " elements");
+            assertEquals(NUM * NUM_THREADS, m.size());
+        }
+
+        Set keys=workers[0].getMap().keySet();
+        for(int i=0; i < workers.length; i++) {
+            Worker w=workers[i];
+            Map m=w.getMap();
+            Set s=m.keySet();
+            assertEquals(keys, s);
+        }
     }
 
 
 
 
     class Worker implements Runnable {
-        JChannel ch;
-        Thread   t, receiver;
-        int      start_num=0;
-        int      id;
+        JChannel        ch;
+        int             to;
+        int             from;
+        final Promise   promise=new Promise();
+        Thread          t;
+        Receiver        receiver;
 
 
-        public Worker(int id, int start_num) {
-            this.start_num=start_num;
-            this.id=id;
+        public Worker(int from, int to) {
+            this.to=to;
+            this.from=from;
+        }
+
+        public Map getMap() {
+            return receiver.getMap();
         }
 
         void start() throws Exception {
             ch=new JChannel(props);
             ch.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
             ch.connect("StateTransferTest-Group");
+            receiver=new Receiver(ch, promise);
             boolean rc=ch.getState(null, 10000);
             if(rc)
                 log("state transfer: OK");
@@ -89,11 +110,13 @@ public class StateTransferTest extends TestCase {
                     log("state transfer: FAIL");
             }
 
-            receiver=new Receiver(id, ch);
-            receiver.setName("Receiver #" + id);
+            receiver.setName("Receiver [" + from + " - " + to + "]");
             receiver.start();
+            if(rc)
+                promise.getResult();
 
-            t=new Thread(this, "worker #" + id);
+            t=new Thread(this);
+            t.setName("Worker [" + from + " - " + to + "]");
             t.start();
         }
 
@@ -108,14 +131,15 @@ public class StateTransferTest extends TestCase {
 
         public void run() {
             Object[] data=new Object[2];
-            log("Worker thread started");
-            for(int i=start_num; i < start_num + NUM; i++) {
+            log("Worker thread started (sending msgs from " + from + " to " + to + " (excluding " + to + ")");
+            for(int i=from; i < to; i++) {
                 data[0]=new Integer(i);
                 data[1]="Value #" + i;
                 try {
                     ch.send(null, null, data);
                     if(i % 1000 == 0)
-                    log("sent " + i);
+                        log("sent " + i);
+                    // log("sent " + data[0]);
                 }
                 catch(Exception e) {
                     e.printStackTrace();
@@ -126,16 +150,22 @@ public class StateTransferTest extends TestCase {
     }
 
     class Receiver extends Thread {
-        int index;
         JChannel ch;
+        Promise promise;
+        Map map;
 
-        public Receiver(int index, JChannel ch) {
-            this.index=index;
+        public Receiver(JChannel ch, Promise promise) {
             this.ch=ch;
+            this.promise=promise;
+            map=Collections.synchronizedMap(new HashMap(NUM * NUM_THREADS));
+        }
+
+        public Map getMap() {
+            return map;
         }
 
         public void run() {
-            Object obj;
+            Object obj, prev_val;
             Object[] data;
             int num_received=0, to_be_received=NUM * NUM_THREADS;
 
@@ -145,10 +175,15 @@ public class StateTransferTest extends TestCase {
                     obj=ch.receive(0);
                     if(obj instanceof Message) {
                         data=(Object[])((Message)obj).getObject();
-                        map.put(data[0], data[1]);
+                        prev_val=map.put(data[0], data[1]);
+                        if(prev_val != null) // we have a duplicate value
+                            continue;
                         num_received=map.size();
                         if(num_received % 1000 == 0)
                             log("received " + num_received);
+
+                        // log("received " + data[0] + " total: " + num_received + ")");
+
                         if(num_received >= to_be_received) {
                             log("DONE: received " + num_received + " messages");
                             break;
@@ -170,8 +205,9 @@ public class StateTransferTest extends TestCase {
                         else {
                             Map tmp=(Map)Util.objectFromByteBuffer(state);
                             log("received state, map has " + tmp.size() + " elements");
-                            map=tmp;
+                            map=Collections.synchronizedMap(tmp);
                         }
+                        promise.setResult(Boolean.TRUE);
                     }
                 }
                 catch(Exception e) {
