@@ -9,7 +9,7 @@
         tos="16"
         ucast_recv_buf_size="10000000"
         mcast_addr="228.8.8.8"
-        bind_to_all_interfaces="true"
+        receive_on_all_interfaces="true"
         loopback="false"
         mcast_recv_buf_size="10000000"
         max_bundle_size="64000"
