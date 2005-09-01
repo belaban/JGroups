@@ -8,18 +8,9 @@ package org.jgroups;
  */
 public class Version {
 	
-	/**
-	 * Value is {@value}.
-	 */
-    public static final String description="2.2.9 alpha";
-	/**
-	 * Value is {@value}.
-	 */
+    public static final String description="2.2.9 beta";
     public static final short version=229;
-	/**
-	 * Value is {@value}.
-	 */
-    public static final String cvs="$Id: Version.java,v 1.22 2005/07/17 11:38:05 chrislott Exp $";
+    public static final String cvs="$Id: Version.java,v 1.23 2005/09/01 12:08:44 belaban Exp $";
 
     /**
      * Prints the value of the description and cvs fields to System.out.
