@@ -1,0 +1,69 @@
+
+Release Notes JGroups 2.2.9
+===========================
+
+Version: $Id: ReleaseNotes-2.2.9.txt,v 1.1 2005/09/01 12:04:15 belaban Exp $
+Author: Bela Ban
+Date: Sept 1 2005
+
+
+JMX support
+-----------
+The channel and most protocols can now be accessed via JMX. This can
+be used in any environment that provides an MBeanServer, e.g. JBoss or
+JDK 5. With JDK 5's jconsole, for example, retransmission counters can
+be viewed in realtime, or operations can be invoked that dump the
+retransmission windows for NAKACK etc.
+More information is available at
+http://wiki.jboss.org/wiki/Wiki.jsp?page=JMX.
+
+
+Fine-grained interface binding
+------------------------------
+Attributes receive_on_all_interfaces and receive_interfaces enable
+receiving multicast packets on all or a number of interfaces, e.g.
+receive_interfaces="hme0,hme1,192.168.5.3"
+
+
+Retransmission from random member
+---------------------------------
+[NAKACK] This is helpful if we have a large group, and want to avoid
+having to ask the original sender of a message for retransmission. By
+asking a random member, we take some potential load off of the
+original sender.
+
+
+Added payload to MethodCall
+---------------------------
+Needed to pass additional information with a method call, required 
+in JBossCache.
+
+
+Common transport protocol TP
+----------------------------
+UDP and TCP now derive from this, therefore common functionality has
+to be implemented and tested only once. TCP now has many more
+properties supported by TP.
+
+
+Performance improvements
+------------------------
+50% speed improvement for
+RpcDispatcher/MessageDispatcher/RequestCorrelator/MethodCall.
+Most headers now support size() and Streamable, making marshalling and
+unmarshalling faster.
+
+
+Bug fixes
+---------
+Critical: in rare cases, the digests could be computed incorrectly,
+leading to higher message buffering than necessary
+
+Critical: message bundling (in TP) changed the destination address, so
+when unicast messages had to be retransmitted, because dest=null, the
+receiver would drop them. This would cause UNICAST to stop delivering
+messages, which would accumulate forever ! This happened only in very
+rare cases when a high sustained throughput was encountered (e.g. 20
+million messages sent at the highest possible speed).
+Workaround: set enable_bundling="false" in UDP.
+Many smaller bug fixes.
