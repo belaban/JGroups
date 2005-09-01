@@ -1,4 +1,4 @@
-// $Id: HTOTAL.java,v 1.3 2005/08/11 12:43:47 belaban Exp $
+// $Id: HTOTAL.java,v 1.4 2005/09/01 11:41:00 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -17,7 +17,7 @@ import java.util.Vector;
  * to a coordinator who then forwards it to its neighbor on the right, who then forwards it to its neighbor to the right
  * etc.
  * @author Bela Ban
- * @version $Id: HTOTAL.java,v 1.3 2005/08/11 12:43:47 belaban Exp $
+ * @version $Id: HTOTAL.java,v 1.4 2005/09/01 11:41:00 belaban Exp $
  */
 public class HTOTAL extends Protocol {
     Address coord=null;
@@ -28,51 +28,12 @@ public class HTOTAL extends Protocol {
     private boolean use_multipoint_forwarding=false;
 
 
-    public static class HTotalHeader extends Header implements Streamable {
-        Address dest, src;
-        boolean forward=true;
 
-        public HTotalHeader() {
-        }
-
-        public HTotalHeader(Address dest, Address src) {
-            this.dest=dest;
-            this.src=src;
-        }
-
-        public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeObject(dest);
-            out.writeObject(src);
-            out.writeBoolean(forward);
-        }
-
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            dest=(Address)in.readObject();
-            src=(Address)in.readObject();
-            forward=in.readBoolean();
-        }
-
-        public void writeTo(DataOutputStream out) throws IOException {
-            Util.writeAddress(dest, out);
-            Util.writeAddress(src, out);
-            out.writeBoolean(forward);
-        }
-
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
-            dest=Util.readAddress(in);
-            src=Util.readAddress(in);
-            forward=in.readBoolean();
-        }
-
-        public String toString() {
-            return "dest=" + dest + ", src=" + src + ", forward=" + forward;
-        }
-    }
 
     public HTOTAL() {
     }
 
-    public String getName() {
+    public final String getName() {
         return "HTOTAL";
     }
 
@@ -105,8 +66,10 @@ public class HTOTAL extends Protocol {
             if(dest == null || dest.isMulticastAddress()) { // only process multipoint messages
                 if(coord == null)
                     log.error("coordinator is null, cannot send message to coordinator");
-                else
+                else {
+                    msg.setSrc(local_addr);
                     forwardTo(coord, msg);
+                }
                 return; // handled here, don't pass down by default
             }
             break;
@@ -129,16 +92,14 @@ public class HTOTAL extends Protocol {
             if(hdr == null)
                 break;  // probably a unicast message, just pass it up
 
-            if(hdr.forward) {
-                Message copy=msg.copy();
-                if(use_multipoint_forwarding) {
-                    copy.setDest(null);
-                    passDown(new Event(Event.MSG, copy));
-                }
-                else {
-                    if(neighbor != null) {
-                        forwardTo(neighbor, copy);
-                    }
+            Message copy=msg.copy(false); // do not copy the buffer
+            if(use_multipoint_forwarding) {
+                copy.setDest(null);
+                passDown(new Event(Event.MSG, copy));
+            }
+            else {
+                if(neighbor != null) {
+                    forwardTo(neighbor, copy);
                 }
             }
 
@@ -155,7 +116,7 @@ public class HTOTAL extends Protocol {
         HTotalHeader hdr=(HTotalHeader)msg.getHeader(getName());
 
         if(hdr == null) {
-            hdr=new HTotalHeader(msg.getDest(), local_addr);
+            hdr=new HTotalHeader(msg.getDest(), msg.getSrc());
             msg.putHeader(getName(), hdr);
         }
         msg.setDest(destination);
@@ -194,5 +155,41 @@ public class HTOTAL extends Protocol {
             log.trace("coord=" + coord + ", neighbor=" + neighbor);
     }
 
+
+    public static class HTotalHeader extends Header implements Streamable {
+        Address dest, src;
+
+        public HTotalHeader() {
+        }
+
+        public HTotalHeader(Address dest, Address src) {
+            this.dest=dest;
+            this.src=src;
+        }
+
+        public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeObject(dest);
+            out.writeObject(src);
+        }
+
+        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            dest=(Address)in.readObject();
+            src=(Address)in.readObject();
+        }
+
+        public void writeTo(DataOutputStream out) throws IOException {
+            Util.writeAddress(dest, out);
+            Util.writeAddress(src, out);
+        }
+
+        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+            dest=Util.readAddress(in);
+            src=Util.readAddress(in);
+        }
+
+        public String toString() {
+            return "dest=" + dest + ", src=" + src;
+        }
+    }
 
 }
