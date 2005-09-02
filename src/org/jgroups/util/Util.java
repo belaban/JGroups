@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.54 2005/08/08 15:05:58 belaban Exp $
+// $Id: Util.java,v 1.55 2005/09/02 11:30:43 belaban Exp $
 
 package org.jgroups.util;
 
@@ -356,6 +356,33 @@ public class Util {
             throw new IOException("failed reading object: " + ex.toString());
         }
     }
+
+    public static void writeObject(Object obj, DataOutputStream out) throws Exception {
+       if(obj == null || !(obj instanceof Streamable)) {
+           byte[] buf=objectToByteBuffer(obj);
+           out.writeShort(buf.length);
+           out.write(buf, 0, buf.length);
+       }
+       else {
+           out.writeShort(-1);
+           writeGenericStreamable((Streamable)obj, out);
+       }
+    }
+
+    public static Object readObject(DataInputStream in) throws Exception {
+        short len=in.readShort();
+        Object retval=null;
+        if(len == -1) {
+            retval=readGenericStreamable(in);
+        }
+        else {
+            byte[] buf=new byte[len];
+            in.readFully(buf, 0, len);
+            retval=objectFromByteBuffer(buf);
+        }
+        return retval;
+    }
+
 
 
     public static void writeString(String s, DataOutputStream out) throws IOException {

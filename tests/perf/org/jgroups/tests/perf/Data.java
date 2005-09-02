@@ -1,6 +1,5 @@
 package org.jgroups.tests.perf;
 
-import org.jgroups.Address;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
@@ -13,7 +12,7 @@ import java.util.Map;
  * Data sent around between members
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: Data.java,v 1.8 2005/07/29 07:20:24 belaban Exp $
+ * @version $Id: Data.java,v 1.9 2005/09/02 11:30:43 belaban Exp $
  */
 public class Data implements Streamable {
     final static byte DISCOVERY_REQ = 1;
@@ -34,7 +33,7 @@ public class Data implements Streamable {
     byte[]     payload=null; // used with DATA
     boolean    sender=false; // used with DISCOVERY_RSP
     long       num_msgs=0;   // used with DISCOVERY_RSP
-    MemberInfo result=null; // used with RESULTS
+    MemberInfo result=null;  // used with RESULTS
     Map        results=null; // used with final results
 
     public int getType() {
@@ -59,13 +58,20 @@ public class Data implements Streamable {
             out.writeBoolean(true);
             out.writeInt(results.size());
             Map.Entry entry;
-            Address key;
+            Object key;
             MemberInfo val;
             for(Iterator it=results.entrySet().iterator(); it.hasNext();) {
                 entry=(Map.Entry)it.next();
-                key=(Address)entry.getKey();
+                key=entry.getKey();
                 val=(MemberInfo)entry.getValue();
-                Util.writeAddress(key, out);
+                try {
+                    Util.writeObject(key, out);
+                }
+                catch(Exception e) {
+                    IOException ex=new IOException("failed to write object " + key);
+                    ex.initCause(e);
+                    throw ex;
+                }
                 Util.writeStreamable(val, out);
             }
         }
@@ -88,10 +94,17 @@ public class Data implements Streamable {
         if(in.readBoolean()) {
             int length=in.readInt();
             results=new HashMap(length);
-            Address key;
+            Object key;
             MemberInfo val;
             for(int i=0; i < length; i++) {
-                key=Util.readAddress(in);
+                try {
+                    key=Util.readObject(in);
+                }
+                catch(Exception e) {
+                    IOException ex=new IOException("failed to read key");
+                    ex.initCause(e);
+                    throw ex;
+                }
                 val=(MemberInfo)Util.readStreamable(MemberInfo.class, in);
                 results.put(key, val);
             }
