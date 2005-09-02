@@ -13,7 +13,7 @@ import java.util.TreeMap;
 
 /**
  * @author Bela Ban
- * @version $Id: HashMapTest.java,v 1.4 2005/07/15 16:38:25 belaban Exp $
+ * @version $Id: HashMapTest.java,v 1.5 2005/09/02 14:27:38 belaban Exp $
  */
 public class HashMapTest {
 
@@ -41,14 +41,9 @@ public class HashMapTest {
             maps[i]=(Map)classes[i].newInstance();
 
 
-        System.out.println("\nTesting insertion times");
+        System.out.println("\nTesting puts and gets");
         for(int i=0; i < maps.length; i++) {
-            t.testPut(maps[i], num);
-        }
-
-        System.out.println("\nTesting retrieval times");
-        for(int i=0; i < maps.length; i++) {
-            t.testGet(maps[i], num);
+            t.testPutAndGet(maps[i], num);
         }
     }
 
@@ -90,8 +85,10 @@ public class HashMapTest {
         System.out.println("Took " + (stop-start) + "ms to create " + num + " instances of " + cl.getName());
     }
 
-    private void testPut(Map m, int num) {
+
+    private void testPutAndGet(Map m, int num) throws Exception {
         long start, stop;
+        Object retval;
 
         start=System.currentTimeMillis();
         for(int i=0; i < num; i++) {
@@ -100,12 +97,6 @@ public class HashMapTest {
 
         stop=System.currentTimeMillis();
         System.out.println("Took " + (stop-start) + "ms to insert " + m.size() + " elements into " + m.getClass().getName());
-    }
-
-
-    private void testGet(Map m, int num) throws Exception {
-        long start, stop;
-        Object retval;
 
         start=System.currentTimeMillis();
         for(int i=0; i < num; i++) {
@@ -115,6 +106,13 @@ public class HashMapTest {
         }
 
         stop=System.currentTimeMillis();
-        System.out.println("Took " + (stop-start) + "ms to insert " + m.size() + " elements into " + m.getClass().getName());
+        System.out.println("Took " + (stop-start) + "ms to fetch " + m.size() + " elements from " + m.getClass().getName());
+
+        start=System.currentTimeMillis();
+        m.clear();
+        stop=System.currentTimeMillis();
+        System.out.println("Took " + (stop-start) + "ms to clear " + m.getClass().getName() + "\n");
     }
+
+
 }
