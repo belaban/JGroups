@@ -1,4 +1,4 @@
-// $Id: QueueTest.java,v 1.15 2005/05/30 16:15:05 belaban Exp $
+// $Id: QueueTest.java,v 1.16 2005/09/06 12:44:15 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -10,6 +10,7 @@ import org.jgroups.util.QueueClosedException;
 import org.jgroups.util.Util;
 
 import java.util.LinkedList;
+import java.util.ArrayList;
 
 
 public class QueueTest extends TestCase {
@@ -120,6 +121,22 @@ public class QueueTest extends TestCase {
         assertNull(queue.getFirst());
         assertNull(queue.getLast());
         assertEquals(queue.getFirst(), queue.getLast()); // both are null; they're equal
+    }
+
+    public void testAddAll() throws QueueClosedException {
+        ArrayList l=new ArrayList();
+        l.add("one");
+        l.add("two");
+        l.add("three");
+        queue.addAll(l);
+        System.out.println("queue is " + queue);
+        assertEquals(3, queue.size());
+        assertEquals(queue.remove(), "one");
+        assertEquals(2, queue.size());
+        assertEquals(queue.remove(), "two");
+        assertEquals(1, queue.size());
+        assertEquals(queue.remove(), "three");
+        assertEquals(0, queue.size());
     }
 
     public void testInsertionAndRemoval() throws Exception {
@@ -432,116 +449,116 @@ public class QueueTest extends TestCase {
         assertEquals(num_dead, 2);
     }
 
-	/** Multiple threads call remove(), one threads then adds an element. Only 1 thread should actually terminate
-	 * (the one that has the element) */
-	public void testBarrierWithTimeOut()
-	{
-		RemoveOneItemWithTimeout[] removers = new RemoveOneItemWithTimeout[10];
-		int num_dead = 0;
+    /** Multiple threads call remove(), one threads then adds an element. Only 1 thread should actually terminate
+     * (the one that has the element) */
+    public void testBarrierWithTimeOut()
+    {
+        RemoveOneItemWithTimeout[] removers = new RemoveOneItemWithTimeout[10];
+        int num_dead = 0;
 
-		for (int i = 0; i < removers.length; i++)
-		{
-			removers[i] = new RemoveOneItemWithTimeout(i, 1000);
-			removers[i].start();
-		}
+        for (int i = 0; i < removers.length; i++)
+        {
+            removers[i] = new RemoveOneItemWithTimeout(i, 1000);
+            removers[i].start();
+        }
 
-		Util.sleep(5000);
+        Util.sleep(5000);
 
-		System.out.println("-- adding element 99");
-		try
-		{
-			queue.add(new Long(99));
-		}
-		catch (Exception ex)
-		{
-			System.err.println(ex);
-		}
+        System.out.println("-- adding element 99");
+        try
+        {
+            queue.add(new Long(99));
+        }
+        catch (Exception ex)
+        {
+            System.err.println(ex);
+        }
 
-		Util.sleep(5000);
-		System.out.println("-- adding element 100");
-		try
-		{
-			queue.add(new Long(100));
-		}
-		catch (Exception ex)
-		{
-			System.err.println(ex);
-		}
+        Util.sleep(5000);
+        System.out.println("-- adding element 100");
+        try
+        {
+            queue.add(new Long(100));
+        }
+        catch (Exception ex)
+        {
+            System.err.println(ex);
+        }
 
-		Util.sleep(1000);
+        Util.sleep(1000);
 
-		for (int i = 0; i < removers.length; i++)
-		{
-			System.out.println("remover #" + i + " is " + (removers[i].isAlive() ? "alive" : "terminated"));
-			if (!removers[i].isAlive())
-			{
-				num_dead++;
-			}
-		}
+        for (int i = 0; i < removers.length; i++)
+        {
+            System.out.println("remover #" + i + " is " + (removers[i].isAlive() ? "alive" : "terminated"));
+            if (!removers[i].isAlive())
+            {
+                num_dead++;
+            }
+        }
 
-		assertEquals(num_dead, 2);
+        assertEquals(num_dead, 2);
 
-		queue.close(false); // will cause all threads still blocking on peek() to return
+        queue.close(false); // will cause all threads still blocking on peek() to return
 
-		Util.sleep(2000);
+        Util.sleep(2000);
 
-		num_dead = 0;
-		for (int i = 0; i < removers.length; i++)
-		{
-			System.out.println("remover #" + i + " is " + (removers[i].isAlive() ? "alive" : "terminated"));
-			if (!removers[i].isAlive())
-			{
-				num_dead++;
-			}
-		}
-		assertEquals(num_dead, 10);
+        num_dead = 0;
+        for (int i = 0; i < removers.length; i++)
+        {
+            System.out.println("remover #" + i + " is " + (removers[i].isAlive() ? "alive" : "terminated"));
+            if (!removers[i].isAlive())
+            {
+                num_dead++;
+            }
+        }
+        assertEquals(num_dead, 10);
 
-	}
+    }
 
 
-	/** Multiple threads add one element, one thread read them all.
-	 * (the one that has the element) */
-	public void testMultipleWriterOneReader()
-	{
-		AddOneItem[] adders = new AddOneItem[10];
-		int num_dead = 0;
-		int num_items = 0;
-		int items = 1000;
+    /** Multiple threads add one element, one thread read them all.
+     * (the one that has the element) */
+    public void testMultipleWriterOneReader()
+    {
+        AddOneItem[] adders = new AddOneItem[10];
+        int num_dead = 0;
+        int num_items = 0;
+        int items = 1000;
 
-		for (int i = 0; i < adders.length; i++)
-		{
-			adders[i] = new AddOneItem(i, items);
-			adders[i].start();
-		}
+        for (int i = 0; i < adders.length; i++)
+        {
+            adders[i] = new AddOneItem(i, items);
+            adders[i].start();
+        }
 
-		while (num_items < (adders.length*items))
-		{
-			try
-			{
-				queue.remove();
-				num_items++;
-			}
-			catch (Exception ex)
-			{
-				System.err.println(ex);
-			}
-		}
+        while (num_items < (adders.length*items))
+        {
+            try
+            {
+                queue.remove();
+                num_items++;
+            }
+            catch (Exception ex)
+            {
+                System.err.println(ex);
+            }
+        }
 
-		Util.sleep(1000);
+        Util.sleep(1000);
 
-		for (int i = 0; i < adders.length; i++)
-		{
-			System.out.println("adder #" + i + " is " + (adders[i].isAlive() ? "alive" : "terminated"));
-			if (!adders[i].isAlive())
-			{
-				num_dead++;
-			}
-		}
+        for (int i = 0; i < adders.length; i++)
+        {
+            System.out.println("adder #" + i + " is " + (adders[i].isAlive() ? "alive" : "terminated"));
+            if (!adders[i].isAlive())
+            {
+                num_dead++;
+            }
+        }
 
-		assertEquals(num_dead, 10);
+        assertEquals(num_dead, 10);
 
-		queue.close(false); // will cause all threads still blocking on peek() to return
-	}
+        queue.close(false); // will cause all threads still blocking on peek() to return
+    }
 
 
     /**
@@ -640,38 +657,38 @@ public class QueueTest extends TestCase {
                 ", diff=" + Math.abs(total_writes - total_reads));
     }
 
-	class AddOneItem extends Thread
-	{
-		Long retval = null;
-		int rank = 0;
-		int iteration = 0;
+    class AddOneItem extends Thread
+    {
+        Long retval = null;
+        int rank = 0;
+        int iteration = 0;
 
-		AddOneItem(int rank, int iteration)
-		{
-			super("AddOneItem thread #" + rank);
-			this.rank = rank;
-			this.iteration = iteration;
-			setDaemon(true);
-		}
+        AddOneItem(int rank, int iteration)
+        {
+            super("AddOneItem thread #" + rank);
+            this.rank = rank;
+            this.iteration = iteration;
+            setDaemon(true);
+        }
 
-		public void run()
-		{
-			try
-			{
-				for (int i = 0; i < iteration; i++)
-				{
-					queue.add(new Long(rank));
-					// Util.sleepRandom(1);
-					// System.out.println("Thread #" + rank + " added element (" + rank + ")");
-				}
-			}
-			catch (QueueClosedException closed)
-			{
-				System.err.println("Thread #" + rank + ": queue was closed");
-			}
-		}
+        public void run()
+        {
+            try
+            {
+                for (int i = 0; i < iteration; i++)
+                {
+                    queue.add(new Long(rank));
+                    // Util.sleepRandom(1);
+                    // System.out.println("Thread #" + rank + " added element (" + rank + ")");
+                }
+            }
+            catch (QueueClosedException closed)
+            {
+                System.err.println("Thread #" + rank + ": queue was closed");
+            }
+        }
 
-	}
+    }
 
     class RemoveOneItem extends Thread {
         Long retval=null;
@@ -699,47 +716,47 @@ public class QueueTest extends TestCase {
         }
     }
 
-	class RemoveOneItemWithTimeout extends Thread
-	{
-		Long retval = null;
-		int rank = 0;
-		long timeout = 0;
+    class RemoveOneItemWithTimeout extends Thread
+    {
+        Long retval = null;
+        int rank = 0;
+        long timeout = 0;
 
-		RemoveOneItemWithTimeout(int rank, long timeout)
-		{
-			super("RemoveOneItem thread #" + rank);
-			this.rank = rank;
+        RemoveOneItemWithTimeout(int rank, long timeout)
+        {
+            super("RemoveOneItem thread #" + rank);
+            this.rank = rank;
             this.timeout=timeout;
-			setDaemon(true);
-		}
+            setDaemon(true);
+        }
 
-		public void run()
-		{
-			boolean finished = false;
-			while (!finished)
-			{
-				try
-				{
-					retval = (Long) queue.remove(timeout);
-					// System.out.println("Thread #" + rank + " removed element (" + retval + ")");
-					finished = true;
-				}
-				catch (QueueClosedException closed)
-				{
-					System.err.println("Thread #" + rank + ": queue was closed");
-					finished = true;
-				}
-				catch (TimeoutException e)
-				{
-				}
-			}
-		}
+        public void run()
+        {
+            boolean finished = false;
+            while (!finished)
+            {
+                try
+                {
+                    retval = (Long) queue.remove(timeout);
+                    // System.out.println("Thread #" + rank + " removed element (" + retval + ")");
+                    finished = true;
+                }
+                catch (QueueClosedException closed)
+                {
+                    System.err.println("Thread #" + rank + ": queue was closed");
+                    finished = true;
+                }
+                catch (TimeoutException e)
+                {
+                }
+            }
+        }
 
-		Long getRetval()
-		{
-			return retval;
-		}
-	}
+        Long getRetval()
+        {
+            return retval;
+        }
+    }
 
 
 
