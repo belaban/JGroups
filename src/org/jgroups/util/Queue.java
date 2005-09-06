@@ -1,4 +1,4 @@
-// $Id: Queue.java,v 1.23 2005/07/22 15:53:39 belaban Exp $
+// $Id: Queue.java,v 1.24 2005/09/06 12:33:09 belaban Exp $
 
 package org.jgroups.util;
 
@@ -137,7 +137,7 @@ public class Queue {
            if(closed)
               throw new QueueClosedException();
            if(this.num_markers > 0)
-              throw new QueueClosedException("Queue.add(): queue has been closed. You can not add more elements. " +
+              throw new QueueClosedException("queue has been closed. You can not add more elements. " +
                                              "Waiting for removal of remaining elements.");
 
             /*create a new linked list element*/
