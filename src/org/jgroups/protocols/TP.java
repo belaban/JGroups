@@ -28,7 +28,7 @@ import java.util.*;
  * <li>{@link #sendToSingleMember(org.jgroups.Address, byte[], int, int)}
  * <li>{@link #init()}
  * <li>{@link #start()}: subclasses <em>must</em> call super.start() <em>after</em> they initialize themselves
- * (e.g., created their sockets). 
+ * (e.g., created their sockets).
  * <li>{@link #stop()}: subclasses <em>must</em> call super.stop() after they deinitialized themselves
  * <li>{@link #destroy()}
  * </ul>
@@ -36,7 +36,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.30 2005/08/26 12:12:53 belaban Exp $
+ * @version $Id: TP.java,v 1.31 2005/09/06 13:17:33 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -117,11 +117,18 @@ public abstract class TP extends Protocol {
     boolean         use_incoming_packet_handler=false;
 
     /** Used by packet handler to store incoming DatagramPackets */
-    Queue           incoming_queue=null;
+    Queue           incoming_packet_queue=null;
 
     /** Dequeues DatagramPackets from packet_queue, unmarshalls them and
      * calls <tt>handleIncomingUdpPacket()</tt> */
     IncomingPacketHandler   incoming_packet_handler=null;
+
+
+    /** Used by packet handler to store incoming Messages */
+    Queue                  incoming_msg_queue=null;
+
+    IncomingMessageHandler incoming_msg_handler;
+
 
     /** Packets to be sent are stored in outgoing_queue and sent by a separate thread. Enabling this
      * value uses an additional thread */
@@ -211,7 +218,7 @@ public abstract class TP extends Protocol {
     public long getMaxBundleTimeout() {return max_bundle_timeout;}
     public void setMaxBundleTimeout(long timeout) {max_bundle_timeout=timeout;}
     public int getOutgoingQueueSize() {return outgoing_queue != null? outgoing_queue.size() : -1;}
-    public int getIncomingQueueSize() {return incoming_queue != null? incoming_queue.size() : -1;}
+    public int getIncomingQueueSize() {return incoming_packet_queue != null? incoming_packet_queue.size() : -1;}
     public Address getLocalAddress() {return local_addr;}
     public String getChannelName() {return channel_name;}
     public boolean isLoopback() {return loopback;}
@@ -289,9 +296,15 @@ public abstract class TP extends Protocol {
 
     public void init() throws Exception {
         if(use_incoming_packet_handler) {
-            incoming_queue=new Queue();
+            incoming_packet_queue=new Queue();
             incoming_packet_handler=new IncomingPacketHandler();
         }
+
+        if(loopback) {
+            incoming_msg_queue=new Queue();
+            incoming_msg_handler=new IncomingMessageHandler();
+        }
+
         if(use_outgoing_packet_handler) {
             outgoing_queue=new Queue();
             if(enable_bundling) {
@@ -512,7 +525,7 @@ public abstract class TP extends Protocol {
     /**
      * This prevents the up-handler thread to be created, which essentially is superfluous:
      * messages are received from the network rather than from a layer below.
-     * DON'T REMOVE ! 
+     * DON'T REMOVE !
      */
     public void startUpHandler() {
     }
@@ -573,17 +586,15 @@ public abstract class TP extends Protocol {
             // copy.removeHeader(name); // we don't remove the header
             copy.setSrc(local_addr);
             // copy.setDest(dest);
-            evt=new Event(Event.MSG, copy);
 
-            /* Because Protocol.up() is never called by this bottommost layer, we call up() directly in the observer.
-               This allows e.g. PerfObserver to get the time of reception of a message */
-            if(observer != null)
-                observer.up(evt, up_queue.size());
             if(trace) log.trace(new StringBuffer("looping back message ").append(copy));
-            if(loopback_queue)
-                loopback_handler.add(evt);
-            else
-                passUp(evt);
+            try {
+                incoming_msg_queue.add(copy);
+            }
+            catch(QueueClosedException e) {
+                log.error("failed adding looped back message to incoming_msg_queue", e);
+            }
+
             if(!multicast)
                 return;
         }
@@ -622,7 +633,7 @@ public abstract class TP extends Protocol {
     /**
      * Subclasses must call this method when a unicast or multicast message has been received.
      * Declared final so subclasses cannot override this method.
-     * 
+     *
      * @param dest
      * @param sender
      * @param data
@@ -650,7 +661,7 @@ public abstract class TP extends Protocol {
             if(use_incoming_packet_handler) {
                 byte[] tmp=new byte[length];
                 System.arraycopy(data, offset, tmp, 0, length);
-                incoming_queue.add(new IncomingQueueEntry(dest, sender, tmp, offset, length));
+                incoming_packet_queue.add(new IncomingQueueEntry(dest, sender, tmp, offset, length));
             }
             else
                 handleIncomingPacket(dest, sender, data, offset, length);
@@ -707,19 +718,46 @@ public abstract class TP extends Protocol {
             }
 
             if(is_message_list) {
-                for(Enumeration en=l.elements(); en.hasMoreElements();) {
-                    msg=(Message)en.nextElement();
-                    try {
-                        handleMessage(msg);
+                if(incoming_msg_queue != null) {
+
+                    // discard my own multicast loopback copy
+                    if(loopback) {
+                        if(multicast && sender != null && local_addr.equals(sender)) {
+                            if(trace)
+                                log.trace("discarded own loopback multicast packets");
+                            return;
+                        }
                     }
-                    catch(Throwable t) {
-                        if(log.isErrorEnabled())
-                            log.error("failed unmarshalling message list", t);
+
+                    incoming_msg_queue.addAll(l);
+                }
+                else {
+                    for(Enumeration en=l.elements(); en.hasMoreElements();) {
+                        msg=(Message)en.nextElement();
+                        try {
+                            handleIncomingMessage(msg);
+                        }
+                        catch(Throwable t) {
+                            if(log.isErrorEnabled())
+                                log.error("failed unmarshalling message list", t);
+                        }
                     }
                 }
             }
             else {
-                handleMessage(msg);
+                if(incoming_msg_queue != null) {
+                    // discard my own multicast loopback copy
+                    if(loopback) {
+                        if(multicast && sender != null && local_addr.equals(sender)) {
+                            if(trace)
+                                log.trace("discarded own loopback multicast packet");
+                            return;
+                        }
+                    }
+                    incoming_msg_queue.add(msg);
+                }
+                else
+                    handleIncomingMessage(msg);
             }
         }
         catch(Throwable t) {
@@ -730,24 +768,13 @@ public abstract class TP extends Protocol {
 
 
 
-    private void handleMessage(Message msg) {
+    private void handleIncomingMessage(Message msg) {
         Event      evt;
         TpHeader   hdr;
-        Address    dst=msg.getDest();
 
         if(stats) {
             num_msgs_received++;
             num_bytes_received+=msg.getLength();
-        }
-
-        // discard my own multicast loopback copy
-        if(loopback) {
-            Address src=msg.getSrc();
-            if((dst == null || (dst.isMulticastAddress())) && src != null && local_addr.equals(src)) {
-                if(trace)
-                    log.trace("discarded own loopback multicast packet");
-                return;
-            }
         }
 
         evt=new Event(Event.MSG, msg);
@@ -916,8 +943,12 @@ public abstract class TP extends Protocol {
     private void startPacketHandlers() throws Exception {
         if(use_outgoing_packet_handler)
             outgoing_packet_handler.start();
+
         if(use_incoming_packet_handler)
             incoming_packet_handler.start();
+
+        if(incoming_msg_handler != null)
+            incoming_msg_handler.start();
     }
 
 
@@ -1067,9 +1098,9 @@ public abstract class TP extends Protocol {
 
         public void run() {
             IncomingQueueEntry entry;
-            while(incoming_queue != null) {
+            while(incoming_packet_queue != null) {
                 try {
-                    entry=(IncomingQueueEntry)incoming_queue.remove();
+                    entry=(IncomingQueueEntry)incoming_packet_queue.remove();
                     handleIncomingPacket(entry.dest, entry.sender, entry.buf, entry.offset, entry.length);
                 }
                 catch(QueueClosedException closed_ex) {
@@ -1092,9 +1123,46 @@ public abstract class TP extends Protocol {
         }
 
         void stop() {
-            if(incoming_queue != null)
-                incoming_queue.close(false); // should terminate the packet_handler thread too
+            if(incoming_packet_queue != null)
+                incoming_packet_queue.close(false); // should terminate the packet_handler thread too
             t=null;
+        }
+    }
+
+
+    class IncomingMessageHandler implements Runnable {
+        Thread t;
+
+        public void start() {
+            if(t == null || !t.isAlive()) {
+                t=new Thread(this, "TP.IncomingMessageHandler");
+                t.setDaemon(true);
+                t.start();
+            }
+        }
+
+
+        public void stop() {
+            if(incoming_msg_queue != null)
+            incoming_msg_queue.close(false);
+        }
+
+        public void run() {
+            Message msg;
+            while(incoming_msg_queue != null) {
+                try {
+                    msg=(Message)incoming_msg_queue.remove();
+                    handleIncomingMessage(msg);
+                }
+                catch(QueueClosedException closed_ex) {
+                    if(trace) log.trace("message handler thread terminating");
+                    break;
+                }
+                catch(Throwable ex) {
+                    if(log.isErrorEnabled())
+                    log.error("error processing incoming message", ex);
+                }
+            }
         }
     }
 
