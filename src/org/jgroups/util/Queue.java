@@ -1,4 +1,4 @@
-// $Id: Queue.java,v 1.24 2005/09/06 12:33:09 belaban Exp $
+// $Id: Queue.java,v 1.25 2005/09/06 12:43:59 belaban Exp $
 
 package org.jgroups.util;
 
@@ -8,8 +8,8 @@ import org.apache.commons.logging.LogFactory;
 import org.jgroups.TimeoutException;
 
 import java.util.LinkedList;
-
-
+import java.util.Collection;
+import java.util.Iterator;
 
 
 /**
@@ -51,7 +51,7 @@ public class Queue {
 
     protected static final Log log=LogFactory.getLog(Queue.class);
 
-    
+
     /**
      * the class Element indicates an object in the queue.
      * This element allows for the linked list algorithm by always holding a
@@ -139,31 +139,40 @@ public class Queue {
            if(this.num_markers > 0)
               throw new QueueClosedException("queue has been closed. You can not add more elements. " +
                                              "Waiting for removal of remaining elements.");
+            addInternal(obj);
 
-            /*create a new linked list element*/
-            Element el=new Element(obj);
-            /*check the first element*/
-            if(head == null) {
-                /*the object added is the first element*/
-                /*set the head to be this object*/
-                head=el;
-                /*set the tail to be this object*/
-                tail=head;
-                /*set the size to be one, since the queue was empty*/
-                size=1;
-            }
-            else {
-                /*add the object to the end of the linked list*/
-                tail.next=el;
-                /*set the tail to point to the last element*/
-                tail=el;
-                /*increase the size*/
-                size++;
-            }
             /*wake up all the threads that are waiting for the lock to be released*/
             mutex.notifyAll();
         }
     }
+
+    public void addAll(Collection c) throws QueueClosedException {
+        if(c == null) {
+            if(log.isErrorEnabled()) log.error("argument must not be null");
+            return;
+        }
+
+        /*lock the queue from other threads*/
+        synchronized(mutex) {
+           if(closed)
+              throw new QueueClosedException();
+           if(this.num_markers > 0)
+              throw new QueueClosedException("queue has been closed. You can not add more elements. " +
+                                             "Waiting for removal of remaining elements.");
+
+            Object obj;
+            for(Iterator it=c.iterator(); it.hasNext();) {
+                obj=it.next();
+                if(obj != null)
+                    addInternal(obj);
+            }
+
+            /*wake up all the threads that are waiting for the lock to be released*/
+            mutex.notifyAll();
+        }
+    }
+
+
 
 
     /**
@@ -507,6 +516,29 @@ public class Queue {
 
     /* ------------------------------------- Private Methods ----------------------------------- */
 
+
+    private final void addInternal(Object obj) {
+        /*create a new linked list element*/
+        Element el=new Element(obj);
+        /*check the first element*/
+        if(head == null) {
+            /*the object added is the first element*/
+            /*set the head to be this object*/
+            head=el;
+            /*set the tail to be this object*/
+            tail=head;
+            /*set the size to be one, since the queue was empty*/
+            size=1;
+        }
+        else {
+            /*add the object to the end of the linked list*/
+            tail.next=el;
+            /*set the tail to point to the last element*/
+            tail=el;
+            /*increase the size*/
+            size++;
+        }
+    }
 
     /**
      * Removes the first element. Returns null if no elements in queue.
