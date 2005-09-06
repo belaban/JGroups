@@ -1,4 +1,4 @@
-// $Id: Queue.java,v 1.25 2005/09/06 12:43:59 belaban Exp $
+// $Id: Queue.java,v 1.26 2005/09/06 12:48:28 belaban Exp $
 
 package org.jgroups.util;
 
@@ -10,6 +10,7 @@ import org.jgroups.TimeoutException;
 import java.util.LinkedList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Enumeration;
 
 
 /**
@@ -163,6 +164,33 @@ public class Queue {
             Object obj;
             for(Iterator it=c.iterator(); it.hasNext();) {
                 obj=it.next();
+                if(obj != null)
+                    addInternal(obj);
+            }
+
+            /*wake up all the threads that are waiting for the lock to be released*/
+            mutex.notifyAll();
+        }
+    }
+
+
+    public void addAll(List l) throws QueueClosedException {
+        if(l == null) {
+            if(log.isErrorEnabled()) log.error("argument must not be null");
+            return;
+        }
+
+        /*lock the queue from other threads*/
+        synchronized(mutex) {
+           if(closed)
+              throw new QueueClosedException();
+           if(this.num_markers > 0)
+              throw new QueueClosedException("queue has been closed. You can not add more elements. " +
+                                             "Waiting for removal of remaining elements.");
+
+            Object obj;
+            for(Enumeration en=l.elements(); en.hasMoreElements();) {
+                obj=en.nextElement();
                 if(obj != null)
                     addInternal(obj);
             }
