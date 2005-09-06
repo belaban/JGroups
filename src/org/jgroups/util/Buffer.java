@@ -3,7 +3,7 @@ package org.jgroups.util;
 /**
  * Buffer with an offset and length. Will be replaced with NIO equivalent once JDK 1.4 becomes baseline
  * @author Bela Ban
- * @version $Id: Buffer.java,v 1.3 2005/08/26 08:55:55 belaban Exp $
+ * @version $Id: Buffer.java,v 1.4 2005/09/06 09:53:53 belaban Exp $
  */
 public class Buffer {
     byte[] buf;
@@ -40,6 +40,14 @@ public class Buffer {
         this.length=length;
     }
 
+    public Buffer copy() {
+        byte[] new_buf=buf != null? new byte[length] : null;
+        int new_length=new_buf != null? new_buf.length : 0;
+        if(new_buf != null)
+            System.arraycopy(buf, offset, new_buf, 0, length);
+        return new Buffer(new_buf, 0, new_length);
+    }
+
     public String toString() {
         StringBuffer sb=new StringBuffer();
         sb.append(length).append(" bytes");
@@ -47,4 +55,5 @@ public class Buffer {
             sb.append(" (offset=").append(offset).append(")");
         return sb.toString();
     }
+
 }
