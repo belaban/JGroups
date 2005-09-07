@@ -36,7 +36,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.31 2005/09/06 13:17:33 belaban Exp $
+ * @version $Id: TP.java,v 1.32 2005/09/07 13:08:55 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -98,12 +98,6 @@ public abstract class TP extends Protocol {
      * when the real copy arrives - it will be discarded. Useful for Window
      * media (non)sense */
     boolean         loopback=true;
-
-    /** Use a separate queue (plus a dedicated thread) for loopbacks */
-    boolean         loopback_queue=false;
-
-    /** Thread handling the loopback queue */
-    LoopbackHandler loopback_handler=null;
 
 
     /** Discard packets with a different version. Usually minor version differences are okay. Setting this property
@@ -223,8 +217,6 @@ public abstract class TP extends Protocol {
     public String getChannelName() {return channel_name;}
     public boolean isLoopback() {return loopback;}
     public void setLoopback(boolean b) {loopback=b;}
-    public boolean isLoopbackQueue() {return loopback_queue;}
-    public void setLoopbackQueue(boolean b) {loopback_queue=b;}
     public boolean isUseIncomingPacketHandler() {return use_incoming_packet_handler;}
     public boolean isUseOutgoingPacketHandler() {return use_outgoing_packet_handler;}
 
@@ -320,10 +312,6 @@ public abstract class TP extends Protocol {
      * Creates the unicast and multicast sockets and starts the unicast and multicast receiver threads
      */
     public void start() throws Exception {
-        if(loopback_queue) {
-            loopback_handler=new LoopbackHandler();
-            loopback_handler.start();
-        }
         startPacketHandlers();
         passUp(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
     }
@@ -331,9 +319,6 @@ public abstract class TP extends Protocol {
 
     public void stop() {
         stopPacketHandlers();
-        if(loopback_handler != null) {
-            loopback_handler.stop();
-        }
     }
 
 
@@ -436,12 +421,6 @@ public abstract class TP extends Protocol {
             props.remove("loopback");
         }
 
-        str=props.getProperty("loopback_queue");
-        if(str != null) {
-            loopback_queue=Boolean.valueOf(str).booleanValue();
-            props.remove("loopback_queue");
-        }
-
         str=props.getProperty("discard_incompatible_packets");
         if(str != null) {
             discard_incompatible_packets=Boolean.valueOf(str).booleanValue();
@@ -512,11 +491,6 @@ public abstract class TP extends Protocol {
             use_outgoing_packet_handler=true;
         }
 
-        if(loopback_queue && loopback == false) {
-            log.warn("loopback_queue is enabled, but loopback is false: setting loopback to true");
-            loopback=true;
-        }
-
         return true;
     }
 
@@ -583,6 +557,7 @@ public abstract class TP extends Protocol {
         boolean multicast=dest == null || dest.isMulticastAddress();
         if(loopback && (multicast || dest.equals(local_addr))) {
             Message copy=msg.copy();
+
             // copy.removeHeader(name); // we don't remove the header
             copy.setSrc(local_addr);
             // copy.setDest(dest);
@@ -717,48 +692,30 @@ public abstract class TP extends Protocol {
                     msg=bufferToMessage(dis, dest, sender, multicast);
             }
 
+            LinkedList msgs=new LinkedList();
             if(is_message_list) {
-                if(incoming_msg_queue != null) {
-
-                    // discard my own multicast loopback copy
-                    if(loopback) {
-                        if(multicast && sender != null && local_addr.equals(sender)) {
-                            if(trace)
-                                log.trace("discarded own loopback multicast packets");
-                            return;
-                        }
-                    }
-
-                    incoming_msg_queue.addAll(l);
-                }
-                else {
-                    for(Enumeration en=l.elements(); en.hasMoreElements();) {
-                        msg=(Message)en.nextElement();
-                        try {
-                            handleIncomingMessage(msg);
-                        }
-                        catch(Throwable t) {
-                            if(log.isErrorEnabled())
-                                log.error("failed unmarshalling message list", t);
-                        }
-                    }
-                }
+                for(Enumeration en=l.elements(); en.hasMoreElements();)
+                    msgs.add(en.nextElement());
             }
-            else {
-                if(incoming_msg_queue != null) {
-                    // discard my own multicast loopback copy
-                    if(loopback) {
-                        if(multicast && sender != null && local_addr.equals(sender)) {
-                            if(trace)
-                                log.trace("discarded own loopback multicast packet");
-                            return;
-                        }
+            else
+                msgs.add(msg);
+
+            Address src;
+            for(Iterator it=msgs.iterator(); it.hasNext();) {
+                msg=(Message)it.next();
+                src=msg.getSrc();
+                if(loopback) {
+                    if(multicast && src != null && local_addr.equals(src)) {
+                        if(trace)
+                            log.trace("discarded own loopback multicast packets");
+                        it.remove();
                     }
-                    incoming_msg_queue.add(msg);
                 }
                 else
                     handleIncomingMessage(msg);
             }
+            if(loopback)
+                incoming_msg_queue.addAll(msgs);
         }
         catch(Throwable t) {
             if(log.isErrorEnabled())
@@ -1132,6 +1089,7 @@ public abstract class TP extends Protocol {
 
     class IncomingMessageHandler implements Runnable {
         Thread t;
+        int i=0;
 
         public void start() {
             if(t == null || !t.isAlive()) {
@@ -1152,6 +1110,8 @@ public abstract class TP extends Protocol {
             while(incoming_msg_queue != null) {
                 try {
                     msg=(Message)incoming_msg_queue.remove();
+                    if(++i % 1000 == 0)
+                        System.out.println("received " + i);
                     handleIncomingMessage(msg);
                 }
                 catch(QueueClosedException closed_ex) {
@@ -1351,54 +1311,6 @@ public abstract class TP extends Protocol {
                 msgs.clear();
                 num_msgs=0;
             }
-        }
-    }
-
-
-    private class LoopbackHandler implements Runnable {
-        private Queue queue=null;
-        private Thread thread=null;
-
-
-        void add(Event evt) {
-            try {
-                queue.add(evt);
-            }
-            catch(QueueClosedException e) {
-                log.error("failed adding message to queue", e);
-            }
-        }
-
-        void start() {
-            queue=new Queue();
-            thread=new Thread(this, "LoopbackHandler");
-            thread.setDaemon(true);
-            thread.start();
-        }
-
-        void stop() {
-            if(thread != null && thread.isAlive()) {
-                queue.close(false);
-            }
-        }
-
-        public void run() {
-            Event evt;
-            while(thread != null && Thread.currentThread().equals(thread)) {
-                try {
-                    evt=(Event)queue.remove();
-                    passUp(evt);
-                }
-                catch(QueueClosedException e) {
-                    break;
-                }
-                catch(Throwable t) {
-                    if(log.isErrorEnabled())
-                        log.error("failed passing up message", t);
-                }
-            }
-            if(trace)
-                log.trace("LoopbackHandler thread terminated");
         }
     }
 
