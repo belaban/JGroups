@@ -12,14 +12,14 @@ import java.util.*;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: TcpTransport.java,v 1.9 2005/07/26 11:50:21 belaban Exp $
+ * @version $Id: TcpTransport.java,v 1.10 2005/09/07 13:06:51 belaban Exp $
  */
 public class TcpTransport implements Transport {
     Receiver         receiver=null;
     Properties       config=null;
     int              max_receiver_buffer_size=500000;
     int              max_send_buffer_size=500000;
-    List             nodes=new ArrayList();
+    List             nodes;
     ConnectionTable  ct;
     int              srv_port=7777;
     ServerSocket     srv_sock=null;

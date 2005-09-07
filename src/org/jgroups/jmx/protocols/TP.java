@@ -8,7 +8,7 @@ import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: TP.java,v 1.3 2005/08/26 14:19:09 belaban Exp $
+ * @version $Id: TP.java,v 1.4 2005/09/07 13:10:46 belaban Exp $
  */
 public class TP extends org.jgroups.jmx.Protocol implements TPMBean {
     org.jgroups.protocols.TP tp;
@@ -120,14 +120,6 @@ public class TP extends org.jgroups.jmx.Protocol implements TPMBean {
 
     public void setLoopback(boolean b) {
         tp.setLoopback(b);
-    }
-
-    public boolean isLoopbackQueue() {
-        return tp.isLoopbackQueue();
-    }
-
-    public void setLoopbackQueue(boolean b) {
-        tp.setLoopbackQueue(b);
     }
 
     public boolean isUseIncomingPacketHandler() {
