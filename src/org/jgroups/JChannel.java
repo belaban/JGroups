@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.39 2005/08/19 08:41:22 belaban Exp $
+// $Id: JChannel.java,v 1.40 2005/09/07 07:01:55 belaban Exp $
 
 package org.jgroups;
 
@@ -66,7 +66,7 @@ import java.util.Vector;
  * 
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.39 $
+ * @version $Revision: 1.40 $
  */
 public class JChannel extends Channel {
 
@@ -1067,17 +1067,18 @@ public class JChannel extends Channel {
      */
     public void down(Event evt) {
         if(evt == null) return;
+        int type=evt.getType();
 
         // only block for messages; all other events are passed through
         // we use double-checked locking; it is okay to 'lose' one or more messages because block_sending changes
         // to true after an initial false value
-        if(evt.getType() == Event.MSG && block_sending.get().equals(Boolean.TRUE)) {
+        if(type == Event.MSG && block_sending.get().equals(Boolean.TRUE)) {
             if(log.isTraceEnabled()) log.trace("down() blocks because block_sending == true");
             block_sending.waitUntil(Boolean.FALSE);
         }
 
         // handle setting of additional data (kludge, will be removed soon)
-        if(evt.getType() == Event.CONFIG) {
+        if(type == Event.CONFIG) {
             try {
                 Map m=(Map)evt.getArg();
                 if(m != null && m.containsKey("additional_data")) {
