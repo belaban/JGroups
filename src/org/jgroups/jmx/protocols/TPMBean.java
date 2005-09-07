@@ -8,7 +8,7 @@ import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: TPMBean.java,v 1.3 2005/08/26 14:19:09 belaban Exp $
+ * @version $Id: TPMBean.java,v 1.4 2005/09/07 13:10:10 belaban Exp $
  */
 public interface TPMBean extends ProtocolMBean {
     Address getLocalAddress();
@@ -35,8 +35,6 @@ public interface TPMBean extends ProtocolMBean {
     int getIncomingQueueSize();
     boolean isLoopback();
     void setLoopback(boolean b);
-    boolean isLoopbackQueue();
-    void setLoopbackQueue(boolean b);
     boolean isUseIncomingPacketHandler();
     boolean isUseOutgoungPacketHandler();
 }
