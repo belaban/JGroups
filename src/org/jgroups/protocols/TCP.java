@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.29 2005/08/26 12:12:53 belaban Exp $
+// $Id: TCP.java,v 1.30 2005/09/07 12:53:35 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -249,11 +249,11 @@ public class TCP extends TP implements ConnectionTable.Receiver {
             }
         }
 
-        if(dest.equals(local_addr)) {
-            if(!loopback) // if loopback, we discard the message (was already looped back)
-                receive(dest, data, offset, length); // else we loop it back here
-            return;
-        }
+//        if(dest.equals(local_addr)) {
+//            if(!loopback) // if loopback, we discard the message (was already looped back)
+//                receive(dest, data, offset, length); // else we loop it back here
+//            return;
+//        }
         try {
             ct.send(dest, data, offset, length);
         }
