@@ -12,7 +12,6 @@ import java.util.*;
 import java.text.NumberFormat;
 
 /**  You start the test by running this class.
- * Use parameters -Xbatch -Xconcurrentio (Solaris specific)
  * @author Bela Ban (belaban@yahoo.com)
 
  */
@@ -185,7 +184,7 @@ public class Test implements Receiver {
 
     public void receive(Object sender, byte[] payload) {
         if(payload == null || payload.length == 0) {
-            System.err.println("payload is incorrect: " + payload);
+            System.err.println("payload is incorrect (sender=" + sender + "): " + payload);
             return;
         }
 
@@ -203,9 +202,11 @@ public class Test implements Receiver {
 
             switch(d.getType()) {
             case Data.DISCOVERY_REQ:
+                // System.out.println("-- received discovery request");
                 sendDiscoveryResponse();
                 break;
             case Data.DISCOVERY_RSP:
+                // System.out.println("-- received discovery response from " + sender);
                 synchronized(this.members) {
                     if(!this.members.contains(sender)) {
                         this.members.add(sender);
@@ -545,6 +546,7 @@ public class Test implements Receiver {
 
     void sendDiscoveryRequest() throws Exception {
         Data d=new Data(Data.DISCOVERY_REQ);
+        // System.out.println("-- sending discovery request");
         transport.send(null, generatePayload(d, null));
     }
 
@@ -554,6 +556,7 @@ public class Test implements Receiver {
             d2.sender=true;
             d2.num_msgs=Long.parseLong(config.getProperty("num_msgs"));
         }
+        // System.out.println("-- sending discovery response");
         transport.send(null, generatePayload(d2, null));
     }
 
