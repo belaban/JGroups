@@ -13,7 +13,7 @@ import java.util.*;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: TcpTransport.java,v 1.12 2005/09/08 09:24:32 belaban Exp $
+ * @version $Id: TcpTransport.java,v 1.13 2005/09/08 11:44:47 belaban Exp $
  */
 public class TcpTransport implements Transport {
     Receiver         receiver=null;
@@ -134,7 +134,6 @@ public class TcpTransport implements Transport {
                         connections[i]=new Connection(addr);
                         connections[i].createSocket();
                         System.out.println("-- connected to " +addr);
-                        System.out.flush();
                     }
                     catch(ConnectException connect_ex) {
                         System.out.println("-- failed to connect to " +addr);
@@ -191,8 +190,8 @@ public class TcpTransport implements Transport {
 
          void createSocket() throws IOException {
              sock=new Socket(to.getAddress(), to.getPort());
-             // sock.setSendBufferSize(2000000);
-             // sock.setReceiveBufferSize(2000000);
+             sock.setSendBufferSize(2000000);
+             sock.setReceiveBufferSize(2000000);
              out=new DataOutputStream(new BufferedOutputStream(sock.getOutputStream()));
              Util.writeAddress(local_addr, out);
          }
@@ -205,8 +204,9 @@ public class TcpTransport implements Transport {
                  out.writeInt(msg.length);
                  out.write(msg, 0, msg.length);
              }
-             out.flush();
+            out.flush();
          }
+
 
          void close() {
              try {
@@ -233,6 +233,8 @@ public class TcpTransport implements Transport {
             this.sock=sock;
             // sock.setSoTimeout(5000);
             in=new DataInputStream(new BufferedInputStream(sock.getInputStream()));
+            // in=new DataInputStream(sock.getInputStream());
+
             peer_addr=Util.readAddress(in);
             // System.out.println("-- ACCEPTED connection from " + peer_addr);
         }
