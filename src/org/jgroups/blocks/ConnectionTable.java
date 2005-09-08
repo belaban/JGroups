@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.35 2005/09/07 12:58:44 belaban Exp $
+// $Id: ConnectionTable.java,v 1.36 2005/09/08 10:45:27 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -573,6 +573,8 @@ public class ConnectionTable implements Runnable {
                 // bela Sept 7 2006
                 out=new DataOutputStream(new BufferedOutputStream(sock.getOutputStream()));
                 in=new DataInputStream(new BufferedInputStream(sock.getInputStream()));
+
+                // in=new DataInputStream(sock.getInputStream());
             }
             catch(Exception ex) {
                 if(log.isErrorEnabled()) log.error("exception is " + ex);
