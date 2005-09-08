@@ -1,6 +1,6 @@
 #
 # This file contains configuration for the JGroups performance tests (org.jgroups.tests.perf package)
-# $Id: config.txt,v 1.7 2005/09/07 13:16:34 belaban Exp $
+# $Id: config.txt,v 1.8 2005/09/08 07:22:06 belaban Exp $
 #
 
 # Class implementing the org.jgroups.tests.perf.Transport interface
@@ -55,7 +55,7 @@ mcast_port=7500
 # List of hosts in the cluster. Since we don't specify ports, you cannot run multiple TcpTransports
 # on the same machine: each ember has to be run on a separate machine (this may be changed in a next version)
 cluster=127.0.0.1:7800,127.0.0.1:7801
-srv_port=7800
+start_port=7800
 
 
 #################################################
