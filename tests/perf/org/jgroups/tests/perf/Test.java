@@ -1,6 +1,7 @@
 package org.jgroups.tests.perf;
 
 import EDU.oswego.cs.dl.util.concurrent.ConcurrentReaderHashMap;
+import EDU.oswego.cs.dl.util.concurrent.QueuedExecutor;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Version;
@@ -8,8 +9,8 @@ import org.jgroups.util.Util;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
-import java.util.*;
 import java.text.NumberFormat;
+import java.util.*;
 
 /**  You start the test by running this class.
  * @author Bela Ban (belaban@yahoo.com)
@@ -68,6 +69,8 @@ public class Test implements Receiver {
     long            counter=1;
     long            msg_size=1000;
     boolean         jmx=false;
+
+    QueuedExecutor  response_sender;
 
     transient static  NumberFormat f;
 
@@ -163,6 +166,8 @@ public class Test implements Receiver {
         transport.setReceiver(this);
         transport.start();
         local_addr=transport.getLocalAddress();
+
+        response_sender=new QueuedExecutor();
     }
 
     private String printProperties() {
@@ -179,6 +184,9 @@ public class Test implements Receiver {
         if(transport != null) {
             transport.stop();
             transport.destroy();
+        }
+        if(response_sender != null) {
+            response_sender.shutdownNow();
         }
     }
 
@@ -327,6 +335,10 @@ public class Test implements Receiver {
         return all_received;
     }
 
+    boolean receivedFinalResults() {
+        return final_results_received;
+    }
+
 
     void sendMessages() throws Exception {
         long total_msgs=0;
@@ -339,6 +351,7 @@ public class Test implements Receiver {
             buf[k]='.';
         Data d=new Data(Data.DATA);
         byte[] payload=generatePayload(d, buf);
+        System.out.println("-- sending " + num_msgs + " " + msgSize + "b messages");
         for(int i=0; i < num_msgs; i++) {
             transport.send(null, payload);
             total_msgs++;
@@ -539,6 +552,7 @@ public class Test implements Receiver {
                 sendDiscoveryRequest();
                 sendDiscoveryResponse();
             }
+
             heard_from.addAll(members);
             System.out.println("-- members: " + this.members.size());
         }
@@ -551,13 +565,24 @@ public class Test implements Receiver {
     }
 
     void sendDiscoveryResponse() throws Exception {
-        Data d2=new Data(Data.DISCOVERY_RSP);
+        final Data d2=new Data(Data.DISCOVERY_RSP);
         if(sender) {
             d2.sender=true;
             d2.num_msgs=Long.parseLong(config.getProperty("num_msgs"));
         }
-        // System.out.println("-- sending discovery response");
-        transport.send(null, generatePayload(d2, null));
+
+        response_sender.execute(new Runnable() {
+            public void run() {
+                try {
+                    transport.send(null, generatePayload(d2, null));
+                }
+                catch(Exception e) {
+                    log.error("failed sending discovery response", e);
+                }
+            }
+        });
+
+
     }
 
 
@@ -608,7 +633,7 @@ public class Test implements Receiver {
             }
             synchronized(t) {
                 int i=0;
-                while(t.allReceived() == false) {
+                while(t.receivedFinalResults() == false) {
                     t.wait(2000);
 //                    i++;
 //                    if(i > 5 && i % 10 == 0) {
