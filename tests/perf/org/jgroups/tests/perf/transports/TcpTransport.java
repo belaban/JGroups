@@ -13,7 +13,7 @@ import java.util.*;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: TcpTransport.java,v 1.11 2005/09/08 08:28:00 belaban Exp $
+ * @version $Id: TcpTransport.java,v 1.12 2005/09/08 09:24:32 belaban Exp $
  */
 public class TcpTransport implements Transport {
     Receiver         receiver=null;
@@ -149,16 +149,14 @@ public class TcpTransport implements Transport {
 
          // todo: parallelize
          void writeMessage(byte[] msg) throws Exception {
-             synchronized(connections) {
-                 for(int i=0; i < connections.length; i++) {
-                     Connection c=connections[i];
-                     if(c != null) {
-                         try {
-                             c.writeMessage(msg);
-                         }
-                         catch(Exception e) {
-                             // System.err.println("failed sending msg on " + c);
-                         }
+             for(int i=0; i < connections.length; i++) {
+                 Connection c=connections[i];
+                 if(c != null) {
+                     try {
+                         c.writeMessage(msg);
+                     }
+                     catch(Exception e) {
+                         // System.err.println("failed sending msg on " + c);
                      }
                  }
              }
@@ -185,6 +183,7 @@ public class TcpTransport implements Transport {
          Socket sock=null;
          DataOutputStream out;
          InetSocketAddress to;
+         final Object mutex=new Object();
 
          Connection(InetSocketAddress addr) {
              this.to=addr;
@@ -192,21 +191,26 @@ public class TcpTransport implements Transport {
 
          void createSocket() throws IOException {
              sock=new Socket(to.getAddress(), to.getPort());
+             // sock.setSendBufferSize(2000000);
+             // sock.setReceiveBufferSize(2000000);
              out=new DataOutputStream(new BufferedOutputStream(sock.getOutputStream()));
              Util.writeAddress(local_addr, out);
          }
 
          void writeMessage(byte[] msg) throws Exception {
-             if(sock == null) {
-                 createSocket();
+             synchronized(mutex) {
+                 if(sock == null) {
+                     createSocket();
+                 }
+                 out.writeInt(msg.length);
+                 out.write(msg, 0, msg.length);
              }
-             out.writeInt(msg.length);
-             out.write(msg, 0, msg.length);
              out.flush();
          }
 
          void close() {
              try {
+                 out.flush();
                  sock.close();
              }
              catch(Exception ex) {
