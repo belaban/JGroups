@@ -13,7 +13,7 @@ import java.util.*;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: TcpTransport.java,v 1.14 2005/09/08 14:14:50 belaban Exp $
+ * @version $Id: TcpTransport.java,v 1.15 2005/09/08 14:27:35 belaban Exp $
  */
 public class TcpTransport implements Transport {
     Receiver         receiver=null;
@@ -190,8 +190,8 @@ public class TcpTransport implements Transport {
 
          void createSocket() throws IOException {
              sock=new Socket(to.getAddress(), to.getPort());
-             sock.setSendBufferSize(20000000);
-             sock.setReceiveBufferSize(20000000);
+             sock.setSendBufferSize(max_send_buffer_size);
+             sock.setReceiveBufferSize(max_receiver_buffer_size);
              out=new DataOutputStream(new BufferedOutputStream(sock.getOutputStream()));
              Util.writeAddress(local_addr, out);
          }
