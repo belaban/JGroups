@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.55 2005/09/02 11:30:43 belaban Exp $
+// $Id: Util.java,v 1.56 2005/09/09 07:11:19 belaban Exp $
 
 package org.jgroups.util;
 
@@ -20,6 +20,7 @@ import java.net.ServerSocket;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
 import java.util.*;
+import java.text.NumberFormat;
 
 
 /**
@@ -30,6 +31,7 @@ public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
 
     protected static final Log log=LogFactory.getLog(Util.class);
+    private static  NumberFormat f;
 
     // constants
     public static final int MAX_PORT=65535; // highest port allocatable
@@ -45,6 +47,9 @@ public class Util {
         catch (SecurityException ex){
             resolve_dns=false;
         }
+        f=NumberFormat.getNumberInstance();
+        f.setGroupingUsed(false);
+        f.setMaximumFractionDigits(2);
     }
 
 
@@ -772,6 +777,25 @@ public class Util {
         return sb.toString();
     }
 
+    public static String printBytes(long bytes) {
+        double tmp;
+
+        if(bytes < 1000)
+            return bytes + "b";
+        if(bytes < 1000000) {
+            tmp=bytes / 1000.0;
+            return f.format(tmp) + "KB";
+        }
+        if(bytes < 1000000000) {
+            tmp=bytes / 1000000.0;
+            return f.format(tmp) + "MB";
+        }
+        else {
+            tmp=bytes / 1000000000.0;
+            return f.format(tmp) + "GB";
+        }
+    }
+
 
     /**
      Fragments a byte buffer into smaller fragments of (max.) frag_size.
@@ -1323,7 +1347,7 @@ public class Util {
         return tmp;
     }
 
-    
+
 
     public static String shortName(String hostname) {
         int index;

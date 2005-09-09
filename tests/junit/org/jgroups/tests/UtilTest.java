@@ -1,4 +1,4 @@
-// $Id: UtilTest.java,v 1.6 2005/05/25 12:56:09 belaban Exp $
+// $Id: UtilTest.java,v 1.7 2005/09/09 07:11:19 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -35,6 +35,75 @@ public class UtilTest extends TestCase {
     }
 
 
+    public void testPrintBytes() {
+        long num;
+        String s;
+
+        num=1;
+        s=Util.printBytes(num);
+        System.out.println(num + " is " + s);
+        assertEquals("1b", s);
+
+        num=999;
+        s=Util.printBytes(num);
+        System.out.println(num + " is " + s);
+        assertEquals("999b", s);
+
+        num=1000;
+        s=Util.printBytes(num);
+        System.out.println(num + " is " + s);
+        assertEquals("1KB", s);
+
+        num=1001;
+        s=Util.printBytes(num);
+        System.out.println(num + " is " + s);
+        assertEquals("1KB", s);
+
+        num=1010;
+        s=Util.printBytes(num);
+        System.out.println(num + " is " + s);
+        assertEquals("1.01KB", s);
+
+        num=1543;
+        s=Util.printBytes(num);
+        System.out.println(num + " is " + s);
+        assertEquals("1.54KB", s);
+
+        num=10000;
+        s=Util.printBytes(num);
+        System.out.println(num + " is " + s);
+        assertEquals("10KB", s);
+
+        num=150000;
+        s=Util.printBytes(num);
+        System.out.println(num + " is " + s);
+        assertEquals("150KB", s);
+
+        num=150023;
+        s=Util.printBytes(num);
+        System.out.println(num + " is " + s);
+        assertEquals("150.02KB", s);
+
+        num=1200000;
+        s=Util.printBytes(num);
+        System.out.println(num + " is " + s);
+        assertEquals("1.2MB", s);
+
+        num=150000000;
+        s=Util.printBytes(num);
+        System.out.println(num + " is " + s);
+        assertEquals("150MB", s);
+
+        num=150030000;
+        s=Util.printBytes(num);
+        System.out.println(num + " is " + s);
+        assertEquals("150.03MB", s);
+
+        num=1200000000;
+        s=Util.printBytes(num);
+        System.out.println(num + " is " + s);
+        assertEquals("1.2GB", s);
+    }
 
 
     public void testWriteStreamable() throws IOException, IllegalAccessException, InstantiationException {
