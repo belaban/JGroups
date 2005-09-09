@@ -351,7 +351,7 @@ public class Test implements Receiver {
             buf[k]='.';
         Data d=new Data(Data.DATA);
         byte[] payload=generatePayload(d, buf);
-        System.out.println("-- sending " + num_msgs + " " + msgSize + "b messages");
+        System.out.println("-- sending " + num_msgs + " " + Util.printBytes(msgSize) + " messages");
         for(int i=0; i < num_msgs; i++) {
             transport.send(null, payload);
             total_msgs++;
@@ -491,8 +491,29 @@ public class Test implements Receiver {
         return sb.toString();
     }
 
+
+    public String dumpTransportStats() {
+        Map stats=transport.dumpStats();
+        StringBuffer sb=new StringBuffer(128);
+        if(stats != null) {
+            Map.Entry entry;
+            String key;
+            Map value;
+            for(Iterator it=stats.entrySet().iterator(); it.hasNext();) {
+                entry=(Map.Entry)it.next();
+                key=(String)entry.getKey();
+                value=(Map)entry.getValue();
+                sb.append("\n").append(key).append(":\n");
+                for(Iterator it2=value.entrySet().iterator(); it2.hasNext();) {
+                    sb.append(it2.next()).append("\n");
+                }
+            }
+        }
+        return sb.toString();
+    }
+
     private void print(Map stats, StringBuffer sb) {
-        sb.append("\ntransport stats:\n");
+        sb.append("\nTransport stats:\n\n");
         Map.Entry entry;
         Object key, val;
         for(Iterator it=stats.entrySet().iterator(); it.hasNext();) {
@@ -588,7 +609,7 @@ public class Test implements Receiver {
 
     public static void main(String[] args) {
         Properties config=new Properties();
-        boolean sender=false, verbose=false, jmx=false;
+        boolean sender=false, verbose=false, jmx=false, dump_stats=false; // dumps at end of run
         Test t=null;
 
         for(int i=0; i < args.length; i++) {
@@ -620,6 +641,10 @@ public class Test implements Receiver {
                 jmx=true;
                 continue;
             }
+            if("-dump_stats".equals(args[i])) {
+                dump_stats=true;
+                continue;
+            }
             help();
             return;
         }
@@ -635,11 +660,11 @@ public class Test implements Receiver {
                 int i=0;
                 while(t.receivedFinalResults() == false) {
                     t.wait(2000);
-//                    i++;
-//                    if(i > 5 && i % 10 == 0) {
-//                        t.dumpSenders();
-//                    }
                 }
+            }
+            if(dump_stats) {
+                String stats=t.dumpTransportStats();
+                System.out.println("\nTransport statistics:\n" + stats);
             }
             if(t.jmx) {
                 System.out.println("jmx=true: not terminating");
@@ -665,7 +690,7 @@ public class Test implements Receiver {
 
     static void help() {
         System.out.println("Test [-help] ([-sender] | [-receiver]) " +
-                           "[-config <config file>] [-props <stack config>] [-verbose] [-jmx]");
+                           "[-config <config file>] [-props <stack config>] [-verbose] [-jmx] [-dump_stats]");
     }
 
 
