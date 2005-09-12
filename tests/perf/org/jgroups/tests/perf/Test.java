@@ -246,7 +246,10 @@ public class Test implements Receiver {
                 results.put(sender, d.result);
                 heard_from.remove(sender);
                 if(heard_from.size() == 0) {
-                    sendFinalResults();
+                    for(int i=0; i < 3; i++) {
+                        sendFinalResults();
+                        Util.sleep(100);
+                    }
                 }
                 break;
 
