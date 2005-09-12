@@ -1,15 +1,12 @@
-// $Id: McastSenderTest.java,v 1.6 2005/05/30 16:15:11 belaban Exp $
+// $Id: McastSenderTest.java,v 1.7 2005/09/12 13:26:22 belaban Exp $
 
 package org.jgroups.tests;
 
 
 import java.io.DataInputStream;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.MulticastSocket;
-
-
+import java.net.*;
+import java.util.ArrayList;
+import java.util.Enumeration;
 
 
 /**
@@ -20,12 +17,13 @@ import java.net.MulticastSocket;
  test whether IPMCAST works between different subnets.
  @see McastReceiverTest
  @author Bela Ban
- @version $Revision: 1.6 $
+ @version $Revision: 1.7 $
  */
 public class McastSenderTest {
 
     public static void main(String args[]) {
-        MulticastSocket sock;
+        MulticastSocket sock=null;
+        ArrayList sockets=null;
         InetAddress mcast_addr=null, bind_addr=null;
         DatagramPacket packet;
         byte[] buf=new byte[0];
@@ -35,6 +33,7 @@ public class McastSenderTest {
         DataInputStream in;
         AckReceiver ack_receiver=null;
         int port=5555;
+        boolean send_on_all_interfaces=false;
 
 
         try {
@@ -60,6 +59,10 @@ public class McastSenderTest {
                     port=Integer.parseInt(args[++i]);
                     continue;
                 }
+                if("-send_on_all_interfaces".equals(args[i])) {
+                    send_on_all_interfaces=true;
+                    continue;
+                }
                 help();
                 return;
             }
@@ -73,16 +76,35 @@ public class McastSenderTest {
 
 
         try {
-            sock=new MulticastSocket(port);
-            sock.setTimeToLive(ttl);
-            if(bind_addr != null)
-                sock.setInterface(bind_addr);
+            if(send_on_all_interfaces) {
+                sockets=new ArrayList(10);
+                NetworkInterface intf;
+                MulticastSocket s;
+                for(Enumeration en=NetworkInterface.getNetworkInterfaces(); en.hasMoreElements();) {
+                    intf=(NetworkInterface)en.nextElement();
+                    s=new MulticastSocket();
+                    sockets.add(s);
+                    s.setTimeToLive(ttl);
+                    s.setNetworkInterface(intf);
+                    System.out.println("Socket=" + s.getLocalAddress() + ':' + s.getLocalPort() +
+                            ", ttl=" + s.getTimeToLive() + ", bind interface=" + s.getInterface());
+                    ack_receiver=new AckReceiver(s);
+                    ack_receiver.start();
+                }
+            }
+            else {
+                sock=new MulticastSocket();
+                sock.setTimeToLive(ttl);
+                if(bind_addr != null)
+                    sock.setInterface(bind_addr);
 
-            System.out.println("Socket=" + sock.getLocalAddress() + ':' + sock.getLocalPort() +
-                               ", ttl=" + sock.getTimeToLive() + ", bind interface=" + sock.getInterface());
+                System.out.println("Socket=" + sock.getLocalAddress() + ':' + sock.getLocalPort() +
+                        ", ttl=" + sock.getTimeToLive() + ", bind interface=" + sock.getInterface());
+                ack_receiver=new AckReceiver(sock);
+                ack_receiver.start();
+            }
 
-            ack_receiver=new AckReceiver(sock);
-            ack_receiver.start();
+
             in=new DataInputStream(System.in);
             while(true) {
                 System.out.print("> ");
@@ -94,7 +116,15 @@ public class McastSenderTest {
                 }
                 buf=line.getBytes();
                 packet=new DatagramPacket(buf, buf.length, mcast_addr, port);
-                sock.send(packet);
+                if(sock != null) {
+                    sock.send(packet);
+                }
+                else {
+                    for(int i=0; i < sockets.size(); i++) {
+                        MulticastSocket s=(MulticastSocket)sockets.get(i);
+                        s.send(packet);
+                    }
+                }
             }
         }
         catch(Exception e) {
@@ -106,7 +136,8 @@ public class McastSenderTest {
 
     static void help() {
         System.out.println("McastSenderTest [-bind_addr <bind address>] [-help] [-mcast_addr <multicast address>] " +
-                           "[-port <multicast port that receivers are listening on>] [-ttl <time to live for mcast packets>]");
+                "[-port <multicast port that receivers are listening on>] [-ttl <time to live for mcast packets>] " +
+                "[-send_on_all_interfaces]");
     }
 
 
@@ -128,7 +159,7 @@ public class McastSenderTest {
                     sock.receive(packet);
                     System.out.println("<< Received response from " +
                                        packet.getAddress().getHostAddress() + ':' +
-                                       packet.getPort() + ": " + new String(packet.getData()));
+                                       packet.getPort() + ": " + new String(packet.getData(), 0, packet.getLength()));
                 }
                 catch(Exception e) {
                     System.err.println(e);
