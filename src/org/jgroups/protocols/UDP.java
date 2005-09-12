@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.102 2005/08/29 08:09:05 belaban Exp $
+// $Id: UDP.java,v 1.103 2005/09/12 15:18:49 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -330,8 +330,9 @@ public class UDP extends TP implements Runnable {
         DatagramPacket packet=new DatagramPacket(data, offset, length, dest, port);
         try {
             if(mcast) {
-                if(mcast_send_sock != null)
+                if(mcast_send_sock != null) {
                     mcast_send_sock.send(packet);
+                }
                 else {
                     if(mcast_send_sockets != null) {
                         MulticastSocket s;
