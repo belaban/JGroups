@@ -1,4 +1,4 @@
-// $Id: McastSenderTest.java,v 1.7 2005/09/12 13:26:22 belaban Exp $
+// $Id: McastSenderTest.java,v 1.8 2005/09/12 14:03:19 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -17,7 +17,7 @@ import java.util.Enumeration;
  test whether IPMCAST works between different subnets.
  @see McastReceiverTest
  @author Bela Ban
- @version $Revision: 1.7 $
+ @version $Revision: 1.8 $
  */
 public class McastSenderTest {
 
@@ -80,6 +80,7 @@ public class McastSenderTest {
                 sockets=new ArrayList(10);
                 NetworkInterface intf;
                 MulticastSocket s;
+
                 for(Enumeration en=NetworkInterface.getNetworkInterfaces(); en.hasMoreElements();) {
                     intf=(NetworkInterface)en.nextElement();
                     s=new MulticastSocket();
