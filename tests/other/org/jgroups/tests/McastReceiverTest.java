@@ -1,13 +1,10 @@
-// $Id: McastReceiverTest.java,v 1.6 2005/05/30 16:15:11 belaban Exp $
+// $Id: McastReceiverTest.java,v 1.7 2005/09/12 13:26:22 belaban Exp $
 
 package org.jgroups.tests;
 
 
-import java.net.DatagramPacket;
-import java.net.InetAddress;
-import java.net.MulticastSocket;
-
-
+import java.net.*;
+import java.util.Enumeration;
 
 
 /**
@@ -18,18 +15,19 @@ import java.net.MulticastSocket;
  test whether IPMCAST works between different subnets.
  @see McastSenderTest
  @author Bela Ban
- @version $Revision: 1.6 $
+ @version $Revision: 1.7 $
  */
 public class McastReceiverTest {
 
     public static void main(String args[]) {
         MulticastSocket sock;
-        InetAddress mcast_addr=null, bind_addr=null;
+        InetAddress bind_addr=null, mcast_addr=null;
         DatagramPacket packet;
         byte buf[]=null;
         byte[] recv_buf;
         String tmp;
         int port=5555;
+        boolean receive_on_all_interfaces=false;
 
         try {
             for(int i=0; i < args.length; i++) {
@@ -50,6 +48,10 @@ public class McastReceiverTest {
                     port=Integer.parseInt(args[++i]);
                     continue;
                 }
+                if(("-receive_on_all_interfaces".equals(args[i]))) {
+                    receive_on_all_interfaces=true;
+                    continue;
+                }
                 help();
                 return;
             }
@@ -64,18 +66,35 @@ public class McastReceiverTest {
 
         try {
             sock=new MulticastSocket(port);
-            if(bind_addr != null)
-                sock.setInterface(bind_addr);
-            sock.joinGroup(mcast_addr);
+            SocketAddress join_addr=new InetSocketAddress(mcast_addr, port);
+
+
+            if(receive_on_all_interfaces) {
+                NetworkInterface intf;
+                for(Enumeration en=NetworkInterface.getNetworkInterfaces(); en.hasMoreElements();) {
+                    intf=(NetworkInterface)en.nextElement();
+                    sock.joinGroup(join_addr, intf);
+                    System.out.println("joined " + join_addr + " on " + intf.getName());
+                }
+            }
+            else {
+                if(bind_addr != null)
+                    sock.setInterface(bind_addr);
+                sock.joinGroup(join_addr, null);
+            }
+
+
             System.out.println("Socket=" + sock.getLocalAddress() + ':' + sock.getLocalPort() + ", bind interface=" +
                                sock.getInterface());
 
+            int length;
             while(true) {
                 buf=new byte[256];
                 packet=new DatagramPacket(buf, buf.length);
                 sock.receive(packet);
                 recv_buf=packet.getData();
-                System.out.println(new String(recv_buf) + " [sender=" + packet.getAddress().getHostAddress() +
+                length=packet.getLength();
+                System.out.println(new String(recv_buf, 0, length) + " [sender=" + packet.getAddress().getHostAddress() +
                                    ':' + packet.getPort() + ']');
                 byte[] buf2="Hello from Bela".getBytes();
                 DatagramPacket rsp=new DatagramPacket(buf2, buf2.length, packet.getAddress(), packet.getPort());
@@ -92,7 +111,7 @@ public class McastReceiverTest {
 
     static void help() {
         System.out.println("McastSenderTest [-bind_addr <bind address>] [-help] [-mcast_addr <multicast address>] " +
-                           "[-port <port for multicast socket>]");
+                           "[-port <port for multicast socket>] [-receive_on_all_interfaces]");
     }
 
 
