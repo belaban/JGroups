@@ -1,4 +1,4 @@
-// $Id: IpAddress.java,v 1.27 2005/08/26 10:18:48 belaban Exp $
+// $Id: IpAddress.java,v 1.28 2005/09/12 15:19:06 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -85,10 +85,10 @@ public class IpAddress implements Address {
 
 
 
-    public InetAddress  getIpAddress()               {return ip_addr;}
-    public int          getPort()                    {return port;}
+    public final InetAddress  getIpAddress()               {return ip_addr;}
+    public final int          getPort()                    {return port;}
 
-    public boolean      isMulticastAddress() {
+    public final boolean      isMulticastAddress() {
         return ip_addr != null && ip_addr.isMulticastAddress();
     }
 
@@ -96,7 +96,7 @@ public class IpAddress implements Address {
      * Returns the additional_data.
      * @return byte[]
      */
-    public byte[] getAdditionalData() {
+    public final byte[] getAdditionalData() {
         return additional_data;
     }
 
@@ -104,7 +104,7 @@ public class IpAddress implements Address {
      * Sets the additional_data.
      * @param additional_data The additional_data to set
      */
-    public void setAdditionalData(byte[] additional_data) {
+    public final void setAdditionalData(byte[] additional_data) {
         this.additional_data = additional_data;
         size=size();
     }
@@ -115,7 +115,7 @@ public class IpAddress implements Address {
      * Excludes channel_name from comparison.
      * @return 0 for equality, value less than 0 if smaller, greater than 0 if greater.
      */
-    public int compare(IpAddress other) {
+    public final int compare(IpAddress other) {
         return compareTo(other);
     }
 
@@ -129,7 +129,7 @@ public class IpAddress implements Address {
      * @exception java.lang.ClassCastException - if the specified object's type prevents it
      *            from being compared to this Object.
      */
-    public int compareTo(Object o) {
+    public final int compareTo(Object o) {
       int   h1, h2, rc;
 
       if ((o == null) || !(o instanceof IpAddress))
@@ -148,7 +148,7 @@ public class IpAddress implements Address {
 
 
 
-    public boolean equals(Object obj) {
+    public final boolean equals(Object obj) {
         if(obj == null) return false;
         return compareTo(obj) == 0 ? true : false;
     }
@@ -156,7 +156,7 @@ public class IpAddress implements Address {
 
 
 
-    public int hashCode() {
+    public final int hashCode() {
         return ip_addr != null ? ip_addr.hashCode() + port : port;
     }
 
