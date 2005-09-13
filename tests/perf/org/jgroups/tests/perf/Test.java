@@ -55,22 +55,17 @@ public class Test implements Receiver {
 
     List            heard_from=new ArrayList();
 
-    /** Dump info in gnuplot format */
-    boolean         gnuplot_output=false;
-
     boolean         dump_transport_stats=false;
 
     /** Log every n msgs received (if gnuplot_output == true) */
     long            log_interval=1000;
 
-    /** Last time we dumped info */
-    long            last_dump=0;
 
     long            counter=1;
     long            msg_size=1000;
     boolean         jmx=false;
 
-    QueuedExecutor  response_sender;
+    QueuedExecutor  response_sender=new QueuedExecutor();
 
     transient static  NumberFormat f;
 
@@ -133,29 +128,22 @@ public class Test implements Receiver {
         this.num_msgs_expected=num_senders * num_msgs;
         sender=Boolean.valueOf(this.config.getProperty("sender")).booleanValue();
         msg_size=Long.parseLong(this.config.getProperty("msg_size"));
-        String tmp2=this.config.getProperty("gnuplot_output", "false");
-        if(Boolean.valueOf(tmp2).booleanValue())
-            this.gnuplot_output=true;
-        tmp2=this.config.getProperty("dump_transport_stats", "false");
+        String tmp2=this.config.getProperty("dump_transport_stats", "false");
         if(Boolean.valueOf(tmp2).booleanValue())
             this.dump_transport_stats=true;
         tmp2=this.config.getProperty("log_interval");
         if(tmp2 != null)
             log_interval=Long.parseLong(tmp2);
 
-        if(gnuplot_output) {
-            sb=new StringBuffer();
-            sb.append("\n##### msgs_received");
-            sb.append(", free_mem [KB] ");
-            sb.append(", total_mem [KB] ");
-            sb.append(", total_msgs_sec [msgs/sec] ");
-            sb.append(", total_throughput [KB/sec] ");
-            sb.append(", rolling_msgs_sec (last ").append(log_interval).append(" msgs) ");
-            sb.append(" [msgs/sec] ");
-            sb.append(", rolling_throughput (last ").append(log_interval).append(" msgs) ");
-            sb.append(" [KB/sec]\n");
-            if(log.isInfoEnabled()) log.info(sb.toString());
-        }
+        sb=new StringBuffer();
+        sb.append("\n##### msgs_received");
+        sb.append(", current time (in ms)");
+        sb.append(", msgs/sec");
+        sb.append(", throughput/sec [KB]");
+        sb.append(", free_mem [KB] ");
+        sb.append(", total_mem [KB] ");
+        if(log.isInfoEnabled()) log.info(sb.toString());
+
         if(jmx) {
             this.config.setProperty("jmx", "true");
         }
@@ -166,8 +154,6 @@ public class Test implements Receiver {
         transport.setReceiver(this);
         transport.start();
         local_addr=transport.getLocalAddress();
-
-        response_sender=new QueuedExecutor();
     }
 
     private String printProperties() {
@@ -268,7 +254,6 @@ public class Test implements Receiver {
             return;
         if(start == 0) {
             start=System.currentTimeMillis();
-            last_dump=start;
         }
 
         num_msgs_received++;
@@ -467,23 +452,24 @@ public class Test implements Receiver {
 
 
     private String dumpStats(long received_msgs) {
+        double msgs_sec, throughput_sec;
+        long   current;
+
         StringBuffer sb=new StringBuffer();
-        if(gnuplot_output)
-            sb.append(received_msgs).append(' ');
-        else
-            sb.append("\nmsgs_received=").append(received_msgs);
+        sb.append(received_msgs).append(' ');
 
-        if(gnuplot_output)
-            sb.append(Runtime.getRuntime().freeMemory() / 1000.0).append(' ');
-        else
-            sb.append(", free_mem=").append(Runtime.getRuntime().freeMemory() / 1000.0);
+        current=System.currentTimeMillis();
+        sb.append(current).append(' ');
 
-        if(gnuplot_output)
-            sb.append(Runtime.getRuntime().totalMemory() / 1000.0).append(' ');
-        else
-            sb.append(", total_mem=").append(Runtime.getRuntime().totalMemory() / 1000.0).append('\n');
+        msgs_sec=received_msgs / ((current - start) / 1000.0);
+        throughput_sec=msgs_sec * msg_size;
 
-        dumpThroughput(sb, received_msgs);
+        sb.append(f.format(msgs_sec)).append(' ').append(f.format(throughput_sec)).append(' ');
+
+        sb.append(Runtime.getRuntime().freeMemory() / 1000.0).append(' ');
+
+        sb.append(Runtime.getRuntime().totalMemory() / 1000.0);
+
 
         if(dump_transport_stats) {
             Map stats=transport.dumpStats();
@@ -525,43 +511,6 @@ public class Test implements Receiver {
             val=entry.getValue();
             sb.append(key).append(": ").append(val).append("\n");
         }
-    }
-
-    private void dumpThroughput(StringBuffer sb, long received_msgs) {
-        double tmp;
-        long   current=System.currentTimeMillis();
-
-        if(current - start == 0 || current - last_dump == 0)
-            return;
-
-        tmp=(1000 * received_msgs) / (current - start);
-        if(gnuplot_output)
-            sb.append(tmp).append(' ');
-        else
-            sb.append("total_msgs_sec=").append(tmp).append(" [msgs/sec]");
-
-        tmp=(received_msgs * msg_size) / (current - start);
-        if(gnuplot_output)
-            sb.append(tmp).append(' ');
-        else
-            sb.append("\ntotal_throughput=").append(tmp).append(" [KB/sec]");
-
-        tmp=(1000 * log_interval) / (current - last_dump);
-        if(gnuplot_output)
-            sb.append(tmp).append(' ');
-        else {
-            sb.append("\nrolling_msgs_sec (last ").append(log_interval).append(" msgs)=");
-            sb.append(tmp).append(" [msgs/sec]");
-        }
-
-        tmp=(log_interval * msg_size) / (current - last_dump);
-        if(gnuplot_output)
-            sb.append(tmp).append(' ');
-        else {
-            sb.append("\nrolling_throughput (last ").append(log_interval).append(" msgs)=");
-            sb.append(tmp).append(" [KB/sec]\n");
-        }
-        last_dump=current;
     }
 
 
@@ -660,7 +609,6 @@ public class Test implements Receiver {
                 t.sendMessages();
             }
             synchronized(t) {
-                int i=0;
                 while(t.receivedFinalResults() == false) {
                     t.wait(2000);
                 }
