@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.20 2005/08/11 12:43:46 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.21 2005/09/14 08:57:07 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -19,7 +19,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.20 $
+ * @version $Revision: 1.21 $
  */
 public class ClientGmsImpl extends GmsImpl {
     private final Vector  initial_mbrs=new Vector(11);
@@ -115,7 +115,7 @@ public class ClientGmsImpl extends GmsImpl {
                 rsp=(JoinRsp)join_promise.getResult(gms.join_timeout);
 
                 if(rsp == null) {
-                    if(warn) log.warn("join(" + mbr + ") failed, retrying");
+                    if(warn) log.warn("join(" + mbr + ") failed (coord=" + coord + "), retrying");
                 }
                 else {
                     // 1. Install digest
