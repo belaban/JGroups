@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.103 2005/09/12 15:18:49 belaban Exp $
+// $Id: UDP.java,v 1.104 2005/09/14 09:45:41 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -54,7 +54,7 @@ public class UDP extends TP implements Runnable {
     private static BoundedList last_ports_used=null;
 
     /** Maintain a list of local ports opened by DatagramSocket. If this is 0, this option is turned off.
-     * If bind_port is null, then this options will be ignored */
+     * If bind_port is > 0, then this option will be ignored */
     int             num_last_ports=100;
 
     /** IP multicast socket for <em>receiving</em> multicast packets */
