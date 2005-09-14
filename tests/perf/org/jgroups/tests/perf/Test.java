@@ -7,8 +7,7 @@ import org.apache.commons.logging.LogFactory;
 import org.jgroups.Version;
 import org.jgroups.util.Util;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
+import java.io.*;
 import java.text.NumberFormat;
 import java.util.*;
 
@@ -65,6 +64,9 @@ public class Test implements Receiver {
     long            msg_size=1000;
     boolean         jmx=false;
 
+
+    FileWriter      output=null;
+
     QueuedExecutor  response_sender=new QueuedExecutor();
 
     transient static  NumberFormat f;
@@ -77,13 +79,16 @@ public class Test implements Receiver {
 
 
 
-    public void start(Properties c, boolean verbose, boolean jmx) throws Exception {
+    public void start(Properties c, boolean verbose, boolean jmx, String output) throws Exception {
         String          config_file="config.txt";
         BufferedReader  fileReader;
         String          line;
         String          key, val;
         StringTokenizer st;
         Properties      tmp=new Properties();
+
+        if(output != null)
+            this.output=new FileWriter(output, false);
 
         config_file=c.getProperty("config");
         fileReader=new BufferedReader(new FileReader(config_file));
@@ -119,7 +124,7 @@ public class Test implements Receiver {
         sb.append("JGroups version: ").append(Version.printVersion()).append('\n');
         System.out.println("Configuration is: " + sb);
 
-        log.info(sb.toString());
+        output(sb.toString());
 
         props=this.config.getProperty("props");
         num_members=Integer.parseInt(this.config.getProperty("num_members"));
@@ -142,7 +147,7 @@ public class Test implements Receiver {
         sb.append(", throughput/sec [KB]");
         sb.append(", free_mem [KB] ");
         sb.append(", total_mem [KB] ");
-        if(log.isInfoEnabled()) log.info(sb.toString());
+        output(sb.toString());
 
         if(jmx) {
             this.config.setProperty("jmx", "true");
@@ -154,6 +159,19 @@ public class Test implements Receiver {
         transport.setReceiver(this);
         transport.start();
         local_addr=transport.getLocalAddress();
+    }
+
+    private void output(String msg) {
+        // if(log.isInfoEnabled())
+           // log.info(msg);
+        if(this.output != null) {
+            try {
+                this.output.write(msg + "\n");
+                this.output.flush();
+            }
+            catch(IOException e) {
+            }
+        }
     }
 
     private String printProperties() {
@@ -173,6 +191,13 @@ public class Test implements Receiver {
         }
         if(response_sender != null) {
             response_sender.shutdownNow();
+        }
+        if(this.output != null) {
+            try {
+                this.output.close();
+            }
+            catch(IOException e) {
+            }
         }
     }
 
@@ -269,7 +294,7 @@ public class Test implements Receiver {
             System.out.println(new StringBuffer("-- received ").append(num_msgs_received).append(" messages"));
 
         if(counter % log_interval == 0) {
-            if(log.isInfoEnabled()) log.info(dumpStats(counter));
+            output(dumpStats(counter));
         }
 
         MemberInfo info=(MemberInfo)this.senders.get(sender);
@@ -371,29 +396,6 @@ public class Test implements Receiver {
 
 
 
-//    private void dumpResults(Map final_results) {
-//        Object      member;
-//        Map.Entry   entry;
-//        Map         map;
-//        StringBuffer sb=new StringBuffer();
-//        sb.append("\n-- results:\n\n");
-//
-//        for(Iterator it=final_results.entrySet().iterator(); it.hasNext();) {
-//            entry=(Map.Entry)it.next();
-//            member=entry.getKey();
-//            map=(Map)entry.getValue();
-//            sb.append("-- results from ").append(member);
-//            if(member.equals(local_addr))
-//                sb.append(" (myself)");
-//            sb.append(":\n");
-//            dump(map, sb);
-//            sb.append('\n');
-//        }
-//        System.out.println(sb.toString());
-//        if(log.isInfoEnabled()) log.info(sb.toString());
-//    }
-
-
     private void dumpResults(Map final_results) {
         Object      member;
         Map.Entry   entry;
@@ -418,7 +420,7 @@ public class Test implements Receiver {
         sb.append("\ncombined: ").append(f.format(combined_msgs_sec)).
                 append(" msgs/sec averaged over all receivers\n");
         System.out.println(sb.toString());
-        if(log.isInfoEnabled()) log.info(sb.toString());
+        output(sb.toString());
     }
 
 
@@ -563,6 +565,7 @@ public class Test implements Receiver {
         Properties config=new Properties();
         boolean sender=false, verbose=false, jmx=false, dump_stats=false; // dumps at end of run
         Test t=null;
+        String output=null;
 
         for(int i=0; i < args.length; i++) {
             if("-sender".equals(args[i])) {
@@ -597,13 +600,17 @@ public class Test implements Receiver {
                 dump_stats=true;
                 continue;
             }
+            if("-f".equals(args[i])) {
+                output=args[++i];
+                continue;
+            }
             help();
             return;
         }
 
         try {
             t=new Test();
-            t.start(config, verbose, jmx);
+            t.start(config, verbose, jmx, output);
             t.runDiscoveryPhase();
             if(sender) {
                 t.sendMessages();
@@ -641,7 +648,9 @@ public class Test implements Receiver {
 
     static void help() {
         System.out.println("Test [-help] ([-sender] | [-receiver]) " +
-                           "[-config <config file>] [-props <stack config>] [-verbose] [-jmx] [-dump_stats]");
+                "[-config <config file>] " +
+                "[-props <stack config>] [-verbose] [-jmx] " +
+                "[-dump_stats] [-f <filename>]");
     }
 
 
