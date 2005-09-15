@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.22 2005/08/11 12:43:47 belaban Exp $
+// $Id: MERGE2.java,v 1.23 2005/09/15 10:19:05 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -255,7 +255,7 @@ public class MERGE2 extends Protocol {
             Vector coords;
             Vector initial_mbrs;
 
-            if(log.isDebugEnabled()) log.debug("merge task started as I'm the coordinator");
+            // if(log.isDebugEnabled()) log.debug("merge task started as I'm the coordinator");
             while(thread != null && Thread.currentThread().equals(thread)) {
                 interval=computeInterval();
                 Util.sleep(interval);
