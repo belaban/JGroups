@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.36 2005/09/08 10:45:27 belaban Exp $
+// $Id: ConnectionTable.java,v 1.37 2005/09/20 14:32:16 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -234,6 +234,11 @@ public class ConnectionTable implements Runnable {
         if(dest == null) {
             if(log.isErrorEnabled())
                 log.error("destination is null");
+            return;
+        }
+
+        if(data == null) {
+            log.warn("data is null; discarding packet");
             return;
         }
 
