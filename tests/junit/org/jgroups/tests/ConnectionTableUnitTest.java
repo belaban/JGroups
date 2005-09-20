@@ -1,4 +1,4 @@
-// $Id: ConnectionTableUnitTest.java,v 1.5 2005/07/04 18:07:00 belaban Exp $
+// $Id: ConnectionTableUnitTest.java,v 1.6 2005/09/20 14:31:48 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -23,8 +23,10 @@ public class ConnectionTableUnitTest extends TestCase {
     protected void setUp() throws Exception {
         super.setUp();
         ct1=new ConnectionTable(port1);
+        ct1.setUseSendQueues(false);
         log("address of ct1: " + ct1.getLocalAddress());
         ct2=new ConnectionTable(port2);
+        ct2.setUseSendQueues(false);
         log("address of ct2: " + ct2.getLocalAddress());
     }
 
@@ -52,8 +54,6 @@ public class ConnectionTableUnitTest extends TestCase {
     public void testSendEmptyData() throws Exception {
         byte[]  data=new byte[0];
         Address myself=ct1.getLocalAddress();
-
-        ct1.setUseSendQueues(false);
         ct1.send(myself, data, 0, data.length);
     }
 
@@ -67,12 +67,12 @@ public class ConnectionTableUnitTest extends TestCase {
         long       NUM=1000, total_time;
         Address    myself=ct1.getLocalAddress();
         MyReceiver r=new MyReceiver(ct1, NUM, false);
+        byte[]     data=new byte[] {'b', 'e', 'l', 'a'};
 
         ct1.setReceiver(r);
-        ct1.setUseSendQueues(false);
 
         for(int i=0; i < NUM; i++) {
-            ct1.send(myself, null, 0, 0);
+            ct1.send(myself, data, 0, 0);
         }
         log("sent " + NUM + " msgs");
         r.waitForCompletion();
@@ -87,12 +87,12 @@ public class ConnectionTableUnitTest extends TestCase {
         long       NUM=1000, total_time;
         Address    other=ct2.getLocalAddress();
         MyReceiver r=new MyReceiver(ct2, NUM, false);
+        byte[]     data=new byte[] {'b', 'e', 'l', 'a'};
 
         ct2.setReceiver(r);
-        // ct1.setUseSendQueues(false);
 
         for(int i=0; i < NUM; i++) {
-            ct1.send(other, null, 0, 0);
+            ct1.send(other, data, 0, 0);
         }
         log("sent " + NUM + " msgs");
         r.waitForCompletion();
@@ -109,12 +109,13 @@ public class ConnectionTableUnitTest extends TestCase {
         Address    other=ct2.getLocalAddress();
         MyReceiver r1=new MyReceiver(ct1, NUM, false);
         MyReceiver r2=new MyReceiver(ct2, NUM, true); // send response
+        byte[]     data=new byte[] {'b', 'e', 'l', 'a'};
 
         ct1.setReceiver(r1);
         ct2.setReceiver(r2);
 
         for(int i=0; i < NUM; i++) {
-            ct1.send(other, null, 0, 0);
+            ct1.send(other, data, 0, 0);
         }
         log("sent " + NUM + " msgs");
         r1.waitForCompletion();
