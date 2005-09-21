@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.56 2005/09/09 07:11:19 belaban Exp $
+// $Id: Util.java,v 1.57 2005/09/21 07:54:59 belaban Exp $
 
 package org.jgroups.util;
 
@@ -13,10 +13,7 @@ import org.jgroups.protocols.pbcast.NakAckHeader;
 import org.jgroups.stack.IpAddress;
 
 import java.io.*;
-import java.net.BindException;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.ServerSocket;
+import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
 import java.util.*;
@@ -1527,6 +1524,18 @@ public class Util {
     }
 
 
+    public static InetAddress getFirstNonLoopbackAddress() throws SocketException {
+        Enumeration en=NetworkInterface.getNetworkInterfaces();
+        while(en.hasMoreElements()) {
+            NetworkInterface i=(NetworkInterface)en.nextElement();
+            for(Enumeration en2=i.getInetAddresses(); en2.hasMoreElements();) {
+                InetAddress addr=(InetAddress)en2.nextElement();
+                if(!addr.isLoopbackAddress())
+                    return addr;
+            }
+        }
+        return null;
+    }
 
 
     /*
