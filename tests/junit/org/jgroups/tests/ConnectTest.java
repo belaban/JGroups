@@ -1,4 +1,4 @@
-// $Id: ConnectTest.java,v 1.4 2005/05/30 16:15:05 belaban Exp $
+// $Id: ConnectTest.java,v 1.5 2005/09/21 07:55:36 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -21,7 +21,7 @@ public class ConnectTest extends TestCase {
     final int TIMES=10;
 
 
-    String props="UDP(mcast_addr=228.8.8.8;mcast_port=45566;ip_ttl=32;" +
+    String props="UDP(bind_addr=127.0.0.1;mcast_addr=228.8.8.8;mcast_port=45566;ip_ttl=32;" +
             "mcast_send_buf_size=150000;mcast_recv_buf_size=80000):" +
             "PING(timeout=2000;num_initial_members=3):" +
             "MERGE2(min_interval=5000;max_interval=10000):" +
@@ -105,6 +105,9 @@ public class ConnectTest extends TestCase {
         View view=channel.getView();
         assertEquals(1, view.size());
         assertTrue(view.containsMember(channel.getLocalAddress()));
+        channel.close();
+        System.out.println("Remaining threads are:");
+        Util.printThreads();
     }
 
 

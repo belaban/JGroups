@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.104 2005/09/14 09:45:41 belaban Exp $
+// $Id: UDP.java,v 1.105 2005/09/21 07:55:36 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -423,10 +423,14 @@ public class UDP extends TP implements Runnable {
         // CHANGED *BACK* by bela March 13 2003: binding to all interfaces did not result in a correct
         // local_addr. As a matter of fact, comparison between e.g. 0.0.0.0:1234 (on hostA) and
         // 0.0.0.0:1.2.3.4 (on hostB) would fail !
+//        if(bind_addr == null) {
+//            InetAddress[] interfaces=InetAddress.getAllByName(InetAddress.getLocalHost().getHostAddress());
+//            if(interfaces != null && interfaces.length > 0)
+//                bind_addr=interfaces[0];
+//        }
+
         if(bind_addr == null) {
-            InetAddress[] interfaces=InetAddress.getAllByName(InetAddress.getLocalHost().getHostAddress());
-            if(interfaces != null && interfaces.length > 0)
-                bind_addr=interfaces[0];
+            bind_addr=Util.getFirstNonLoopbackAddress();
         }
         if(bind_addr == null)
             bind_addr=InetAddress.getLocalHost();
