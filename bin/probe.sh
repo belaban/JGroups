@@ -6,7 +6,7 @@
 
 BIN=`dirname $0`
 
-CLASSPATH=$BIN/../classes
+CLASSPATH=$BIN/../classes:$CLASSPATH
 
 # OS specific support (must be 'true' or 'false').
 cygwin=false;
@@ -22,5 +22,4 @@ else
    CP=$CLASSPATH
 fi
 
-
-java -cp $CP org.jgroups.tests.Probe $*
+java org.jgroups.tests.Probe $*
