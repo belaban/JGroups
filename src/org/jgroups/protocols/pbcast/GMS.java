@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.36 2005/08/11 12:43:46 belaban Exp $
+// $Id: GMS.java,v 1.37 2005/09/22 05:40:39 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -6,10 +6,9 @@ package org.jgroups.protocols.pbcast;
 import org.jgroups.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.BoundedList;
+import org.jgroups.util.Streamable;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
-import org.jgroups.util.Streamable;
-import org.apache.commons.logging.Log;
 
 import java.io.*;
 import java.util.*;
@@ -371,8 +370,8 @@ public class GMS extends Protocol {
         if(view_id != null) {
             rc=vid.compareTo(view_id);
             if(rc <= 0) {
-                if(log.isDebugEnabled())
-                    log.debug("[" + local_addr + "] received view <= current view;" +
+                if(log.isTraceEnabled())
+                    log.trace("[" + local_addr + "] received view <= current view;" +
                               " discarding it (current vid: " + view_id + ", new vid: " + vid + ')');
                 return;
             }
