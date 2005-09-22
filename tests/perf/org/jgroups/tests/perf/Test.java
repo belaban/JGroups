@@ -353,7 +353,7 @@ public class Test implements Receiver {
     }
 
 
-    void sendMessages() throws Exception {
+    void sendMessages(long interval) throws Exception {
         long total_msgs=0;
         int msgSize=Integer.parseInt(config.getProperty("msg_size"));
         int num_msgs=Integer.parseInt(config.getProperty("num_msgs"));
@@ -371,6 +371,8 @@ public class Test implements Receiver {
             if(total_msgs % log_interval == 0) {
                 System.out.println("++ sent " + total_msgs);
             }
+            if(interval > 0)
+                Util.sleep(interval);
         }
     }
 
@@ -566,6 +568,7 @@ public class Test implements Receiver {
         boolean sender=false, verbose=false, jmx=false, dump_stats=false; // dumps at end of run
         Test t=null;
         String output=null;
+        long interval=0;
 
         for(int i=0; i < args.length; i++) {
             if("-sender".equals(args[i])) {
@@ -600,6 +603,10 @@ public class Test implements Receiver {
                 dump_stats=true;
                 continue;
             }
+            if("-interval".equals(args[i])) {
+                interval=Long.parseLong(args[++i]);
+                continue;
+            }
             if("-f".equals(args[i])) {
                 output=args[++i];
                 continue;
@@ -613,7 +620,7 @@ public class Test implements Receiver {
             t.start(config, verbose, jmx, output);
             t.runDiscoveryPhase();
             if(sender) {
-                t.sendMessages();
+                t.sendMessages(interval);
             }
             synchronized(t) {
                 while(t.receivedFinalResults() == false) {
@@ -650,7 +657,7 @@ public class Test implements Receiver {
         System.out.println("Test [-help] ([-sender] | [-receiver]) " +
                 "[-config <config file>] " +
                 "[-props <stack config>] [-verbose] [-jmx] " +
-                "[-dump_stats] [-f <filename>]");
+                "[-dump_stats] [-f <filename>] [-interval <ms between sends>]");
     }
 
 
