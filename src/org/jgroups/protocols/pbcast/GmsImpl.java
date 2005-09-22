@@ -1,4 +1,4 @@
-// $Id: GmsImpl.java,v 1.9 2005/08/11 12:43:46 belaban Exp $
+// $Id: GmsImpl.java,v 1.10 2005/09/22 07:19:03 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -51,8 +51,8 @@ public abstract class GmsImpl {
 
 
     protected void wrongMethod(String method_name) {
-        if(log.isErrorEnabled())
-            log.error(method_name + "() should not be invoked on an instance of " + getClass().getName());
+        if(log.isWarnEnabled())
+            log.warn(method_name + "() should not be invoked on an instance of " + getClass().getName());
     }
 
 
