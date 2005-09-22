@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.21 2005/09/14 08:57:07 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.22 2005/09/22 07:07:11 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -19,7 +19,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.21 $
+ * @version $Revision: 1.22 $
  */
 public class ClientGmsImpl extends GmsImpl {
     private final Vector  initial_mbrs=new Vector(11);
@@ -172,7 +172,6 @@ public class ClientGmsImpl extends GmsImpl {
     }
 
     public void unsuspect(Address mbr) {
-        wrongMethod("unsuspect");
     }
 
 
@@ -219,7 +218,6 @@ public class ClientGmsImpl extends GmsImpl {
 
     /** Returns immediately. Clients don't handle suspect() requests */
     public void handleSuspect(Address mbr) {
-        wrongMethod("handleSuspect");
     }
 
 
