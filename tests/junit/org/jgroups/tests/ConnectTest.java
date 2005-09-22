@@ -1,4 +1,4 @@
-// $Id: ConnectTest.java,v 1.5 2005/09/21 07:55:36 belaban Exp $
+// $Id: ConnectTest.java,v 1.6 2005/09/22 15:17:12 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -21,8 +21,9 @@ public class ConnectTest extends TestCase {
     final int TIMES=10;
 
 
-    String props="UDP(bind_addr=127.0.0.1;mcast_addr=228.8.8.8;mcast_port=45566;ip_ttl=32;" +
-            "mcast_send_buf_size=150000;mcast_recv_buf_size=80000):" +
+    String props="UDP(mcast_addr=228.8.8.8;mcast_port=45566;ip_ttl=32;" +
+            "mcast_send_buf_size=150000;mcast_recv_buf_size=80000;" +
+            "enable_bundling=true;use_incoming_packet_handler=true;loopback=true):" +
             "PING(timeout=2000;num_initial_members=3):" +
             "MERGE2(min_interval=5000;max_interval=10000):" +
             "FD_SOCK:" +
@@ -34,22 +35,6 @@ public class ConnectTest extends TestCase {
             "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
             "shun=true;print_local_addr=false)";
 
-
-
-    /*
-    String props= "UDP:" +
-  	"PING(timeout=2000;num_initial_members=3):" +
-  	"FD(timeout=5000):" +
-  	"VERIFY_SUSPECT(timeout=1500):" +
-  	"MERGE:" +
-  	"NAKACK:" +
-  	"UNICAST(timeout=5000):" +
-  	"FRAG:" +
-  	"FLUSH:" +
-  	"GMS:" +
-  	"STATE_TRANSFER:" +
-  	"QUEUE:VIEW_ENFORCER";
-    */
 
 
     public ConnectTest(String name) {
@@ -80,7 +65,6 @@ public class ConnectTest extends TestCase {
             channel.disconnect();
             System.out.println("-- disconnected --");
         }
-        
     }
 
 
@@ -92,7 +76,6 @@ public class ConnectTest extends TestCase {
         System.out.print("Closing channel: ");
         channel.close();
         System.out.println("-- closed --");
-        channel.close();
         System.out.println("Remaining threads are:");
         Util.printThreads();
     }
@@ -136,6 +119,9 @@ public class ConnectTest extends TestCase {
         assertTrue(view.containsMember(channel.getLocalAddress()));
         assertTrue(view.containsMember(coordinator.getLocalAddress()));
         coordinator.close();
+        channel.close();
+        System.out.println("Remaining threads are:");
+        Util.printThreads();
     }
 
 
@@ -165,6 +151,9 @@ public class ConnectTest extends TestCase {
         assertEquals("payload", msg.getObject());
         ppa.stop();
         coordinator.close();
+        channel.close();
+        System.out.println("Remaining threads are:");
+        Util.printThreads();
     }
 
 
