@@ -1,4 +1,4 @@
-// $Id: QueueTest.java,v 1.16 2005/09/06 12:44:15 belaban Exp $
+// $Id: QueueTest.java,v 1.17 2005/09/22 13:07:03 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -74,6 +74,29 @@ public class QueueTest extends TestCase {
         catch(Exception x) {
             System.out.println(x);
             assertTrue(false);
+        }
+    }
+
+
+    public void testCloseWithoutFlush() {
+        queue.close(false);
+        try {
+            queue.remove();
+            fail("we should have gotten a QueueClosedException trying to remove an element from a closed queue");
+        }
+        catch(QueueClosedException e) {
+            assertTrue("queue is closed, this is okay", queue.closed());
+        }
+    }
+
+    public void testCloseWithFlush() {
+        queue.close(true);
+        try {
+            queue.remove();
+            fail("we should have gotten a QueueClosedException trying to remove an element from a closed queue");
+        }
+        catch(QueueClosedException e) {
+            assertTrue("queue is closed, this is okay", queue.closed());
         }
     }
 
