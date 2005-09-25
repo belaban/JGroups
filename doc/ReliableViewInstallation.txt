@@ -3,14 +3,14 @@ Reliable view installation
 ==========================
 
 Author: Bela Ban
-Version: $Id: ReliableViewInstallation.txt,v 1.1 2005/09/25 08:34:58 belaban Exp $
+Version: $Id: ReliableViewInstallation.txt,v 1.2 2005/09/25 09:10:56 belaban Exp $
 
 The default stack sees view as just messages; a view multicast is retransmitted until the sender is excluded because
 it left or crashed. However, this behavior can lead to problems described below. The problems occur when a view
 multicast is lost.
 
 
-A: new coordinator doesn't take over
+A: New coordinator doesn't take over
 ------------------------------------
 - Group is {A,B,C}, A is coordinator
 - A leaves gracefully, multicasts view V2 {B,C}
@@ -31,7 +31,7 @@ Problem 2:
   never arrives. If the mode is GET_ALL and timeout is 0, then this call will block forever !
 
 
-B: continuous SUSPECT messages
+B: Continuous SUSPECT messages
 ------------------------------
 - Group is {A,B,C}, A is coordinator
 - A leaves gracefully, multicasts view V2 {B,C}
@@ -49,6 +49,13 @@ Problem:
   never arrives. If the mode is GET_ALL and timeout is 0, then this call will block forever !
 
 
+C: New coordinator doesn't take over, old coord crashes
+-------------------------------------------------------
+- Same as case A, but old coordinator crashes before V2 can be retransmitted to B
+- So B doesn't receive V2
+
+
+
 SOLUTION:
 
 1: Views need to be ack'ed
@@ -56,12 +63,23 @@ SOLUTION:
 - When multicasting a view, we block until every member in that view has acknowledged the view reception
 - Because GMS runs above both UNICAST and NAKACK, we *don't* need to retransmit, but we cannot terminate (as in case A),
   before having received an ACK for the view from each member in the new view
+  --> This solves case A
 
 2: Handling crashes of the coordinator while multicasting a view
 ----------------------------------------------------------------
 - If the coordinator crashes before having received all ACKs, some members might still not receive the new view.
   (This is highly unlikely though)
-- If we therefore receive a SUSPECT(P) where P is not member of the current view
+- If we therefore receive a SUSPECT(P) where P is not member of the current view, we multicast the current view V
+  to the group. Those member who already installed V will simply ignore it, those who didn't will install it
+  --> This solves case B
+- The STABLE protocol periodically multicasts digests. We now add the current view to the digest.
+- When the coordinator receives a view V that is greater than its own view, it installs V and multicasts it
+  - Member who didn't install V will install it
+  - Member who installed V will ignore it
+- When the coordinator receives a view V which is smaller than its current view V-curr, it will multicast
+  V-curr, so that those members who didn't install V-curr (and therfore sent V with their digest) will install V-curr.
+- When the coordinator receives a view V which is identical to the current view V-curr, it doesn't do anything
+--> This solves case C
 
 
 
