@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.37 2005/09/22 05:40:39 belaban Exp $
+// $Id: GMS.java,v 1.38 2005/09/25 13:35:32 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -639,7 +639,7 @@ public class GMS extends Protocol {
 
     /**
      This method is overridden to avoid hanging on getDigest(): when a JOIN is received, the coordinator needs
-     to retrieve the digest from the PBCAST layer. It therefore sends down a GET_DIGEST event, to which the PBCAST layer
+     to retrieve the digest from the NAKACK layer. It therefore sends down a GET_DIGEST event, to which the NAKACK layer
      responds with a GET_DIGEST_OK event.<p>
      However, the GET_DIGEST_OK event will not be processed because the thread handling the JOIN request won't process
      the GET_DIGEST_OK event until the JOIN event returns. The receiveUpEvent() method is executed by the up-handler
