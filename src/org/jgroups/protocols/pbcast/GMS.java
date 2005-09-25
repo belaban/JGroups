@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.38 2005/09/25 13:35:32 belaban Exp $
+// $Id: GMS.java,v 1.39 2005/09/25 14:05:32 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -317,13 +317,8 @@ public class GMS extends Protocol {
 
         // next view: current mbrs + new_mbrs - old_mbrs - suspected_mbrs
         new_view=getNextView(new_mbrs, old_mbrs, suspected_mbrs);
-        castViewChange(new_view);
-        return new_view;
-    }
-
-
-    public void castViewChange(View new_view) {
         castViewChange(new_view, null);
+        return new_view;
     }
 
 
@@ -798,7 +793,7 @@ public class GMS extends Protocol {
 
         // 4. Bcast the new view
         if(join_rsp != null)
-            castViewChange(join_rsp.getView());
+            castViewChange(join_rsp.getView(), null);
     }
 
 
