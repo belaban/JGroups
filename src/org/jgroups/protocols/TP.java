@@ -36,7 +36,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.38 2005/09/21 07:55:36 belaban Exp $
+ * @version $Id: TP.java,v 1.39 2005/09/25 09:49:37 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -97,7 +97,7 @@ public abstract class TP extends Protocol {
      * looped back immediately, multicast messages get a local copy first and -
      * when the real copy arrives - it will be discarded. Useful for Window
      * media (non)sense */
-    boolean         loopback=true;
+    boolean         loopback=false;
 
 
     /** Discard packets with a different version. Usually minor version differences are okay. Setting this property
@@ -285,16 +285,20 @@ public abstract class TP extends Protocol {
     /*------------------------------ Protocol interface ------------------------------ */
 
 
-
-    public void init() throws Exception {
+    /**
+     * Creates the unicast and multicast sockets and starts the unicast and multicast receiver threads
+     */
+    public void start() throws Exception {
         if(use_incoming_packet_handler) {
             incoming_packet_queue=new Queue();
             incoming_packet_handler=new IncomingPacketHandler();
+            incoming_packet_handler.start();
         }
 
         if(loopback) {
             incoming_msg_queue=new Queue();
             incoming_msg_handler=new IncomingMessageHandler();
+            incoming_msg_handler.start();
         }
 
         if(use_outgoing_packet_handler) {
@@ -304,21 +308,28 @@ public abstract class TP extends Protocol {
             }
             else
                 outgoing_packet_handler=new OutgoingPacketHandler();
+            outgoing_packet_handler.start();
         }
-    }
 
-
-    /**
-     * Creates the unicast and multicast sockets and starts the unicast and multicast receiver threads
-     */
-    public void start() throws Exception {
-        startPacketHandlers();
         passUp(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
     }
 
 
     public void stop() {
-        stopPacketHandlers();
+
+        // 1. Stop the outgoing packet handler thread
+        if(outgoing_packet_handler != null)
+            outgoing_packet_handler.stop();
+
+
+        // 2. Stop the incoming packet handler thread
+        if(incoming_packet_handler != null)
+            incoming_packet_handler.stop();
+
+
+        // 3. Finally stop the incoming message handler
+        if(incoming_msg_handler != null)
+            incoming_msg_handler.stop();
     }
 
 
@@ -579,6 +590,9 @@ public abstract class TP extends Protocol {
                 outgoing_queue.add(msg);
             else
                 send(msg, dest, multicast);
+        }
+        catch(QueueClosedException closed_ex) {
+            ; // ignore
         }
         catch(Throwable e) {
             if(log.isErrorEnabled()) log.error("failed sending message", e);
@@ -897,38 +911,6 @@ public abstract class TP extends Protocol {
 
 
     /**
-     * Starts the packet handlers
-     */
-    private void startPacketHandlers() throws Exception {
-        if(use_outgoing_packet_handler)
-            outgoing_packet_handler.start();
-
-        if(use_incoming_packet_handler)
-            incoming_packet_handler.start();
-
-        if(incoming_msg_handler != null)
-            incoming_msg_handler.start();
-    }
-
-
-    /**
-     * Stops the packet handlers
-     */
-    private void stopPacketHandlers() {
-        // 1. Stop the in_packet_handler thread
-        if(incoming_packet_handler != null)
-            incoming_packet_handler.stop();
-
-        // 2. Stop the outgoing packet handler thread
-        if(outgoing_packet_handler != null)
-            outgoing_packet_handler.stop();
-
-        // 3. Finally stop the incoming message handler
-        if(incoming_msg_handler != null)
-            incoming_msg_handler.stop();
-    }
-
-    /**
      *
      * @param s
      * @return List<NetworkInterface>
@@ -1059,24 +1041,6 @@ public abstract class TP extends Protocol {
     class IncomingPacketHandler implements Runnable {
         Thread t=null;
 
-        public void run() {
-            IncomingQueueEntry entry;
-            while(incoming_packet_queue != null) {
-                try {
-                    entry=(IncomingQueueEntry)incoming_packet_queue.remove();
-                    handleIncomingPacket(entry.dest, entry.sender, entry.buf, entry.offset, entry.length);
-                }
-                catch(QueueClosedException closed_ex) {
-                    if(trace) log.trace("packet_handler thread terminating");
-                    break;
-                }
-                catch(Throwable ex) {
-                    if(log.isErrorEnabled())
-                    log.error("error processing incoming packet", ex);
-                }
-            }
-        }
-
         void start() {
             if(t == null || !t.isAlive()) {
                 t=new Thread(this, "TP.IncomingPacketHandler thread");
@@ -1086,9 +1050,26 @@ public abstract class TP extends Protocol {
         }
 
         void stop() {
-            if(incoming_packet_queue != null)
-                incoming_packet_queue.close(false); // should terminate the packet_handler thread too
+            incoming_packet_queue.close(true); // should terminate the packet_handler thread too
             t=null;
+        }
+
+        public void run() {
+            IncomingQueueEntry entry;
+            while(!incoming_packet_queue.closed() && Thread.currentThread().equals(t)) {
+                try {
+                    entry=(IncomingQueueEntry)incoming_packet_queue.remove();
+                    handleIncomingPacket(entry.dest, entry.sender, entry.buf, entry.offset, entry.length);
+                }
+                catch(QueueClosedException closed_ex) {
+                    break;
+                }
+                catch(Throwable ex) {
+                    if(log.isErrorEnabled())
+                        log.error("error processing incoming packet", ex);
+                }
+            }
+            if(trace) log.trace("incoming packet handler terminating");
         }
     }
 
@@ -1107,28 +1088,26 @@ public abstract class TP extends Protocol {
 
 
         public void stop() {
-            if(incoming_msg_queue != null)
-                incoming_msg_queue.close(false);
+            incoming_msg_queue.close(true);
+            t=null;
         }
 
         public void run() {
             Message msg;
-            while(incoming_msg_queue != null) {
+            while(!incoming_msg_queue.closed() && Thread.currentThread().equals(t)) {
                 try {
                     msg=(Message)incoming_msg_queue.remove();
-                    // if(++i % 1000 == 0)
-                      //  System.out.println("received " + i);
                     handleIncomingMessage(msg);
                 }
                 catch(QueueClosedException closed_ex) {
-                    if(trace) log.trace("message handler thread terminating");
                     break;
                 }
                 catch(Throwable ex) {
                     if(log.isErrorEnabled())
-                    log.error("error processing incoming message", ex);
+                        log.error("error processing incoming message", ex);
                 }
             }
+            if(trace) log.trace("incoming message handler terminating");
         }
     }
 
@@ -1142,10 +1121,23 @@ public abstract class TP extends Protocol {
         byte[]             buf;
         DatagramPacket     packet;
 
+        void start() {
+            if(t == null || !t.isAlive()) {
+                t=new Thread(this, "TP.OutgoingPacketHandler thread");
+                t.setDaemon(true);
+                t.start();
+            }
+        }
+
+        void stop() {
+            outgoing_queue.close(true); // should terminate the packet_handler thread too
+            t=null;
+        }
+
         public void run() {
             Message msg;
 
-            while(outgoing_queue != null && outgoing_packet_handler != null) {
+            while(!outgoing_queue.closed() && Thread.currentThread().equals(t)) {
                 try {
                     msg=(Message)outgoing_queue.remove();
                     handleMessage(msg);
@@ -1158,7 +1150,7 @@ public abstract class TP extends Protocol {
                 }
                 msg=null; // let's give the poor garbage collector a hand...
             }
-            if(trace) log.trace("packet_handler thread terminating");
+            if(trace) log.trace("outgoing message handler terminating");
         }
 
         protected void handleMessage(Message msg) throws Throwable {
@@ -1167,19 +1159,6 @@ public abstract class TP extends Protocol {
         }
 
 
-        void start() {
-            if(t == null || !t.isAlive()) {
-                t=new Thread(this, "TP.OutgoingPacketHandler thread");
-                t.setDaemon(true);
-                t.start();
-            }
-        }
-
-        void stop() {
-            if(outgoing_queue != null)
-                outgoing_queue.close(false); // should terminate the packet_handler thread too
-            t=null;
-        }
     }
 
 
@@ -1211,6 +1190,10 @@ public abstract class TP extends Protocol {
             t.setName("TP.BundlingOutgoingPacketHandler thread");
         }
 
+        void stop() {
+            // bundleAndSend();
+            super.stop();
+        }
 
         public void run() {
             Message msg;
@@ -1239,6 +1222,7 @@ public abstract class TP extends Protocol {
                     }
                 }
                 catch(QueueClosedException queue_closed_ex) {
+                    bundleAndSend();
                     break;
                 }
                 catch(TimeoutException timeout_ex) {
