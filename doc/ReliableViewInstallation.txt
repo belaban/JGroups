@@ -3,7 +3,7 @@ Reliable view installation
 ==========================
 
 Author: Bela Ban
-Version: $Id: ReliableViewInstallation.txt,v 1.2 2005/09/25 09:10:56 belaban Exp $
+Version: $Id: ReliableViewInstallation.txt,v 1.3 2005/09/25 13:41:13 belaban Exp $
 
 The default stack sees view as just messages; a view multicast is retransmitted until the sender is excluded because
 it left or crashed. However, this behavior can lead to problems described below. The problems occur when a view
@@ -79,7 +79,9 @@ SOLUTION:
 - When the coordinator receives a view V which is smaller than its current view V-curr, it will multicast
   V-curr, so that those members who didn't install V-curr (and therfore sent V with their digest) will install V-curr.
 - When the coordinator receives a view V which is identical to the current view V-curr, it doesn't do anything
---> This solves case C
+- Note that, if the received view is greater than the current view, every member checks whether it would be the
+  new coordinator. If this is the case, it becomes coordinator, installs the view and multicasts it
+--> This solves cases A, B and C
 
 
 
