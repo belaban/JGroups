@@ -3,7 +3,7 @@ Reliable view installation
 ==========================
 
 Author: Bela Ban
-Version: $Id: ReliableViewInstallation.txt,v 1.3 2005/09/25 13:41:13 belaban Exp $
+Version: $Id: ReliableViewInstallation.txt,v 1.4 2005/09/25 14:04:53 belaban Exp $
 
 The default stack sees view as just messages; a view multicast is retransmitted until the sender is excluded because
 it left or crashed. However, this behavior can lead to problems described below. The problems occur when a view
@@ -83,6 +83,31 @@ SOLUTION:
   new coordinator. If this is the case, it becomes coordinator, installs the view and multicasts it
 --> This solves cases A, B and C
 
+
+DESIGN:
+
+On castViewChange(View v) [coord]:
+----------------------------------
+- Reset view_change_mutex
+- Populate missing_acks list with contents of v
+- Multicast v
+- Block on view_change_mutex (possibly with timeout (0 == wait forever))
+
+On SUSPECT(P) / on VIEW_ACK(P) [coord]:
+---------------------------------------
+- Remove P from missing_acks
+- If missing_acks is empty --> notify view_change_mutex
+- Neeeds to be done in receiveUpEvent(), real work is then done in up()
+
+On VIEW(v) [all]:
+-----------------
+- Send VIEW_ACK to coordinator
+- Neeeds to be done in receiveUpEvent(), real work is then done in up()
+
+
+On JOIN_RSP [client]:
+---------------------
+- Send VIEW_ACK to coordinator
 
 
 
