@@ -1,4 +1,4 @@
-// $Id: AckCollectorTest.java,v 1.1 2005/09/26 08:39:43 belaban Exp $
+// $Id: AckCollectorTest.java,v 1.2 2005/09/26 11:25:05 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -15,6 +15,7 @@ import java.util.List;
 public class AckCollectorTest extends TestCase {
     List l=new ArrayList(5);
     AckCollector ac;
+    private List new_list=new ArrayList(3);
 
     public AckCollectorTest(String name) {
         super(name);
@@ -28,12 +29,16 @@ public class AckCollectorTest extends TestCase {
         l.add("four");
         l.add("five");
         ac=new AckCollector(l);
+        new_list.add("six");
+        new_list.add("seven");
+        new_list.add("eight");
     }
 
 
     public void tearDown() throws Exception {
         super.tearDown();
         l.clear();
+        new_list.clear();
     }
 
     public void testConstructor() {
@@ -131,6 +136,51 @@ public class AckCollectorTest extends TestCase {
         catch(TimeoutException e) {
             assertTrue("we should get a timeout exception here", true);
         }
+    }
+
+
+    public void testReset() {
+        new Thread() {
+            public void run() {
+                Util.sleep(500);
+                System.out.println("resetting AckCollector");
+                ac.reset(new_list);
+                System.out.println("reset AckCollector: " + ac);
+            }
+        }.start();
+        System.out.println("initial AckCollector: " + ac);
+        try {
+            ac.waitForAllAcks(1000);
+            fail("needs to throw TimeoutException");
+        }
+        catch(TimeoutException e) {
+            assertTrue("expected TimeoutException", e != null);
+        }
+        System.out.println("new AckCollector: " + ac);
+    }
+
+
+    public void testReset2() throws TimeoutException {
+        new Thread() {
+            public void run() {
+                Util.sleep(500);
+                System.out.println("resetting AckCollector");
+                ac.reset(new_list);
+                System.out.println("reset AckCollector: " + ac);
+                Util.sleep(100);
+                ac.ack("six");
+                System.out.println("AckCollector: " + ac);
+                Util.sleep(100);
+                ac.ack("seven");
+                System.out.println("AckCollector: " + ac);
+                Util.sleep(100);
+                ac.ack("eight");
+                System.out.println("AckCollector: " + ac);
+            }
+        }.start();
+        System.out.println("initial AckCollector: " + ac);
+        ac.waitForAllAcks(2000);
+        System.out.println("new AckCollector: " + ac);
     }
 
 
