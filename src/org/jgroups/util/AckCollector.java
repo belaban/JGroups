@@ -6,7 +6,7 @@ import java.util.ArrayList;
 
 /**
  * @author Bela Ban
- * @version $Id: AckCollector.java,v 1.1 2005/09/26 08:39:31 belaban Exp $
+ * @version $Id: AckCollector.java,v 1.2 2005/09/26 11:25:20 belaban Exp $
  */
 public class AckCollector {
     /** List<Object>: list of members from whom we haven't received an ACK yet */
@@ -15,6 +15,13 @@ public class AckCollector {
 
     public AckCollector(java.util.List l) {
         missing_acks=new ArrayList(l);
+    }
+
+    public void reset(java.util.List l) {
+        missing_acks.clear();
+        if(l != null)
+            missing_acks.addAll(l);
+        all_acks_received.reset();
     }
 
     public int size() {
