@@ -3,7 +3,7 @@ Reliable view installation
 ==========================
 
 Author: Bela Ban
-Version: $Id: ReliableViewInstallation.txt,v 1.4 2005/09/25 14:04:53 belaban Exp $
+Version: $Id: ReliableViewInstallation.txt,v 1.5 2005/09/26 07:29:50 belaban Exp $
 
 The default stack sees view as just messages; a view multicast is retransmitted until the sender is excluded because
 it left or crashed. However, this behavior can lead to problems described below. The problems occur when a view
@@ -108,6 +108,24 @@ On VIEW(v) [all]:
 On JOIN_RSP [client]:
 ---------------------
 - Send VIEW_ACK to coordinator
+
+
+
+Two-Phase View installation
+----------------------------
+- First phase: coord multicasts PREPARE_VIEW(V)
+- Coord waits for all ACKs
+- If SUSPECT(P) is received, coord creates new view V (excluding P) and restarts first phase
+- When all ACKs have been received, coord multicasts COMMIT_VIEW(V)
+- When a participant receives the PREPARE_VIEW, it starts a timer. When the COMMIT_VIEW(V) is received,
+  the timer is cancelled. When the timer expires in participant R, we multicast a STATUS_VIEW(V). If a participant
+  has received the COMMIT_VIEW(V) message for the given view, it multicasts the COMMIT_VIEW(V) again, so that R
+  can commit (= install) V.
+- If the coordinator crashed before multicasting the COMMIT_VIEW, the SUSPECT(coord) message will make the
+  second-in-line the new coordinator, and it will either restart the first or second phase
+- If the coordinator crashed after sending the COMMIT_VIEW, and at least 1 member M received the COMMIT_VIEW, M will
+  be able to multicast COMMIT_VIEW when asked by other participants. If no member received COMMIT_VIEW, then this is
+  treated as if COMMIT_VIEW was never sent, and the new coordinator will restart the first and second phase
 
 
 
