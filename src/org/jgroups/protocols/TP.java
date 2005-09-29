@@ -36,7 +36,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.39 2005/09/25 09:49:37 belaban Exp $
+ * @version $Id: TP.java,v 1.40 2005/09/29 08:47:28 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -82,6 +82,8 @@ public abstract class TP extends Protocol {
 
     /** The members of this group (updated when a member joins or leaves) */
     final Vector    members=new Vector(11);
+
+    View            view=null;
 
     /** Pre-allocated byte stream. Used for marshalling messages. Will grow as needed */
     final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(1024);
@@ -266,7 +268,20 @@ public abstract class TP extends Protocol {
 
     private void handleDiagnosticProbe(Address sender) {
         try {
-            byte[] diag_rsp=getInfo().getBytes();
+            String info=getInfo();
+            if(info == null) info="";
+            Channel ch=stack.getChannel();
+            if(ch != null) {
+                Map m=ch.dumpStats();
+                StringBuffer sb=new StringBuffer();
+                sb.append("stats:\n");
+                for(Iterator it=m.entrySet().iterator(); it.hasNext();) {
+                    sb.append(it.next()).append("\n");
+                }
+                info+=sb.toString();
+            }
+
+            byte[] diag_rsp=info.getBytes();
             if(log.isDebugEnabled())
                 log.debug("sending diag response to " + sender);
             sendToSingleMember(sender, diag_rsp, 0, diag_rsp.length);
@@ -970,8 +985,9 @@ public abstract class TP extends Protocol {
         case Event.TMP_VIEW:
         case Event.VIEW_CHANGE:
             synchronized(members) {
+                view=(View)evt.getArg();
                 members.clear();
-                Vector tmpvec=((View)evt.getArg()).getMembers();
+                Vector tmpvec=view.getMembers();
                 members.addAll(tmpvec);
             }
             break;
@@ -1043,7 +1059,7 @@ public abstract class TP extends Protocol {
 
         void start() {
             if(t == null || !t.isAlive()) {
-                t=new Thread(this, "TP.IncomingPacketHandler thread");
+                t=new Thread(this, "IncomingPacketHandler");
                 t.setDaemon(true);
                 t.start();
             }
@@ -1080,7 +1096,7 @@ public abstract class TP extends Protocol {
 
         public void start() {
             if(t == null || !t.isAlive()) {
-                t=new Thread(this, "TP.IncomingMessageHandler");
+                t=new Thread(this, "IncomingMessageHandler");
                 t.setDaemon(true);
                 t.start();
             }
@@ -1123,7 +1139,7 @@ public abstract class TP extends Protocol {
 
         void start() {
             if(t == null || !t.isAlive()) {
-                t=new Thread(this, "TP.OutgoingPacketHandler thread");
+                t=new Thread(this, "OutgoingPacketHandler");
                 t.setDaemon(true);
                 t.start();
             }
@@ -1187,7 +1203,7 @@ public abstract class TP extends Protocol {
         void start() {
             init();
             super.start();
-            t.setName("TP.BundlingOutgoingPacketHandler thread");
+            t.setName("BundlingOutgoingPacketHandler");
         }
 
         void stop() {
