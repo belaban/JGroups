@@ -1,4 +1,4 @@
-// $Id: ProtocolStack.java,v 1.23 2005/09/21 09:50:39 belaban Exp $
+// $Id: ProtocolStack.java,v 1.24 2005/09/29 12:10:03 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -53,6 +53,10 @@ public class ProtocolStack extends Protocol implements Transport {
 
     }
 
+
+    public Channel getChannel() {
+        return channel;
+    }
 
     /** Returns all protocols in a list, from top to bottom. <em>These are not copies of protocols,
      so modifications will affect the actual instances !</em> */
@@ -124,6 +128,45 @@ public class ProtocolStack extends Protocol implements Transport {
                 prot=prot.getDownProtocol();
             }
         }
+
+        return sb.toString();
+    }
+
+    public String printProtocolSpecAsXML() {
+        StringBuffer sb=new StringBuffer();
+        Protocol     prot=bottom_prot;
+        Properties   tmpProps;
+        String       name;
+        Map.Entry    entry;
+        int len, max_len=30;
+
+        sb.append("<config>\n");
+        while(prot != null) {
+            name=prot.getName();
+            if(name != null) {
+                if("ProtocolStack".equals(name))
+                    break;
+                sb.append("  <").append(name).append(" ");
+                tmpProps=prot.getProperties();
+                if(tmpProps != null) {
+                    len=name.length();
+                    String s;
+                    for(Iterator it=tmpProps.entrySet().iterator(); it.hasNext();) {
+                        entry=(Map.Entry)it.next();
+                        s=entry.getKey() + "=\"" + entry.getValue() + "\" ";
+                        if(len + s.length() > max_len) {
+                            sb.append("\n       ");
+                            len=8;
+                        }
+                        sb.append(s);
+                        len+=s.length();
+                    }
+                }
+                sb.append("/>\n");
+                prot=prot.getUpProtocol();
+            }
+        }
+        sb.append("</config>");
 
         return sb.toString();
     }
