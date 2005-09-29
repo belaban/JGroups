@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.57 2005/09/21 07:54:59 belaban Exp $
+// $Id: Util.java,v 1.58 2005/09/29 10:20:50 belaban Exp $
 
 package org.jgroups.util;
 
@@ -17,6 +17,7 @@ import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
 import java.util.*;
+import java.util.List;
 import java.text.NumberFormat;
 
 
@@ -1536,6 +1537,17 @@ public class Util {
         }
         return null;
     }
+
+    public static List getAllAvailableInterfaces() throws SocketException {
+        List retval=new ArrayList(10);
+        NetworkInterface intf;
+        for(Enumeration en=NetworkInterface.getNetworkInterfaces(); en.hasMoreElements();) {
+            intf=(NetworkInterface)en.nextElement();
+            retval.add(intf);
+        }
+        return retval;
+    }
+
 
 
     /*
