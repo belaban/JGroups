@@ -1,4 +1,4 @@
-// $Id: RouterTest.java,v 1.9 2005/07/05 08:38:59 belaban Exp $
+// $Id: RouterTest.java,v 1.10 2005/09/29 16:08:26 belaban Exp $
 
 package org.jgroups.tests.stack;
 
@@ -28,7 +28,7 @@ import java.util.Random;
  * may timeout.
  *
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Revision: 1.9 $
+ * @version $Revision: 1.10 $
  * @since 2.2.1
  */
 public class RouterTest extends TestCase {
@@ -524,8 +524,8 @@ public class RouterTest extends TestCase {
         Thread.sleep(1000);
 
         // send a series of stress routing requests to all members
-        final int count=50000; // total number of messages to be sent
-        int timeout=120; // nr of secs to wait for all messages to arrrive
+        final int count=20000; // total number of messages to be sent
+        int timeout=50; // nr of secs to wait for all messages to arrrive
 
         final boolean[] received=new boolean[count];
         for(int i=0; i < count; i++) {
@@ -545,7 +545,7 @@ public class RouterTest extends TestCase {
                         dosOne.writeInt(buffer.length);
                         dosOne.write(buffer, 0, buffer.length);
                         dosOne.flush();
-                        if(i % 10000 == 0)
+                        if(i % 2000 == 0)
                             System.out.println("--sent " + i);
                     }
                     catch(Exception e) {
@@ -569,7 +569,7 @@ public class RouterTest extends TestCase {
                         int index=((Integer)msg.getObject()).intValue();
                         received[index]=true;
                         cnt++;
-                        if(cnt % 10000 == 0)
+                        if(cnt % 2000 == 0)
                             System.out.println("-- received " + cnt);
                     }
                     catch(Exception e) {
@@ -631,8 +631,6 @@ public class RouterTest extends TestCase {
         System.exit(0);
     }
 
-    static void log(String msg) {
-        
-    }
+
 
 }

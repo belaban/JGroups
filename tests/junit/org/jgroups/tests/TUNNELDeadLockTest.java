@@ -1,4 +1,4 @@
-// $Id: TUNNELDeadLockTest.java,v 1.8 2005/05/30 16:15:05 belaban Exp $
+// $Id: TUNNELDeadLockTest.java,v 1.9 2005/09/29 16:11:04 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -23,7 +23,7 @@ import java.net.Socket;
  * under heavy load.
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
- * @version $Revision: 1.8 $
+ * @version $Revision: 1.9 $
  * @see TUNNELDeadLockTest#testStress
  */
 public class TUNNELDeadLockTest extends TestCase {
@@ -33,7 +33,7 @@ public class TUNNELDeadLockTest extends TestCase {
     private volatile int receivedCnt;
 
     // the total number of the messages pumped down the channel
-    private int msgCount=30000;
+    private int msgCount=20000;
     // the message payload size (in bytes);
     private int payloadSize=32;
     // the time (in ms) the main thread waits for all the messages to arrive,
@@ -111,7 +111,7 @@ public class TUNNELDeadLockTest extends TestCase {
                         Object o=channel.receive(10000);
                         if(o instanceof Message) {
                             receivedCnt++;
-                            if(receivedCnt % 5000 == 0)
+                            if(receivedCnt % 2000 == 0)
                                 System.out.println("-- received " + receivedCnt);
                             if(receivedCnt == msgCount) {
                                 // let the main thread know I got all msgs
@@ -138,7 +138,7 @@ public class TUNNELDeadLockTest extends TestCase {
                 try {
                     for(int i=0; i < msgCount; i++) {
                         channel.send(null, null, new byte[payloadSize]);
-                        if(i % 5000 == 0)
+                        if(i % 2000 == 0)
                             System.out.println("-- sent " + i);
                     }
                 }
