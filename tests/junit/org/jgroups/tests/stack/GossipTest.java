@@ -1,4 +1,4 @@
-// $Id: GossipTest.java,v 1.4 2004/07/13 01:45:24 ovidiuf Exp $
+// $Id: GossipTest.java,v 1.5 2005/09/29 16:55:07 belaban Exp $
 
 package org.jgroups.tests.stack;
 
@@ -25,7 +25,7 @@ import java.util.Vector;
  * USE_ROUTER to false;
  *
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Revision: 1.4 $
+ * @version $Revision: 1.5 $
  * @since 2.2.1
  */
 public class GossipTest extends TestCase {
@@ -255,7 +255,7 @@ public class GossipTest extends TestCase {
         assertEquals(GossipData.GET_RSP, gres.getType());
         assertEquals(groupName, gres.getGroup());
         mbrs=gres.getMbrs();
-        assertEquals(0, mbrs.size());
+        assertTrue(mbrs == null || mbrs.size() == 0);
 
         oos.close();
         ois.close();
