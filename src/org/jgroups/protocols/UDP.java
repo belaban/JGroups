@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.105 2005/09/21 07:55:36 belaban Exp $
+// $Id: UDP.java,v 1.106 2005/09/29 12:24:06 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -291,11 +291,7 @@ public class UDP extends TP implements Runnable {
 
     public String getInfo() {
         StringBuffer sb=new StringBuffer();
-        sb.append(local_addr).append(" (").append(channel_name).append(')');
-        sb.append(" [").append(mcast_addr_name).append(':').append(mcast_port).append("]\n");
-        sb.append("Version=").append(Version.description).append(", cvs=\"").append(Version.cvs).append("\"\n");
-        sb.append("bound to ").append(bind_addr).append(':').append(bind_port).append('\n');
-        sb.append("members: ").append(members).append('\n');
+        sb.append("group_addr=").append(mcast_addr_name).append(':').append(mcast_port).append("\n");
         return sb.toString();
     }
 
@@ -477,7 +473,7 @@ public class UDP extends TP implements Runnable {
                 if(receive_interfaces != null)
                     interfaces=receive_interfaces;
                 else
-                    interfaces=getAllAvailableInterfaces();
+                    interfaces=Util.getAllAvailableInterfaces();
                 bindToInterfaces(interfaces, mcast_recv_sock, mcast_addr.getIpAddress());
             }
             else {
@@ -493,7 +489,7 @@ public class UDP extends TP implements Runnable {
                 if(send_interfaces != null)
                     interfaces=send_interfaces;
                 else
-                    interfaces=getAllAvailableInterfaces();
+                    interfaces=Util.getAllAvailableInterfaces();
                 mcast_send_sockets=new MulticastSocket[interfaces.size()];
                 int index=0;
                 for(Iterator it=interfaces.iterator(); it.hasNext();) {
@@ -573,15 +569,6 @@ public class UDP extends TP implements Runnable {
         }
     }
 
-    private List getAllAvailableInterfaces() throws SocketException {
-        List retval=new ArrayList(10);
-        NetworkInterface intf;
-        for(Enumeration en=NetworkInterface.getNetworkInterfaces(); en.hasMoreElements();) {
-            intf=(NetworkInterface)en.nextElement();
-            retval.add(intf);
-        }
-        return retval;
-    }
 
 
     /** Creates a DatagramSocket with a random port. Because in certain operating systems, ports are reused,

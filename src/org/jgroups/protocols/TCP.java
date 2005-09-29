@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.30 2005/09/07 12:53:35 belaban Exp $
+// $Id: TCP.java,v 1.31 2005/09/29 12:24:37 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -6,7 +6,6 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
-import org.jgroups.Version;
 import org.jgroups.blocks.ConnectionTable;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.BoundedList;
@@ -270,10 +269,6 @@ public class TCP extends TP implements ConnectionTable.Receiver {
 
     public String getInfo() {
         StringBuffer sb=new StringBuffer();
-        sb.append(local_addr).append(" (").append(channel_name).append(')');
-        sb.append("Version=").append(Version.description).append(", cvs=\"").append(Version.cvs).append("\"\n");
-        sb.append("bound to ").append(bind_addr).append(':').append(bind_port).append('\n');
-        sb.append("members: ").append(members).append('\n');
         sb.append("connections: ").append(printConnections()).append("\n");
         return sb.toString();
     }
