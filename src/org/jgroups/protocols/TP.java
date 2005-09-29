@@ -8,6 +8,7 @@ import org.jgroups.util.List;
 import org.jgroups.util.Queue;
 
 import java.io.DataInputStream;
+import java.io.IOException;
 import java.net.*;
 import java.util.*;
 
@@ -36,7 +37,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.40 2005/09/29 08:47:28 belaban Exp $
+ * @version $Id: TP.java,v 1.41 2005/09/29 12:23:25 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -151,6 +152,11 @@ public abstract class TP extends Protocol {
     /** Enabled bundling of smaller messages into bigger ones */
     boolean enable_bundling=false;
 
+    DiagnosticsHandler diag_handler=null;
+    boolean enable_diagnostics=true;
+    String diagnostics_addr="224.0.0.75";
+    int    diagnostics_port=7500;
+
 
     /** HashMap<Address, Address>. Keys=senders, values=destinations. For each incoming message M with sender S, adds
      * an entry with key=S and value= sender's IP address and port.
@@ -264,27 +270,54 @@ public abstract class TP extends Protocol {
     public abstract void postUnmarshallingList(Message msg, Address dest, boolean multicast);
 
 
+    private String _getInfo() {
+        StringBuffer sb=new StringBuffer();
+        sb.append(local_addr).append(" (").append(channel_name).append(") ").append("\n");
+        sb.append("local_addr=").append(local_addr).append("\n");
+        sb.append("group_name=").append(channel_name).append("\n");
+        sb.append("Version=").append(Version.description).append(", cvs=\"").append(Version.cvs).append("\"\n");
+        sb.append("view: ").append(view).append('\n');
+        sb.append(getInfo());
+        return sb.toString();
+    }
 
 
-    private void handleDiagnosticProbe(Address sender) {
+    private void handleDiagnosticProbe(SocketAddress sender, DatagramSocket sock, String request) {
         try {
-            String info=getInfo();
-            if(info == null) info="";
-            Channel ch=stack.getChannel();
-            if(ch != null) {
-                Map m=ch.dumpStats();
-                StringBuffer sb=new StringBuffer();
-                sb.append("stats:\n");
-                for(Iterator it=m.entrySet().iterator(); it.hasNext();) {
-                    sb.append(it.next()).append("\n");
+            StringTokenizer tok=new StringTokenizer(request);
+            String req=tok.nextToken();
+            String info="n/a";
+            if(req.trim().toLowerCase().startsWith("query")) {
+                ArrayList l=new ArrayList(tok.countTokens());
+                while(tok.hasMoreTokens())
+                    l.add(tok.nextToken().trim().toLowerCase());
+
+                info=_getInfo();
+
+                if(l.contains("jmx")) {
+                    if(info == null) info="";
+                    Channel ch=stack.getChannel();
+                    if(ch != null) {
+                        Map m=ch.dumpStats();
+                        StringBuffer sb=new StringBuffer();
+                        sb.append("stats:\n");
+                        for(Iterator it=m.entrySet().iterator(); it.hasNext();) {
+                            sb.append(it.next()).append("\n");
+                        }
+                        info+=sb.toString();
+                    }
                 }
-                info+=sb.toString();
+                if(l.contains("props")) {
+                    String p=stack.printProtocolSpecAsXML();
+                    info+="\nprops:\n" + p;
+                }
             }
+
 
             byte[] diag_rsp=info.getBytes();
             if(log.isDebugEnabled())
                 log.debug("sending diag response to " + sender);
-            sendToSingleMember(sender, diag_rsp, 0, diag_rsp.length);
+            sendResponse(sock, sender, diag_rsp);
         }
         catch(Throwable t) {
             if(log.isErrorEnabled())
@@ -292,6 +325,10 @@ public abstract class TP extends Protocol {
         }
     }
 
+    private void sendResponse(DatagramSocket sock, SocketAddress sender, byte[] buf) throws IOException {
+        DatagramPacket p=new DatagramPacket(buf, 0, buf.length, sender);
+        sock.send(p);
+    }
 
     /* ------------------------------------------------------------------------------- */
 
@@ -304,6 +341,11 @@ public abstract class TP extends Protocol {
      * Creates the unicast and multicast sockets and starts the unicast and multicast receiver threads
      */
     public void start() throws Exception {
+        if(enable_diagnostics) {
+            diag_handler=new DiagnosticsHandler();
+            diag_handler.start();
+        }
+
         if(use_incoming_packet_handler) {
             incoming_packet_queue=new Queue();
             incoming_packet_handler=new IncomingPacketHandler();
@@ -331,6 +373,10 @@ public abstract class TP extends Protocol {
 
 
     public void stop() {
+        if(diag_handler != null) {
+            diag_handler.stop();
+            diag_handler=null;
+        }
 
         // 1. Stop the outgoing packet handler thread
         if(outgoing_packet_handler != null)
@@ -511,6 +557,24 @@ public abstract class TP extends Protocol {
             props.remove("use_addr_translation");
         }
 
+        str=props.getProperty("enable_diagnostics");
+        if(str != null) {
+            enable_diagnostics=Boolean.valueOf(str).booleanValue();
+            props.remove("enable_diagnostics");
+        }
+
+        str=props.getProperty("diagnostics_addr");
+        if(str != null) {
+            diagnostics_addr=str;
+            props.remove("diagnostics_addr");
+        }
+
+        str=props.getProperty("diagnostics_port");
+        if(str != null) {
+            diagnostics_port=Integer.parseInt(str);
+            props.remove("diagnostics_port");
+        }
+
         if(enable_bundling) {
             if(use_outgoing_packet_handler == false)
                 if(warn) log.warn("enable_bundling is true; setting use_outgoing_packet_handler=true");
@@ -647,12 +711,12 @@ public abstract class TP extends Protocol {
     protected final void receive(Address dest, Address sender, byte[] data, int offset, int length) {
         if(data == null) return;
 
-        if(length == 4) {  // received a diagnostics probe
-            if(data[offset] == 'd' && data[offset+1] == 'i' && data[offset+2] == 'a' && data[offset+3] == 'g') {
-                handleDiagnosticProbe(sender);
-                return;
-            }
-        }
+//        if(length == 4) {  // received a diagnostics probe
+//            if(data[offset] == 'd' && data[offset+1] == 'i' && data[offset+2] == 'a' && data[offset+3] == 'g') {
+//                handleDiagnosticProbe(sender);
+//                return;
+//            }
+//        }
 
         boolean mcast=dest == null || dest.isMulticastAddress();
         if(trace){
@@ -1316,6 +1380,62 @@ public abstract class TP extends Protocol {
             finally {
                 msgs.clear();
                 num_msgs=0;
+            }
+        }
+    }
+
+
+    private class DiagnosticsHandler implements Runnable {
+        Thread t=null;
+        MulticastSocket diag_sock=null;
+
+        DiagnosticsHandler() {
+        }
+
+        void start() throws IOException {
+            diag_sock=new MulticastSocket(diagnostics_port);
+            java.util.List interfaces=Util.getAllAvailableInterfaces();
+            bindToInterfaces(interfaces, diag_sock);
+
+            if(t == null || !t.isAlive()) {
+                t=new Thread(this, "DiagnosticsHandler");
+                t.setDaemon(true);
+                t.start();
+            }
+        }
+
+        void stop() {
+            if(diag_sock != null)
+                diag_sock.close();
+            t=null;
+        }
+
+        public void run() {
+            byte[] buf=new byte[1500]; // MTU on most LANs
+            DatagramPacket packet;
+            while(!diag_sock.isClosed() && Thread.currentThread().equals(t)) {
+                packet=new DatagramPacket(buf, 0, buf.length);
+                try {
+                    diag_sock.receive(packet);
+                    handleDiagnosticProbe(packet.getSocketAddress(), diag_sock,
+                                          new String(packet.getData(), packet.getOffset(), packet.getLength()));
+                }
+                catch(IOException e) {
+                }
+            }
+        }
+
+        private void bindToInterfaces(java.util.List interfaces, MulticastSocket s) throws IOException {
+            SocketAddress group_addr=new InetSocketAddress(diagnostics_addr, diagnostics_port);
+            for(Iterator it=interfaces.iterator(); it.hasNext();) {
+                NetworkInterface i=(NetworkInterface)it.next();
+                for(Enumeration en2=i.getInetAddresses(); en2.hasMoreElements();) {
+                    InetAddress addr=(InetAddress)en2.nextElement();
+                    s.joinGroup(group_addr, i);
+                    if(trace)
+                        log.trace("joined " + group_addr + " on interface " + i.getName() + " (" + addr + ")");
+                    break;
+                }
             }
         }
     }
