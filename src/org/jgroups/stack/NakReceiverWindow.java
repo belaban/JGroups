@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindow.java,v 1.25 2005/07/18 14:26:47 belaban Exp $
+// $Id: NakReceiverWindow.java,v 1.26 2005/09/29 07:33:53 belaban Exp $
 
 
 package org.jgroups.stack;
@@ -722,6 +722,8 @@ public class NakReceiverWindow {
             try {max=(Long)delivered_msgs.lastKey();}  catch(NoSuchElementException ex) {}
         }
         sb.append('[').append(min).append(" - ").append(max).append(']');
+        if(min != null && max != null)
+            sb.append(" (size=" + max.longValue() - min.longValue() + ")");
         return sb.toString();
     }
 
