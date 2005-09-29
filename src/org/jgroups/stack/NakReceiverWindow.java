@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindow.java,v 1.26 2005/09/29 07:33:53 belaban Exp $
+// $Id: NakReceiverWindow.java,v 1.27 2005/09/29 08:33:14 belaban Exp $
 
 
 package org.jgroups.stack;
@@ -723,7 +723,7 @@ public class NakReceiverWindow {
         }
         sb.append('[').append(min).append(" - ").append(max).append(']');
         if(min != null && max != null)
-            sb.append(" (size=" + max.longValue() - min.longValue() + ")");
+            sb.append(" (size=" + (max.longValue() - min.longValue()) + ")");
         return sb.toString();
     }
 
