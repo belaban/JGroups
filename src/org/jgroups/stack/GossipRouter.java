@@ -1,4 +1,4 @@
-// $Id: GossipRouter.java,v 1.14 2005/06/13 06:38:53 belaban Exp $
+// $Id: GossipRouter.java,v 1.15 2005/09/29 16:28:52 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -442,7 +442,6 @@ public class GossipRouter {
                     continue;
                 default:
                     if(log.isErrorEnabled()) log.error("request of type " + type + " not recognized");
-                    continue;
                 }
             }
             catch(Exception e) {
@@ -453,7 +452,6 @@ public class GossipRouter {
                 catch(IOException e2) {
                     if(log.isWarnEnabled()) log.warn("failed to close socket "+sock);
                 }
-                continue;
             }
         }
     }
@@ -633,6 +631,8 @@ public class GossipRouter {
                         }
                     }
                 }
+                if(val.size() == 0)
+                    i.remove();
             }
         }
         
