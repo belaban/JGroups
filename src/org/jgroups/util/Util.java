@@ -1,9 +1,7 @@
-// $Id: Util.java,v 1.58 2005/09/29 10:20:50 belaban Exp $
+// $Id: Util.java,v 1.59 2005/09/29 12:21:02 belaban Exp $
 
 package org.jgroups.util;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.FD;
@@ -16,9 +14,9 @@ import java.io.*;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
+import java.text.NumberFormat;
 import java.util.*;
 import java.util.List;
-import java.text.NumberFormat;
 
 
 /**
@@ -28,7 +26,6 @@ public class Util {
     private static final Object mutex=new Object();
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
 
-    protected static final Log log=LogFactory.getLog(Util.class);
     private static  NumberFormat f;
 
     // constants
@@ -545,7 +542,6 @@ public class Util {
     /** Sleeps between 1 and timeout milliseconds, chosen randomly. Timeout must be > 1 */
     public static void sleepRandom(long timeout) {
         if(timeout <= 0) {
-            log.error("timeout must be > 0 !");
             return;
         }
 
@@ -1151,8 +1147,7 @@ public class Util {
             return data.length;
         }
         catch(Exception ex) {
-            if(log.isErrorEnabled()) log.error("exception=" + ex);
-            return 0;
+            return -1;
         }
     }
 
@@ -1165,8 +1160,7 @@ public class Util {
             return data.length;
         }
         catch(Exception ex) {
-            if(log.isErrorEnabled()) log.error("exception+" + ex);
-            return 0;
+            return -1;
         }
     }
 
@@ -1184,8 +1178,7 @@ public class Util {
             return data.length;
         }
         catch(Exception ex) {
-            if(log.isErrorEnabled()) log.error("exception+" + ex);
-            return 0;
+            return -1;
         }
     }
 
@@ -1277,7 +1270,6 @@ public class Util {
 
         if(one == null || two == null) return false;
         if(!(one instanceof IpAddress) || !(two instanceof IpAddress)) {
-            if(log.isErrorEnabled()) log.error("addresses have to be of type IpAddress to be compared");
             return false;
         }
 
@@ -1291,16 +1283,6 @@ public class Util {
         return host_a.equals(host_b);
     }
 
-
-    public static void removeFile(String fname) {
-        if(fname == null) return;
-        try {
-            new File(fname).delete();
-        }
-        catch(Exception ex) {
-            if(log.isErrorEnabled()) log.error("exception=" + ex);
-        }
-    }
 
 
     public static boolean fileExists(String fname) {
@@ -1385,7 +1367,6 @@ public class Util {
                 continue;
             }
             catch(IOException io_ex) {
-                if(log.isErrorEnabled()) log.error("exception is " + io_ex);
             }
             break;
         }
@@ -1404,7 +1385,6 @@ public class Util {
                 continue;
             }
             catch(IOException io_ex) {
-                if(log.isErrorEnabled()) log.error("exception is " + io_ex);
             }
             break;
         }
