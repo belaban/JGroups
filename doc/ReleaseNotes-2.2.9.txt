@@ -2,7 +2,7 @@
 Release Notes JGroups 2.2.9
 ===========================
 
-Version: $Id: ReleaseNotes-2.2.9.txt,v 1.1 2005/09/01 12:04:15 belaban Exp $
+Version: $Id: ReleaseNotes-2.2.9.txt,v 1.2 2005/09/29 12:44:29 belaban Exp $
 Author: Bela Ban
 Date: Sept 1 2005
 
@@ -52,6 +52,15 @@ Performance improvements
 RpcDispatcher/MessageDispatcher/RequestCorrelator/MethodCall.
 Most headers now support size() and Streamable, making marshalling and
 unmarshalling faster.
+
+
+Discovery of all clusters in a network
+--------------------------------------
+With JGroups/bin/probe.sh or probe.bat, it is now possible to discover *all* clusters running in
+a network. This is useful for
+- management tools that needs to discover the clusters running, and then drill down into each individual cluster
+- for diagnostics and trouble shooting
+Details at http://wiki.jboss.org/wiki/Wiki.jsp?page=Probe
 
 
 Bug fixes
