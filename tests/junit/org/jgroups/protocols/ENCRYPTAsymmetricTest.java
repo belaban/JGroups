@@ -48,7 +48,7 @@ public class ENCRYPTAsymmetricTest extends TestCase {
 		assertEquals("RSA",encrypt.getAsymAlgorithm());		
 		assertEquals(512,encrypt.getAsymInit());
 		assertEquals("RSA",encrypt.getKpair().getPublic().getAlgorithm());
-		assertEquals("X509",encrypt.getKpair().getPublic().getFormat());
+		assertEquals("X.509",encrypt.getKpair().getPublic().getFormat());
 
 		assertNotNull(encrypt.getKpair().getPublic().getEncoded());
 		
