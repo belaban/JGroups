@@ -1,9 +1,8 @@
-// $Id: GmsImpl.java,v 1.10 2005/09/22 07:19:03 belaban Exp $
+// $Id: GmsImpl.java,v 1.11 2005/09/30 07:20:43 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
 import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
 
 import java.util.Vector;
@@ -14,10 +13,23 @@ import java.util.Vector;
 
 public abstract class GmsImpl {
     protected GMS   gms=null;
-    protected final Log   log=LogFactory.getLog(getClass());
-    final boolean         trace=log.isTraceEnabled();
-    final boolean         warn=log.isWarnEnabled();
+    // protected final Log   log=LogFactory.getLog(getClass());
+    protected final Log   log;
+    final boolean         trace;
+    final boolean         warn;
     boolean               leaving=false;
+
+    protected GmsImpl() {
+        log=null;
+        trace=warn=false;
+    }
+
+    protected GmsImpl(GMS gms) {
+        this.gms=gms;
+        log=gms.getLog();
+        trace=log.isTraceEnabled();
+        warn=log.isWarnEnabled();
+    }
 
     public abstract void      join(Address mbr);
     public abstract void      leave(Address mbr);
