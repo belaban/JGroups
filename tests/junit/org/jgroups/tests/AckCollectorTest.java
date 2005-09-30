@@ -1,4 +1,4 @@
-// $Id: AckCollectorTest.java,v 1.2 2005/09/26 11:25:05 belaban Exp $
+// $Id: AckCollectorTest.java,v 1.3 2005/09/30 07:29:05 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -28,7 +28,7 @@ public class AckCollectorTest extends TestCase {
         l.add("three");
         l.add("four");
         l.add("five");
-        ac=new AckCollector(l);
+        ac=new AckCollector(null, l);
         new_list.add("six");
         new_list.add("seven");
         new_list.add("eight");
@@ -144,7 +144,7 @@ public class AckCollectorTest extends TestCase {
             public void run() {
                 Util.sleep(500);
                 System.out.println("resetting AckCollector");
-                ac.reset(new_list);
+                ac.reset(null, new_list);
                 System.out.println("reset AckCollector: " + ac);
             }
         }.start();
@@ -165,7 +165,7 @@ public class AckCollectorTest extends TestCase {
             public void run() {
                 Util.sleep(500);
                 System.out.println("resetting AckCollector");
-                ac.reset(new_list);
+                ac.reset(null, new_list);
                 System.out.println("reset AckCollector: " + ac);
                 Util.sleep(100);
                 ac.ack("six");
