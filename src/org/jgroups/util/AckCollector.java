@@ -1,25 +1,29 @@
 package org.jgroups.util;
 
 import org.jgroups.TimeoutException;
+import org.jgroups.ViewId;
 
 import java.util.*;
 
 /**
  * @author Bela Ban
- * @version $Id: AckCollector.java,v 1.3 2005/09/26 11:41:44 belaban Exp $
+ * @version $Id: AckCollector.java,v 1.4 2005/09/30 07:21:08 belaban Exp $
  */
 public class AckCollector {
     /** List<Object>: list of members from whom we haven't received an ACK yet */
-    final java.util.List missing_acks;
-    final Set received_acks=new HashSet();
-    final Promise all_acks_received=new Promise();
+    private final java.util.List missing_acks;
+    private final Set            received_acks=new HashSet();
+    private final Promise        all_acks_received=new Promise();
+    private ViewId               proposed_view;
+
 
     public AckCollector() {
         missing_acks=new ArrayList();
     }
 
-    public AckCollector(java.util.List l) {
+    public AckCollector(ViewId v, java.util.List l) {
         missing_acks=new ArrayList(l);
+        proposed_view=v;
     }
 
     public java.util.List getMissing() {
@@ -30,7 +34,12 @@ public class AckCollector {
         return received_acks;
     }
 
-    public void reset(java.util.List l) {
+    public ViewId getViewId() {
+        return proposed_view;
+    }
+
+    public void reset(ViewId v, java.util.List l) {
+        proposed_view=v;
         missing_acks.clear();
         received_acks.clear();
         if(l != null)
@@ -47,6 +56,10 @@ public class AckCollector {
         received_acks.add(member);
         if(missing_acks.size() == 0)
             all_acks_received.setResult(Boolean.TRUE);
+    }
+
+    public void remove(Object member) {
+        ack(member);
     }
 
     public boolean waitForAllAcks() {
