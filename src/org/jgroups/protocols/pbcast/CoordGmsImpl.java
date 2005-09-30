@@ -1,10 +1,11 @@
-// $Id: CoordGmsImpl.java,v 1.26 2005/08/11 12:43:46 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.27 2005/09/30 07:32:04 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
 
 import org.jgroups.*;
 import org.jgroups.util.TimeScheduler;
+import org.jgroups.util.Promise;
 
 import java.util.Iterator;
 import java.util.Vector;
@@ -30,7 +31,7 @@ public class CoordGmsImpl extends GmsImpl {
 
 
     public CoordGmsImpl(GMS g) {
-        gms=g;
+        super(g);
     }
 
 
@@ -265,7 +266,6 @@ public class CoordGmsImpl extends GmsImpl {
         View v;
         Digest d, tmp;
 
-        if(log.isDebugEnabled()) log.debug("mbr=" + mbr);
         if(gms.local_addr.equals(mbr)) {
             if(log.isErrorEnabled()) log.error("cannot join myself !");
             return null;
@@ -283,7 +283,7 @@ public class CoordGmsImpl extends GmsImpl {
             if(log.isErrorEnabled()) log.error("received null digest from GET_DIGEST: will cause JOIN to fail");
             return null;
         }
-        if(log.isDebugEnabled()) log.debug("got digest=" + tmp);
+        // if(log.isDebugEnabled()) log.debug("got digest=" + tmp);
 
         d=new Digest(tmp.size() + 1);
         // create a new digest, which contains 1 more member
@@ -320,10 +320,26 @@ public class CoordGmsImpl extends GmsImpl {
         sendLeaveResponse(mbr); // send an ack to the leaving member
 
         v.addElement(mbr);
+
+        boolean coord_leaving=mbr.equals(gms.local_addr);
+        Promise p=coord_leaving? new Promise() : null;
+
         if(suspected)
-            gms.castViewChange(null, null, v);
+            gms.castViewChange(null, null, v, p);
         else
-            gms.castViewChange(null, v, null);
+            gms.castViewChange(null, v, null, p);
+
+        if(coord_leaving) {
+            Boolean result=(Boolean)p.getResult(gms.leave_timeout);
+            if(trace) {
+                if(result != null && result.booleanValue()) {
+                    log.trace("LEAVE succeeded");
+                }
+                else {
+                    log.trace("LEAVE failed");
+                }
+            }
+        }
     }
 
     void sendLeaveResponse(Address mbr) {

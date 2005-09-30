@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.22 2005/09/22 07:07:11 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.23 2005/09/30 07:30:23 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -19,7 +19,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.22 $
+ * @version $Revision: 1.23 $
  */
 public class ClientGmsImpl extends GmsImpl {
     private final Vector  initial_mbrs=new Vector(11);
@@ -28,7 +28,7 @@ public class ClientGmsImpl extends GmsImpl {
 
 
     public ClientGmsImpl(GMS g) {
-        gms=g;
+        super(g);
     }
 
     public void init() throws Exception {
@@ -122,7 +122,7 @@ public class ClientGmsImpl extends GmsImpl {
                     tmp_digest=rsp.getDigest();
                     if(tmp_digest != null) {
                         tmp_digest.incrementHighSeqno(coord); 	// see DESIGN for an explanantion
-                        if(log.isDebugEnabled()) log.debug("digest is " + tmp_digest);
+                        // if(log.isDebugEnabled()) log.debug("digest is " + tmp_digest);
                         gms.setDigest(tmp_digest);
                     }
                     else
@@ -137,6 +137,13 @@ public class ClientGmsImpl extends GmsImpl {
                             if(log.isErrorEnabled()) log.error("view installation failed, retrying to join group");
                             continue;
                         }
+
+                        // send VIEW_ACK to sender of view
+                        Message view_ack=new Message(coord, null, null);
+                        GMS.GmsHeader tmphdr=new GMS.GmsHeader(GMS.GmsHeader.VIEW_ACK, rsp.getView());
+                        view_ack.putHeader(GMS.name, tmphdr);
+                        gms.passDown(new Event(Event.MSG, view_ack));
+
                         gms.passUp(new Event(Event.BECOME_SERVER));
                         gms.passDown(new Event(Event.BECOME_SERVER));
                         return;
@@ -191,8 +198,8 @@ public class ClientGmsImpl extends GmsImpl {
      * Does nothing. Discards all views while still client.
      */
     public synchronized void handleViewChange(View new_view, Digest digest) {
-        if(log.isDebugEnabled()) log.debug("view " + new_view.getMembers() +
-                                           " is discarded as we are not a participant");
+        if(log.isTraceEnabled())
+            log.trace("view " + new_view.getVid() + " is discarded as we are not a participant");
     }
 
 
