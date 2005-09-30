@@ -1,4 +1,4 @@
-// $Id: ParticipantGmsImpl.java,v 1.10 2005/08/08 12:45:38 belaban Exp $
+// $Id: ParticipantGmsImpl.java,v 1.11 2005/09/30 07:31:07 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -17,7 +17,7 @@ public class ParticipantGmsImpl extends GmsImpl {
 
 
     public ParticipantGmsImpl(GMS g) {
-        gms=g;
+        super(g);
     }
 
 
