@@ -1,19 +1,16 @@
-// $Id: GMS.java,v 1.39 2005/09/25 14:05:32 belaban Exp $
+// $Id: GMS.java,v 1.40 2005/09/30 07:25:44 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
 
 import org.jgroups.*;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.BoundedList;
-import org.jgroups.util.Streamable;
-import org.jgroups.util.TimeScheduler;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
+import org.jgroups.util.Queue;
+import org.apache.commons.logging.Log;
 
 import java.io.*;
 import java.util.*;
-
-
 
 
 /**
@@ -64,6 +61,8 @@ public class GMS extends Protocol {
     /** Stores the last 20 views */
     BoundedList               prev_views=new BoundedList(20);
 
+    final ViewBroadcaster     view_broadcaster=new ViewBroadcaster();
+
     static final String       name="GMS";
 
 
@@ -98,6 +97,9 @@ public class GMS extends Protocol {
         }
         return sb.toString();
     }
+
+    Log getLog() {return log;}
+
     public String printPreviousViews() {
         StringBuffer sb=new StringBuffer();
         for(Enumeration en=prev_views.elements(); en.hasMoreElements();) {
@@ -130,6 +132,8 @@ public class GMS extends Protocol {
 
     public void setImpl(GmsImpl new_impl) {
         synchronized(impl_mutex) {
+            if(impl == new_impl) // superfluous
+                return;
             impl=new_impl;
             if(log.isDebugEnabled()) {
                 String msg=(local_addr != null? local_addr.toString()+" " : "") + "changed role to " + new_impl.getClass().getName();
@@ -161,6 +165,7 @@ public class GMS extends Protocol {
         if(impl != null) impl.stop();
         if(prev_members != null)
             prev_members.removeAll();
+        view_broadcaster.stop();
     }
 
 
@@ -235,11 +240,11 @@ public class GMS extends Protocol {
             }
             vid=Math.max(view_id.getId(), ltime) + 1;
             ltime=vid;
-            if(log.isDebugEnabled()) log.debug("VID=" + vid + ", current members=" +
-                    Util.printMembers(members.getMembers()) +
-                    ", new_mbrs=" + Util.printMembers(new_mbrs) +
-                    ", old_mbrs=" + Util.printMembers(old_mbrs) + ", suspected_mbrs=" +
-                    Util.printMembers(suspected_mbrs));
+//            if(log.isDebugEnabled()) log.debug("VID=" + vid + ", current members=" +
+//                    Util.printMembers(members.getMembers()) +
+//                    ", new_mbrs=" + Util.printMembers(new_mbrs) +
+//                    ", old_mbrs=" + Util.printMembers(old_mbrs) + ", suspected_mbrs=" +
+//                    Util.printMembers(suspected_mbrs));
 
             tmp_mbrs=tmp_members.copy();  // always operate on the temporary membership
             tmp_mbrs.remove(suspected_mbrs);
@@ -312,27 +317,38 @@ public class GMS extends Protocol {
      </ol>
      @return View The new view
      */
-    public View castViewChange(Vector new_mbrs, Vector old_mbrs, Vector suspected_mbrs) {
+    View castViewChange(Vector new_mbrs, Vector old_mbrs, Vector suspected_mbrs, Promise p) {
         View new_view;
 
         // next view: current mbrs + new_mbrs - old_mbrs - suspected_mbrs
         new_view=getNextView(new_mbrs, old_mbrs, suspected_mbrs);
-        castViewChange(new_view, null);
+        castViewChange(new_view, null, p);
         return new_view;
     }
 
-
-    public void castViewChange(View new_view, Digest digest) {
-        Message view_change_msg;
-        GmsHeader hdr;
-
-        if(log.isDebugEnabled()) log.debug("mcasting view {" + new_view + "} (" + new_view.size() + " mbrs)\n");
-        view_change_msg=new Message(); // bcast to all members
-        hdr=new GmsHeader(GmsHeader.VIEW, new_view);
-        hdr.my_digest=digest;
-        view_change_msg.putHeader(name, hdr);
-        passDown(new Event(Event.MSG, view_change_msg));
+    View castViewChange(Vector new_mbrs, Vector old_mbrs, Vector suspected_mbrs) {
+        return castViewChange(new_mbrs, old_mbrs, suspected_mbrs, null);
     }
+
+
+    void castViewChange(View new_view, Digest digest) {
+        castViewChange(new_view, digest,  null);
+    }
+
+
+    void castViewChange(View new_view, Digest digest, Promise p) {
+        if(p != null)
+            view_broadcaster.register(new_view, p);
+        try {
+            view_broadcaster.add(new_view, digest);
+        }
+        catch(QueueClosedException e) {
+            if(warn)
+                log.warn("cannot broadcast view " + new_view.getVid(), e);
+        }
+    }
+
+
 
 
     /**
@@ -377,8 +393,7 @@ public class GMS extends Protocol {
         /* Check for self-inclusion: if I'm not part of the new membership, I just discard it.
         This ensures that messages sent in view V1 are only received by members of V1 */
         if(checkSelfInclusion(mbrs) == false) {
-            if(warn) log.warn("checkSelfInclusion() failed, " + local_addr +
-                    " is not a member of view " + new_view + "; discarding view");
+            if(warn) log.warn(local_addr + " is not a member of view " + new_view + "; discarding view");
 
             // only shun if this member was previously part of the group. avoids problem where multiple
             // members (e.g. X,Y,Z) join {A,B} concurrently, X is joined first, and Y and Z get view
@@ -558,7 +573,8 @@ public class GMS extends Protocol {
                         impl.handleJoinResponse(hdr.join_rsp);
                         break;
                     case GmsHeader.LEAVE_REQ:
-                        if(log.isDebugEnabled()) log.debug("received LEAVE_REQ " + hdr + " from " + msg.getSrc());
+                        if(log.isDebugEnabled())
+                            log.debug("received LEAVE_REQ for " + hdr.mbr + " from " + msg.getSrc());
                         if(hdr.mbr == null) {
                             if(log.isErrorEnabled()) log.error("LEAVE_REQ's mbr field is null");
                             return;
@@ -574,8 +590,28 @@ public class GMS extends Protocol {
                             if(log.isErrorEnabled()) log.error("[VIEW]: view == null");
                             return;
                         }
+                        // send VIEW_ACK to sender of view
+
+                        Address coord=msg.getSrc();
+                        Message view_ack=new Message(coord, null, null);
+                        GmsHeader tmphdr=new GmsHeader(GmsHeader.VIEW_ACK, hdr.view);
+                        view_ack.putHeader(name, tmphdr);
+
+                        if(trace)
+                            log.trace("sending VIEW_ACK for " + hdr.view.getVid() + " to " + coord);
+                        passDown(new Event(Event.MSG, view_ack));
+                        if(trace)
+                            log.trace("sent VIEW_ACK to " + coord);
+
                         impl.handleViewChange(hdr.view, hdr.my_digest);
                         break;
+
+                    case GmsHeader.VIEW_ACK:
+                        Object sender=msg.getSrc();
+                        if(trace)
+                            log.trace("received VIEW_ACK from " + sender);
+                        view_broadcaster.ack(sender);
+                        return; // don't pass further up
 
                     case GmsHeader.MERGE_REQ:
                         impl.handleMergeRequest(msg.getSrc(), hdr.merge_id);
@@ -615,7 +651,9 @@ public class GMS extends Protocol {
                 break;                               // pass up
 
             case Event.SUSPECT:
-                impl.suspect((Address)evt.getArg());
+                Address suspected=(Address)evt.getArg();
+                view_broadcaster.suspect(suspected);
+                impl.suspect(suspected);
                 break;                               // pass up
 
             case Event.UNSUSPECT:
@@ -643,13 +681,14 @@ public class GMS extends Protocol {
      it won't be processed twice.
      */
     public void receiveUpEvent(Event evt) {
-        if(evt.getType() == Event.GET_DIGEST_OK) {
-            synchronized(digest_mutex) {
-                digest=(Digest)evt.getArg();
-                digest_mutex.notifyAll();
-            }
-            return;
-        }
+        switch(evt.getType()) {
+            case Event.GET_DIGEST_OK:
+                synchronized(digest_mutex) {
+                    digest=(Digest)evt.getArg();
+                    digest_mutex.notifyAll();
+                }
+                return;
+                }
         super.receiveUpEvent(evt);
     }
 
@@ -744,7 +783,7 @@ public class GMS extends Protocol {
 
         if(props.size() > 0) {
             log.error("GMS.setProperties(): the following properties are not recognized: " + props);
-            
+
             return false;
         }
         return true;
@@ -813,6 +852,7 @@ public class GMS extends Protocol {
         public static final byte MERGE_RSP=7;
         public static final byte INSTALL_MERGE_VIEW=8;
         public static final byte CANCEL_MERGE=9;
+        public static final byte VIEW_ACK=10;
 
         byte type=0;
         View view=null;            // used when type=VIEW or MERGE_RSP or INSTALL_MERGE_VIEW
@@ -855,41 +895,42 @@ public class GMS extends Protocol {
             StringBuffer sb=new StringBuffer("GmsHeader");
             sb.append('[' + type2String(type) + ']');
             switch(type) {
-            case JOIN_REQ:
-                sb.append(": mbr=" + mbr);
-                break;
+                case JOIN_REQ:
+                    sb.append(": mbr=" + mbr);
+                    break;
 
-            case JOIN_RSP:
-                sb.append(": join_rsp=" + join_rsp);
-                break;
+                case JOIN_RSP:
+                    sb.append(": join_rsp=" + join_rsp);
+                    break;
 
-            case LEAVE_REQ:
-                sb.append(": mbr=" + mbr);
-                break;
+                case LEAVE_REQ:
+                    sb.append(": mbr=" + mbr);
+                    break;
 
-            case LEAVE_RSP:
-                break;
+                case LEAVE_RSP:
+                    break;
 
-            case VIEW:
-                sb.append(": view=" + view);
-                break;
+                case VIEW:
+                case VIEW_ACK:
+                    sb.append(": view=" + view);
+                    break;
 
-            case MERGE_REQ:
-                sb.append(": merge_id=" + merge_id);
-                break;
+                case MERGE_REQ:
+                    sb.append(": merge_id=" + merge_id);
+                    break;
 
-            case MERGE_RSP:
-                sb.append(": view=" + view + ", digest=" + my_digest + ", merge_rejected=" + merge_rejected +
-                          ", merge_id=" + merge_id);
-                break;
+                case MERGE_RSP:
+                    sb.append(": view=" + view + ", digest=" + my_digest + ", merge_rejected=" + merge_rejected +
+                            ", merge_id=" + merge_id);
+                    break;
 
-            case INSTALL_MERGE_VIEW:
-                sb.append(": view=" + view + ", digest=" + my_digest);
-                break;
+                case INSTALL_MERGE_VIEW:
+                    sb.append(": view=" + view + ", digest=" + my_digest);
+                    break;
 
-            case CANCEL_MERGE:
-                sb.append(", <merge cancelled>, merge_id=" + merge_id);
-                break;
+                case CANCEL_MERGE:
+                    sb.append(", <merge cancelled>, merge_id=" + merge_id);
+                    break;
             }
             return sb.toString();
         }
@@ -897,26 +938,17 @@ public class GMS extends Protocol {
 
         public static String type2String(int type) {
             switch(type) {
-            case JOIN_REQ:
-                return "JOIN_REQ";
-            case JOIN_RSP:
-                return "JOIN_RSP";
-            case LEAVE_REQ:
-                return "LEAVE_REQ";
-            case LEAVE_RSP:
-                return "LEAVE_RSP";
-            case VIEW:
-                return "VIEW";
-            case MERGE_REQ:
-                return "MERGE_REQ";
-            case MERGE_RSP:
-                return "MERGE_RSP";
-            case INSTALL_MERGE_VIEW:
-                return "INSTALL_MERGE_VIEW";
-            case CANCEL_MERGE:
-                return "CANCEL_MERGE";
-            default:
-                return "<unknown>";
+                case JOIN_REQ: return "JOIN_REQ";
+                case JOIN_RSP: return "JOIN_RSP";
+                case LEAVE_REQ: return "LEAVE_REQ";
+                case LEAVE_RSP: return "LEAVE_RSP";
+                case VIEW: return "VIEW";
+                case MERGE_REQ: return "MERGE_REQ";
+                case MERGE_RSP: return "MERGE_RSP";
+                case INSTALL_MERGE_VIEW: return "INSTALL_MERGE_VIEW";
+                case CANCEL_MERGE: return "CANCEL_MERGE";
+                case VIEW_ACK: return "VIEW_ACK";
+                default: return "<unknown>";
             }
         }
 
@@ -986,6 +1018,130 @@ public class GMS extends Protocol {
             return retval;
         }
 
+    }
+
+
+    private static class Entry {
+        View   v;
+        Digest d;
+
+        Entry(View v, Digest d) {
+            this.v=v;
+            this.d=d;
+        }
+    }
+
+    private class ViewBroadcaster implements Runnable {
+        Thread t;
+        Queue  views=new Queue(); // Queue<Entry>
+
+        /** Map<View, Set<Promise>> */
+        final Map listeners=new HashMap();
+
+        /** To collect VIEW_ACKs from all members */
+        final private AckCollector ack_collector=new AckCollector();
+
+        final static long         VIEW_INSTALLATION_TIMEOUT=5000;
+
+
+
+
+        private void add(View v, Digest d) throws QueueClosedException {
+            start();
+            views.add(new Entry(v, d));
+        }
+
+
+        synchronized private void start() {
+            if(t == null || !t.isAlive()) {
+                if(views.closed())
+                    views.reset();
+                t=new Thread(this, "ViewBroadcaster");
+                t.setDaemon(true);
+                t.start();
+                if(trace)
+                    log.trace("ViewBroadcaster started");
+            }
+        }
+
+        synchronized private void stop() {
+            views.close(true);
+            t=null;
+        }
+
+        public void run() {
+            Entry entry;
+            while(!views.closed() && Thread.currentThread().equals(t)) {
+                try {
+                    entry=(Entry)views.remove(VIEW_INSTALLATION_TIMEOUT);
+                    process(entry.v, entry.d);
+                }
+                catch(QueueClosedException e) {
+                    break;
+                }
+                catch(TimeoutException e) {
+                    break;
+                }
+            }
+            t=null;
+            if(trace)
+                log.trace("ViewBroadcaster terminated");
+        }
+
+        private void process(View v, Digest d) {
+            Message view_change_msg;
+            GmsHeader hdr;
+
+            if(log.isTraceEnabled()) log.trace("mcasting view {" + v + "} (" + v.size() + " mbrs)\n");
+            view_change_msg=new Message(); // bcast to all members
+            hdr=new GmsHeader(GmsHeader.VIEW, v);
+            hdr.my_digest=d;
+            view_change_msg.putHeader(name, hdr);
+
+            ack_collector.reset(v.getVid(), v.getMembers());
+            passDown(new Event(Event.MSG, view_change_msg));
+            try {
+                ack_collector.waitForAllAcks(VIEW_INSTALLATION_TIMEOUT);
+            }
+            catch(TimeoutException e) {
+                log.warn("failed to collect all ACKs for view " + v.getVid() +
+                        ", missing ACKs from " + ack_collector.getMissing() + " (received=" + ack_collector.getReceived() + ")");
+            }
+            notifyListeners(v);
+        }
+
+        private void notifyListeners(View v) {
+            synchronized(listeners) {
+                Set s=(Set)listeners.get(v);
+                if(s != null) {
+                    Promise p;
+                    for(Iterator it=new ArrayList(s).iterator(); it.hasNext();) {
+                        p=(Promise)it.next();
+                        p.setResult(Boolean.TRUE);
+                    }
+                    listeners.remove(v);
+                }
+            }
+        }
+
+        private void suspect(Object arg) {
+            ack_collector.remove(arg);
+        }
+
+        public void ack(Object sender) {
+            ack_collector.ack(sender);
+        }
+
+        public void register(View new_view, Promise p) {
+            synchronized(listeners) {
+                Set s=(Set)listeners.get(new_view);
+                if(s == null) {
+                    s=new TreeSet();
+                    listeners.put(new_view, s);
+                }
+                s.add(p);
+            }
+        }
     }
 
 
