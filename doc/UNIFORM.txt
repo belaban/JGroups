@@ -1,0 +1,80 @@
+
+Uniform message delivery
+========================
+
+Author: Bela Ban
+Version: $Id: UNIFORM.txt,v 1.1 2005/10/02 11:35:27 belaban Exp $
+
+
+Definition
+----------
+Dynamic uniformity is the property that a message M is delivered to the group members only
+after all members acknowledge M's reception ([1] ch 13.9). This ensures that either all operational
+members or none receive M. The latter could occur if M's sender
+crashed right after sending M, but before *any* of the members received M. If at least one member P
+received M, and P doesn't crash, then M will be delivered to all members.
+
+This is different from two-phase commit (2PC) protocols in the database world, where even non-operational
+(= crashed) members must eventually deliver M, by logging the PREPARE ad COMMIT actions, and processing
+the log when restarting after a crash.
+
+2PC is not necessary in the group communication world, because the state of a new member can be initialized
+from an existing member by means of state transfer.
+
+
+Design
+------
+There is an additional UNIFORM protocol, which needs to sit somewhere on top of NAKACK (note that uniformity doesn't
+apply to unicast messages, only to multicast messages). UNIFORM also needs reliable unicast messages, so it must sit
+on top of UNICAST, too.
+
+init():
+- preparing-table,
+  committing-table,
+  acking-table : map<M, List<Address>> where M is <sender:seqno> and List is a list of
+                 members from which we expect ACKs for M
+- prepared-table: map<M, Message> where M is <sender:seqno> and Message is the real message received as part of PREPARE
+- committed-table:
+
+On send(M):
+- Add PREPARE header to M
+- Put message M in preparing-table (key is M (dest + seqno), value is list of members from which we expect
+  ACKs (this is the membership view at the time M was sent)
+- Pass message down
+
+On reception of PREPARE(M) from P:
+- Add M to prepared-table
+- Send PREPARE-ACK(M) to P
+
+On reception of PREPARE-ACK(M) from P:
+- Remove P from M's list
+- If M's list is empty:
+  - Remove M from preparing-table
+  - Add M to committing-table
+  - Send COMMIT(M) message to group
+
+On reception of COMMIT(M) from P:
+- Remove M from prepared-table
+- Add M to committed-table
+- Pass M up the stack (delivering it)
+- Send COMMIT-ACK(M) to P
+
+On reception of COMMIT-ACK(M) from P:
+
+
+On reception of VIEW(V):
+
+On reception of SUSPECT(P):
+-Ignored
+
+On LEAVE/STOP:
+- Flush preparing-table,
+- Flush committing-table
+- Flush acking-table
+
+
+
+References
+----------
+[1] Birman, Kenneth P.: Building Secure and Reliable Network Applications.
+    Manning, Greenwich CT, 1996
