@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.106 2005/09/29 12:24:06 belaban Exp $
+// $Id: UDP.java,v 1.107 2005/10/03 13:31:33 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -610,9 +610,9 @@ public class UDP extends TP implements Runnable {
         int rcv_port=bind_port, max_port=bind_port + port_range;
         while(rcv_port <= max_port) {
             try {
-                tmp=new DatagramSocket(rcv_port, bind_addr);
-                break;
-            }
+                    tmp=new DatagramSocket(rcv_port, bind_addr);
+                    break;
+                }
             catch(SocketException bind_ex) {	// Cannot listen on this port
                 rcv_port++;
             }
@@ -622,7 +622,7 @@ public class UDP extends TP implements Runnable {
 
             // Cannot listen at all, throw an Exception
             if(rcv_port >= max_port + 1) { // +1 due to the increment above
-                throw new Exception("UDP.createSockets(): cannot listen on any port in range " +
+                throw new Exception("UDP.createSockets(): cannot create a socket on any port in range " +
                         bind_port + '-' + (bind_port + port_range));
             }
         }
