@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.27 2005/09/30 07:32:04 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.28 2005/10/03 13:36:10 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -272,8 +272,8 @@ public class CoordGmsImpl extends GmsImpl {
         }
 
         if(gms.members.contains(mbr)) {
-            if(log.isErrorEnabled())
-                log.error("member " + mbr + " already present; returning existing view " + gms.members.getMembers());
+            if(log.isWarnEnabled())
+                log.warn(mbr + " already present; returning existing view " + gms.view);
             return new JoinRsp(new View(gms.view_id, gms.members.getMembers()), gms.getDigest());
             // already joined: return current digest and membership
         }
@@ -336,7 +336,7 @@ public class CoordGmsImpl extends GmsImpl {
                     log.trace("LEAVE succeeded");
                 }
                 else {
-                    log.trace("LEAVE failed");
+                    log.trace("LEAVE failed, view broadcaster: " + gms.view_broadcaster);
                 }
             }
         }
