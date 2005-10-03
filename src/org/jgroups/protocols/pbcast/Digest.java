@@ -1,4 +1,4 @@
-// $Id: Digest.java,v 1.16 2005/08/11 12:43:46 belaban Exp $
+// $Id: Digest.java,v 1.17 2005/10/03 13:25:26 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -307,15 +307,14 @@ public class Digest implements Externalizable, Streamable {
                 sb.append(", ");
             }
             else {
-                sb.append('[');
                 first=false;
             }
             sb.append(key).append(": ").append('[').append(val.low_seqno).append(" : ");
             sb.append(val.high_seqno);
             if(val.high_seqno_seen >= 0)
-                sb.append(" (").append(val.high_seqno_seen).append(")]");
+                sb.append(" (").append(val.high_seqno_seen).append(")");
+            sb.append("]");
         }
-        sb.append(']');
         return sb.toString();
     }
 
