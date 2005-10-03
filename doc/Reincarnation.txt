@@ -4,7 +4,7 @@ Problems with reincarnation
 ===========================
 
 Author:  Bela Ban
-Version: $Id: Reincarnation.txt,v 1.1 2005/09/14 08:40:28 belaban Exp $
+Version: $Id: Reincarnation.txt,v 1.2 2005/10/03 07:07:30 belaban Exp $
 JIRA:    http://jira.jboss.com/jira/browse/JGRP-130
 
 The identity of a JGroups member is always the IP address and a port. The port is usually chosen by the OS, unless
@@ -35,10 +35,13 @@ Again, these problems occur *only* when the OS reuses previously assigned ports.
 
 SOLUTION:
 
-A: Use temporary storage (per host) to store the last N addresses assigned on a given host. This makes sure we
+A: Remember any ports seen by members on the same host, e.g. if we receive a view, we will add all ports
+of any members residing on the same machine to lastPortsUsed
+
+B: Use temporary storage (per host) to store the last N addresses assigned on a given host. This makes sure we
 don't reuse previous addresses
 
-B: Use logical addresses, such as java.rmi.VMID or java.rmi.server.UID, which are unique over time for a given host.
+C: Use logical addresses, such as java.rmi.VMID or java.rmi.server.UID, which are unique over time for a given host.
 Then, it doesn't matter what ports we use because the ports are not used to determine a member's identity.
 The JIRA task for logical addresses is http://jira.jboss.com/jira/browse/JGRP-129.
 
