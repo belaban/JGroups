@@ -1,4 +1,4 @@
-// $Id: ConnectStressTest.java,v 1.12 2004/09/14 12:59:55 belaban Exp $
+// $Id: ConnectStressTest.java,v 1.13 2005/10/03 13:24:44 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -20,7 +20,7 @@ import java.util.Vector;
 /**
  * Creates 1 channel, then creates NUM channels, all try to join the same channel concurrently.
  * @author Bela Ban Nov 20 2003
- * @version $Id: ConnectStressTest.java,v 1.12 2004/09/14 12:59:55 belaban Exp $
+ * @version $Id: ConnectStressTest.java,v 1.13 2005/10/03 13:24:44 belaban Exp $
  */
 public class ConnectStressTest extends TestCase {
     static CyclicBarrier  start_connecting=null;
@@ -37,7 +37,7 @@ public class ConnectStressTest extends TestCase {
     static String props="UDP(mcast_addr=228.8.8.9;mcast_port=7788;ip_ttl=1;" +
             "mcast_send_buf_size=150000;mcast_recv_buf_size=80000):" +
             "PING(timeout=3000;num_initial_members=3):" +
-            "MERGE2(min_interval=5000;max_interval=10000):" +
+            "MERGE2(min_interval=3000;max_interval=5000):" +
             "FD_SOCK:" +
             "VERIFY_SUSPECT(timeout=1500):" +
             "pbcast.NAKACK(gc_lag=50;retransmit_timeout=300,600,1200,2400,4800):" +
@@ -45,7 +45,7 @@ public class ConnectStressTest extends TestCase {
             "pbcast.STABLE(desired_avg_gossip=5000):" +
             "FRAG(frag_size=4096;down_thread=false;up_thread=false):" +
             "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
-            "shun=true;print_local_addr=false)";
+            "shun=true;print_local_addr=false;view_ack_collection_timeout=0)";
 
 
 
@@ -176,8 +176,20 @@ public class ConnectStressTest extends TestCase {
                 connected.barrier();
 
                 int num_members=0;
-                while((num_members=ch.getView().getMembers().size()) < NUM+1) {
-                    log("num_members=" + num_members);
+                while(true) {
+                    View v=ch.getView();
+                    Vector mbrs=v != null? v.getMembers() : null;
+                    if(mbrs == null) {
+                        System.err.println("mbrs is null, v=" + v);
+                    }
+                    else {
+                        num_members=mbrs.size();
+                        log("num_members=" + num_members);
+                        // if(num_members >= NUM+1)
+                        // System.out.println("** mbrs: " + mbrs);
+                        if(num_members == NUM+1) // all threads (NUM) plus the first channel (1)
+                            break;
+                    }
                     Util.sleep(2000);
                 }
                 log("reached " + num_members + " members");
