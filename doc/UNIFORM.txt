@@ -3,7 +3,7 @@ Uniform message delivery
 ========================
 
 Author: Bela Ban
-Version: $Id: UNIFORM.txt,v 1.1 2005/10/02 11:35:27 belaban Exp $
+Version: $Id: UNIFORM.txt,v 1.2 2005/10/03 08:45:19 belaban Exp $
 
 
 Definition
@@ -29,12 +29,13 @@ apply to unicast messages, only to multicast messages). UNIFORM also needs relia
 on top of UNICAST, too.
 
 init():
-- preparing-table,
-  committing-table,
-  acking-table : map<M, List<Address>> where M is <sender:seqno> and List is a list of
-                 members from which we expect ACKs for M
-- prepared-table: map<M, Message> where M is <sender:seqno> and Message is the real message received as part of PREPARE
-- committed-table:
+- preparing-table (sender),
+  committing-table (sender): map<M, List<Address>> where M is <sender:seqno> and List is a list of
+                             members from which we expect ACKs for M
+- prepared-table (receiver): map<M, Entry> where M is <sender:seqno>
+                             and Entry contains (1) the real message received as part of PREPARE and
+                             (2) the list of members to which this PREPARE was sent
+- committed-table (receiver): list<M> where M is <sender:seqno>
 
 On send(M):
 - Add PREPARE header to M
@@ -43,35 +44,69 @@ On send(M):
 - Pass message down
 
 On reception of PREPARE(M) from P:
-- Add M to prepared-table
+- Add M to prepared-table if M is not yet in committed-table
 - Send PREPARE-ACK(M) to P
 
 On reception of PREPARE-ACK(M) from P:
-- Remove P from M's list
+- Remove P from M's list in preparing-table
 - If M's list is empty:
   - Remove M from preparing-table
   - Add M to committing-table
   - Send COMMIT(M) message to group
 
 On reception of COMMIT(M) from P:
-- Remove M from prepared-table
-- Add M to committed-table
+- Remove M from prepared-table (if present)
+- Add M to committed-table (if not yet present)
 - Pass M up the stack (delivering it)
 - Send COMMIT-ACK(M) to P
 
 On reception of COMMIT-ACK(M) from P:
+- Remove P from M's list in committing-table
+- If M's list is empty:
+  - Remove M from committing-table
+  - Send ACK(M) to group
 
+On reception of ACK(M):
+- Remove M from committed-table
+
+- On reception of COLLECT(P) from R:
+  - Get all messages from P in prepared-table and committed-table which are not yet in list L
+    sent as part of the COLLECT message and add them to L
+  - Send a COLLECT-ACK to R containing the updated L
 
 On reception of VIEW(V):
+- We need to agree on all pending PREPARE, COMMIT and ACK messages for a sender P who is not in V anymore.
+  (This is similar to the LEAVE/STOP use case below)
+- Some member R drives this flush protocol, R might be the coordinator, or a deterministically chosen member (e.g.
+  the one right next to P)
+- Get a list L of all messages from P in prepared-table and committed-table
+- Send a COLLECT(P) message to the group, the message contains L
+- Wait for all COLLECT-ACK responses:
+  - Merge response into 2 lists: L1 and L2
+  - Add all elements of L1 into preparing-table, for each element of L1 send a PREPARE message
+  - Add all elements of L2 into committing-table, for each element of L2 send a COMMIT message
+  - The rest is driven by the regular processing of the sender
+
 
 On reception of SUSPECT(P):
 -Ignored
 
 On LEAVE/STOP:
-- Flush preparing-table,
-- Flush committing-table
-- Flush acking-table
+- Flush preparing-table: wait for all PREPARE-ACKs but don't send new PREPARE messages
+- Flush committing-table: wait for all COMMIT-ACKs but don't send new COMMIT messages
+- Flush acking-table: wait until all ACKs have been received, don't add new elements
 
+Misc
+----
+- Provide JMX stats of all tables, so we can introspect them at runtime, e.g. to ensure that they don't grow
+  infinitely
+- The PREPARE, COMMIT and ACK messages contain also a member list at which the message is targetted
+- The VIEW processing needs to be handled in a separate thread. When a view V2 arrives while V1 is still
+  handled, and if V2 contains fewer members than V1, then the wait for COLLECT-ACK might wait forever. Therefore,
+  all members from V1 not in V2 will be removed from the processing of V1, so the wait for COLLECT-ACK can terminate
+- The fact that processing of a message M from P is continued by another member R when P crashes, will lead to
+  eventual delivery of M as long as at least 1 member has received M and that member remains operational for M
+  to be committed across the group
 
 
 References
