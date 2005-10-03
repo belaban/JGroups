@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.40 2005/09/30 07:25:44 belaban Exp $
+// $Id: GMS.java,v 1.41 2005/10/03 13:35:04 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -30,6 +30,7 @@ public class GMS extends Protocol {
     /** Members excluded from group, but for which no view has been received yet */
     private final Vector      leaving=new Vector(7);
 
+    View                      view=null;
     ViewId                    view_id=null;
     private long              ltime=0;
     long                      join_timeout=5000;
@@ -62,6 +63,9 @@ public class GMS extends Protocol {
     BoundedList               prev_views=new BoundedList(20);
 
     final ViewBroadcaster     view_broadcaster=new ViewBroadcaster();
+
+    /** Time in ms to wait for all VIEW acks (0 == wait forever) */
+    long                      view_ack_collection_timeout=10000;
 
     static final String       name="GMS";
 
@@ -393,25 +397,29 @@ public class GMS extends Protocol {
         /* Check for self-inclusion: if I'm not part of the new membership, I just discard it.
         This ensures that messages sent in view V1 are only received by members of V1 */
         if(checkSelfInclusion(mbrs) == false) {
-            if(warn) log.warn(local_addr + " is not a member of view " + new_view + "; discarding view");
-
             // only shun if this member was previously part of the group. avoids problem where multiple
             // members (e.g. X,Y,Z) join {A,B} concurrently, X is joined first, and Y and Z get view
             // {A,B,X}, which would cause Y and Z to be shunned as they are not part of the membership
             // bela Nov 20 2003
             if(shun && local_addr != null && prev_members.contains(local_addr)) {
                 if(warn)
-                    log.warn("I (" + local_addr + ") am being shunned, will leave the group" +
-                            " (prev_members are " + prev_members + ')');
+                    log.warn("I (" + local_addr + ") am not a member of view " + new_view +
+                            ", shunning myself and leaving the group (prev_members are " + prev_members +
+                            ", current view is " + view + ")");
                 if(impl != null)
                     impl.handleExit();
                 passUp(new Event(Event.EXIT));
+            }
+            else {
+                if(warn) log.warn("I (" + local_addr + ") am not a member of view " + new_view + "; discarding view");
             }
             return;
         }
 
         synchronized(members) {   // serialize access to views
             // assign new_view to view_id
+
+            view=new_view;
             view_id=vid.copy();
 
             // Set the membership. Take into account joining members
@@ -590,8 +598,8 @@ public class GMS extends Protocol {
                             if(log.isErrorEnabled()) log.error("[VIEW]: view == null");
                             return;
                         }
-                        // send VIEW_ACK to sender of view
 
+                        // send VIEW_ACK to sender of view
                         Address coord=msg.getSrc();
                         Message view_ack=new Message(coord, null, null);
                         GmsHeader tmphdr=new GmsHeader(GmsHeader.VIEW_ACK, hdr.view);
@@ -769,6 +777,12 @@ public class GMS extends Protocol {
             props.remove("digest_timeout");
         }
 
+        str=props.getProperty("view_ack_collection_timeout");
+        if(str != null) {
+            view_ack_collection_timeout=Long.parseLong(str);
+            props.remove("view_ack_collection_timeout");
+        }
+
         str=props.getProperty("disable_initial_coord");
         if(str != null) {
             disable_initial_coord=Boolean.valueOf(str).booleanValue();
@@ -796,6 +810,7 @@ public class GMS extends Protocol {
     void initState() {
         becomeClient();
         view_id=null;
+        view=null;
     }
 
 
@@ -1041,7 +1056,7 @@ public class GMS extends Protocol {
         /** To collect VIEW_ACKs from all members */
         final private AckCollector ack_collector=new AckCollector();
 
-        final static long         VIEW_INSTALLATION_TIMEOUT=5000;
+        final static long         INTERVAL=5000;
 
 
 
@@ -1073,7 +1088,7 @@ public class GMS extends Protocol {
             Entry entry;
             while(!views.closed() && Thread.currentThread().equals(t)) {
                 try {
-                    entry=(Entry)views.remove(VIEW_INSTALLATION_TIMEOUT);
+                    entry=(Entry)views.remove(INTERVAL);
                     process(entry.v, entry.d);
                 }
                 catch(QueueClosedException e) {
@@ -1089,8 +1104,9 @@ public class GMS extends Protocol {
         }
 
         private void process(View v, Digest d) {
-            Message view_change_msg;
+            Message   view_change_msg;
             GmsHeader hdr;
+            Boolean   result;
 
             if(log.isTraceEnabled()) log.trace("mcasting view {" + v + "} (" + v.size() + " mbrs)\n");
             view_change_msg=new Message(); // bcast to all members
@@ -1101,23 +1117,25 @@ public class GMS extends Protocol {
             ack_collector.reset(v.getVid(), v.getMembers());
             passDown(new Event(Event.MSG, view_change_msg));
             try {
-                ack_collector.waitForAllAcks(VIEW_INSTALLATION_TIMEOUT);
+                ack_collector.waitForAllAcks(view_ack_collection_timeout);
+                result=Boolean.TRUE;
             }
             catch(TimeoutException e) {
                 log.warn("failed to collect all ACKs for view " + v.getVid() +
                         ", missing ACKs from " + ack_collector.getMissing() + " (received=" + ack_collector.getReceived() + ")");
+                result=Boolean.FALSE;
             }
-            notifyListeners(v);
+            notifyListeners(v, result);
         }
 
-        private void notifyListeners(View v) {
+        private void notifyListeners(View v, Boolean result) {
             synchronized(listeners) {
                 Set s=(Set)listeners.get(v);
                 if(s != null) {
                     Promise p;
                     for(Iterator it=new ArrayList(s).iterator(); it.hasNext();) {
                         p=(Promise)it.next();
-                        p.setResult(Boolean.TRUE);
+                        p.setResult(result);
                     }
                     listeners.remove(v);
                 }
@@ -1141,6 +1159,10 @@ public class GMS extends Protocol {
                 }
                 s.add(p);
             }
+        }
+
+        public String toString() {
+            return ack_collector.toString();
         }
     }
 
