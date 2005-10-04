@@ -1,0 +1,32 @@
+
+
+Merge problem in GMS/MERGE2
+===========================
+
+Author: Bela Ban
+Version: $Id: MergeProblem.txt,v 1.1 2005/10/04 15:22:48 belaban Exp $
+
+Symptom: first merge works, subsequent merges don't work
+
+The problem is that when many members join, we increment the VID (ViewID) every time we multicast a new view.
+Say we have subgroups {A,B,C} and {D,E}. The merge is now started by MERGE2, detecting 2 coordinators (A and D).
+The VID are 4 for {A,B,C} and 6 for {D,E}.
+The merge coordinator (A) therefore picks VID=7 for the MergeView. It now sends a request to both A and D, to multicast
+the new MergeView to their respective subgroups.
+However, let's assume that in the meantime, other members have joined one of the 2 subgroups, so that the VIDs are now:
+
+{A,B,C}: VID=9
+{D,E}:   VID=5
+
+When the MergeView is received, it will be rejected by {A,B,C} because its own VID of 9 is greater than the
+MergeView's VID of 7. However, subgroup {D,E} will accept the MergeView because its own VID of 5 is smaller than the
+MergeView's VID of 7 !
+
+So now the
+A, B and C have a membership of {A,B,C} with VID=9
+but
+D and E have a membership of {A,B,C,D,E} with VID=7 !
+
+One of the consequences of this is that D will cease sending out MERGE2 requests, because it thinks it is not
+the coordinator anymore ! This means we will not get any MERGE2 events into the GMS layer anymore, which would
+cause another merge, this time with a higher VID for the MergeView.
