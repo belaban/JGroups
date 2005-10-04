@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.24 2005/10/04 11:45:58 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.25 2005/10/04 11:52:27 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -19,7 +19,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.24 $
+ * @version $Revision: 1.25 $
  */
 public class ClientGmsImpl extends GmsImpl {
     private final Vector  initial_mbrs=new Vector(11);
@@ -305,7 +305,7 @@ public class ClientGmsImpl extends GmsImpl {
      The coordinator is determined by a majority vote. If there are an equal number of votes for
      more than 1 candidate, we determine the winner randomly.
      */
-    Address determineCoord(Vector mbrs) {
+    private Address determineCoord(Vector mbrs) {
         PingRsp mbr;
         Hashtable votes;
         int count, most_votes;
@@ -329,13 +329,12 @@ public class ClientGmsImpl extends GmsImpl {
             }
         }
 
-        if(log.isDebugEnabled()) {
-            if(votes.size() > 1)
-                if(warn) log.warn("there was more than 1 candidate for coordinator: " + votes);
-                else
-                    if(log.isDebugEnabled()) log.debug("election results: " + votes);
+        if(votes.size() > 1) {
+            if(warn) log.warn("there was more than 1 candidate for coordinator: " + votes);
         }
-
+        else {
+            if(log.isDebugEnabled()) log.debug("election results: " + votes);
+        }
 
         // determine who got the most votes
         most_votes=0;
