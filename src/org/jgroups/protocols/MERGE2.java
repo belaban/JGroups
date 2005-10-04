@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.24 2005/10/04 13:49:38 belaban Exp $
+// $Id: MERGE2.java,v 1.25 2005/10/04 15:47:47 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -284,7 +284,7 @@ public class MERGE2 extends Protocol {
                 }
             }
             if(trace)
-                log.trace("MERGE2.FindSubgroups thread terminated");
+                log.trace("MERGE2.FindSubgroups thread terminated (local_addr=" + local_addr + ")");
         }
 
 
