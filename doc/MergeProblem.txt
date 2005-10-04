@@ -4,9 +4,10 @@ Merge problem in GMS/MERGE2
 ===========================
 
 Author: Bela Ban
-Version: $Id: MergeProblem.txt,v 1.1 2005/10/04 15:22:48 belaban Exp $
+Version: $Id: MergeProblem.txt,v 1.2 2005/10/04 16:12:09 belaban Exp $
 
 Symptom: first merge works, subsequent merges don't work
+Unit test: ConnectStressTest
 
 The problem is that when many members join, we increment the VID (ViewID) every time we multicast a new view.
 Say we have subgroups {A,B,C} and {D,E}. The merge is now started by MERGE2, detecting 2 coordinators (A and D).
@@ -30,3 +31,18 @@ D and E have a membership of {A,B,C,D,E} with VID=7 !
 One of the consequences of this is that D will cease sending out MERGE2 requests, because it thinks it is not
 the coordinator anymore ! This means we will not get any MERGE2 events into the GMS layer anymore, which would
 cause another merge, this time with a higher VID for the MergeView.
+
+Possible SOLUTIONs:
+
+#1 Pick a VID for MergeViews that is high enough to be accepted by all subgroups
+#2 Suspend generating view changes while a merge is in progress
+
+Comments:
+
+- #1 doesn't work well because then all previously generated views will be discarded, but clients already
+  *have* the views !
+
+- We have to process VIEWS and MERGE requests in order, possibly we need to flush the ViewBroadcaster and suspend
+  view generation until the merge has been handled, then resumt view generation
+
+
