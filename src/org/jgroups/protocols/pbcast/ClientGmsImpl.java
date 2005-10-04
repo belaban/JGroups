@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.23 2005/09/30 07:30:23 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.24 2005/10/04 11:45:58 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -19,7 +19,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.23 $
+ * @version $Revision: 1.24 $
  */
 public class ClientGmsImpl extends GmsImpl {
     private final Vector  initial_mbrs=new Vector(11);
@@ -96,13 +96,14 @@ public class ClientGmsImpl extends GmsImpl {
                 Address new_coord=(Address)clients.iterator().next();
                 if(new_coord.equals(mbr)) {
                     if(trace)
-                        log.trace("I'm the first of the clients, will become singleton");
+                        log.trace("I (" + mbr + ") am the first of the clients, will become coordinator");
                     becomeSingletonMember(mbr);
                     return;
                 }
                 else {
                     if(trace)
-                        log.trace("I'm not the first of the clients, waiting for another client to become coord");
+                        log.trace("I (" + mbr + ") am not the first of the clients, " +
+                                "waiting for another client to become coordinator");
                     Util.sleep(500);
                 }
                 continue;
