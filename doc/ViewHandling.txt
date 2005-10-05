@@ -4,7 +4,7 @@ New view handling
 =================
 
 Author: Bela Ban
-Version: $Id: ViewHandling.txt,v 1.2 2005/10/05 08:41:40 belaban Exp $
+Version: $Id: ViewHandling.txt,v 1.3 2005/10/05 11:33:17 belaban Exp $
 
 Problem:
 Merge, join and leave requests need to handled in the order in which they arrive. Currently,
@@ -23,5 +23,17 @@ Proposed solution:
   views are transmitted reliable, ie. for each view we need to receive an ack from each member
 - When the coordinator itself leave, we need to flush the queue, ie. not accept new requests, and complete the
   existing requests
+
+Merging:
+- When we receive a MERGE event, the merge coordinator needs to inform all coordinators involved to flush their queues
+  in the ViewHandler.
+- This processes all requests in the queue, then simply discards new requests (or queues them in
+  a separate queue). We could also simply discard all current requests in the queue, since for example a JOIN
+  request will redirect its JOIN-REQ to a new coordinator until successful.
+- When the merge has successfully run (or aborted), all the queues in the ViewHandlers need to resume
+- The reason for doing this is that the MergeView's VID needs to be higher than any view seen by any of the
+  coordinators participating in the merge. If a coordinator was allowed to continue generating new views, then
+  this would not be the case
+
 
 
