@@ -3,7 +3,7 @@ Reliable view installation
 ==========================
 
 Author: Bela Ban
-Version: $Id: ReliableViewInstallation.txt,v 1.5 2005/09/26 07:29:50 belaban Exp $
+Version: $Id: ReliableViewInstallation.txt,v 1.6 2005/10/05 08:46:02 belaban Exp $
 
 The default stack sees view as just messages; a view multicast is retransmitted until the sender is excluded because
 it left or crashed. However, this behavior can lead to problems described below. The problems occur when a view
@@ -54,6 +54,16 @@ C: New coordinator doesn't take over, old coord crashes
 - Same as case A, but old coordinator crashes before V2 can be retransmitted to B
 - So B doesn't receive V2
 
+
+D: The coordinator leaves while another member joins
+----------------------------------------------------
+- In the current impl, the new member P will receive a view V in a JoinRsp
+- The VIEW V is then to be broadcast by the coord
+- However, the coord leaves before this happens
+--> Everybody has the old view, while P has the new view !
+--> We need to atomically return the JoinRsp and broadcast the view !
+    --> Maybe we should broadcast the view first and then return the JoinRsp to the client !
+--> See ViewHandling.txt for a new approach
 
 
 SOLUTION:
