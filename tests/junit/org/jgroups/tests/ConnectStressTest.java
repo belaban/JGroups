@@ -1,4 +1,4 @@
-// $Id: ConnectStressTest.java,v 1.13 2005/10/03 13:24:44 belaban Exp $
+// $Id: ConnectStressTest.java,v 1.14 2005/10/05 11:01:03 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -8,10 +8,7 @@ import EDU.oswego.cs.dl.util.concurrent.CyclicBarrier;
 import junit.framework.TestCase;
 import junit.framework.Test;
 import junit.framework.TestSuite;
-import org.jgroups.ChannelException;
-import org.jgroups.JChannel;
-import org.jgroups.View;
-import org.jgroups.Address;
+import org.jgroups.*;
 import org.jgroups.util.Util;
 
 import java.util.Vector;
@@ -20,7 +17,7 @@ import java.util.Vector;
 /**
  * Creates 1 channel, then creates NUM channels, all try to join the same channel concurrently.
  * @author Bela Ban Nov 20 2003
- * @version $Id: ConnectStressTest.java,v 1.13 2005/10/03 13:24:44 belaban Exp $
+ * @version $Id: ConnectStressTest.java,v 1.14 2005/10/05 11:01:03 belaban Exp $
  */
 public class ConnectStressTest extends TestCase {
     static CyclicBarrier  start_connecting=null;
@@ -28,15 +25,15 @@ public class ConnectStressTest extends TestCase {
     static CyclicBarrier  received_all_views=null;
     static CyclicBarrier  start_disconnecting=null;
     static CyclicBarrier  disconnected=null;
-    static final int      NUM=30;
-    MyThread[]            threads;
+    static final int      NUM=10;
+    static final MyThread[] threads=new MyThread[NUM];
     static JChannel       channel;
     static String         groupname="ConcurrentTestDemo";
 
 
     static String props="UDP(mcast_addr=228.8.8.9;mcast_port=7788;ip_ttl=1;" +
             "mcast_send_buf_size=150000;mcast_recv_buf_size=80000):" +
-            "PING(timeout=3000;num_initial_members=3):" +
+            "PING(timeout=3000;num_initial_members=10):" +
             "MERGE2(min_interval=3000;max_interval=5000):" +
             "FD_SOCK:" +
             "VERIFY_SUSPECT(timeout=1500):" +
@@ -45,7 +42,8 @@ public class ConnectStressTest extends TestCase {
             "pbcast.STABLE(desired_avg_gossip=5000):" +
             "FRAG(frag_size=4096;down_thread=false;up_thread=false):" +
             "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
-            "shun=true;print_local_addr=false;view_ack_collection_timeout=0)";
+            "shun=false;print_local_addr=false;view_ack_collection_timeout=5000;" +
+            "digest_timeout=0;merge_timeout=30000)";
 
 
 
@@ -71,6 +69,7 @@ public class ConnectStressTest extends TestCase {
 
         //  create main channel - will be coordinator for JOIN requests
         channel=new JChannel(props);
+        channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
         start=System.currentTimeMillis();
         channel.connect(groupname);
         stop=System.currentTimeMillis();
@@ -78,7 +77,6 @@ public class ConnectStressTest extends TestCase {
                     channel.getView().getMembers().size() + " members). VID=" + channel.getView().getVid());
         assertEquals(channel.getView().getMembers().size(), 1);
 
-        threads=new MyThread[NUM];
         for(int i=0; i < threads.length; i++) {
             threads[i]=new MyThread(i);
             threads[i].start();
@@ -97,20 +95,17 @@ public class ConnectStressTest extends TestCase {
             stop=System.currentTimeMillis();
             System.out.println("-- took " + (stop-start) + " msecs for all " + NUM + " threads to see all views");
 
-//            int num_members=0;
-//            for(int i=0; i < 10; i++) {
-//                num_members=channel.getView().getMembers().size();
-//                System.out.println("*--* number of members connected: " + num_members + ", (expected: " +(NUM+1) + ')');
-//                if(num_members >= NUM+1)
-//                    break;
-//                Util.sleep(500);
-//            }
-
-
-            int num_members=channel.getView().getMembers().size();
-            System.out.println("*--* number of members connected: " + num_members + ", (expected: " +(NUM+1) + ')');
+            int num_members=-1;
+            for(int i=0; i < 10; i++) {
+                View v=channel.getView();
+                num_members=v.getMembers().size();
+                System.out.println("*--* number of members connected: " + num_members + ", (expected: " +(NUM+1) +
+                        "), v=" + v);
+                if(num_members == NUM+1)
+                    break;
+                Util.sleep(500);
+            }
             assertEquals((NUM+1), num_members);
-            // Util.sleep(5000L);
         }
         catch(Exception ex) {
             fail(ex.toString());
@@ -132,13 +127,18 @@ public class ConnectStressTest extends TestCase {
             Vector mbrs=v != null? v.getMembers() : null;
             if(mbrs != null) {
                 num_members=mbrs.size();
-                System.out.println("*--* number of members connected: " + num_members + ", (expected: 1)");
+                System.out.println("*--* number of members connected: " + num_members + ", (expected: 1), view=" + v);
                 if(num_members <= 1)
                     break;
             }
-            Util.sleep(500);
+            Util.sleep(3000);
         }
         assertEquals(1, num_members);
+        log("closing all channels");
+        for(int i=0; i < threads.length; i++) {
+            MyThread t=threads[i];
+            t.closeChannel();
+        }
         channel.close();
     }
 
@@ -146,17 +146,24 @@ public class ConnectStressTest extends TestCase {
 
 
     public static class MyThread extends Thread {
-        int            index=-1;
-        long           total_connect_time=0, total_disconnect_time=0;
-        Address        my_addr=null;
+        int                index=-1;
+        long                total_connect_time=0, total_disconnect_time=0;
+        private JChannel    ch=null;
+        private Address     my_addr=null;
 
         public MyThread(int i) {
             super("thread #" + i);
             index=i;
         }
 
+        public void closeChannel() {
+            if(ch != null) {
+                ch.close();
+            }
+        }
+
+
         public void run() {
-            JChannel ch=null;
             View view;
 
             try {
@@ -185,8 +192,6 @@ public class ConnectStressTest extends TestCase {
                     else {
                         num_members=mbrs.size();
                         log("num_members=" + num_members);
-                        // if(num_members >= NUM+1)
-                        // System.out.println("** mbrs: " + mbrs);
                         if(num_members == NUM+1) // all threads (NUM) plus the first channel (1)
                             break;
                     }
@@ -197,7 +202,7 @@ public class ConnectStressTest extends TestCase {
 
                 start_disconnecting.barrier();
                 start=System.currentTimeMillis();
-                ch.close();
+                ch.disconnect();
                 stop=System.currentTimeMillis();
 
                 log(my_addr + " disconnected in " + (stop-start) + " msecs");
@@ -220,6 +225,7 @@ public class ConnectStressTest extends TestCase {
 
     public static Test suite() {
         TestSuite s=new TestSuite();
+        // we're adding the tests manually, because they need to be run in *this exact order*
         s.addTest(new ConnectStressTest("testConcurrentJoins"));
         s.addTest(new ConnectStressTest("testConcurrentLeaves"));
         return s;

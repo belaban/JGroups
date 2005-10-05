@@ -1,4 +1,4 @@
-// $Id: ParticipantGmsImpl.java,v 1.11 2005/09/30 07:31:07 belaban Exp $
+// $Id: ParticipantGmsImpl.java,v 1.12 2005/10/05 11:01:03 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -53,7 +53,7 @@ public class ParticipantGmsImpl extends GmsImpl {
                 return;
             }
 
-            if(log.isDebugEnabled()) log.debug("sending LEAVE request to " + coord);
+            if(log.isDebugEnabled()) log.debug("sending LEAVE request to " + coord + " (local_addr=" + gms.local_addr + ")");
             sendLeaveMessage(coord, mbr);
             synchronized(leave_promise) {
                 result=leave_promise.getResult(gms.leave_timeout);
