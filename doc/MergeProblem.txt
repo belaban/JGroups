@@ -4,7 +4,7 @@ Merge problem in GMS/MERGE2
 ===========================
 
 Author: Bela Ban
-Version: $Id: MergeProblem.txt,v 1.3 2005/10/04 16:29:30 belaban Exp $
+Version: $Id: MergeProblem.txt,v 1.4 2005/10/05 08:33:22 belaban Exp $
 
 Symptom: first merge works, subsequent merges don't work
 Unit test: ConnectStressTest
@@ -36,6 +36,8 @@ Possible SOLUTIONs:
 
 #1 Pick a VID for MergeViews that is high enough to be accepted by all subgroups
 #2 Suspend generating view changes while a merge is in progress
+#3 All JOIN, LEAVE and MERGE requests need to be handled by ViewBroadcaster (rename this!), check out
+   ViewHandling.txt for details
 
 Comments:
 
