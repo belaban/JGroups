@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.41 2005/10/03 13:35:04 belaban Exp $
+// $Id: GMS.java,v 1.42 2005/10/05 11:01:03 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -36,11 +36,11 @@ public class GMS extends Protocol {
     long                      join_timeout=5000;
     long                      join_retry_timeout=2000;
     long                      leave_timeout=5000;
-    private long              digest_timeout=5000;        // time to wait for a digest (from PBCAST). should be fast
-    long                      merge_timeout=10000;        // time to wait for all MERGE_RSPS
-    private final Object      impl_mutex=new Object();    // synchronizes event entry into impl
-    private final Object      digest_mutex=new Object();  // synchronizes the GET_DIGEST/GET_DIGEST_OK events
-    private Digest            digest=null;                // holds result of GET_DIGEST event
+    private long              digest_timeout=0;              // time to wait for a digest (from PBCAST). should be fast
+    long                      merge_timeout=10000;           // time to wait for all MERGE_RSPS
+    private final Object      impl_mutex=new Object();       // synchronizes event entry into impl
+    private final Object      digest_mutex=new Object();
+    private final Promise     digest_promise=new Promise();  // holds result of GET_DIGEST event
     private final Hashtable   impls=new Hashtable(3);
     private boolean           shun=true;
     boolean                   merge_leader=false;         // can I initiate a merge ?
@@ -65,7 +65,7 @@ public class GMS extends Protocol {
     final ViewBroadcaster     view_broadcaster=new ViewBroadcaster();
 
     /** Time in ms to wait for all VIEW acks (0 == wait forever) */
-    long                      view_ack_collection_timeout=10000;
+    long                      view_ack_collection_timeout=20000;
 
     static final String       name="GMS";
 
@@ -244,12 +244,6 @@ public class GMS extends Protocol {
             }
             vid=Math.max(view_id.getId(), ltime) + 1;
             ltime=vid;
-//            if(log.isDebugEnabled()) log.debug("VID=" + vid + ", current members=" +
-//                    Util.printMembers(members.getMembers()) +
-//                    ", new_mbrs=" + Util.printMembers(new_mbrs) +
-//                    ", old_mbrs=" + Util.printMembers(old_mbrs) + ", suspected_mbrs=" +
-//                    Util.printMembers(suspected_mbrs));
-
             tmp_mbrs=tmp_members.copy();  // always operate on the temporary membership
             tmp_mbrs.remove(suspected_mbrs);
             tmp_mbrs.remove(old_mbrs);
@@ -321,17 +315,16 @@ public class GMS extends Protocol {
      </ol>
      @return View The new view
      */
-    View castViewChange(Vector new_mbrs, Vector old_mbrs, Vector suspected_mbrs, Promise p) {
+    void castViewChange(Vector new_mbrs, Vector old_mbrs, Vector suspected_mbrs, Promise p) {
         View new_view;
 
         // next view: current mbrs + new_mbrs - old_mbrs - suspected_mbrs
         new_view=getNextView(new_mbrs, old_mbrs, suspected_mbrs);
         castViewChange(new_view, null, p);
-        return new_view;
     }
 
-    View castViewChange(Vector new_mbrs, Vector old_mbrs, Vector suspected_mbrs) {
-        return castViewChange(new_mbrs, old_mbrs, suspected_mbrs, null);
+    void castViewChange(Vector new_mbrs, Vector old_mbrs, Vector suspected_mbrs) {
+        castViewChange(new_mbrs, old_mbrs, suspected_mbrs, null);
     }
 
 
@@ -340,7 +333,7 @@ public class GMS extends Protocol {
     }
 
 
-    void castViewChange(View new_view, Digest digest, Promise p) {
+    private void castViewChange(View new_view, Digest digest, Promise p) {
         if(p != null)
             view_broadcaster.register(new_view, p);
         try {
@@ -534,27 +527,18 @@ public class GMS extends Protocol {
     /** Sends down a GET_DIGEST event and waits for the GET_DIGEST_OK response, or
      timeout, whichever occurs first */
     public Digest getDigest() {
-        Digest ret;
+        Digest ret=null;
 
         synchronized(digest_mutex) {
-            digest=null;
+            digest_promise.reset();
             passDown(Event.GET_DIGEST_EVT);
-            if(digest == null) {
-                try {
-                    digest_mutex.wait(digest_timeout);
-                }
-                catch(Exception ex) {
-                }
+            try {
+                ret=(Digest)digest_promise.getResultWithTimeout(digest_timeout);
             }
-            if(digest != null) {
-                ret=digest;
-                digest=null;
-                return ret;
-            }
-            else {
+            catch(TimeoutException e) {
                 if(log.isErrorEnabled()) log.error("digest could not be fetched from below");
-                return null;
             }
+            return ret;
         }
     }
 
@@ -604,20 +588,12 @@ public class GMS extends Protocol {
                         Message view_ack=new Message(coord, null, null);
                         GmsHeader tmphdr=new GmsHeader(GmsHeader.VIEW_ACK, hdr.view);
                         view_ack.putHeader(name, tmphdr);
-
-                        if(trace)
-                            log.trace("sending VIEW_ACK for " + hdr.view.getVid() + " to " + coord);
                         passDown(new Event(Event.MSG, view_ack));
-                        if(trace)
-                            log.trace("sent VIEW_ACK to " + coord);
-
                         impl.handleViewChange(hdr.view, hdr.my_digest);
                         break;
 
                     case GmsHeader.VIEW_ACK:
                         Object sender=msg.getSrc();
-                        if(trace)
-                            log.trace("received VIEW_ACK from " + sender);
                         view_broadcaster.ack(sender);
                         return; // don't pass further up
 
@@ -691,12 +667,9 @@ public class GMS extends Protocol {
     public void receiveUpEvent(Event evt) {
         switch(evt.getType()) {
             case Event.GET_DIGEST_OK:
-                synchronized(digest_mutex) {
-                    digest=(Digest)evt.getArg();
-                    digest_mutex.notifyAll();
-                }
-                return;
-                }
+                digest_promise.setResult(evt.getArg());
+                return; // don't pass further up
+        }
         super.receiveUpEvent(evt);
     }
 
@@ -1064,6 +1037,8 @@ public class GMS extends Protocol {
         private void add(View v, Digest d) throws QueueClosedException {
             start();
             views.add(new Entry(v, d));
+            if(trace)
+            log.trace("ViewBroadcaster has " + views.size() + " views in its queue");
         }
 
 
@@ -1107,22 +1082,30 @@ public class GMS extends Protocol {
             Message   view_change_msg;
             GmsHeader hdr;
             Boolean   result;
+            long      start, stop;
+            ViewId    vid=v.getVid();
+            int       size=-1;
 
             if(log.isTraceEnabled()) log.trace("mcasting view {" + v + "} (" + v.size() + " mbrs)\n");
+            start=System.currentTimeMillis();
             view_change_msg=new Message(); // bcast to all members
             hdr=new GmsHeader(GmsHeader.VIEW, v);
             hdr.my_digest=d;
             view_change_msg.putHeader(name, hdr);
 
-            ack_collector.reset(v.getVid(), v.getMembers());
+            ack_collector.reset(vid, v.getMembers());
+            size=ack_collector.size();
             passDown(new Event(Event.MSG, view_change_msg));
             try {
                 ack_collector.waitForAllAcks(view_ack_collection_timeout);
                 result=Boolean.TRUE;
+                stop=System.currentTimeMillis();
+                if(trace)
+                log.trace("received all ACKs (" + size + ") for " + vid + " in " + (stop-start) + "ms");
             }
             catch(TimeoutException e) {
-                log.warn("failed to collect all ACKs for view " + v.getVid() +
-                        ", missing ACKs from " + ack_collector.getMissing() + " (received=" + ack_collector.getReceived() + ")");
+                log.warn("failed to collect all ACKs (" + size + ") for view " + vid + " after " + view_ack_collection_timeout +
+                        "ms, missing ACKs from " + ack_collector.getMissing() + " (received=" + ack_collector.getReceived() + ")");
                 result=Boolean.FALSE;
             }
             notifyListeners(v, result);
