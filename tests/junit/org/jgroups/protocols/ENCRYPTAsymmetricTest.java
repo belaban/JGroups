@@ -97,7 +97,7 @@ public class ENCRYPTAsymmetricTest extends TestCase {
 	
 	}
 
-	public void testInitRSABlockAsymProperties()
+	public void XtestInitRSABlockAsymProperties()
 	{
 		
 		Properties props = new Properties();
