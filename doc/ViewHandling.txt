@@ -4,7 +4,7 @@ New view handling
 =================
 
 Author: Bela Ban
-Version: $Id: ViewHandling.txt,v 1.3 2005/10/05 11:33:17 belaban Exp $
+Version: $Id: ViewHandling.txt,v 1.4 2005/10/10 11:45:40 belaban Exp $
 
 Problem:
 Merge, join and leave requests need to handled in the order in which they arrive. Currently,
@@ -34,6 +34,36 @@ Merging:
 - The reason for doing this is that the MergeView's VID needs to be higher than any view seen by any of the
   coordinators participating in the merge. If a coordinator was allowed to continue generating new views, then
   this would not be the case
+
+
+Implementation
+--------------
+
+- LEAVE of coordinator:
+  - Add LEAVE request to queue
+  - Stop (=flush) queue. Wait until all requests have been processed, then leave
+
+- LEAVE of regular member P:
+  - Add LEAVE request to queue:
+    - Compute new view V (excluding P)
+    - Multicast V to all members of V, wait for VIEW_ACKs
+
+- JOIN(P):
+  - Add JOIN request to queue
+    - Compute new view V including P
+    - Multicast V to all members of V *excluding* P
+      (this is necessary because we won't receive a VIEW_ACK from P, so we would block)
+    - Send unicast JoinRsp to P
+
+- SUSPECT(P):
+  - Add SUSPECT request to queue
+  - Same as LEAVE handling
+
+- STOP of coordinator:
+  - Stop (=flush) and close queue. Wait until all requests have been processed, then leave
+  - This is probably superfluous (already done by LEAVE(coord)), but double-check
+
+- MERGE:
 
 
 
