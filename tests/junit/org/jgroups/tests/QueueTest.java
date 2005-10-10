@@ -1,4 +1,4 @@
-// $Id: QueueTest.java,v 1.17 2005/09/22 13:07:03 belaban Exp $
+// $Id: QueueTest.java,v 1.18 2005/10/10 12:22:08 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -30,7 +30,6 @@ public class QueueTest extends TestCase {
         super.tearDown();
         if(queue != null) {
             queue.reset();
-            queue=null;
         }
     }
 
@@ -88,6 +87,7 @@ public class QueueTest extends TestCase {
             assertTrue("queue is closed, this is okay", queue.closed());
         }
     }
+
 
     public void testCloseWithFlush() {
         queue.close(true);
@@ -189,6 +189,89 @@ public class QueueTest extends TestCase {
         assertTrue(queue.getFirst() == null);
         assertTrue(queue.getLast() == null);
     }
+
+
+    public void testWaitUntilClosed() {
+        queue.close(true);
+        queue.waitUntilClosed(0);
+        assertEquals(0, queue.size());
+    }
+
+    public void testWaitUntilClosed2() {
+        queue.close(true);
+        try {
+            queue.peek();
+            fail("peek() should throw a QueueClosedException");
+        }
+        catch(QueueClosedException e) {
+            assertTrue(e != null);
+        }
+        assertEquals(0, queue.size());
+    }
+
+    public void testWaitUntilClosed3() throws QueueClosedException {
+        queue.add("one");
+        queue.close(true);
+        Object obj=queue.peek();
+        assertEquals("one", obj);
+        assertEquals(1, queue.size());
+        queue.remove();
+        try {
+            queue.peek();
+            fail("peek() should throw a QueueClosedException");
+        }
+        catch(QueueClosedException e) {
+            assertTrue(e != null);
+        }
+        assertEquals(0, queue.size());
+    }
+
+    public void testWaitUntilClosed4() throws QueueClosedException {
+        for(int i=0; i < 10; i++)
+            queue.add(new Integer(i));
+        new Thread() {
+            public void run() {
+                while(!queue.closed()) {
+                    try {
+                        System.out.println("-- removed " + queue.remove());
+                        Util.sleep(200);
+                    }
+                    catch(QueueClosedException e) {
+                        break;
+                    }
+                }
+            }
+        }.start();
+        queue.close(true);
+        queue.waitUntilClosed(0);
+        assertEquals(0, queue.size());
+    }
+
+
+    public void testWaitUntilClosed5() throws QueueClosedException {
+        for(int i=0; i < 10; i++)
+            queue.add(new Integer(i));
+        new Thread() {
+            public void run() {
+                while(!queue.closed()) {
+                    try {
+                        System.out.println("-- removed " + queue.remove());
+                        Util.sleep(200);
+                    }
+                    catch(QueueClosedException e) {
+                        System.out.println("-- queue is closed, cannot remove element");
+                        break;
+                    }
+                }
+            }
+        }.start();
+
+        Util.sleep(600);
+        queue.close(false);
+        queue.waitUntilClosed(0);
+        assertTrue(queue.size() > 0);
+    }
+
 
 
     public void testRemoveElementNoElement() {
@@ -308,7 +391,6 @@ public class QueueTest extends TestCase {
 
     public void testRemoveAndClose() {
         try {
-
             new Thread() {
                 public void run() {
                     Util.sleep(1000);
@@ -321,6 +403,27 @@ public class QueueTest extends TestCase {
         }
         catch(QueueClosedException ex) {
             assertTrue(ex instanceof QueueClosedException); // of course, stupid comparison...
+        }
+    }
+
+
+    public void testRemoveAndCloseWithTimeout() throws TimeoutException {
+        try {
+            new Thread() {
+                public void run() {
+                    Util.sleep(1000);
+                    queue.close(true); // close gracefully
+                }
+            }.start();
+
+            queue.remove(5000);
+            fail("we should not be able to remove an object from a closed queue");
+        }
+        catch(QueueClosedException ex) {
+            assertTrue(ex instanceof QueueClosedException); // of course, stupid comparison...
+        }
+        catch(TimeoutException timeout) {
+            fail("we should not get a TimeoutException, but a QueueClosedException here");
         }
     }
 
