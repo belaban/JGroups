@@ -2,12 +2,13 @@ package org.jgroups.util;
 
 import org.jgroups.TimeoutException;
 import org.jgroups.ViewId;
+import org.jgroups.View;
 
 import java.util.*;
 
 /**
  * @author Bela Ban
- * @version $Id: AckCollector.java,v 1.4 2005/09/30 07:21:08 belaban Exp $
+ * @version $Id: AckCollector.java,v 1.5 2005/10/10 12:23:10 belaban Exp $
  */
 public class AckCollector {
     /** List<Object>: list of members from whom we haven't received an ACK yet */
@@ -15,6 +16,7 @@ public class AckCollector {
     private final Set            received_acks=new HashSet();
     private final Promise        all_acks_received=new Promise();
     private ViewId               proposed_view;
+    private final Set            suspected_mbrs=new HashSet();
 
 
     public AckCollector() {
@@ -44,6 +46,7 @@ public class AckCollector {
         received_acks.clear();
         if(l != null)
             missing_acks.addAll(l);
+        missing_acks.removeAll(suspected_mbrs);
         all_acks_received.reset();
     }
 
@@ -58,8 +61,19 @@ public class AckCollector {
             all_acks_received.setResult(Boolean.TRUE);
     }
 
-    public void remove(Object member) {
+    public void suspect(Object member) {
         ack(member);
+        suspected_mbrs.add(member);
+    }
+
+    public void unsuspect(Object member) {
+        suspected_mbrs.remove(member);
+    }
+
+    public void handleView(View v) {
+        if(v == null) return;
+        Vector mbrs=v.getMembers();
+        suspected_mbrs.retainAll(mbrs);
     }
 
     public boolean waitForAllAcks() {
