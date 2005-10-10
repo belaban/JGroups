@@ -1,4 +1,4 @@
-// $Id: ParticipantGmsImpl.java,v 1.13 2005/10/10 14:53:00 belaban Exp $
+// $Id: ParticipantGmsImpl.java,v 1.14 2005/10/10 15:10:30 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -49,7 +49,8 @@ public class ParticipantGmsImpl extends GmsImpl {
         while((coord=gms.determineCoordinator()) != null && max_tries-- > 0) {
             if(gms.local_addr.equals(coord)) {            // I'm the coordinator
                 gms.becomeCoordinator();
-                gms.getImpl().handleLeave(mbr, false);    // regular leave
+                // gms.getImpl().handleLeave(mbr, false);    // regular leave
+                gms.getImpl().leave(mbr);    // regular leave
                 return;
             }
 
@@ -133,7 +134,9 @@ public class ParticipantGmsImpl extends GmsImpl {
 
             suspected_mbrs.removeAllElements();
             gms.becomeCoordinator();
-            gms.getImpl().suspect(mbr);
+            // gms.getImpl().suspect(mbr);
+            gms.view_handler.add(new GMS.Request(GMS.Request.SUSPECT, mbr, true, null));
+            gms.ack_collector.suspect(mbr);
         }
     }
 

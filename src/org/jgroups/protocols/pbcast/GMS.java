@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.42 2005/10/05 11:01:03 belaban Exp $
+// $Id: GMS.java,v 1.43 2005/10/10 15:09:30 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -62,7 +62,12 @@ public class GMS extends Protocol {
     /** Stores the last 20 views */
     BoundedList               prev_views=new BoundedList(20);
 
-    final ViewBroadcaster     view_broadcaster=new ViewBroadcaster();
+
+    /** Class to process JOIN, LEAVE and MERGE requests */
+    public final ViewHandler   view_handler=new ViewHandler();
+
+    /** To collect VIEW_ACKs from all members */
+    final AckCollector ack_collector=new AckCollector();
 
     /** Time in ms to wait for all VIEW acks (0 == wait forever) */
     long                      view_ack_collection_timeout=20000;
@@ -166,10 +171,10 @@ public class GMS extends Protocol {
     }
 
     public void stop() {
+        view_handler.stop(true);
         if(impl != null) impl.stop();
         if(prev_members != null)
             prev_members.removeAll();
-        view_broadcaster.stop();
     }
 
 
@@ -315,36 +320,43 @@ public class GMS extends Protocol {
      </ol>
      @return View The new view
      */
-    void castViewChange(Vector new_mbrs, Vector old_mbrs, Vector suspected_mbrs, Promise p) {
+    public void castViewChange(Vector new_mbrs, Vector old_mbrs, Vector suspected_mbrs) {
         View new_view;
 
         // next view: current mbrs + new_mbrs - old_mbrs - suspected_mbrs
         new_view=getNextView(new_mbrs, old_mbrs, suspected_mbrs);
-        castViewChange(new_view, null, p);
-    }
-
-    void castViewChange(Vector new_mbrs, Vector old_mbrs, Vector suspected_mbrs) {
-        castViewChange(new_mbrs, old_mbrs, suspected_mbrs, null);
+        castViewChange(new_view, null);
     }
 
 
-    void castViewChange(View new_view, Digest digest) {
-        castViewChange(new_view, digest,  null);
-    }
+    public void castViewChange(View new_view, Digest digest) {
+        Message   view_change_msg;
+        GmsHeader hdr;
+        long      start, stop;
+        ViewId    vid=new_view.getVid();
+        int       size=-1;
 
+        if(log.isTraceEnabled()) log.trace("mcasting view {" + new_view + "} (" + new_view.size() + " mbrs)\n");
+        start=System.currentTimeMillis();
+        view_change_msg=new Message(); // bcast to all members
+        hdr=new GmsHeader(GmsHeader.VIEW, new_view);
+        hdr.my_digest=digest;
+        view_change_msg.putHeader(name, hdr);
 
-    private void castViewChange(View new_view, Digest digest, Promise p) {
-        if(p != null)
-            view_broadcaster.register(new_view, p);
+        ack_collector.reset(vid, new_view.getMembers());
+        size=ack_collector.size();
+        passDown(new Event(Event.MSG, view_change_msg));
         try {
-            view_broadcaster.add(new_view, digest);
+            ack_collector.waitForAllAcks(view_ack_collection_timeout);
+            stop=System.currentTimeMillis();
+            if(trace)
+                log.trace("received all ACKs (" + size + ") for " + vid + " in " + (stop-start) + "ms");
         }
-        catch(QueueClosedException e) {
-            if(warn)
-                log.warn("cannot broadcast view " + new_view.getVid(), e);
+        catch(TimeoutException e) {
+            log.warn("failed to collect all ACKs (" + size + ") for view " + vid + " after " + view_ack_collection_timeout +
+                    "ms, missing ACKs from " + ack_collector.getMissing() + " (received=" + ack_collector.getReceived() + ")");
         }
     }
-
 
 
 
@@ -559,7 +571,7 @@ public class GMS extends Protocol {
                 hdr=(GmsHeader)msg.removeHeader(name);
                 switch(hdr.type) {
                     case GmsHeader.JOIN_REQ:
-                        handleJoinRequest(hdr.mbr);
+                        view_handler.add(new Request(Request.JOIN, hdr.mbr, false, null));
                         break;
                     case GmsHeader.JOIN_RSP:
                         impl.handleJoinResponse(hdr.join_rsp);
@@ -571,8 +583,7 @@ public class GMS extends Protocol {
                             if(log.isErrorEnabled()) log.error("LEAVE_REQ's mbr field is null");
                             return;
                         }
-                        // sendLeaveResponse(hdr.mbr);
-                        impl.handleLeave(hdr.mbr, false);
+                        view_handler.add(new Request(Request.LEAVE, hdr.mbr, false, null));
                         break;
                     case GmsHeader.LEAVE_RSP:
                         impl.handleLeaveResponse();
@@ -594,7 +605,7 @@ public class GMS extends Protocol {
 
                     case GmsHeader.VIEW_ACK:
                         Object sender=msg.getSrc();
-                        view_broadcaster.ack(sender);
+                        ack_collector.ack(sender);
                         return; // don't pass further up
 
                     case GmsHeader.MERGE_REQ:
@@ -636,8 +647,8 @@ public class GMS extends Protocol {
 
             case Event.SUSPECT:
                 Address suspected=(Address)evt.getArg();
-                view_broadcaster.suspect(suspected);
-                impl.suspect(suspected);
+                view_handler.add(new Request(Request.LEAVE, suspected, true, null));
+                ack_collector.suspect(suspected);
                 break;                               // pass up
 
             case Event.UNSUSPECT:
@@ -645,7 +656,7 @@ public class GMS extends Protocol {
                 return;                              // discard
 
             case Event.MERGE:
-                impl.merge((Vector)evt.getArg());
+                view_handler.add(new Request(Request.MERGE, null, false, (Vector)evt.getArg()));
                 return;                              // don't pass up
         }
 
@@ -785,45 +796,6 @@ public class GMS extends Protocol {
         view_id=null;
         view=null;
     }
-
-
-    void handleJoinRequest(Address mbr) {
-        JoinRsp join_rsp;
-        Message m;
-        GmsHeader hdr;
-
-        if(mbr == null) {
-            if(log.isErrorEnabled()) log.error("mbr is null");
-            return;
-        }
-
-        if(log.isDebugEnabled()) log.debug("mbr=" + mbr);
-
-        // 1. Get the new view and digest
-        join_rsp=impl.handleJoin(mbr);
-        if(join_rsp == null)
-            if(log.isErrorEnabled())
-                log.error(impl.getClass().toString() + ".handleJoin(" + mbr +
-                        ") returned null: will not be able to multicast new view");
-
-        // 2. Send down a local TMP_VIEW event. This is needed by certain layers (e.g. NAKACK) to compute correct digest
-        //    in case client's next request (e.g. getState()) reaches us *before* our own view change multicast.
-        // Check NAKACK's TMP_VIEW handling for details
-        if(join_rsp != null && join_rsp.getView() != null)
-            passDown(new Event(Event.TMP_VIEW, join_rsp.getView()));
-
-        // 3. Return result to client
-        m=new Message(mbr, null, null);
-        hdr=new GmsHeader(GmsHeader.JOIN_RSP, join_rsp);
-        m.putHeader(name, hdr);
-        passDown(new Event(Event.MSG, m));
-
-        // 4. Bcast the new view
-        if(join_rsp != null)
-            castViewChange(join_rsp.getView(), null);
-    }
-
-
 
 
     /* --------------------------- End of Private Methods ------------------------------- */
@@ -1009,62 +981,96 @@ public class GMS extends Protocol {
     }
 
 
-    private static class Entry {
-        View   v;
-        Digest d;
 
-        Entry(View v, Digest d) {
-            this.v=v;
-            this.d=d;
+
+    public static class Request {
+        static final int JOIN    = 1;
+        static final int LEAVE   = 2;
+        static final int SUSPECT = 3;
+        static final int MERGE   = 4;
+
+
+        int     type=-1;
+        Address mbr=null;
+        boolean suspected;
+        Vector  coordinators=null;
+
+        Request(int type, Address mbr, boolean suspected, Vector coordinators) {
+            this.type=type;
+            this.mbr=mbr;
+            this.suspected=suspected;
+            this.coordinators=coordinators;
+        }
+
+        public String toString() {
+            switch(type) {
+                case JOIN:    return "JOIN(" + mbr + ")";
+                case LEAVE:   return "LEAVE(" + mbr + ", " + suspected + ")";
+                case SUSPECT: return "SUSPECT(" + mbr + ")";
+                case MERGE:   return "MERGE(" + coordinators + ")";
+            }
+            return "<invalid (type=" + type + ")";
         }
     }
 
-    private class ViewBroadcaster implements Runnable {
-        Thread t;
-        Queue  views=new Queue(); // Queue<Entry>
-
-        /** Map<View, Set<Promise>> */
-        final Map listeners=new HashMap();
-
-        /** To collect VIEW_ACKs from all members */
-        final private AckCollector ack_collector=new AckCollector();
-
-        final static long         INTERVAL=5000;
 
 
 
+    /**
+     * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
+     * @author Bela Ban
+     * @version $Id: GMS.java,v 1.43 2005/10/10 15:09:30 belaban Exp $
+     */
+    class ViewHandler implements Runnable {
+        Thread                t;
+        Queue                 q=new Queue(); // Queue<Request>
+        boolean               suspended=false;
+        final static long     INTERVAL=5000;
 
-        private void add(View v, Digest d) throws QueueClosedException {
+
+        void add(Request req) {
+            if(suspended) {
+                log.warn("queue is suspended; request is discarded");
+                return;
+            }
             start();
-            views.add(new Entry(v, d));
-            if(trace)
-            log.trace("ViewBroadcaster has " + views.size() + " views in its queue");
-        }
-
-
-        synchronized private void start() {
-            if(t == null || !t.isAlive()) {
-                if(views.closed())
-                    views.reset();
-                t=new Thread(this, "ViewBroadcaster");
-                t.setDaemon(true);
-                t.start();
+            try {
+                q.add(req);
+            }
+            catch(QueueClosedException e) {
                 if(trace)
-                    log.trace("ViewBroadcaster started");
+                    log.trace("queue is closed; request " + req + " is discarded");
             }
         }
 
-        synchronized private void stop() {
-            views.close(true);
-            t=null;
+        synchronized void waitUntilCompleted(long timeout) {
+            if(t != null) {
+                try {
+                    t.join(timeout);
+                }
+                catch(InterruptedException e) {
+                }
+            }
+
+        }
+
+        public void suspend() {
+            suspended=true;
+            q.close(true);
+        }
+
+        public void resume() {
+            if(q.closed())
+                q.reset();
+            suspended=false;
         }
 
         public void run() {
-            Entry entry;
-            while(!views.closed() && Thread.currentThread().equals(t)) {
+            Request req;
+            while(!q.closed() && Thread.currentThread().equals(t)) {
                 try {
-                    entry=(Entry)views.remove(INTERVAL);
-                    process(entry.v, entry.d);
+                    req=(Request)q.remove(INTERVAL);
+                    process(req);
                 }
                 catch(QueueClosedException e) {
                     break;
@@ -1073,81 +1079,60 @@ public class GMS extends Protocol {
                     break;
                 }
             }
-            t=null;
+        }
+
+
+
+        private void process(Request req) {
             if(trace)
-                log.trace("ViewBroadcaster terminated");
+                log.trace("processing " + req);
+            switch(req.type) {
+                case Request.JOIN:
+                    impl.handleJoin(req.mbr);
+                    break;
+                case Request.LEAVE:
+                    if(req.suspected)
+                        impl.suspect(req.mbr);
+                    else
+                        impl.handleLeave(req.mbr, req.suspected);
+                    break;
+                case Request.SUSPECT:
+                    impl.suspect(req.mbr);
+                    break;
+                case Request.MERGE:
+                    impl.merge(req.coordinators);
+                    break;
+                default:
+                    log.error("Request " + req.type + " is unknown; discarded");
+            }
         }
 
-        private void process(View v, Digest d) {
-            Message   view_change_msg;
-            GmsHeader hdr;
-            Boolean   result;
-            long      start, stop;
-            ViewId    vid=v.getVid();
-            int       size=-1;
 
-            if(log.isTraceEnabled()) log.trace("mcasting view {" + v + "} (" + v.size() + " mbrs)\n");
-            start=System.currentTimeMillis();
-            view_change_msg=new Message(); // bcast to all members
-            hdr=new GmsHeader(GmsHeader.VIEW, v);
-            hdr.my_digest=d;
-            view_change_msg.putHeader(name, hdr);
+        private void handleMergeRequest(Vector coordinators) {
 
-            ack_collector.reset(vid, v.getMembers());
-            size=ack_collector.size();
-            passDown(new Event(Event.MSG, view_change_msg));
-            try {
-                ack_collector.waitForAllAcks(view_ack_collection_timeout);
-                result=Boolean.TRUE;
-                stop=System.currentTimeMillis();
+        }
+
+
+        synchronized void start() {
+            if(q.closed())
+                q.reset();
+            suspended=false;
+            if(t == null || !t.isAlive()) {
+                t=new Thread(this, "ViewHandler");
+                t.setDaemon(true);
+                t.start();
                 if(trace)
-                log.trace("received all ACKs (" + size + ") for " + vid + " in " + (stop-start) + "ms");
-            }
-            catch(TimeoutException e) {
-                log.warn("failed to collect all ACKs (" + size + ") for view " + vid + " after " + view_ack_collection_timeout +
-                        "ms, missing ACKs from " + ack_collector.getMissing() + " (received=" + ack_collector.getReceived() + ")");
-                result=Boolean.FALSE;
-            }
-            notifyListeners(v, result);
-        }
-
-        private void notifyListeners(View v, Boolean result) {
-            synchronized(listeners) {
-                Set s=(Set)listeners.get(v);
-                if(s != null) {
-                    Promise p;
-                    for(Iterator it=new ArrayList(s).iterator(); it.hasNext();) {
-                        p=(Promise)it.next();
-                        p.setResult(result);
-                    }
-                    listeners.remove(v);
-                }
+                    log.trace("ViewHandler started");
             }
         }
 
-        private void suspect(Object arg) {
-            ack_collector.remove(arg);
+        synchronized void stop(boolean flush) {
+            q.close(flush);
         }
 
-        public void ack(Object sender) {
-            ack_collector.ack(sender);
-        }
 
-        public void register(View new_view, Promise p) {
-            synchronized(listeners) {
-                Set s=(Set)listeners.get(new_view);
-                if(s == null) {
-                    s=new TreeSet();
-                    listeners.put(new_view, s);
-                }
-                s.add(p);
-            }
-        }
-
-        public String toString() {
-            return ack_collector.toString();
-        }
     }
+
 
 
 }
