@@ -1,4 +1,4 @@
-// $Id: ParticipantGmsImpl.java,v 1.12 2005/10/05 11:01:03 belaban Exp $
+// $Id: ParticipantGmsImpl.java,v 1.13 2005/10/10 14:53:00 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -92,9 +92,8 @@ public class ParticipantGmsImpl extends GmsImpl {
     }
 
 
-    public JoinRsp handleJoin(Address mbr) {
+    public void handleJoin(Address mbr) {
         wrongMethod("handleJoin");
-        return null;
     }
 
 
@@ -122,8 +121,6 @@ public class ParticipantGmsImpl extends GmsImpl {
 
 
     public void handleSuspect(Address mbr) {
-        Vector suspects;
-
         if(mbr == null) return;
         if(!suspected_mbrs.contains(mbr))
             suspected_mbrs.addElement(mbr);
@@ -134,10 +131,9 @@ public class ParticipantGmsImpl extends GmsImpl {
             if(log.isDebugEnabled()) log.debug("suspected mbr=" + mbr + "), members are " +
                     gms.members + ", coord=" + gms.local_addr + ": I'm the new coord !");
 
-            suspects=(Vector)suspected_mbrs.clone();
             suspected_mbrs.removeAllElements();
             gms.becomeCoordinator();
-            gms.castViewChange(null, null, suspects);
+            gms.getImpl().suspect(mbr);
         }
     }
 

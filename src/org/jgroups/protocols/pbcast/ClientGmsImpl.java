@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.25 2005/10/04 11:52:27 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.26 2005/10/10 14:52:27 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -19,7 +19,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.25 $
+ * @version $Revision: 1.26 $
  */
 public class ClientGmsImpl extends GmsImpl {
     private final Vector  initial_mbrs=new Vector(11);
@@ -183,15 +183,14 @@ public class ClientGmsImpl extends GmsImpl {
     }
 
 
-    public JoinRsp handleJoin(Address mbr) {
-        wrongMethod("handleJoin");
-        return null;
+    public void handleJoin(Address mbr) {
+        wrongMethod("handleJoin(" + mbr + ")");
     }
 
 
     /** Returns false. Clients don't handle leave() requests */
     public void handleLeave(Address mbr, boolean suspected) {
-        wrongMethod("handleLeave");
+        wrongMethod("handleLeave(" + mbr + ", " + suspected + ")");
     }
 
 
