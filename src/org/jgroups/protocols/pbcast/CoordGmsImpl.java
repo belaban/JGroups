@@ -1,11 +1,10 @@
-// $Id: CoordGmsImpl.java,v 1.29 2005/10/05 11:01:03 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.30 2005/10/10 15:11:24 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
 
 import org.jgroups.*;
 import org.jgroups.util.TimeScheduler;
-import org.jgroups.util.Promise;
 
 import java.util.Iterator;
 import java.util.Vector;
@@ -77,7 +76,11 @@ public class CoordGmsImpl extends GmsImpl {
         }
         if(mbr.equals(gms.local_addr))
             leaving=true;
-        handleLeave(mbr, false); // regular leave
+        // handleLeave(mbr, false); // regular leave
+        gms.view_handler.add(new GMS.Request(GMS.Request.LEAVE, mbr, false, null));
+        gms.view_handler.stop(true); // wait until all requests have been processed, then close the queue and leave
+        gms.view_handler.waitUntilCompleted(gms.leave_timeout);
+        // handleLeave(mbr, false); // regular leave
     }
 
     public void handleJoinResponse(JoinRsp join_rsp) {
@@ -267,86 +270,98 @@ public class CoordGmsImpl extends GmsImpl {
      * Computes the new view (including the newly joined member) and get the digest from PBCAST.
      * Returns both in the form of a JoinRsp
      */
-    public synchronized JoinRsp handleJoin(Address mbr) {
-        Vector new_mbrs=new Vector(1);
+    public synchronized void handleJoin(Address mbr) {
         View v;
         Digest d, tmp;
+        JoinRsp join_rsp;
 
+        if(mbr == null) {
+            if(log.isErrorEnabled()) log.error("mbr is null");
+            return;
+        }
         if(gms.local_addr.equals(mbr)) {
             if(log.isErrorEnabled()) log.error("cannot join myself !");
-            return null;
+            return;
         }
-
-        if(gms.members.contains(mbr)) {
+        if(log.isDebugEnabled()) log.debug("mbr=" + mbr);
+        if(gms.members.contains(mbr)) { // already joined: return current digest and membership
             if(log.isWarnEnabled())
                 log.warn(mbr + " already present; returning existing view " + gms.view);
-            return new JoinRsp(new View(gms.view_id, gms.members.getMembers()), gms.getDigest());
-            // already joined: return current digest and membership
+            join_rsp=new JoinRsp(new View(gms.view_id, gms.members.getMembers()), gms.getDigest());
+            sendJoinResponse(join_rsp, mbr);
+            return;
         }
+        Vector new_mbrs=new Vector(1);
         new_mbrs.addElement(mbr);
         tmp=gms.getDigest(); // get existing digest
         if(tmp == null) {
             if(log.isErrorEnabled()) log.error("received null digest from GET_DIGEST: will cause JOIN to fail");
-            return null;
+            return;
         }
-        // if(log.isDebugEnabled()) log.debug("got digest=" + tmp);
 
-        d=new Digest(tmp.size() + 1);
-        // create a new digest, which contains 1 more member
+        d=new Digest(tmp.size() + 1); // create a new digest, which contains 1 more member
         d.add(tmp); // add the existing digest to the new one
-        d.add(mbr, 0, 0);
-        // ... and add the new member. it's first seqno will be 1
+        d.add(mbr, 0, 0); // ... and add the new member. it's first seqno will be 1
         v=gms.getNextView(new_mbrs, null, null);
         if(log.isDebugEnabled()) log.debug("joined member " + mbr + ", view is " + v);
-        return new JoinRsp(v, d);
+        join_rsp=new JoinRsp(v, d);
+        if(join_rsp == null) {
+            if(log.isErrorEnabled())
+                log.error(getClass().toString() + ".handleJoin(" + mbr + ") returned null: will not be able to multicast new view");
+        }
+
+        // 2. Send down a local TMP_VIEW event. This is needed by certain layers (e.g. NAKACK) to compute correct digest
+        //    in case client's next request (e.g. getState()) reaches us *before* our own view change multicast.
+        // Check NAKACK's TMP_VIEW handling for details
+        if(join_rsp != null && join_rsp.getView() != null)
+            gms.passDown(new Event(Event.TMP_VIEW, join_rsp.getView()));
+
+        // 3. Return result to client
+        sendJoinResponse(join_rsp, mbr);
+
+        // 4. Broadcast the new view
+        if(join_rsp != null)
+            gms.castViewChange(join_rsp.getView(), null);
     }
+
+
+
+
 
     /**
-     Exclude <code>mbr</code> from the membership. If <code>suspected</code> is true, then
-     this member crashed and therefore is forced to leave, otherwise it is leaving voluntarily.
-     */
-    public synchronized void handleLeave(Address mbr, boolean suspected) {
-        Vector v=new Vector(1);
-        // contains either leaving mbrs or suspected mbrs
-        if(log.isDebugEnabled()) log.debug("mbr=" + mbr);
-        if(!gms.members.contains(mbr)) {
-            if(trace) log.trace("mbr " + mbr + " is not a member !");
-            return;
-        }
+      Exclude <code>mbr</code> from the membership. If <code>suspected</code> is true, then
+      this member crashed and therefore is forced to leave, otherwise it is leaving voluntarily.
+      */
+     public void handleLeave(Address mbr, boolean suspected) {
+         Vector v=new Vector(1);
+         // contains either leaving mbrs or suspected mbrs
+         if(log.isDebugEnabled()) log.debug("mbr=" + mbr);
+         if(!gms.members.contains(mbr)) {
+             if(trace) log.trace("mbr " + mbr + " is not a member !");
+             return;
+         }
 
-        if(gms.view_id == null) {
-            // we're probably not the coord anymore (we just left ourselves), let someone else do it
-            // (client will retry when it doesn't get a response
-            if(log.isDebugEnabled())
-                log.debug("gms.view_id is null, I'm not the coordinator anymore (leaving=" + leaving +
-                          "); the new coordinator will handle the leave request");
-            return;
-        }
+         if(gms.view_id == null) {
+             // we're probably not the coord anymore (we just left ourselves), let someone else do it
+             // (client will retry when it doesn't get a response
+             if(log.isDebugEnabled())
+                 log.debug("gms.view_id is null, I'm not the coordinator anymore (leaving=" + leaving +
+                           "); the new coordinator will handle the leave request");
+             return;
+         }
 
-        sendLeaveResponse(mbr); // send an ack to the leaving member
+         sendLeaveResponse(mbr); // send an ack to the leaving member
 
-        v.addElement(mbr);
+         v.addElement(mbr);
 
-        boolean coord_leaving=mbr.equals(gms.local_addr);
-        Promise p=coord_leaving? new Promise() : null;
+         if(suspected)
+             gms.castViewChange(null, null, v);
+         else
+             gms.castViewChange(null, v, null);
+     }
 
-        if(suspected)
-            gms.castViewChange(null, null, v);
-        else
-            gms.castViewChange(null, v, null, p);
 
-        if(coord_leaving) {
-            Boolean result=(Boolean)p.getResult(gms.leave_timeout);
-            if(trace) {
-                if(result != null && result.booleanValue()) {
-                    log.trace("LEAVE of coordinator succeeded");
-                }
-                else {
-                    log.trace("LEAVE of coordinator failed, view broadcaster: " + gms.view_broadcaster);
-                }
-            }
-        }
-    }
+
 
     void sendLeaveResponse(Address mbr) {
         Message msg=new Message(mbr, null, null);
@@ -404,6 +419,13 @@ public class CoordGmsImpl extends GmsImpl {
         synchronized(merge_task) {
             merge_task.stop();
         }
+    }
+
+    private void sendJoinResponse(JoinRsp rsp, Address dest) {
+        Message m=new Message(dest, null, null);
+        GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.JOIN_RSP, rsp);
+        m.putHeader(gms.getName(), hdr);
+        gms.passDown(new Event(Event.MSG, m));
     }
 
     /**
@@ -591,9 +613,6 @@ public class CoordGmsImpl extends GmsImpl {
             if(log.isErrorEnabled()) log.error("view or digest is null, cannot send consolidated merge view/digest");
             return;
         }
-
-        // long id=v.getVid().getId() + 100;
-        // v=new View(v.getCreator(), id, v.getMembers()); // todo: remove
 
         if(trace)
             log.trace("sending merge view " + v.getVid() + " to coordinators " + coords);
