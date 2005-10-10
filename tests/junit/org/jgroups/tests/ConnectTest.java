@@ -1,4 +1,4 @@
-// $Id: ConnectTest.java,v 1.6 2005/09/22 15:17:12 belaban Exp $
+// $Id: ConnectTest.java,v 1.7 2005/10/10 12:17:55 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -55,7 +55,7 @@ public class ConnectTest extends TestCase {
             System.out.print("Connecting to channel: ");
             try {
                 channel.connect("ConnectTest");
-                System.out.println("-- connected --");
+                System.out.println("-- connected: " + channel.getView() + " --");
             }
             catch(Exception e) {
                 System.out.println("-- connection failed --");
