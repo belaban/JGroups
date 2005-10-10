@@ -1,4 +1,4 @@
-// $Id: GmsImpl.java,v 1.11 2005/09/30 07:20:43 belaban Exp $
+// $Id: GmsImpl.java,v 1.12 2005/10/10 14:53:10 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -46,7 +46,7 @@ public abstract class GmsImpl {
     public void               handleMergeView(MergeData data, ViewId merge_id)     {} // only processed by coords
     public void               handleMergeCancelled(ViewId merge_id)                {} // only processed by coords
 
-    public abstract JoinRsp   handleJoin(Address mbr);
+    public abstract void      handleJoin(Address mbr);
     public abstract void      handleLeave(Address mbr, boolean suspected);
     public abstract void      handleViewChange(View new_view, Digest digest);
     public abstract void      handleSuspect(Address mbr);
