@@ -1,4 +1,4 @@
-// $Id: Queue.java,v 1.26 2005/09/06 12:48:28 belaban Exp $
+// $Id: Queue.java,v 1.27 2005/10/10 12:21:56 belaban Exp $
 
 package org.jgroups.util;
 
@@ -279,10 +279,10 @@ public class Queue {
          * we ran into an Endmarker, which means that the queue was closed before
          * through close(true)
          */
-        if(retval == endMarker) {
-            close(false); // mark queue as closed
-            throw new QueueClosedException();
-        }
+//        if(retval == endMarker) {
+//            close(false); // mark queue as closed
+//            throw new QueueClosedException();
+//        }
         return retval;
     }
 
@@ -311,6 +311,8 @@ public class Queue {
                 }
             }
             /*we either timed out, or got notified by the mutex lock object*/
+            if(closed)
+                throw new QueueClosedException();
 
             /*get the next value*/
             retval=removeInternal();
@@ -318,10 +320,10 @@ public class Queue {
             if(retval == null) throw new TimeoutException("timeout=" + timeout + "ms");
 
             /*if we reached an end marker we are going to close the queue*/
-            if(retval == endMarker) {
-                close(false);
-                throw new QueueClosedException();
-            }
+//            if(retval == endMarker) {
+//                close(false);
+//                throw new QueueClosedException();
+//            }
             /*at this point we actually did receive a value from the queue, return it*/
             return retval;
         }
@@ -409,13 +411,6 @@ public class Queue {
                 throw new QueueClosedException();
 
             retval=(head != null)? head.obj : null;
-
-            // @remove:
-            if(retval == null) {
-                // print some diagnostics
-                if(log.isErrorEnabled()) log.error("retval is null: head=" + head + ", tail=" + tail + ", size()=" + size() +
-                                            ", num_markers=" + num_markers + ", closed=" + closed);
-            }
         }
 
         if(retval == endMarker) {
@@ -474,7 +469,7 @@ public class Queue {
      */
     public void close(boolean flush_entries) {
         synchronized(mutex) {
-            if(flush_entries) {
+            if(flush_entries && size > 0) {
                 try {
                     add(endMarker); // add an end-of-entries marker to the end of the queue
                     num_markers++;
@@ -485,6 +480,21 @@ public class Queue {
             }
             closed=true;
             mutex.notifyAll();
+        }
+    }
+
+    /** Waits until the queue has been closed. Returns immediately if already closed
+     * @param timeout Number of milliseconds to wait. A value <= 0 means to wait forever
+     */
+    public void waitUntilClosed(long timeout) {
+        synchronized(mutex) {
+            if(closed)
+                return;
+            try {
+                mutex.wait(timeout);
+            }
+            catch(InterruptedException e) {
+            }
         }
     }
 
@@ -589,6 +599,7 @@ public class Queue {
         decrementSize();
         if(head != null && head.obj == endMarker) {
             closed=true;
+            mutex.notifyAll();
         }
 
         retval.next=null;
