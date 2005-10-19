@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.59 2005/09/29 12:21:02 belaban Exp $
+// $Id: Util.java,v 1.60 2005/10/19 12:12:57 belaban Exp $
 
 package org.jgroups.util;
 
@@ -32,6 +32,7 @@ public class Util {
     public static final int MAX_PORT=65535; // highest port allocatable
     public static final String DIAG_GROUP="DIAG_GROUP-BELA-322649"; // unique
     static boolean resolve_dns=false;
+    static final String IGNORE_BIND_ADDRESS_PROPERTY="ignore.bind.address";
 
     static {
         /* Trying to get value of resolve_dns. PropertyPermission not granted if
@@ -1528,6 +1529,20 @@ public class Util {
         return retval;
     }
 
+
+    public static boolean isBindAddressPropertyIgnored() {
+        String tmp=System.getProperty(IGNORE_BIND_ADDRESS_PROPERTY);
+        if(tmp == null)
+            return false;
+
+        tmp=tmp.trim().toLowerCase();
+        if(tmp.equals("false") ||
+                tmp.equals("no") ||
+                tmp.equals("off"))
+            return false;
+
+        return true;
+    }
 
 
     /*

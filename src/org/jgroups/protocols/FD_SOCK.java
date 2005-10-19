@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.29 2005/08/11 12:43:47 belaban Exp $
+// $Id: FD_SOCK.java,v 1.30 2005/10/19 12:12:56 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -117,7 +117,15 @@ public class FD_SOCK extends Protocol implements Runnable {
 
 
         // PropertyPermission not granted if running in an untrusted environment with JNLP.
-        try {tmp=System.getProperty("bind.address");} catch (SecurityException ex){}
+        try {
+            tmp=System.getProperty("bind.address");
+            if(Util.isBindAddressPropertyIgnored()) {
+                tmp=null;
+            }
+        }
+        catch (SecurityException ex){
+        }
+
         if(tmp != null)
             str=tmp;
         else
@@ -126,16 +134,16 @@ public class FD_SOCK extends Protocol implements Runnable {
             try {
                 srv_sock_bind_addr=InetAddress.getByName(str);
             }
-            catch(UnknownHostException e) {
-                log.error("srv_sock_bind_addr " + str + " is invalid", e);
+            catch(UnknownHostException unknown) {
+                if(log.isFatalEnabled()) log.fatal("(srv_sock_bind_addr): host " + str + " not known");
                 return false;
             }
             props.remove("srv_sock_bind_addr");
         }
 
+
         if(props.size() > 0) {
             log.error("FD_SOCK.setProperties(): the following properties are not recognized: " + props);
-
             return false;
         }
         return true;
