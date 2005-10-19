@@ -1,4 +1,4 @@
-// $Id: Configurator.java,v 1.13 2005/08/08 14:58:34 belaban Exp $
+// $Id: Configurator.java,v 1.14 2005/10/19 07:23:16 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -562,9 +562,18 @@ public class Configurator {
             String defaultProtocolName=protocol_prefix + '.' + protocol_name;
             Class clazz=null;
 
-            clazz=Util.loadClass(defaultProtocolName, this.getClass());
+            try {
+                clazz=Util.loadClass(defaultProtocolName, this.getClass());
+            }
+            catch(ClassNotFoundException e) {
+            }
+
             if(clazz == null) {
-                clazz=Util.loadClass(protocol_name, this.getClass());
+                try {
+                    clazz=Util.loadClass(protocol_name, this.getClass());
+                }
+                catch(ClassNotFoundException e) {
+                }
                 if(clazz == null) {
                     throw new Exception("unable to load class for protocol " + protocol_name +
                             " (either as an absolute - " + protocol_name + " - or relative - " +
