@@ -37,7 +37,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.41 2005/09/29 12:23:25 belaban Exp $
+ * @version $Id: TP.java,v 1.42 2005/10/19 12:12:56 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -168,8 +168,6 @@ public abstract class TP extends Protocol {
     TpHeader header;
 
     final String name=getName();
-
-    static final String IGNORE_BIND_ADDRESS_PROPERTY="ignore.bind.address";
 
     static final byte LIST      = 1;  // we have a list of messages rather than a single message when set
     static final byte MULTICAST = 2;  // message is a multicast (versus a unicast) message when set
@@ -410,7 +408,7 @@ public abstract class TP extends Protocol {
         // PropertyPermission not granted if running in an untrusted environment with JNLP.
         try {
             tmp=System.getProperty("bind.address");
-            if(Boolean.getBoolean(IGNORE_BIND_ADDRESS_PROPERTY)) {
+            if(Util.isBindAddressPropertyIgnored()) {
                 tmp=null;
             }
         }
