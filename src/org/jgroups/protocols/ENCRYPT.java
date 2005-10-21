@@ -1,6 +1,6 @@
 
 
-//$Id: ENCRYPT.java,v 1.12 2005/08/11 12:43:47 belaban Exp $
+//$Id: ENCRYPT.java,v 1.13 2005/10/21 16:37:00 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -154,11 +154,11 @@ public class ENCRYPT extends Protocol {
 		 */
 		public boolean equals(Object obj)
 		{
-			// TODO Auto-generated method stub
 			if (obj instanceof EncryptHeader)
 			{
+                // changed == to equals()
                 return ((((EncryptHeader) obj).getType() == type) && ((((EncryptHeader) obj)
-                        .getVersion() == version)));
+                        .getVersion().equals(version))));
 			}
 			return false;
 		}
