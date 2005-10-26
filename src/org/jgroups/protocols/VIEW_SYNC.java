@@ -19,12 +19,13 @@ import java.util.Vector;
  * install it. Otherwise we simply discard it. This is used to solve the problem for unreliable view
  * dissemination outlined in JGroups/doc/ReliableViewInstallation.txt. This protocol is supposed to be just below GMS.
  * @author Bela Ban
- * @version $Id: VIEW_SYNC.java,v 1.1 2005/10/26 15:54:03 belaban Exp $
+ * @version $Id: VIEW_SYNC.java,v 1.2 2005/10/26 16:08:40 belaban Exp $
  */
 public class VIEW_SYNC extends Protocol {
     Address             local_addr=null;
     final Vector        mbrs=new Vector();
     View                my_view=null;
+    ViewId              my_vid=null;
 
     /** Sends a VIEW_SYNC message to the group every 20 seconds on average. 0 disables sending of VIEW_SYNC messages */
     long                avg_send_interval=20000;
@@ -130,7 +131,7 @@ public class VIEW_SYNC extends Protocol {
             Address sender=msg.getSrc();
             switch(hdr.type) {
             case ViewSyncHeader.VIEW_SYNC:
-                handleView(hdr.view);
+                handleView(hdr.view, sender);
                 break;
             case ViewSyncHeader.VIEW_SYNC_REQ:
                 if(!sender.equals(local_addr))
@@ -171,17 +172,31 @@ public class VIEW_SYNC extends Protocol {
 
     /* --------------------------------------- Private Methods ---------------------------------------- */
 
-    private void handleView(View v) {
+    private void handleView(View v, Address sender) {
         Vector members=v.getMembers();
         if(!members.contains(local_addr)) {
             if(log.isWarnEnabled())
             log.warn("discarding view as I (" + local_addr + ") am not member of view (" + v + ")");
             return;
         }
+
+        ViewId vid=v.getVid();
+        if(vid.compareTo(my_vid) > 0) { // foreign view is greater than my onw view; update my own view !
+            if(log.isTraceEnabled())
+                log.trace("view from " + sender + " (" + vid + ") is greater than my own view (" + my_vid + ");" +
+                "will update my own view");
+
+            Message view_change=new Message(local_addr, local_addr, null);
+            org.jgroups.protocols.pbcast.GMS.GmsHeader hdr;
+            hdr=new org.jgroups.protocols.pbcast.GMS.GmsHeader(org.jgroups.protocols.pbcast.GMS.GmsHeader.VIEW, v);
+            view_change.putHeader(GMS.name, hdr);
+            passUp(new Event(Event.MSG, view_change));
+        }
     }
 
     private void handleViewChange(View view) {
         my_view=(View)view.clone();
+        my_vid=my_view.getVid();
         if(my_view.size() > 1 && view_send_task != null && !view_send_task.running())
             startViewSender();
     }
