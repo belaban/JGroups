@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.15 2005/08/11 12:43:47 belaban Exp $
+// $Id: GMS.java,v 1.16 2005/10/26 16:07:33 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -51,6 +51,8 @@ public class GMS extends RpcProtocol implements Runnable {
     static final String COORD="Coordinator";
     static final String PART="Participant";
 
+    public static final String name="GMS";
+
 
     public GMS() {
         initState();
@@ -58,7 +60,7 @@ public class GMS extends RpcProtocol implements Runnable {
 
 
     public String getName() {
-        return "GMS";
+        return name;
     }
 
     public Vector requiredDownServices() {
