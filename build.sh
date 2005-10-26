@@ -2,7 +2,6 @@
 # Ant build script for the JGroups project
 # The following variables have to be set in the following way
 # PATH should include $JAVA_HOME/bin
-# Questions: please email filip@filip.net (sourceforge id fhanik)
 JG_HOME=.
 
 
@@ -22,9 +21,9 @@ LIB=lib
 
 
 if [ "$cygwin" = "true" ]; then
-    CP=${LIB}/ant.jar\;${LIB}/ant-optional.jar\;${LIB}/xercesxmlapi-2.1.0.jar\;${LIB}/xercesimpl-2.1.0.jar\;${LIB}/xalan.jar\;${LIB}/junit.jar
+    CP=${LIB}/ant.jar\;${LIB}/ant-optional.jar\;${LIB}/xalan.jar\;${LIB}/junit.jar
 else
-    CP=${LIB}/ant.jar:${LIB}/ant-optional.jar:${LIB}/xercesxmlapi-2.1.0.jar:${LIB}/xercesimpl-2.1.0.jar:${LIB}/xalan.jar:${LIB}/junit.jar
+    CP=${LIB}/ant.jar:${LIB}/ant-optional.jar:${LIB}/xalan.jar:${LIB}/junit.jar
 fi
 
 
