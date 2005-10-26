@@ -1,4 +1,4 @@
-// $Id: ReplicatedHashtable.java,v 1.10 2005/07/17 11:36:40 chrislott Exp $
+// $Id: ReplicatedHashtable.java,v 1.11 2005/10/26 08:30:54 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -79,18 +79,19 @@ public class ReplicatedHashtable extends Hashtable implements MessageListener, M
             adapter=new PullPushAdapter(channel, this, this);
             adapter.setListener(this);
             channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
-            boolean rc=channel.getState(null, state_timeout);
-            if(rc)
-                if(log.isInfoEnabled()) log.info("state was retrieved successfully");
-            else
-                if(log.isInfoEnabled()) log.info("state could not be retrieved (first member)");
+            getInitState(channel, state_timeout);
+//            boolean rc=channel.getState(null, state_timeout);
+//            if(rc)
+//                if(log.isInfoEnabled()) log.info("state was retrieved successfully");
+//            else
+//                if(log.isInfoEnabled()) log.info("state could not be retrieved (first member)");
         }
         catch(Exception e) {
             if(log.isErrorEnabled()) log.error("exception=" + e);
         }
     }
 
-    void getInitState(Channel channel, long state_timeout) throws Exception {
+    private void getInitState(Channel channel, long state_timeout) throws ChannelClosedException, ChannelNotConnectedException {
         try {
             notifyStateTransferStarted();
             boolean rc=channel.getState(null, state_timeout);
@@ -101,9 +102,13 @@ public class ReplicatedHashtable extends Hashtable implements MessageListener, M
                 notifyStateTransferCompleted(false);
             }
         }
-        catch(Exception ex) {
+        catch(ChannelClosedException ex) {
             notifyStateTransferCompleted(false);
             throw ex;
+        }
+        catch(ChannelNotConnectedException ex2) {
+            notifyStateTransferCompleted(false);
+            throw ex2;
         }
     }
 
@@ -122,11 +127,12 @@ public class ReplicatedHashtable extends Hashtable implements MessageListener, M
         if(l != null)
             addStateTransferListener(l);
         this.channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
-        boolean rc=channel.getState(null, state_timeout);
-        if(rc)
-            if(log.isInfoEnabled()) log.info("state was retrieved successfully");
-        else
-            if(log.isInfoEnabled()) log.info("state could not be retrieved (first member)");
+        getInitState(channel, state_timeout);
+//        boolean rc=channel.getState(null, state_timeout);
+//        if(rc)
+//            if(log.isInfoEnabled()) log.info("state was retrieved successfully");
+//        else
+//            if(log.isInfoEnabled()) log.info("state could not be retrieved (first member)");
     }
 
     public boolean stateTransferRunning() {
