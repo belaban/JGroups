@@ -19,7 +19,7 @@ import java.util.Vector;
  * install it. Otherwise we simply discard it. This is used to solve the problem for unreliable view
  * dissemination outlined in JGroups/doc/ReliableViewInstallation.txt. This protocol is supposed to be just below GMS.
  * @author Bela Ban
- * @version $Id: VIEW_SYNC.java,v 1.2 2005/10/26 16:08:40 belaban Exp $
+ * @version $Id: VIEW_SYNC.java,v 1.3 2005/10/27 08:14:43 belaban Exp $
  */
 public class VIEW_SYNC extends Protocol {
     Address             local_addr=null;
@@ -28,7 +28,7 @@ public class VIEW_SYNC extends Protocol {
     ViewId              my_vid=null;
 
     /** Sends a VIEW_SYNC message to the group every 20 seconds on average. 0 disables sending of VIEW_SYNC messages */
-    long                avg_send_interval=20000;
+    long                avg_send_interval=60000;
 
     private int         num_views_sent=0;
     private int         num_views_adjusted=0;
@@ -56,16 +56,8 @@ public class VIEW_SYNC extends Protocol {
         return num_views_sent;
     }
 
-    public void setNumViewsSent(int num_views_sent) {
-        this.num_views_sent=num_views_sent;
-    }
-
     public int getNumViewsAdjusted() {
         return num_views_adjusted;
-    }
-
-    public void setNumViewsAdjusted(int num_views_adjusted) {
-        this.num_views_adjusted=num_views_adjusted;
     }
 
     public void resetStats() {
@@ -99,8 +91,6 @@ public class VIEW_SYNC extends Protocol {
             timer=stack.timer;
         else
             throw new Exception("timer cannot be retrieved from protocol stack");
-        if(avg_send_interval > 0)
-            startViewSender();
     }
 
     public void stop() {
@@ -181,7 +171,8 @@ public class VIEW_SYNC extends Protocol {
         }
 
         ViewId vid=v.getVid();
-        if(vid.compareTo(my_vid) > 0) { // foreign view is greater than my onw view; update my own view !
+        int rc=vid.compareTo(my_vid);
+        if(rc > 0) { // foreign view is greater than my own view; update my own view !
             if(log.isTraceEnabled())
                 log.trace("view from " + sender + " (" + vid + ") is greater than my own view (" + my_vid + ");" +
                 "will update my own view");
@@ -191,23 +182,29 @@ public class VIEW_SYNC extends Protocol {
             hdr=new org.jgroups.protocols.pbcast.GMS.GmsHeader(org.jgroups.protocols.pbcast.GMS.GmsHeader.VIEW, v);
             view_change.putHeader(GMS.name, hdr);
             passUp(new Event(Event.MSG, view_change));
+            num_views_adjusted++;
+        }
+        else {
+            if(log.isTraceEnabled())
+                log.trace("view from " + sender + " (" + vid + ") is <= my own view (" + my_vid + "); ignoring it");
         }
     }
 
     private void handleViewChange(View view) {
         my_view=(View)view.clone();
         my_vid=my_view.getVid();
-        if(my_view.size() > 1 && view_send_task != null && !view_send_task.running())
+        if(my_view.size() > 1 && (view_send_task == null || !view_send_task.running()))
             startViewSender();
     }
 
     private void sendView() {
         View tmp=(View)(my_view != null? my_view.clone() : null);
         if(tmp == null) return;
-        Message msg=new Message(null, null, null);
+        Message msg=new Message(null, null, null); // send to the group
         ViewSyncHeader hdr=new ViewSyncHeader(ViewSyncHeader.VIEW_SYNC, tmp);
         msg.putHeader(name, hdr);
         passDown(new Event(Event.MSG, msg));
+        num_views_sent++;
     }
 
     void startViewSender() {
