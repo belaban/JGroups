@@ -1,4 +1,4 @@
-// $Id: ParticipantGmsImpl.java,v 1.14 2005/10/10 15:10:30 belaban Exp $
+// $Id: ParticipantGmsImpl.java,v 1.15 2005/10/27 15:24:23 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -67,7 +67,7 @@ public class ParticipantGmsImpl extends GmsImpl {
 
 
     public void handleJoinResponse(JoinRsp join_rsp) {
-        wrongMethod("handleJoinResponse");
+        // wrongMethod("handleJoinResponse");
     }
 
     public void handleLeaveResponse() {
