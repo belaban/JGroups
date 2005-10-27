@@ -1,4 +1,4 @@
-// $Id: Protocol.java,v 1.33 2005/08/16 12:58:58 belaban Exp $
+// $Id: Protocol.java,v 1.34 2005/10/27 16:05:04 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -62,7 +62,7 @@ class UpHandler extends Thread {
                 break;
             }
             catch(Throwable e) {
-                if(log.isWarnEnabled()) log.warn(getName() + " exception: " + e);
+                if(log.isWarnEnabled()) log.warn(getName() + " caught exception", e);
             }
         }
     }
@@ -123,7 +123,7 @@ class DownHandler extends Thread {
                 break;
             }
             catch(Throwable e) {
-                if(log.isWarnEnabled()) log.warn(getName() + " exception is " + e);
+                if(log.isWarnEnabled()) log.warn(getName() + " caught exception", e);
             }
         }
     }
