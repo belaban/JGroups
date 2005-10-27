@@ -248,24 +248,6 @@
         <magic-number>41</magic-number>
     </class>
     <class>
-        <description>Request header to lease service</description>
-        <class-name>org.jgroups.service.lease.LeaseRequestHeader</class-name>
-        <preload>false</preload>
-        <magic-number>50</magic-number>
-    </class>
-    <class>
-        <description>Normal response header from lease service</description>
-        <class-name>org.jgroups.service.lease.LeaseResponseHeader</class-name>
-        <preload>true</preload>
-        <magic-number>51</magic-number>
-    </class>
-    <class>
-        <description>Denial response header from lease service</description>
-        <class-name>org.jgroups.service.lease.DenyResponseHeader</class-name>
-        <preload>true</preload>
-        <magic-number>52</magic-number>
-    </class>
-    <class>
         <description>Header for COMPRESS protocol</description>
         <class-name>org.jgroups.protocols.COMPRESS$CompressHeader</class-name>
         <preload>true</preload>
