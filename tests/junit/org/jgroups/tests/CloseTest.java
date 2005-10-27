@@ -1,4 +1,4 @@
-// $Id: CloseTest.java,v 1.5 2005/09/30 07:21:30 belaban Exp $
+// $Id: CloseTest.java,v 1.6 2005/10/27 09:05:51 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -69,12 +69,14 @@ public class CloseTest extends TestCase {
         c1=new JChannel(props);
         System.out.println("-- connecting c1");
         c1.connect("X");
+        Util.sleep(500); // time to receive its own view
         dumpMessages("c1", c1);
         a1=c1.getLocalAddress();
 
         c2=new JChannel(props);
         System.out.println("-- connecting c2");
         c2.connect("X");
+        Util.sleep(500); // time to receive its own view
         a2=c2.getLocalAddress();
         dumpMessages("c2", c2);
 
@@ -107,11 +109,13 @@ public class CloseTest extends TestCase {
 
         c1=new JChannel(props);
         c1.connect("X");
+        Util.sleep(500); // time to receive its own view
         dumpMessages("c1", c1);
         a1=c1.getLocalAddress();
 
         c2=new JChannel(props);
         c2.connect("X");
+        Util.sleep(500); // time to receive its own view
         a2=c2.getLocalAddress();
         v=(View)c2.receive(1);
         members=v.getMembers();
@@ -119,7 +123,7 @@ public class CloseTest extends TestCase {
         assertTrue(members.contains(a2));
 
         c1.close();
-        Util.sleep(5000);
+        Util.sleep(500);
 
         System.out.println("queue of c2 is " + c2.dumpQueue());
         assertTrue("found 0 messages in channel", c2.getNumMessages() > 0);
