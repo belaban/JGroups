@@ -19,7 +19,7 @@ import java.util.Vector;
  * install it. Otherwise we simply discard it. This is used to solve the problem for unreliable view
  * dissemination outlined in JGroups/doc/ReliableViewInstallation.txt. This protocol is supposed to be just below GMS.
  * @author Bela Ban
- * @version $Id: VIEW_SYNC.java,v 1.3 2005/10/27 08:14:43 belaban Exp $
+ * @version $Id: VIEW_SYNC.java,v 1.4 2005/10/27 08:30:14 belaban Exp $
  */
 public class VIEW_SYNC extends Protocol {
     Address             local_addr=null;
@@ -105,6 +105,15 @@ public class VIEW_SYNC extends Protocol {
         passDown(new Event(Event.MSG, msg));
     }
 
+//    public void sendFakeViewForTestingOnly() {
+//        ViewId fake_vid=new ViewId(local_addr, my_vid.getId() +2);
+//        View fake_view=new View(fake_vid, new Vector(my_view.getMembers()));
+//        System.out.println("sending fake view " + fake_view);
+//        my_view=fake_view;
+//        my_vid=fake_vid;
+//        sendView();
+//    }
+
 
     public void up(Event evt) {
         Message msg;
@@ -175,7 +184,7 @@ public class VIEW_SYNC extends Protocol {
         if(rc > 0) { // foreign view is greater than my own view; update my own view !
             if(log.isTraceEnabled())
                 log.trace("view from " + sender + " (" + vid + ") is greater than my own view (" + my_vid + ");" +
-                "will update my own view");
+                " will update my own view");
 
             Message view_change=new Message(local_addr, local_addr, null);
             org.jgroups.protocols.pbcast.GMS.GmsHeader hdr;
@@ -183,10 +192,6 @@ public class VIEW_SYNC extends Protocol {
             view_change.putHeader(GMS.name, hdr);
             passUp(new Event(Event.MSG, view_change));
             num_views_adjusted++;
-        }
-        else {
-            if(log.isTraceEnabled())
-                log.trace("view from " + sender + " (" + vid + ") is <= my own view (" + my_vid + "); ignoring it");
         }
     }
 
