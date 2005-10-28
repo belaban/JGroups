@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.44 2005/08/26 08:57:48 belaban Exp $
+// $Id: UNICAST.java,v 1.45 2005/10/28 13:47:52 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -6,13 +6,13 @@ import org.jgroups.*;
 import org.jgroups.stack.AckReceiverWindow;
 import org.jgroups.stack.AckSenderWindow;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.BoundedList;
+import org.jgroups.util.Streamable;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
-import org.jgroups.util.Streamable;
 
 import java.io.*;
 import java.util.*;
-
 
 
 /**
@@ -44,19 +44,14 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     // default is true
     private boolean          use_gms=true;
 
-    /** @deprecated Not used anymore */
-    int              window_size=-1;               // sliding window: max number of msgs in table (disabled by default)
-
-    /** @deprecated Not used anymore */
-    int              min_threshold=-1;             // num under which table has to fall before we resume adding msgs
+    /** A list of members who left, used to determine when to prevent sending messages to left mbrs */
+    private final BoundedList previous_members=new BoundedList(50);
 
     private final static String name="UNICAST";
     private static final long DEFAULT_FIRST_SEQNO=1;
 
     private long num_msgs_sent=0, num_msgs_received=0, num_bytes_sent=0, num_bytes_received=0;
     private long num_acks_sent=0, num_acks_received=0, num_xmit_requests_received=0;
-
-
 
 
     /** All protocol names have to be unique ! */
@@ -141,22 +136,20 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         super.setProperties(props);
         str=props.getProperty("timeout");
         if(str != null) {
-	    tmp=Util.parseCommaDelimitedLongs(str);
-	    if(tmp != null && tmp.length > 0)
-		timeout=tmp;
+        tmp=Util.parseCommaDelimitedLongs(str);
+        if(tmp != null && tmp.length > 0)
+        timeout=tmp;
             props.remove("timeout");
         }
 
         str=props.getProperty("window_size");
         if(str != null) {
-            window_size=Integer.parseInt(str);
             props.remove("window_size");
             log.error("window_size is deprecated and will be ignored");
         }
 
         str=props.getProperty("min_threshold");
         if(str != null) {
-            min_threshold=Integer.parseInt(str);
             props.remove("min_threshold");
             log.error("min_threshold is deprecated and will be ignored");
         }
@@ -243,6 +236,12 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 break;
             }
 
+            if(previous_members.contains(dst)) {
+                if(log.isTraceEnabled())
+                    log.trace("discarding message to " + dst + " as this member left the group");
+                return;
+            }
+
             Entry entry;
             synchronized(connections) {
                 entry=(Entry)connections.get(dst);
@@ -265,6 +264,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
                 entry.sent_msgs_seqno++;
                 Message tmp=Global.copy? msg.copy() : msg;
+
                 try {
                     passDown(new Event(Event.MSG, tmp));
                     num_msgs_sent++;
@@ -296,7 +296,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                     mbr=left_members.elementAt(i);
                     rc=removeConnection(mbr);
                     if(rc && trace)
-                        log.trace("removed " + mbr + " from connection table, members " + left_members + " left");
+                        log.trace("removed " + mbr + " from connection table, member(s) " + left_members + " left");
                 }
             }
             break;
@@ -312,6 +312,8 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
         synchronized(connections) {
             entry=(Entry)connections.remove(mbr);
+            if(!previous_members.contains(mbr))
+                previous_members.add(mbr);
         }
         if(entry != null) {
             entry.reset();
@@ -348,13 +350,13 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         //
         //                  if(warn) log.warn("UNICAST.retransmit()", "seqno=" + seqno + ":  dest " + dst +
         //                             " is not member any longer; removing entry !");
-        
+
         //              synchronized(connections) {
         //                  removeConnection(dst);
         //              }
         //              return;
         //          }
-	
+
         if(trace)
             log.trace("[" + local_addr + "] --> XMIT(" + dst + ": #" + seqno + ')');
 
@@ -379,6 +381,12 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
         if(trace)
             log.trace(new StringBuffer().append(local_addr).append(" <-- DATA(").append(sender).append(": #").append(seqno));
+
+        if(previous_members.contains(sender)) {
+            if(log.isTraceEnabled())
+                log.trace("discarding message from " + sender + " as this member left the group");
+            return;
+        }
 
         synchronized(connections) {
             entry=(Entry)connections.get(sender);
@@ -439,7 +447,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     public static class UnicastHeader extends Header implements Streamable {
         public static final byte DATA=0;
         public static final byte ACK=1;
-	
+
         byte    type=DATA;
         long    seqno=0;
 
@@ -447,16 +455,16 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
 
         public UnicastHeader() {} // used for externalization
-	
+
         public UnicastHeader(byte type, long seqno) {
             this.type=type;
             this.seqno=seqno;
         }
-	
+
         public String toString() {
             return "[UNICAST: " + type2Str(type) + ", seqno=" + seqno + ']';
         }
-	
+
         public static String type2Str(byte t) {
             switch(t) {
                 case DATA: return "DATA";
@@ -474,9 +482,9 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             out.writeByte(type);
             out.writeLong(seqno);
         }
-	
-	
-	
+
+
+
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             type=in.readByte();
             seqno=in.readLong();
@@ -492,7 +500,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             seqno=in.readLong();
         }
     }
-    
+
     private static final class Entry {
         AckReceiverWindow  received_msgs=null;  // stores all msgs rcvd by a certain peer in seqno-order
         AckSenderWindow    sent_msgs=null;      // stores (and retransmits) msgs sent by us to a certain peer
