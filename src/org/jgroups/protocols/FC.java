@@ -1,4 +1,4 @@
-// $Id: FC.java,v 1.48 2005/08/22 12:32:58 belaban Exp $
+// $Id: FC.java,v 1.49 2005/10/28 07:38:31 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -22,7 +22,7 @@ import java.util.*;
  * <br/>This is the second simplified implementation of the same model. The algorithm is sketched out in
  * doc/FlowControl.txt
  * @author Bela Ban
- * @version $Revision: 1.48 $
+ * @version $Revision: 1.49 $
  */
 public class FC extends Protocol {
 
@@ -406,7 +406,7 @@ public class FC extends Protocol {
         }
         else {
             credits=(Long)sent.get(dest);
-            if(credits.longValue() <= length) {
+            if(credits != null && credits.longValue() <= length) {
                 if(!creditors.contains(dest))
                     creditors.add(dest);
             }
