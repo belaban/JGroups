@@ -1,4 +1,4 @@
-// $Id: FC.java,v 1.49 2005/10/28 07:38:31 belaban Exp $
+// $Id: FC.java,v 1.50 2005/10/28 14:46:49 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -22,7 +22,7 @@ import java.util.*;
  * <br/>This is the second simplified implementation of the same model. The algorithm is sketched out in
  * doc/FlowControl.txt
  * @author Bela Ban
- * @version $Revision: 1.49 $
+ * @version $Revision: 1.50 $
  */
 public class FC extends Protocol {
 
@@ -375,7 +375,8 @@ public class FC extends Protocol {
             }
             else {
                 long tmp=decrementCredit(sent, dest, length);
-                lowest_credit=Math.min(tmp, lowest_credit);
+                if(tmp != -1)
+                    lowest_credit=Math.min(tmp, lowest_credit);
             }
         }
         // send message - either after regular processing, or after blocking (when enough credits available again)
@@ -565,7 +566,8 @@ public class FC extends Protocol {
             }
 
             if(trace) log.trace("creditors are " + creditors);
-            if(insufficient_credit && lowest_credit > 0 && creditors.size() == 0) {
+            if(insufficient_credit && creditors.size() == 0) {
+                lowest_credit=computeLowestCredit(sent);
                 insufficient_credit=false;
                 mutex.notifyAll();
             }
