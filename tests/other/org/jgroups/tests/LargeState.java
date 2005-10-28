@@ -1,4 +1,4 @@
-// $Id: LargeState.java,v 1.11 2005/05/30 16:15:11 belaban Exp $
+// $Id: LargeState.java,v 1.12 2005/10/28 15:53:29 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -37,29 +37,22 @@ public class LargeState {
         channel=new JChannel(props);
         channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
         channel.connect("TestChannel");
+        System.out.println("-- connected to channel");
 
         if(provider) {
-
-//            channel.send(new Message(null, null, "Hello1"));
-//            channel.send(new Message(null, null, "Hello2"));
-//            channel.send(new Message(null, null, "Hello3"));
-//            channel.send(new Message(null, null, "Hello4"));
-
             System.out.println("Creating state of " + size + " bytes");
             state=createLargeState(size);
             System.out.println("Done. Waiting for other members to join and fetch large state");
         }
         else {
-
-//            channel.send(null, null, "Hello5");
-//            channel.send(null, null, "Hello6");
-//            channel.send(null, null, "Hello7");
-//            channel.send(null, null, "Hello8");
-
             System.out.println("Getting state");
             start=System.currentTimeMillis();
-            rc=channel.getState(null, 20000);
+            rc=channel.getState(null, 30000);
             System.out.println("getState(), rc=" + rc);
+            if(rc == false) {
+                channel.close();
+                return;
+            }
         }
 
         mainLoop();
@@ -112,18 +105,17 @@ public class LargeState {
     public static void main(String[] args) {
         boolean provider=false;
         long size=1024 * 1024;
-        String props="UDP(mcast_addr=224.0.0.35;mcast_port=45566;ip_ttl=32;" +
+        String props="UDP(mcast_addr=239.255.0.35;mcast_port=7500;ip_ttl=2;" +
                 "mcast_send_buf_size=150000;mcast_recv_buf_size=80000;" +
                 "ucast_send_buf_size=80000;ucast_recv_buf_size=150000):" +
-                "AUTOCONF:" +
                 "PING(timeout=2000;num_initial_members=3):" +
                 "MERGE2(min_interval=5000;max_interval=10000):" +
                 "FD_SOCK:" +
                 "VERIFY_SUSPECT(timeout=1500):" +
                 "pbcast.NAKACK(gc_lag=50;retransmit_timeout=300,600,1200,2400,4800):" +
-                "UNICAST(timeout=1000):" +
+                "UNICAST(timeout=300,600,900,1200,2400):" +
                 "pbcast.STABLE(desired_avg_gossip=20000):" +
-                "FRAG(frag_size=16000;down_thread=false;up_thread=false):" +
+                "FRAG(frag_size=60000;down_thread=false;up_thread=false):" +
                 "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
                 "shun=false;print_local_addr=true):" +
                 "pbcast.STATE_TRANSFER";
@@ -145,7 +137,6 @@ public class LargeState {
             }
             if("-props".equals(args[i])) {
                 props=args[++i];
-                continue;
             }
         }
 
