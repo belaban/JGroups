@@ -18,7 +18,7 @@ import java.util.Vector;
  * <li>Send a message from another member (must work !)
  * </ol>
  * @author Bela Ban
- * @version $Id: MessageDispatcherShunTest.java,v 1.1 2005/01/10 10:45:28 belaban Exp $
+ * @version $Id: MessageDispatcherShunTest.java,v 1.2 2005/10/31 11:02:54 belaban Exp $
  */
 public class MessageDispatcherShunTest implements MembershipListener, RequestHandler {
     JChannel           channel;
@@ -91,6 +91,8 @@ public class MessageDispatcherShunTest implements MembershipListener, RequestHan
         RspList rsp_list;
         Message msg=new Message(null, null, "Hello world");
         View v=channel.getView();
+        if(v == null)
+            return;
         Vector members=new Vector(v.getMembers());
         System.out.println("sending to " + members);
         rsp_list=disp.castMessage(members, msg, GroupRequest.GET_ALL, 0);
