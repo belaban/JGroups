@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.26 2005/10/10 14:52:27 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.27 2005/10/31 09:54:18 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -19,7 +19,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.26 $
+ * @version $Revision: 1.27 $
  */
 public class ClientGmsImpl extends GmsImpl {
     private final Vector  initial_mbrs=new Vector(11);
@@ -79,6 +79,13 @@ public class ClientGmsImpl extends GmsImpl {
 
             coord=determineCoord(initial_mbrs);
             if(coord == null) { // e.g. because we have all clients only
+                if(gms.handle_concurrent_startup == false) {
+                    if(trace)
+                        log.trace("handle_concurrent_startup is false; ignoring responses of initial clients");
+                    becomeSingletonMember(mbr);
+                    return;
+                }
+
                 if(trace)
                     log.trace("could not determine coordinator from responses " + initial_mbrs);
 
