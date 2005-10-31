@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.43 2005/10/10 15:09:30 belaban Exp $
+// $Id: GMS.java,v 1.44 2005/10/31 09:54:18 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -46,6 +46,9 @@ public class GMS extends Protocol {
     boolean                   merge_leader=false;         // can I initiate a merge ?
     private boolean           print_local_addr=true;
     boolean                   disable_initial_coord=false; // can the member become a coord on startup or not ?
+    /** Setting this to false disables concurrent startups. This is only used by unit testing code
+     * for testing merging. To everybody else: don't change it to false ! */
+    boolean                   handle_concurrent_startup=true;
     static final String       CLIENT="Client";
     static final String       COORD="Coordinator";
     static final String       PART="Participant";
@@ -64,7 +67,7 @@ public class GMS extends Protocol {
 
 
     /** Class to process JOIN, LEAVE and MERGE requests */
-    public final ViewHandler   view_handler=new ViewHandler();
+    public final ViewHandler  view_handler=new ViewHandler();
 
     /** To collect VIEW_ACKs from all members */
     final AckCollector ack_collector=new AckCollector();
@@ -773,6 +776,12 @@ public class GMS extends Protocol {
             props.remove("disable_initial_coord");
         }
 
+        str=props.getProperty("handle_concurrent_startup");
+        if(str != null) {
+            handle_concurrent_startup=Boolean.valueOf(str).booleanValue();
+            props.remove("handle_concurrent_startup");
+        }
+
         str=props.getProperty("num_prev_mbrs");
         if(str != null) {
             num_prev_mbrs=Integer.parseInt(str);
@@ -1019,7 +1028,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.43 2005/10/10 15:09:30 belaban Exp $
+     * @version $Id: GMS.java,v 1.44 2005/10/31 09:54:18 belaban Exp $
      */
     class ViewHandler implements Runnable {
         Thread                t;
