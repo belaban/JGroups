@@ -1,4 +1,4 @@
-// $Id: Channel.java,v 1.11 2005/10/31 10:56:31 belaban Exp $
+// $Id: Channel.java,v 1.12 2005/10/31 11:00:40 belaban Exp $
 
 package org.jgroups;
 
@@ -426,6 +426,7 @@ public abstract class Channel implements Transport {
     }
 
     protected void notifyChannelConnected(Channel c) {
+        if(channel_listeners == null) return;
         for(Iterator it=channel_listeners.iterator(); it.hasNext();) {
             ChannelListener channelListener=(ChannelListener)it.next();
             try {
