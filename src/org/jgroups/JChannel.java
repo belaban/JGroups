@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.40 2005/09/07 07:01:55 belaban Exp $
+// $Id: JChannel.java,v 1.41 2005/10/31 10:56:31 belaban Exp $
 
 package org.jgroups;
 
@@ -66,7 +66,7 @@ import java.util.Vector;
  * 
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.40 $
+ * @version $Revision: 1.41 $
  */
 public class JChannel extends Channel {
 
@@ -313,6 +313,9 @@ public class JChannel extends Channel {
         return prot_stack;
     }
 
+    protected Log getLog() {
+        return log;
+    }
 
     /**
      * returns the protocol stack configuration in string format.
@@ -425,8 +428,7 @@ public class JChannel extends Channel {
 
         /*notify any channel listeners*/
         connected=true;
-        if(channel_listener != null)
-            channel_listener.channelConnected(this);
+        notifyChannelConnected(this);
     }
 
 
@@ -468,10 +470,7 @@ public class JChannel extends Channel {
             catch(Exception e) {
                 if(log.isErrorEnabled()) log.error("exception: " + e);
             }
-
-            if(channel_listener != null)
-                channel_listener.channelDisconnected(this);
-
+            notifyChannelDisconnected(this);
             init(); // sets local_addr=null; changed March 18 2003 (bela) -- prevented successful rejoining
         }
     }
@@ -1164,6 +1163,8 @@ public class JChannel extends Channel {
             throw new ChannelClosedException();
     }
 
+
+
     /**
      * returns the value of the event<BR>
      * These objects will be returned<BR>
@@ -1275,8 +1276,7 @@ public class JChannel extends Channel {
         }
         closed=true;
         connected=false;
-        if(channel_listener != null)
-            channel_listener.channelClosed(this);
+        notifyChannelClosed(this);
         init(); // sets local_addr=null; changed March 18 2003 (bela) -- prevented successful rejoining
     }
 
@@ -1287,10 +1287,8 @@ public class JChannel extends Channel {
      * hang waiting for up() to return, while up() actually tries to kill that very thread.
      * This way, we return immediately and allow the thread to terminate.
      */
-    void handleExit(Event evt) {
-        if(channel_listener != null)
-            channel_listener.channelShunned();
-
+    private void handleExit(Event evt) {
+        notifyChannelShunned();
         if(closer != null && !closer.isAlive())
             closer=null;
         if(closer == null) {
@@ -1360,8 +1358,7 @@ public class JChannel extends Channel {
                             down(new Event(Event.CONFIG, m));
                         }
                         connect(old_channel_name);
-                        if(channel_listener != null)
-                            channel_listener.channelReconnected(local_addr);
+                        notifyChannelReconnected(local_addr);
                     }
                     catch(Exception ex) {
                         if(log.isErrorEnabled()) log.error("failure reconnecting to channel: " + ex);

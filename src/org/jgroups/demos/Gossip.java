@@ -1,4 +1,4 @@
-// $Id: Gossip.java,v 1.8 2005/05/30 16:14:40 belaban Exp $
+// $Id: Gossip.java,v 1.9 2005/10/31 10:56:31 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -50,7 +50,7 @@ public class Gossip implements Runnable, WindowListener, ActionListener, Channel
     public Gossip(String props, long traffic) throws Exception {
 
         channel=new JChannel(props);
-        channel.setChannelListener(this);
+        channel.addChannelListener(this);
         channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
         traffic_interval=traffic;
         if(traffic_interval > 0) {

@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER_Test.java,v 1.5 2005/05/30 16:14:46 belaban Exp $
+// $Id: STATE_TRANSFER_Test.java,v 1.6 2005/10/31 10:56:31 belaban Exp $
 package org.jgroups.protocols;
 
 import junit.framework.Test;
@@ -89,7 +89,7 @@ public class STATE_TRANSFER_Test extends TestCase {
 
          channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
 
-         channel.setChannelListener(this);
+         channel.addChannelListener(this);
 
          channel.connect(GROUP_NAME);
       }
