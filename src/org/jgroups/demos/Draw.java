@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.14 2005/06/22 14:48:46 belaban Exp $
+// $Id: Draw.java,v 1.15 2005/10/31 10:56:31 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -59,7 +59,7 @@ public class Draw implements ActionListener, ChannelListener {
             debugger.start();
         }
         channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
-        channel.setChannelListener(this);
+        channel.addChannelListener(this);
     }
 
 

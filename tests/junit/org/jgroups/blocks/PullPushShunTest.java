@@ -8,9 +8,9 @@ import org.jgroups.util.Util;
 
 /**
  * @author Bela Ban
- * @version $Id: PullPushShunTest.java,v 1.2 2005/04/21 14:50:48 belaban Exp $
+ * @version $Id: PullPushShunTest.java,v 1.3 2005/10/31 10:56:31 belaban Exp $
  */
-public class PullPushShunTest extends TestCase implements MessageListener, MembershipListener {
+public class PullPushShunTest extends TestCase implements MessageListener, MembershipListener, ChannelListener {
     private JChannel channel;
     PullPushAdapter adapter;
 
@@ -35,6 +35,7 @@ public class PullPushShunTest extends TestCase implements MessageListener, Membe
         Address old_local_addr, new_local_addr;
         channel=new JChannel();
         channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
+        channel.addChannelListener(this);
         channel.connect("PullPushTestShun");
         adapter=new PullPushAdapter(channel, this, this);
         assertEquals(1, channel.getView().getMembers().size());

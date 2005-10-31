@@ -1,4 +1,4 @@
-// $Id: RpcDispatcher.java,v 1.18 2005/07/22 11:10:29 belaban Exp $
+// $Id: RpcDispatcher.java,v 1.19 2005/10/31 10:56:31 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -45,7 +45,7 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
 
     public RpcDispatcher(Channel channel, MessageListener l, MembershipListener l2, Object server_obj) {
         super(channel, l, l2);
-        channel.setChannelListener(this);
+        channel.addChannelListener(this);
         this.server_obj=server_obj;
         additionalChannelListeners = new ArrayList();
     }
@@ -54,7 +54,7 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
     public RpcDispatcher(Channel channel, MessageListener l, MembershipListener l2, Object server_obj,
                          boolean deadlock_detection) {
         super(channel, l, l2, deadlock_detection);
-        channel.setChannelListener(this);
+        channel.addChannelListener(this);
         this.server_obj=server_obj;
         additionalChannelListeners = new ArrayList();
     }
@@ -62,7 +62,7 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
     public RpcDispatcher(Channel channel, MessageListener l, MembershipListener l2, Object server_obj,
                          boolean deadlock_detection, boolean concurrent_processing) {
         super(channel, l, l2, deadlock_detection, concurrent_processing);
-        channel.setChannelListener(this);
+        channel.addChannelListener(this);
         this.server_obj=server_obj;
         additionalChannelListeners = new ArrayList();
     }
@@ -78,7 +78,7 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         if(this.adapter != null) {
             Transport t=this.adapter.getTransport();
             if(t != null && t instanceof Channel) {
-                ((Channel)t).setChannelListener(this);
+                ((Channel)t).addChannelListener(this);
             }
         }
 

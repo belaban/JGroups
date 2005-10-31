@@ -15,7 +15,7 @@ import java.util.Map;
 
 /**
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.7 2005/08/19 08:41:22 belaban Exp $
+ * @version $Id: JChannel.java,v 1.8 2005/10/31 10:56:31 belaban Exp $
  */
 public class JChannel implements JChannelMBean {
     /** Ref to the original JGroups channel */
@@ -293,9 +293,20 @@ public class JChannel implements JChannelMBean {
         return addr != null? addr.toString() : "n/a";
     }
 
+    /** @deprecated Use addChannelListener() instead */
     public void setChannelListener(ChannelListener channel_listener) {
         if(channel != null)
-            channel.setChannelListener(channel_listener);
+            channel.addChannelListener(channel_listener);
+    }
+
+    public void addChannelListener(ChannelListener listener) {
+        if(channel != null)
+            channel.addChannelListener(listener);
+    }
+
+    public void removeChannelListener(ChannelListener l) {
+        if(channel != null)
+            channel.removeChannelListener(l);
     }
 
     public boolean isOpen() {

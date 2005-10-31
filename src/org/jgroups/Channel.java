@@ -1,13 +1,12 @@
-// $Id: Channel.java,v 1.10 2005/07/29 08:59:37 belaban Exp $
+// $Id: Channel.java,v 1.11 2005/10/31 10:56:31 belaban Exp $
 
 package org.jgroups;
 
 
+import org.apache.commons.logging.Log;
+
 import java.io.Serializable;
-import java.util.Vector;
-import java.util.Map;
-
-
+import java.util.*;
 
 
 /**
@@ -54,7 +53,10 @@ public abstract class Channel implements Transport {
 
     protected UpHandler up_handler=null;   // when set, <em>all</em> events are passed to it !
     protected ChannelListener channel_listener=null;
+    protected Set channel_listeners=null;
 
+
+    protected abstract Log getLog();
 
     /**
      Connects the channel to a group. The client is now able to receive group
@@ -174,7 +176,7 @@ public abstract class Channel implements Transport {
      not</em> serializable, the byte buffer will be null.
      */
     abstract public void send(Address dst, Address src, Serializable obj) throws ChannelNotConnectedException,
-            ChannelClosedException;
+                                                                                 ChannelClosedException;
 
 
     /**
@@ -219,7 +221,7 @@ public abstract class Channel implements Transport {
      @exception TimeoutException Thrown when a timeout has occurred.
      */
     abstract public Object receive(long timeout) throws ChannelNotConnectedException,
-            ChannelClosedException, TimeoutException;
+                                                        ChannelClosedException, TimeoutException;
 
 
     /** Returns the next message, view, block, suspect or other event <em>without removing
@@ -288,11 +290,29 @@ public abstract class Channel implements Transport {
      Allows to be notified when a channel event such as connect, disconnect or close occurs.
      E.g. a PullPushAdapter may choose to stop when the channel is closed, or to start when
      it is opened.
+     @deprecated Use addChannelListener() instead
      */
     public void setChannelListener(ChannelListener channel_listener) {
-        this.channel_listener=channel_listener;
+        addChannelListener(channel_listener);
     }
 
+    /**
+     Allows to be notified when a channel event such as connect, disconnect or close occurs.
+     E.g. a PullPushAdapter may choose to stop when the channel is closed, or to start when
+     it is opened.
+     */
+    public synchronized void addChannelListener(ChannelListener listener) {
+        if(listener == null)
+            return;
+        if(channel_listeners == null)
+            channel_listeners=new LinkedHashSet();
+        channel_listeners.add(listener);
+    }
+
+    public synchronized void removeChannelListener(ChannelListener listener) {
+        if(channel_listeners != null)
+            channel_listeners.remove(listener);
+    }
 
     /**
      Sets an option. The following options are currently recognized:
@@ -404,4 +424,70 @@ public abstract class Channel implements Transport {
                 return "unknown (" + option + ')';
         }
     }
+
+    protected void notifyChannelConnected(Channel c) {
+        for(Iterator it=channel_listeners.iterator(); it.hasNext();) {
+            ChannelListener channelListener=(ChannelListener)it.next();
+            try {
+                channelListener.channelConnected(c);
+            }
+            catch(Throwable t) {
+                getLog().error("exception in channelConnected() callback", t);
+            }
+        }
+    }
+
+    protected void notifyChannelDisconnected(Channel c) {
+        if(channel_listeners == null) return;
+        for(Iterator it=channel_listeners.iterator(); it.hasNext();) {
+            ChannelListener channelListener=(ChannelListener)it.next();
+            try {
+                channelListener.channelDisconnected(c);
+            }
+            catch(Throwable t) {
+                getLog().error("exception in channelDisonnected() callback", t);
+            }
+        }
+    }
+
+    protected void notifyChannelClosed(Channel c) {
+        if(channel_listeners == null) return;
+        for(Iterator it=channel_listeners.iterator(); it.hasNext();) {
+            ChannelListener channelListener=(ChannelListener)it.next();
+            try {
+                channelListener.channelClosed(c);
+            }
+            catch(Throwable t) {
+                getLog().error("exception in channelClosed() callback", t);
+            }
+        }
+    }
+
+    protected void notifyChannelShunned() {
+        if(channel_listeners == null) return;
+        for(Iterator it=channel_listeners.iterator(); it.hasNext();) {
+            ChannelListener channelListener=(ChannelListener)it.next();
+            try {
+                channelListener.channelShunned();
+            }
+            catch(Throwable t) {
+                getLog().error("exception in channelShunned() callback", t);
+            }
+        }
+    }
+
+    protected void notifyChannelReconnected(Address addr) {
+        if(channel_listeners == null) return;
+        for(Iterator it=channel_listeners.iterator(); it.hasNext();) {
+            ChannelListener channelListener=(ChannelListener)it.next();
+            try {
+                channelListener.channelReconnected(addr);
+            }
+            catch(Throwable t) {
+                getLog().error("exception in channelReconnected() callback", t);
+            }
+        }
+    }
+
+
 }
