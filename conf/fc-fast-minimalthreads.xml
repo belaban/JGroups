@@ -50,7 +50,7 @@ Best result with perf.Test (2 members, 1 sender, laptop, 20000 1K msgs
                  time=3165ms, msgs/sec=6319.12, throughput=6.32MB/sec
  -->
 <config>
-    <UDP bind_addr="192.168.5.1"
+    <UDP
          mcast_port="45566" 
          mcast_addr="228.10.10.10"
          tos="16"

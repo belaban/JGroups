@@ -2,10 +2,10 @@
 <!--
 Discards 10% of all outgoing packets
 Author: Bela Ban
-Version: $Id: discard.xml,v 1.2 2005/07/16 09:03:06 belaban Exp $
+Version: $Id: discard.xml,v 1.3 2005/11/02 12:07:01 belaban Exp $
  -->
 <config>
-    <UDP bind_addr="192.168.5.1"
+    <UDP 
          mcast_port="45566" 
          mcast_addr="228.8.8.8"
          tos="16"
