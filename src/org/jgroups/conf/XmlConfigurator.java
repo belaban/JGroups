@@ -1,4 +1,4 @@
-// $Id: XmlConfigurator.java,v 1.14 2005/07/17 11:36:41 chrislott Exp $
+// $Id: XmlConfigurator.java,v 1.15 2005/11/03 11:42:58 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -10,7 +10,6 @@ package org.jgroups.conf;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.jgroups.util.Util;
 import org.w3c.dom.*;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -24,8 +23,6 @@ import java.util.*;
 
 
 public class XmlConfigurator implements ProtocolStackConfigurator {
-    private static boolean xml_debug=true;
-
     public static final String ATTR_NAME="name";
     public static final String ATTR_VALUE="value";
     public static final String ATTR_INHERIT="inherit";
@@ -125,56 +122,8 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
     }
 
 
-//    protected static XmlConfigurator parse(InputStream stream) throws java.io.IOException {
-//        XmlConfigurator configurator=null;
-//        try {
-//            DocumentBuilderFactory factory=DocumentBuilderFactory.newInstance();
-//            factory.setValidating(false); //for now
-//            DocumentBuilder builder=factory.newDocumentBuilder();
-//            builder.setEntityResolver(new ClassPathEntityResolver());
-//            Document document=builder.parse(stream);
-//            Element root=(Element)document.getElementsByTagName("protocol-stack").item(0);
-//            root.normalize();
-//            //print("",new PrintWriter(System.out),root);
-//            String stackname=root.getAttribute(ATTR_NAME);
-//            String inherit=root.getAttribute(ATTR_INHERIT);
-//            boolean isinherited=(inherit != null && inherit.length() > 0);
-//            NodeList protocol_list=document.getElementsByTagName(isinherited ? ELMT_PROT_OVERRIDE : ELMT_PROT);
-//            Vector v=new Vector();
-//            for(int i=0; i < protocol_list.getLength(); i++) {
-//                if(protocol_list.item(i).getNodeType() == Node.ELEMENT_NODE) {
-//                    v.addElement(parseProtocolData(protocol_list.item(i)));
-//                }
-//            }
-//            ProtocolData[] protocols=new ProtocolData[v.size()];
-//            v.copyInto(protocols);
-//
-//            if(isinherited) {
-//                URL inheritURL=new URL(inherit);
-//                configurator=XmlConfigurator.getInstance(inheritURL);
-//                for(int i=0; i < protocols.length; i++)
-//                    configurator.override(protocols[i]);
-//            }
-//            else {
-//                configurator=new XmlConfigurator(stackname, protocols);
-//            }//end if
-//
-//        }
-//        catch(Exception x) {
-//            if(x instanceof java.io.IOException)
-//                throw (java.io.IOException)x;
-//            else {
-//                if(xml_debug) x.printStackTrace();
-//                String error=Util.getStackTrace(x);
-//                if(log.isErrorEnabled()) log.error(error);
-//                throw new java.io.IOException(x.getMessage());
-//            }
-//        }
-//        return configurator;
-//    }
 
-
-        protected static XmlConfigurator parseOldFormat(InputStream stream) throws java.io.IOException {
+    protected static XmlConfigurator parseOldFormat(InputStream stream) throws java.io.IOException {
         XmlConfigurator configurator=null;
         try {
             DocumentBuilderFactory factory=DocumentBuilderFactory.newInstance();
@@ -206,17 +155,16 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
             }
             else {
                 configurator=new XmlConfigurator(stackname, protocols);
-            }//end if
+            }
 
         }
         catch(Exception x) {
             if(x instanceof java.io.IOException)
                 throw (java.io.IOException)x;
             else {
-                if(xml_debug) x.printStackTrace();
-                String error=Util.getStackTrace(x);
-                if(log.isErrorEnabled()) log.error(error);
-                throw new java.io.IOException(x.getMessage());
+                IOException tmp=new IOException();
+                tmp.initCause(x);
+                throw tmp;
             }
         }
         return configurator;
@@ -248,10 +196,9 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
             if(x instanceof java.io.IOException)
                 throw (java.io.IOException)x;
             else {
-                if(xml_debug) x.printStackTrace();
-                String error=Util.getStackTrace(x);
-                if(log.isErrorEnabled()) log.error(error);
-                throw new java.io.IOException(x.getMessage());
+                IOException tmp=new IOException();
+                tmp.initCause(x);
+                throw tmp;
             }
         }
     }
@@ -324,10 +271,9 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
             if(x instanceof java.io.IOException)
                 throw (java.io.IOException)x;
             else {
-                if(xml_debug) x.printStackTrace();
-                String error=Util.getStackTrace(x);
-                if(log.isErrorEnabled()) log.error(error);
-                throw new java.io.IOException(x.getMessage());
+                IOException tmp=new IOException();
+                tmp.initCause(x);
+                throw tmp;
             }
         }
         return configurator;
@@ -390,13 +336,11 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
             if(x instanceof java.io.IOException)
                 throw (java.io.IOException)x;
             else {
-
-                if(xml_debug) x.printStackTrace();
-                String error=Util.getStackTrace(x);
-                if(log.isErrorEnabled()) log.error(error);
-                throw new java.io.IOException(x.getMessage());
-            }//end if
-        }//catch
+                IOException tmp=new IOException();
+                tmp.initCause(x);
+                throw tmp;
+            }
+        }
     }
 
     protected static ProtocolParameter[] parseProtocolParameters(Element protparams)
@@ -422,13 +366,11 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
             if(x instanceof java.io.IOException)
                 throw (java.io.IOException)x;
             else {
-
-                if(xml_debug) x.printStackTrace();
-                String error=Util.getStackTrace(x);
-                if(log.isErrorEnabled()) log.error(error);
-                throw new java.io.IOException(x.getMessage());
-            }//end if
-        }//catch
+                IOException tmp=new IOException();
+                tmp.initCause(x);
+                throw tmp;
+            }
+        }
     }
 
     public static void main(String[] args) throws Exception {
@@ -451,8 +393,6 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
             help();
             return;
         }
-
-        xml_debug=true;
         if(input_file != null) {
             InputStream input=null;
 

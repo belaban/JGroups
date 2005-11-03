@@ -1,11 +1,10 @@
 package org.jgroups.protocols;
 
 import org.jgroups.Event;
+import org.jgroups.Global;
 import org.jgroups.Header;
 import org.jgroups.Message;
-import org.jgroups.Global;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.Util;
 import org.jgroups.util.Streamable;
 
 import java.io.*;
@@ -18,7 +17,7 @@ import java.util.zip.Inflater;
  * Compresses the payload of a message. Goal is to reduce the number of messages sent across the wire.
  * Should ideally be layered somewhere above a fragmentation protocol (e.g. FRAG).
  * @author Bela Ban
- * @version $Id: COMPRESS.java,v 1.9 2005/08/11 12:43:47 belaban Exp $
+ * @version $Id: COMPRESS.java,v 1.10 2005/11/03 11:42:59 belaban Exp $
  */
 public class COMPRESS extends Protocol {
 
@@ -98,7 +97,7 @@ public class COMPRESS extends Protocol {
                         msg.setBuffer(uncompressed_payload);
                     }
                     catch(DataFormatException e) {
-                        if(log.isErrorEnabled()) log.error("exception on uncompression: " + Util.printStackTrace(e));
+                        if(log.isErrorEnabled()) log.error("exception on uncompression: " + e);
                     }
                 }
             }

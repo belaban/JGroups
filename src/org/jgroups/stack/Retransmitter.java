@@ -1,4 +1,4 @@
-// $Id: Retransmitter.java,v 1.9 2005/08/16 09:55:03 belaban Exp $
+// $Id: Retransmitter.java,v 1.10 2005/11/03 11:42:59 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -24,7 +24,7 @@ import java.util.*;
  *
  * @author John Giorgiadis
  * @author Bela Ban
- * @version $Revision: 1.9 $
+ * @version $Revision: 1.10 $
  */
 public class Retransmitter {
 
@@ -166,7 +166,7 @@ public class Retransmitter {
                     retransmitter.stop();
                 }
                 catch(InterruptedException ex) {
-                    if(log.isErrorEnabled()) log.error(Util.printStackTrace(ex));
+                    if(log.isErrorEnabled()) log.error("failed stopping retransmitter", ex);
                 }
             }
             else {
