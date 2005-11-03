@@ -15,7 +15,7 @@ import java.util.Map;
 
 /**
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.8 2005/10/31 10:56:31 belaban Exp $
+ * @version $Id: JChannel.java,v 1.9 2005/11/03 20:06:58 belaban Exp $
  */
 public class JChannel implements JChannelMBean {
     /** Ref to the original JGroups channel */
@@ -41,6 +41,8 @@ public class JChannel implements JChannelMBean {
      *setting this to true, automatically forces auto_reconnect to true*/
     private boolean auto_getstate=false;
 
+    private String mbean_server_name=null;
+
 
     public JChannel() {
     }
@@ -58,7 +60,13 @@ public class JChannel implements JChannelMBean {
         return Version.printDescription();
     }
 
+    public String getMBeanServerName() {
+        return mbean_server_name;
+    }
 
+    public void setMBeanServerName(String n) {
+        this.mbean_server_name=n;
+    }
 
     public String getProperties() {
         return props;
@@ -235,7 +243,7 @@ public class JChannel implements JChannelMBean {
             channel.close();
         channel=new org.jgroups.JChannel(props);
         setOptions();
-        MBeanServer server=(MBeanServer)MBeanServerFactory.findMBeanServer(null).get(0);
+        MBeanServer server=(MBeanServer)MBeanServerFactory.findMBeanServer(mbean_server_name).get(0);
         JmxConfigurator.registerProtocols(server, channel, getObjectName());
     }
 
@@ -249,7 +257,7 @@ public class JChannel implements JChannelMBean {
     }
 
     public void destroy() {
-        MBeanServer server=(MBeanServer)MBeanServerFactory.findMBeanServer(null).get(0);
+        MBeanServer server=(MBeanServer)MBeanServerFactory.findMBeanServer(mbean_server_name).get(0);
         JmxConfigurator.unregisterProtocols(server, channel, getObjectName());
         if(channel != null) {
             channel.close();
