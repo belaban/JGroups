@@ -1,4 +1,4 @@
-// $Id: ClassConfigurator.java,v 1.17 2005/08/22 08:31:25 belaban Exp $
+// $Id: ClassConfigurator.java,v 1.18 2005/11/03 11:42:58 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -89,7 +89,7 @@ public class ClassConfigurator {
                         }
                     }
                     catch(ClassNotFoundException cnf) {
-                        throw new ChannelException("failed loading class: " + cnf);
+                        throw new ChannelException("failed loading class", cnf);
                     }
                 }
                 if(log.isDebugEnabled()) log.debug("mapping is:\n" + printMagicMap());

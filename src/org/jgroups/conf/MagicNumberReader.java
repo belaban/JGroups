@@ -1,4 +1,4 @@
-// $Id: MagicNumberReader.java,v 1.9 2005/08/08 14:58:32 belaban Exp $
+// $Id: MagicNumberReader.java,v 1.10 2005/11/03 11:42:58 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -20,9 +20,9 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
+import java.io.IOException;
 
 public class MagicNumberReader {
-    private static final boolean xml_debug=false;
     public static final String MAGIC_NUMBER_FILE="jg-magic-map.xml";
 
     public String mMagicNumberFile=MAGIC_NUMBER_FILE;
@@ -66,9 +66,7 @@ public class MagicNumberReader {
             return parse(stream);
         }
         catch(Exception x) {
-            if(xml_debug) x.printStackTrace();
-            String error=Util.getStackTrace(x);
-            if(log.isErrorEnabled()) log.error(error);
+            if(log.isErrorEnabled()) log.error("failed reading mapig map", x);
         }
         return new ClassMap[0];
     }
@@ -91,8 +89,7 @@ public class MagicNumberReader {
         return data;
     }//parse
 
-    protected static ClassMap parseClassData(Node protocol)
-            throws java.io.IOException {
+    protected static ClassMap parseClassData(Node protocol) throws java.io.IOException {
         try {
             protocol.normalize();
             int pos=0;
@@ -104,9 +101,6 @@ public class MagicNumberReader {
              * 3. preload
              * 4. magic-number
              */
-
-            //
-
 
             String clazzname=null;
             String desc=null;
@@ -129,9 +123,9 @@ public class MagicNumberReader {
                         case 4:
                             magicnumber=children.item(i).getFirstChild().getNodeValue();
                             break;
-                    }//switch
-                }//end if
-            }//for
+                    }
+                }
+            }
 
             return new ClassMap(clazzname, desc, Boolean.valueOf(preload).booleanValue(), Integer.valueOf(magicnumber).intValue());
         }
@@ -139,13 +133,11 @@ public class MagicNumberReader {
             if(x instanceof java.io.IOException)
                 throw (java.io.IOException)x;
             else {
-
-                if(xml_debug) x.printStackTrace();
-                String error=Util.getStackTrace(x);
-                if(log.isErrorEnabled()) log.error(error);
-                throw new java.io.IOException(x.getMessage());
-            }//end if
-        }//catch
+                IOException tmp=new IOException();
+                tmp.initCause(x);
+                throw tmp;
+            }
+        }
     }
 
 

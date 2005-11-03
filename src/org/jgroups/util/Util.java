@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.60 2005/10/19 12:12:57 belaban Exp $
+// $Id: Util.java,v 1.61 2005/11/03 11:42:59 belaban Exp $
 
 package org.jgroups.util;
 
@@ -671,20 +671,7 @@ public class Util {
         return printStackTrace(t);
     }
 
-    /**
-     * Use with caution: lots of overhead
-     */
-    public static String printStackTrace() {
-        try {
-            throw new Exception("Dumping stack:");
-        }
-        catch(Throwable t) {
-            StringWriter s=new StringWriter();
-            PrintWriter p=new PrintWriter(s);
-            t.printStackTrace(p);
-            return s.toString();
-        }
-    }
+
 
     public static String print(Throwable t) {
         return printStackTrace(t);

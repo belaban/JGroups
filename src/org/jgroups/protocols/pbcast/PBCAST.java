@@ -1,4 +1,4 @@
-// $Id: PBCAST.java,v 1.14 2005/08/11 12:43:46 belaban Exp $
+// $Id: PBCAST.java,v 1.15 2005/11/03 11:42:58 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -984,7 +984,7 @@ public class PBCAST extends Protocol implements Runnable {
                                 xmit_msgs=(List) Util.objectFromByteBuffer(data);
                             }
                             catch(Exception ex) {
-                                if(log.isErrorEnabled()) log.error(ex.getMessage());
+                                if(log.isErrorEnabled()) log.error("failed creating retransmitted messages from buffer", ex);
                                 break;
                             }
                             handleXmitRsp(xmit_msgs);

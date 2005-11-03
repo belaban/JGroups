@@ -1,4 +1,4 @@
-// $Id: RpcProtocol.java,v 1.5 2004/05/15 00:20:34 belaban Exp $
+// $Id: RpcProtocol.java,v 1.6 2005/11/03 11:42:59 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -126,7 +126,7 @@ public class RpcProtocol extends MessageProtocol {
             return method_call.invoke(this);
         }
         catch(Throwable x) {
-            if(log.isErrorEnabled()) log.error(Util.getStackTrace(x));
+            if(log.isErrorEnabled()) log.error("failed invoking method " + method_call.getName(), x);
             return x;
         }
     }

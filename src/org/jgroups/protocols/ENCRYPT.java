@@ -1,6 +1,6 @@
 
 
-//$Id: ENCRYPT.java,v 1.13 2005/10/21 16:37:00 belaban Exp $
+//$Id: ENCRYPT.java,v 1.14 2005/11/03 11:42:59 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -1078,7 +1078,7 @@ final Map keyMap = new WeakHashMap();
 					
 				} catch (Exception e)
 				{
-					log.warn("Unable to send down event " + e.getMessage());
+					log.warn("Unable to send down event", e);
 				}
 				return;
 			default :

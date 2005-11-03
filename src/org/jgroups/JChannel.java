@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.41 2005/10/31 10:56:31 belaban Exp $
+// $Id: JChannel.java,v 1.42 2005/11/03 11:42:59 belaban Exp $
 
 package org.jgroups;
 
@@ -66,7 +66,7 @@ import java.util.Vector;
  * 
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.41 $
+ * @version $Revision: 1.42 $
  */
 public class JChannel extends Channel {
 
@@ -285,9 +285,7 @@ public class JChannel extends Channel {
             props=c.getProtocolStackString();
         }
         catch(Exception x) {
-            String strace=Util.getStackTrace(x);
-            if(log.isErrorEnabled()) log.error(strace);
-            throw new ChannelException("unable to load protocol stack: {" + x.getMessage() + ';' + strace + '}');
+            throw new ChannelException("unable to load protocol stack", x);
         }
 
         /*create the new protocol stack*/
@@ -298,7 +296,7 @@ public class JChannel extends Channel {
             prot_stack.setup();
         }
         catch(Throwable e) {
-            throw new ChannelException("JChannel(): " + e);
+            throw new ChannelException("failed to setup protocol stack", e);
         }
     }
 
@@ -392,8 +390,7 @@ public class JChannel extends Channel {
             prot_stack.startStack(); // calls start() in all protocols, from top to bottom
         }
         catch(Throwable e) {
-            if(log.isErrorEnabled()) log.error("exception: " + e);
-            throw new ChannelException(e.toString());
+            throw new ChannelException("failed to start protocol stack", e);
         }
 
         /* try to get LOCAL_ADDR_TIMEOUT. Catch SecurityException if called in an untrusted environment (e.g. using JNLP) */
@@ -502,7 +499,7 @@ public class JChannel extends Channel {
      */
     public synchronized void open() throws ChannelException {
         if(!closed)
-            throw new ChannelException("JChannel.open(): channel is already open");
+            throw new ChannelException("channel is already open");
 
         try {
             mq.reset();
@@ -513,7 +510,7 @@ public class JChannel extends Channel {
             closed=false;
         }
         catch(Exception e) {
-            throw new ChannelException("JChannel().open(): " + e.getMessage());
+            throw new ChannelException("failed to open channel" , e);
         }
     }
 
