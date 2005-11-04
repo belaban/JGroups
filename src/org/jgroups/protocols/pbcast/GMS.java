@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.44 2005/10/31 09:54:18 belaban Exp $
+// $Id: GMS.java,v 1.45 2005/11/04 18:40:36 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -859,6 +859,13 @@ public class GMS extends Protocol {
             this.join_rsp=join_rsp;
         }
 
+        public byte getType() {
+            return type;
+        }
+
+        public Address getMemeber() {
+            return mbr;
+        }
 
         public String toString() {
             StringBuffer sb=new StringBuffer("GmsHeader");
@@ -1028,7 +1035,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.44 2005/10/31 09:54:18 belaban Exp $
+     * @version $Id: GMS.java,v 1.45 2005/11/04 18:40:36 belaban Exp $
      */
     class ViewHandler implements Runnable {
         Thread                t;
