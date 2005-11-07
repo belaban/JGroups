@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.42 2005/11/07 06:47:00 belaban Exp $
+// $Id: Message.java,v 1.43 2005/11/07 13:37:23 belaban Exp $
 
 package org.jgroups;
 
@@ -58,6 +58,10 @@ public class Message implements Externalizable, Streamable {
     static final byte SRC_HOST_NULL=64;
 
     static final HashSet nonStreamableHeaders=new HashSet(); // todo: remove when all headers are streamable
+
+    /** Map<Address,Address>. Maintains mappings to canonical addresses */
+    private static final Map canonicalAddresses=new ConcurrentReaderHashMap();
+    private static final boolean DISABLE_CANONICALIZATION=Boolean.getBoolean("disable_canonicalization");
 
 
 
@@ -141,7 +145,10 @@ public class Message implements Externalizable, Streamable {
     }
 
     public void setDest(Address new_dest) {
-        dest_addr=new_dest;
+        if(DISABLE_CANONICALIZATION)
+            dest_addr=new_dest;
+        else
+            dest_addr=canonicalAddress(new_dest);
     }
 
     public Address getSrc() {
@@ -149,7 +156,10 @@ public class Message implements Externalizable, Streamable {
     }
 
     public void setSrc(Address new_src) {
-        src_addr=new_src;
+        if(DISABLE_CANONICALIZATION)
+            src_addr=new_src;
+        else
+            src_addr=canonicalAddress(new_src);
     }
 
     /**
@@ -458,11 +468,15 @@ public class Message implements Externalizable, Streamable {
 
         if(destAddressExist) {
             dest_addr=(Address)Marshaller.read(in);
+            if(!DISABLE_CANONICALIZATION)
+                dest_addr=canonicalAddress(dest_addr);
         }
 
         srcAddressExist=in.readBoolean();
         if(srcAddressExist) {
             src_addr=(Address)Marshaller.read(in);
+            if(!DISABLE_CANONICALIZATION)
+                src_addr=canonicalAddress(src_addr);
         }
 
         int i=in.readInt();
@@ -580,6 +594,8 @@ public class Message implements Externalizable, Streamable {
             else {
                 src_addr=Util.readAddress(in);
             }
+            if(!DISABLE_CANONICALIZATION)
+                src_addr=canonicalAddress(src_addr);
         }
 
         // 3. buf
@@ -694,6 +710,31 @@ public class Message implements Externalizable, Streamable {
 
     private Map createHeaders(Map m) {
         return new ConcurrentReaderHashMap(m);
+    }
+
+    /** canonicalize addresses to some extent.  There are race conditions
+     * allowed in this method, so it may not fully canonicalize an address
+     * @param nonCanonicalAddress
+     * @return canonical representation of the address
+     */
+    private static Address canonicalAddress(Address nonCanonicalAddress) {
+        Address result=null;
+        if(nonCanonicalAddress == null) {
+            return null;
+        }
+        // do not synchronize between get/put on the canonical map to avoid cost of contention
+        // this can allow multiple equivalent addresses to leak out, but it's worth the cost savings
+        try {
+            result=(Address)canonicalAddresses.get(nonCanonicalAddress);
+        }
+        catch(NullPointerException npe) {
+            // no action needed
+        }
+        if(result == null) {
+            result=nonCanonicalAddress;
+            canonicalAddresses.put(nonCanonicalAddress, result);
+        }
+        return result;
     }
 
     /* ------------------------------- End of Private methods ---------------------------- */
