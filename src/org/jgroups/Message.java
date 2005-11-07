@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.41 2005/08/26 11:09:45 belaban Exp $
+// $Id: Message.java,v 1.42 2005/11/07 06:47:00 belaban Exp $
 
 package org.jgroups;
 
@@ -661,6 +661,8 @@ public class Message implements Externalizable, Streamable {
             if(use_magic_number) {
                 magic_number=in.readInt();
                 clazz=ClassConfigurator.getInstance(false).get(magic_number);
+                if(clazz == null)
+                    log.error("magic number " + magic_number + " is not available in magic map");
             }
             else {
                 classname=in.readUTF();
