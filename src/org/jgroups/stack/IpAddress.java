@@ -1,4 +1,4 @@
-// $Id: IpAddress.java,v 1.28 2005/09/12 15:19:06 belaban Exp $
+// $Id: IpAddress.java,v 1.29 2005/11/07 09:44:17 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -130,25 +130,27 @@ public class IpAddress implements Address {
      *            from being compared to this Object.
      */
     public final int compareTo(Object o) {
-      int   h1, h2, rc;
+        int   h1, h2, rc; // added Nov 7 2005, makes sense with canonical addresses
 
-      if ((o == null) || !(o instanceof IpAddress))
-          throw new ClassCastException("comparison between different classes: the other object is " +
-                                       (o != null? o.getClass() : o));
-      IpAddress other = (IpAddress) o;
-      if(ip_addr == null)
-          if (other.ip_addr == null) return port < other.port ? -1 : (port > other.port ? 1 : 0);
-          else return -1;
+        if(this == o) return 0;
+        if ((o == null) || !(o instanceof IpAddress))
+            throw new ClassCastException("comparison between different classes: the other object is " +
+                    (o != null? o.getClass() : o));
+        IpAddress other = (IpAddress) o;
+        if(ip_addr == null)
+            if (other.ip_addr == null) return port < other.port ? -1 : (port > other.port ? 1 : 0);
+            else return -1;
       
-      h1=ip_addr.hashCode();
-      h2=other.ip_addr.hashCode();
-      rc=h1 < h2? -1 : h1 > h2? 1 : 0;
-      return rc != 0 ? rc : port < other.port ? -1 : (port > other.port ? 1 : 0);
+        h1=ip_addr.hashCode();
+        h2=other.ip_addr.hashCode();
+        rc=h1 < h2? -1 : h1 > h2? 1 : 0;
+        return rc != 0 ? rc : port < other.port ? -1 : (port > other.port ? 1 : 0);
     }
 
 
 
     public final boolean equals(Object obj) {
+        if(this == obj) return true; // added Nov 7 2005, makes sense with canonical addresses
         if(obj == null) return false;
         return compareTo(obj) == 0 ? true : false;
     }
