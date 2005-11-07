@@ -2,7 +2,7 @@
 Release Notes JGroups 2.2.9
 ===========================
 
-Version: $Id: ReleaseNotes-2.2.9.txt,v 1.3 2005/10/27 08:40:40 belaban Exp $
+Version: $Id: ReleaseNotes-2.2.9.txt,v 1.4 2005/11/07 13:49:29 belaban Exp $
 Author: Bela Ban
 Date: Sept 1 2005
 
@@ -74,6 +74,13 @@ that is greater than its own view, it installs it. Thus, all members will eventu
 view should the above problem occur. Note that the view sending is done by default every 60 seconds, but it can
 also be triggered through JMX by calling the sendView() method directly.
 See JGroups/doc/ReliableViewInstallation for details.
+
+
+Address canonicalization
+------------------------
+To avoid many instances of Address, 2.2.9 now uses canonicalization, which points the same
+addresses to the same memory location. Therefore most addresses can be garbage collected as soon as they
+have been created, resulting in reduced memory overhead. Can be turned off with -Ddisable_canonicalization=true.
 
 
 Bug fixes
