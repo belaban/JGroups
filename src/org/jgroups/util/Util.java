@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.61 2005/11/03 11:42:59 belaban Exp $
+// $Id: Util.java,v 1.62 2005/11/07 08:05:54 belaban Exp $
 
 package org.jgroups.util;
 
@@ -1493,14 +1493,40 @@ public class Util {
     }
 
 
+//    public static InetAddress getFirstNonLoopbackAddress() throws SocketException {
+//        Enumeration en=NetworkInterface.getNetworkInterfaces();
+//        while(en.hasMoreElements()) {
+//            NetworkInterface i=(NetworkInterface)en.nextElement();
+//            for(Enumeration en2=i.getInetAddresses(); en2.hasMoreElements();) {
+//                InetAddress addr=(InetAddress)en2.nextElement();
+//                if(!addr.isLoopbackAddress())
+//                    return addr;
+//            }
+//        }
+//        return null;
+//    }
+
+
     public static InetAddress getFirstNonLoopbackAddress() throws SocketException {
         Enumeration en=NetworkInterface.getNetworkInterfaces();
+        boolean preferIpv4=Boolean.getBoolean("java.net.preferIPv4Stack");
+        boolean preferIPv6=Boolean.getBoolean("java.net.preferIPv6Addresses");
         while(en.hasMoreElements()) {
             NetworkInterface i=(NetworkInterface)en.nextElement();
             for(Enumeration en2=i.getInetAddresses(); en2.hasMoreElements();) {
                 InetAddress addr=(InetAddress)en2.nextElement();
-                if(!addr.isLoopbackAddress())
-                    return addr;
+                if(!addr.isLoopbackAddress()) {
+                    if(addr instanceof Inet4Address) {
+                        if(preferIPv6)
+                            continue;
+                        return addr;
+                    }
+                    if(addr instanceof Inet6Address) {
+                        if(preferIpv4)
+                            continue;
+                        return addr;
+                    }
+                }
             }
         }
         return null;
