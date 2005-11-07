@@ -1,4 +1,4 @@
-// $Id: IpAddressTest.java,v 1.13 2005/07/15 10:05:48 belaban Exp $
+// $Id: IpAddressTest.java,v 1.14 2005/11/07 09:43:52 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -86,12 +86,13 @@ public class IpAddressTest extends TestCase {
 
 
     public void testInequality() throws Exception {
+        IpAddress tmp=null;
         assertTrue(!a.equals(d));
         assertTrue(!c.equals(d));
         assertTrue(!a.equals(f));
         assertTrue(!e.equals(f));
         assertTrue(!f.equals(g));
-        assertFalse(a.equals(null));
+        assertFalse(a.equals(tmp));
     }
 
 
