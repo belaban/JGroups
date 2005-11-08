@@ -1,10 +1,11 @@
-// $Id: LargeState.java,v 1.12 2005/10/28 15:53:29 belaban Exp $
+// $Id: LargeState.java,v 1.13 2005/11/08 11:05:45 belaban Exp $
 
 
 package org.jgroups.tests;
 
 
 import org.jgroups.*;
+import org.jgroups.util.Util;
 
 
 /**
@@ -22,7 +23,7 @@ import org.jgroups.*;
  * 
  * @author Bela Ban Dec 13 2001
  */
-public class LargeState {
+public class LargeState extends ReceiverAdapter {
     Channel  channel;
     byte[]   state=null;
     Thread   getter=null;
@@ -36,6 +37,7 @@ public class LargeState {
         this.provider=provider;
         channel=new JChannel(props);
         channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
+        channel.setReceiver(this);
         channel.connect("TestChannel");
         System.out.println("-- connected to channel");
 
@@ -55,9 +57,14 @@ public class LargeState {
             }
         }
 
-        mainLoop();
-        channel.close();
-
+        // mainLoop();
+        if(!provider)
+            channel.close();
+        else {
+            for(;;) {
+                Util.sleep(10000);
+            }
+        }
     }
 
 
@@ -73,7 +80,7 @@ public class LargeState {
                             ((Message)ret).getSrc());
                 }
                 else if(ret instanceof GetStateEvent) {
-                    System.out.println("--> returned state: " + ret);
+                    System.out.println("--> returning state: " + ret);
                     channel.returnState(state);
                 }
                 else if(ret instanceof SetStateEvent) {
@@ -100,6 +107,26 @@ public class LargeState {
             ret.append('.');
         return ret.toString().getBytes();
     }
+
+    public void receive(Message msg) {
+        System.out.println("-- received msg " + msg.getObject() + " from " + msg.getSrc());
+    }
+
+    public byte[] getState() {
+        System.out.println("--> returning state: " + state.length + " bytes");
+        return state;
+    }
+
+    public void setState(byte[] state) {
+        stop=System.currentTimeMillis();
+        byte[] new_state=state;
+        if(new_state != null) {
+            this.state=new_state;
+            System.out.println("<-- Received state, size =" + state.length +
+                    " (took " + (stop-start) + "ms)");
+        }
+    }
+
 
 
     public static void main(String[] args) {

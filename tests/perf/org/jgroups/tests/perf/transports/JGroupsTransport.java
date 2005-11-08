@@ -14,9 +14,9 @@ import java.util.Properties;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: JGroupsTransport.java,v 1.8 2005/08/16 10:55:40 belaban Exp $
+ * @version $Id: JGroupsTransport.java,v 1.9 2005/11/08 11:05:31 belaban Exp $
  */
-public class JGroupsTransport implements Transport, Runnable {
+public class JGroupsTransport extends org.jgroups.ReceiverAdapter implements Transport  {
     Properties config=null;
     JChannel   channel=null;
     Thread     t=null;
@@ -38,6 +38,7 @@ public class JGroupsTransport implements Transport, Runnable {
         props=config.getProperty("props");
         jmx=new Boolean(this.config.getProperty("jmx")).booleanValue();
         channel=new JChannel(props);
+        channel.setReceiver(this);
     }
 
     public void start() throws Exception {
@@ -51,8 +52,6 @@ public class JGroupsTransport implements Transport, Runnable {
             MBeanServer server=(MBeanServer)servers.get(0);
             JmxConfigurator.registerChannel(channel, server, "PerfTest:channel=" + channel.getChannelName() , true);
         }
-        t=new Thread(this, "JGroupsTransport receiver thread");
-        t.start();
     }
 
     public void stop() {
@@ -84,40 +83,19 @@ public class JGroupsTransport implements Transport, Runnable {
             channel.send(msg);
     }
 
-    public void run() {
-        Object obj;
-        Message msg;
-        Object sender;
-        byte[] payload;
 
-        while(t != null) {
+    public void receive(Message msg) {
+        Address sender=msg.getSrc();
+        byte[] payload=msg.getBuffer();
+        if(receiver != null) {
             try {
-                if(channel == null)
-                break;
-                obj=channel.receive(0);
-                if(obj instanceof Message) {
-                    msg=(Message)obj;
-                    sender=msg.getSrc();
-                    payload=msg.getBuffer();
-                    if(receiver != null) {
-                        try {
-                            receiver.receive(sender, payload);
-                        }
-                        catch(Throwable tt) {
-                            tt.printStackTrace();
-                        }
-                    }
-                }
+                receiver.receive(sender, payload);
             }
-            catch(ChannelNotConnectedException e) {
-                t=null;
-            }
-            catch(ChannelClosedException e) {
-                t=null;
-            }
-            catch(TimeoutException e) {
-                e.printStackTrace();
+            catch(Throwable tt) {
+                tt.printStackTrace();
             }
         }
     }
+
+
 }
