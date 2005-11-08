@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.59 2005/09/09 07:31:45 belaban Exp $
+// $Id: NAKACK.java,v 1.60 2005/11/08 11:08:08 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -126,6 +126,21 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             }
         }
         return num;
+    }
+
+    public int getSentTableSize() {
+        return sent_msgs.size();
+    }
+
+    public int getReceivedTableSize() {
+        int ret=0;
+        NakReceiverWindow win;
+        Set s=new LinkedHashSet(received_msgs.values());
+        for(Iterator it=s.iterator(); it.hasNext();) {
+            win=(NakReceiverWindow)it.next();
+            ret+=win.size();
+        }
+        return ret;
     }
 
     public void resetStats() {
@@ -1258,7 +1273,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             min_seqno=sent_msgs.size() > 0 ? (Long)sent_msgs.firstKey() : new Long(0);
             max_seqno=sent_msgs.size() > 0 ? (Long)sent_msgs.lastKey() : new Long(0);
         }
-        sb.append('[').append(min_seqno).append(" - ").append(max_seqno).append(']');
+        sb.append('[').append(min_seqno).append(" - ").append(max_seqno).append("] (" + sent_msgs.size() + ")");
         return sb.toString();
     }
 
