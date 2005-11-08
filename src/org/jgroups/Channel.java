@@ -1,4 +1,4 @@
-// $Id: Channel.java,v 1.12 2005/10/31 11:00:40 belaban Exp $
+// $Id: Channel.java,v 1.13 2005/11/08 11:06:11 belaban Exp $
 
 package org.jgroups;
 
@@ -51,9 +51,10 @@ public abstract class Channel implements Transport {
     public static final int AUTO_GETSTATE=6;
 
 
-    protected UpHandler up_handler=null;   // when set, <em>all</em> events are passed to it !
-    protected ChannelListener channel_listener=null;
-    protected Set channel_listeners=null;
+    protected UpHandler          up_handler=null;   // when set, <em>all</em> events are passed to it !
+    protected ChannelListener    channel_listener=null;
+    protected Set                channel_listeners=null;
+    protected Receiver           receiver=null;
 
 
     protected abstract Log getLog();
@@ -314,6 +315,11 @@ public abstract class Channel implements Transport {
             channel_listeners.remove(listener);
     }
 
+    /** Sets the receiver, which will handle all messages, view changes etc */
+    public void setReceiver(Receiver r) {
+        receiver=r;
+    }
+
     /**
      Sets an option. The following options are currently recognized:
      <ol>
@@ -402,6 +408,7 @@ public abstract class Channel implements Transport {
      *              (to send over the network).
      */
     public abstract void returnState(byte[] state);
+
 
 
     public static String option2String(int option) {
