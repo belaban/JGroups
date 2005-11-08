@@ -15,7 +15,7 @@ import java.util.Map;
 
 /**
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.9 2005/11/03 20:06:58 belaban Exp $
+ * @version $Id: JChannel.java,v 1.10 2005/11/08 13:53:52 belaban Exp $
  */
 public class JChannel implements JChannelMBean {
     /** Ref to the original JGroups channel */
@@ -236,6 +236,18 @@ public class JChannel implements JChannelMBean {
     public long getSentBytes() {return channel.getSentBytes();}
     public long getReceivedMessages() {return channel.getReceivedMessages();}
     public long getReceivedBytes() {return channel.getReceivedBytes();}
+
+    public void suspend() {
+        channel.suspend();
+    }
+
+    public void resume() {
+        channel.resume();
+    }
+
+    public boolean isSuspended() {
+        return channel.isSuspended();
+    }
 
 
     public void create() throws Exception {

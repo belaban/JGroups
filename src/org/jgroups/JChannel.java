@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.43 2005/11/08 11:06:49 belaban Exp $
+// $Id: JChannel.java,v 1.44 2005/11/08 13:57:08 belaban Exp $
 
 package org.jgroups;
 
@@ -25,48 +25,48 @@ import java.util.Vector;
  * <p>
  * <B>Properties</B>
  * <P>
- * Properties are used to configure a channel, and are accepted in 
+ * Properties are used to configure a channel, and are accepted in
  * several forms; the String form is described here.
- * A property string consists of a number of properties separated by 
+ * A property string consists of a number of properties separated by
  * colons.  For example:
  * <p>
  * <pre>"&lt;prop1&gt;(arg1=val1):&lt;prop2&gt;(arg1=val1;arg2=val2):&lt;prop3&gt;:&lt;propn&gt;"</pre>
  * <p>
- * Each property relates directly to a protocol layer, which is 
- * implemented as a Java class. When a protocol stack is to be created 
- * based on the above property string, the first property becomes the 
- * bottom-most layer, the second one will be placed on the first, etc.: 
- * the stack is created from the bottom to the top, as the string is 
- * parsed from left to right. Each property has to be the name of a 
- * Java class that resides in the 
- * {@link org.jgroups.protocols} package. 
+ * Each property relates directly to a protocol layer, which is
+ * implemented as a Java class. When a protocol stack is to be created
+ * based on the above property string, the first property becomes the
+ * bottom-most layer, the second one will be placed on the first, etc.:
+ * the stack is created from the bottom to the top, as the string is
+ * parsed from left to right. Each property has to be the name of a
+ * Java class that resides in the
+ * {@link org.jgroups.protocols} package.
  * <p>
- * Note that only the base name has to be given, not the fully specified 
+ * Note that only the base name has to be given, not the fully specified
  * class name (e.g., UDP instead of org.jgroups.protocols.UDP).
  * <p>
- * Each layer may have 0 or more arguments, which are specified as a 
- * list of name/value pairs in parentheses directly after the property. 
- * In the example above, the first protocol layer has 1 argument, 
- * the second 2, the third none. When a layer is created, these 
- * properties (if there are any) will be set in a layer by invoking 
+ * Each layer may have 0 or more arguments, which are specified as a
+ * list of name/value pairs in parentheses directly after the property.
+ * In the example above, the first protocol layer has 1 argument,
+ * the second 2, the third none. When a layer is created, these
+ * properties (if there are any) will be set in a layer by invoking
  * the layer's setProperties() method
  * <p>
- * As an example the property string below instructs JGroups to create 
+ * As an example the property string below instructs JGroups to create
  * a JChannel with protocols UDP, PING, FD and GMS:<p>
  * <pre>"UDP(mcast_addr=228.10.9.8;mcast_port=5678):PING:FD:GMS"</pre>
  * <p>
- * The UDP protocol layer is at the bottom of the stack, and it 
- * should use mcast address 228.10.9.8. and port 5678 rather than 
- * the default IP multicast address and port. The only other argument 
- * instructs FD to output debug information while executing. 
- * Property UDP refers to a class {@link org.jgroups.protocols.UDP}, 
- * which is subsequently loaded and an instance of which is created as protocol layer. 
- * If any of these classes are not found, an exception will be thrown and 
- * the construction of the stack will be aborted. 
- * 
+ * The UDP protocol layer is at the bottom of the stack, and it
+ * should use mcast address 228.10.9.8. and port 5678 rather than
+ * the default IP multicast address and port. The only other argument
+ * instructs FD to output debug information while executing.
+ * Property UDP refers to a class {@link org.jgroups.protocols.UDP},
+ * which is subsequently loaded and an instance of which is created as protocol layer.
+ * If any of these classes are not found, an exception will be thrown and
+ * the construction of the stack will be aborted.
+ *
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.43 $
+ * @version $Revision: 1.44 $
  */
 public class JChannel extends Channel {
 
@@ -442,6 +442,8 @@ public class JChannel extends Channel {
      */
     public synchronized void disconnect() {
         if(closed) return;
+
+        resume();
 
         if(connected) {
 
@@ -1315,6 +1317,9 @@ public class JChannel extends Channel {
     private void _close(boolean disconnect, boolean close_mq) {
         if(closed)
             return;
+
+        if(!disconnect)
+            resume();
 
         if(disconnect)
             disconnect();                     // leave group if connected
