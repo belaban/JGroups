@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.42 2005/11/03 11:42:59 belaban Exp $
+// $Id: JChannel.java,v 1.43 2005/11/08 11:06:49 belaban Exp $
 
 package org.jgroups;
 
@@ -66,7 +66,7 @@ import java.util.Vector;
  * 
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.42 $
+ * @version $Revision: 1.43 $
  */
 public class JChannel extends Channel {
 
@@ -115,8 +115,8 @@ public class JChannel extends Channel {
 
     private final Promise state_promise=new Promise();
 
-    // private final Promise flow_control_promise=new Promise();
-    // private final Object  flow_control_mutex=new Object();
+    private final Object suspend_mutex=new Object();
+    private boolean suspended=false;
 
     /** wait until we have a non-null local_addr */
     private long LOCAL_ADDR_TIMEOUT=30000; //=Long.parseLong(System.getProperty("local_addr.timeout", "30000"));
@@ -929,12 +929,6 @@ public class JChannel extends Channel {
         int type=evt.getType();
         Message msg;
 
-        /*if the queue is not available, there is no point in
-        *processing the message at all*/
-        if(mq == null) {
-            if(log.isErrorEnabled()) log.error("message queue is null");
-            return;
-        }
 
         switch(type) {
 
@@ -1012,7 +1006,12 @@ public class JChannel extends Channel {
                 return;
             }
             if(state != null) {
-                try {mq.add(new Event(Event.STATE_RECEIVED, state));} catch(Exception e) {}
+                if(receiver != null) {
+                    receiver.setState((byte[])state);
+                }
+                else {
+                    try {mq.add(new Event(Event.STATE_RECEIVED, state));} catch(Exception e) {}
+                }
             }
             break;
 
@@ -1045,6 +1044,42 @@ public class JChannel extends Channel {
             return;
         }
 
+        switch(type) {
+            case Event.MSG:
+                if(receiver != null) {
+                    receiver.receive((Message)evt.getArg());
+                    return;
+                }
+                break;
+            case Event.VIEW_CHANGE:
+                if(receiver != null) {
+                    receiver.viewAccepted((View)evt.getArg());
+                    return;
+                }
+                break;
+            case Event.SUSPECT:
+                if(receiver != null) {
+                    receiver.suspect((Address)evt.getArg());
+                    return;
+                }
+                break;
+            case Event.GET_APPLSTATE:
+                if(receiver != null) {
+                    byte[] tmp_state=receiver.getState();
+                    returnState(tmp_state);
+                    return;
+                }
+                break;
+            case Event.BLOCK:
+                if(receiver != null) {
+                    receiver.block();
+                    return;
+                }
+                break;
+            default:
+                break;
+        }
+
         if(type == Event.MSG || type == Event.VIEW_CHANGE || type == Event.SUSPECT ||
                 type == Event.GET_APPLSTATE || type == Event.BLOCK) {
             try {
@@ -1063,6 +1098,19 @@ public class JChannel extends Channel {
      */
     public void down(Event evt) {
         if(evt == null) return;
+
+        if(suspended) {
+            synchronized(suspend_mutex) {
+                while(suspended) {
+                    try {
+                        suspend_mutex.wait();
+                    }
+                    catch(InterruptedException e) {
+                    }
+                }
+            }
+        }
+
         int type=evt.getType();
 
         // only block for messages; all other events are passed through
@@ -1090,6 +1138,25 @@ public class JChannel extends Channel {
             prot_stack.down(evt);
         else
             if(log.isErrorEnabled()) log.error("no protocol stack available");
+    }
+
+    /** Send() blocks from now on, until resume() is called */
+    public void suspend() {
+        synchronized(suspend_mutex) {
+            suspended=true;
+        }
+    }
+
+    /** Send() unblocks */
+    public void resume() {
+        synchronized(suspend_mutex) {
+            suspended=false;
+            suspend_mutex.notifyAll();
+        }
+    }
+
+    public boolean isSuspended() {
+        return suspended;
     }
 
 
@@ -1322,7 +1389,8 @@ public class JChannel extends Channel {
                     up_handler.up(this.evt);
                 else {
                     try {
-                        mq.add(this.evt);
+                        if(receiver == null)
+                            mq.add(this.evt);
                     }
                     catch(Exception ex) {
                         if(log.isErrorEnabled()) log.error("exception: " + ex);
