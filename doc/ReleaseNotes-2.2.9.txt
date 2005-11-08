@@ -2,7 +2,7 @@
 Release Notes JGroups 2.2.9
 ===========================
 
-Version: $Id: ReleaseNotes-2.2.9.txt,v 1.4 2005/11/07 13:49:29 belaban Exp $
+Version: $Id: ReleaseNotes-2.2.9.txt,v 1.5 2005/11/08 14:10:36 belaban Exp $
 Author: Bela Ban
 Date: Sept 1 2005
 
@@ -23,6 +23,15 @@ Fine-grained interface binding
 Attributes receive_on_all_interfaces and receive_interfaces enable
 receiving multicast packets on all or a number of interfaces, e.g.
 receive_interfaces="hme0,hme1,192.168.5.3"
+
+
+Push model available in JChannel
+--------------------------------
+Instead of having to pull (receive()) a message out of a channel, a Receiver listener can
+be registered with a channel. When a message, view change, state request etc
+is available, the listener is called immediately. This avoid a context switch, given
+that all messages are usually place in a queue inside the channel and then pulled out
+by the application thread.
 
 
 Retransmission from random member
