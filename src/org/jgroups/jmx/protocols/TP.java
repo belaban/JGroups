@@ -8,7 +8,7 @@ import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: TP.java,v 1.4 2005/09/07 13:10:46 belaban Exp $
+ * @version $Id: TP.java,v 1.5 2005/11/09 17:42:25 belaban Exp $
  */
 public class TP extends org.jgroups.jmx.Protocol implements TPMBean {
     org.jgroups.protocols.TP tp;
@@ -108,6 +108,14 @@ public class TP extends org.jgroups.jmx.Protocol implements TPMBean {
 
     public int getOutgoingQueueSize() {
         return tp.getOutgoingQueueSize();
+    }
+
+    public int getOutgoingQueueMaxSize() {
+        return tp.getOutgoingQueueMaxSize();
+    }
+
+    public void setOutgoingQueueMaxSize(int new_size) {
+        tp.setOutgoingQueueMaxSize(new_size);
     }
 
     public int getIncomingQueueSize() {
