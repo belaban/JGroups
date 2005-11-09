@@ -4,7 +4,7 @@
 Message bundling
 ================
 
-// Version: $Id: Bundling.txt,v 1.3 2005/11/09 19:21:10 belaban Exp $
+// Version: $Id: Bundling.txt,v 1.4 2005/11/09 22:15:12 belaban Exp $
 // Author: Bela Ban
 
 Init:
@@ -53,14 +53,17 @@ Variables:
 
 On send():
 ----------
-- if msg size + queue size > max_size: bundle and send queued msgs
+- if msg size + queue size >= max_size:
+    - cancel timer
+    - bundle and send queued msgs
+    - clear queue
 - add msg to queue
 - if timer is not running: start timer
 
 On timer timeout:
 -----------------
-- bundle and send queued msgs
-- reset timer
+- bundle and send queued msgs (if any)
+- clear queue
 
 
 
