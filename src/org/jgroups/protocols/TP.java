@@ -38,7 +38,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.47 2005/11/09 23:04:02 belaban Exp $
+ * @version $Id: TP.java,v 1.48 2005/11/09 23:17:06 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -1431,7 +1431,7 @@ public abstract class TP extends Protocol {
         BundlingTimer       bundling_timer=null;
 
 
-        private void send(Message msg, Address dest) throws Exception {
+        private synchronized void send(Message msg, Address dest) throws Exception {
             long length=msg.size();
             checkLength(length);
 
