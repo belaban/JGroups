@@ -2,7 +2,6 @@ package org.jgroups.protocols;
 
 
 import EDU.oswego.cs.dl.util.concurrent.BoundedLinkedQueue;
-import EDU.oswego.cs.dl.util.concurrent.SynchronizedBoolean;
 import org.jgroups.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
@@ -39,7 +38,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.46 2005/11/09 22:15:44 belaban Exp $
+ * @version $Id: TP.java,v 1.47 2005/11/09 23:04:02 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -896,7 +895,7 @@ public abstract class TP extends Protocol {
     /** Internal method to serialize and send a message. This method is not reentrant */
     private void send(Message msg, Address dest, boolean multicast) throws Exception {
         if(enable_bundling) {
-            bundler.send(msg, dest, multicast);
+            bundler.send(msg, dest);
             return;
         }
 
@@ -1429,55 +1428,47 @@ public abstract class TP extends Protocol {
         final HashMap       msgs=new HashMap(36);
         long                count=0;    // current number of bytes accumulated
         int                 num_msgs=0;
-        long                start=0;
-        SynchronizedBoolean timer_running=new SynchronizedBoolean(false);
         BundlingTimer       bundling_timer=null;
 
 
-        private void send(Message msg, Address dest, boolean multicast) throws Exception {
+        private void send(Message msg, Address dest) throws Exception {
             long length=msg.size();
             checkLength(length);
-
-            if(start == 0)
-                start=System.currentTimeMillis();
 
             if(count + length >= max_bundle_size) {
                 cancelTimer();
                 bundleAndSend();  // clears msgs and resets num_msgs
                 count=0;
-                start=System.currentTimeMillis();
             }
 
-            addMessage(msg);
+            addMessage(msg, dest);
             count+=length;
-
-            // start timer if not running
-            startTimer();
+            startTimer(); // start timer if not running
         }
 
+        /** Never called concurrently with cancelTimer - no need for synchronization */
         private void startTimer() {
-            boolean rc=timer_running.commit(false, true); // if current value is false, then set to true
-            if(rc) {
+            if(bundling_timer == null || bundling_timer.cancelled()) {
                 bundling_timer=new BundlingTimer();
                 timer.add(bundling_timer);
             }
         }
 
+        /** Never called concurrently with startTimer() - no need for synchronization */
         private void cancelTimer() {
-            boolean rc=timer_running.commit(true, false);
-            if(rc && bundling_timer != null) {
+            if(bundling_timer != null) {
                 bundling_timer.cancel();
+                bundling_timer=null;
             }
         }
 
-        private void addMessage(Message msg) { // no sync needed, never called by multiple threads concurrently
+        private void addMessage(Message msg, Address dest) { // no sync needed, never called by multiple threads concurrently
             List    tmp;
-            Address dst=msg.getDest();
             synchronized(msgs) {
-                tmp=(List)msgs.get(dst);
+                tmp=(List)msgs.get(dest);
                 if(tmp == null) {
                     tmp=new List();
-                    msgs.put(dst, tmp);
+                    msgs.put(dest, tmp);
                 }
                 tmp.add(msg);
                 num_msgs++;
@@ -1490,7 +1481,6 @@ public abstract class TP extends Protocol {
             Address        dst;
             Buffer         buffer;
             List           l;
-            long           stop_time=System.currentTimeMillis();
 
             synchronized(msgs) {
                 if(msgs.size() == 0)
@@ -1499,8 +1489,7 @@ public abstract class TP extends Protocol {
                 try {
                     if(trace) {
                         StringBuffer sb=new StringBuffer("sending ").append(num_msgs).append(" msgs (");
-                        sb.append(count).append(" bytes, ").append(stop_time-start).append("ms)");
-                        sb.append(" to ").append(msgs.size()).append(" destination(s)");
+                        sb.append(count).append(" bytes to ").append(msgs.size()).append(" destination(s)");
                         if(msgs.size() > 1) sb.append(" (dests=").append(msgs.keySet()).append(")");
                         log.trace(sb.toString());
                     }
@@ -1552,9 +1541,8 @@ public abstract class TP extends Protocol {
             }
 
             public void run() {
-                cancelled=true;
                 bundleAndSend();
-                timer_running.commit(true, false);
+                cancelled=true;
             }
         }
     }
