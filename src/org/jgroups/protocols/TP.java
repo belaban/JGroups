@@ -1,6 +1,7 @@
 package org.jgroups.protocols;
 
 
+import EDU.oswego.cs.dl.util.concurrent.BoundedLinkedQueue;
 import org.jgroups.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
@@ -11,8 +12,6 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.*;
 import java.util.*;
-
-import EDU.oswego.cs.dl.util.concurrent.BoundedLinkedQueue;
 
 
 /**
@@ -39,7 +38,7 @@ import EDU.oswego.cs.dl.util.concurrent.BoundedLinkedQueue;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.43 2005/11/09 17:18:00 belaban Exp $
+ * @version $Id: TP.java,v 1.44 2005/11/09 17:43:11 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -131,10 +130,13 @@ public abstract class TP extends Protocol {
 
     /** Packets to be sent are stored in outgoing_queue and sent by a separate thread. Enabling this
      * value uses an additional thread */
-    boolean         use_outgoing_packet_handler=false;
+    boolean               use_outgoing_packet_handler=false;
 
     /** Used by packet handler to store outgoing DatagramPackets */
-    BoundedLinkedQueue outgoing_queue=null;
+    BoundedLinkedQueue    outgoing_queue=null;
+
+    /** max number of elements in the bounded outgoing_queue */
+    int                   outgoing_queue_max_size=2000;
 
     OutgoingPacketHandler outgoing_packet_handler=null;
 
@@ -227,7 +229,13 @@ public abstract class TP extends Protocol {
     public void setLoopback(boolean b) {loopback=b;}
     public boolean isUseIncomingPacketHandler() {return use_incoming_packet_handler;}
     public boolean isUseOutgoingPacketHandler() {return use_outgoing_packet_handler;}
-
+    public int getOutgoingQueueMaxSize() {return outgoing_queue != null? outgoing_queue.size() : 0;}
+    public void setOutgoingQueueMaxSize(int new_size) {
+        if(outgoing_queue != null) {
+            outgoing_queue.setCapacity(new_size);
+            outgoing_queue_max_size=new_size;
+        }
+    }
 
 
     public Map dumpStats() {
@@ -359,7 +367,7 @@ public abstract class TP extends Protocol {
         }
 
         if(use_outgoing_packet_handler) {
-            outgoing_queue=new BoundedLinkedQueue(2000);
+            outgoing_queue=new BoundedLinkedQueue(outgoing_queue_max_size);
             if(enable_bundling) {
                 outgoing_packet_handler=new BundlingOutgoingPacketHandler();
             }
@@ -519,6 +527,17 @@ public abstract class TP extends Protocol {
             props.remove("use_outgoing_packet_handler");
         }
 
+        str=props.getProperty("max_outgoing_queue_size");
+        if(str != null) {
+            outgoing_queue_max_size=Integer.parseInt(str);
+            props.remove("outgoing_queue_max_size");
+            if(outgoing_queue_max_size <= 0) {
+                if(log.isWarnEnabled())
+                    log.warn("outgoing_queue_max_size of " + outgoing_queue_max_size + " is invalid, setting it to 1");
+                outgoing_queue_max_size=1;
+            }
+        }
+
         str=props.getProperty("max_bundle_size");
         if(str != null) {
             int bundle_size=Integer.parseInt(str);
@@ -671,7 +690,8 @@ public abstract class TP extends Protocol {
                 send(msg, dest, multicast);
         }
         catch(QueueClosedException closed_ex) {
-            ; // ignore
+        }
+        catch(InterruptedException interruptedEx) {
         }
         catch(Throwable e) {
             if(log.isErrorEnabled()) log.error("failed sending message", e);
@@ -1226,10 +1246,12 @@ public abstract class TP extends Protocol {
                 catch(QueueClosedException closed_ex) {
                     break;
                 }
+                catch(InterruptedException interruptedEx) {
+                }
                 catch(Throwable th) {
                     if(log.isErrorEnabled()) log.error("exception sending packet", th);
                 }
-                msg=null; // let's give the poor garbage collector a hand...
+                msg=null; // let's give the garbage collector a hand... this is probably useless though
             }
             if(trace) log.trace("outgoing message handler terminating");
         }
@@ -1279,7 +1301,7 @@ public abstract class TP extends Protocol {
         public void run() {
             Message msg;
             long    length;
-            while(outgoing_queue != null) {
+            while(t != null && Thread.currentThread().equals(t)) {
                 try {
                     msg=(Message)outgoing_queue.poll(wait_time);
                     if(msg == null)
