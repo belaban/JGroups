@@ -1,4 +1,4 @@
-// $Id: TimeSchedulerTest.java,v 1.6 2005/07/22 07:57:38 belaban Exp $
+// $Id: TimeSchedulerTest.java,v 1.7 2005/11/09 20:42:28 belaban Exp $
 package org.jgroups.tests;
 
 
@@ -98,6 +98,45 @@ public class TimeSchedulerTest extends TestCase {
             done=true;
         }
     }
+
+    class StressTask implements TimeScheduler.Task {
+        boolean cancelled=false;
+
+        public void cancel() {
+            cancelled=true;
+        }
+
+        public boolean cancelled() {
+            return cancelled;
+        }
+
+        public long nextInterval() {
+            return 50;
+        }
+
+        public void run() {
+            System.out.println("executed");
+        }
+    }
+
+//
+//    public void testStress() {
+//        StressTask t;
+//
+//        for(int i=0; i < 1000; i++) {
+//            for(int j=0; j < 1000; j++) {
+//                t=new StressTask();
+//                timer.add(t);
+//                t.cancel();
+//            }
+//            System.out.println(i + ": " + timer.size());
+//            // Util.sleep(300);
+//        }
+//        for(int i=0; i < 10; i++) {
+//            System.out.println(timer.size());
+//            Util.sleep(500);
+//        }
+//    }
 
     public void test2Tasks() {
         int size;
