@@ -12,6 +12,8 @@ import java.io.IOException;
 import java.net.*;
 import java.util.*;
 
+import EDU.oswego.cs.dl.util.concurrent.BoundedLinkedQueue;
+
 
 /**
  * Generic transport - specific implementations should extend this abstract class.
@@ -37,7 +39,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.42 2005/10/19 12:12:56 belaban Exp $
+ * @version $Id: TP.java,v 1.43 2005/11/09 17:18:00 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -132,7 +134,7 @@ public abstract class TP extends Protocol {
     boolean         use_outgoing_packet_handler=false;
 
     /** Used by packet handler to store outgoing DatagramPackets */
-    Queue           outgoing_queue=null;
+    BoundedLinkedQueue outgoing_queue=null;
 
     OutgoingPacketHandler outgoing_packet_handler=null;
 
@@ -246,7 +248,7 @@ public abstract class TP extends Protocol {
      * @param data The data to be sent. This is not a copy, so don't modify it
      * @param offset
      * @param length
-     * @throws Throwable
+     * @throws Exception
      */
     public abstract void sendToAllMembers(byte[] data, int offset, int length) throws Exception;
 
@@ -257,7 +259,7 @@ public abstract class TP extends Protocol {
      * @param data The data to be sent. This is not a copy, so don't modify it
      * @param offset
      * @param length
-     * @throws Throwable
+     * @throws Exception
      */
     public abstract void sendToSingleMember(Address dest, byte[] data, int offset, int length) throws Exception;
 
@@ -357,7 +359,7 @@ public abstract class TP extends Protocol {
         }
 
         if(use_outgoing_packet_handler) {
-            outgoing_queue=new Queue();
+            outgoing_queue=new BoundedLinkedQueue(2000);
             if(enable_bundling) {
                 outgoing_packet_handler=new BundlingOutgoingPacketHandler();
             }
@@ -664,7 +666,7 @@ public abstract class TP extends Protocol {
 
         try {
             if(use_outgoing_packet_handler)
-                outgoing_queue.add(msg);
+                outgoing_queue.put(msg);
             else
                 send(msg, dest, multicast);
         }
@@ -895,8 +897,6 @@ public abstract class TP extends Protocol {
     /**
      * This method needs to be synchronized on out_stream when it is called
      * @param msg
-     * @param dest
-     * @param src
      * @return
      * @throws java.io.IOException
      */
@@ -1208,16 +1208,19 @@ public abstract class TP extends Protocol {
         }
 
         void stop() {
-            outgoing_queue.close(true); // should terminate the packet_handler thread too
+            Thread tmp=t;
             t=null;
+            if(tmp != null) {
+                tmp.interrupt();
+            }
         }
 
         public void run() {
             Message msg;
 
-            while(!outgoing_queue.closed() && Thread.currentThread().equals(t)) {
+            while(t != null && Thread.currentThread().equals(t)) {
                 try {
-                    msg=(Message)outgoing_queue.remove();
+                    msg=(Message)outgoing_queue.take();
                     handleMessage(msg);
                 }
                 catch(QueueClosedException closed_ex) {
@@ -1278,7 +1281,9 @@ public abstract class TP extends Protocol {
             long    length;
             while(outgoing_queue != null) {
                 try {
-                    msg=(Message)outgoing_queue.remove(wait_time);
+                    msg=(Message)outgoing_queue.poll(wait_time);
+                    if(msg == null)
+                        throw new TimeoutException();
                     length=msg.size();
                     checkLength(length);
                     if(start == 0)
