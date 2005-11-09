@@ -2,6 +2,7 @@ package org.jgroups.protocols;
 
 
 import EDU.oswego.cs.dl.util.concurrent.BoundedLinkedQueue;
+import EDU.oswego.cs.dl.util.concurrent.SynchronizedBoolean;
 import org.jgroups.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
@@ -38,7 +39,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.45 2005/11/09 19:59:05 belaban Exp $
+ * @version $Id: TP.java,v 1.46 2005/11/09 22:15:44 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -155,6 +156,10 @@ public abstract class TP extends Protocol {
 
     /** Enabled bundling of smaller messages into bigger ones */
     boolean enable_bundling=false;
+
+    Bundler            bundler=null;
+
+    TimeScheduler      timer=null;
 
     DiagnosticsHandler diag_handler=null;
     boolean enable_diagnostics=true;
@@ -349,6 +354,10 @@ public abstract class TP extends Protocol {
      * Creates the unicast and multicast sockets and starts the unicast and multicast receiver threads
      */
     public void start() throws Exception {
+        timer=stack.timer;
+        if(timer == null)
+            throw new Exception("timer is null");
+
         if(enable_diagnostics) {
             diag_handler=new DiagnosticsHandler();
             diag_handler.start();
@@ -368,12 +377,12 @@ public abstract class TP extends Protocol {
 
         if(use_outgoing_packet_handler) {
             outgoing_queue=new BoundedLinkedQueue(outgoing_queue_max_size);
-            if(enable_bundling) {
-                outgoing_packet_handler=new BundlingOutgoingPacketHandler();
-            }
-            else
-                outgoing_packet_handler=new OutgoingPacketHandler();
+            outgoing_packet_handler=new OutgoingPacketHandler();
             outgoing_packet_handler.start();
+        }
+
+        if(enable_bundling) {
+            bundler=new Bundler();
         }
 
         passUp(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
@@ -595,9 +604,9 @@ public abstract class TP extends Protocol {
         }
 
         if(enable_bundling) {
-            if(use_outgoing_packet_handler == false)
-                if(warn) log.warn("enable_bundling is true; setting use_outgoing_packet_handler=true");
-            use_outgoing_packet_handler=true;
+            //if (use_outgoing_packet_handler == false)
+              //  if(warn) log.warn("enable_bundling is true; setting use_outgoing_packet_handler=true");
+            // use_outgoing_packet_handler=true;
         }
 
         return true;
@@ -886,12 +895,16 @@ public abstract class TP extends Protocol {
 
     /** Internal method to serialize and send a message. This method is not reentrant */
     private void send(Message msg, Address dest, boolean multicast) throws Exception {
-        Buffer   buf;
+        if(enable_bundling) {
+            bundler.send(msg, dest, multicast);
+            return;
+        }
 
         // Needs to be synchronized because we can have possible concurrent access, e.g.
         // Discovery uses a separate thread to send out discovery messages
         // We would *not* need to sync between send(), OutgoingPacketHandler and BundlingOutgoingPacketHandler,
         // because only *one* of them is enabled
+        Buffer   buf;
         synchronized(out_stream) {
             buf=messageToBuffer(msg, multicast);
             doSend(buf, dest, multicast);
@@ -1408,6 +1421,144 @@ public abstract class TP extends Protocol {
             }
         }
     }
+
+
+
+    private class Bundler {
+        /** HashMap<Address, List<Message>>. Keys are destinations, values are lists of Messages */
+        final HashMap       msgs=new HashMap(36);
+        long                count=0;    // current number of bytes accumulated
+        int                 num_msgs=0;
+        long                start=0;
+        SynchronizedBoolean timer_running=new SynchronizedBoolean(false);
+        BundlingTimer       bundling_timer=null;
+
+
+        private void send(Message msg, Address dest, boolean multicast) throws Exception {
+            long length=msg.size();
+            checkLength(length);
+
+            if(start == 0)
+                start=System.currentTimeMillis();
+
+            if(count + length >= max_bundle_size) {
+                cancelTimer();
+                bundleAndSend();  // clears msgs and resets num_msgs
+                count=0;
+                start=System.currentTimeMillis();
+            }
+
+            addMessage(msg);
+            count+=length;
+
+            // start timer if not running
+            startTimer();
+        }
+
+        private void startTimer() {
+            boolean rc=timer_running.commit(false, true); // if current value is false, then set to true
+            if(rc) {
+                bundling_timer=new BundlingTimer();
+                timer.add(bundling_timer);
+            }
+        }
+
+        private void cancelTimer() {
+            boolean rc=timer_running.commit(true, false);
+            if(rc && bundling_timer != null) {
+                bundling_timer.cancel();
+            }
+        }
+
+        private void addMessage(Message msg) { // no sync needed, never called by multiple threads concurrently
+            List    tmp;
+            Address dst=msg.getDest();
+            synchronized(msgs) {
+                tmp=(List)msgs.get(dst);
+                if(tmp == null) {
+                    tmp=new List();
+                    msgs.put(dst, tmp);
+                }
+                tmp.add(msg);
+                num_msgs++;
+            }
+        }
+
+
+        private void bundleAndSend() {
+            Map.Entry      entry;
+            Address        dst;
+            Buffer         buffer;
+            List           l;
+            long           stop_time=System.currentTimeMillis();
+
+            synchronized(msgs) {
+                if(msgs.size() == 0)
+                    return;
+
+                try {
+                    if(trace) {
+                        StringBuffer sb=new StringBuffer("sending ").append(num_msgs).append(" msgs (");
+                        sb.append(count).append(" bytes, ").append(stop_time-start).append("ms)");
+                        sb.append(" to ").append(msgs.size()).append(" destination(s)");
+                        if(msgs.size() > 1) sb.append(" (dests=").append(msgs.keySet()).append(")");
+                        log.trace(sb.toString());
+                    }
+                    boolean multicast;
+                    for(Iterator it=msgs.entrySet().iterator(); it.hasNext();) {
+                        entry=(Map.Entry)it.next();
+                        l=(List)entry.getValue();
+                        if(l.size() == 0)
+                            continue;
+                        dst=(Address)entry.getKey();
+                        multicast=dst == null || dst.isMulticastAddress();
+                        synchronized(out_stream) {
+                            try {
+                                buffer=listToBuffer(l, multicast);
+                                doSend(buffer, dst, multicast);
+                            }
+                            catch(Throwable e) {
+                                if(log.isErrorEnabled()) log.error("exception sending msg", e);
+                            }
+                        }
+                    }
+                }
+                finally {
+                    msgs.clear();
+                    num_msgs=0;
+                }
+            }
+        }
+
+        private void checkLength(long len) throws Exception {
+            if(len > max_bundle_size)
+                throw new Exception("message size (" + len + ") is greater than max bundling size (" + max_bundle_size +
+                        "). Set the fragmentation/bundle size in FRAG and TP correctly");
+        }
+
+        private class BundlingTimer implements TimeScheduler.Task {
+            boolean cancelled=false;
+
+            void cancel() {
+                cancelled=true;
+            }
+
+            public boolean cancelled() {
+                return cancelled;
+            }
+
+            public long nextInterval() {
+                return max_bundle_timeout;
+            }
+
+            public void run() {
+                cancelled=true;
+                bundleAndSend();
+                timer_running.commit(true, false);
+            }
+        }
+    }
+
 
 
     private class DiagnosticsHandler implements Runnable {
