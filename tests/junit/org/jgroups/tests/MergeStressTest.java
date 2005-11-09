@@ -1,0 +1,188 @@
+// $Id: MergeStressTest.java,v 1.1 2005/11/09 15:46:58 belaban Exp $
+
+package org.jgroups.tests;
+
+
+import EDU.oswego.cs.dl.util.concurrent.CyclicBarrier;
+import junit.framework.Test;
+import junit.framework.TestCase;
+import junit.framework.TestSuite;
+import org.jgroups.Address;
+import org.jgroups.JChannel;
+import org.jgroups.View;
+import org.jgroups.util.Util;
+
+import java.util.Vector;
+
+
+/**
+ * Creates NUM channels, all trying to join the same channel concurrently. This will lead to singleton groups
+ * and subsequent merging. To enable merging, GMS.handle_concurrent_startup has to be set to false.
+ * @author Bela Ban
+ * @version $Id: MergeStressTest.java,v 1.1 2005/11/09 15:46:58 belaban Exp $
+ */
+public class MergeStressTest extends TestCase {
+    static CyclicBarrier    start_connecting=null;
+    static CyclicBarrier    received_all_views=null;
+    static CyclicBarrier    start_disconnecting=null;
+    static CyclicBarrier    disconnected=null;
+    static final int        NUM=2;
+    static final long       TIMEOUT=50000;
+    static final MyThread[] threads=new MyThread[NUM];
+    static String           groupname="ConcurrentTestDemo";
+
+
+    static String props="UDP(mcast_addr=228.8.8.9;mcast_port=7788;ip_ttl=1;" +
+            "mcast_send_buf_size=150000;mcast_recv_buf_size=80000):" +
+            "PING(timeout=3000;num_initial_members=3):" +
+            "MERGE2(min_interval=3000;max_interval=5000):" +
+            "FD_SOCK:" +
+            "VERIFY_SUSPECT(timeout=1500):" +
+            "pbcast.NAKACK(gc_lag=50;retransmit_timeout=300,600,1200,2400,4800):" +
+            "UNICAST(timeout=300,600,1200,2400):" +
+            "pbcast.STABLE(desired_avg_gossip=5000):" +
+            "FRAG(frag_size=4096;down_thread=false;up_thread=false):" +
+            "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
+            "shun=false;print_local_addr=false;view_ack_collection_timeout=5000;" +
+            "digest_timeout=0;merge_timeout=30000;handle_concurrent_startup=true)";
+
+
+
+    public MergeStressTest(String name) {
+        super(name);
+    }
+
+
+    static void log(String msg) {
+        System.out.println("-- [" + Thread.currentThread().getName() + "] " + msg);
+    }
+
+
+    public void testConcurrentStartupAndMerging() throws Exception {
+        start_connecting=new CyclicBarrier(NUM);
+        received_all_views=new CyclicBarrier(NUM);
+        start_disconnecting=new CyclicBarrier(NUM);
+        disconnected=new CyclicBarrier(NUM);
+
+        long start, stop;
+
+        for(int i=0; i < threads.length; i++) {
+            threads[i]=new MyThread(i);
+            threads[i].start();
+        }
+
+        // signal the threads to start connecting to their channels
+        Util.sleep(1000);
+        start_connecting.barrier();
+        start=System.currentTimeMillis();
+
+        try {
+            received_all_views.barrier();
+            stop=System.currentTimeMillis();
+            System.out.println("-- took " + (stop-start) + " msecs for all " + NUM + " threads to see all views");
+
+            int num_members;
+            MyThread t;
+            System.out.println("checking that all views have " + NUM + " members");
+            for(int i=0; i < threads.length; i++) {
+                t=threads[i];
+                num_members=t.numMembers();
+                assertEquals(num_members, NUM);
+            }
+            System.out.println("checking that all views have " + NUM + " members: SUCCESSFUL");
+        }
+        catch(Exception ex) {
+            fail(ex.toString());
+        }
+        finally {
+            start_disconnecting.barrier();
+            disconnected.barrier();
+        }
+    }
+
+
+
+
+
+    public static class MyThread extends Thread {
+        int                index=-1;
+        long                total_connect_time=0, total_disconnect_time=0;
+        private JChannel    ch=null;
+        private Address     my_addr=null;
+
+        public MyThread(int i) {
+            super("thread #" + i);
+            index=i;
+        }
+
+        public void closeChannel() {
+            if(ch != null) {
+                ch.close();
+            }
+        }
+
+        public int numMembers() {
+            return ch.getView().size();
+        }
+
+        public void run() {
+            View view;
+
+            try {
+                start_connecting.barrier();
+                ch=new JChannel(props);
+                log("created channel");
+                log("connecting to channel");
+                long start=System.currentTimeMillis(), stop;
+                ch.connect(groupname);
+                stop=System.currentTimeMillis();
+                total_connect_time=stop-start;
+                view=ch.getView();
+                my_addr=ch.getLocalAddress();
+                log(my_addr + " connected in " + total_connect_time + " msecs (" +
+                    view.getMembers().size() + " members). VID=" + view.getVid());
+
+                int num_members=0;
+                while(true) {
+                    View v=ch.getView();
+                    Vector mbrs=v != null? v.getMembers() : null;
+                    if(mbrs != null) {
+                        num_members=mbrs.size();
+                        log("num_members=" + num_members);
+                        if(num_members == NUM)
+                            break;
+                    }
+                    Util.sleep(2000);
+                }
+                log("reached " + num_members + " members");
+                received_all_views.barrier();
+
+                start_disconnecting.barrier();
+                start=System.currentTimeMillis();
+                ch.disconnect();
+                stop=System.currentTimeMillis();
+
+                log(my_addr + " disconnected in " + (stop-start) + " msecs");
+                disconnected.barrier();
+            }
+            catch(Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+
+    }
+
+
+    public static Test suite() {
+        TestSuite s=new TestSuite(MergeStressTest.class);
+        return s;
+    }
+
+    public static void main(String[] args) {
+        String[] testCaseName={MergeStressTest.class.getName()};
+        junit.textui.TestRunner.main(testCaseName);
+    }
+
+
+}
