@@ -38,7 +38,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.44 2005/11/09 17:43:11 belaban Exp $
+ * @version $Id: TP.java,v 1.45 2005/11/09 19:59:05 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -221,15 +221,15 @@ public abstract class TP extends Protocol {
     public void setMaxBundleSize(int size) {max_bundle_size=size;}
     public long getMaxBundleTimeout() {return max_bundle_timeout;}
     public void setMaxBundleTimeout(long timeout) {max_bundle_timeout=timeout;}
-    public int getOutgoingQueueSize() {return outgoing_queue != null? outgoing_queue.size() : -1;}
-    public int getIncomingQueueSize() {return incoming_packet_queue != null? incoming_packet_queue.size() : -1;}
+    public int getOutgoingQueueSize() {return outgoing_queue != null? outgoing_queue.size() : 0;}
+    public int getIncomingQueueSize() {return incoming_packet_queue != null? incoming_packet_queue.size() : 0;}
     public Address getLocalAddress() {return local_addr;}
     public String getChannelName() {return channel_name;}
     public boolean isLoopback() {return loopback;}
     public void setLoopback(boolean b) {loopback=b;}
     public boolean isUseIncomingPacketHandler() {return use_incoming_packet_handler;}
     public boolean isUseOutgoingPacketHandler() {return use_outgoing_packet_handler;}
-    public int getOutgoingQueueMaxSize() {return outgoing_queue != null? outgoing_queue.size() : 0;}
+    public int getOutgoingQueueMaxSize() {return outgoing_queue != null? outgoing_queue_max_size : 0;}
     public void setOutgoingQueueMaxSize(int new_size) {
         if(outgoing_queue != null) {
             outgoing_queue.setCapacity(new_size);
