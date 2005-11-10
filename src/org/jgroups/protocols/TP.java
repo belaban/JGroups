@@ -12,6 +12,7 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.*;
 import java.util.*;
+import java.text.NumberFormat;
 
 
 /**
@@ -38,7 +39,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.49 2005/11/09 23:35:15 belaban Exp $
+ * @version $Id: TP.java,v 1.50 2005/11/10 16:55:43 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -181,6 +182,14 @@ public abstract class TP extends Protocol {
     static final byte MULTICAST = 2;  // message is a multicast (versus a unicast) message when set
 
     long num_msgs_sent=0, num_msgs_received=0, num_bytes_sent=0, num_bytes_received=0;
+
+    transient static  NumberFormat f;
+
+    static {
+        f=NumberFormat.getNumberInstance();
+        f.setGroupingUsed(false);
+        f.setMaximumFractionDigits(2);
+    }
 
 
     /**
@@ -1428,6 +1437,7 @@ public abstract class TP extends Protocol {
         final HashMap       msgs=new HashMap(36);
         long                count=0;    // current number of bytes accumulated
         int                 num_msgs=0;
+        long                start=0;
         BundlingTimer       bundling_timer=null;
 
 
@@ -1435,10 +1445,11 @@ public abstract class TP extends Protocol {
             long length=msg.size();
             checkLength(length);
 
+            if(start == 0)
+                start=System.currentTimeMillis();
             if(count + length >= max_bundle_size) {
                 cancelTimer();
                 bundleAndSend();  // clears msgs and resets num_msgs
-                count=0;
             }
 
             addMessage(msg, dest);
@@ -1488,8 +1499,12 @@ public abstract class TP extends Protocol {
 
                 try {
                     if(trace) {
+                        long stop=System.currentTimeMillis();
+                        double percentage=100.0 / max_bundle_size * count;
                         StringBuffer sb=new StringBuffer("sending ").append(num_msgs).append(" msgs (");
-                        sb.append(count).append(" bytes to ").append(msgs.size()).append(" destination(s)");
+                        sb.append(count).append(" bytes (" + f.format(percentage) + "% of max_bundle_size), collected in "+
+                                + (stop-start) + "ms) to ").append(msgs.size()).
+                                append(" destination(s)");
                         if(msgs.size() > 1) sb.append(" (dests=").append(msgs.keySet()).append(")");
                         log.trace(sb.toString());
                     }
@@ -1515,6 +1530,8 @@ public abstract class TP extends Protocol {
                 finally {
                     msgs.clear();
                     num_msgs=0;
+                    start=0;
+                    count=0;
                 }
             }
         }
