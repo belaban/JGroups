@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.107 2005/10/03 13:31:33 belaban Exp $
+// $Id: UDP.java,v 1.108 2005/11/12 06:38:03 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -425,7 +425,7 @@ public class UDP extends TP implements Runnable {
 //                bind_addr=interfaces[0];
 //        }
 
-        if(bind_addr == null) {
+        if(bind_addr == null && !use_local_host) {
             bind_addr=Util.getFirstNonLoopbackAddress();
         }
         if(bind_addr == null)
