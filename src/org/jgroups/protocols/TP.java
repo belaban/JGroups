@@ -39,7 +39,7 @@ import java.text.NumberFormat;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.50 2005/11/10 16:55:43 belaban Exp $
+ * @version $Id: TP.java,v 1.51 2005/11/12 06:40:28 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -52,6 +52,9 @@ public abstract class TP extends Protocol {
 
     /** The interface (NIC) which should be used by this transport */
     InetAddress     bind_addr=null;
+
+    /** Overrides bind_addr and -Dbind.address: let's the OS return the local host address */
+    boolean         use_local_host=false;
 
     /** If true, the transport should use all available interfaces to receive multicast messages
      * @deprecated  Use {@link receive_on_all_interfaces} instead */
@@ -455,6 +458,12 @@ public abstract class TP extends Protocol {
                 return false;
             }
             props.remove("bind_addr");
+        }
+
+        str=props.getProperty("use_local_host");
+        if(str != null) {
+            use_local_host=new Boolean(str).booleanValue();
+            props.remove("use_local_host");
         }
 
         str=props.getProperty("bind_to_all_interfaces");
