@@ -1,20 +1,19 @@
-// $Id: RequestCorrelator.java,v 1.23 2005/07/22 15:37:38 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.24 2005/11/12 06:39:11 belaban Exp $
 
 package org.jgroups.blocks;
 
+import EDU.oswego.cs.dl.util.concurrent.ConcurrentReaderHashMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Scheduler;
 import org.jgroups.util.SchedulerListener;
-import org.jgroups.util.Util;
 import org.jgroups.util.Streamable;
+import org.jgroups.util.Util;
 
 import java.io.*;
 import java.util.*;
-
-import EDU.oswego.cs.dl.util.concurrent.ConcurrentReaderHashMap;
 
 
 
@@ -320,6 +319,7 @@ public class RequestCorrelator {
         case Event.VIEW_CHANGE: // adjust number of responses to wait for
             receiveView((View)evt.getArg());
             break;
+
         case Event.SET_LOCAL_ADDRESS:
             setLocalAddress((Address)evt.getArg());
             break;
@@ -344,6 +344,11 @@ public class RequestCorrelator {
         started=true;
     }
 
+    public void stop() {
+        stopScheduler();
+        started=false;
+    }
+
 
     void startScheduler() {
         if(scheduler == null) {
@@ -358,13 +363,6 @@ public class RequestCorrelator {
         }
     }
 
-
-    /**
-     */
-    public void stop() {
-        stopScheduler();
-        started=false;
-    }
 
     void stopScheduler() {
         if(scheduler != null) {

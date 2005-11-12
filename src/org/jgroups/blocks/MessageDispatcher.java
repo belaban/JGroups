@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.43 2005/08/29 12:28:26 belaban Exp $
+// $Id: MessageDispatcher.java,v 1.44 2005/11/12 06:39:02 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -277,8 +277,8 @@ public class MessageDispatcher implements RequestHandler {
                 corr=new RequestCorrelator("MessageDispatcher", prot_adapter,
                                            this, deadlock_detection, local_addr, concurrent_processing);
             }
-            corr.start();
         }
+        corr.start();
         if(channel != null) {
             Vector tmp_mbrs=channel.getView() != null ? channel.getView().getMembers() : null;
             setMembers(tmp_mbrs);
@@ -289,7 +289,6 @@ public class MessageDispatcher implements RequestHandler {
     public void stop() {
         if(corr != null) {
             corr.stop();
-            corr=null;
         }
     }
 
