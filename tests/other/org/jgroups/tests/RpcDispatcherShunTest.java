@@ -18,9 +18,9 @@ import java.util.Vector;
  * <li>Send a message from another member (must work !)
  * </ol>
  * @author Bela Ban
- * @version $Id: RpcDispatcherShunTest.java,v 1.1 2005/01/10 11:25:41 belaban Exp $
+ * @version $Id: RpcDispatcherShunTest.java,v 1.2 2005/11/12 06:38:44 belaban Exp $
  */
-public class RpcDispatcherShunTest implements MembershipListener, RequestHandler {
+public class RpcDispatcherShunTest implements MembershipListener, RequestHandler, ChannelListener {
     JChannel           channel;
     RpcDispatcher      disp;
 
@@ -46,6 +46,7 @@ public class RpcDispatcherShunTest implements MembershipListener, RequestHandler
 
     private void start(String props) throws IOException, ChannelException {
         channel=new JChannel(props);
+        channel.addChannelListener(this);
         channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
         disp=new RpcDispatcher(channel, null, this, this,
                 false, // deadlock detection is disabled
@@ -95,6 +96,8 @@ public class RpcDispatcherShunTest implements MembershipListener, RequestHandler
     private void invokeGroupMethod() {
         RspList rsp_list;
         View v=channel.getView();
+        if(v == null)
+            return;
         Vector members=new Vector(v.getMembers());
         System.out.println("sending to " + members);
         rsp_list=disp.callRemoteMethods(members, "helloWorld", null, (String[])null, GroupRequest.GET_ALL, 0);
@@ -117,5 +120,26 @@ public class RpcDispatcherShunTest implements MembershipListener, RequestHandler
     }
 
     public void block() {
+    }
+
+
+    public void channelConnected(Channel channel) {
+        // System.out.println("-- channel connected");
+    }
+
+    public void channelDisconnected(Channel channel) {
+        // System.out.println("-- channel disconnected");
+    }
+
+    public void channelClosed(Channel channel) {
+        // System.out.println("-- channel closed");
+    }
+
+    public void channelShunned() {
+        // System.out.println("-- channel shunned");
+    }
+
+    public void channelReconnected(Address addr) {
+        // System.out.println("-- channel reconnected");
     }
 }
