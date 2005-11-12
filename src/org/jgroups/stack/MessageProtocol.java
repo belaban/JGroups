@@ -1,4 +1,4 @@
-// $Id: MessageProtocol.java,v 1.4 2004/09/23 16:29:53 belaban Exp $
+// $Id: MessageProtocol.java,v 1.5 2005/11/12 06:37:41 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -39,12 +39,13 @@ public abstract class MessageProtocol extends Protocol implements RequestHandler
     public void start() throws Exception {
         if(_corr == null)
             _corr=new RequestCorrelator(getName(), this, this);
+        _corr.start();
     }
 
     public void stop() {
         if(_corr != null) {
             _corr.stop();
-            _corr=null;
+            // _corr=null;
         }
     }
 

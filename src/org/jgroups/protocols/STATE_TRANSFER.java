@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.15 2005/08/11 12:43:47 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.16 2005/11/12 06:38:21 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -206,7 +206,6 @@ public class STATE_TRANSFER extends Protocol implements RequestHandler {
                 coord=determineCoordinator();
 
                 if(coord == null || coord.equals(local_addr)) {
-                    if(warn) log.warn("GET_STATE: coordinator is null");
                     event_list=new Vector(1);
                     event_list.addElement(new Event(Event.GET_STATE_OK, null));
                     passUp(new Event(Event.STOP_QUEUEING, event_list));
