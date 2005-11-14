@@ -2,7 +2,7 @@
 Release Notes JGroups 2.2.9
 ===========================
 
-Version: $Id: ReleaseNotes-2.2.9.txt,v 1.5 2005/11/08 14:10:36 belaban Exp $
+Version: $Id: ReleaseNotes-2.2.9.txt,v 1.6 2005/11/14 13:34:50 belaban Exp $
 Author: Bela Ban
 Date: Sept 1 2005
 
@@ -31,7 +31,24 @@ Instead of having to pull (receive()) a message out of a channel, a Receiver lis
 be registered with a channel. When a message, view change, state request etc
 is available, the listener is called immediately. This avoid a context switch, given
 that all messages are usually place in a queue inside the channel and then pulled out
-by the application thread.
+by the application thread. Here's an example of how this can be used:
+
+JChannel ch=new JChannel();
+ch.setReceiver(new ReceiverAdapter() {
+    public void receive(Message msg) {
+        System.out.println("-- received " + msg);
+    }
+
+    public void viewAccepted(View new_view) {
+        System.out.println("-- new view: " + new_view);
+    }
+});
+ch.connect("demo");
+ch.send(new Message());
+
+Note that ReceiverAdapter is a class which implements the Receiver
+interface, so that only the methods one is interested in have to be
+overridden.
 
 
 Retransmission from random member
@@ -53,6 +70,18 @@ Common transport protocol TP
 UDP and TCP now derive from this, therefore common functionality has
 to be implemented and tested only once. TCP now has many more
 properties supported by TP.
+
+
+Bounded buffer in message bundling
+----------------------------------
+Message bundling has by default always used unbounded buffers. For
+very fast senders, this could result in more and more messages
+being stored in the queue before the bundling thread could dequeue and
+send them, resulting in out-of-memory issues.
+The bundling buffer is now bounded, by default a size of 2000 elements
+is configured. This can be set via 
+outgoing_queue_max_size="<num_elements>".
+
 
 
 Performance improvements
