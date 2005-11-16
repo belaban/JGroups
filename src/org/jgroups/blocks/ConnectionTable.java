@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.37 2005/09/20 14:32:16 belaban Exp $
+// $Id: ConnectionTable.java,v 1.38 2005/11/16 11:08:21 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -285,14 +285,14 @@ public class ConnectionTable implements Runnable {
                 }
                 catch(IllegalArgumentException ex) {
                     if(log.isErrorEnabled()) log.error("exception setting send buffer size to " +
-                                                       send_buf_size + " bytes: " + ex);
+                            send_buf_size + " bytes", ex);
                 }
                 try {
                     sock.setReceiveBufferSize(recv_buf_size);
                 }
                 catch(IllegalArgumentException ex) {
                     if(log.isErrorEnabled()) log.error("exception setting receive buffer size to " +
-                            send_buf_size + " bytes: " + ex);
+                            send_buf_size + " bytes", ex);
                 }
                 conn=new Connection(sock, dest);
                 conn.sendLocalAddress(local_addr);
@@ -308,6 +308,7 @@ public class ConnectionTable implements Runnable {
 
 
     public void start() throws Exception {
+        init();
         srv_sock=createServerSocket(srv_port, max_port);
 
         if (external_addr!=null)
@@ -333,7 +334,9 @@ public class ConnectionTable implements Runnable {
         }
     }
 
-
+    protected void init() throws Exception {
+    }
+    
     /** Closes all open sockets, the server socket and all threads waiting for incoming messages */
     public void stop() {
         Iterator it=null;
@@ -992,5 +995,4 @@ public class ConnectionTable implements Runnable {
 
 
 }
-
 
