@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry excluding="**/obsolete/*" kind="src" path="src"/>
+	<classpathentry excluding="**/obsolete/*" kind="src" path="tests/junit"/>
+	<classpathentry excluding="**/obsolete/*" kind="src" path="tests/other"/>
+	<classpathentry excluding="**/obsolete/*" kind="src" path="tests/perf"/>
+	<classpathentry excluding="**/obsolete/*" kind="src" path="tests/stress"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="lib/ant.jar"/>
+	<classpathentry kind="lib" path="lib/ant-optional.jar"/>
+	<classpathentry kind="lib" path="lib/avalon-framework-4.0.jar"/>
+	<classpathentry kind="lib" path="lib/batik.jar"/>
+	<classpathentry kind="lib" path="lib/bcprov-jdk14-117.jar"/>
+	<classpathentry kind="lib" path="lib/bsh-1.2b3.jar"/>
+	<classpathentry kind="lib" path="lib/commons-logging.jar"/>
+	<classpathentry kind="lib" path="lib/concurrent.jar"/>
+	<classpathentry kind="lib" path="lib/fop.jar"/>
+	<classpathentry kind="lib" path="lib/jms.jar"/>
+	<classpathentry kind="lib" path="lib/jmxri.jar"/>
+	<classpathentry kind="lib" path="lib/junit.jar"/>
+	<classpathentry kind="lib" path="lib/log4j-1.2.6.jar"/>
+	<classpathentry kind="lib" path="lib/logkit-1.0b4.jar"/>
+	<classpathentry kind="lib" path="lib/xalan.jar"/>
+	<classpathentry kind="output" path="eclipse-classes"/>
+</classpath>

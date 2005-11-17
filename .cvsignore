@@ -1,7 +1,5 @@
 build.properties
 configure.cache
-.project
-.classpath
 classes
 dist
 eclipse-bin
