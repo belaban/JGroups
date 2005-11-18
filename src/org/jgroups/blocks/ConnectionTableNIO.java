@@ -1,4 +1,4 @@
-// $Id: ConnectionTableNIO.java,v 1.4 2005/11/17 22:04:48 smarlownovell Exp $
+// $Id: ConnectionTableNIO.java,v 1.5 2005/11/18 19:52:39 smarlownovell Exp $
 
 package org.jgroups.blocks;
 
@@ -237,9 +237,9 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
          }
          catch (Exception eat)
          {
+
          }
       }
-      super.stop();
 
       // Stop the main selector
       m_acceptSelector.wakeup();
@@ -268,6 +268,8 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
 
       // Stop the callback thread pool
       m_requestProcessors.shutdownNow();
+
+      super.stop();
 
    }
 
@@ -407,6 +409,7 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
       }   // end of thread
       if (LOG.isTraceEnabled())
          LOG.trace("acceptor thread terminated");
+
    }
 
 
@@ -568,8 +571,9 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
             }
             if (null == o)
                continue;
-            if (o instanceof Shutdown)
+            if (o instanceof Shutdown) {
                return;
+            }
             Connection conn = (Connection) o;
             SocketChannel sc = conn.getSocketChannel();
             try
@@ -1032,13 +1036,13 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
          {
             try
             {
-               if(sock_ch.isConnected())
+               if(sock_ch.isConnected()) {
                   sock_ch.close();
+               }
             }
-            catch (Exception e)
+            catch (Exception eat)
             {
-               if (LOG.isErrorEnabled())
-                  LOG.error("failure closing socket", e);
+
             }
             sock_ch = null;
          }
@@ -1222,8 +1226,9 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
                if (m_pendingChannels == 0)
                {
                   o = QUEUE.take();
-                  if (o instanceof Shutdown)    // Stop the thread
+                  if (o instanceof Shutdown){    // Stop the thread
                      return;
+                  }
                   queueEntry = (WriteRequest) o;
                   if (queueEntry.getHandler().add(queueEntry))
                      m_pendingChannels++;
