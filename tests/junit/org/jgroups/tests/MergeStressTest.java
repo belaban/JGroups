@@ -1,4 +1,4 @@
-// $Id: MergeStressTest.java,v 1.1 2005/11/09 15:46:58 belaban Exp $
+// $Id: MergeStressTest.java,v 1.2 2005/11/18 17:10:38 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -19,7 +19,7 @@ import java.util.Vector;
  * Creates NUM channels, all trying to join the same channel concurrently. This will lead to singleton groups
  * and subsequent merging. To enable merging, GMS.handle_concurrent_startup has to be set to false.
  * @author Bela Ban
- * @version $Id: MergeStressTest.java,v 1.1 2005/11/09 15:46:58 belaban Exp $
+ * @version $Id: MergeStressTest.java,v 1.2 2005/11/18 17:10:38 belaban Exp $
  */
 public class MergeStressTest extends TestCase {
     static CyclicBarrier    start_connecting=null;
@@ -44,7 +44,7 @@ public class MergeStressTest extends TestCase {
             "FRAG(frag_size=4096;down_thread=false;up_thread=false):" +
             "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
             "shun=false;print_local_addr=false;view_ack_collection_timeout=5000;" +
-            "digest_timeout=0;merge_timeout=30000;handle_concurrent_startup=true)";
+            "digest_timeout=0;merge_timeout=30000;handle_concurrent_startup=false)";
 
 
 
@@ -59,10 +59,10 @@ public class MergeStressTest extends TestCase {
 
 
     public void testConcurrentStartupAndMerging() throws Exception {
-        start_connecting=new CyclicBarrier(NUM);
-        received_all_views=new CyclicBarrier(NUM);
-        start_disconnecting=new CyclicBarrier(NUM);
-        disconnected=new CyclicBarrier(NUM);
+        start_connecting=new CyclicBarrier(NUM+1);
+        received_all_views=new CyclicBarrier(NUM+1);
+        start_disconnecting=new CyclicBarrier(NUM+1);
+        disconnected=new CyclicBarrier(NUM+1);
 
         long start, stop;
 
@@ -83,13 +83,13 @@ public class MergeStressTest extends TestCase {
 
             int num_members;
             MyThread t;
-            System.out.println("checking that all views have " + NUM + " members");
+            System.out.print("checking that all views have " + NUM + " members: ");
             for(int i=0; i < threads.length; i++) {
                 t=threads[i];
                 num_members=t.numMembers();
                 assertEquals(num_members, NUM);
             }
-            System.out.println("checking that all views have " + NUM + " members: SUCCESSFUL");
+            System.out.println("SUCCESSFUL");
         }
         catch(Exception ex) {
             fail(ex.toString());
@@ -131,7 +131,6 @@ public class MergeStressTest extends TestCase {
             try {
                 start_connecting.barrier();
                 ch=new JChannel(props);
-                log("created channel");
                 log("connecting to channel");
                 long start=System.currentTimeMillis(), stop;
                 ch.connect(groupname);
@@ -140,7 +139,7 @@ public class MergeStressTest extends TestCase {
                 view=ch.getView();
                 my_addr=ch.getLocalAddress();
                 log(my_addr + " connected in " + total_connect_time + " msecs (" +
-                    view.getMembers().size() + " members). VID=" + view.getVid());
+                    view.getMembers().size() + " members). VID=" + ch.getView());
 
                 int num_members=0;
                 while(true) {
@@ -148,9 +147,9 @@ public class MergeStressTest extends TestCase {
                     Vector mbrs=v != null? v.getMembers() : null;
                     if(mbrs != null) {
                         num_members=mbrs.size();
-                        log("num_members=" + num_members);
-                        if(num_members == NUM)
+                        if(num_members == NUM) {
                             break;
+                        }
                     }
                     Util.sleep(2000);
                 }
