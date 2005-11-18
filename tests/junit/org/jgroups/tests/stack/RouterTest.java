@@ -1,4 +1,4 @@
-// $Id: RouterTest.java,v 1.10 2005/09/29 16:08:26 belaban Exp $
+// $Id: RouterTest.java,v 1.11 2005/11/18 17:04:07 belaban Exp $
 
 package org.jgroups.tests.stack;
 
@@ -28,7 +28,7 @@ import java.util.Random;
  * may timeout.
  *
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Revision: 1.10 $
+ * @version $Revision: 1.11 $
  * @since 2.2.1
  */
 public class RouterTest extends TestCase {
@@ -59,7 +59,7 @@ public class RouterTest extends TestCase {
         int len;
         byte[] buffer;
 
-        log.warn("running testEmptyGET");
+        log.info("running testEmptyGET");
 
         Socket s=new Socket("localhost", routerPort);
         DataInputStream dis=new DataInputStream(s.getInputStream());
@@ -96,7 +96,7 @@ public class RouterTest extends TestCase {
      */
     public void test_REGISTER_GET() throws Exception {
 
-        log.warn("running test_REGISTER_GET");
+        log.info("running test_REGISTER_GET");
 
 
         int len;
@@ -172,7 +172,7 @@ public class RouterTest extends TestCase {
 
     public void test_REGISTER_Route_To_Self() throws Exception {
 
-        log.warn("running test_REGISTER_Route_To_Self");
+        log.info("running test_REGISTER_Route_To_Self");
 
 
         int len;
@@ -257,7 +257,7 @@ public class RouterTest extends TestCase {
 
     public void test_REGISTER_Route_To_All() throws Exception {
 
-        log.warn("running test_REGISTER_Route_To_All");
+        log.info("running test_REGISTER_Route_To_All");
 
         int len;
         byte[] buffer;
@@ -357,7 +357,7 @@ public class RouterTest extends TestCase {
 
     public void test_REGISTER_Route_To_Other() throws Exception {
 
-        log.warn("running test_REGISTER_Route_To_Other");
+        log.info("running test_REGISTER_Route_To_Other");
 
 
         int len;
@@ -461,7 +461,7 @@ public class RouterTest extends TestCase {
      */
     public void test_REGISTER_RouteStressAll() throws Exception {
 
-        log.warn("running test_REGISTER_RouteStressAll, this may take a while .... ");
+        log.info("running test_REGISTER_RouteStressAll, this may take a while .... ");
 
 
         int len;
