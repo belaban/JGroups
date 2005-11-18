@@ -1,4 +1,4 @@
-// $Id: AckCollectorTest.java,v 1.3 2005/09/30 07:29:05 belaban Exp $
+// $Id: AckCollectorTest.java,v 1.4 2005/11/18 15:12:40 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -7,6 +7,8 @@ import junit.framework.TestCase;
 import org.jgroups.util.AckCollector;
 import org.jgroups.util.Util;
 import org.jgroups.TimeoutException;
+import org.jgroups.Address;
+import org.jgroups.stack.IpAddress;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -181,6 +183,20 @@ public class AckCollectorTest extends TestCase {
         System.out.println("initial AckCollector: " + ac);
         ac.waitForAllAcks(2000);
         System.out.println("new AckCollector: " + ac);
+    }
+
+    public void testNullList() throws TimeoutException {
+        AckCollector coll=new AckCollector();
+        coll.waitForAllAcks(1000);
+    }
+
+    public void testOneList() throws TimeoutException {
+        List tmp=new ArrayList();
+        Address addr=new IpAddress("127.0.0.1", 5555);
+        tmp.add(addr);
+        AckCollector coll=new AckCollector(null, tmp);
+        coll.ack(addr);
+        coll.waitForAllAcks(1000);
     }
 
 
