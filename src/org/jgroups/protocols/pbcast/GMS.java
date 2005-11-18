@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.45 2005/11/04 18:40:36 belaban Exp $
+// $Id: GMS.java,v 1.46 2005/11/18 17:09:32 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -11,6 +11,7 @@ import org.apache.commons.logging.Log;
 
 import java.io.*;
 import java.util.*;
+import java.util.List;
 
 
 /**
@@ -333,20 +334,37 @@ public class GMS extends Protocol {
 
 
     public void castViewChange(View new_view, Digest digest) {
+        castViewChangeWithDest(new_view, digest, null);
+    }
+
+
+    /**
+     * Broadcasts the new view and digest, and waits for acks from all members in the list given as argument.
+     * If the list is null, we take the members who are part of new_view
+     * @param new_view
+     * @param digest
+     * @param members
+     */
+    public void castViewChangeWithDest(View new_view, Digest digest, java.util.List members) {
         Message   view_change_msg;
         GmsHeader hdr;
         long      start, stop;
         ViewId    vid=new_view.getVid();
         int       size=-1;
 
-        if(log.isTraceEnabled()) log.trace("mcasting view {" + new_view + "} (" + new_view.size() + " mbrs)\n");
+        if(members == null || members.size() == 0)
+            members=new_view.getMembers();
+
+        if(log.isTraceEnabled())
+            log.trace("mcasting view {" + new_view + "} (" + new_view.size() + " mbrs)\n");
+
         start=System.currentTimeMillis();
         view_change_msg=new Message(); // bcast to all members
         hdr=new GmsHeader(GmsHeader.VIEW, new_view);
         hdr.my_digest=digest;
         view_change_msg.putHeader(name, hdr);
 
-        ack_collector.reset(vid, new_view.getMembers());
+        ack_collector.reset(vid, members);
         size=ack_collector.size();
         passDown(new Event(Event.MSG, view_change_msg));
         try {
@@ -357,10 +375,10 @@ public class GMS extends Protocol {
         }
         catch(TimeoutException e) {
             log.warn("failed to collect all ACKs (" + size + ") for view " + vid + " after " + view_ack_collection_timeout +
-                    "ms, missing ACKs from " + ack_collector.getMissing() + " (received=" + ack_collector.getReceived() + ")");
+                    "ms, missing ACKs from " + ack_collector.getMissing() + " (received=" + ack_collector.getReceived() +
+                    "), local_addr=" + local_addr);
         }
     }
-
 
 
     /**
@@ -393,9 +411,9 @@ public class GMS extends Protocol {
         if(view_id != null) {
             rc=vid.compareTo(view_id);
             if(rc <= 0) {
-                if(log.isTraceEnabled())
-                    log.trace("[" + local_addr + "] received view <= current view;" +
-                              " discarding it (current vid: " + view_id + ", new vid: " + vid + ')');
+                if(log.isTraceEnabled() && rc < 0) // only scream if view is smaller, silently discard same views
+                    log.trace("[" + local_addr + "] received view < current view;" +
+                            " discarding it (current vid: " + view_id + ", new vid: " + vid + ')');
                 return;
             }
         }
@@ -1004,12 +1022,20 @@ public class GMS extends Protocol {
         static final int LEAVE   = 2;
         static final int SUSPECT = 3;
         static final int MERGE   = 4;
+        static final int VIEW    = 5;
 
 
         int     type=-1;
         Address mbr=null;
         boolean suspected;
         Vector  coordinators=null;
+        View    view=null;
+        Digest  digest=null;
+        List    target_members=null;
+
+        Request(int type) {
+            this.type=type;
+        }
 
         Request(int type, Address mbr, boolean suspected, Vector coordinators) {
             this.type=type;
@@ -1024,6 +1050,7 @@ public class GMS extends Protocol {
                 case LEAVE:   return "LEAVE(" + mbr + ", " + suspected + ")";
                 case SUSPECT: return "SUSPECT(" + mbr + ")";
                 case MERGE:   return "MERGE(" + coordinators + ")";
+                case VIEW:    return "VIEW (" + view.getVid() + ")";
             }
             return "<invalid (type=" + type + ")";
         }
@@ -1035,7 +1062,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.45 2005/11/04 18:40:36 belaban Exp $
+     * @version $Id: GMS.java,v 1.46 2005/11/18 17:09:32 belaban Exp $
      */
     class ViewHandler implements Runnable {
         Thread                t;
@@ -1052,6 +1079,21 @@ public class GMS extends Protocol {
             start();
             try {
                 q.add(req);
+            }
+            catch(QueueClosedException e) {
+                if(trace)
+                    log.trace("queue is closed; request " + req + " is discarded");
+            }
+        }
+
+        void addAtHead(Request req) {
+            if(suspended) {
+                log.warn("queue is suspended; request is discarded");
+                return;
+            }
+            start();
+            try {
+                q.addAtHead(req);
             }
             catch(QueueClosedException e) {
                 if(trace)
@@ -1118,16 +1160,13 @@ public class GMS extends Protocol {
                 case Request.MERGE:
                     impl.merge(req.coordinators);
                     break;
+                case Request.VIEW:
+                    castViewChangeWithDest(req.view, req.digest, req.target_members);
+                    break;
                 default:
                     log.error("Request " + req.type + " is unknown; discarded");
             }
         }
-
-
-        private void handleMergeRequest(Vector coordinators) {
-
-        }
-
 
         synchronized void start() {
             if(q.closed())

@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.31 2005/11/18 13:17:04 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.32 2005/11/18 17:10:27 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -237,7 +237,17 @@ public class CoordGmsImpl extends GmsImpl {
             if(log.isErrorEnabled()) log.error("merge_ids don't match (or are null); merge view discarded");
             return;
         }
-        gms.castViewChange(data.view, data.digest);
+        java.util.List my_members=gms.view != null? gms.view.getMembers() : null;
+
+        // only send to our *current* members, if we have A and B being merged (we are B), then we would *not*
+        // receive a VIEW_ACK from A because A doesn't see us in the pre-merge view yet and discards the view
+
+        GMS.Request req=new GMS.Request(GMS.Request.VIEW);
+        req.view=data.view;
+        req.digest=data.digest;
+        req.target_members=my_members;
+        gms.view_handler.addAtHead(req); // at head so it is processed next
+        // gms.castViewChangeWithDest(data.view, data.digest, my_members);
         merging=false;
         // this.merge_id=null;
     }
