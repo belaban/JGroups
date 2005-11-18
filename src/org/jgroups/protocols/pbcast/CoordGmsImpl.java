@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.30 2005/10/10 15:11:24 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.31 2005/11/18 13:17:04 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -305,23 +305,18 @@ public class CoordGmsImpl extends GmsImpl {
         v=gms.getNextView(new_mbrs, null, null);
         if(log.isDebugEnabled()) log.debug("joined member " + mbr + ", view is " + v);
         join_rsp=new JoinRsp(v, d);
-        if(join_rsp == null) {
-            if(log.isErrorEnabled())
-                log.error(getClass().toString() + ".handleJoin(" + mbr + ") returned null: will not be able to multicast new view");
-        }
 
         // 2. Send down a local TMP_VIEW event. This is needed by certain layers (e.g. NAKACK) to compute correct digest
         //    in case client's next request (e.g. getState()) reaches us *before* our own view change multicast.
         // Check NAKACK's TMP_VIEW handling for details
-        if(join_rsp != null && join_rsp.getView() != null)
+        if(join_rsp.getView() != null)
             gms.passDown(new Event(Event.TMP_VIEW, join_rsp.getView()));
 
         // 3. Return result to client
         sendJoinResponse(join_rsp, mbr);
 
         // 4. Broadcast the new view
-        if(join_rsp != null)
-            gms.castViewChange(join_rsp.getView(), null);
+        gms.castViewChange(join_rsp.getView(), null);
     }
 
 
