@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.33 2005/11/21 09:21:17 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.34 2005/11/21 11:44:36 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -183,11 +183,16 @@ public class CoordGmsImpl extends GmsImpl {
         setMergeId(merge_id);
         if(log.isDebugEnabled()) log.debug("sender=" + sender + ", merge_id=" + merge_id);
 
-        digest=gms.getDigest();
-        view=new View(gms.view_id.copy(), gms.members.getMembers());
-        retval=new MergeData(sender, view, digest);
-        retval.view=view;
-        retval.digest=digest;
+        try {
+            digest=gms.getDigest();
+            view=new View(gms.view_id.copy(), gms.members.getMembers());
+            retval=new MergeData(sender, view, digest);
+            retval.view=view;
+            retval.digest=digest;
+        }
+        catch(NullPointerException null_ex) {
+            return null;
+        }
         return retval;
     }
 
@@ -454,6 +459,7 @@ public class CoordGmsImpl extends GmsImpl {
         }
 
         start=System.currentTimeMillis();
+        MergeData tmp;
         synchronized(merge_rsps) {
             merge_rsps.removeAllElements();
             if(log.isDebugEnabled()) log.debug("sending MERGE_REQ to " + coords);
@@ -461,7 +467,9 @@ public class CoordGmsImpl extends GmsImpl {
                 coord=(Address)coords.elementAt(i);
 
                 if(gms.local_addr != null && gms.local_addr.equals(coord)) {
-                    merge_rsps.add(getMergeResponse(gms.local_addr, merge_id));
+                    tmp=getMergeResponse(gms.local_addr, merge_id);
+                    if(tmp != null)
+                        merge_rsps.add(tmp);
                     continue;
                 }
 
