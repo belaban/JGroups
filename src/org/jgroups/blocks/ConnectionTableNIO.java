@@ -1,4 +1,4 @@
-// $Id: ConnectionTableNIO.java,v 1.5 2005/11/18 19:52:39 smarlownovell Exp $
+// $Id: ConnectionTableNIO.java,v 1.6 2005/11/21 14:59:44 smarlownovell Exp $
 
 package org.jgroups.blocks;
 
@@ -28,6 +28,8 @@ import EDU.oswego.cs.dl.util.concurrent.PooledExecutor;
 import EDU.oswego.cs.dl.util.concurrent.BoundedBuffer;
 import EDU.oswego.cs.dl.util.concurrent.LinkedQueue;
 import EDU.oswego.cs.dl.util.concurrent.FutureResult;
+import EDU.oswego.cs.dl.util.concurrent.Executor;
+import EDU.oswego.cs.dl.util.concurrent.DirectExecutor;
 
 /**
  * Manages incoming and outgoing TCP connections. For each outgoing message to destination P, if there
@@ -56,7 +58,7 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
    private Object m_lockNextReadHandler = new Object();
 
    // thread pool for processing read requests
-   private PooledExecutor m_requestProcessors;
+   private Executor m_requestProcessors;
 
 
    /**
@@ -211,12 +213,26 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
    {
 
       TCP_NIO NIOreceiver = (TCP_NIO)receiver;
-      // Create worker thread pool for processing incoming buffers
-      m_requestProcessors = new PooledExecutor(new BoundedBuffer(NIOreceiver.getProcessorQueueSize()), NIOreceiver.getProcessorMaxThreads());
-      m_requestProcessors.setMinimumPoolSize(NIOreceiver.getProcessorMinThreads());
-      m_requestProcessors.setKeepAliveTime(NIOreceiver.getProcessormKeepAliveTime());
-      m_requestProcessors.waitWhenBlocked();
-      m_requestProcessors.createThreads(NIOreceiver.getProcessorThreads());
+      // use directExector if max thread pool size is less than or equal to zero
+      // this will be useful for small clusters where we will have a reader/writer
+      // thread for each cluster node.  In a small cluster, the readerThread will
+      // execute the request or response that we read.  In a large cluster, the
+      // ProcessorMaxThreads will be set to the number of threads that will handle
+      // processing the request/response that we read.
+      if(NIOreceiver.getProcessorMaxThreads() <= 0) {
+         m_requestProcessors = new DirectExecutor();
+      }
+      else
+      {
+         // Create worker thread pool for processing incoming buffers
+         PooledExecutor requestProcessors = new PooledExecutor(new BoundedBuffer(NIOreceiver.getProcessorQueueSize()), NIOreceiver.getProcessorMaxThreads());
+         requestProcessors.setMinimumPoolSize(NIOreceiver.getProcessorMinThreads());
+         requestProcessors.setKeepAliveTime(NIOreceiver.getProcessormKeepAliveTime());
+         requestProcessors.waitWhenBlocked();
+         requestProcessors.createThreads(NIOreceiver.getProcessorThreads());
+         m_requestProcessors = requestProcessors;
+      }
+
       m_writeHandlers = WriteHandler.create(NIOreceiver.getWriterThreads());
       m_readHandlers = new ReadHandler[NIOreceiver.getReaderThreads()];
       for (int i = 0; i < m_readHandlers.length; i++)
@@ -267,7 +283,8 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
       }
 
       // Stop the callback thread pool
-      m_requestProcessors.shutdownNow();
+      if(m_requestProcessors instanceof PooledExecutor)
+         ((PooledExecutor)m_requestProcessors).shutdownNow();
 
       super.stop();
 
