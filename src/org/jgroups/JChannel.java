@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.44 2005/11/08 13:57:08 belaban Exp $
+// $Id: JChannel.java,v 1.45 2005/11/21 13:00:14 belaban Exp $
 
 package org.jgroups;
 
@@ -66,7 +66,7 @@ import java.util.Vector;
  *
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.44 $
+ * @version $Revision: 1.45 $
  */
 public class JChannel extends Channel {
 
@@ -944,7 +944,11 @@ public class JChannel extends Channel {
             break;
 
         case Event.VIEW_CHANGE:
-            my_view=(View)evt.getArg();
+            View tmp=(View)evt.getArg();
+            if(tmp instanceof MergeView)
+                my_view=new View(tmp.getVid(), tmp.getMembers());
+            else
+                my_view=tmp;
 
             // crude solution to bug #775120: if we get our first view *before* the CONNECT_OK,
             // we simply set the state to connected
