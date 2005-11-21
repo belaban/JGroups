@@ -1,4 +1,4 @@
-// $Id: MergeView.java,v 1.4 2005/11/21 12:26:08 belaban Exp $
+// $Id: MergeView.java,v 1.5 2005/11/21 13:33:08 belaban Exp $
 
 
 package org.jgroups;
@@ -101,7 +101,7 @@ public class MergeView extends View {
         // write subgroups
         int len=subgroups != null? subgroups.size() : 0;
         out.writeShort(len);
-        if(subgroups == null)
+        if(len == 0)
             return;
         View v;
         for(Iterator it=subgroups.iterator(); it.hasNext();) {
@@ -115,9 +115,11 @@ public class MergeView extends View {
         short len=in.readShort();
         if(len > 0) {
             View v;
+            subgroups=new Vector();
             for(int i=0; i < len; i++) {
                 v=new View();
                 v.readFrom(in);
+                subgroups.add(v);
             }
         }
     }
