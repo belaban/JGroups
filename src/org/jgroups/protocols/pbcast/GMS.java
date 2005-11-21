@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.46 2005/11/18 17:09:32 belaban Exp $
+// $Id: GMS.java,v 1.47 2005/11/21 13:04:58 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -444,8 +444,10 @@ public class GMS extends Protocol {
 
         synchronized(members) {   // serialize access to views
             // assign new_view to view_id
-
-            view=new_view;
+            if(new_view instanceof MergeView)
+                view=new View(new_view.getVid(), new_view.getMembers());
+            else
+                view=new_view;
             view_id=vid.copy();
 
             // Set the membership. Take into account joining members
@@ -971,6 +973,8 @@ public class GMS extends Protocol {
 
         public void writeTo(DataOutputStream out) throws IOException {
             out.writeByte(type);
+            boolean isMergeView=view != null && view instanceof MergeView;
+            out.writeBoolean(isMergeView);
             Util.writeStreamable(view, out);
             Util.writeAddress(mbr, out);
             Util.writeStreamable(join_rsp, out);
@@ -981,7 +985,11 @@ public class GMS extends Protocol {
 
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
             type=in.readByte();
-            view=(View)Util.readStreamable(View.class, in);
+            boolean isMergeView=in.readBoolean();
+            if(isMergeView)
+                view=(View)Util.readStreamable(MergeView.class, in);
+            else
+                view=(View)Util.readStreamable(View.class, in);
             mbr=Util.readAddress(in);
             join_rsp=(JoinRsp)Util.readStreamable(JoinRsp.class, in);
             my_digest=(Digest)Util.readStreamable(Digest.class, in);
@@ -993,6 +1001,7 @@ public class GMS extends Protocol {
             long retval=Global.BYTE_SIZE *2; // type + merge_rejected
 
             retval+=Global.BYTE_SIZE; // presence view
+            retval+=Global.BYTE_SIZE; // MergeView or View
             if(view != null)
                 retval+=view.serializedSize();
 
@@ -1062,7 +1071,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.46 2005/11/18 17:09:32 belaban Exp $
+     * @version $Id: GMS.java,v 1.47 2005/11/21 13:04:58 belaban Exp $
      */
     class ViewHandler implements Runnable {
         Thread                t;
