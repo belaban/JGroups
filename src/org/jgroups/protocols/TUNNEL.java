@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.15 2005/08/11 12:43:47 belaban Exp $
+// $Id: TUNNEL.java,v 1.16 2005/11/21 14:21:11 belaban Exp $
 
 
 package org.jgroups.protocols;
@@ -198,9 +198,18 @@ public class TUNNEL extends Protocol implements Runnable {
                 return;
         }
 
-        if(!stub.isConnected() || !stub.send(msg, channel_name)) { // if msg is not sent okay,
+        if(!stub.isConnected()) {
             startReconnector();
         }
+        else {
+            if(stub.send(msg, channel_name) == false) {
+                startReconnector();
+            }
+        }
+
+        //if(!stub.isConnected() || !stub.send(msg, channel_name)) { // if msg is not sent okay,
+          //  startReconnector();
+        //}
     }
 
 
