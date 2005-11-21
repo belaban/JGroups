@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.32 2005/11/18 17:10:27 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.33 2005/11/21 09:21:17 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -771,7 +771,7 @@ public class CoordGmsImpl extends GmsImpl {
                 sendMergeView(coords, combined_merge_data);
             }
             catch(Throwable ex) {
-                if(log.isErrorEnabled()) log.error("exception=" + ex);
+                if(log.isErrorEnabled()) log.error("exception while merging", ex);
             }
             finally {
                 sendMergeCancelledMessage(coords, merge_id);

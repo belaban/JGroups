@@ -1,4 +1,4 @@
-// $Id: ParticipantGmsImpl.java,v 1.15 2005/10/27 15:24:23 belaban Exp $
+// $Id: ParticipantGmsImpl.java,v 1.16 2005/11/21 09:21:02 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -94,12 +94,10 @@ public class ParticipantGmsImpl extends GmsImpl {
 
 
     public void handleJoin(Address mbr) {
-        wrongMethod("handleJoin");
     }
 
 
     public void handleLeave(Address mbr, boolean suspected) {
-        wrongMethod("handleLeave");
     }
 
 
