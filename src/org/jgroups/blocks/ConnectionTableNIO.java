@@ -1,4 +1,4 @@
-// $Id: ConnectionTableNIO.java,v 1.6 2005/11/21 14:59:44 smarlownovell Exp $
+// $Id: ConnectionTableNIO.java,v 1.7 2005/11/21 16:37:34 smarlownovell Exp $
 
 package org.jgroups.blocks;
 
@@ -213,12 +213,7 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
    {
 
       TCP_NIO NIOreceiver = (TCP_NIO)receiver;
-      // use directExector if max thread pool size is less than or equal to zero
-      // this will be useful for small clusters where we will have a reader/writer
-      // thread for each cluster node.  In a small cluster, the readerThread will
-      // execute the request or response that we read.  In a large cluster, the
-      // ProcessorMaxThreads will be set to the number of threads that will handle
-      // processing the request/response that we read.
+      // use directExector if max thread pool size is less than or equal to zero.
       if(NIOreceiver.getProcessorMaxThreads() <= 0) {
          m_requestProcessors = new DirectExecutor();
       }
