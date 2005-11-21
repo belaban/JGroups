@@ -1,11 +1,10 @@
-// $Id: MergeView.java,v 1.3 2005/07/17 11:38:05 chrislott Exp $
+// $Id: MergeView.java,v 1.4 2005/11/21 12:26:08 belaban Exp $
 
 
 package org.jgroups;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.*;
+import java.util.Iterator;
 import java.util.Vector;
 
 
@@ -93,6 +92,48 @@ public class MergeView extends View {
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
         subgroups=(Vector)in.readObject();
+    }
+
+
+    public void writeTo(DataOutputStream out) throws IOException {
+        super.writeTo(out);
+
+        // write subgroups
+        int len=subgroups != null? subgroups.size() : 0;
+        out.writeShort(len);
+        if(subgroups == null)
+            return;
+        View v;
+        for(Iterator it=subgroups.iterator(); it.hasNext();) {
+            v=(View)it.next();
+            v.writeTo(out);
+        }
+    }
+
+    public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        super.readFrom(in);
+        short len=in.readShort();
+        if(len > 0) {
+            View v;
+            for(int i=0; i < len; i++) {
+                v=new View();
+                v.readFrom(in);
+            }
+        }
+    }
+
+    public int serializedSize() {
+        int retval=super.serializedSize();
+        retval+=Global.SHORT_SIZE; // for size of subgroups vector
+
+        if(subgroups == null)
+            return retval;
+        View v;
+        for(Iterator it=subgroups.iterator(); it.hasNext();) {
+            v=(View)it.next();
+            retval+=v.serializedSize();
+        }
+        return retval;
     }
 
 
