@@ -45,7 +45,7 @@ public class TCP_NIO extends TCP
    public int getProcessorMinThreads() { return m_processor_minThreads;}
    public int getProcessorMaxThreads() { return m_processor_maxThreads;}
    public int getProcessorQueueSize() { return m_processor_queueSize; }
-   public int getProcessormKeepAliveTime() { return m_processor_keepAliveTime; }
+   public int getProcessorKeepAliveTime() { return m_processor_keepAliveTime; }
 
    /** Setup the Protocol instance acording to the configuration string */
    public boolean setProperties(Properties props) {
