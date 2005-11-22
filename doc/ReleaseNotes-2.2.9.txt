@@ -2,7 +2,7 @@
 Release Notes JGroups 2.2.9
 ===========================
 
-Version: $Id: ReleaseNotes-2.2.9.txt,v 1.6 2005/11/14 13:34:50 belaban Exp $
+Version: $Id: ReleaseNotes-2.2.9.txt,v 1.7 2005/11/22 15:36:04 smarlownovell Exp $
 Author: Bela Ban
 Date: Sept 1 2005
 
@@ -121,6 +121,12 @@ addresses to the same memory location. Therefore most addresses can be garbage c
 have been created, resulting in reduced memory overhead. Can be turned off with -Ddisable_canonicalization=true.
 
 
+TCP_NIO support
+---------------
+A new implementation of NIO support has been added.  See configuration sample tcp_nio.xml.  
+You can configure the number of "reader_threads", "writer_threads" and "processor_threads".
+
+
 Bug fixes
 ---------
 Critical: in rare cases, the digests could be computed incorrectly,
@@ -133,4 +139,5 @@ messages, which would accumulate forever ! This happened only in very
 rare cases when a high sustained throughput was encountered (e.g. 20
 million messages sent at the highest possible speed).
 Workaround: set enable_bundling="false" in UDP.
+Minor: Apply recv_buf_size/send_buf_size to all TCP socket connections.
 Many smaller bug fixes.
