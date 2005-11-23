@@ -11,6 +11,7 @@
     <pbcast.NAKACK max_xmit_size="60000" use_mcast_xmit="false" gc_lag="50" retransmit_timeout="300,600,1200,2400,4800"/>
     <UNICAST timeout="300,600,1200,2400,3600"/>
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="5000" max_bytes="250000"/>
+    <VIEW_SYNC avg_send_interval="60000" down_thread="false" up_thread="false" />
     <pbcast.GMS print_local_addr="true" join_timeout="3000" join_retry_timeout="2000" shun="true"/>
     <FC max_credits="500000" down_thread="false" min_credits="52000"/>
     <FRAG frag_size="60000" down_thread="false" up_thread="true"/>

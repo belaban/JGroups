@@ -16,6 +16,7 @@
     <UNICAST timeout="1200,2400,3600" down_thread="false" up_thread="false"/>
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="20000" down_thread="false" max_bytes="0" up_thread="false"/>
     <FRAG frag_size="8192" down_thread="false" up_thread="false"/>
+    <VIEW_SYNC avg_send_interval="60000" down_thread="false" up_thread="false" />
     <pbcast.GMS print_local_addr="true" join_timeout="3000" down_thread="false" join_retry_timeout="2000" up_thread="false" shun="true"/>
     <pbcast.STATE_TRANSFER down_thread="false" up_thread="false"/>
 </config>

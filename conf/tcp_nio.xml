@@ -10,5 +10,6 @@
     <VERIFY_SUSPECT timeout="1500" down_thread="false" up_thread="false"/>
     <pbcast.NAKACK gc_lag="100" retransmit_timeout="600,1200,2400,4800"/>
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="20000" down_thread="false" max_bytes="0" up_thread="false"/>
+    <VIEW_SYNC avg_send_interval="60000" down_thread="false" up_thread="false" />
     <pbcast.GMS print_local_addr="true" join_timeout="5000" join_retry_timeout="2000" shun="true"/>
 </config>
