@@ -37,6 +37,7 @@
         desired_avg_gossip="5000"
         down_thread="false"
         max_bytes="250000"/>
+    <VIEW_SYNC avg_send_interval="60000" down_thread="false" up_thread="false" />
     <pbcast.GMS print_local_addr="true"
         join_timeout="3000"
         down_thread="false"

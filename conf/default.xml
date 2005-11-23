@@ -44,6 +44,7 @@
     <FRAG frag_size="8192"
         down_thread="false"
         up_thread="false"/>
+    <VIEW_SYNC avg_send_interval="60000" down_thread="false" up_thread="false" />
     <pbcast.GMS print_local_addr="true"
         join_timeout="3000"
         join_retry_timeout="2000"
