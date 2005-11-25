@@ -1,4 +1,4 @@
-// $Id: TimeScheduler.java,v 1.9 2005/08/19 08:41:22 belaban Exp $
+// $Id: TimeScheduler.java,v 1.10 2005/11/25 12:53:14 belaban Exp $
 
 package org.jgroups.util;
 
@@ -204,6 +204,10 @@ public class TimeScheduler {
     private static final long SUSPEND_INTERVAL=30000;
 
 
+    /** if it takes more than this to run a task, we emit a warning */
+    private static final long MAX_EXECUTION_TIME=3000;
+
+
     /**
      * Thread is running
      * <p/>
@@ -380,8 +384,16 @@ public class TimeScheduler {
                 }
             }
 
+            long start=System.currentTimeMillis(), stop, diff;
             try {
                 task.run();
+                stop=System.currentTimeMillis();
+                diff=stop-start;
+                if(diff >= MAX_EXECUTION_TIME) {
+                    if(log.isWarnEnabled())
+                        log.warn("task " + task + " took " + diff + "ms to execute, " +
+                                "please check why it is taking so long. It is delaying other tasks");
+                }
             }
             catch(Throwable ex) {
                 log.error("failed running task " + task, ex);
