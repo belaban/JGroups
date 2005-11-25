@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.17 2005/11/25 12:09:39 belaban Exp $
+// $Id: TUNNEL.java,v 1.18 2005/11/25 12:53:56 belaban Exp $
 
 
 package org.jgroups.protocols;
@@ -8,16 +8,15 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.View;
-import org.jgroups.util.TimeScheduler;
-import org.jgroups.util.Util;
+import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.RouterStub;
-import org.jgroups.stack.IpAddress;
+import org.jgroups.util.Util;
 
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Properties;
 import java.util.Vector;
-import java.util.HashMap;
 
 
 
@@ -52,14 +51,15 @@ public class TUNNEL extends Protocol implements Runnable {
      * media (non)sense */
     boolean  loopback=true;
 
-    TimeScheduler timer=null;
-
-    Reconnector reconnector=null;
+    private final Reconnector reconnector=new Reconnector();
     private final Object reconnector_mutex=new Object();
 
     /** If set it will be added to <tt>local_addr</tt>. Used to implement
      * for example transport independent addresses */
     byte[]          additional_data=null;
+
+    /** time to wait in ms between reconnect attempts */
+    long            reconnect_interval=5000;
 
 
     public TUNNEL() {
@@ -81,7 +81,6 @@ public class TUNNEL extends Protocol implements Runnable {
 
     public void init() throws Exception {
         super.init();
-        timer=stack.timer;
     }
 
     public void start() throws Exception {
@@ -132,6 +131,12 @@ public class TUNNEL extends Protocol implements Runnable {
                 log.error("both router_host and router_port have to be set !");
                 return false;
             }
+        }
+
+        str=props.getProperty("reconnect_interval");
+        if(str != null) {
+            reconnect_interval=Long.parseLong(str);
+            props.remove("reconnect_interval");
         }
 
         str=props.getProperty("loopback");
@@ -367,19 +372,13 @@ public class TUNNEL extends Protocol implements Runnable {
 
     private void startReconnector() {
         synchronized(reconnector_mutex) {
-            if(reconnector == null || reconnector.cancelled()) {
-                reconnector=new Reconnector();
-                timer.add(reconnector);
-            }
+            reconnector.start();
         }
     }
 
     private void stopReconnector() {
         synchronized(reconnector_mutex) {
-            if(reconnector != null) {
-                reconnector.stop();
-                reconnector=null;
-            }
+            reconnector.stop();
         }
     }
 
@@ -392,27 +391,35 @@ public class TUNNEL extends Protocol implements Runnable {
     /* ------------------------------------------------------------------------------- */
 
 
-    private class Reconnector implements TimeScheduler.Task {
-        boolean cancelled=false;
+    private class Reconnector implements Runnable {
+        Thread  my_thread=null;
 
+
+        public void start() {
+            synchronized(this) {
+                if(my_thread == null || !my_thread.isAlive()) {
+                    my_thread=new Thread(this, "Reconnector");
+                    my_thread.setDaemon(true);
+                    my_thread.start();
+                }
+            }
+        }
 
         public void stop() {
-            cancelled=true;
+            synchronized(this) {
+                my_thread=null;
+            }
         }
 
-        public boolean cancelled() {
-            return cancelled;
-        }
-
-        public long nextInterval() {
-            return 5000;
-        }
 
         public void run() {
-            if(stub.reconnect()) {
-                stub.register(channel_name);
-                if(log.isDebugEnabled()) log.debug("reconnected");
-                stop();
+            while(Thread.currentThread().equals(my_thread)) {
+                if(stub.reconnect()) {
+                    stub.register(channel_name);
+                    if(log.isDebugEnabled()) log.debug("reconnected");
+                    return;
+                }
+                Util.sleep(reconnect_interval);
             }
         }
     }
