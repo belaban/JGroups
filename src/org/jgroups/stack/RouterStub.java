@@ -1,4 +1,4 @@
-// $Id: RouterStub.java,v 1.13 2005/07/15 09:34:58 belaban Exp $
+// $Id: RouterStub.java,v 1.14 2005/11/25 12:55:47 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -335,8 +335,8 @@ public class RouterStub {
                 if((new_addr=connect()) != null)
                     break;
             }
-            catch(Exception ex) {
-                if(log.isWarnEnabled()) log.warn("exception is " + ex);
+            catch(Exception ex) { // this is a normal case
+                if(log.isTraceEnabled()) log.trace("failed reconnecting", ex);
             }
             if(max_attempts == -1)
                 Util.sleep(RECONNECT_TIMEOUT);
@@ -344,7 +344,7 @@ public class RouterStub {
         if(new_addr == null) {
             return false;
         }
-        if(log.isWarnEnabled()) log.warn("client reconnected, new address is " + new_addr);
+        if(log.isTraceEnabled()) log.trace("client reconnected, new address is " + new_addr);
         return true;
     }
 
