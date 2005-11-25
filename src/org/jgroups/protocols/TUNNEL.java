@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.16 2005/11/21 14:21:11 belaban Exp $
+// $Id: TUNNEL.java,v 1.17 2005/11/25 12:09:39 belaban Exp $
 
 
 package org.jgroups.protocols;
@@ -258,7 +258,7 @@ public class TUNNEL extends Protocol implements Runnable {
             msg=stub.receive();
             if(msg == null) {
                 if(receiver == null) break;
-                if(log.isErrorEnabled()) log.error("received a null message. Trying to reconnect to router");
+                if(log.isTraceEnabled()) log.trace("received a null message. Trying to reconnect to router");
                 if(!stub.isConnected())
                     startReconnector();
                 Util.sleep(5000);
