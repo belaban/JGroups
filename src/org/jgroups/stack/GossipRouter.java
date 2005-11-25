@@ -1,4 +1,4 @@
-// $Id: GossipRouter.java,v 1.15 2005/09/29 16:28:52 belaban Exp $
+// $Id: GossipRouter.java,v 1.16 2005/11/25 12:55:18 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -780,11 +780,11 @@ public class GossipRouter {
             // send to destination address
             AddressEntry ae = findAddressEntry(dest);
             if (ae == null) {
-                if(log.isErrorEnabled()) log.error("cannot find address "+dest+" in the routing table");
+                if(log.isErrorEnabled()) log.error("cannot find " + dest + " in the routing table");
                 return;
             }
             if (ae.output==null) {
-                if(log.isErrorEnabled()) log.error("address "+dest+" is associated with a null output stream");
+                if(log.isErrorEnabled()) log.error(dest + " is associated with a null output stream");
                 return;
             }
             try {
