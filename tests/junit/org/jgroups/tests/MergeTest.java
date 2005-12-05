@@ -12,7 +12,7 @@ import org.jgroups.stack.GossipRouter;
 /**
  * Tests merging
  * @author Bela Ban
- * @version $Id: MergeTest.java,v 1.1 2005/11/22 09:47:04 belaban Exp $
+ * @version $Id: MergeTest.java,v 1.2 2005/12/05 16:31:04 belaban Exp $
  */
 public class MergeTest extends TestCase {
     JChannel     channel;
@@ -21,10 +21,9 @@ public class MergeTest extends TestCase {
     GossipRouter router;
     JChannel     ch1, ch2;
 
-
     String props="TUNNEL(router_port=" + router_port + ";router_host=127.0.0.1;loopback=true):" +
             "PING(timeout=1000;num_initial_members=2;gossip_host=127.0.0.1;gossip_port=" + router_port + "):" +
-            "MERGE2(min_interval=3000;max_interval=5000):" +
+            "MERGE2(min_interval=7000;max_interval=10000):" +
             "FD(timeout=2000;max_tries=2):" +
             "VERIFY_SUSPECT(timeout=1500):" +
             "pbcast.NAKACK(gc_lag=50;retransmit_timeout=600,1200,2400,4800):" +
@@ -32,6 +31,7 @@ public class MergeTest extends TestCase {
             "pbcast.STABLE(desired_avg_gossip=20000):" +
             "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
             "shun=true;print_local_addr=false)";
+
 
 
 
@@ -58,7 +58,7 @@ public class MergeTest extends TestCase {
         System.out.println("view is " + v);
         assertEquals("channel is supposed to have 2 members", 2, ch2.getView().size());
 
-        System.out.println("simulating network partition by stopping the GossipRouter");
+        System.out.println("++ simulating network partition by stopping the GossipRouter");
         stopRouter();
 
         System.out.println("sleeping for 10 secs");
@@ -70,11 +70,11 @@ public class MergeTest extends TestCase {
         System.out.println("-- ch2.view: " + v);
         assertEquals("view should be 1 (channels should have excluded each other", 1, v.size());
 
-        System.out.println("simulating merge by starting the GossipRouter again");
+        System.out.println("++ simulating merge by starting the GossipRouter again");
         startRouter();
 
         System.out.println("sleeping for 10 secs");
-        Util.sleep(10000);
+        Util.sleep(20000);
 
         v=ch1.getView();
         System.out.println("-- ch1.view: " + v);
