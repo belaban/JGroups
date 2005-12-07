@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.35 2005/12/07 09:24:29 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.36 2005/12/07 09:26:09 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -504,7 +504,7 @@ public class CoordGmsImpl extends GmsImpl {
             }
             stop=System.currentTimeMillis();
             if(trace)
-                log.trace("collected all " + merge_rsps.size() + " merge responses in " + (stop-start) + "ms");
+                log.trace("collected " + merge_rsps.size() + " merge response(s) in " + (stop-start) + "ms");
         }
     }
 
