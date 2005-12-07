@@ -12,7 +12,7 @@ import org.jgroups.stack.GossipRouter;
 /**
  * Tests merging
  * @author Bela Ban
- * @version $Id: MergeTest.java,v 1.3 2005/12/07 10:30:31 belaban Exp $
+ * @version $Id: MergeTest.java,v 1.4 2005/12/07 12:32:29 belaban Exp $
  */
 public class MergeTest extends TestCase {
     JChannel     channel;
@@ -28,6 +28,7 @@ public class MergeTest extends TestCase {
             "FD(timeout=2000;max_tries=2;shun=false):" +
             "VERIFY_SUSPECT(timeout=1500):" +
             "pbcast.NAKACK(gc_lag=50;retransmit_timeout=600,1200,2400,4800):" +
+            "UNICAST(timeout=600,1200,2400):" +
             "pbcast.STABLE(desired_avg_gossip=20000):" +
             "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
             "shun=true;print_local_addr=false;shun=false)";
