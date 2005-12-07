@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.18 2005/11/25 12:53:56 belaban Exp $
+// $Id: TUNNEL.java,v 1.19 2005/12/07 10:01:58 belaban Exp $
 
 
 package org.jgroups.protocols;
@@ -166,10 +166,6 @@ public class TUNNEL extends Protocol implements Runnable {
         TunnelHeader hdr;
         Address dest;
 
-        if(log.isDebugEnabled()) {
-            log.debug(evt.toString());
-        }
-
         if(evt.getType() != Event.MSG) {
             handleDownEvent(evt);
             return;
@@ -182,6 +178,9 @@ public class TUNNEL extends Protocol implements Runnable {
 
         if(msg.getSrc() == null)
             msg.setSrc(local_addr);
+
+        if(trace)
+            log.trace(msg + ", hdrs: " + msg.getHeaders());
 
         // Don't send if destination is local address. Instead, switch dst and src and put in up_queue.
         // If multicast message, loopback a copy directly to us (but still multicast). Once we receive this,
@@ -203,6 +202,8 @@ public class TUNNEL extends Protocol implements Runnable {
                 return;
         }
 
+
+
         if(!stub.isConnected()) {
             startReconnector();
         }
@@ -211,10 +212,6 @@ public class TUNNEL extends Protocol implements Runnable {
                 startReconnector();
             }
         }
-
-        //if(!stub.isConnected() || !stub.send(msg, channel_name)) { // if msg is not sent okay,
-          //  startReconnector();
-        //}
     }
 
 
@@ -297,10 +294,8 @@ public class TUNNEL extends Protocol implements Runnable {
             }
         }
 
-         if(log.isDebugEnabled()) {
-             log.debug("received message " + msg);
-         }
-
+         if(trace)
+             log.trace(msg + ", hdrs: " + msg.getHeaders());
 
         /* Discard all messages destined for a channel with a different name */
 
@@ -313,6 +308,8 @@ public class TUNNEL extends Protocol implements Runnable {
 
 
     void handleDownEvent(Event evt) {
+        if(trace)
+            log.trace(evt);
 
         switch(evt.getType()) {
 
