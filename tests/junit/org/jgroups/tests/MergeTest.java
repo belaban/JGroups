@@ -12,26 +12,25 @@ import org.jgroups.stack.GossipRouter;
 /**
  * Tests merging
  * @author Bela Ban
- * @version $Id: MergeTest.java,v 1.2 2005/12/05 16:31:04 belaban Exp $
+ * @version $Id: MergeTest.java,v 1.3 2005/12/07 10:30:31 belaban Exp $
  */
 public class MergeTest extends TestCase {
     JChannel     channel;
     final int    TIMES=10;
     final int    router_port=12000;
+    final String bind_addr="127.0.0.1";
     GossipRouter router;
     JChannel     ch1, ch2;
 
-    String props="TUNNEL(router_port=" + router_port + ";router_host=127.0.0.1;loopback=true):" +
-            "PING(timeout=1000;num_initial_members=2;gossip_host=127.0.0.1;gossip_port=" + router_port + "):" +
-            "MERGE2(min_interval=7000;max_interval=10000):" +
-            "FD(timeout=2000;max_tries=2):" +
+    String props="TUNNEL(router_port=" + router_port + ";router_host=" +bind_addr+ ";loopback=true):" +
+            "PING(timeout=1000;num_initial_members=2;gossip_host=" +bind_addr+";gossip_port=" + router_port + "):" +
+            "MERGE2(min_interval=5000;max_interval=8000):" +
+            "FD(timeout=2000;max_tries=2;shun=false):" +
             "VERIFY_SUSPECT(timeout=1500):" +
             "pbcast.NAKACK(gc_lag=50;retransmit_timeout=600,1200,2400,4800):" +
-            "UNICAST(timeout=600,1200,2400):" +
             "pbcast.STABLE(desired_avg_gossip=20000):" +
             "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
-            "shun=true;print_local_addr=false)";
-
+            "shun=true;print_local_addr=false;shun=false)";
 
 
 
@@ -73,8 +72,8 @@ public class MergeTest extends TestCase {
         System.out.println("++ simulating merge by starting the GossipRouter again");
         startRouter();
 
-        System.out.println("sleeping for 10 secs");
-        Util.sleep(20000);
+        System.out.println("sleeping for 30 secs");
+        Util.sleep(30000);
 
         v=ch1.getView();
         System.out.println("-- ch1.view: " + v);
@@ -87,7 +86,7 @@ public class MergeTest extends TestCase {
 
 
     private void startRouter() throws Exception {
-        router=new GossipRouter(router_port, "127.0.0.1");
+        router=new GossipRouter(router_port, bind_addr);
         router.start();
     }
 
