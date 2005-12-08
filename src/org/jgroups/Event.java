@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.11 2005/04/20 20:25:50 belaban Exp $
+// $Id: Event.java,v 1.12 2005/12/08 12:53:53 belaban Exp $
 
 package org.jgroups;
 
@@ -75,6 +75,7 @@ public class Event {
     public static final int STOP_OK                   = 64;  // arg = exception or null - internal event, handled by Protocol
     public static final int SUSPEND_STABLE            = 65;  // arg = Long (max_suspend_time)
     public static final int RESUME_STABLE             = 66;  // arg = null
+    public static final int ENABLE_UNICASTS_TO        = 67;  // arg = Address (member)
 
 
 
@@ -180,6 +181,7 @@ public class Event {
             case STOP_OK:                return "STOP_OK";
             case SUSPEND_STABLE:         return "SUSPEND_STABLE";
             case RESUME_STABLE:          return "RESUME_STABLE";
+            case ENABLE_UNICASTS_TO:     return "ENABLE_UNICASTS_TO";
 
             case USER_DEFINED:           return "USER_DEFINED";
             default:                     return "UNDEFINED";
