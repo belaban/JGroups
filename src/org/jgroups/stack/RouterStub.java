@@ -1,4 +1,4 @@
-// $Id: RouterStub.java,v 1.14 2005/11/25 12:55:47 belaban Exp $
+// $Id: RouterStub.java,v 1.15 2005/12/08 09:34:47 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -294,7 +294,9 @@ public class RouterStub {
             connected=false;
             return null;
         }
+        Address dest;
         try {
+            dest=Util.readAddress(input);
             len=input.readInt();
             if(len == 0) {
                 ret=null;
@@ -306,6 +308,7 @@ public class RouterStub {
                 ByteArrayInputStream tmp=new ByteArrayInputStream(buf);
                 DataInputStream in=new DataInputStream(tmp);
                 ret.readFrom(in);
+                ret.setDest(dest);
                 in.close();
             }
         }
