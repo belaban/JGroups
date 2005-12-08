@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.19 2005/12/07 10:01:58 belaban Exp $
+// $Id: TUNNEL.java,v 1.20 2005/12/08 09:35:28 belaban Exp $
 
 
 package org.jgroups.protocols;
@@ -189,7 +189,7 @@ public class TUNNEL extends Protocol implements Runnable {
             Message copy=msg.copy();
             // copy.removeHeader(name); // we don't remove the header
             copy.setSrc(local_addr);
-            copy.setDest(dest);
+            // copy.setDest(dest);
             evt=new Event(Event.MSG, copy);
 
             /* Because Protocol.up() is never called by this bottommost layer, we call up() directly in the observer.
