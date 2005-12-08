@@ -208,7 +208,7 @@ public class ENCRYPTAsymmetricTest extends TestCase {
 		digest.reset();
 		digest.update(encrypt.getDesKey().getEncoded());
 	     
-		String symVersion = new String(digest.digest());
+		String symVersion = new String(digest.digest(), "UTF-8");
 		
 		encrypt.keyServer = false;
 		Message msg = new Message();
@@ -304,7 +304,7 @@ public class ENCRYPTAsymmetricTest extends TestCase {
 		digest.reset();
 		digest.update(server.getDesKey().getEncoded());
 	     
-		String symVersion = new String(digest.digest());
+		String symVersion = new String(digest.digest(), "UTF-8");
 		
 		// encrypt and send an initial message to peer
 		Cipher cipher = server.getSymEncodingCipher();
@@ -551,7 +551,6 @@ public class ENCRYPTAsymmetricTest extends TestCase {
 		}
 		public void up(Event evt)
 		{
-			// TODO Auto-generated method stub
 			storeUp(evt);
 			System.out.println("Up:"+evt.toString());
 			
@@ -562,8 +561,6 @@ public class ENCRYPTAsymmetricTest extends TestCase {
 		 */
 		public void setProtocol(Protocol prot)
 		{
-			// TODO Auto-generated method stub
-			
 		}
 
 		/* (non-Javadoc)
@@ -571,7 +568,6 @@ public class ENCRYPTAsymmetricTest extends TestCase {
 		 */
 		public boolean up(Event evt, int num_evts)
 		{
-			// TODO Auto-generated method stub
 			System.out.println("Up:"+evt.toString());
 			
 			return false;
@@ -582,7 +578,6 @@ public class ENCRYPTAsymmetricTest extends TestCase {
 		 */
 		public boolean passUp(Event evt)
 		{
-			// TODO Auto-generated method stub
 			storeUp(evt);
 			System.out.println("PassUp:"+evt.toString());
 			
@@ -594,7 +589,6 @@ public class ENCRYPTAsymmetricTest extends TestCase {
 		 */
 		public boolean down(Event evt, int num_evts)
 		{
-			// TODO Auto-generated method stub
 			System.out.println("down:"+evt.toString());
 			
 			return false;
@@ -605,7 +599,6 @@ public class ENCRYPTAsymmetricTest extends TestCase {
 		 */
 		public boolean passDown(Event evt)
 		{
-			// TODO Auto-generated method stub
 			storeDown(evt);
 			System.out.println("passdown:"+evt.toString());
 			
@@ -657,7 +650,6 @@ public class ENCRYPTAsymmetricTest extends TestCase {
 
         public boolean isMulticastAddress()
 		{
-			// TODO Auto-generated method stub
 			return false;
 		}
 
@@ -670,8 +662,6 @@ public class ENCRYPTAsymmetricTest extends TestCase {
 		 */
 		public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException
 		{
-			// TODO Auto-generated method stub
-			
 		}
 
 		/* (non-Javadoc)
@@ -679,8 +669,6 @@ public class ENCRYPTAsymmetricTest extends TestCase {
 		 */
 		public void writeExternal(ObjectOutput out) throws IOException
 		{
-			// TODO Auto-generated method stub
-			
 		}
 
 
@@ -690,7 +678,6 @@ public class ENCRYPTAsymmetricTest extends TestCase {
 		 */
 		public int compareTo(Object o)
 		{
-			// TODO Auto-generated method stub
 			return -1;
 		}
 		

@@ -1,6 +1,6 @@
 
 
-// $Id: ENCRYPT.java,v 1.15 2005/11/07 06:38:19 belaban Exp $
+// $Id: ENCRYPT.java,v 1.16 2005/12/08 15:19:51 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -627,8 +627,7 @@ final Map keyMap = new WeakHashMap();
 				// try and handle message
 				try
 				{
-
-						handleUpMessage(evt);
+                    handleUpMessage(evt);
 
 				} catch (Exception e)
 				{
