@@ -1,4 +1,4 @@
-// $Id: MergeStressTest.java,v 1.2 2005/11/18 17:10:38 belaban Exp $
+// $Id: MergeStressTest.java,v 1.3 2005/12/08 13:04:21 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -19,14 +19,14 @@ import java.util.Vector;
  * Creates NUM channels, all trying to join the same channel concurrently. This will lead to singleton groups
  * and subsequent merging. To enable merging, GMS.handle_concurrent_startup has to be set to false.
  * @author Bela Ban
- * @version $Id: MergeStressTest.java,v 1.2 2005/11/18 17:10:38 belaban Exp $
+ * @version $Id: MergeStressTest.java,v 1.3 2005/12/08 13:04:21 belaban Exp $
  */
 public class MergeStressTest extends TestCase {
     static CyclicBarrier    start_connecting=null;
     static CyclicBarrier    received_all_views=null;
     static CyclicBarrier    start_disconnecting=null;
     static CyclicBarrier    disconnected=null;
-    static final int        NUM=2;
+    static final int        NUM=10;
     static final long       TIMEOUT=50000;
     static final MyThread[] threads=new MyThread[NUM];
     static String           groupname="ConcurrentTestDemo";
@@ -158,10 +158,10 @@ public class MergeStressTest extends TestCase {
 
                 start_disconnecting.barrier();
                 start=System.currentTimeMillis();
-                ch.disconnect();
+                ch.shutdown();
                 stop=System.currentTimeMillis();
 
-                log(my_addr + " disconnected in " + (stop-start) + " msecs");
+                log(my_addr + " shut down in " + (stop-start) + " msecs");
                 disconnected.barrier();
             }
             catch(Exception e) {
