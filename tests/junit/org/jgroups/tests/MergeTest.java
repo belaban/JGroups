@@ -12,7 +12,7 @@ import org.jgroups.stack.GossipRouter;
 /**
  * Tests merging
  * @author Bela Ban
- * @version $Id: MergeTest.java,v 1.5 2005/12/08 09:51:56 belaban Exp $
+ * @version $Id: MergeTest.java,v 1.6 2005/12/08 12:52:08 belaban Exp $
  */
 public class MergeTest extends TestCase {
     JChannel     channel;
@@ -21,10 +21,11 @@ public class MergeTest extends TestCase {
     final String bind_addr="127.0.0.1";
     GossipRouter router;
     JChannel     ch1, ch2;
+    ViewChecker  checker;
 
     String props="TUNNEL(router_port=" + router_port + ";router_host=" +bind_addr+ ";loopback=true):" +
             "PING(timeout=1000;num_initial_members=2;gossip_host=" +bind_addr+";gossip_port=" + router_port + "):" +
-            "MERGE2(min_interval=5000;max_interval=8000):" +
+            "MERGE2(min_interval=3000;max_interval=5000):" +
             "FD(timeout=1000;max_tries=2;shun=false):" +
             "pbcast.NAKACK(gc_lag=50;retransmit_timeout=600,1200,2400,4800):" +
             "UNICAST(timeout=600,1200,2400):" +
@@ -41,21 +42,35 @@ public class MergeTest extends TestCase {
     protected void setUp() throws Exception {
         super.setUp();
         startRouter();
-    }
-
-    public void tearDown() throws Exception {
-        super.tearDown();
-        stopRouter();
-    }
-
-    public void testPartitionAndSubsequentMerge() throws Exception {
-        ViewChecker checker=new ViewChecker();
+        checker=new ViewChecker();
         ch1=new JChannel(props);
         ch1.setReceiver(checker);
         ch1.connect("demo");
         ch2=new JChannel(props);
         ch2.setReceiver(checker);
         ch2.connect("demo");
+    }
+
+    public void tearDown() throws Exception {
+        super.tearDown();
+        ch2.close();
+        ch1.close();
+        stopRouter();
+    }
+
+    public void testPartitionAndSubsequentMerge() throws Exception {
+        partitionAndMerge();
+    }
+
+
+    public void testTwoMerges() throws Exception {
+        partitionAndMerge();
+        partitionAndMerge();
+    }
+
+
+
+    private void partitionAndMerge() throws Exception {
         View v=ch2.getView();
         System.out.println("view is " + v);
         assertEquals("channel is supposed to have 2 members", 2, ch2.getView().size());
@@ -89,6 +104,8 @@ public class MergeTest extends TestCase {
 
         assertEquals("channel is supposed to have 2 members again after merge", 2, ch2.getView().size());
     }
+
+
 
 
 
