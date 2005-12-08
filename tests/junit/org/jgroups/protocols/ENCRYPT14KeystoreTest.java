@@ -154,7 +154,7 @@ public class ENCRYPT14KeystoreTest extends TestCase {
 		digest.reset();
 		digest.update(encrypt.getDesKey().getEncoded());
 	     
-		String symVersion = new String(digest.digest());
+		String symVersion = new String(digest.digest(), "UTF-8");
 		
 		Message msg = new Message(null,null,encodedBytes);
 		msg.putHeader(ENCRYPT.EncryptHeader.KEY, new ENCRYPT.EncryptHeader(ENCRYPT.EncryptHeader.ENCRYPT,symVersion));
