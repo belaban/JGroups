@@ -1,4 +1,4 @@
-// $Id: GossipRouter.java,v 1.16 2005/11/25 12:55:18 belaban Exp $
+// $Id: GossipRouter.java,v 1.17 2005/12/08 09:34:04 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -788,7 +788,7 @@ public class GossipRouter {
                 return;
             }
             try {
-                sendToMember(ae.output, msg);
+                sendToMember(dest, ae.output, msg);
             }
             catch(Exception e) {
                 if(log.isErrorEnabled()) log.error("failed sending message to "+dest+": "+e.getMessage());
@@ -891,7 +891,7 @@ public class GossipRouter {
                 if (dos!=null) {
                     // send only to 'connected' members
                     try {
-                        sendToMember(dos, msg);
+                        sendToMember(null, dos, msg);
                     }
                     catch(Exception e) {
                         if(log.isWarnEnabled()) log.warn("cannot send to "+ae.addr+": "+e.getMessage());
@@ -907,12 +907,13 @@ public class GossipRouter {
     /**
      * @exception IOException 
      **/
-    private void sendToMember(DataOutputStream out, byte[] msg) throws IOException {
+    private void sendToMember(Address dest, DataOutputStream out, byte[] msg) throws IOException {
         if (out==null) {
             return;
         }
 
         synchronized(out) {
+            Util.writeAddress(dest, out);
             out.writeInt(msg.length);
             out.write(msg, 0, msg.length);
         }
