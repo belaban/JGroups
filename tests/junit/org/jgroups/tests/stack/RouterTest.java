@@ -1,4 +1,4 @@
-// $Id: RouterTest.java,v 1.12 2005/12/08 14:06:38 belaban Exp $
+// $Id: RouterTest.java,v 1.13 2005/12/08 14:31:41 belaban Exp $
 
 package org.jgroups.tests.stack;
 
@@ -15,10 +15,7 @@ import org.jgroups.util.List;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.ByteArrayInputStream;
+import java.io.*;
 import java.net.Socket;
 import java.util.Random;
 
@@ -30,7 +27,7 @@ import java.util.Random;
  * may timeout.
  *
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Revision: 1.12 $
+ * @version $Revision: 1.13 $
  * @since 2.2.1
  */
 public class RouterTest extends TestCase {
@@ -325,37 +322,14 @@ public class RouterTest extends TestCase {
 
         // the first member sends a simple routing request to all members (null dest address)
         msg=new Message(null, localAddrOne, payload);
-        ByteArrayOutputStream bos=new ByteArrayOutputStream(100);
-        DataOutputStream tmp=new DataOutputStream(bos);
-        msg.writeTo(tmp);
-        tmp.flush();
-        buffer=bos.toByteArray();
-        tmp.close();
 
-        dosOne.writeUTF(groupName);
-        Util.writeAddress(null, dosOne);
-        dosOne.writeInt(buffer.length);
-        dosOne.write(buffer, 0, buffer.length);
-        dosOne.flush();
-
+        writeMessage(groupName, msg, dosOne);
 
         // only the second member should receive the routing request, the router won't send a
         // message to the originator
 
         // the second member reads the message
-        Address dest=Util.readAddress(disTwo);
-        len=disTwo.readInt();
-
-        buffer=new byte[len];
-        disTwo.readFully(buffer, 0, len);
-        msgCopy=new Message(false);
-        ByteArrayInputStream tmp_in=new ByteArrayInputStream(buffer);
-        DataInputStream in=new DataInputStream(tmp_in);
-        msgCopy.readFrom(in);
-        msgCopy.setDest(dest);
-        tmp_in.close();
-
-
+        msgCopy=readMessage(disTwo);
         assertEquals(msg.getSrc(), msgCopy.getSrc());
         assertNull(msgCopy.getDest());
         assertEquals(msg.getObject(), msgCopy.getObject());
@@ -372,9 +346,7 @@ public class RouterTest extends TestCase {
 
 
     public void test_REGISTER_Route_To_Other() throws Exception {
-
         log.info("running test_REGISTER_Route_To_Other");
-
 
         int len;
         byte[] buffer;
@@ -382,7 +354,6 @@ public class RouterTest extends TestCase {
         Message msg, msgCopy;
 
         // Register the first member
-
         Socket sOne = new Socket("localhost", routerPort);
         DataInputStream disOne = new DataInputStream(sOne.getInputStream());
         DataOutputStream dosOne = new DataOutputStream(sOne.getOutputStream());
@@ -440,21 +411,10 @@ public class RouterTest extends TestCase {
 
         // first member send a simple routing request to the second member
         msg=new Message(localAddrTwo, localAddrOne, payload);
-        buffer=Util.objectToByteBuffer(msg);
-        dosOne.writeUTF(groupName);
-        dosOne.write(1);
-        dosOne.write(1); // regular IPAddress
-        localAddrTwo.writeTo(dosOne);
-        dosOne.writeInt(buffer.length);
-        dosOne.write(buffer, 0, buffer.length);
-
-        dosOne.flush();
+        writeMessage(groupName, msg, dosOne);
 
         // the second member reads the message
-        len=disTwo.readInt();
-        buffer=new byte[len];
-        disTwo.readFully(buffer, 0, len);
-        msgCopy=(Message)Util.objectFromByteBuffer(buffer);
+        msgCopy=readMessage(disTwo);
         assertEquals(msg.getSrc(), msgCopy.getSrc());
         assertEquals(msg.getDest(), msgCopy.getDest());
         assertEquals(msg.getObject(), msgCopy.getObject());
@@ -471,21 +431,19 @@ public class RouterTest extends TestCase {
 
 
 
+
     /**
      * Sends a GossipRouter.REGISTER request followed by a series of stress routing
      * requests to all members of the group.
      */
     public void test_REGISTER_RouteStressAll() throws Exception {
-
         log.info("running test_REGISTER_RouteStressAll, this may take a while .... ");
-
 
         int len;
         byte[] buffer;
         final String groupName="TESTGROUP";
 
         // Register the first member
-
         Socket sOne = new Socket("localhost", routerPort);
         DataInputStream disOne = new DataInputStream(sOne.getInputStream());
         final DataOutputStream dosOne = new DataOutputStream(sOne.getOutputStream());
@@ -555,12 +513,7 @@ public class RouterTest extends TestCase {
                 for(int i=0; i < count; i++) {
                     Message msg=new Message(null, localAddrOne, new Integer(i));
                     try {
-                        byte[] buffer=Util.objectToByteBuffer(msg);
-                        dosOne.writeUTF(groupName);
-                        dosOne.write(0);
-                        dosOne.writeInt(buffer.length);
-                        dosOne.write(buffer, 0, buffer.length);
-                        dosOne.flush();
+                        writeMessage(groupName, msg, dosOne);
                         if(i % 2000 == 0)
                             System.out.println("--sent " + i);
                     }
@@ -578,10 +531,7 @@ public class RouterTest extends TestCase {
                 int cnt=0;
                 while(cnt < count) {
                     try {
-                        int len=disTwo.readInt();
-                        byte[] buffer=new byte[len];
-                        disTwo.readFully(buffer, 0, len);
-                        Message msg= (Message)Util.objectFromByteBuffer(buffer);
+                        Message msg=readMessage(disTwo);
                         int index=((Integer)msg.getObject()).intValue();
                         received[index]=true;
                         cnt++;
@@ -634,6 +584,43 @@ public class RouterTest extends TestCase {
         }
         System.out.println("STRESS TEST OK, " + count + " messages, " +
                 1000 * count / (stop - start) + " messages/sec");
+    }
+
+
+    private void writeMessage(String group_name, Message msg, DataOutputStream out) throws IOException {
+        ByteArrayOutputStream bos=new ByteArrayOutputStream(100);
+        DataOutputStream tmp=new DataOutputStream(bos);
+        msg.writeTo(tmp);
+        tmp.flush();
+        byte[] buffer=bos.toByteArray();
+        tmp.close();
+
+        // 1. group name first
+        out.writeUTF(group_name);
+
+        // 2. destination address
+        Util.writeAddress(msg.getDest(), out);
+
+        // 3. length of message
+        out.writeInt(buffer.length);
+
+        // 4. message
+        out.write(buffer, 0, buffer.length);
+        out.flush();
+    }
+
+    private Message readMessage(DataInputStream in) throws Exception {
+        Address dest=Util.readAddress(in);
+        int len=in.readInt();
+        byte[] buffer=new byte[len];
+        in.readFully(buffer, 0, len);
+        Message msgCopy=new Message(false);
+        ByteArrayInputStream tmp_in=new ByteArrayInputStream(buffer);
+        DataInputStream inp=new DataInputStream(tmp_in);
+        msgCopy.readFrom(inp);
+        msgCopy.setDest(dest);
+        tmp_in.close();
+        return msgCopy;
     }
 
 
