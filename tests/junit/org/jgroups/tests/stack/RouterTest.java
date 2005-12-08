@@ -1,10 +1,12 @@
-// $Id: RouterTest.java,v 1.11 2005/11/18 17:04:07 belaban Exp $
+// $Id: RouterTest.java,v 1.12 2005/12/08 14:06:38 belaban Exp $
 
 package org.jgroups.tests.stack;
 
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.stack.GossipRouter;
@@ -12,11 +14,11 @@ import org.jgroups.stack.IpAddress;
 import org.jgroups.util.List;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.ByteArrayInputStream;
 import java.net.Socket;
 import java.util.Random;
 
@@ -28,7 +30,7 @@ import java.util.Random;
  * may timeout.
  *
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Revision: 1.11 $
+ * @version $Revision: 1.12 $
  * @since 2.2.1
  */
 public class RouterTest extends TestCase {
@@ -323,12 +325,17 @@ public class RouterTest extends TestCase {
 
         // the first member sends a simple routing request to all members (null dest address)
         msg=new Message(null, localAddrOne, payload);
-        buffer=Util.objectToByteBuffer(msg);
+        ByteArrayOutputStream bos=new ByteArrayOutputStream(100);
+        DataOutputStream tmp=new DataOutputStream(bos);
+        msg.writeTo(tmp);
+        tmp.flush();
+        buffer=bos.toByteArray();
+        tmp.close();
+
         dosOne.writeUTF(groupName);
-        dosOne.write(0); // a 0 byte means a null address
+        Util.writeAddress(null, dosOne);
         dosOne.writeInt(buffer.length);
         dosOne.write(buffer, 0, buffer.length);
-
         dosOne.flush();
 
 
@@ -336,10 +343,19 @@ public class RouterTest extends TestCase {
         // message to the originator
 
         // the second member reads the message
+        Address dest=Util.readAddress(disTwo);
         len=disTwo.readInt();
+
         buffer=new byte[len];
         disTwo.readFully(buffer, 0, len);
-        msgCopy=(Message)Util.objectFromByteBuffer(buffer);
+        msgCopy=new Message(false);
+        ByteArrayInputStream tmp_in=new ByteArrayInputStream(buffer);
+        DataInputStream in=new DataInputStream(tmp_in);
+        msgCopy.readFrom(in);
+        msgCopy.setDest(dest);
+        tmp_in.close();
+
+
         assertEquals(msg.getSrc(), msgCopy.getSrc());
         assertNull(msgCopy.getDest());
         assertEquals(msg.getObject(), msgCopy.getObject());
@@ -352,8 +368,8 @@ public class RouterTest extends TestCase {
         disTwo.close();
         dosTwo.close();
         sTwo.close();
-
     }
+
 
     public void test_REGISTER_Route_To_Other() throws Exception {
 
