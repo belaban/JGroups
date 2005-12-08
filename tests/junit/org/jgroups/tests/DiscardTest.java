@@ -1,4 +1,4 @@
-// $Id: DiscardTest.java,v 1.4 2005/10/27 09:07:07 belaban Exp $
+// $Id: DiscardTest.java,v 1.5 2005/12/08 14:41:48 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -16,7 +16,7 @@ import org.jgroups.View;
  * Tests the NAKACK (retransmission) and STABLE (garbage collection) protocols
  * by discarding 10% of all network-bound messages
  * @author Bela Ban
- * @version $Id: DiscardTest.java,v 1.4 2005/10/27 09:07:07 belaban Exp $
+ * @version $Id: DiscardTest.java,v 1.5 2005/12/08 14:41:48 belaban Exp $
  */
 public class DiscardTest extends TestCase {
     JChannel ch1, ch2;
@@ -43,6 +43,9 @@ public class DiscardTest extends TestCase {
     public void _testLosslessReception(String props) throws Exception {
         Address ch1_addr, ch2_addr;
         long start, stop;
+
+        System.setProperty("bind.address", "127.0.0.1");
+
         ch1=new JChannel(props);
         ch2=new JChannel(props);
 
