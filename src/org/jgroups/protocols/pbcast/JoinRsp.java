@@ -1,4 +1,4 @@
-// $Id: JoinRsp.java,v 1.7 2005/08/08 12:45:38 belaban Exp $
+// $Id: JoinRsp.java,v 1.8 2005/12/08 13:13:07 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
