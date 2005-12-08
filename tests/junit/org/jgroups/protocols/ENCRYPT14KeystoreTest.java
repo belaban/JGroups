@@ -6,24 +6,19 @@
  */
 package org.jgroups.protocols;
 
+import junit.framework.TestCase;
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Message;
+import org.jgroups.stack.Protocol;
+import org.jgroups.stack.ProtocolObserver;
+
+import javax.crypto.Cipher;
 import java.io.*;
 import java.security.MessageDigest;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Vector;
-
-import javax.crypto.Cipher;
-
-import junit.framework.TestCase;
-
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Message;
-import org.jgroups.protocols.ENCRYPT.EncryptHeader;
-import org.jgroups.protocols.ENCRYPTAsymmetricTest.MockObserver;
-import org.jgroups.stack.Protocol;
-import org.jgroups.stack.ProtocolObserver;
 /**
  * @author xenephon
  *
@@ -341,7 +336,6 @@ public class ENCRYPT14KeystoreTest extends TestCase {
 		}
 		public void up(Event evt)
 		{
-			// TODO Auto-generated method stub
 			storeUp(evt);
 			System.out.println("Up:"+evt.toString());
 			
@@ -352,8 +346,6 @@ public class ENCRYPT14KeystoreTest extends TestCase {
 		 */
 		public void setProtocol(Protocol prot)
 		{
-			// TODO Auto-generated method stub
-			
 		}
 
 		/* (non-Javadoc)
@@ -361,7 +353,6 @@ public class ENCRYPT14KeystoreTest extends TestCase {
 		 */
 		public boolean up(Event evt, int num_evts)
 		{
-			// TODO Auto-generated method stub
 			System.out.println("Up:"+evt.toString());
 			
 			return false;
@@ -372,7 +363,6 @@ public class ENCRYPT14KeystoreTest extends TestCase {
 		 */
 		public boolean passUp(Event evt)
 		{
-			// TODO Auto-generated method stub
 			storeUp(evt);
 			System.out.println("PassUp:"+evt.toString());
 			
@@ -384,7 +374,6 @@ public class ENCRYPT14KeystoreTest extends TestCase {
 		 */
 		public boolean down(Event evt, int num_evts)
 		{
-			// TODO Auto-generated method stub
 			System.out.println("down:"+evt.toString());
 			
 			return false;
@@ -395,7 +384,6 @@ public class ENCRYPT14KeystoreTest extends TestCase {
 		 */
 		public boolean passDown(Event evt)
 		{
-			// TODO Auto-generated method stub
 			storeDown(evt);
 			System.out.println("passdown:"+evt.toString());
 			
@@ -439,7 +427,6 @@ public class ENCRYPT14KeystoreTest extends TestCase {
 		 */
 		public boolean isMulticastAddress()
 		{
-			// TODO Auto-generated method stub
 			return false;
 		}
 
@@ -452,8 +439,7 @@ public class ENCRYPT14KeystoreTest extends TestCase {
 		 */
 		public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException
 		{
-			// TODO Auto-generated method stub
-			
+
 		}
 
 		/* (non-Javadoc)
@@ -461,8 +447,6 @@ public class ENCRYPT14KeystoreTest extends TestCase {
 		 */
 		public void writeExternal(ObjectOutput out) throws IOException
 		{
-			// TODO Auto-generated method stub
-			
 		}
 
         public void writeTo(DataOutputStream out) throws IOException {
@@ -478,7 +462,6 @@ public class ENCRYPT14KeystoreTest extends TestCase {
 		 */
 		public int compareTo(Object o)
 		{
-			// TODO Auto-generated method stub
 			return -1;
 		}
 
