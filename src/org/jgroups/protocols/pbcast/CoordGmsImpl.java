@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.36 2005/12/07 09:26:09 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.37 2005/12/08 12:53:35 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -160,6 +160,7 @@ public class CoordGmsImpl extends GmsImpl {
         if(log.isDebugEnabled()) log.debug("sender=" + sender + ", merge_id=" + merge_id);
         digest=gms.getDigest();
         view=new View(gms.view_id.copy(), gms.members.getMembers());
+        gms.passDown(new Event(Event.ENABLE_UNICASTS_TO, sender));
         sendMergeResponse(sender, view, digest);
     }
 
@@ -449,7 +450,7 @@ public class CoordGmsImpl extends GmsImpl {
     private void getMergeDataFromSubgroupCoordinators(Vector coords, long timeout) {
         Message msg;
         GMS.GmsHeader hdr;
-        Address coord;
+
         long curr_time, time_to_wait, end_time, start, stop;
         int num_rsps_expected;
 
@@ -463,15 +464,18 @@ public class CoordGmsImpl extends GmsImpl {
         synchronized(merge_rsps) {
             merge_rsps.removeAllElements();
             if(log.isDebugEnabled()) log.debug("sending MERGE_REQ to " + coords);
+            Address coord;
             for(int i=0; i < coords.size(); i++) {
                 coord=(Address)coords.elementAt(i);
-
                 if(gms.local_addr != null && gms.local_addr.equals(coord)) {
                     tmp=getMergeResponse(gms.local_addr, merge_id);
                     if(tmp != null)
                         merge_rsps.add(tmp);
                     continue;
                 }
+
+                // this allows UNICAST to remove coord from previous_members in case of a merge
+                gms.passDown(new Event(Event.ENABLE_UNICASTS_TO, coord));
 
                 msg=new Message(coord, null, null);
                 hdr=new GMS.GmsHeader(GMS.GmsHeader.MERGE_REQ);
