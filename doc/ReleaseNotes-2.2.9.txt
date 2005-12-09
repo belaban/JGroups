@@ -2,9 +2,9 @@
 Release Notes JGroups 2.2.9
 ===========================
 
-Version: $Id: ReleaseNotes-2.2.9.txt,v 1.7 2005/11/22 15:36:04 smarlownovell Exp $
+Version: $Id: ReleaseNotes-2.2.9.txt,v 1.8 2005/12/09 14:53:36 belaban Exp $
 Author: Bela Ban
-Date: Sept 1 2005
+Date: Dec 9 2005
 
 
 JMX support
@@ -18,19 +18,12 @@ More information is available at
 http://wiki.jboss.org/wiki/Wiki.jsp?page=JMX.
 
 
-Fine-grained interface binding
-------------------------------
-Attributes receive_on_all_interfaces and receive_interfaces enable
-receiving multicast packets on all or a number of interfaces, e.g.
-receive_interfaces="hme0,hme1,192.168.5.3"
-
-
 Push model available in JChannel
 --------------------------------
 Instead of having to pull (receive()) a message out of a channel, a Receiver listener can
 be registered with a channel. When a message, view change, state request etc
-is available, the listener is called immediately. This avoid a context switch, given
-that all messages are usually place in a queue inside the channel and then pulled out
+is available, the listener is called immediately. This avoids a context switch, given
+that all messages are usually placed in a queue inside the channel and then pulled out
 by the application thread. Here's an example of how this can be used:
 
 JChannel ch=new JChannel();
@@ -49,6 +42,13 @@ ch.send(new Message());
 Note that ReceiverAdapter is a class which implements the Receiver
 interface, so that only the methods one is interested in have to be
 overridden.
+
+
+Fine-grained interface binding
+------------------------------
+Attributes receive_on_all_interfaces and receive_interfaces enable
+receiving multicast packets on all or a number of interfaces, e.g.
+receive_interfaces="hme0,hme1,192.168.5.3"
 
 
 Retransmission from random member
@@ -81,7 +81,6 @@ send them, resulting in out-of-memory issues.
 The bundling buffer is now bounded, by default a size of 2000 elements
 is configured. This can be set via 
 outgoing_queue_max_size="<num_elements>".
-
 
 
 Performance improvements
@@ -125,7 +124,7 @@ TCP_NIO support
 ---------------
 A new implementation of NIO support has been added.  See configuration sample tcp_nio.xml.  
 You can configure the number of "reader_threads", "writer_threads" and "processor_threads".
-
+This should allow for large scale TCP based deployments, compared to TCP.
 
 Bug fixes
 ---------
@@ -139,5 +138,6 @@ messages, which would accumulate forever ! This happened only in very
 rare cases when a high sustained throughput was encountered (e.g. 20
 million messages sent at the highest possible speed).
 Workaround: set enable_bundling="false" in UDP.
+
 Minor: Apply recv_buf_size/send_buf_size to all TCP socket connections.
 Many smaller bug fixes.
