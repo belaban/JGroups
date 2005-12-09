@@ -104,7 +104,7 @@ public class ContinousThroughputTest {
         }
     }
 
-    static void main(String[] args) {
+    public static void main(String[] args) {
         ContinousThroughputTest perfTest=new ContinousThroughputTest();
         perfTest.go();
     }
