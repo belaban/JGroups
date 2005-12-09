@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.173 2005/07/26 11:50:10 belaban Exp $
+Revision: $Id: history.txt,v 1.174 2005/12/09 14:47:42 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -28,6 +28,15 @@ publicnmi	= Robert Schaffar-Taurok (robert@fusion.at)
 
 Version 2.2.9
 -------------
+
+- Created label JGROUPS_2_2_9
+  (bela Dec 9 2005)
+
+- Rewrite of TCP_NIO
+  (Scott Marlow and Alex Fu Nov 2005)
+
+- Added support for Receiver in JChannel (push based message reception)
+  (bela Oct 2005)
 
 - Added JChannel.dumpStats(): returns information about the various protocols, and the channel itself,
   as a map. Currenty, only NAKACK, TP and FC have implementations
