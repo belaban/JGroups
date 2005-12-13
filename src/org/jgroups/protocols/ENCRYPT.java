@@ -1,6 +1,6 @@
 
 
-// $Id: ENCRYPT.java,v 1.16 2005/12/08 15:19:51 belaban Exp $
+// $Id: ENCRYPT.java,v 1.17 2005/12/13 13:20:16 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -181,7 +181,7 @@ public class ENCRYPT extends Protocol {
 		}
 
 	}
-
+	static final String DEFAULT_SYM_ALGO = "Blowfish";
 	// address info
 	Address local_addr = null;
 	// keyserver address
@@ -194,7 +194,7 @@ public class ENCRYPT extends Protocol {
 	String asymProvider = null;
 	final String symProvider = null;
 	String asymAlgorithm = "RSA";
-	String symAlgorithm = "Blowfish";
+	String symAlgorithm = DEFAULT_SYM_ALGO;
 	int asymInit = 512; // initial public/private key length
 	int symInit = 56; // initial shared key length
 
@@ -458,7 +458,10 @@ final Map keyMap = new WeakHashMap();
 			}
 			//set the key here
 			setSecretKey(tempKey);
+
+			if (symAlgorithm.equals(DEFAULT_SYM_ALGO)) {
 			symAlgorithm = tempKey.getAlgorithm();
+			}
 
 			// set the fact we are using a supplied key
 
@@ -1078,7 +1081,15 @@ final Map keyMap = new WeakHashMap();
 					log.warn("Unable to send down event " + e);
 				}
 				return;
-			default :
+
+            case Event.VIEW_CHANGE:
+				if (log.isInfoEnabled())
+					log.info("handling view change event");
+				if (!suppliedKey){
+					handleViewChange(evt);
+				}
+				break;
+            default :
 				break;
 		}
 		passDown(evt);
