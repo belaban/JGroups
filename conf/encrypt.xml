@@ -14,6 +14,8 @@
     <UNICAST timeout="1200,2400,3600"/>
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="20000" max_bytes="0"/>
     <FRAG frag_size="8192" down_thread="false" up_thread="false"/>
-    <ENCRYPT1_4 symInit="56" asymInit="512" symAlgorithm="DES/ECB/PKCS5Padding" asymAlgorithm="RSA"/>
+    <!--<ENCRYPT1_4 symInit="56" asymInit="512" symAlgorithm="DES/ECB/PKCS5Padding" asymAlgorithm="RSA"/>-->
+    <ENCRYPT sym_init="128" sym_algorithm="AES/ECB/PKCS5Padding" asym_init="512" asym_algorithm="RSA"/>
+
     <pbcast.GMS print_local_addr="true" join_timeout="3000" join_retry_timeout="2000" shun="true"/>
 </config>
