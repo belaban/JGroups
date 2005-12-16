@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.24 2005/10/28 15:54:12 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.25 2005/12/16 16:21:07 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -238,12 +238,14 @@ public class STATE_TRANSFER extends Protocol {
 
 
     /** Return the first element of members which is not me. Otherwise return null. */
-    Address determineCoordinator() {
+    private Address determineCoordinator() {
         Address ret=null;
-        if(members != null && members.size() > 1) {
-            for(int i=0; i < members.size(); i++)
-                if(!local_addr.equals(members.elementAt(i)))
-                    return (Address)members.elementAt(i);
+        synchronized(members) {
+            if(members != null && members.size() > 1) {
+                for(int i=0; i < members.size(); i++)
+                    if(!local_addr.equals(members.elementAt(i)))
+                        return (Address)members.elementAt(i);
+            }
         }
         return ret;
     }
