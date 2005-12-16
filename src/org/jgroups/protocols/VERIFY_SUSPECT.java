@@ -1,4 +1,4 @@
-// $Id: VERIFY_SUSPECT.java,v 1.15 2005/08/11 12:43:47 belaban Exp $
+// $Id: VERIFY_SUSPECT.java,v 1.16 2005/12/16 16:08:17 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -7,14 +7,13 @@ import org.jgroups.Event;
 import org.jgroups.Header;
 import org.jgroups.Message;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.Util;
 import org.jgroups.util.Streamable;
+import org.jgroups.util.Util;
 
 import java.io.*;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Properties;
-import java.util.Vector;
 
 
 /**
@@ -23,13 +22,12 @@ import java.util.Vector;
  * below the GMS layer (receiver of the SUSPECT event). Note that SUSPECT events may be reordered by this protocol.
  */
 public class VERIFY_SUSPECT extends Protocol implements Runnable {
-    Address local_addr=null;
-    long timeout=2000;   // number of millisecs to wait for an are-you-dead msg
-    int num_msgs=1;     // number of are-you-alive msgs and i-am-not-dead responses (for redundancy)
-    final Vector members=null;
-    final Hashtable suspects=new Hashtable();  // keys=Addresses, vals=time in mcses since added
-    Thread timer=null;
-    final String name="VERIFY_SUSPECT";
+    private Address     local_addr=null;
+    private             long timeout=2000;   // number of millisecs to wait for an are-you-dead msg
+    private             int num_msgs=1;     // number of are-you-alive msgs and i-am-not-dead responses (for redundancy)
+    final Hashtable     suspects=new Hashtable();  // keys=Addresses, vals=time in mcses since added
+    private Thread      timer=null;
+    static final String name="VERIFY_SUSPECT";
 
 
     public String getName() {
