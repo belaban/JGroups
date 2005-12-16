@@ -23,11 +23,10 @@ import java.util.*;
  * <li>num_ping_requests - the number of GET_MBRS_REQ messages to be sent (min=1), distributed over timeout ms
  * </ul>
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.13 2005/08/11 12:43:47 belaban Exp $
+ * @version $Id: Discovery.java,v 1.14 2005/12/16 16:02:43 belaban Exp $
  */
 public abstract class Discovery extends Protocol {
     final Vector  members=new Vector(11);
-    final Set     members_set=new HashSet(11); // copy of the members vector for fast random access
     Address       local_addr=null;
     String        group_addr=null;
     long          timeout=3000;
@@ -311,8 +310,6 @@ public abstract class Discovery extends Protocol {
                 synchronized(members) {
                     members.clear();
                     members.addAll(tmp);
-                    members_set.clear();
-                    members_set.addAll(tmp);
                 }
             }
             passDown(evt);
