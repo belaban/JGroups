@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.46 2005/12/08 12:58:38 belaban Exp $
+// $Id: UNICAST.java,v 1.47 2005/12/16 16:11:17 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -286,7 +286,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 Vector left_members;
                 synchronized(members) {
                     left_members=Util.determineLeftMembers(members, new_members);
-                    members.removeAllElements();
+                    members.clear();
                     if(new_members != null)
                         members.addAll(new_members);
                 }

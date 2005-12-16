@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.60 2005/11/08 11:08:08 belaban Exp $
+// $Id: NAKACK.java,v 1.61 2005/12/16 16:10:26 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -439,14 +439,14 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
         case Event.TMP_VIEW:
             mbrs=((View)evt.getArg()).getMembers();
-            members.removeAllElements();
+            members.clear();
             members.addAll(mbrs);
             adjustReceivers();
             break;
 
         case Event.VIEW_CHANGE:
             mbrs=((View)evt.getArg()).getMembers();
-            members.removeAllElements();
+            members.clear();
             members.addAll(mbrs);
             adjustReceivers();
             is_server=true;  // check vids from now on
