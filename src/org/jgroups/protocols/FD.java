@@ -1,16 +1,16 @@
-// $Id: FD.java,v 1.30 2005/12/16 14:02:22 belaban Exp $
+// $Id: FD.java,v 1.31 2005/12/16 15:34:13 belaban Exp $
 
 package org.jgroups.protocols;
 
 
+import EDU.oswego.cs.dl.util.concurrent.CopyOnWriteArrayList;
 import org.jgroups.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 
 import java.io.*;
 import java.util.*;
-
-
+import java.util.List;
 
 
 /**
@@ -29,7 +29,7 @@ import java.util.*;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Revision: 1.30 $
+ * @version $Revision: 1.31 $
  */
 public class FD extends Protocol {
     Address               ping_dest=null;
@@ -38,11 +38,11 @@ public class FD extends Protocol {
     long                  last_ack=System.currentTimeMillis();
     int                   num_tries=0;
     int                   max_tries=2;   // number of times to send a are-you-alive msg (tot time= max_tries*timeout)
-    final Vector          members=new Vector(11);
+    final List            members=new CopyOnWriteArrayList();
     final Hashtable       invalid_pingers=new Hashtable(7);  // keys=Address, val=Integer (number of pings from suspected mbrs)
 
     /** Members from which we select ping_dest. may be subset of {@link #members} */
-    final Vector          pingable_mbrs=new Vector(11);
+    final List            pingable_mbrs=new CopyOnWriteArrayList();
 
     boolean               shun=true;
     TimeScheduler         timer=null;
@@ -133,18 +133,18 @@ public class FD extends Protocol {
     }
 
 
-    private Object getPingDest(Vector mbrs) {
+    private Object getPingDest(List mbrs) {
         Object tmp, retval=null;
 
         if(mbrs == null || mbrs.size() < 2 || local_addr == null)
             return null;
         for(int i=0; i < mbrs.size(); i++) {
-            tmp=mbrs.elementAt(i);
+            tmp=mbrs.get(i);
             if(local_addr.equals(tmp)) {
                 if(i + 1 >= mbrs.size())
-                    retval=mbrs.elementAt(0);
+                    retval=mbrs.get(0);
                 else
-                    retval=mbrs.elementAt(i + 1);
+                    retval=mbrs.get(i + 1);
                 break;
             }
         }
@@ -313,9 +313,9 @@ public class FD extends Protocol {
     }
 
 
-    void unsuspect(Address mbr) {
+    private void unsuspect(Address mbr) {
         bcast_task.removeSuspectedMember(mbr);
-        pingable_mbrs.removeAllElements();
+        pingable_mbrs.clear();
         pingable_mbrs.addAll(members);
         pingable_mbrs.removeAll(bcast_task.getSuspectedMembers());
         ping_dest=(Address)getPingDest(pingable_mbrs);
@@ -325,7 +325,7 @@ public class FD extends Protocol {
     /**
      * If sender is not a member, send a NOT_MEMBER to sender (after n pings received)
      */
-    void shunInvalidHeartbeatSender(Address hb_sender) {
+    private void shunInvalidHeartbeatSender(Address hb_sender) {
         int num_pings=0;
         Message shun_msg;
 
@@ -599,7 +599,7 @@ public class FD extends Protocol {
         }
 
         /** Removes all elements from suspected_mbrs that are <em>not</em> in the new membership */
-        void adjustSuspectedMembers(Vector new_mbrship) {
+        void adjustSuspectedMembers(List new_mbrship) {
             if(new_mbrship == null || new_mbrship.size() == 0) return;
             StringBuffer sb=new StringBuffer();
             synchronized(suspected_mbrs) {
