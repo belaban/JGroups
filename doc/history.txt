@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.174 2005/12/09 14:47:42 belaban Exp $
+Revision: $Id: history.txt,v 1.175 2005/12/16 15:34:13 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -22,6 +22,15 @@ ovidiuf     = Ovidiu Feodorov (ovidiuf@users.sf.net)
 romuald     = Romuald du Song
 yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 publicnmi	= Robert Schaffar-Taurok (robert@fusion.at)
+
+
+Version 2.2.9.1
+---------------
+
+
+- Replaced Vector for members and pingable_members in FD with CopyOnWriteArrayList.
+  Fixes  (http://jira.jboss.com/jira/browse/JGRP-161)
+  (bela Dec 16 2005)
 
 
 
