@@ -1,4 +1,4 @@
-// $Id: SizeTest.java,v 1.6 2005/11/21 12:25:49 belaban Exp $$
+// $Id: SizeTest.java,v 1.7 2005/12/20 14:27:35 belaban Exp $$
 
 package org.jgroups.tests;
 
@@ -253,6 +253,14 @@ public class SizeTest extends TestCase {
         digest.add(addr, 100, 200, 205);
         digest.add(new IpAddress(2314), 102, 104, 105);
         hdr=new STATE_TRANSFER.StateHeader(STATE_TRANSFER.StateHeader.STATE_RSP, addr, 322649, digest);
+        _testSize(hdr);
+    }
+
+
+    public void testEncryptHeader() throws Exception {
+        ENCRYPT.EncryptHeader hdr=new ENCRYPT.EncryptHeader((short)1, null);
+        _testSize(hdr);
+        hdr=new ENCRYPT.EncryptHeader((short)2, "Hello world");
         _testSize(hdr);
     }
 
