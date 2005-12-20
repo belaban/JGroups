@@ -1,19 +1,20 @@
-// $Id: ENCRYPT.java,v 1.18 2005/12/20 14:09:56 belaban Exp $
+// $Id: ENCRYPT.java,v 1.19 2005/12/20 14:28:01 belaban Exp $
 
 package org.jgroups.protocols;
 
 import EDU.oswego.cs.dl.util.concurrent.LinkedQueue;
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Message;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.QueueClosedException;
+import org.jgroups.util.Streamable;
+import org.jgroups.util.Util;
 
 import javax.crypto.*;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.DataOutputStream;
+import java.io.DataInputStream;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.spec.X509EncodedKeySpec;
@@ -85,13 +86,13 @@ import java.util.WeakHashMap;
 
 public class ENCRYPT extends Protocol {
 
-	public static class EncryptHeader extends org.jgroups.Header {
-		int type;
-		public static final int ENCRYPT = 0;
-		public static final int KEY_REQUEST = 1;
-		public static final int SERVER_PUBKEY = 2;
-		public static final int SECRETKEY = 3;
-		public static final int SECRETKEY_READY = 4;
+	public static class EncryptHeader extends org.jgroups.Header implements Streamable {
+		short type;
+		public static final short ENCRYPT = 0;
+		public static final short KEY_REQUEST = 1;
+		public static final short SERVER_PUBKEY = 2;
+		public static final short SECRETKEY = 3;
+		public static final short SECRETKEY_READY = 4;
 
 		// adding key for Message object purpose
 		static final String KEY = "encrypt";
@@ -101,11 +102,10 @@ public class ENCRYPT extends Protocol {
 
 		public EncryptHeader()
 		{
-			//this(type, 0l);
 		}
 
 
-		public EncryptHeader(int type)
+		public EncryptHeader(short type)
 		{
 			//this(type, 0l);
 			this.type = type;
@@ -113,7 +113,7 @@ public class ENCRYPT extends Protocol {
 		}
 
 
-		public EncryptHeader(int type, String version)
+		public EncryptHeader(short type, String version)
 		{
 			this.type = type;
 			this.version = version;
@@ -122,7 +122,7 @@ public class ENCRYPT extends Protocol {
 
 		public void writeExternal(java.io.ObjectOutput out) throws IOException
 		{
-			out.writeInt(type);
+			out.writeShort(type);
 			out.writeObject(version);
 		}
 
@@ -130,21 +130,36 @@ public class ENCRYPT extends Protocol {
 		public void readExternal(java.io.ObjectInput in) throws IOException,
 				ClassNotFoundException
 		{
-			//System.out.println("reading in int");
-			type = in.readInt();
-			//System.out.println("reading in long");
+			type = in.readShort();
 			version = (String)in.readObject();
 		}
 
 
-		public String toString()
+        public void writeTo(DataOutputStream out) throws IOException {
+            out.writeShort(type);
+            Util.writeString(version, out);
+        }
+
+        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+            type=in.readShort();
+            version=Util.readString(in);
+        }
+
+
+        public String toString()
 		{
-			return "{ENCTYPT:[Type:" + type + " Version:" + version + "]}";
-			//	return "{ENCTYPT:[Type:"+type + "]";
+			return "ENCTYPT [type:" + type + " version:" + version + "]";
 		}
 
+        public long size() {
+            long retval=Global.SHORT_SIZE + Global.BYTE_SIZE;
+            if(version != null)
+                retval+=version.length() +2;
+            return retval;
+        }
 
-		/*
+
+        /*
 		 * (non-Javadoc)
 		 *
 		 * @see java.lang.Object#equals(java.lang.Object)
@@ -164,7 +179,7 @@ public class ENCRYPT extends Protocol {
 		/**
 		 * @return Returns the type.
 		 */
-		protected int getType()
+		protected short getType()
 		{
 			return type;
 		}
@@ -177,9 +192,11 @@ public class ENCRYPT extends Protocol {
 		{
 			return version;
 		}
-
 	}
-	static final String DEFAULT_SYM_ALGO = "Blowfish";
+
+
+
+    static final String DEFAULT_SYM_ALGO = "Blowfish";
 	// address info
 	Address local_addr = null;
 	// keyserver address
@@ -221,7 +238,7 @@ public class ENCRYPT extends Protocol {
 	SecretKey secretKey = null;
 
 	// map to hold previous keys so we can decrypt some earlier messages if we need to
-final Map keyMap = new WeakHashMap();
+    final Map keyMap = new WeakHashMap();
 	// locks for queue access
 	final Object downLock = new Object();
 	final Object upLock = new Object();
@@ -712,7 +729,7 @@ final Map keyMap = new WeakHashMap();
 		if (msg == null)
 		{
 			if (trace)
-				log.trace("Null message - passing straight up");
+				log.trace("null message - passing straight up");
 			passUp(evt);
 			return;
 		}
@@ -723,7 +740,7 @@ final Map keyMap = new WeakHashMap();
 		if (obj == null || !(obj instanceof EncryptHeader))
 		{
 			if (log.isTraceEnabled())
-				log.trace("Dropping message as ENCRYPT header is null  or has not been recognized, msg will not be passed up, " +
+				log.trace("dropping message as ENCRYPT header is null  or has not been recognized, msg will not be passed up, " +
 						"headers are " + msg.getHeaders());
 			return;
 		}
