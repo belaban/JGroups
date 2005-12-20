@@ -1,6 +1,4 @@
-
-
-// $Id: ENCRYPT.java,v 1.17 2005/12/13 13:20:16 belaban Exp $
+// $Id: ENCRYPT.java,v 1.18 2005/12/20 14:09:56 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -584,19 +582,14 @@ final Map keyMap = new WeakHashMap();
 	public void up(Event evt)
 	{
 
-		if (log.isDebugEnabled())
-		{
-			log.debug("Event going up is " + evt);
-		}
-
 		switch (evt.getType()) {
 
 			// we need to know what our address is
 			case Event.SET_LOCAL_ADDRESS :
-				if (log.isDebugEnabled())
-					log.debug("Set local address ");
 				local_addr = (Address) evt.getArg();
-				break;
+                if (log.isDebugEnabled())
+					log.debug("set local address to " + local_addr);
+                break;
 				// used to log out whether we are the key server
 			case Event.FIND_INITIAL_MBRS_OK :
 				if (!suppliedKey){
@@ -613,43 +606,40 @@ final Map keyMap = new WeakHashMap();
 				break;
 				// the event used to control the key exchange
 			case Event.VIEW_CHANGE:
-				if (log.isInfoEnabled())
-					log.info("handling view change event");
+                View view=(View)evt.getArg();
+                if (log.isInfoEnabled())
+					log.info("handling view: " + view);
 				if (!suppliedKey){
-					handleViewChange(evt);
+					handleViewChange(view);
 				}
 				break;
 			// we try and decrypt all messages
 			case Event.MSG :
 				// if empty just pass up
 				if (evt.getArg() == null || ((Message)evt.getArg()).getBuffer() == null){
-					if (log.isDebugEnabled())
-						log.debug("passing up message as is empty buffer ");
+					if (trace)
+						log.trace("passing up message as it has an empty buffer ");
 					break;
 				}
 				// try and handle message
 				try
 				{
                     handleUpMessage(evt);
-
 				} catch (Exception e)
 				{
-					log.warn("Exception occurred decrypting up message",e);
+					log.warn("Exception occurred decrypting message", e);
 				}
 				return;
 			default :
 				break;
 		}
 
-		if (log.isDebugEnabled())
-			log.debug("passing event up " +evt);
 		passUp(evt);
 		return;
 	}
 
 
-	private synchronized void handleViewChange(Event evt){
-		View view = (View)evt.getArg();
+	private synchronized void handleViewChange(View view){
 
 		// if view is a bit broken set me as keyserver
 		if (view.getMembers() == null || view.getMembers().get(0) == null){
@@ -710,8 +700,6 @@ final Map keyMap = new WeakHashMap();
 
 		// create a key request message
 		sendKeyRequest();
-
-
 	}
 
 	/**
@@ -719,15 +707,12 @@ final Map keyMap = new WeakHashMap();
 	 */
 	private void handleUpMessage(Event evt) throws Exception
 	{
-		if (log.isDebugEnabled())
-			log.debug("Handling up message " + evt);
-
 		Message msg = (Message) evt.getArg();
 
 		if (msg == null)
 		{
-			if (log.isDebugEnabled())
-				log.debug("Null message - passing straight up");
+			if (trace)
+				log.trace("Null message - passing straight up");
 			passUp(evt);
 			return;
 		}
@@ -745,19 +730,18 @@ final Map keyMap = new WeakHashMap();
 
 		EncryptHeader hdr = (EncryptHeader) obj;
 
-
-		if (log.isDebugEnabled())
-			log.debug("Header received " + hdr);
+		if (trace)
+			log.trace("header received " + hdr);
 
 		// if a normal message try and decrypt it
 		if (hdr.getType() == EncryptHeader.ENCRYPT)
 		{
 			// if queueing then pass into queue to be dealt with later
 			if (queue_up){
-				if (log.isDebugEnabled())
-					log.debug("queueing up message as no session key established");
+				if (trace)
+					log.trace("queueing up message as no session key established");
 					upMessageQueue.put(evt);
-			}else{
+			} else{
 				// make sure we pass up any queued messages first
 				// could be more optimised but this can wait
 				// we only need this if not using supplied key
@@ -765,10 +749,11 @@ final Map keyMap = new WeakHashMap();
 					drainUpQueue();
 				}
 				// try and decrypt the message
-				Message tmpMsg =decryptMessage(symDecodingCipher, msg);
+                Message tmpMsg =decryptMessage(symDecodingCipher, msg);
 				if (tmpMsg != null){
-					//log.info("normal message passup " + msg);
-				    passUp(evt);
+                    if(trace)
+                        log.trace("decrypted message " + tmpMsg);
+                    passUp(evt);
 				} else {
 				    log.warn("Unrecognised cipher discarding message");
 				}
@@ -826,7 +811,6 @@ final Map keyMap = new WeakHashMap();
 							}
 						} catch (Exception e){
 							log.warn("unable to process received public key");
-							log.fatal(e);
 						}
 						break;
 					default:
@@ -846,28 +830,24 @@ final Map keyMap = new WeakHashMap();
 	 */
 	private  void drainUpQueue() throws QueueClosedException, Exception
 	{
-		//we do not synchronize here as we only have one up thread so we should never get an issue
-		//synchronized(upLock){
-			Event tmp =null;
-			while ((tmp = (Event)upMessageQueue.poll(0L)) != null){
-				//if (log.isDebugEnabled()){
-				//	log.info("queue draining with message " + tmp);
-				//}
-					if (tmp != null){
-						Message msg = decryptMessage(symDecodingCipher, (Message)tmp.getArg());
+        //we do not synchronize here as we only have one up thread so we should never get an issue
+        //synchronized(upLock){
+        Event tmp =null;
+        while ((tmp = (Event)upMessageQueue.poll(0L)) != null){
+            if (tmp != null){
+                Message msg = decryptMessage(symDecodingCipher, (Message)tmp.getArg());
 
-						if (msg != null){
-							if (log.isDebugEnabled()){
-								log.debug("passing up message from drain " + new String(msg.getBuffer()));
-							}
-							passUp(tmp);
-						}else{
-							log.warn("discarding message in queue up drain as cannot decode it");
-						}
-					}
-			}
-		//}
-	}
+                if (msg != null){
+                    if (trace){
+                        log.trace("passing up message from drain " + msg);
+                    }
+                    passUp(tmp);
+                }else{
+                    log.warn("discarding message in queue up drain as cannot decode it");
+                }
+            }
+        }
+    }
 
 
 	/**
@@ -911,11 +891,6 @@ final Map keyMap = new WeakHashMap();
 	 */
 	private Message decryptMessage(Cipher cipher, Message msg) throws Exception
 	{
-
-		if (log.isDebugEnabled())
-			log.debug(" Starting to decypher message:"
-					+ formatArray(msg.getBuffer()));
-
 		EncryptHeader hdr = (EncryptHeader)msg.getHeader(EncryptHeader.KEY);
 		//System.out.println("my version     = " + getSymVersion());
 		//System.out.println("header version = " + hdr.getVersion());
@@ -926,7 +901,8 @@ final Map keyMap = new WeakHashMap();
 				log.warn("Unable to find a matching cipher in previous key map");
 				return null;
 			} else{
-				log.info("Decrypting using previous cipher version "+ hdr.getVersion());
+                if(trace)
+                    log.trace("decrypting using previous cipher version "+ hdr.getVersion());
 				msg.setBuffer(temp.doFinal(msg.getBuffer()));
 				return msg;
 			}
@@ -934,12 +910,6 @@ final Map keyMap = new WeakHashMap();
 
 			// reset buffer with decrypted message
 			msg.setBuffer(cipher.doFinal(msg.getBuffer()));
-
-			// log out unencrypted bytes so we can see the
-			// message in readable form
-			if (log.isDebugEnabled())
-				log.debug(" Decyphered message:" + formatArray(msg.getBuffer()));
-
 			return msg;
 		}
 	}
@@ -992,48 +962,48 @@ final Map keyMap = new WeakHashMap();
 	 * @param msg
 	 * @return
 	 */
-	private PublicKey handleKeyRequest(Message msg)
-	{
-		Message newMsg;
-		if (log.isDebugEnabled())
-			log.debug("Request for key recieved");
-
-		//SW log the clients encoded public key so we can
-		// see if they match
-		if (log.isDebugEnabled())
-			log.debug("Got peer's encoded public key:"
-					+ formatArray(msg.getBuffer()));
-
-		PublicKey pubKey = generatePubKey(msg.getBuffer());
-
-		//SW log the clients resulting public key so we can
-		// see if it is created correctly
-		if (log.isDebugEnabled())
-			log.debug("Generated requestors public key" + pubKey);
-
-		/*
-		 * SW why do we send this as the client does not use it ? - although we
-		 * could make use to provide some authentication later on rahter than
-		 * just encryption send server's publicKey
-		 */
-		newMsg = new Message(msg.getSrc(), local_addr, Kpair.getPublic()
-				.getEncoded());
-
-		//SW Log out our public key in encoded format so we
-		// can match with the client debugging to
-		// see if they match
-		if (log.isInfoEnabled())
-			log.debug("encoded key is "
-					+ formatArray(Kpair.getPublic().getEncoded()));
-
-
-		newMsg.putHeader(EncryptHeader.KEY, new EncryptHeader(
-				EncryptHeader.SERVER_PUBKEY, getSymVersion()));
-
-
-		passDown(new Event(Event.MSG, newMsg));
-		return pubKey;
-	}
+//	private PublicKey handleKeyRequest(Message msg)
+//	{
+//		Message newMsg;
+//		if (log.isDebugEnabled())
+//			log.debug("Request for key recieved");
+//
+//		//SW log the clients encoded public key so we can
+//		// see if they match
+//		if (log.isDebugEnabled())
+//			log.debug("Got peer's encoded public key:"
+//					+ formatArray(msg.getBuffer()));
+//
+//		PublicKey pubKey = generatePubKey(msg.getBuffer());
+//
+//		//SW log the clients resulting public key so we can
+//		// see if it is created correctly
+//		if (log.isDebugEnabled())
+//			log.debug("Generated requestors public key" + pubKey);
+//
+//		/*
+//		 * SW why do we send this as the client does not use it ? - although we
+//		 * could make use to provide some authentication later on rahter than
+//		 * just encryption send server's publicKey
+//		 */
+//		newMsg = new Message(msg.getSrc(), local_addr, Kpair.getPublic()
+//				.getEncoded());
+//
+//		//SW Log out our public key in encoded format so we
+//		// can match with the client debugging to
+//		// see if they match
+//		if (log.isInfoEnabled())
+//			log.debug("encoded key is "
+//					+ formatArray(Kpair.getPublic().getEncoded()));
+//
+//
+//		newMsg.putHeader(EncryptHeader.KEY, new EncryptHeader(
+//				EncryptHeader.SERVER_PUBKEY, getSymVersion()));
+//
+//
+//		passDown(new Event(Event.MSG, newMsg));
+//		return pubKey;
+//	}
 
 
 	/**
@@ -1060,41 +1030,37 @@ final Map keyMap = new WeakHashMap();
 	 */
 	public void down(Event evt)
 	{
-
-		if (log.isDebugEnabled())
-			log.debug("down:evt is " + evt );
-
 		switch (evt.getType()) {
 
 			case Event.MSG :
 				try
 				{
-						if (queue_down){
-						// queue messages if we are waiting for a new key
-							downMessageQueue.put(evt);
-						}else{
-							handleDownEvent(evt);
-						}
+                    if (queue_down){
+                        downMessageQueue.put(evt); // queue messages if we are waiting for a new key
+                    } else{
+                        handleDownEvent(evt);
+                    }
 
-				} catch (Exception e)
-				{
-					log.warn("Unable to send down event " + e);
-				}
-				return;
+                } catch (Exception e)
+                {
+                    log.warn("unable to send down event " + e);
+                }
+                return;
 
             case Event.VIEW_CHANGE:
-				if (log.isInfoEnabled())
-					log.info("handling view change event");
-				if (!suppliedKey){
-					handleViewChange(evt);
-				}
-				break;
+                View view=(View)evt.getArg();
+                if (log.isInfoEnabled())
+                    log.info("handling view: " + view);
+                if (!suppliedKey){
+                    handleViewChange(view);
+                }
+                break;
             default :
-				break;
-		}
-		passDown(evt);
+                break;
+        }
+        passDown(evt);
 
-	}
+    }
 
 
 	/**
@@ -1103,8 +1069,6 @@ final Map keyMap = new WeakHashMap();
 	 */
 	private void handleDownEvent(Event evt) throws Exception
 	{
-		if (log.isDebugEnabled())
-			log.debug("Handling down message");
 		// make sure the down queue is drained first to keep ordering
 		if (!suppliedKey){
 			drainDownQueue();
@@ -1119,15 +1083,13 @@ final Map keyMap = new WeakHashMap();
 	 */
 	private void drainDownQueue() throws Exception, QueueClosedException
 	{
-//		we do not synchronize here as we only have one down thread so we should never get an issue
-		//synchronized(downLock){
-			// first lets replay any oustanding events
-			Event tmp =null;
-			while((tmp = (Event)downMessageQueue.poll(0L) )!= null){
-				sendDown(tmp);
-			}
-		//}
-	}
+        //	we do not synchronize here as we only have one down thread so we should never get an issue
+        //  first lets replay any oustanding events
+        Event tmp =null;
+        while((tmp = (Event)downMessageQueue.poll(0L) )!= null){
+            sendDown(tmp);
+        }
+    }
 
 
 	/**
@@ -1152,8 +1114,8 @@ final Map keyMap = new WeakHashMap();
             return;
         }
 
-        if (log.isDebugEnabled())
-            log.debug("buffer is null not encrypting ");
+        if (trace)
+            log.trace("buffer is null not encrypting ");
 
         passDown(evt);
     }
@@ -1165,21 +1127,7 @@ final Map keyMap = new WeakHashMap();
 	 */
 	private byte[] encryptMessage(Cipher cipher, byte[] plain) throws Exception
 	{
-	    byte[] cypherText;
-		//log out encrypted bytes so we can see the message
-		// in readable form
-
-		if (log.isDebugEnabled())
-			log.debug(" Starting to encypher message:"
-					+ formatArray(plain));
-
-		cypherText = cipher.doFinal(plain);
-
-		//log out unencrypted bytes so we can see the
-		// message in readable form
-		if (log.isDebugEnabled())
-			log.debug(" Encypher message:" + formatArray(cypherText));
-
+	    byte[] cypherText = cipher.doFinal(plain);
 		return cypherText;
 
 	}
@@ -1339,10 +1287,7 @@ final Map keyMap = new WeakHashMap();
 	 */
 	private String getSymVersion()
 	{
-
-		
-			return symVersion;
-		
+        return symVersion;
 	}
 
 
@@ -1352,9 +1297,7 @@ final Map keyMap = new WeakHashMap();
 	 */
 	private void setSymVersion(String symVersion)
 	{
-		
-			this.symVersion = symVersion;
-		
+        this.symVersion = symVersion;
 	}
 
 
@@ -1363,34 +1306,19 @@ final Map keyMap = new WeakHashMap();
 	 */
 	private SecretKey getSecretKey()
 	{
-		
-			return secretKey;
-		
+        return secretKey;
 	}
 
 
 	/**
-	 * @param secretKey
-	 *            The secretKey to set.
+	 * @param secretKey The secretKey to set.
 	 */
 	private void setSecretKey(SecretKey secretKey)
 	{
-		
-			this.secretKey = secretKey;
-		
+        this.secretKey = secretKey;
 	}
 
 
-	/**
-	 * @param serverPubKey
-	 *            The serverPubKey to set.
-	 */
-	private void setServerPubKey(PublicKey serverPubKey)
-	{
-		
-			this.serverPubKey = serverPubKey;
-		
-	}
 	/**
 	 * @return Returns the keyStoreName.
 	 */
