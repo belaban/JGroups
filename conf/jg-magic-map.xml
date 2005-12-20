@@ -271,5 +271,11 @@
         <preload>true</preload>
         <magic-number>56</magic-number>
     </class>
+    <class>
+        <description>(Description goes here)</description>
+        <class-name>org.jgroups.protocols.ENCRYPT$EncryptHeader</class-name>
+        <preload>true</preload>
+        <magic-number>57</magic-number>
+    </class>
 
 </magic-number-class-mapping>
