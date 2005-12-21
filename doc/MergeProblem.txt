@@ -4,7 +4,7 @@ Merge problem in GMS/MERGE2
 ===========================
 
 Author: Bela Ban
-Version: $Id: MergeProblem.txt,v 1.4 2005/10/05 08:33:22 belaban Exp $
+Version: $Id: MergeProblem.txt,v 1.5 2005/12/21 10:39:40 belaban Exp $
 
 Symptom: first merge works, subsequent merges don't work
 Unit test: ConnectStressTest
@@ -45,7 +45,7 @@ Comments:
   *have* the views !
 
 - We have to process VIEWS and MERGE requests in order, possibly we need to flush the ViewBroadcaster and suspend
-  view generation until the merge has been handled, then resumt view generation
+  view generation until the merge has been handled, then resume view generation
 
 - Therefore #2 looks more promising: on merge() we flush the ViewBroadcaster (send out all pending views) on *all*
   coordinators involved. Then we process the merge, generate and mcast the new MergeView, then resume
