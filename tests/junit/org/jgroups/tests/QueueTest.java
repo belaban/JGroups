@@ -1,4 +1,4 @@
-// $Id: QueueTest.java,v 1.18 2005/10/10 12:22:08 belaban Exp $
+// $Id: QueueTest.java,v 1.19 2005/12/21 17:08:47 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -438,6 +438,26 @@ public class QueueTest extends TestCase {
         catch(TimeoutException e) {
             assertNull(el);
         }
+    }
+
+    public void testClear() throws QueueClosedException {
+        queue.add("one");
+        queue.add("two");
+        assertEquals(2, queue.size());
+        queue.close(true);
+        assertEquals(2, queue.size());
+        queue.clear();
+        assertEquals(0, queue.size());
+        queue=new Queue();
+        queue.add("one");
+        queue.add("two");
+        queue.clear();
+        assertEquals(0, queue.size());
+        queue.add("one");
+        queue.add("two");
+        assertEquals(2, queue.size());
+        queue.clear();
+        assertEquals(0, queue.size());
     }
 
 
