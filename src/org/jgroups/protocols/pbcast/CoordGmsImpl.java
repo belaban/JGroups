@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.37 2005/12/08 12:53:35 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.38 2005/12/21 16:43:29 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -80,7 +80,6 @@ public class CoordGmsImpl extends GmsImpl {
         gms.view_handler.add(new GMS.Request(GMS.Request.LEAVE, mbr, false, null));
         gms.view_handler.stop(true); // wait until all requests have been processed, then close the queue and leave
         gms.view_handler.waitUntilCompleted(gms.leave_timeout);
-        // handleLeave(mbr, false); // regular leave
     }
 
     public void handleJoinResponse(JoinRsp join_rsp) {
@@ -252,10 +251,8 @@ public class CoordGmsImpl extends GmsImpl {
         req.view=data.view;
         req.digest=data.digest;
         req.target_members=my_members;
-        gms.view_handler.addAtHead(req); // at head so it is processed next
-        // gms.castViewChangeWithDest(data.view, data.digest, my_members);
+        gms.view_handler.add(req, true, false); // at head so it is processed next
         merging=false;
-        // this.merge_id=null;
     }
 
     public void handleMergeCancelled(ViewId merge_id) {
