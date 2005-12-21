@@ -1,4 +1,4 @@
-// $Id: ENCRYPT.java,v 1.20 2005/12/20 14:31:27 belaban Exp $
+// $Id: ENCRYPT.java,v 1.21 2005/12/21 10:16:14 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -239,16 +239,13 @@ public class ENCRYPT extends Protocol {
 
 	// map to hold previous keys so we can decrypt some earlier messages if we need to
     final Map keyMap = new WeakHashMap();
-	// locks for queue access
-	final Object downLock = new Object();
-	final Object upLock = new Object();
 
 	// queues to buffer data while we are swapping shared key
 	// or obtsining key for first time
 
 	private boolean queue_up = true;
 
-	private boolean queue_down = true;
+	private boolean queue_down = false;
 
 	// queue to hold upcoming messages while key negotiation is happening
 	private LinkedQueue upMessageQueue = new LinkedQueue();
@@ -485,14 +482,7 @@ public class ENCRYPT extends Protocol {
 			queue_up =false;
 		} finally
 		{
-			// close the input stream
-			try
-			{
-				inputStream.close();
-			} catch (Exception e)
-			{
-
-			}
+            Util.closeInputStream(inputStream);
 		}
 
 	}
@@ -607,21 +597,6 @@ public class ENCRYPT extends Protocol {
                 if (log.isDebugEnabled())
 					log.debug("set local address to " + local_addr);
                 break;
-				// used to log out whether we are the key server
-			case Event.FIND_INITIAL_MBRS_OK :
-				if (!suppliedKey){
-					if (!keyServer)
-					{
-						if (log.isInfoEnabled())
-							log.info("FIND_INIT_MBRS_OK called - I am not the keyserver");
-					} else
-					{
-						if (log.isInfoEnabled())
-							log.info("FIND_INIT_MBRS_OK called -I am keyserver ");
-					}
-				}
-				break;
-				// the event used to control the key exchange
 			case Event.VIEW_CHANGE:
                 View view=(View)evt.getArg();
                 if (log.isInfoEnabled())
@@ -756,7 +731,7 @@ public class ENCRYPT extends Protocol {
 			// if queueing then pass into queue to be dealt with later
 			if (queue_up){
 				if (trace)
-					log.trace("queueing up message as no session key established");
+					log.trace("queueing up message as no session key established: " + evt.getArg());
 					upMessageQueue.put(evt);
 			} else{
 				// make sure we pass up any queued messages first
@@ -1053,6 +1028,8 @@ public class ENCRYPT extends Protocol {
 				try
 				{
                     if (queue_down){
+                        if(trace)
+                            log.trace("queueing down message as no session key established" + evt.getArg());
                         downMessageQueue.put(evt); // queue messages if we are waiting for a new key
                     } else{
                         handleDownEvent(evt);
