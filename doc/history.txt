@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.175 2005/12/16 15:34:13 belaban Exp $
+Revision: $Id: history.txt,v 1.176 2005/12/21 10:17:27 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -27,6 +27,9 @@ publicnmi	= Robert Schaffar-Taurok (robert@fusion.at)
 Version 2.2.9.1
 ---------------
 
+- Fixed ENCRYPT bug where down messages were queued unnecessarily
+  (JIRA: http://jira.jboss.com/jira/browse/JGRP-166)
+  (bela Dec 21 2005)
 
 - Replaced Vector for members and pingable_members in FD with CopyOnWriteArrayList.
   Fixes  (http://jira.jboss.com/jira/browse/JGRP-161)
