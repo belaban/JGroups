@@ -1,4 +1,4 @@
-// $Id: Queue.java,v 1.27 2005/10/10 12:21:56 belaban Exp $
+// $Id: Queue.java,v 1.28 2005/12/21 17:08:32 belaban Exp $
 
 package org.jgroups.util;
 
@@ -455,6 +455,16 @@ public class Queue {
                 throw new QueueClosedException();
             }
             return retval;
+        }
+    }
+
+    /** Removes all elements from the queue. This method can succeed even when the queue is closed */
+    public void clear() {
+        synchronized(mutex) {
+            head=tail=null;
+            size=0;
+            num_markers=0;
+            mutex.notifyAll();
         }
     }
 
