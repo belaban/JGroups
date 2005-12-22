@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.38 2005/12/21 16:43:29 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.39 2005/12/22 14:53:16 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -155,6 +155,10 @@ public class CoordGmsImpl extends GmsImpl {
             return;
         }
         merging=true;
+
+        /* Clears the view handler queue and discards all JOIN/LEAVE/MERGE requests until after the MERGE  */
+        gms.view_handler.suspend();
+
         setMergeId(merge_id);
         if(log.isDebugEnabled()) log.debug("sender=" + sender + ", merge_id=" + merge_id);
         digest=gms.getDigest();
@@ -251,7 +255,8 @@ public class CoordGmsImpl extends GmsImpl {
         req.view=data.view;
         req.digest=data.digest;
         req.target_members=my_members;
-        gms.view_handler.add(req, true, false); // at head so it is processed next
+        gms.view_handler.add(req, true, // at head so it is processed next
+                             true);     // un-suspend the queue
         merging=false;
     }
 
@@ -264,6 +269,7 @@ public class CoordGmsImpl extends GmsImpl {
             setMergeId(null);
             this.merge_leader=null;
             merging=false;
+            gms.view_handler.resume();
         }
     }
 
@@ -277,6 +283,7 @@ public class CoordGmsImpl extends GmsImpl {
         synchronized(merge_rsps) {
             merge_rsps.clear();
         }
+        gms.view_handler.resume();
     }
 
     /**
@@ -775,7 +782,11 @@ public class CoordGmsImpl extends GmsImpl {
                     return;
                 }
 
-                /* 5. Send the new View/Digest to all coordinators (including myself). On reception, they will
+                /* 5. Don't allow JOINs or LEAVEs until we are done with the merge. Suspend() will clear the
+                      view handler queue, so no requests beyond this current MERGE request will be processed */
+                gms.view_handler.suspend();
+
+                /* 6. Send the new View/Digest to all coordinators (including myself). On reception, they will
                    install the digest and view in all of their subgroup members */
                 sendMergeView(coords, combined_merge_data);
             }

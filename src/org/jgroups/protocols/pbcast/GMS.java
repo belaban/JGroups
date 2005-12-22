@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.47 2005/11/21 13:04:58 belaban Exp $
+// $Id: GMS.java,v 1.48 2005/12/22 14:52:59 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -109,6 +109,15 @@ public class GMS extends Protocol {
             }
         }
         return sb.toString();
+    }
+
+    public int viewHandlerSize() {return view_handler.size();}
+    public boolean isViewHandlerSuspended() {return view_handler.suspended();}
+    public String dumpViewHandlerQueue() {
+        return view_handler.dumpQueue();
+    }
+    public String dumpViewHandlerHistory() {
+        return view_handler.dumpHistory();
     }
 
     Log getLog() {return log;}
@@ -1071,23 +1080,34 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.47 2005/11/21 13:04:58 belaban Exp $
+     * @version $Id: GMS.java,v 1.48 2005/12/22 14:52:59 belaban Exp $
      */
     class ViewHandler implements Runnable {
-        Thread                t;
-        Queue                 q=new Queue(); // Queue<Request>
-        boolean               suspended=false;
-        final static long     INTERVAL=5000;
+        Thread                    t;
+        Queue                     q=new Queue(); // Queue<Request>
+        boolean                   suspended=false;
+        final static long         INTERVAL=5000;
+        private static final long MAX_COMPLETION_TIME=10000;
+        /** Maintains a list of the last 20 requests */
+        private final BoundedList history=new BoundedList(20);
 
 
         void add(Request req) {
-            if(suspended) {
-                log.warn("queue is suspended; request is discarded");
+            add(req, false, false);
+        }
+
+        synchronized void add(Request req, boolean at_head, boolean unsuspend) {
+            if(suspended && !unsuspend) {
+                log.warn("queue is suspended; request " + req + " is discarded");
                 return;
             }
             start();
             try {
-                q.add(req);
+                if(at_head)
+                    q.addAtHead(req);
+                else
+                    q.add(req);
+                history.add(new Date() + ": " + req.toString());
             }
             catch(QueueClosedException e) {
                 if(trace)
@@ -1095,20 +1115,6 @@ public class GMS extends Protocol {
             }
         }
 
-        void addAtHead(Request req) {
-            if(suspended) {
-                log.warn("queue is suspended; request is discarded");
-                return;
-            }
-            start();
-            try {
-                q.addAtHead(req);
-            }
-            catch(QueueClosedException e) {
-                if(trace)
-                    log.trace("queue is closed; request " + req + " is discarded");
-            }
-        }
 
         synchronized void waitUntilCompleted(long timeout) {
             if(t != null) {
@@ -1118,25 +1124,34 @@ public class GMS extends Protocol {
                 catch(InterruptedException e) {
                 }
             }
-
         }
 
-        public void suspend() {
+        /**
+         * Waits until the current request has been processes, then clears the queue and discards new
+         * requests from now on
+         */
+        public synchronized void suspend() {
             suspended=true;
+            q.clear();
+            waitUntilCompleted(MAX_COMPLETION_TIME);
             q.close(true);
+            if(trace)
+                log.trace("suspended ViewHandler");
         }
 
-        public void resume() {
+        public synchronized void resume() {
             if(q.closed())
                 q.reset();
             suspended=false;
+            if(trace)
+                log.trace("resumed ViewHandler");
         }
 
         public void run() {
             Request req;
             while(!q.closed() && Thread.currentThread().equals(t)) {
                 try {
-                    req=(Request)q.remove(INTERVAL);
+                    req=(Request)q.remove(INTERVAL); // throws a TimeoutException if it runs into timeout
                     process(req);
                 }
                 catch(QueueClosedException e) {
@@ -1148,7 +1163,24 @@ public class GMS extends Protocol {
             }
         }
 
+        public int size() {return q.size();}
+        public boolean suspended() {return suspended;}
+        public String dumpQueue() {
+            StringBuffer sb=new StringBuffer();
+            List v=q.values();
+            for(Iterator it=v.iterator(); it.hasNext();) {
+                sb.append(it.next() + "\n");
+            }
+            return sb.toString();
+        }
 
+        public String dumpHistory() {
+            StringBuffer sb=new StringBuffer();
+            for(Enumeration en=history.elements(); en.hasMoreElements();) {
+                sb.append(en.nextElement() + "\n");
+            }
+            return sb.toString();
+        }
 
         private void process(Request req) {
             if(trace)
@@ -1193,8 +1225,6 @@ public class GMS extends Protocol {
         synchronized void stop(boolean flush) {
             q.close(flush);
         }
-
-
     }
 
 
