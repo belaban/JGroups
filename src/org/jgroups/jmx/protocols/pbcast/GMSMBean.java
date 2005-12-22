@@ -2,11 +2,9 @@ package org.jgroups.jmx.protocols.pbcast;
 
 import org.jgroups.jmx.ProtocolMBean;
 
-import java.util.Enumeration;
-
 /**
  * @author Bela Ban
- * @version $Id: GMSMBean.java,v 1.1 2005/06/13 15:50:07 belaban Exp $
+ * @version $Id: GMSMBean.java,v 1.2 2005/12/22 14:51:40 belaban Exp $
  */
 public interface GMSMBean extends ProtocolMBean {
     String getView();
@@ -23,4 +21,8 @@ public interface GMSMBean extends ProtocolMBean {
     void setShun(boolean s);
     String printPreviousMembers();
     String printPreviousViews();
+    int getViewHandlerQueue();
+    boolean isViewHandlerSuspended();
+    String dumpViewHandlerQueue();
+    String dumpHistory();
 }
