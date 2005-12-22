@@ -1,4 +1,4 @@
-// $Id: MergeStressTest.java,v 1.3 2005/12/08 13:04:21 belaban Exp $
+// $Id: MergeStressTest.java,v 1.4 2005/12/22 14:27:51 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -7,19 +7,15 @@ import EDU.oswego.cs.dl.util.concurrent.CyclicBarrier;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
-import org.jgroups.Address;
-import org.jgroups.JChannel;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.util.Util;
-
-import java.util.Vector;
 
 
 /**
  * Creates NUM channels, all trying to join the same channel concurrently. This will lead to singleton groups
  * and subsequent merging. To enable merging, GMS.handle_concurrent_startup has to be set to false.
  * @author Bela Ban
- * @version $Id: MergeStressTest.java,v 1.3 2005/12/08 13:04:21 belaban Exp $
+ * @version $Id: MergeStressTest.java,v 1.4 2005/12/22 14:27:51 belaban Exp $
  */
 public class MergeStressTest extends TestCase {
     static CyclicBarrier    start_connecting=null;
@@ -104,15 +100,24 @@ public class MergeStressTest extends TestCase {
 
 
 
-    public static class MyThread extends Thread {
-        int                index=-1;
+    public static class MyThread extends ReceiverAdapter implements Runnable {
+        int                 index=-1;
         long                total_connect_time=0, total_disconnect_time=0;
         private JChannel    ch=null;
         private Address     my_addr=null;
+        private View        current_view;
+        private Thread      thread;
+        private int         num_members=0;
+
+
 
         public MyThread(int i) {
-            super("thread #" + i);
+            thread=new Thread(this, "thread #" + i);
             index=i;
+        }
+
+        public void start() {
+            thread.start();
         }
 
         public void closeChannel() {
@@ -125,12 +130,38 @@ public class MergeStressTest extends TestCase {
             return ch.getView().size();
         }
 
+
+        public void viewAccepted(View new_view) {
+            String type="view";
+            if(new_view instanceof MergeView)
+                type="merge view";
+            if(current_view == null) {
+                current_view=new_view;
+                log(type + " accepted: " + current_view.getVid() + " :: " + current_view.getMembers());
+            }
+            else {
+                if(!current_view.equals(new_view)) {
+                    current_view=new_view;
+                    log(type + " accepted: " + current_view.getVid() + " :: " + current_view.getMembers());
+                }
+            }
+
+            num_members=current_view.getMembers().size();
+            if(num_members == NUM) {
+                synchronized(this) {
+                    this.notifyAll();
+                }
+            }
+        }
+
+
         public void run() {
             View view;
 
             try {
                 start_connecting.barrier();
                 ch=new JChannel(props);
+                ch.setReceiver(this);
                 log("connecting to channel");
                 long start=System.currentTimeMillis(), stop;
                 ch.connect(groupname);
@@ -141,18 +172,12 @@ public class MergeStressTest extends TestCase {
                 log(my_addr + " connected in " + total_connect_time + " msecs (" +
                     view.getMembers().size() + " members). VID=" + ch.getView());
 
-                int num_members=0;
-                while(true) {
-                    View v=ch.getView();
-                    Vector mbrs=v != null? v.getMembers() : null;
-                    if(mbrs != null) {
-                        num_members=mbrs.size();
-                        if(num_members == NUM) {
-                            break;
-                        }
+                synchronized(this) {
+                    while(num_members < NUM) {
+                        try {this.wait();} catch(InterruptedException e) {}
                     }
-                    Util.sleep(2000);
                 }
+
                 log("reached " + num_members + " members");
                 received_all_views.barrier();
 
