@@ -4,7 +4,7 @@ import org.jgroups.jmx.Protocol;
 
 /**
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.2 2005/12/22 14:51:53 belaban Exp $
+ * @version $Id: GMS.java,v 1.3 2005/12/23 14:57:05 belaban Exp $
  */
 public class GMS extends Protocol implements GMSMBean {
     org.jgroups.protocols.pbcast.GMS p;
@@ -92,6 +92,14 @@ public class GMS extends Protocol implements GMSMBean {
 
     public String dumpHistory() {
         return p.dumpViewHandlerHistory();
+    }
+
+    public void suspendViewHandler() {
+        p.suspendViewHandler();
+    }
+
+    public void resumeViewHandler() {
+        p.resumeViewHandler();
     }
 
 }

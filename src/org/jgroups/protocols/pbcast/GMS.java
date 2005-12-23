@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.48 2005/12/22 14:52:59 belaban Exp $
+// $Id: GMS.java,v 1.49 2005/12/23 14:57:06 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -76,6 +76,9 @@ public class GMS extends Protocol {
     /** Time in ms to wait for all VIEW acks (0 == wait forever) */
     long                      view_ack_collection_timeout=20000;
 
+    /** How long should a Resumer wait until resuming the ViewHandler */
+    long                      resume_task_timeout=20000;
+
     static final String       name="GMS";
 
 
@@ -118,6 +121,12 @@ public class GMS extends Protocol {
     }
     public String dumpViewHandlerHistory() {
         return view_handler.dumpHistory();
+    }
+    public void suspendViewHandler() {
+        view_handler.suspend(null);
+    }
+    public void resumeViewHandler() {
+        view_handler.resumeForce();
     }
 
     Log getLog() {return log;}
@@ -799,6 +808,12 @@ public class GMS extends Protocol {
             props.remove("view_ack_collection_timeout");
         }
 
+        str=props.getProperty("resume_task_timeout");
+        if(str != null) {
+            resume_task_timeout=Long.parseLong(str);
+            props.remove("resume_task_timeout");
+        }
+
         str=props.getProperty("disable_initial_coord");
         if(str != null) {
             disable_initial_coord=Boolean.valueOf(str).booleanValue();
@@ -1080,7 +1095,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.48 2005/12/22 14:52:59 belaban Exp $
+     * @version $Id: GMS.java,v 1.49 2005/12/23 14:57:06 belaban Exp $
      */
     class ViewHandler implements Runnable {
         Thread                    t;
@@ -1090,6 +1105,10 @@ public class GMS extends Protocol {
         private static final long MAX_COMPLETION_TIME=10000;
         /** Maintains a list of the last 20 requests */
         private final BoundedList history=new BoundedList(20);
+
+        /** Map<Object,TimeScheduler.CancellableTask>. Keeps track of Resumer tasks which have not fired yet */
+        private final Map         resume_tasks=new HashMap();
+        private Object            merge_id=null;
 
 
         void add(Request req) {
@@ -1101,7 +1120,7 @@ public class GMS extends Protocol {
                 log.warn("queue is suspended; request " + req + " is discarded");
                 return;
             }
-            start();
+            start(unsuspend);
             try {
                 if(at_head)
                     q.addAtHead(req);
@@ -1130,16 +1149,44 @@ public class GMS extends Protocol {
          * Waits until the current request has been processes, then clears the queue and discards new
          * requests from now on
          */
-        public synchronized void suspend() {
+        public synchronized void suspend(Object merge_id) {
+            if(suspended)
+                return;
             suspended=true;
+            this.merge_id=merge_id;
             q.clear();
             waitUntilCompleted(MAX_COMPLETION_TIME);
             q.close(true);
             if(trace)
                 log.trace("suspended ViewHandler");
+            Resumer r=new Resumer(resume_task_timeout, merge_id, resume_tasks, this);
+            resume_tasks.put(merge_id, r);
+            timer.add(r);
         }
 
-        public synchronized void resume() {
+
+        public synchronized void resume(Object merge_id) {
+            if(!suspended)
+                return;
+            boolean same_merge_id=this.merge_id != null && merge_id != null && this.merge_id.equals(merge_id);
+            same_merge_id=same_merge_id || (this.merge_id == null && merge_id == null);
+
+            if(!same_merge_id) {
+                if(warn)
+                    log.warn("resume(" +merge_id+ ") does not match " + this.merge_id + ", ignoring resume()");
+                return;
+            }
+            synchronized(resume_tasks) {
+                TimeScheduler.CancellableTask task=(TimeScheduler.CancellableTask)resume_tasks.get(merge_id);
+                if(task != null) {
+                    task.cancel();
+                    resume_tasks.remove(merge_id);
+                }
+            }
+            resumeForce();
+        }
+
+        public synchronized void resumeForce() {
             if(q.closed())
                 q.reset();
             suspended=false;
@@ -1209,10 +1256,20 @@ public class GMS extends Protocol {
             }
         }
 
-        synchronized void start() {
+        synchronized void start(boolean unsuspend) {
             if(q.closed())
                 q.reset();
-            suspended=false;
+            if(unsuspend) {
+                suspended=false;
+                synchronized(resume_tasks) {
+                    TimeScheduler.CancellableTask task=(TimeScheduler.CancellableTask)resume_tasks.get(merge_id);
+                    if(task != null) {
+                        task.cancel();
+                        resume_tasks.remove(merge_id);
+                    }
+                }
+            }
+            merge_id=null;
             if(t == null || !t.isAlive()) {
                 t=new Thread(this, "ViewHandler");
                 t.setDaemon(true);
@@ -1224,9 +1281,74 @@ public class GMS extends Protocol {
 
         synchronized void stop(boolean flush) {
             q.close(flush);
+            TimeScheduler.CancellableTask task;
+            synchronized(resume_tasks) {
+                for(Iterator it=resume_tasks.values().iterator(); it.hasNext();) {
+                    task=(TimeScheduler.CancellableTask)it.next();
+                    task.cancel();
+                }
+                resume_tasks.clear();
+            }
+            merge_id=null;
+            resumeForce();
         }
     }
 
+
+    /**
+     * Resumer is a second line of defense: when the ViewHandler is suspended, it will be resumed when the current
+     * merge is cancelled, or when the merge completes. However, in a case where this never happens (this
+     * shouldn't be the case !), the Resumer will nevertheless resume the ViewHandler.
+     * We chose this strategy because ViewHandler is critical: if it is suspended indefinitely, we would
+     * not be able to process new JOIN requests ! So, this is for peace of mind, although it most likely
+     * will never be used...
+     */
+    static class Resumer implements TimeScheduler.CancellableTask {
+        boolean           cancelled=false;
+        long              interval;
+        final Object      token;
+        final Map         tasks;
+        final ViewHandler handler;
+
+
+        public Resumer(long interval, final Object token, final Map t, final ViewHandler handler) {
+            this.interval=interval;
+            this.token=token;
+            this.tasks=t;
+            this.handler=handler;
+        }
+
+        public void cancel() {
+            cancelled=true;
+        }
+
+        public boolean cancelled() {
+            return cancelled;
+        }
+
+        public long nextInterval() {
+            return interval;
+        }
+
+        public void run() {
+            TimeScheduler.CancellableTask t;
+            boolean execute=true;
+            synchronized(tasks) {
+                t=(TimeScheduler.CancellableTask)tasks.get(token);
+                if(t != null) {
+                    t.cancel();
+                    execute=true;
+                }
+                else {
+                    execute=false;
+                }
+                tasks.remove(token);
+            }
+            if(execute) {
+                handler.resume(token);
+            }
+        }
+    }
 
 
 }
