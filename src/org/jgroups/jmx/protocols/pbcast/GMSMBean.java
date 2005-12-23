@@ -4,7 +4,7 @@ import org.jgroups.jmx.ProtocolMBean;
 
 /**
  * @author Bela Ban
- * @version $Id: GMSMBean.java,v 1.2 2005/12/22 14:51:40 belaban Exp $
+ * @version $Id: GMSMBean.java,v 1.3 2005/12/23 14:57:05 belaban Exp $
  */
 public interface GMSMBean extends ProtocolMBean {
     String getView();
@@ -25,4 +25,6 @@ public interface GMSMBean extends ProtocolMBean {
     boolean isViewHandlerSuspended();
     String dumpViewHandlerQueue();
     String dumpHistory();
+    void suspendViewHandler();
+    void resumeViewHandler();
 }

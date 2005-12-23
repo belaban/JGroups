@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.39 2005/12/22 14:53:16 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.40 2005/12/23 14:57:06 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -151,13 +151,13 @@ public class CoordGmsImpl extends GmsImpl {
         }
         if(merging) {
             if(log.isErrorEnabled()) log.error("merge already in progress");
-            sendMergeRejectedResponse(sender);
+            sendMergeRejectedResponse(sender, merge_id);
             return;
         }
         merging=true;
 
         /* Clears the view handler queue and discards all JOIN/LEAVE/MERGE requests until after the MERGE  */
-        gms.view_handler.suspend();
+        gms.view_handler.suspend(merge_id);
 
         setMergeId(merge_id);
         if(log.isDebugEnabled()) log.debug("sender=" + sender + ", merge_id=" + merge_id);
@@ -269,12 +269,13 @@ public class CoordGmsImpl extends GmsImpl {
             setMergeId(null);
             this.merge_leader=null;
             merging=false;
-            gms.view_handler.resume();
+            gms.view_handler.resume(merge_id);
         }
     }
 
 
     private void cancelMerge() {
+        Object tmp=merge_id;
         if(merge_id != null && log.isDebugEnabled()) log.debug("cancelling merge (merge_id=" + merge_id + ')');
         setMergeId(null);
         this.merge_leader=null;
@@ -283,7 +284,7 @@ public class CoordGmsImpl extends GmsImpl {
         synchronized(merge_rsps) {
             merge_rsps.clear();
         }
-        gms.view_handler.resume();
+        gms.view_handler.resume(tmp);
     }
 
     /**
@@ -664,15 +665,6 @@ public class CoordGmsImpl extends GmsImpl {
         gms.passDown(new Event(Event.MSG, msg));
     }
 
-    private void sendMergeRejectedResponse(Address sender) {
-        Message msg=new Message(sender, null, null);
-        GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.MERGE_RSP);
-        hdr.merge_rejected=true;
-        hdr.merge_id=merge_id;
-        msg.putHeader(gms.getName(), hdr);
-        if(log.isDebugEnabled()) log.debug("response=" + hdr);
-        gms.passDown(new Event(Event.MSG, msg));
-    }
 
     private void sendMergeCancelledMessage(Vector coords, ViewId merge_id) {
         Message msg;
@@ -784,7 +776,7 @@ public class CoordGmsImpl extends GmsImpl {
 
                 /* 5. Don't allow JOINs or LEAVEs until we are done with the merge. Suspend() will clear the
                       view handler queue, so no requests beyond this current MERGE request will be processed */
-                gms.view_handler.suspend();
+                gms.view_handler.suspend(merge_id);
 
                 /* 6. Send the new View/Digest to all coordinators (including myself). On reception, they will
                    install the digest and view in all of their subgroup members */

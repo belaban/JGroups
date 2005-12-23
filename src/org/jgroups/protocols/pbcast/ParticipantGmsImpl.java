@@ -1,11 +1,8 @@
-// $Id: ParticipantGmsImpl.java,v 1.16 2005/11/21 09:21:02 belaban Exp $
+// $Id: ParticipantGmsImpl.java,v 1.17 2005/12/23 14:57:06 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Message;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.util.Promise;
 
 import java.util.Vector;
@@ -138,6 +135,10 @@ public class ParticipantGmsImpl extends GmsImpl {
         }
     }
 
+    public void handleMergeRequest(Address sender, ViewId merge_id) {
+        // only coords handle this method; reject it if we're not coord
+        sendMergeRejectedResponse(sender, merge_id);
+    }
 
     /* ---------------------------------- Private Methods --------------------------------------- */
 
