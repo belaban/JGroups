@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.108 2005/11/12 06:38:03 belaban Exp $
+// $Id: UDP.java,v 1.109 2005/12/23 17:08:22 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -563,7 +563,7 @@ public class UDP extends TP implements Runnable {
                 InetAddress addr=(InetAddress)en2.nextElement();
                 s.joinGroup(tmp_mcast_addr, i);
                 if(trace)
-                    log.trace("joined " + tmp_mcast_addr + " on interface " + i.getName() + " (" + addr + ")");
+                    log.trace("joined " + tmp_mcast_addr + " on " + i.getName() + " (" + addr + ")");
                 break;
             }
         }
