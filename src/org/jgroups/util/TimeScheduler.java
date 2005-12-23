@@ -1,4 +1,4 @@
-// $Id: TimeScheduler.java,v 1.10 2005/11/25 12:53:14 belaban Exp $
+// $Id: TimeScheduler.java,v 1.11 2005/12/23 12:04:01 belaban Exp $
 
 package org.jgroups.util;
 
@@ -61,6 +61,14 @@ public class TimeScheduler {
          * Execute the task
          */
         void run();
+    }
+
+    public interface CancellableTask extends Task {
+        /**
+         * Cancels the task. After calling this, {@link #cancelled()} return true. If the task was already cancelled,
+         * this is a no-op
+         */
+        void cancel();
     }
 
 
