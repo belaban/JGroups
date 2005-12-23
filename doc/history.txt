@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.176 2005/12/21 10:17:27 belaban Exp $
+Revision: $Id: history.txt,v 1.177 2005/12/23 16:54:15 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -26,6 +26,14 @@ publicnmi	= Robert Schaffar-Taurok (robert@fusion.at)
 
 Version 2.2.9.1
 ---------------
+
+- Fixed bug "binding to same interface twice fails"
+  (http://jira.jboss.com/jira/browse/JGRP-167)
+  (bela Dec 23 2005)
+
+- Fixed merge bug occurring when members are joining during a merge
+  (http://jira.jboss.com/jira/browse/JGRP-139)
+  (bela Dec 23 2005)
 
 - Fixed ENCRYPT bug where down messages were queued unnecessarily
   (JIRA: http://jira.jboss.com/jira/browse/JGRP-166)
