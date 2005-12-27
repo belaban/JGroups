@@ -4,10 +4,10 @@ Merge problem in GMS/MERGE2
 ===========================
 
 Author: Bela Ban
-Version: $Id: MergeProblem.txt,v 1.6 2005/12/21 11:08:47 belaban Exp $
+Version: $Id: MergeProblem.txt,v 1.7 2005/12/27 12:57:58 belaban Exp $
 
 Symptom: first merge works, subsequent merges don't work
-Unit test: ConnectStressTest
+Unit test: MergeStressTest
 
 The problem is that when many members join, we increment the VID (ViewID) every time we multicast a new view.
 Say we have subgroups {A,B,C} and {D,E}. The merge is now started by MERGE2, detecting 2 coordinators (A and D).
