@@ -1,0 +1,74 @@
+
+
+Design of SEQUENCER, a total order protocol using a sequencer
+=============================================================
+
+Author: Bela Ban
+Date: Dec 29 2005
+Version: $Id: SEQUENCER.txt,v 1.1 2005/12/29 14:34:10 belaban Exp $
+
+
+Motivation
+----------
+The TOTAL protocol works by asking the coordinator for a sequence number for every group message, but each member
+sends the message itself. This means a round trip to the coordinator, then a multicast. In the design below, we want
+the coordinator to directly multicast the message on behalf of the member, now we have 1 unicast to the coordinator and
+1 multicast. The downside is that all message are now routed via the coordinator, which makes the latter the
+bottleneck. However, since it is only the coordinator who sends multicasts, we have no contention.
+
+Overview
+--------
+When a member multicasts a group message, it sends it to the coordinator. The coord then wraps the message into
+its own message and multicasts it to the group. The SEQUENCER protocol (somewhere above NAKACK) unwraps the message
+so that the original sender is seen.
+
+Example: group is {A,B,C}. B wants to multicast a message M to the group. It does so by sending M to A. A then
+adds a header which records the original sender (B) and replaces M's sender address with its own (A).
+When a member receives M, everybody thinks the message is from A, and NAKACK will possibly retransmit from A
+in case M is lost. However, SEQUENCER removes the header and replaces M's sender address with B. It has to
+do so on a (shallow) *copy* of M, otherwise we would change the original message and therefore retransmission
+requests would go to B, rather than A !
+
+Design
+------
+
+On send(M):
+- If not coordinator:
+  - Add FORWARD header to M
+  - Send M to coordinator
+- Else
+  - Multicast(M)
+
+On reception of M from S:
+- If header is present
+  - If header is FORWARD:
+    - If coordinator: Multicast(M,S)
+  - If header is DATA:
+    - Take sender S from header and call Deliver(M,S)
+
+Multicast(M,S):
+- Create a new message M2 with unique seqno
+- Add DATA header, stores S
+- Multicast M2
+
+Deliver(M,S):
+- Shallow-copy M into M-tmp
+- Set M-tmp's sender address to S
+- Pass up M-tmp
+
+Todos:
+- Add reliable transmission to the initial unicast FORWARD message: if the coordinator dies, we need to
+  re-send the message to the new coordinator
+
+
+
+
+
+
+
+
+
+
+
+
+
