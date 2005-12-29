@@ -1,4 +1,4 @@
-// $Id: LargeState.java,v 1.13 2005/11/08 11:05:45 belaban Exp $
+// $Id: LargeState.java,v 1.14 2005/12/29 12:01:38 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -33,7 +33,7 @@ public class LargeState extends ReceiverAdapter {
     boolean  provider=true;
 
 
-    public void start(boolean provider, long size, String props) throws Exception {
+    public void start(boolean provider, int size, String props) throws Exception {
         this.provider=provider;
         channel=new JChannel(props);
         channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
@@ -101,11 +101,9 @@ public class LargeState extends ReceiverAdapter {
     }
 
 
-    byte[] createLargeState(long size) {
-        StringBuffer ret=new StringBuffer();
-        for(int i=0; i < size; i++)
-            ret.append('.');
-        return ret.toString().getBytes();
+    byte[] createLargeState(int size) {
+        byte[] retval=new byte[size];
+        return retval;
     }
 
     public void receive(Message msg) {
@@ -131,7 +129,7 @@ public class LargeState extends ReceiverAdapter {
 
     public static void main(String[] args) {
         boolean provider=false;
-        long size=1024 * 1024;
+        int size=1024 * 1024;
         String props="UDP(mcast_addr=239.255.0.35;mcast_port=7500;ip_ttl=2;" +
                 "mcast_send_buf_size=150000;mcast_recv_buf_size=80000;" +
                 "ucast_send_buf_size=80000;ucast_recv_buf_size=150000):" +
@@ -159,7 +157,7 @@ public class LargeState extends ReceiverAdapter {
                 continue;
             }
             if("-size".equals(args[i])) {
-                size=Long.parseLong(args[++i]);
+                size=Integer.parseInt(args[++i]);
                 continue;
             }
             if("-props".equals(args[i])) {
