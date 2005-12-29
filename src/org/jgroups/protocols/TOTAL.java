@@ -1,20 +1,16 @@
-// $Id: TOTAL.java,v 1.11 2005/08/08 12:45:44 belaban Exp $
+// $Id: TOTAL.java,v 1.12 2005/12/29 14:58:37 belaban Exp $
 package org.jgroups.protocols;
 
 
 import EDU.oswego.cs.dl.util.concurrent.ReadWriteLock;
 import EDU.oswego.cs.dl.util.concurrent.WriterPreferenceReadWriteLock;
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Message;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.stack.AckSenderWindow;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.TimeScheduler;
+import org.jgroups.util.Streamable;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.*;
 import java.util.*;
 
 
@@ -57,7 +53,7 @@ import java.util.*;
  * bcast requests are retransmitted periodically until a bcast reply is
  * received. In case a BCAST_REP is on its way during a BCAST_REQ
  * retransmission, then the next BCAST_REP will be to a non-existing
- * BCAST_REQ. So, a nulll BCAST message is sent to fill the created gap in
+ * BCAST_REQ. So, a null BCAST message is sent to fill the created gap in
  * the seqID of all members.
  *
  * @author i.georgiadis@doc.ic.ac.uk
@@ -67,7 +63,7 @@ public class TOTAL extends Protocol {
      * The header processed by the TOTAL layer and intended for TOTAL
      * inter-stack communication
      */
-    public static class Header extends org.jgroups.Header {
+    public static class Header extends org.jgroups.Header implements Streamable {
         // Header types
         /**
          * Null value for the tag
@@ -190,6 +186,24 @@ public class TOTAL extends Protocol {
             localSequenceID=in.readLong();
             sequenceID=in.readLong();
         }
+
+
+        public void writeTo(DataOutputStream out) throws IOException {
+            out.writeInt(type);
+            out.writeLong(localSequenceID);
+            out.writeLong(sequenceID);
+        }
+
+        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+            type=in.readInt();
+            localSequenceID=in.readLong();
+            sequenceID=in.readLong();
+        }
+
+        public long size() {
+            return Global.INT_SIZE + Global.LONG_SIZE *2;
+        }
+
     }
 
 
