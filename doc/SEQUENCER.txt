@@ -5,7 +5,7 @@ Design of SEQUENCER, a total order protocol using a sequencer
 
 Author: Bela Ban
 Date: Dec 29 2005
-Version: $Id: SEQUENCER.txt,v 1.1 2005/12/29 14:34:10 belaban Exp $
+Version: $Id: SEQUENCER.txt,v 1.2 2005/12/30 12:30:16 belaban Exp $
 
 
 Motivation
@@ -33,6 +33,7 @@ Design
 ------
 
 On send(M):
+- Pass down unicasts and return (handle only multicasts)
 - If not coordinator:
   - Add FORWARD header to M
   - Send M to coordinator
@@ -40,6 +41,7 @@ On send(M):
   - Multicast(M)
 
 On reception of M from S:
+- Pass up unicasts and return (handle only multicasts)
 - If header is present
   - If header is FORWARD:
     - If coordinator: Multicast(M,S)
