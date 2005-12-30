@@ -14,7 +14,7 @@ import java.util.Vector;
 /**
  * Implementation of total order protocol using a sequencer. Consult doc/SEQUENCER.txt for details
  * @author Bela Ban
- * @version $Id: SEQUENCER.java,v 1.1 2005/12/30 13:55:29 belaban Exp $
+ * @version $Id: SEQUENCER.java,v 1.2 2005/12/30 16:35:42 belaban Exp $
  */
 public class SEQUENCER extends Protocol {
     private Address     local_addr=null, coord=null;
@@ -160,8 +160,15 @@ public class SEQUENCER extends Protocol {
             this.from=from;
         }
 
-
         public String toString() {
+            StringBuffer sb=new StringBuffer(64);
+            sb.append(printType());
+            if(from != null)
+                sb.append(" (from=").append(from).append(")");
+            return sb.toString();
+        }
+
+        public String printType() {
             switch(type) {
                 case FORWARD: return "FORWARD";
                 case DATA:    return "DATA";
