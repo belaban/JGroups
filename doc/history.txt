@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.179 2005/12/29 13:24:25 belaban Exp $
+Revision: $Id: history.txt,v 1.180 2005/12/30 13:56:51 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -26,6 +26,11 @@ publicnmi	= Robert Schaffar-Taurok (robert@fusion.at)
 
 Version 2.3
 -----------
+
+
+- Added total order SEQUENCER protocol. See doc/SEQUENCER.txt for details
+  (bela Dec 30 2005)
+
 
 
 
