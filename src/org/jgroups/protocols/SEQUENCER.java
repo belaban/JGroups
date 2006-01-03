@@ -9,21 +9,51 @@ import org.jgroups.util.Util;
 import java.io.*;
 import java.util.Properties;
 import java.util.Vector;
+import java.util.Map;
+import java.util.HashMap;
 
 
 /**
  * Implementation of total order protocol using a sequencer. Consult doc/SEQUENCER.txt for details
  * @author Bela Ban
- * @version $Id: SEQUENCER.java,v 1.3 2006/01/03 13:22:31 belaban Exp $
+ * @version $Id: SEQUENCER.java,v 1.4 2006/01/03 14:43:43 belaban Exp $
  */
 public class SEQUENCER extends Protocol {
     private Address     local_addr=null, coord=null;
     static final String name="SEQUENCER";
     private boolean     is_coord=false;
 
+    private long forwarded_msgs=0;
+    private long bcast_msgs=0;
+    private long received_forwards=0;
+    private long received_bcasts=0;
 
-    public String getName() {
-        return name;
+    public boolean isCoordinator() {return is_coord;}
+    public Address getCoordinator() {return coord;}
+    public Address getLocalAddress() {return local_addr;}
+    public String getName() {return name;}
+    public long getForwarded() {return forwarded_msgs;}
+    public long getBroadcast() {return bcast_msgs;}
+    public long getReceivedForwards() {return received_forwards;}
+    public long getReceivedBroadcasts() {return received_bcasts;}
+
+    public void resetStats() {
+        forwarded_msgs=bcast_msgs=received_forwards=received_bcasts=0L;
+    }
+
+    public Map dumpStats() {
+        Map m=super.dumpStats();
+        if(m == null)
+            m=new HashMap();
+        m.put("forwarded", new Long(forwarded_msgs));
+        m.put("broadcast", new Long(bcast_msgs));
+        m.put("received_forwards", new Long(received_forwards));
+        m.put("received_bcasts", new Long(received_bcasts));
+        return m;
+    }
+
+    public String printStats() {
+        return dumpStats().toString();
     }
 
 
@@ -83,9 +113,11 @@ public class SEQUENCER extends Protocol {
                 switch(hdr.type) {
                     case SequencerHeader.FORWARD:
                         broadcast(msg, msg.getSrc());
+                        received_forwards++;
                         return;
                     case SequencerHeader.DATA:
                         deliver(msg, hdr);
+                        received_bcasts++;
                         return;
                 }
                 break;
@@ -116,6 +148,7 @@ public class SEQUENCER extends Protocol {
         msg.putHeader(name, hdr);
         msg.setDest(coord);  // we change the message dest from multicast to unicast (to coord)
         passDown(new Event(Event.MSG, msg));
+        forwarded_msgs++;
     }
 
     private void broadcast(Message msg, Address sender) {
@@ -124,6 +157,7 @@ public class SEQUENCER extends Protocol {
         msg.setSrc(local_addr); // the coord is sending it - this will be replaced with sender in deliver()
         msg.putHeader(name, hdr);
         passDown(new Event(Event.MSG, msg));
+        bcast_msgs++;
     }
 
     /**
