@@ -1,4 +1,4 @@
-// $Id: TOTAL.java,v 1.12 2005/12/29 14:58:37 belaban Exp $
+// $Id: TOTAL.java,v 1.13 2006/01/03 14:11:29 belaban Exp $
 package org.jgroups.protocols;
 
 
@@ -57,6 +57,7 @@ import java.util.*;
  * the seqID of all members.
  *
  * @author i.georgiadis@doc.ic.ac.uk
+ * @author Bela Ban
  */
 public class TOTAL extends Protocol {
     /**
@@ -317,23 +318,23 @@ public class TOTAL extends Protocol {
     /**
      * Print addresses in host_ip:port form to bypass DNS
      */
-    private String _addrToString(Object addr) {
+    private String addrToString(Object addr) {
         return (
-                   addr == null ? "<null>" :
-                ((addr instanceof org.jgroups.stack.IpAddress) ?
-                (((org.jgroups.stack.IpAddress)addr).getIpAddress(
-                ).getHostAddress() + ':' +
-                ((org.jgroups.stack.IpAddress)addr).getPort()) :
-                addr.toString())
-               );
+                addr == null ? "<null>" :
+                        ((addr instanceof org.jgroups.stack.IpAddress) ?
+                                (((org.jgroups.stack.IpAddress)addr).getIpAddress(
+                                ).getHostAddress() + ':' +
+                                        ((org.jgroups.stack.IpAddress)addr).getPort()) :
+                                addr.toString())
+        );
     }
 
 
     /**
      * @return this protocol's name
      */
-    private String _getName() {
-        return (PROT_NAME);
+    public String getName() {
+        return PROT_NAME;
     }
 
     /**
@@ -343,7 +344,7 @@ public class TOTAL extends Protocol {
      * @return false if there was any unrecognized property or a property with
      *         an invalid value
      */
-    private boolean _setProperties(Properties properties) {
+    public boolean setProperties(Properties properties) {
         String value;
 
         // trace
@@ -352,8 +353,7 @@ public class TOTAL extends Protocol {
         if(value != null) properties.remove(TRACE_PROP);
         if(properties.size() > 0) {
             if(log.isErrorEnabled())
-                log.error("The following properties are not " +
-                          "recognized: " + properties.toString());
+                log.error("The following properties are not recognized: " + properties);
             return (false);
         }
         return (true);
@@ -365,10 +365,8 @@ public class TOTAL extends Protocol {
      * @return the set of <code>Event</code>s that must be handled by some layer
      *         below
      */
-    Vector _requiredDownServices() {
-        Vector services=new Vector();
-
-        return (services);
+    public Vector requiredDownServices() {
+        return new Vector();
     }
 
     /**
@@ -377,10 +375,8 @@ public class TOTAL extends Protocol {
      * @return the set of <code>Event</code>s that must be handled by some
      *         layer above
      */
-    Vector _requiredUpServices() {
-        Vector services=new Vector();
-
-        return (services);
+    public Vector requiredUpServices() {
+        return new Vector();
     }
 
 
@@ -427,7 +423,7 @@ public class TOTAL extends Protocol {
                         log.info("During replay: " +
                                  "discarding BCAST[" +
                                  ((TOTAL.Header)msg.getHeader(getName())).sequenceID +
-                                 "] from " + _addrToString(msg.getSrc()));
+                                 "] from " + addrToString(msg.getSrc()));
                     continue;
                 }
                 header=(Header)msg.removeHeader(getName());
@@ -838,7 +834,7 @@ public class TOTAL extends Protocol {
      *
      * @return true if event should travel further down
      */
-    private boolean _downBlockOk() {
+    private boolean downBlockOk() {
         // *** Get an exclusive lock
         try {
             stateLock.writeLock().acquire();
@@ -960,7 +956,7 @@ public class TOTAL extends Protocol {
      *
      * @param event the event to process
      */
-    private void _up(Event event) {
+    public void up(Event event) {
         switch(event.getType()) {
         case Event.BLOCK:
             if(!_upBlock()) return;
@@ -987,10 +983,10 @@ public class TOTAL extends Protocol {
      *
      * @param event the event to process
      */
-    private void _down(Event event) {
+    public void down(Event event) {
         switch(event.getType()) {
         case Event.BLOCK_OK:
-            if(!_downBlockOk()) return;
+            if(!downBlockOk()) return;
             break;
         case Event.MSG:
             if(!_downMsg(event)) return;
@@ -1010,34 +1006,6 @@ public class TOTAL extends Protocol {
     }
 
 
-    // Methods deriving from <code>Protocol</code>
-    // javadoc inherited from superclass
-    public String getName() {
-        return (_getName());
-    }
 
-    // javadoc inherited from superclass
-    public boolean setProperties(Properties properties) {
-        return (_setProperties(properties));
-    }
 
-    // javadoc inherited from superclass
-    public Vector requiredDownServices() {
-        return (_requiredDownServices());
-    }
-
-    // javadoc inherited from superclass
-    public Vector requiredUpServices() {
-        return (_requiredUpServices());
-    }
-
-    // javadoc inherited from superclass
-    public void up(Event event) {
-        _up(event);
-    }
-
-    // javadoc inherited from superclass
-    public void down(Event event) {
-        _down(event);
-    }
 }
