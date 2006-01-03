@@ -5,7 +5,7 @@ Design of SEQUENCER, a total order protocol using a sequencer
 
 Author: Bela Ban
 Date: Dec 29 2005
-Version: $Id: SEQUENCER.txt,v 1.2 2005/12/30 12:30:16 belaban Exp $
+Version: $Id: SEQUENCER.txt,v 1.3 2006/01/03 13:22:31 belaban Exp $
 
 
 Motivation
@@ -49,9 +49,9 @@ On reception of M from S:
     - Take sender S from header and call Deliver(M,S)
 
 Multicast(M,S):
-- Create a new message M2 with unique seqno
-- Add DATA header, stores S
-- Multicast M2
+- Reuse M (no problem since UNICAST's retransmission buffer will have remove M when passed to SEQUENCER)
+- Replace FORWARD header with DATA header (stores S)
+- Multicast M
 
 Deliver(M,S):
 - Shallow-copy M into M-tmp
