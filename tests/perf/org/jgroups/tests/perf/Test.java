@@ -121,7 +121,7 @@ public class Test implements Receiver {
             Map.Entry entry=(Map.Entry)it.next();
             sb.append(entry.getKey()).append(":\t").append(entry.getValue()).append('\n');
         }
-        sb.append("JGroups version: ").append(Version.printVersion()).append('\n');
+        sb.append("JGroups version: ").append(Version.description).append('\n');
         System.out.println("Configuration is: " + sb);
 
         output(sb.toString());
