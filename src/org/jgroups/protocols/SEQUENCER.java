@@ -14,7 +14,7 @@ import java.util.Vector;
 /**
  * Implementation of total order protocol using a sequencer. Consult doc/SEQUENCER.txt for details
  * @author Bela Ban
- * @version $Id: SEQUENCER.java,v 1.2 2005/12/30 16:35:42 belaban Exp $
+ * @version $Id: SEQUENCER.java,v 1.3 2006/01/03 13:22:31 belaban Exp $
  */
 public class SEQUENCER extends Protocol {
     private Address     local_addr=null, coord=null;
@@ -126,12 +126,18 @@ public class SEQUENCER extends Protocol {
         passDown(new Event(Event.MSG, msg));
     }
 
+    /**
+     * We copy the message in order to change the sender's address. If we did this on the original message,
+     * retransmission would likely run into problems, and possibly also stability (STABLE) of messages
+     * @param msg
+     * @param hdr
+     */
     private void deliver(Message msg, SequencerHeader hdr) {
         if(hdr.from != null) {
-            msg.setSrc(hdr.from);
-            passUp(new Event(Event.MSG, msg));
+            Message tmp=msg.copy(true);
+            tmp.setSrc(hdr.from);
+            passUp(new Event(Event.MSG, tmp));
         }
-
     }
 
     /* ----------------------------- End of Private Methods -------------------------------- */
