@@ -1,0 +1,26 @@
+
+Release Notes JGroups 2.3
+=========================
+
+Version: $Id: ReleaseNotes-2.3.txt,v 1.1 2006/01/03 13:36:38 belaban Exp $
+Author: Bela Ban
+
+
+Sequencer based total order protocol
+------------------------------------
+SEQUENCER is an improved implementation of total order, and faster than TOTAL. When sending a message to
+the group, the sender sends the message via unicast to the coordinator, who then broadcasts the message
+(on behalf of the sender) to all members, with a unique sequence number. The coordinator uses FIFO,
+but since there is only 1 sender, this results in total order.
+SEQUENCER can be used for example to maintain identical replicas of a (JMS) queue: senders and receivers can
+send and receive messages to/from any queue replica simultaneously, without affecting the consistency
+of all replicas across the cluster.
+A quick 2 node performance test (perf.Test) with 2 million 1K messages showed
+ca 6500 messages/sec with sequencer.xml, compared to ca. 10500 messages/sec with fc-fast-minimalthreads.xml.
+For details see JGroups/doc/SEQUENCER.txt.
+
+
+Bug fixes
+---------
+FD_SOCK now uses the bind address of the transport unless a bind_addr is specifically
+specified, or the -Dbind.address system property is used
