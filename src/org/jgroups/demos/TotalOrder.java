@@ -1,4 +1,4 @@
-// $Id: TotalOrder.java,v 1.11 2006/01/03 12:09:43 belaban Exp $
+// $Id: TotalOrder.java,v 1.12 2006/01/03 12:19:35 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -96,6 +96,7 @@ public class TotalOrder extends Frame {
                     req=createRandomRequest();
                     buf=req.toBuffer();
                     channel.send(new Message(null, null, buf));
+                    System.out.print("-- num requests sent: " + cnt + "\r");
                     if(timeout > 0)
                         Util.sleep(timeout);
                     cnt++;
