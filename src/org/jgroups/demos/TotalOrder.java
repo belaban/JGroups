@@ -1,4 +1,4 @@
-// $Id: TotalOrder.java,v 1.10 2005/12/30 17:17:32 belaban Exp $
+// $Id: TotalOrder.java,v 1.11 2006/01/03 12:09:43 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -50,6 +50,8 @@ public class TotalOrder extends Frame {
     static final int y_offset=40;
     private int num=0;
 
+    private int num_additions=0, num_subtractions=0, num_divisions=0, num_multiplications=0;
+
 
     void error(String s) {
         System.err.println(s);
@@ -77,6 +79,11 @@ public class TotalOrder extends Frame {
         public void stopSender() {
             running=false;
             interrupt();
+            System.out.println("-- num_additions: " + num_additions +
+                    "\n-- num_subtractions: " + num_subtractions +
+                    "\n-- num_divisions: " + num_divisions +
+                    "\n-- num_multiplications: " + num_multiplications);
+            num_additions=num_subtractions=num_multiplications=num_divisions=0;
         }
 
         public void run() {
@@ -174,15 +181,19 @@ public class TotalOrder extends Frame {
         switch(req.type) {
             case TotOrderRequest.ADDITION:
                 canvas.addValueTo(x, y, val);
+                num_additions++;
                 break;
             case TotOrderRequest.SUBTRACTION:
                 canvas.subtractValueFrom(x, y, val);
+                num_subtractions++;
                 break;
             case TotOrderRequest.MULTIPLICATION:
                 canvas.multiplyValueWith(x, y, val);
+                num_multiplications++;
                 break;
             case TotOrderRequest.DIVISION:
                 canvas.divideValueBy(x, y, val);
+                num_divisions++;
                 break;
         }
         canvas.update();
@@ -305,15 +316,9 @@ public class TotalOrder extends Frame {
         }
     }
 
-    void stopReceiver() {
-        if(receiver != null) {
-            receiver.stopReceiver();
-            receiver=null;
-        }
-    }
 
 
-    MenuBar createMenuBar() {
+    private MenuBar createMenuBar() {
         MenuBar ret=new MenuBar();
         Menu file=new Menu("File");
         MenuItem quitm=new MenuItem("Quit");
@@ -335,29 +340,8 @@ public class TotalOrder extends Frame {
     }
 
 
-    public void rrror(String msg) {
-        Button ok=new Button("Ok");
-        Label l=new Label(msg);
 
-        error_dlg=new Dialog(this, msg, true);
-        error_dlg.setLocation(90, 150);
-        error_dlg.setSize(420, 100);
-        error_dlg.setLayout(new BorderLayout());
-        error_dlg.setFont(def_font2);
-
-        ok.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                error_dlg.dispose();
-            }
-        });
-
-        error_dlg.add("Center", l);
-        error_dlg.add("South", ok);
-        error_dlg.setVisible(true);
-    }
-
-
-    TotOrderRequest createRandomRequest() {
+    private TotOrderRequest createRandomRequest() {
         TotOrderRequest ret=null;
         byte op_type=(byte)(((Math.random() * 10) % 4) + 1);  // 1 - 4
         int x=(int)((Math.random() * num_fields * 2) % num_fields);
