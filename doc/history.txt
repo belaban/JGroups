@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.180 2005/12/30 13:56:51 belaban Exp $
+Revision: $Id: history.txt,v 1.181 2006/01/03 09:26:39 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -27,6 +27,12 @@ publicnmi	= Robert Schaffar-Taurok (robert@fusion.at)
 Version 2.3
 -----------
 
+
+
+- Fixed bug where srv_sock_bind_addr could be different from transport's bind_addr.
+  This could cause incorrect suspect messages.
+  (http://jira.jboss.com/jira/browse/JGRP-173)
+  (bela Jan 3 2006)
 
 - Added total order SEQUENCER protocol. See doc/SEQUENCER.txt for details
   (bela Dec 30 2005)

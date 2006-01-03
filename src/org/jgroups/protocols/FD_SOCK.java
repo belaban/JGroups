@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.30 2005/10/19 12:12:56 belaban Exp $
+// $Id: FD_SOCK.java,v 1.31 2006/01/03 09:25:44 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -45,7 +45,13 @@ public class FD_SOCK extends Protocol implements Runnable {
     boolean             got_cache_from_coord=false;        // was cache already fetched ?
     Address             local_addr=null;                   // our own address
     ServerSocket        srv_sock=null;                     // server socket to which another member connects to monitor me
+
+    InetAddress         bind_addr=null;                    // the NIC on which the ServerSocket should listen
+    InetAddress         transport_bind_addr=null;          // sent up from the transport
+
+    /** @deprecated Use {@link bind_addr} instead */
     InetAddress         srv_sock_bind_addr=null;           // the NIC on which the ServerSocket should listen
+
     ServerSocketHandler srv_sock_handler=null;             // accepts new connections on srv_sock
     IpAddress           srv_sock_addr=null;                // pair of server_socket:port
     Address             ping_dest=null;                    // address of the member we monitor
@@ -115,6 +121,11 @@ public class FD_SOCK extends Protocol implements Runnable {
             props.remove("start_port");
         }
 
+        str=props.getProperty("srv_sock_bind_addr");
+        if(str != null) {
+            log.error("srv_sock_bind_addr is deprecated and will be ignored - use bind_addr instead");
+            props.remove("srv_sock_bind_addr");
+        }
 
         // PropertyPermission not granted if running in an untrusted environment with JNLP.
         try {
@@ -129,21 +140,20 @@ public class FD_SOCK extends Protocol implements Runnable {
         if(tmp != null)
             str=tmp;
         else
-            str=props.getProperty("srv_sock_bind_addr");
+            str=props.getProperty("bind_addr");
         if(str != null) {
             try {
-                srv_sock_bind_addr=InetAddress.getByName(str);
+                bind_addr=InetAddress.getByName(str);
             }
             catch(UnknownHostException unknown) {
-                if(log.isFatalEnabled()) log.fatal("(srv_sock_bind_addr): host " + str + " not known");
+                log.error("(bind_addr): host " + str + " not known");
                 return false;
             }
-            props.remove("srv_sock_bind_addr");
+            props.remove("bind_addr");
         }
 
-
         if(props.size() > 0) {
-            log.error("FD_SOCK.setProperties(): the following properties are not recognized: " + props);
+            log.error("the following properties are not recognized: " + props);
             return false;
         }
         return true;
@@ -263,6 +273,11 @@ public class FD_SOCK extends Protocol implements Runnable {
                 break;
             }
             return;
+
+            case Event.CONFIG:
+                Map config=(Map)evt.getArg();
+                transport_bind_addr=(InetAddress)config.get("bind_addr");
+                break;
         }
 
         passUp(evt);                                        // pass up to the layer above us
@@ -281,8 +296,12 @@ public class FD_SOCK extends Protocol implements Runnable {
 
             case Event.CONNECT:
                 passDown(evt);
-                srv_sock=Util.createServerSocket(srv_sock_bind_addr, start_port); // grab a random unused port above 10000
-                srv_sock_addr=new IpAddress(srv_sock_bind_addr, srv_sock.getLocalPort());
+
+                if(bind_addr == null)
+                    bind_addr=transport_bind_addr;
+                
+                srv_sock=Util.createServerSocket(bind_addr, start_port); // grab a random unused port above 10000
+                srv_sock_addr=new IpAddress(bind_addr, srv_sock.getLocalPort());
                 startServerSocket();
                 //if(pinger_thread == null)
                   //  startPingerThread();
@@ -632,10 +651,6 @@ public class FD_SOCK extends Protocol implements Runnable {
         hdr.mbr=mbr;
         hdr.sock_addr=addr;
         msg.putHeader(name, hdr);
-
-        if(trace) // +++ remove
-            log.trace("hdr=" + hdr);
-
         passDown(new Event(Event.MSG, msg));
     }
 
