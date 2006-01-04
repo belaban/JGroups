@@ -5,7 +5,7 @@ Design of SEQUENCER, a total order protocol using a sequencer
 
 Author: Bela Ban
 Date: Dec 29 2005
-Version: $Id: SEQUENCER.txt,v 1.3 2006/01/03 13:22:31 belaban Exp $
+Version: $Id: SEQUENCER.txt,v 1.4 2006/01/04 09:26:06 belaban Exp $
 
 
 Motivation
@@ -58,10 +58,34 @@ Deliver(M,S):
 - Set M-tmp's sender address to S
 - Pass up M-tmp
 
-Todos:
-- Add reliable transmission to the initial unicast FORWARD message: if the coordinator dies, we need to
-  re-send the message to the new coordinator
 
+Reliable transmission in failover case
+--------------------------------------
+Add reliable transmission to the initial unicast FORWARD message: if the coordinator dies, we need to
+re-send the message to the new coordinator. We can also not deliver the same message twice.
+
+On send(M):
+- Add a FORWARD header to M with the local_addr and an increasing seqno
+  (also if coord == local_addr)
+- Add message to the forward-queue
+  (when a broadcast is received, remove the corresponding message from the forward-queue)
+- If the coord leaves/crashes (VIEW_CHANGE):
+  - For each message M in forward-queue:
+    - Change M.dest to the new coord
+    - Send M
+- If the member is stopped:
+  - Flush queue, wait for all replies (?)
+
+On forward(M):
+- If M was already received: discard it
+
+On reception of bcast M:
+- Remove corresponding message from forward-queue (key is original sender and seqno)
+- Get original sender and seqno
+- If M was already delivered: discard M
+- Else:
+  - Store M in received-bcasts table
+  - Deliver M
 
 
 
