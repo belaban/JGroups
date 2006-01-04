@@ -16,7 +16,7 @@ import java.util.HashMap;
 /**
  * Implementation of total order protocol using a sequencer. Consult doc/SEQUENCER.txt for details
  * @author Bela Ban
- * @version $Id: SEQUENCER.java,v 1.4 2006/01/03 14:43:43 belaban Exp $
+ * @version $Id: SEQUENCER.java,v 1.5 2006/01/04 14:35:16 belaban Exp $
  */
 public class SEQUENCER extends Protocol {
     private Address     local_addr=null, coord=null;
@@ -167,9 +167,9 @@ public class SEQUENCER extends Protocol {
      * @param hdr
      */
     private void deliver(Message msg, SequencerHeader hdr) {
-        if(hdr.from != null) {
+        if(hdr.original_sender != null) {
             Message tmp=msg.copy(true);
-            tmp.setSrc(hdr.from);
+            tmp.setSrc(hdr.original_sender);
             passUp(new Event(Event.MSG, tmp));
         }
     }
@@ -185,11 +185,11 @@ public class SEQUENCER extends Protocol {
         static final short DATA    = 2;
 
         short   type=-1;
-        Address from=null;     // member who wants to verify that suspected_mbr is dead
+        Address original_sender=null;
 
 
         public SequencerHeader() {
-        } // used for externalization
+        }
 
         SequencerHeader(short type) {
             this.type=type;
@@ -197,14 +197,14 @@ public class SEQUENCER extends Protocol {
 
         SequencerHeader(short type, Address from) {
             this(type);
-            this.from=from;
+            this.original_sender=from;
         }
 
         public String toString() {
             StringBuffer sb=new StringBuffer(64);
             sb.append(printType());
-            if(from != null)
-                sb.append(" (from=").append(from).append(")");
+            if(original_sender != null)
+                sb.append(" (from=").append(original_sender).append(")");
             return sb.toString();
         }
 
@@ -218,23 +218,23 @@ public class SEQUENCER extends Protocol {
 
         public void writeExternal(ObjectOutput out) throws IOException {
             out.writeShort(type);
-            out.writeObject(from);
+            out.writeObject(original_sender);
         }
 
 
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             type=in.readShort();
-            from=(Address)in.readObject();
+            original_sender=(Address)in.readObject();
         }
 
         public void writeTo(DataOutputStream out) throws IOException {
             out.writeShort(type);
-            Util.writeAddress(from, out);
+            Util.writeAddress(original_sender, out);
         }
 
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
             type=in.readShort();
-            from=Util.readAddress(in);
+            original_sender=Util.readAddress(in);
         }
 
     }
