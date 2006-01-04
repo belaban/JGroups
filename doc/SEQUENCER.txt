@@ -5,7 +5,7 @@ Design of SEQUENCER, a total order protocol using a sequencer
 
 Author: Bela Ban
 Date: Dec 29 2005
-Version: $Id: SEQUENCER.txt,v 1.4 2006/01/04 09:26:06 belaban Exp $
+Version: $Id: SEQUENCER.txt,v 1.5 2006/01/04 14:35:15 belaban Exp $
 
 
 Motivation
@@ -66,7 +66,7 @@ re-send the message to the new coordinator. We can also not deliver the same mes
 
 On send(M):
 - Add a FORWARD header to M with the local_addr and an increasing seqno
-  (also if coord == local_addr)
+  (also do this even if coord == local_addr)
 - Add message to the forward-queue
   (when a broadcast is received, remove the corresponding message from the forward-queue)
 - If the coord leaves/crashes (VIEW_CHANGE):
