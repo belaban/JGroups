@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.182 2006/01/05 10:23:42 belaban Exp $
+Revision: $Id: history.txt,v 1.183 2006/01/05 16:38:37 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -26,6 +26,10 @@ publicnmi	= Robert Schaffar-Taurok (robert@fusion.at)
 
 Version 2.3
 -----------
+
+- Fix in ReplicatedHashtable where state transfer notification is not emitted
+  (http://jira.jboss.com/jira/browse/JGRP-175)
+  (David Forget Jan 5 2006)
 
 - init() is now called after all protocols have been created
   (bela Jan 5 2006)
