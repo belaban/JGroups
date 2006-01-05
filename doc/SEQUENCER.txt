@@ -5,7 +5,7 @@ Design of SEQUENCER, a total order protocol using a sequencer
 
 Author: Bela Ban
 Date: Dec 29 2005
-Version: $Id: SEQUENCER.txt,v 1.5 2006/01/04 14:35:15 belaban Exp $
+Version: $Id: SEQUENCER.txt,v 1.6 2006/01/05 16:22:21 belaban Exp $
 
 
 Motivation
@@ -32,60 +32,62 @@ requests would go to B, rather than A !
 Design
 ------
 
+Variables:
+- forward-table: Map<seqno, Message>, list of messages to be forwarded (sorted by seqno)
+                 that have not yet been received (as bcasts)
+- received-table: Map<Address, Long> which keeps the highest seqno seen per member. This table has N
+                  entries, where N is the number of members in the group
+
 On send(M):
 - Pass down unicasts and return (handle only multicasts)
+- Add a FORWARD header to M with the local_addr and an increasing seqno
 - If not coordinator:
-  - Add FORWARD header to M
+  - Add message to the forward-table (when a broadcast is received,
+                                      remove the corresponding message from the forward-table)
   - Send M to coordinator
 - Else
   - Multicast(M)
 
+
+On stop():
+- Flush forward-table, wait for all replies (?)
+
+
 On reception of M from S:
-- Pass up unicasts and return (handle only multicasts)
 - If header is present
   - If header is FORWARD:
-    - If coordinator: Multicast(M,S)
+    - If not coord: error and return
+    - If M's seqno is <= the one in received-table (with kety=S):
+      - discard it (we already received it)
+    - Else:
+      - forward M and update the received-table with M's seqno with key=S
+    - Multicast(M,S)
   - If header is DATA:
     - Take sender S from header and call Deliver(M,S)
 
+
 Multicast(M,S):
 - Reuse M (no problem since UNICAST's retransmission buffer will have remove M when passed to SEQUENCER)
-- Replace FORWARD header with DATA header (stores S)
+- Replace FORWARD type in header with DATA type(stores S)
 - Multicast M
 
 Deliver(M,S):
-- Shallow-copy M into M-tmp
-- Set M-tmp's sender address to S
-- Pass up M-tmp
+- If M was sent by us (local_addr == S):
+  - remove corresponding message from forward-table
 
-
-Reliable transmission in failover case
---------------------------------------
-Add reliable transmission to the initial unicast FORWARD message: if the coordinator dies, we need to
-re-send the message to the new coordinator. We can also not deliver the same message twice.
-
-On send(M):
-- Add a FORWARD header to M with the local_addr and an increasing seqno
-  (also do this even if coord == local_addr)
-- Add message to the forward-queue
-  (when a broadcast is received, remove the corresponding message from the forward-queue)
-- If the coord leaves/crashes (VIEW_CHANGE):
-  - For each message M in forward-queue:
-    - Change M.dest to the new coord
-    - Send M
-- If the member is stopped:
-  - Flush queue, wait for all replies (?)
-
-On forward(M):
-- If M was already received: discard it
-
-On reception of bcast M:
-- Remove corresponding message from forward-queue (key is original sender and seqno)
-- Get original sender and seqno
 - If M was already delivered: discard M
 - Else:
-  - Store M in received-bcasts table
-  - Deliver M
+  - Store M in received-table
+  - Shallow-copy M into M-tmp
+  - Set M-tmp's sender address to S
+  - Pass up M-tmp
+
+
+On view change:
+- If the coord leaves/crashes:
+  - For each message M in forward-table:
+    - Change M.dest to the new coord
+    - Send M to the new coord
 
 
 
