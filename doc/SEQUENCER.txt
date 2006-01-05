@@ -5,7 +5,7 @@ Design of SEQUENCER, a total order protocol using a sequencer
 
 Author: Bela Ban
 Date: Dec 29 2005
-Version: $Id: SEQUENCER.txt,v 1.7 2006/01/05 16:38:16 belaban Exp $
+Version: $Id: SEQUENCER.txt,v 1.8 2006/01/05 17:17:15 belaban Exp $
 
 
 Motivation
@@ -40,7 +40,7 @@ Variables:
 
 On send(M):
 - Pass down unicasts and return (handle only multicasts)
-- Add a FORWARD header to M with the local_addr and an increasing seqno
+- Add a FORWARD header to M with the local_addr and a monotonically increasing seqno (use a ViewId ?)
 - If not coordinator:
   - Add message to the forward-table (when a broadcast is received,
                                       remove the corresponding message from the forward-table)
@@ -50,18 +50,18 @@ On send(M):
 
 
 On stop():
-- Flush forward-table, wait for all replies (?)
+- Stop handling new down messages
+- Wait for all replies until forward-table is empty, or a timeout (?)
 
 
 On reception of M from S:
-- If header is present
+- If header is not present:
+  - Pass up
+- Else (header is present)
   - If header is FORWARD:
     - If not coord: error and return
-    - If M's seqno is <= the one in received-table (with kety=S):
-      - discard it (we already received it)
-    - Else:
-      - forward M and update the received-table with M's seqno with key=S
-    - Multicast(M,S)
+    - Else
+      - Multicast(M,S)
   - If header is DATA:
     - Take sender S from header and call Deliver(M,S)
 
@@ -74,9 +74,11 @@ Multicast(M,S):
 Deliver(M,S):
 - If M was sent by us (local_addr == S):
   - remove corresponding message from forward-table
-- If M was already delivered: discard M
+- If M was already delivered (M's seqno is <= the one in received-table):
+  - Discard M
 - Else:
-  - Store M in received-table
+  - Update the received-table with M's seqno with key=S
+    (needs to be 1 higher then prev seqno)
   - Shallow-copy M into M-tmp
   - Set M-tmp's sender address to S
   - Pass up M-tmp
@@ -84,12 +86,15 @@ Deliver(M,S):
 
 On view change:
 - If the coord leaves/crashes:
-  - For each message M in forward-table:
+  - For each message M in forward-table (*in increasing order of seqnos* !):
     - Change M.dest to the new coord
     - Send M to the new coord
 
-
-
+Comments
+--------
+When forwarding we don't care about whether the message was forwarded before, e.g. by the previous
+coordinator. We simply forward, but discard duplicate messages when receiving the bcast. This is not
+overly efficient when failing over between coordinators, but makes the implementation simpler.
 
 
 
