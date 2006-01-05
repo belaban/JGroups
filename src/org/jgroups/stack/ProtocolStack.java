@@ -1,4 +1,4 @@
-// $Id: ProtocolStack.java,v 1.24 2005/09/29 12:10:03 belaban Exp $
+// $Id: ProtocolStack.java,v 1.25 2006/01/05 10:23:43 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -174,11 +174,12 @@ public class ProtocolStack extends Protocol implements Transport {
 
     public void setup() throws Exception {
         if(top_prot == null) {
-            top_prot=conf.setupProtocolStack(setup_string, this); // calls init() on each protocol
+            top_prot=conf.setupProtocolStack(setup_string, this);
             if(top_prot == null)
-                throw new Exception("ProtocolStack.setup(): couldn't create protocol stack");
+                throw new Exception("couldn't create protocol stack");
             top_prot.setUpProtocol(this);
             bottom_prot=conf.getBottommostProtocol(top_prot);
+            conf.initProtocolStack(bottom_prot);         // calls init() on each protocol, from bottom to top
             conf.startProtocolStack(bottom_prot);        // sets up queues and threads
         }
     }

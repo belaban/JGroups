@@ -1,4 +1,4 @@
-// $Id: Configurator.java,v 1.14 2005/10/19 07:23:16 belaban Exp $
+// $Id: Configurator.java,v 1.15 2006/01/05 10:23:43 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -58,6 +58,14 @@ public class Configurator {
             return null;
         protocol_stack=connectProtocols(protocols);
         return protocol_stack;
+    }
+
+
+    public void initProtocolStack(Protocol bottom_prot) throws Exception {
+        while(bottom_prot != null) {
+            bottom_prot.init();
+            bottom_prot=bottom_prot.getUpProtocol();
+        }
     }
 
 
@@ -131,6 +139,7 @@ public class Configurator {
 
         // create an instance of the protocol class and configure it
         prot=config.createLayer(stack);
+        prot.init();
 
         // start the handler threads (unless down_thread or up_thread are set to false)
         prot.startDownHandler();
@@ -276,7 +285,6 @@ public class Configurator {
                 return null;
             retval.addElement(layer);
         }
-
         sanityCheck(retval);
         return retval;
     }
@@ -554,7 +562,7 @@ public class Configurator {
         }
 
 
-        Protocol createLayer(ProtocolStack prot_stack) throws Exception {
+        private Protocol createLayer(ProtocolStack prot_stack) throws Exception {
             Protocol retval=null;
             if(protocol_name == null)
                 return null;
@@ -590,7 +598,7 @@ public class Configurator {
                 if(properties != null)
                     if(!retval.setPropertiesInternal(properties))
                         return null;
-                retval.init();
+                // retval.init(); // moved to after creation of *all* protocols
             }
             catch(InstantiationException inst_ex) {
                 log.error("an instance of " + protocol_name + " could not be created. Please check that it implements" +

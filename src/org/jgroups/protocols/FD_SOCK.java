@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.31 2006/01/03 09:25:44 belaban Exp $
+// $Id: FD_SOCK.java,v 1.32 2006/01/05 10:23:43 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -47,7 +47,6 @@ public class FD_SOCK extends Protocol implements Runnable {
     ServerSocket        srv_sock=null;                     // server socket to which another member connects to monitor me
 
     InetAddress         bind_addr=null;                    // the NIC on which the ServerSocket should listen
-    InetAddress         transport_bind_addr=null;          // sent up from the transport
 
     /** @deprecated Use {@link bind_addr} instead */
     InetAddress         srv_sock_bind_addr=null;           // the NIC on which the ServerSocket should listen
@@ -275,8 +274,10 @@ public class FD_SOCK extends Protocol implements Runnable {
             return;
 
             case Event.CONFIG:
-                Map config=(Map)evt.getArg();
-                transport_bind_addr=(InetAddress)config.get("bind_addr");
+                if(bind_addr == null) {
+                    Map config=(Map)evt.getArg();
+                    bind_addr=(InetAddress)config.get("bind_addr");
+                }
                 break;
         }
 
@@ -296,10 +297,6 @@ public class FD_SOCK extends Protocol implements Runnable {
 
             case Event.CONNECT:
                 passDown(evt);
-
-                if(bind_addr == null)
-                    bind_addr=transport_bind_addr;
-                
                 srv_sock=Util.createServerSocket(bind_addr, start_port); // grab a random unused port above 10000
                 srv_sock_addr=new IpAddress(bind_addr, srv_sock.getLocalPort());
                 startServerSocket();
