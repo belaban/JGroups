@@ -1,4 +1,4 @@
-// $Id: IpAddress.java,v 1.29 2005/11/07 09:44:17 belaban Exp $
+// $Id: IpAddress.java,v 1.30 2006/01/05 14:07:25 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -183,8 +183,6 @@ public class IpAddress implements Address {
             }
         }
         sb.append(":" + port);
-        if(additional_data != null)
-            sb.append(" (additional data: ").append(additional_data.length).append(" bytes)");
         return sb.toString();
     }
 
