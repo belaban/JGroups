@@ -5,7 +5,7 @@ Design of SEQUENCER, a total order protocol using a sequencer
 
 Author: Bela Ban
 Date: Dec 29 2005
-Version: $Id: SEQUENCER.txt,v 1.8 2006/01/05 17:17:15 belaban Exp $
+Version: $Id: SEQUENCER.txt,v 1.9 2006/01/05 17:37:11 belaban Exp $
 
 
 Motivation
@@ -28,6 +28,23 @@ When a member receives M, everybody thinks the message is from A, and NAKACK wil
 in case M is lost. However, SEQUENCER removes the header and replaces M's sender address with B. It has to
 do so on a (shallow) *copy* of M, otherwise we would change the original message and therefore retransmission
 requests would go to B, rather than A !
+
+Reliability on failover of coordinator
+--------------------------------------
+When sending messages to a coord, and that coord dies, then we simply resend the unacked messages to the new
+coord (on a VIEW_CHANGE). Each message has a unique tag, consisting of the sender's address and a monotonically
+increasing sequence number (seqno). The coord simply broadcasts the message (making sure that the tag is still
+in the message, as a header).
+When a member receives a broadcast message, it checks whether it already received that message, by comparing the
+message's seqno to the highest seqno it received for that sender. If received, the message will simply
+be discarded, otherwise the member will update its highest seqno received and deliver the message.
+
+So if a member C sends messages 1, 2, 3, 4, 5 and 6 to the coord, and the coord is able to broadcast all messages,
+but dies and C doesn't receive brodacasts 5 and 6 (therefore 5 and 6 are still in the forward-table), then
+C simply re-sends messages 5 and 6 to the new coord. The new coord broadcasts 5 and 6, but all members
+who received 5 and 6 before will simply discard them. C, who originally sent 5 and 6, will deliver them
+and remove 5 and 6 from its forward-table.
+
 
 Design
 ------
@@ -68,7 +85,7 @@ On reception of M from S:
 
 Multicast(M,S):
 - Reuse M (no problem since UNICAST's retransmission buffer will have remove M when passed to SEQUENCER)
-- Replace FORWARD type in header with DATA type(stores S)
+- Replace FORWARD type in header with DATA type
 - Multicast M
 
 Deliver(M,S):
