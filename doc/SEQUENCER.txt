@@ -5,7 +5,7 @@ Design of SEQUENCER, a total order protocol using a sequencer
 
 Author: Bela Ban
 Date: Dec 29 2005
-Version: $Id: SEQUENCER.txt,v 1.6 2006/01/05 16:22:21 belaban Exp $
+Version: $Id: SEQUENCER.txt,v 1.7 2006/01/05 16:38:16 belaban Exp $
 
 
 Motivation
@@ -74,7 +74,6 @@ Multicast(M,S):
 Deliver(M,S):
 - If M was sent by us (local_addr == S):
   - remove corresponding message from forward-table
-
 - If M was already delivered: discard M
 - Else:
   - Store M in received-table
