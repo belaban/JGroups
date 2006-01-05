@@ -5,7 +5,7 @@ Design of SEQUENCER, a total order protocol using a sequencer
 
 Author: Bela Ban
 Date: Dec 29 2005
-Version: $Id: SEQUENCER.txt,v 1.9 2006/01/05 17:37:11 belaban Exp $
+Version: $Id: SEQUENCER.txt,v 1.10 2006/01/05 17:40:11 belaban Exp $
 
 
 Motivation
@@ -44,6 +44,7 @@ but dies and C doesn't receive brodacasts 5 and 6 (therefore 5 and 6 are still i
 C simply re-sends messages 5 and 6 to the new coord. The new coord broadcasts 5 and 6, but all members
 who received 5 and 6 before will simply discard them. C, who originally sent 5 and 6, will deliver them
 and remove 5 and 6 from its forward-table.
+The unit test that verifies this behavior is org.jgroups.tests.SequencerFailoverTest
 
 
 Design
@@ -112,7 +113,6 @@ Comments
 When forwarding we don't care about whether the message was forwarded before, e.g. by the previous
 coordinator. We simply forward, but discard duplicate messages when receiving the bcast. This is not
 overly efficient when failing over between coordinators, but makes the implementation simpler.
-
 
 
 
