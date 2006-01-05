@@ -10,6 +10,7 @@ import java.io.*;
 import java.net.*;
 import java.util.Enumeration;
 import java.util.Properties;
+import java.util.Map;
 
 /**
  * Uses its own IP multicast socket to send and receive discovery requests/responses. Can be used in
@@ -19,13 +20,13 @@ import java.util.Properties;
  * back via the regular transport (e.g. TCP) to the sender (discovery request contained sender's regular address,
  * e.g. 192.168.0.2:7800).
  * @author Bela Ban
- * @version $Id: MPING.java,v 1.12 2005/08/11 12:43:47 belaban Exp $
+ * @version $Id: MPING.java,v 1.13 2006/01/05 10:23:43 belaban Exp $
  */
 public class MPING extends PING implements Runnable {
     MulticastSocket     mcast_sock=null;
     Thread              receiver=null;
     InetAddress         bind_addr=null;
-    boolean             bind_to_all_interfaces=true;
+    boolean             bind_to_all_interfaces=false;
     int                 ip_ttl=16;
     InetAddress         mcast_addr=null;
     int                 mcast_port=7555;
@@ -150,6 +151,20 @@ public class MPING extends PING implements Runnable {
 
         return super.setProperties(props);
     }
+
+
+    public void up(Event evt) {
+        if(evt.getType() == Event.CONFIG) {
+            if(bind_addr == null) {
+                Map config=(Map)evt.getArg();
+                bind_addr=(InetAddress)config.get("bind_addr");
+            }
+            passUp(evt);
+            return;
+        }
+        super.up(evt);
+    }
+
 
 
     public void start() throws Exception {
