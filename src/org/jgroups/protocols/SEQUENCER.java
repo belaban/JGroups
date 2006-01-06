@@ -1,27 +1,29 @@
 
 package org.jgroups.protocols;
 
+import EDU.oswego.cs.dl.util.concurrent.SynchronizedLong;
 import org.jgroups.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
 import java.io.*;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Vector;
-import java.util.Map;
-import java.util.HashMap;
 
 
 /**
  * Implementation of total order protocol using a sequencer. Consult doc/SEQUENCER.txt for details
  * @author Bela Ban
- * @version $Id: SEQUENCER.java,v 1.5 2006/01/04 14:35:16 belaban Exp $
+ * @version $Id: SEQUENCER.java,v 1.6 2006/01/06 08:44:54 belaban Exp $
  */
 public class SEQUENCER extends Protocol {
-    private Address     local_addr=null, coord=null;
-    static final String name="SEQUENCER";
-    private boolean     is_coord=false;
+    private Address                 local_addr=null, coord=null;
+    static final String             name="SEQUENCER";
+    private boolean                 is_coord=false;
+    private final SynchronizedLong  seqno=new SynchronizedLong(0);
 
     private long forwarded_msgs=0;
     private long bcast_msgs=0;
@@ -65,6 +67,10 @@ public class SEQUENCER extends Protocol {
             return false;
         }
         return true;
+    }
+
+    private final long nextSeqno() {
+        return seqno.increment();
     }
 
 
@@ -115,7 +121,7 @@ public class SEQUENCER extends Protocol {
                         broadcast(msg, msg.getSrc());
                         received_forwards++;
                         return;
-                    case SequencerHeader.DATA:
+                    case SequencerHeader.BCAST:
                         deliver(msg, hdr);
                         received_bcasts++;
                         return;
@@ -144,7 +150,7 @@ public class SEQUENCER extends Protocol {
 
 
     private void forwardToCoord(Message msg) {
-        SequencerHeader hdr=new SequencerHeader(SequencerHeader.FORWARD);
+        SequencerHeader hdr=new SequencerHeader(SequencerHeader.FORWARD, local_addr, nextSeqno());
         msg.putHeader(name, hdr);
         msg.setDest(coord);  // we change the message dest from multicast to unicast (to coord)
         passDown(new Event(Event.MSG, msg));
@@ -152,10 +158,16 @@ public class SEQUENCER extends Protocol {
     }
 
     private void broadcast(Message msg, Address sender) {
-        SequencerHeader hdr=new SequencerHeader(SequencerHeader.DATA, sender);
+        SequencerHeader hdr=(SequencerHeader)msg.getHeader(name);
+        if(hdr == null) {
+            hdr=new SequencerHeader(SequencerHeader.BCAST, sender, nextSeqno());
+            msg.putHeader(name, hdr);
+        }
+        else {
+            hdr.type=SequencerHeader.BCAST; // we change the type of header, but leave the tag intact
+        }
         msg.setDest(null); // mcast
         msg.setSrc(local_addr); // the coord is sending it - this will be replaced with sender in deliver()
-        msg.putHeader(name, hdr);
         passDown(new Event(Event.MSG, msg));
         bcast_msgs++;
     }
@@ -167,9 +179,9 @@ public class SEQUENCER extends Protocol {
      * @param hdr
      */
     private void deliver(Message msg, SequencerHeader hdr) {
-        if(hdr.original_sender != null) {
+        if(hdr.getOriginalSender() != null) {
             Message tmp=msg.copy(true);
-            tmp.setSrc(hdr.original_sender);
+            tmp.setSrc(hdr.getOriginalSender());
             passUp(new Event(Event.MSG, tmp));
         }
     }
@@ -181,60 +193,72 @@ public class SEQUENCER extends Protocol {
 
 
     public static class SequencerHeader extends Header implements Streamable {
-        static final short FORWARD = 1;
-        static final short DATA    = 2;
+        static final byte FORWARD = 1;
+        static final byte BCAST   = 2;
 
-        short   type=-1;
-        Address original_sender=null;
+        byte    type=-1;
+        /** the original sender's address and a seqno */
+        ViewId  tag=null;
 
 
         public SequencerHeader() {
         }
 
-        SequencerHeader(short type) {
+        public SequencerHeader(byte type, Address original_sender, long seqno) {
             this.type=type;
+            this.tag=new ViewId(original_sender, seqno);
         }
 
-        SequencerHeader(short type, Address from) {
-            this(type);
-            this.original_sender=from;
+        public Address getOriginalSender() {
+            return tag != null? tag.getCoordAddress() : null;
+        }
+
+        public long getSeqno() {
+            return tag != null? tag.getId() : -1;
         }
 
         public String toString() {
             StringBuffer sb=new StringBuffer(64);
             sb.append(printType());
-            if(original_sender != null)
-                sb.append(" (from=").append(original_sender).append(")");
+            if(tag != null)
+                sb.append(" (tag=").append(tag).append(")");
             return sb.toString();
         }
 
-        public String printType() {
+        private final String printType() {
             switch(type) {
                 case FORWARD: return "FORWARD";
-                case DATA:    return "DATA";
+                case BCAST:   return "DATA";
                 default:      return "n/a";
             }
         }
 
         public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeShort(type);
-            out.writeObject(original_sender);
+            out.writeByte(type);
+            out.writeObject(tag);
         }
 
 
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            type=in.readShort();
-            original_sender=(Address)in.readObject();
+            type=in.readByte();
+            tag=(ViewId)in.readObject();
         }
 
         public void writeTo(DataOutputStream out) throws IOException {
-            out.writeShort(type);
-            Util.writeAddress(original_sender, out);
+            out.writeByte(type);
+            Util.writeStreamable(tag, out);
         }
 
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
-            type=in.readShort();
-            original_sender=Util.readAddress(in);
+            type=in.readByte();
+            tag=(ViewId)Util.readStreamable(ViewId.class, in);
+        }
+
+        public long size() {
+            long size=Global.BYTE_SIZE *2; // type + presence byte
+            if(tag != null)
+                size+=tag.serializedSize();
+            return size;
         }
 
     }
