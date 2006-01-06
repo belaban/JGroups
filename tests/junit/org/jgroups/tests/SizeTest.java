@@ -1,4 +1,4 @@
-// $Id: SizeTest.java,v 1.7 2005/12/20 14:27:35 belaban Exp $$
+// $Id: SizeTest.java,v 1.8 2006/01/06 08:44:02 belaban Exp $$
 
 package org.jgroups.tests;
 
@@ -116,6 +116,15 @@ public class SizeTest extends TestCase {
         _testSize(hdr);
 
         hdr=new STABLE.StableHeader(STABLE.StableHeader.STABILITY, null);
+        _testSize(hdr);
+    }
+
+    public void testSequencerHeader() throws Exception {
+        org.jgroups.protocols.SEQUENCER.SequencerHeader hdr;
+        IpAddress addr=new IpAddress("127.0.0.1", 5555);
+        hdr=new SEQUENCER.SequencerHeader((byte)1, addr, 1L);
+        _testSize(hdr);
+        hdr=new SEQUENCER.SequencerHeader((byte)2, null, -1L);
         _testSize(hdr);
     }
 
