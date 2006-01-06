@@ -1,4 +1,4 @@
-// $Id: SizeTest.java,v 1.8 2006/01/06 08:44:02 belaban Exp $$
+// $Id: SizeTest.java,v 1.9 2006/01/06 12:18:27 belaban Exp $$
 
 package org.jgroups.tests;
 
@@ -220,6 +220,8 @@ public class SizeTest extends TestCase {
         rsp=new JoinRsp();
         _testSize(rsp);
         rsp=new JoinRsp(v, d);
+        _testSize(rsp);
+        rsp=new JoinRsp("this is a failure");
         _testSize(rsp);
     }
 
