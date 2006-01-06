@@ -15,7 +15,7 @@ import java.util.*;
 /**
  * Implementation of total order protocol using a sequencer. Consult doc/SEQUENCER.txt for details
  * @author Bela Ban
- * @version $Id: SEQUENCER.java,v 1.7 2006/01/06 09:42:34 belaban Exp $
+ * @version $Id: SEQUENCER.java,v 1.8 2006/01/06 14:09:59 belaban Exp $
  */
 public class SEQUENCER extends Protocol {
     private Address                 local_addr=null, coord=null;
@@ -24,7 +24,7 @@ public class SEQUENCER extends Protocol {
     private final SynchronizedLong  seqno=new SynchronizedLong(0);
 
     /** Map<seqno, Message>: maintains messages forwarded to the coord which which no ack has been received yet */
-    private final ConcurrentHashMap forward_table=new ConcurrentHashMap();
+    private final Map               forward_table=new TreeMap();
 
     /** Map<Address, seqno>: maintains the highest seqnos seen for a given member */
     private final ConcurrentHashMap received_table=new ConcurrentHashMap();
@@ -175,14 +175,30 @@ public class SEQUENCER extends Protocol {
         }
     }
 
+    /**
+     * Sends all messages currently in forward_table to the new coordinator (changing the dest field).
+     * This needs to be done, so the underlying reliable unicast protocol (e.g. UNICAST) adds these messages
+     * to its retransmission mechanism<br/>
+     * Note that we need to resend the messages in order of their seqnos ! We also need to prevent other message
+     * from being inserted until we're done, that's why there's synchronization.
+     */
     private void resendMessagesInForwardTable() {
-
+        Message   msg;
+        synchronized(forward_table) {
+            for(Iterator it=forward_table.values().iterator(); it.hasNext();) {
+                msg=(Message)it.next();
+                msg.setDest(coord);
+                passDown(new Event(Event.MSG, msg));
+            }
+        }
     }
 
 
     private void forwardToCoord(Message msg, long seqno) {
         msg.setDest(coord);  // we change the message dest from multicast to unicast (to coord)
-        forward_table.put(new Long(seqno), msg);
+        synchronized(forward_table) {
+            forward_table.put(new Long(seqno), msg);
+        }
         passDown(new Event(Event.MSG, msg));
         forwarded_msgs++;
     }
@@ -212,8 +228,11 @@ public class SEQUENCER extends Protocol {
         long msg_seqno=hdr.getSeqno();
 
         // this is the ack for the message sent by myself
-        if(original_sender.equals(local_addr))
-            forward_table.remove(new Long(msg_seqno));
+        if(original_sender.equals(local_addr)) {
+            synchronized(forward_table) {
+                forward_table.remove(new Long(msg_seqno));
+            }
+        }
 
         // if msg was already delivered, discard it
         Long highest_seqno_seen=(Long)received_table.get(original_sender);
