@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.49 2005/12/23 14:57:06 belaban Exp $
+// $Id: GMS.java,v 1.50 2006/01/06 12:50:13 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -730,11 +730,17 @@ public class GMS extends Protocol {
         switch(evt.getType()) {
 
             case Event.CONNECT:
+                Object arg=null;
                 passDown(evt);
                 if(local_addr == null)
                     if(log.isFatalEnabled()) log.fatal("[CONNECT] local_addr is null");
-                impl.join(local_addr);
-                passUp(new Event(Event.CONNECT_OK));
+                try {
+                    impl.join(local_addr);
+                }
+                catch(SecurityException e) {
+                    arg=e;
+                }
+                passUp(new Event(Event.CONNECT_OK, arg));
                 return;                              // don't pass down: was already passed down
 
             case Event.DISCONNECT:
@@ -1095,7 +1101,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.49 2005/12/23 14:57:06 belaban Exp $
+     * @version $Id: GMS.java,v 1.50 2006/01/06 12:50:13 belaban Exp $
      */
     class ViewHandler implements Runnable {
         Thread                    t;

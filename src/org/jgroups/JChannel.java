@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.45 2005/11/21 13:00:14 belaban Exp $
+// $Id: JChannel.java,v 1.46 2006/01/06 12:50:13 belaban Exp $
 
 package org.jgroups;
 
@@ -66,7 +66,7 @@ import java.util.Vector;
  *
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.45 $
+ * @version $Revision: 1.46 $
  */
 public class JChannel extends Channel {
 
@@ -420,7 +420,10 @@ public class JChannel extends Channel {
             connect_promise.reset();
             Event connect_event=new Event(Event.CONNECT, channel_name);
             down(connect_event);
-            connect_promise.getResult();  // waits forever until connected (or channel is closed)
+            Object res=connect_promise.getResult();  // waits forever until connected (or channel is closed)
+            if(res != null && res instanceof Exception) { // the JOIN was rejected by the coordinator
+                throw new ChannelException("connect() failed", (Throwable)res);
+            }
         }
 
         /*notify any channel listeners*/
@@ -928,7 +931,7 @@ public class JChannel extends Channel {
      * @param evt the event carrying the message from the protocol stack
      */
     public void up(Event evt) {
-        int type=evt.getType();
+        int     type=evt.getType();
         Message msg;
 
 
@@ -954,7 +957,7 @@ public class JChannel extends Channel {
             // we simply set the state to connected
             if(connected == false) {
                 connected=true;
-                connect_promise.setResult(Boolean.TRUE);
+                connect_promise.setResult(null);
             }
 
             // unblock queueing of messages due to previous BLOCK event:
@@ -997,7 +1000,7 @@ public class JChannel extends Channel {
             break;
 
         case Event.CONNECT_OK:
-            connect_promise.setResult(Boolean.TRUE);
+            connect_promise.setResult(evt.getArg());
             break;
 
         case Event.DISCONNECT_OK:
