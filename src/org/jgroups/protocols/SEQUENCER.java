@@ -15,7 +15,7 @@ import java.util.*;
 /**
  * Implementation of total order protocol using a sequencer. Consult doc/SEQUENCER.txt for details
  * @author Bela Ban
- * @version $Id: SEQUENCER.java,v 1.8 2006/01/06 14:09:59 belaban Exp $
+ * @version $Id: SEQUENCER.java,v 1.9 2006/01/06 14:41:03 belaban Exp $
  */
 public class SEQUENCER extends Protocol {
     private Address                 local_addr=null, coord=null;
@@ -163,7 +163,7 @@ public class SEQUENCER extends Protocol {
 
         boolean coord_changed=prev_coord != null && !prev_coord.equals(coord);
         if(coord_changed) {
-            resendMessagesInForwardTable();
+            resendMessagesInForwardTable(); // maybe optimize in the future: broadcast directly if coord
         }
         // remove left members from received_table
         int size=received_table.size();
@@ -240,7 +240,7 @@ public class SEQUENCER extends Protocol {
             if(highest_seqno_seen.longValue() >= msg_seqno) {
                 if(log.isWarnEnabled())
                 log.warn("message seqno (" + original_sender + "::" + msg_seqno + " has already " +
-                        "been received (" + highest_seqno_seen + "); discarding duplicate message");
+                        "been received (highest received=" + highest_seqno_seen + "); discarding duplicate message");
                 return;
             }
         }
@@ -295,7 +295,7 @@ public class SEQUENCER extends Protocol {
         private final String printType() {
             switch(type) {
                 case FORWARD: return "FORWARD";
-                case BCAST:   return "DATA";
+                case BCAST:   return "BCAST";
                 default:      return "n/a";
             }
         }
