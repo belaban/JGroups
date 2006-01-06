@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.11 2005/08/11 12:43:47 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.12 2006/01/06 12:23:04 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -25,7 +25,7 @@ import java.util.Vector;
  * tell the client what its initial membership is.
  * 
  * @author Bela Ban
- * @version $Revision: 1.11 $
+ * @version $Revision: 1.12 $
  */
 public class ClientGmsImpl extends GmsImpl {
     final Vector initial_mbrs=new Vector(7);
@@ -68,31 +68,29 @@ public class ClientGmsImpl extends GmsImpl {
             }
             if(initial_mbrs.size() == 0) {
                 if(gms.disable_initial_coord) {
-
-                        if(log.isInfoEnabled()) log.info("received an initial membership of 0, but " +
-                                "cannot become coordinator (disable_initial_coord=" + gms.disable_initial_coord +
-                                "), will retry fetching the initial membership");
+                    if(log.isInfoEnabled()) log.info("received an initial membership of 0, but " +
+                            "cannot become coordinator (disable_initial_coord=" + gms.disable_initial_coord +
+                            "), will retry fetching the initial membership");
                     continue;
                 }
                 joined=true;
                 gms.view_id=new ViewId(mbr);       // create singleton view with mbr as only member
                 gms.mbrs.add(mbr);
                 view_evt=new Event(Event.VIEW_CHANGE,
-                        gms.makeView(gms.mbrs.getMembers(), gms.view_id));
+                                   GMS.makeView(gms.mbrs.getMembers(), gms.view_id));
                 gms.passDown(view_evt);
                 gms.passUp(view_evt);
                 gms.becomeCoordinator();
 
                 gms.passUp(new Event(Event.BECOME_SERVER));
                 gms.passDown(new Event(Event.BECOME_SERVER));
-                 if(log.isInfoEnabled()) log.info("created group (first member)");
+                if(log.isInfoEnabled()) log.info("created group (first member)");
                 break;
             }
 
             coord=determineCoord(initial_mbrs);
             if(coord == null) {
-                if(warn) log.warn("could not determine coordinator " +
-                                                 "from responses " + initial_mbrs);
+                if(warn) log.warn("could not determine coordinator from responses " + initial_mbrs);
                 continue;
             }
 
