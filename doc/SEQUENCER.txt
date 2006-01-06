@@ -5,7 +5,7 @@ Design of SEQUENCER, a total order protocol using a sequencer
 
 Author: Bela Ban
 Date: Dec 29 2005
-Version: $Id: SEQUENCER.txt,v 1.10 2006/01/05 17:40:11 belaban Exp $
+Version: $Id: SEQUENCER.txt,v 1.11 2006/01/06 08:44:54 belaban Exp $
 
 
 Motivation
@@ -52,9 +52,12 @@ Design
 
 Variables:
 - forward-table: Map<seqno, Message>, list of messages to be forwarded (sorted by seqno)
-                 that have not yet been received (as bcasts)
+                 that have not yet been received (as bcasts).
+                 Access patterns: add at end (frequent), remove by seqno (frequent), iterate through
+                 it in order of seqnos (infrequent): therefore a Map was preferred over a linked list
 - received-table: Map<Address, Long> which keeps the highest seqno seen per member. This table has N
-                  entries, where N is the number of members in the group
+                  entries, where N is the number of members in the group.
+                  Access patterns: lookup of message by seqno, update by seqno. Therefore a map was chosen
 
 On send(M):
 - Pass down unicasts and return (handle only multicasts)
@@ -107,6 +110,7 @@ On view change:
   - For each message M in forward-table (*in increasing order of seqnos* !):
     - Change M.dest to the new coord
     - Send M to the new coord
+- Remove entries for left members in received-table
 
 Comments
 --------
