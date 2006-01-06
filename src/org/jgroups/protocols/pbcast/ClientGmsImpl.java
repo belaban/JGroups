@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.29 2005/11/22 11:58:28 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.30 2006/01/06 12:50:13 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -19,7 +19,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.29 $
+ * @version $Revision: 1.30 $
  */
 public class ClientGmsImpl extends GmsImpl {
     private final Vector  initial_mbrs=new Vector(11);
@@ -126,7 +126,12 @@ public class ClientGmsImpl extends GmsImpl {
                     if(warn) log.warn("join(" + mbr + ") sent to " + coord + " timed out, retrying");
                 }
                 else {
-                    // 1. Install digest
+                    // 1. check whether JOIN was rejected
+                    String failure=rsp.getFailReason();
+                    if(failure != null)
+                        throw new SecurityException(failure);
+
+                    // 2. Install digest
                     tmp_digest=rsp.getDigest();
                     if(tmp_digest != null) {
                         tmp_digest.incrementHighSeqno(coord); 	// see DESIGN for an explanantion
@@ -136,7 +141,7 @@ public class ClientGmsImpl extends GmsImpl {
                     else
                         if(log.isErrorEnabled()) log.error("digest of JOIN response is null");
 
-                    // 2. Install view
+                    // 3. Install view
                     if(log.isDebugEnabled()) log.debug("[" + gms.local_addr + "]: JoinRsp=" + rsp.getView() +
                             " [size=" + rsp.getView().size() + "]\n\n");
 
@@ -160,8 +165,11 @@ public class ClientGmsImpl extends GmsImpl {
                         if(log.isErrorEnabled()) log.error("view of JOIN response is null");
                 }
             }
+            catch(SecurityException security_ex) {
+                throw security_ex;
+            }
             catch(Exception e) {
-                if(log.isDebugEnabled()) log.debug("exception=" + e.toString() + ", retrying");
+                if(log.isDebugEnabled()) log.debug("exception=" + e + ", retrying");
             }
 
             Util.sleep(gms.join_retry_timeout);
