@@ -2,28 +2,32 @@
 package org.jgroups.protocols;
 
 import EDU.oswego.cs.dl.util.concurrent.SynchronizedLong;
+import EDU.oswego.cs.dl.util.concurrent.ConcurrentHashMap;
 import org.jgroups.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
 import java.io.*;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Vector;
+import java.util.*;
 
 
 /**
  * Implementation of total order protocol using a sequencer. Consult doc/SEQUENCER.txt for details
  * @author Bela Ban
- * @version $Id: SEQUENCER.java,v 1.6 2006/01/06 08:44:54 belaban Exp $
+ * @version $Id: SEQUENCER.java,v 1.7 2006/01/06 09:42:34 belaban Exp $
  */
 public class SEQUENCER extends Protocol {
     private Address                 local_addr=null, coord=null;
     static final String             name="SEQUENCER";
     private boolean                 is_coord=false;
     private final SynchronizedLong  seqno=new SynchronizedLong(0);
+
+    /** Map<seqno, Message>: maintains messages forwarded to the coord which which no ack has been received yet */
+    private final ConcurrentHashMap forward_table=new ConcurrentHashMap();
+
+    /** Map<Address, seqno>: maintains the highest seqnos seen for a given member */
+    private final ConcurrentHashMap received_table=new ConcurrentHashMap();
 
     private long forwarded_msgs=0;
     private long bcast_msgs=0;
@@ -79,12 +83,15 @@ public class SEQUENCER extends Protocol {
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
                 Address dest=msg.getDest();
-                if(dest == null || dest.isMulticastAddress()) {
+                if(dest == null || dest.isMulticastAddress()) { // only handle multicasts
+                    long next_seqno=nextSeqno();
+                    SequencerHeader hdr=new SequencerHeader(SequencerHeader.FORWARD, local_addr, next_seqno);
+                    msg.putHeader(name, hdr);
                     if(!is_coord) {
-                        forwardToCoord(msg);
+                        forwardToCoord(msg, next_seqno);
                     }
                     else {
-                        broadcast(msg, local_addr);
+                        broadcast(msg);
                     }
                     return; // don't pass down
                 }
@@ -114,15 +121,21 @@ public class SEQUENCER extends Protocol {
                 msg=(Message)evt.getArg();
                 hdr=(SequencerHeader)msg.getHeader(name);
                 if(hdr == null)
-                    break;
+                    break; // pass up
 
                 switch(hdr.type) {
                     case SequencerHeader.FORWARD:
-                        broadcast(msg, msg.getSrc());
+                        if(!is_coord) {
+                            if(log.isErrorEnabled())
+                                log.warn("I (" + local_addr + ") am not the coord and don't handle " +
+                                        "FORWARD requests, ignoring request");
+                            return;
+                        }
+                        broadcast(msg);
                         received_forwards++;
                         return;
                     case SequencerHeader.BCAST:
-                        deliver(msg, hdr);
+                        deliver(msg, hdr);  // deliver a copy and return (discard the original msg)
                         received_bcasts++;
                         return;
                 }
@@ -142,30 +155,41 @@ public class SEQUENCER extends Protocol {
 
     private void handleViewChange(View v) {
         Vector members=v.getMembers();
-        if(members.size() > 0) {
-            coord=(Address)members.firstElement();
-            is_coord=local_addr != null && local_addr.equals(coord);
+        if(members.size() == 0) return;
+
+        Address prev_coord=coord;
+        coord=(Address)members.firstElement();
+        is_coord=local_addr != null && local_addr.equals(coord);
+
+        boolean coord_changed=prev_coord != null && !prev_coord.equals(coord);
+        if(coord_changed) {
+            resendMessagesInForwardTable();
+        }
+        // remove left members from received_table
+        int size=received_table.size();
+        Set keys=received_table.keySet();
+        keys.retainAll(members);
+        if(keys.size() != size) {
+            if(trace)
+                log.trace("adjusted received_table, keys are " + keys);
         }
     }
 
+    private void resendMessagesInForwardTable() {
 
-    private void forwardToCoord(Message msg) {
-        SequencerHeader hdr=new SequencerHeader(SequencerHeader.FORWARD, local_addr, nextSeqno());
-        msg.putHeader(name, hdr);
+    }
+
+
+    private void forwardToCoord(Message msg, long seqno) {
         msg.setDest(coord);  // we change the message dest from multicast to unicast (to coord)
+        forward_table.put(new Long(seqno), msg);
         passDown(new Event(Event.MSG, msg));
         forwarded_msgs++;
     }
 
-    private void broadcast(Message msg, Address sender) {
+    private void broadcast(Message msg) {
         SequencerHeader hdr=(SequencerHeader)msg.getHeader(name);
-        if(hdr == null) {
-            hdr=new SequencerHeader(SequencerHeader.BCAST, sender, nextSeqno());
-            msg.putHeader(name, hdr);
-        }
-        else {
-            hdr.type=SequencerHeader.BCAST; // we change the type of header, but leave the tag intact
-        }
+        hdr.type=SequencerHeader.BCAST; // we change the type of header, but leave the tag intact
         msg.setDest(null); // mcast
         msg.setSrc(local_addr); // the coord is sending it - this will be replaced with sender in deliver()
         passDown(new Event(Event.MSG, msg));
@@ -179,11 +203,35 @@ public class SEQUENCER extends Protocol {
      * @param hdr
      */
     private void deliver(Message msg, SequencerHeader hdr) {
-        if(hdr.getOriginalSender() != null) {
-            Message tmp=msg.copy(true);
-            tmp.setSrc(hdr.getOriginalSender());
-            passUp(new Event(Event.MSG, tmp));
+        Address original_sender=hdr.getOriginalSender();
+        if(original_sender == null) {
+            if(log.isErrorEnabled())
+                log.error("original sender is null, cannot swap sender address back to original sender");
+            return;
         }
+        long msg_seqno=hdr.getSeqno();
+
+        // this is the ack for the message sent by myself
+        if(original_sender.equals(local_addr))
+            forward_table.remove(new Long(msg_seqno));
+
+        // if msg was already delivered, discard it
+        Long highest_seqno_seen=(Long)received_table.get(original_sender);
+        if(highest_seqno_seen != null) {
+            if(highest_seqno_seen.longValue() >= msg_seqno) {
+                if(log.isWarnEnabled())
+                log.warn("message seqno (" + original_sender + "::" + msg_seqno + " has already " +
+                        "been received (" + highest_seqno_seen + "); discarding duplicate message");
+                return;
+            }
+        }
+        // update the table with the new seqno
+        received_table.put(original_sender, new Long(msg_seqno));
+
+        // pass a copy of the message up the stack
+        Message tmp=msg.copy(true);
+        tmp.setSrc(original_sender);
+        passUp(new Event(Event.MSG, tmp));
     }
 
     /* ----------------------------- End of Private Methods -------------------------------- */

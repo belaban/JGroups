@@ -5,7 +5,7 @@ Design of SEQUENCER, a total order protocol using a sequencer
 
 Author: Bela Ban
 Date: Dec 29 2005
-Version: $Id: SEQUENCER.txt,v 1.11 2006/01/06 08:44:54 belaban Exp $
+Version: $Id: SEQUENCER.txt,v 1.12 2006/01/06 09:42:34 belaban Exp $
 
 
 Motivation
@@ -61,18 +61,19 @@ Variables:
 
 On send(M):
 - Pass down unicasts and return (handle only multicasts)
-- Add a FORWARD header to M with the local_addr and a monotonically increasing seqno (use a ViewId ?)
+- Add a FORWARD header to M with the local_addr and a monotonically increasing seqno (use a ViewId)
 - If not coordinator:
   - Add message to the forward-table (when a broadcast is received,
                                       remove the corresponding message from the forward-table)
   - Send M to coordinator
 - Else
-  - Multicast(M)
+  - Multicast(M, local_addr)
 
 
 On stop():
 - Stop handling new down messages
 - Wait for all replies until forward-table is empty, or a timeout (?)
+** Comment: I decided not to implement this, because this implies flushing **
 
 
 On reception of M from S:
