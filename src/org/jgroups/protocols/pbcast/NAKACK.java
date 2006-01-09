@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.61 2005/12/16 16:10:26 belaban Exp $
+// $Id: NAKACK.java,v 1.62 2006/01/09 12:21:40 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -809,7 +809,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         }
         catch(Exception ex) {
             if(log.isErrorEnabled()) {
-                log.error("message did not contain a list (LinkedList) of retransmitted messages: " + ex);
+                log.error("message did not contain a list (LinkedList) of retransmitted messages", ex);
             }
         }
     }
