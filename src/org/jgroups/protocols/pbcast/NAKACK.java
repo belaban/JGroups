@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.62 2006/01/09 12:21:40 belaban Exp $
+// $Id: NAKACK.java,v 1.63 2006/01/09 12:22:49 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -630,7 +630,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 StringBuffer sb=new StringBuffer('[');
                 sb.append(local_addr).append("] discarded message from non-member ").append(sender);
                 if(warn)
-                    log.warn(sb.toString());
+                    log.warn(sb);
             }
             return;
         }
@@ -706,7 +706,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                     else {
                         sb.append("\nSent messages: ").append(printSentMsgs());
                     }
-                    log.error(sb.toString());
+                    log.error(sb);
                 }
                 continue;
             }
