@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.35 2005/12/29 13:24:25 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.36 2006/01/11 17:55:20 ossiejnr Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -234,7 +234,8 @@
             bottom="Copyright &#169; 1998-2005 Bela Ban. All Rights Reserved."
 			useexternalfile="yes"
 			doctitle="JGroups"
-			overview="${src.dir}/org/jgroups/overview.html">
+			overview="${src.dir}/org/jgroups/overview.html"
+            source="1.4">
 			<!-- The tag option for Javadoc is available in Java 1.4 or later. -->
 			<tag name="todo" description="To do:"/>
 			</javadoc>
@@ -342,7 +343,7 @@
             <formatter type="brief" usefile="false"/>
             <batchtest todir="${tmp.dir}">
                 <fileset dir="${junit.dir}"
-                    includes="**/*Test.java"/>
+                    includes="**/AUTHTest.java"/>
             </batchtest>
         </junit>
     	<delete dir="${keystore.dir}" failonerror="false"/>

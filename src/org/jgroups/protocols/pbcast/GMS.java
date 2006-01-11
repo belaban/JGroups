@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.50 2006/01/06 12:50:13 belaban Exp $
+// $Id: GMS.java,v 1.51 2006/01/11 17:55:21 ossiejnr Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -79,7 +79,7 @@ public class GMS extends Protocol {
     /** How long should a Resumer wait until resuming the ViewHandler */
     long                      resume_task_timeout=20000;
 
-    static final String       name="GMS";
+    public static final String       name="GMS";
 
 
 
@@ -1101,7 +1101,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.50 2006/01/06 12:50:13 belaban Exp $
+     * @version $Id: GMS.java,v 1.51 2006/01/11 17:55:21 ossiejnr Exp $
      */
     class ViewHandler implements Runnable {
         Thread                    t;
