@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.62 2005/11/07 08:05:54 belaban Exp $
+// $Id: Util.java,v 1.63 2006/01/11 17:55:22 ossiejnr Exp $
 
 package org.jgroups.util;
 
@@ -7,6 +7,8 @@ import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.FD;
 import org.jgroups.protocols.PingHeader;
 import org.jgroups.protocols.UdpHeader;
+import org.jgroups.auth.AuthToken;
+import org.jgroups.auth.SimpleToken;
 import org.jgroups.protocols.pbcast.NakAckHeader;
 import org.jgroups.stack.IpAddress;
 
@@ -142,6 +144,22 @@ public class Util {
         return retval;
     }
 
+    public static void writeAuthToken(AuthToken token, DataOutputStream out) throws IOException{
+        Util.writeString(token.getName(), out);
+        token.writeTo(out);
+    }
+
+    public static AuthToken readAuthToken(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        try{
+            String type = Util.readString(in);
+            Object obj = Class.forName(type).newInstance();
+            AuthToken token = (AuthToken) obj;
+            token.readFrom(in);
+            return token;
+        }catch(ClassNotFoundException cnfe){
+            return null;
+        }
+    }
 
     public static void writeAddress(Address addr, DataOutputStream out) throws IOException {
         if(addr == null) {
@@ -160,8 +178,6 @@ public class Util {
             writeOtherAddress(addr, out);
         }
     }
-
-
 
     public static Address readAddress(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
         Address addr=null;
