@@ -1,4 +1,4 @@
-// $Id: ChannelTest.java,v 1.1 2005/07/18 08:49:16 belaban Exp $
+// $Id: ChannelTest.java,v 1.2 2006/01/11 15:02:34 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -7,13 +7,12 @@ import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.jgroups.*;
-import org.jgroups.tests.*;
 
 
 /**
  * Tests various methods in JChannel
  * @author Bela Ban
- * @version $Id: ChannelTest.java,v 1.1 2005/07/18 08:49:16 belaban Exp $
+ * @version $Id: ChannelTest.java,v 1.2 2006/01/11 15:02:34 belaban Exp $
  */
 public class ChannelTest extends TestCase {
     JChannel ch;
@@ -63,7 +62,16 @@ public class ChannelTest extends TestCase {
         catch(TimeoutException e) {
             System.out.println("caught a TimeoutException - this is the expected behavior");
         }
+    }
 
+    public void testNullMessage() throws ChannelClosedException, ChannelNotConnectedException {
+        try {
+            ch.send(null);
+            fail("null message should throw an exception - we should not get here");
+        }
+        catch(NullPointerException e) {
+            System.out.println("caught NullPointerException - this is expected");
+        }
     }
 
 
