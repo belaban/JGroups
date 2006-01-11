@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.63 2006/01/09 12:22:49 belaban Exp $
+// $Id: NAKACK.java,v 1.64 2006/01/11 14:21:13 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -129,7 +129,11 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     }
 
     public int getSentTableSize() {
-        return sent_msgs.size();
+        int size;
+        synchronized(sent_msgs) {
+            size=sent_msgs.size();
+        }
+        return size;
     }
 
     public int getReceivedTableSize() {
