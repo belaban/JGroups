@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.46 2006/01/06 12:50:13 belaban Exp $
+// $Id: JChannel.java,v 1.47 2006/01/11 14:58:47 belaban Exp $
 
 package org.jgroups;
 
@@ -66,7 +66,7 @@ import java.util.Vector;
  *
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.46 $
+ * @version $Revision: 1.47 $
  */
 public class JChannel extends Channel {
 
@@ -584,6 +584,8 @@ public class JChannel extends Channel {
             sent_msgs++;
             sent_bytes+=msg.getLength();
         }
+        if(msg == null)
+            throw new NullPointerException("msg is null");
         down(new Event(Event.MSG, msg));
     }
 
