@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.66 2006/01/11 14:38:09 belaban Exp $
+// $Id: NAKACK.java,v 1.67 2006/01/11 14:57:23 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -581,6 +581,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * message should not be changed after storing it in the sent-table ! See protocols/DESIGN for details.
      */
     private void send(Event evt, Message msg) {
+        if(msg == null)
+            throw new NullPointerException("msg is null; event is " + evt);
         long msg_id=getNextSeqno();
 
         msg.putHeader(name, new NakAckHeader(NakAckHeader.MSG, msg_id));
