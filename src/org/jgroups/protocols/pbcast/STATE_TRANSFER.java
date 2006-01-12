@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.25 2005/12/16 16:21:07 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.26 2006/01/12 12:30:43 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -66,7 +66,7 @@ public class STATE_TRANSFER extends Protocol {
         super.setProperties(props);
 
         if(props.size() > 0) {
-            log.error("STATE_TRANSFER.setProperties(): the following properties are not recognized: " + props);
+            log.error("the following properties are not recognized: " + props);
 
             return false;
         }
@@ -215,6 +215,8 @@ public class STATE_TRANSFER extends Protocol {
                         state_rsp=new Message(requester, null, state); // put the state into state_rsp.buffer
                         hdr=new StateHeader(StateHeader.STATE_RSP, local_addr, 0, digest);
                         state_rsp.putHeader(name, hdr);
+                        if(trace)
+                            log.trace("sending state to " + requester + " (" + state.length + " bytes)");
                         passDown(new Event(Event.MSG, state_rsp));
                     }
                     digest=null;
