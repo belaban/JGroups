@@ -1,14 +1,13 @@
-// $Id: Util.java,v 1.63 2006/01/11 17:55:22 ossiejnr Exp $
+// $Id: Util.java,v 1.64 2006/01/12 07:42:41 belaban Exp $
 
 package org.jgroups.util;
 
 import org.jgroups.*;
+import org.jgroups.auth.AuthToken;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.FD;
 import org.jgroups.protocols.PingHeader;
 import org.jgroups.protocols.UdpHeader;
-import org.jgroups.auth.AuthToken;
-import org.jgroups.auth.SimpleToken;
 import org.jgroups.protocols.pbcast.NakAckHeader;
 import org.jgroups.stack.IpAddress;
 
