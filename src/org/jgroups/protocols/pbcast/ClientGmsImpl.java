@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.30 2006/01/06 12:50:13 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.31 2006/01/13 21:26:23 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -19,7 +19,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.30 $
+ * @version $Revision: 1.31 $
  */
 public class ClientGmsImpl extends GmsImpl {
     private final Vector  initial_mbrs=new Vector(11);
@@ -168,7 +168,7 @@ public class ClientGmsImpl extends GmsImpl {
             catch(SecurityException security_ex) {
                 throw security_ex;
             }
-            catch(Exception e) {
+            catch(Throwable e) {
                 if(log.isDebugEnabled()) log.debug("exception=" + e + ", retrying");
             }
 
