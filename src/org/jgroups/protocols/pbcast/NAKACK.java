@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.68 2006/01/13 17:13:38 belaban Exp $
+// $Id: NAKACK.java,v 1.69 2006/01/13 20:42:17 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -582,8 +582,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             throw new NullPointerException("msg is null; event is " + evt);
 
         synchronized(sent_msgs) {
-            try {
-                long msg_id=seqno +1;
+            long msg_id;
+            try { // incrementing seqno and adding the msg to sent_msgs needs to be atomic
+                msg_id=seqno +1;
                 msg.putHeader(name, new NakAckHeader(NakAckHeader.MSG, msg_id));
                 if(Global.copy) {
                     sent_msgs.put(new Long(msg_id), msg.copy());
@@ -592,8 +593,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                     sent_msgs.put(new Long(msg_id), msg);
                 }
                 seqno=msg_id;
-                if(trace)
-                    log.trace(local_addr + ": sending msg #" + msg_id);
             }
             catch(Throwable t) {
                 if(t instanceof Error)
@@ -604,9 +603,18 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                     throw new RuntimeException("failure adding msg " + msg + " to the retransmit table", t);
                 }
             }
-        }
 
-        passDown(evt);
+            try {
+                if(trace)
+                    log.trace(local_addr + ": sending msg #" + msg_id);
+                passDown(evt); // if this fails, since msg is in sent_msgs, it can be retransmitted
+            }
+            catch(Throwable t) { // eat the exception, don't pass it up the stack
+                if(warn) {
+                    log.warn("failure passing message down", t);
+                }
+            }
+        }
     }
 
 
