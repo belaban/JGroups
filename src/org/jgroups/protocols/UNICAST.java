@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.48 2006/01/13 20:51:59 belaban Exp $
+// $Id: UNICAST.java,v 1.49 2006/01/13 22:02:57 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -222,15 +222,15 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     }
 
 
-
+    static int i=0;
 
 
     public void down(Event evt) {
         switch (evt.getType()) {
 
             case Event.MSG: // Add UnicastHeader, add to AckSenderWindow and pass down
-                Message msg = (Message) evt.getArg();
-                Object dst = msg.getDest();
+                Message msg=(Message) evt.getArg();
+                Object  dst=msg.getDest();
 
                 /* only handle unicast messages */
                 if (dst == null || ((Address) dst).isMulticastAddress()) {
@@ -256,26 +256,42 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 }
 
                 synchronized(entry) { // threads will only sync if they access the same entry
-                    long seqno=entry.sent_msgs_seqno;
-                    UnicastHeader hdr=new UnicastHeader(UnicastHeader.DATA, seqno);
-                    if(entry.sent_msgs == null) { // first msg to peer 'dst'
-                        entry.sent_msgs=new AckSenderWindow(this, timeout, timer); // use the protocol stack's timer
+                    long seqno=-2;
+                    Message tmp;
+                    try {
+                        seqno=entry.sent_msgs_seqno;
+                        UnicastHeader hdr=new UnicastHeader(UnicastHeader.DATA, seqno);
+                        if(entry.sent_msgs == null) { // first msg to peer 'dst'
+                            entry.sent_msgs=new AckSenderWindow(this, timeout, timer); // use the protocol stack's timer
+                        }
+                        msg.putHeader(name, hdr);
+                        if(trace)
+                            log.trace(new StringBuffer().append(local_addr).append(" --> DATA(").append(dst).append(": #").
+                                    append(seqno));
+                        tmp=Global.copy? msg.copy() : msg;
+                        entry.sent_msgs.add(seqno, tmp);  // add *including* UnicastHeader, adds to retransmitter
+                        entry.sent_msgs_seqno++;
                     }
-                    msg.putHeader(name, hdr);
-                    if(trace)
-                        log.trace(new StringBuffer().append(local_addr).append(" --> DATA(").append(dst).append(": #").
-                                append(seqno));
-
-                    entry.sent_msgs_seqno++;
-                    Message tmp=Global.copy? msg.copy() : msg;
+                    catch(Throwable t) {
+                        entry.sent_msgs.ack(seqno); // remove seqno again, so it is not transmitted
+                        if(t instanceof Error)
+                            throw (Error)t;
+                        if(t instanceof RuntimeException)
+                            throw (RuntimeException)t;
+                        else {
+                            throw new RuntimeException("failure adding msg " + msg + " to the retransmit table", t);
+                        }
+                    }
 
                     try {
                         passDown(new Event(Event.MSG, tmp));
                         num_msgs_sent++;
                         num_bytes_sent+=msg.getLength();
                     }
-                    finally {
-                        entry.sent_msgs.add(seqno, tmp);  // add *including* UnicastHeader, adds to retransmitter
+                    catch(Throwable t) { // eat the exception, don't pass it up the stack
+                        if(warn) {
+                            log.warn("failure passing message down", t);
+                        }
                     }
                 }
                 msg=null;
