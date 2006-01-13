@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.47 2005/12/16 16:11:17 belaban Exp $
+// $Id: UNICAST.java,v 1.48 2006/01/13 20:51:59 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -279,7 +279,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                     }
                 }
                 msg=null;
-                return; // AckSenderWindow will send message for us
+                return; // we already passed the msg down
 
             case Event.VIEW_CHANGE:  // remove connections to peers that are not members anymore !
                 Vector new_members=((View)evt.getArg()).getMembers();
