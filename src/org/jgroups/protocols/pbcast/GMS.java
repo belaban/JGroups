@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.51 2006/01/11 17:55:21 ossiejnr Exp $
+// $Id: GMS.java,v 1.52 2006/01/13 21:27:09 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -1101,7 +1101,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.51 2006/01/11 17:55:21 ossiejnr Exp $
+     * @version $Id: GMS.java,v 1.52 2006/01/13 21:27:09 belaban Exp $
      */
     class ViewHandler implements Runnable {
         Thread                    t;
@@ -1212,6 +1212,9 @@ public class GMS extends Protocol {
                 }
                 catch(TimeoutException e) {
                     break;
+                }
+                catch(Throwable catchall) {
+                    Util.sleep(50);
                 }
             }
         }
