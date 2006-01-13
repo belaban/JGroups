@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.67 2006/01/11 14:57:23 belaban Exp $
+// $Id: NAKACK.java,v 1.68 2006/01/13 17:13:38 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -33,7 +33,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     private boolean is_server=false;
     private Address local_addr=null;
     private final Vector  members=new Vector(11);
-    private long    seqno=0;                                   // current message sequence number (starts with 0)
+    private long    seqno=-1;                                  // current message sequence number (starts with 0)
     private long    max_xmit_size=8192;                        // max size of a retransmit message (otherwise send multiple)
     private int     gc_lag=20;                                 // number of msgs garbage collection lags behind
 
@@ -468,7 +468,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         case Event.DISCONNECT:
             leaving=true;
             removeAll();
-            seqno=0;
+            seqno=-1;
             break;
         }
 
@@ -570,32 +570,42 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
     /* --------------------------------- Private Methods --------------------------------------- */
 
-    private synchronized long getNextSeqno() {
-        return seqno++;
-    }
-
-
     /**
      * Adds the message to the sent_msgs table and then passes it down the stack. Change Bela Ban May 26 2002: we don't
      * store a copy of the message, but a reference ! This saves us a lot of memory. However, this also means that a
      * message should not be changed after storing it in the sent-table ! See protocols/DESIGN for details.
+     * Made seqno increment and adding to sent_msgs atomic, e.g. seqno won't get incremented if adding to
+     * sent_msgs fails e.g. due to an OOM (see http://jira.jboss.com/jira/browse/JGRP-179). bela Jan 13 2006
      */
     private void send(Event evt, Message msg) {
         if(msg == null)
             throw new NullPointerException("msg is null; event is " + evt);
-        long msg_id=getNextSeqno();
 
-        msg.putHeader(name, new NakAckHeader(NakAckHeader.MSG, msg_id));
         synchronized(sent_msgs) {
-            if(Global.copy) {
-                sent_msgs.put(new Long(msg_id), msg.copy());
+            try {
+                long msg_id=seqno +1;
+                msg.putHeader(name, new NakAckHeader(NakAckHeader.MSG, msg_id));
+                if(Global.copy) {
+                    sent_msgs.put(new Long(msg_id), msg.copy());
+                }
+                else {
+                    sent_msgs.put(new Long(msg_id), msg);
+                }
+                seqno=msg_id;
+                if(trace)
+                    log.trace(local_addr + ": sending msg #" + msg_id);
             }
-            else {
-                sent_msgs.put(new Long(msg_id), msg);
+            catch(Throwable t) {
+                if(t instanceof Error)
+                    throw (Error)t;
+                if(t instanceof RuntimeException)
+                    throw (RuntimeException)t;
+                else {
+                    throw new RuntimeException("failure adding msg " + msg + " to the retransmit table", t);
+                }
             }
         }
-        if(trace)
-            log.trace(local_addr + ": sending msg #" + msg_id);
+
         passDown(evt);
     }
 
