@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.64 2006/01/12 07:42:41 belaban Exp $
+// $Id: Util.java,v 1.65 2006/01/13 21:18:17 belaban Exp $
 
 package org.jgroups.util;
 
@@ -524,7 +524,7 @@ public class Util {
         try {
             Thread.sleep(timeout);
         }
-        catch(Exception e) {
+        catch(Throwable e) {
         }
     }
 
