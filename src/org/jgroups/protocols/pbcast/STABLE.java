@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.39 2005/08/11 12:43:46 belaban Exp $
+// $Id: STABLE.java,v 1.40 2006/01/14 14:00:33 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -45,9 +45,9 @@ public class STABLE extends Protocol {
     /** delay before we send STABILITY msg (give others a change to send first). This should be set to a very
      * small number (> 0 !) if <code>max_bytes</code> is used */
     long                stability_delay=6000;
-    StabilitySendTask   stability_task=null;
+    private StabilitySendTask   stability_task=null;
     final Object        stability_mutex=new Object(); // to synchronize on stability_task
-    StableTask          stable_task=null;             // bcasts periodic STABLE message (added to timer below)
+    private StableTask          stable_task=null;             // bcasts periodic STABLE message (added to timer below)
     final Object        stable_task_mutex=new Object(); // to sync on stable_task
     TimeScheduler       timer=null;                   // to send periodic STABLE msgs (and STABILITY messages)
     static final String name="STABLE";
@@ -66,7 +66,7 @@ public class STABLE extends Protocol {
 
     boolean             initialized=false;
 
-    ResumeTask          resume_task=null;
+    private ResumeTask  resume_task=null;
     final Object        resume_task_mutex=new Object();
 
     /** Number of gossip messages */
@@ -198,8 +198,7 @@ public class STABLE extends Protocol {
         case Event.MSG:
             msg=(Message)evt.getArg();
             if(max_bytes > 0) {  // message counting is enabled
-                long size=Math.max(msg.getLength(), 24);
-                num_bytes_received+=size;
+                num_bytes_received+=(long)Math.max(msg.getLength(), 24);
                 if(num_bytes_received >= max_bytes) {
                     if(trace) {
                         log.trace(new StringBuffer("max_bytes has been reached (").append(max_bytes).
@@ -300,7 +299,7 @@ public class STABLE extends Protocol {
 
 
     /** Digest and members are guaranteed to be non-null */
-    private void adjustSenders(Digest d, Vector members) {
+    private static void adjustSenders(Digest d, Vector members) {
         synchronized(d) {
             // 1. remove all members from digest who are not in the view
             Iterator it=d.senders.keySet().iterator();
@@ -407,7 +406,6 @@ public class STABLE extends Protocol {
      * Removes mbr from heard_from and returns true if this was the last member, otherwise false.
      * Resets the heard_from list (populates with membership)
      * @param mbr
-     * @return
      */
     private boolean removeFromHeardFromList(Address mbr) {
         synchronized(heard_from) {
@@ -551,7 +549,7 @@ public class STABLE extends Protocol {
     /**
      * Bcasts a STABLE message of the current digest to all members. Message contains highest seqnos of all members
      * seen by this member. Highest seqnos are retrieved from the NAKACK layer below.
-     * @param Digest A <em>copy</em> of this.digest
+     * @param d A <em>copy</em> of this.digest
      */
     private void sendStableMessage(Digest d) {
         if(suspended) {

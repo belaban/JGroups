@@ -8,7 +8,7 @@ import java.util.*;
 
 /**
  * @author Bela Ban
- * @version $Id: AckCollector.java,v 1.6 2005/11/18 15:12:24 belaban Exp $
+ * @version $Id: AckCollector.java,v 1.7 2006/01/14 14:00:44 belaban Exp $
  */
 public class AckCollector {
     /** List<Object>: list of members from whom we haven't received an ACK yet */
@@ -80,18 +80,14 @@ public class AckCollector {
         if(missing_acks.size() == 0)
             return true;
         Object result=all_acks_received.getResult();
-        if(result != null && result instanceof Boolean && ((Boolean)result).booleanValue())
-            return true;
-        return false;
+        return result != null && result instanceof Boolean && ((Boolean)result).booleanValue();
     }
 
     public boolean waitForAllAcks(long timeout) throws TimeoutException {
         if(missing_acks.size() == 0)
             return true;
         Object result=all_acks_received.getResultWithTimeout(timeout);
-        if(result != null && result instanceof Boolean && ((Boolean)result).booleanValue())
-            return true;
-        return false;
+        return result != null && result instanceof Boolean && ((Boolean)result).booleanValue();
     }
 
     public String toString() {

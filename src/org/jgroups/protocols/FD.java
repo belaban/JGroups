@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.31 2005/12/16 15:34:13 belaban Exp $
+// $Id: FD.java,v 1.32 2006/01/14 14:00:38 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -29,7 +29,7 @@ import java.util.List;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Revision: 1.31 $
+ * @version $Revision: 1.32 $
  */
 public class FD extends Protocol {
     Address               ping_dest=null;
@@ -46,13 +46,13 @@ public class FD extends Protocol {
 
     boolean               shun=true;
     TimeScheduler         timer=null;
-    Monitor               monitor=null;  // task that performs the actual monitoring for failure detection
+    private Monitor       monitor=null;  // task that performs the actual monitoring for failure detection
     private final Object  monitor_mutex=new Object();
     private int           num_heartbeats=0;
     private int           num_suspect_events=0;
 
     /** Transmits SUSPECT message until view change or UNSUSPECT is received */
-    final Broadcaster     bcast_task=new Broadcaster();
+    private final Broadcaster     bcast_task=new Broadcaster();
     final static String   name="FD";
 
     BoundedList           suspect_history=new BoundedList(20);
@@ -518,7 +518,7 @@ public class FD extends Protocol {
 
 
         public String toString() {
-            return "" + started;
+            return Boolean.toString(started);
         }
 
     }

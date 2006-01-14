@@ -1,4 +1,4 @@
-// $Id: ProtocolStack.java,v 1.25 2006/01/05 10:23:43 belaban Exp $
+// $Id: ProtocolStack.java,v 1.26 2006/01/14 14:00:42 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -119,7 +119,7 @@ public class ProtocolStack extends Protocol implements Transport {
                         sb.append('\n');
                         for(Iterator it=tmpProps.entrySet().iterator(); it.hasNext();) {
                             entry=(Map.Entry)it.next();
-                            sb.append(entry + "\n");
+                            sb.append(entry).append("\n");
                         }
                     }
                 }

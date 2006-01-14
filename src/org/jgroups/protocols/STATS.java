@@ -11,7 +11,7 @@ import java.util.*;
 /**
  * Provides various stats
  * @author Bela Ban
- * @version $Id: STATS.java,v 1.2 2005/06/07 10:17:27 belaban Exp $
+ * @version $Id: STATS.java,v 1.3 2006/01/14 14:00:38 belaban Exp $
  */
 public class STATS extends Protocol {
     long sent_msgs, sent_bytes, sent_ucasts, sent_mcasts, received_ucasts, received_mcasts;
@@ -23,8 +23,8 @@ public class STATS extends Protocol {
     /** HashMap<Address,Entry>, maintains stats per receiver */
     HashMap received=new HashMap();
 
-    final short UP=1;
-    final short DOWN=2;
+    static final short UP=1;
+    static final short DOWN=2;
 
 
     public String getName() {

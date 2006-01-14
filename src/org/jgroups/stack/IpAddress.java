@@ -1,4 +1,4 @@
-// $Id: IpAddress.java,v 1.30 2006/01/05 14:07:25 belaban Exp $
+// $Id: IpAddress.java,v 1.31 2006/01/14 14:00:42 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -152,7 +152,7 @@ public class IpAddress implements Address {
     public final boolean equals(Object obj) {
         if(this == obj) return true; // added Nov 7 2005, makes sense with canonical addresses
         if(obj == null) return false;
-        return compareTo(obj) == 0 ? true : false;
+        return compareTo(obj) == 0;
     }
 
 
@@ -182,7 +182,7 @@ public class IpAddress implements Address {
                 appendShortName(host_name, sb);
             }
         }
-        sb.append(":" + port);
+        sb.append(":").append(port);
         return sb.toString();
     }
 
@@ -195,7 +195,7 @@ public class IpAddress implements Address {
      * @param hostname The hostname in long form. Guaranteed not to be null
      * @param sb The string buffer to which the result is to be appended
      */
-    private void appendShortName(String hostname, StringBuffer sb) {
+    private static void appendShortName(String hostname, StringBuffer sb) {
         if(hostname == null) return;
         int  index=hostname.indexOf('.');
         if(index > 0 && !Character.isDigit(hostname.charAt(0)))

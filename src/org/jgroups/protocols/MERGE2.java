@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.25 2005/10/04 15:47:47 belaban Exp $
+// $Id: MERGE2.java,v 1.26 2006/01/14 14:00:38 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -42,16 +42,16 @@ import java.util.Vector;
  * @author Bela Ban, Oct 16 2001
  */
 public class MERGE2 extends Protocol {
-    Address       local_addr=null;
-    FindSubgroups task=null;             // task periodically executing as long as we are coordinator
-    private final Object task_lock=new Object();
-    long          min_interval=5000;     // minimum time between executions of the FindSubgroups task
-    long          max_interval=20000;    // maximum time between executions of the FindSubgroups task
-    boolean       is_coord=false;
-    final Promise find_promise=new Promise(); // to synchronize FindSubgroups.findInitialMembers() on
+    Address               local_addr=null;
+    private FindSubgroups task=null;             // task periodically executing as long as we are coordinator
+    private final Object  task_lock=new Object();
+    long                  min_interval=5000;     // minimum time between executions of the FindSubgroups task
+    long                  max_interval=20000;    // maximum time between executions of the FindSubgroups task
+    boolean               is_coord=false;
+    final Promise         find_promise=new Promise(); // to synchronize FindSubgroups.findInitialMembers() on
 
     /** Use a new thread to send the MERGE event up the stack */
-    boolean       use_separate_thread=false;
+    boolean               use_separate_thread=false;
 
 
     public String getName() {

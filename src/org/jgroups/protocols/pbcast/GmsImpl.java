@@ -1,4 +1,4 @@
-// $Id: GmsImpl.java,v 1.13 2005/12/23 14:57:06 belaban Exp $
+// $Id: GmsImpl.java,v 1.14 2006/01/14 14:00:33 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 

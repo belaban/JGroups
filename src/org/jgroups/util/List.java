@@ -1,4 +1,4 @@
-// $Id: List.java,v 1.10 2005/04/12 12:59:21 belaban Exp $
+// $Id: List.java,v 1.11 2006/01/14 14:00:44 belaban Exp $
 
 package org.jgroups.util;
 
@@ -214,7 +214,7 @@ public class List implements Externalizable, Cloneable {
 
         while(el != null) {
             if(el.obj != null)
-                ret.append(el.obj + " ");
+                ret.append(el.obj).append(" ");
             el=el.next;
         }
         ret.append(']');
@@ -225,7 +225,7 @@ public class List implements Externalizable, Cloneable {
     public String dump() {
         StringBuffer ret=new StringBuffer("[");
         for(Element el=head; el != null; el=el.next)
-            ret.append(el.obj + " ");
+            ret.append(el.obj).append(" ");
 
         return ret.toString() + ']';
     }

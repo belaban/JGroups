@@ -1,15 +1,16 @@
 package org.jgroups.protocols;
 
 
-import org.jgroups.stack.Protocol;
-import org.jgroups.*;
-import org.jgroups.protocols.pbcast.*;
-import org.jgroups.protocols.pbcast.GMS;
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Message;
 import org.jgroups.auth.AuthToken;
-
+import org.jgroups.protocols.pbcast.GMS;
+import org.jgroups.protocols.pbcast.JoinRsp;
+import org.jgroups.stack.Protocol;
 import java.util.Properties;
-import java.util.Enumeration;
-import java.util.HashMap;
+
+
 /**
  * The AUTH protocol adds a layer of authentication to JGroups
  * @author Chris Mills
@@ -182,7 +183,7 @@ public class AUTH extends Protocol{
      * @param evt The event object passed in to AUTH
      * @return A GmsHeader object or null if the event contains a message of a different type
      */
-    private GMS.GmsHeader isJoinMessage(Event evt){
+    private static GMS.GmsHeader isJoinMessage(Event evt){
         Message msg;
         switch(evt.getType()){
           case Event.MSG:

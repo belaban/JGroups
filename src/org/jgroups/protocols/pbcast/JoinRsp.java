@@ -1,4 +1,4 @@
-// $Id: JoinRsp.java,v 1.9 2006/01/06 12:18:27 belaban Exp $
+// $Id: JoinRsp.java,v 1.10 2006/01/14 14:00:33 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -19,7 +19,7 @@ public class JoinRsp implements Serializable, Streamable {
     Digest digest=null;
     /** only set if JOIN failed, e.g. in AUTH */
     String fail_reason=null;
-    static final long serialVersionUID = -212620440767943314L;
+    private static final long serialVersionUID = -212620440767943314L;
 
 
 
