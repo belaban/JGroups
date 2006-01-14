@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.69 2006/01/13 20:42:17 belaban Exp $
+// $Id: NAKACK.java,v 1.70 2006/01/14 11:01:29 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -1297,7 +1297,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             min_seqno=sent_msgs.size() > 0 ? (Long)sent_msgs.firstKey() : new Long(0);
             max_seqno=sent_msgs.size() > 0 ? (Long)sent_msgs.lastKey() : new Long(0);
         }
-        sb.append('[').append(min_seqno).append(" - ").append(max_seqno).append("] (" + sent_msgs.size() + ")");
+        sb.append('[').append(min_seqno).append(" - ").append(max_seqno).append("] (").append(sent_msgs.size()).append(")");
         return sb.toString();
     }
 
