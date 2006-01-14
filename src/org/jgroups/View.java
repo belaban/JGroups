@@ -1,4 +1,4 @@
-// $Id: View.java,v 1.10 2005/08/08 09:48:06 belaban Exp $
+// $Id: View.java,v 1.11 2006/01/14 13:00:21 belaban Exp $
 
 package org.jgroups;
 
@@ -116,6 +116,8 @@ public class View implements Externalizable, Cloneable, Streamable {
     public boolean equals(Object obj) {
         if(obj == null)
             return false;
+        if(!(obj instanceof View))
+            throw new ClassCastException(obj.getClass().getName() + " is not a View");
         if(vid != null) {
             int rc=vid.compareTo(((View)obj).vid);
             if(rc != 0)

@@ -1,4 +1,4 @@
-// $Id: MergeView.java,v 1.5 2005/11/21 13:33:08 belaban Exp $
+// $Id: MergeView.java,v 1.6 2006/01/14 13:00:21 belaban Exp $
 
 
 package org.jgroups;
@@ -77,8 +77,7 @@ public class MergeView extends View {
 
     public String toString() {
         StringBuffer sb=new StringBuffer();
-        sb.append("MergeView::" + super.toString());
-        sb.append(", subgroups=" + subgroups);
+        sb.append("MergeView::").append(super.toString()).append(", subgroups=").append(subgroups);
         return sb.toString();
     }
 
