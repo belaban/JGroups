@@ -1,4 +1,4 @@
-// $Id: Protocol.java,v 1.34 2005/10/27 16:05:04 belaban Exp $
+// $Id: Protocol.java,v 1.35 2006/01/14 11:06:32 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -42,10 +42,9 @@ class UpHandler extends Thread {
 
     /** Removes events from mq and calls handler.up(evt) */
     public void run() {
-        Event evt;
         while(!mq.closed()) {
             try {
-                evt=(Event)mq.remove();
+                Event evt=(Event)mq.remove();
                 if(evt == null) {
                     if(log.isWarnEnabled()) log.warn("removed null event");
                     continue;
@@ -97,10 +96,9 @@ class DownHandler extends Thread {
 
     /** Removes events from mq and calls handler.down(evt) */
     public void run() {
-        Event evt;
         while(!mq.closed()) {
             try {
-                evt=(Event)mq.remove();
+                Event evt=(Event)mq.remove();
                 if(evt == null) {
                     if(log.isWarnEnabled()) log.warn("removed null event");
                     continue;
@@ -189,10 +187,9 @@ public abstract class Protocol {
      *	calls setProperties(), which might invoke the setProperties() method of the actual protocol instance.
      */
     public boolean setPropertiesInternal(Properties props) {
-        String str;
         this.props.putAll(props);
 
-        str=props.getProperty("down_thread");
+        String str=props.getProperty("down_thread");
         if(str != null) {
             down_thread=Boolean.valueOf(str).booleanValue();
             props.remove("down_thread");
