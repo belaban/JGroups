@@ -1,4 +1,4 @@
-// $Id: ViewTest.java,v 1.3 2004/10/07 15:45:41 belaban Exp $
+// $Id: ViewTest.java,v 1.4 2006/01/14 12:51:12 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -21,7 +21,8 @@ public class ViewTest extends TestCase {
         super(Name_);
     }
 
-    public void setUp() {
+    public void setUp() throws Exception {
+        super.setUp();
         a=new IpAddress("localhost", 5555);
         b=new IpAddress("localhost", 5555);
         c=b;
@@ -55,7 +56,7 @@ public class ViewTest extends TestCase {
     }
 
     public void testEqualsCreator() {
-        assertTrue("Creator should be a:", view.getCreator().equals(a));
+        assertEquals("Creator should be a:", view.getCreator(), a);
         assertTrue("Creator should not be d", !view.getCreator().equals(d));
     }
 
@@ -73,7 +74,7 @@ public class ViewTest extends TestCase {
         assertFalse(v1.equals(v2));
     }
 
-    public void tearDown() {
+    public void tearDown() throws Exception {
         a=null;
         b=null;
         c=null;
@@ -84,6 +85,7 @@ public class ViewTest extends TestCase {
         h=null;
         i=null;
         view=null;
+        super.tearDown();
     }
 
     public static void main(String[] args) {

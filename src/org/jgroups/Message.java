@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.43 2005/11/07 13:37:23 belaban Exp $
+// $Id: Message.java,v 1.44 2006/01/14 12:48:52 belaban Exp $
 
 package org.jgroups;
 
@@ -47,7 +47,7 @@ public class Message implements Externalizable, Streamable {
 
     protected static final Log log=LogFactory.getLog(Message.class);
 
-    static final long serialVersionUID=-1137364035832847034L;
+    private static final long serialVersionUID=7966206671974139740L;
 
     static final byte DEST_SET=1;
     static final byte SRC_SET=2;
@@ -176,7 +176,7 @@ public class Message implements Externalizable, Streamable {
      * Returns a copy of the buffer if offset and length are used, otherwise a reference.
      * @return byte array with a copy of the buffer.
      */
-    public byte[] getBuffer() {
+    final public byte[] getBuffer() {
         if(buf == null)
             return null;
         if(offset == 0 && length == buf.length)
@@ -188,7 +188,7 @@ public class Message implements Externalizable, Streamable {
         }
     }
 
-    public void setBuffer(byte[] b) {
+    final public void setBuffer(byte[] b) {
         buf=b;
         if(buf != null) {
             offset=0;
@@ -205,7 +205,7 @@ public class Message implements Externalizable, Streamable {
      * @param offset The initial position
      * @param length The number of bytes
      */
-    public void setBuffer(byte[] b, int offset, int length) {
+    final public void setBuffer(byte[] b, int offset, int length) {
         buf=b;
         if(buf != null) {
             if(offset < 0 || offset > buf.length)
@@ -234,7 +234,7 @@ public class Message implements Externalizable, Streamable {
         return headers;
     }
 
-    public void setObject(Serializable obj) {
+    final public void setObject(Serializable obj) {
         if(obj == null) return;
         try {
             ByteArrayOutputStream out_stream=new ByteArrayOutputStream();
@@ -247,7 +247,7 @@ public class Message implements Externalizable, Streamable {
         }
     }
 
-    public Object getObject() {
+    final public Object getObject() {
         if(buf == null) return null;
         try {
             ByteArrayInputStream in_stream=new ByteArrayInputStream(buf, offset, length);
@@ -357,11 +357,10 @@ public class Message implements Externalizable, Streamable {
 
     /** Tries to read an object from the message's buffer and prints it */
     public String toStringAsObject() {
-        Object obj;
 
         if(buf == null) return null;
         try {
-            obj=getObject();
+            Object obj=getObject();
             return obj != null ? obj.toString() : "";
         }
         catch(Exception e) {  // it is not an object
@@ -461,10 +460,7 @@ public class Message implements Externalizable, Streamable {
 
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        int      len;
         boolean  destAddressExist=in.readBoolean();
-        boolean  srcAddressExist;
-        Object   key, value;
 
         if(destAddressExist) {
             dest_addr=(Address)Marshaller.read(in);
@@ -472,7 +468,7 @@ public class Message implements Externalizable, Streamable {
                 dest_addr=canonicalAddress(dest_addr);
         }
 
-        srcAddressExist=in.readBoolean();
+        boolean srcAddressExist=in.readBoolean();
         if(srcAddressExist) {
             src_addr=(Address)Marshaller.read(in);
             if(!DISABLE_CANONICALIZATION)
@@ -487,10 +483,10 @@ public class Message implements Externalizable, Streamable {
             length=buf.length;
         }
 
-        len=in.readInt();
+        int len=in.readInt();
         while(len-- > 0) {
-            key=in.readUTF();
-            value=Marshaller.read(in);
+            Object key=in.readUTF();
+            Object value=Marshaller.read(in);
             headers.put(key, value);
         }
     }
@@ -624,7 +620,7 @@ public class Message implements Externalizable, Streamable {
 
     /* ----------------------------------- Private methods ------------------------------- */
 
-    private void writeHeader(Header value, DataOutputStream out) throws IOException {
+    private static void writeHeader(Header value, DataOutputStream out) throws IOException {
         int magic_number;
         String classname;
         ObjectOutputStream oos=null;
@@ -665,7 +661,7 @@ public class Message implements Externalizable, Streamable {
     }
 
 
-    private Header readHeader(DataInputStream in) throws IOException {
+    private static Header readHeader(DataInputStream in) throws IOException {
         Header            hdr;
         boolean           use_magic_number=in.readBoolean();
         int               magic_number;
@@ -696,19 +692,15 @@ public class Message implements Externalizable, Streamable {
         catch(Exception ex) {
             throw new IOException("failed read header: " + ex.toString());
         }
-        finally {
-            // if(ois != null) // we cannot close this because other readers depend on it
-               // ois.close();
-        }
         return hdr;
     }
 
-    private Map createHeaders(int size) {
+    private static Map createHeaders(int size) {
         return size > 0? new ConcurrentReaderHashMap(size) : new ConcurrentReaderHashMap();
     }
 
 
-    private Map createHeaders(Map m) {
+    private static Map createHeaders(Map m) {
         return new ConcurrentReaderHashMap(m);
     }
 
