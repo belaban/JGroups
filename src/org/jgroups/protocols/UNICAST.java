@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.49 2006/01/13 22:02:57 belaban Exp $
+// $Id: UNICAST.java,v 1.50 2006/01/14 13:26:14 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -221,8 +221,6 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         passUp(evt);   // Pass up to the layer above us
     }
 
-
-    static int i=0;
 
 
     public void down(Event evt) {
@@ -548,9 +546,9 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         public String toString() {
             StringBuffer sb=new StringBuffer();
             if(sent_msgs != null)
-                sb.append("sent_msgs=" + sent_msgs + '\n');
+                sb.append("sent_msgs=").append(sent_msgs).append('\n');
             if(received_msgs != null)
-                sb.append("received_msgs=" + received_msgs + '\n');
+                sb.append("received_msgs=").append(received_msgs).append('\n');
             return sb.toString();
         }
     }
