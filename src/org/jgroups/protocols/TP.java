@@ -39,7 +39,8 @@ import java.text.NumberFormat;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.55 2006/01/05 10:23:43 belaban Exp $
+ * @version $Id: TP.java,v 1.56 2006/01/14 13:18:07 belaban Exp $
+ * @noinspection ALL
  */
 public abstract class TP extends Protocol {
 
@@ -160,11 +161,11 @@ public abstract class TP extends Protocol {
     /** Enabled bundling of smaller messages into bigger ones */
     boolean enable_bundling=false;
 
-    Bundler            bundler=null;
+    private Bundler    bundler=null;
 
     TimeScheduler      timer=null;
 
-    DiagnosticsHandler diag_handler=null;
+    private DiagnosticsHandler diag_handler=null;
     boolean enable_diagnostics=true;
     String diagnostics_addr="224.0.0.75";
     int    diagnostics_port=7500;
@@ -186,7 +187,7 @@ public abstract class TP extends Protocol {
 
     long num_msgs_sent=0, num_msgs_received=0, num_bytes_sent=0, num_bytes_received=0;
 
-    transient static  NumberFormat f;
+    static  NumberFormat f;
 
     static {
         f=NumberFormat.getNumberInstance();
@@ -294,7 +295,7 @@ public abstract class TP extends Protocol {
     public abstract void postUnmarshallingList(Message msg, Address dest, boolean multicast);
 
 
-    private String _getInfo() {
+    private StringBuffer _getInfo() {
         StringBuffer sb=new StringBuffer();
         sb.append(local_addr).append(" (").append(channel_name).append(") ").append("\n");
         sb.append("local_addr=").append(local_addr).append("\n");
@@ -302,7 +303,7 @@ public abstract class TP extends Protocol {
         sb.append("Version=").append(Version.description).append(", cvs=\"").append(Version.cvs).append("\"\n");
         sb.append("view: ").append(view).append('\n');
         sb.append(getInfo());
-        return sb.toString();
+        return sb;
     }
 
 
@@ -310,7 +311,7 @@ public abstract class TP extends Protocol {
         try {
             StringTokenizer tok=new StringTokenizer(request);
             String req=tok.nextToken();
-            String info="n/a";
+            StringBuffer info=new StringBuffer("n/a");
             if(req.trim().toLowerCase().startsWith("query")) {
                 ArrayList l=new ArrayList(tok.countTokens());
                 while(tok.hasMoreTokens())
@@ -319,7 +320,6 @@ public abstract class TP extends Protocol {
                 info=_getInfo();
 
                 if(l.contains("jmx")) {
-                    if(info == null) info="";
                     Channel ch=stack.getChannel();
                     if(ch != null) {
                         Map m=ch.dumpStats();
@@ -328,17 +328,17 @@ public abstract class TP extends Protocol {
                         for(Iterator it=m.entrySet().iterator(); it.hasNext();) {
                             sb.append(it.next()).append("\n");
                         }
-                        info+=sb.toString();
+                        info.append(sb);
                     }
                 }
                 if(l.contains("props")) {
                     String p=stack.printProtocolSpecAsXML();
-                    info+="\nprops:\n" + p;
+                    info.append("\nprops:\n").append(p);
                 }
             }
 
 
-            byte[] diag_rsp=info.getBytes();
+            byte[] diag_rsp=info.toString().getBytes();
             if(log.isDebugEnabled())
                 log.debug("sending diag response to " + sender);
             sendResponse(sock, sender, diag_rsp);
@@ -349,7 +349,7 @@ public abstract class TP extends Protocol {
         }
     }
 
-    private void sendResponse(DatagramSocket sock, SocketAddress sender, byte[] buf) throws IOException {
+    private static void sendResponse(DatagramSocket sock, SocketAddress sender, byte[] buf) throws IOException {
         DatagramPacket p=new DatagramPacket(buf, 0, buf.length, sender);
         sock.send(p);
     }
@@ -1082,7 +1082,7 @@ public abstract class TP extends Protocol {
         return interfaces;
     }
 
-    private String print(java.util.List interfaces) {
+    private static String print(java.util.List interfaces) {
         StringBuffer sb=new StringBuffer();
         boolean first=true;
         NetworkInterface intf;
@@ -1153,7 +1153,7 @@ public abstract class TP extends Protocol {
 
     /* ----------------------------- Inner Classes ---------------------------------------- */
 
-    class IncomingQueueEntry {
+    static class IncomingQueueEntry {
         Address   dest=null;
         Address   sender=null;
         byte[]    buf;
@@ -1624,7 +1624,7 @@ public abstract class TP extends Protocol {
             }
         }
 
-        private void bindToInterfaces(java.util.List interfaces, MulticastSocket s) throws IOException {
+        private void bindToInterfaces(java.util.List interfaces, MulticastSocket s) {
             SocketAddress group_addr=new InetSocketAddress(diagnostics_addr, diagnostics_port);
             for(Iterator it=interfaces.iterator(); it.hasNext();) {
                 NetworkInterface i=(NetworkInterface)it.next();

@@ -1,4 +1,4 @@
-// $Id: Membership.java,v 1.8 2005/07/17 11:38:05 chrislott Exp $
+// $Id: Membership.java,v 1.9 2006/01/14 13:18:08 belaban Exp $
 
 package org.jgroups;
 
@@ -80,7 +80,7 @@ public class Membership implements Cloneable {
      * @throws ClassCastException if v contains objects that don't implement the Address interface
      * @see #add
      */
-    public void add(Collection v) {
+    public final void add(Collection v) {
         if(v != null) {
             for(Iterator it=v.iterator(); it.hasNext();) {
                 Address addr=(Address)it.next();
