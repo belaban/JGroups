@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.109 2005/12/23 17:08:22 belaban Exp $
+// $Id: UDP.java,v 1.110 2006/01/14 13:23:41 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -37,6 +37,7 @@ import java.util.*;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
+ * @noinspection ALL
  */
 public class UDP extends TP implements Runnable {
 
@@ -68,7 +69,7 @@ public class UDP extends TP implements Runnable {
 
     /**
      * Traffic class for sending unicast and multicast datagrams.
-     * Valid values are (check {@link #DatagramSocket.setTrafficClass(int)}  for details):
+     * Valid values are (check {@link DatagramSocket#setTrafficClass(int)} );  for details):
      * <UL>
      * <LI><CODE>IPTOS_LOWCOST (0x02)</CODE>, <b>decimal 2</b></LI>
      * <LI><CODE>IPTOS_RELIABILITY (0x04)</CODE><, <b>decimal 4</b>/LI>
@@ -233,13 +234,6 @@ public class UDP extends TP implements Runnable {
 
 
 
-    private BoundedList getLastPortsUsed() {
-        if(last_ports_used == null)
-            last_ports_used=new BoundedList(num_last_ports);
-        return last_ports_used;
-    }
-
-
 
     /* ----------------------- Receiving of MCAST UDP packets ------------------------ */
 
@@ -353,8 +347,7 @@ public class UDP extends TP implements Runnable {
             }
         }
         catch(Exception ex) {
-            Exception new_ex=new Exception("dest=" + dest + ":" + port + " (" + length + " bytes)", ex);
-            throw new_ex;
+            throw new Exception("dest=" + dest + ":" + port + " (" + length + " bytes)", ex);
         }
     }
 
@@ -581,14 +574,16 @@ public class UDP extends TP implements Runnable {
             if(num_last_ports <= 0)
                 break;
             localPort=tmp.getLocalPort();
-            if(getLastPortsUsed().contains(new Integer(localPort))) {
+            if(last_ports_used == null)
+                last_ports_used=new BoundedList(num_last_ports);
+            if(last_ports_used.contains(new Integer(localPort))) {
                 if(log.isDebugEnabled())
                     log.debug("local port " + localPort + " already seen in this session; will try to get other port");
                 try {tmp.close();} catch(Throwable e) {}
                 localPort++;
             }
             else {
-                getLastPortsUsed().add(new Integer(localPort));
+                last_ports_used.add(new Integer(localPort));
                 break;
             }
         }
