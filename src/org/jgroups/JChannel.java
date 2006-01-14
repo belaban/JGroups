@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.47 2006/01/11 14:58:47 belaban Exp $
+// $Id: JChannel.java,v 1.48 2006/01/14 11:11:35 belaban Exp $
 
 package org.jgroups;
 
@@ -66,7 +66,7 @@ import java.util.Vector;
  *
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.47 $
+ * @version $Revision: 1.48 $
  */
 public class JChannel extends Channel {
 
@@ -620,15 +620,13 @@ public class JChannel extends Channel {
      * @see JChannel#peek
      */
     public Object receive(long timeout) throws ChannelNotConnectedException, ChannelClosedException, TimeoutException {
-        Object retval=null;
-        Event evt;
 
         checkClosed();
         checkNotConnected();
 
         try {
-            evt=(timeout <= 0) ? (Event)mq.remove() : (Event)mq.remove(timeout);
-            retval=getEvent(evt);
+            Event evt=(timeout <= 0)? (Event)mq.remove() : (Event)mq.remove(timeout);
+            Object retval=getEvent(evt);
             evt=null;
             if(stats) {
                 if(retval != null && retval instanceof Message) {
@@ -658,15 +656,13 @@ public class JChannel extends Channel {
      * receiver queue
      */
     public Object peek(long timeout) throws ChannelNotConnectedException, ChannelClosedException, TimeoutException {
-        Object retval=null;
-        Event evt;
 
         checkClosed();
         checkNotConnected();
 
         try {
-            evt=(timeout <= 0) ? (Event)mq.peek() : (Event)mq.peek(timeout);
-            retval=getEvent(evt);
+            Event evt=(timeout <= 0)? (Event)mq.peek() : (Event)mq.peek(timeout);
+            Object retval=getEvent(evt);
             evt=null;
             return retval;
         }
@@ -1304,10 +1300,7 @@ public class JChannel extends Channel {
         state_promise.reset();
         down(evt);
         byte[] state=(byte[])state_promise.getResult(timeout);
-        if(state != null) // state set by GET_STATE_OK event
-            return true;
-        else
-            return false;
+        return state != null;
     }
 
 
@@ -1449,10 +1442,12 @@ public class JChannel extends Channel {
                     if(log.isInfoEnabled())
                         log.info("fetching the state (auto_getstate=true)");
                     boolean rc=JChannel.this.getState(null, GET_STATE_DEFAULT_TIMEOUT);
-                    if(rc)
-                        if(log.isInfoEnabled()) log.info("state was retrieved successfully");
-                    else
-                        if(log.isInfoEnabled()) log.info("state transfer failed");
+                    if(log.isInfoEnabled()) {
+                        if(rc)
+                            log.info("state was retrieved successfully");
+                        else
+                            log.info("state transfer failed");
+                    }
                 }
 
             }
