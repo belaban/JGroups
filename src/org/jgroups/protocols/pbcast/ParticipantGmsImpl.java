@@ -1,4 +1,4 @@
-// $Id: ParticipantGmsImpl.java,v 1.17 2005/12/23 14:57:06 belaban Exp $
+// $Id: ParticipantGmsImpl.java,v 1.18 2006/01/14 14:00:33 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -130,7 +130,7 @@ public class ParticipantGmsImpl extends GmsImpl {
             suspected_mbrs.removeAllElements();
             gms.becomeCoordinator();
             // gms.getImpl().suspect(mbr);
-            gms.view_handler.add(new GMS.Request(GMS.Request.SUSPECT, mbr, true, null));
+            gms.getViewHandler().add(new GMS.Request(GMS.Request.SUSPECT, mbr, true, null));
             gms.ack_collector.suspect(mbr);
         }
     }

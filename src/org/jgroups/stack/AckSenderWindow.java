@@ -1,4 +1,4 @@
-// $Id: AckSenderWindow.java,v 1.17 2005/08/26 08:56:22 belaban Exp $
+// $Id: AckSenderWindow.java,v 1.18 2006/01/14 14:00:42 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -157,7 +157,7 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
 
 
     /** Struct used to store message alongside with its seqno in the message queue */
-    class Entry {
+    static class Entry {
         final long seqno;
         final Message msg;
 
@@ -169,8 +169,8 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
 
 
     static class Dummy implements RetransmitCommand {
-        final long last_xmit_req = 0;
-         long curr_time;
+        static final long last_xmit_req = 0;
+        long curr_time;
 
 
         public void retransmit(long seqno, Message msg) {

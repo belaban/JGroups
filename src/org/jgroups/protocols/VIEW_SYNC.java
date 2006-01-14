@@ -19,24 +19,24 @@ import java.util.Vector;
  * install it. Otherwise we simply discard it. This is used to solve the problem for unreliable view
  * dissemination outlined in JGroups/doc/ReliableViewInstallation.txt. This protocol is supposed to be just below GMS.
  * @author Bela Ban
- * @version $Id: VIEW_SYNC.java,v 1.5 2005/12/16 16:18:16 belaban Exp $
+ * @version $Id: VIEW_SYNC.java,v 1.6 2006/01/14 14:00:38 belaban Exp $
  */
 public class VIEW_SYNC extends Protocol {
-    Address             local_addr=null;
-    final Vector        mbrs=new Vector();
-    View                my_view=null;
-    ViewId              my_vid=null;
+    Address              local_addr=null;
+    final Vector         mbrs=new Vector();
+    View                 my_view=null;
+    ViewId               my_vid=null;
 
     /** Sends a VIEW_SYNC message to the group every 20 seconds on average. 0 disables sending of VIEW_SYNC messages */
-    long                avg_send_interval=60000;
+    long                 avg_send_interval=60000;
 
-    private int         num_views_sent=0;
-    private int         num_views_adjusted=0;
+    private int          num_views_sent=0;
+    private int          num_views_adjusted=0;
 
-    ViewSendTask        view_send_task=null;             // bcasts periodic STABLE message (added to timer below)
-    final Object        view_send_task_mutex=new Object(); // to sync on stable_task
-    TimeScheduler       timer=null;                   // to send periodic STABLE msgs (and STABILITY messages)
-    static final String name="VIEW_SYNC";
+    private ViewSendTask view_send_task=null;             // bcasts periodic STABLE message (added to timer below)
+    final Object         view_send_task_mutex=new Object(); // to sync on stable_task
+    TimeScheduler        timer=null;                   // to send periodic STABLE msgs (and STABILITY messages)
+    static final String  name="VIEW_SYNC";
 
 
 

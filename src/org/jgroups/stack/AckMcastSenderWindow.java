@@ -1,4 +1,4 @@
-// $Id: AckMcastSenderWindow.java,v 1.9 2005/07/17 11:34:20 chrislott Exp $
+// $Id: AckMcastSenderWindow.java,v 1.10 2006/01/14 14:00:42 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -33,7 +33,7 @@ import java.util.*;
  *
  * @author Bela Ban June 9 1999
  * @author John Georgiadis May 8 2001
- * @version $Revision: 1.9 $
+ * @version $Revision: 1.10 $
  */
 public class AckMcastSenderWindow {
     /**
@@ -103,8 +103,7 @@ public class AckMcastSenderWindow {
 
 	public String toString() {
 	    StringBuffer buff = new StringBuffer();
-	    buff.append("num_received = " + num_received +
-			", received msgs = " + senders);
+        buff.append("num_received = ").append(num_received).append(", received msgs = ").append(senders);
 	    return(buff.toString());
 	}
     }
@@ -132,7 +131,7 @@ public class AckMcastSenderWindow {
     private final LinkedList suspects=new LinkedList();
 
     /** Max number in suspects list */
-    private final int max_suspects=20;
+    private static final int max_suspects=20;
 
     /**
      * List of acknowledged msgs since the last call to
@@ -198,7 +197,7 @@ public class AckMcastSenderWindow {
      * Setup this object's state
      *
      * @param cmd the callback object for retranmissions
-     * @param retransmit_timeout the interval between two consecutive
+     * @param retransmit_intervals the interval between two consecutive
      * retransmission attempts
      * @param sched the external scheduler to use to schedule retransmissions
      * @param sched_owned if true, the scheduler is owned by this object and
@@ -312,31 +311,31 @@ public class AckMcastSenderWindow {
      * @param sender The sender which sent the ACK
      */
     public void ack(long seqno, Address sender) {
-	Entry   entry;
-	Boolean received;
+        Entry   entry;
+        Boolean received;
 
 	synchronized(msgs) {
 	    entry = (Entry)msgs.get(new Long(seqno));
 	    if (entry == null) return;
 		    
-	    synchronized(entry) {
-		received = (Boolean)entry.senders.get(sender);
-		if (received == null || received.booleanValue()) return;
+        synchronized(entry) {
+            received = (Boolean)entry.senders.get(sender);
+            if (received == null || received.booleanValue()) return;
 			
-		// If not yet received
-		entry.senders.put(sender, Boolean.TRUE);
-		entry.num_received++;
-		if (!entry.allReceived()) return;
-	    }
+            // If not yet received
+            entry.senders.put(sender, Boolean.TRUE);
+            entry.num_received++;
+            if (!entry.allReceived()) return;
+        }
 		    
-	    synchronized(stable_msgs) {
-		entry.cancel();
-		msgs.remove(new Long(seqno));
-		stable_msgs.add(new Long(seqno));
-	    }
-	    // wake up waitUntilAllAcksReceived() method
-	    msgs.notifyAll();
-	}
+        synchronized(stable_msgs) {
+            entry.cancel();
+            msgs.remove(new Long(seqno));
+            stable_msgs.add(new Long(seqno));
+        }
+        // wake up waitUntilAllAcksReceived() method
+        msgs.notifyAll();
+    }
     }
     
 
@@ -570,14 +569,14 @@ public class AckMcastSenderWindow {
 
 	ret = new StringBuffer();
 	synchronized(msgs) {
-	    ret.append("msgs: (" + msgs.size() + ')');
+        ret.append("msgs: (").append(msgs.size()).append(')');
 	    for (Enumeration e = msgs.keys(); e.hasMoreElements();) {
 		key   = (Long)e.nextElement();
 		entry = (Entry)msgs.get(key);
-		ret.append("key = " + key + ", value = " + entry + '\n');
+            ret.append("key = ").append(key).append(", value = ").append(entry).append('\n');
 	    }
 	    synchronized(stable_msgs) {
-		ret.append("\nstable_msgs: " + stable_msgs);
+            ret.append("\nstable_msgs: ").append(stable_msgs);
 	    }
 	}
 		

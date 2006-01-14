@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.42 2006/01/06 12:49:17 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.43 2006/01/14 14:00:33 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -77,9 +77,9 @@ public class CoordGmsImpl extends GmsImpl {
         if(mbr.equals(gms.local_addr))
             leaving=true;
         // handleLeave(mbr, false); // regular leave
-        gms.view_handler.add(new GMS.Request(GMS.Request.LEAVE, mbr, false, null));
-        gms.view_handler.stop(true); // wait until all requests have been processed, then close the queue and leave
-        gms.view_handler.waitUntilCompleted(gms.leave_timeout);
+        gms.getViewHandler().add(new GMS.Request(GMS.Request.LEAVE, mbr, false, null));
+        gms.getViewHandler().stop(true); // wait until all requests have been processed, then close the queue and leave
+        gms.getViewHandler().waitUntilCompleted(gms.leave_timeout);
     }
 
     public void handleJoinResponse(JoinRsp join_rsp) {
@@ -157,7 +157,7 @@ public class CoordGmsImpl extends GmsImpl {
         merging=true;
 
         /* Clears the view handler queue and discards all JOIN/LEAVE/MERGE requests until after the MERGE  */
-        gms.view_handler.suspend(merge_id);
+        gms.getViewHandler().suspend(merge_id);
 
         setMergeId(merge_id);
         if(log.isDebugEnabled()) log.debug("sender=" + sender + ", merge_id=" + merge_id);
@@ -255,7 +255,7 @@ public class CoordGmsImpl extends GmsImpl {
         req.view=data.view;
         req.digest=data.digest;
         req.target_members=my_members;
-        gms.view_handler.add(req, true, // at head so it is processed next
+        gms.getViewHandler().add(req, true, // at head so it is processed next
                              true);     // un-suspend the queue
         merging=false;
     }
@@ -269,7 +269,7 @@ public class CoordGmsImpl extends GmsImpl {
             setMergeId(null);
             this.merge_leader=null;
             merging=false;
-            gms.view_handler.resume(merge_id);
+            gms.getViewHandler().resume(merge_id);
         }
     }
 
@@ -284,7 +284,7 @@ public class CoordGmsImpl extends GmsImpl {
         synchronized(merge_rsps) {
             merge_rsps.clear();
         }
-        gms.view_handler.resume(tmp);
+        gms.getViewHandler().resume(tmp);
     }
 
     /**
@@ -776,7 +776,7 @@ public class CoordGmsImpl extends GmsImpl {
 
                 /* 5. Don't allow JOINs or LEAVEs until we are done with the merge. Suspend() will clear the
                       view handler queue, so no requests beyond this current MERGE request will be processed */
-                gms.view_handler.suspend(merge_id);
+                gms.getViewHandler().suspend(merge_id);
 
                 /* 6. Send the new View/Digest to all coordinators (including myself). On reception, they will
                    install the digest and view in all of their subgroup members */

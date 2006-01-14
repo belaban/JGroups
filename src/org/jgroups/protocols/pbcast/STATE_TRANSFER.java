@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.26 2006/01/12 12:30:43 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.27 2006/01/14 14:00:33 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -329,7 +329,7 @@ public class STATE_TRANSFER extends Protocol {
 
         long id=0;          // state transfer ID (to separate multiple state transfers at the same time)
         byte type=0;
-        Address sender=null;   // sender of state STATE_REQ or STATE_RSP
+        Address sender;   // sender of state STATE_REQ or STATE_RSP
         Digest my_digest=null;   // digest of sender (if type is STATE_RSP)
 
 
@@ -376,9 +376,9 @@ public class STATE_TRANSFER extends Protocol {
 
         public String toString() {
             StringBuffer sb=new StringBuffer();
-            sb.append("[StateHeader: type=" + type2Str(type));
-            if(sender != null) sb.append(", sender=" + sender + " id=#" + id);
-            if(my_digest != null) sb.append(", digest=" + my_digest);
+            sb.append("[StateHeader: type=").append(type2Str(type));
+            if(sender != null) sb.append(", sender=").append(sender).append(" id=#").append(id);
+            if(my_digest != null) sb.append(", digest=").append(my_digest);
             return sb.toString();
         }
 

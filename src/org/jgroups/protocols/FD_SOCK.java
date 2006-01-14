@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.32 2006/01/05 10:23:43 belaban Exp $
+// $Id: FD_SOCK.java,v 1.33 2006/01/14 14:00:38 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -35,7 +35,7 @@ import java.util.List;
  */
 public class FD_SOCK extends Protocol implements Runnable {
     long                get_cache_timeout=3000;            // msecs to wait for the socket cache from the coordinator
-    final long          get_cache_retry_timeout=500;       // msecs to wait until we retry getting the cache from coord
+    static final long   get_cache_retry_timeout=500;       // msecs to wait until we retry getting the cache from coord
     long                suspect_msg_interval=5000;         // (BroadcastTask): mcast SUSPECT every 5000 msecs
     int                 num_tries=3;                       // attempts coord is solicited for socket cache until we give up
     final Vector        members=new Vector(11);            // list of group members (updated on VIEW_CHANGE)
@@ -51,7 +51,7 @@ public class FD_SOCK extends Protocol implements Runnable {
     /** @deprecated Use {@link bind_addr} instead */
     InetAddress         srv_sock_bind_addr=null;           // the NIC on which the ServerSocket should listen
 
-    ServerSocketHandler srv_sock_handler=null;             // accepts new connections on srv_sock
+    private ServerSocketHandler srv_sock_handler=null;             // accepts new connections on srv_sock
     IpAddress           srv_sock_addr=null;                // pair of server_socket:port
     Address             ping_dest=null;                    // address of the member we monitor
     Socket              ping_sock=null;                    // socket to the member we monitor
@@ -65,7 +65,7 @@ public class FD_SOCK extends Protocol implements Runnable {
     final Promise       ping_addr_promise=new Promise();   // to fetch the ping_addr for ping_dest
     final Object        sock_mutex=new Object();           // for access to ping_sock, ping_input
     TimeScheduler       timer=null;
-    final BroadcastTask bcast_task=new BroadcastTask();    // to transmit SUSPECT message (until view change)
+    private final BroadcastTask bcast_task=new BroadcastTask();    // to transmit SUSPECT message (until view change)
     boolean             regular_sock_close=false;         // used by interruptPingerThread() when new ping_dest is computed
     int                 num_suspect_events=0;
     private static final int NORMAL_TEMINATION=9;
@@ -922,7 +922,7 @@ public class FD_SOCK extends Protocol implements Runnable {
             start();
         }
 
-        void start() {
+        final void start() {
             if(acceptor == null) {
                 acceptor=new Thread(this, "ServerSocket acceptor thread");
                 acceptor.setDaemon(true);
@@ -931,7 +931,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         }
 
 
-        void stop() {
+        final void stop() {
             if(acceptor != null && acceptor.isAlive()) {
                 try {
                     srv_sock.close(); // this will terminate thread, peer will receive SocketException (socket close)
@@ -982,7 +982,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         Socket      client_sock=null;
         InputStream in;
         final Object mutex=new Object();
-        List clients=new ArrayList();
+        final List clients=new ArrayList();
 
         ClientConnectionHandler(Socket client_sock, List clients) {
             setName("ClientConnectionHandler");

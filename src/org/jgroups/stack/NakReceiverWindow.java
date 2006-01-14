@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindow.java,v 1.27 2005/09/29 08:33:14 belaban Exp $
+// $Id: NakReceiverWindow.java,v 1.28 2006/01/14 14:00:42 belaban Exp $
 
 
 package org.jgroups.stack;
@@ -693,8 +693,8 @@ public class NakReceiverWindow {
         try {
             lock.readLock().acquire();
             try {
-                sb.append("received_msgs: " + printReceivedMessages());
-                sb.append(", delivered_msgs: " + printDeliveredMessages());
+                sb.append("received_msgs: ").append(printReceivedMessages());
+                sb.append(", delivered_msgs: ").append(printDeliveredMessages());
             }
             finally {
                 lock.readLock().release();
@@ -711,7 +711,7 @@ public class NakReceiverWindow {
 
     /**
      * Prints delivered_msgs. Requires read lock present.
-     * @return
+     * @return String
      */
     String printDeliveredMessages() {
         StringBuffer sb=new StringBuffer();
@@ -723,14 +723,14 @@ public class NakReceiverWindow {
         }
         sb.append('[').append(min).append(" - ").append(max).append(']');
         if(min != null && max != null)
-            sb.append(" (size=" + (max.longValue() - min.longValue()) + ")");
+            sb.append(" (size=").append(max.longValue() - min.longValue()).append(")");
         return sb.toString();
     }
 
 
     /**
      * Prints received_msgs. Requires read lock to be present
-     * @return
+     * @return String
      */
     String printReceivedMessages() {
         StringBuffer sb=new StringBuffer();

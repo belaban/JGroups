@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.52 2006/01/13 21:27:09 belaban Exp $
+// $Id: GMS.java,v 1.53 2006/01/14 14:00:33 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -68,7 +68,7 @@ public class GMS extends Protocol {
 
 
     /** Class to process JOIN, LEAVE and MERGE requests */
-    public final ViewHandler  view_handler=new ViewHandler();
+    private final ViewHandler  view_handler=new ViewHandler();
 
     /** To collect VIEW_ACKs from all members */
     final AckCollector ack_collector=new AckCollector();
@@ -130,6 +130,8 @@ public class GMS extends Protocol {
     }
 
     Log getLog() {return log;}
+
+    ViewHandler getViewHandler() {return view_handler;}
 
     public String printPreviousViews() {
         StringBuffer sb=new StringBuffer();
@@ -340,7 +342,6 @@ public class GMS extends Protocol {
      joined successfully). The temporary view is essentially the current view plus the joining
      members (old members are still part of the current view).
      </ol>
-     @return View The new view
      */
     public void castViewChange(Vector new_mbrs, Vector old_mbrs, Vector suspected_mbrs) {
         View new_view;
@@ -850,7 +851,7 @@ public class GMS extends Protocol {
 
     /* ------------------------------- Private Methods --------------------------------- */
 
-    void initState() {
+    private final void initState() {
         becomeClient();
         view_id=null;
         view=null;
@@ -1101,7 +1102,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.52 2006/01/13 21:27:09 belaban Exp $
+     * @version $Id: GMS.java,v 1.53 2006/01/14 14:00:33 belaban Exp $
      */
     class ViewHandler implements Runnable {
         Thread                    t;

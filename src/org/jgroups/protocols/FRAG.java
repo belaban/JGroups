@@ -1,4 +1,4 @@
-// $Id: FRAG.java,v 1.28 2005/10/28 07:42:41 belaban Exp $
+// $Id: FRAG.java,v 1.29 2006/01/14 14:00:38 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -28,7 +28,7 @@ import java.util.*;
  * multicast messages.
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.28 2005/10/28 07:42:41 belaban Exp $
+ * @version $Id: FRAG.java,v 1.29 2006/01/14 14:00:38 belaban Exp $
  */
 public class FRAG extends Protocol {
     private int frag_size=8192;  // conservative value
@@ -488,7 +488,7 @@ public class FRAG extends Protocol {
              */
             public String toString() {
                 StringBuffer ret=new StringBuffer();
-                ret.append("[tot_frags=" + tot_frags + ", number_of_frags_recvd=" + number_of_frags_recvd + ']');
+                ret.append("[tot_frags=").append(tot_frags).append(", number_of_frags_recvd=").append(number_of_frags_recvd).append(']');
                 return ret.toString();
             }
 

@@ -1,4 +1,4 @@
-// $Id: Configurator.java,v 1.15 2006/01/05 10:23:43 belaban Exp $
+// $Id: Configurator.java,v 1.16 2006/01/14 14:00:42 belaban Exp $
 
 package org.jgroups.stack;
 

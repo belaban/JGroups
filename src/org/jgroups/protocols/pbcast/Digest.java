@@ -1,4 +1,4 @@
-// $Id: Digest.java,v 1.17 2005/10/03 13:25:26 belaban Exp $
+// $Id: Digest.java,v 1.18 2006/01/14 14:00:33 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -418,7 +418,7 @@ public class Digest implements Externalizable, Streamable {
         return retval;
     }
 
-    private Map createSenders(int size) {
+    private static Map createSenders(int size) {
         return new ConcurrentReaderHashMap(size);
     }
 

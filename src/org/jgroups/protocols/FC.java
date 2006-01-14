@@ -1,4 +1,4 @@
-// $Id: FC.java,v 1.50 2005/10/28 14:46:49 belaban Exp $
+// $Id: FC.java,v 1.51 2006/01/14 14:00:38 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -22,7 +22,7 @@ import java.util.*;
  * <br/>This is the second simplified implementation of the same model. The algorithm is sketched out in
  * doc/FlowControl.txt
  * @author Bela Ban
- * @version $Revision: 1.50 $
+ * @version $Revision: 1.51 $
  */
 public class FC extends Protocol {
 
@@ -483,7 +483,7 @@ public class FC extends Protocol {
         }
     }
 
-    private long computeLowestCredit(Map m) {
+    private static long computeLowestCredit(Map m) {
         Collection credits=m.values(); // List of Longs (credits)
         Long retval=(Long)Collections.min(credits);
         return retval.longValue();
