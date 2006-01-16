@@ -11,11 +11,11 @@ import java.io.*;
  * 4
  * </pre>
  * @author Bela Ban
- * @version $Id: CheckMonotonicallyIncreasingNumbers.java,v 1.1 2006/01/13 16:42:58 belaban Exp $
+ * @version $Id: CheckMonotonicallyIncreasingNumbers.java,v 1.2 2006/01/16 13:01:26 belaban Exp $
  */
 public class CheckMonotonicallyIncreasingNumbers {
 
-    int check(InputStream in) throws IOException {
+    static int check(InputStream in) throws IOException {
         Reader r = new BufferedReader(new InputStreamReader(in));
         StreamTokenizer st = new StreamTokenizer(r);
         int i, cnt=0, num=0, tmp, incorrect=0;
@@ -55,9 +55,8 @@ public class CheckMonotonicallyIncreasingNumbers {
             help();
             return;
         }
-        CheckMonotonicallyIncreasingNumbers m=new CheckMonotonicallyIncreasingNumbers();
         FileInputStream fis=new FileInputStream(file);
-        int incorrect=m.check(fis);
+        int incorrect=CheckMonotonicallyIncreasingNumbers.check(fis);
         if(incorrect == 0) {
             System.out.println("OK, all numbers are monotonically increasing");
         }
