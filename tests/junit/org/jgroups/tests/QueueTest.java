@@ -1,4 +1,4 @@
-// $Id: QueueTest.java,v 1.20 2006/01/18 13:09:44 belaban Exp $
+// $Id: QueueTest.java,v 1.21 2006/01/18 13:27:43 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -176,7 +176,7 @@ public class QueueTest extends TestCase {
         Object o1=queue.peek();
         Object o2=queue.getFirst();
 
-        System.out.println("o1=" + o1 + ", o2=" + o2 + ", o1 == o2=" + o1 == o2 + ", o1.equals(o2)=" + o1.equals(o2));
+        System.out.println("o1=" + o1 + ", o2=" + o2 + ", o1.equals(o2)=" + o1.equals(o2));
 
         assertEquals(queue.peek(), queue.getFirst());
         queue.remove();
