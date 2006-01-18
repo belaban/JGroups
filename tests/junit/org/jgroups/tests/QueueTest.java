@@ -1,4 +1,4 @@
-// $Id: QueueTest.java,v 1.19 2005/12/21 17:08:47 belaban Exp $
+// $Id: QueueTest.java,v 1.20 2006/01/18 13:09:44 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -55,7 +55,7 @@ public class QueueTest extends TestCase {
 
             try {
                 queue.add("Q6");
-                assertTrue(false);
+                fail("should not get here");
             }
             catch(org.jgroups.util.QueueClosedException qc) {
                 assertTrue(true);
@@ -63,7 +63,7 @@ public class QueueTest extends TestCase {
 
             int size=queue.size();
             queue.removeElement("Q5");
-            assertTrue((size - 1) == queue.size());
+            assertEquals((size - 1), queue.size());
 
             assertEquals("Q3", queue.peek());
             assertEquals("Q3", queue.remove());
@@ -72,7 +72,7 @@ public class QueueTest extends TestCase {
         }
         catch(Exception x) {
             System.out.println(x);
-            assertTrue(false);
+            fail();
         }
     }
 
@@ -135,7 +135,7 @@ public class QueueTest extends TestCase {
         }
         catch(Exception ex) {
             System.err.println(ex);
-            assertTrue(false);
+            fail();
         }
     }
 
@@ -154,11 +154,11 @@ public class QueueTest extends TestCase {
         queue.addAll(l);
         System.out.println("queue is " + queue);
         assertEquals(3, queue.size());
-        assertEquals(queue.remove(), "one");
+        assertEquals("one", queue.remove());
         assertEquals(2, queue.size());
-        assertEquals(queue.remove(), "two");
+        assertEquals("two", queue.remove());
         assertEquals(1, queue.size());
-        assertEquals(queue.remove(), "three");
+        assertEquals("three", queue.remove());
         assertEquals(0, queue.size());
     }
 
@@ -181,11 +181,11 @@ public class QueueTest extends TestCase {
         assertEquals(queue.peek(), queue.getFirst());
         queue.remove();
 
-        assertTrue(queue.size() == 1);
+        assertEquals(1, queue.size());
         assertEquals(queue.getFirst(), queue.getLast());
         queue.remove();
 
-        assertTrue(queue.size() == 0);
+        assertEquals(0, queue.size());
         assertTrue(queue.getFirst() == null);
         assertTrue(queue.getLast() == null);
     }
@@ -279,8 +279,8 @@ public class QueueTest extends TestCase {
 
         try {
             queue.removeElement(s1);
-            assertTrue(queue.closed() == false);
-            assertTrue(queue.size() == 0);
+            assertFalse(queue.closed());
+            assertEquals(0, queue.size());
         }
         catch(QueueClosedException ex) {
             fail(ex.toString());
@@ -294,7 +294,7 @@ public class QueueTest extends TestCase {
         try {
             queue.add(s1);
             queue.removeElement(s1);
-            assertTrue(queue.size() == 0);
+            assertEquals(0, queue.size());
             assertTrue(queue.getFirst() == null);
             assertTrue(queue.getLast() == null);
         }
@@ -310,7 +310,7 @@ public class QueueTest extends TestCase {
             queue.add(s1);
             queue.add(s2);
             queue.removeElement(s1);
-            assertTrue(queue.size() == 1);
+            assertEquals(1, queue.size());
             assertEquals(queue.getFirst(), s2);
             assertEquals(queue.getLast(), s2);
             assertEquals(queue.getFirst(), queue.getLast());
@@ -327,7 +327,7 @@ public class QueueTest extends TestCase {
             queue.add(s1);
             queue.add(s2);
             queue.removeElement(s2);
-            assertTrue(queue.size() == 1);
+            assertEquals(1, queue.size());
             assertEquals(queue.getFirst(), s1);
             assertEquals(queue.getLast(), s1);
             assertEquals(queue.getFirst(), queue.getLast());
@@ -345,7 +345,7 @@ public class QueueTest extends TestCase {
             queue.add(s2);
             queue.add(s3);
             queue.removeElement(s1);
-            assertTrue(queue.size() == 2);
+            assertEquals(2, queue.size());
             assertEquals(queue.getFirst(), s2);
             assertEquals(queue.getLast(), s3);
         }
@@ -362,7 +362,7 @@ public class QueueTest extends TestCase {
             queue.add(s2);
             queue.add(s3);
             queue.removeElement(s2);
-            assertTrue(queue.size() == 2);
+            assertEquals(2, queue.size());
             assertEquals(queue.getFirst(), s1);
             assertEquals(queue.getLast(), s3);
         }
@@ -379,7 +379,7 @@ public class QueueTest extends TestCase {
             queue.add(s2);
             queue.add(s3);
             queue.removeElement(s3);
-            assertTrue(queue.size() == 2);
+            assertEquals(2, queue.size());
             assertEquals(queue.getFirst(), s1);
             assertEquals(queue.getLast(), s2);
         }
@@ -592,7 +592,7 @@ public class QueueTest extends TestCase {
             }
         }
 
-        assertEquals(num_dead, 2);
+        assertEquals(2, num_dead);
     }
 
     /** Multiple threads call remove(), one threads then adds an element. Only 1 thread should actually terminate
@@ -642,7 +642,7 @@ public class QueueTest extends TestCase {
             }
         }
 
-        assertEquals(num_dead, 2);
+        assertEquals(2, num_dead);
 
         queue.close(false); // will cause all threads still blocking on peek() to return
 
@@ -657,7 +657,7 @@ public class QueueTest extends TestCase {
                 num_dead++;
             }
         }
-        assertEquals(num_dead, 10);
+        assertEquals(10, num_dead);
 
     }
 
@@ -701,7 +701,7 @@ public class QueueTest extends TestCase {
             }
         }
 
-        assertEquals(num_dead, 10);
+        assertEquals(10, num_dead);
 
         queue.close(false); // will cause all threads still blocking on peek() to return
     }
