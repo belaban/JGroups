@@ -39,7 +39,7 @@ import java.text.NumberFormat;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.57 2006/01/14 14:00:38 belaban Exp $
+ * @version $Id: TP.java,v 1.58 2006/01/18 15:24:15 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -1628,9 +1628,11 @@ public abstract class TP extends Protocol {
             for(Iterator it=interfaces.iterator(); it.hasNext();) {
                 NetworkInterface i=(NetworkInterface)it.next();
                 try {
-                    s.joinGroup(group_addr, i);
-                    if(trace)
-                        log.trace("joined " + group_addr + " on " + i.getName());
+                    if (i.getInetAddresses().hasMoreElements()) { // fix for VM crash - suggested by JJalenak@netopia.com
+                        s.joinGroup(group_addr, i);
+                        if(trace)
+                            log.trace("joined " + group_addr + " on " + i.getName());
+                    }
                 }
                 catch(IOException e) {
                     log.warn("failed to join " + group_addr + " on " + i.getName() + ": " + e);
