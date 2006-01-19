@@ -1,4 +1,4 @@
-// $Id: Router.java,v 1.7 2005/05/30 16:14:44 belaban Exp $
+// $Id: Router.java,v 1.8 2006/01/19 09:53:39 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -462,6 +462,7 @@ public class Router {
 
 
         public SocketThread(Socket sock, DataInputStream ois) {
+            super(Util.getGlobalThreadGroup(), "SocketThread");
             this.sock=sock;
             input=ois;
         }

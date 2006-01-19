@@ -1,4 +1,4 @@
-//$Id: TOTAL_TOKEN.java,v 1.12 2005/08/08 12:45:44 belaban Exp $
+//$Id: TOTAL_TOKEN.java,v 1.13 2006/01/19 09:53:37 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -49,7 +49,7 @@ import java.util.*;
  *
  *
  *@author Vladimir Blagojevic vladimir@cs.yorku.ca
- *@version $Revision: 1.12 $
+ *@version $Revision: 1.13 $
  *
  *@see org.jgroups.protocols.ring.RingNodeFlowControl
  *@see org.jgroups.protocols.ring.RingNode
@@ -1059,7 +1059,7 @@ public class TOTAL_TOKEN extends RpcProtocol
 
       private TokenTransmitter()
       {
-         super("TokenTransmitter");
+         super(Util.getGlobalThreadGroup(), "TokenTransmitter");
          resetTimeout();
          running = true;
       }

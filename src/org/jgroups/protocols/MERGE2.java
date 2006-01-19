@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.26 2006/01/14 14:00:38 belaban Exp $
+// $Id: MERGE2.java,v 1.27 2006/01/19 09:53:37 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -232,7 +232,7 @@ public class MERGE2 extends Protocol {
 
         public void start() {
             if(thread == null || !thread.isAlive()) {
-                thread=new Thread(this, "MERGE2.FindSubgroups thread");
+                thread=new Thread(Util.getGlobalThreadGroup(), this, "MERGE2.FindSubgroups thread");
                 thread.setDaemon(true);
                 thread.start();
             }

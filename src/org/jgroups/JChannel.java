@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.48 2006/01/14 11:11:35 belaban Exp $
+// $Id: JChannel.java,v 1.49 2006/01/19 09:53:39 belaban Exp $
 
 package org.jgroups;
 
@@ -66,7 +66,7 @@ import java.util.Vector;
  *
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.48 $
+ * @version $Revision: 1.49 $
  */
 public class JChannel extends Channel {
 
@@ -1379,8 +1379,8 @@ public class JChannel extends Channel {
 
 
         CloserThread(Event evt) {
+            super(Util.getGlobalThreadGroup(), "CloserThread");
             this.evt=evt;
-            setName("CloserThread");
             setDaemon(true);
         }
 

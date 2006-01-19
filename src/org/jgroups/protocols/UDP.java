@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.111 2006/01/14 14:00:38 belaban Exp $
+// $Id: UDP.java,v 1.112 2006/01/19 09:53:37 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -776,7 +776,7 @@ public class UDP extends TP implements Runnable {
             }
 
             if(mcast_receiver == null) {
-                mcast_receiver=new Thread(this, "UDP mcast receiver");
+                mcast_receiver=new Thread(Util.getGlobalThreadGroup(), this, "UDP mcast receiver");
                 mcast_receiver.setPriority(Thread.MAX_PRIORITY); // needed ????
                 mcast_receiver.setDaemon(true);
                 mcast_receiver.start();
@@ -879,7 +879,7 @@ public class UDP extends TP implements Runnable {
 
         public void start() {
             if(thread == null) {
-                thread=new Thread(this, "UDP.UcastReceiverThread");
+                thread=new Thread(Util.getGlobalThreadGroup(), this, "UDP.UcastReceiverThread");
                 thread.setDaemon(true);
                 running=true;
                 thread.start();

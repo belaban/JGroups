@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.33 2006/01/14 14:00:38 belaban Exp $
+// $Id: FD_SOCK.java,v 1.34 2006/01/19 09:53:37 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -924,7 +924,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
         final void start() {
             if(acceptor == null) {
-                acceptor=new Thread(this, "ServerSocket acceptor thread");
+                acceptor=new Thread(Util.getGlobalThreadGroup(), this, "ServerSocket acceptor thread");
                 acceptor.setDaemon(true);
                 acceptor.start();
             }

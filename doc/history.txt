@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.185 2006/01/12 07:50:53 belaban Exp $
+Revision: $Id: history.txt,v 1.186 2006/01/19 09:54:33 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -29,6 +29,9 @@ ossiejnr    = Chris Mills (chris.mills@jboss.com)
 
 Version 2.3
 -----------
+
+- Created global JGroups thread group (all threads belong to it)
+  (bela Jan 19 2006)
 
 - Added AUTH protocol, samle configs and documentation. http://jira.jboss.com/jira/browse/JGRP-164
   (ossiejnr Jan 12 2006)

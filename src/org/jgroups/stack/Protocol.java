@@ -1,4 +1,4 @@
-// $Id: Protocol.java,v 1.35 2006/01/14 11:06:32 belaban Exp $
+// $Id: Protocol.java,v 1.36 2006/01/19 09:53:38 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -8,6 +8,7 @@ import org.apache.commons.logging.LogFactory;
 import org.jgroups.Event;
 import org.jgroups.util.Queue;
 import org.jgroups.util.QueueClosedException;
+import org.jgroups.util.Util;
 
 import java.util.Map;
 import java.util.Properties;
@@ -24,6 +25,7 @@ class UpHandler extends Thread {
 
 
     public UpHandler(Queue mq, Protocol handler, ProtocolObserver observer) {
+        super(Util.getGlobalThreadGroup(), "UpHandler");
         this.mq=mq;
         this.handler=handler;
         this.observer=observer;
@@ -78,6 +80,7 @@ class DownHandler extends Thread {
 
 
     public DownHandler(Queue mq, Protocol handler, ProtocolObserver observer) {
+        super(Util.getGlobalThreadGroup(), "DownHandler");
         this.mq=mq;
         this.handler=handler;
         this.observer=observer;

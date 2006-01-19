@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.39 2005/11/18 19:50:54 smarlownovell Exp $
+// $Id: ConnectionTable.java,v 1.40 2006/01/19 09:53:37 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -321,7 +321,7 @@ public class ConnectionTable implements Runnable {
         if(log.isInfoEnabled()) log.info("server socket created on " + local_addr);
 
         //Roland Kurmann 4/7/2003, build new thread group
-        thread_group = new ThreadGroup(Thread.currentThread().getThreadGroup(), "ConnectionTableGroup");
+        thread_group = new ThreadGroup(Util.getGlobalThreadGroup(), "ConnectionTableGroup");
         //Roland Kurmann 4/7/2003, put in thread_group
         acceptor=new Thread(thread_group, this, "ConnectionTable.AcceptorThread");
         acceptor.setDaemon(true);

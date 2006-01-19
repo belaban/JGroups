@@ -1,4 +1,4 @@
-// $Id: TimeScheduler.java,v 1.11 2005/12/23 12:04:01 belaban Exp $
+// $Id: TimeScheduler.java,v 1.12 2006/01/19 09:53:39 belaban Exp $
 
 package org.jgroups.util;
 
@@ -287,7 +287,7 @@ public class TimeScheduler {
 
         // only start if not yet running
         if(thread == null || !thread.isAlive()) {
-            thread=new Thread(new Loop(), THREAD_NAME);
+            thread=new Thread(Util.getGlobalThreadGroup(), new Loop(), THREAD_NAME);
             thread.setDaemon(true);
             thread.start();
         }
@@ -301,7 +301,7 @@ public class TimeScheduler {
 
         // only start if not yet running
         if(thread == null || !thread.isAlive()) {
-            thread=new Thread(new Loop(), THREAD_NAME);
+            thread=new Thread(Util.getGlobalThreadGroup(), new Loop(), THREAD_NAME);
             thread.setDaemon(true);
             thread.start();
         }
