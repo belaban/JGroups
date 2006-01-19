@@ -1,4 +1,4 @@
-// $Id: TimedWriter.java,v 1.5 2005/05/30 16:14:45 belaban Exp $
+// $Id: TimedWriter.java,v 1.6 2006/01/19 09:53:39 belaban Exp $
 
 package org.jgroups.util;
 
@@ -33,10 +33,10 @@ public class TimedWriter {
     static Log    log=LogFactory.getLog(TimedWriter.class);
 
 
-    class Timeout extends Exception {
-	public String toString() {
-	    return "TimedWriter.Timeout";
-	}
+    static class Timeout extends Exception {
+        public String toString() {
+            return "TimedWriter.Timeout";
+        }
     }
 
 
@@ -48,15 +48,15 @@ public class TimedWriter {
 
 	
 	public WriterThread(OutputStream out, byte[] buf) {
-	    this.out=new DataOutputStream(out);
+        super(Util.getGlobalThreadGroup(), "TimedWriter.WriterThread");
+        this.out=new DataOutputStream(out);
 	    this.buf=buf;
-	    setName("TimedWriter.WriterThread");
 	}
 	
 	public WriterThread(OutputStream out, int i) {
-	    this.out=new DataOutputStream(out);
+        super(Util.getGlobalThreadGroup(), "TimedWriter.WriterThread");
+        this.out=new DataOutputStream(out);
 	    this.i=i;
-	    setName("TimedWriter.WriterThread");
 	}
 
 	public void run() {

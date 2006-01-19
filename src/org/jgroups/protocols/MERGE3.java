@@ -1,4 +1,4 @@
-// $Id: MERGE3.java,v 1.8 2005/08/08 12:45:43 belaban Exp $
+// $Id: MERGE3.java,v 1.9 2006/01/19 09:53:37 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -232,13 +232,13 @@ public class MERGE3 extends Protocol {
                     log.debug("passing up MERGE event, coords=" + coords);
                 final Event evt=new Event(Event.MERGE, coords);
                 if(use_separate_thread) {
-                    Thread merge_notifier=new Thread() {
+                    Thread merge_notifier=new Thread(Util.getGlobalThreadGroup(), "merge notifier thread") {
                         public void run() {
                             passUp(evt);
                         }
                     };
                     merge_notifier.setDaemon(true);
-                    merge_notifier.setName("merge notifier thread");
+                    merge_notifier.start();
                 }
                 else {
                     passUp(evt);

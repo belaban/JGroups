@@ -20,7 +20,7 @@ import java.util.Map;
  * back via the regular transport (e.g. TCP) to the sender (discovery request contained sender's regular address,
  * e.g. 192.168.0.2:7800).
  * @author Bela Ban
- * @version $Id: MPING.java,v 1.13 2006/01/05 10:23:43 belaban Exp $
+ * @version $Id: MPING.java,v 1.14 2006/01/19 09:53:37 belaban Exp $
  */
 public class MPING extends PING implements Runnable {
     MulticastSocket     mcast_sock=null;
@@ -223,7 +223,7 @@ public class MPING extends PING implements Runnable {
 
     private void startReceiver() {
         if(receiver == null || !receiver.isAlive()) {
-            receiver=new Thread(this, "ReceiverThread");
+            receiver=new Thread(Util.getGlobalThreadGroup(), this, "ReceiverThread");
             receiver.setDaemon(true);
             receiver.start();
             if(trace)

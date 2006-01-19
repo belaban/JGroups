@@ -1,10 +1,11 @@
-// $Id: TOTAL_OLD.java,v 1.11 2005/08/08 12:45:44 belaban Exp $
+// $Id: TOTAL_OLD.java,v 1.12 2006/01/19 09:53:37 belaban Exp $
 
 package org.jgroups.protocols;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
+import org.jgroups.util.Util;
 import org.jgroups.stack.Protocol;
 
 import java.io.IOException;
@@ -1240,12 +1241,13 @@ class TotalRetransmissionThread extends Thread {
      * specified instance of a TOTAL_OLD protocol
      */
     TotalRetransmissionThread(TOTAL_OLD parent_prot) {
+        super(Util.getGlobalThreadGroup(), "retransmission thread");
         if(parent_prot != null) {
             prot_ptr=parent_prot;
         }
         else {
             // parent thread not specified
-            log.error("Error: TotalRetransmissionThread.TotalRetransmissionThread() - given parent protocol reference is null\n  (FATAL ERROR - TOTAL_OLD protocol will not function properly)");
+            log.fatal("given parent protocol reference is null\n  (FATAL ERROR - TOTAL_OLD protocol will not function properly)");
 
             // prevent the run method from doing any work
             is_running=false;

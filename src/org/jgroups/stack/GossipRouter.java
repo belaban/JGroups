@@ -1,4 +1,4 @@
-// $Id: GossipRouter.java,v 1.17 2005/12/08 09:34:04 belaban Exp $
+// $Id: GossipRouter.java,v 1.18 2006/01/19 09:53:38 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -1006,7 +1006,7 @@ public class GossipRouter {
         Address addr=null;
 
         public SocketThread(Socket sock, DataInputStream ois, Address addr) {
-            super("SocketThread "+(threadCounter++));
+            super(Util.getGlobalThreadGroup(), "SocketThread "+(threadCounter++));
             this.sock=sock;
             input=ois;
             this.addr=addr;

@@ -1,4 +1,4 @@
-// $Id: ConnectionTableNIO.java,v 1.8 2005/11/22 13:56:39 smarlownovell Exp $
+// $Id: ConnectionTableNIO.java,v 1.9 2006/01/19 09:53:37 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -492,7 +492,7 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
          }
 
          // Start thread
-         m_th = new Thread(null, this, "nioReadSelectorThread");
+         m_th = new Thread(thread_group, this, "nioReadSelectorThread");
          m_th.setDaemon(true);
          m_th.start();
       }
