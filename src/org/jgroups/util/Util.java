@@ -1,7 +1,8 @@
-// $Id: Util.java,v 1.65 2006/01/13 21:18:17 belaban Exp $
+// $Id: Util.java,v 1.66 2006/01/19 09:28:28 belaban Exp $
 
 package org.jgroups.util;
 
+import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
 import org.jgroups.auth.AuthToken;
 import org.jgroups.conf.ClassConfigurator;
@@ -34,6 +35,20 @@ public class Util {
     public static final String DIAG_GROUP="DIAG_GROUP-BELA-322649"; // unique
     static boolean resolve_dns=false;
     static final String IGNORE_BIND_ADDRESS_PROPERTY="ignore.bind.address";
+
+    /**
+     * Global thread group to which all (most!) JGroups threads belong
+     */
+    private static ThreadGroup GLOBAL_GROUP=new ThreadGroup("JGroups Threads") {
+        public void uncaughtException(Thread t, Throwable e) {
+            LogFactory.getLog("org.jgroups").error("uncaught exception in " + t + " (thread group=" + GLOBAL_GROUP + " )", e);
+        }
+    };
+
+    public static ThreadGroup getGlobalThreadGroup() {
+        return GLOBAL_GROUP;
+    }
+
 
     static {
         /* Trying to get value of resolve_dns. PropertyPermission not granted if
@@ -573,10 +588,7 @@ public class Util {
     public static boolean tossWeightedCoin(double probability) {
         long r=random(100);
         long cutoff=(long)(probability * 100);
-        if(r < cutoff)
-            return true;
-        else
-            return false;
+        return r < cutoff;
     }
 
 
@@ -1444,17 +1456,17 @@ public class Util {
 
     public static boolean checkForLinux() {
         String os=System.getProperty("os.name");
-        return os != null && os.toLowerCase().startsWith("linux") ? true : false;
+        return os != null && os.toLowerCase().startsWith("linux");
     }
 
     public static boolean checkForSolaris() {
         String os=System.getProperty("os.name");
-        return os != null && os.toLowerCase().startsWith("sun") ? true : false;
+        return os != null && os.toLowerCase().startsWith("sun");
     }
 
     public static boolean checkForWindows() {
         String os=System.getProperty("os.name");
-        return os != null && os.toLowerCase().startsWith("win") ? true : false;
+        return os != null && os.toLowerCase().startsWith("win");
     }
 
     public static void prompt(String s) {
@@ -1564,12 +1576,10 @@ public class Util {
             return false;
 
         tmp=tmp.trim().toLowerCase();
-        if(tmp.equals("false") ||
+        return !(tmp.equals("false") ||
                 tmp.equals("no") ||
-                tmp.equals("off"))
-            return false;
+                tmp.equals("off"));
 
-        return true;
     }
 
 
