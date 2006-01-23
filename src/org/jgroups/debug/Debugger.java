@@ -1,4 +1,4 @@
-// $Id: Debugger.java,v 1.5 2005/08/22 08:31:25 belaban Exp $
+// $Id: Debugger.java,v 1.6 2006/01/23 13:03:09 belaban Exp $
 
 package org.jgroups.debug;
 
@@ -26,7 +26,7 @@ public class Debugger extends JFrame {
     JTable table;
     DefaultTableModel table_model;
     JScrollPane scroll_pane;
-    public static final Font helvetica_12=new Font("Helvetica", Font.PLAIN, 12);;
+    public static final Font helvetica_12=new Font("Helvetica", Font.PLAIN, 12);
     public boolean cummulative=false; // shows added up/down events instead of up/down queue_size
 
 
