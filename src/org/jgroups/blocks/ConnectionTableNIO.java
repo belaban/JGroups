@@ -1,4 +1,4 @@
-// $Id: ConnectionTableNIO.java,v 1.9 2006/01/19 09:53:37 belaban Exp $
+// $Id: ConnectionTableNIO.java,v 1.10 2006/01/23 13:41:09 smarlownovell Exp $
 
 package org.jgroups.blocks;
 
@@ -314,7 +314,6 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
                SelectionKey key = (SelectionKey) i.next();
                i.remove();
                // We only deal with new incoming connections
-               assert key.isAcceptable();
 
                ServerSocketChannel readyChannel = (ServerSocketChannel) key.channel();
                SocketChannel client_sock_ch = null;
@@ -535,7 +534,6 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
                {
                   SelectionKey key = (SelectionKey) i.next();
                   i.remove();
-                  assert key.isReadable();
                   // Do partial read and handle call back
                   Connection conn = (Connection) key.attachment();
                   try
@@ -611,7 +609,6 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
       private void readOnce(Connection conn)
          throws IOException
       {
-         assert conn != null;
          ConnectionReadState readState = conn.getReadState();
          if (readState.getHandShakingStatus() != ConnectionReadState.HANDSHAKINGFIN)  // hand shaking not finished
             if (!readForHandShaking(conn))
@@ -672,7 +669,6 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
       private int read(Connection conn, ByteBuffer buf)
          throws IOException
       {
-         assert buf.remaining() > 0;
          SocketChannel sc = conn.getSocketChannel();
 
          int num = sc.read(buf);
@@ -695,7 +691,6 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
       {
          ConnectionReadState readState = conn.getReadState();
          int i = readState.getHandShakingStatus();
-         assert i != ConnectionReadState.HANDSHAKINGFIN;
          switch (i)
          {
             case 0:
@@ -733,7 +728,6 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
                readState.handShakingStep4Finished();    // now all done
                return true;
          }
-         assert false;
          // never here
          return true;
       }
@@ -751,7 +745,6 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
       {
          ConnectionReadState readState = conn.getReadState();
          ByteBuffer headBuf = readState.getReadHeadBuffer();
-         assert headBuf.remaining() > 0;
 
          SocketChannel sc = conn.getSocketChannel();
          while (headBuf.remaining() > 0)
@@ -780,7 +773,6 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
          throws IOException
       {
          ByteBuffer bodyBuf = conn.getReadState().getReadBodyBuffer();
-         assert bodyBuf != null && bodyBuf.remaining() > 0;
 
          SocketChannel sc = conn.getSocketChannel();
          while (bodyBuf.remaining() > 0)
