@@ -1,4 +1,4 @@
-// $Id: SizeTest.java,v 1.9 2006/01/06 12:18:27 belaban Exp $$
+// $Id: SizeTest.java,v 1.10 2006/01/24 16:06:51 belaban Exp $$
 
 package org.jgroups.tests;
 
@@ -50,7 +50,7 @@ public class SizeTest extends TestCase {
 
 
 
-    public void testUdpHeader(Header hdr) throws Exception {
+    public void testUdpHeader() throws Exception {
         _testSize(new UdpHeader("DemoChannel"));
     }
 
@@ -342,9 +342,9 @@ public class SizeTest extends TestCase {
         assertEquals(tmp, new IpAddress(3333));
         tmp=(Address)hdr.callStack.pop();
         assertEquals(tmp, new IpAddress(2222));
-        assertEquals(hdr.id, 322649);
+        assertEquals(322649, hdr.id);
         assertTrue(hdr.rsp_expected);
-        assertEquals(hdr.corrName, "bla");
+        assertEquals("bla", hdr.corrName);
         assertEquals(hdr.type, RequestCorrelator.Header.RSP);
     }
 
@@ -395,8 +395,7 @@ public class SizeTest extends TestCase {
 
 
     public static Test suite() {
-        TestSuite s=new TestSuite(SizeTest.class);
-        return s;
+        return new TestSuite(SizeTest.class);
     }
 
     public static void main(String[] args) {
