@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.49 2006/01/19 09:53:39 belaban Exp $
+// $Id: JChannel.java,v 1.50 2006/01/24 23:42:25 belaban Exp $
 
 package org.jgroups;
 
@@ -66,7 +66,7 @@ import java.util.Vector;
  *
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.49 $
+ * @version $Revision: 1.50 $
  */
 public class JChannel extends Channel {
 
@@ -887,7 +887,10 @@ public class JChannel extends Channel {
     public boolean getState(Address target, long timeout) throws ChannelNotConnectedException, ChannelClosedException {
         StateTransferInfo info=new StateTransferInfo(StateTransferInfo.GET_FROM_SINGLE, target);
         info.timeout=timeout;
-        return _getState(new Event(Event.GET_STATE, info), timeout);
+        boolean rc=_getState(new Event(Event.GET_STATE, info), timeout);
+        if(rc == false)
+            down(new Event(Event.RESUME_STABLE));
+        return rc;
     }
 
 
