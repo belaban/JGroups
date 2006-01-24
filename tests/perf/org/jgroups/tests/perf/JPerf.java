@@ -9,7 +9,7 @@ import java.text.NumberFormat;
 /**
  * Tool to measure TCP throughput, similar to iperf
  * @author Bela Ban
- * @version $Id: JPerf.java,v 1.1 2005/09/08 11:41:09 belaban Exp $
+ * @version $Id: JPerf.java,v 1.2 2006/01/24 16:26:40 belaban Exp $
  */
 public class JPerf {
     boolean sender;
@@ -21,7 +21,7 @@ public class JPerf {
     int size=1000;
     int incr=1000;
 
-    transient static  NumberFormat f;
+    static  NumberFormat f;
 
     static {
         f=NumberFormat.getNumberInstance();
