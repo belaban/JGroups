@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.40 2006/01/19 09:53:37 belaban Exp $
+// $Id: ConnectionTable.java,v 1.41 2006/01/24 15:52:35 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -13,10 +13,7 @@ import org.jgroups.util.Util;
 
 import java.io.*;
 import java.net.*;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Vector;
+import java.util.*;
 
 
 /**
@@ -132,9 +129,9 @@ public class ConnectionTable implements Runnable {
     public ConnectionTable(Receiver r, InetAddress bind_addr, InetAddress external_addr, int srv_port, int max_port) throws Exception {
         setReceiver(r);
         this.bind_addr=bind_addr;
-	    this.external_addr=external_addr;
+        this.external_addr=external_addr;
         this.srv_port=srv_port;
-	    this.max_port=max_port;
+        this.max_port=max_port;
         start();
     }
 
@@ -336,7 +333,7 @@ public class ConnectionTable implements Runnable {
 
     protected void init() throws Exception {
     }
-    
+
     /** Closes all open sockets, the server socket and all threads waiting for incoming messages */
     public void stop() {
         Iterator it=null;
@@ -386,6 +383,14 @@ public class ConnectionTable implements Runnable {
             }
         }
         if(log.isTraceEnabled()) log.trace("removed " + addr + ", connections are " + toString());
+    }
+
+    /**
+     * Removes all connections from ConnectionTable which are not in c
+     * @param c
+     */
+    public void retainAll(Collection c) {
+        conns.keySet().retainAll(c);
     }
 
 
