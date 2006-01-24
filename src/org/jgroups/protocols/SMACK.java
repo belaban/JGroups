@@ -1,4 +1,4 @@
-// $Id: SMACK.java,v 1.12 2005/08/11 12:43:47 belaban Exp $
+// $Id: SMACK.java,v 1.13 2006/01/24 16:05:26 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -8,10 +8,9 @@ import org.jgroups.stack.AckMcastSenderWindow;
 import org.jgroups.stack.AckReceiverWindow;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
+import org.jgroups.util.Streamable;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.*;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Properties;
@@ -46,7 +45,7 @@ import java.util.Vector;
  * </ul>
  * Advantage of this protocol: no group membership necessary, fast.
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.12 $
+ * @version $Revision: 1.13 $
  * @todo Initial mcast to announce new member (for view change).
  * <BR> Fix membershop bug: start a, b, kill b, restart b: b will be suspected by a.
  */
@@ -287,32 +286,46 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
 
 
 
-    public static class SmackHeader extends Header {
-        public static final int MCAST=1;
-        public static final int ACK=2;
-        public static final int JOIN_ANNOUNCEMENT=3;
-        public static final int LEAVE_ANNOUNCEMENT=4;
+    public static class SmackHeader extends Header implements Streamable {
+        public static final byte MCAST=1;
+        public static final byte ACK=2;
+        public static final byte JOIN_ANNOUNCEMENT=3;
+        public static final byte LEAVE_ANNOUNCEMENT=4;
 
-        int type=0;
+        byte type=0;
         long seqno=-1;
 
         public SmackHeader() {
         }
 
-        public SmackHeader(int type, long seqno) {
+        public SmackHeader(byte type, long seqno) {
             this.type=type;
             this.seqno=seqno;
         }
 
 
         public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeInt(type);
+            out.writeByte(type);
             out.writeLong(seqno);
         }
 
 
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            type=in.readInt();
+            type=in.readByte();
+            seqno=in.readLong();
+        }
+
+        public long size() {
+            return Global.LONG_SIZE + Global.BYTE_SIZE;
+        }
+
+        public void writeTo(DataOutputStream out) throws IOException {
+            out.writeByte(type);
+            out.writeLong(seqno);
+        }
+
+        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+            type=in.readByte();
             seqno=in.readLong();
         }
 
