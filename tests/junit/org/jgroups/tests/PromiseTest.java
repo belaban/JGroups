@@ -1,14 +1,12 @@
-// $Id: PromiseTest.java,v 1.1 2004/09/16 15:03:42 belaban Exp $
+// $Id: PromiseTest.java,v 1.2 2006/01/24 22:44:27 belaban Exp $
 
 package org.jgroups.tests;
 
 
 import junit.framework.TestCase;
 import org.jgroups.TimeoutException;
-import org.jgroups.util.Queue;
-import org.jgroups.util.QueueClosedException;
-import org.jgroups.util.Util;
 import org.jgroups.util.Promise;
+import org.jgroups.util.Util;
 
 
 /**
@@ -22,13 +20,15 @@ public class PromiseTest extends TestCase {
         super(name);
     }
 
-    public void setUp() {
+    public void setUp() throws Exception {
+        super.setUp();
         p=new Promise();
     }
 
 
-    public void tearDown() {
+    public void tearDown() throws Exception {
         p.reset();
+        super.tearDown();
     }
 
 
@@ -70,7 +70,7 @@ public class PromiseTest extends TestCase {
     }
 
 
-    class ResultSetter extends Thread {
+    static class ResultSetter extends Thread {
         long wait_time=2000;
         Promise target=null;
 
@@ -86,7 +86,7 @@ public class PromiseTest extends TestCase {
     }
 
 
-    class Interrupter extends Thread {
+    static class Interrupter extends Thread {
         long wait_time=2000;
         Thread target=null;
 
