@@ -1,17 +1,15 @@
-// $Id: TunnelHeader.java,v 1.5 2004/09/15 16:21:11 belaban Exp $
+// $Id: TunnelHeader.java,v 1.6 2006/01/24 16:01:08 belaban Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.Header;
+import org.jgroups.util.Streamable;
+import org.jgroups.util.Util;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-
-
+import java.io.*;
 
 
-public class TunnelHeader extends Header {
+public class TunnelHeader extends Header implements Streamable {
     public String channel_name=null;
 
     public TunnelHeader() {} // used for externalization
@@ -19,7 +17,7 @@ public class TunnelHeader extends Header {
     public TunnelHeader(String n) {channel_name=n;}
 
     public long size() {
-        return 100;
+        return channel_name == null? 1 : channel_name.length() +3;
     }
 
     public String toString() {
@@ -37,5 +35,13 @@ public class TunnelHeader extends Header {
         channel_name=(String)in.readObject();
     }
 
+
+    public void writeTo(DataOutputStream out) throws IOException {
+        Util.writeString(channel_name, out);
+    }
+
+    public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        channel_name=Util.readString(in);
+    }
 
 }
