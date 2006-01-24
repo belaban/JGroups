@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.40 2006/01/14 14:00:33 belaban Exp $
+// $Id: STABLE.java,v 1.41 2006/01/24 23:43:04 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -46,10 +46,10 @@ public class STABLE extends Protocol {
      * small number (> 0 !) if <code>max_bytes</code> is used */
     long                stability_delay=6000;
     private StabilitySendTask   stability_task=null;
-    final Object        stability_mutex=new Object(); // to synchronize on stability_task
-    private StableTask          stable_task=null;             // bcasts periodic STABLE message (added to timer below)
+    final Object        stability_mutex=new Object();   // to synchronize on stability_task
+    private StableTask  stable_task=null;               // bcasts periodic STABLE message (added to timer below)
     final Object        stable_task_mutex=new Object(); // to sync on stable_task
-    TimeScheduler       timer=null;                   // to send periodic STABLE msgs (and STABILITY messages)
+    TimeScheduler       timer=null;                     // to send periodic STABLE msgs (and STABILITY messages)
     static final String name="STABLE";
 
     /** Total amount of bytes from incoming messages (default = 0 = disabled). When exceeded, a STABLE
@@ -71,7 +71,8 @@ public class STABLE extends Protocol {
 
     /** Number of gossip messages */
     int                 num_gossips=0;
-
+    
+    private static final long MAX_SUSPEND_TIME=200000;
 
 
     public String getName() {
@@ -451,6 +452,8 @@ public class STABLE extends Protocol {
 
     void startResumeTask(long max_suspend_time) {
         max_suspend_time=(long)(max_suspend_time * 1.1); // little slack
+        if(max_suspend_time <= 0)
+            max_suspend_time=MAX_SUSPEND_TIME;
 
         synchronized(resume_task_mutex) {
             if(resume_task != null && resume_task.running()) {
