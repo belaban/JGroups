@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.70 2006/01/14 11:01:29 belaban Exp $
+// $Id: NAKACK.java,v 1.71 2006/01/24 23:58:58 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -468,7 +468,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         case Event.DISCONNECT:
             leaving=true;
             removeAll();
-            seqno=-1;
             break;
         }
 
@@ -1258,6 +1257,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
         synchronized(sent_msgs) {
             sent_msgs.clear();
+            seqno=-1;
         }
 
         synchronized(received_msgs) {
