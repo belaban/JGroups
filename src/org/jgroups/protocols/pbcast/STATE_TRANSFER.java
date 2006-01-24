@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.27 2006/01/14 14:00:33 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.28 2006/01/24 23:22:17 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -296,7 +296,7 @@ public class STATE_TRANSFER extends Protocol {
             passDown(new Event(Event.SET_DIGEST, digest)); // set the digest (e.g. in NAKACK)
         stop=System.currentTimeMillis();
 
-        // resume sending and handling of mesage garbage collection gossip messages,
+        // resume sending and handling of message garbage collection gossip messages,
         // fixes bugs #943480 and #938584). Wakes up a previously suspended message garbage
         // collection protocol (e.g. STABLE)
         if(log.isDebugEnabled())
