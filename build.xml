@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.36 2006/01/11 17:55:20 ossiejnr Exp $ -->
+<!-- $Id: build.xml,v 1.37 2006/01/26 09:33:32 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -101,6 +101,10 @@
          </javac>
      </target>
 
+
+    <target name="draw" depends="compile">
+        <java classname="org.jgroups.demos.Draw" classpathref="jg.classpath"/>
+    </target>
 
     <target name="jar"
         description="Compiles and creates JAR files in the ./dist directory"
