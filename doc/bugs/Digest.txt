@@ -1,0 +1,28 @@
+
+Digest on view changes
+======================
+
+Author: Bela Ban
+Version: $Id: Digest.txt,v 1.1 2006/01/26 09:23:16 belaban Exp $
+
+
+With STATE_TRANSFER we disable message garbage collection with SUSPEND_STABLE for the duration of the state transfer
+and later resume it with RESUME_STABLE. However, we don't do this for regular view changes, e.g. when a new member joins.
+
+The problem is:
+- Member A is in the group
+- Member B joins
+- Member A (as coord) sent 5 messages and therefore returns 5 as digest (assuming it has received all 5 messages yet)
+- Member B receives the JoinRsp and installs the digest of A:5
+- In the meantime, member A sent another 10 messages, which triggered garbage collection of messages
+  A:0 - A:13 (just as example), so A has only messages 13-15 in its sent_table
+- A sends another message (A:16)
+- Upon reception of A:16, B requests retransmission of A:6 - A:16
+- A will not be able to serve that request because it garbage collected messages up to 13
+
+
+SOLUTION:
+- Same as with STATE_TRANSFER:
+- On JOIN request, send down a SUSPEND_STABLE
+- When JOIN request handling has processed (e.g. after receiving all VIEW_ACKs ?), send a RESUME_STABLE down
+- Does this need to be done only on JOIN or also on LEAVE ?
