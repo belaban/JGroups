@@ -1,57 +1,42 @@
-<chapter id="protocols">
-<chapterinfo>
-<pubdate>$Date: 2003/09/09 01:24:04 $</pubdate>
-<releaseinfo>$Revision: 1.1 $</releaseinfo>
-</chapterinfo>
+<chapter id="protocols"><title>Protocols</title>
 
-<title>Protocols</title>
-<para>
-Discussion of protocol-related stuff goes in here
-</para>
+  <para>Discussion of protocol-related stuff goes in here</para>
 
+  <section><title>Virtual Synchrony</title>
 
+    <para></para>
 
-<sect1 id="vsync">
-<title>Virtual Synchrony</title>
-<para>
-</para>
-</sect1>
+  </section>
+
+  <section><title>Probabilistic Broadcast (PBCAST)</title>
+
+    <para></para>
+
+  </section>
 
 
-<sect1 id="pbcast">
-<title>Probabilistic Broadcast (PBCAST)</title>
-<para>
-</para>
-</sect1>
+  <section><title>Token Passing Total Order</title>
 
+    <para></para>
 
-<sect1 id="ring">
-<title>Token Passing Total Order</title>
-<para>
-</para>
-</sect1>
+  </section>
 
+  <section><title>How to write a protocol</title>
 
-<sect1>
-<title>How to write a protocol</title>
-<para>
-</para>
-</sect1>
+    <para></para>
 
+  </section>
 
-<sect1>
-<title>Overview of available protocols</title>
-<para>
-</para>
-</sect1>
+  <section><title>Overview of available protocols</title>
 
+    <para></para>
 
-<sect1 id="configurations">
-<title>Tested protocol configurations</title>
-<para>
-</para>
-</sect1>
+  </section>
 
+  <section><title>Tested protocol configurations</title>
 
+    <para></para>
+
+  </section>
 
 </chapter>

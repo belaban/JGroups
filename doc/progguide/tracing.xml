@@ -1,0 +1,411 @@
+<chapter><title>Tracing</title>
+
+  <para>JGroups provides its own tracing module, located in the
+  <classname>org.javagroups.log</classname> package. The reason for
+  having its own tracing is that tracing was written before log4j or
+  the JDK 1.4 logging API were available. We will probably switch to
+  the JDK 1.4 logging API once JGroups is moved to 1.4, but in the
+  meantime, the current tracing module is doing a fine job.</para>
+
+  <para>Tracing allows a programmer to write a message to some output,
+  which can be a file, stdout/stderr or a socket. Outputs are
+  associated with a module name and a trace level. A module name
+  specifies a class name and optionally a method name. A trace level
+  is an integer specifying a level of output verbosity. The Trace
+  class defines trace level constants DEBUG, TEST, INFO, WARN, ERROR
+  or FATAL (in increasing order of importance). Messages sent to an
+  output are only printed if the trace level of the message is greater
+  than or equal to the trace level set for the output.</para>
+
+  <para>Outputs are flushed when a program terminates. Outputs may be
+  set to auto-flush after every call to print. By default,
+  auto-flushing is turned off. As of Java 1.3, the
+  <methodname>Runtime.addShutdownHook()</methodname> method allows us
+  to register a thread that is used to flush and close all outputs
+  when the program exits. Note that this will not be the case if a
+  program is killed via <command>kill -9</command>.</para>
+
+  <para>If a module is not associated with any output, then a default
+  output is used. The initial value of the default output is
+  null. Messages sent to a null output are ignored.</para>
+
+  <section><title>Module names</title>
+
+    <para>A module name is a string used to associate a message with a
+    particular logging output. Module names should be of the form
+    <parameter>classname[.methodname([args...])]]</parameter>: a class
+    name optionally followed by a method name with parenthesis that
+    optionally contain arguments. Here are some examples of legal
+    module names:</para>
+
+    <itemizedlist>
+      <listitem>
+	<para><parameter>MyClass</parameter> (classname)</para>
+      </listitem>
+      <listitem>
+	<para><parameter>JGroups.Common.MyClass</parameter> (class
+	names can be fully qualified)</para>
+      </listitem>
+      <listitem>
+	<para><parameter>MyClass.method()</parameter> (classname and
+	method, no args)</para>
+      </listitem>
+      <listitem>
+	<para><parameter>MyClass.method(int, String)</parameter>
+	(classname and method, with args)</para>
+      </listitem>
+      <listitem>
+	<para><parameter>MyClass.method</parameter> (legal, but this
+	is a fully qualified class name because there are no
+	parenthesis)</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>Currently, method arguments are always ignored. In the
+    future, we may want to be able to distinguish between methods with
+    the same name and different arguments (for example,
+    <methodname>MyClass.method(int)</methodname> and
+    <methodname>MyClass.method(String)</methodname>).</para>
+
+  </section>
+
+  <section><title>Output lookup</title>
+
+    <para>When calling <methodname>Trace.print()</methodname>, the
+    first argument, the first argument is a module name. When looking
+    for which output to use, Trace uses the following set of rules. If
+    no output is found (the returned output is null), then nothing is
+    printed.</para>
+
+    <orderedlist>
+      <listitem>
+	<para>If the module name contains no method name (there are no
+	parenthesis), look for the output associated with this module
+	name. If found, return it. Else, return the default output
+	(initially <literal>null</literal>).</para>
+      </listitem>
+      <listitem>
+	<para>Look for the output associated with this module and
+	method name, excluding arguments if any.</para>
+      </listitem>
+      <listitem>
+	<para>Strip off the method name and look for the output
+	associated with the class name.</para>
+      </listitem>
+      <listitem>
+	<para>Use the default output (initially
+	<literal>null</literal>).</para>
+      </listitem>
+    </orderedlist>
+
+    <para>For example,</para>
+
+    <screen>
+    Trace.print("JChannel.foo()", Trace.FATAL, "ouch!");
+    </screen>
+
+    <para>would first look for
+    <methodname>JChannel.foo()</methodname>, then
+    <classname>JChannel</classname>, then use the default output
+    (which may be <literal>null</literal>, which means no output will
+    be produced).</para>
+
+  </section>
+
+  <section><title>Using Trace</title>
+
+    <para>To use Trace in a program, the following things have to be
+    done:</para>
+
+    <orderedlist>
+      <listitem>
+	<para>Define trace outputs</para>
+      </listitem>
+      <listitem>
+	<para>Use trace statements in your code</para>
+      </listitem>
+    </orderedlist>
+
+    <section><title>Defining Trace outputs</title>
+
+      <para>There are two ways to define Trace outputs:
+      programmatically and file-based. The
+      <methodname>setOutput()</methodname> methods allow a programmer
+      to add trace output as in the following example:</para>
+
+      <screen>
+    Trace.setOutput("MyClass", Trace.WARN, "/tmp/logfile");
+      </screen>
+
+      <para>This means that all trace statements whose module names
+      start with <parameter>MyClass</parameter> and whose level is
+      WARN or greater will be written to
+      <filename>/tmp/logfile</filename>. Any number of such statements
+      can be given, and the one that matches most of the module name
+      will be used. For example, we can have an additional statement
+      like:</para>
+
+      <screen>
+    Trace.setOutput("MyClass.foo", Trace.WARN, "/tmp/logfile2");
+      </screen>
+
+      <para>In this case, a trace statement whose module name is
+      <parameter>MyClass.foo()</parameter> would be written to
+      <filename>/tmp/logfile2</filename> rather than
+      <filename>/tmp/logfile</filename>.</para>
+
+      <para>Tracing can also be configured through a property file
+      which is read by <methodname>Trace.init()</methodname>. This has
+      the advantage that tracing can be modified by changing a file
+      rather than changing code. In order to configure Trace from a
+      file, one of the two <methodname>Trace.init()</methodname>
+      methods can be called:</para>
+
+      <screen>
+   public static void init(String fname) throws IOException, SecurityException;
+   public static void init();
+      </screen>
+
+      <para>The first method takes a filename as argument. It can
+      either be a fully qualified filename or a relative filename. In
+      the latter case, the file will be looked up in the directory
+      from which the program was started. If
+      <parameter>fname</parameter> refers to a directory, JGroups
+      will automatically add a directory separator followed by
+      <filename>javagroups.properties</filename>, e.g. if
+      <parameter>fname</parameter> is <filename>/tmp</filename>, then
+      the full filename will be
+      <filename>/tmp/javagroups.properties</filename>. If the file is
+      not found, or cannot be opened, an exception will be
+      thrown.</para>
+
+      <para>The second <methodname>init()</methodname> method takes no
+      parameters and throws no exceptions. The following algorithm is
+      used to determine the filename:</para>
+
+      <itemizedlist>
+	<listitem>
+	  <para>If there is a
+	  <filename>javagroups.properties</filename> file in the
+	  user's home directory (<parameter>user.home</parameter>
+	  property), then it will be used.</para>
+	</listitem>
+	<listitem>
+	  <para>Otherwise <filename>javagroups.properties</filename>
+	  will be searched in the <envar>CLASSPATH</envar> and the
+	  first one found will be used (the
+	  <methodname>Class.getResourceAsStream()</methodname> method
+	  call is used for this).</para>
+	</listitem>
+      </itemizedlist>
+
+      <para>A property file looks as follows:</para>
+
+      <screen>
+    trace=true
+
+    timestamp_format=HH:mm:ss[SSS]
+
+    default_output=WARN STDERR
+
+    # trace2=ClientGmsImpl.join      DEBUG STDOUT
+    # trace2=CoordGmsImpl.handleJoin DEBUG STDOUT
+    # trace3=GMS.castViewChange      DEBUG STDOUT
+
+    trace4=SMACK                     DEBUG STDOUT
+    trace5=AckMcastSenderWindow      DEBUG /tmp/trace.ack
+
+    trace8=NAKACK.up                 DEBUG STDOUT
+      </screen>
+
+      <para>The <parameter>trace=true</parameter> statement enables or
+      disabled tracing. This sets the public static
+      <varname>Trace.trace</varname> variable, which should be queried
+      by trace statements before executing a trace statement (see
+      <xref linkend="trace-statements"/>. This flag is on by
+      default. If tracing should be disabled, set it to false.</para>
+
+      <para>The next<footnote><para>Note that statements can occur in
+      any order.</para></footnote>statement is
+      <parameter>timestamp_format</parameter>. It defines the format
+      of the timestamp which occurs before every line of output. The
+      format used is the one defined by
+      <classname>java.text.SimpleDateFormat</classname>. In the above
+      example, we will print the hour, minute, second and millisecond
+      when the event occurred. For example, a trace statement</para>
+
+      <screen>
+    Trace.info("NAKACK.up()", "hello world")
+      </screen>
+
+      <para>will yield the following output:</para>
+
+      <screen>
+[14:07:07[539]] [INFO] NAKACK.up(): hello world].
+      </screen>     
+
+      <para>The next statement is
+      <parameter>default_output</parameter>. It defines an output that
+      is used as a fallback, if there are no other outputs defined. In
+      the example, all warnings or higher (error and fatal messages)
+      will by default be printed to stderr. To enable all output on
+      all levels to go to file <filename>c:\tmp\trace.all</filename>,
+      the following statement can be used:</para>
+
+      <screen>
+default_ouput=DEBUG c:\tmp\trace.all
+      </screen>
+
+      <para>This is not recommended, as all output for
+      <emphasis>all</emphasis> levels (DEBUG is the lowest level) will
+      be dumped to <filename>c:\tmp\trace.all</filename>.</para>
+
+      <para>Next we have a couple of comments, indicated by a line
+      starting with a hash (#). Note that this is the only accepted
+      comment sign; C- or Java-like comments will not be
+      accepted.</para>
+
+      <para>Next come zero or more trace statements. In the example
+      we're tracing class <classname>SMACK</classname> to stdout,
+      <classname>AckMcastSenderWindow</classname> to file
+      <filename>/tmp/trace.ack</filename> and method
+      <methodname>NAKACK.up()</methodname> to stdout. All of these
+      statements have to start with the <parameter>trace</parameter>
+      keyword, followed by a unique ID. Any ID can be used,
+      e.g. <parameter>traceA</parameter>,
+      <parameter>trace-01</parameter> and
+      <parameter>traceMyTrace</parameter> are all valid trace
+      statements. After the equals sign, the module name has to be
+      given. This can be either a class name, or a class name followed
+      by a method name (no parameters must be given !). Note that an
+      inner class method to be traced might look like
+      <methodname>MyClass.MyInnerClass.method1()</methodname>. The
+      next entry defines the trace level: all statements with a level
+      equal or higher to the one given are printed. The last entry in
+      the trace statement is the output: it can be either</para>
+
+      <variablelist>
+	<varlistentry>
+	  <term>STDERR, STDOUT</term>
+	  <listitem>
+	    <para>The standard error or output streams</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term>&lt;filename&gt;</term>
+	  <listitem>
+	    <para>A fully qualified file name</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term>&lt;host:port&gt;</term>
+	  <listitem>
+	    <para>The name and port of a host. The output will be sent
+	    to a host on which a listener has to be running (similar
+	    to UNIX syslogd).</para>
+	  </listitem>
+	</varlistentry>
+      </variablelist>
+
+    </section>
+
+    <section id="trace-statements"><title>Using Trace
+    statements</title>
+
+      <para>Trace statements can be used anywhere in the code (after
+      <classname>org.javagroups.log.*</classname> has been
+      imported). There are several public static methods in the Trace
+      class which can be used:</para>
+
+      <screen>
+   public static void println(String module, int level, String message);
+   public static void debug(String module, String message);
+   public static void test(String module, String message);
+   public static void info(String module, String message);
+   public static void warn(String module, String message);
+   public static void error(String module, String message);
+   public static void fatal(String module, String message);
+      </screen>
+
+      <para>Method <methodname>print()</methodname> takes the module,
+      level and message to be printed as arguments. Methods
+      <methodname>debug()</methodname>,
+      <methodname>test()</methodname>,
+      <methodname>info()</methodname>,
+      <methodname>warn()</methodname>,
+      <methodname>error()</methodname> and
+      <methodname>fatal()</methodname> are mere convenience methods
+      and all use <methodname>println()</methodname>
+      internally.</para>
+
+    </section>
+
+    <section><title>Conditional tracing</title>
+
+      <para>Naive tracing statements can lead to bad performance and a
+      lot of memory used. Consider the following case:</para>
+
+      <screen>
+    for(int i=0; i &lt; 1000; i++)
+        Trace.info("MyClass.foo()", "hello world");
+      </screen>
+
+      <para>When tracing is enabled, this will print the trace
+      statement 1000 times. When tracing is disabled, it will not be
+      printed. However, <methodname>Trace.info()</methodname> will
+      still be evaluated, resulting in 1000 superfluous string
+      creations<footnote><para>Actually, there will be more than 1000
+      strings created because of
+      concatenation.</para></footnote>. Therefore to prevent
+      evaluating trace statements when tracing is disabled, we can add
+      a check before executing the trace statement:</para>
+
+      <screen>
+    for(int i=0; i &lt; 1000; i++) {
+        if(Trace.trace)
+            Trace.info("MyClass.foo()", "hello world");
+    }
+      </screen>
+
+      <para>If trace is disabled, the ony thing we do here is the
+      check for <varname>Trace.trace</varname>; the trace statement
+      will not be evaluated. Note that it is very important to use
+      such checks in code that is executed frequently. For example,
+      the UDP protocol has such conditional trace statements whenever
+      it receives or sends a datagram packet. Otherwise, if tracing
+      was disabled, a lot of memory would be used for superfluous
+      temporary string creation and subsequent deletion.</para>
+
+    </section>
+
+    <section><title>Removing tracing altogether</title>
+
+      <para>The <varname>Trace.trace</varname> flag can be used to
+      enable/disable tracing of certain statements. However, if we
+      want to add trace statements for testing purposes that are not
+      supposed to be shipped in the code for the official release, we
+      can use the <varname>Trace.debug</varname> flag. This flag is
+      defined as public static final in Trace and is set to true by
+      default. A trace statement can use it as follows:</para>
+
+      <screen>
+    for(int i=0; i &lt; 1000; i++) {
+        if(Trace.debug)
+           Trace.info("MyClass.foo()", "hello world");
+    }
+      </screen>
+
+      <para>In this case if <varname>Trace.debug</varname> is set to
+      true, the trace statement will be printed. However, to remove
+      all code using <varname>Trace.debug</varname> altogether, one
+      has to set <varname>Trace.debug</varname> to false (in
+      <varname>Trace.java</varname>) and recompile JGroups. The
+      above example would not include the conditional trace statement
+      in the generated code.</para>
+
+    </section>
+
+  </section>
+
+</chapter>
+

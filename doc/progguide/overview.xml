@@ -1,38 +1,21 @@
-<chapter id="overview">
-<chapterinfo>
-<pubdate>$Date: 2003/09/09 01:24:04 $</pubdate>
-<releaseinfo>$Revision: 1.1 $</releaseinfo>
-</chapterinfo>
+<chapter><title>Overview</title>
 
-<title>Overview</title>
-<para>
+  <section><title>Philosophy of JGroups (KISS)</title>
 
-</para>
+    <para></para>
 
+  </section>
 
+  <section><title>The Group Communication Model</title>
 
-<sect1 id="GroupCommunication">
-<title>Group Communication</title>
-<para>
-Group communication is ...
-</para>
-</sect1>
+    <para></para>
 
-<sect1 id="Philosophy">
-<title>Philosophy of JGroups</title>
-<para>
-KISS, flexibility, core services
-</para>
-</sect1>
+  </section>
 
-<sect1 id="Focus">
-<title>Focus</title>
-<para>
-Focus of PG on Protocol Development
-</para>
-</sect1>
+  <section><title>Roadmap for this book</title>
 
+    <para></para>
 
-
+  </section>
 
 </chapter>
