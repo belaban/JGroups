@@ -1,0 +1,692 @@
+<chapter id="user-advanced"><title>Advanced Concepts</title>
+
+  <para>This chapter discusses some of the more advanced concepts of
+  JGroups with respect to using it and setting it up
+  correctly.</para>
+
+  <section><title>Setting up the protocol stack</title>
+
+    <para>This section applies only to the JChannel channel
+    implementation, not to the Ensemble or iBus channel
+    implementations.</para>
+
+    <para>When creating a <classname>JChannel</classname>, the
+    properties of the underlying protocol stack can be specified as
+    argument. A null argument means use the default composition of
+    layers in the protocol stack (which may change between releases of
+    JGroups).</para>
+
+    <para>A possible property specification may instruct JGroups to
+    create an unreliable, UDP-based channel, another one may specify a
+    loss-less, FIFO channel, and yet a third one may create a
+    loss-less, FIFO, virtually synchronous, total order
+    channel.</para>
+
+    <para>This section discusses how to create a JChannel with a
+    customized protocol stack and the syntax of property strings will
+    be described. It does not describe the protocols in detail; see
+    the Programmer's Guide for details. Also, as JGroups is work in
+    progress, new protocols may be added, or existing ones
+    removed/renamed. Refer to the Javadoc documentation for a complete
+    reference.</para>
+
+    <section><title>Properties</title>
+
+      <para>A property string consists of a number of properties
+      separated by colons:</para>
+
+      <screen>
+    "&lt;prop1&gt;(arg1=val1):&lt;prop2&gt;(arg1=val1;arg2=val2):&lt;prop3&gt;:&lt;propn&gt;"
+      </screen>
+
+      <para>Each property relates directly to a protocol layer, which
+      is implemented as a Java class. When a protocol stack is to be
+      created based on the above property string, the first property
+      becomes the bottom-most layer, the second one will be placed on
+      the first, etc: the stack is created from the bottom to the top,
+      as the string is parsed from left to right. Each property has to
+      be the name of a Java class that resides in the
+      <classname>org.jgroups.stack.protocols</classname>
+      package<footnote><para>This package may change in the
+      future.</para></footnote>. Note that only the base name has to
+      be given, not the fully specified class name
+      (<classname>UDP</classname> instead of
+      <classname>org.jgroups.stack.protocols.UDP</classname>).</para>
+
+      <para>Each layer may have 0 or more arguments, which are
+      specified as a list of name/value pairs in parentheses directly
+      after the property. In the example above, the first protocol
+      layer has 1 argument, the second 2, the third none. When a layer
+      is created, these properties (if there are any) will be set in a
+      layer by invoking the layer's
+      <methodname>setProperties()</methodname>
+      method<footnote><para>If in doubt what properties are accepted
+      by a layer, this method can always be consulted in the source
+      code.</para></footnote>.</para>
+
+      <para>As an example the property string below instructs
+      JGroups to create a JChannel with protocols
+      <classname>UDP</classname>, <classname>PING</classname>,
+      <classname>FD</classname> and <classname>GMS</classname>:</para>
+
+      <screen>
+    "UDP(mcast_addr=228.10.9.8;mcast_port=5678):PING:FD:GMS"
+      </screen>
+
+      <para>The <classname>UDP</classname> protocol layer is at the
+      bottom of the stack, and it should use mcast address
+      <literal>228.10.9.8.</literal> and port <literal>5678</literal>
+      rather than the default IP multicast address and port. The only
+      other argument instructs <classname>FD</classname> to output
+      debug information while executing. Property
+      <classname>UDP</classname> refers to a class
+      <classname>org.jgroups.stack.protocols.UDP</classname>, which is
+      subsequently loaded and an instance of which is created as
+      protocol layer. If any of these classes are not found, an
+      exception will be thrown and the construction of the stack will
+      be aborted.</para>
+
+    </section>
+
+  </section>
+
+  <section><title>Using multiple channels</title>
+
+    <para>When using a fully virtual synchronous protocol stack, the
+    performance may not be great because of the larger number of
+    protocols present. For certain applications, however, throughput
+    is more important than ordering, e.g. for video/audio streams or
+    airplane tracking. In the latter case, it is important that
+    airplanes are handed over between control domains correctly, but
+    if there are a (small) number of radar tracking messages (which
+    determine the exact location of the plane) missing, it is not a
+    problem. The first type of messages do not occur very often
+    (typically a number of messages per hour), whereas the second type
+    of messages would be sent at a rate of 10-30 messages/second. The
+    same applies for a distributed whiteboard: messages that represent
+    a video or audio stream have to be delivered as quick as possible,
+    whereas messages that represent figures drawn on the whiteboard,
+    or new participants joining the whiteboard have to be delivered
+    according to a certain order.</para>
+
+    <para>The requirements for such applications can be solved by
+    using two separate stacks: one for control messages such as group
+    membership, floor control etc and the other one for data messages
+    such as video/audio streams (actually one might consider using one
+    channel for audio and one for video). The control channel might
+    use virtual synchrony, which is relatively slow, but enforces
+    ordering and retransmission, and the data channel might use a
+    simple UDP channel, possibly including a fragmentation layer, but
+    no retransmission layer (losing packets is preferred to costly
+    retransmission).</para>
+
+    <para>The <classname>Draw2Channels</classname> demo program (in
+    the <classname>org.jgroups.demos</classname> package) demonstrates
+    how to use two different channels.</para>
+
+  </section>
+
+  <section><title>Transport protocols</title>
+
+    <para>A <emphasis>transport protocol</emphasis> refers to the
+    protocol at the bottom of the protocol stack which is responsible
+    for sending and receiving messages to/from the network. There are
+    a number of transport protocols in JGroups. They are discussed
+    in the following sections.</para>
+
+    <para>A typical protocol stack configuration using UDP
+    is<footnote><para>Consult the Programmer's Guide for
+    details</para></footnote>:</para>
+
+    <screen>
+    "UDP(mcast_addr=224.0.0.35;mcast_port=45566;ip_ttl=32;" +
+        "mcast_send_buf_size=150000;mcast_recv_buf_size=80000):" +
+    "PING(timeout=2000;num_initial_members=3):" +
+    "MERGE2(min_interval=5000;max_interval=10000):" +
+    "FD_SOCK:" +
+    "VERIFY_SUSPECT(timeout=1500):" +
+    "pbcast.STABLE(desired_avg_gossip=20000):" +
+    "pbcast.NAKACK(gc_lag=50;retransmit_timeout=300,600,1200,2400,4800):" +
+    "UNICAST(timeout=5000;min_wait_time=2000):" +
+    "FRAG(frag_size=4096;down_thread=false;up_thread=false):" +
+    "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
+                "shun=false;print_local_addr=true)"
+    </screen>
+
+    <para>In a nutshell the properties of the protocols are:</para>
+
+
+    <variablelist>
+      <varlistentry>
+	<term>UDP</term>
+	<listitem><para>Uses IP multicast for group messages and UDP
+        packets for messages to individual members</para></listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>PING</term>
+	<listitem><para>Uses IP multicast (by default) to find initial
+        members. Once found, the current coordinator can be determined
+        and a unicast JOIN request will be sent to it</para></listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>MERGE2</term>
+	<listitem><para>Will merge subgroups back into one group</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>FD_SOCK</term>
+	<listitem><para>Failure detection based on sockets (in a ring
+        form between members). Generates notification if a member
+        fails</para></listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>VERIFY_SUSPECT</term>
+	<listitem><para>Double-checks whether suspected member is
+        really dead, otherwise suspicion generated from protocol below
+        is discarded</para></listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>pbcast.STABLE</term>
+	<listitem><para>Deletes messages that have been seen by all
+        members (distributed message garbage
+        collection)</para></listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>pbcast.NAKACK</term>
+	<listitem><para>Ensures (a) message reliability and (b)
+        FIFO. Message reliability guarantees that a message will be
+        received. If not, receiver will request retransmission. FIFO
+        guarantees that all messages from sender P will be received in
+        the order P sent them</para></listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>UNICAST</term>
+	<listitem><para>Same as NAKACK for unicast messages: messages
+        from sender P will not be lost (retransmission if necessary)
+        and will be in FIFO order (essentially the same as TCP in
+        TCP/IP, without the flow control)</para></listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>FRAG</term>
+	<listitem><para>Fragments large messages into smaller ones and
+        reassembles them back at the receiver side. For both multicast
+        and unicast messages</para></listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>pbcast.GMS</term>
+	<listitem><para>Membership protocol. Responsible for
+        joining/leaving members and installing new
+        views.</para></listitem>
+      </varlistentry>
+    </variablelist>
+
+    <section><title>UDP</title>
+
+      <para>UDP uses IP multicast for sending messages to all members
+      of a group and UDP datagrams for unicast messages (sent to a
+      single member). When started, it opens a unicast and multicast
+      socket: the unicast socket is used to send/receive unicast
+      messages, whereas the multicast socket sends/receives multicast
+      messages. The channel's address will be the address and port
+      number of the <emphasis>unicast</emphasis> socket.</para>
+
+      <section><title>Using UDP and plain IP multicasting</title>
+
+	<para>A protocol stack with UDP as transport protocol is
+        typically used with groups whose members run on the same host
+        or are distributed across a LAN. Before running such a stack a
+        programmer has to ensure that IP multicast is enabled across
+        subnets. It is often the case that IP multicast is not enabled
+        across subnets. Refer to section <xref
+        linkend="ItDoesntWork"/> for running a test program that
+        determines whether members can reach each other via IP
+        multicast. If this does not work, the protocol stack cannot
+        use UDP with IP multicast as transport. In this case, the
+        stack has to either use UDP without IP multicasting or other
+        transports such as TCP.</para>
+
+      </section>
+
+      <section id="IpNoMulticast"><title>Using UDP without IP
+      multicasting</title>
+
+	<para>The protocol stack with UDP and PING as the bottom
+        protocols use IP multicasting by default to send messages to
+        all members (UDP) and for discovery of the initial members
+        (PING). However, if multicasting cannot be used, the UDP and
+        PING protocols can be configured to send multiple unicast
+        messages instead of one multicast
+        message<footnote><para>Although not as efficient (and using
+        more bandwidth), it is sometimes the only possibility to reach
+        group members.</para></footnote> (UDP) and to access a
+        well-known server (<emphasis>GossipServer</emphasis>) for
+        initial membership information (PING).</para>
+
+	<para>To configure UDP to use multiple unicast messages to
+        send a group message instead of using IP multicasting, the
+        <parameter>ip_mcast</parameter> property has to be set to
+        <literal>false</literal>.</para>
+
+	<para>To configure PING to access a GossipServer instead of
+        using IP multicast the following properties have to be
+        set:</para>
+
+	<variablelist>
+	  <varlistentry>
+	    <term>gossip_host</term>
+	    <listitem><para>The name of the host on which GossipServer
+	    is started</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>gossip_port</term>
+	    <listitem><para>The port on which GossipServer is
+	    listening</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>gossip_refresh</term>
+	    <listitem><para>The number of milliseconds to wait until
+            refreshing our address entry with the
+            GossipServer</para></listitem>
+	  </varlistentry>
+	</variablelist>
+
+	<para>Before any members are started the GossipServer has to
+	be started, e.g.</para>
+
+	<screen>
+    java org.jgroups.stack.GossipServer -port 5555
+        </screen>
+
+	<para>This starts the GossipServer on the local host on port 5555.
+        The GossipServer is essentially a lookup service for groups
+        and members. It is a process that runs on a well-known host
+        and port and accepts GET(group) and REGISTER(group, member)
+        requests. The REGISTER request registers a member's address
+        and group with the GossipServer. The GET request retrieves all
+        member addresses given a group name. Each member has to
+        periodically (<parameter>gossip_refresh</parameter>)
+        re-register their address with the GossipServer, otherwise the
+        entry for that member will be removed (accommodating for
+        crashed members).</para>
+
+	<para>The following example shows how to disable the use of IP
+        multicasting and use a GossipServer instead. Only the bottom
+        two protocols are shown, the rest of the stack is the same as
+        in the previous example:</para>
+
+	<screen>
+    "UDP(ip_mcast=false;mcast_addr=224.0.0.35;mcast_port=45566;ip_ttl=32;" +
+         "mcast_send_buf_size=150000;mcast_recv_buf_size=80000):" +
+    "PING(gossip_host=localhost;gossip_port=5555;gossip_refresh=15000;" +
+          "timeout=2000;num_initial_members=3):" +
+        </screen>
+
+	<para>The property <parameter>ip_mcast</parameter> is set to
+        <literal>false</literal> in <classname>UDP</classname> and the
+        gossip properties in <classname>PING</classname> define the
+        GossipServer to be on the local host at port 5555 with a
+        refresh rate of 15 seconds. If PING is parameterized with the
+        GossipServer's address <emphasis>and</emphasis> port, then
+        gossiping is enabled, otherwise it is disabled. If only one
+        parameter is given, gossiping will be
+        <emphasis>disabled</emphasis>.</para>
+
+	<para>Make sure to run the GossipServer before starting any
+        members, otherwise the members will not find each other and
+        each member will form its own group<footnote><para>This can
+        actually be used to test the MERGE2 protocol: start two
+        members (forming two singleton groups because they don't find
+        each other), then start the GossipServer. After some time, the
+        two members will merge into one
+        group</para></footnote>.</para>
+       
+      </section>
+
+    </section>
+
+    <section><title>TCP</title>
+
+      <para>TCP is a replacement of UDP as bottom layer in cases where
+      IP Multicast based on UDP is not desired. This may be the case
+      when operating over a WAN, where routers will discard IP
+      MCAST. As a rule of thumb UDP is used as transport for LANs,
+      whereas TCP is used for WANs.</para>
+
+      <para>The properties for a typical stack based on TCP might look
+      like this:</para>
+
+      <screen>
+    "TCP(start_port=7800):" +
+    "TCPPING(initial_hosts=localhost[7800];port_range=5;timeout=3000;" +
+            "num_initial_members=3;up_thread=true;down_thread=true):" +
+    "VERIFY_SUSPECT(timeout=1500;down_thread=false;up_thread=false):" +
+    "pbcast.STABLE(desired_avg_gossip=20000;down_thread=false;up_thread=false):" +
+    "pbcast.NAKACK(down_thread=true;up_thread=true;gc_lag=100;retransmit_timeout=3000):" +
+    "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;shun=false;" +
+               "print_local_addr=false;down_thread=true;up_thread=true)";
+      </screen>
+
+
+      <variablelist>
+	<varlistentry>
+	  <term>TCP</term>
+	  <listitem><para> The transport protocol, uses TCP (from
+          TCP/IP) to send unicast and multicast messages. In the
+          latter case, it sends multiple unicast messages.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term>TCPPING</term>
+	  <listitem><para>Discovers the initial membership to
+          determine coordinator. Join request will then be sent to
+          coordinator.</para></listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term>VERIFY_SUSPECT</term>
+	  <listitem><para>Double checks that a suspected member is
+	  really dead</para></listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term>pbcast.STABLE</term>
+	  <listitem><para>Distributed garbage collection of messages
+	  seen by all members</para></listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term>pbcast.NAKACK</term>
+	  <listitem><para>Reliable and FIFO message delivery</para></listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term>pbcast.GMS</term>
+	  <listitem><para>Membership services. Takes care of joining
+          and removing new/old members, emits view changes</para></listitem>
+	</varlistentry>
+      </variablelist>
+
+      <para>Since TCP already offers some of the reliability
+      guarantees that UDP doesn't, some protocols (e.g. FRAG and
+      UNICAST) are not needed on top of TCP.</para>
+
+      <para>When using TCP, each message to the group is sent as
+      multiple unicast messages (one to each member). Due to the fact
+      that IP multicasting cannot be used to discover the initial
+      members, another mechanism has to be used to find the initial
+      membership. There are a number of alternatives:</para>
+
+      <itemizedlist>
+	<listitem>
+	  <para>PING with GossipServer: same solution as described in
+          <xref linkend="IpNoMulticast"/>. The
+          <parameter>ip_mcast</parameter> property has to be set to
+          <literal>false</literal>. GossipServer has to be started
+          before the first member is started.</para>
+	</listitem>
+    	<listitem>
+	  <para>TCPPING: uses a list of well-known group members that
+           it solicits for initial membership</para>
+	</listitem>
+	<listitem>
+	  <para>TCPGOSSIP: essentially the same as the above
+          PING<footnote><para>PING and TCPGOSSIP will be merged in the
+          future.</para></footnote>. The only difference is that
+          TCPGOSSIP allows for multiple GossipServers instead of only
+          one.</para>
+	</listitem>
+      </itemizedlist>
+
+      <para>The next two section illustrate the use of TCP with both
+      TCPPING and TCPGOSSIP.</para>
+
+      <section><title>Using TCP and TCPPING</title>
+      
+	<para>A protocol stack using TCP and TCPPING looks like this
+        (other protocol omitted):</para>
+
+	<screen>
+    "TCP(start_port=7800):" +
+    "TCPPING(initial_hosts=HostA[7800],HostB[7800];port_range=5;timeout=3000;" +
+             "num_initial_members=3;up_thread=true;down_thread=true):" +
+        </screen>
+      
+	<para>The concept behind TCPPING is that no external daemon
+        such as GossipServer is needed. Instead some selected group
+        members assume the role of well-known hosts from which initial
+        membership information can be retrieved. In the example
+        <parameter>HostA</parameter> and <parameter>HostB</parameter>
+        are designated members that will be used by TCPPING to lookup
+        the initial membership. The property
+        <parameter>start_port</parameter> in
+        <classname>TCP</classname> means that each member should try
+        to assign port 7800 for itself. If this is not possible it
+        will try the next higher port (<literal>7801</literal>) and so
+        on, until it finds an unused port.</para>
+      
+	<para><classname>TCPPING</classname> will try to contact both
+        <parameter>HostA</parameter> and <parameter>HostB</parameter>,
+        starting at port <literal>7800</literal> and ending at port
+        <literal>7800 + port_range</literal>, in the above example
+        ports <literal>7800</literal> -
+        <literal>7804</literal>. Assuming that at least one of
+        <parameter>HostA</parameter> or <parameter>HostB</parameter>
+        is up, a response will be received. To be absolutely sure to
+        receive a response all the hosts on which members of the group
+        will be running can be added to the configuration
+        string.</para>
+
+      </section>
+
+      <section><title>Using TCP and TCPGOSSIP</title>
+
+	<para>As mentioned before <classname>TCPGOSSIP</classname> is
+        essentially the same as <classname>PING</classname> with
+        properties <parameter>gossip_host</parameter>,
+        <parameter>gossip_port</parameter> and
+        <parameter>gossip_refresh</parameter> set. However, in
+        TCPGOSSIP these properties are called differently as shown
+        below (only the bottom two protocols are shown):</para>
+
+	<screen>
+    "TCP:" +
+    "TCPGOSSIP(initial_hosts=localhost[5555],localhost[5556];gossip_refresh_rate=10000;" +
+               "num_initial_members=3;up_thread=true;down_thread=true):" +
+        </screen>
+      
+	<para>The <parameter>initial_hosts</parameter> properties
+        combines both the host and port of a GossipServer, and it is
+        possible to specify more than one GossipServer. In the example
+        there are two GossipServers at ports <literal>5555</literal>
+        and <literal>5556</literal> on the local host. Also,
+        <parameter>gossip_refresh_rate</parameter> defines how many
+        milliseconds to wait between refreshing the entry with the
+        GossipServers.</para>
+
+	<para>The advantage of having multiple GossipServers is that,
+        as long as at least one is running, new members will always be
+        able to retrieve the initial membership. Note that the
+        GossipServer should be started before any of the
+        members.</para>
+
+      </section>
+
+    </section>
+
+    <section><title>TUNNEL</title>
+
+      <section><title>Using TUNNEL to tunnel a firewall</title>
+
+	<para>Firewalls are usually placed at the connection to the
+        internet. They shield local networks from outside attacks by
+        screening incoming traffic and rejecting connection attempts
+        to host inside the firewalls by outside machines. Most
+        firewall systems allow hosts inside the firewall to connect to
+        hosts outside it (outgoing traffic), however, incoming traffic
+        is most often disabled entirely.</para>
+
+	<para><emphasis>Tunnels</emphasis> are host protocols which
+        encapsulate other protocols by multiplexing them at one end
+        and demultiplexing them at the other end. Any protocol can be
+        tunneled by a tunnel protocol.</para>
+
+	<para>The most restrictive setups of firewalls usually disable
+        <emphasis>all</emphasis> incoming traffic, and only enable a
+        few selected ports for outgoing traffic. In the solution
+        below, it is assumed that 2 TCP ports are enabled for outgoing
+        ports; one for the GossipServer and one for the Router.</para>
+
+	<para>JGroups has a mechanism that allows a programmer to
+        tunnel a firewall. The solution involves a GossipServer and a
+        Router process. Both have to be outside of the firewall, so
+        other members (possibly also behind firewalls) can access
+        it.</para>
+
+	<para>The solution works as follows. A channel inside a
+        firewall has to use protocol TUNNEL instead of UDP as
+        bottommost layer in the stack, plus either PING or TCPGOSSIP,
+        as shown below (only the bottom two protocols shown):</para>
+
+	<screen>
+    "TUNNEL(router_host=localhost;router_port=12001):" +
+    "TCPGOSSIP(initial_hosts=localhost[12002];gossip_refresh_rate=10000;" +
+               "num_initial_members=3;up_thread=true;down_thread=true):"
+        </screen>      
+
+	<para><classname>TCPGOSSIP</classname> uses the GossipServer
+        (outside the firewall) at port <literal>12002</literal> to
+        register its address (periodically) and to retrieve the
+        initial membership for its group.</para>
+
+	<para><classname>TUNNEL</classname> establishes a TCP
+        connection to a <emphasis>Router</emphasis> process (also
+        outside the firewall) that accepts messages from members and
+        passes them on to other members. This connection is initiated
+        by the host inside the firewall and persists as long as the
+        channel is connected to a group. Router will use the
+        <emphasis>same connection</emphasis> to send incoming messages
+        to the channel that initiated the connection. This is
+        perfectly legal, as TCP connections are fully duplex. Note
+        that, if Router tried to establish its own TCP connection to
+        the channel behind the firewall, it would fail. But it is okay
+        to reuse the existing TCP connection, established by the
+        channel.</para>
+
+	<para>Note that <classname>TUNNEL</classname> has to be given
+        the hostname and port of the Router process. This example
+        assumes a Router is running on the local host at port
+        <literal>12001</literal> and a GossipServer is running at port
+        <literal>12002</literal>.</para>
+
+	<para>Any time a message has to be sent, TUNNEL forwards the
+        message to Router, which distributes it to its destination: if
+        the message's destination field is null (send to all group
+        members), then Router looks up the members that belong to that
+        group and forwards the message to all of them via the TCP
+        connection they established when connecting to Router. If the
+        destination is a valid member address, then that member's TCP
+        connection is looked up, and the message is forwarded to
+        it<footnote><para>To do so, Router has to maintain a table
+        between groups, member addresses and TCP
+        connections.</para></footnote>.</para>
+
+	<para>To tunnel a firewall using JGroups, the following steps
+	have to be taken:</para>
+
+	<orderedlist>
+	  <listitem>
+	    <para>Check that 2 TCP ports (e.g. 12001 and 12002) are
+            enabled in the firewall for outgoing traffic</para>
+	  </listitem>
+	  <listitem>
+	    <para>Start the GossipServer:</para>
+	    <screen>
+    start org.jgroups.stack.GossipServer -port 12002
+            </screen>
+	  </listitem>
+	  <listitem>
+	    <para>Start Router:</para>
+	    <screen>
+    java org.jgroups.stack.Router -port 12001
+            </screen>
+	  </listitem>
+	  <listitem>
+	    <para>Configure the TUNNEL protocol layer as instructed
+	    above.</para>
+	  </listitem>
+	  <listitem>
+	    <para>Create a channel</para>
+	  </listitem>
+	</orderedlist>
+
+	<para>The general setup is shown in <xref
+	linkend="TunnelingFig"/>.</para>
+
+
+	<figure id="TunnelingFig">
+	  <title>Tunneling a firewall</title>
+	  <mediaobject>
+	    <!--imageobject>
+	      <imagedata align="center" fileref="Tunneling.png"/>
+	    </imageobject-->
+	    <textobject>
+	      <phrase>A diagram representing tunneling a firewall.</phrase>
+	    </textobject>
+	  </mediaobject>
+	</figure>
+	
+	<para>First, the GossipServer and Router processes are created
+        on host B. Note that these should be outside the firewall, and
+        all channels in the same group should use the same
+        GossipServer and Router processes. When a channel on host A is
+        created, its <classname>TCPGOSSIP</classname> protocol will
+        register its address with the GossipServer and retrieve the
+        initial membership (assume this is C). Now, a TCP connection
+        with Router is established by A; this will persist until A
+        crashes or voluntarily leaves the group. When A multicasts a
+        message to the group, Router looks up all group members (in
+        this case, A and C) and forwards the message to all members,
+        using their TCP connections. In the example, A would receive
+        its own copy of the multicast message it sent, and another
+        copy would be sent to C.</para>
+	
+	<para>This scheme allows for example <emphasis>Java
+        applets</emphasis>, which are only allowed to connect back to
+        the host from which they were downloaded, to use JGroups:
+        the HTTP server would be located on host B and the gossip and
+        Router daemons would also run on that host. An applet
+        downloaded to either A or C would be allowed to make a TCP
+        connection to B. Also, applications behind a firewall would be
+        able to talk to each other, joining a group.</para>
+
+	<para>However, there are several drawbacks: first, the central
+        GossipServer and Router processes constitute a single point of
+        failure (if host B crashes)<footnote><para>Although multiple
+        GossipServer could be started</para></footnote>, second,
+        having to maintain a TCP connection for the duration of the
+        connection might use up resources in the host system (e.g. in
+        the Router), leading to scalability problems, third, this
+        scheme is inappropriate when only a few channels are located
+        behind firewalls, and the vast majority can indeed use IP
+        multicast to communicate, and finally, it is not always
+        possible to enable outgoing traffic on 2 ports in a firewall,
+        e.g. when a user does not 'own' the firewall.</para>
+
+      </section>
+
+    </section>
+
+    <section><title>Difference between Router and GossipServer</title>
+    
+      <para>The Router and GossipServer processes have overlapping
+      functionality: both of them allows a member to fetch initial
+      membership information. In addition the Router provides routing
+      functionality. The reason for not merging the functionalities is
+      that some (probably most) applications only need gossiping, but
+      not routing functionality. Therefore they will use the
+      lightweight GossipServer, without having to use Router whose
+      routing functionality would not be used. As a matter of fact
+      both processes used to be merged in earlier versions of
+      JGroups.</para>
+
+    </section>
+
+  </section>
+
+</chapter>

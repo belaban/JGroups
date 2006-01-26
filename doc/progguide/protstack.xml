@@ -1,58 +1,63 @@
-<chapter id="protstack">
-<chapterinfo>
-<pubdate>$Date: 2003/09/09 01:24:04 $</pubdate>
-<releaseinfo>$Revision: 1.1 $</releaseinfo>
-</chapterinfo>
+<chapter id="protstack"><title>Protocol Stack</title>
 
-<title>Protocol Stack</title>
+  <section><title>Connection to Channel</title>
 
-<sect1>
-<title>Architecture</title>
-<para>
-Setup and teardown of ProtocolStack (creation, connect(),
-disconnect(), close())
-</para>
-</sect1>
+    <para>Setup and teardown of ProtocolStack (creation, connect(),
+    disconnect(), close())</para>
 
+  </section>
 
-<sect1>
-<title>Protocol</title>
-<para>
-</para>
+  <section><title>Anatomy of a Protocol</title>
 
-  <sect2>
-  <title>MessageProtocol</title>
-  <para>
-  </para>
-  </sect2>
+    <section><title>Protocol</title>
 
-  <sect2>
-  <title>RpcProtocol</title>
-  <para>
-  </para>
-  </sect2>
+      <para></para>
 
-</sect1>
+    </section>
+
+    <section><title>MessageProtocol</title>
+
+      <para></para>
+
+    </section>
+
+    <section><title>RpcProtocol</title>
+
+      <para></para>
+
+    </section>
+
+  </section>
 
 
-<sect1>
-<title>Configurator</title>
-<para>
-</para>
+  <section><title>Configurator</title>
 
-  <sect2>
-  <title>PlainConfigurator</title>
-  <para>
-  </para>
-  </sect2>
+    <para></para>
 
-  <sect2>
-  <title>UrlConfigurator</title>
-  <para>
-  </para>
-  </sect2>
+    <section><title>PlainConfigurator</title>
+      
+      <para></para>
+      
+    </section>
+    
+    <section><title>UrlConfigurator</title>
+      
+      <para></para>
+      
+    </section>
 
-</sect1>
+  </section>
 
+  <section><title>Initialization of a ProtocolStack</title>
+
+    <para></para>
+
+  </section>
+
+  <section><title>Destruction of a ProtocolStack</title>
+
+    <para></para>
+
+  </section>
 
 </chapter>

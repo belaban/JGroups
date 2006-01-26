@@ -1,85 +1,65 @@
-<chapter id="architecture">
-<chapterinfo>
-<pubdate>$Date: 2003/09/09 01:24:04 $</pubdate>
-<releaseinfo>$Revision: 1.1 $</releaseinfo>
-</chapterinfo>
+<chapter id="architecture"><title>Architecture</title>
 
-<title>Architecture</title>
-<para>
-Discussion of architecture
-</para>
+  <para>Discussion of architecture</para>
 
+  <section><title>Channel</title>
 
+    <para>Overview of channel. The architecture is shown below:
 
-<sect1 id="Channel">
-<title>Channel</title>
-<para>
-Overview of channel. The architecture is shown below:
+      <figure>
+	<title>Architecture of JGroups</title>
+	<!--graphic fileref="Message.png"/-->
+      </figure>
+    </para>
 
-<figure>
-<title>Architecture of JGroups</title>
-<graphic fileref="Message.png"/>
-</figure>
+    <section><title>Address</title>
+    
+      <para>Discussion of Address, IpAddress etc</para>
+      
+    </section>
+    
+    <section><title>Message</title>
+      
+      <para>Discussion of Message</para>
+    
+    </section>
+  
+    <section><title>Header</title>
+      
+      <para>Discussion of Header</para>
+    
+    </section>
+  
+    <section><title>Event</title>
 
-</para>
+      <para>Discussion of Event</para>
 
-  <sect2>
-  <title>Address</title>
-  <para>
-  Discussion of Address, IpAddress etc
-  </para>
-  </sect2>
+    </section>
+  
+    <section><title>View</title>
 
-  <sect2>
-  <title>Message</title>
-  <para>
-  Discussion of Message
-  </para>
-  </sect2>
+      <para>Discussion of View</para>
 
-  <sect2>
-  <title>Header</title>
-  <para>
-  Discussion of Header
-  </para>
-  </sect2>
+    </section>
+  
+    <section><title>ViewId</title>
 
-  <sect2>
-  <title>Event</title>
-  <para>
-  Discussion of Event
-  </para>
-  </sect2>
+      <para>Discussion of ViewId</para>
+      
+    </section>
+    
+  </section>
 
-  <sect2>
-  <title>View</title>
-  <para>
-  Discussion of View
-  </para>
-  </sect2>
+  <section><title>Protocol Stack</title>
 
-  <sect2>
-  <title>ViewId</title>
-  <para>
-  Discussion of ViewId
-  </para>
-  </sect2>
+    <para>Discussion of protocol stack and relation to channel</para>
 
-</sect1>
+  </section>
 
-<sect1 id="OverviewProtocolStack">
-<title>Protocol Stack</title>
-<para>
-Discussion of protocol stack and relation to channel
-</para>
-</sect1>
+  <section><title>Building Blocks</title>
 
-<sect1 id="OverviewBuildingBlocks">
-<title>Building Blocks</title>
-<para>
-Discussion of building blocks
-</para>
-</sect1>
+    <para>Discussion of building blocks</para>
 
+  </section>
 
 </chapter>
