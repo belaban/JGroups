@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.50 2006/01/14 13:26:14 belaban Exp $
+// $Id: UNICAST.java,v 1.51 2006/01/27 14:58:42 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -540,6 +540,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 sent_msgs.reset();
             if(received_msgs != null)
                 received_msgs.reset();
+            sent_msgs_seqno=DEFAULT_FIRST_SEQNO;
         }
 
 
