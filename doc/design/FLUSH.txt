@@ -1,0 +1,58 @@
+
+FLUSH protocol for default stack
+================================
+
+Author: Bela Ban
+Version: $Id: FLUSH.txt,v 1.1 2006/01/27 12:57:44 belaban Exp $
+
+Overview
+--------
+Flushing means that all members of a group flush their pending messages. The process of flushing acquiesces the cluster
+so that state transfer or a join can be done. It is also called the stop-the-world model as nobody will be able to
+send messages while a flush is in process.
+
+When is it needed ?
+-------------------
+(1) On state transfer. When a member requests state transfer, the coordinator tells everyone to stop sending messages
+and waits for everyone's ack. Then it asks the application for its state and ships it back to the requester. After
+the requester has received and set the state successfully, the coordinator tells everyone to resume sending messages.
+
+(2) On view changes (e.g.a join). Before installing a new view V2, flushing would ensure that all messages *sent* in the
+current view V1 are indeed *delivered* in V1, rather than in V2 (in all non-faulty members). This is essentially
+Virtual Synchrony.
+
+Design
+------
+As another protocol FLUSH which handles a FLUSH event. FLUSH sits just below the channel, e.g. above STATE_TRANSFER
+and FC. STATE_TRANSFER and GMS can be configured with a boolean use_flush attribute which determines whether flushing
+is used on state transfer and/or view changes. If so, the protocol just sends a SUSPEND event up the stack, where it
+is handled by the FLUSH protcol. The SUSPEND_OK ack sent back by the FLUSH protocol let's the caller know that the
+flush has completed.
+When done (e.g. view was installed or state transferred), the protocol sends up a RESUME event, which will allow
+everyone in the cluster to resume sending.
+
+FLUSH protocol:
+- On SUSPEND event: multicast START_FLUSH to everyone (including self)
+
+- On reception of START_FLUSH:
+  - set suspended flag to true, all subsequent down() methods will block on mutex
+  - *multicast* a FLUSH_OK message
+
+- On reception of FLUSH_OK at non-coordinator: discard
+
+- On reception of FLUSH_OK at coordinator:
+  - Record FLUSH_OK in vector (1 per member)
+  - Once FLUSH_OK messages have been received from all members --> send down SUSPEND_OK event
+    (in case of crash notification: mark that member's entry as received, so we don't hang forever)
+
+- On RESUME event: multicast STOP_FLUSH message
+
+- On reception of STOP_FLUSH message: unblock down()
+
+- On view change: 
+
+Notes
+-----
+*Multicasting* (as compared to unicasting) the FLUSH_OK message is required so we can be sure that the FLUSH_OK
+message sent by P is the last message received from P before P stopped sending messages. Since we're waiting on
+everyone's FLUSH_OK, we can be assured that everyone's previous messages were received (thanks to reliable mcast).
