@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.42 2006/01/27 14:48:12 belaban Exp $
+// $Id: STABLE.java,v 1.43 2006/01/27 15:47:17 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -168,6 +168,7 @@ public class STABLE extends Protocol {
     }
 
     private void resume() {
+        resetDigest(mbrs); // start from scratch
         suspended=false;
         if(log.isDebugEnabled())
             log.debug("resuming message garbage collection");
