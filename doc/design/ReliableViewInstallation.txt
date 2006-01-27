@@ -3,7 +3,7 @@ Reliable view installation
 ==========================
 
 Author: Bela Ban
-Version: $Id: ReliableViewInstallation.txt,v 1.6 2005/10/05 08:46:02 belaban Exp $
+Version: $Id: ReliableViewInstallation.txt,v 1.1 2006/01/27 14:46:12 belaban Exp $
 
 The default stack sees view as just messages; a view multicast is retransmitted until the sender is excluded because
 it left or crashed. However, this behavior can lead to problems described below. The problems occur when a view

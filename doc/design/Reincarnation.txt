@@ -4,7 +4,7 @@ Problems with reincarnation
 ===========================
 
 Author:  Bela Ban
-Version: $Id: Reincarnation.txt,v 1.2 2005/10/03 07:07:30 belaban Exp $
+Version: $Id: Reincarnation.txt,v 1.1 2006/01/27 14:46:12 belaban Exp $
 JIRA:    http://jira.jboss.com/jira/browse/JGRP-130
 
 The identity of a JGroups member is always the IP address and a port. The port is usually chosen by the OS, unless
