@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.32 2006/01/27 12:13:39 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.33 2006/01/27 15:39:47 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -19,7 +19,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.32 $
+ * @version $Revision: 1.33 $
  */
 public class ClientGmsImpl extends GmsImpl {
     private final Vector  initial_mbrs=new Vector(11);
@@ -57,7 +57,8 @@ public class ClientGmsImpl extends GmsImpl {
     public void join(Address mbr) {
         Address coord;
         JoinRsp rsp;
-        Digest tmp_digest;
+        Digest  tmp_digest;
+        View    tmp_view;
         leaving=false;
 
         join_promise.reset();
@@ -133,27 +134,27 @@ public class ClientGmsImpl extends GmsImpl {
 
                     // 2. Install digest
                     tmp_digest=rsp.getDigest();
-                    if(tmp_digest != null) {
-                        tmp_digest.incrementHighSeqno(coord); 	// see DESIGN for an explanantion
-                        // if(log.isDebugEnabled()) log.debug("digest is " + tmp_digest);
-                        gms.setDigest(tmp_digest);
+                    tmp_view=rsp.getView();
+                    if(tmp_digest == null || tmp_view == null) {
+                        if(log.isErrorEnabled())
+                            log.error("JoinRsp has a null view or digest: view=" + tmp_view + ", digest=" +
+                                    tmp_digest + ", skipping it");
                     }
-                    else
-                        if(log.isErrorEnabled()) log.error("digest of JOIN response is null");
+                    else {
+                        tmp_digest.incrementHighSeqno(coord); 	// see DESIGN for an explanantion
+                        gms.setDigest(tmp_digest);
 
-                    // 3. Install view
-                    if(log.isDebugEnabled()) log.debug("[" + gms.local_addr + "]: JoinRsp=" + rsp.getView() +
-                            " [size=" + rsp.getView().size() + "]\n\n");
+                        if(log.isDebugEnabled()) log.debug("[" + gms.local_addr + "]: JoinRsp=" + tmp_view +
+                                " [size=" + tmp_view.size() + "]\n\n");
 
-                    if(rsp.getView() != null) {
-                        if(!installView(rsp.getView())) {
+                        if(!installView(tmp_view)) {
                             if(log.isErrorEnabled()) log.error("view installation failed, retrying to join group");
                             continue;
                         }
 
                         // send VIEW_ACK to sender of view
                         Message view_ack=new Message(coord, null, null);
-                        GMS.GmsHeader tmphdr=new GMS.GmsHeader(GMS.GmsHeader.VIEW_ACK, rsp.getView());
+                        GMS.GmsHeader tmphdr=new GMS.GmsHeader(GMS.GmsHeader.VIEW_ACK, tmp_view);
                         view_ack.putHeader(GMS.name, tmphdr);
                         gms.passDown(new Event(Event.MSG, view_ack));
 
@@ -161,8 +162,6 @@ public class ClientGmsImpl extends GmsImpl {
                         gms.passDown(new Event(Event.BECOME_SERVER));
                         return;
                     }
-                    else
-                        if(log.isErrorEnabled()) log.error("view of JOIN response is null");
                 }
             }
             catch(SecurityException security_ex) {
