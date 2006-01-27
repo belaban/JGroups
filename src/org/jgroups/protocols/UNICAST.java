@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.51 2006/01/27 14:58:42 belaban Exp $
+// $Id: UNICAST.java,v 1.52 2006/01/27 15:05:56 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -43,6 +43,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     // if UNICAST is used without GMS, don't consult the membership on retransmit() if use_gms=false
     // default is true
     private boolean          use_gms=true;
+    private boolean          started=false;
 
     /** A list of members who left, used to determine when to prevent sending messages to left mbrs */
     private final BoundedList previous_members=new BoundedList(50);
@@ -172,9 +173,11 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         timer=stack != null ? stack.timer : null;
         if(timer == null)
             throw new Exception("timer is null");
+        started=true;
     }
 
     public void stop() {
+        started=false;
         removeAllConnections();
     }
 
@@ -239,6 +242,12 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                     if(trace)
                         log.trace("discarding message to " + dst + " as this member left the group," +
                                 " previous_members=" + previous_members);
+                    return;
+                }
+
+                if(!started) {
+                    if(warn)
+                        log.warn("discarded message as start() has not yet been called, message: " + msg);
                     return;
                 }
 
