@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER_Test.java,v 1.6 2005/10/31 10:56:31 belaban Exp $
+// $Id: STATE_TRANSFER_Test.java,v 1.7 2006/01/27 12:11:36 belaban Exp $
 package org.jgroups.protocols;
 
 import junit.framework.Test;
@@ -125,7 +125,6 @@ public class STATE_TRANSFER_Test extends TestCase {
                            System.err.println("--  GetStateEvent, cnt=" + cnt);
                            channel.returnState(Util.objectToByteBuffer(new Integer(cnt)));
                         }
-                        continue;
                      }
                   } catch (ChannelNotConnectedException not) {
                      break;
@@ -133,7 +132,6 @@ public class STATE_TRANSFER_Test extends TestCase {
                      break;
                   } catch (Exception e) {
                      System.err.println(e);
-                     continue;
                   }
                }
             }
@@ -158,7 +156,6 @@ public class STATE_TRANSFER_Test extends TestCase {
                      break;
                   } catch (Exception e) {
                      System.err.println(e);
-                     continue;
                   }
                }
             }
@@ -211,7 +208,6 @@ public class STATE_TRANSFER_Test extends TestCase {
             break;
          } catch (Exception e) {
             System.err.println(e);
-            continue;
          }
       }
 
