@@ -3,7 +3,7 @@ FLUSH protocol for default stack
 ================================
 
 Author: Bela Ban
-Version: $Id: FLUSH.txt,v 1.1 2006/01/27 12:57:44 belaban Exp $
+Version: $Id: FLUSH.txt,v 1.2 2006/01/27 13:00:00 belaban Exp $
 
 Overview
 --------
@@ -49,7 +49,12 @@ FLUSH protocol:
 
 - On reception of STOP_FLUSH message: unblock down()
 
-- On view change: 
+- On view change:
+  - Mark crashed member as 'received' (see above)
+
+- On suspect(P)
+  - If P is the coordinator and we're next in line
+    - Run the FLUSH protocol from scratch
 
 Notes
 -----
