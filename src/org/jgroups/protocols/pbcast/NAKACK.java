@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.72 2006/01/27 12:15:39 belaban Exp $
+// $Id: NAKACK.java,v 1.73 2006/01/27 15:09:11 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -75,6 +75,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     private final TreeMap sent_msgs=new TreeMap();
 
     private boolean leaving=false;
+    private boolean started=false;
     private TimeScheduler timer=null;
     private static final String name="NAKACK";
 
@@ -379,9 +380,11 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         timer=stack != null ? stack.timer : null;
         if(timer == null)
             throw new Exception("timer is null");
+        started=true;
     }
 
     public void stop() {
+        started=false;
         reset();  // clears sent_msgs and destroys all NakReceiverWindows
     }
 
@@ -578,6 +581,12 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     private void send(Event evt, Message msg) {
         if(msg == null)
             throw new NullPointerException("msg is null; event is " + evt);
+
+        if(!started) {
+            if(warn)
+                log.warn("discarded message as start() has not yet been called, message: " + msg);
+            return;
+        }
 
         synchronized(sent_msgs) {
             long msg_id;
