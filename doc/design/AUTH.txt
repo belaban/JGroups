@@ -4,7 +4,7 @@ Design of authentication protocol (AUTH)
 ========================================
 
 Author: Roland Raez, Bela Ban, Chris Mills
-Version: $Id: AUTH.txt,v 1.3 2006/01/12 07:49:28 belaban Exp $
+Version: $Id: AUTH.txt,v 1.1 2006/01/27 14:46:12 belaban Exp $
 
 Goal: to prevent random members from joining a group. Members have to pass authentication
 to join a group, otherwise they will be rejected

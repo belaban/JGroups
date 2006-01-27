@@ -1,9 +1,0 @@
-
-// $Id: performance.txt,v 1.3 2005/06/23 16:36:29 belaban Exp $
-
-Tips and tricks
----------------
-
-- Use the flags -Xmx500M and -Xms500M, set them to the same initial value
-- Use -verbose:gc to track garbage collections
-- For better performance, disable logging

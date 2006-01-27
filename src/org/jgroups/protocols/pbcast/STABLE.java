@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.41 2006/01/24 23:43:04 belaban Exp $
+// $Id: STABLE.java,v 1.42 2006/01/27 14:48:12 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -586,6 +586,12 @@ public class STABLE extends Protocol {
      */
     void sendStabilityMessage(Digest tmp) {
         long delay;
+
+        if(suspended) {
+            if(trace)
+                log.trace("STABILITY message will not be sent as I'm suspended");
+            return;
+        }
 
         // give other members a chance to mcast STABILITY message. if we receive STABILITY by the end of
         // our random sleep, we will not send the STABILITY msg. this prevents that all mbrs mcast a

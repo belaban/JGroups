@@ -1,4 +1,4 @@
-// $Id: AddressTranslation.txt,v 1.1 2005/01/07 10:01:05 belaban Exp $
+// $Id: AddressTranslation.txt,v 1.1 2006/01/27 14:46:12 belaban Exp $
 
 On multi-homed systems, the identity of a member is bound to a NIC (either chosen by the OS, or by the
 user through bind_addr): Address. When a message is sent, the msg contains this address as the sender's

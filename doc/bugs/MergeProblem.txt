@@ -4,7 +4,7 @@ Merge problem in GMS/MERGE2
 ===========================
 
 Author: Bela Ban
-Version: $Id: MergeProblem.txt,v 1.7 2005/12/27 12:57:58 belaban Exp $
+Version: $Id: MergeProblem.txt,v 1.1 2006/01/27 14:46:11 belaban Exp $
 
 Symptom: first merge works, subsequent merges don't work
 Unit test: MergeStressTest

@@ -4,7 +4,7 @@
 Message bundling
 ================
 
-// Version: $Id: Bundling.txt,v 1.4 2005/11/09 22:15:12 belaban Exp $
+// Version: $Id: Bundling.txt,v 1.1 2006/01/27 14:46:12 belaban Exp $
 // Author: Bela Ban
 
 Init:
