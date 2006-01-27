@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.43 2006/01/14 14:00:33 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.44 2006/01/27 15:46:47 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -29,6 +29,9 @@ public class CoordGmsImpl extends GmsImpl {
     private MergeCanceller   merge_canceller=null;
 
     private final Object     merge_canceller_mutex=new Object();
+
+    /** the max time in ms to suspend message garbage collection */
+    private final Long       MAX_SUSPEND_TIMEOUT=new Long(30000);
 
 
     public CoordGmsImpl(GMS g) {
@@ -312,32 +315,43 @@ public class CoordGmsImpl extends GmsImpl {
             sendJoinResponse(join_rsp, mbr);
             return;
         }
-        Vector new_mbrs=new Vector(1);
-        new_mbrs.addElement(mbr);
-        tmp=gms.getDigest(); // get existing digest
-        if(tmp == null) {
-            if(log.isErrorEnabled()) log.error("received null digest from GET_DIGEST: will cause JOIN to fail");
-            return;
+
+        try {
+            // we cannot garbage collect during joining a new member *if* we're the only member
+            // Example: {A}, B joins, after returning JoinRsp to B, A garbage collects messages higher than those in the
+            // digest returned to the client, so the client will *not* be able to ask for retransmission of those
+            // messages if he misses them
+            gms.passDown(new Event(Event.SUSPEND_STABLE, MAX_SUSPEND_TIMEOUT));
+            Vector new_mbrs=new Vector(1);
+            new_mbrs.addElement(mbr);
+            tmp=gms.getDigest(); // get existing digest
+            if(tmp == null) {
+                if(log.isErrorEnabled()) log.error("received null digest from GET_DIGEST: will cause JOIN to fail");
+                return;
+            }
+
+            d=new Digest(tmp.size() + 1); // create a new digest, which contains 1 more member
+            d.add(tmp); // add the existing digest to the new one
+            d.add(mbr, 0, 0); // ... and add the new member. it's first seqno will be 1
+            v=gms.getNextView(new_mbrs, null, null);
+            if(log.isDebugEnabled()) log.debug("joined member " + mbr + ", view is " + v);
+            join_rsp=new JoinRsp(v, d);
+
+            // 2. Send down a local TMP_VIEW event. This is needed by certain layers (e.g. NAKACK) to compute correct digest
+            //    in case client's next request (e.g. getState()) reaches us *before* our own view change multicast.
+            // Check NAKACK's TMP_VIEW handling for details
+            if(join_rsp.getView() != null)
+                gms.passDown(new Event(Event.TMP_VIEW, join_rsp.getView()));
+
+            // 3. Return result to client
+            sendJoinResponse(join_rsp, mbr);
+
+            // 4. Broadcast the new view
+            gms.castViewChange(join_rsp.getView(), null);
         }
-
-        d=new Digest(tmp.size() + 1); // create a new digest, which contains 1 more member
-        d.add(tmp); // add the existing digest to the new one
-        d.add(mbr, 0, 0); // ... and add the new member. it's first seqno will be 1
-        v=gms.getNextView(new_mbrs, null, null);
-        if(log.isDebugEnabled()) log.debug("joined member " + mbr + ", view is " + v);
-        join_rsp=new JoinRsp(v, d);
-
-        // 2. Send down a local TMP_VIEW event. This is needed by certain layers (e.g. NAKACK) to compute correct digest
-        //    in case client's next request (e.g. getState()) reaches us *before* our own view change multicast.
-        // Check NAKACK's TMP_VIEW handling for details
-        if(join_rsp.getView() != null)
-            gms.passDown(new Event(Event.TMP_VIEW, join_rsp.getView()));
-
-        // 3. Return result to client
-        sendJoinResponse(join_rsp, mbr);
-
-        // 4. Broadcast the new view
-        gms.castViewChange(join_rsp.getView(), null);
+        finally {
+            gms.passDown(new Event(Event.RESUME_STABLE));
+        }
     }
 
 
