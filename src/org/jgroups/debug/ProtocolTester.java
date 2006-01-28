@@ -1,4 +1,4 @@
-// $Id: ProtocolTester.java,v 1.6 2005/05/30 16:14:35 belaban Exp $
+// $Id: ProtocolTester.java,v 1.7 2006/01/28 10:51:19 belaban Exp $
 
 package org.jgroups.debug;
 
@@ -9,6 +9,7 @@ import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.stack.Configurator;
 import org.jgroups.stack.Protocol;
+import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 
 
@@ -38,7 +39,8 @@ public class ProtocolTester {
         props="LOOPBACK:" + props; // add a loopback layer at the bottom of the stack
 
         config=new Configurator();
-        top=config.setupProtocolStack(props, null);
+        ProtocolStack stack=new ProtocolStack();
+        top=config.setupProtocolStack(props, stack);
         harness.setDownProtocol(top);
         top.setUpProtocol(harness); // +++
 
@@ -55,6 +57,26 @@ public class ProtocolTester {
         return props;
     }
 
+
+    public void start() throws Exception {
+        Protocol p;
+        if(harness != null) {
+            p=harness;
+            while(p != null) {
+                p.start();
+                p=p.getDownProtocol();
+            }
+            config.startProtocolStack(harness);
+        }
+        else if(top != null) {
+            p=top;
+            while(p != null) {
+                p.start();
+                p=p.getDownProtocol();
+            }
+            config.startProtocolStack(top);
+        }
+    }
 
     public void stop() {
         Protocol p;
@@ -77,7 +99,7 @@ public class ProtocolTester {
     }
 
 
-    Protocol getBottomProtocol(Protocol top) {
+    private final Protocol getBottomProtocol(Protocol top) {
         Protocol tmp;
 
         if(top == null)
@@ -117,6 +139,8 @@ public class ProtocolTester {
             System.err.println(ex);
         }
     }
+
+
 
 
     private static class Harness extends Protocol {
