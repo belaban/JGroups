@@ -1,4 +1,4 @@
-// $Id: NakackTest.java,v 1.6 2005/05/30 14:31:32 belaban Exp $
+// $Id: NakackTest.java,v 1.7 2006/01/28 10:51:29 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -31,6 +31,7 @@ public class NakackTest extends TestCase {
         num_msgs_received=0;
         num_msgs_sent=0;
     }
+    
 
 
     public void test0() throws Exception {
@@ -44,6 +45,8 @@ public class NakackTest extends TestCase {
 
         mbrs.addElement(my_addr);
         view=new View(vid, mbrs);
+
+        t.start();
         check.down(new Event(Event.BECOME_SERVER));
         check.down(new Event(Event.VIEW_CHANGE, view));
 
@@ -57,14 +60,13 @@ public class NakackTest extends TestCase {
             mutex.wait(WAIT_TIME);
         }
         System.out.println("\nMessages sent: " + num_msgs_sent + ", messages received: " + num_msgs_received);
-        assertTrue(num_msgs_received == num_msgs_sent);
+        assertEquals(num_msgs_received, num_msgs_sent);
         t.stop();
     }
 
 
     public static Test suite() {
-        TestSuite s=new TestSuite(NakackTest.class);
-        return s;
+        return new TestSuite(NakackTest.class);
     }
 
     public static void main(String[] args) {
@@ -78,6 +80,7 @@ public class NakackTest extends TestCase {
         Hashtable senders=new Hashtable(); // sender --> highest seqno received so far
         NakackTest t=null;
         Object mut=null;
+
 
         CheckNoGaps(long seqno, NakackTest t, Object mut) {
             starting_seqno=seqno;
