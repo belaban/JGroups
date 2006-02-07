@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.44 2005/11/12 06:39:02 belaban Exp $
+// $Id: MessageDispatcher.java,v 1.45 2006/02/07 04:33:53 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -267,7 +267,7 @@ public class MessageDispatcher implements RequestHandler {
     }
 
 
-    public void start() {
+    public final void start() {
         if(corr == null) {
             if(transport_adapter != null) {
                 corr=new RequestCorrelator("MessageDispatcher", transport_adapter,
@@ -293,7 +293,7 @@ public class MessageDispatcher implements RequestHandler {
     }
 
 
-    public void setMessageListener(MessageListener l) {
+    public final void setMessageListener(MessageListener l) {
         msg_listener=l;
     }
 
@@ -305,11 +305,11 @@ public class MessageDispatcher implements RequestHandler {
         return msg_listener;
     }
 
-    public void setMembershipListener(MembershipListener l) {
+    public final void setMembershipListener(MembershipListener l) {
         membership_listener=l;
     }
 
-    public void setRequestHandler(RequestHandler rh) {
+    public final void setRequestHandler(RequestHandler rh) {
         req_handler=rh;
     }
 
@@ -753,7 +753,6 @@ public class MessageDispatcher implements RequestHandler {
         }
 
         public Object receive(long timeout) throws Exception {
-            // @todo: implement
             return null;
         }
     }
