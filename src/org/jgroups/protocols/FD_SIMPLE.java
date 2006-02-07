@@ -1,4 +1,4 @@
-// $Id: FD_SIMPLE.java,v 1.9 2005/08/11 12:43:47 belaban Exp $
+// $Id: FD_SIMPLE.java,v 1.10 2006/02/07 07:41:10 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -6,10 +6,9 @@ import org.jgroups.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Promise;
 import org.jgroups.util.TimeScheduler;
+import org.jgroups.util.Streamable;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.*;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Properties;
@@ -23,7 +22,7 @@ import java.util.Vector;
  * suspected. When a message or a heartbeat are received, the counter is reset to 0.
  *
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.9 $
+ * @version $Revision: 1.10 $
  */
 public class FD_SIMPLE extends Protocol {
     Address local_addr=null;
@@ -88,7 +87,6 @@ public class FD_SIMPLE extends Protocol {
         Message msg, rsp;
         Address sender;
         FdHeader hdr=null;
-        Object obj;
         boolean counter_reset=false;
 
         switch(evt.getType()) {
@@ -133,9 +131,6 @@ public class FD_SIMPLE extends Protocol {
 
 
     public void down(Event evt) {
-        Message msg;
-        int num_mbrs;
-        Address mbr;
         View new_view;
         Address key;
 
@@ -165,7 +160,6 @@ public class FD_SIMPLE extends Protocol {
                 for(Iterator it=counters.keySet().iterator(); it.hasNext();) {
                     key=(Address)it.next();
                     if(!members.contains(key)) {
-
                         if(log.isInfoEnabled()) log.info("removing " + key + " from counters");
                         it.remove();
                     }
@@ -247,17 +241,17 @@ public class FD_SIMPLE extends Protocol {
 
 
 
-    public static class FdHeader extends Header {
-        static final int ARE_YOU_ALIVE=1;  // sent periodically to a random member
-        static final int I_AM_ALIVE=2;  // response to above message
+    public static class FdHeader extends Header implements Streamable {
+        static final byte ARE_YOU_ALIVE=1;  // sent periodically to a random member
+        static final byte I_AM_ALIVE=2;     // response to above message
 
 
-        int type=ARE_YOU_ALIVE;
+        byte type=ARE_YOU_ALIVE;
 
         public FdHeader() {
         } // used for externalization
 
-        FdHeader(int type) {
+        FdHeader(byte type) {
             this.type=type;
         }
 
@@ -275,12 +269,24 @@ public class FD_SIMPLE extends Protocol {
 
 
         public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeInt(type);
+            out.writeByte(type);
         }
 
 
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            type=in.readInt();
+            type=in.readByte();
+        }
+
+        public long size() {
+            return Global.BYTE_SIZE;
+        }
+
+        public void writeTo(DataOutputStream out) throws IOException {
+            out.writeByte(type);
+        }
+
+        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+            type=in.readByte();
         }
 
 
