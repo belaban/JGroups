@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.44 2006/01/14 12:48:52 belaban Exp $
+// $Id: Message.java,v 1.45 2006/02/07 13:46:25 belaban Exp $
 
 package org.jgroups;
 
@@ -64,6 +64,19 @@ public class Message implements Externalizable, Streamable {
     private static final boolean DISABLE_CANONICALIZATION=Boolean.getBoolean("disable_canonicalization");
 
 
+    /** Public constructor
+     *  @param dest Address of receiver. If it is <em>null</em> or a <em>string</em>, then
+     *              it is sent to the group (either to current group or to the group as given
+     *              in the string). If it is a Vector, then it contains a number of addresses
+     *              to which it must be sent. Otherwise, it contains a single destination.<p>
+     *              Addresses are generally untyped (all are of type <em>Object</em>. A channel
+     *              instance must know what types of addresses it expects and downcast
+     *              accordingly.
+     */
+    public Message(Address dest) {
+        dest_addr=dest;
+        headers=createHeaders(7);
+    }
 
     /** Public constructor
      *  @param dest Address of receiver. If it is <em>null</em> or a <em>string</em>, then
