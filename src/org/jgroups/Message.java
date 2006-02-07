@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.45 2006/02/07 13:46:25 belaban Exp $
+// $Id: Message.java,v 1.46 2006/02/07 13:47:33 belaban Exp $
 
 package org.jgroups;
 
@@ -336,7 +336,7 @@ public class Message implements Externalizable, Streamable {
     }
 
     public Message makeReply() {
-        return new Message(src_addr, null, null);
+        return new Message(src_addr);
     }
 
 
