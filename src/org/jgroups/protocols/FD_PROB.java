@@ -1,14 +1,13 @@
-// $Id: FD_PROB.java,v 1.9 2005/08/11 12:43:47 belaban Exp $
+// $Id: FD_PROB.java,v 1.10 2006/02/07 07:57:50 belaban Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
+import org.jgroups.util.Streamable;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.*;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Properties;
@@ -26,7 +25,7 @@ import java.util.Vector;
  * for timeout seconds, Q will be suspected.<p>
  * This protocol can be used both with a PBCAST *and* regular stacks.
  * @author Bela Ban 1999
- * @version $Revision: 1.9 $
+ * @version $Revision: 1.10 $
  */
 public class FD_PROB extends Protocol implements Runnable {
     Address local_addr=null;
@@ -102,7 +101,6 @@ public class FD_PROB extends Protocol implements Runnable {
 
     public void up(Event evt) {
         Message msg;
-        Address hb_sender;
         FdHeader hdr=null;
         Object obj;
 
@@ -145,7 +143,6 @@ public class FD_PROB extends Protocol implements Runnable {
 
 
     public void down(Event evt) {
-        Message msg;
         int num_mbrs;
         Vector excluded_mbrs;
         FdEntry entry;
@@ -328,7 +325,6 @@ public class FD_PROB extends Protocol implements Runnable {
     /** Set my own counters values to max(own-counter, counter) */
     void updateCounters(FdHeader hdr) {
         Address key;
-        long counter;
         FdEntry entry;
 
         if(hdr == null || hdr.members == null || hdr.counters == null) {
@@ -431,12 +427,12 @@ public class FD_PROB extends Protocol implements Runnable {
 
 
 
-    public static class FdHeader extends Header {
-        static final int HEARTBEAT=1;  // sent periodically to a random member
-        static final int NOT_MEMBER=2;  // sent to the sender, when it is not a member anymore (shunned)
+    public static class FdHeader extends Header implements Streamable {
+        static final byte HEARTBEAT=1;  // sent periodically to a random member
+        static final byte NOT_MEMBER=2;  // sent to the sender, when it is not a member anymore (shunned)
 
 
-        int type=HEARTBEAT;
+        byte type=HEARTBEAT;
         Address[] members=null;
         long[] counters=null;  // correlates with 'members' (same indexes)
 
@@ -444,11 +440,11 @@ public class FD_PROB extends Protocol implements Runnable {
         public FdHeader() {
         } // used for externalization
 
-        FdHeader(int type) {
+        FdHeader(byte type) {
             this.type=type;
         }
 
-        FdHeader(int type, int num_elements) {
+        FdHeader(byte type, int num_elements) {
             this(type);
             members=new Address[num_elements];
             counters=new long[num_elements];
@@ -469,7 +465,6 @@ public class FD_PROB extends Protocol implements Runnable {
         public String printDetails() {
             StringBuffer sb=new StringBuffer();
             Address mbr;
-            long c;
 
             if(members != null && counters != null)
                 for(int i=0; i < members.length; i++) {
@@ -485,7 +480,7 @@ public class FD_PROB extends Protocol implements Runnable {
 
 
         public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeInt(type);
+            out.writeByte(type);
 
             if(members != null) {
                 out.writeInt(members.length);
@@ -506,7 +501,7 @@ public class FD_PROB extends Protocol implements Runnable {
 
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             int num;
-            type=in.readInt();
+            type=in.readByte();
 
             num=in.readInt();
             if(num == 0)
@@ -522,6 +517,67 @@ public class FD_PROB extends Protocol implements Runnable {
                 counters=new long[num];
                 for(int i=0; i < counters.length; i++)
                     counters[i]=in.readLong();
+            }
+        }
+
+        public long size() {
+            long retval=Global.BYTE_SIZE;
+            retval+=Global.SHORT_SIZE; // number of members
+            if(members != null && members.length > 0) {
+                for(int i=0; i < members.length; i++) {
+                    Address member=members[i];
+                    retval+=Util.size(member);
+                }
+            }
+
+            retval+=Global.SHORT_SIZE; // counters
+            if(counters != null && counters.length > 0) {
+                retval+=counters.length * Global.LONG_SIZE;
+            }
+
+            return retval;
+        }
+
+        public void writeTo(DataOutputStream out) throws IOException {
+            out.writeByte(type);
+            if(members == null || members.length == 0)
+                out.writeShort(0);
+            else {
+                out.writeShort(members.length);
+                for(int i=0; i < members.length; i++) {
+                    Address member=members[i];
+                    Util.writeAddress(member, out);
+                }
+            }
+
+            if(counters == null || counters.length == 0) {
+                out.writeShort(0);
+            }
+            else {
+                out.writeShort(counters.length);
+                for(int i=0; i < counters.length; i++) {
+                    long counter=counters[i];
+                    out.writeLong(counter);
+                }
+            }
+        }
+
+        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+            type=in.readByte();
+            short len=in.readShort();
+            if(len > 0) {
+                members=new Address[len];
+                for(int i=0; i < len; i++) {
+                    members[i]=Util.readAddress(in);
+                }
+            }
+
+            len=in.readShort();
+            if(len > 0) {
+                counters=new long[len];
+                for(int i=0; i < counters.length; i++) {
+                    counters[i]=in.readLong();
+                }
             }
         }
 
