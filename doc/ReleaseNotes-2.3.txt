@@ -2,9 +2,16 @@
 Release Notes JGroups 2.3
 =========================
 
-Version: $Id: ReleaseNotes-2.3.txt,v 1.1 2006/01/03 13:36:38 belaban Exp $
+Version: $Id: ReleaseNotes-2.3.txt,v 1.2 2006/02/07 15:28:59 belaban Exp $
 Author: Bela Ban
 
+
+AUTH
+----
+AUTH is a protocol directly under GMS, which allows to authenticate members who want to join a group. Based on a
+pluggable authentication mechanism, new members are either admitted or rejected. In the latter case, Channel.connect()
+will fail with a security exception.
+For details see JGroups/doc/design/AUTH.txt.
 
 Sequencer based total order protocol
 ------------------------------------
@@ -17,10 +24,16 @@ send and receive messages to/from any queue replica simultaneously, without affe
 of all replicas across the cluster.
 A quick 2 node performance test (perf.Test) with 2 million 1K messages showed
 ca 6500 messages/sec with sequencer.xml, compared to ca. 10500 messages/sec with fc-fast-minimalthreads.xml.
-For details see JGroups/doc/SEQUENCER.txt.
+For details see JGroups/doc/design/SEQUENCER.txt.
 
+ENCRYPT enhancements
+--------------------
+The encrypt_entire_message flag (if set to true) will now encrypt the entire message (including the headers),
+as opposed to only encrypting the message buffer. Note that this operation requires serialization of the message,
+so setting this option to true is expensive. Why use it ? When one wants to prevent eavesdroppers from snooping
+out information located in the (non-encrypted) headers, such as sequence numbers.
 
-Bug fixes
----------
+Enhancements and bug fixes
+--------------------------
 FD_SOCK now uses the bind address of the transport unless a bind_addr is specifically
 specified, or the -Dbind.address system property is used
