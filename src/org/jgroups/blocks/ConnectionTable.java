@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.41 2006/01/24 15:52:35 belaban Exp $
+// $Id: ConnectionTable.java,v 1.42 2006/02/07 09:08:19 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -56,7 +56,6 @@ public class ConnectionTable implements Runnable {
     int                 sock_conn_timeout=1000;      // max time in millis to wait for Socket.connect() to return
     ThreadGroup         thread_group=null;
     protected final Log log=LogFactory.getLog(getClass());
-    final static        byte[] NULL_DATA={};
     final byte[]        cookie={'b', 'e', 'l', 'a'};
 
 
@@ -644,18 +643,19 @@ public class ConnectionTable implements Runnable {
         }
 
 
+        /**
+         *
+         * @param data Guaranteed to be non null (checked in {@link ConnectionTable#send(org.jgroups.Address, byte[], int, int)})
+         * @param offset
+         * @param length
+         */
         void send(byte[] data, int offset, int length) {
             if(use_send_queues) {
                 try {
-                    if(data != null) {
-                        // we need to copy the byte[] buffer here because the original buffer might get changed
-                        // in the meantime
-                        byte[] tmp=new byte[length];
-                        System.arraycopy(data, offset, tmp, 0, length);
-                        send_queue.add(tmp);}
-                    else {
-                        send_queue.add(NULL_DATA);
-                    }
+                    // we need to copy the byte[] buffer here because the original buffer might get changed meanwhile
+                    byte[] tmp=new byte[length];
+                    System.arraycopy(data, offset, tmp, 0, length);
+                    send_queue.add(tmp);
                     if(!sender.isRunning())
                         sender.start();
                 }
