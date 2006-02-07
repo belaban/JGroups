@@ -1,4 +1,4 @@
-// $Id: ENCRYPT.java,v 1.21 2005/12/21 10:16:14 belaban Exp $
+// $Id: ENCRYPT.java,v 1.22 2006/02/07 14:03:50 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -11,10 +11,10 @@ import org.jgroups.util.Util;
 
 import javax.crypto.*;
 import javax.crypto.spec.SecretKeySpec;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.DataOutputStream;
-import java.io.DataInputStream;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.spec.X509EncodedKeySpec;
@@ -168,9 +168,8 @@ public class ENCRYPT extends Protocol {
 		{
 			if (obj instanceof EncryptHeader)
 			{
-				boolean res = ((((EncryptHeader) obj).getType() == type) && ((((EncryptHeader) obj)
-						.getVersion().equals(version))));
-				return res;
+                return ((((EncryptHeader) obj).getType() == type) && ((((EncryptHeader) obj)
+                        .getVersion().equals(version))));
 			}
 			return false;
 		}
@@ -627,7 +626,6 @@ public class ENCRYPT extends Protocol {
 		}
 
 		passUp(evt);
-		return;
 	}
 
 
@@ -908,7 +906,7 @@ public class ENCRYPT extends Protocol {
 
 
 	/**
-	 * @param msg
+	 * @param secret
 	 * @param pubKey
 	 * @throws InvalidKeyException
 	 * @throws IllegalStateException
@@ -999,7 +997,7 @@ public class ENCRYPT extends Protocol {
 
 
 	/**
-	 * @return
+	 * @return Message
 	 */
 
 	private Message sendKeyRequest()
@@ -1101,7 +1099,7 @@ public class ENCRYPT extends Protocol {
         msg.putHeader(EncryptHeader.KEY, new EncryptHeader(EncryptHeader.ENCRYPT, getSymVersion()));
 
         if (msg.getBuffer() != null) {
-            // copy neeeded because same message (object) may be retransimted -> no double encryption
+            // copy neeeded because same message (object) may be retransmitted -> no double encryption
             Message msgEncrypted = msg.copy(false);
             msgEncrypted.setBuffer(encryptMessage(symEncodingCipher, msg.getBuffer()));
             passDown(new Event(Event.MSG, msgEncrypted));
@@ -1115,14 +1113,16 @@ public class ENCRYPT extends Protocol {
     }
 
 
-	/**
-	 * @param symEncodingCipher2
-	 * @param msg
-	 */
-	private byte[] encryptMessage(Cipher cipher, byte[] plain) throws Exception
+    /**
+     *
+     * @param cipher
+     * @param plain
+     * @return
+     * @throws Exception
+     */
+    private byte[] encryptMessage(Cipher cipher, byte[] plain) throws Exception
 	{
-	    byte[] cypherText = cipher.doFinal(plain);
-		return cypherText;
+        return cipher.doFinal(plain);
 
 	}
 
@@ -1152,7 +1152,7 @@ public class ENCRYPT extends Protocol {
 	/**
 	 * used to reconstitute public key sent in byte form from peer
 	 * @param encodedKey
-	 * @return
+	 * @return PublicKey
 	 */
 	private PublicKey generatePubKey(byte[] encodedKey)
 	{
