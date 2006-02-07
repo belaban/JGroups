@@ -1,15 +1,13 @@
-// $Id: JChannelFactory.java,v 1.4 2005/07/17 11:38:05 chrislott Exp $
+// $Id: JChannelFactory.java,v 1.5 2006/02/07 08:02:25 belaban Exp $
 
 package org.jgroups;
 
+import org.jgroups.conf.ConfiguratorFactory;
+import org.jgroups.conf.ProtocolStackConfigurator;
 import org.w3c.dom.Element;
 
 import java.io.File;
-
 import java.net.URL;
-
-import org.jgroups.conf.ConfiguratorFactory;
-import org.jgroups.conf.ProtocolStackConfigurator;
 
 /**
  * JChannelFactory creates pure Java implementations of the <code>Channel</code>
@@ -88,6 +86,22 @@ public class JChannelFactory implements ChannelFactory {
     public JChannelFactory(String properties) throws ChannelException {
         _configuration=ConfiguratorFactory.getStackConfigurator(properties);
     }
+
+    public void config(Object properties) throws ChannelException {
+    }
+
+    public void config(File properties) throws ChannelException {
+    }
+
+    public void config(Element properties) throws ChannelException {
+    }
+
+    public void config(URL properties) throws ChannelException {
+    }
+
+    public void config(String properties) throws ChannelException {
+    }
+
 
     /**
      * Creates a <code>JChannel</code> implementation of the
