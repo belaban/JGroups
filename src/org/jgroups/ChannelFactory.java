@@ -1,6 +1,11 @@
-// $Id: ChannelFactory.java,v 1.2 2004/07/31 22:14:18 jiwils Exp $
+// $Id: ChannelFactory.java,v 1.3 2006/02/07 08:02:25 belaban Exp $
 
 package org.jgroups;
+
+import org.w3c.dom.Element;
+
+import java.io.File;
+import java.net.URL;
 
 /**
    A channel factory takes care of creation of channel implementations. Subclasses will create
@@ -9,25 +14,40 @@ package org.jgroups;
 public interface ChannelFactory {
 
     /**
-       Creates an instance implementing the <code>Channel</code> interface.
-       @param properties The specification of the protocol stack (underneath the channel).
-              A <code>null</code> value means use the default properties.
-       @exception ChannelException Thrown when the creation of the channel failed, e.g.
-                  the <code>properties</code> specified were incompatible (e.g. a missing
-		  UDP layer etc.)
-       @deprecated Channel factories should pass configuration information
-                   related to the protocol stack during construction or via
-                   another method before attempting to create any channels.
+     * Initializes the factory.
+     * @param properties
+     * @throws ChannelException
      */
-    Channel createChannel(Object properties) throws ChannelException;
+    void config(Object properties) throws ChannelException;
 
     /**
-     * Creates an instance implementing the <code>Channel</code> interface.
-     * <p>
-     * Protocol stack configuration information should be passed to implementing
-     * factories before this method is called.
-     *
-     * @throws ChannelException if the creation of the channel failed.
+     * Initializes the factory from  a file. Example: conf/stacks.xml
+     * @param properties
+     * @throws ChannelException
      */
-     Channel createChannel() throws ChannelException;
+    void config(File properties) throws ChannelException;
+
+    void config(Element properties) throws ChannelException;
+
+    void config(URL properties) throws ChannelException;
+
+    void config(String properties) throws ChannelException;
+
+    /**
+     * Creates an implementation of Channel using a guven stack name and registering under a given identity.
+     * The latter is used for multiplexing requests to and from a block on top of a channel.
+     * @param stack_name The name of the stack to be used. All stacks are defined in the configuration
+     * with which the factory is configured (see {@link #config(Object)} for example.
+     * @param receiver The receiver (see {@link Receiver} for details
+     * @param id The identifier used for multiplexing and demultiplexing (dispatching requests to one of possibly
+     * multiple receivers). Note that id will most probably be a number or a string, but since it will be shipped
+     * with the message it needs to be serializable (we also support the {@link org.jgroups.util.Streamable}
+     * interface.
+     * @return An implementation of Channel which keeps track of the id, so that it can be attached to each message
+     * and be properly dispatched at the receiver
+     * @throws ChannelException
+     */
+    // Channel createChannel(String stack_name, Receiver receiver, Object id) throws ChannelException;
+
+    Channel createChannel(Object props) throws ChannelException;
 }
