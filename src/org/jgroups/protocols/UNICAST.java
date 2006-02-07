@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.52 2006/01/27 15:05:56 belaban Exp $
+// $Id: UNICAST.java,v 1.53 2006/02/07 13:49:01 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -468,7 +468,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
 
     private void sendAck(Address dst, long seqno) {
-        Message ack=new Message(dst, null, null);
+        Message ack=new Message(dst);
         ack.putHeader(name, new UnicastHeader(UnicastHeader.ACK, seqno));
         if(trace)
             log.trace(new StringBuffer().append(local_addr).append(" --> ACK(").append(dst).

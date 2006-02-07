@@ -1,4 +1,4 @@
-// $Id: SMACK.java,v 1.13 2006/01/24 16:05:26 belaban Exp $
+// $Id: SMACK.java,v 1.14 2006/02/07 13:49:57 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -7,8 +7,8 @@ import org.jgroups.*;
 import org.jgroups.stack.AckMcastSenderWindow;
 import org.jgroups.stack.AckReceiverWindow;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.Util;
 import org.jgroups.util.Streamable;
+import org.jgroups.util.Util;
 
 import java.io.*;
 import java.util.HashMap;
@@ -45,8 +45,7 @@ import java.util.Vector;
  * </ul>
  * Advantage of this protocol: no group membership necessary, fast.
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.13 $
- * @todo Initial mcast to announce new member (for view change).
+ * @version $Revision: 1.14 $
  * <BR> Fix membershop bug: start a, b, kill b, restart b: b will be suspected by a.
  */
 public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCommand {
@@ -165,7 +164,7 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
                     case SmackHeader.MCAST: // send an ack, then pass up (if not already received)
                         Long tmp_seqno;
                         AckReceiverWindow win;
-                        Message ack_msg=new Message(sender, null, null);
+                        Message ack_msg=new Message(sender);
 
                         ack_msg.putHeader(name, new SmackHeader(SmackHeader.ACK, hdr.seqno));
                         passDown(new Event(Event.MSG, ack_msg));
@@ -201,7 +200,7 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
                             if(log.isInfoEnabled()) log.info("received join announcement by " + msg.getSrc());
 
                         if(!containsMember(sender)) {
-                            Message join_rsp=new Message(sender, null, null);
+                            Message join_rsp=new Message(sender);
                             join_rsp.putHeader(name, new SmackHeader(SmackHeader.JOIN_ANNOUNCEMENT, -1));
                             passDown(new Event(Event.MSG, join_rsp));
                         }

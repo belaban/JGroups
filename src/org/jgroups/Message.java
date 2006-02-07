@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.46 2006/02/07 13:47:33 belaban Exp $
+// $Id: Message.java,v 1.47 2006/02/07 13:49:02 belaban Exp $
 
 package org.jgroups;
 
@@ -91,10 +91,9 @@ public class Message implements Externalizable, Streamable {
      *              not allowed), since we don't copy the contents on clopy() or clone().
      */
     public Message(Address dest, Address src, byte[] buf) {
-        dest_addr=dest;
+        this(dest);
         src_addr=src;
         setBuffer(buf);
-        headers=createHeaders(7);
     }
 
     /**
@@ -115,10 +114,9 @@ public class Message implements Externalizable, Streamable {
      *               array index violations and an ArrayIndexOutOfBoundsException will be thrown if invalid
      */
     public Message(Address dest, Address src, byte[] buf, int offset, int length) {
-        dest_addr=dest;
+        this(dest);
         src_addr=src;
         setBuffer(buf, offset, length);
-        headers=createHeaders(7);
     }
 
 
@@ -136,10 +134,9 @@ public class Message implements Externalizable, Streamable {
      *              (e.g. buf[0]=0 is not allowed), since we don't copy the contents on clopy() or clone().
      */
     public Message(Address dest, Address src, Serializable obj) {
-        dest_addr=dest;
+        this(dest);
         src_addr=src;
         setObject(obj);
-        headers=createHeaders(7);
     }
 
 
