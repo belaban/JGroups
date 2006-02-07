@@ -1,4 +1,4 @@
-// $Id: RouterStub.java,v 1.15 2005/12/08 09:34:47 belaban Exp $
+// $Id: RouterStub.java,v 1.16 2006/02/07 13:27:58 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -8,14 +8,14 @@ import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.protocols.TunnelHeader;
+import org.jgroups.util.Buffer;
+import org.jgroups.util.ExposedByteArrayOutputStream;
 import org.jgroups.util.List;
 import org.jgroups.util.Util;
-import org.jgroups.util.ExposedByteArrayOutputStream;
-import org.jgroups.util.Buffer;
 
+import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.ByteArrayInputStream;
 import java.net.Socket;
 
 
@@ -25,7 +25,7 @@ public class RouterStub {
     String router_host=null;       // name of the router host
     int router_port=0;          // port on which router listens on router_host
     Socket sock=null;              // socket connecting to the router
-    final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(512);
+    private ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(512);
     DataOutputStream output=null;            // output stream associated with sock
     DataInputStream input=null;             // input stream associated with sock
     Address local_addr=null;        // addr of group mbr. Once assigned, remains the same
@@ -255,7 +255,14 @@ public class RouterStub {
 
         try {
             dst_addr=msg.getDest(); // could be null in case of mcast
-            out_stream.reset();
+            try {
+                out_stream.reset();
+            }
+            catch (Exception ex) {
+                out_stream=new ExposedByteArrayOutputStream(512);
+            }
+            // at this point out_stream is always valid and non-null
+
             DataOutputStream tmp=new DataOutputStream(out_stream);
             msg.writeTo(tmp);
             tmp.close();
