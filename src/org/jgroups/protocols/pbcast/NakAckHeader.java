@@ -1,11 +1,11 @@
-// $Id: NakAckHeader.java,v 1.17 2006/01/14 14:00:33 belaban Exp $
+// $Id: NakAckHeader.java,v 1.18 2006/02/08 11:42:50 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
 
-import org.jgroups.Header;
-import org.jgroups.Global;
 import org.jgroups.Address;
+import org.jgroups.Global;
+import org.jgroups.Header;
 import org.jgroups.util.Range;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
@@ -129,9 +129,18 @@ public class NakAckHeader extends Header implements Streamable {
 
     public String toString() {
         StringBuffer ret=new StringBuffer();
-        ret.append("[").append(type2Str(type)).append(", seqno=").append(seqno);
-        if(range != null)
-            ret.append(", range=").append(range);
+        ret.append("[").append(type2Str(type));
+        switch(type) {
+            case MSG:           // seqno and sender
+                ret.append(", seqno=").append(seqno);
+                break;
+            case XMIT_REQ:  // range and sender
+            case XMIT_RSP:  // range and sender
+                if(range != null)
+                    ret.append(", range=").append(range);
+                break;
+        }
+
         if(sender != null) ret.append(", sender=").append(sender);
         ret.append(']');
         return ret.toString();
