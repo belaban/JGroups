@@ -1,4 +1,4 @@
-// $Id: GroupRequest.java,v 1.16 2005/08/27 14:03:17 belaban Exp $
+// $Id: GroupRequest.java,v 1.17 2006/02/08 08:19:50 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -10,8 +10,8 @@ import org.jgroups.Message;
 import org.jgroups.Transport;
 import org.jgroups.View;
 import org.jgroups.util.Command;
-import org.jgroups.util.RspList;
 import org.jgroups.util.Rsp;
+import org.jgroups.util.RspList;
 
 import java.util.*;
 
@@ -41,7 +41,7 @@ import java.util.*;
  * to do so.<p>
  * <b>Requirements</b>: lossless delivery, e.g. acknowledgment-based message confirmation.
  * @author Bela Ban
- * @version $Revision: 1.16 $
+ * @version $Revision: 1.17 $
  */
 public class GroupRequest implements RspCollector, Command {
     /** return only first response */
@@ -200,7 +200,7 @@ public class GroupRequest implements RspCollector, Command {
      * <code>rsp_mutex</code> lock.
      * @param mbrs The new list of members
      */
-    public void reset(Vector mbrs) {
+    public final void reset(Vector mbrs) {
         if(mbrs != null) {
             Address mbr;
             synchronized(requests) {
@@ -353,8 +353,7 @@ public class GroupRequest implements RspCollector, Command {
     public RspList getResults() {
         synchronized(requests) {
             Collection rsps=requests.values();
-            RspList retval=new RspList(rsps);
-            return retval;
+            return new RspList(rsps);
         }
     }
 
@@ -532,9 +531,7 @@ public class GroupRequest implements RspCollector, Command {
                     return true;
                 break;
             case GET_ALL:
-                if(num_not_received > 0)
-                    return false;
-                return true;
+                return num_not_received <= 0;
             case GET_MAJORITY:
                 if(num_received + num_suspected >= majority)
                     return true;
@@ -552,10 +549,7 @@ public class GroupRequest implements RspCollector, Command {
                     return true;
                 }
                 if(num_received + num_not_received < expected_mbrs) {
-                    if(num_received + num_suspected >= expected_mbrs) {
-                        return true;
-                    }
-                    return false;
+                    return num_received + num_suspected >= expected_mbrs;
                 }
                 return false;
             case GET_NONE:
