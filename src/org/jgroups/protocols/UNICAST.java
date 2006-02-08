@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.53 2006/02/07 13:49:01 belaban Exp $
+// $Id: UNICAST.java,v 1.54 2006/02/08 08:48:04 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -269,7 +269,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                         seqno=entry.sent_msgs_seqno;
                         UnicastHeader hdr=new UnicastHeader(UnicastHeader.DATA, seqno);
                         if(entry.sent_msgs == null) { // first msg to peer 'dst'
-                            entry.sent_msgs=new AckSenderWindow(this, timeout, timer); // use the protocol stack's timer
+                            entry.sent_msgs=new AckSenderWindow(this, timeout, timer, this.local_addr); // use the protocol stack's timer
                         }
                         msg.putHeader(name, hdr);
                         if(trace)
