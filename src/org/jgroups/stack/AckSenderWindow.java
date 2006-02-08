@@ -1,4 +1,4 @@
-// $Id: AckSenderWindow.java,v 1.18 2006/01/14 14:00:42 belaban Exp $
+// $Id: AckSenderWindow.java,v 1.19 2006/02/08 08:47:43 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -63,6 +63,13 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
         retransmit_command = com;
         this.interval = interval;
         retransmitter = new Retransmitter(null, this, sched);
+        retransmitter.setRetransmitTimeouts(interval);
+    }
+
+    public AckSenderWindow(RetransmitCommand com, long[] interval, TimeScheduler sched, Address sender) {
+        retransmit_command = com;
+        this.interval = interval;
+        retransmitter = new Retransmitter(sender, this, sched);
         retransmitter.setRetransmitTimeouts(interval);
     }
 
@@ -135,7 +142,7 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
         if(retransmit_command != null) {
             if(log.isTraceEnabled())
                 log.trace(new StringBuffer("retransmitting messages ").append(first_seqno).
-                          append(" - ").append(last_seqno).append(" to ").append(sender));
+                          append(" - ").append(last_seqno).append(" from ").append(sender));
             for(long i = first_seqno; i <= last_seqno; i++) {
                 if((msg = (Message) msgs.get(new Long(i))) != null) { // find the message to retransmit
                     retransmit_command.retransmit(i, msg);
