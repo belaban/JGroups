@@ -1,4 +1,4 @@
-// $Id: Protocol.java,v 1.36 2006/01/19 09:53:38 belaban Exp $
+// $Id: Protocol.java,v 1.37 2006/02/08 07:34:27 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -597,7 +597,7 @@ public abstract class Protocol {
                         return true; // pass down the stack
                 }
                 catch(Exception e) {
-                    passUp(new Event(Event.START_OK, new Exception("exception caused by " + getName() + ".start(): " + e)));
+                    passUp(new Event(Event.START_OK, new Exception("exception caused by " + getName() + ".start()", e)));
                     return false;
                 }
             case Event.STOP:
