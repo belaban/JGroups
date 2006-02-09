@@ -1,4 +1,4 @@
-// $Id: ENCRYPT.java,v 1.24 2006/02/09 12:34:02 belaban Exp $
+// $Id: ENCRYPT.java,v 1.25 2006/02/09 13:01:08 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -554,8 +554,6 @@ public class ENCRYPT extends Protocol {
             if (log.isDebugEnabled())
                 log.debug("Membership has changed but I do not care");
         }
-
-
     }
 
     /**
@@ -611,6 +609,11 @@ public class ENCRYPT extends Protocol {
             return;
         }
 
+        if(msg.getLength() == 0) {
+            passUp(evt);
+            return;
+        }
+
         EncryptHeader hdr = (EncryptHeader)msg.getHeader(EncryptHeader.KEY);
 
         // try and get the encryption header
@@ -630,7 +633,7 @@ public class ENCRYPT extends Protocol {
         if (hdr.getType() == EncryptHeader.ENCRYPT)
         {
             // if msg buffer is empty, and we didn't encrypt the entire message, just pass up
-            if (!hdr.encrypt_entire_msg && ((Message)evt.getArg()).getBuffer() == null) {
+            if (!hdr.encrypt_entire_msg && ((Message)evt.getArg()).getLength() == 0) {
                 if (trace)
                     log.trace("passing up message as it has an empty buffer ");
                 passUp(evt);
@@ -668,8 +671,7 @@ public class ENCRYPT extends Protocol {
             {
                 if (log.isWarnEnabled())
                 {
-                    log.warn("We received an encrypt header of "
-                            + hdr.getType() + " while in configured mode");
+                    log.warn("We received an encrypt header of " + hdr.getType() + " while in configured mode");
                 }
             } else{
                 // see what sort of encrypt control message we
@@ -981,7 +983,6 @@ public class ENCRYPT extends Protocol {
                 break;
         }
         passDown(evt);
-
     }
 
 
@@ -1010,7 +1011,13 @@ public class ENCRYPT extends Protocol {
         if (evt.getType() != Event.MSG) {
             return;
         }
+
         Message msg = (Message) evt.getArg();
+        if(msg.getLength() == 0) {
+            passDown(evt);
+            return;
+        }
+
         EncryptHeader hdr=new EncryptHeader(EncryptHeader.ENCRYPT, getSymVersion());
         hdr.encrypt_entire_msg=this.encrypt_entire_message;
 
@@ -1029,18 +1036,10 @@ public class ENCRYPT extends Protocol {
         // put our encrypt header on the message
         msg.putHeader(EncryptHeader.KEY, hdr);
 
-        if (msg.getBuffer() != null) {
-            // copy neeeded because same message (object) may be retransmitted -> no double encryption
-            Message msgEncrypted = msg.copy(false);
-            msgEncrypted.setBuffer(encryptMessage(symEncodingCipher, msg.getBuffer()));
-            passDown(new Event(Event.MSG, msgEncrypted));
-            return;
-        }
-
-        if (trace)
-            log.trace("buffer is null not encrypting ");
-
-        passDown(evt);
+        // copy neeeded because same message (object) may be retransmitted -> no double encryption
+        Message msgEncrypted = msg.copy(false);
+        msgEncrypted.setBuffer(encryptMessage(symEncodingCipher, msg.getBuffer()));
+        passDown(new Event(Event.MSG, msgEncrypted));
     }
 
 
@@ -1054,7 +1053,6 @@ public class ENCRYPT extends Protocol {
     private byte[] encryptMessage(Cipher cipher, byte[] plain) throws Exception
     {
         return cipher.doFinal(plain);
-
     }
 
 
@@ -1090,8 +1088,7 @@ public class ENCRYPT extends Protocol {
         PublicKey pubKey = null;
         try
         {
-            KeyFactory KeyFac = KeyFactory
-                    .getInstance(getAlgorithm(asymAlgorithm));
+            KeyFactory KeyFac = KeyFactory.getInstance(getAlgorithm(asymAlgorithm));
             X509EncodedKeySpec x509KeySpec = new X509EncodedKeySpec(encodedKey);
             pubKey = KeyFac.generatePublic(x509KeySpec);
         } catch (Exception e)
