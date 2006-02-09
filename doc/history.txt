@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.187 2006/01/26 09:28:01 belaban Exp $
+Revision: $Id: history.txt,v 1.188 2006/02/09 13:03:23 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -29,6 +29,10 @@ ossiejnr    = Chris Mills (chris.mills@jboss.com)
 
 Version 2.3
 -----------
+
+- Added encryption of entire message to ENCRYPT
+  (http://jira.jboss.com/jira/browse/JGRP-190)
+  (bela Feb 9 2006)
 
 - Converted Word prog guide to docbook (./doc/progguide). Done by gdvieira@ic.unicamp.br
   (gdvieira@ic.unicamp.br Jan 26 2006)
