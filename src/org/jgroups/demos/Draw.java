@@ -1,23 +1,23 @@
-// $Id: Draw.java,v 1.15 2005/10/31 10:56:31 belaban Exp $
+// $Id: Draw.java,v 1.16 2006/02/09 11:54:31 belaban Exp $
 
 
 package org.jgroups.demos;
 
 
 import org.jgroups.*;
-import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.debug.Debugger;
+import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.util.Util;
 
-import javax.swing.*;
-import javax.management.MBeanServerFactory;
 import javax.management.MBeanServer;
+import javax.management.MBeanServerFactory;
+import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
-import java.util.Random;
 import java.util.ArrayList;
+import java.util.Random;
 
 
 
@@ -309,8 +309,7 @@ public class Draw implements ActionListener, ChannelListener {
                 break;
             }
             catch(Exception e) {
-                System.err.println(e);
-                continue;
+                e.printStackTrace();
             }
         }
     }
@@ -425,7 +424,7 @@ public class Draw implements ActionListener, ChannelListener {
 
 
 
-        void createOffscreenImage() {
+        final void createOffscreenImage() {
             d=getSize();
             if(img == null || imgsize == null || imgsize.width != d.width || imgsize.height != d.height) {
                 img=createImage(d.width, d.height);
