@@ -1,14 +1,17 @@
 package org.jgroups.util;
 
 import org.jgroups.TimeoutException;
-import org.jgroups.ViewId;
 import org.jgroups.View;
+import org.jgroups.ViewId;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.Vector;
 
 /**
  * @author Bela Ban
- * @version $Id: AckCollector.java,v 1.7 2006/01/14 14:00:44 belaban Exp $
+ * @version $Id: AckCollector.java,v 1.8 2006/02/10 07:23:09 belaban Exp $
  */
 public class AckCollector {
     /** List<Object>: list of members from whom we haven't received an ACK yet */
@@ -41,29 +44,37 @@ public class AckCollector {
     }
 
     public void reset(ViewId v, java.util.List l) {
-        proposed_view=v;
-        missing_acks.clear();
-        received_acks.clear();
-        if(l != null)
-            missing_acks.addAll(l);
-        missing_acks.removeAll(suspected_mbrs);
-        all_acks_received.reset();
+        synchronized(this) {
+            proposed_view=v;
+            missing_acks.clear();
+            received_acks.clear();
+            if(l != null)
+                missing_acks.addAll(l);
+            missing_acks.removeAll(suspected_mbrs);
+            all_acks_received.reset();
+        }
     }
 
     public int size() {
-        return missing_acks.size();
+        synchronized(this) {
+            return missing_acks.size();
+        }
     }
 
     public void ack(Object member) {
-        missing_acks.remove(member);
-        received_acks.add(member);
-        if(missing_acks.size() == 0)
-            all_acks_received.setResult(Boolean.TRUE);
+        synchronized(this) {
+            missing_acks.remove(member);
+            received_acks.add(member);
+            if(missing_acks.size() == 0)
+                all_acks_received.setResult(Boolean.TRUE);
+        }
     }
 
     public void suspect(Object member) {
-        ack(member);
-        suspected_mbrs.add(member);
+        synchronized(this) {
+            ack(member);
+            suspected_mbrs.add(member);
+        }
     }
 
     public void unsuspect(Object member) {
