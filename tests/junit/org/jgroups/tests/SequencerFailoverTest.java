@@ -4,19 +4,21 @@ package org.jgroups.tests;
 
 
 import junit.framework.TestCase;
-import org.jgroups.*;
+import org.jgroups.JChannel;
+import org.jgroups.Message;
+import org.jgroups.View;
 import org.jgroups.util.Util;
 
-import java.util.List;
-import java.util.LinkedList;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 
 
 /**
  * Tests a SEQUENCER based stack: A, B and C. B starts multicasting messages with a monotonically increasing
  * number. Then A is crashed. C and B should receive *all* numbers *without* a gap.
  * @author Bela Ban
- * @version $Id: SequencerFailoverTest.java,v 1.1 2006/01/03 15:38:02 belaban Exp $
+ * @version $Id: SequencerFailoverTest.java,v 1.2 2006/02/10 07:42:55 belaban Exp $
  */
 public class SequencerFailoverTest extends TestCase {
     JChannel ch1, ch2, ch3; // ch1 is the coordinator
@@ -35,7 +37,7 @@ public class SequencerFailoverTest extends TestCase {
             "UNICAST(timeout=600,1200,2400):" +
             "pbcast.STABLE(desired_avg_gossip=20000):" +
             "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
-            "shun=true;print_local_addr=true):" +
+            "shun=true;print_local_addr=true;view_ack_collection_timeout=2000):" +
             "SEQUENCER";
 
 
