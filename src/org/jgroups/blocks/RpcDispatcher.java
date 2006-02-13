@@ -1,26 +1,18 @@
-// $Id: RpcDispatcher.java,v 1.20 2005/11/12 06:39:21 belaban Exp $
+// $Id: RpcDispatcher.java,v 1.21 2006/02/13 13:52:56 belaban Exp $
 
 package org.jgroups.blocks;
 
 
+import org.jgroups.*;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
-import org.jgroups.ChannelListener;
-import org.jgroups.Channel;
-import org.jgroups.MessageListener;
-import org.jgroups.MembershipListener;
-import org.jgroups.Transport;
-import org.jgroups.Message;
-import org.jgroups.TimeoutException;
-import org.jgroups.SuspectedException;
-import org.jgroups.Address;
 
 import java.io.Serializable;
-import java.util.Vector;
-import java.util.List;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.lang.reflect.Method;
+import java.util.List;
+import java.util.Vector;
 
 
 
@@ -39,7 +31,7 @@ import java.lang.reflect.Method;
 public class RpcDispatcher extends MessageDispatcher implements ChannelListener {
     protected Object        server_obj=null;
     protected Marshaller    marshaller=null;
-    protected List          additionalChannelListeners=null;
+    protected final List    additionalChannelListeners=new ArrayList();
     protected MethodLookup  method_lookup=null;
 
 
@@ -47,7 +39,6 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         super(channel, l, l2);
         channel.addChannelListener(this);
         this.server_obj=server_obj;
-        additionalChannelListeners = new ArrayList();
     }
 
 
@@ -56,7 +47,6 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         super(channel, l, l2, deadlock_detection);
         channel.addChannelListener(this);
         this.server_obj=server_obj;
-        additionalChannelListeners = new ArrayList();
     }
 
     public RpcDispatcher(Channel channel, MessageListener l, MembershipListener l2, Object server_obj,
@@ -64,7 +54,6 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         super(channel, l, l2, deadlock_detection, concurrent_processing);
         channel.addChannelListener(this);
         this.server_obj=server_obj;
-        additionalChannelListeners = new ArrayList();
     }
 
 
@@ -83,7 +72,6 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         }
 
         this.server_obj=server_obj;
-        additionalChannelListeners = new ArrayList();
     }
 
 
@@ -157,8 +145,11 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
             buf=marshaller != null? marshaller.objectToByteBuffer(method_call) : Util.objectToByteBuffer(method_call);
         }
         catch(Exception e) {
-            if(log.isErrorEnabled()) log.error("exception=" + e);
-            return null;
+            // if(log.isErrorEnabled()) log.error("exception", e);
+            // we will change this in 2.4 to add the exception to the signature
+            // (see http://jira.jboss.com/jira/browse/JGRP-193). The reason for a RTE is that we cannot change the
+            // signature in 2.3, otherwise 2.3 would be *not* API compatible to prev releases
+            throw new RuntimeException("failure to marshal argument(s)", e);
         }
 
         Message msg=new Message(null, null, buf);
@@ -196,8 +187,11 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
             buf=marshaller != null? marshaller.objectToByteBuffer(method_call) : Util.objectToByteBuffer(method_call);
         }
         catch(Exception e) {
-            if(log.isErrorEnabled()) log.error("exception=" + e);
-            return null;
+            // if(log.isErrorEnabled()) log.error("exception", e);
+            // we will change this in 2.4 to add the exception to the signature
+            // (see http://jira.jboss.com/jira/browse/JGRP-193). The reason for a RTE is that we cannot change the
+            // signature in 2.3, otherwise 2.3 would be *not* API compatible to prev releases
+            throw new RuntimeException("failure to marshal argument(s)", e);
         }
 
         msg=new Message(dest, null, buf);
@@ -259,7 +253,6 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
             return method_call.invoke(server_obj);
         }
         catch(Throwable x) {
-            log.error("failed invoking method", x);
             return x;
         }
     }
