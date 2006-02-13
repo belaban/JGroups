@@ -66,7 +66,7 @@ public class RpcDispatcherSerializationTest extends TestCase {
         Vector members=channel.getView().getMembers();
         System.out.println("members are: " + members);
         RspList rsps=disp.callRemoteMethods(members, "foo", new Object[]{"one", "two"}, new Class[]{String.class, String.class},
-                                            GroupRequest.GET_ALL, 800000);
+                                            GroupRequest.GET_ALL, 8000);
         System.out.println("responses:\n" + rsps + ", channel.view: " + channel.getView() + ", channel2.view: " + channel2.getView());
         assertEquals(members.size(), rsps.size());
         for(int i=0; i < rsps.size(); i++) {
