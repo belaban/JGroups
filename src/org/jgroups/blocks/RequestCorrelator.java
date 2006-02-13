@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.24 2005/11/12 06:39:11 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.25 2006/02/13 13:01:14 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -74,7 +74,7 @@ public class RequestCorrelator {
      * This field is used only if deadlock detection is enabled.
      * It sets the calling stack to the currently running request
      */
-    protected CallStackSetter call_stack_setter=null;
+    private CallStackSetter call_stack_setter=null;
 
     /** Process items on the queue concurrently (Scheduler). The default is to wait until the processing of an item
      * has completed before fetching the next item from the queue. Note that setting this to true
@@ -253,7 +253,7 @@ public class RequestCorrelator {
         // coresponding entry in the pending requests table
         // iii. If deadlock detection is enabled, set/update the call stack
         // iv. Pass the msg down to the protocol layer below
-        hdr = new Header(Header.REQ, id, (coll!=null? true:false), name);
+        hdr = new Header(Header.REQ, id, (coll != null), name);
         hdr.dest_mbrs=dest_mbrs;
 
         if (coll != null) {
@@ -337,7 +337,7 @@ public class RequestCorrelator {
 
     /**
      */
-    public void start() {
+    public final void start() {
         if(deadlock_detection) {
             startScheduler();
         }
