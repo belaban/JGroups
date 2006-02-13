@@ -6,6 +6,8 @@ import junit.framework.TestSuite;
 import org.jgroups.Channel;
 import org.jgroups.JChannel;
 
+import java.io.NotSerializableException;
+
 
 public class RpcDispatcherSerializationTest extends TestCase {
     private JChannel channel, channel2;
@@ -37,9 +39,19 @@ public class RpcDispatcherSerializationTest extends TestCase {
 
 
     public void testNonSerializableArgument() {
-        disp.callRemoteMethods(null, "foo", new Object[]{new NonSerializable()}, new Class[]{NonSerializable.class},
-                               GroupRequest.GET_ALL, 5000);
-        fail("should throw exception");
+        try {
+            disp.callRemoteMethods(null, "foo", new Object[]{new NonSerializable()}, new Class[]{NonSerializable.class},
+                                   GroupRequest.GET_ALL, 5000);
+            fail("should throw NotSerializableException");
+        }
+        catch(Throwable t) {
+            Throwable cause=t.getCause();
+            if(cause != null && cause instanceof NotSerializableException) { // this needs to be changed once we change the signature
+                System.out.println("received RuntimeException with NotSerializableException as cause - this is expected");
+            }
+            else
+                fail("received " + t);
+        }
     }
 
     public void testTargetMethodNotFound() {
