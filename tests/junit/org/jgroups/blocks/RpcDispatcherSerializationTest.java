@@ -5,13 +5,16 @@ import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.jgroups.Channel;
 import org.jgroups.JChannel;
+import org.jgroups.util.Rsp;
+import org.jgroups.util.RspList;
 
 import java.io.NotSerializableException;
+import java.util.Vector;
 
 
 public class RpcDispatcherSerializationTest extends TestCase {
     private JChannel channel, channel2;
-    private RpcDispatcher disp;
+    private RpcDispatcher disp, disp2;
     private String props=null;
 
 
@@ -25,7 +28,10 @@ public class RpcDispatcherSerializationTest extends TestCase {
         channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
         disp=new RpcDispatcher(channel, null, null, this);
         channel.connect("RpcDispatcherSerializationTestGroup");
+
+
         channel2=new JChannel(props);
+        disp2=new RpcDispatcher(channel2, null, null, this);
         channel2.connect("RpcDispatcherSerializationTestGroup");
     }
 
@@ -33,6 +39,8 @@ public class RpcDispatcherSerializationTest extends TestCase {
     protected void tearDown() throws Exception {
         super.tearDown();
         channel2.close();
+        disp2.stop();
+
         disp.stop();
         channel.close();
     }
@@ -55,9 +63,16 @@ public class RpcDispatcherSerializationTest extends TestCase {
     }
 
     public void testTargetMethodNotFound() {
-        disp.callRemoteMethods(null, "foo", new Object[]{"one", "two"}, new Class[]{String.class, String.class},
-                               GroupRequest.GET_ALL, 5000);
-        fail("should throw exception");
+        Vector members=channel.getView().getMembers();
+        System.out.println("members are: " + members);
+        RspList rsps=disp.callRemoteMethods(members, "foo", new Object[]{"one", "two"}, new Class[]{String.class, String.class},
+                                            GroupRequest.GET_ALL, 800000);
+        System.out.println("responses:\n" + rsps + ", channel.view: " + channel.getView() + ", channel2.view: " + channel2.getView());
+        assertEquals(members.size(), rsps.size());
+        for(int i=0; i < rsps.size(); i++) {
+            Rsp rsp=(Rsp)rsps.elementAt(i);
+            assertTrue(rsp.getValue() instanceof NoSuchMethodException);
+        }
     }
 
     public static Test suite() {
