@@ -1,4 +1,4 @@
-// $Id: GroupRequest.java,v 1.17 2006/02/08 08:19:50 belaban Exp $
+// $Id: GroupRequest.java,v 1.18 2006/02/13 13:51:01 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -41,7 +41,7 @@ import java.util.*;
  * to do so.<p>
  * <b>Requirements</b>: lossless delivery, e.g. acknowledgment-based message confirmation.
  * @author Bela Ban
- * @version $Revision: 1.17 $
+ * @version $Revision: 1.18 $
  */
 public class GroupRequest implements RspCollector, Command {
     /** return only first response */
@@ -503,8 +503,8 @@ public class GroupRequest implements RspCollector, Command {
     }
 
     private boolean responsesComplete() {
-        int num_received=0, num_not_received=0, num_suspected=0, num_total=requests.size();
-        int majority=determineMajority(num_total);
+        int num_received=0, num_not_received=0, num_suspected=0;
+        final int num_total=requests.size();
 
         Rsp rsp;
         for(Iterator it=requests.values().iterator(); it.hasNext();) {
@@ -531,12 +531,14 @@ public class GroupRequest implements RspCollector, Command {
                     return true;
                 break;
             case GET_ALL:
-                return num_not_received <= 0;
+                return num_received + num_suspected >= num_total;
             case GET_MAJORITY:
+                int majority=determineMajority(num_total);
                 if(num_received + num_suspected >= majority)
                     return true;
                 break;
             case GET_ABS_MAJORITY:
+                majority=determineMajority(num_total);
                 if(num_received >= majority)
                     return true;
                 break;
