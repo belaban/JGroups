@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.66 2006/01/19 09:28:28 belaban Exp $
+// $Id: Util.java,v 1.67 2006/02/15 09:33:25 belaban Exp $
 
 package org.jgroups.util;
 
@@ -84,10 +84,27 @@ public class Util {
         synchronized(mutex) {
             if(buffer == null) return null;
             Object retval=null;
-            ByteArrayInputStream in_stream=new ByteArrayInputStream(buffer);
-            ObjectInputStream in=new ContextObjectInputStream(in_stream); // changed Nov 29 2004 (bela)
-            retval=in.readObject();
-            in.close();
+
+            try {  // to read the object as an Externalizable
+                ByteArrayInputStream in_stream=new ByteArrayInputStream(buffer);
+                ObjectInputStream in=new ContextObjectInputStream(in_stream); // changed Nov 29 2004 (bela)
+                retval=in.readObject();
+                in.close();
+            }
+            catch(StreamCorruptedException sce) {
+                try {  // is it Streamable?
+                    ByteArrayInputStream in_stream=new ByteArrayInputStream(buffer);
+                    DataInputStream in=new DataInputStream(in_stream);
+                    retval=readGenericStreamable(in);
+                    in.close();
+                }
+                catch(Exception ee) {
+                    IOException tmp=new IOException("unmarshalling failed");
+                    tmp.initCause(ee);
+                    throw tmp;
+                }
+            }
+
             if(retval == null)
                 return null;
             return retval;
@@ -95,17 +112,25 @@ public class Util {
     }
 
     /**
-     * Serializes an object into a byte buffer.
+     * Serializes/Streams an object into a byte buffer.
      * The object has to implement interface Serializable or Externalizable
+     * or Streamable.  Only Streamable objects are interoperable w/ jgroups-me
      */
     public static byte[] objectToByteBuffer(Object obj) throws Exception {
         byte[] result=null;
         synchronized(out_stream) {
             out_stream.reset();
-            ObjectOutputStream out=new ObjectOutputStream(out_stream);
-            out.writeObject(obj);
+            if(obj instanceof Streamable) {  // use Streamable if we can
+                DataOutputStream out=new DataOutputStream(out_stream);
+                writeGenericStreamable((Streamable)obj, out);
+                out.close();
+            }
+            else {
+                ObjectOutputStream out=new ObjectOutputStream(out_stream);
+                out.writeObject(obj);
+                out.close();
+            }
             result=out_stream.toByteArray();
-            out.close();
         }
         return result;
     }
