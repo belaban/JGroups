@@ -12,7 +12,7 @@ import org.jgroups.stack.GossipRouter;
 /**
  * Tests merging
  * @author Bela Ban
- * @version $Id: MergeTest.java,v 1.6 2005/12/08 12:52:08 belaban Exp $
+ * @version $Id: MergeTest.java,v 1.7 2006/02/15 12:38:06 belaban Exp $
  */
 public class MergeTest extends TestCase {
     JChannel     channel;
@@ -21,7 +21,7 @@ public class MergeTest extends TestCase {
     final String bind_addr="127.0.0.1";
     GossipRouter router;
     JChannel     ch1, ch2;
-    ViewChecker  checker;
+    private ViewChecker  checker;
 
     String props="TUNNEL(router_port=" + router_port + ";router_host=" +bind_addr+ ";loopback=true):" +
             "PING(timeout=1000;num_initial_members=2;gossip_host=" +bind_addr+";gossip_port=" + router_port + "):" +
@@ -119,7 +119,7 @@ public class MergeTest extends TestCase {
         router.stop();
     }
 
-    private class ViewChecker extends ReceiverAdapter {
+    private static class ViewChecker extends ReceiverAdapter {
         final Object mutex=new Object();
         int          count=0;
 
