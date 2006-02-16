@@ -1,4 +1,4 @@
-// $Id: RpcDispatcher.java,v 1.21 2006/02/13 13:52:56 belaban Exp $
+// $Id: RpcDispatcher.java,v 1.22 2006/02/16 08:23:24 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -161,21 +161,18 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
 
 
     public Object callRemoteMethod(Address dest, String method_name, Object[] args,
-                                   Class[] types, int mode, long timeout)
-            throws TimeoutException, SuspectedException {
+                                   Class[] types, int mode, long timeout) throws Throwable {
         MethodCall method_call=new MethodCall(method_name, args, types);
         return callRemoteMethod(dest, method_call, mode, timeout);
     }
 
     public Object callRemoteMethod(Address dest, String method_name, Object[] args,
-                                   String[] signature, int mode, long timeout)
-            throws TimeoutException, SuspectedException {
+                                   String[] signature, int mode, long timeout) throws Throwable {
         MethodCall method_call=new MethodCall(method_name, args, signature);
         return callRemoteMethod(dest, method_call, mode, timeout);
     }
 
-    public Object callRemoteMethod(Address dest, MethodCall method_call, int mode, long timeout)
-            throws TimeoutException, SuspectedException {
+    public Object callRemoteMethod(Address dest, MethodCall method_call, int mode, long timeout) throws Throwable {
         byte[]   buf=null;
         Message  msg=null;
         Object   retval=null;
@@ -183,20 +180,12 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         if(log.isTraceEnabled())
             log.trace("dest=" + dest + ", method_call=" + method_call + ", mode=" + mode + ", timeout=" + timeout);
 
-        try {
-            buf=marshaller != null? marshaller.objectToByteBuffer(method_call) : Util.objectToByteBuffer(method_call);
-        }
-        catch(Exception e) {
-            // if(log.isErrorEnabled()) log.error("exception", e);
-            // we will change this in 2.4 to add the exception to the signature
-            // (see http://jira.jboss.com/jira/browse/JGRP-193). The reason for a RTE is that we cannot change the
-            // signature in 2.3, otherwise 2.3 would be *not* API compatible to prev releases
-            throw new RuntimeException("failure to marshal argument(s)", e);
-        }
-
+        buf=marshaller != null? marshaller.objectToByteBuffer(method_call) : Util.objectToByteBuffer(method_call);
         msg=new Message(dest, null, buf);
         retval=super.sendMessage(msg, mode, timeout);
         if(log.isTraceEnabled()) log.trace("retval: " + retval);
+        if(retval instanceof Throwable)
+            throw (Throwable)retval;
         return retval;
     }
 
