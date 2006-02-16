@@ -1,15 +1,12 @@
-// $Id: TimeoutException.java,v 1.3 2005/07/17 11:38:05 chrislott Exp $
+// $Id: TimeoutException.java,v 1.4 2006/02/16 08:41:32 belaban Exp $
 
 package org.jgroups;
-
-import java.util.List;
-
 
 /**
  * Thrown if members fail to respond in time.
  */
 public class TimeoutException extends Exception {
-    List failed_mbrs=null; // members that failed responding
+    private static final long serialVersionUID = -3555655828017487825L;
 
     public TimeoutException() {
         super("TimeoutException");
@@ -19,19 +16,8 @@ public class TimeoutException extends Exception {
         super(msg);
     }
 
-    public TimeoutException(List failed_mbrs) {
-        super("TimeoutException");
-        this.failed_mbrs=failed_mbrs;
-    }
-
 
     public String toString() {
-        StringBuffer sb=new StringBuffer();
-
-        sb.append(super.toString());
-
-        if(failed_mbrs != null && failed_mbrs.size() > 0)
-            sb.append(" (failed members: ").append(failed_mbrs);
-        return sb.toString();
+        return super.toString();
     }
 }
