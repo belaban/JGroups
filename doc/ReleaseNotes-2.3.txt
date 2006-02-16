@@ -2,7 +2,7 @@
 Release Notes JGroups 2.3
 =========================
 
-Version: $Id: ReleaseNotes-2.3.txt,v 1.2 2006/02/07 15:28:59 belaban Exp $
+Version: $Id: ReleaseNotes-2.3.txt,v 1.3 2006/02/16 08:20:40 belaban Exp $
 Author: Bela Ban
 
 
@@ -32,6 +32,18 @@ The encrypt_entire_message flag (if set to true) will now encrypt the entire mes
 as opposed to only encrypting the message buffer. Note that this operation requires serialization of the message,
 so setting this option to true is expensive. Why use it ? When one wants to prevent eavesdroppers from snooping
 out information located in the (non-encrypted) headers, such as sequence numbers.
+
+
+
+Incompatibilities to previous version
+-------------------------------------
+Changed method signature of the RpcDispatcher.callRemoteMethod() methods to throw a Throwable.
+Previously they returned the exception as an object, now the exception will be thrown.
+Callers of these methods have to change their code, so this is an incompatible change. However,
+these calls are not used in JBossCache and JBoss Clustering.
+(http://jira.jboss.com/jira/browse/JGRP-154)
+
+
 
 Enhancements and bug fixes
 --------------------------
