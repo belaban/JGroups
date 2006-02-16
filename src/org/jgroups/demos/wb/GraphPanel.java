@@ -1,19 +1,21 @@
-// $Id: GraphPanel.java,v 1.5 2005/05/30 16:14:37 belaban Exp $
+// $Id: GraphPanel.java,v 1.6 2006/02/16 08:22:25 belaban Exp $
 
 
 package org.jgroups.demos.wb;
 
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.jgroups.Address;
+import org.jgroups.blocks.GroupRequest;
+import org.jgroups.blocks.MethodCall;
+import org.jgroups.util.Util;
 
 import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.util.Vector;
-import org.jgroups.*;
-import org.jgroups.blocks.*;
-import org.jgroups.util.Util;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 
 
@@ -212,7 +214,7 @@ public class GraphPanel extends Panel implements MouseListener, MouseMotionListe
 	    n=findNodeAtPoint(p);
 	    if(n != null) {
 		System.out.println("Found node at " + p + ": " + n); 
-		SendDialog dlg=new SendDialog(findParent(), n, myname, wb.disp, wb.groupname);
+		SendDialog dlg=new SendDialog(findParent(), n, myname, wb.disp);
 		repaint();
 	    }
 	    e.consume();

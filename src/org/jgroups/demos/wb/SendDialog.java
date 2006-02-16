@@ -1,4 +1,4 @@
-// $Id: SendDialog.java,v 1.5 2006/02/16 07:56:35 belaban Exp $
+// $Id: SendDialog.java,v 1.6 2006/02/16 08:22:36 belaban Exp $
 
 package org.jgroups.demos.wb;
 
@@ -16,13 +16,12 @@ public class SendDialog extends Dialog implements ActionListener {
     private final TextArea       msg=new TextArea("");
     private final Font     default_font=new Font("Helvetica",Font.PLAIN,12);
     private RpcDispatcher  disp=null;
-    private String         groupname=null;
     private Node           dest=null;
     private String         sender=null;
 
     
 
-    public SendDialog(Frame parent, Node dest, String src, RpcDispatcher disp, String groupname) {
+    public SendDialog(Frame parent, Node dest, String src, RpcDispatcher disp) {
 	super(parent, "Send message to " + dest.lbl + " at " + dest.addr, true);
 
 	Panel      p1=new Panel(), p2=new Panel();
@@ -30,7 +29,6 @@ public class SendDialog extends Dialog implements ActionListener {
 	Button     cancel=new Button("Cancel");
 
 	this.disp=disp;
-	this.groupname=groupname;
 	this.dest=dest;
 	sender=src;
 
@@ -85,7 +83,7 @@ public class SendDialog extends Dialog implements ActionListener {
 	    else if(command.equals("Send to all"))
 			disp.callRemoteMethods(null, call, GroupRequest.GET_ALL, 0);
 	}
-	catch(Exception ex) {
+	catch(Throwable ex) {
 	    System.err.println(ex);
 	}
 	

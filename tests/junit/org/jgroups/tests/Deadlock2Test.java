@@ -1,4 +1,4 @@
-// $Id: Deadlock2Test.java,v 1.8 2006/02/16 07:57:24 belaban Exp $
+// $Id: Deadlock2Test.java,v 1.9 2006/02/16 08:23:40 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -21,7 +21,7 @@ import java.util.Vector;
  * @author John Giorgiadis
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
  * *
- * @version $Revision: 1.8 $
+ * @version $Revision: 1.9 $
  */
 public class Deadlock2Test extends TestCase {
 
@@ -85,7 +85,7 @@ public class Deadlock2Test extends TestCase {
      * If there is a deadlock, JUnit will timeout and fail the test.
      *
      */
-    public void testTwoChannels() throws Exception {
+    public void testTwoChannels() throws Throwable {
         ServerObject obj1, obj2 = null;
 
         JChannel c1 = new JChannel();
