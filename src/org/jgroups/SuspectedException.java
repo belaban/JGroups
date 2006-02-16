@@ -1,4 +1,4 @@
-// $Id: SuspectedException.java,v 1.2 2005/07/17 11:38:05 chrislott Exp $
+// $Id: SuspectedException.java,v 1.3 2006/02/16 08:43:03 belaban Exp $
 
 package org.jgroups;
 
@@ -7,6 +7,8 @@ package org.jgroups;
  */
 public class SuspectedException extends Exception {
     Object suspect=null;
+
+    private static final long serialVersionUID=-6663279911010545655L;
 
     public SuspectedException()                {}
     public SuspectedException(Object suspect)  {this.suspect=suspect;}
