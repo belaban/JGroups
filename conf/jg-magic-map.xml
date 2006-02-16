@@ -218,12 +218,6 @@
         <magic-number>36</magic-number>
     </class>
      <class>
-        <description>Object Array</description>
-        <class-name>[Ljava.lang.Object;</class-name>
-        <preload>true</preload>
-        <magic-number>37</magic-number>
-    </class>
-     <class>
         <description>Vector</description>
         <class-name>java.util.Vector</class-name>
         <preload>true</preload>
