@@ -1,11 +1,14 @@
-// $Id: SendDialog.java,v 1.4 2005/05/30 16:14:37 belaban Exp $
+// $Id: SendDialog.java,v 1.5 2006/02/16 07:56:35 belaban Exp $
 
 package org.jgroups.demos.wb;
+
+import org.jgroups.blocks.GroupRequest;
+import org.jgroups.blocks.MethodCall;
+import org.jgroups.blocks.RpcDispatcher;
 
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import org.jgroups.blocks.*;
 
 
 
@@ -77,9 +80,9 @@ public class SendDialog extends Dialog implements ActionListener {
 	try {
 		MethodCall call = new MethodCall("displayMessage", new Object[] {sender, retval}, 
 			new String[] {String.class.getName(), String.class.getName()});
-	    if(command == "Send")
+	    if(command.equals("Send"))
 			disp.callRemoteMethod(dest.addr, call, GroupRequest.GET_FIRST, 0);
-	    else if(command == "Send to all")		
+	    else if(command.equals("Send to all"))
 			disp.callRemoteMethods(null, call, GroupRequest.GET_ALL, 0);
 	}
 	catch(Exception ex) {
@@ -87,7 +90,6 @@ public class SendDialog extends Dialog implements ActionListener {
 	}
 	
 	dispose();
-	return;
     }
 
 
