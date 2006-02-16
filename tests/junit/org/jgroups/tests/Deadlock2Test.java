@@ -1,4 +1,4 @@
-// $Id: Deadlock2Test.java,v 1.7 2005/04/26 12:56:56 belaban Exp $
+// $Id: Deadlock2Test.java,v 1.8 2006/02/16 07:57:24 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -21,7 +21,7 @@ import java.util.Vector;
  * @author John Giorgiadis
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
  * *
- * @version $Revision: 1.7 $
+ * @version $Revision: 1.8 $
  */
 public class Deadlock2Test extends TestCase {
 
@@ -104,8 +104,6 @@ public class Deadlock2Test extends TestCase {
         try {
             // call a point-to-point method on Member 2 that triggers a nested distributed RPC
             MethodCall call = new MethodCall("outerMethod", new Object[0], new Class[0]);
-            Vector dests = new Vector();
-            dests.add(localAddress2);
             log("calling outerMethod() on " + localAddress2);
             Object retval = disp1.callRemoteMethod(localAddress2, call, GroupRequest.GET_ALL, 0);
             log("results of outerMethod(): " + retval);
