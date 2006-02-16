@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.188 2006/02/09 13:03:23 belaban Exp $
+Revision: $Id: history.txt,v 1.189 2006/02/16 08:19:13 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -29,6 +29,13 @@ ossiejnr    = Chris Mills (chris.mills@jboss.com)
 
 Version 2.3
 -----------
+
+- Changed method signature of RpcDispatcher.callRemoteMethod() to throw a Throwable.
+  Previously it returned the exception as an object, now the exception will be thrown.
+  Callers of these methods have to change their code, so this is an incompatible change. However,
+  these calls are not used in JBossCache and JBoss Clustering.
+  (http://jira.jboss.com/jira/browse/JGRP-154)
+  (bela Feb 16 2006)
 
 - Added encryption of entire message to ENCRYPT
   (http://jira.jboss.com/jira/browse/JGRP-190)
