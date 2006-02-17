@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.5 2006/02/07 08:02:25 belaban Exp $
+// $Id: JChannelFactory.java,v 1.6 2006/02/17 09:51:38 belaban Exp $
 
 package org.jgroups;
 
@@ -15,7 +15,7 @@ import java.net.URL;
  * See {@link JChannel} for a discussion of channel properties.
  */
 public class JChannelFactory implements ChannelFactory {
-    private ProtocolStackConfigurator _configuration;
+    private ProtocolStackConfigurator configurator;
 
     /**
      * Constructs a <code>JChannelFactory</code> instance that contains no
@@ -39,7 +39,7 @@ public class JChannelFactory implements ChannelFactory {
      *                          the protocol stack configuration.
      */
     public JChannelFactory(File properties) throws ChannelException {
-        _configuration=ConfiguratorFactory.getStackConfigurator(properties);
+        configurator=ConfiguratorFactory.getStackConfigurator(properties);
     }
 
     /**
@@ -53,7 +53,7 @@ public class JChannelFactory implements ChannelFactory {
      *                          the protocol stack configuration.
      */
     public JChannelFactory(Element properties) throws ChannelException {
-        _configuration =ConfiguratorFactory.getStackConfigurator(properties);
+        configurator=ConfiguratorFactory.getStackConfigurator(properties);
     }
 
     /**
@@ -67,7 +67,7 @@ public class JChannelFactory implements ChannelFactory {
      *                          the protocol stack configuration.
      */
     public JChannelFactory(URL properties) throws ChannelException {
-        _configuration=ConfiguratorFactory.getStackConfigurator(properties);
+        configurator=ConfiguratorFactory.getStackConfigurator(properties);
     }
 
     /**
@@ -84,7 +84,7 @@ public class JChannelFactory implements ChannelFactory {
      *                          the protocol stack configuration.
      */
     public JChannelFactory(String properties) throws ChannelException {
-        _configuration=ConfiguratorFactory.getStackConfigurator(properties);
+        configurator=ConfiguratorFactory.getStackConfigurator(properties);
     }
 
     public void config(Object properties) throws ChannelException {
@@ -101,6 +101,7 @@ public class JChannelFactory implements ChannelFactory {
 
     public void config(String properties) throws ChannelException {
     }
+
 
 
     /**
@@ -132,6 +133,11 @@ public class JChannelFactory implements ChannelFactory {
      * @throws ChannelException if the creation of the channel failed.
      */
      public Channel createChannel() throws ChannelException {
-         return new JChannel(_configuration);
+         return new JChannel(configurator);
      }
+
+    public Channel createChannel(String stack_name, Receiver receiver, String id) throws ChannelException {
+        return null;
+    }
+
 }

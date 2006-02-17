@@ -1,4 +1,4 @@
-// $Id: ChannelFactory.java,v 1.3 2006/02/07 08:02:25 belaban Exp $
+// $Id: ChannelFactory.java,v 1.4 2006/02/17 09:51:38 belaban Exp $
 
 package org.jgroups;
 
@@ -40,14 +40,13 @@ public interface ChannelFactory {
      * with which the factory is configured (see {@link #config(Object)} for example.
      * @param receiver The receiver (see {@link Receiver} for details
      * @param id The identifier used for multiplexing and demultiplexing (dispatching requests to one of possibly
-     * multiple receivers). Note that id will most probably be a number or a string, but since it will be shipped
-     * with the message it needs to be serializable (we also support the {@link org.jgroups.util.Streamable}
-     * interface.
+     * multiple receivers). Note that id needs to be a string since it will be shipped with each message. Try to pick
+     * a short string, because this is shipped with every message (overhead). todo: possibly change to short ?
      * @return An implementation of Channel which keeps track of the id, so that it can be attached to each message
      * and be properly dispatched at the receiver
      * @throws ChannelException
      */
-    // Channel createChannel(String stack_name, Receiver receiver, Object id) throws ChannelException;
+    Channel createChannel(String stack_name, Receiver receiver, String id) throws ChannelException;
 
     Channel createChannel(Object props) throws ChannelException;
 }
