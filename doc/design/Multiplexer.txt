@@ -4,7 +4,7 @@ Multiplexing functionality
 ===========================
 
 Author: Bela Ban
-Version: $Id: Multiplexer.txt,v 1.4 2006/02/17 10:31:38 belaban Exp $
+Version: $Id: Multiplexer.txt,v 1.5 2006/02/17 12:56:32 belaban Exp $
 JIRA: http://jira.jboss.com/jira/browse/JGRP-119, http://jira.jboss.com/jira/browse/JGRP-112
 
 Overview
@@ -44,17 +44,34 @@ reception and state transfer.
 
 Configuration
 -------------
-
-Configuration is via XML
+Configuration is via XML, example is ./conf/stacks.xml. The file defines a number of stacks, each is given a unique
+name. This name is used in JChannelFactory.createChannel() as stack name.
 
 Structures
 ----------
+- mux-table: Map<JChannel, MuxReceiver>. A hashmap of channels and their associated MuxReceivers. A MuxReceiver implements
+  org.jgroups.UpHandler and keeps track of all Receivers attached to a given JChannel.
+  It also stores the name under which the channel was created. Whenever up() is called, it removes the header (containing
+  the application ID and dispatches the call to the right Receiver (or receiver-queue is enabled).
+
+- app-table: Map<String, AppReceiver>. A hashmap of application IDs and AppReceivers. AppReceivers implement
+  org.jgroups.Receiver and keep a reference to the Receiver provided by the application when calling createChannel().
+  The main task of an AppReceiver is to buffer callbacks if enabled. Otherwise, a callback on AppReceiver is simply
+  calling the corresponding callback on receiver.
+
+Possibly, MuxReceivers and AppReceivers could - instead of implementing Receiver - register as an UpHandler with
+the JChannel, setUpHandler().
 
 JChannelFactory initialization
 ------------------------------
+JChannelFactory has a reference to the configuration which is set either on creation (e.g. via JMX attribute) when
+used as an MBean, or via one of the config() methods.
+The JChannelFactory MBean has to support the JMX life cycle methods (create(), start(), stop(), destroy()).
 
 MuxChannel creation
 -------------------
+When JChannelFactory.createChannel() is called, the following happens:
+-
 
 MuxChannel connect
 ------------------
