@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.6 2006/02/17 09:51:38 belaban Exp $
+// $Id: JChannelFactory.java,v 1.7 2006/02/17 12:56:15 belaban Exp $
 
 package org.jgroups;
 
@@ -136,7 +136,7 @@ public class JChannelFactory implements ChannelFactory {
          return new JChannel(configurator);
      }
 
-    public Channel createChannel(String stack_name, Receiver receiver, String id) throws ChannelException {
+    public Channel createChannel(String stack_name, String id) throws ChannelException {
         return null;
     }
 
