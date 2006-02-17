@@ -4,14 +4,75 @@ Multiplexing functionality
 ===========================
 
 Author: Bela Ban
-Version: $Id: Multiplexer.txt,v 1.2 2006/02/17 08:54:15 belaban Exp $
+Version: $Id: Multiplexer.txt,v 1.3 2006/02/17 09:34:33 belaban Exp $
 JIRA: http://jira.jboss.com/jira/browse/JGRP-119, http://jira.jboss.com/jira/browse/JGRP-112
 
 Overview
 --------
-In JBoss we have multiple JGroups channels, one for each block (e.g. JBossCache, ClusterPartition etc). The goal of
-the Multiplexer is to combine all stacks with the *same* configuration into one, and have multiple blocks on top
+In JBoss we have multiple JGroups channels, one for each application (e.g. JBossCache, ClusterPartition etc). The goal of
+the Multiplexer is to combine all stacks with the *same* configuration into one, and have multiple apps on top
 of that same channel.
-To do this we have to introduce multiplexing and demultiplexing functionality, ie. each block will have to have
-a unique identification (a string), and when sending a message, the message has to be tagged with that ID. When
-receiving a message, it will be dispatched to the right block based on the ID attached to the message.
+To do this we have to introduce multiplexing and demultiplexing functionality, ie. each app will have to have
+a unique application ID (a string), and when sending a message, the message has to be tagged with that ID. When
+receiving a message, it will be dispatched to the right app based on the ID attached to the message.
+We require special handling for VIEW and SUSPECT messages: those need to be dispatched to *all* apps.
+State transfer also needs to be handled specially, here we probably have to use thread locals, or change the API (TBS).
+
+When deployed into JBoss, the Multiplexer will be exposed as an MBean, and all apps that depend on it will be deployed
+with dependency injection on the Multiplexer. Of course, the old configuration will still be supported.
+
+The config of the Multiplexer is done via a config file, which lists a number of stacks, each keyed by a name, e.g.
+"udp", "tcp", "tcp-nio" etc. See ./conf/stacks.xml for an example. An app is configured with the name of a stack, e.g.
+"udp", and a reference to the Multiplexer MBean. It will get a proxy channel through which all of its communication
+will take place. The proxy channel (MuxChannel) will mux/demux messages to the real JGroups channel.
+
+The advantage of the Multiplexer is that we can reduce N channels into M where M < N. This means fewer threads, therefore
+fewer context switches, less memory consumption and easier configuration and better support.
+
+
+Design
+------
+The Multiplexer is implemented by extending the JChannelFactory class. When an app wants to fetch a channel, it calls
+Channel createChannel(String stack_name, Receiver receiver, String id) on the factory. The arguments define the stack
+name (e.g. "udp"), the receiver that will be called when messages and view changes arrive, and the application ID.
+The factory then returns a MuxChannel (a subclass of Channel), and all calls made against the MuxChannel are
+redirected to the factory (some go directly to the JGroups Channel). The subsequent sections describe the various
+use cases, e.g. life cycle for channel creation, message sending and reception, channel close/disconnect, view
+reception and state transfer.
+
+
+Structures
+----------
+
+Configuration
+-------------
+
+JChannelFactory initialization
+------------------------------
+
+MuxChannel creation
+-------------------
+
+MuxChannel connect
+------------------
+
+Sending a message on MuxChannel
+-------------------------------
+
+Receiving a message on MuxReceiver
+----------------------------------
+
+View change
+-----------
+
+State transfer
+--------------
+
+MuxChannel disconnect/close
+---------------------------
+
+
+
+
+
+
