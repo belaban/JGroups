@@ -4,7 +4,7 @@ Multiplexing functionality
 ===========================
 
 Author: Bela Ban
-Version: $Id: Multiplexer.txt,v 1.3 2006/02/17 09:34:33 belaban Exp $
+Version: $Id: Multiplexer.txt,v 1.4 2006/02/17 10:31:38 belaban Exp $
 JIRA: http://jira.jboss.com/jira/browse/JGRP-119, http://jira.jboss.com/jira/browse/JGRP-112
 
 Overview
@@ -41,11 +41,14 @@ use cases, e.g. life cycle for channel creation, message sending and reception, 
 reception and state transfer.
 
 
-Structures
-----------
 
 Configuration
 -------------
+
+Configuration is via XML
+
+Structures
+----------
 
 JChannelFactory initialization
 ------------------------------
