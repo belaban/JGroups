@@ -1,4 +1,4 @@
-// $Id: DistributedHashtable.java,v 1.20 2005/11/10 20:54:01 belaban Exp $
+// $Id: DistributedHashtable.java,v 1.21 2006/02/17 09:40:49 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -35,7 +35,7 @@ import java.util.*;
  * initial state (using the state exchange funclet <code>StateExchangeFunclet</code>.
  * @author Bela Ban
  * @author <a href="mailto:aolias@yahoo.com">Alfonso Olias-Sanz</a>
- * @version $Id: DistributedHashtable.java,v 1.20 2005/11/10 20:54:01 belaban Exp $
+ * @version $Id: DistributedHashtable.java,v 1.21 2006/02/17 09:40:49 belaban Exp $
  */
 public class DistributedHashtable extends Hashtable implements MessageListener, MembershipListener {
 
@@ -53,8 +53,8 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
     private transient Channel               channel;
     protected transient RpcDispatcher       disp=null;
     private transient String                groupname=null;
-    private final transient Vector                notifs=new Vector();  // to be notified when mbrship changes
-    private final transient Vector                members=new Vector(); // keeps track of all DHTs
+    private final transient Vector          notifs=new Vector();  // to be notified when mbrship changes
+    private final transient Vector          members=new Vector(); // keeps track of all DHTs
     private transient Class[]               put_signature=null;
     private transient Class[]               putAll_signature=null;
     private transient Class[]               clear_signature=null;
@@ -160,7 +160,7 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
         channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
     }
 
-    protected void init(long state_timeout) throws ChannelClosedException, ChannelNotConnectedException {
+    protected final void init(long state_timeout) throws ChannelClosedException, ChannelNotConnectedException {
         initSignatures();
         channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
         disp = new RpcDispatcher(channel, this, this, this);
@@ -177,7 +177,7 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
      * @throws ChannelClosedException
      * @throws ChannelNotConnectedException
      */
-    public void start(long state_timeout) throws ChannelClosedException, ChannelNotConnectedException {
+    public final void start(long state_timeout) throws ChannelClosedException, ChannelNotConnectedException {
         boolean rc;
         if(persistent) {
             if(log.isInfoEnabled()) log.info("fetching state from database");
@@ -299,7 +299,7 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
         if(send_message == true) {
             try {
                 disp.callRemoteMethods(
-                        null, "_putAll", new Object[]{m}, 
+                        null, "_putAll", new Object[]{m},
                         putAll_signature,
                         GroupRequest.GET_ALL,
                         0);
@@ -576,7 +576,7 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
     }
 
 
-    void initSignatures() {
+    final void initSignatures() {
         try {
             if(put_signature == null) {
                 put_signature=new Class[] {Object.class,Object.class};
