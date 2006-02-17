@@ -1,0 +1,14 @@
+
+
+Multiplexing functionality
+===========================
+
+Author: Bela Ban
+Version: $Id: Multiplexer.txt,v 1.1 2006/02/17 08:52:12 belaban Exp $
+JIRA: http://jira.jboss.com/jira/browse/JGRP-119, http://jira.jboss.com/jira/browse/JGRP-112
+
+Overview
+--------
+In JBoss we have multiple JGroups channels, one for each block (e.g. JBossCache, ClusterPartition etc). The goal of
+the Multiplexer is to combine all stacks with the *same* configuration into one, and have multiple blocks on top
+of that same channel.
