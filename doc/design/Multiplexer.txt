@@ -4,7 +4,7 @@ Multiplexing functionality
 ===========================
 
 Author: Bela Ban
-Version: $Id: Multiplexer.txt,v 1.5 2006/02/17 12:56:32 belaban Exp $
+Version: $Id: Multiplexer.txt,v 1.6 2006/02/23 14:43:33 belaban Exp $
 JIRA: http://jira.jboss.com/jira/browse/JGRP-119, http://jira.jboss.com/jira/browse/JGRP-112
 
 Overview
@@ -16,7 +16,7 @@ To do this we have to introduce multiplexing and demultiplexing functionality, i
 a unique application ID (a string), and when sending a message, the message has to be tagged with that ID. When
 receiving a message, it will be dispatched to the right app based on the ID attached to the message.
 We require special handling for VIEW and SUSPECT messages: those need to be dispatched to *all* apps.
-State transfer also needs to be handled specially, here we probably have to use thread locals, or change the API (TBS).
+State transfer also needs to be handled specially, here we probably have to use thread locals, or change the API (TBD).
 
 When deployed into JBoss, the Multiplexer will be exposed as an MBean, and all apps that depend on it will be deployed
 with dependency injection on the Multiplexer. Of course, the old configuration will still be supported.
@@ -33,10 +33,26 @@ fewer context switches, less memory consumption and easier configuration and bet
 Design
 ------
 The Multiplexer is implemented by extending the JChannelFactory class. When an app wants to fetch a channel, it calls
-Channel createChannel(String stack_name, Receiver receiver, String id) on the factory. The arguments define the stack
-name (e.g. "udp"), the receiver that will be called when messages and view changes arrive, and the application ID.
-The factory then returns a MuxChannel (a subclass of Channel), and all calls made against the MuxChannel are
-redirected to the factory (some go directly to the JGroups Channel). The subsequent sections describe the various
+Channel createChannel(String stack_name, String id) on the factory. The arguments are the stack
+name (e.g. "udp") and the application ID.
+The factory then returns a MuxChannel (a subclass of Channel). This channel is the handle for the application to
+send and receive messages. There can be multiple MuxChannel instances per JChannel, but each application has only
+1 MuxChannel. The application can choose between the pull or push style of receiving messages;
+it can call Channel.receive() to pull messages out of the channel, or register as a Receiver, in which case messages
+are pushed to the application when received.
+All calls made against the MuxChannel are redirected to the factory for multiplexing and de-multiplexing.
+
+Each JChannel has a Multiplexer class sitting on top of it (an UpHandler impl). This instance maintains the
+mappings between application IDs and MuxChannels and, upon receiving a message from the JChannel, looks up
+the correct MuxChannel according to the application ID stripped from the message header, and dispatches the message
+to that MuxChannel.
+
+TBD: we may buffer messages internally in the Multiplexer before dispatching them into the MuxChannel, should be
+enabled or disabled via a configuration option (or programmatically). This may be desired if the application registers
+as a Receiver with the MuxChannel; a receive() callback taking some time to be processed would block all other
+applications from receiving messages until completion. The configuration should be per channel.
+
+The subsequent sections describe the various
 use cases, e.g. life cycle for channel creation, message sending and reception, channel close/disconnect, view
 reception and state transfer.
 
@@ -49,6 +65,27 @@ name. This name is used in JChannelFactory.createChannel() as stack name.
 
 Structures
 ----------
+
+In JChannelFactory:
+- channels: Map<String, ChannelEntry>. A hashmap of channels and their associated MuxChannels. The keys are the channel
+stack names and the connect names, e.g. "udp:MyChannelGroup", or "tcp:MyTcpChannel". The values are ChannelEntries,
+which contain both the JChannel and associated MuxChannel.
+We need to keep the stack names *and* channel names, because multiple applications residing on top of the same
+channel stack could be connected to different groups, e.g.
+Appl-1 uses the "udp" stack and connects to group "group-A", whereas appl-2 uses the same "udp" stack, but connects
+to "group-B". Since a channel can be connected to only *one* group at a time, this requires 2 different channel
+instances.
+Only if 2 applications use the same channel stack *and* group can we share the same channel. We do provide this
+flexibility, however, we expect that all applications sharing the same channel stack will use the same group name !
+
+In Multiplexer:
+- apps: Map<String, MuxChannel>. A hashmap of application IDs as keys and MuxChannels as values. Used for dispatching
+  incoming messages. The Multiplexer implements UpHandler and registers with the associated JChannel (there can only
+  be 1 MuxChannel per JChannel). When up() is called with a message, the header of the message is removed and the
+  MuxChannel corresponding to the header's application ID is retrieved from the map, and MuxChannel.up() is called
+  with the message.
+
+<obsolete>
 - mux-table: Map<JChannel, MuxReceiver>. A hashmap of channels and their associated MuxReceivers. A MuxReceiver implements
   org.jgroups.UpHandler and keeps track of all Receivers attached to a given JChannel.
   It also stores the name under which the channel was created. Whenever up() is called, it removes the header (containing
@@ -58,6 +95,7 @@ Structures
   org.jgroups.Receiver and keep a reference to the Receiver provided by the application when calling createChannel().
   The main task of an AppReceiver is to buffer callbacks if enabled. Otherwise, a callback on AppReceiver is simply
   calling the corresponding callback on receiver.
+  </obsolete>
 
 Possibly, MuxReceivers and AppReceivers could - instead of implementing Receiver - register as an UpHandler with
 the JChannel, setUpHandler().
