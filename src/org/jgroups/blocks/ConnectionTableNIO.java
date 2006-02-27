@@ -1,9 +1,10 @@
-// $Id: ConnectionTableNIO.java,v 1.10 2006/01/23 13:41:09 smarlownovell Exp $
+// $Id: ConnectionTableNIO.java,v 1.11 2006/02/27 11:05:30 belaban Exp $
 
 package org.jgroups.blocks;
 
-import org.apache.commons.logging.LogFactory;
+import EDU.oswego.cs.dl.util.concurrent.*;
 import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.Version;
 import org.jgroups.protocols.TCP_NIO;
@@ -12,24 +13,11 @@ import org.jgroups.stack.IpAddress;
 import java.io.IOException;
 import java.net.*;
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
-import java.nio.channels.ClosedSelectorException;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
-import java.nio.channels.CancelledKeyException;
+import java.nio.channels.*;
 import java.nio.channels.spi.SelectorProvider;
 import java.util.Iterator;
-import java.util.Set;
 import java.util.LinkedList;
-
-import EDU.oswego.cs.dl.util.concurrent.PooledExecutor;
-import EDU.oswego.cs.dl.util.concurrent.BoundedBuffer;
-import EDU.oswego.cs.dl.util.concurrent.LinkedQueue;
-import EDU.oswego.cs.dl.util.concurrent.FutureResult;
-import EDU.oswego.cs.dl.util.concurrent.Executor;
-import EDU.oswego.cs.dl.util.concurrent.DirectExecutor;
+import java.util.Set;
 
 /**
  * Manages incoming and outgoing TCP connections. For each outgoing message to destination P, if there
@@ -51,11 +39,11 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
 
    private WriteHandler[] m_writeHandlers;
    private int m_nextWriteHandler = 0;
-   private Object m_lockNextWriteHandler = new Object();
+   private final Object m_lockNextWriteHandler = new Object();
 
    private ReadHandler[] m_readHandlers;
    private int m_nextReadHandler = 0;
-   private Object m_lockNextReadHandler = new Object();
+   private final Object m_lockNextReadHandler = new Object();
 
    // thread pool for processing read requests
    private Executor m_requestProcessors;
@@ -548,7 +536,6 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
                            conns.remove(peerAddr);
                         }
                         notifyConnectionClosed(peerAddr);
-                        continue;
                      }
                   } catch (IOException e)
                   {
@@ -563,7 +550,6 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
                         conns.remove(peerAddr);
                      }
                      notifyConnectionClosed(peerAddr);
-                     continue;
                   }
                }
             }
@@ -663,7 +649,6 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
             // Give up handling the message then
             LOG.error("Thread ("+Thread.currentThread().getName() +") was interrupted while assigning executor to process read request" , e);
          }
-         return;
       }
 
       private int read(Connection conn, ByteBuffer buf)
@@ -1104,8 +1089,7 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
        */
       private SelectorWriteHandler add(SocketChannel channel) throws InterruptedException
       {
-         SelectorWriteHandler hdlr = new SelectorWriteHandler(channel, m_selector, m_headerBuffer);
-         return hdlr;
+          return new SelectorWriteHandler(channel, m_selector, m_headerBuffer);
       }
 
       /**
