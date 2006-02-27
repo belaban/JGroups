@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.43 2006/01/27 15:47:17 belaban Exp $
+// $Id: STABLE.java,v 1.44 2006/02/27 14:14:12 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -10,7 +10,10 @@ import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 
 import java.io.*;
-import java.util.*;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Vector;
 
 
 
@@ -47,7 +50,7 @@ public class STABLE extends Protocol {
     long                stability_delay=6000;
     private StabilitySendTask   stability_task=null;
     final Object        stability_mutex=new Object();   // to synchronize on stability_task
-    private StableTask  stable_task=null;               // bcasts periodic STABLE message (added to timer below)
+    private volatile StableTask  stable_task=null;               // bcasts periodic STABLE message (added to timer below)
     final Object        stable_task_mutex=new Object(); // to sync on stable_task
     TimeScheduler       timer=null;                     // to send periodic STABLE msgs (and STABILITY messages)
     static final String name="STABLE";

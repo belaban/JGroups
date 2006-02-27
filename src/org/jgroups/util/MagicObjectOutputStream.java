@@ -13,10 +13,10 @@ import java.io.OutputStream;
 /**
  * Uses magic numbers for class descriptors
  * @author Bela Ban
- * @version $Id: MagicObjectOutputStream.java,v 1.4 2004/10/04 20:43:35 belaban Exp $
+ * @version $Id: MagicObjectOutputStream.java,v 1.5 2006/02/27 14:09:57 belaban Exp $
  */
 public class MagicObjectOutputStream extends ObjectOutputStream {
-    static ClassConfigurator conf=null;
+    static volatile ClassConfigurator conf=null;
     static final Log log=LogFactory.getLog(MagicObjectOutputStream.class);
 
 

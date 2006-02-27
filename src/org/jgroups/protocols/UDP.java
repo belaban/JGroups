@@ -1,9 +1,10 @@
-// $Id: UDP.java,v 1.112 2006/01/19 09:53:37 belaban Exp $
+// $Id: UDP.java,v 1.113 2006/02/27 14:11:00 belaban Exp $
 
 package org.jgroups.protocols;
 
 
-import org.jgroups.*;
+import org.jgroups.Address;
+import org.jgroups.Message;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.BoundedList;
 import org.jgroups.util.Util;
@@ -51,7 +52,7 @@ public class UDP extends TP implements Runnable {
     /**
      * BoundedList<Integer> of the last 100 ports used. This is to avoid reusing a port for DatagramSocket
      */
-    private static BoundedList last_ports_used=null;
+    private static volatile BoundedList last_ports_used=null;
 
     /** Maintain a list of local ports opened by DatagramSocket. If this is 0, this option is turned off.
      * If bind_port is > 0, then this option will be ignored */

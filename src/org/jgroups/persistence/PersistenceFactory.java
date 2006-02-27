@@ -188,8 +188,8 @@ public class PersistenceFactory
         return props;
     }
 
-    private static PersistenceManager _manager = null;
-    private static PersistenceFactory _factory = null;
+    private static volatile PersistenceManager _manager = null;
+    private static volatile PersistenceFactory _factory = null;
    
 
     /* Please set this according to configuration */
