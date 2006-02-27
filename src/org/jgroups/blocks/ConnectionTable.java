@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.42 2006/02/07 09:08:19 belaban Exp $
+// $Id: ConnectionTable.java,v 1.43 2006/02/27 11:06:03 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -169,7 +169,7 @@ public class ConnectionTable implements Runnable {
     }
 
 
-    public void setReceiver(Receiver r) {
+    public final void setReceiver(Receiver r) {
         receiver=r;
     }
 
@@ -274,6 +274,7 @@ public class ConnectionTable implements Runnable {
                 SocketAddress destAddr=new InetSocketAddress(tmpDest, ((IpAddress)dest).getPort());
                 sock=new Socket();
                 sock.bind(tmpBindAddr);
+                sock.setKeepAlive(true);
                 sock.connect(destAddr, sock_conn_timeout);
 
                 try {
@@ -303,7 +304,7 @@ public class ConnectionTable implements Runnable {
     }
 
 
-    public void start() throws Exception {
+    public final void start() throws Exception {
         init();
         srv_sock=createServerSocket(srv_port, max_port);
 
@@ -422,6 +423,8 @@ public class ConnectionTable implements Runnable {
                     if(log.isErrorEnabled()) log.error("exception setting receive buffer size to " +
                            send_buf_size + " bytes", ex);
                 }
+
+                client_sock.setKeepAlive(true);
 
                 // create new thread and add to conn table
                 conn=new Connection(client_sock, null); // will call receive(msg)
