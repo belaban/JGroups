@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.34 2006/01/19 09:53:37 belaban Exp $
+// $Id: FD_SOCK.java,v 1.35 2006/02/27 10:35:57 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -8,9 +8,9 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 
 import java.io.*;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.*;
 import java.util.List;
@@ -74,6 +74,9 @@ public class FD_SOCK extends Protocol implements Runnable {
 
     BoundedList          suspect_history=new BoundedList(20);
 
+    /** whether to use KEEP_ALIVE on the ping socket or not */
+    private boolean      keep_alive=true;
+
 
     public String getName() {
         return name;
@@ -118,6 +121,12 @@ public class FD_SOCK extends Protocol implements Runnable {
         if(str != null) {
             start_port=Integer.parseInt(str);
             props.remove("start_port");
+        }
+
+        str=props.getProperty("keep_alive");
+        if(str != null) {
+            keep_alive=new Boolean(str).booleanValue();
+            props.remove("keep_alive");
         }
 
         str=props.getProperty("srv_sock_bind_addr");
@@ -515,6 +524,7 @@ public class FD_SOCK extends Protocol implements Runnable {
             try {
                 ping_sock=new Socket(dest.getIpAddress(), dest.getPort());
                 ping_sock.setSoLinger(true, 1);
+                ping_sock.setKeepAlive(keep_alive);
                 ping_input=ping_sock.getInputStream();
                 return true;
             }
