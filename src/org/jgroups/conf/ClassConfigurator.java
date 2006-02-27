@@ -1,4 +1,4 @@
-// $Id: ClassConfigurator.java,v 1.18 2005/11/03 11:42:58 belaban Exp $
+// $Id: ClassConfigurator.java,v 1.19 2006/02/27 14:08:45 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -26,7 +26,7 @@ import java.util.*;
  * @see MagicNumberReader
  */
 public class ClassConfigurator {
-    static ClassConfigurator instance=null;
+    static volatile ClassConfigurator instance=null; // works under the new JSR 133 memory model in JDK 5
 
     //this is where we store magic numbers
     private final Map classMap=new HashMap(); // key=Class, value=magic number

@@ -2,22 +2,20 @@ package org.jgroups.util;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.ChannelException;
+import org.jgroups.conf.ClassConfigurator;
 
 import java.io.IOException;
-import java.io.ObjectStreamClass;
 import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.util.HashMap;
+import java.io.ObjectStreamClass;
 
 /**
  * Uses magic numbers for class descriptors
  * @author Bela Ban
- * @version $Id: MagicObjectInputStream.java,v 1.3 2004/10/04 20:43:34 belaban Exp $
+ * @version $Id: MagicObjectInputStream.java,v 1.5 2006/02/27 14:13:30 belaban Exp $
  */
 public class MagicObjectInputStream extends ContextObjectInputStream {
-    static ClassConfigurator conf=null;
+    static volatile ClassConfigurator conf=null;
     static final Log log=LogFactory.getLog(MagicObjectInputStream.class);
 
 
