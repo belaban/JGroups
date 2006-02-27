@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.37 2006/01/26 09:33:32 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.38 2006/02/27 12:57:29 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -16,6 +16,7 @@
     <property name="perf.dir" value="${root.dir}/tests/perf"/>
     <property name="compile.dir" value="${root.dir}/classes"/>
     <property name="lib.dir" value="${root.dir}/lib"/>
+    <property name="license.dir" value="${lib.dir}/licenses"/>
     <property name="dist.dir" value="${root.dir}/dist"/>
     <property name="tmp.dir" value="${root.dir}/tmp"/>
     <property name="doc.dir" value="${root.dir}/doc"/>
@@ -182,6 +183,7 @@
                  <include name="log4j*.jar"/>
                  <include name="concurrent*.jar"/>
                  <include name="jmx*.jar"/>
+                 <include name="licenses/*"/>
              </fileset>
              <fileset dir="${dist.dir}">
                  <include name="jgroups-all*.jar"/>
