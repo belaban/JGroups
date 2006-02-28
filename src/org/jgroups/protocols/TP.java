@@ -39,7 +39,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.61 2006/02/15 12:37:57 belaban Exp $
+ * @version $Id: TP.java,v 1.62 2006/02/28 16:14:38 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -116,7 +116,7 @@ public abstract class TP extends Protocol {
      * Packet handler is a separate thread taking care of de-serialization, receiver
      * thread(s) simply put packet in queue and return immediately. Setting this to
      * true adds one more thread */
-    boolean         use_incoming_packet_handler=false;
+    boolean         use_incoming_packet_handler=true;
 
     /** Used by packet handler to store incoming DatagramPackets */
     Queue           incoming_packet_queue=null;
