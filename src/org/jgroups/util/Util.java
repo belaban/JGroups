@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.67 2006/02/15 09:33:25 belaban Exp $
+// $Id: Util.java,v 1.68 2006/02/28 17:08:00 belaban Exp $
 
 package org.jgroups.util;
 
@@ -39,7 +39,7 @@ public class Util {
     /**
      * Global thread group to which all (most!) JGroups threads belong
      */
-    private static ThreadGroup GLOBAL_GROUP=new ThreadGroup("JGroups Threads") {
+    private static ThreadGroup GLOBAL_GROUP=new ThreadGroup("JGroups threads") {
         public void uncaughtException(Thread t, Throwable e) {
             LogFactory.getLog("org.jgroups").error("uncaught exception in " + t + " (thread group=" + GLOBAL_GROUP + " )", e);
         }
