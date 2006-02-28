@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.35 2006/02/27 10:35:57 belaban Exp $
+// $Id: FD_SOCK.java,v 1.36 2006/02/28 17:22:11 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -470,7 +470,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
     void startPingerThread() {
         if(pinger_thread == null) {
-            pinger_thread=new Thread(this, "FD_SOCK Ping thread");
+            pinger_thread=new Thread(Util.getGlobalThreadGroup(), this, "FD_SOCK Ping thread");
             pinger_thread.setDaemon(true);
             pinger_thread.start();
         }
