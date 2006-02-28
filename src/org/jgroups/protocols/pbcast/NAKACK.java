@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.73 2006/01/27 15:09:11 belaban Exp $
+// $Id: NAKACK.java,v 1.74 2006/02/28 16:34:37 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -8,8 +8,8 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.stack.Retransmitter;
 import org.jgroups.util.*;
 
+import java.io.IOException;
 import java.util.*;
-import java.io.*;
 
 
 /**
@@ -667,11 +667,19 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         }
         win.add(hdr.seqno, msg);  // add in order, then remove and pass up as many msgs as possible
 
-        while((msg_to_deliver=win.remove()) != null) {
+        // Prevents concurrent passing up of messages by different threads (http://jira.jboss.com/jira/browse/JGRP-198);
+        // this is all the more important once we have a threadless stack (http://jira.jboss.com/jira/browse/JGRP-181),
+        // where lots of threads can come up to this point concurrently, but only 1 is allowed to pass at a time
+        // We *can* deliver messages from *different* senders concurrently, e.g. reception of P1, Q1, P2, Q2 can result in
+        // delivery of P1, Q1, Q2, P2: FIFO (implemented by NAKACK) says messages need to be delivered only in the
+        // order in which they were sent by the sender
+        synchronized(win) {
+            while((msg_to_deliver=win.remove()) != null) {
 
-            // Changed by bela Jan 29 2003: not needed (see above)
-            //msg_to_deliver.removeHeader(getName());
-            passUp(new Event(Event.MSG, msg_to_deliver));
+                // Changed by bela Jan 29 2003: not needed (see above)
+                //msg_to_deliver.removeHeader(getName());
+                passUp(new Event(Event.MSG, msg_to_deliver));
+            }
         }
     }
 
