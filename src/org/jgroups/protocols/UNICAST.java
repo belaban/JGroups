@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.54 2006/02/08 08:48:04 belaban Exp $
+// $Id: UNICAST.java,v 1.55 2006/02/28 16:34:37 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -442,8 +442,17 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
         // Try to remove (from the AckReceiverWindow) as many messages as possible as pass them up
         Message  m;
-        while((m=entry.received_msgs.remove()) != null)
-            passUp(new Event(Event.MSG, m));
+
+        // Prevents concurrent passing up of messages by different threads (http://jira.jboss.com/jira/browse/JGRP-198);
+        // this is all the more important once we have a threadless stack (http://jira.jboss.com/jira/browse/JGRP-181),
+        // where lots of threads can come up to this point concurrently, but only 1 is allowed to pass at a time
+        // We *can* deliver messages from *different* senders concurrently, e.g. reception of P1, Q1, P2, Q2 can result in
+        // delivery of P1, Q1, Q2, P2: FIFO (implemented by UNICAST) says messages need to be delivered only in the
+        // order in which they were sent by their senders
+        synchronized(entry) {
+            while((m=entry.received_msgs.remove()) != null)
+                passUp(new Event(Event.MSG, m));
+        }
     }
 
 
