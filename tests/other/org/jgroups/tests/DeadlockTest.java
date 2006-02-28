@@ -1,4 +1,4 @@
-// $Id: DeadlockTest.java,v 1.6 2004/07/05 14:15:11 belaban Exp $
+// $Id: DeadlockTest.java,v 1.7 2006/02/28 16:32:11 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -15,14 +15,16 @@ import org.jgroups.blocks.RpcDispatcher;
  * @author John Giorgiadis
  */
 public class DeadlockTest {
+    private static final Class[] TYPES=new Class[]{};
+    private static final Object[] ARGS=new Object[]{};
 
-	public class InRpc {
-		public void rpc_1() { _in_rpc_1(); }
-		public void rpc_2() { _in_rpc_2(); }
-	}
+    public class InRpc {
+        public void rpc_1() { _in_rpc_1(); }
+        public void rpc_2() { _in_rpc_2(); }
+    }
 
 
-	private class Handler implements MessageListener, MembershipListener {
+	private static class Handler implements MessageListener, MembershipListener {
 		public Handler() { super(); }
 		// MessageListener
 		public byte[] getState() { return(null); }
@@ -44,7 +46,7 @@ public class DeadlockTest {
 
 	private void _in_rpc_1() {
 		System.out.println("In rpc_1()");
-		cast_call("rpc_2", new Object[]{}, new Class[]{});
+		cast_call("rpc_2", ARGS, TYPES);
 		System.out.println("Exiting rpc_1()");
 	}
 
@@ -71,8 +73,8 @@ public class DeadlockTest {
 		    disp = new RpcDispatcher(channel, handler, handler, in_rpc, use_deadlock_detection);
 		    channel.connect(name);
 		} 
-                catch(ChannelClosedException ex) { ex.printStackTrace(); }
-                catch(ChannelException ex) { ex.printStackTrace(); }
+        catch(ChannelClosedException ex) { ex.printStackTrace(); }
+        catch(ChannelException ex) { ex.printStackTrace(); }
 		
 		// Call rpc_1 which in turn calls rpc_2
 		System.out.println("Calling rpc_1()");
@@ -80,7 +82,7 @@ public class DeadlockTest {
 		    System.out.println("** Not using deadlock detection -- recursive call will hang !");
 		else
 		    System.out.println("** Using deadlock detection -- recursive call will succeed");
-		cast_call("rpc_1", new Object[]{}, new Class[]{});
+		cast_call("rpc_1", ARGS, TYPES);
 		System.out.println("Out of rpc_1()");
 		channel.disconnect();
 		channel.close();
