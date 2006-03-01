@@ -2,6 +2,7 @@ package org.jgroups.tests.perf;
 
 import EDU.oswego.cs.dl.util.concurrent.ConcurrentReaderHashMap;
 import EDU.oswego.cs.dl.util.concurrent.QueuedExecutor;
+import EDU.oswego.cs.dl.util.concurrent.ThreadFactory;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Version;
@@ -92,6 +93,12 @@ public class Test implements Receiver {
 
         if(output != null)
             this.output=new FileWriter(output, false);
+
+        response_sender.setThreadFactory(new ThreadFactory() {
+            public Thread newThread(Runnable runnable) {
+                return new Thread(runnable, "Test.ResponseSender");
+            }
+        });
 
         config_file=c.getProperty("config");
         fileReader=new BufferedReader(new FileReader(config_file));
