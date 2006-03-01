@@ -10,10 +10,10 @@ import java.util.Vector;
 
 /**
  * Multiplexer channel. This is returned as result of calling
- * {@link org.jgroups.ChannelFactory#createChannel(String, org.jgroups.Receiver, String)}. Maintains the multiplexer
+ * {@link org.jgroups.ChannelFactory#createChannel(String, String)}. Maintains the multiplexer
  * ID, which is used to add a header to each message, so that the message can be demultiplexed at the receiver
  * @author Bela Ban
- * @version $Id: MuxChannel.java,v 1.1 2006/02/17 09:51:08 belaban Exp $
+ * @version $Id: MuxChannel.java,v 1.2 2006/03/01 16:17:53 belaban Exp $
  */
 public class MuxChannel extends Channel {
 
