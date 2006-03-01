@@ -7,7 +7,10 @@ import org.apache.commons.logging.LogFactory;
 import org.jgroups.Version;
 import org.jgroups.util.Util;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.text.NumberFormat;
 import java.util.*;
 
@@ -26,7 +29,7 @@ public class Test implements Receiver {
     Map             senders=new ConcurrentReaderHashMap(10);
 
     /** Keeps track of members. ArrayList<SocketAddress> */
-    ArrayList       members=new ArrayList();
+    final ArrayList       members=new ArrayList();
 
 
     /** Set when first message is received */
@@ -50,7 +53,7 @@ public class Test implements Receiver {
     /** Map<Object, MemberInfo>. A hashmap of senders, each value is the 'senders' hashmap */
     Map             results=new HashMap();
 
-    ResultsPublisher publisher=new ResultsPublisher();
+    private ResultsPublisher publisher=new ResultsPublisher();
 
     List            heard_from=new ArrayList();
 
@@ -69,7 +72,7 @@ public class Test implements Receiver {
 
     QueuedExecutor  response_sender=new QueuedExecutor();
 
-    transient static  NumberFormat f;
+    static  NumberFormat f;
 
     static {
         f=NumberFormat.getNumberInstance();
@@ -237,7 +240,7 @@ public class Test implements Receiver {
                                 }
                             }
                         }
-                        this.members.notify();
+                        this.members.notifyAll();
                     }
                 }
                 break;
@@ -249,7 +252,7 @@ public class Test implements Receiver {
                     final_results_received=true;
                 }
                 synchronized(this) {
-                    this.notify();
+                    this.notifyAll();
                 }
                 break;
 
@@ -616,6 +619,14 @@ public class Test implements Receiver {
         }
 
         try {
+
+            /*int prio=Thread.currentThread().getPriority();
+            System.out.println("current thread: " + Thread.currentThread() + ", prio: " + prio);
+
+            Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
+            prio=Thread.currentThread().getPriority();
+            System.out.println("current thread: " + Thread.currentThread() + ", prio: " + prio);*/
+
             t=new Test();
             t.start(config, verbose, jmx, output);
             t.runDiscoveryPhase();
