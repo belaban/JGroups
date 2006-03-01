@@ -1,4 +1,4 @@
-// $Id: ConnectionTableNIO.java,v 1.11 2006/02/27 11:05:30 belaban Exp $
+// $Id: ConnectionTableNIO.java,v 1.12 2006/03/01 09:12:39 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -9,6 +9,7 @@ import org.jgroups.Address;
 import org.jgroups.Version;
 import org.jgroups.protocols.TCP_NIO;
 import org.jgroups.stack.IpAddress;
+import org.jgroups.util.Util;
 
 import java.io.IOException;
 import java.net.*;
@@ -209,6 +210,11 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
       {
          // Create worker thread pool for processing incoming buffers
          PooledExecutor requestProcessors = new PooledExecutor(new BoundedBuffer(NIOreceiver.getProcessorQueueSize()), NIOreceiver.getProcessorMaxThreads());
+          requestProcessors.setThreadFactory(new ThreadFactory() {
+              public Thread newThread(Runnable runnable) {
+                  return new Thread(Util.getGlobalThreadGroup(), runnable);
+              }
+          });
          requestProcessors.setMinimumPoolSize(NIOreceiver.getProcessorMinThreads());
          requestProcessors.setKeepAliveTime(NIOreceiver.getProcessorKeepAliveTime());
          requestProcessors.waitWhenBlocked();
