@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.20 2005/12/08 09:35:28 belaban Exp $
+// $Id: TUNNEL.java,v 1.21 2006/03/01 16:20:26 belaban Exp $
 
 
 package org.jgroups.protocols;
@@ -71,6 +71,9 @@ public class TUNNEL extends Protocol implements Runnable {
     }
 
 
+    public boolean isConnected() {
+        return stub != null && stub.isConnected();
+    }
 
 
     /*------------------------------ Protocol interface ------------------------------ */
