@@ -4,7 +4,7 @@ Multiplexing functionality
 ===========================
 
 Author: Bela Ban
-Version: $Id: Multiplexer.txt,v 1.7 2006/03/02 12:57:19 belaban Exp $
+Version: $Id: Multiplexer.txt,v 1.8 2006/03/02 14:48:05 belaban Exp $
 JIRA: http://jira.jboss.com/jira/browse/JGRP-119, http://jira.jboss.com/jira/browse/JGRP-112
 
 Overview
@@ -111,19 +111,21 @@ MuxChannel creation
 -------------------
 When JChannelFactory.createChannel() is called, the following happens:
 - If the JChannel already exists:
-  - Create a MuxChannel (only if the application ID doesn't yet exists), connect it, referencing the JChannel,
+  - Create a MuxChannel (only if the application ID doesn't yet exists), referencing the JChannel,
     add it to the Multiplexer's apps hashmap, and return it to the application
 - Else:
   - Create a new JChannel, add it to the channels hashmap
-  - Create a new MuxChannel, connect it, referencing the JChannel, add it to the Multiplexer's apps hashmap, and return it
-If a new JChannel was created, we always connect it, using the stack name as group name.
+  - Create a new MuxChannel, referencing the JChannel, add it to the Multiplexer's apps hashmap, and return it
+Note that a newly created JChannel is not connected yet.
 
 MuxChannel connect
 ------------------
-This is a no-op because any returned MuxChannel should already be connected
+- Calling JChannel.connect(stack_name). If the JChannel is already connected, this is a no-op. The name of the group
+  is always the name of the stack, e.g. "udp" or "tcp"
 
 Sending a message on MuxChannel
 -------------------------------
+- 
 
 Receiving a message on MuxReceiver
 ----------------------------------
