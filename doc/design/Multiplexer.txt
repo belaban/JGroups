@@ -4,14 +4,16 @@ Multiplexing functionality
 ===========================
 
 Author: Bela Ban
-Version: $Id: Multiplexer.txt,v 1.6 2006/02/23 14:43:33 belaban Exp $
+Version: $Id: Multiplexer.txt,v 1.7 2006/03/02 12:57:19 belaban Exp $
 JIRA: http://jira.jboss.com/jira/browse/JGRP-119, http://jira.jboss.com/jira/browse/JGRP-112
 
 Overview
 --------
-In JBoss we have multiple JGroups channels, one for each application (e.g. JBossCache, ClusterPartition etc). The goal of
-the Multiplexer is to combine all stacks with the *same* configuration into one, and have multiple apps on top
-of that same channel.
+In JBoss we have multiple JGroups channels, one for each application (e.g. JBossCache, ClusterPartition etc).
+
+The goal of the Multiplexer is to combine all stacks with the *same* configuration into one, and have multiple
+apps on top of that same channel.
+
 To do this we have to introduce multiplexing and demultiplexing functionality, ie. each app will have to have
 a unique application ID (a string), and when sending a message, the message has to be tagged with that ID. When
 receiving a message, it will be dispatched to the right app based on the ID attached to the message.
@@ -52,9 +54,8 @@ enabled or disabled via a configuration option (or programmatically). This may b
 as a Receiver with the MuxChannel; a receive() callback taking some time to be processed would block all other
 applications from receiving messages until completion. The configuration should be per channel.
 
-The subsequent sections describe the various
-use cases, e.g. life cycle for channel creation, message sending and reception, channel close/disconnect, view
-reception and state transfer.
+The subsequent sections describe the various use cases, e.g. life cycle for channel creation, message sending and
+reception, channel close/disconnect, view reception and state transfer.
 
 
 
@@ -68,8 +69,10 @@ Structures
 
 In JChannelFactory:
 - channels: Map<String, ChannelEntry>. A hashmap of channels and their associated MuxChannels. The keys are the channel
-stack names and the connect names, e.g. "udp:MyChannelGroup", or "tcp:MyTcpChannel". The values are ChannelEntries,
-which contain both the JChannel and associated MuxChannel.
+stack names, e.g. "udp", or "tcp". The values are ChannelEntries, which contain both the JChannel and associated Multiplexer.
+The Multiplexer maintains a hashtable of application IDs and MuxChannels (Map<String,MuxChannel>), see Multiplexer below.
+
+<obsolete>
 We need to keep the stack names *and* channel names, because multiple applications residing on top of the same
 channel stack could be connected to different groups, e.g.
 Appl-1 uses the "udp" stack and connects to group "group-A", whereas appl-2 uses the same "udp" stack, but connects
@@ -77,42 +80,47 @@ to "group-B". Since a channel can be connected to only *one* group at a time, th
 instances.
 Only if 2 applications use the same channel stack *and* group can we share the same channel. We do provide this
 flexibility, however, we expect that all applications sharing the same channel stack will use the same group name !
+</obsolete>
+
+This is not needed, as "udp" as stack name implies that all applications which use "udp" will use the *same* stack and
+join the *same* group. If an application wants to use the same stack, but join a different group, it has to create
+its own JChannel and cannot use the Multiplexer mechanism.
 
 In Multiplexer:
 - apps: Map<String, MuxChannel>. A hashmap of application IDs as keys and MuxChannels as values. Used for dispatching
   incoming messages. The Multiplexer implements UpHandler and registers with the associated JChannel (there can only
-  be 1 MuxChannel per JChannel). When up() is called with a message, the header of the message is removed and the
+  be 1 Multiplexer per JChannel). When up() is called with a message, the header of the message is removed and the
   MuxChannel corresponding to the header's application ID is retrieved from the map, and MuxChannel.up() is called
   with the message.
 
-<obsolete>
-- mux-table: Map<JChannel, MuxReceiver>. A hashmap of channels and their associated MuxReceivers. A MuxReceiver implements
-  org.jgroups.UpHandler and keeps track of all Receivers attached to a given JChannel.
-  It also stores the name under which the channel was created. Whenever up() is called, it removes the header (containing
-  the application ID and dispatches the call to the right Receiver (or receiver-queue is enabled).
 
-- app-table: Map<String, AppReceiver>. A hashmap of application IDs and AppReceivers. AppReceivers implement
-  org.jgroups.Receiver and keep a reference to the Receiver provided by the application when calling createChannel().
-  The main task of an AppReceiver is to buffer callbacks if enabled. Otherwise, a callback on AppReceiver is simply
-  calling the corresponding callback on receiver.
-  </obsolete>
-
-Possibly, MuxReceivers and AppReceivers could - instead of implementing Receiver - register as an UpHandler with
-the JChannel, setUpHandler().
 
 JChannelFactory initialization
 ------------------------------
 JChannelFactory has a reference to the configuration which is set either on creation (e.g. via JMX attribute) when
 used as an MBean, or via one of the config() methods.
 The JChannelFactory MBean has to support the JMX life cycle methods (create(), start(), stop(), destroy()).
+On redeployment, a JChannelFactory re-reads its configuration file. The method to read the config file (config()) can
+also be called via JMX to force a re-read without redeploying the factory.
+When a JChannelFactory is destroyed or redeployed, all of its dependent MBeans (usually all applications) will be
+redeployed/destroyed as well. We recommend dependency definition/injection between application MBeans and their
+underlying shared JChannelFactory MBean.
+
 
 MuxChannel creation
 -------------------
 When JChannelFactory.createChannel() is called, the following happens:
--
+- If the JChannel already exists:
+  - Create a MuxChannel (only if the application ID doesn't yet exists), connect it, referencing the JChannel,
+    add it to the Multiplexer's apps hashmap, and return it to the application
+- Else:
+  - Create a new JChannel, add it to the channels hashmap
+  - Create a new MuxChannel, connect it, referencing the JChannel, add it to the Multiplexer's apps hashmap, and return it
+If a new JChannel was created, we always connect it, using the stack name as group name.
 
 MuxChannel connect
 ------------------
+This is a no-op because any returned MuxChannel should already be connected
 
 Sending a message on MuxChannel
 -------------------------------
@@ -128,9 +136,14 @@ State transfer
 
 MuxChannel disconnect/close
 ---------------------------
+- Remove the MuxChannel from the Multiplexer's apps hashmap
+- If the apps hashmap is empty:
+  - Disconnect and close the JChannel
+  - Remove the Multiplexer from the channels hashmap in Multiplexer
 
 
-
+Life cycle dependency between applications and JChannelFactory MBeans
+---------------------------------------------------------------------
 
 
 
