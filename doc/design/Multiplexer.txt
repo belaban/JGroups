@@ -4,7 +4,7 @@ Multiplexing functionality
 ===========================
 
 Author: Bela Ban
-Version: $Id: Multiplexer.txt,v 1.8 2006/03/02 14:48:05 belaban Exp $
+Version: $Id: Multiplexer.txt,v 1.9 2006/03/02 15:11:59 belaban Exp $
 JIRA: http://jira.jboss.com/jira/browse/JGRP-119, http://jira.jboss.com/jira/browse/JGRP-112
 
 Overview
@@ -53,6 +53,8 @@ TBD: we may buffer messages internally in the Multiplexer before dispatching the
 enabled or disabled via a configuration option (or programmatically). This may be desired if the application registers
 as a Receiver with the MuxChannel; a receive() callback taking some time to be processed would block all other
 applications from receiving messages until completion. The configuration should be per channel.
+The buffering should be handled in the MuxChannel; MuxChannel.up() would then simply put the event into a queue,
+or - if a Receiver is configured - directly convert the event into a callback for Receiver.
 
 The subsequent sections describe the various use cases, e.g. life cycle for channel creation, message sending and
 reception, channel close/disconnect, view reception and state transfer.
@@ -125,16 +127,21 @@ MuxChannel connect
 
 Sending a message on MuxChannel
 -------------------------------
-- 
+- The MuxChannel adds a MuxHeader, with the application ID and then calls JChannel.send()/down()
 
-Receiving a message on MuxReceiver
-----------------------------------
+Receiving an event on Multiplexer (up() method)
+-----------------------------------------------
+- The Multiplexer removes the MuxHeader (if present)
+- For SUSPECT and VIEW: pass it on to all MuxChannels.
+- For messages and state transfer events: fetch the MuxChannel associated with the MuxHeader's application ID and
+  pass the message to it
+- A MuxChannel can be configured to use a queue when the pull model is chosen (no Receiver present). In that case,
+  up() simply places the event into the queue, and MuxChannel.receive() dequeues the event. The queue can be bounded.
+  If a Receiver is set, we can either directly invoke the callback, or use a QueuedExecutor to queue all events and
+  invoke them in FIFO order on the Receiver. Note that we *cannot* use a PooledExecutor since the delivery order might
+  be destroyed by a thread pool.
 
-View change
------------
 
-State transfer
---------------
 
 MuxChannel disconnect/close
 ---------------------------
