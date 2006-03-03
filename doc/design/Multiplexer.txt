@@ -4,7 +4,7 @@ Multiplexing functionality
 ===========================
 
 Author: Bela Ban
-Version: $Id: Multiplexer.txt,v 1.10 2006/03/03 09:03:17 belaban Exp $
+Version: $Id: Multiplexer.txt,v 1.11 2006/03/03 11:29:40 belaban Exp $
 JIRA: http://jira.jboss.com/jira/browse/JGRP-119, http://jira.jboss.com/jira/browse/JGRP-112
 
 Overview
@@ -68,7 +68,6 @@ name. This name is used in JChannelFactory.createChannel() as stack name.
 
 Structures
 ----------
-
 In JChannelFactory:
 - channels: Map<String, ChannelEntry>. A hashmap of channels and their associated MuxChannels. The keys are the channel
 stack names, e.g. "udp", or "tcp". The values are ChannelEntries, which contain both the JChannel and associated Multiplexer.
@@ -159,6 +158,7 @@ State transfer for *all* applications
   N times, once for each application
 - This could be improved by fetching *all* states after the last application has been started
 - It could be implemented by adding a getState(Address coord, long timeout, Object state_id) method to Channel:
+   (same as partial state transfer)
   - the state transfer event would have the state_id as parameter
   - a new method Multiplexer.getAllApplicationStates() would call JChannel.getState() with a state_id of "ALL"
   - when the Multiplexer receives the state event, and the state_id is "ALL", it asks all the registered applications
