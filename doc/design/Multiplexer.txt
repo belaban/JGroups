@@ -4,7 +4,7 @@ Multiplexing functionality
 ===========================
 
 Author: Bela Ban
-Version: $Id: Multiplexer.txt,v 1.9 2006/03/02 15:11:59 belaban Exp $
+Version: $Id: Multiplexer.txt,v 1.10 2006/03/03 09:03:17 belaban Exp $
 JIRA: http://jira.jboss.com/jira/browse/JGRP-119, http://jira.jboss.com/jira/browse/JGRP-112
 
 Overview
@@ -120,14 +120,17 @@ When JChannelFactory.createChannel() is called, the following happens:
   - Create a new MuxChannel, referencing the JChannel, add it to the Multiplexer's apps hashmap, and return it
 Note that a newly created JChannel is not connected yet.
 
+
 MuxChannel connect
 ------------------
 - Calling JChannel.connect(stack_name). If the JChannel is already connected, this is a no-op. The name of the group
   is always the name of the stack, e.g. "udp" or "tcp"
 
+
 Sending a message on MuxChannel
 -------------------------------
 - The MuxChannel adds a MuxHeader, with the application ID and then calls JChannel.send()/down()
+
 
 Receiving an event on Multiplexer (up() method)
 -----------------------------------------------
@@ -142,7 +145,6 @@ Receiving an event on Multiplexer (up() method)
   be destroyed by a thread pool.
 
 
-
 MuxChannel disconnect/close
 ---------------------------
 - Remove the MuxChannel from the Multiplexer's apps hashmap
@@ -151,8 +153,31 @@ MuxChannel disconnect/close
   - Remove the Multiplexer from the channels hashmap in Multiplexer
 
 
-Life cycle dependency between applications and JChannelFactory MBeans
----------------------------------------------------------------------
+State transfer for *all* applications
+-------------------------------------
+- If we transfer the state for each application separately, we have to run the stop-the-world (FLUSH) protocol
+  N times, once for each application
+- This could be improved by fetching *all* states after the last application has been started
+- It could be implemented by adding a getState(Address coord, long timeout, Object state_id) method to Channel:
+  - the state transfer event would have the state_id as parameter
+  - a new method Multiplexer.getAllApplicationStates() would call JChannel.getState() with a state_id of "ALL"
+  - when the Multiplexer receives the state event, and the state_id is "ALL", it asks all the registered applications
+    for their state, and returns all appl states as one state. That state would contains all substates, prefixed
+    with the substate ID (which is the application ID)
+  - on the receiving Multiplexer, we demultiplex the state into individual appl states and call setState() on the
+    application corresponding to the substate ID
+  - this has the advantage that the digest would have to be transferred and set only *once*, not once per application
+
+
+
+
+
+
+
+
+
+
+
 
 
 
