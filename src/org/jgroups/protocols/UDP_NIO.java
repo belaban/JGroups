@@ -32,7 +32,8 @@ import java.util.*;
  * the unicast routing caches should ensure that unicasts are only sent via 1 interface in almost all cases.
  * 
  * @author Bela Ban Oct 2003
- * @version $Id: UDP_NIO.java,v 1.5 2006/01/19 09:53:37 belaban Exp $
+ * @version $Id: UDP_NIO.java,v 1.6 2006/03/07 08:19:28 belaban Exp $
+ * @deprecated Use UDP instead with send_interfaces or receive_interfaces properties defined
  */
 public class UDP_NIO extends Protocol implements  Receiver {
 
