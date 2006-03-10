@@ -1,4 +1,4 @@
-// $Id: VectorTime.java,v 1.5 2005/07/17 11:36:15 chrislott Exp $
+// $Id: VectorTime.java,v 1.6 2006/03/10 15:45:18 belaban Exp $
 
 
 package org.jgroups.protocols;
@@ -13,7 +13,7 @@ import java.util.*;
  * Vector timestamp used in CAUSAL order protocol stack
  *
  * @author Vladimir Blagojevic vladimir@cs.yorku.ca
- * @version $Revision: 1.5 $
+ * @version $Revision: 1.6 $
  */
 public class VectorTime
 {
@@ -56,7 +56,7 @@ public class VectorTime
     *Returns Vector clock values of this Vector clock
     * @return values of the Vector clock
     */
-   public java.util.Collection getVectorValues()
+   public Collection getVectorValues()
    {
       return entries.values();
    }
