@@ -1,4 +1,4 @@
-// $Id: ConfiguratorFactory.java,v 1.17 2005/08/08 14:58:32 belaban Exp $
+// $Id: ConfiguratorFactory.java,v 1.18 2006/03/10 15:09:44 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -10,11 +10,7 @@ import org.jgroups.ChannelException;
 import org.jgroups.JChannel;
 import org.jgroups.util.Util;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
+import java.io.*;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -77,26 +73,22 @@ public class ConfiguratorFactory {
      * @throws ChannelException if problems occur during the configuration of
      *                          the protocol stack.
      */
-    public static ProtocolStackConfigurator getStackConfigurator(File file)
-    throws ChannelException {
+    public static ProtocolStackConfigurator getStackConfigurator(File file) throws ChannelException {
         ProtocolStackConfigurator returnValue;
 
         if (propertiesOverride != null) {
             returnValue = getStackConfigurator(propertiesOverride);
         }
         else {
-            checkForNullConfiguration(file);
-            checkJAXPAvailability();
-
             try {
-                returnValue=
-                    XmlConfigurator.getInstance(new FileInputStream(file));
+                checkJAXPAvailability();
+                InputStream input=getConfigStream(file);
+                returnValue=XmlConfigurator.getInstance(input);
             }
-            catch (IOException ioe) {
-                throw createChannelConfigurationException(ioe);
+            catch(Exception ex) {
+                throw createChannelConfigurationException(ex);
             }
         }
-
         return returnValue;
     }
 
@@ -112,8 +104,7 @@ public class ConfiguratorFactory {
      * @throws ChannelException if problems occur during the configuration of
      *                          the protocol stack.
      */
-    public static ProtocolStackConfigurator getStackConfigurator(URL url)
-    throws ChannelException {
+    public static ProtocolStackConfigurator getStackConfigurator(URL url) throws ChannelException {
         ProtocolStackConfigurator returnValue;
 
         if (propertiesOverride != null) {
@@ -146,8 +137,7 @@ public class ConfiguratorFactory {
      * @throws ChannelException if problems occur during the configuration of
      *                          the protocol stack.
      */
-    public static ProtocolStackConfigurator getStackConfigurator(Element element)
-    throws ChannelException {
+    public static ProtocolStackConfigurator getStackConfigurator(Element element) throws ChannelException {
         ProtocolStackConfigurator returnValue;
 
         if (propertiesOverride != null) {
@@ -304,6 +294,37 @@ public class ConfiguratorFactory {
     }
 
 
+
+    public static InputStream getConfigStream(File file) throws Exception {
+        if(propertiesOverride != null)
+            return getConfigStream(propertiesOverride);
+
+        checkForNullConfiguration(file);
+
+        try {
+            return new FileInputStream(file);
+        }
+        catch(IOException ioe) {
+            throw createChannelConfigurationException(ioe);
+        }
+    }
+
+
+
+    public static InputStream getConfigStream(URL url) throws Exception {
+        if (propertiesOverride != null)
+            return getConfigStream(propertiesOverride);
+        try {
+            checkJAXPAvailability();
+            return url.openStream();
+        }
+        catch(Exception ex) {
+            throw createChannelConfigurationException(ex);
+        }
+    }
+
+
+
     /**
      * Returns a JGroups XML configuration InputStream based on the provided
      * properties string.
@@ -317,8 +338,10 @@ public class ConfiguratorFactory {
      * @throws IOException  if the provided properties string appears to be a
      *                      valid URL but is unreachable.
      */
-    static InputStream getConfigStream(String properties) throws IOException {
+    public static InputStream getConfigStream(String properties) throws IOException {
         InputStream configStream = null;
+        if (propertiesOverride != null)
+            return getConfigStream(propertiesOverride);
 
         // Check to see if the properties string is a URL.
         try {
@@ -356,6 +379,51 @@ public class ConfiguratorFactory {
         return configStream;
     }
 
+
+    public static InputStream getConfigStream(Object properties) throws IOException {
+        InputStream input=null;
+        if (propertiesOverride != null)
+            return getConfigStream(propertiesOverride);
+
+        // added by bela: for null String props we use the default properties
+        if(properties == null)
+            properties=JChannel.DEFAULT_PROTOCOL_STACK;
+
+        if(properties instanceof URL) {
+            try {
+                input=((URL)properties).openStream();
+            }
+            catch(Throwable t) {
+            }
+        }
+
+        // if it is a string, then it could be a plain string or a url
+        if(input == null && properties instanceof String) {
+            input=getConfigStream((String)properties);
+        }
+
+        // try a regular file
+        if(input == null && properties instanceof File) {
+            try {
+                input=new FileInputStream((File)properties);
+            }
+            catch(Throwable t) {
+            }
+        }
+
+        if(input != null)
+            return input;
+
+        if(properties instanceof Element) {
+            return getConfigStream((Element)properties);
+        }
+
+        return new ByteArrayInputStream(((String)properties).getBytes());
+    }
+
+
+
+
     /**
      * Returns an XmlConfigurator based on the provided properties string (if
      * possible).
@@ -381,7 +449,6 @@ public class ConfiguratorFactory {
 
         if (configStream != null) {
             checkJAXPAvailability();
-
             returnValue=XmlConfigurator.getInstance(configStream);
         }
 
@@ -409,12 +476,8 @@ public class ConfiguratorFactory {
      *                              are <code>null</code>.
      */
     static void checkForNullConfiguration(Object properties) {
-        if (properties == null) {
-            final String msg =
-                "the specifed protocol stack configuration was null.";
-
-            throw new NullPointerException(msg);
-        }
+        if(properties == null)
+            throw new NullPointerException("the specifed protocol stack configuration was null");
     }
 
     /**
@@ -431,7 +494,9 @@ public class ConfiguratorFactory {
             XmlConfigurator.class.getName();
         }
         catch (NoClassDefFoundError error) {
-            throw new NoClassDefFoundError(JAXP_MISSING_ERROR_MSG);
+            Error tmp=new NoClassDefFoundError(JAXP_MISSING_ERROR_MSG);
+            tmp.initCause(error);
+            throw tmp;
         }
     }
 }

@@ -1,13 +1,22 @@
-// $Id: JChannelFactory.java,v 1.7 2006/02/17 12:56:15 belaban Exp $
+// $Id: JChannelFactory.java,v 1.8 2006/03/10 15:09:46 belaban Exp $
 
 package org.jgroups;
 
+import org.jgroups.conf.ClassPathEntityResolver;
 import org.jgroups.conf.ConfiguratorFactory;
 import org.jgroups.conf.ProtocolStackConfigurator;
-import org.w3c.dom.Element;
+import org.jgroups.conf.XmlConfigurator;
+import org.jgroups.util.Util;
+import org.w3c.dom.*;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * JChannelFactory creates pure Java implementations of the <code>Channel</code>
@@ -17,13 +26,20 @@ import java.net.URL;
 public class JChannelFactory implements ChannelFactory {
     private ProtocolStackConfigurator configurator;
 
+    /** Map<String,String>. Hashmap which maps stack names to JGroups configurations. Keys are stack names, values are
+     * plain JGroups stack configs. This is (re-)populated whenever a setMultiplexerConfig() method is called */
+    private final Map stacks=new HashMap();
+
+    // private Log log=LogFactory.getLog(getClass());
+    private final static String PROTOCOL_STACKS="protocol_stacks";
+    private final static String STACK="stack";
+    private static final String NAME="name";
+    private static final String DESCR="description";
+    private static final String CONFIG="config";
+
     /**
      * Constructs a <code>JChannelFactory</code> instance that contains no
      * protocol stack configuration.
-     *
-     * @deprecated This constructor should only be used in conjunction with the
-     *             deprecated <code>getChannel(Object)</code> method of this
-     *             class.
      */
     public JChannelFactory() {
     }
@@ -87,20 +103,51 @@ public class JChannelFactory implements ChannelFactory {
         configurator=ConfiguratorFactory.getStackConfigurator(properties);
     }
 
-    public void config(Object properties) throws ChannelException {
+
+    public void setMultiplexerConfig(Object properties) throws Exception {
+        InputStream input=ConfiguratorFactory.getConfigStream(properties);
+        try {
+            parse(input);
+        }
+        finally {
+            Util.closeInputStream(input);
+        }
     }
 
-    public void config(File properties) throws ChannelException {
+    public void setMultiplexerConfig(File file) throws Exception {
+        InputStream input=ConfiguratorFactory.getConfigStream(file);
+        try {
+            parse(input);
+        }
+        finally {
+            Util.closeInputStream(input);
+        }
     }
 
-    public void config(Element properties) throws ChannelException {
+    public void setMultiplexerConfig(Element properties) throws Exception {
+        parse(properties);
     }
 
-    public void config(URL properties) throws ChannelException {
+    public void setMultiplexerConfig(URL url) throws Exception {
+        InputStream input=ConfiguratorFactory.getConfigStream(url);
+        try {
+            parse(input);
+        }
+        finally {
+            Util.closeInputStream(input);
+        }
     }
 
-    public void config(String properties) throws ChannelException {
+    public void setMultiplexerConfig(String properties) throws Exception {
+        InputStream input=ConfiguratorFactory.getConfigStream(properties);
+        try {
+            parse(input);
+        }
+        finally {
+            Util.closeInputStream(input);
+        }
     }
+
 
 
 
@@ -136,8 +183,97 @@ public class JChannelFactory implements ChannelFactory {
          return new JChannel(configurator);
      }
 
-    public Channel createChannel(String stack_name, String id) throws ChannelException {
+    public Channel createMultiplexerChannel(String stack_name, String id) throws ChannelException {
         return null;
     }
+
+
+    private void parse(InputStream input) throws Exception {
+        /**
+         * CAUTION: crappy code ahead ! I (bela) am not an XML expert, so the code below is pretty amateurish...
+         * But it seems to work, and it is executed only on startup, so no perf loss on the critical path.
+         * If somebody wants to improve this, please be my guest.
+         */
+        DocumentBuilderFactory factory=DocumentBuilderFactory.newInstance();
+        factory.setValidating(false); //for now
+        DocumentBuilder builder=factory.newDocumentBuilder();
+        builder.setEntityResolver(new ClassPathEntityResolver());
+        Document document=builder.parse(input);
+
+        // The root element of the document should be the "config" element,
+        // but the parser(Element) method checks this so a check is not
+        // needed here.
+        Element configElement = document.getDocumentElement();
+        parse(configElement);
+    }
+
+    private void parse(Element root) throws Exception {
+        /**
+         * CAUTION: crappy code ahead ! I (bela) am not an XML expert, so the code below is pretty amateurish...
+         * But it seems to work, and it is executed only on startup, so no perf loss on the critical path.
+         * If somebody wants to improve this, please be my guest.
+         */
+        String root_name=root.getNodeName();
+        if(!PROTOCOL_STACKS.equals(root_name.trim().toLowerCase())) {
+            String error="XML protocol stack configuration does not start with a '<config>' element; " +
+                    "maybe the XML configuration needs to be converted to the new format ?\n" +
+                    "use 'java org.jgroups.conf.XmlConfigurator <old XML file> -new_format' to do so";
+            throw new IOException("invalid XML configuration: " + error);
+        }
+
+        NodeList tmp_stacks=root.getChildNodes();
+        for(int i=0; i < tmp_stacks.getLength(); i++) {
+            Node node = tmp_stacks.item(i);
+            if(node.getNodeType() != Node.ELEMENT_NODE )
+                continue;
+
+            Element stack=(Element) node;
+            String tmp=stack.getNodeName();
+            if(!STACK.equals(tmp.trim().toLowerCase())) {
+                throw new IOException("invalid configuration: didn't find a \"" + STACK + "\" element under \"" + PROTOCOL_STACKS + "\"");
+            }
+
+            NamedNodeMap attrs = stack.getAttributes();
+            Node name=attrs.getNamedItem(NAME);
+            Node descr=attrs.getNamedItem(DESCR);
+            String st_name=name.getNodeValue();
+            String stack_descr=descr.getNodeValue();
+            System.out.print("Parsing \"" + st_name + "\" (" + stack_descr + ")");
+            NodeList configs=stack.getChildNodes();
+            for(int j=0; j < configs.getLength(); j++) {
+                Node config=configs.item(j);
+                if(config.getNodeType() != Node.ELEMENT_NODE )
+                    continue;
+                Element cfg = (Element) config;
+                tmp=cfg.getNodeName();
+                if(!CONFIG.equals(tmp))
+                    throw new IOException("invalid configuration: didn't find a \"" + CONFIG + "\" element under \"" + STACK + "\"");
+
+                XmlConfigurator conf=XmlConfigurator.getInstance(cfg);
+                String val=conf.getProtocolStackString();
+                this.stacks.put(st_name, val);
+            }
+            System.out.println(" - OK");
+        }
+//        System.out.println("stacks: ");
+//        for(Iterator it=stacks.entrySet().iterator(); it.hasNext();) {
+//            Map.Entry entry=(Map.Entry)it.next();
+//            System.out.println("key: " + entry.getKey());
+//            System.out.println("val: " + entry.getValue() + "\n");
+//        }
+    }
+
+    /**
+     * Returns the stack configuration as a string (to be fed into new JChannel()). Throws an exception
+     * if the stack_name is not found. One of the setMultiplexerConfig() methods had to be called beforehand
+     * @return The protocol stack config as a plain string
+     */
+    private String getConfig(String stack_name) throws Exception {
+        String config=(String)stacks.get(stack_name);
+        if(config == null)
+            throw new Exception("stack \"" + stack_name + "\" not found in " + stacks.keySet());
+        return config;
+    }
+
 
 }

@@ -1,4 +1,4 @@
-// $Id: ChannelFactory.java,v 1.5 2006/02/17 12:56:24 belaban Exp $
+// $Id: ChannelFactory.java,v 1.6 2006/03/10 15:09:46 belaban Exp $
 
 package org.jgroups;
 
@@ -18,26 +18,26 @@ public interface ChannelFactory {
      * @param properties
      * @throws ChannelException
      */
-    void config(Object properties) throws ChannelException;
+    void setMultiplexerConfig(Object properties) throws Exception;
 
     /**
      * Initializes the factory from  a file. Example: conf/stacks.xml
      * @param properties
      * @throws ChannelException
      */
-    void config(File properties) throws ChannelException;
+    void setMultiplexerConfig(File properties) throws Exception;
 
-    void config(Element properties) throws ChannelException;
+    void setMultiplexerConfig(Element properties) throws Exception;
 
-    void config(URL properties) throws ChannelException;
+    void setMultiplexerConfig(URL properties) throws Exception;
 
-    void config(String properties) throws ChannelException;
+    void setMultiplexerConfig(String properties) throws Exception;
 
     /**
      * Creates an implementation of Channel using a guven stack name and registering under a given identity.
      * The latter is used for multiplexing requests to and from a block on top of a channel.
      * @param stack_name The name of the stack to be used. All stacks are defined in the configuration
-     * with which the factory is configured (see {@link #config(Object)} for example.
+     * with which the factory is configured (see {@link #setMultiplexerConfig(Object)} for example.
      * @param id The identifier used for multiplexing and demultiplexing (dispatching requests to one of possibly
      * multiple receivers). Note that id needs to be a string since it will be shipped with each message. Try to pick
      * a short string, because this is shipped with every message (overhead). todo: possibly change to short ?
@@ -45,7 +45,7 @@ public interface ChannelFactory {
      * and be properly dispatched at the receiver. This will be a {@link org.jgroups.mux.MuxChannel}.
      * @throws ChannelException
      */
-    Channel createChannel(String stack_name, String id) throws ChannelException;
+    Channel createMultiplexerChannel(String stack_name, String id) throws ChannelException;
 
     Channel createChannel(Object props) throws ChannelException;
 }
