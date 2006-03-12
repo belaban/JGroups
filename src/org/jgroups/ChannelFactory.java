@@ -1,4 +1,4 @@
-// $Id: ChannelFactory.java,v 1.6 2006/03/10 15:09:46 belaban Exp $
+// $Id: ChannelFactory.java,v 1.7 2006/03/12 11:49:28 belaban Exp $
 
 package org.jgroups;
 
@@ -45,7 +45,7 @@ public interface ChannelFactory {
      * and be properly dispatched at the receiver. This will be a {@link org.jgroups.mux.MuxChannel}.
      * @throws ChannelException
      */
-    Channel createMultiplexerChannel(String stack_name, String id) throws ChannelException;
+    Channel createMultiplexerChannel(String stack_name, String id) throws Exception;
 
     Channel createChannel(Object props) throws ChannelException;
 }

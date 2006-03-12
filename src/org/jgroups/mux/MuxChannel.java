@@ -10,10 +10,10 @@ import java.util.Vector;
 
 /**
  * Multiplexer channel. This is returned as result of calling
- * {@link org.jgroups.ChannelFactory#createChannel(String, String)}. Maintains the multiplexer
+ * {@link org.jgroups.ChannelFactory#createMultiplexerChannel(String, String)}. Maintains the multiplexer
  * ID, which is used to add a header to each message, so that the message can be demultiplexed at the receiver
  * @author Bela Ban
- * @version $Id: MuxChannel.java,v 1.2 2006/03/01 16:17:53 belaban Exp $
+ * @version $Id: MuxChannel.java,v 1.3 2006/03/12 11:49:27 belaban Exp $
  */
 public class MuxChannel extends Channel {
 
@@ -48,6 +48,7 @@ public class MuxChannel extends Channel {
     }
 
     public void connect(String channel_name) throws ChannelException, ChannelClosedException {
+        ch.connect(stack_name);
     }
 
     public void disconnect() {
@@ -87,6 +88,10 @@ public class MuxChannel extends Channel {
 
     public Object receive(long timeout) throws ChannelNotConnectedException, ChannelClosedException, TimeoutException {
         return null;
+    }
+
+    public void up(Event evt) {
+        System.out.println("received " + evt);
     }
 
     public Object peek(long timeout) throws ChannelNotConnectedException, ChannelClosedException, TimeoutException {
