@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.50 2006/01/24 23:42:25 belaban Exp $
+// $Id: JChannel.java,v 1.51 2006/03/12 13:52:28 belaban Exp $
 
 package org.jgroups;
 
@@ -66,7 +66,7 @@ import java.util.Vector;
  *
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.50 $
+ * @version $Revision: 1.51 $
  */
 public class JChannel extends Channel {
 
@@ -375,7 +375,7 @@ public class JChannel extends Channel {
 
         /*if we already are connected, then ignore this*/
         if(connected) {
-            if(log.isErrorEnabled()) log.error("already connected to " + channel_name);
+            if(log.isTraceEnabled()) log.trace("already connected to " + channel_name);
             return;
         }
 
