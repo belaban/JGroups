@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.8 2006/03/10 15:09:46 belaban Exp $
+// $Id: JChannelFactory.java,v 1.9 2006/03/12 11:49:28 belaban Exp $
 
 package org.jgroups;
 
@@ -7,6 +7,8 @@ import org.jgroups.conf.ConfiguratorFactory;
 import org.jgroups.conf.ProtocolStackConfigurator;
 import org.jgroups.conf.XmlConfigurator;
 import org.jgroups.util.Util;
+import org.jgroups.mux.Multiplexer;
+import org.jgroups.mux.MuxChannel;
 import org.w3c.dom.*;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -29,6 +31,10 @@ public class JChannelFactory implements ChannelFactory {
     /** Map<String,String>. Hashmap which maps stack names to JGroups configurations. Keys are stack names, values are
      * plain JGroups stack configs. This is (re-)populated whenever a setMultiplexerConfig() method is called */
     private final Map stacks=new HashMap();
+
+    /** Map<String,Entry>, maintains mapping between stack names (e.g. "udp") and Entries, which contain a JChannel and
+     * a Multiplexer */
+    private final Map channels=new HashMap();
 
     // private Log log=LogFactory.getLog(getClass());
     private final static String PROTOCOL_STACKS="protocol_stacks";
@@ -183,9 +189,51 @@ public class JChannelFactory implements ChannelFactory {
          return new JChannel(configurator);
      }
 
-    public Channel createMultiplexerChannel(String stack_name, String id) throws ChannelException {
-        return null;
+    public Channel createMultiplexerChannel(String stack_name, String id) throws Exception {
+        if(stack_name == null || id == null)
+            throw new ChannelException("stack name and application ID have to be non null");
+        Entry entry;
+        synchronized(channels) {
+            entry=(Entry)channels.get(stack_name);
+            if(entry == null) {
+                entry=new Entry();
+                channels.put(stack_name, entry);
+            }
+        }
+        synchronized(entry) {
+            JChannel ch=entry.channel;
+            if(ch == null) {
+                String props=getConfig(stack_name);
+                ch=new JChannel(props);
+                entry.channel=ch;
+            }
+            Multiplexer mux=entry.multiplexer;
+            if(mux == null) {
+                mux=new Multiplexer(ch);
+                entry.multiplexer=mux;
+            }
+            return mux.createMuxChannel(this, id, stack_name);
+        }
     }
+
+
+    public void create() throws Exception{
+
+    }
+
+    public void start() throws Exception {
+
+    }
+
+    public void stop() {
+
+    }
+
+    public void destroy() {
+
+    }
+
+
 
 
     private void parse(InputStream input) throws Exception {
@@ -273,6 +321,12 @@ public class JChannelFactory implements ChannelFactory {
         if(config == null)
             throw new Exception("stack \"" + stack_name + "\" not found in " + stacks.keySet());
         return config;
+    }
+
+
+    private static class Entry {
+        JChannel channel;
+        Multiplexer multiplexer;
     }
 
 

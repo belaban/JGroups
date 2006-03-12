@@ -9,7 +9,7 @@ import java.io.*;
 
 /**
  * @author Bela Ban
- * @version $Id: MuxHeader.java,v 1.1 2006/02/17 09:51:08 belaban Exp $
+ * @version $Id: MuxHeader.java,v 1.2 2006/03/12 11:49:27 belaban Exp $
  */
 public class MuxHeader extends Header implements Streamable {
     String id=null;
@@ -43,5 +43,9 @@ public class MuxHeader extends Header implements Streamable {
 
     public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
         id=Util.readString(in);
+    }
+
+    public String toString() {
+        return id;
     }
 }

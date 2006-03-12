@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.17 2006/03/10 15:44:12 belaban Exp $
+// $Id: Draw.java,v 1.18 2006/03/12 11:49:27 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -30,7 +30,7 @@ import java.util.Random;
 public class Draw implements ActionListener, ChannelListener {
     private final ByteArrayOutputStream  out=new ByteArrayOutputStream();
     String                         groupname="DrawGroupDemo";
-    private JChannel               channel=null;
+    private Channel                channel=null;
     private int                    member_size=1;
     Debugger                       debugger=null;
     final boolean                        first=true;
@@ -55,7 +55,7 @@ public class Draw implements ActionListener, ChannelListener {
 
         channel=new JChannel(props);
         if(debug) {
-            debugger=new Debugger(channel, cummulative);
+            debugger=new Debugger((JChannel)channel, cummulative);
             debugger.start();
         }
         channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
@@ -63,7 +63,7 @@ public class Draw implements ActionListener, ChannelListener {
     }
 
     public Draw(Channel channel) throws Exception {
-        this.channel=(JChannel)channel;
+        this.channel=channel;
         channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
         channel.addChannelListener(this);
     }
@@ -183,7 +183,7 @@ public class Draw implements ActionListener, ChannelListener {
                                         "\nJmxTest needs to be run with an MBeanServer present, or inside JDK 5");
                 }
                 MBeanServer server=(MBeanServer)servers.get(0);
-                JmxConfigurator.registerChannel(channel, server, "JGroups:channel=" + channel.getChannelName() , true);
+                JmxConfigurator.registerChannel((JChannel)channel, server, "JGroups:channel=" + channel.getChannelName() , true);
             }
         }
         mainFrame=new JFrame();
