@@ -5,7 +5,7 @@ import org.jgroups.JChannelFactory;
 
 /**
  * @author Bela Ban
- * @version $Id: JChannelFactoryDemo.java,v 1.1 2006/03/12 11:49:27 belaban Exp $
+ * @version $Id: JChannelFactoryDemo.java,v 1.2 2006/03/13 09:24:30 belaban Exp $
  */
 public class JChannelFactoryDemo {
     JChannelFactory factory;
@@ -28,14 +28,47 @@ public class JChannelFactoryDemo {
         factory=new JChannelFactory();
         factory.setMultiplexerConfig(props);
 
-        Channel ch1, ch2;
-        ch1=factory.createMultiplexerChannel("fc-fast-minimalthreads", "fast");
-        ch2=factory.createMultiplexerChannel("tcp", "TCP-based");
+        final Channel ch1, ch2, ch3;
+        ch1=factory.createMultiplexerChannel("fc-fast-minimalthreads", "id-1");
+        ch1.connect("bela");
 
-        Draw draw1, draw2;
-        draw1=new Draw(ch1);
-        draw1.go();
- //       draw2=new Draw(ch2);
-   //     draw2.go();
+        ch2=factory.createMultiplexerChannel("fc-fast-minimalthreads", "id-2");
+        ch2.connect("ban");
+
+        // ch3=factory.createMultiplexerChannel("tcp", "TCP-based");
+        // ch3.connect("bla");
+
+        Thread t1=new Thread() {
+            public void run() {
+                try {
+                    Draw draw1=new Draw(ch1);
+                    draw1.go();
+                }
+                catch(Throwable t) {
+                    t.printStackTrace();
+                }
+            }
+        };
+
+
+
+        Thread t2=new Thread() {
+            public void run() {
+                try {
+                    Draw draw2=new Draw(ch2);
+                    draw2.go();
+                }
+                catch(Throwable t) {
+                    t.printStackTrace();
+                }
+            }
+        };
+
+        t1.start();
+        t2.start();
+
+        t1.join();
+        t2.join();
+
     }
 }

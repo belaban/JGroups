@@ -14,7 +14,7 @@ import java.util.Iterator;
  * message is removed and the MuxChannel corresponding to the header's application ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.1 2006/03/12 11:49:27 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.2 2006/03/13 09:24:30 belaban Exp $
  */
 public class Multiplexer implements UpHandler {
     /** Map<String,MuxChannel>. Maintains the mapping between application IDs and their associated MuxChannels */
@@ -51,20 +51,19 @@ public class Multiplexer implements UpHandler {
                 }
                 if(log.isTraceEnabled())
                     log.trace("dispatching message to " + hdr.id);
+                System.out.println("dispatching message to " + hdr.id);
                 mux_ch.up(evt);
                 break;
             case Event.VIEW_CHANGE:
                 // throw new UnsupportedOperationException("VIEW_CHANGE event");
-                for(Iterator it=apps.values().iterator(); it.hasNext();) {
-                    MuxChannel ch=(MuxChannel)it.next();
-                    ch.up(evt);
-                }
+                passToAllMuxChannels(evt);
                 break;
             case Event.SUSPECT:
-                throw new UnsupportedOperationException("SUSPECT event");
-                //break;
+                passToAllMuxChannels(evt);
+                break;
             default:
-                log.warn("don't know what to do with event " + evt);
+                passToAllMuxChannels(evt);
+                // log.warn("don't know what to do with event " + evt);
                 break;
         }
     }
@@ -77,6 +76,14 @@ public class Multiplexer implements UpHandler {
             MuxChannel ch=new MuxChannel(f, channel, id, stack_name);
             apps.put(id, ch);
             return ch;
+        }
+    }
+
+
+    private void passToAllMuxChannels(Event evt) {
+        for(Iterator it=apps.values().iterator(); it.hasNext();) {
+            MuxChannel ch=(MuxChannel)it.next();
+            ch.up(evt);
         }
     }
 }
