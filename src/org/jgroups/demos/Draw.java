@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.18 2006/03/12 11:49:27 belaban Exp $
+// $Id: Draw.java,v 1.19 2006/03/13 14:27:20 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -33,15 +33,15 @@ public class Draw implements ActionListener, ChannelListener {
     private Channel                channel=null;
     private int                    member_size=1;
     Debugger                       debugger=null;
-    final boolean                        first=true;
-    final boolean cummulative=true;
+    final boolean                  first=true;
+    final boolean                  cummulative=true;
     private JFrame                 mainFrame=null;
     private JPanel                 sub_panel=null;
     private DrawPanel              panel=null;
     private JButton                clear_button, leave_button;
-    private final Random                 random=new Random(System.currentTimeMillis());
+    private final Random           random=new Random(System.currentTimeMillis());
     private final Font             default_font=new Font("Helvetica",Font.PLAIN,12);
-    private final Color                  draw_color=selectColor();
+    private final Color            draw_color=selectColor();
     private final Color background_color=Color.white;
     boolean                        no_channel=false;
     boolean                        jmx;
@@ -413,7 +413,7 @@ public class Draw implements ActionListener, ChannelListener {
     private class DrawPanel extends JPanel implements MouseMotionListener {
         final Dimension        preferred_size=new Dimension(235, 170);
         Image            img=null; // for drawing pixels
-        Dimension        d, imgsize;
+        Dimension        d, imgsize=null;
         Graphics         gr=null;
 
 
