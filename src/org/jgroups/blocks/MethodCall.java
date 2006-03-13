@@ -3,11 +3,9 @@ package org.jgroups.blocks;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jgroups.util.Streamable;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
@@ -18,9 +16,9 @@ import java.util.*;
  * It includes the name of the method (case sensitive) and a list of arguments.
  * A method call is serializable and can be passed over the wire.
  * @author Bela Ban
- * @version $Revision: 1.20 $
+ * @version $Revision: 1.21 $
  */
-public class MethodCall implements Externalizable {
+public class MethodCall implements Externalizable, Streamable {
 
     private static final long serialVersionUID=7873471327078957662L;
 
@@ -511,6 +509,53 @@ public class MethodCall implements Externalizable {
     }
 
 
+    public static final byte STRING=0;
+    public static final byte BYTE_ARRAY=1;
+
+    public void writeTo(DataOutputStream out) throws IOException {
+        out.writeShort(method_id);
+        // out.writeUTF(method_name);
+        int len=args != null? args.length : 0;
+        out.writeByte(len);
+        for(int i=0; i < len; i++) {
+            Object arg=args[i];
+            if(arg instanceof String) {
+                out.writeByte(STRING);
+                out.writeUTF((String)arg);
+                continue;
+            }
+            if(arg instanceof byte[]) {
+                out.writeByte(BYTE_ARRAY);
+                out.writeInt(((byte[])arg).length);
+                out.write((byte[])arg);
+            }
+        }
+    }
+
+    public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        method_id=in.readShort();
+        //method_name=in.readUTF();
+        int len=in.readByte();
+
+        if(len > 0) {
+            args=new Object[len];
+            for(int i=0; i < len; i++) {
+                byte type=in.readByte();
+                switch(type) {
+                    case STRING:
+                        args[i]=in.readUTF();
+                        break;
+                    case BYTE_ARRAY:
+                        int l=in.readInt();
+                        byte[] arr=new byte[l];
+                        in.read(arr, 0, l);
+                        args[i]=arr;
+                        break;
+                }
+            }
+        }
+
+    }
 
 
 }
