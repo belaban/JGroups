@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.52 2006/03/13 09:24:30 belaban Exp $
+// $Id: JChannel.java,v 1.53 2006/03/14 09:08:26 belaban Exp $
 
 package org.jgroups;
 
@@ -66,7 +66,7 @@ import java.util.Vector;
  *
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.52 $
+ * @version $Revision: 1.53 $
  */
 public class JChannel extends Channel {
 
@@ -139,13 +139,13 @@ public class JChannel extends Channel {
      *setting this to true, automatically forces auto_reconnect to true*/
     private boolean auto_getstate=false;
     /*channel connected flag*/
-    private boolean connected=false;
+    protected boolean connected=false;
 
     /** block send()/down() if true (unlocked by UNBLOCK_SEND event) */
     private final CondVar block_sending=new CondVar("block_sending", Boolean.FALSE);
 
     /*channel closed flag*/
-    private boolean closed=false;      // close() has been called, channel is unusable
+    protected boolean closed=false;      // close() has been called, channel is unusable
 
     /** True if a state transfer protocol is available, false otherwise */
     private boolean state_transfer_supported=false; // set by CONFIG event from STATE_TRANSFER protocol
@@ -163,6 +163,10 @@ public class JChannel extends Channel {
     protected long sent_msgs=0, received_msgs=0, sent_bytes=0, received_bytes=0;
 
 
+    /** Used by subclass to create a JChannel without a protocol stack, don't use as application programmer */
+    protected JChannel(boolean no_op) {
+        ;
+    }
 
     /**
      * Constructs a <code>JChannel</code> instance with the protocol stack
@@ -1319,7 +1323,7 @@ public class JChannel extends Channel {
      * <li>Notifies any channel listener of the channel close operation
      * </ol>
      */
-    private void _close(boolean disconnect, boolean close_mq) {
+    protected void _close(boolean disconnect, boolean close_mq) {
         if(closed)
             return;
 
@@ -1345,13 +1349,19 @@ public class JChannel extends Channel {
                 prot_stack.destroy();
             }
             catch(Exception e) {
-                if(log.isErrorEnabled()) log.error("exception: " + e);
+                if(log.isErrorEnabled()) log.error("failed destroying the protocol stack", e);
             }
         }
         closed=true;
         connected=false;
         notifyChannelClosed(this);
         init(); // sets local_addr=null; changed March 18 2003 (bela) -- prevented successful rejoining
+    }
+
+
+    protected final void closeMessageQueue(boolean flush_entries) {
+        if(mq != null)
+            mq.close(flush_entries);
     }
 
 
