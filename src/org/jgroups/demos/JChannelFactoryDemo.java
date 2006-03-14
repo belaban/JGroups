@@ -5,7 +5,7 @@ import org.jgroups.JChannelFactory;
 
 /**
  * @author Bela Ban
- * @version $Id: JChannelFactoryDemo.java,v 1.2 2006/03/13 09:24:30 belaban Exp $
+ * @version $Id: JChannelFactoryDemo.java,v 1.3 2006/03/14 09:08:16 belaban Exp $
  */
 public class JChannelFactoryDemo {
     JChannelFactory factory;

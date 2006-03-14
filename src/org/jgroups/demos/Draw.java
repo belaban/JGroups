@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.19 2006/03/13 14:27:20 belaban Exp $
+// $Id: Draw.java,v 1.20 2006/03/14 09:08:16 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -371,7 +371,6 @@ public class Draw implements ActionListener, ChannelListener {
             }
             mainFrame.setVisible(false);
             mainFrame.dispose();
-            System.exit(0);
         }
         else
             System.out.println("Unknown action");

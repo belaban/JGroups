@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.9 2006/03/12 11:49:28 belaban Exp $
+// $Id: JChannelFactory.java,v 1.10 2006/03/14 09:08:26 belaban Exp $
 
 package org.jgroups;
 
@@ -215,6 +215,56 @@ public class JChannelFactory implements ChannelFactory {
             return mux.createMuxChannel(this, id, stack_name);
         }
     }
+
+
+
+    public void connect(MuxChannel ch) {
+
+    }
+
+
+    public void disconnect(MuxChannel ch) {
+        Entry entry;
+        ch.setClosed(false);
+        ch.setConnected(false);
+
+        synchronized(channels) {
+            entry=(Entry)channels.get(ch.getStackName());
+        }
+        if(entry != null) {
+            synchronized(entry) {
+                Multiplexer mux=entry.multiplexer;
+                if(mux != null) {
+                    mux.checkDisconnected(); // disconnects JChannel if all MuxChannels are in disconnected state
+                }
+            }
+        }
+    }
+
+
+    public void close(MuxChannel ch) {
+        Entry entry;
+        ch.setClosed(true);
+        ch.setConnected(false);
+        ch.closeMessageQueue(true);
+
+        synchronized(channels) {
+            entry=(Entry)channels.get(ch.getStackName());
+        }
+        if(entry != null) {
+            synchronized(entry) {
+                Multiplexer mux=entry.multiplexer;
+                if(mux != null) {
+                   mux.checkClosed(); // closes JChannel if all MuxChannels are in closed state
+                }
+            }
+        }
+    }
+
+    public void open(MuxChannel ch) {
+
+    }
+
 
 
     public void create() throws Exception{

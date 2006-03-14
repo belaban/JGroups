@@ -1,6 +1,5 @@
 package org.jgroups.mux;
 
-import org.apache.commons.logging.Log;
 import org.jgroups.*;
 
 import java.io.Serializable;
@@ -12,12 +11,15 @@ import java.util.Vector;
  * {@link org.jgroups.ChannelFactory#createMultiplexerChannel(String, String)}. Maintains the multiplexer
  * ID, which is used to add a header to each message, so that the message can be demultiplexed at the receiver
  * @author Bela Ban
- * @version $Id: MuxChannel.java,v 1.4 2006/03/13 09:24:30 belaban Exp $
+ * @version $Id: MuxChannel.java,v 1.5 2006/03/14 09:08:21 belaban Exp $
  */
 public class MuxChannel extends JChannel {
 
     /** the real channel to delegate to */
     final JChannel ch;
+
+    /** The application ID */
+    final String id;
 
     /** a reference back to the factory that created us */
     final JChannelFactory factory;
@@ -33,53 +35,92 @@ public class MuxChannel extends JChannel {
 
 
     public MuxChannel(JChannelFactory f, JChannel ch, String id, String stack_name) throws ChannelException {
+        super(false); // don't create protocol stack, queues and threads
         factory=f;
         this.ch=ch;
         this.stack_name=stack_name;
+        this.id=id;
         hdr=new MuxHeader(id);
+        closed=!ch.isOpen();
+        connected=ch.isConnected();
+    }
+
+    public String getStackName() {return stack_name;}
+
+    public String getId() {return id;}
+
+    public String getChannelName() {
+        return ch.getChannelName();
     }
 
     public Address getLocalAddress() {
         return ch != null? ch.getLocalAddress() : null;
     }
 
-    protected Log getLog() {
-        return log;
+    public View getView() {
+        return ch != null? ch.getView() : null;
+    }
+
+    public boolean isOpen() {
+        return !closed;
+    }
+
+    public boolean isConnected() {
+        return connected;
+    }
+
+    public Map dumpStats() {
+        return ch.dumpStats();
+    }
+
+
+    public void setClosed(boolean f) {
+        closed=f;
+    }
+
+    public void setConnected(boolean f) {
+        connected=f;
     }
 
     public synchronized void connect(String channel_name) throws ChannelException, ChannelClosedException {
         ch.connect(stack_name);
+        closed=!ch.isOpen();
+        connected=ch.isConnected();
+        notifyChannelConnected(this);
     }
 
     public synchronized void disconnect() {
+        factory.disconnect(this);
+        notifyChannelDisconnected(this);
+    }
+
+
+
+    public synchronized void open() throws ChannelException {
+        ch.open();
+        closed=!ch.isOpen();
+        connected=ch.isConnected();
     }
 
     public synchronized void close() {
+        factory.close(this);
+        // closeMessageQueue(true);
+    }
+
+    protected void _close(boolean disconnect, boolean close_mq) {
+        super._close(disconnect, close_mq);
+        closed=!ch.isOpen();
+        connected=ch.isConnected();
+        notifyChannelClosed(this);
     }
 
     public synchronized void shutdown() {
 
     }
 
-    public boolean isOpen() {
-        return ch.isOpen();
-    }
 
-    public boolean isConnected() {
-        return ch.isConnected();
-    }
 
-    protected void checkNotConnected() throws ChannelNotConnectedException {
-        ;
-    }
 
-    protected void checkClosed() throws ChannelClosedException {
-        ;
-    }
-
-    public Map dumpStats() {
-        return null;
-    }
 
     public void send(Message msg) throws ChannelNotConnectedException, ChannelClosedException {
         msg.putHeader(name, hdr);
@@ -99,32 +140,6 @@ public class MuxChannel extends JChannel {
         }
     }
 
-//    public Object receive(long timeout) throws ChannelNotConnectedException, ChannelClosedException, TimeoutException {
-//        return null;
-//    }
-
-    public Object peek(long timeout) throws ChannelNotConnectedException, ChannelClosedException, TimeoutException {
-        return null;
-    }
-
-//    public View getView() {
-//        return null;
-//    }
-
-//    public Address getLocalAddress() {
-//        return null;
-//    }
-
-    public String getChannelName() {
-        return null;
-    }
-
-    public void setOpt(int option, Object value) {
-    }
-
-    public Object getOpt(int option) {
-        return null;
-    }
 
     public void blockOk() {
     }
@@ -138,5 +153,26 @@ public class MuxChannel extends JChannel {
     }
 
     public void returnState(byte[] state) {
+    }
+
+    public void suspend() {
+        ch.suspend();
+    }
+
+    public void resume() {
+        ch.resume();
+    }
+
+    public boolean isSuspended() {
+        return ch.isSuspended();
+    }
+
+
+    protected void checkNotConnected() throws ChannelNotConnectedException {
+        ;
+    }
+
+    protected void checkClosed() throws ChannelClosedException {
+        ;
     }
 }
