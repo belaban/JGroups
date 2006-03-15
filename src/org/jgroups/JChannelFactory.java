@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.10 2006/03/14 09:08:26 belaban Exp $
+// $Id: JChannelFactory.java,v 1.11 2006/03/15 11:43:01 belaban Exp $
 
 package org.jgroups;
 
@@ -19,6 +19,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Iterator;
 
 /**
  * JChannelFactory creates pure Java implementations of the <code>Channel</code>
@@ -185,9 +186,9 @@ public class JChannelFactory implements ChannelFactory {
      *
      * @throws ChannelException if the creation of the channel failed.
      */
-     public Channel createChannel() throws ChannelException {
-         return new JChannel(configurator);
-     }
+    public Channel createChannel() throws ChannelException {
+        return new JChannel(configurator);
+    }
 
     public Channel createMultiplexerChannel(String stack_name, String id) throws Exception {
         if(stack_name == null || id == null)
@@ -218,8 +219,21 @@ public class JChannelFactory implements ChannelFactory {
 
 
 
-    public void connect(MuxChannel ch) {
-
+    public void connect(MuxChannel ch) throws ChannelException {
+        Entry entry;
+        synchronized(channels) {
+            entry=(Entry)channels.get(ch.getStackName());
+        }
+        if(entry != null) {
+            synchronized(entry) {
+                if(entry.channel == null)
+                    throw new ChannelException("channel has to be created before it can be connected");
+                if(!entry.channel.isConnected())
+                    entry.channel.connect(ch.getStackName());
+            }
+        }
+        ch.setClosed(false);
+        ch.setConnected(true);
     }
 
 
@@ -235,7 +249,7 @@ public class JChannelFactory implements ChannelFactory {
             synchronized(entry) {
                 Multiplexer mux=entry.multiplexer;
                 if(mux != null) {
-                    mux.checkDisconnected(); // disconnects JChannel if all MuxChannels are in disconnected state
+                    mux.disconnect(); // disconnects JChannel if all MuxChannels are in disconnected state
                 }
             }
         }
@@ -255,14 +269,52 @@ public class JChannelFactory implements ChannelFactory {
             synchronized(entry) {
                 Multiplexer mux=entry.multiplexer;
                 if(mux != null) {
-                   mux.checkClosed(); // closes JChannel if all MuxChannels are in closed state
+                   mux.close(); // closes JChannel if all MuxChannels are in closed state
                 }
+            }
+            synchronized(channels) {
+                channels.remove(entry);
             }
         }
     }
 
-    public void open(MuxChannel ch) {
+    public void shutdown(MuxChannel ch) {
+        Entry entry;
+        ch.setClosed(true);
+        ch.setConnected(false);
+        ch.closeMessageQueue(true);
 
+        synchronized(channels) {
+            entry=(Entry)channels.get(ch.getStackName());
+        }
+        if(entry != null) {
+            synchronized(entry) {
+                Multiplexer mux=entry.multiplexer;
+                if(mux != null) {
+                   mux.shutdown(); // closes JChannel if all MuxChannels are in closed state
+                }
+            }
+            synchronized(channels) {
+                channels.remove(entry);
+            }
+        }
+    }
+
+    public void open(MuxChannel ch) throws ChannelException {
+        Entry entry;
+        synchronized(channels) {
+            entry=(Entry)channels.get(ch.getStackName());
+        }
+        if(entry != null) {
+            synchronized(entry) {
+                if(entry.channel == null)
+                    throw new ChannelException("channel has to be created before it can be opened");
+                if(!entry.channel.isOpen())
+                    entry.channel.open();
+            }
+        }
+        ch.setClosed(false);
+        ch.setConnected(false); //  needs to be connected next
     }
 
 
@@ -280,7 +332,17 @@ public class JChannelFactory implements ChannelFactory {
     }
 
     public void destroy() {
-
+        synchronized(channels) {
+            Entry entry;
+            for(Iterator it=channels.values().iterator(); it.hasNext();) {
+                entry=(Entry)it.next();
+                if(entry.multiplexer != null)
+                    entry.multiplexer.closeAll();
+                if(entry.channel != null)
+                    entry.channel.close();
+            }
+            channels.clear();
+        }
     }
 
 

@@ -11,7 +11,7 @@ import java.util.Vector;
  * {@link org.jgroups.ChannelFactory#createMultiplexerChannel(String, String)}. Maintains the multiplexer
  * ID, which is used to add a header to each message, so that the message can be demultiplexed at the receiver
  * @author Bela Ban
- * @version $Id: MuxChannel.java,v 1.5 2006/03/14 09:08:21 belaban Exp $
+ * @version $Id: MuxChannel.java,v 1.6 2006/03/15 11:42:59 belaban Exp $
  */
 public class MuxChannel extends JChannel {
 
@@ -83,9 +83,7 @@ public class MuxChannel extends JChannel {
     }
 
     public synchronized void connect(String channel_name) throws ChannelException, ChannelClosedException {
-        ch.connect(stack_name);
-        closed=!ch.isOpen();
-        connected=ch.isConnected();
+        factory.connect(this);
         notifyChannelConnected(this);
     }
 
@@ -97,14 +95,12 @@ public class MuxChannel extends JChannel {
 
 
     public synchronized void open() throws ChannelException {
-        ch.open();
-        closed=!ch.isOpen();
-        connected=ch.isConnected();
+        factory.open(this);
     }
 
     public synchronized void close() {
         factory.close(this);
-        // closeMessageQueue(true);
+        notifyChannelClosed(this);
     }
 
     protected void _close(boolean disconnect, boolean close_mq) {
@@ -115,10 +111,8 @@ public class MuxChannel extends JChannel {
     }
 
     public synchronized void shutdown() {
-
+        factory.shutdown(this);
     }
-
-
 
 
 
