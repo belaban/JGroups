@@ -1,19 +1,15 @@
-// $Id: STATE_TRANSFER.java,v 1.29 2006/03/15 13:30:56 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.30 2006/03/15 15:20:42 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
 import org.jgroups.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.StateTransferInfo;
-import org.jgroups.util.List;
-import org.jgroups.util.Util;
 import org.jgroups.util.Streamable;
+import org.jgroups.util.Util;
 
 import java.io.*;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Properties;
-import java.util.Vector;
+import java.util.*;
 
 
 /**
@@ -28,7 +24,7 @@ public class STATE_TRANSFER extends Protocol {
     Address        local_addr=null;
     final Vector   members=new Vector();
     long           state_id=1;  // used to differentiate between state transfers (not currently used)
-    final List     state_requesters=new List(); // requesters of state (usually just 1, could be more)
+    final Set      state_requesters=new HashSet(); // requesters of state (usually just 1, could be more)
     Digest         digest=null;
     final HashMap  map=new HashMap(); // to store configuration information
     long           start, stop; // to measure state transfer time
@@ -205,8 +201,8 @@ public class STATE_TRANSFER extends Protocol {
                             num_bytes_sent+=state.length;
                         avg_state_size=num_bytes_sent / num_state_reqs;
                     }
-                    for(Enumeration e=state_requesters.elements(); e.hasMoreElements();) {
-                        requester=(Address)e.nextElement();
+                    for(Iterator it=state_requesters.iterator(); it.hasNext();) {
+                        requester=(Address)it.next();
                         state_rsp=new Message(requester, null, state); // put the state into state_rsp.buffer
                         hdr=new StateHeader(StateHeader.STATE_RSP, local_addr, 0, digest);
                         state_rsp.putHeader(name, hdr);
@@ -215,7 +211,7 @@ public class STATE_TRANSFER extends Protocol {
                         passDown(new Event(Event.MSG, state_rsp));
                     }
                     digest=null;
-                    state_requesters.removeAll();
+                    state_requesters.clear();
                 }
                 return;                 // don't pass down any further !
         }
@@ -269,7 +265,7 @@ public class STATE_TRANSFER extends Protocol {
 
         synchronized(state_requesters) {
             if(state_requesters.size() > 0) {  // state transfer is in progress, digest was requested
-                state_requesters.add(sender);
+                state_requesters.add(sender); // only adds if not yet present
             }
             else {
                 state_requesters.add(sender);
