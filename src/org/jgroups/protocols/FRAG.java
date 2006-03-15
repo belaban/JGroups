@@ -1,4 +1,4 @@
-// $Id: FRAG.java,v 1.29 2006/01/14 14:00:38 belaban Exp $
+// $Id: FRAG.java,v 1.30 2006/03/15 16:41:41 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -28,7 +28,7 @@ import java.util.*;
  * multicast messages.
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.29 2006/01/14 14:00:38 belaban Exp $
+ * @version $Id: FRAG.java,v 1.30 2006/03/15 16:41:41 belaban Exp $
  */
 public class FRAG extends Protocol {
     private int frag_size=8192;  // conservative value
@@ -268,7 +268,7 @@ public class FRAG extends Protocol {
                 passUp(new Event(Event.MSG, assembled_msg));
             }
             catch(Exception e) {
-                log.error("exception is " + e);
+                log.error("failed unfragmenting a message", e);
             }
             finally {
                 Util.closeInputStream(in);
@@ -321,7 +321,7 @@ public class FRAG extends Protocol {
                     frag_tables.put(sender, table);
                 }
                 else {
-                    throw new IllegalArgumentException("Sender <" + sender + "> already exists in the fragementation list.");
+                    throw new IllegalArgumentException("Sender <" + sender + "> already exists in the fragementation list");
                 }
             }
         }
