@@ -1,4 +1,4 @@
-// $Id: FRAG2.java,v 1.21 2006/01/14 14:00:38 belaban Exp $
+// $Id: FRAG2.java,v 1.22 2006/03/15 16:41:41 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -27,7 +27,7 @@ import java.util.*;
  * size addition for headers and src and dest address is minimal when the transport finally has to serialize the
  * message, so we add a constant (1000 bytes).
  * @author Bela Ban
- * @version $Id: FRAG2.java,v 1.21 2006/01/14 14:00:38 belaban Exp $
+ * @version $Id: FRAG2.java,v 1.22 2006/03/15 16:41:41 belaban Exp $
  */
 public class FRAG2 extends Protocol {
 
@@ -250,7 +250,7 @@ public class FRAG2 extends Protocol {
             }
         }
         catch(Exception e) {
-            if(log.isErrorEnabled()) log.error("exception is " + e);
+            if(log.isErrorEnabled()) log.error("fragmentation failure", e);
         }
     }
 
@@ -288,7 +288,7 @@ public class FRAG2 extends Protocol {
                 passUp(new Event(Event.MSG, assembled_msg));
             }
             catch(Exception e) {
-                if(log.isErrorEnabled()) log.error("exception is " + e);
+                if(log.isErrorEnabled()) log.error("unfragmentation failed", e);
             }
         }
     }
