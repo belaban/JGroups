@@ -4,14 +4,13 @@ import org.jgroups.*;
 
 import java.io.Serializable;
 import java.util.Map;
-import java.util.Vector;
 
 /**
  * Multiplexer channel. This is returned as result of calling
  * {@link org.jgroups.ChannelFactory#createMultiplexerChannel(String, String)}. Maintains the multiplexer
  * ID, which is used to add a header to each message, so that the message can be demultiplexed at the receiver
  * @author Bela Ban
- * @version $Id: MuxChannel.java,v 1.7 2006/03/15 13:30:52 belaban Exp $
+ * @version $Id: MuxChannel.java,v 1.8 2006/03/15 13:33:23 belaban Exp $
  */
 public class MuxChannel extends JChannel {
 
