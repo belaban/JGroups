@@ -1,4 +1,4 @@
-// $Id: Channel.java,v 1.14 2006/02/16 13:40:28 belaban Exp $
+// $Id: Channel.java,v 1.15 2006/03/15 13:31:18 belaban Exp $
 
 package org.jgroups;
 
@@ -393,9 +393,9 @@ public abstract class Channel implements Transport {
      @return boolean True if the state was retrieved successfully, otherwise false.
      @exception ChannelNotConnectedException The channel must be connected to
      receive messages.
-
      @exception ChannelClosedException The channel is closed and therefore cannot be used
      any longer. A new channel has to be created first.
+     @deprecated Not really needed - we always want to get the state from a single member
      */
     abstract public boolean getAllStates(Vector targets, long timeout)
             throws ChannelNotConnectedException, ChannelClosedException;
