@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.54 2006/03/15 11:43:01 belaban Exp $
+// $Id: JChannel.java,v 1.55 2006/03/15 13:31:18 belaban Exp $
 
 package org.jgroups;
 
@@ -66,7 +66,7 @@ import java.util.Vector;
  *
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.54 $
+ * @version $Revision: 1.55 $
  */
 public class JChannel extends Channel {
 
@@ -889,9 +889,8 @@ public class JChannel extends Channel {
      * @return true of the state was received, false if the operation timed out
      */
     public boolean getState(Address target, long timeout) throws ChannelNotConnectedException, ChannelClosedException {
-        StateTransferInfo info=new StateTransferInfo(StateTransferInfo.GET_FROM_SINGLE, target);
-        info.timeout=timeout;
-        boolean rc=_getState(new Event(Event.GET_STATE, info), timeout);
+        StateTransferInfo info=new StateTransferInfo(target, timeout);
+        boolean rc=_getState(new Event(Event.GET_STATE, info), info);
         if(rc == false)
             down(new Event(Event.RESUME_STABLE));
         return rc;
@@ -905,10 +904,11 @@ public class JChannel extends Channel {
      * @param targets - the target members to receive the state from ( an Address list )
      * @param timeout - the number of milliseconds to wait for the operation to complete successfully
      * @return true of the state was received, false if the operation timed out
+     * @deprecated Not really needed - we always want to get the state from a single member,
+     * use {@link #getState(org.jgroups.Address, long)} instead
      */
     public boolean getAllStates(Vector targets, long timeout) throws ChannelNotConnectedException, ChannelClosedException {
-        StateTransferInfo info=new StateTransferInfo(StateTransferInfo.GET_FROM_MANY, targets);
-        return _getState(new Event(Event.GET_STATE, info), timeout);
+        throw new UnsupportedOperationException("use getState() instead");
     }
 
 
@@ -1292,10 +1292,10 @@ public class JChannel extends Channel {
      * This method initializes the local state variable to null, and then sends the state
      * event down the stack. It waits for a GET_STATE_OK event to bounce back
      * @param evt the get state event, has to be of type Event.GET_STATE
-     * @param timeout the number of milliseconds to wait for the GET_STATE_OK response
+     * @param info Information about the state transfer, e.g. target member and timeout
      * @return true of the state was received, false if the operation timed out
      */
-    boolean _getState(Event evt, long timeout) throws ChannelNotConnectedException, ChannelClosedException {
+    private boolean _getState(Event evt, StateTransferInfo info) throws ChannelNotConnectedException, ChannelClosedException {
         checkClosed();
         checkNotConnected();
         if(!state_transfer_supported) {
@@ -1306,7 +1306,7 @@ public class JChannel extends Channel {
 
         state_promise.reset();
         down(evt);
-        byte[] state=(byte[])state_promise.getResult(timeout);
+        byte[] state=(byte[])state_promise.getResult(info.timeout);
         return state != null;
     }
 

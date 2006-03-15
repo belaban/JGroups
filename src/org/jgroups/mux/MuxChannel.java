@@ -11,7 +11,7 @@ import java.util.Vector;
  * {@link org.jgroups.ChannelFactory#createMultiplexerChannel(String, String)}. Maintains the multiplexer
  * ID, which is used to add a header to each message, so that the message can be demultiplexed at the receiver
  * @author Bela Ban
- * @version $Id: MuxChannel.java,v 1.6 2006/03/15 11:42:59 belaban Exp $
+ * @version $Id: MuxChannel.java,v 1.7 2006/03/15 13:30:52 belaban Exp $
  */
 public class MuxChannel extends JChannel {
 
@@ -34,7 +34,7 @@ public class MuxChannel extends JChannel {
 
 
 
-    public MuxChannel(JChannelFactory f, JChannel ch, String id, String stack_name) throws ChannelException {
+    public MuxChannel(JChannelFactory f, JChannel ch, String id, String stack_name) {
         super(false); // don't create protocol stack, queues and threads
         factory=f;
         this.ch=ch;
@@ -142,9 +142,6 @@ public class MuxChannel extends JChannel {
         return false;
     }
 
-    public boolean getAllStates(Vector targets, long timeout) throws ChannelNotConnectedException, ChannelClosedException {
-        return false;
-    }
 
     public void returnState(byte[] state) {
     }
