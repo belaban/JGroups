@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.16 2005/11/12 06:38:21 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.17 2006/03/15 13:00:00 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -214,10 +214,7 @@ public class STATE_TRANSFER extends Protocol implements RequestHandler {
 
                 sendMakeCopyMessage();  // multicast MAKE_COPY to all members (including me)
 
-                if(info.type == StateTransferInfo.GET_FROM_MANY)
-                    state=getStateFromMany(info.targets);
-                else
-                    state=getStateFromSingle(info.target);
+                state=getStateFromSingle(info.target);
 
                 /* Pass up the state to the application layer (insert into JChannel's event queue */
                 event_list=new Vector(1);
