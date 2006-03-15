@@ -14,14 +14,14 @@ import java.util.Properties;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: JGroupsTransport.java,v 1.9 2005/11/08 11:05:31 belaban Exp $
+ * @version $Id: JGroupsTransport.java,v 1.10 2006/03/15 11:42:31 belaban Exp $
  */
 public class JGroupsTransport extends org.jgroups.ReceiverAdapter implements Transport  {
     Properties config=null;
     JChannel   channel=null;
     Thread     t=null;
     String     props=null;
-    String     group_name="PerfGroup";
+    String     group_name="perf";
     Receiver   receiver=null;
     boolean    jmx=false;
 
