@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.53 2006/03/14 09:08:26 belaban Exp $
+// $Id: JChannel.java,v 1.54 2006/03/15 11:43:01 belaban Exp $
 
 package org.jgroups;
 
@@ -66,7 +66,7 @@ import java.util.Vector;
  *
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.53 $
+ * @version $Revision: 1.54 $
  */
 public class JChannel extends Channel {
 
@@ -1359,7 +1359,7 @@ public class JChannel extends Channel {
     }
 
 
-    protected final void closeMessageQueue(boolean flush_entries) {
+    public final void closeMessageQueue(boolean flush_entries) {
         if(mq != null)
             mq.close(flush_entries);
     }

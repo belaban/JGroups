@@ -14,7 +14,7 @@ import java.util.Iterator;
  * message is removed and the MuxChannel corresponding to the header's application ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.3 2006/03/14 09:08:21 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.4 2006/03/15 11:42:59 belaban Exp $
  */
 public class Multiplexer implements UpHandler {
     /** Map<String,MuxChannel>. Maintains the mapping between application IDs and their associated MuxChannels */
@@ -91,8 +91,10 @@ public class Multiplexer implements UpHandler {
         }
     }
 
+    
+
     /** Closes the underlying JChannel is all MuxChannels have been disconnected */
-    public void checkDisconnected() {
+    public void disconnect() {
         MuxChannel mux_ch;
         boolean all_disconnected=true;
         synchronized(apps) {
@@ -112,7 +114,7 @@ public class Multiplexer implements UpHandler {
         }
     }
 
-    public void checkClosed() {
+    public void close() {
         MuxChannel mux_ch;
         boolean all_closed=true;
         synchronized(apps) {
@@ -128,7 +130,43 @@ public class Multiplexer implements UpHandler {
                     log.trace("closing underlying JChannel as all MuxChannels are closed");
                 }
                 channel.close();
+                apps.clear();
             }
         }
     }
+
+    public void closeAll() {
+        synchronized(apps) {
+            MuxChannel mux_ch;
+            for(Iterator it=apps.values().iterator(); it.hasNext();) {
+                mux_ch=(MuxChannel)it.next();
+                mux_ch.setConnected(false);
+                mux_ch.setClosed(true);
+                mux_ch.closeMessageQueue(true);
+            }
+        }
+    }
+
+    public void shutdown() {
+        MuxChannel mux_ch;
+        boolean all_closed=true;
+        synchronized(apps) {
+            for(Iterator it=apps.values().iterator(); it.hasNext();) {
+                mux_ch=(MuxChannel)it.next();
+                if(mux_ch.isOpen()) {
+                    all_closed=false;
+                    break;
+                }
+            }
+            if(all_closed) {
+                if(log.isTraceEnabled()) {
+                    log.trace("shutting down underlying JChannel as all MuxChannels are closed");
+                }
+                channel.shutdown();
+                apps.clear();
+            }
+        }
+    }
+
+
 }
