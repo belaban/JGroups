@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.30 2006/03/15 15:20:42 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.31 2006/03/16 16:51:49 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -164,11 +164,11 @@ public class STATE_TRANSFER extends Protocol {
                 }
                 if(target == null) {
                     if(log.isDebugEnabled()) log.debug("GET_STATE: first member (no state)");
-                    passUp(new Event(Event.GET_STATE_OK, null));
+                    passUp(new Event(Event.GET_STATE_OK, new StateTransferInfo()));
                 }
                 else {
                     state_req=new Message(target, null, null);
-                    state_req.putHeader(name, new StateHeader(StateHeader.STATE_REQ, local_addr, state_id++, null));
+                    state_req.putHeader(name, new StateHeader(StateHeader.STATE_REQ, local_addr, state_id++, null, info.state_id));
                     if(log.isDebugEnabled()) log.debug("GET_STATE: asking " + target + " for state");
 
                     // suspend sending and handling of mesage garbage collection gossip messages,
@@ -300,7 +300,8 @@ public class STATE_TRANSFER extends Protocol {
         }
         else
             log.debug("received state, size=" + state.length + " bytes. Time=" + (stop-start) + " milliseconds");
-        passUp(new Event(Event.GET_STATE_OK, state));
+        StateTransferInfo info=new StateTransferInfo(null, null, 0L, state);
+        passUp(new Event(Event.GET_STATE_OK, info));
     }
 
 
@@ -318,14 +319,15 @@ public class STATE_TRANSFER extends Protocol {
         public static final byte STATE_RSP=2;
 
 
-        long id=0;          // state transfer ID (to separate multiple state transfers at the same time)
+        long id=0;               // state transfer ID (to separate multiple state transfers at the same time)
         byte type=0;
-        Address sender;   // sender of state STATE_REQ or STATE_RSP
+        Address sender;          // sender of state STATE_REQ or STATE_RSP
         Digest my_digest=null;   // digest of sender (if type is STATE_RSP)
+        String state_id=null;    // for partial state transfer
 
 
-        public StateHeader() {
-        } // for externalization
+        public StateHeader() {  // for externalization
+        }
 
 
         public StateHeader(byte type, Address sender, long id, Digest digest) {
@@ -333,6 +335,14 @@ public class STATE_TRANSFER extends Protocol {
             this.sender=sender;
             this.id=id;
             this.my_digest=digest;
+        }
+
+        public StateHeader(byte type, Address sender, long id, Digest digest, String state_id) {
+            this.type=type;
+            this.sender=sender;
+            this.id=id;
+            this.my_digest=digest;
+            this.state_id=state_id;
         }
 
         public int getType() {
@@ -343,6 +353,9 @@ public class STATE_TRANSFER extends Protocol {
             return my_digest;
         }
 
+        public String getStateId() {
+            return state_id;
+        }
 
         public boolean equals(Object o) {
             StateHeader other;
@@ -370,6 +383,8 @@ public class STATE_TRANSFER extends Protocol {
             sb.append("[StateHeader: type=").append(type2Str(type));
             if(sender != null) sb.append(", sender=").append(sender).append(" id=#").append(id);
             if(my_digest != null) sb.append(", digest=").append(my_digest);
+            if(state_id != null)
+                sb.append(", state_id=").append(state_id);
             return sb.toString();
         }
 
@@ -391,6 +406,7 @@ public class STATE_TRANSFER extends Protocol {
             out.writeLong(id);
             out.writeByte(type);
             out.writeObject(my_digest);
+            out.writeUTF(state_id);
         }
 
 
@@ -399,6 +415,7 @@ public class STATE_TRANSFER extends Protocol {
             id=in.readLong();
             type=in.readByte();
             my_digest=(Digest)in.readObject();
+            state_id=in.readUTF();
         }
 
 
@@ -408,6 +425,7 @@ public class STATE_TRANSFER extends Protocol {
             out.writeLong(id);
             Util.writeAddress(sender, out);
             Util.writeStreamable(my_digest, out);
+            Util.writeString(state_id, out);
         }
 
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
@@ -415,6 +433,7 @@ public class STATE_TRANSFER extends Protocol {
             id=in.readLong();
             sender=Util.readAddress(in);
             my_digest=(Digest)Util.readStreamable(Digest.class, in);
+            state_id=Util.readString(in);
         }
 
         public long size() {
@@ -426,6 +445,9 @@ public class STATE_TRANSFER extends Protocol {
             if(my_digest != null)
                 retval+=my_digest.serializedSize();
 
+            retval+=Global.BYTE_SIZE; // presence byte for state_id
+            if(state_id != null)
+                retval+=state_id.length() +2;
             return retval;
         }
 

@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.56 2006/03/16 09:56:28 belaban Exp $
+// $Id: JChannel.java,v 1.57 2006/03/16 16:51:49 belaban Exp $
 
 package org.jgroups;
 
@@ -66,7 +66,7 @@ import java.util.Vector;
  *
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.56 $
+ * @version $Revision: 1.57 $
  */
 public class JChannel extends Channel {
 
@@ -896,6 +896,15 @@ public class JChannel extends Channel {
         return rc;
     }
 
+    /**
+     * Retrieves a substate (or partial state) from the target.
+     * @param target State provider. If null, coordinator is used
+     * @param state_id The ID of the substate. If null, the entire state will be transferred
+     * @param timeout
+     * @return
+     * @throws ChannelNotConnectedException
+     * @throws ChannelClosedException
+     */
     public boolean getState(Address target, String state_id, long timeout) throws ChannelNotConnectedException, ChannelClosedException {
         StateTransferInfo info=new StateTransferInfo(target, state_id, timeout);
         boolean rc=_getState(new Event(Event.GET_STATE, info), info);
@@ -1021,8 +1030,10 @@ public class JChannel extends Channel {
             break;
 
         case Event.GET_STATE_OK:
-            Object state=evt.getArg();
-            state_promise.setResult(state);
+            StateTransferInfo info=(StateTransferInfo)evt.getArg();
+            Object state=info.state;
+
+            state_promise.setResult(state != null? Boolean.TRUE : Boolean.FALSE);
             if(up_handler != null) {
                 up_handler.up(evt);
                 return;
@@ -1314,8 +1325,8 @@ public class JChannel extends Channel {
 
         state_promise.reset();
         down(evt);
-        byte[] state=(byte[])state_promise.getResult(info.timeout);
-        return state != null;
+        Boolean state_transfer_successfull=(Boolean)state_promise.getResult(info.timeout);
+        return state_transfer_successfull.booleanValue();
     }
 
 
