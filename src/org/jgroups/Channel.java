@@ -1,4 +1,4 @@
-// $Id: Channel.java,v 1.15 2006/03/15 13:31:18 belaban Exp $
+// $Id: Channel.java,v 1.16 2006/03/16 09:56:28 belaban Exp $
 
 package org.jgroups;
 
@@ -381,6 +381,18 @@ public abstract class Channel implements Transport {
     abstract public boolean getState(Address target, long timeout)
             throws ChannelNotConnectedException, ChannelClosedException;
 
+
+    /**
+     * Fetches a partial state identified by state_id.
+     * @param target
+     * @param state_id
+     * @param timeout
+     * @return
+     * @throws ChannelNotConnectedException
+     * @throws ChannelClosedException
+     */
+    abstract public boolean getState(Address target, String state_id, long timeout)
+            throws ChannelNotConnectedException, ChannelClosedException;
 
     /**
      Retrieve all states of the group members. Will contact all group members to get
