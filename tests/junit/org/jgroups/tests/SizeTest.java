@@ -1,4 +1,4 @@
-// $Id: SizeTest.java,v 1.10 2006/01/24 16:06:51 belaban Exp $$
+// $Id: SizeTest.java,v 1.11 2006/03/16 14:59:36 belaban Exp $$
 
 package org.jgroups.tests;
 
@@ -260,10 +260,18 @@ public class SizeTest extends TestCase {
         STATE_TRANSFER.StateHeader hdr;
         hdr=new STATE_TRANSFER.StateHeader(STATE_TRANSFER.StateHeader.STATE_REQ, addr, 322649, null);
         _testSize(hdr);
+
+        hdr=new STATE_TRANSFER.StateHeader(STATE_TRANSFER.StateHeader.STATE_REQ, addr, 322649, null, "my_state");
+        _testSize(hdr);
+
+
         Digest digest=new Digest(2);
         digest.add(addr, 100, 200, 205);
         digest.add(new IpAddress(2314), 102, 104, 105);
         hdr=new STATE_TRANSFER.StateHeader(STATE_TRANSFER.StateHeader.STATE_RSP, addr, 322649, digest);
+        _testSize(hdr);
+
+        hdr=new STATE_TRANSFER.StateHeader(STATE_TRANSFER.StateHeader.STATE_RSP, addr, 322649, digest, "my_state");
         _testSize(hdr);
     }
 
