@@ -1,4 +1,4 @@
-// $Id: GetStateEvent.java,v 1.4 2005/07/17 11:38:05 chrislott Exp $
+// $Id: GetStateEvent.java,v 1.5 2006/03/16 15:55:06 belaban Exp $
 
 package org.jgroups;
 
@@ -8,10 +8,13 @@ package org.jgroups;
  */
 public class GetStateEvent {
     Object requestor=null;
+    String state_id=null;
 
     public GetStateEvent(Object requestor) {this.requestor=requestor;}
 
     public Object getRequestor() {return requestor;}
 
-    public String toString() {return "GetStateEvent[requestor=" + requestor + ']';}
+    public String getStateId() {return state_id;}
+
+    public String toString() {return "GetStateEvent[requestor=" + requestor + ", state_id=" + state_id + ']';}
 }
