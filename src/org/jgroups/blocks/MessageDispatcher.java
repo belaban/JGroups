@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.45 2006/02/07 04:33:53 belaban Exp $
+// $Id: MessageDispatcher.java,v 1.46 2006/03/16 16:51:49 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -6,6 +6,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
 import org.jgroups.stack.Protocol;
+import org.jgroups.stack.StateTransferInfo;
 import org.jgroups.util.*;
 
 import java.io.Serializable;
@@ -647,7 +648,8 @@ public class MessageDispatcher implements RequestHandler {
                 case Event.GET_STATE_OK:
                     if(msg_listener != null) {
                         try {
-                            msg_listener.setState((byte[]) evt.getArg());
+                            StateTransferInfo info=(StateTransferInfo)evt.getArg();
+                            msg_listener.setState(info.state);
                         }
                         catch(ClassCastException cast_ex) {
                             if(this.log.isErrorEnabled())

@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.17 2006/03/15 13:00:00 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.18 2006/03/16 16:51:49 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -207,7 +207,7 @@ public class STATE_TRANSFER extends Protocol implements RequestHandler {
 
                 if(coord == null || coord.equals(local_addr)) {
                     event_list=new Vector(1);
-                    event_list.addElement(new Event(Event.GET_STATE_OK, null));
+                    event_list.addElement(new Event(Event.GET_STATE_OK, new StateTransferInfo()));
                     passUp(new Event(Event.STOP_QUEUEING, event_list));
                     return;             // don't pass down any further !
                 }
@@ -218,7 +218,7 @@ public class STATE_TRANSFER extends Protocol implements RequestHandler {
 
                 /* Pass up the state to the application layer (insert into JChannel's event queue */
                 event_list=new Vector(1);
-                event_list.addElement(new Event(Event.GET_STATE_OK, state));
+                event_list.addElement(new Event(Event.GET_STATE_OK, new StateTransferInfo(null, null, 0L, (byte[])state)));
 
                 /* Now stop queueing */
                 passUp(new Event(Event.STOP_QUEUEING, event_list));
