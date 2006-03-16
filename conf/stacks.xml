@@ -2,7 +2,7 @@
 <!--
   Sample file that defines a number of stacks, used by multiplexer JGroups channel
   Author: Bela Ban
-  Version: $Id: stacks.xml,v 1.1 2006/02/16 09:08:53 belaban Exp $
+  Version: $Id: stacks.xml,v 1.2 2006/03/16 15:29:02 belaban Exp $
 -->
 <protocol_stacks>
     <stack name="fc-fast-minimalthreads" description="Flow control, no up or down threads">
@@ -55,7 +55,7 @@
         <config>
             <UDP bind_addr="192.168.5.1"
                  mcast_port="45566"
-                 mcast_addr="228.10.10.10"
+                 mcast_addr="228.12.12.12"
                  tos="16"
                  ucast_recv_buf_size="20000000"
                  ucast_send_buf_size="640000"
@@ -110,6 +110,17 @@
             <pbcast.STABLE stability_delay="1000" desired_avg_gossip="20000" down_thread="false" max_bytes="0" up_thread="false"/>
             <VIEW_SYNC avg_send_interval="60000" down_thread="false" up_thread="false" />
             <pbcast.GMS print_local_addr="true" join_timeout="5000" join_retry_timeout="2000" shun="true"/>
+        </config>
+    </stack>
+
+    <stack name="discovery" description="Simple UDP-only stack for discovery">
+        <config>
+            <UDP mcast_port="7609"
+                 use_incoming_packet_handler="false"
+                 mcast_addr="228.15.15.15"
+                 use_outgoing_packet_handler="false"
+                 ip_ttl="32"/>
+            <!-- UNICAST timeout="1200"/-->
         </config>
     </stack>
 
