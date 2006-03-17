@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.13 2006/01/06 12:50:13 belaban Exp $
+// $Id: Event.java,v 1.14 2006/03/17 09:05:11 belaban Exp $
 
 package org.jgroups;
 
@@ -25,11 +25,11 @@ public class Event {
     public static final int MERGE                     = 14;  // arg = Vector of Objects
     public static final int TMP_VIEW                  = 15;  // arg = View
     public static final int BECOME_SERVER             = 16;  // sent when client has joined group
-    public static final int GET_APPLSTATE             = 17;  // get state from appl (arg=requestor)
-    public static final int GET_APPLSTATE_OK          = 18;  // arg = byte[] (state)
+    public static final int GET_APPLSTATE             = 17;  // get state from appl (arg=StateTransferInfo)
+    public static final int GET_APPLSTATE_OK          = 18;  // arg = StateTranferInfo (includes state)
     public static final int GET_STATE                 = 19;  // arg = StateTransferInfo
     public static final int GET_STATE_OK              = 20;  // arg = Object or Vector (state(s))
-    public static final int STATE_RECEIVED            = 21;  // arg = state
+    public static final int STATE_RECEIVED            = 21;  // arg = StateTransferInfo (with state and state_id)
     public static final int START_QUEUEING            = 22;
     public static final int STOP_QUEUEING             = 23;  // arg = Vector (event-list)
     public static final int SWITCH_NAK                = 24;
