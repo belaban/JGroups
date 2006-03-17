@@ -3,7 +3,7 @@ FLUSH protocol for default stack
 ================================
 
 Author: Bela Ban
-Version: $Id: FLUSH.txt,v 1.2 2006/01/27 13:00:00 belaban Exp $
+Version: $Id: FLUSH.txt,v 1.3 2006/03/17 11:00:54 belaban Exp $
 
 Overview
 --------
@@ -35,6 +35,7 @@ FLUSH protocol:
 - On SUSPEND event: multicast START_FLUSH to everyone (including self)
 
 - On reception of START_FLUSH:
+  - invoke the blockOK() callback
   - set suspended flag to true, all subsequent down() methods will block on mutex
   - *multicast* a FLUSH_OK message
 
