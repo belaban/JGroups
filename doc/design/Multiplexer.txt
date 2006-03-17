@@ -4,7 +4,7 @@ Multiplexing functionality
 ===========================
 
 Author: Bela Ban
-Version: $Id: Multiplexer.txt,v 1.12 2006/03/10 21:50:24 belaban Exp $
+Version: $Id: Multiplexer.txt,v 1.13 2006/03/17 07:29:07 belaban Exp $
 JIRA: http://jira.jboss.com/jira/browse/JGRP-119, http://jira.jboss.com/jira/browse/JGRP-112
 
 Overview
@@ -167,6 +167,26 @@ State transfer for *all* applications
   - on the receiving Multiplexer, we demultiplex the state into individual appl states and call setState() on the
     application corresponding to the substate ID
   - this has the advantage that the digest would have to be transferred and set only *once*, not once per application
+
+
+Preventing multiple FLUSH phases
+--------------------------------
+- When we have multiple applications on top of the same channel, each application will call MuxChannel.getState() after
+  connecting. Let's say we have 3 applications, which all require state transfer, then we will have 3 FLUSH phases when
+  starting. This will slow down the startup of JBoss
+- The goal is to reduce this to just a single FLUSH phase (the use case is JBoss)
+- Let's assume there are 4 applications that reside on the same JChannel. 3 of them require state
+- All 4 applications are MBeans which have a dependency to the JChannelFactory MBean
+- Each application which requires state has to do the following:
+  - On create(): register with the JChannelFactory for state transfer. This basically tells the factory that application
+    X is interested in state transfer
+  - An application must *not* call MuxChannel.getState() after it connected, but should rely on the JChannelFactory
+    to push the state to it when all applications that require state have connected. As an alternative, we could
+    simply ignore MuxChannel.getState() if the state push model is chosen.
+  - When all applications that registered for state transfer have connected (we can find out because all
+    MuxChannel.connect() calls go through the JChannelFactory), the factory tells the Multiplexer to fetch *all*
+    substates for that JChannel. This is essentially the same as fetching the entire state, but the returned state
+    contains a list of <application-id/state> pairs, so the Multiplexer will call setState() on each application
 
 
 
