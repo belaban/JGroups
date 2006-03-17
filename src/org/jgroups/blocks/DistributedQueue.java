@@ -1,4 +1,4 @@
-// $Id: DistributedQueue.java,v 1.16 2005/07/17 11:36:40 chrislott Exp $
+// $Id: DistributedQueue.java,v 1.17 2006/03/17 10:48:13 belaban Exp $
 package org.jgroups.blocks;
 
 import org.apache.commons.logging.Log;
@@ -43,19 +43,19 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
     private long internal_timeout = 10000; // 10 seconds to wait for a response
 
     /*lock object for synchronization*/
-    protected Object mutex = new Object();
-    protected transient boolean stopped = false; // whether to we are stopped !
+    protected final Object mutex = new Object();
+    protected boolean stopped = false; // whether to we are stopped !
     protected LinkedList internalQueue;
-    protected transient Channel channel;
-    protected transient RpcDispatcher disp = null;
-    protected transient String groupname = null;
-    protected transient Vector notifs = new Vector(); // to be notified when mbrship changes
-    protected transient Vector members = new Vector(); // keeps track of all DHTs
-    private transient Class[] add_signature = null;
-    private transient Class[] addAtHead_signature = null;
-    private transient Class[] addAll_signature = null;
-    private transient Class[] reset_signature = null;
-    private transient Class[] remove_signature = null;
+    protected Channel channel;
+    protected RpcDispatcher disp = null;
+    protected String groupname = null;
+    protected Vector notifs = new Vector(); // to be notified when mbrship changes
+    protected Vector members = new Vector(); // keeps track of all DHTs
+    private Class[] add_signature = null;
+    private Class[] addAtHead_signature = null;
+    private Class[] addAll_signature = null;
+    private Class[] reset_signature = null;
+    private Class[] remove_signature = null;
     
     /**
      * Creates a DistributedQueue
@@ -115,7 +115,7 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
         disp.setDeadlockDetection(false); // To ensure strict FIFO MethodCall
     }
 
-    protected void init()
+    protected final void init()
     {
         initSignatures();
         internalQueue = new LinkedList();
@@ -124,7 +124,7 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
         disp.setDeadlockDetection(false); // To ensure strict FIFO MethodCall
     }
 
-    public void start(long state_timeout) throws ChannelClosedException, ChannelNotConnectedException
+    public final void start(long state_timeout) throws ChannelClosedException, ChannelNotConnectedException
     {
         boolean rc;
         logger.debug("DistributedQueue.initState(" + groupname + "): starting state retrieval");
@@ -215,7 +215,6 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
             logger.error("Unable to add value " + value, e);
         }
 
-        return;
     }
 
     /**
@@ -233,7 +232,6 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
             logger.error("Unable to addAtHead value " + value, e);
         }
 
-        return;
     }
 
     /**
@@ -253,7 +251,6 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
             logger.error("Unable to addAll value: " + values, e);
         }
 
-        return;
     }
 
     public Vector getContents()
@@ -664,7 +661,7 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
         }
     }
 
-    void initSignatures()
+    final void initSignatures()
     {
         try
         {
