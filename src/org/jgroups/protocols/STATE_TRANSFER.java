@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.18 2006/03/16 16:51:49 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.19 2006/03/17 08:33:38 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -218,7 +218,7 @@ public class STATE_TRANSFER extends Protocol implements RequestHandler {
 
                 /* Pass up the state to the application layer (insert into JChannel's event queue */
                 event_list=new Vector(1);
-                event_list.addElement(new Event(Event.GET_STATE_OK, new StateTransferInfo(null, null, 0L, (byte[])state)));
+                event_list.addElement(new Event(Event.GET_STATE_OK, new StateTransferInfo(null, info.state_id, 0L, (byte[])state)));
 
                 /* Now stop queueing */
                 passUp(new Event(Event.STOP_QUEUEING, event_list));
@@ -404,8 +404,8 @@ public class STATE_TRANSFER extends Protocol implements RequestHandler {
             if(is_server) {  // get state from application and store it locally
                 synchronized(state_xfer_mutex) {
                     cached_state=null;
-
-                    passUp(new Event(Event.GET_APPLSTATE, local_addr));
+                    StateTransferInfo info=new StateTransferInfo(local_addr);
+                    passUp(new Event(Event.GET_APPLSTATE, info));
                     if(cached_state == null) {
                         try {
                             state_xfer_mutex.wait(timeout_get_appl_state); // wait for STATE_TRANSFER_OK
