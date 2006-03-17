@@ -10,7 +10,7 @@ import java.util.Map;
  * {@link org.jgroups.ChannelFactory#createMultiplexerChannel(String, String)}. Maintains the multiplexer
  * ID, which is used to add a header to each message, so that the message can be demultiplexed at the receiver
  * @author Bela Ban
- * @version $Id: MuxChannel.java,v 1.9 2006/03/17 09:28:06 belaban Exp $
+ * @version $Id: MuxChannel.java,v 1.10 2006/03/17 11:10:15 belaban Exp $
  */
 public class MuxChannel extends JChannel {
 
@@ -114,7 +114,6 @@ public class MuxChannel extends JChannel {
     }
 
 
-
     public void send(Message msg) throws ChannelNotConnectedException, ChannelClosedException {
         msg.putHeader(name, hdr);
         ch.send(msg);
@@ -124,7 +123,6 @@ public class MuxChannel extends JChannel {
         send(new Message(dst, src, obj));
     }
 
-
     public void down(Event evt) {
         if(evt.getType() == Event.MSG) {
             Message msg=(Message)evt.getArg();
@@ -133,21 +131,26 @@ public class MuxChannel extends JChannel {
         }
     }
 
-
     public void blockOk() {
     }
 
+
     public boolean getState(Address target, long timeout) throws ChannelNotConnectedException, ChannelClosedException {
-        return false;
+        return ch.getState(target, id, timeout);
     }
 
+    public boolean getState(Address target, String state_id, long timeout) throws ChannelNotConnectedException, ChannelClosedException {
+        String my_id=id + "::" + state_id;
+        return ch.getState(target, my_id, timeout);
+    }
 
     public void returnState(byte[] state) {
-        throw new UnsupportedOperationException();
+        ch.returnState(state, id);
     }
 
     public void returnState(byte[] state, String state_id) {
-        throw new UnsupportedOperationException();
+        String my_id=id + "::" + state_id;
+        ch.returnState(state, my_id);
     }
 
     public void suspend() {

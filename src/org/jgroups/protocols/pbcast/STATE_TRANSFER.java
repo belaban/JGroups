@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.33 2006/03/17 09:28:06 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.34 2006/03/17 11:10:17 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -105,10 +105,6 @@ public class STATE_TRANSFER extends Protocol {
 
         case Event.GET_DIGEST_STATE_OK:
             synchronized(state_requesters) {
-               // if(digest != null) {
-                    //if(warn)
-                        //log.warn("GET_DIGEST_STATE_OK: existing digest is not null, overwriting it !");
-                //}
                 digest=(Digest)evt.getArg();
                 if(log.isDebugEnabled())
                     log.debug("GET_DIGEST_STATE_OK: digest is " + digest + "\npassUp(GET_APPLSTATE)");

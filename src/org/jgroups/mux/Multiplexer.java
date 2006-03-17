@@ -1,6 +1,7 @@
 package org.jgroups.mux;
 
 import org.jgroups.*;
+import org.jgroups.stack.StateTransferInfo;
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.logging.Log;
 
@@ -14,13 +15,14 @@ import java.util.Iterator;
  * message is removed and the MuxChannel corresponding to the header's application ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.4 2006/03/15 11:42:59 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.5 2006/03/17 11:10:15 belaban Exp $
  */
 public class Multiplexer implements UpHandler {
     /** Map<String,MuxChannel>. Maintains the mapping between application IDs and their associated MuxChannels */
     private final Map apps=new HashMap();
     private final JChannel channel;
     static final Log log=LogFactory.getLog(Multiplexer.class);
+    static final String SEPARATOR="::";
 
 
     public Multiplexer() {
@@ -53,18 +55,30 @@ public class Multiplexer implements UpHandler {
                     log.trace("dispatching message to " + hdr.id);
                 mux_ch.up(evt);
                 break;
+
             case Event.VIEW_CHANGE:
-                // throw new UnsupportedOperationException("VIEW_CHANGE event");
                 passToAllMuxChannels(evt);
                 break;
+
             case Event.SUSPECT:
                 passToAllMuxChannels(evt);
                 break;
+
+            case Event.GET_APPLSTATE:
+                handleStateRequest(evt);
+                break;
+
+            case Event.GET_STATE_OK:
+                handleStateResponse(evt);
+                break;
+
             default:
                 passToAllMuxChannels(evt);
                 break;
         }
     }
+
+
 
 
     public Channel createMuxChannel(JChannelFactory f, String id, String stack_name) throws Exception {
@@ -165,6 +179,57 @@ public class Multiplexer implements UpHandler {
                 channel.shutdown();
                 apps.clear();
             }
+        }
+    }
+
+
+
+    private void handleStateRequest(Event evt) {
+        StateTransferInfo info=(StateTransferInfo)evt.getArg();
+        String state_id=info.state_id;
+        MuxChannel mux_ch;
+
+        // state_id might be "myID" or "myID::mySubID". if it is null, get all substates
+
+        info.state_id=null;
+
+        int index=state_id.indexOf(SEPARATOR);
+        if(index > -1) {
+            state_id=state_id.substring(0, index);
+            info.state_id=state_id.substring(index+1, state_id.length()-1);
+        }
+
+        mux_ch=(MuxChannel)apps.get(state_id);
+        if(mux_ch == null) {
+            log.error("didn't find application with ID=" + state_id + " to fetch state from");
+        }
+        else {
+            mux_ch.up(evt); // state_id will be null, get regular state from tha application named state_id
+        }
+    }
+
+
+    private void handleStateResponse(Event evt) {
+        StateTransferInfo info=(StateTransferInfo)evt.getArg();
+        String state_id=info.state_id;
+        MuxChannel mux_ch;
+
+        // state_id might be "myID" or "myID::mySubID". if it is null, get all substates
+
+        info.state_id=null;
+
+        int index=state_id.indexOf(SEPARATOR);
+        if(index > -1) {
+            state_id=state_id.substring(0, index);
+            info.state_id=state_id.substring(index+1, state_id.length()-1);
+        }
+
+        mux_ch=(MuxChannel)apps.get(state_id);
+        if(mux_ch == null) {
+            log.error("didn't find application with ID=" + state_id + " to fetch state from");
+        }
+        else {
+            mux_ch.up(evt); // state_id will be null, get regular state from tha application named state_id
         }
     }
 
