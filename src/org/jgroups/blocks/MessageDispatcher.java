@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.46 2006/03/16 16:51:49 belaban Exp $
+// $Id: MessageDispatcher.java,v 1.47 2006/03/17 09:28:04 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -625,7 +625,6 @@ public class MessageDispatcher implements RequestHandler {
          * listener's corresponding methods
          */
         public void passUp(Event evt) {
-            byte[] tmp_state=null;
             switch(evt.getType()) {
                 case Event.MSG:
                     if(msg_listener != null) {
@@ -634,22 +633,36 @@ public class MessageDispatcher implements RequestHandler {
                     break;
 
                 case Event.GET_APPLSTATE: // reply with GET_APPLSTATE_OK
+                    StateTransferInfo info=(StateTransferInfo)evt.getArg();
+                    String state_id=info.state_id;
+                    byte[] tmp_state=null;
                     if(msg_listener != null) {
                         try {
-                            tmp_state=msg_listener.getState();
+                            if(msg_listener instanceof ExtendedMessageListener) {
+                                tmp_state=((ExtendedMessageListener)msg_listener).getState(state_id);
+                            }
+                            else {
+                                tmp_state=msg_listener.getState();
+                            }
                         }
                         catch(Throwable t) {
                             this.log.error("failed getting state from message listener (" + msg_listener + ')', t);
                         }
                     }
-                    channel.returnState(tmp_state);
+                    channel.returnState(tmp_state, state_id);
                     break;
 
                 case Event.GET_STATE_OK:
                     if(msg_listener != null) {
                         try {
-                            StateTransferInfo info=(StateTransferInfo)evt.getArg();
-                            msg_listener.setState(info.state);
+                            info=(StateTransferInfo)evt.getArg();
+                            if(msg_listener instanceof ExtendedMessageListener) {
+                                String id=info.state_id;
+                                ((ExtendedMessageListener)msg_listener).setState(id, info.state);
+                            }
+                            else {
+                                msg_listener.setState(info.state);
+                            }
                         }
                         catch(ClassCastException cast_ex) {
                             if(this.log.isErrorEnabled())
@@ -760,7 +773,7 @@ public class MessageDispatcher implements RequestHandler {
     }
 
 
-    class PullPushHandler implements MessageListener, MembershipListener {
+    class PullPushHandler implements ExtendedMessageListener, MembershipListener {
 
 
         /* ------------------------- MessageListener interface ---------------------- */
@@ -781,9 +794,30 @@ public class MessageDispatcher implements RequestHandler {
             return msg_listener != null ? msg_listener.getState() : null;
         }
 
+        public byte[] getState(String state_id) {
+            if(msg_listener == null) return null;
+            if(msg_listener instanceof ExtendedMessageListener) {
+                return ((ExtendedMessageListener)msg_listener).getState(state_id);
+            }
+            else {
+                return msg_listener.getState();
+            }
+        }
+
         public void setState(byte[] state) {
             if(msg_listener != null) {
                 msg_listener.setState(state);
+            }
+        }
+
+        public void setState(String state_id, byte[] state) {
+            if(msg_listener != null) {
+                if(msg_listener instanceof ExtendedMessageListener) {
+                    ((ExtendedMessageListener)msg_listener).setState(state_id, state);
+                }
+                else {
+                    msg_listener.setState(state);
+                }
             }
         }
         /* --------------------- End of MessageListener interface ------------------- */

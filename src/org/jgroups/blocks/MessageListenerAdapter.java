@@ -2,6 +2,7 @@ package org.jgroups.blocks;
 
 import org.jgroups.Message;
 import org.jgroups.MessageListener;
+import org.jgroups.ExtendedMessageListener;
 
 import java.util.HashSet;
 
@@ -15,7 +16,7 @@ import java.util.HashSet;
  * 
  * @author Roman Rokytskyy (rrokytskyy@acm.org)
  */
-public class MessageListenerAdapter implements MessageListener {
+public class MessageListenerAdapter implements ExtendedMessageListener {
     
     protected MessageListener stateListener;
     
@@ -65,6 +66,18 @@ public class MessageListenerAdapter implements MessageListener {
             return null;
     }
 
+
+    public byte[] getState(String state_id) {
+        if(stateListener == null)
+            return null;
+        if(stateListener instanceof ExtendedMessageListener) {
+            return ((ExtendedMessageListener)stateListener).getState(state_id);
+        }
+        else {
+            return stateListener.getState();
+        }
+    }
+
     /**
      * Receive message from group. This method will send this message to each 
      * message listener that was registered in this adapter.
@@ -84,14 +97,25 @@ public class MessageListenerAdapter implements MessageListener {
         if (stateListener != null)
             stateListener.setState(state);
     }
-    
+
+    public void setState(String state_id, byte[] state) {
+        if(stateListener != null) {
+            if(stateListener instanceof ExtendedMessageListener) {
+                ((ExtendedMessageListener)stateListener).setState(state_id, state);
+            }
+            else {
+                stateListener.setState(state);
+            }
+        }
+    }
+
     /**
      * Add message listener to this adapter. This method registers 
      * <code>listener</code> for message notification.
      * <p>
      * Note, state notification will not be used.
      */
-    public synchronized void addMessageListener(MessageListener listener) {
+    public final synchronized void addMessageListener(MessageListener listener) {
         if (messageListeners.add(listener))
             messageListenersCache = 
                 (MessageListener[])messageListeners.toArray(

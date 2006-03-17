@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.57 2006/03/16 16:51:49 belaban Exp $
+// $Id: JChannel.java,v 1.58 2006/03/17 09:28:08 belaban Exp $
 
 package org.jgroups;
 
@@ -66,7 +66,7 @@ import java.util.Vector;
  *
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.57 $
+ * @version $Revision: 1.58 $
  */
 public class JChannel extends Channel {
 
@@ -941,7 +941,15 @@ public class JChannel extends Channel {
         down(new Event(Event.GET_APPLSTATE_OK, state));
     }
 
-
+    /**
+     * Returns a substate as indicated by state_id
+     * @param state
+     * @param state_id
+     */
+    public void returnState(byte[] state, String state_id) {
+        StateTransferInfo info=new StateTransferInfo(null, state_id, 0L, state);
+        down(new Event(Event.GET_APPLSTATE_OK, info));
+    }
 
 
 
@@ -996,8 +1004,10 @@ public class JChannel extends Channel {
             break;
 
         case Event.GET_APPLSTATE:  // return the application's state
+            StateTransferInfo info=(StateTransferInfo)evt.getArg();
             if(!receive_get_states) {  // if not set to handle state transfers, send null state
-                down(new Event(Event.GET_APPLSTATE_OK, null));
+                info.state=null;
+                down(new Event(Event.GET_APPLSTATE_OK, info));
                 return;
             }
             break;
@@ -1030,20 +1040,27 @@ public class JChannel extends Channel {
             break;
 
         case Event.GET_STATE_OK:
-            StateTransferInfo info=(StateTransferInfo)evt.getArg();
-            Object state=info.state;
+            info=(StateTransferInfo)evt.getArg();
+            byte[] state=info.state;
 
             state_promise.setResult(state != null? Boolean.TRUE : Boolean.FALSE);
             if(up_handler != null) {
                 up_handler.up(evt);
                 return;
             }
+
             if(state != null) {
+                String state_id=info.state_id;
                 if(receiver != null) {
-                    receiver.setState((byte[])state);
+                    if(receiver instanceof ExtendedReceiver) {
+                        ((ExtendedReceiver)receiver).setState(state_id, state);
+                    }
+                    else {
+                        receiver.setState(state);
+                    }
                 }
                 else {
-                    try {mq.add(new Event(Event.STATE_RECEIVED, state));} catch(Exception e) {}
+                    try {mq.add(new Event(Event.STATE_RECEIVED, info));} catch(Exception e) {}
                 }
             }
             break;
@@ -1098,8 +1115,16 @@ public class JChannel extends Channel {
                 break;
             case Event.GET_APPLSTATE:
                 if(receiver != null) {
-                    byte[] tmp_state=receiver.getState();
-                    returnState(tmp_state);
+                    StateTransferInfo info=(StateTransferInfo)evt.getArg();
+                    byte[] tmp_state;
+                    String state_id=info.state_id;
+                    if(receiver instanceof ExtendedReceiver) {
+                        tmp_state=((ExtendedReceiver)receiver).getState(state_id);
+                    }
+                    else {
+                        tmp_state=receiver.getState();
+                    }
+                    returnState(tmp_state, state_id);
                     return;
                 }
                 break;
@@ -1295,9 +1320,11 @@ public class JChannel extends Channel {
             case Event.BLOCK:
                 return new BlockEvent();
             case Event.GET_APPLSTATE:
-                return new GetStateEvent(evt.getArg());
+                StateTransferInfo info=(StateTransferInfo)evt.getArg();
+                return new GetStateEvent(info.target, info.state_id);
             case Event.STATE_RECEIVED:
-                return new SetStateEvent((byte[])evt.getArg());
+                info=(StateTransferInfo)evt.getArg();
+                return new SetStateEvent(info.state, info.state_id);
             case Event.EXIT:
                 return new ExitEvent();
             default:

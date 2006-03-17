@@ -8,7 +8,7 @@ import java.util.Map;
 
 /**
  * @author Bela Ban
- * @version $Id: JChannelMBean.java,v 1.7 2005/11/08 13:54:04 belaban Exp $
+ * @version $Id: JChannelMBean.java,v 1.8 2006/03/17 09:28:05 belaban Exp $
  */
 public interface JChannelMBean {
     void create() throws Exception;
@@ -118,4 +118,6 @@ public interface JChannelMBean {
     boolean getState(Address target, long timeout) throws ChannelNotConnectedException, ChannelClosedException;
 
     void returnState(byte[] state);
+
+    void returnState(byte[] state, String state_id);
 }

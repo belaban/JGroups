@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.14 2006/03/17 09:05:11 belaban Exp $
+// $Id: Event.java,v 1.15 2006/03/17 09:28:08 belaban Exp $
 
 package org.jgroups;
 
@@ -28,7 +28,7 @@ public class Event {
     public static final int GET_APPLSTATE             = 17;  // get state from appl (arg=StateTransferInfo)
     public static final int GET_APPLSTATE_OK          = 18;  // arg = StateTranferInfo (includes state)
     public static final int GET_STATE                 = 19;  // arg = StateTransferInfo
-    public static final int GET_STATE_OK              = 20;  // arg = Object or Vector (state(s))
+    public static final int GET_STATE_OK              = 20;  // arg = StateTransferInfo
     public static final int STATE_RECEIVED            = 21;  // arg = StateTransferInfo (with state and state_id)
     public static final int START_QUEUEING            = 22;
     public static final int STOP_QUEUEING             = 23;  // arg = Vector (event-list)

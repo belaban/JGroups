@@ -15,7 +15,7 @@ import java.util.Map;
 
 /**
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.10 2005/11/08 13:53:52 belaban Exp $
+ * @version $Id: JChannel.java,v 1.11 2006/03/17 09:28:05 belaban Exp $
  */
 public class JChannel implements JChannelMBean {
     /** Ref to the original JGroups channel */
@@ -405,6 +405,9 @@ public class JChannel implements JChannelMBean {
         channel.returnState(state);
     }
 
+    public void returnState(byte[] state, String state_id) {
+        channel.returnState(state, state_id);
+    }
 
     private void setOptions() {
         channel.setOpt(Channel.BLOCK, new Boolean(this.receive_blocks));
