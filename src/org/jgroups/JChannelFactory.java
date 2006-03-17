@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.12 2006/03/17 09:28:08 belaban Exp $
+// $Id: JChannelFactory.java,v 1.13 2006/03/17 12:48:22 belaban Exp $
 
 package org.jgroups;
 
@@ -418,7 +418,7 @@ public class JChannelFactory implements ChannelFactory {
             Node descr=attrs.getNamedItem(DESCR);
             String st_name=name.getNodeValue();
             String stack_descr=descr.getNodeValue();
-            System.out.print("Parsing \"" + st_name + "\" (" + stack_descr + ")");
+            //System.out.print("Parsing \"" + st_name + "\" (" + stack_descr + ")");
             NodeList configs=stack.getChildNodes();
             for(int j=0; j < configs.getLength(); j++) {
                 Node config=configs.item(j);
@@ -433,7 +433,7 @@ public class JChannelFactory implements ChannelFactory {
                 String val=conf.getProtocolStackString();
                 this.stacks.put(st_name, val);
             }
-            System.out.println(" - OK");
+            //System.out.println(" - OK");
         }
 //        System.out.println("stacks: ");
 //        for(Iterator it=stacks.entrySet().iterator(); it.hasNext();) {
