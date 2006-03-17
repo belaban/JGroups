@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.38 2006/02/27 12:57:29 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.39 2006/03/17 10:54:17 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -366,7 +366,7 @@
             <formatter type="xml" usefile="true"/>
             <batchtest todir="${tmp.dir}/tests-results">
                 <fileset dir="${junit.dir}"
-                    includes="**/*Test.java"/>
+                    includes="**/*Test.java" excludes="**/DistributedQueueTest.java"/>
             </batchtest>
         </junit>
     </target>
