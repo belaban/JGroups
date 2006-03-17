@@ -12,7 +12,7 @@ import java.util.Map;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.1 2006/03/17 12:09:50 belaban Exp $
+ * @version $Id: MultiplexerTest.java,v 1.2 2006/03/17 12:48:22 belaban Exp $
  */
 public class MultiplexerTest extends TestCase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -88,9 +88,45 @@ public class MultiplexerTest extends TestCase {
 
         Util.sleep(500);
         System.out.println("c1: " + c1 + ", c1_repl: " + c1_repl);
-        
+
         assertEquals(4, c1.size());
         assertEquals(4, c1_repl.size());
+
+        assertEquals(new Long(322649), c1.get("id"));
+        assertEquals(new Long(322649), c1_repl.get("id"));
+
+        assertEquals("biking", c1.get("hobbies"));
+        assertEquals("biking", c1_repl.get("hobbies"));
+
+        assertEquals("Centurion", c1.get("bike"));
+        assertEquals("Centurion", c1_repl.get("bike"));
+    }
+
+
+    public void testStateTransfer() throws Exception {
+        ch1=factory.createMultiplexerChannel(STACK_NAME, "c1");
+        ch1.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
+        ch1.connect("bla");
+        c1=new Cache(ch1, "cache-1");
+        assertEquals("cache has to be empty initially", 0, c1.size());
+
+        ch1_repl=factory2.createMultiplexerChannel(STACK_NAME, "c1");
+        ch1_repl.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
+
+        c1.put("name", "Bela");
+        c1.put("id", new Long(322649));
+        c1.put("hobbies", "biking");
+        c1.put("bike", "Centurion");
+
+
+        ch1_repl.connect("bla");
+        c1_repl=new Cache(ch1_repl, "cache-1-repl");
+        boolean rc=ch1_repl.getState(null, 5000);
+        System.out.println("state transfer: " + rc);
+        Util.sleep(500);
+
+        System.out.println("c1_repl: " + c1_repl);
+        assertEquals("initial state should have been transferred", 4, c1_repl.size());
 
         assertEquals(new Long(322649), c1.get("id"));
         assertEquals(new Long(322649), c1_repl.get("id"));
@@ -112,8 +148,8 @@ public class MultiplexerTest extends TestCase {
     }
 
 
-    private static class Cache extends ExtendedReceiverAdapter {
-        Map data=new HashMap();
+    private static class Cache extends ReceiverAdapter {
+        final Map data=new HashMap();
         Channel ch;
         String name;
 
@@ -124,7 +160,7 @@ public class MultiplexerTest extends TestCase {
         }
 
         Object get(Object key) {
-            synchronized(this) {
+            synchronized(data) {
                 return data.get(key);
             }
         }
@@ -137,7 +173,7 @@ public class MultiplexerTest extends TestCase {
         }
 
         int size() {
-            synchronized(this) {
+            synchronized(data) {
                 return data.size();
             }
         }
@@ -147,14 +183,14 @@ public class MultiplexerTest extends TestCase {
             Object[] modification=(Object[])msg.getObject();
             Object key=modification[0];
             Object val=modification[1];
-            synchronized(this) {
+            synchronized(data) {
                 data.put(key,val);
             }
         }
 
         public byte[] getState() {
             byte[] state=null;
-            synchronized(this) {
+            synchronized(data) {
                 try {
                     state=Util.objectToByteBuffer(data);
                 }
@@ -170,9 +206,9 @@ public class MultiplexerTest extends TestCase {
             Map m;
             try {
                 m=(Map)Util.objectFromByteBuffer(state);
-                synchronized(this) {
+                synchronized(data) {
                     data.clear();
-                    data=m;
+                    data.putAll(m);
                 }
             }
             catch(Exception e) {
