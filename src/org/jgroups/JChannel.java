@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.58 2006/03/17 09:28:08 belaban Exp $
+// $Id: JChannel.java,v 1.59 2006/03/17 11:10:18 belaban Exp $
 
 package org.jgroups;
 
@@ -66,7 +66,7 @@ import java.util.Vector;
  *
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.58 $
+ * @version $Revision: 1.59 $
  */
 public class JChannel extends Channel {
 
@@ -938,7 +938,8 @@ public class JChannel extends Channel {
      *              (to send over the network).
      */
     public void returnState(byte[] state) {
-        down(new Event(Event.GET_APPLSTATE_OK, state));
+        StateTransferInfo info=new StateTransferInfo(null, null, 0L, state);
+        down(new Event(Event.GET_APPLSTATE_OK, info));
     }
 
     /**
@@ -1353,7 +1354,7 @@ public class JChannel extends Channel {
         state_promise.reset();
         down(evt);
         Boolean state_transfer_successfull=(Boolean)state_promise.getResult(info.timeout);
-        return state_transfer_successfull.booleanValue();
+        return state_transfer_successfull != null && state_transfer_successfull.booleanValue();
     }
 
 
