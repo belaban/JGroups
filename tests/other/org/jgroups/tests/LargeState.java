@@ -1,4 +1,4 @@
-// $Id: LargeState.java,v 1.15 2006/01/24 23:45:29 belaban Exp $
+// $Id: LargeState.java,v 1.16 2006/03/17 08:49:48 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -90,8 +90,8 @@ public class LargeState extends ReceiverAdapter {
                     byte[] new_state=((SetStateEvent)ret).getArg();
                     if(new_state != null) {
                         state=new_state;
-                        System.out.println("<-- Received state, size =" + state.length +
-                                " (took " + (stop-start) + "ms)");
+                        System.out.println("<-- Received state, size = " + state.length +
+                                " bytes (took " + (stop-start) + "ms)");
                     }
                     if(!provider)
                         break;
