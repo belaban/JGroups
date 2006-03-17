@@ -1,4 +1,4 @@
-// $Id: PullPushAdapter.java,v 1.15 2005/10/31 10:56:31 belaban Exp $
+// $Id: PullPushAdapter.java,v 1.16 2006/03/17 09:28:04 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -75,7 +75,7 @@ public class PullPushAdapter implements Runnable, ChannelListener {
     }
 
 
-    public void start() {
+    public final void start() {
         if(receiver_thread == null || !receiver_thread.isAlive()) {
             receiver_thread=new Thread(this, "PullPushAdapterThread");
             receiver_thread.setDaemon(true);
@@ -129,7 +129,7 @@ public class PullPushAdapter implements Runnable, ChannelListener {
     }
 
 
-    public void setListener(MessageListener l) {
+    public final void setListener(MessageListener l) {
         listener=l;
     }
 
@@ -171,7 +171,7 @@ public class PullPushAdapter implements Runnable, ChannelListener {
         addMembershipListener(ml);
     }
 
-    public void addMembershipListener(MembershipListener l) {
+    public final void addMembershipListener(MembershipListener l) {
         if(l != null && !membership_listeners.contains(l))
             membership_listeners.add(l);
     }
@@ -200,9 +200,16 @@ public class PullPushAdapter implements Runnable, ChannelListener {
                 }
                 else if(obj instanceof GetStateEvent) {
                     byte[] retval=null;
+                    GetStateEvent evt=(GetStateEvent)obj;
+                    String state_id=evt.getStateId();
                     if(listener != null) {
                         try {
-                            retval=listener.getState();
+                            if(listener instanceof ExtendedMessageListener) {
+                                retval=((ExtendedMessageListener)listener).getState(state_id);
+                            }
+                            else {
+                                retval=listener.getState();
+                            }
                         }
                         catch(Throwable t) {
                             log.error("getState() from application failed, will return empty state", t);
@@ -213,24 +220,29 @@ public class PullPushAdapter implements Runnable, ChannelListener {
                     }
 
                     if(transport instanceof Channel) {
-                        ((Channel)transport).returnState(retval);
+                        ((Channel)transport).returnState(retval, state_id);
                     }
                     else {
                         if(log.isErrorEnabled())
                             log.error("underlying transport is not a Channel, but a " +
                                     transport.getClass().getName() + ": cannot return state using returnState()");
-                        continue;
                     }
                 }
                 else if(obj instanceof SetStateEvent) {
+                    SetStateEvent evt=(SetStateEvent)obj;
+                    String state_id=evt.getStateId();
                     if(listener != null) {
                         try {
-                            listener.setState(((SetStateEvent)obj).getArg());
+                            if(listener instanceof ExtendedMessageListener) {
+                                ((ExtendedMessageListener)listener).setState(evt.getStateId(), evt.getArg());
+                            }
+                            else {
+                                listener.setState(evt.getArg());
+                            }
                         }
                         catch(ClassCastException cast_ex) {
                             if(log.isErrorEnabled()) log.error("received SetStateEvent, but argument " +
                                     ((SetStateEvent)obj).getArg() + " is not serializable ! Discarding message.");
-                            continue;
                         }
                     }
                 }

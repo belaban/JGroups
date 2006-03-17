@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.11 2006/03/15 11:43:01 belaban Exp $
+// $Id: JChannelFactory.java,v 1.12 2006/03/17 09:28:08 belaban Exp $
 
 package org.jgroups;
 
@@ -343,6 +343,26 @@ public class JChannelFactory implements ChannelFactory {
             }
             channels.clear();
         }
+    }
+
+
+    /**
+     * When all applications which registered for state transfer have connected, we will fetch the *entire* state and
+     * push individual substates to the registered applications
+     * @param ch
+     */
+    public void registerForStateTransfer(MuxChannel ch) {
+        // todo: fetch the stack_name and appl_id from ch
+    }
+
+    /**
+     * Tells the JChannel associated with the given stack_name to fetch all substates; ie. by using a state_id of
+     * null in {@link JChannel#getState(Address, String, long)}. When the state is received, we demultiplex it and
+     * set it in each application
+     * @param stack_name
+     */
+    private void getAllSubstates(String stack_name) {
+        // todo: implement
     }
 
 
