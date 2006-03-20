@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.47 2006/02/07 13:49:02 belaban Exp $
+// $Id: Message.java,v 1.48 2006/03/20 08:21:02 belaban Exp $
 
 package org.jgroups;
 
@@ -662,7 +662,9 @@ public class Message implements Externalizable, Streamable {
             }
         }
         catch(ChannelException e) {
-            log.error("failed writing the header", e);
+            IOException io_ex=new IOException("failed writing header");
+            io_ex.initCause(e);
+            throw io_ex;
         }
         finally {
             if(oos != null)
@@ -700,7 +702,9 @@ public class Message implements Externalizable, Streamable {
             }
         }
         catch(Exception ex) {
-            throw new IOException("failed read header: " + ex.toString());
+            IOException io_ex=new IOException("failed reading header");
+            io_ex.initCause(ex);
+            throw io_ex;
         }
         return hdr;
     }
