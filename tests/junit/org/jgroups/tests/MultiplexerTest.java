@@ -12,7 +12,7 @@ import java.util.Map;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.2 2006/03/17 12:48:22 belaban Exp $
+ * @version $Id: MultiplexerTest.java,v 1.3 2006/03/20 09:56:29 belaban Exp $
  */
 public class MultiplexerTest extends TestCase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -137,6 +137,61 @@ public class MultiplexerTest extends TestCase {
         assertEquals("Centurion", c1.get("bike"));
         assertEquals("Centurion", c1_repl.get("bike"));
     }
+
+
+    public void testStateTransferWithTwoApplications() throws Exception {
+        ch1=factory.createMultiplexerChannel(STACK_NAME, "c1");
+        ch1.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
+        ch1.connect("bla");
+        c1=new Cache(ch1, "cache-1");
+        assertEquals("cache has to be empty initially", 0, c1.size());
+
+        ch2=factory.createMultiplexerChannel(STACK_NAME, "c2");
+        ch2.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
+        ch2.connect("bla");
+        c2=new Cache(ch2, "cache-2");
+        assertEquals("cache has to be empty initially", 0, c2.size());
+
+        ch1_repl=factory2.createMultiplexerChannel(STACK_NAME, "c1");
+        ch1_repl.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
+
+        ch2_repl=factory2.createMultiplexerChannel(STACK_NAME, "c2");
+        ch2_repl.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
+
+
+        c1.put("name", "cache-1");
+        c2.put("name", "cache-2");
+
+        ch1_repl.connect("bla");
+        c1_repl=new Cache(ch1_repl, "cache-1-repl");
+        boolean rc=ch1_repl.getState(null, 5000);
+        System.out.println("state transfer: " + rc);
+
+        ch2_repl.connect("bla");
+        c2_repl=new Cache(ch2_repl, "cache-2-repl");
+        rc=ch2_repl.getState(null, 5000);
+        System.out.println("state transfer: " + rc);
+        Util.sleep(500);
+
+        System.out.println("Caches after state transfers:");
+        System.out.println("c1: " + c1);
+        System.out.println("c1_repl: " + c1_repl);
+        System.out.println("c2: " + c2);
+        System.out.println("c2_repl: " + c2_repl);
+
+        assertEquals(1, c1.size());
+        assertEquals(1, c1_repl.size());
+
+        assertEquals(1, c2.size());
+        assertEquals(1, c2_repl.size());
+
+        assertEquals("cache-1", c1.get("name"));
+        assertEquals("cache-1", c1_repl.get("name"));
+
+        assertEquals("cache-2", c2.get("name"));
+        assertEquals("cache-2", c2_repl.get("name"));
+    }
+
 
 
     public static Test suite() {
