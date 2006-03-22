@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.74 2006/02/28 16:34:37 belaban Exp $
+// $Id: NAKACK.java,v 1.75 2006/03/22 06:09:10 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -41,7 +41,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * Retransmit messages using multicast rather than unicast. This has the advantage that, if many receivers lost a
      * message, the sender only retransmits once.
      */
-    private boolean use_mcast_xmit=false;
+    private boolean use_mcast_xmit=true;
 
     /**
      * Ask a random member for retransmission of a missing message. If set to true, discard_delivered_msgs will be
