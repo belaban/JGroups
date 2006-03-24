@@ -6,7 +6,12 @@ REM Probe [-help] [-addr <addr>] [-port <port>] [-ttl <ttl>] [-timeout <timeout>
 
 set CLASSPATH=..\classes
 
-set CP=%CLASSPATH%
+set LIB=..\lib
+
+set LIBS=%LIB%\log4j-1.2.6.jar;%LIB%\commons-logging.jar;%LIB%\concurrent.jar
+
+
+set CP=%CLASSPATH%;%LIBS%
 
 
 java -cp %CP% org.jgroups.tests.Probe %*
