@@ -6,7 +6,13 @@
 
 BIN=`dirname $0`
 
-CLASSPATH=$BIN/../classes:$CLASSPATH
+LIB=$BIN/../lib
+
+LIBS=$LIB/log4j-1.2.6.jar:$LIB/commons-logging.jar:$LIB/concurrent.jar
+
+echo $CLASSPATH
+
+CLASSPATH=$BIN/../classes:$CLASSPATH:$LIBS
 
 # OS specific support (must be 'true' or 'false').
 cygwin=false;
@@ -22,4 +28,4 @@ else
    CP=$CLASSPATH
 fi
 
-java org.jgroups.tests.Probe $*
+java -classpath $CP org.jgroups.tests.Probe $*
