@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.62 2006/03/27 08:22:11 belaban Exp $
+// $Id: JChannel.java,v 1.63 2006/03/27 08:25:26 belaban Exp $
 
 package org.jgroups;
 
@@ -66,7 +66,7 @@ import java.util.Vector;
  *
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.62 $
+ * @version $Revision: 1.63 $
  */
 public class JChannel extends Channel {
 
@@ -122,8 +122,6 @@ public class JChannel extends Channel {
     private long LOCAL_ADDR_TIMEOUT=30000; //=Long.parseLong(System.getProperty("local_addr.timeout", "30000"));
     /*if the states is fetched automatically, this is the default timeout, 5 secs*/
     private static final long GET_STATE_DEFAULT_TIMEOUT=5000;
-    /*flag to indicate whether to receive suspect messages*/
-    private boolean receive_suspects=true;
     /*flag to indicate whether to receive blocks, if this is set to true, receive_views is set to true*/
     private boolean receive_blocks=false;
     /*flag to indicate whether to receive local messages
@@ -716,7 +714,6 @@ public class JChannel extends Channel {
      * Sets a channel option.  The options can be one of the following:
      * <UL>
      * <LI>    Channel.BLOCK
-     * <LI>    Channel.SUSPECT
      * <LI>    Channel.LOCAL
      * <LI>    Channel.AUTO_RECONNECT
      * <LI>    Channel.AUTO_GETSTATE
@@ -725,10 +722,6 @@ public class JChannel extends Channel {
      * There are certain dependencies between the options that you can set,
      * I will try to describe them here.
      * <P>
-     * Option: Channel.SUSPECT<BR>
-     * Value:  java.lang.Boolean<BR>
-     * Result: set to true the JChannel will receive SUSPECT events<BR>
-     *<BR>
      * Option: Channel.BLOCK<BR>
      * Value:  java.lang.Boolean<BR>
      * Result: set to true will set setOpt(VIEW, true) and the JChannel will receive BLOCKS and VIEW events<BR>
@@ -762,11 +755,8 @@ public class JChannel extends Channel {
                     log.warn("option VIEW has been deprecated (it is always true now); this option is ignored");
                 break;
             case SUSPECT:
-                if(value instanceof Boolean)
-                    receive_suspects=((Boolean)value).booleanValue();
-                else
-                    if(log.isErrorEnabled()) log.error("option " + Channel.option2String(option) +
-                                                     " (" + value + "): value has to be Boolean");
+                if(log.isWarnEnabled())
+                    log.warn("option SUSPECT has been deprecated (it is always true now); this option is ignored");
                 break;
             case BLOCK:
                 if(value instanceof Boolean)
@@ -829,7 +819,7 @@ public class JChannel extends Channel {
             case BLOCK:
             	return receive_blocks ? Boolean.TRUE : Boolean.FALSE;
             case SUSPECT:
-            	return receive_suspects ? Boolean.TRUE : Boolean.FALSE;
+            	return Boolean.TRUE;
             case GET_STATE_EVENTS:
                 return Boolean.TRUE;
             case LOCAL:
@@ -966,11 +956,6 @@ public class JChannel extends Channel {
 
             // unblock queueing of messages due to previous BLOCK event:
             down(new Event(Event.STOP_QUEUEING));
-            break;
-
-        case Event.SUSPECT:
-            if(!receive_suspects)
-                return;
             break;
 
         case Event.CONFIG:
@@ -1190,7 +1175,6 @@ public class JChannel extends Channel {
             sb.append("incoming queue size=").append(mq.size()).append('\n');
         if(details) {
             sb.append("block_sending=").append(block_sending).append('\n');
-            sb.append("receive_suspects=").append(receive_suspects).append('\n');
             sb.append("receive_blocks=").append(receive_blocks).append('\n');
             sb.append("receive_local_msgs=").append(receive_local_msgs).append('\n');
             sb.append("auto_reconnect=").append(auto_reconnect).append('\n');

@@ -1,4 +1,4 @@
-// $Id: Channel.java,v 1.19 2006/03/27 08:22:11 belaban Exp $
+// $Id: Channel.java,v 1.20 2006/03/27 08:25:26 belaban Exp $
 
 package org.jgroups;
 
@@ -324,9 +324,7 @@ public abstract class Channel implements Transport {
      Sets an option. The following options are currently recognized:
      <ol>
      <li><code>BLOCK</code>. Turn the reception of BLOCK events on/off (value is Boolean).
-     Default is off. If set to on, receiving VIEW events will be set to on, too.
-     <li><code>SUSPECT</code>. Turn the reception of SUSPECT events on/off (value is Boolean).
-     Default is on.
+     Default is off
      <li><code>LOCAL</code>. Receive its own broadcast messages to the group
      (value is Boolean). Default is on.
      <li><code>AUTO_RECONNECT</code>. Turn auto-reconnection on/off. If on, when a member if forced out
