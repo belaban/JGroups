@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.43 2006/02/27 11:06:03 belaban Exp $
+// $Id: ConnectionTable.java,v 1.44 2006/03/27 15:31:54 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -917,8 +917,11 @@ public class ConnectionTable implements Runnable {
 
             void stop() {
                 if(senderThread != null) {
-                    senderThread.interrupt();
+                    if(send_queue != null)
+                        send_queue.close(false);
+                    Thread tmp=senderThread;
                     senderThread=null;
+                    tmp.interrupt();
                     running=false;
                 }
             }
