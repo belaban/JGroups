@@ -1,4 +1,4 @@
-// $Id: Channel.java,v 1.18 2006/03/27 08:18:56 belaban Exp $
+// $Id: Channel.java,v 1.19 2006/03/27 08:22:11 belaban Exp $
 
 package org.jgroups;
 
@@ -325,8 +325,6 @@ public abstract class Channel implements Transport {
      <ol>
      <li><code>BLOCK</code>. Turn the reception of BLOCK events on/off (value is Boolean).
      Default is off. If set to on, receiving VIEW events will be set to on, too.
-     <li><code>VIEW</code>. Turn the reception of VIEW events on/off (value is Boolean).
-     Default is on.
      <li><code>SUSPECT</code>. Turn the reception of SUSPECT events on/off (value is Boolean).
      Default is on.
      <li><code>LOCAL</code>. Receive its own broadcast messages to the group

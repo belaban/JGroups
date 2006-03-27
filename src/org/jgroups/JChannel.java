@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.61 2006/03/27 08:18:56 belaban Exp $
+// $Id: JChannel.java,v 1.62 2006/03/27 08:22:11 belaban Exp $
 
 package org.jgroups;
 
@@ -66,7 +66,7 @@ import java.util.Vector;
  *
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.61 $
+ * @version $Revision: 1.62 $
  */
 public class JChannel extends Channel {
 
@@ -122,8 +122,6 @@ public class JChannel extends Channel {
     private long LOCAL_ADDR_TIMEOUT=30000; //=Long.parseLong(System.getProperty("local_addr.timeout", "30000"));
     /*if the states is fetched automatically, this is the default timeout, 5 secs*/
     private static final long GET_STATE_DEFAULT_TIMEOUT=5000;
-    /*flag to indicate whether to receive views from the protocol stack*/
-    private boolean receive_views=true;
     /*flag to indicate whether to receive suspect messages*/
     private boolean receive_suspects=true;
     /*flag to indicate whether to receive blocks, if this is set to true, receive_views is set to true*/
@@ -718,10 +716,8 @@ public class JChannel extends Channel {
      * Sets a channel option.  The options can be one of the following:
      * <UL>
      * <LI>    Channel.BLOCK
-     * <LI>    Channel.VIEW
      * <LI>    Channel.SUSPECT
      * <LI>    Channel.LOCAL
-     * <LI>    Channel.GET_STATE_EVENTS
      * <LI>    Channel.AUTO_RECONNECT
      * <LI>    Channel.AUTO_GETSTATE
      * </UL>
@@ -729,10 +725,6 @@ public class JChannel extends Channel {
      * There are certain dependencies between the options that you can set,
      * I will try to describe them here.
      * <P>
-     * Option: Channel.VIEW option<BR>
-     * Value:  java.lang.Boolean<BR>
-     * Result: set to true the JChannel will receive VIEW change events<BR>
-     *<BR>
      * Option: Channel.SUSPECT<BR>
      * Value:  java.lang.Boolean<BR>
      * Result: set to true the JChannel will receive SUSPECT events<BR>
@@ -766,11 +758,8 @@ public class JChannel extends Channel {
 
         switch(option) {
             case VIEW:
-                if(value instanceof Boolean)
-                    receive_views=((Boolean)value).booleanValue();
-                else
-                    if(log.isErrorEnabled()) log.error("option " + Channel.option2String(option) +
-                                                     " (" + value + "): value has to be Boolean");
+                if(log.isWarnEnabled())
+                    log.warn("option VIEW has been deprecated (it is always true now); this option is ignored");
                 break;
             case SUSPECT:
                 if(value instanceof Boolean)
@@ -785,13 +774,11 @@ public class JChannel extends Channel {
                 else
                     if(log.isErrorEnabled()) log.error("option " + Channel.option2String(option) +
                                                      " (" + value + "): value has to be Boolean");
-                if(receive_blocks)
-                    receive_views=true;
                 break;
 
             case GET_STATE_EVENTS:
                 if(log.isWarnEnabled())
-                log.warn("option GET_STATE_EVENTS has been deprecated (it is always true now); this option is ignored");
+                    log.warn("option GET_STATE_EVENTS has been deprecated (it is always true now); this option is ignored");
                 break;
 
 
@@ -838,7 +825,7 @@ public class JChannel extends Channel {
     public Object getOpt(int option) {
         switch(option) {
             case VIEW:
-            	return receive_views ? Boolean.TRUE : Boolean.FALSE;
+            	return Boolean.TRUE;
             case BLOCK:
             	return receive_blocks ? Boolean.TRUE : Boolean.FALSE;
             case SUSPECT:
@@ -979,10 +966,6 @@ public class JChannel extends Channel {
 
             // unblock queueing of messages due to previous BLOCK event:
             down(new Event(Event.STOP_QUEUEING));
-            if(!receive_views)  // discard if client has not set receving views to on
-                return;
-            //if(connected == false)
-            //  my_view=(View)evt.getArg();
             break;
 
         case Event.SUSPECT:
@@ -1207,7 +1190,6 @@ public class JChannel extends Channel {
             sb.append("incoming queue size=").append(mq.size()).append('\n');
         if(details) {
             sb.append("block_sending=").append(block_sending).append('\n');
-            sb.append("receive_views=").append(receive_views).append('\n');
             sb.append("receive_suspects=").append(receive_suspects).append('\n');
             sb.append("receive_blocks=").append(receive_blocks).append('\n');
             sb.append("receive_local_msgs=").append(receive_local_msgs).append('\n');
