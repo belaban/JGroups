@@ -1,4 +1,4 @@
-// $Id: DistributedHashtable.java,v 1.21 2006/02/17 09:40:49 belaban Exp $
+// $Id: DistributedHashtable.java,v 1.22 2006/03/27 08:34:24 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -35,7 +35,7 @@ import java.util.*;
  * initial state (using the state exchange funclet <code>StateExchangeFunclet</code>.
  * @author Bela Ban
  * @author <a href="mailto:aolias@yahoo.com">Alfonso Olias-Sanz</a>
- * @version $Id: DistributedHashtable.java,v 1.21 2006/02/17 09:40:49 belaban Exp $
+ * @version $Id: DistributedHashtable.java,v 1.22 2006/03/27 08:34:24 belaban Exp $
  */
 public class DistributedHashtable extends Hashtable implements MessageListener, MembershipListener {
 
@@ -87,7 +87,6 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
         initSignatures();
         channel=factory != null ? factory.createChannel(properties) : new JChannel(properties);
         disp=new RpcDispatcher(channel, this, this, this);
-        channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
         channel.connect(groupname);
         start(state_timeout);
     }
@@ -110,7 +109,6 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
         initSignatures();
         channel=factory != null ? factory.createChannel(properties) : new JChannel(properties);
         disp=new RpcDispatcher(channel, this, this, this);
-        channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
         channel.connect(groupname);
         start(state_timeout);
     }
@@ -148,7 +146,6 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
         this.channel = (Channel)adapter.getTransport();
         this.groupname = this.channel.getChannelName();
         disp=new RpcDispatcher(adapter, id, this, this, this);
-        channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
         start(state_timeout);
     }
 
@@ -157,12 +154,10 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
         this.channel = (Channel)adapter.getTransport();
         this.groupname = this.channel.getChannelName();
         disp=new RpcDispatcher(adapter, id, this, this, this);
-        channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
     }
 
     protected final void init(long state_timeout) throws ChannelClosedException, ChannelNotConnectedException {
         initSignatures();
-        channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
         disp = new RpcDispatcher(channel, this, this, this);
 
         // Changed by bela (jan 20 2003): start() has to be called by user (only when providing
@@ -611,7 +606,6 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
             //         "file://c:/JGroups-2.0/conf/state_transfer.xml", 5000);
 
             JChannel c = new JChannel("file:/c:/JGroups-2.0/conf/state_transfer.xml");
-            c.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
             DistributedHashtable ht = new DistributedHashtable(c, false, 5000);
             c.connect("demo");
             ht.start(5000);

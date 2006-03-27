@@ -77,7 +77,6 @@ public class ContinousThroughputTest {
 //      prot = (Protocol) channel.getProtocolStack().getProtocols().lastElement();
 //      prot.setObserver(new ContinousThroughputTest.MessageLenghtObserver());
             channel.setOpt(Channel.BLOCK, Boolean.FALSE);
-            channel.setOpt(Channel.SUSPECT, Boolean.FALSE);
             channel.connect("Janus");
         }
         catch(Exception ex) {

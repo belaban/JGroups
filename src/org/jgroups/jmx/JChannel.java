@@ -15,7 +15,7 @@ import java.util.Map;
 
 /**
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.11 2006/03/17 09:28:05 belaban Exp $
+ * @version $Id: JChannel.java,v 1.12 2006/03/27 08:34:24 belaban Exp $
  */
 public class JChannel implements JChannelMBean {
     /** Ref to the original JGroups channel */
@@ -25,16 +25,11 @@ public class JChannel implements JChannelMBean {
     String object_name=null;
     Log    log=LogFactory.getLog(getClass());
 
-    private boolean receive_views=true;
-    /*flag to indicate whether to receive suspect messages*/
-    private boolean receive_suspects=true;
     /*flag to indicate whether to receive blocks, if this is set to true, receive_views is set to true*/
     private boolean receive_blocks=false;
     /*flag to indicate whether to receive local messages
      *if this is set to false, the JChannel will not receive messages sent by itself*/
     private boolean receive_local_msgs=true;
-    /*flag to indicate whether to receive a state message or not*/
-    private boolean receive_get_states=false;
     /*flag to indicate whether the channel will reconnect (reopen) when the exit message is received*/
     private boolean auto_reconnect=false;
     /*flag t indicate whether the state is supposed to be retrieved after the channel is reconnected
@@ -146,25 +141,6 @@ public class JChannel implements JChannelMBean {
         setGroupName(cluster_name);
     }
 
-    public boolean getReceiveViewEvents() {
-        return receive_views;
-    }
-
-    public void setReceiveViewEvents(boolean flag) {
-        this.receive_views=flag;
-        if(channel != null)
-            channel.setOpt(Channel.VIEW, new Boolean(flag));
-    }
-
-    public boolean getReceiveSuspectEvents() {
-        return receive_suspects;
-    }
-
-    public void setReceiveSuspectEvents(boolean flag) {
-        this.receive_suspects=flag;
-        if(channel != null)
-            channel.setOpt(Channel.SUSPECT, new Boolean(flag));
-    }
 
     public boolean getReceiveBlockEvents() {
         return receive_blocks;
@@ -174,16 +150,6 @@ public class JChannel implements JChannelMBean {
         this.receive_blocks=flag;
         if(channel != null)
             channel.setOpt(Channel.BLOCK, new Boolean(flag));
-    }
-
-    public boolean getReceiveStateEvents() {
-        return receive_get_states;
-    }
-
-    public void setReceiveStateEvents(boolean flag) {
-        this.receive_get_states=flag;
-        if(channel != null)
-            channel.setOpt(Channel.GET_STATE_EVENTS, new Boolean(flag));
     }
 
     public boolean getReceiveLocalMessages() {
@@ -411,10 +377,7 @@ public class JChannel implements JChannelMBean {
 
     private void setOptions() {
         channel.setOpt(Channel.BLOCK, new Boolean(this.receive_blocks));
-        channel.setOpt(Channel.SUSPECT, new Boolean(this.receive_suspects));
-        channel.setOpt(Channel.VIEW, new Boolean(this.receive_views));
         channel.setOpt(Channel.LOCAL, new Boolean(this.receive_local_msgs));
-        channel.setOpt(Channel.GET_STATE_EVENTS, new Boolean(this.receive_get_states));
         channel.setOpt(Channel.AUTO_RECONNECT, new Boolean(this.auto_reconnect));
         channel.setOpt(Channel.AUTO_GETSTATE, new Boolean(this.auto_getstate));
     }

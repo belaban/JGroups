@@ -18,7 +18,7 @@ import java.util.Set;
 /**
  * Tests correct state transfer while other members continue sending messages to the group
  * @author Bela Ban
- * @version $Id: StateTransferTest.java,v 1.5 2005/08/31 12:46:59 belaban Exp $
+ * @version $Id: StateTransferTest.java,v 1.6 2006/03/27 08:34:25 belaban Exp $
  */
 public class StateTransferTest extends TestCase {
     final int NUM=10000;
@@ -97,7 +97,6 @@ public class StateTransferTest extends TestCase {
 
         void start() throws Exception {
             ch=new JChannel(props);
-            ch.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
             ch.connect("StateTransferTest-Group");
             receiver=new Receiver(ch, promise);
             boolean rc=ch.getState(null, 10000);

@@ -1,4 +1,4 @@
-// $Id: QuoteServer.java,v 1.7 2005/05/30 16:14:40 belaban Exp $
+// $Id: QuoteServer.java,v 1.8 2006/03/27 08:34:24 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -75,7 +75,6 @@ public class QuoteServer implements MembershipListener, MessageListener {
     public void start() {
         try {
             channel=new JChannel(props);
-            channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
             disp=new RpcDispatcher(channel, this, this, this);
             channel.connect(channel_name);
             System.out.println("\nQuote Server started at " + new Date());

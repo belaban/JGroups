@@ -1,4 +1,4 @@
-// $Id: ReplicatedTree.java,v 1.11 2005/11/10 20:54:01 belaban Exp $
+// $Id: ReplicatedTree.java,v 1.12 2006/03/27 08:34:24 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -175,7 +175,6 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
         }
         adapter=new PullPushAdapter(channel, this, this);
         adapter.setListener(this);
-        channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
         boolean rc=channel.getState(null, state_fetch_timeout);
         if(rc)
             if(log.isInfoEnabled()) log.info("state was retrieved successfully");

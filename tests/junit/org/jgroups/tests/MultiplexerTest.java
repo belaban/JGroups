@@ -12,7 +12,7 @@ import java.util.Map;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.3 2006/03/20 09:56:29 belaban Exp $
+ * @version $Id: MultiplexerTest.java,v 1.4 2006/03/27 08:34:25 belaban Exp $
  */
 public class MultiplexerTest extends TestCase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -105,13 +105,11 @@ public class MultiplexerTest extends TestCase {
 
     public void testStateTransfer() throws Exception {
         ch1=factory.createMultiplexerChannel(STACK_NAME, "c1");
-        ch1.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
         ch1.connect("bla");
         c1=new Cache(ch1, "cache-1");
         assertEquals("cache has to be empty initially", 0, c1.size());
 
         ch1_repl=factory2.createMultiplexerChannel(STACK_NAME, "c1");
-        ch1_repl.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
 
         c1.put("name", "Bela");
         c1.put("id", new Long(322649));
@@ -141,22 +139,18 @@ public class MultiplexerTest extends TestCase {
 
     public void testStateTransferWithTwoApplications() throws Exception {
         ch1=factory.createMultiplexerChannel(STACK_NAME, "c1");
-        ch1.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
         ch1.connect("bla");
         c1=new Cache(ch1, "cache-1");
         assertEquals("cache has to be empty initially", 0, c1.size());
 
         ch2=factory.createMultiplexerChannel(STACK_NAME, "c2");
-        ch2.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
         ch2.connect("bla");
         c2=new Cache(ch2, "cache-2");
         assertEquals("cache has to be empty initially", 0, c2.size());
 
         ch1_repl=factory2.createMultiplexerChannel(STACK_NAME, "c1");
-        ch1_repl.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
 
         ch2_repl=factory2.createMultiplexerChannel(STACK_NAME, "c2");
-        ch2_repl.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
 
 
         c1.put("name", "cache-1");

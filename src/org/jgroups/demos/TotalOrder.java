@@ -1,4 +1,4 @@
-// $Id: TotalOrder.java,v 1.12 2006/01/03 12:19:35 belaban Exp $
+// $Id: TotalOrder.java,v 1.13 2006/03/27 08:34:24 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -212,7 +212,6 @@ public class TotalOrder extends Frame {
 
         try {
             channel=new JChannel(props);
-            channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
             channel.connect("TotalOrderGroup");
             channel.getState(null, 8000);
         }
