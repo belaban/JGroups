@@ -1,4 +1,4 @@
-// $Id: Channel.java,v 1.17 2006/03/17 09:28:08 belaban Exp $
+// $Id: Channel.java,v 1.18 2006/03/27 08:18:56 belaban Exp $
 
 package org.jgroups;
 
@@ -331,9 +331,6 @@ public abstract class Channel implements Transport {
      Default is on.
      <li><code>LOCAL</code>. Receive its own broadcast messages to the group
      (value is Boolean). Default is on.
-     <li><code>GET_STATE_EVENTS</code>. Turn the reception of GetState events on/off
-     (value is Boolean). Default is off, which means that no other members can
-     ask this member for its state (null will be returned).
      <li><code>AUTO_RECONNECT</code>. Turn auto-reconnection on/off. If on, when a member if forced out
      of a group (EXIT event), then we will reconnect.
      <li><code>AUTO_GETSTATE</code>. Turn automatic fetching of state after an auto-reconnect on/off.

@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.60 2006/03/27 08:07:31 belaban Exp $
+// $Id: JChannel.java,v 1.61 2006/03/27 08:18:56 belaban Exp $
 
 package org.jgroups;
 
@@ -66,7 +66,7 @@ import java.util.Vector;
  *
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.60 $
+ * @version $Revision: 1.61 $
  */
 public class JChannel extends Channel {
 
@@ -131,8 +131,6 @@ public class JChannel extends Channel {
     /*flag to indicate whether to receive local messages
      *if this is set to false, the JChannel will not receive messages sent by itself*/
     private boolean receive_local_msgs=true;
-    /*flag to indicate whether to receive a state message or not*/
-    private boolean receive_get_states=false;
     /*flag to indicate whether the channel will reconnect (reopen) when the exit message is received*/
     private boolean auto_reconnect=false;
     /*flag t indicate whether the state is supposed to be retrieved after the channel is reconnected
@@ -743,10 +741,6 @@ public class JChannel extends Channel {
      * Value:  java.lang.Boolean<BR>
      * Result: set to true will set setOpt(VIEW, true) and the JChannel will receive BLOCKS and VIEW events<BR>
      *<BR>
-     * Option: GET_STATE_EVENTS<BR>
-     * Value:  java.lang.Boolean<BR>
-     * Result: set to true the JChannel will receive state events<BR>
-     *<BR>
      * Option: LOCAL<BR>
      * Value:  java.lang.Boolean<BR>
      * Result: set to true the JChannel will receive messages that it self sent out.<BR>
@@ -796,11 +790,8 @@ public class JChannel extends Channel {
                 break;
 
             case GET_STATE_EVENTS:
-                if(value instanceof Boolean)
-                    receive_get_states=((Boolean)value).booleanValue();
-                else
-                    if(log.isErrorEnabled()) log.error("option " + Channel.option2String(option) +
-                                                     " (" + value + "): value has to be Boolean");
+                if(log.isWarnEnabled())
+                log.warn("option GET_STATE_EVENTS has been deprecated (it is always true now); this option is ignored");
                 break;
 
 
@@ -847,19 +838,14 @@ public class JChannel extends Channel {
     public Object getOpt(int option) {
         switch(option) {
             case VIEW:
-//                return Boolean.valueOf(receive_views);
             	return receive_views ? Boolean.TRUE : Boolean.FALSE;
             case BLOCK:
-//                return Boolean.valueOf(receive_blocks);
             	return receive_blocks ? Boolean.TRUE : Boolean.FALSE;
             case SUSPECT:
-//                return Boolean.valueOf(receive_suspects);
             	return receive_suspects ? Boolean.TRUE : Boolean.FALSE;
             case GET_STATE_EVENTS:
-//                return Boolean.valueOf(receive_get_states);
-            	return receive_get_states ? Boolean.TRUE : Boolean.FALSE;
+                return Boolean.TRUE;
             case LOCAL:
-//                return Boolean.valueOf(receive_local_msgs);
             	return receive_local_msgs ? Boolean.TRUE : Boolean.FALSE;
             default:
                 if(log.isErrorEnabled()) log.error("option " + Channel.option2String(option) + " not known");
@@ -1004,15 +990,6 @@ public class JChannel extends Channel {
                 return;
             break;
 
-        case Event.GET_APPLSTATE:  // return the application's state
-            StateTransferInfo info=(StateTransferInfo)evt.getArg();
-            if(!receive_get_states) {  // if not set to handle state transfers, send null state
-                info.state=null;
-                down(new Event(Event.GET_APPLSTATE_OK, info));
-                return;
-            }
-            break;
-
         case Event.CONFIG:
             HashMap config=(HashMap)evt.getArg();
             if(config != null && config.containsKey("state_transfer"))
@@ -1041,7 +1018,7 @@ public class JChannel extends Channel {
             break;
 
         case Event.GET_STATE_OK:
-            info=(StateTransferInfo)evt.getArg();
+            StateTransferInfo info=(StateTransferInfo)evt.getArg();
             byte[] state=info.state;
 
             state_promise.setResult(state != null? Boolean.TRUE : Boolean.FALSE);
@@ -1234,7 +1211,6 @@ public class JChannel extends Channel {
             sb.append("receive_suspects=").append(receive_suspects).append('\n');
             sb.append("receive_blocks=").append(receive_blocks).append('\n');
             sb.append("receive_local_msgs=").append(receive_local_msgs).append('\n');
-            sb.append("receive_get_states=").append(receive_get_states).append('\n');
             sb.append("auto_reconnect=").append(auto_reconnect).append('\n');
             sb.append("auto_getstate=").append(auto_getstate).append('\n');
             sb.append("state_transfer_supported=").append(state_transfer_supported).append('\n');
