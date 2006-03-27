@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.59 2006/03/17 11:10:18 belaban Exp $
+// $Id: JChannel.java,v 1.60 2006/03/27 08:07:31 belaban Exp $
 
 package org.jgroups;
 
@@ -66,7 +66,7 @@ import java.util.Vector;
  *
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.59 $
+ * @version $Revision: 1.60 $
  */
 public class JChannel extends Channel {
 
@@ -1346,9 +1346,8 @@ public class JChannel extends Channel {
         checkClosed();
         checkNotConnected();
         if(!state_transfer_supported) {
-            log.error("fetching state will fail as state transfer is not supported. "
-                      + "Add one of the STATE_TRANSFER protocols to your protocol configuration");
-            return false;
+            throw new IllegalStateException("fetching state will fail as state transfer is not supported. "
+                    + "Add one of the STATE_TRANSFER protocols to your protocol configuration");
         }
 
         state_promise.reset();
