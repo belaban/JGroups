@@ -1,4 +1,4 @@
-// $Id: DistributedQueue.java,v 1.17 2006/03/17 10:48:13 belaban Exp $
+// $Id: DistributedQueue.java,v 1.18 2006/03/27 08:34:24 belaban Exp $
 package org.jgroups.blocks;
 
 import org.apache.commons.logging.Log;
@@ -78,7 +78,6 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
         channel = (factory != null) ? factory.createChannel(properties) : new JChannel(properties);
         disp = new RpcDispatcher(channel, this, this, this);
         disp.setDeadlockDetection(false); // To ensure strict FIFO MethodCall
-        channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
         channel.connect(groupname);
         start(state_timeout);
     }
@@ -110,7 +109,6 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
         initSignatures();
         internalQueue = new LinkedList();
 
-        channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
         disp = new RpcDispatcher(adapter, id, this, this, this);
         disp.setDeadlockDetection(false); // To ensure strict FIFO MethodCall
     }
@@ -119,7 +117,6 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
     {
         initSignatures();
         internalQueue = new LinkedList();
-        channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
         disp = new RpcDispatcher(channel, this, this, this);
         disp.setDeadlockDetection(false); // To ensure strict FIFO MethodCall
     }
@@ -710,7 +707,6 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
             // DistributedQueue ht = new DistributedQueue("demo", null, 
             //         "file://c:/JGroups-2.0/conf/total-token.xml", 5000);
             JChannel c = new JChannel("file:/c:/JGroups-2.0/conf/conf/total-token.xml");
-            c.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
 
             DistributedQueue ht = new DistributedQueue(c);
             c.connect("demo");

@@ -1,4 +1,4 @@
-// $Id: LargeState.java,v 1.17 2006/03/27 08:06:44 belaban Exp $
+// $Id: LargeState.java,v 1.18 2006/03/27 08:34:25 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -36,7 +36,6 @@ public class LargeState extends ReceiverAdapter {
     public void start(boolean provider, int size, String props) throws Exception {
         this.provider=provider;
         channel=new JChannel(props);
-        channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
         channel.setReceiver(this);
         channel.connect("TestChannel");
         System.out.println("-- connected to channel");

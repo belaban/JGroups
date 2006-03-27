@@ -1,4 +1,4 @@
-// $Id: GetStateTest.java,v 1.8 2005/05/30 16:15:11 belaban Exp $
+// $Id: GetStateTest.java,v 1.9 2006/03/27 08:34:25 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -43,7 +43,6 @@ public class GetStateTest implements Runnable {
 
 
 	channel=new JChannel(props);
-	channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
 	channel.connect("TestChannel");
 
 	System.out.println("Getting state");

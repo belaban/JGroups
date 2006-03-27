@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER_Test.java,v 1.7 2006/01/27 12:11:36 belaban Exp $
+// $Id: STATE_TRANSFER_Test.java,v 1.8 2006/03/27 08:34:24 belaban Exp $
 package org.jgroups.protocols;
 
 import junit.framework.Test;
@@ -74,7 +74,7 @@ public class STATE_TRANSFER_Test extends TestCase {
       coord = null;
    }
 
-   class Coordinator implements ChannelListener {
+   static class Coordinator implements ChannelListener {
 
       private JChannel channel = null;
       private int cnt = 0;  // the state
@@ -84,13 +84,8 @@ public class STATE_TRANSFER_Test extends TestCase {
 
          channel = new JChannel(CHANNEL_PROPS);
          channel.setOpt(Channel.LOCAL, Boolean.FALSE);
-
          channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
-
-         channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
-
          channel.addChannelListener(this);
-
          channel.connect(GROUP_NAME);
       }
 

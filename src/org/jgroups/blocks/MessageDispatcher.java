@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.47 2006/03/17 09:28:04 belaban Exp $
+// $Id: MessageDispatcher.java,v 1.48 2006/03/27 08:34:24 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -64,7 +64,6 @@ public class MessageDispatcher implements RequestHandler {
         prot_adapter=new ProtocolAdapter();
         if(channel != null) {
             local_addr=channel.getLocalAddress();
-            channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
         }
         setMessageListener(l);
         setMembershipListener(l2);
@@ -81,7 +80,6 @@ public class MessageDispatcher implements RequestHandler {
         prot_adapter=new ProtocolAdapter();
         if(channel != null) {
             local_addr=channel.getLocalAddress();
-            channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
         }
         setMessageListener(l);
         setMembershipListener(l2);
@@ -99,7 +97,6 @@ public class MessageDispatcher implements RequestHandler {
         prot_adapter=new ProtocolAdapter();
         if(channel != null) {
             local_addr=channel.getLocalAddress();
-            channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
         }
         setMessageListener(l);
         setMembershipListener(l2);
@@ -163,7 +160,6 @@ public class MessageDispatcher implements RequestHandler {
         }
 
         if((tp=adapter.getTransport()) instanceof Channel) {
-            ((Channel) tp).setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
             local_addr=((Channel) tp).getLocalAddress();
         }
         start();
@@ -204,7 +200,6 @@ public class MessageDispatcher implements RequestHandler {
         }
 
         if((tp=adapter.getTransport()) instanceof Channel) {
-            ((Channel) tp).setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
             local_addr=((Channel) tp).getLocalAddress(); // fixed bug #800774
         }
 
@@ -236,7 +231,6 @@ public class MessageDispatcher implements RequestHandler {
         }
 
         if((tp=adapter.getTransport()) instanceof Channel) {
-            ((Channel) tp).setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
             local_addr=((Channel) tp).getLocalAddress(); // fixed bug #800774
         }
 

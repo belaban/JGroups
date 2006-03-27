@@ -8,7 +8,7 @@ import java.util.Map;
 
 /**
  * @author Bela Ban
- * @version $Id: JChannelMBean.java,v 1.8 2006/03/17 09:28:05 belaban Exp $
+ * @version $Id: JChannelMBean.java,v 1.9 2006/03/27 08:34:24 belaban Exp $
  */
 public interface JChannelMBean {
     void create() throws Exception;
@@ -39,17 +39,8 @@ public interface JChannelMBean {
     String getClusterName();
     void setClusterName(String cluster_name);
 
-    boolean getReceiveViewEvents();
-    void setReceiveViewEvents(boolean flag);
-
-    boolean getReceiveSuspectEvents();
-    void setReceiveSuspectEvents(boolean flag);
-
     boolean getReceiveBlockEvents();
     void setReceiveBlockEvents(boolean flag);
-
-    boolean getReceiveStateEvents();
-    void setReceiveStateEvents(boolean flag);
 
     boolean getReceiveLocalMessages();
     void setReceiveLocalMessages(boolean flag);

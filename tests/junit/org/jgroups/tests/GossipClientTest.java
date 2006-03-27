@@ -10,7 +10,7 @@ import junit.framework.TestCase;
 
 /**
  * @author Bela Ban
- * @version $Id: GossipClientTest.java,v 1.1 2004/08/04 10:07:09 belaban Exp $
+ * @version $Id: GossipClientTest.java,v 1.2 2006/03/27 08:34:24 belaban Exp $
  */
 public class GossipClientTest extends TestCase {
 
@@ -27,7 +27,6 @@ public class GossipClientTest extends TestCase {
         try {
             JChannel jChannel=new JChannel(props);
             jChannel.setOpt(Channel.LOCAL, Boolean.FALSE);
-            jChannel.setOpt(Channel.VIEW, Boolean.TRUE);
             jChannel.connect("testGroup");
             assertTrue(jChannel.isConnected());
             assertTrue(jChannel.isOpen());

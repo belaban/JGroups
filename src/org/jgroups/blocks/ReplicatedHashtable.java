@@ -1,4 +1,4 @@
-// $Id: ReplicatedHashtable.java,v 1.13 2006/01/05 16:33:05 belaban Exp $
+// $Id: ReplicatedHashtable.java,v 1.14 2006/03/27 08:34:24 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -77,7 +77,6 @@ public class ReplicatedHashtable extends Hashtable implements MessageListener, M
             channel.connect(groupname);
             adapter=new PullPushAdapter(channel, this, this);
             adapter.setListener(this);
-            channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
             getInitState(channel, state_timeout);
         }
         catch(Exception e) {
@@ -121,7 +120,6 @@ public class ReplicatedHashtable extends Hashtable implements MessageListener, M
         this.adapter.setListener(this);
         if(l != null)
             addStateTransferListener(l);
-        this.channel.setOpt(Channel.GET_STATE_EVENTS, Boolean.TRUE);
         getInitState(channel, state_timeout);
 //        boolean rc=channel.getState(null, state_timeout);
 //        if(rc)
@@ -147,7 +145,7 @@ public class ReplicatedHashtable extends Hashtable implements MessageListener, M
             notifs.addElement(n);
     }
 
-    public void addStateTransferListener(StateTransferListener l) {
+    public final void addStateTransferListener(StateTransferListener l) {
         if(l != null && !(state_transfer_listeners.contains(l)))
             state_transfer_listeners.add(l);
     }
