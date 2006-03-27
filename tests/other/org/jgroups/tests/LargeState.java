@@ -1,4 +1,4 @@
-// $Id: LargeState.java,v 1.16 2006/03/17 08:49:48 belaban Exp $
+// $Id: LargeState.java,v 1.17 2006/03/27 08:06:44 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -175,7 +175,7 @@ public class LargeState extends ReceiverAdapter {
             new LargeState().start(provider, size, props);
         }
         catch(Exception e) {
-            System.err.println(e);
+            e.printStackTrace();
         }
     }
 
