@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.68 2006/02/28 17:08:00 belaban Exp $
+// $Id: Util.java,v 1.69 2006/03/29 11:35:48 belaban Exp $
 
 package org.jgroups.util;
 
@@ -1027,6 +1027,16 @@ public class Util {
         }
         ret.append(']');
         return ret.toString();
+    }
+
+    /** Returns true if all elements of c match obj */
+    public static boolean all(Collection c, Object obj) {
+        for(Iterator iterator=c.iterator(); iterator.hasNext();) {
+            Object o=iterator.next();
+            if(!o.equals(obj))
+                return false;
+        }
+        return true;
     }
 
 

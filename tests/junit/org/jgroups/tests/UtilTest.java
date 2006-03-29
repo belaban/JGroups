@@ -1,4 +1,4 @@
-// $Id: UtilTest.java,v 1.7 2005/09/09 07:11:19 belaban Exp $
+// $Id: UtilTest.java,v 1.8 2006/03/29 11:35:37 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -15,8 +15,7 @@ import org.jgroups.util.Util;
 
 import java.io.*;
 import java.util.Vector;
-
-
+import java.util.ArrayList;
 
 
 public class UtilTest extends TestCase {
@@ -272,10 +271,19 @@ public class UtilTest extends TestCase {
         }
     }
 
+    public void testAll() {
+        ArrayList l=new ArrayList();
+        l.add("one"); l.add("two"); l.add("one");
+        System.out.println("-- list is " + l);
+        assertFalse(Util.all(l, "one"));
+        l.remove("two");
+        System.out.println("-- list is " + l);
+        assertTrue(Util.all(l, "one"));
+    }
+
 
     public static Test suite() {
-        TestSuite s=new TestSuite(UtilTest.class);
-        return s;
+        return new TestSuite(UtilTest.class);
     }
 
     public static void main(String[] args) {
