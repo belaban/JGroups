@@ -1,4 +1,4 @@
-// $Id: SizeTest.java,v 1.11 2006/03/16 14:59:36 belaban Exp $$
+// $Id: SizeTest.java,v 1.12 2006/04/05 05:34:58 belaban Exp $$
 
 package org.jgroups.tests;
 
@@ -68,6 +68,7 @@ public class SizeTest extends TestCase {
     public void testNakackHeader() throws Exception {
         _testSize(new NakAckHeader(NakAckHeader.MSG, 322649));
         _testSize(new NakAckHeader(NakAckHeader.XMIT_REQ, 100, 104, new IpAddress("127.0.0.1", 5655)));
+        _testSize(new NakAckHeader(NakAckHeader.XMIT_RSP, 100, 104, new IpAddress("127.0.0.1", 5655)));
         _testSize(new NakAckHeader(NakAckHeader.XMIT_RSP, 322649));
     }
 
@@ -272,6 +273,9 @@ public class SizeTest extends TestCase {
         _testSize(hdr);
 
         hdr=new STATE_TRANSFER.StateHeader(STATE_TRANSFER.StateHeader.STATE_RSP, addr, 322649, digest, "my_state");
+        _testSize(hdr);
+
+        hdr=new STATE_TRANSFER.StateHeader(STATE_TRANSFER.StateHeader.STATE_RSP, addr, 322649, digest, "my_state", true);
         _testSize(hdr);
     }
 

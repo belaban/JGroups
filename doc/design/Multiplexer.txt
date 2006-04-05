@@ -4,7 +4,7 @@ Multiplexing functionality
 ===========================
 
 Author: Bela Ban
-Version: $Id: Multiplexer.txt,v 1.13 2006/03/17 07:29:07 belaban Exp $
+Version: $Id: Multiplexer.txt,v 1.14 2006/04/05 05:31:24 belaban Exp $
 JIRA: http://jira.jboss.com/jira/browse/JGRP-119, http://jira.jboss.com/jira/browse/JGRP-112
 
 Overview
@@ -167,6 +167,11 @@ State transfer for *all* applications
   - on the receiving Multiplexer, we demultiplex the state into individual appl states and call setState() on the
     application corresponding to the substate ID
   - this has the advantage that the digest would have to be transferred and set only *once*, not once per application
+- Actually, transferring all substates as *one* single combined state is a bad idea, this might become too big. For example.
+  if we have 2 substates A and B, each 500MB, and assuming we have to generate a byte[] array for the serialized state, which
+  is 500MB as well (simplified assumption), then if we combine the state, we have 500MB for A and 500MB for B, for a total
+  of 1GB. This 1GB byte[] buffer can only be discarded once we have fragmented it and placed all fragments on the wire.
+  If we send the substates individually, then we only have to generate 500MB at a time.
 
 
 Preventing multiple FLUSH phases

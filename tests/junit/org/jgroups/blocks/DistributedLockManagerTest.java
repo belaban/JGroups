@@ -13,28 +13,28 @@ import org.jgroups.JChannel;
  * Testcase for the DistributedLockManager
  * 
  * @author Robert Schaffar-Taurok (robert@fusion.at)
- * @version $Id: DistributedLockManagerTest.java,v 1.3 2005/06/08 15:56:53 publicnmi Exp $
+ * @version $Id: DistributedLockManagerTest.java,v 1.4 2006/04/05 05:35:54 belaban Exp $
  */
 public class DistributedLockManagerTest extends TestCase {
 
-    public static final String SERVER_PROTOCOL_STACK = ""
-            + "UDP(mcast_addr=228.3.11.76;mcast_port=12345;ip_ttl=1;"
-            + "mcast_send_buf_size=150000;mcast_recv_buf_size=80000)"
+    public static final String SERVER_PROTOCOL_STACK =
+            "UDP(mcast_addr=228.3.11.76;mcast_port=12345;ip_ttl=1;"
+                    + "mcast_send_buf_size=150000;mcast_recv_buf_size=80000)"
 //        + "JMS(topicName=topic/testTopic;cf=UILConnectionFactory;"
 //        + "jndiCtx=org.jnp.interfaces.NamingContextFactory;"
 //        + "providerURL=localhost;ttl=10000)"
-            + ":PING(timeout=500;num_initial_members=1)"
-            + ":FD"
-            + ":VERIFY_SUSPECT(timeout=1500)" 
-            + ":pbcast.NAKACK(gc_lag=50;retransmit_timeout=300,600,1200,2400,4800)"
-            + ":UNICAST(timeout=5000)"
-            + ":pbcast.STABLE(desired_avg_gossip=200)"
-            + ":FRAG(frag_size=4096)"
-            + ":pbcast.GMS(join_timeout=5000;join_retry_timeout=1000;"
-            +     "shun=false;print_local_addr=false)"
+                    + ":PING(timeout=500;num_initial_members=1)"
+                    + ":FD"
+                    + ":VERIFY_SUSPECT(timeout=1500)"
+                    + ":pbcast.NAKACK(gc_lag=50;retransmit_timeout=300,600,1200,2400,4800)"
+                    + ":UNICAST(timeout=5000)"
+                    + ":pbcast.STABLE(desired_avg_gossip=200)"
+                    + ":FRAG(frag_size=4096)"
+                    + ":pbcast.GMS(join_timeout=5000;join_retry_timeout=1000;"
+                    +     "shun=false;print_local_addr=false)"
 //        + ":SPEED_LIMIT(down_queue_limit=10)"
 //        + ":pbcast.STATE_TRANSFER(down_thread=false)"
-        ;
+            ;
     
     
     public DistributedLockManagerTest(String testName) {
@@ -55,36 +55,34 @@ public class DistributedLockManagerTest extends TestCase {
     protected LockManager lockManager1;
     protected LockManager lockManager2;
 
-    protected static
-            boolean logConfigured;
+    protected static  boolean logConfigured;
 
     public void setUp() throws Exception {
-        
-
-
-        channel1 = new JChannel(SERVER_PROTOCOL_STACK);
-        adapter1 = new VotingAdapter(channel1);
+        super.setUp();
+        channel1=new JChannel(SERVER_PROTOCOL_STACK);
+        adapter1=new VotingAdapter(channel1);
         channel1.connect("voting");
 
-        
-        lockManager1 = new DistributedLockManager(adapter1, "1");
+
+        lockManager1=new DistributedLockManager(adapter1, "1");
 
         // give some time for the channel to become a coordinator
         try {
-                Thread.sleep(1000);
-        } catch(Exception ex) {
+            Thread.sleep(1000);
         }
-        
-        channel2 = new JChannel(SERVER_PROTOCOL_STACK);
-        adapter2 = new VotingAdapter(channel2);
-        lockManager2 = new DistributedLockManager(adapter2, "2");
-        
+        catch(Exception ex) {
+        }
+
+        channel2=new JChannel(SERVER_PROTOCOL_STACK);
+        adapter2=new VotingAdapter(channel2);
+        lockManager2=new DistributedLockManager(adapter2, "2");
+
         channel2.connect("voting");
-        
+
         try {
             Thread.sleep(1000);
         }
-        catch (InterruptedException ex) {
+        catch(InterruptedException ex) {
         }
     }
 
