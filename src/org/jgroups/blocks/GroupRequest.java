@@ -1,4 +1,4 @@
-// $Id: GroupRequest.java,v 1.18 2006/02/13 13:51:01 belaban Exp $
+// $Id: GroupRequest.java,v 1.19 2006/04/05 05:20:50 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -41,7 +41,7 @@ import java.util.*;
  * to do so.<p>
  * <b>Requirements</b>: lossless delivery, e.g. acknowledgment-based message confirmation.
  * @author Bela Ban
- * @version $Revision: 1.18 $
+ * @version $Revision: 1.19 $
  */
 public class GroupRequest implements RspCollector, Command {
     /** return only first response */
@@ -178,18 +178,22 @@ public class GroupRequest implements RspCollector, Command {
      * timeout  has occurred. <em>n</em> can be the first response, all
      * responses, or a majority  of the responses.
      */
-    public boolean execute() {
-        boolean retval;
+    public boolean execute() throws Exception {
         if(corr == null && transport == null) {
             if(log.isErrorEnabled()) log.error("both corr and transport are null, cannot send group request");
             return false;
         }
-        done=false;
-        retval=doExecute(timeout);
-        if(retval == false && log.isTraceEnabled())
-            log.trace("call did not execute correctly, request is " + toString());
-        done=true;
-        return retval;
+
+        try {
+            done=false;
+            boolean retval=doExecute(timeout);
+            if(retval == false && log.isTraceEnabled())
+                log.trace("call did not execute correctly, request is " + this.toString());
+            return retval;
+        }
+        finally {
+            done=true;
+        }
     }
 
 
@@ -421,7 +425,7 @@ public class GroupRequest implements RspCollector, Command {
     }
 
     /** This method runs with rsp_mutex locked (called by <code>execute()</code>). */
-    private boolean doExecute(long timeout) {
+    private boolean doExecute(long timeout) throws Exception {
         long start_time=0;
         Address suspect;
         req_id=getRequestId();
@@ -448,12 +452,10 @@ public class GroupRequest implements RspCollector, Command {
                 transport.send(request_msg);
             }
         }
-        catch(Throwable e) {
-            log.error("exception=" + e);
-            if(corr != null) {
+        catch(Exception ex) {
+            if(corr != null)
                 corr.done(req_id);
-            }
-            return false;
+            throw ex;
         }
 
         synchronized(requests) {
