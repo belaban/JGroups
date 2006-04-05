@@ -1,4 +1,4 @@
-// $Id: GroupRequestTest.java,v 1.1 2005/07/25 11:49:27 belaban Exp $$
+// $Id: GroupRequestTest.java,v 1.2 2006/04/05 05:38:36 belaban Exp $$
 
 package org.jgroups.blocks;
 
@@ -15,7 +15,7 @@ public class GroupRequestTest extends TestCase {
     GroupRequest req;
     Address a1, a2;
     Vector dests=new Vector();
-    MyTransport transport;
+    private MyTransport transport;
 
     public GroupRequestTest(String testName) {
         super(testName);
@@ -29,24 +29,24 @@ public class GroupRequestTest extends TestCase {
         dests.add(a2);
     }
 
-    public void testMessageReception() {
+    public void testMessageReception() throws Exception {
         _testMessageReception(true);
         _testMessageReception(false);
     }
 
 
-    public void testMessageReceptionWithSuspect() {
+    public void testMessageReceptionWithSuspect() throws Exception {
         _testMessageReceptionWithSuspect(true);
         _testMessageReceptionWithSuspect(false);
     }
 
 
-    public void testMessageReceptionWithViewChange() {
+    public void testMessageReceptionWithViewChange() throws Exception {
         _testMessageReceptionWithViewChange(true);
         _testMessageReceptionWithViewChange(false);
     }
 
-    public void testMessageReceptionWithViewChangeMemberLeft() {
+    public void testMessageReceptionWithViewChangeMemberLeft() throws Exception {
         _testMessageReceptionWithViewChangeMemberLeft(true);
         _testMessageReceptionWithViewChangeMemberLeft(false);
     }
@@ -54,7 +54,7 @@ public class GroupRequestTest extends TestCase {
 
 
 
-    private void _testMessageReception(boolean async) {
+    private void _testMessageReception(boolean async) throws Exception {
          Object[] responses=new Message[]{new Message(null, a1, new Long(1)),
                                           new Message(null, a2, new Long(2))};
          transport=new MyTransport(async, responses);
@@ -69,7 +69,7 @@ public class GroupRequestTest extends TestCase {
          assertEquals(2, results.size());
      }
 
-    private void _testMessageReceptionWithSuspect(boolean async) {
+    private void _testMessageReceptionWithSuspect(boolean async) throws Exception {
          Object[] responses=new Object[]{new Message(null, a1, new Long(1)),
                                          new SuspectEvent(a2)};
          transport=new MyTransport(async, responses);
@@ -85,7 +85,7 @@ public class GroupRequestTest extends TestCase {
      }
 
 
-    private void _testMessageReceptionWithViewChange(boolean async) {
+    private void _testMessageReceptionWithViewChange(boolean async) throws Exception {
         Vector new_dests=new Vector(dests);
         new_dests.add(new IpAddress(3333));
         Object[] responses=new Object[]{new Message(null, a1, new Long(1)),
@@ -104,7 +104,7 @@ public class GroupRequestTest extends TestCase {
     }
 
 
-    private void _testMessageReceptionWithViewChangeMemberLeft(boolean async) {
+    private void _testMessageReceptionWithViewChangeMemberLeft(boolean async) throws Exception {
         Vector new_dests=new Vector(dests);
         new_dests.remove(a1);
         Object[] responses=new Object[]{new Message(null, a2, new Long(1)),

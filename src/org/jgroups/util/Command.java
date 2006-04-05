@@ -1,4 +1,4 @@
-// $Id: Command.java,v 1.2 2005/07/17 11:33:58 chrislott Exp $
+// $Id: Command.java,v 1.3 2006/04/05 05:33:57 belaban Exp $
 
 package org.jgroups.util;
 
@@ -8,5 +8,5 @@ package org.jgroups.util;
   * @author Bela Ban
   */
 public interface Command {
-    boolean execute();
+    boolean execute() throws Exception;
 }
