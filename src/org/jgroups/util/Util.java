@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.69 2006/03/29 11:35:48 belaban Exp $
+// $Id: Util.java,v 1.70 2006/04/05 05:34:31 belaban Exp $
 
 package org.jgroups.util;
 
@@ -1365,17 +1365,23 @@ public class Util {
 
     /** e.g. "bela,jeannette,michelle" --> List{"bela", "jeannette", "michelle"} */
     public static java.util.List parseCommaDelimitedStrings(String l) {
-        java.util.List tmp=new ArrayList();
-        StringTokenizer tok=new StringTokenizer(l, ",");
-        String t;
-
-        while(tok.hasMoreTokens()) {
-            t=tok.nextToken();
-            tmp.add(t);
-        }
-
-        return tmp;
+        return parseStringList(l, ",");
     }
+
+
+    public static List parseStringList(String l, String separator) {
+         List tmp=new LinkedList();
+         StringTokenizer tok=new StringTokenizer(l, separator);
+         String t;
+
+         while(tok.hasMoreTokens()) {
+             t=tok.nextToken();
+             tmp.add(t.trim());
+         }
+
+         return tmp;
+     }
+
 
 
 
@@ -1690,5 +1696,20 @@ public class Util {
     }
 
 
+    public static String generateList(Collection c, String separator) {
+        if(c == null) return null;
+        StringBuffer sb=new StringBuffer();
+        boolean first=true;
 
+        for(Iterator it=c.iterator(); it.hasNext();) {
+            if(first) {
+                first=false;
+            }
+            else {
+                sb.append(separator);
+            }
+            sb.append(it.next());
+        }
+        return sb.toString();
+    }
 }
