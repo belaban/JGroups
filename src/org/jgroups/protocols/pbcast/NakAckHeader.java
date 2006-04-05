@@ -1,4 +1,4 @@
-// $Id: NakAckHeader.java,v 1.18 2006/02/08 11:42:50 belaban Exp $
+// $Id: NakAckHeader.java,v 1.19 2006/04/05 05:37:34 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -81,21 +81,26 @@ public class NakAckHeader extends Header implements Streamable {
 
     public void writeTo(DataOutputStream out) throws IOException {
         out.writeByte(type);
-        out.writeLong(seqno);
+        if(type != XMIT_RSP)
+            out.writeLong(seqno);
         Util.writeStreamable(range, out);
         Util.writeAddress(sender, out);
     }
 
     public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
         type=in.readByte();
-        seqno=in.readLong();
+        if(type != XMIT_RSP)
+            seqno=in.readLong();
         range=(Range)Util.readStreamable(Range.class, in);
         sender=Util.readAddress(in);
     }
 
     public long size() {
         // type (1 byte) + seqno (8 bytes)
-        int retval=Global.BYTE_SIZE + Global.LONG_SIZE;
+        int retval=Global.BYTE_SIZE;
+
+        if(type != XMIT_RSP) // we don't send the seqno if this is an XMIT_RSP
+            retval+=Global.LONG_SIZE;
 
         retval+=Global.BYTE_SIZE; // presence for range
         if(range != null)
