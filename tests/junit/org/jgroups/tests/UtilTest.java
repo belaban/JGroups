@@ -1,4 +1,4 @@
-// $Id: UtilTest.java,v 1.8 2006/03/29 11:35:37 belaban Exp $
+// $Id: UtilTest.java,v 1.9 2006/04/05 05:34:45 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -16,6 +16,7 @@ import org.jgroups.util.Util;
 import java.io.*;
 import java.util.Vector;
 import java.util.ArrayList;
+import java.util.List;
 
 
 public class UtilTest extends TestCase {
@@ -280,6 +281,38 @@ public class UtilTest extends TestCase {
         System.out.println("-- list is " + l);
         assertTrue(Util.all(l, "one"));
     }
+
+
+    public void testParseCommaDelimitedString() {
+        String input="1,2,3,4,5,6,7,8,9,10 , 11, 12 ,13";
+
+        List list=Util.parseCommaDelimitedStrings(input);
+        System.out.println("list: " + list);
+        assertEquals(13, list.size());
+        assertEquals("1", list.get(0));
+        assertEquals("13", list.get(list.size() -1));
+    }
+
+
+    public void testParseSemicolonDelimitedString() {
+        String input="one;two ; three; four ; five;six";
+        List list=Util.parseStringList(input, ";");
+        System.out.println("list: " + list);
+        assertEquals(6, list.size());
+        assertEquals("one", list.get(0));
+        assertEquals("six", list.get(list.size() -1));
+    }
+
+
+    public void testParseSemicolonDelimitedString2() {
+        String input="  myID1::subID1 ; myID2::mySubID2; myID3 ;myID4::blaSubID4";
+        List list=Util.parseStringList(input, ";");
+        System.out.println("list: " + list);
+        assertEquals(4, list.size());
+        assertEquals("myID1::subID1", list.get(0));
+        assertEquals("myID4::blaSubID4", list.get(list.size() -1));
+    }
+
 
 
     public static Test suite() {
