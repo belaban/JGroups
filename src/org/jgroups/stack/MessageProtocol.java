@@ -1,4 +1,4 @@
-// $Id: MessageProtocol.java,v 1.5 2005/11/12 06:37:41 belaban Exp $
+// $Id: MessageProtocol.java,v 1.6 2006/04/05 05:32:24 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -79,7 +79,12 @@ public abstract class MessageProtocol extends Protocol implements RequestHandler
         // msg.addHeader(new MsgProtHeader(getName()));   ++ already done by RequestCorrelator
 
         _req=new GroupRequest(msg, _corr, real_dests, mode, timeout, 0);
-        _req.execute();
+        try {
+            _req.execute();
+        }
+        catch(Exception e) {
+            throw new RuntimeException("failed executing request " + _req, e);
+        }
 
         return _req.getResults();
     }
@@ -107,7 +112,12 @@ public abstract class MessageProtocol extends Protocol implements RequestHandler
 
 
         _req=new GroupRequest(msg, _corr, mbrs, mode, timeout, 0);
-        _req.execute();
+        try {
+            _req.execute();
+        }
+        catch(Exception e) {
+            throw new RuntimeException("failed executing request " + _req, e);
+        }
 
         if(mode == GroupRequest.GET_NONE)
             return null;

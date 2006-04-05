@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.48 2006/03/27 08:34:24 belaban Exp $
+// $Id: MessageDispatcher.java,v 1.49 2006/04/05 05:31:07 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -408,7 +408,12 @@ public class MessageDispatcher implements RequestHandler {
 
         _req=new GroupRequest(msg, corr, real_dests, mode, timeout, 0);
         _req.setCaller(this.local_addr);
-        _req.execute();
+        try {
+            _req.execute();
+        }
+        catch(Exception ex) {
+            throw new RuntimeException("failed executing request " + _req, ex);
+        }
 
         return _req.getResults();
     }
@@ -479,7 +484,12 @@ public class MessageDispatcher implements RequestHandler {
             return;
         }
 
-        corr.sendRequest(req_id, real_dests, msg, coll);
+        try {
+            corr.sendRequest(req_id, real_dests, msg, coll);
+        }
+        catch(Exception e) {
+            throw new RuntimeException("failure sending request " + req_id + " to " + real_dests, e);
+        }
     }
 
 
@@ -510,7 +520,12 @@ public class MessageDispatcher implements RequestHandler {
 
         _req=new GroupRequest(msg, corr, mbrs, mode, timeout, 0);
         _req.setCaller(local_addr);
-        _req.execute();
+        try {
+            _req.execute();
+        }
+        catch(Exception t) {
+            throw new RuntimeException("failed executing request " + _req, t);
+        }
 
         if(mode == GroupRequest.GET_NONE) {
             return null;

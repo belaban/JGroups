@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.25 2006/02/13 13:01:14 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.26 2006/04/05 05:31:07 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -217,7 +217,7 @@ public class RequestCorrelator {
     /**
      * Helper method for {@link #sendRequest(long,List,Message,RspCollector)}.
      */
-    public void sendRequest(long id, Message msg, RspCollector coll) {
+    public void sendRequest(long id, Message msg, RspCollector coll) throws Exception {
         sendRequest(id, null, msg, coll);
     }
 
@@ -239,7 +239,7 @@ public class RequestCorrelator {
      * <code>suspect()</code> will be invoked when a message has been received
      * or a member is suspected, respectively.
      */
-    public void sendRequest(long id, List dest_mbrs, Message msg, RspCollector coll) {
+    public void sendRequest(long id, List dest_mbrs, Message msg, RspCollector coll) throws Exception {
         Header hdr;
 
         if(transport == null) {
@@ -271,19 +271,12 @@ public class RequestCorrelator {
         }
         msg.putHeader(name, hdr);
 
-        try {
-            if(transport instanceof Protocol)
-                ((Protocol)transport).passDown(new Event(Event.MSG, msg));
-            else if(transport instanceof Transport)
-                ((Transport)transport).send(msg);
-            else
-                if(log.isErrorEnabled())
-                    log.error("transport object has to be either a " +
-                              "Transport or a Protocol, however it is a " + transport.getClass());
-        }
-        catch(Throwable e) {
-            if(log.isWarnEnabled()) log.warn(e.toString());
-        }
+        if(transport instanceof Protocol)
+            ((Protocol)transport).passDown(new Event(Event.MSG, msg));
+        else if(transport instanceof Transport)
+            ((Transport)transport).send(msg);
+        else
+            throw new IllegalStateException("transport has to be either a Transport or a Protocol, however it is a " + transport.getClass());
     }
 
 
