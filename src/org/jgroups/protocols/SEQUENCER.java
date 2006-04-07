@@ -1,7 +1,6 @@
 
 package org.jgroups.protocols;
 
-import EDU.oswego.cs.dl.util.concurrent.SynchronizedLong;
 import EDU.oswego.cs.dl.util.concurrent.ConcurrentHashMap;
 import org.jgroups.*;
 import org.jgroups.stack.Protocol;
@@ -15,13 +14,13 @@ import java.util.*;
 /**
  * Implementation of total order protocol using a sequencer. Consult doc/SEQUENCER.txt for details
  * @author Bela Ban
- * @version $Id: SEQUENCER.java,v 1.9 2006/01/06 14:41:03 belaban Exp $
+ * @version $Id: SEQUENCER.java,v 1.10 2006/04/07 11:49:52 belaban Exp $
  */
 public class SEQUENCER extends Protocol {
-    private Address                 local_addr=null, coord=null;
-    static final String             name="SEQUENCER";
-    private boolean                 is_coord=false;
-    private final SynchronizedLong  seqno=new SynchronizedLong(0);
+    private Address           local_addr=null, coord=null;
+    static final String       name="SEQUENCER";
+    private boolean           is_coord=false;
+    private long              seqno=0;
 
     /** Map<seqno, Message>: maintains messages forwarded to the coord which which no ack has been received yet */
     private final Map               forward_table=new TreeMap();
@@ -74,7 +73,9 @@ public class SEQUENCER extends Protocol {
     }
 
     private final long nextSeqno() {
-        return seqno.increment();
+        synchronized(this) {
+            return seqno++;
+        }
     }
 
 
