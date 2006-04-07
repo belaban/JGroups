@@ -1,4 +1,4 @@
-// $Id: NotificationBus.java,v 1.9 2005/07/17 11:36:40 chrislott Exp $
+// $Id: NotificationBus.java,v 1.10 2006/04/07 12:24:37 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -137,6 +137,11 @@ public class NotificationBus implements MessageListener, MembershipListener {
 
     /** Pack the argument in a Info, serialize that one into the message buffer and send the message */
     public void sendNotification(Serializable n) {
+        sendNotification(null, n);
+    }
+
+        /** Pack the argument in a Info, serialize that one into the message buffer and send the message */
+    public void sendNotification(Address dest, Serializable n) {
         Message msg=null;
         byte[] data=null;
         Info info;
@@ -145,17 +150,15 @@ public class NotificationBus implements MessageListener, MembershipListener {
             if(n == null) return;
             info=new Info(Info.NOTIFICATION, n);
             data=Util.objectToByteBuffer(info);
-            msg=new Message(null, null, data);
+            msg=new Message(dest, null, data);
             if(channel == null) {
-                if(log.isErrorEnabled()) log.error("channel is null. " +
-                                                                  " Won't send notification");
+                if(log.isErrorEnabled()) log.error("channel is null. Won't send notification");
                 return;
             }
             channel.send(msg);
         }
         catch(Throwable ex) {
-
-                if(log.isErrorEnabled()) log.error("exception is " + ex);
+            if(log.isErrorEnabled()) log.error("error sending notification", ex);
         }
     }
 
