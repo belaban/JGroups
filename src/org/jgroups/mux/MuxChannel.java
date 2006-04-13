@@ -7,10 +7,10 @@ import java.util.Map;
 
 /**
  * Multiplexer channel. This is returned as result of calling
- * {@link org.jgroups.ChannelFactory#createMultiplexerChannel(String, String)}. Maintains the multiplexer
+ * {@link org.jgroups.ChannelFactory#createMultiplexerChannel(String,String,boolean,String)}. Maintains the multiplexer
  * ID, which is used to add a header to each message, so that the message can be demultiplexed at the receiver
  * @author Bela Ban
- * @version $Id: MuxChannel.java,v 1.11 2006/03/17 12:48:21 belaban Exp $
+ * @version $Id: MuxChannel.java,v 1.12 2006/04/13 08:45:42 belaban Exp $
  */
 public class MuxChannel extends JChannel {
 
@@ -30,16 +30,17 @@ public class MuxChannel extends JChannel {
     final MuxHeader hdr;
 
     final String name="MUX";
+    final Multiplexer mux;
 
 
-
-    public MuxChannel(JChannelFactory f, JChannel ch, String id, String stack_name) {
+    public MuxChannel(JChannelFactory f, JChannel ch, String id, String stack_name, Multiplexer mux) {
         super(false); // don't create protocol stack, queues and threads
         factory=f;
         this.ch=ch;
         this.stack_name=stack_name;
         this.id=id;
         hdr=new MuxHeader(id);
+        this.mux=mux;
         closed=!ch.isOpen();
         connected=ch.isConnected();
     }
@@ -47,6 +48,8 @@ public class MuxChannel extends JChannel {
     public String getStackName() {return stack_name;}
 
     public String getId() {return id;}
+
+    public Multiplexer getMultiplexer() {return mux;}
 
     public String getChannelName() {
         return ch.getChannelName();
@@ -145,12 +148,20 @@ public class MuxChannel extends JChannel {
 
 
     public boolean getState(Address target, long timeout) throws ChannelNotConnectedException, ChannelClosedException {
-        return ch.getState(target, id, timeout);
+        return getState(target, null, timeout);
     }
 
     public boolean getState(Address target, String state_id, long timeout) throws ChannelNotConnectedException, ChannelClosedException {
-        String my_id=id + "::" + state_id;
-        return ch.getState(target, my_id, timeout);
+        String my_id=id;
+
+        if(state_id != null)
+            my_id += "::" + state_id;
+
+        if(!mux.stateTransferListenersPresent())
+            return ch.getState(target, my_id, timeout);
+        else {
+            return mux.getState(target, my_id, timeout);
+        }
     }
 
     public void returnState(byte[] state) {

@@ -6,13 +6,12 @@ import junit.framework.TestSuite;
 import org.jgroups.*;
 import org.jgroups.util.Util;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.4 2006/03/27 08:34:25 belaban Exp $
+ * @version $Id: MultiplexerTest.java,v 1.5 2006/04/13 08:45:42 belaban Exp $
  */
 public class MultiplexerTest extends TestCase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -187,6 +186,174 @@ public class MultiplexerTest extends TestCase {
     }
 
 
+    public void testStateTransferWithRegistration() throws Exception {
+        ch1=factory.createMultiplexerChannel(STACK_NAME, "c1");
+        ch1.connect("bla");
+        c1=new Cache(ch1, "cache-1");
+        assertEquals("cache has to be empty initially", 0, c1.size());
+
+        ch2=factory.createMultiplexerChannel(STACK_NAME, "c2");
+        ch2.connect("bla");
+        c2=new Cache(ch2, "cache-2");
+        assertEquals("cache has to be empty initially", 0, c2.size());
+        c1.put("name", "cache-1");
+        c2.put("name", "cache-2");
+
+        ch1_repl=factory2.createMultiplexerChannel(STACK_NAME, "c1", true, null); // register for state transfer
+        ch2_repl=factory2.createMultiplexerChannel(STACK_NAME, "c2", true, null); // register for state transfer
+
+        ch1_repl.connect("bla");
+        c1_repl=new Cache(ch1_repl, "cache-1-repl");
+        boolean rc=ch1_repl.getState(null, 5000); // this will *not* trigger the state transfer protocol
+        System.out.println("state transfer: " + rc);
+
+        ch2_repl.connect("bla");
+        c2_repl=new Cache(ch2_repl, "cache-2-repl");
+        rc=ch2_repl.getState(null, 5000); // only *this* will trigger the state transfer
+        System.out.println("state transfer: " + rc);
+        Util.sleep(500);
+
+        System.out.println("Caches after state transfers:");
+        System.out.println("c1: " + c1);
+        System.out.println("c1_repl: " + c1_repl);
+        System.out.println("c2: " + c2);
+        System.out.println("c2_repl: " + c2_repl);
+
+        assertEquals(1, c1.size());
+        assertEquals(1, c1_repl.size());
+
+        assertEquals(1, c2.size());
+        assertEquals(1, c2_repl.size());
+
+        assertEquals("cache-1", c1.get("name"));
+        assertEquals("cache-1", c1_repl.get("name"));
+
+        assertEquals("cache-2", c2.get("name"));
+        assertEquals("cache-2", c2_repl.get("name"));
+    }
+
+
+    public void testGetSubstates() throws Exception {
+        ch1=factory.createMultiplexerChannel(STACK_NAME, "c1");
+        ch1.connect("bla");
+        c1=new ExtendedCache(ch1, "cache-1");
+        assertEquals("cache has to be empty initially", 0, c1.size());
+
+        ch2=factory.createMultiplexerChannel(STACK_NAME, "c2");
+        ch2.connect("bla");
+        c2=new ExtendedCache(ch2, "cache-2");
+        assertEquals("cache has to be empty initially", 0, c2.size());
+
+        for(int i=0; i < 10; i++) {
+            c1.put(new Integer(i), new Integer(i));
+            c2.put(new Integer(i), new Integer(i));
+        }
+
+        ch1_repl=factory2.createMultiplexerChannel(STACK_NAME, "c1");
+        ch2_repl=factory2.createMultiplexerChannel(STACK_NAME, "c2");
+        ch1_repl.connect("bla");
+        c1_repl=new ExtendedCache(ch1_repl, "cache-1-repl");
+        boolean rc=ch1_repl.getState(null, "odd", 5000);
+        System.out.println("state transfer: " + rc);
+
+        ch2_repl.connect("bla");
+        c2_repl=new ExtendedCache(ch2_repl, "cache-2-repl");
+        rc=ch2_repl.getState(null, "even", 5000);
+        System.out.println("state transfer: " + rc);
+        Util.sleep(500);
+
+        System.out.println("Caches after state transfers:");
+        System.out.println("c1: " + c1);
+        System.out.println("c2: " + c2);
+
+        System.out.println("c1_repl (removed odd substate): " + c1_repl);
+        System.out.println("c2_repl (removed even substate): " + c2_repl);
+
+        assertEquals(5, c1_repl.size());
+        assertEquals(5, c2_repl.size());
+
+        _testEvenNumbersPresent(c1_repl);
+        _testOddNumbersPresent(c2_repl);
+    }
+
+    private void _testEvenNumbersPresent(Cache c) {
+        Integer[] evens=new Integer[]{new Integer(0), new Integer(2), new Integer(4), new Integer(6), new Integer(8)};
+        _testNumbersPresent(c, evens);
+
+    }
+
+    private void _testOddNumbersPresent(Cache c) {
+        Integer[] odds=new Integer[]{new Integer(1), new Integer(3), new Integer(5), new Integer(7), new Integer(9)};
+        _testNumbersPresent(c, odds);
+    }
+
+    private void _testNumbersPresent(Cache c, Integer[] numbers) {
+        int len=numbers.length;
+        assertEquals(len, c.size());
+        for(int i=0; i < numbers.length; i++) {
+            Integer number=numbers[i];
+            assertEquals(number, c.get(number));
+        }
+    }
+
+
+
+    public void testGetSubstatesMultipleTimes() throws Exception {
+        ch1=factory.createMultiplexerChannel(STACK_NAME, "c1");
+        ch1.connect("bla");
+        c1=new ExtendedCache(ch1, "cache-1");
+        assertEquals("cache has to be empty initially", 0, c1.size());
+
+        ch2=factory.createMultiplexerChannel(STACK_NAME, "c2");
+        ch2.connect("bla");
+        c2=new ExtendedCache(ch2, "cache-2");
+        assertEquals("cache has to be empty initially", 0, c2.size());
+
+        for(int i=0; i < 10; i++) {
+            c1.put(new Integer(i), new Integer(i));
+            c2.put(new Integer(i), new Integer(i));
+        }
+
+        ch1_repl=factory2.createMultiplexerChannel(STACK_NAME, "c1");
+        ch2_repl=factory2.createMultiplexerChannel(STACK_NAME, "c2");
+        ch1_repl.connect("bla");
+        c1_repl=new ExtendedCache(ch1_repl, "cache-1-repl");
+        boolean rc=ch1_repl.getState(null, "odd", 5000);
+        System.out.println("state transfer: " + rc);
+
+        ch2_repl.connect("bla");
+        c2_repl=new ExtendedCache(ch2_repl, "cache-2-repl");
+        rc=ch2_repl.getState(null, "even", 5000);
+        System.out.println("state transfer: " + rc);
+        Util.sleep(500);
+        _testOddNumbersPresent(c2_repl);
+
+        System.out.println("Caches after state transfers:");
+        System.out.println("c1: " + c1);
+        System.out.println("c2: " + c2);
+        System.out.println("c1_repl (removed odd substate): " + c1_repl);
+        System.out.println("c2_repl (removed even substate): " + c2_repl);
+
+        assertEquals(5, c2_repl.size());
+        rc=ch2_repl.getState(null, "odd", 5000);
+        Util.sleep(500);
+        System.out.println("c2_repl (removed odd substate): " + c2_repl);
+        _testEvenNumbersPresent(c2_repl);
+
+        assertEquals(5, c2_repl.size());
+        rc=ch2_repl.getState(null, "even", 5000);
+        Util.sleep(500);
+        System.out.println("c2_repl (removed even substate): " + c2_repl);
+        _testOddNumbersPresent(c2_repl);
+
+        assertEquals(5, c2_repl.size());
+        rc=ch2_repl.getState(null, "odd", 5000);
+        Util.sleep(500);
+        System.out.println("c2_repl (removed odd substate): " + c2_repl);
+        _testEvenNumbersPresent(c2_repl);
+    }
+
+
 
     public static Test suite() {
         return new TestSuite(MultiplexerTest.class);
@@ -197,7 +364,7 @@ public class MultiplexerTest extends TestCase {
     }
 
 
-    private static class Cache extends ReceiverAdapter {
+    private static class Cache extends ExtendedReceiverAdapter {
         final Map data=new HashMap();
         Channel ch;
         String name;
@@ -208,20 +375,20 @@ public class MultiplexerTest extends TestCase {
             this.ch.setReceiver(this);
         }
 
-        Object get(Object key) {
+        protected Object get(Object key) {
             synchronized(data) {
                 return data.get(key);
             }
         }
 
-        void put(Object key, Object val) throws Exception {
+        protected  void put(Object key, Object val) throws Exception {
             Object[] buf=new Object[2];
             buf[0]=key; buf[1]=val;
             Message msg=new Message(null, null, buf);
             ch.send(msg);
         }
 
-        int size() {
+        protected int size() {
             synchronized(data) {
                 return data.size();
             }
@@ -251,6 +418,11 @@ public class MultiplexerTest extends TestCase {
             return state;
         }
 
+        public byte[] getState(String state_id) {
+            return getState();
+        }
+
+
         public void setState(byte[] state) {
             Map m;
             try {
@@ -263,8 +435,12 @@ public class MultiplexerTest extends TestCase {
             catch(Exception e) {
                 e.printStackTrace();
             }
-
         }
+
+        public void setState(String state_id, byte[] state) {
+            setState(state);
+        }
+
 
         public void viewAccepted(View new_view) {
             log("view is " + new_view);
@@ -279,4 +455,48 @@ public class MultiplexerTest extends TestCase {
         }
 
     }
+
+
+    static class ExtendedCache extends Cache {
+
+        public ExtendedCache(Channel ch, String name) {
+            super(ch, name);
+        }
+
+
+        public byte[] getState(String state_id) {
+            Map copy=new HashMap(data);
+            for(Iterator it=copy.keySet().iterator(); it.hasNext();) {
+                Integer key=(Integer)it.next();
+                if(state_id.equals("odd") && key.intValue() % 2 != 0)
+                    it.remove();
+                else if(state_id.equals("even") && key.intValue() % 2 == 0)
+                    it.remove();
+            }
+            try {
+                return Util.objectToByteBuffer(copy);
+            }
+            catch(Exception e) {
+                e.printStackTrace();
+                return null;
+            }
+        }
+
+        public void setState(String state_id, byte[] state) {
+            setState(state);
+        }
+
+        public String toString() {
+            synchronized(data) {
+                Set keys=new TreeSet(data.keySet());
+                StringBuffer sb=new StringBuffer();
+                for(Iterator it=keys.iterator(); it.hasNext();) {
+                    Object o=it.next();
+                    sb.append(o).append("=").append(data.get(o)).append(" ");
+                }
+                return sb.toString();
+            }
+        }
+    }
+
 }

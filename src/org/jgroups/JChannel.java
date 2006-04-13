@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.63 2006/03/27 08:25:26 belaban Exp $
+// $Id: JChannel.java,v 1.64 2006/04/13 08:45:42 belaban Exp $
 
 package org.jgroups;
 
@@ -66,7 +66,7 @@ import java.util.Vector;
  *
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.63 $
+ * @version $Revision: 1.64 $
  */
 public class JChannel extends Channel {
 
@@ -914,6 +914,8 @@ public class JChannel extends Channel {
         StateTransferInfo info=new StateTransferInfo(null, state_id, 0L, state);
         down(new Event(Event.GET_APPLSTATE_OK, info));
     }
+
+
 
 
 

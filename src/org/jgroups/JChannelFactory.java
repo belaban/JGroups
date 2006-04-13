@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.13 2006/03/17 12:48:22 belaban Exp $
+// $Id: JChannelFactory.java,v 1.14 2006/04/13 08:45:42 belaban Exp $
 
 package org.jgroups;
 
@@ -191,8 +191,12 @@ public class JChannelFactory implements ChannelFactory {
     }
 
     public Channel createMultiplexerChannel(String stack_name, String id) throws Exception {
+        return createMultiplexerChannel(stack_name, id, false, null);
+    }
+
+    public Channel createMultiplexerChannel(String stack_name, String id, boolean register_for_state_transfer, String substate_id) throws Exception {
         if(stack_name == null || id == null)
-            throw new ChannelException("stack name and application ID have to be non null");
+            throw new IllegalArgumentException("stack name and application ID have to be non null");
         Entry entry;
         synchronized(channels) {
             entry=(Entry)channels.get(stack_name);
@@ -213,6 +217,8 @@ public class JChannelFactory implements ChannelFactory {
                 mux=new Multiplexer(ch);
                 entry.multiplexer=mux;
             }
+            if(register_for_state_transfer)
+                mux.registerForStateTransfer(id, substate_id);
             return mux.createMuxChannel(this, id, stack_name);
         }
     }
@@ -234,6 +240,7 @@ public class JChannelFactory implements ChannelFactory {
         }
         ch.setClosed(false);
         ch.setConnected(true);
+        // entry.multiplexer.checkForStateTransfer(ch.getId());
     }
 
 
@@ -343,26 +350,6 @@ public class JChannelFactory implements ChannelFactory {
             }
             channels.clear();
         }
-    }
-
-
-    /**
-     * When all applications which registered for state transfer have connected, we will fetch the *entire* state and
-     * push individual substates to the registered applications
-     * @param ch
-     */
-    public void registerForStateTransfer(MuxChannel ch) {
-        // todo: fetch the stack_name and appl_id from ch
-    }
-
-    /**
-     * Tells the JChannel associated with the given stack_name to fetch all substates; ie. by using a state_id of
-     * null in {@link JChannel#getState(Address, String, long)}. When the state is received, we demultiplex it and
-     * set it in each application
-     * @param stack_name
-     */
-    private void getAllSubstates(String stack_name) {
-        // todo: implement
     }
 
 

@@ -1,4 +1,4 @@
-// $Id: ChannelFactory.java,v 1.7 2006/03/12 11:49:28 belaban Exp $
+// $Id: ChannelFactory.java,v 1.8 2006/04/13 08:45:42 belaban Exp $
 
 package org.jgroups;
 
@@ -41,10 +41,16 @@ public interface ChannelFactory {
      * @param id The identifier used for multiplexing and demultiplexing (dispatching requests to one of possibly
      * multiple receivers). Note that id needs to be a string since it will be shipped with each message. Try to pick
      * a short string, because this is shipped with every message (overhead). todo: possibly change to short ?
+     * @param register_for_state_transfer If set to true, after all registered listeners called connect() on the returned Channel,
+     * the state for all registered listeners will be fetched and set in all listeners
+     * @param substate_id The ID of the substate to be retrieved. Set this to null if the entire state should be retrieved. If
+     * register_for_state_transfer is false, substate_id will be ignored
      * @return An implementation of Channel which keeps track of the id, so that it can be attached to each message
      * and be properly dispatched at the receiver. This will be a {@link org.jgroups.mux.MuxChannel}.
      * @throws ChannelException
      */
+    Channel createMultiplexerChannel(String stack_name, String id, boolean register_for_state_transfer, String substate_id) throws Exception;
+
     Channel createMultiplexerChannel(String stack_name, String id) throws Exception;
 
     Channel createChannel(Object props) throws ChannelException;
