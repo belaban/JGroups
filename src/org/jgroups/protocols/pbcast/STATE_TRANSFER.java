@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.34 2006/03/17 11:10:17 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.35 2006/04/13 08:11:47 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -228,7 +228,7 @@ public class STATE_TRANSFER extends Protocol {
                         state_requesters.remove(id);
                     }
                 }
-                return;                 // don't pass down any further !
+                return;             // don't pass down any further !
         }
 
         passDown(evt);              // pass on to the layer below us
@@ -347,11 +347,11 @@ public class STATE_TRANSFER extends Protocol {
         public static final byte STATE_RSP=2;
 
 
-        long id=0;               // state transfer ID (to separate multiple state transfers at the same time)
-        byte type=0;
-        Address sender;          // sender of state STATE_REQ or STATE_RSP
-        Digest my_digest=null;   // digest of sender (if type is STATE_RSP)
-        String state_id=null;    // for partial state transfer
+        long    id=0;               // state transfer ID (to separate multiple state transfers at the same time)
+        byte    type=0;
+        Address sender;             // sender of state STATE_REQ or STATE_RSP
+        Digest  my_digest=null;     // digest of sender (if type is STATE_RSP)
+        String  state_id=null;      // for partial state transfer
 
 
         public StateHeader() {  // for externalization
@@ -373,6 +373,7 @@ public class STATE_TRANSFER extends Protocol {
             this.state_id=state_id;
         }
 
+
         public int getType() {
             return type;
         }
@@ -384,6 +385,7 @@ public class STATE_TRANSFER extends Protocol {
         public String getStateId() {
             return state_id;
         }
+
 
         public boolean equals(Object o) {
             StateHeader other;
