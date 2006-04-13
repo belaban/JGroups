@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.20 2006/03/17 10:48:46 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.21 2006/04/13 08:14:20 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -212,9 +212,17 @@ public class STATE_TRANSFER extends Protocol implements RequestHandler {
                     return;             // don't pass down any further !
                 }
 
-                sendMakeCopyMessage();  // multicast MAKE_COPY to all members (including me)
 
-                state=getStateFromSingle(info.target);
+
+                try {
+                    sendMakeCopyMessage();  // multicast MAKE_COPY to all members (including me)
+                    state=getStateFromSingle(info.target);
+                }
+                catch(Throwable t) {
+                    if(log.isErrorEnabled())
+                        log.error("failed sending state request", t);
+                    state=null;
+                }
 
                 /* Pass up the state to the application layer (insert into JChannel's event queue */
                 event_list=new Vector(1);
@@ -277,7 +285,7 @@ public class STATE_TRANSFER extends Protocol implements RequestHandler {
 
 
 
-    byte[] getStateFromSingle(Address target) {
+    byte[] getStateFromSingle(Address target) throws Throwable {
         Vector dests=new Vector(11);
         Message msg;
         StateTransferRequest r=new StateTransferRequest(StateTransferRequest.RETURN_STATE, local_addr);
@@ -318,50 +326,50 @@ public class STATE_TRANSFER extends Protocol implements RequestHandler {
     }
 
 
-    Vector getStateFromMany(Vector targets) {
-        Vector dests=new Vector(11);
-        Message msg;
-        StateTransferRequest r=new StateTransferRequest(StateTransferRequest.RETURN_STATE, local_addr);
-        RspList rsp_list;
-        GroupRequest req;
-        int i;
+//    Vector getStateFromMany(Vector targets) {
+//        Vector dests=new Vector(11);
+//        Message msg;
+//        StateTransferRequest r=new StateTransferRequest(StateTransferRequest.RETURN_STATE, local_addr);
+//        RspList rsp_list;
+//        GroupRequest req;
+//        int i;
+//
+//
+//        if(targets != null) {
+//            for(i=0; i < targets.size(); i++)
+//                if(!local_addr.equals(targets.elementAt(i)))
+//                    dests.addElement(targets.elementAt(i));
+//        }
+//        else {
+//            for(i=0; i < members.size(); i++)
+//                if(!local_addr.equals(members.elementAt(i)))
+//                    dests.addElement(members.elementAt(i));
+//        }
+//
+//        if(dests.size() == 0)
+//            return null;
+//
+//        msg=new Message();
+//        try {
+//            msg.setBuffer(Util.objectToByteBuffer(r));
+//        }
+//        catch(Exception e) {
+//        }
+//
+//        req=new GroupRequest(msg, corr, dests, GroupRequest.GET_ALL, timeout_return_state, 0);
+//        req.execute();
+//        rsp_list=req.getResults();
+//        return rsp_list.getResults();
+//    }
 
 
-        if(targets != null) {
-            for(i=0; i < targets.size(); i++)
-                if(!local_addr.equals(targets.elementAt(i)))
-                    dests.addElement(targets.elementAt(i));
-        }
-        else {
-            for(i=0; i < members.size(); i++)
-                if(!local_addr.equals(members.elementAt(i)))
-                    dests.addElement(members.elementAt(i));
-        }
-
-        if(dests.size() == 0)
-            return null;
-
-        msg=new Message();
-        try {
-            msg.setBuffer(Util.objectToByteBuffer(r));
-        }
-        catch(Exception e) {
-        }
-
-        req=new GroupRequest(msg, corr, dests, GroupRequest.GET_ALL, timeout_return_state, 0);
-        req.execute();
-        rsp_list=req.getResults();
-        return rsp_list.getResults();
-    }
-
-
-    void sendMakeCopyMessage() {
+    void sendMakeCopyMessage() throws Throwable {
         GroupRequest req;
         Message msg=new Message();
         StateTransferRequest r=new StateTransferRequest(StateTransferRequest.MAKE_COPY, local_addr);
         Vector dests=new Vector(11);
 
-        for(int i=0; i < members.size(); i++)   
+        for(int i=0; i < members.size(); i++)
              dests.addElement(members.elementAt(i));
 
         if(dests.size() == 0)
