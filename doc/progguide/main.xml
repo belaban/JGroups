@@ -22,8 +22,8 @@
 
   <bookinfo>
     <title>Reliable Multicasting with the JGroups Toolkit</title>
-    <pubdate>$Date: 2006/02/16 12:21:37 $</pubdate>
-    <releaseinfo>$Revision: 1.3 $</releaseinfo>
+    <pubdate>$Date: 2006/04/15 13:05:57 $</pubdate>
+    <releaseinfo>$Revision: 1.4 $</releaseinfo>
     <authorgroup>
       <author>
 	<firstname>Bela</firstname>
@@ -34,13 +34,9 @@
           <address><email>belaban@yahoo.com</email></address>
         </affiliation>
       </author>
-      <!--othercredit>
-	<firstname>Vladimir</firstname>
-	<surname>Blagejovic</surname>
-      </othercredit-->
     </authorgroup>
     <copyright>
-      <year>2002</year>
+      <year>1998-2006</year>
       <holder>Bela Ban</holder>
     </copyright>
     <legalnotice>
@@ -185,6 +181,25 @@
 
   &overview;
 
+
+    <part><title>User's Guide</title>
+
+        &uoverview;
+        &installation;
+        &uchannel;
+        &ublocks;
+
+        <chapter><title>Services</title>
+            <section><title>ServiceRunner</title><para></para></section>
+            <section><title>Leasing Service</title><para></para></section>
+            <section><title>Agreement Service</title><para></para></section>
+        </chapter>
+
+        &advanced;
+        &tracing;
+
+    </part>
+
   <part><title>Programmer's Guide</title>
     
     &architecture;
@@ -198,23 +213,7 @@
 
   </part>
 
-  <part><title>User's Guide</title>
 
-    &uoverview;
-    &installation;
-    &uchannel;
-    &ublocks;
-
-    <chapter><title>Services</title>
-      <section><title>ServiceRunner</title><para></para></section>
-      <section><title>Leasing Service</title><para></para></section>
-      <section><title>Agreement Service</title><para></para></section>
-    </chapter>
-
-    &advanced;
-    &tracing;
-    
-  </part>
 
   <bibliography>
     
