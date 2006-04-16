@@ -9,7 +9,6 @@
         <!ENTITY debugging    SYSTEM "debugging.xml">
         <!ENTITY protocols    SYSTEM "protocols.xml">
         <!ENTITY protlist     SYSTEM "protlist.xml">
-        <!ENTITY eventlist    SYSTEM "eventlist.xml">
         <!ENTITY uoverview    SYSTEM "uoverview.xml">
         <!ENTITY installation SYSTEM "installation.xml">
         <!ENTITY uchannel     SYSTEM "uchannel.xml">
@@ -22,8 +21,8 @@
 
     <bookinfo>
         <title>Reliable Multicasting with the JGroups Toolkit</title>
-        <pubdate>$Date: 2006/04/16 21:52:39 $</pubdate>
-        <releaseinfo>$Revision: 1.5 $</releaseinfo>
+        <pubdate>$Date: 2006/04/16 22:24:52 $</pubdate>
+        <releaseinfo>$Revision: 1.6 $</releaseinfo>
         <authorgroup>
             <author>
                 <firstname>Bela</firstname>
@@ -189,7 +188,6 @@
 
     <part>
         <title>User's Guide</title>
-
         &uoverview;
         &installation;
         &uchannel;
@@ -200,7 +198,6 @@
 
     <part>
         <title>Programmer's Guide</title>
-
         &architecture;
         &channel;
         &protstack;
@@ -208,8 +205,6 @@
         &debugging;
         &protocols;
         &protlist;
-        &eventlist;
-
     </part>
 
 

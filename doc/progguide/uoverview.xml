@@ -41,7 +41,7 @@
   given channel.</para>
 
   <para>This document describes how to install and
-  <emphasis>use</emphasis> Javagroups, ie. the Channel API and the
+  <emphasis>use</emphasis> JGroups, ie. the Channel API and the
   building blocks. The targeted audience is application programmers
   who want to use JGroups to build reliable distributed programs
   that need group communication. Programmers who want to
