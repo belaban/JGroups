@@ -1,5 +1,12 @@
 <chapter><title>Tracing</title>
 
+    <note>
+        The following information is not accurate anymore. JGroups switched to Apache commons-logging a long time ago,
+        and can now use either log4j or the JDK logging subsystem, or any other implementation. I want to thank
+        Jim Menard for this (now deprecated) Tracing subsystem anyway, this was incredibly useful in finding out bugs,
+        especially when the only debugger available was jdb !
+    </note>
+
   <para>JGroups provides its own tracing module, located in the
   <classname>org.javagroups.log</classname> package. The reason for
   having its own tracing is that tracing was written before log4j or
