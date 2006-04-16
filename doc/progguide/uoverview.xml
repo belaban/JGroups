@@ -18,9 +18,9 @@
   <figure id="ArchitectureFig">
     <title>Architecture of JGroups</title>
     <mediaobject>
-     <!--imageobject>
-      <imagedata align="center" fileref="Architecture.png"/>
-     </imageobject-->
+        <imageobject>
+            <imagedata align="center" fileref="images/Architecture.png"/>
+        </imageobject>
      <textobject>
       <phrase>A diagram representing JGroups architecture.</phrase>
      </textobject>

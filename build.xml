@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.39 2006/03/17 10:54:17 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.40 2006/04/16 14:11:55 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -55,6 +55,7 @@
         <mkdir dir="${dist.dir}"/>
         <mkdir dir="${dist.dir}/pg"/>
         <mkdir dir="${dist.dir}/pg/html"/>
+        <mkdir dir="${dist.dir}/pg/html/images"/>
         <mkdir dir="${dist.dir}/pg/pdf"/>
         <mkdir dir="${javadoc.dir}"/>
     </target>
@@ -237,7 +238,7 @@
             author="true"
             version="true"
             use="true"
-            bottom="Copyright &#169; 1998-2005 Bela Ban. All Rights Reserved."
+            bottom="Copyright &#169; 1998-2006 Bela Ban. All Rights Reserved."
 			useexternalfile="yes"
 			doctitle="JGroups"
 			overview="${src.dir}/org/jgroups/overview.html"
@@ -253,6 +254,9 @@
         <style in="${pg.dir}/main.xml"
             style="${docbook.dir}/html/docbook.xsl"
             out="${dist.dir}/pg/html/pg.html"/>
+        <copy todir="${dist.dir}/pg/html/images">
+            <fileset dir="${pg.dir}/images" includes="*.png"/>
+        </copy>
     </target>
 
     <!--
