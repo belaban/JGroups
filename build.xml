@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.40 2006/04/16 14:11:55 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.41 2006/04/17 21:09:52 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -259,15 +259,28 @@
         </copy>
     </target>
 
-    <!--
     <target name="chunkedhtml" depends="prepare"
             description="Generates the Programmer's Guide in chunked HTML">
 	<style basedir="${pg.dir}"
 	       includes="*.xml"
-	       style="${docbook.dir}/html/chunk.xsl"
+            classpathref="jg.classpath"
+           style="${docbook.dir}/html/chunk.xsl"
 	       destdir="${dist.dir}/pg/html"/>
     </target>
-    -->
+
+
+    <!--<target name="chunkedhtml">-->
+        <!--<copy todir="${dist.dir}/pg/html/images">-->
+            <!--<fileset dir="${pg.dir}/images" includes="*.png"/>-->
+        <!--</copy>-->
+<!---->
+        <!--<java classname="com.icl.saxon.StyleSheet"-->
+              <!--fork="true" dir="${dist.dir}/pg/html">-->
+            <!--<classpath refid="jg.classpath"/>-->
+            <!--<arg value="${pg.dir}/main.xml"/>-->
+            <!--<arg value="${pg.dir}/html_chunk.xsl"/>-->
+        <!--</java>-->
+    <!--</target>-->
 
 
     <target name="pdf" depends="prepare"
@@ -281,6 +294,8 @@
             <arg line="-pdf ${dist.dir}/pg/pdf/pg.pdf "/>
         </java>
     </target>
+
+
 
 
     <!-- clean up directories -->
