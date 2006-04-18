@@ -95,8 +95,8 @@
 
             <screen>
                 public interface Transport {
-                public void send(Message msg) throws Exception;
-                public Object receive(long timeout) throws Exception;
+                    public void send(Message msg) throws Exception;
+                    public Object receive(long timeout) throws Exception;
                 }
             </screen>
 
@@ -143,9 +143,9 @@
 
             <screen>
                 public interface MessageListener {
-                public void receive(Message msg);
-                byte[] getState();
-                void setState(byte[] state);
+                    public void receive(Message msg);
+                    byte[] getState();
+                    void setState(byte[] state);
                 }
             </screen>
 
@@ -213,9 +213,9 @@
 
             <screen>
                 public interface MembershipListener {
-                public void viewAccepted(View new_view);
-                public void suspect(Object suspected_mbr);
-                public void block();
+                    public void viewAccepted(View new_view);
+                    public void suspect(Object suspected_mbr);
+                    public void block();
                 }
             </screen>
 
@@ -268,11 +268,11 @@
 
             <screen>
                 public interface ChannelListener {
-                void channelConnected(Channel channel);
-                void channelDisconnected(Channel channel);
-                void channelClosed(Channel channel);
-                void channelShunned();
-                void channelReconnected(Address addr);
+                    void channelConnected(Channel channel);
+                    void channelDisconnected(Channel channel);
+                    void channelClosed(Channel channel);
+                    void channelShunned();
+                    void channelReconnected(Address addr);
                 }
             </screen>
 
@@ -308,6 +308,15 @@
             </screen>
             <para>This is a receiver who will be able to handle partial state transfer</para>
         </section>
+
+        <note>
+            <title>Merging of Extended interfaces with their super interfaces</title>
+            <para>
+                The Extended- interfaces (ExtendedMessageListener, ExtendedReceiver) will be merged with their parents
+                in the 3.0 release of JGroups. The reason is that this will create an API backwards incompatibility, which
+                we didn't want to introduce in the 2.x series.
+            </para>
+        </note>
 
     </section>
 
@@ -375,16 +384,9 @@
             .
         </para>
 
-        <figure id="MessageFig">
-            <title>Structure of a message</title>
-            <mediaobject>
-                <!--imageobject>
-              <imagedata align="center" fileref="Message.png"/>
-                </imageobject-->
-                <textobject>
-                    <phrase>A diagram representing the structure of a message.</phrase>
-                </textobject>
-            </mediaobject>
+
+        <figure id="MessageFig"><title>Structure of a message</title>
+                <graphic fileref="images/Message.png" format="PNG" align="center"  />
         </figure>
 
         <para>A message contains four fields:</para>
@@ -1419,7 +1421,7 @@
                 channel=new JChannel("UDP:PING:FD:GMS:STATE_TRANSFER:QUEUE");
                 channel.setOpt(Channel.GET_STATE_EVENTS, new Boolean(true)); // not needed anymore (no-op in 2.3 and higher)
                 channel.connect("TestChannel");
-                boolean rc=channel.getState(5000);
+                boolean rc=channel.getState(null, 5000);
 
                 ...
 
@@ -1505,7 +1507,7 @@
                 channel=new JChannel(); // use default properties (has to include pbcast.STATE_TRANSFER protocol)
                 channel.connect("TestChannel");
                 channel.setReceiver(new MyReceiver());
-                boolean rc=channel.getState(5000);
+                boolean rc=channel.getState(null, 5000);
             </screen>
             <para>
                 In a group consisting of A,B and C, with D joining the group and calling Channel.getState(), the following
@@ -1523,7 +1525,71 @@
         <section id="PartialStateTransfer">
             <title>Partial state transfer</title>
             <para>
+                Partial state transfer means that instead of transferring the entire state, we may want to transfer
+                only a <emphasis>substate</emphasis>. For example, with HTTP session replication, a new node in a cluster
+                may want to transfer only the state of a specific session, not <emphasis>all</emphasis> HTTP sessions.
+                This can be done with either the pull or push model. The method to call would be Channel.getState(),
+                including the ID of the substate (a string). In the pull model, GetStateEvent and SetStateEvent have an
+                additional member, state_id, and in the push model, there are 2 additional getState() and setState()
+                callbacks. The example below shows partial state transfer for the push model:
+            </para>
 
+            <screen>
+                class MyReceiver extends ExtendedReceiverAdapter {
+                    final Map m=new HashMap();
+
+                    public byte[] getState() {
+                        return getState(null);
+                    }
+
+                    public byte[] getState(String substate_id) {
+                        synchronized(m) { // so nobody else can modify the map while we serialize it
+                            byte[] state=null;
+                            if(substate_id == null) {
+                                state=Util.objectToByteBuffer(m);
+                            }
+                            else {
+                                Object value=m.get(substate_id);
+                                if(value != null) {
+                                    return Util.objectToByteBuffer(value);
+                                }
+                            }
+                            return state;
+                        }
+                    }
+
+                    public void setState(byte[] state) {
+                        setState(null, state);
+                    }
+
+                    public void setState(String substate_id, byte[] state) {
+                        synchronized(m) {
+                            if(substate_id == null) {
+                                Object value=Util.objectFromByteBuffer(state);
+                                m.put(substate_id, value);
+                            }
+                            else {
+                                Map new_m=(Map)Util.objectFromByteBuffer(state);
+                                m.clear();
+                                m.addAll(new_m);
+                            }
+                        }
+                    }
+                }
+
+                channel=new JChannel(); // use default properties (has to include pbcast.STATE_TRANSFER protocol)
+                channel.connect("TestChannel");
+                channel.setReceiver(new MyReceiver());
+                boolean rc=channel.getState(null, "MySpecificSessionID", 5000);
+            </screen>
+            <para>
+                The example shows that the Channel.getState() method specifies the ID of the substate, in this case
+                "MySpecificSessionID". The <methodname>getState(String substate_id)</methodname> method checks whether
+                the substate ID is not null, and returns the substate pertaining to the ID, or the entire state if
+                the substate_id is null.
+                The same goes for setting the substate: if <methodname>setState(String substate_id, byte[] state)</methodname>
+                has a non-null substate_id, only that part of the current state will be overwritten, otherwise (if null)
+                the entire state will be overwritten.
             </para>
         </section>
 
