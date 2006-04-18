@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.14 2006/04/13 08:45:42 belaban Exp $
+// $Id: JChannelFactory.java,v 1.15 2006/04/18 15:26:50 belaban Exp $
 
 package org.jgroups;
 
@@ -350,6 +350,26 @@ public class JChannelFactory implements ChannelFactory {
             }
             channels.clear();
         }
+    }
+
+
+    public String dumpConfiguration() {
+        if(stacks != null) {
+            return stacks.keySet().toString();
+        }
+        else
+            return null;
+    }
+
+    public String dumpChannels() {
+        if(channels == null)
+            return null;
+        StringBuffer sb=new StringBuffer();
+        for(Iterator it=channels.entrySet().iterator(); it.hasNext();) {
+            Map.Entry entry=(Map.Entry)it.next();
+            sb.append(entry.getKey()).append(": ").append(((Entry)entry.getValue()).multiplexer.getApplicationIds()).append("\n");
+        }
+        return sb.toString();
     }
 
 

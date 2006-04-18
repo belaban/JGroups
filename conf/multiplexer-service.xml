@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<server>
+
+    <!--
+    An example for setting up the JChannelFactory MBean
+    Author: Bela Ban
+    Version: $Id: multiplexer-service.xml,v 1.1 2006/04/18 15:26:49 belaban Exp $
+    -->
+    <mbean code="org.jgroups.jmx.JChannelFactory" name="jgroups:name=Multiplexer">
+        <attribute name="MultiplexerConfig">stacks.xml</attribute>
+    </mbean>
+
+</server>
