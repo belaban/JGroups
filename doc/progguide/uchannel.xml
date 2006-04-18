@@ -1310,25 +1310,6 @@
         </section>
 
         <section>
-            <title>Peeking at a message</title>
-
-            <para>Instead of removing the next available message from the
-                channel,
-                <methodname>peek()</methodname>
-                just returns a
-                reference to the next message, but does not remove it. This is
-                useful when one has to check the type of the next message,
-                e.g. whether it is a regular message, or a view change. The
-                signature of this method is not shown here, it is the same as
-                for
-                <methodname>receive()</methodname>
-                .
-            </para>
-
-        </section>
-
-
-        <section>
             <title>Using a Receiver to receive messages</title>
             <para>
                 Instead of pulling messages from a channel in an application thread, a Receiver can be registered with
@@ -1357,21 +1338,38 @@
                 messages/views, which can quickly get large if the receiver cannot process messages fast enough, and
                 the sender keeps sending messages.
             </para>
+                </section>
+
+        <section>
+            <title>Peeking at a message</title>
+
+            <para>Instead of removing the next available message from the
+                channel,
+                <methodname>peek()</methodname>
+                just returns a
+                reference to the next message, but does not remove it. This is
+                useful when one has to check the type of the next message,
+                e.g. whether it is a regular message, or a view change. The
+                signature of this method is not shown here, it is the same as
+                for
+                <methodname>receive()</methodname>
+                .
+            </para>
+
         </section>
+
+
+
 
 
         <section id="GetState">
             <title>Getting the group's state</title>
 
             <para>A newly joined member may wish to retrieve the state of
-                the group before starting work. This is done calling either
-                <methodname>getState()</methodname>
-                of
-                <methodname>getStates()</methodname>
-                . The first method returns
+                the group before starting work. This is done with
+                <methodname>getState()</methodname>. This method returns
                 the state of one member (in most cases, of the oldest member,
-                the coordinator) whereas the latter returns the states of all
-                members. This method returns true or false, depending on whether
+                the coordinator). It returns true or false, depending on whether
                 a valid state could be retrieved. For example, if a member is a
                 singleton, then calling this method would always return
                 false
@@ -1387,11 +1385,10 @@
             <para>The actual state is returned as the return value of one of
                 the subsequent
                 <methodname>receive()</methodname>
-                calls, in the
-                form of a
+                calls, in the form of a
                 <classname>SetStateEvent</classname>
                 object. If
-                <methodname>getState(s)</methodname>
+                <methodname>getState()</methodname>
                 returned true, then a valid
                 state (non-null) will be returned, otherwise a null state will
                 be returned. Alternatively if an application uses
@@ -1404,18 +1401,15 @@
                 copy of the current state should be returned. By the same token,
                 setting a state would be accomplished by JGroups calling the
                 <methodname>setState()</methodname>
-                method of the state
-                fetcher.
+                method of the state fetcher.
             </para>
 
             <para>The reason for not directly returning the state as a
                 result of
                 <methodname>getState()</methodname>
-                is that the state
-                has to be returned in the correct position relative to other
+                is that the state has to be returned in the correct position relative to other
                 messages. Returning it directly would violate the FIFO
-                properties of a channel, and state transfer would not be
-                correct.
+                properties of a channel, and state transfer would not be correct.
             </para>
 
             <para>The following code fragment shows how a group member
@@ -1423,7 +1417,7 @@
 
             <screen>
                 channel=new JChannel("UDP:PING:FD:GMS:STATE_TRANSFER:QUEUE");
-                channel.setOpt(Channel.GET_STATE_EVENTS, new Boolean(true));
+                channel.setOpt(Channel.GET_STATE_EVENTS, new Boolean(true)); // not needed anymore (no-op in 2.3 and higher)
                 channel.connect("TestChannel");
                 boolean rc=channel.getState(5000);
 
@@ -1432,14 +1426,14 @@
                 Object state, copy;
                 Object ret=channel.receive(0);
                 if(ret instanceof Message)
-                ;
+                    ;
                 else if(ret instanceof GetStateEvent) {
-                copy=copyState(state); // make a copy so that other msgs don't change the state
-                channel.returnState(Util.objectToByteBuffer(copy));
+                    copy=copyState(state); // make a copy so that other msgs don't change the state
+                    channel.returnState(Util.objectToByteBuffer(copy));
                 }
                 else if(ret instanceof SetStateEvent) {
-                SetStateEvent e=(SetStateEvent)ret;
-                // set state from ret.GetArg();
+                    SetStateEvent e=(SetStateEvent)ret;
+                    state=e.getArg();
                 }
             </screen>
 
@@ -1450,26 +1444,19 @@
                 protocols (see
                 <xref
                         linkend="user-advanced"/>
-                ). Option
-                <constant>GET_STATE_EVENTS</constant>
-                should be enabled, as the
-                channel might probably want to return its current state if
-                asked. Method
+                ). Method
                 <methodname>getState()</methodname>
-                subsequently
-                asks the channel to return the current state. If there is a
+                subsequently asks the channel to return the current state. If there is a
                 current state (there may not be any other members in the group
                 !), then true is returned. In this case, one of the subsequent
                 <methodname>receive()</methodname>
-                method invocations on the
-                channel will return a
+                method invocations on the channel will return a
                 <classname>SetStateEvent</classname>
                 object which contains the current state. In this case, the
-                caller sets its state to the one received from the
-                channel.
+                caller sets its state to the one received from the channel.
             </para>
 
-            <para>If state transfer events are enabled, then
+            <para>Method
                 <methodname>receive()</methodname>
                 might return a
                 <classname>GetStateEvent</classname>
@@ -1477,11 +1464,9 @@
                 state of the member to be returned. In this case,
                 <emphasis>a
                     copy of the current state should be made</emphasis>
-                and returned
-                using
+                and returned using
                 <methodname>JChannel.returnState()</methodname>
-                . It is
-                important to a) synchronize access to the state when returning
+                . It is important to a) synchronize access to the state when returning
                 it since other accesses may modify it while it is being returned
                 and b) make a copy of the state since other accesses after
                 returning the state may still be able to modify it ! This is
@@ -1490,9 +1475,49 @@
                 reference to it could still alter it.
             </para>
 
-            <para>The details of state transfer as implemented in JGroups
-                are discussed in the Programmer's Guide.</para>
+        </section>
 
+        <section>
+            <title>Getting the state with a Receiver</title>
+            <para>
+                As an alternative to handling the GetStateEvent and SetStateEvent events, and calling Channel.returnState(),
+                a Receiver could be used. The example above would look like this:
+            </para>
+            <screen>
+                class MyReceiver extends ReceiverAdapter {
+                    final Map m=new HashMap();
+                    public byte[] getState() {
+                        synchronized(m) { // so nobody else can modify the map while we serialize it
+                            byte[] state=Util.objectToByteBuffer(m);
+                            return state;
+                        }
+                    }
+
+                    public void setState(byte[] state) {
+                        synchronized(m) {
+                            Map new_m=(Map)Util.objectFromByteBuffer(state);
+                            m.clear();
+                            m.addAll(new_m);
+                        }
+                    }
+                }
+
+                channel=new JChannel(); // use default properties (has to include pbcast.STATE_TRANSFER protocol)
+                channel.connect("TestChannel");
+                channel.setReceiver(new MyReceiver());
+                boolean rc=channel.getState(5000);
+            </screen>
+            <para>
+                In a group consisting of A,B and C, with D joining the group and calling Channel.getState(), the following
+                sequence of callbacks happens:
+                <itemizedlist>
+                    <listitem>D calls Channel.getState(). The state will be retrieved from the oldest member, A</listitem>
+                    <listitem>A.MyReceiver.getState() is called. A returns a copy of its hashmap</listitem>
+                    <listitem>D: getState() returns true</listitem>
+                    <listitem>D.MyReceiver.setState() is called with the serialized state. D unserializes the
+                    state and sets it</listitem>
+                </itemizedlist>
+            </para>
         </section>
 
         <section id="PartialStateTransfer">
