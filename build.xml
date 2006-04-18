@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.41 2006/04/17 21:09:52 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.42 2006/04/18 07:51:28 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -252,8 +252,9 @@
     <target name="pg" depends="prepare"
         description="Create the Programmer's Guide (HTML)">
         <style in="${pg.dir}/main.xml"
-            style="${docbook.dir}/html/docbook.xsl"
-            out="${dist.dir}/pg/html/pg.html"/>
+               force="true"
+               style="${docbook.dir}/html/docbook.xsl"
+               out="${dist.dir}/pg/html/pg.html"/>
         <copy todir="${dist.dir}/pg/html/images">
             <fileset dir="${pg.dir}/images" includes="*.png"/>
         </copy>
@@ -262,10 +263,11 @@
     <target name="chunkedhtml" depends="prepare"
             description="Generates the Programmer's Guide in chunked HTML">
 	<style basedir="${pg.dir}"
-	       includes="*.xml"
-            classpathref="jg.classpath"
+           includes="*.xml"
+           classpathref="jg.classpath"
            style="${docbook.dir}/html/chunk.xsl"
-	       destdir="${dist.dir}/pg/html"/>
+           force="true"
+           destdir="${dist.dir}/pg/html"/>
     </target>
 
 
