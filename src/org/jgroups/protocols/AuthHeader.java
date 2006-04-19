@@ -1,6 +1,7 @@
 package org.jgroups.protocols;
 
 import org.jgroups.Header;
+import org.jgroups.Address;
 import org.jgroups.auth.AuthToken;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
@@ -12,7 +13,7 @@ import java.io.*;
  */
 public class AuthHeader extends Header implements Streamable{
     private AuthToken token=null;
-    //Address mbr=null;
+    
     public AuthHeader(){
     }
     /**

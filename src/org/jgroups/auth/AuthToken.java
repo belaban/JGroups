@@ -1,6 +1,7 @@
 package org.jgroups.auth;
 
 import org.jgroups.util.Streamable;
+import org.jgroups.Message;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -25,7 +26,8 @@ public abstract class AuthToken implements Serializable, Streamable{
     /**
      * This method should be implemented to perform the actual authentication of joining members.
      * @param token the token sent by the joiner
+     * @param msg the Message object containing the actual JOIN_REQ
      * @return true if authenticaion passed or false if it failed.
      */
-    public abstract boolean authenticate(AuthToken token);
+    public abstract boolean authenticate(AuthToken token, Message msg);
 }

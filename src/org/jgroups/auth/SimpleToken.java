@@ -1,6 +1,7 @@
 package org.jgroups.auth;
 
 import org.jgroups.util.Util;
+import org.jgroups.Message;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -39,8 +40,7 @@ public class SimpleToken extends AuthToken {
         return "org.jgroups.auth.SimpleToken";
     }
 
-    public boolean authenticate(AuthToken token){
-
+    public boolean authenticate(AuthToken token, Message msg){
         if((token != null) && (token instanceof SimpleToken)){
             //Found a valid Token to authenticate against
             SimpleToken serverToken = (SimpleToken) token;
@@ -70,7 +70,9 @@ public class SimpleToken extends AuthToken {
      * @throws IOException
      */
     public void writeTo(DataOutputStream out) throws IOException {
-        log.debug("SimpleToken writeTo()");
+        if(log.isDebugEnabled()){
+            log.debug("SimpleToken writeTo()");
+        }
         Util.writeString(this.token, out);
     }
     /**
@@ -81,7 +83,9 @@ public class SimpleToken extends AuthToken {
      * @throws InstantiationException
      */
     public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
-        log.debug("SimpleToken readFrom()");
+        if(log.isDebugEnabled()){
+            log.debug("SimpleToken readFrom()");
+        }
         this.token = Util.readString(in);
     }
 }
