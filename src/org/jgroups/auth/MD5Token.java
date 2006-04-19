@@ -2,6 +2,7 @@ package org.jgroups.auth;
 
 import org.jgroups.util.Util;
 import org.jgroups.util.HashUtils;
+import org.jgroups.Message;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -40,6 +41,11 @@ public class MD5Token extends AuthToken {
         this.token = hash(token);
     }
 
+    public MD5Token(String token, String hash_type){
+        this.token = hash(token);
+        this.hash_type = hash_type;
+    }
+
     public void setValue(Properties properties){
         this.token = hash((String)properties.get(MD5Token.TOKEN_ATTR));
         properties.remove(MD5Token.TOKEN_ATTR);
@@ -70,13 +76,15 @@ public class MD5Token extends AuthToken {
 
         if(hashedToken == null){
             //failed to encrypt
-            log.warn("Failed to hash token - sending in clear text");
+            if(log.isWarnEnabled()){
+                log.warn("Failed to hash token - sending in clear text");
+            }
             return token;
         }
         return hashedToken;
     }
 
-    public boolean authenticate(AuthToken token){
+    public boolean authenticate(AuthToken token, Message msg){
 
         if((token != null) && (token instanceof MD5Token)){
             //Found a valid Token to authenticate against
@@ -84,7 +92,9 @@ public class MD5Token extends AuthToken {
 
             if((this.token != null) && (serverToken.token != null) && (this.token.equalsIgnoreCase(serverToken.token))){
                 //validated
-                log.debug("MD5Token match");
+                if(log.isDebugEnabled()){
+                    log.debug("MD5Token match");
+                }
                 return true;
             }else{
                 if(log.isWarnEnabled()){
@@ -94,17 +104,23 @@ public class MD5Token extends AuthToken {
             }
         }
 
-        log.warn("Invalid AuthToken instance - wrong type or null");
+        if(log.isWarnEnabled()){
+            log.warn("Invalid AuthToken instance - wrong type or null");
+        }
         return false;
     }
 
     public void writeTo(DataOutputStream out) throws IOException {
-        log.debug("MD5Token writeTo()");
+        if(log.isDebugEnabled()){
+            log.debug("MD5Token writeTo()");
+        }
         Util.writeString(this.token, out);
     }
 
     public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
-        log.debug("MD5Token readFrom()");
+        if(log.isDebugEnabled()){
+            log.debug("MD5Token readFrom()");
+        }
         this.token = Util.readString(in);
     }
 }

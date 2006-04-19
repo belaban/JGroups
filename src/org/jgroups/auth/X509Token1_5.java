@@ -1,6 +1,7 @@
 package org.jgroups.auth;
 
 import org.jgroups.util.Util;
+import org.jgroups.Message;
 
 import javax.crypto.Cipher;
 import java.io.*;
@@ -60,62 +61,86 @@ public class X509Token1_5 extends AuthToken {
     }
 
     public void setValue(Properties properties) {
-        log.debug("setting values on X509Token1_5 object");
+        if(log.isDebugEnabled()){
+            log.debug("setting values on X509Token1_5 object");
+        }
 
         if(properties.containsKey(X509Token1_5.TOKEN_ATTR)){
             this.token_attr = (String) properties.get(X509Token1_5.TOKEN_ATTR);
             properties.remove(X509Token1_5.TOKEN_ATTR);
-            log.debug("token_attr = " + this.token_attr);
+            if(log.isDebugEnabled()){
+                log.debug("token_attr = " + this.token_attr);
+            }
         }
 
         if(properties.containsKey(X509Token1_5.KEYSTORE_TYPE)){
             this.keystore_type = (String) properties.get(X509Token1_5.KEYSTORE_TYPE);
             properties.remove(X509Token1_5.KEYSTORE_TYPE);
-            log.debug("keystore_type = " + this.keystore_type);
+            if(log.isDebugEnabled()){
+                log.debug("keystore_type = " + this.keystore_type);
+            }
         }else{
             this.keystore_type = "JKS";
-            log.debug("keystore_type = " + this.keystore_type);
+            if(log.isDebugEnabled()){
+                log.debug("keystore_type = " + this.keystore_type);
+            }
         }
 
         if(properties.containsKey(X509Token1_5.KEYSTORE_PATH)){
             this.keystore_path = (String) properties.get(X509Token1_5.KEYSTORE_PATH);
             properties.remove(X509Token1_5.KEYSTORE_PATH);
-            log.debug("keystore_path = " + this.keystore_path);
+            if(log.isDebugEnabled()){
+                log.debug("keystore_path = " + this.keystore_path);
+            }
         }
 
         if(properties.containsKey(X509Token1_5.KEYSTORE_PASSWORD)){
             this.keystore_password = ((String) properties.get(X509Token1_5.KEYSTORE_PASSWORD)).toCharArray();
             properties.remove(X509Token1_5.KEYSTORE_PASSWORD);
-            log.debug("keystore_password = " + this.keystore_password);
+            if(log.isDebugEnabled()){
+                log.debug("keystore_password = " + this.keystore_password);
+            }
         }
 
         if(properties.containsKey(X509Token1_5.CERT_ALIAS)){
             this.cert_alias = (String) properties.get(X509Token1_5.CERT_ALIAS);
             properties.remove(X509Token1_5.CERT_ALIAS);
-            log.debug("cert_alias = " + this.cert_alias);
+            if(log.isDebugEnabled()){
+                log.debug("cert_alias = " + this.cert_alias);
+            }
         }
 
         if(properties.containsKey(X509Token1_5.CERT_PASSWORD)){
             this.cert_password = ((String) properties.get(X509Token1_5.CERT_PASSWORD)).toCharArray();
             properties.remove(X509Token1_5.CERT_PASSWORD);
-            log.debug("cert_password = " + this.cert_password);
+            if(log.isDebugEnabled()){
+                log.debug("cert_password = " + this.cert_password);
+            }
         }else{
             this.cert_password = this.keystore_password;
-            log.debug("cert_password = " + this.cert_password);
+            if(log.isDebugEnabled()){
+                log.debug("cert_password = " + this.cert_password);
+            }
         }
 
         if(properties.containsKey(X509Token1_5.CIPHER_TYPE)){
             this.cipher_type = (String) properties.get(X509Token1_5.CIPHER_TYPE);
             properties.remove(X509Token1_5.CIPHER_TYPE);
-            log.debug("cipher_type = " + this.cipher_type);
+            if(log.isDebugEnabled()){
+                log.debug("cipher_type = " + this.cipher_type);
+            }
         }else{
             this.cipher_type = "RSA";
-            log.debug("cipher_type = " + this.cipher_type);
+            if(log.isDebugEnabled()){
+                log.debug("cipher_type = " + this.cipher_type);
+            }
         }
 
         if(getCertificate()){
             this.valueSet = true;
-            log.debug("X509Token1_5 created correctly");
+            if(log.isDebugEnabled()){
+                log.debug("X509Token1_5 created correctly");
+            }
         }
     }
 
@@ -123,9 +148,11 @@ public class X509Token1_5 extends AuthToken {
         return "org.jgroups.auth.X509Token1_5";
     }
 
-    public boolean authenticate(AuthToken token) {
+    public boolean authenticate(AuthToken token, Message msg) {
         if (!this.valueSet) {
-            log.fatal("X509Token1_5 not setup correctly - check token attrs");
+            if(log.isFatalEnabled()){
+                log.fatal("X509Token1_5 not setup correctly - check token attrs");
+            }
             return false;
         }
 
@@ -133,33 +160,47 @@ public class X509Token1_5 extends AuthToken {
             //got a valid X509 token object
             X509Token1_5 serverToken = (X509Token1_5)token;
             if(!serverToken.valueSet){
-                log.fatal("X509Token1_5 - recieved token not valid");
+                if(log.isFatalEnabled()){
+                    log.fatal("X509Token1_5 - recieved token not valid");
+                }
                 return false;
             }
 
             try{
-                log.debug("setting cipher to decrypt mode");
+                if(log.isDebugEnabled()){
+                    log.debug("setting cipher to decrypt mode");
+                }
                 this.cipher.init(Cipher.DECRYPT_MODE, this.certPrivateKey);
                 String serverBytes = new String(this.cipher.doFinal(serverToken.encryptedToken));
                 if((serverBytes != null) && (serverBytes.equalsIgnoreCase(this.token_attr))){
-                    log.debug("X509 authentication passed");
+                    if(log.isDebugEnabled()){
+                        log.debug("X509 authentication passed");
+                    }
                     return true;
                 }
             }catch(Exception e){
-                log.fatal(e);
+                if(log.isFatalEnabled()){
+                    log.fatal(e);
+                }
             }
         }
-        log.warn("X509 authentication failed");
+        if(log.isWarnEnabled()){
+            log.warn("X509 authentication failed");
+        }
         return false;
     }
 
     public void writeTo(DataOutputStream out) throws IOException {
-        log.debug("X509Token1_5 writeTo()");
+        if(log.isDebugEnabled()){
+            log.debug("X509Token1_5 writeTo()");
+        }
         Util.writeByteBuffer(this.encryptedToken, out);
     }
 
     public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
-        log.debug("X509Token1_5 readFrom()");
+        if(log.isDebugEnabled()){
+            log.debug("X509Token1_5 readFrom()");
+        }
         this.encryptedToken = Util.readByteBuffer(in);
         this.valueSet = true;
     }
@@ -176,21 +217,29 @@ public class X509Token1_5 extends AuthToken {
             this.cipher = Cipher.getInstance(this.cipher_type);
             this.certificate = (X509Certificate) store.getCertificate(this.cert_alias);
 
-            log.debug("certificate = " + this.certificate.toString());
+            if(log.isDebugEnabled()){
+                log.debug("certificate = " + this.certificate.toString());
+            }
 
             this.cipher.init(Cipher.ENCRYPT_MODE, this.certificate);
             this.encryptedToken = this.cipher.doFinal(this.token_attr.getBytes());
 
-            log.debug("encryptedToken = " + this.encryptedToken);
+            if(log.isDebugEnabled()){
+                log.debug("encryptedToken = " + this.encryptedToken);
+            }
 
             KeyStore.PrivateKeyEntry privateKey = (KeyStore.PrivateKeyEntry)store.getEntry(this.cert_alias, new KeyStore.PasswordProtection(this.cert_password));
             this.certPrivateKey = privateKey.getPrivateKey();
 
-            log.debug("certPrivateKey = " + this.certPrivateKey.toString());
+            if(log.isDebugEnabled()){
+                log.debug("certPrivateKey = " + this.certPrivateKey.toString());
+            }
 
             return true;
         }catch(Exception e){
-            log.fatal(e);
+            if(log.isFatalEnabled()){
+                log.fatal(e);
+            }
             return false;
         }
     }

@@ -40,16 +40,17 @@ public class AUTH extends Protocol{
                 serverSideToken.setValue(props);
             }catch(Exception e){
                 if(log.isFatalEnabled()){
-                    log.fatal("Failed to create server side token");
+                    log.fatal("Failed to create server side token (" + authClassString + ")");
                     log.fatal(e);
                 }
+                return false;
             }
         }
 
         if(props.size() > 0) {
             //this should never happen as everything is read in to the AuthToken instance
             if(log.isErrorEnabled()){
-                log.error("GMS.setProperties(): the following properties are not recognized: " + props);
+                log.error("AUTH.setProperties(): the following properties are not recognized: " + props);
             }
             return false;
         }
@@ -107,7 +108,7 @@ public class AUTH extends Protocol{
 
                 if(authHeader != null){
                     //Now we have the AUTH Header we need to validate it
-                    if(this.serverSideToken.authenticate(authHeader.getToken())){
+                    if(this.serverSideToken.authenticate(authHeader.getToken(), msg)){
                         //valid token
                         if(log.isDebugEnabled()){
                             log.debug("AUTH passing up event");
@@ -169,7 +170,6 @@ public class AUTH extends Protocol{
         }
 
         if((hdr != null) && (hdr.getType() == GMS.GmsHeader.JOIN_RSP)){
-            log.debug(hdr.toString());
             if(log.isDebugEnabled()){
                 log.debug(hdr.toString());
             }

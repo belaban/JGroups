@@ -36,7 +36,7 @@ public class AUTHTest extends TestCase{
             SimpleToken token2 = new SimpleToken();
             token2.setValue(properties);
 
-            assertTrue(token1.authenticate(token2));
+            assertTrue(token1.authenticate(token2, null));
         }catch(Exception failException){
             fail(failException.getMessage());
         }
@@ -60,7 +60,7 @@ public class AUTHTest extends TestCase{
             SimpleToken token2 = new SimpleToken();
             token2.setValue(properties);
 
-            assertTrue(!token1.authenticate(token2));
+            assertTrue(!token1.authenticate(token2, null));
         }catch(Exception failException){
             fail(failException.getMessage());
         }
@@ -89,7 +89,7 @@ public class AUTHTest extends TestCase{
             MD5Token token2 = new MD5Token();
             token2.setValue(properties);
 
-            assertTrue(token1.authenticate(token2));
+            assertTrue(token1.authenticate(token2, null));
         }catch(Exception failException){
             fail(failException.getMessage());
         }
@@ -118,7 +118,7 @@ public class AUTHTest extends TestCase{
             MD5Token token2 = new MD5Token();
             token2.setValue(properties);
 
-            assertTrue(!token1.authenticate(token2));
+            assertTrue(!token1.authenticate(token2, null));
         }catch(Exception failException){
             fail(failException.getMessage());
         }
@@ -147,7 +147,7 @@ public class AUTHTest extends TestCase{
             MD5Token token2 = new MD5Token();
             token2.setValue(properties);
 
-            assertTrue(token1.authenticate(token2));
+            assertTrue(token1.authenticate(token2, null));
         }catch(Exception failException){
             fail(failException.getMessage());
         }
@@ -176,7 +176,7 @@ public class AUTHTest extends TestCase{
             MD5Token token2 = new MD5Token();
             token2.setValue(properties);
 
-            assertTrue(!token1.authenticate(token2));
+            assertTrue(!token1.authenticate(token2, null));
         }catch(Exception failException){
             fail(failException.getMessage());
         }
