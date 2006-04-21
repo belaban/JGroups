@@ -11,7 +11,7 @@ import java.util.Map;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: JmsTransport.java,v 1.4 2005/07/26 11:50:21 belaban Exp $
+ * @version $Id: JmsTransport.java,v 1.5 2006/04/21 20:01:02 belaban Exp $
  */
 public class JmsTransport implements Transport, MessageListener {
     Receiver          receiver=null;
@@ -46,12 +46,11 @@ public class JmsTransport implements Transport, MessageListener {
 
 
         // local_addr=new IpAddress(ucast_sock.getLocalAddress(), ucast_sock.getLocalPort());
-        System.out.println("-- local_addr is " + local_addr);
+
     }
 
 
     public void start() throws Exception {
-        this.local_addr=conn.getClientID();
         conn=((TopicConnectionFactory)factory).createTopicConnection();
         session=conn.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
         topic=(Topic)ctx.lookup(topic_name);
@@ -59,6 +58,8 @@ public class JmsTransport implements Transport, MessageListener {
         sub=session.createSubscriber(topic);
         sub.setMessageListener(this);
         conn.start();
+        this.local_addr=conn.getClientID();
+        System.out.println("-- local_addr is " + local_addr);
     }
 
     public void stop() {
@@ -85,6 +86,7 @@ public class JmsTransport implements Transport, MessageListener {
         if(destination != null)
             throw new Exception("JmsTransport.send(): unicast destination is not supported");
         BytesMessage msg=session.createBytesMessage();
+        msg.setObjectProperty("sender", local_addr);
 
         //todo: write the sender (maybe use ObjectMessage instead of BytesMessage)
 
@@ -103,6 +105,7 @@ public class JmsTransport implements Transport, MessageListener {
         try {
 
           //  todo: read the sender
+            sender=msg.getObjectProperty("sender");
 
             int len=msg.readInt();
             byte[] payload=new byte[len];
