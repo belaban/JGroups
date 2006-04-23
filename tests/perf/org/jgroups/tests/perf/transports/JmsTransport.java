@@ -11,7 +11,7 @@ import java.util.Map;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: JmsTransport.java,v 1.5 2006/04/21 20:01:02 belaban Exp $
+ * @version $Id: JmsTransport.java,v 1.6 2006/04/23 12:45:56 belaban Exp $
  */
 public class JmsTransport implements Transport, MessageListener {
     Receiver          receiver=null;
@@ -25,6 +25,7 @@ public class JmsTransport implements Transport, MessageListener {
     TopicSubscriber   sub;
     Topic             topic;
     String            topic_name="topic/testTopic";
+    BytesMessage      msg;
 
 
     public JmsTransport() {
@@ -53,6 +54,7 @@ public class JmsTransport implements Transport, MessageListener {
     public void start() throws Exception {
         conn=((TopicConnectionFactory)factory).createTopicConnection();
         session=conn.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
+        msg=session.createBytesMessage();
         topic=(Topic)ctx.lookup(topic_name);
         pub=session.createPublisher(topic);
         sub=session.createSubscriber(topic);
@@ -85,7 +87,7 @@ public class JmsTransport implements Transport, MessageListener {
     public void send(Object destination, byte[] payload) throws Exception {
         if(destination != null)
             throw new Exception("JmsTransport.send(): unicast destination is not supported");
-        BytesMessage msg=session.createBytesMessage();
+
         msg.setObjectProperty("sender", local_addr);
 
         //todo: write the sender (maybe use ObjectMessage instead of BytesMessage)
@@ -101,15 +103,15 @@ public class JmsTransport implements Transport, MessageListener {
             System.err.println("JmsTransport.onMessage(): received a non BytesMessage (" + message + "), discarding");
             return;
         }
-        BytesMessage msg=(BytesMessage)message;
+        BytesMessage tmp=(BytesMessage)message;
         try {
 
           //  todo: read the sender
-            sender=msg.getObjectProperty("sender");
+            sender=tmp.getObjectProperty("sender");
 
-            int len=msg.readInt();
+            int len=tmp.readInt();
             byte[] payload=new byte[len];
-            msg.readBytes(payload, len);
+            tmp.readBytes(payload, len);
             if(receiver != null)
                 receiver.receive(sender, payload);
         }
