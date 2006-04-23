@@ -48,7 +48,8 @@ public class FRAG_Test extends TestCase {
         s.setLocalAddress(a1);
         s.setView(v);
         s.addMember(a1);
-        FRAG frag=new FRAG();
+        Protocol frag=createProtocol();
+        System.out.println("protocol to be tested: " + frag);
         Properties props=new Properties();
         props.setProperty("frag_size", "512");
         props.setProperty("up_thread", "false");
@@ -57,6 +58,11 @@ public class FRAG_Test extends TestCase {
         Protocol[] stack=new Protocol[]{frag};
         s.setProtocolStack(stack);
         s.start();
+    }
+
+
+    protected Protocol createProtocol() {
+        return new FRAG();
     }
 
     public void tearDown() throws Exception {
