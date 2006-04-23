@@ -1,4 +1,4 @@
-// $Id: FRAG.java,v 1.30 2006/03/15 16:41:41 belaban Exp $
+// $Id: FRAG.java,v 1.31 2006/04/23 14:34:49 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -28,7 +28,7 @@ import java.util.*;
  * multicast messages.
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.30 2006/03/15 16:41:41 belaban Exp $
+ * @version $Id: FRAG.java,v 1.31 2006/04/23 14:34:49 belaban Exp $
  */
 public class FRAG extends Protocol {
     private int frag_size=8192;  // conservative value
@@ -191,15 +191,20 @@ public class FRAG extends Protocol {
         Address            dest=msg.getDest(), src=msg.getSrc();
         long               id=curr_id++; // used as seqnos
         int                num_frags;
+        int size;
 
         try {
             // Write message into a byte buffer and fragment it
-            bos.reset();
-            out=new DataOutputStream(bos);
-            msg.writeTo(out);
-            out.flush();
-            buffer=bos.getRawBuffer();
-            fragments=Util.fragmentBuffer(buffer, frag_size, bos.size());
+            // Synchronization around bos is needed for concurrent access (http://jira.jboss.com/jira/browse/JGRP-215)
+            synchronized(bos) {
+                bos.reset();
+                out=new DataOutputStream(bos);
+                msg.writeTo(out);
+                out.flush();
+                buffer=bos.getRawBuffer();
+                fragments=Util.fragmentBuffer(buffer, frag_size, bos.size());
+            }
+
             num_frags=fragments.length;
             num_sent_frags+=num_frags;
 
