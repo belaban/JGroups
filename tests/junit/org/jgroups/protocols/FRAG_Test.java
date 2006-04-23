@@ -19,11 +19,12 @@ import java.util.Vector;
  * Tests the fragmentation (FRAG) protocol for http://jira.jboss.com/jira/browse/JGRP-215
  * @author Bela Ban
  */
-public class FRAGTest extends TestCase {
+public class FRAG_Test extends TestCase {
     IpAddress a1;
     Vector members;
     View v;
     static Simulator s=null;
+    static int num_done=0;
 
     static Sender[] senders=null;
 
@@ -32,7 +33,7 @@ public class FRAGTest extends TestCase {
     public static final int NUM_THREADS=100;
 
 
-    public FRAGTest(String name) {
+    public FRAG_Test(String name) {
         super(name);
     }
 
@@ -50,7 +51,9 @@ public class FRAGTest extends TestCase {
         FRAG frag=new FRAG();
         Properties props=new Properties();
         props.setProperty("frag_size", "512");
-        frag.setProperties(props);
+        props.setProperty("up_thread", "false");
+        props.setProperty("down_thread", "false");
+        frag.setPropertiesInternal(props);
         Protocol[] stack=new Protocol[]{frag};
         s.setProtocolStack(stack);
         s.start();
@@ -64,7 +67,7 @@ public class FRAGTest extends TestCase {
 
 
     public void testFragmentation() throws InterruptedException {
-        FRAGTest.Receiver r=new FRAGTest.Receiver();
+        FRAG_Test.Receiver r=new FRAG_Test.Receiver();
         s.setReceiver(r);
 
         senders=new Sender[NUM_THREADS];
@@ -79,7 +82,10 @@ public class FRAGTest extends TestCase {
 
         for(int i=0; i < senders.length; i++) {
             Sender sender=senders[i];
-            sender.join();
+            sender.join(5000);
+            if(sender.isAlive()) {
+                System.err.println("sender #" + i + " could not be joined (still alive)");
+            }
         }
 
         int sent=0, received=0, corrupted=0;
@@ -142,6 +148,8 @@ public class FRAGTest extends TestCase {
                 try {
                     while(!done)
                         this.wait(500);
+                    num_done++;
+                    System.out.println("thread #" + id  + " is done (" + num_done + ")");
                 }
                 catch(InterruptedException e) {
                 }
@@ -207,10 +215,10 @@ public class FRAGTest extends TestCase {
 
 
     public static Test suite() {
-        return new TestSuite(FRAGTest.class);
+        return new TestSuite(FRAG_Test.class);
     }
 
     public static void main(String[] args) {
-        junit.textui.TestRunner.run(FRAGTest.suite());
+        junit.textui.TestRunner.run(FRAG_Test.suite());
     }
 }
