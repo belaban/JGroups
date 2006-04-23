@@ -1,4 +1,4 @@
-// $Id: GroupRequestPull.java,v 1.9 2006/04/05 05:38:22 belaban Exp $
+// $Id: GroupRequestPull.java,v 1.10 2006/04/23 12:52:54 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -98,7 +98,7 @@ public class GroupRequestPull implements MessageListener, MembershipListener, Tr
         }
         else if(hdr.type == MyHeader.REQUEST) {
             // System.out.println("-- received REQUEST from " + msg.getSrc());
-            rsp=new Message(msg.getSrc(), null, null);
+            rsp=new Message(msg.getSrc());
             rsp.putHeader(HDRNAME, new MyHeader(MyHeader.RESPONSE));
             rsp.setObject("Hello from member " + ch.getLocalAddress());
             try {

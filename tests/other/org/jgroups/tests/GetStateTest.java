@@ -1,4 +1,4 @@
-// $Id: GetStateTest.java,v 1.9 2006/03/27 08:34:25 belaban Exp $
+// $Id: GetStateTest.java,v 1.10 2006/04/23 12:52:54 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -61,7 +61,7 @@ public class GetStateTest implements Runnable {
 
 
 	while(true) {
-	    Message update=new Message(null, null, null);
+	    Message update=new Message(null);
 	    int     index=(int)  ((Math.random() * 10) % 3);
 	    
 	    try {

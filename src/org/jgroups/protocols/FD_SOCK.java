@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.36 2006/02/28 17:22:11 belaban Exp $
+// $Id: FD_SOCK.java,v 1.37 2006/04/23 12:52:54 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -701,7 +701,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
 
         // 3. Try to get from all members
-        ping_addr_req=new Message(null, null, null); // multicast
+        ping_addr_req=new Message(null); // multicast
         hdr=new FdHeader(FdHeader.WHO_HAS_SOCK);
         hdr.mbr=mbr;
         ping_addr_req.putHeader(name, hdr);

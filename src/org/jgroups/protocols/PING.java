@@ -1,4 +1,4 @@
-// $Id: PING.java,v 1.27 2005/08/11 12:43:47 belaban Exp $
+// $Id: PING.java,v 1.28 2006/04/23 12:52:54 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -181,7 +181,7 @@ public class PING extends Discovery {
             if(initial_hosts != null && initial_hosts.size() > 0) {
                 IpAddress h;
                 List hlist;
-                msg=new Message(null, null, null);
+                msg=new Message(null);
                 msg.putHeader(getName(), new PingHeader(PingHeader.GET_MBRS_REQ, null));
                 for(Enumeration en=initial_hosts.elements(); en.hasMoreElements();) {
                     hlist=(List)en.nextElement();
@@ -198,7 +198,7 @@ public class PING extends Discovery {
             else {
                 // 1. Mcast GET_MBRS_REQ message
                 hdr=new PingHeader(PingHeader.GET_MBRS_REQ, null);
-                msg=new Message(null, null, null);  // mcast msg
+                msg=new Message(null);  // mcast msg
                 msg.putHeader(getName(), hdr); // needs to be getName(), so we might get "MPING" !
                 sendMcastDiscoveryRequest(msg);
             }

@@ -1,4 +1,4 @@
-// $Id: MERGE.java,v 1.10 2005/08/11 12:43:47 belaban Exp $
+// $Id: MERGE.java,v 1.11 2006/04/23 12:52:54 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -265,7 +265,7 @@ public class MERGE extends Protocol implements Runnable {
             if(hello_thread == null) break;
 
             if(client == null) {                              // plain IP MCAST
-                hello_msg=new Message(null, null, null);
+                hello_msg=new Message(null);
                 hdr=new MergeHeader(MergeHeader.HELLO);
                 hello_msg.putHeader(getName(), hdr);
                 passDown(new Event(Event.MSG, hello_msg));

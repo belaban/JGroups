@@ -1,4 +1,4 @@
-// $Id: PerfTest.java,v 1.8 2005/05/30 16:15:11 belaban Exp $
+// $Id: PerfTest.java,v 1.9 2006/04/23 12:52:54 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -104,7 +104,7 @@ public class PerfTest implements MessageListener, MembershipListener{
                     break;
                 case 's':
                     MyHeader hdr=new MyHeader(MyHeader.START, num_bursts * num_msgs_per_burst);
-                    Message start_msg=new Message(null, null, null);
+                    Message start_msg=new Message(null);
                     start_msg.putHeader(HDRNAME, hdr);
                     adapter.send(start_msg);
                     break;

@@ -1,4 +1,4 @@
-// $Id: TCPGOSSIP.java,v 1.16 2005/08/11 12:43:47 belaban Exp $
+// $Id: TCPGOSSIP.java,v 1.17 2006/04/23 12:52:54 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -117,7 +117,7 @@ public class TCPGOSSIP extends Discovery {
 
         // 1. 'Mcast' GET_MBRS_REQ message
         hdr=new PingHeader(PingHeader.GET_MBRS_REQ, null);
-        msg=new Message(null, null, null);
+        msg=new Message(null);
         msg.putHeader(name, hdr);
 
         for(int i=0; i < tmp_mbrs.size(); i++) {

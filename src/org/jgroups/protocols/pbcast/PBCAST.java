@@ -1,4 +1,4 @@
-// $Id: PBCAST.java,v 1.15 2005/11/03 11:42:58 belaban Exp $
+// $Id: PBCAST.java,v 1.16 2006/04/23 12:52:53 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -561,7 +561,7 @@ public class PBCAST extends Protocol implements Runnable {
                 gossip.addToSeenList(local_addr);
                 hdr=new PbcastHeader(gossip, PbcastHeader.GOSSIP);
                 dest=(Address) subset_mbrs.elementAt(i);
-                msg=new Message(dest, null, null);
+                msg=new Message(dest);
                 msg.putHeader(getName(), hdr);
 
 
