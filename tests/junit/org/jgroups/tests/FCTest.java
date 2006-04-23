@@ -1,4 +1,4 @@
-// $Id: FCTest.java,v 1.9 2005/08/29 12:18:44 belaban Exp $
+// $Id: FCTest.java,v 1.10 2006/04/23 13:17:44 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -84,7 +84,7 @@ public class FCTest extends TestCase {
                 break;
             num_tries--;
         }
-        assertTrue(num_received == NUM_MSGS);
+        assertEquals(num_received, NUM_MSGS);
     }
 
 
@@ -97,7 +97,7 @@ public class FCTest extends TestCase {
     }
 
 
-    class Receiver implements Simulator.Receiver {
+    static class Receiver implements Simulator.Receiver {
         int num_mgs_received=0;
 
         public void receive(Event evt) {
@@ -116,8 +116,7 @@ public class FCTest extends TestCase {
    
 
     public static Test suite() {
-        TestSuite s=new TestSuite(FCTest.class);
-        return s;
+        return new TestSuite(FCTest.class);
     }
 
     public static void main(String[] args) {
