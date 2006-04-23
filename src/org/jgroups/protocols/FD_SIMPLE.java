@@ -1,4 +1,4 @@
-// $Id: FD_SIMPLE.java,v 1.10 2006/02/07 07:41:10 belaban Exp $
+// $Id: FD_SIMPLE.java,v 1.11 2006/04/23 12:48:59 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -22,7 +22,7 @@ import java.util.Vector;
  * suspected. When a message or a heartbeat are received, the counter is reset to 0.
  *
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.10 $
+ * @version $Revision: 1.11 $
  */
 public class FD_SIMPLE extends Protocol {
     Address local_addr=null;
@@ -107,7 +107,7 @@ public class FD_SIMPLE extends Protocol {
 
                 switch(hdr.type) {
                     case FdHeader.ARE_YOU_ALIVE:                    // are-you-alive request, send i-am-alive response
-                        rsp=new Message(sender, null, null);
+                        rsp=new Message(sender);
                         rsp.putHeader(name, new FdHeader(FdHeader.I_AM_ALIVE));
                         passDown(new Event(Event.MSG, rsp));
                         return; // don't pass up further
@@ -330,7 +330,7 @@ public class FD_SIMPLE extends Protocol {
                         ", counters are\n" + printCounters());
 
             promise.reset();
-            msg=new Message(dest, null, null);
+            msg=new Message(dest);
             msg.putHeader(name, new FdHeader(FdHeader.ARE_YOU_ALIVE));
             passDown(new Event(Event.MSG, msg));
 
