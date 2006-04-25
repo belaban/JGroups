@@ -3,7 +3,7 @@ Uniform message delivery
 ========================
 
 Author: Bela Ban
-Version: $Id: UNIFORM.txt,v 1.1 2006/01/27 14:46:12 belaban Exp $
+Version: $Id: UNIFORM.txt,v 1.2 2006/04/25 03:00:31 belaban Exp $
 
 
 Definition
@@ -15,7 +15,7 @@ crashed right after sending M, but before *any* of the members received M. If at
 received M, and P doesn't crash, then M will be delivered to all members.
 
 This is different from two-phase commit (2PC) protocols in the database world, where even non-operational
-(= crashed) members must eventually deliver M, by logging the PREPARE ad COMMIT actions, and processing
+(= crashed) members must eventually deliver M, by logging the PREPARE and COMMIT actions, and processing
 the log when restarting after a crash.
 
 2PC is not necessary in the group communication world, because the state of a new member can be initialized
@@ -100,7 +100,7 @@ Misc
 ----
 - Provide JMX stats of all tables, so we can introspect them at runtime, e.g. to ensure that they don't grow
   infinitely
-- The PREPARE, COMMIT and ACK messages contain also a member list at which the message is targetted
+- The PREPARE, COMMIT and ACK messages contain also a member list at which the message is targeted
 - The VIEW processing needs to be handled in a separate thread. When a view V2 arrives while V1 is still
   handled, and if V2 contains fewer members than V1, then the wait for COLLECT-ACK might wait forever. Therefore,
   all members from V1 not in V2 will be removed from the processing of V1, so the wait for COLLECT-ACK can terminate
