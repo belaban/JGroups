@@ -6,12 +6,14 @@ REM This script assumes that tools.jar is already in the classpath
 if "%JAVA_HOME%" == "" goto noJavaHome
 
 
-set LIB=..\lib
+set LIB=lib
 
 set LIBS=%LIB%\log4j-1.2.6.jar;%LIB%\commons-logging.jar;%LIB%\concurrent.jar
 
+set LIBS=%LIB%\ant.jar;%LIB%\ant-junit.jar;%LIB%\ant-launcher.jar;%LIB%\junit.jar;%LIB%\xalan.jar;%LIB%\serializer.jar;
+REM echo LIBS=%LIBS%
 
-set CP=%JAVA_HOME%\lib\tools.jar;%JAVA_HOME%\jre\lib\rt.jar;lib\ant.jar;lib\ant-optional.jar;lib\junit.jar;lib\xalan.jar;%CLASSPATH%;%LIBS%
+set CP=%JAVA_HOME%\lib\tools.jar;%JAVA_HOME%\jre\lib\rt.jar;%CLASSPATH%;%LIBS%
 java -classpath "%CP%" org.apache.tools.ant.Main -buildfile build.xml %1 %2 %3 %4 %5 %6 %7 %8 %9
 
 goto endOfFile
