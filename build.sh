@@ -20,11 +20,26 @@ esac
 LIB=lib
 
 
+#if [ "$cygwin" = "true" ]; then
+#    CP=${LIB}/ant.jar\;${LIB}/ant-launcher.jar\;${LIB}/ant-junit.jar\;${LIB}/xalan.jar\;${LIB}/junit.jar
+#else
+#    CP=${LIB}/ant.jar:${LIB}/ant-launcher.jar:${LIB}/ant-junit.jar:${LIB}/xalan.jar:${LIB}/junit.jar
+#fi
+
+
 if [ "$cygwin" = "true" ]; then
-    CP=${LIB}/ant.jar\;${LIB}/ant-optional.jar\;${LIB}/xalan.jar\;${LIB}/junit.jar
+    for i in ${LIB}/*.jar
+        do
+           CP=${CP}${i}\;
+        done
 else
-    CP=${LIB}/ant.jar:${LIB}/ant-optional.jar:${LIB}/xalan.jar:${LIB}/junit.jar
+    for i in ${LIB}/*.jar
+        do
+           CP=${CP}${i}:
+        done
+    CP=${LIB}/ant.jar:${LIB}/ant-launcher.jar:${LIB}/ant-junit.jar:${LIB}/xalan.jar:${LIB}/junit.jar
 fi
+
 
 
 if [ -n "$JAVA_HOME" ]; then
