@@ -1,0 +1,252 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
+        "../../../../docbook-support/support/docbook-dtd/docbookx.dtd" [
+        <!ENTITY overview     SYSTEM "modules/overview.xml">
+        <!ENTITY architecture SYSTEM "modules/architecture.xml">
+        <!ENTITY channel      SYSTEM "modules/channel.xml">
+        <!ENTITY protstack    SYSTEM "modules/protstack.xml">
+        <!ENTITY blocks       SYSTEM "modules/blocks.xml">
+        <!ENTITY debugging    SYSTEM "modules/debugging.xml">
+        <!ENTITY protocols    SYSTEM "modules/protocols.xml">
+        <!ENTITY protlist     SYSTEM "modules/protlist.xml">
+        <!ENTITY uoverview    SYSTEM "modules/uoverview.xml">
+        <!ENTITY installation SYSTEM "modules/installation.xml">
+        <!ENTITY uchannel     SYSTEM "modules/uchannel.xml">
+        <!ENTITY ublocks      SYSTEM "modules/ublocks.xml">
+        <!ENTITY advanced     SYSTEM "modules/advanced.xml">
+        <!ENTITY tracing      SYSTEM "modules/tracing.xml">
+        ]>
+
+<book>
+
+    <bookinfo>
+        <title>Reliable Multicasting with the JGroups Toolkit</title>
+        <pubdate>$Date: 2006/04/25 11:49:50 $</pubdate>
+        <releaseinfo>$Revision: 1.1 $</releaseinfo>
+        <authorgroup>
+            <author>
+                <firstname>Bela</firstname>
+                <surname>Ban</surname>
+                <affiliation>
+                    <orgname>
+                        <ulink url="http://www.jgroups.org/">JGroups Project</ulink>
+                    </orgname>
+                    <address>
+                        <email>belaban@yahoo.com</email>
+                    </address>
+                </affiliation>
+            </author>
+        </authorgroup>
+        <copyright>
+            <year>1998-2006</year>
+            <holder>Bela Ban</holder>
+        </copyright>
+        <legalnotice>
+            <para>This document is copyrighted by Bela Ban. Copies are allowed for
+                personal use. Redistribution only with written permission of the
+                author.</para>
+        </legalnotice>
+    </bookinfo>
+
+    <preface>
+        <title>Foreword</title>
+
+        <para>This is the Programmer's and User's Guide for
+            JGroups. It provides information about the following areas:
+            <orderedlist>
+                <listitem>
+                    <para>Installation and configuration.</para>
+                </listitem>
+                <listitem>
+                    <para>Using JGroups.</para>
+                </listitem>
+                <listitem>
+                    <para>Architecture and implementation of JGroups. Focus on the
+                        protocol stack and protocols.</para>
+                </listitem>
+            </orderedlist>
+        </para>
+
+        <para>Most of the Installation and User's Guide has been copied
+            from what is freely available on the
+            <ulink
+                    url="http://www.jgroups.org/">JGroups web site</ulink>
+            .
+            However, the focus of this document is to introduce programmers
+            who want to learn more about JGroups to the architecture and
+            implementation of JGroups. I will for example go into the
+            details of the protocol stack, how a message traverses the stack,
+            and how protocols can process it. I will also explain the various
+            design decisions I had to make when designing JGroups, which
+            hopefully leads to a better understanding of why things are the
+            way they are.
+        </para>
+
+        <para>Here are a couple of points I want to abide by throughout
+            this book:
+            <orderedlist>
+                <listitem>
+                    <para>I like brevity. I will strive to describe concepts as
+                        clearly as possible (for a non-native English speaker) and will
+                        refrain from saying more than I have to to make a point.</para>
+                </listitem>
+                <listitem>
+                    <para>I like simplicity. Keep It Simple and Stupid. This is
+                        one of the biggest goals I have both in writing this book
+                        and in writing JGroups. It is easy to explain simple
+                        concepts in complex terms, but it is hard to explain a
+                        complex system in simple terms. I'll try to do the
+                        latter.</para>
+                </listitem>
+            </orderedlist>
+        </para>
+
+
+        <bridgehead>So, how did it all start?</bridgehead>
+
+        <para>I spent 1998-1999 at the Computer Science Department at
+            Cornell University for a post-doc, in Ken Birman's group. Ken is
+            credited with inventing the group communication paradigm,
+            especially the Virtual Synchrony model. At the time they were
+            working on their third generation group communication prototype,
+            called Ensemble. Ensemble followed Horus (written in C by Robbert
+            VanRenesse), which followed ISIS (written by Ken Birman, also in
+            C). Ensemble was written in OCaml, developed at INRIA, which is a
+            functional language and related to ML. I never liked the OCaml
+            language, which in my opinion has a hideous syntax. Therefore I
+            never got warm with Ensemble either.</para>
+
+        <para>However, Ensemble had a Java interface (implemented by a
+            student in a semester project) which allowed me to program in Java
+            and use Ensemble underneath. The Java part would require that an
+            Ensemble process was running somewhere on the same machine, or
+            within the same network, and would connect to it via a
+            bidirectional pipe. The student had developed a simple protocol
+            for talking to the Ensemble engine, and extended the engine as
+            well to talk back to Java.</para>
+
+        <para>However, I still needed to compile and install the Ensemble
+            runtime for each different platform, which is exactly why Java was
+            developed in the first place: portability.</para>
+
+        <para>Therefore I started writing a simple framework (now
+            <classname>JChannel</classname>
+            ), which would allow me to treat
+            Ensemble as just another group communication transport, which
+            could be replaced at any time by a pure Java solution. And soon I
+            found myself working on a pure Java implementation of the group
+            communication transport (now:
+            <classname>ProtocolStack</classname>
+            ). I figured that a pure Java
+            implementation would have a much bigger impact that something
+            written in Ensemble. In the end I didn't spend much time writing
+            scientific papers that nobody would read anyway (I guess I'm not a
+            good scientist, at least not a theoretical one), but rather code
+            for JGroups, which could have a much bigger impact. For me,
+            knowing that real-life projects/products are using JGroups is
+            much more satisfactory than having a paper accepted at a
+            conference/journal.
+        </para>
+
+        <para>That's why, after my time was up, I left Cornell and
+            academia altogether, and started a job in the industry: with
+            Fujitsu Network Communications in Silicon Valley.</para>
+
+        <para>At around that time (May 2000), SourceForge had just opened
+            its site, and I decided to use it for hosting JGroups. I guess
+            this was a major boost for JGroups because now other developers
+            could work on the code. From then on, the page hit and download
+            numbers for JGroups have steadily risen.</para>
+
+        <para>
+            In the fall of 2002, Sacha Labourey contacted me, letting me know that JGroups was being used by JBoss for
+            their clustering implementation. I joined JBoss in 2003 and have been working on JGroups and JBossCache. My
+            goal is to make JGroups the most widely used clustering software in the Java space...
+        </para>
+
+        <para>Bela Ban, San Jose, Aug 2002, Kreuzlingen Switzerland 2006</para>
+
+    </preface>
+
+    <preface>
+        <title>Acknowledgments</title>
+
+        <para>I want to thank all contributors to JGroups, present and
+            past, for their work. Without you, this project would never have
+            taken off the ground.</para>
+
+        <para>I also want to thank Ken Birman and Robbert VanRenesse for
+            many fruitful discussions of all aspects of group communication in
+            particular and distributed systems in general.</para>
+
+        <para>I want to dedicate this book to Jeannette and Michelle.</para>
+
+    </preface>
+
+    &overview;
+
+
+    <part>
+        <title>User's Guide</title>
+        &uoverview;
+        &installation;
+        &uchannel;
+        &ublocks;
+        &advanced;
+        &tracing;
+    </part>
+
+    <part>
+        <title>Programmer's Guide</title>
+        &architecture;
+        &channel;
+        &protstack;
+        &blocks;
+        &debugging;
+        &protocols;
+        &protlist;
+    </part>
+
+
+    <bibliography>
+
+        <bibliomixed id="Ensemble:1997">
+            <title>The Ensemble Distributed Communication System</title>
+            ,
+            <orgname>CS Dept Cornell University</orgname>
+            ,
+            <pubdate>1997</pubdate>
+            .
+            <releaseinfo>
+                <ulink
+                        url="http://www.cs.cornell.edu/Info/Projects/Ensemble/index.html"/>
+            </releaseinfo>
+            .
+        </bibliomixed>
+
+        <bibliomixed id="Gamma:1995">
+            <firstname>Erich</firstname>
+            <surname>Gamma</surname>
+            ,
+            <firstname>Richard</firstname>
+            <surname>Helm</surname>
+            ,
+            <firstname>Ralph</firstname>
+            <surname>Johnson</surname>
+            , and
+            <firstname>John</firstname>
+            <surname>Vlissides</surname>
+            .
+            <title>Design Patterns: Elements of Reusable Object-Oriented
+                Software</title>
+            .
+            <publishername>Addison-Wesley</publishername>
+            ,
+            <pubdate>1995</pubdate>
+            .
+        </bibliomixed>
+
+    </bibliography>
+
+</book>
+
