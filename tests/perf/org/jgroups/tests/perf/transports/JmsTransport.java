@@ -11,7 +11,7 @@ import java.util.Map;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: JmsTransport.java,v 1.6 2006/04/23 12:45:56 belaban Exp $
+ * @version $Id: JmsTransport.java,v 1.7 2006/04/25 11:55:18 belaban Exp $
  */
 public class JmsTransport implements Transport, MessageListener {
     Receiver          receiver=null;
@@ -25,7 +25,6 @@ public class JmsTransport implements Transport, MessageListener {
     TopicSubscriber   sub;
     Topic             topic;
     String            topic_name="topic/testTopic";
-    BytesMessage      msg;
 
 
     public JmsTransport() {
@@ -54,7 +53,6 @@ public class JmsTransport implements Transport, MessageListener {
     public void start() throws Exception {
         conn=((TopicConnectionFactory)factory).createTopicConnection();
         session=conn.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
-        msg=session.createBytesMessage();
         topic=(Topic)ctx.lookup(topic_name);
         pub=session.createPublisher(topic);
         sub=session.createSubscriber(topic);
@@ -88,30 +86,33 @@ public class JmsTransport implements Transport, MessageListener {
         if(destination != null)
             throw new Exception("JmsTransport.send(): unicast destination is not supported");
 
+        ObjectMessage msg=session.createObjectMessage(payload);
         msg.setObjectProperty("sender", local_addr);
+        // msg.setObjectProperty("size", new Integer(payload.length));
 
         //todo: write the sender (maybe use ObjectMessage instead of BytesMessage)
 
-        msg.writeInt(payload.length);
-        msg.writeBytes(payload, 0, payload.length);
+        // msg.writeInt(payload.length);
+        // msg.writeBytes(payload, 0, payload.length);
         pub.publish(topic, msg);
     }
 
     public void onMessage(Message message) {
         Object sender=null;
-        if(message == null || !(message instanceof BytesMessage)) {
-            System.err.println("JmsTransport.onMessage(): received a non BytesMessage (" + message + "), discarding");
+        if(message == null || !(message instanceof ObjectMessage)) {
+            System.err.println("JmsTransport.onMessage(): received a non ObjectMessage (" + message + "), discarding");
             return;
         }
-        BytesMessage tmp=(BytesMessage)message;
+        ObjectMessage tmp=(ObjectMessage)message;
         try {
 
           //  todo: read the sender
             sender=tmp.getObjectProperty("sender");
 
-            int len=tmp.readInt();
-            byte[] payload=new byte[len];
-            tmp.readBytes(payload, len);
+            // int len=tmp.readInt();
+            // int len=((Integer)tmp.getObjectProperty("size")).intValue();
+
+            byte[] payload=(byte[])tmp.getObject();
             if(receiver != null)
                 receiver.receive(sender, payload);
         }

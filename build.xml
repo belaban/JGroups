@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.43 2006/04/25 11:47:55 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.44 2006/04/25 11:59:03 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -46,10 +46,6 @@
         <property environment="env"/>
         <mkdir dir="${compile.dir}"/>
         <mkdir dir="${dist.dir}"/>
-        <mkdir dir="${dist.dir}/pg"/>
-        <mkdir dir="${dist.dir}/pg/html"/>
-        <mkdir dir="${dist.dir}/pg/html/images"/>
-        <mkdir dir="${dist.dir}/pg/pdf"/>
         <mkdir dir="${javadoc.dir}"/>
     </target>
 
