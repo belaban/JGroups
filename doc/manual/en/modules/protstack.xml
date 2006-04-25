@@ -1,0 +1,63 @@
+<chapter id="protstack"><title>Protocol Stack</title>
+
+  <section><title>Connection to Channel</title>
+
+    <para>Setup and teardown of ProtocolStack (creation, connect(),
+    disconnect(), close())</para>
+
+  </section>
+
+  <section><title>Anatomy of a Protocol</title>
+
+    <section><title>Protocol</title>
+
+      <para></para>
+
+    </section>
+
+    <section><title>MessageProtocol</title>
+
+      <para></para>
+
+    </section>
+
+    <section><title>RpcProtocol</title>
+
+      <para></para>
+
+    </section>
+
+  </section>
+
+
+  <section><title>Configurator</title>
+
+    <para></para>
+
+    <section><title>PlainConfigurator</title>
+      
+      <para></para>
+      
+    </section>
+    
+    <section><title>UrlConfigurator</title>
+      
+      <para></para>
+      
+    </section>
+
+  </section>
+
+  <section><title>Initialization of a ProtocolStack</title>
+
+    <para></para>
+
+  </section>
+
+  <section><title>Destruction of a ProtocolStack</title>
+
+    <para></para>
+
+  </section>
+
+</chapter>
