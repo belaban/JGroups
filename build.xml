@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.46 2006/04/26 12:30:14 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.47 2006/04/26 21:05:31 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -124,7 +124,8 @@
     </target>
 
     <target name="jgroups-core.jar"
-        description="Creates the jgroups-core.jar. Includes only core file, no demos">
+        description="Creates the jgroups-core.jar. Includes only core file, no demos" depends="compile">
+        <mkdir dir="${dist.dir}"/>
         <jar jarfile="${dist.dir}/jgroups-core.jar"
             basedir="${compile.dir}"
             manifest="${conf.dir}/manifest.mf"
@@ -199,16 +200,17 @@
         </jar>
     </target>
 
-    <target name="multiplexer-service" depends="jar"
+    <target name="multiplexer-service" depends="jgroups-core.jar"
             description="Creates the service archive used to deploy the JChannelFactory (multiplexer) MBean">
         <mkdir dir="${dist.dir}/muxtemp"/>
-        <copy file="${conf.dir}/multiplexer-service.xml" tofile="${dist.dir}/muxtemp/jboss-service.xml"/>
+        <copy  file="${conf.dir}/multiplexer-service.xml" tofile="${dist.dir}/muxtemp/jboss-service.xml"/>
+        <copy  file="${conf.dir}/multiplexer-xmbean.xml" todir="${dist.dir}/muxtemp/"/>
         <jar jarfile="${dist.dir}/Multiplexer.sar">
             <fileset dir="${dist.dir}" includes="jgroups-core.jar"/>
             <fileset dir="${lib.dir}" includes="concurrent*.jar,commons-logging*.jar,log4j*.jar,jmx*.jar"/>
             <fileset dir="${conf.dir}" includes="jg-magic-map.xml,stacks.xml"/>
             <metainf dir="${dist.dir}/muxtemp"
-                     includes="jboss-service.xml"/>
+                     includes="*.xml"/>
         </jar>
         <delete dir="${dist.dir}/muxtemp"/>
     </target>

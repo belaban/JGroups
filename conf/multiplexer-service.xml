@@ -1,15 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE server
+        PUBLIC "-//JBoss//DTD MBean Service 3.2//EN"
+        "http://www.jboss.org/j2ee/dtd/jboss-service_3_2.dtd">
 
 
 <server>
 
+
     <!--
     An example for setting up the JChannelFactory MBean
     Author: Bela Ban
-    Version: $Id: multiplexer-service.xml,v 1.1 2006/04/18 15:26:49 belaban Exp $
+    Version: $Id: multiplexer-service.xml,v 1.2 2006/04/26 21:05:07 belaban Exp $
     -->
-    <mbean code="org.jgroups.jmx.JChannelFactory" name="jgroups:name=Multiplexer">
+    <mbean code="org.jgroups.jmx.JChannelFactory" name="jgroups:name=Multiplexer" xmbean-dd="resource:multiplexer-xmbean.xml">
+        <attribute name="ObjectName">jgroups:name=Multiplexer</attribute>
         <attribute name="MultiplexerConfig">stacks.xml</attribute>
+        <attribute name="ExposeChannels">true</attribute>
+        <attribute name="ExposeProtocols">true</attribute>
     </mbean>
+
 
 </server>
