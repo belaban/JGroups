@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.15 2006/04/18 15:26:50 belaban Exp $
+// $Id: JChannelFactory.java,v 1.16 2006/04/26 22:14:12 belaban Exp $
 
 package org.jgroups;
 
@@ -6,20 +6,27 @@ import org.jgroups.conf.ClassPathEntityResolver;
 import org.jgroups.conf.ConfiguratorFactory;
 import org.jgroups.conf.ProtocolStackConfigurator;
 import org.jgroups.conf.XmlConfigurator;
-import org.jgroups.util.Util;
+import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.mux.Multiplexer;
 import org.jgroups.mux.MuxChannel;
+import org.jgroups.util.Util;
 import org.w3c.dom.*;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
+import javax.management.MBeanServer;
+import javax.management.MBeanServerFactory;
+import javax.management.ObjectName;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Iterator;
+import java.util.Map;
 
 /**
  * JChannelFactory creates pure Java implementations of the <code>Channel</code>
@@ -29,6 +36,8 @@ import java.util.Iterator;
 public class JChannelFactory implements ChannelFactory {
     private ProtocolStackConfigurator configurator;
 
+    private Log log=LogFactory.getLog(getClass());
+
     /** Map<String,String>. Hashmap which maps stack names to JGroups configurations. Keys are stack names, values are
      * plain JGroups stack configs. This is (re-)populated whenever a setMultiplexerConfig() method is called */
     private final Map stacks=new HashMap();
@@ -37,11 +46,27 @@ public class JChannelFactory implements ChannelFactory {
      * a Multiplexer */
     private final Map channels=new HashMap();
 
+    private String config=null;
+
+    /** The MBeanServer to expose JMX management data with (no management data will be available if null) */
+    private MBeanServer server=null;
+
+    /** To expose the channels and protocols */
+    private String object_name=null;
+
+    /** Whether or not to expose channels via JMX */
+    private boolean expose_channels=true;
+
+    /** Whether to expose the factory only, or all protocols as well */
+    private boolean expose_protocols=true;
+
+
+
     // private Log log=LogFactory.getLog(getClass());
     private final static String PROTOCOL_STACKS="protocol_stacks";
     private final static String STACK="stack";
     private static final String NAME="name";
-    private static final String DESCR="description";
+    // private static final String DESCR="description";
     private static final String CONFIG="config";
 
     /**
@@ -145,10 +170,13 @@ public class JChannelFactory implements ChannelFactory {
         }
     }
 
+    public String getMultiplexerConfig() {return config;}
+
     public void setMultiplexerConfig(String properties) throws Exception {
         InputStream input=ConfiguratorFactory.getConfigStream(properties);
         try {
             parse(input);
+            this.config=properties;
         }
         finally {
             Util.closeInputStream(input);
@@ -156,6 +184,30 @@ public class JChannelFactory implements ChannelFactory {
     }
 
 
+    public String getObjectName() {
+        return object_name;
+    }
+
+    public void setObjectName(String object_name) {
+        this.object_name=object_name;
+    }
+
+    public boolean isExposeChannels() {
+        return expose_channels;
+    }
+
+    public void setExposeChannels(boolean expose_channels) {
+        this.expose_channels=expose_channels;
+    }
+
+    public boolean isExposeProtocols() {
+        return expose_protocols;
+    }
+
+    public void setExposeProtocols(boolean expose_protocols) {
+        this.expose_protocols=expose_protocols;
+        this.expose_channels=true;
+    }
 
 
     /**
@@ -211,6 +263,8 @@ public class JChannelFactory implements ChannelFactory {
                 String props=getConfig(stack_name);
                 ch=new JChannel(props);
                 entry.channel=ch;
+                if(expose_channels && server != null)
+                    registerChannel(ch, stack_name);
             }
             Multiplexer mux=entry.multiplexer;
             if(mux == null) {
@@ -223,6 +277,18 @@ public class JChannelFactory implements ChannelFactory {
         }
     }
 
+    private void registerChannel(JChannel ch, String stack_name) throws Exception {
+        JmxConfigurator.registerChannel(ch, server, object_name + ",stack=" + stack_name, expose_protocols);
+    }
+
+
+
+
+    /** Unregisters everything under stack_name (including stack_name) */
+    private void unregister(String stack_name) throws Exception {
+        String tmp=object_name + ",stack=" + stack_name;
+        JmxConfigurator.unregister(server, tmp);
+    }
 
 
     public void connect(MuxChannel ch) throws ChannelException {
@@ -281,9 +347,19 @@ public class JChannelFactory implements ChannelFactory {
             }
             synchronized(channels) {
                 channels.remove(entry);
+                if(expose_channels && server != null) {
+                    try {
+                        unregister(object_name + ",stack=" + ch.getStackName());
+                    }
+                    catch(Exception e) {
+                        log.error("failed unregistering channel " + ch.getStackName(), e);
+                    }
+                }
             }
         }
     }
+
+
 
     public void shutdown(MuxChannel ch) {
         Entry entry;
@@ -303,6 +379,14 @@ public class JChannelFactory implements ChannelFactory {
             }
             synchronized(channels) {
                 channels.remove(entry);
+                if(expose_channels && server != null) {
+                    try {
+                        unregister(ch.getStackName());
+                    }
+                    catch(Exception e) {
+                        log.error("failed unregistering channel " + ch.getStackName(), e);
+                    }
+                }
             }
         }
     }
@@ -327,7 +411,16 @@ public class JChannelFactory implements ChannelFactory {
 
 
     public void create() throws Exception{
-
+        if(expose_channels) {
+            ArrayList servers=MBeanServerFactory.findMBeanServer(null);
+            if(servers == null || servers.size() == 0) {
+                throw new Exception("No MBeanServer found; JChannelFactory needs to be run with an MBeanServer present, " +
+                        "inside JDK 5, or with ExposeChannel set to false");
+            }
+            server=(MBeanServer)servers.get(0);
+            if(object_name == null)
+                object_name="jgroups:name=Multiplexer";
+        }
     }
 
     public void start() throws Exception {
@@ -341,12 +434,24 @@ public class JChannelFactory implements ChannelFactory {
     public void destroy() {
         synchronized(channels) {
             Entry entry;
-            for(Iterator it=channels.values().iterator(); it.hasNext();) {
-                entry=(Entry)it.next();
+            Map.Entry tmp;
+            String stack_name;
+            for(Iterator it=channels.entrySet().iterator(); it.hasNext();) {
+                tmp=(Map.Entry)it.next();
+                stack_name=(String)tmp.getKey();
+                entry=(Entry)tmp.getValue();
                 if(entry.multiplexer != null)
                     entry.multiplexer.closeAll();
                 if(entry.channel != null)
                     entry.channel.close();
+                if(expose_channels && server != null) {
+                    try {
+                        unregister(stack_name);
+                    }
+                    catch(Throwable e) {
+                        log.error("failed unregistering channel " + entry.channel.getChannelName(), e);
+                    }
+                }
             }
             channels.clear();
         }
@@ -422,16 +527,16 @@ public class JChannelFactory implements ChannelFactory {
 
             NamedNodeMap attrs = stack.getAttributes();
             Node name=attrs.getNamedItem(NAME);
-            Node descr=attrs.getNamedItem(DESCR);
+            // Node descr=attrs.getNamedItem(DESCR);
             String st_name=name.getNodeValue();
-            String stack_descr=descr.getNodeValue();
-            //System.out.print("Parsing \"" + st_name + "\" (" + stack_descr + ")");
+            // String stack_descr=descr.getNodeValue();
+            // System.out.print("Parsing \"" + st_name + "\" (" + stack_descr + ")");
             NodeList configs=stack.getChildNodes();
             for(int j=0; j < configs.getLength(); j++) {
-                Node config=configs.item(j);
-                if(config.getNodeType() != Node.ELEMENT_NODE )
+                Node tmp_config=configs.item(j);
+                if(tmp_config.getNodeType() != Node.ELEMENT_NODE )
                     continue;
-                Element cfg = (Element) config;
+                Element cfg = (Element) tmp_config;
                 tmp=cfg.getNodeName();
                 if(!CONFIG.equals(tmp))
                     throw new IOException("invalid configuration: didn't find a \"" + CONFIG + "\" element under \"" + STACK + "\"");
@@ -456,10 +561,10 @@ public class JChannelFactory implements ChannelFactory {
      * @return The protocol stack config as a plain string
      */
     private String getConfig(String stack_name) throws Exception {
-        String config=(String)stacks.get(stack_name);
-        if(config == null)
+        String cfg=(String)stacks.get(stack_name);
+        if(cfg == null)
             throw new Exception("stack \"" + stack_name + "\" not found in " + stacks.keySet());
-        return config;
+        return cfg;
     }
 
 

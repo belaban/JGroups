@@ -7,10 +7,12 @@ import org.jgroups.util.Util;
 
 import javax.management.*;
 import java.util.Vector;
+import java.util.Set;
+import java.util.Iterator;
 
 /**
  * @author Bela Ban
- * @version $Id: JmxConfigurator.java,v 1.5 2005/08/17 07:32:31 belaban Exp $
+ * @version $Id: JmxConfigurator.java,v 1.6 2006/04/26 22:14:12 belaban Exp $
  */
 public class JmxConfigurator {
     static final Log log=LogFactory.getLog(JmxConfigurator.class);
@@ -38,6 +40,11 @@ public class JmxConfigurator {
     public static void unregisterChannel(MBeanServer server, ObjectName name) throws Exception {
         if(server != null)
             server.unregisterMBean(name);
+    }
+
+    public static void unregisterChannel(MBeanServer server, String name) throws Exception {
+        if(server != null)
+            server.unregisterMBean(new ObjectName(name));
     }
 
     /**
@@ -83,6 +90,21 @@ public class JmxConfigurator {
             }
             catch(Throwable e) {
                 log.error("failed to unregister " + prot_name, e);
+            }
+        }
+    }
+
+    /**
+     * Unregisters object_name and everything under it
+     * @param object_name
+     */
+    public static void unregister(MBeanServer server, String object_name) throws Exception {
+        Set mbeans=server.queryNames(new ObjectName(object_name + ",*"), null);
+        if(mbeans != null) {
+            ObjectName name;
+            for(Iterator it=mbeans.iterator(); it.hasNext();) {
+                name=(ObjectName)it.next();
+                server.unregisterMBean(name);
             }
         }
     }
