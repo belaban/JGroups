@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.45 2006/04/26 11:57:23 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.46 2006/04/26 12:30:14 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -206,10 +206,9 @@
         <jar jarfile="${dist.dir}/Multiplexer.sar">
             <fileset dir="${dist.dir}" includes="jgroups-core.jar"/>
             <fileset dir="${lib.dir}" includes="concurrent*.jar,commons-logging*.jar,log4j*.jar,jmx*.jar"/>
-            <fileset dir="${conf.dir}" includes="*.dtd, *.xml" excludes="jboss-service.xml,multiplexer-service.xml"/>
+            <fileset dir="${conf.dir}" includes="jg-magic-map.xml,stacks.xml"/>
             <metainf dir="${dist.dir}/muxtemp"
                      includes="jboss-service.xml"/>
-            <fileset dir="${conf.dir}" includes="*.dtd, *.xml" excludes="jboss-service.xml,multiplexer-service.xml"/>
         </jar>
         <delete dir="${dist.dir}/muxtemp"/>
     </target>
