@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.44 2006/04/25 11:59:03 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.45 2006/04/26 11:57:23 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -199,22 +199,31 @@
         </jar>
     </target>
 
+    <target name="multiplexer-service" depends="jar"
+            description="Creates the service archive used to deploy the JChannelFactory (multiplexer) MBean">
+        <mkdir dir="${dist.dir}/muxtemp"/>
+        <copy file="${conf.dir}/multiplexer-service.xml" tofile="${dist.dir}/muxtemp/jboss-service.xml"/>
+        <jar jarfile="${dist.dir}/Multiplexer.sar">
+            <fileset dir="${dist.dir}" includes="jgroups-core.jar"/>
+            <fileset dir="${lib.dir}" includes="concurrent*.jar,commons-logging*.jar,log4j*.jar,jmx*.jar"/>
+            <fileset dir="${conf.dir}" includes="*.dtd, *.xml" excludes="jboss-service.xml,multiplexer-service.xml"/>
+            <metainf dir="${dist.dir}/muxtemp"
+                     includes="jboss-service.xml"/>
+            <fileset dir="${conf.dir}" includes="*.dtd, *.xml" excludes="jboss-service.xml,multiplexer-service.xml"/>
+        </jar>
+        <delete dir="${dist.dir}/muxtemp"/>
+    </target>
 
-    <target name="jgroups-service" depends="jar"
-        description="Creates the service archive used to deploy a JGroups channel as a JBoss MBean">
-        <jar jarfile="${dist.dir}/jgroups-service.sar"
-            basedir="${compile.dir}"
-            includes="org/jgroups/**"
-            excludes="org/jgroups/demos/**,
-                      org/jgroups/tests/**,
-                      org/jgroups/**/*Test.class,
-                      org/jgroups/**/*Test\$*.class">
+    <target name="jgroups-service" depends="jgroups-core.jar"
+            description="Creates the service archive used to deploy a JGroups channel as a JBoss MBean">
+        <jar jarfile="${dist.dir}/jgroups-service.sar">
+            <fileset dir="${dist.dir}" includes="jgroups-core.jar"/>
+            <fileset dir="${lib.dir}" includes="concurrent*.jar,commons-logging*.jar,log4j*.jar,jmx*.jar"/>
             <metainf dir="${conf.dir}"
-                includes="jboss-service.xml"/>
+                     includes="jboss-service.xml"/>
             <fileset dir="${conf.dir}" includes="*.dtd, *.xml" excludes="jboss-service.xml"/>
         </jar>
     </target>
-
 
     <!-- generate java doc -->
     <target name="javadoc"
