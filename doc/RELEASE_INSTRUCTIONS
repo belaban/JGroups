@@ -1,7 +1,9 @@
-// $Id: RELEASE_INSTRUCTIONS,v 1.2 2005/04/26 13:45:09 belaban Exp $
+// $Id: RELEASE_INSTRUCTIONS,v 1.3 2006/04/27 08:44:44 belaban Exp $
 
 	       Things to do before packaging a release
 	       ---------------------------------------
+
+- Use JDK 1.4 to build the JARs !
 
 - Remove all "// +++ remove" statements
 
