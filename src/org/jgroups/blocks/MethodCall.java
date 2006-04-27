@@ -3,9 +3,11 @@ package org.jgroups.blocks;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.jgroups.util.Streamable;
 
-import java.io.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
@@ -16,7 +18,7 @@ import java.util.*;
  * It includes the name of the method (case sensitive) and a list of arguments.
  * A method call is serializable and can be passed over the wire.
  * @author Bela Ban
- * @version $Revision: 1.22 $
+ * @version $Revision: 1.23 $
  */
 public class MethodCall implements Externalizable {
 
@@ -214,16 +216,25 @@ public class MethodCall implements Externalizable {
      * and those inherited from superclasses and superinterfaces.
      */
     Method[] getAllMethods(Class target) {
-
         Class superclass = target;
         List methods = new ArrayList();
         int size = 0;
 
         while(superclass != null) {
-            Method[] m = superclass.getDeclaredMethods();
-            methods.add(m);
-            size += m.length;
-            superclass = superclass.getSuperclass();
+            try {
+                Method[] m = superclass.getDeclaredMethods();
+                methods.add(m);
+                size += m.length;
+                superclass = superclass.getSuperclass();
+            }
+            catch(SecurityException e) {
+                // if it runs in an applet context, it won't be able to retrieve
+                // methods from superclasses that belong to the java VM and it will
+                // raise a security exception, so we catch it here.
+                if(log.isWarnEnabled())
+                    log.warn("unable to enumerate methods of superclass "+superclass+" of class "+target);
+                superclass=null;
+            }
         }
 
         Method[] result = new Method[size];
