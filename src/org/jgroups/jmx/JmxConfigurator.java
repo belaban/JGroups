@@ -12,7 +12,7 @@ import java.util.Iterator;
 
 /**
  * @author Bela Ban
- * @version $Id: JmxConfigurator.java,v 1.6 2006/04/26 22:14:12 belaban Exp $
+ * @version $Id: JmxConfigurator.java,v 1.7 2006/04/27 08:24:59 belaban Exp $
  */
 public class JmxConfigurator {
     static final Log log=LogFactory.getLog(JmxConfigurator.class);
@@ -46,6 +46,17 @@ public class JmxConfigurator {
         if(server != null)
             server.unregisterMBean(new ObjectName(name));
     }
+
+
+    public static org.jgroups.jmx.JChannelFactory registerChannelFactory(org.jgroups.JChannelFactory factory,
+                                                                         MBeanServer server, String name) throws Exception {
+        JChannelFactory retval=new JChannelFactory(factory);
+        server.registerMBean(retval, new ObjectName(name));
+        return retval;
+    }
+
+    
+
 
     /**
      * Takes all protocols of an existing stack, creates corresponding MBean proxies and registers them with
