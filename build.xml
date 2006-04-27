@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.47 2006/04/26 21:05:31 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.48 2006/04/27 08:25:21 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -134,7 +134,7 @@
                       org/jgroups/tests/**,
                       org/jgroups/**/*Test.class,
                       org/jgroups/**/*Test\$*.class">
-            <fileset dir="${conf.dir}" includes="*.dtd, *.xml" excludes="jboss-service.xml"/>
+            <fileset dir="${conf.dir}" includes="*.dtd, *.xml" excludes="*-service.xml"/>
         </jar>
     </target>
 
@@ -185,19 +185,23 @@
          <delete dir="${tmp.dir}" failonerror="false"/>
     </target>
 
-    <target name="jboss-service"
-        description="Creates the service archive used to deploy GossipServer as a JBoss MBean">
-        <jar jarfile="${dist.dir}/jgroups-router.sar"
+    <target name="gossip-service"
+            description="Creates the service archive used to deploy GossipServer as a JBoss MBean"
+            depends="compile">
+        <mkdir dir="${dist.dir}/gossiptemp"/>
+        <copy  file="${conf.dir}/gossip-service.xml" tofile="${dist.dir}/gossiptemp/jboss-service.xml"/>
+        <jar jarfile="${dist.dir}/gossip-router.sar"
             basedir="${compile.dir}"
             includes="org/jgroups/**"
             excludes="org/jgroups/demos/**,
                       org/jgroups/tests/**,
                       org/jgroups/**/*Test.class,
                       org/jgroups/**/*Test\$*.class">
-            <metainf dir="${src.dir}/org/jgroups/stack"
+            <metainf dir="${dist.dir}/gossiptemp"
                 includes="jboss-service.xml"/>
-            <fileset dir="${conf.dir}" includes="*.dtd, *.xml" excludes="jboss-service.xml"/>
+            <fileset dir="${conf.dir}" includes="jg-magic-map.xml"/>
         </jar>
+        <delete dir="${dist.dir}/gossiptemp"/>
     </target>
 
     <target name="multiplexer-service" depends="jgroups-core.jar"
