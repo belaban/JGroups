@@ -37,7 +37,6 @@ else
         do
            CP=${CP}${i}:
         done
-    CP=${LIB}/ant.jar:${LIB}/ant-launcher.jar:${LIB}/ant-junit.jar:${LIB}/xalan.jar:${LIB}/junit.jar
 fi
 
 
