@@ -2,18 +2,23 @@ package org.jgroups.jmx;
 
 import org.jgroups.Channel;
 
-import javax.management.MBeanServerFactory;
 import javax.management.MBeanServer;
-import javax.management.ObjectName;
-import java.util.ArrayList;
 
 /**
  * @author Bela Ban
- * @version $Id: JChannelFactory.java,v 1.2 2006/04/26 22:14:12 belaban Exp $
+ * @version $Id: JChannelFactory.java,v 1.3 2006/04/27 08:44:13 belaban Exp $
  */
 public class JChannelFactory implements JChannelFactoryMBean {
     org.jgroups.JChannelFactory factory=new org.jgroups.JChannelFactory();
     MBeanServer server=null;
+
+
+    public JChannelFactory(org.jgroups.JChannelFactory factory) {
+        this.factory=factory;
+    }
+
+    public JChannelFactory() {
+    }
 
     public void setMultiplexerConfig(String properties) throws Exception {
         factory.setMultiplexerConfig(properties);
@@ -60,19 +65,6 @@ public class JChannelFactory implements JChannelFactoryMBean {
         if(factory == null)
             factory=new org.jgroups.JChannelFactory();
         factory.create();
-
-        if(isExposeChannels()) {
-            ArrayList servers=MBeanServerFactory.findMBeanServer(null);
-            if(servers == null || servers.size() == 0) {
-                throw new Exception("No MBeanServer found; JChannelFactory needs to be run with an MBeanServer present, " +
-                        "inside JDK 5, or with ExposeChannel set to false");
-            }
-            server=(MBeanServer)servers.get(0);
-            String object_name=getObjectName();
-            if(object_name == null)
-                object_name="jgroups:name=Multiplexer";
-            server.registerMBean(this, new ObjectName(object_name));
-        }
     }
 
     public void start() throws Exception {
@@ -85,19 +77,7 @@ public class JChannelFactory implements JChannelFactoryMBean {
 
     public void destroy() {
         factory.destroy();
-        try {
-            if(isExposeChannels() && server != null) {
-                try {
-                    JmxConfigurator.unregister(server, getObjectName());
-                }
-                catch(Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-        finally {
-            factory=null;
-        }
+        factory=null;
     }
 
     public String dumpConfiguration() {
