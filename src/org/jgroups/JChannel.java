@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.65 2006/04/28 15:27:09 belaban Exp $
+// $Id: JChannel.java,v 1.66 2006/04/28 15:39:42 belaban Exp $
 
 package org.jgroups;
 
@@ -66,7 +66,7 @@ import java.util.Vector;
  *
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.65 $
+ * @version $Revision: 1.66 $
  */
 public class JChannel extends Channel {
 
@@ -114,9 +114,6 @@ public class JChannel extends Channel {
     private final Promise disconnect_promise=new Promise();
 
     private final Promise state_promise=new Promise();
-
-    private final Object suspend_mutex=new Object();
-    private boolean suspended=false;
 
     /** wait until we have a non-null local_addr */
     private long LOCAL_ADDR_TIMEOUT=30000; //=Long.parseLong(System.getProperty("local_addr.timeout", "30000"));
@@ -440,8 +437,6 @@ public class JChannel extends Channel {
      */
     public synchronized void disconnect() {
         if(closed) return;
-
-        resume();
 
         if(connected) {
 
@@ -1092,18 +1087,6 @@ public class JChannel extends Channel {
     public void down(Event evt) {
         if(evt == null) return;
 
-        if(suspended) {
-            synchronized(suspend_mutex) {
-                while(suspended) {
-                    try {
-                        suspend_mutex.wait();
-                    }
-                    catch(InterruptedException e) {
-                    }
-                }
-            }
-        }
-
         // handle setting of additional data (kludge, will be removed soon)
         if(evt.getType() == Event.CONFIG) {
             try {
@@ -1123,24 +1106,6 @@ public class JChannel extends Channel {
             if(log.isErrorEnabled()) log.error("no protocol stack available");
     }
 
-    /** Send() blocks from now on, until resume() is called */
-    public void suspend() {
-        synchronized(suspend_mutex) {
-            suspended=true;
-        }
-    }
-
-    /** Send() unblocks */
-    public void resume() {
-        synchronized(suspend_mutex) {
-            suspended=false;
-            suspend_mutex.notifyAll();
-        }
-    }
-
-    public boolean isSuspended() {
-        return suspended;
-    }
 
 
     public String toString(boolean details) {
@@ -1291,9 +1256,6 @@ public class JChannel extends Channel {
     protected void _close(boolean disconnect, boolean close_mq) {
         if(closed)
             return;
-
-        if(!disconnect)
-            resume();
 
         if(disconnect)
             disconnect();                     // leave group if connected
