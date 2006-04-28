@@ -1,4 +1,4 @@
-//$Id: TOTAL_TOKEN.java,v 1.13 2006/01/19 09:53:37 belaban Exp $
+//$Id: TOTAL_TOKEN.java,v 1.14 2006/04/28 15:25:00 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -49,7 +49,7 @@ import java.util.*;
  *
  *
  *@author Vladimir Blagojevic vladimir@cs.yorku.ca
- *@version $Revision: 1.13 $
+ *@version $Revision: 1.14 $
  *
  *@see org.jgroups.protocols.ring.RingNodeFlowControl
  *@see org.jgroups.protocols.ring.RingNode
@@ -61,79 +61,81 @@ import java.util.*;
 
 public class TOTAL_TOKEN extends RpcProtocol
 {
+    private static final Object[] NULL_OBJ=new Object[]{};
+    private static final Class[] NULL_TYPES=new Class[]{};
 
 
-   public static class TotalTokenHeader extends Header
-   {
+    public static class TotalTokenHeader extends Header
+    {
 
 
-      /**
-       * sequence number of the message
-       */
-      private long seq;
+       /**
+        * sequence number of the message
+        */
+       private long seq;
 
 
-      /**
-       *used for externalization
-       */
-      public TotalTokenHeader()
-      {
-      }
+       /**
+        *used for externalization
+        */
+       public TotalTokenHeader()
+       {
+       }
 
-      public TotalTokenHeader(long seq)
-      {
-         this.seq = seq;
-      }
+       public TotalTokenHeader(long seq)
+       {
+          this.seq = seq;
+       }
 
-      public TotalTokenHeader(Long seq)
-      {
-         this.seq = seq.longValue();
-      }
+       public TotalTokenHeader(Long seq)
+       {
+          this.seq = seq.longValue();
+       }
 
 
-      /**
-       *Returns sequence number of the message that owns this header
-       *@return sequence number
-       */
-      public long getSeq()
-      {
-         return seq;
-      }
+       /**
+        *Returns sequence number of the message that owns this header
+        *@return sequence number
+        */
+       public long getSeq()
+       {
+          return seq;
+       }
 
-      /**
-       *Returns size of the header
-       * @return headersize in bytes
-       */
-      public long size()
-      {
-         //calculated using Util.SizeOf(Object)
-         return 121;
-      }
+       /**
+        *Returns size of the header
+        * @return headersize in bytes
+        */
+       public long size()
+       {
+          //calculated using Util.SizeOf(Object)
+          return 121;
+       }
 
-      /**
-       * Manual serialization
-       *
-       *
-       */
-      public void writeExternal(ObjectOutput out) throws IOException
-      {
-         out.writeLong(seq);
-      }
+       /**
+        * Manual serialization
+        *
+        *
+        */
+       public void writeExternal(ObjectOutput out) throws IOException
+       {
+          out.writeLong(seq);
+       }
 
-      /**
-       * Manual deserialization
-       *
-       */
-      public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException
-      {
-         seq = in.readLong();
-      }
+       /**
+        * Manual deserialization
+        *
+        */
+       public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException
+       {
+          seq = in.readLong();
+       }
 
-      public String toString()
-      {
-         return "[TotalTokenHeader=" + seq + ']';
-      }
-   }
+       public String toString()
+       {
+          return "[TotalTokenHeader=" + seq + ']';
+       }
+    }
 
    public static class RingTokenHeader extends Header
    {
@@ -163,8 +165,8 @@ public class TOTAL_TOKEN extends RpcProtocol
    UdpRingNode node;
    RingNodeFlowControl flowControl;
    Address localAddress;
-   final TokenTransmitter tokenRetransmitter=new TokenTransmitter();
-   List newMessagesQueue;
+   private final TokenTransmitter tokenRetransmitter=new TokenTransmitter();
+   final List newMessagesQueue = Collections.synchronizedList(new ArrayList());
    SortedSet liveMembersInRecovery,suspects;
 
    final Object mutex = new Object();
@@ -188,6 +190,7 @@ public class TOTAL_TOKEN extends RpcProtocol
    int unblockSendingBacklogThreshold = Integer.MIN_VALUE;
    boolean tokenCirculating = false;
    boolean senderBlocked = false;
+    final Object block_sending=new Object();
    public static final String prot_name = "TOTAL_TOKEN";
 
 
@@ -209,7 +212,6 @@ public class TOTAL_TOKEN extends RpcProtocol
 
     public void start() throws Exception {
         super.start();
-        newMessagesQueue = Collections.synchronizedList(new ArrayList());
         receivedMessagesQueue = new TreeMap();
         tokenRetransmitter.start();
     }
@@ -493,11 +495,11 @@ public class TOTAL_TOKEN extends RpcProtocol
 
           Vector m = new Vector(liveMembersInRecovery);
 
-          RspList list=callRemoteMethods(m, "getAllReceivedUpTo", new Object[]{}, new Class[]{}, GroupRequest.GET_ALL, 0);
+          RspList list=callRemoteMethods(m, "getAllReceivedUpTo", NULL_OBJ, NULL_TYPES, GroupRequest.GET_ALL, 0);
          //RspList list = callRemoteMethods(m, "getAllReceivedUpTo", GroupRequest.GET_ALL, 0);
          Vector myAllReceivedUpTos = list.getResults();
 
-          callRemoteMethods(m, "getAllReceivedUpTo", new Object[]{}, new Class[]{}, GroupRequest.GET_ALL, 0);
+          callRemoteMethods(m, "getAllReceivedUpTo", NULL_OBJ, NULL_TYPES, GroupRequest.GET_ALL, 0);
          //callRemoteMethods(m, "getAllReceivedUpTo", GroupRequest.GET_ALL, 0);
          Vector myAllReceivedUpTosConfirm = list.getResults();
 
@@ -505,7 +507,7 @@ public class TOTAL_TOKEN extends RpcProtocol
          while (!myAllReceivedUpTos.equals(myAllReceivedUpTosConfirm))
          {
             myAllReceivedUpTos = myAllReceivedUpTosConfirm;
-             callRemoteMethods(m, "getAllReceivedUpTo", new Object[]{}, new Class[]{}, GroupRequest.GET_ALL, 0);
+             callRemoteMethods(m, "getAllReceivedUpTo", NULL_OBJ, NULL_TYPES, GroupRequest.GET_ALL, 0);
             // callRemoteMethods(m, "getAllReceivedUpTo", GroupRequest.GET_ALL, 0);
             myAllReceivedUpTosConfirm = list.getResults();
 
@@ -974,8 +976,16 @@ public class TOTAL_TOKEN extends RpcProtocol
    {
       if (!senderBlocked && flowControl.getBacklog() > blockSendingBacklogThreshold)
       {
-         passUp(new Event(Event.BLOCK_SEND));
-         senderBlocked = true;
+          synchronized(block_sending) {
+              senderBlocked = true;
+              while(senderBlocked) {
+                  try {
+                      block_sending.wait();
+                  }
+                  catch(InterruptedException e) {
+                  }
+              }
+          }
       }
    }
 
@@ -991,8 +1001,10 @@ public class TOTAL_TOKEN extends RpcProtocol
    {
       if (senderBlocked && flowControl.getBacklog() < unblockSendingBacklogThreshold)
       {
-         passUp(new Event(Event.UNBLOCK_SEND));
-         senderBlocked = false;
+          synchronized(block_sending) {
+              senderBlocked = false;
+              block_sending.notifyAll();
+          }
       }
 
    }
