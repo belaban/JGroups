@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.64 2006/04/13 08:45:42 belaban Exp $
+// $Id: JChannel.java,v 1.65 2006/04/28 15:27:09 belaban Exp $
 
 package org.jgroups;
 
@@ -66,7 +66,7 @@ import java.util.Vector;
  *
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Revision: 1.64 $
+ * @version $Revision: 1.65 $
  */
 public class JChannel extends Channel {
 
@@ -134,9 +134,6 @@ public class JChannel extends Channel {
     private boolean auto_getstate=false;
     /*channel connected flag*/
     protected boolean connected=false;
-
-    /** block send()/down() if true (unlocked by UNBLOCK_SEND event) */
-    private final CondVar block_sending=new CondVar("block_sending", Boolean.FALSE);
 
     /*channel closed flag*/
     protected boolean closed=false;      // close() has been called, channel is unusable
@@ -1021,16 +1018,6 @@ public class JChannel extends Channel {
             handleExit(evt);
             return;  // no need to pass event up; already done in handleExit()
 
-        case Event.BLOCK_SEND: // emitted by FLOW_CONTROL
-            if(log.isInfoEnabled()) log.info("received BLOCK_SEND");
-            block_sending.set(Boolean.TRUE);
-            break;
-
-        case Event.UNBLOCK_SEND:  // emitted by FLOW_CONTROL
-            if(log.isInfoEnabled()) log.info("received UNBLOCK_SEND");
-            block_sending.set(Boolean.FALSE);
-            break;
-
         default:
             break;
         }
@@ -1117,18 +1104,8 @@ public class JChannel extends Channel {
             }
         }
 
-        int type=evt.getType();
-
-        // only block for messages; all other events are passed through
-        // we use double-checked locking; it is okay to 'lose' one or more messages because block_sending changes
-        // to true after an initial false value
-        if(type == Event.MSG && block_sending.get().equals(Boolean.TRUE)) {
-            if(log.isTraceEnabled()) log.trace("down() blocks because block_sending == true");
-            block_sending.waitUntil(Boolean.FALSE);
-        }
-
         // handle setting of additional data (kludge, will be removed soon)
-        if(type == Event.CONFIG) {
+        if(evt.getType() == Event.CONFIG) {
             try {
                 Map m=(Map)evt.getArg();
                 if(m != null && m.containsKey("additional_data")) {
@@ -1176,7 +1153,6 @@ public class JChannel extends Channel {
         if(mq != null)
             sb.append("incoming queue size=").append(mq.size()).append('\n');
         if(details) {
-            sb.append("block_sending=").append(block_sending).append('\n');
             sb.append("receive_blocks=").append(receive_blocks).append('\n');
             sb.append("receive_local_msgs=").append(receive_local_msgs).append('\n');
             sb.append("auto_reconnect=").append(auto_reconnect).append('\n');
@@ -1208,7 +1184,6 @@ public class JChannel extends Channel {
         connect_promise.reset();
         disconnect_promise.reset();
         connected=false;
-        block_sending.set(Boolean.FALSE);
     }
 
 
