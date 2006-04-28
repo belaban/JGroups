@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.66 2006/04/28 15:39:42 belaban Exp $
+// $Id: JChannel.java,v 1.67 2006/04/28 15:40:07 belaban Exp $
 
 package org.jgroups;
 
@@ -65,8 +65,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @author Filip Hanik
- * @version $Revision: 1.66 $
+ * @version $Revision: 1.67 $
  */
 public class JChannel extends Channel {
 
