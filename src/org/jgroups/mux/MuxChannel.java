@@ -10,7 +10,7 @@ import java.util.Map;
  * {@link org.jgroups.ChannelFactory#createMultiplexerChannel(String,String,boolean,String)}. Maintains the multiplexer
  * ID, which is used to add a header to each message, so that the message can be demultiplexed at the receiver
  * @author Bela Ban
- * @version $Id: MuxChannel.java,v 1.12 2006/04/13 08:45:42 belaban Exp $
+ * @version $Id: MuxChannel.java,v 1.13 2006/04/28 15:39:42 belaban Exp $
  */
 public class MuxChannel extends JChannel {
 
@@ -173,18 +173,6 @@ public class MuxChannel extends JChannel {
         if(state_id != null)
             my_id+="::" + state_id;
         ch.returnState(state, my_id);
-    }
-
-    public void suspend() {
-        ch.suspend();
-    }
-
-    public void resume() {
-        ch.resume();
-    }
-
-    public boolean isSuspended() {
-        return ch.isSuspended();
     }
 
 

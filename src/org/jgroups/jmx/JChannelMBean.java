@@ -8,7 +8,7 @@ import java.util.Map;
 
 /**
  * @author Bela Ban
- * @version $Id: JChannelMBean.java,v 1.9 2006/03/27 08:34:24 belaban Exp $
+ * @version $Id: JChannelMBean.java,v 1.10 2006/04/28 15:39:41 belaban Exp $
  */
 public interface JChannelMBean {
     void create() throws Exception;
@@ -50,10 +50,6 @@ public interface JChannelMBean {
 
     boolean getAutoGetState();
     void setAutoGetState(boolean flag);
-
-    void suspend();
-    void resume();
-    boolean isSuspended();
 
     Map dumpStats();
 
