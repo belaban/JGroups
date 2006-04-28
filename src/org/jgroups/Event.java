@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.15 2006/03/17 09:28:08 belaban Exp $
+// $Id: Event.java,v 1.16 2006/04/28 15:15:20 belaban Exp $
 
 package org.jgroups;
 
@@ -62,8 +62,6 @@ public class Event {
     public static final int UNSUSPECT                 = 51;  // arg = Address (of unsuspected member)
     public static final int SET_PID                   = 52;  // arg = Integer (process id)
     public static final int MERGE_DIGEST              = 53;  // arg = Digest
-    public static final int BLOCK_SEND                = 54;  // arg = null
-    public static final int UNBLOCK_SEND              = 55;  // arg = null
     public static final int CONFIG                    = 56;  // arg = HashMap (config properties)
     public static final int GET_DIGEST_STABLE         = 57;
     public static final int GET_DIGEST_STABLE_OK      = 58;  // response to GET_DIGEST_STABLE
@@ -168,8 +166,6 @@ public class Event {
             case UNSUSPECT:              return "UNSUSPECT";
             case SET_PID:                return "SET_PID";
             case MERGE_DIGEST:           return "MERGE_DIGEST";
-            case BLOCK_SEND:             return "BLOCK_SEND";
-            case UNBLOCK_SEND:           return "UNBLOCK_SEND";
             case CONFIG:                 return "CONFIG";
             case GET_DIGEST_STABLE:      return "GET_DIGEST_STABLE";
             case GET_DIGEST_STABLE_OK:   return "GET_DIGEST_STABLE_OK";
