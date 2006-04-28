@@ -1,4 +1,4 @@
-// $Id: FLOW_CONTROL.java,v 1.10 2005/08/11 12:43:47 belaban Exp $
+// $Id: FLOW_CONTROL.java,v 1.11 2006/04/28 15:16:53 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -33,8 +33,8 @@ import java.util.Properties;
  * <em>Note: A reliable transport layer is required for this protocol to function properly.</em>
  * With little effort this can be made completely independent.
  * <p>
- * @todo Handle view changes (e.g., members {A,B,C}, blocked on C, and C crashes --&gt; unblock).
- * <br> Also block on down() instead of sending BLOCK_SEND.
+ * todo Handle view changes (e.g., members {A,B,C}, blocked on C, and C crashes --&gt; unblock).
+ * <br> Also block on down() instead of sending BLOCK_SEND. // done, bela April 28 2006
  *
  * @author Ananda Bollu
  */
@@ -56,6 +56,8 @@ public class FLOW_CONTROL extends MessageProtocol implements Runnable {
     private double WINDOW_SIZE_REDUCTION=0.75;
     private double WINDOW_SIZE_EXPANSION=1.25;
     private boolean isBlockState=false;
+
+    private final Object block_sending=new Object();
 
     private int _windowsize_cap=1000000; //initial window size can not be more than 10^6 messages.
 
@@ -91,8 +93,16 @@ public class FLOW_CONTROL extends MessageProtocol implements Runnable {
 
                     if(log.isInfoEnabled()) log.info("ACTION BLOCK");
                     log.error("0;" + System.currentTimeMillis() + ';' + _windowSize);
-                    passUp(new Event(Event.BLOCK_SEND));
-                    isBlockState=true;
+                    synchronized(block_sending) {
+                        isBlockState=true;
+                        while(isBlockState) {
+                            try {
+                                block_sending.wait();
+                            }
+                            catch(InterruptedException e) {
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -264,13 +274,13 @@ public class FLOW_CONTROL extends MessageProtocol implements Runnable {
         _msgsSentAfterFCreq=0;
 
         if(isBlockState) {
-
             if(warn) log.warn("ACTION UNBLOCK");
-            passUp(new Event(Event.UNBLOCK_SEND));
             log.error("1;" + System.currentTimeMillis() + ';' + _windowSize);
-            isBlockState=false;
+            synchronized(block_sending) {
+                isBlockState=false;
+                block_sending.notifyAll();
+            }
         }
-
 
         if(warn) log.warn("estimatedTimeout = " + _estimatedRTT);
         if(warn) log.warn("window size = " + _windowSize + " forward margin size = " + _fwdMarginSize);
