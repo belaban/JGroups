@@ -9,7 +9,7 @@ import org.jgroups.TimeoutException;
 
 /**
  * @author Bela Ban
- * @version $Id: RpcDispatcherUnicastMethodExceptionTest.java,v 1.2 2006/02/16 08:22:55 belaban Exp $
+ * @version $Id: RpcDispatcherUnicastMethodExceptionTest.java,v 1.3 2006/04/30 13:45:54 belaban Exp $
  */
 public class RpcDispatcherUnicastMethodExceptionTest extends TestCase {
     RpcDispatcher disp;
@@ -49,13 +49,18 @@ public class RpcDispatcherUnicastMethodExceptionTest extends TestCase {
         throw new AssertionError("bla bla bla from foofoobar");
     }
 
+    public void fooWithThrowable() throws Throwable {
+        System.out.println("-- fooWithThrowable()");
+        throw new Throwable("this is an exception");
+    }
+
+
 
     public void testMethodWithoutException() throws Throwable {
         Object retval=disp.callRemoteMethod(channel.getLocalAddress(), "foo", null, (Class[])null, GroupRequest.GET_ALL, 5000);
         System.out.println("retval: " + retval);
         assertNotNull(retval);
     }
-
 
 
 
@@ -92,6 +97,18 @@ public class RpcDispatcherUnicastMethodExceptionTest extends TestCase {
         catch(Throwable e) {
             System.out.println("caught exception (" + e + ") - as expected");
             assertTrue(e instanceof AssertionError);
+        }
+    }
+
+    public void testMethodWithThrowable() throws ChannelException {
+        try {
+            Object retval=disp.callRemoteMethod(channel.getLocalAddress(), "fooWithThrowable", null, (Class[])null, GroupRequest.GET_ALL, 5000);
+            System.out.println("retval: " + retval);
+            fail("we should not get here; foofoobar() should throw an exception");
+        }
+        catch(Throwable e) {
+            System.out.println("caught exception (" + e + ") - as expected");
+            assertTrue(e instanceof Throwable);
         }
     }
 
