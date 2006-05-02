@@ -72,7 +72,7 @@ Best result with perf.Test (2 members, 1 sender, laptop, 20000 1K msgs
     <!-- MERGE2 max_interval="100000"
             down_thread="false" up_thread="false" min_interval="20000"/ -->
     <FD_SOCK down_thread="false" up_thread="false"/>
-    <!--VERIFY_SUSPECT timeout="1500" down_thread="false"/-->
+    <VERIFY_SUSPECT timeout="1500" down_thread="false"/>
     <pbcast.NAKACK max_xmit_size="60000"
                    use_mcast_xmit="false" gc_lag="0"
                    retransmit_timeout="100,200,300,600,1200,2400,4800"
@@ -89,6 +89,6 @@ Best result with perf.Test (2 members, 1 sender, laptop, 20000 1K msgs
                 join_retry_timeout="2000" shun="true"/>
     <FC max_credits="2000000" down_thread="false" up_thread="false"
         min_threshold="0.10"/>
-    <!-- FRAG2 frag_size="60000" down_thread="false" up_thread="false"/ -->
+    <FRAG2 frag_size="60000" down_thread="false" up_thread="false"/>
     <pbcast.STATE_TRANSFER down_thread="false" up_thread="false"/>
 </config>
