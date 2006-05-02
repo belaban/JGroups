@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.70 2006/04/05 05:34:31 belaban Exp $
+// $Id: Util.java,v 1.71 2006/05/02 08:34:04 belaban Exp $
 
 package org.jgroups.util;
 
@@ -25,7 +25,6 @@ import java.util.List;
  * Collection of various utility routines that can not be assigned to other classes.
  */
 public class Util {
-    private static final Object mutex=new Object();
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
 
     private static  NumberFormat f;
@@ -81,34 +80,32 @@ public class Util {
      * Creates an object from a byte buffer
      */
     public static Object objectFromByteBuffer(byte[] buffer) throws Exception {
-        synchronized(mutex) {
-            if(buffer == null) return null;
-            Object retval=null;
+        if(buffer == null) return null;
+        Object retval=null;
 
-            try {  // to read the object as an Externalizable
+        try {  // to read the object as an Externalizable
+            ByteArrayInputStream in_stream=new ByteArrayInputStream(buffer);
+            ObjectInputStream in=new ContextObjectInputStream(in_stream); // changed Nov 29 2004 (bela)
+            retval=in.readObject();
+            in.close();
+        }
+        catch(StreamCorruptedException sce) {
+            try {  // is it Streamable?
                 ByteArrayInputStream in_stream=new ByteArrayInputStream(buffer);
-                ObjectInputStream in=new ContextObjectInputStream(in_stream); // changed Nov 29 2004 (bela)
-                retval=in.readObject();
+                DataInputStream in=new DataInputStream(in_stream);
+                retval=readGenericStreamable(in);
                 in.close();
             }
-            catch(StreamCorruptedException sce) {
-                try {  // is it Streamable?
-                    ByteArrayInputStream in_stream=new ByteArrayInputStream(buffer);
-                    DataInputStream in=new DataInputStream(in_stream);
-                    retval=readGenericStreamable(in);
-                    in.close();
-                }
-                catch(Exception ee) {
-                    IOException tmp=new IOException("unmarshalling failed");
-                    tmp.initCause(ee);
-                    throw tmp;
-                }
+            catch(Exception ee) {
+                IOException tmp=new IOException("unmarshalling failed");
+                tmp.initCause(ee);
+                throw tmp;
             }
-
-            if(retval == null)
-                return null;
-            return retval;
         }
+
+        if(retval == null)
+            return null;
+        return retval;
     }
 
     /**
@@ -137,19 +134,17 @@ public class Util {
 
 
      public static Streamable streamableFromByteBuffer(Class cl, byte[] buffer) throws Exception {
-        synchronized(mutex) {
-            if(buffer == null) return null;
-            Streamable retval=null;
-            ByteArrayInputStream in_stream=new ByteArrayInputStream(buffer);
-            DataInputStream in=new DataInputStream(in_stream); // changed Nov 29 2004 (bela)
-            retval=(Streamable)cl.newInstance();
-            retval.readFrom(in);
-            in.close();
-            if(retval == null)
-                return null;
-            return retval;
-        }
-    }
+         if(buffer == null) return null;
+         Streamable retval=null;
+         ByteArrayInputStream in_stream=new ByteArrayInputStream(buffer);
+         DataInputStream in=new DataInputStream(in_stream); // changed Nov 29 2004 (bela)
+         retval=(Streamable)cl.newInstance();
+         retval.readFrom(in);
+         in.close();
+         if(retval == null)
+             return null;
+         return retval;
+     }
 
     public static byte[] streamableToByteBuffer(Streamable obj) throws Exception {
         byte[] result=null;
@@ -195,7 +190,8 @@ public class Util {
             AuthToken token = (AuthToken) obj;
             token.readFrom(in);
             return token;
-        }catch(ClassNotFoundException cnfe){
+        }
+        catch(ClassNotFoundException cnfe){
             return null;
         }
     }
