@@ -1,4 +1,4 @@
-// $Id: Digest.java,v 1.18 2006/01/14 14:00:33 belaban Exp $
+// $Id: Digest.java,v 1.19 2006/05/02 09:03:28 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -427,8 +427,11 @@ public class Digest implements Externalizable, Streamable {
      * Class keeping track of the lowest and highest sequence numbers delivered, and the highest
      * sequence numbers received, per member
      */
-    public static class Entry {
+    public static class Entry implements Externalizable {
         public long low_seqno, high_seqno, high_seqno_seen=-1;
+
+        public Entry() {
+        }
 
         public Entry(long low_seqno, long high_seqno, long high_seqno_seen) {
             this.low_seqno=low_seqno;
@@ -449,6 +452,7 @@ public class Digest implements Externalizable, Streamable {
             }
         }
 
+
         public boolean equals(Object obj) {
             Entry other=(Entry)obj;
             return low_seqno == other.low_seqno && high_seqno == other.high_seqno && high_seqno_seen == other.high_seqno_seen;
@@ -462,6 +466,18 @@ public class Digest implements Externalizable, Streamable {
         public void reset() {
             low_seqno=high_seqno=0;
             high_seqno_seen=-1;
+        }
+
+        public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeLong(low_seqno);
+            out.writeLong(high_seqno);
+            out.writeLong(high_seqno_seen);
+        }
+
+        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            low_seqno=in.readLong();
+            high_seqno=in.readLong();
+            high_seqno_seen=in.readLong();
         }
     }
 }
