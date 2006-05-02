@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.27 2006/01/19 09:53:37 belaban Exp $
+// $Id: MERGE2.java,v 1.28 2006/05/02 08:12:58 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -6,6 +6,7 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.View;
+import org.jgroups.Global;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
@@ -43,6 +44,7 @@ import java.util.Vector;
  */
 public class MERGE2 extends Protocol {
     Address               local_addr=null;
+    String                group_name=null;
     private FindSubgroups task=null;             // task periodically executing as long as we are coordinator
     private final Object  task_lock=new Object();
     long                  min_interval=5000;     // minimum time between executions of the FindSubgroups task
@@ -170,6 +172,16 @@ public class MERGE2 extends Protocol {
 
         switch(evt.getType()) {
 
+            case Event.CONNECT:
+                group_name=(String)evt.getArg();
+                passDown(evt);
+                break;
+
+            case Event.DISCONNECT:
+                group_name=null;
+                passDown(evt);
+                break;
+
             case Event.VIEW_CHANGE:
                 passDown(evt);
                 mbrs=((View)evt.getArg()).getMembers();
@@ -205,13 +217,21 @@ public class MERGE2 extends Protocol {
             if(task == null)
                 task=new FindSubgroups();
             task.start();
+            if(group_name != null) {
+                String tmp, prefix=Global.THREAD_PREFIX;
+                tmp=task.getName();
+                if(tmp != null && tmp.indexOf(prefix) == -1) {
+                    tmp+=prefix + group_name + ")";
+                    task.setName(tmp);
+                }
+            }
         }
     }
 
     void stopTask() {
         synchronized(task_lock) {
             if(task != null) {
-                task.stop(); // will cause timer to remove task from execution schedule
+                task.stop();
                 task=null;
             }
         }
@@ -228,6 +248,15 @@ public class MERGE2 extends Protocol {
      */
     private class FindSubgroups implements Runnable {
         Thread thread=null;
+
+        String getName() {
+            return thread != null? thread.getName() : null;
+        }
+
+        void setName(String thread_name) {
+            if(thread != null)
+                thread.setName(thread_name);
+        }
 
 
         public void start() {
