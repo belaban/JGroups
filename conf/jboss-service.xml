@@ -6,13 +6,10 @@
     <!--
     A bunch of JGroups channels which can be used by other services
     Author: Bela Ban
-    Version: $Id: jboss-service.xml,v 1.2 2005/06/06 15:33:53 belaban Exp $
+    Version: $Id: jboss-service.xml,v 1.3 2006/05/02 14:36:27 belaban Exp $
     -->
     <mbean code="org.jgroups.jmx.JChannel" name="jgroups:name=DemoChannel">
         <attribute name="ObjectName">jgroups:name=DemoChannel</attribute>
-        <attribute name="ReceiveViewEvents">true</attribute>
-        <attribute name="ReceiveSuspectEvents">true</attribute>
-        <attribute name="ReceiveStateEvents">true</attribute>
         <attribute name="ReceiveLocalMessages">true</attribute>
         <attribute name="AutoReconnect">true</attribute>
         <attribute name="AutoGetState">true</attribute>

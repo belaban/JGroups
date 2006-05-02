@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.49 2006/05/02 08:38:42 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.50 2006/05/02 14:36:27 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -226,7 +226,7 @@
             <fileset dir="${lib.dir}" includes="concurrent*.jar,commons-logging*.jar,log4j*.jar,jmx*.jar"/>
             <metainf dir="${conf.dir}"
                      includes="jboss-service.xml"/>
-            <fileset dir="${conf.dir}" includes="*.dtd, *.xml" excludes="jboss-service.xml"/>
+            <fileset dir="${conf.dir}" includes="jg-magic-map.xml,stacks.xml"/>
         </jar>
     </target>
 
