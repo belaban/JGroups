@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.48 2006/04/27 08:25:21 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.49 2006/05/02 08:38:42 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -299,12 +299,14 @@
                 <include name="**/*~"/>
             </fileset>
         </delete>
+    </target>
 
+
+    <target name="name=cleanall" depends="clean">
         <echo message="Cleaning documentation"/>
         <ant dir="${root.dir}/doc/manual" antfile="build.xml"
              target="clean"/>
     </target>
-
 
 
     <target name="all"
