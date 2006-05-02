@@ -9,7 +9,7 @@
 <!--
     An example for setting up the JChannelFactory MBean
     Author: Bela Ban
-    Version: $Id: multiplexer-xmbean.xml,v 1.1 2006/04/26 21:05:17 belaban Exp $
+    Version: $Id: multiplexer-xmbean.xml,v 1.2 2006/05/02 11:06:00 belaban Exp $
     -->
 <mbean>
 
@@ -23,12 +23,12 @@
     </constructor>
 
     <!-- Attributes -->
-    <attribute access="read-write" getMethod="getObjectName" setMethod="setObjectName">
-        <description>The ObjectName which is used as prefix for all channels and protocols exposed via JMX</description>
-        <name>ObjectName</name>
+    <attribute access="read-write" getMethod="getDomain" setMethod="setDomain">
+        <description>The domain which is used as prefix for all channels and protocols exposed via JMX</description>
+        <name>Domain</name>
         <type>java.lang.String</type>
         <descriptors>
-            <default value="jgroups:name=multiplexer" />
+            <default value="jgroups.mux" />
         </descriptors>
     </attribute>
 

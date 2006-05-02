@@ -13,7 +13,7 @@ import java.util.ArrayList;
 
 /**
  * @author Bela Ban
- * @version $Id: JmxTest.java,v 1.5 2005/06/07 10:17:29 belaban Exp $
+ * @version $Id: JmxTest.java,v 1.6 2006/05/02 11:06:03 belaban Exp $
  */
 public class JmxTest {
     MBeanServer server;
@@ -33,7 +33,7 @@ public class JmxTest {
         server=(MBeanServer)servers.get(0);
         channel=new JChannel(props);
         channel.connect("DemoChannel");
-        JmxConfigurator.registerChannel(channel, server, channel_name + channel.getChannelName() , true);
+        JmxConfigurator.registerChannel(channel, server, channel_name, channel.getChannelName() , true);
         return true;
     }
 

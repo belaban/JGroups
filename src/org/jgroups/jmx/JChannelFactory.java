@@ -6,7 +6,7 @@ import javax.management.MBeanServer;
 
 /**
  * @author Bela Ban
- * @version $Id: JChannelFactory.java,v 1.3 2006/04/27 08:44:13 belaban Exp $
+ * @version $Id: JChannelFactory.java,v 1.4 2006/05/02 11:06:00 belaban Exp $
  */
 public class JChannelFactory implements JChannelFactoryMBean {
     org.jgroups.JChannelFactory factory=new org.jgroups.JChannelFactory();
@@ -28,12 +28,12 @@ public class JChannelFactory implements JChannelFactoryMBean {
         return factory.getMultiplexerConfig();
     }
 
-    public String getObjectName() {
-        return factory.getObjectName();
+    public String getDomain() {
+        return factory.getDomain();
     }
 
-    public void setObjectName(String name) {
-        factory.setObjectName(name);
+    public void setDomain(String name) {
+        factory.setDomain(name);
     }
 
     public boolean isExposeChannels() {

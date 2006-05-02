@@ -14,7 +14,7 @@ import java.util.Properties;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: JGroupsTransport.java,v 1.10 2006/03/15 11:42:31 belaban Exp $
+ * @version $Id: JGroupsTransport.java,v 1.11 2006/05/02 11:06:04 belaban Exp $
  */
 public class JGroupsTransport extends org.jgroups.ReceiverAdapter implements Transport  {
     Properties config=null;
@@ -50,7 +50,7 @@ public class JGroupsTransport extends org.jgroups.ReceiverAdapter implements Tra
                                     "\nneeds to be run with an MBeanServer present, or inside JDK 5");
             }
             MBeanServer server=(MBeanServer)servers.get(0);
-            JmxConfigurator.registerChannel(channel, server, "PerfTest:channel=" + channel.getChannelName() , true);
+            JmxConfigurator.registerChannel(channel, server, "jgroups.perf", channel.getChannelName() , true);
         }
     }
 

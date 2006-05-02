@@ -1,4 +1,4 @@
-// $Id: ReplicatedTree.java,v 1.12 2006/03/27 08:34:24 belaban Exp $
+// $Id: ReplicatedTree.java,v 1.13 2006/05/02 11:06:00 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -109,7 +109,7 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
                                     "\nJmxTest needs to be run with an MBeanServer present, or inside JDK 5");
             }
             MBeanServer server=(MBeanServer)servers.get(0);
-            JmxConfigurator.registerChannel(channel, server, "JGroups:channel=" + channel.getChannelName() , true);
+            JmxConfigurator.registerChannel(channel, server, "jgroups", channel.getChannelName() , true);
         }
         start();
     }
@@ -149,10 +149,12 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
      */
     public void fetchState(long timeout) throws ChannelClosedException, ChannelNotConnectedException {
         boolean rc=channel.getState(null, timeout);
-        if(rc)
-            if(log.isInfoEnabled()) log.info("state was retrieved successfully");
-        else
-            if(log.isInfoEnabled()) log.info("state could not be retrieved (first member)");
+        if(log.isInfoEnabled()) {
+            if(rc)
+                log.info("state was retrieved successfully");
+            else
+                log.info("state could not be retrieved (first member)");
+        }
     }
 
 
@@ -167,7 +169,7 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
     }
 
 
-    public void start() throws Exception {
+    public final void start() throws Exception {
         if(request_handler == null) {
             request_handler=new Thread(this, "ReplicatedTree.RequestHandler thread");
             request_handler.setDaemon(true);
