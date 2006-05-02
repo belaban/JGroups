@@ -1,10 +1,11 @@
-// $Id: UDP.java,v 1.113 2006/02/27 14:11:00 belaban Exp $
+// $Id: UDP.java,v 1.114 2006/05/02 08:12:58 belaban Exp $
 
 package org.jgroups.protocols;
 
 
 import org.jgroups.Address;
 import org.jgroups.Message;
+import org.jgroups.Global;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.BoundedList;
 import org.jgroups.util.Util;
@@ -29,7 +30,7 @@ import java.util.*;
  * <li> param ip_mcast - (boolean) flag whether to use IP multicast; default is true.
  * <li> param ip_ttl - the default time-to-live for multicast packets sent out on this
  * socket; default is 32.
- * <li> param use_packet_handler - boolean, defaults to false.  
+ * <li> param use_packet_handler - boolean, defaults to false.
  * If set, the mcast and ucast receiver threads just put
  * the datagram's payload (a byte buffer) into a queue, from where a separate thread
  * will dequeue and handle them (unmarshal and pass up). This frees the receiver
@@ -817,6 +818,53 @@ public class UDP extends TP implements Runnable {
     }
 
 
+    protected void setThreadNames() {
+        super.setThreadNames();
+
+        if(channel_name != null) {
+            String tmp, prefix=Global.THREAD_PREFIX;
+            if(mcast_receiver != null) {
+                tmp=mcast_receiver.getName();
+                if(tmp != null && tmp.indexOf(prefix) == -1) {
+                    tmp+=prefix + channel_name + ")";
+                    mcast_receiver.setName(tmp);
+                }
+            }
+            if(ucast_receiver != null) {
+                tmp=ucast_receiver.getName();
+                if(tmp != null && tmp.indexOf(prefix) == -1) {
+                    tmp+=prefix + channel_name + ")";
+                    ucast_receiver.setName(tmp);
+                }
+            }
+        }
+    }
+
+    protected void unsetThreadNames() {
+        super.unsetThreadNames();
+        if(channel_name != null) {
+            String tmp, prefix=Global.THREAD_PREFIX;
+            int index;
+
+            tmp=mcast_receiver != null? mcast_receiver.getName() : null;
+            if(tmp != null) {
+                index=tmp.indexOf(prefix);
+                if(index > -1) {
+                    tmp=tmp.substring(0, index);
+                    mcast_receiver.setName(tmp);
+                }
+            }
+            tmp=ucast_receiver != null? ucast_receiver.getName() : null;
+            if(tmp != null) {
+                index=tmp.indexOf(prefix);
+                if(index > -1) {
+                    tmp=tmp.substring(0, index);
+                    ucast_receiver.setName(tmp);
+                }
+            }
+        }
+    }
+
 
     protected void handleConfigEvent(HashMap map) {
         super.handleConfigEvent(map);
@@ -877,6 +925,14 @@ public class UDP extends TP implements Runnable {
         boolean running=true;
         Thread thread=null;
 
+        String getName() {
+            return thread != null? thread.getName() : null;
+        }
+
+        void setName(String thread_name) {
+            if(thread != null)
+                thread.setName(thread_name);
+        }
 
         public void start() {
             if(thread == null) {

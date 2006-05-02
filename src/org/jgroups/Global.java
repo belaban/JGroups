@@ -4,7 +4,7 @@ package org.jgroups;
  * Globals used by JGroups packages.
  * 
  * @author Bela Ban Mar 29, 2004
- * @version $Id: Global.java,v 1.4 2005/07/17 11:38:05 chrislott Exp $
+ * @version $Id: Global.java,v 1.5 2006/05/02 08:12:59 belaban Exp $
  */
 public class Global {
     /** Allows for conditional compilation; e.g., if(log.isTraceEnabled()) if(log.isInfoEnabled()) log.info(...) would be removed from the code
@@ -19,6 +19,9 @@ public class Global {
      * will be removed entirely
      */
     public static final boolean copy=false;
+
+
+    public static final String THREAD_PREFIX=" (channel=";
     
 
     /**

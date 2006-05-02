@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.37 2006/04/23 12:52:54 belaban Exp $
+// $Id: FD_SOCK.java,v 1.38 2006/05/02 08:12:58 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -47,6 +47,8 @@ public class FD_SOCK extends Protocol implements Runnable {
     ServerSocket        srv_sock=null;                     // server socket to which another member connects to monitor me
 
     InetAddress         bind_addr=null;                    // the NIC on which the ServerSocket should listen
+
+    String              group_name=null;                   // the name of the group (set on CONNECT, nulled on DISCONNECT)
 
     /** @deprecated Use {@link bind_addr} instead */
     InetAddress         srv_sock_bind_addr=null;           // the NIC on which the ServerSocket should listen
@@ -306,11 +308,32 @@ public class FD_SOCK extends Protocol implements Runnable {
 
             case Event.CONNECT:
                 passDown(evt);
+                group_name=(String)evt.getArg();
                 srv_sock=Util.createServerSocket(bind_addr, start_port); // grab a random unused port above 10000
                 srv_sock_addr=new IpAddress(bind_addr, srv_sock.getLocalPort());
                 startServerSocket();
-                //if(pinger_thread == null)
-                  //  startPingerThread();
+                break;
+
+            case Event.DISCONNECT:
+                group_name=null;
+                String tmp, prefix=Global.THREAD_PREFIX;
+                int index;
+                tmp=srv_sock_handler != null? srv_sock_handler.getName() : null;
+                if(tmp != null) {
+                    index=tmp.indexOf(prefix);
+                    if(index > -1) {
+                        tmp=tmp.substring(0, index);
+                        srv_sock_handler.setName(tmp);
+                    }
+                }
+                tmp=pinger_thread != null? pinger_thread.getName() : null;
+                if(tmp != null) {
+                    index=tmp.indexOf(prefix);
+                    if(index > -1) {
+                        tmp=tmp.substring(0, index);
+                        pinger_thread.setName(tmp);
+                    }
+                }
                 break;
 
             case Event.VIEW_CHANGE:
@@ -473,6 +496,15 @@ public class FD_SOCK extends Protocol implements Runnable {
             pinger_thread=new Thread(Util.getGlobalThreadGroup(), this, "FD_SOCK Ping thread");
             pinger_thread.setDaemon(true);
             pinger_thread.start();
+
+            if(group_name != null) {
+                String tmp, prefix=Global.THREAD_PREFIX;
+                tmp=pinger_thread.getName();
+                if(tmp != null && tmp.indexOf(prefix) == -1) {
+                    tmp+=prefix + group_name + ")";
+                    pinger_thread.setName(tmp);
+                }
+            }
         }
     }
 
@@ -502,8 +534,17 @@ public class FD_SOCK extends Protocol implements Runnable {
     }
 
     void startServerSocket() {
-        if(srv_sock_handler != null)
+        if(srv_sock_handler != null) {
             srv_sock_handler.start(); // won't start if already running
+            if(group_name != null) {
+                String tmp, prefix=Global.THREAD_PREFIX;
+                tmp=srv_sock_handler.getName();
+                if(tmp != null && tmp.indexOf(prefix) == -1) {
+                    tmp+=prefix + group_name + ")";
+                    srv_sock_handler.setName(tmp);
+                }
+            }
+        }
     }
 
     void stopServerSocket() {
@@ -927,6 +968,14 @@ public class FD_SOCK extends Protocol implements Runnable {
         final List clients=new ArrayList();
 
 
+        String getName() {
+            return acceptor != null? acceptor.getName() : null;
+        }
+
+        void setName(String thread_name) {
+            if(acceptor != null)
+                acceptor.setName(thread_name);
+        }
 
         ServerSocketHandler() {
             start();
