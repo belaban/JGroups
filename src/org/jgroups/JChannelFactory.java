@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.16 2006/04/26 22:14:12 belaban Exp $
+// $Id: JChannelFactory.java,v 1.17 2006/05/02 11:06:02 belaban Exp $
 
 package org.jgroups;
 
@@ -16,7 +16,6 @@ import org.apache.commons.logging.LogFactory;
 
 import javax.management.MBeanServer;
 import javax.management.MBeanServerFactory;
-import javax.management.ObjectName;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
@@ -52,7 +51,7 @@ public class JChannelFactory implements ChannelFactory {
     private MBeanServer server=null;
 
     /** To expose the channels and protocols */
-    private String object_name=null;
+    private String domain=null;
 
     /** Whether or not to expose channels via JMX */
     private boolean expose_channels=true;
@@ -184,12 +183,12 @@ public class JChannelFactory implements ChannelFactory {
     }
 
 
-    public String getObjectName() {
-        return object_name;
+    public String getDomain() {
+        return domain;
     }
 
-    public void setObjectName(String object_name) {
-        this.object_name=object_name;
+    public void setDomain(String domain) {
+        this.domain=domain;
     }
 
     public boolean isExposeChannels() {
@@ -278,16 +277,15 @@ public class JChannelFactory implements ChannelFactory {
     }
 
     private void registerChannel(JChannel ch, String stack_name) throws Exception {
-        JmxConfigurator.registerChannel(ch, server, object_name + ",stack=" + stack_name, expose_protocols);
+        JmxConfigurator.registerChannel(ch, server, domain, stack_name, expose_protocols);
     }
 
 
 
 
     /** Unregisters everything under stack_name (including stack_name) */
-    private void unregister(String stack_name) throws Exception {
-        String tmp=object_name + ",stack=" + stack_name;
-        JmxConfigurator.unregister(server, tmp);
+    private void unregister(String name) throws Exception {
+        JmxConfigurator.unregister(server, name);
     }
 
 
@@ -349,7 +347,7 @@ public class JChannelFactory implements ChannelFactory {
                 channels.remove(entry);
                 if(expose_channels && server != null) {
                     try {
-                        unregister(object_name + ",stack=" + ch.getStackName());
+                        unregister(domain + ":*,cluster=" + ch.getStackName());
                     }
                     catch(Exception e) {
                         log.error("failed unregistering channel " + ch.getStackName(), e);
@@ -381,7 +379,7 @@ public class JChannelFactory implements ChannelFactory {
                 channels.remove(entry);
                 if(expose_channels && server != null) {
                     try {
-                        unregister(ch.getStackName());
+                        unregister(domain + ":*,cluster=" + ch.getStackName());
                     }
                     catch(Exception e) {
                         log.error("failed unregistering channel " + ch.getStackName(), e);
@@ -418,8 +416,8 @@ public class JChannelFactory implements ChannelFactory {
                         "inside JDK 5, or with ExposeChannel set to false");
             }
             server=(MBeanServer)servers.get(0);
-            if(object_name == null)
-                object_name="jgroups:name=Multiplexer";
+            if(domain == null)
+                domain="jgroups:name=Multiplexer";
         }
     }
 
@@ -444,13 +442,14 @@ public class JChannelFactory implements ChannelFactory {
                     entry.multiplexer.closeAll();
                 if(entry.channel != null)
                     entry.channel.close();
-                if(expose_channels && server != null) {
-                    try {
-                        unregister(stack_name);
-                    }
-                    catch(Throwable e) {
-                        log.error("failed unregistering channel " + entry.channel.getChannelName(), e);
-                    }
+
+            }
+            if(expose_channels && server != null) {
+                try {
+                    unregister(domain + ":*");
+                }
+                catch(Throwable e) {
+                    log.error("failed unregistering domain " + domain, e);
                 }
             }
             channels.clear();

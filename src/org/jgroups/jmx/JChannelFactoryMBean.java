@@ -4,14 +4,14 @@ import org.jgroups.Channel;
 
 /**
  * @author Bela Ban
- * @version $Id: JChannelFactoryMBean.java,v 1.2 2006/04/26 22:14:12 belaban Exp $
+ * @version $Id: JChannelFactoryMBean.java,v 1.3 2006/05/02 11:06:00 belaban Exp $
  */
 public interface JChannelFactoryMBean {
     String getMultiplexerConfig();
     void setMultiplexerConfig(String properties) throws Exception;
 
-    String getObjectName();
-    void setObjectName(String name);
+    String getDomain();
+    void setDomain(String name);
 
     boolean isExposeChannels();
     void setExposeChannels(boolean flag);
