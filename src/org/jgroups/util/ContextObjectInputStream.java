@@ -10,7 +10,7 @@ import java.util.HashMap;
  * ObjectInputStream which sets a contact classloader for reading bytes into objects. Copied from
  * MarshalledValueInputStream of JBoss
  * @author Bela Ban
- * @version $Id: ContextObjectInputStream.java,v 1.6 2005/08/22 06:49:04 belaban Exp $
+ * @version $Id: ContextObjectInputStream.java,v 1.7 2006/05/02 08:23:25 belaban Exp $
  */
 public class ContextObjectInputStream extends ObjectInputStream {
 
@@ -45,10 +45,8 @@ public class ContextObjectInputStream extends ObjectInputStream {
         String className=v.getName();
         Class resolvedClass=null;
         // Check the class cache first if it exists
-        if(classCache != null) {
-            synchronized(classCache) {
-                resolvedClass=(Class)classCache.get(className);
-            }
+        synchronized(classCache) {
+            resolvedClass=(Class)classCache.get(className);
         }
 
         if(resolvedClass == null) {
@@ -74,10 +72,8 @@ public class ContextObjectInputStream extends ObjectInputStream {
                     resolvedClass=super.resolveClass(v);
                 }
             }
-            if(classCache != null) {
-                synchronized(classCache) {
-                    classCache.put(className, resolvedClass);
-                }
+            synchronized(classCache) {
+                classCache.put(className, resolvedClass);
             }
         }
         return resolvedClass;
