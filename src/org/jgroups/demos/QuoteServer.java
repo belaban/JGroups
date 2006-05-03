@@ -1,4 +1,4 @@
-// $Id: QuoteServer.java,v 1.9 2006/05/03 08:14:00 belaban Exp $
+// $Id: QuoteServer.java,v 1.10 2006/05/03 08:20:15 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -39,18 +39,8 @@ public class QuoteServer implements MembershipListener, MessageListener {
     static final String channel_name="Quotes";
     final int num_members=1;
     Log            log=LogFactory.getLog(getClass());
-    //String          props="UDP:PING:FD:STABLE:NAKACK:UNICAST:FRAG:FLUSH:GMS:"+
-    //                  "VIEW_ENFORCER:STATE_TRANSFER:QUEUE";
 
-    final String props=
-            "UDP:"
-            + "PING(num_initial_members=2;timeout=3000):"
-            + "FD:"
-            + "pbcast.PBCAST(gossip_interval=5000;gc_lag=50):"
-            + "UNICAST:"
-            + "FRAG:"
-            + "pbcast.GMS:"
-            + "pbcast.STATE_TRANSFER";
+    final String props=null; // default stack from JChannel
 
     private void integrate(Hashtable state) {
         String key;
