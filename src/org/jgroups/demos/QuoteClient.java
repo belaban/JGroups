@@ -1,4 +1,4 @@
-// $Id: QuoteClient.java,v 1.9 2006/05/03 08:14:00 belaban Exp $
+// $Id: QuoteClient.java,v 1.10 2006/05/03 08:20:15 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -43,17 +43,8 @@ public class QuoteClient extends Frame implements WindowListener, ActionListener
     final TextField value_field=new TextField();
     final java.awt.List listbox=new java.awt.List();
     final Font default_font=new Font("Helvetica", Font.PLAIN, 12);
-    //    String         props="UDP:PING:FD:STABLE:NAKACK:UNICAST:FRAG:FLUSH:GMS:"+
-    //                 "VIEW_ENFORCER:STATE_TRANSFER:QUEUE";
 
-    final String props="UDP:" +
-            "PING(num_initial_members=2;timeout=3000):" +
-            "FD:" +
-            "pbcast.PBCAST(gossip_interval=5000;gc_lag=50):" +
-            "UNICAST:" +
-            "FRAG:" +
-            "pbcast.GMS:" +
-            "pbcast.STATE_TRANSFER";
+    final String props=null; // default stack from JChannel
 
 
     public QuoteClient() {
