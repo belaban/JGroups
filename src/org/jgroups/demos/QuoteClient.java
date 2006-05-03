@@ -1,4 +1,4 @@
-// $Id: QuoteClient.java,v 1.10 2006/05/03 08:20:15 belaban Exp $
+// $Id: QuoteClient.java,v 1.11 2006/05/03 08:45:19 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -148,10 +148,18 @@ public class QuoteClient extends Frame implements WindowListener, ActionListener
                 showMsg("Looking up value for " + stock_name + ':');
                 rsp_list=disp.callRemoteMethods(null, "getQuote", new Object[]{stock_name},
                                                 new String[]{String.class.getName()},
-                                                GroupRequest.GET_FIRST, 10000);
+                                                GroupRequest.GET_ALL, 10000);
 
-                first_rsp=(Rsp)rsp_list.elementAt(0);
-                Float val=first_rsp != null? (Float)first_rsp.getValue() : null;
+                Float val=null;
+                for(int i=0; i < rsp_list.size(); i++) {
+                    Rsp rsp=(Rsp)rsp_list.elementAt(i);
+                    Object obj=rsp.getValue();
+                    if(obj == null || obj instanceof Throwable)
+                        continue;
+                    val=(Float)obj;
+                    break;
+                }
+
                 if(val != null) {
                     value_field.setText(val.toString());
                     clearMsg();
@@ -181,14 +189,22 @@ public class QuoteClient extends Frame implements WindowListener, ActionListener
                     if(command.equals("All")) {
                         listbox.removeAll();
                         showMsg("Getting all stocks:");
-                        rsp_list=disp.callRemoteMethods(null, "printAllStocks",
+                        rsp_list=disp.callRemoteMethods(null, "getAllStocks",
                                                         (Object[])null, (Class[])null,
-                                                        GroupRequest.GET_NONE,  0);
+                                                        GroupRequest.GET_ALL, 5000);
 
                         System.out.println("rsp_list is " + rsp_list);
 
+                        Hashtable all_stocks=null;
+                        for(int i=0; i < rsp_list.size(); i++) {
+                            Rsp rsp=(Rsp)rsp_list.elementAt(i);
+                            Object obj=rsp.getValue();
+                            if(obj == null || obj instanceof Throwable)
+                                continue;
+                            all_stocks=(Hashtable)obj;
+                            break;
+                        }
 
-                        Hashtable all_stocks=(Hashtable)rsp_list.getFirst();
                         if(all_stocks == null) {
                             showMsg("No stocks found");
                             return;
@@ -219,6 +235,15 @@ public class QuoteClient extends Frame implements WindowListener, ActionListener
             ex.printStackTrace();
             showMsg(ex.toString());
         }
+    }
+
+
+
+    public void setQuote(String stock_name, Float value) {
+        ;
+    }
+
+    public void printAllStocks() {
     }
 
 
