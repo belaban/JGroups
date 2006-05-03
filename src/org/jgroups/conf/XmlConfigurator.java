@@ -1,4 +1,4 @@
-// $Id: XmlConfigurator.java,v 1.15 2005/11/03 11:42:58 belaban Exp $
+// $Id: XmlConfigurator.java,v 1.16 2006/05/03 08:14:00 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -11,6 +11,7 @@ package org.jgroups.conf;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.w3c.dom.*;
+import org.jgroups.stack.Configurator;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -376,23 +377,21 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
     public static void main(String[] args) throws Exception {
         String input_file=null, output=null;
         XmlConfigurator conf;
-        boolean new_format=false;
+        boolean old_format=false;
 
-        if(args.length == 0) {
-            help();
-            return;
-        }
-
-        input_file=args[0];
-
-        for(int i=1; i < args.length; i++) {
-            if("-new_format".equals(args[i])) {
-                new_format=true;
+        for(int i=0; i < args.length; i++) {
+            if(args[i].equals("-old")) {
+                old_format=true;
+                continue;
+            }
+            if(args[i].equals("-file")) {
+                input_file=args[++i];
                 continue;
             }
             help();
             return;
         }
+
         if(input_file != null) {
             InputStream input=null;
 
@@ -409,16 +408,94 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
                 }
             }
 
-            conf=XmlConfigurator.getInstanceOldFormat(input);
-            output=conf.getProtocolStackString(new_format);
-            output=replace(output, "org.jgroups.protocols.", "");
-            if(new_format)
-                System.out.println(getTitle(input_file));
-            System.out.println('\n' + output);
+            if(input == null)
+                input=Thread.currentThread().getContextClassLoader().getResourceAsStream(input_file);
+
+            if(old_format) {
+                Configurator config=new Configurator();
+                String cfg=inputAsString(input);
+                Vector tmp=config.parseConfigurations(cfg);
+                System.out.println(dump(tmp));
+
+
+//                conf=XmlConfigurator.getInstanceOldFormat(input);
+//                output=conf.getProtocolStackString(true);
+//                output=replace(output, "org.jgroups.protocols.", "");
+//                System.out.println(getTitle(input_file));
+//                System.out.println('\n' + output);
+            }
+            else {
+                conf=XmlConfigurator.getInstance(input);
+                String tmp=conf.getProtocolStackString();
+                System.out.println("\n" + tmp);
+            }
         }
         else {
             log.error("no input file given");
         }
+    }
+
+    /**
+     *
+     * @param tmp Vector of Configurator.ProtocolConfiguration
+     * @return String (XML format)
+     */
+    private static String dump(Vector tmp) {
+        StringBuffer sb=new StringBuffer();
+        String indent="  ";
+        sb.append("<config>\n");
+
+        for(Iterator it=tmp.iterator(); it.hasNext();) {
+            Configurator.ProtocolConfiguration cfg=(Configurator.ProtocolConfiguration)it.next();
+            sb.append(indent).append("<").append(cfg.getProtocolName());
+            Properties props=cfg.getProperties();
+            if(props.size() == 0) {
+                sb.append(" />\n");
+            }
+            else {
+                sb.append("\n").append(indent).append(indent);
+                for(Iterator it2=props.entrySet().iterator(); it2.hasNext();) {
+                    Map.Entry entry=(Map.Entry)it2.next();
+                    String key=(String)entry.getKey();
+                    String val=(String)entry.getValue();
+                    key=trim(key);
+                    val=trim(val);
+                    sb.append(key).append("=\"").append(val).append("\"");
+                    if(it2.hasNext()) {
+                        sb.append("\n").append(indent).append(indent);
+                    }
+                }
+                sb.append(" />\n");
+            }
+        }
+
+        sb.append("</config>\n");
+        return sb.toString();
+    }
+
+    private static String trim(String val) {
+        String retval="";
+        int index;
+
+        val=val.trim();
+        while(true) {
+            index=val.indexOf('\n');
+            if(index == -1) {
+                retval+=val;
+                break;
+            }
+            retval+=val.substring(0, index);
+            val=val.substring(index+1);
+        }
+
+        return retval;
+    }
+
+    private static String inputAsString(InputStream input) throws IOException {
+        int len=input.available();
+        byte[] buf=new byte[len];
+        input.read(buf, 0, len);
+        return new String(buf);
     }
 
     private static String getTitle(String input) {
@@ -451,7 +528,7 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
 
 
     static void help() {
-        System.out.println("XmlConfigurator <input XML file> [-new_format]");
-        System.out.println("(-new_format: converts old XML format into new format)");
+        System.out.println("XmlConfigurator -file <input XML file> [-old]");
+        System.out.println("(-old: converts old (plain-text) input format into new XML format)");
     }
 }
