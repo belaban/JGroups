@@ -1,4 +1,4 @@
-// $Id: QuoteServer.java,v 1.8 2006/03/27 08:34:24 belaban Exp $
+// $Id: QuoteServer.java,v 1.9 2006/05/03 08:14:00 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -142,6 +142,9 @@ public class QuoteServer implements MembershipListener, MessageListener {
         try {
             QuoteServer server=new QuoteServer();
             server.start();
+            while(true) {
+                Util.sleep(10000);
+            }
         }
         catch(Throwable t) {
             t.printStackTrace();

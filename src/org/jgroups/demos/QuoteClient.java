@@ -1,4 +1,4 @@
-// $Id: QuoteClient.java,v 1.8 2005/05/30 16:14:40 belaban Exp $
+// $Id: QuoteClient.java,v 1.9 2006/05/03 08:14:00 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -148,7 +148,7 @@ public class QuoteClient extends Frame implements WindowListener, ActionListener
         Rsp     first_rsp;
 
         try {
-            if(command == "Get") {
+            if(command.equals("Get")) {
                 String stock_name=stock_field.getText();
                 if(stock_name == null || stock_name.length() == 0) {
                     showMsg("Stock name is empty !");
@@ -171,7 +171,7 @@ public class QuoteClient extends Frame implements WindowListener, ActionListener
                 }
             }
             else
-                if(command == "Set") {
+                if(command.equals("Set")) {
                     String stock_name=stock_field.getText();
                     String stock_val=value_field.getText();
                     if(stock_name == null || stock_val == null || stock_name.length() == 0 ||
@@ -187,7 +187,7 @@ public class QuoteClient extends Frame implements WindowListener, ActionListener
                     showMsg("Stock " + stock_name + " set to " + val);
                 }
                 else
-                    if(command == "All") {
+                    if(command.equals("All")) {
                         listbox.removeAll();
                         showMsg("Getting all stocks:");
                         rsp_list=disp.callRemoteMethods(null, "printAllStocks",
@@ -215,7 +215,7 @@ public class QuoteClient extends Frame implements WindowListener, ActionListener
                         }
                     }
                     else
-                        if(command == "Quit") {
+                        if(command.equals("Quit")) {
                             setVisible(false);
                             channel.close();
                             System.exit(0);
