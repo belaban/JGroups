@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.114 2006/05/02 08:12:58 belaban Exp $
+// $Id: UDP.java,v 1.115 2006/05/04 11:55:42 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -372,7 +372,14 @@ public class UDP extends TP implements Runnable {
      */
     public void start() throws Exception {
         if(log.isDebugEnabled()) log.debug("creating sockets and starting threads");
-        createSockets();
+        try {
+            createSockets();
+        }
+        catch(Exception ex) {
+            String tmp="problem creating sockets (bind_addr=" + bind_addr +
+                    ", mcast_addr=" + mcast_addr + ")";
+            throw new Exception(tmp, ex);
+        }
         super.start();
         startThreads();
     }
