@@ -14,7 +14,7 @@ import java.util.*;
  * message is removed and the MuxChannel corresponding to the header's application ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.7 2006/04/18 15:26:50 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.8 2006/05/04 06:51:16 belaban Exp $
  */
 public class Multiplexer implements UpHandler {
     /** Map<String,MuxChannel>. Maintains the mapping between application IDs and their associated MuxChannels */
@@ -351,28 +351,28 @@ public class Multiplexer implements UpHandler {
         // List states=Util.parseStringList(info.state_id, ";");
         String appl_id, substate_id, tmp;
         //for(Iterator it=states.iterator(); it.hasNext();) {
-            tmp=info.state_id;
+        tmp=info.state_id;
 
-            int index=tmp.indexOf(SEPARATOR);
-            if(index > -1) {
-                appl_id=tmp.substring(0, index);
-                substate_id=tmp.substring(index+SEPARATOR_LEN);
-            }
-            else {
-                appl_id=tmp;
-                substate_id=null;
-            }
+        int index=tmp.indexOf(SEPARATOR);
+        if(index > -1) {
+            appl_id=tmp.substring(0, index);
+            substate_id=tmp.substring(index+SEPARATOR_LEN);
+        }
+        else {
+            appl_id=tmp;
+            substate_id=null;
+        }
 
-            mux_ch=(MuxChannel)apps.get(appl_id);
-            if(mux_ch == null) {
-                log.error("didn't find application with ID=" + appl_id + " to fetch state from");
-            }
-            else {
-                StateTransferInfo tmp_info=info.copy();
-                tmp_info.state_id=substate_id;
-                evt.setArg(tmp_info);
-                mux_ch.up(evt); // state_id will be null, get regular state from the application named state_id
-            }
+        mux_ch=(MuxChannel)apps.get(appl_id);
+        if(mux_ch == null) {
+            log.error("didn't find application with ID=" + appl_id + " to fetch state from");
+        }
+        else {
+            StateTransferInfo tmp_info=info.copy();
+            tmp_info.state_id=substate_id;
+            evt.setArg(tmp_info);
+            mux_ch.up(evt); // state_id will be null, get regular state from the application named state_id
+        }
         //}
     }
 
