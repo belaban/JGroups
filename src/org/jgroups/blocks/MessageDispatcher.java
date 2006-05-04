@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.49 2006/04/05 05:31:07 belaban Exp $
+// $Id: MessageDispatcher.java,v 1.50 2006/05/04 12:42:34 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -46,6 +46,7 @@ public class MessageDispatcher implements RequestHandler {
     protected Address local_addr=null;
     protected boolean deadlock_detection=false;
     protected PullPushAdapter adapter=null;
+    protected PullPushHandler handler=null;
     protected Serializable id=null;
     protected final Log log=LogFactory.getLog(getClass());
 
@@ -146,19 +147,17 @@ public class MessageDispatcher implements RequestHandler {
         setMembers(((Channel) adapter.getTransport()).getView().getMembers());
         setMessageListener(l);
         setMembershipListener(l2);
-        PullPushHandler handler=new PullPushHandler();
-        Transport tp;
-
+        handler=new PullPushHandler();
         transport_adapter=new TransportAdapter();
-        adapter.addMembershipListener(handler);
-        if(id == null) // no other building block around, let's become the main consumer of this PullPushAdapter
-        {
+        adapter.addMembershipListener(handler); // remove in stop()
+        if(id == null) { // no other building block around, let's become the main consumer of this PullPushAdapter
             adapter.setListener(handler);
         }
         else {
             adapter.registerListener(id, handler);
         }
 
+        Transport tp;
         if((tp=adapter.getTransport()) instanceof Channel) {
             local_addr=((Channel) tp).getLocalAddress();
         }
@@ -186,19 +185,17 @@ public class MessageDispatcher implements RequestHandler {
         setRequestHandler(req_handler);
         setMessageListener(l);
         setMembershipListener(l2);
-        PullPushHandler handler=new PullPushHandler();
-        Transport tp;
-
+        handler=new PullPushHandler();
         transport_adapter=new TransportAdapter();
         adapter.addMembershipListener(handler);
-        if(id == null) // no other building block around, let's become the main consumer of this PullPushAdapter
-        {
+        if(id == null) { // no other building block around, let's become the main consumer of this PullPushAdapter
             adapter.setListener(handler);
         }
         else {
             adapter.registerListener(id, handler);
         }
 
+        Transport tp;
         if((tp=adapter.getTransport()) instanceof Channel) {
             local_addr=((Channel) tp).getLocalAddress(); // fixed bug #800774
         }
@@ -217,19 +214,17 @@ public class MessageDispatcher implements RequestHandler {
         setRequestHandler(req_handler);
         setMessageListener(l);
         setMembershipListener(l2);
-        PullPushHandler handler=new PullPushHandler();
-        Transport tp;
-
+        handler=new PullPushHandler();
         transport_adapter=new TransportAdapter();
         adapter.addMembershipListener(handler);
-        if(id == null) // no other building block around, let's become the main consumer of this PullPushAdapter
-        {
+        if(id == null) { // no other building block around, let's become the main consumer of this PullPushAdapter
             adapter.setListener(handler);
         }
         else {
             adapter.registerListener(id, handler);
         }
 
+        Transport tp;
         if((tp=adapter.getTransport()) instanceof Channel) {
             local_addr=((Channel) tp).getLocalAddress(); // fixed bug #800774
         }
@@ -284,6 +279,11 @@ public class MessageDispatcher implements RequestHandler {
     public void stop() {
         if(corr != null) {
             corr.stop();
+        }
+
+        // fixes leaks of MembershipListeners (http://jira.jboss.com/jira/browse/JGRP-160)
+        if(adapter != null && handler != null) {
+            adapter.removeMembershipListener(handler);
         }
     }
 
