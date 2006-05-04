@@ -14,7 +14,7 @@ import org.jgroups.View;
 /**
  * Tests concurrent leaves of all members of a channel
  * @author Bela Ban
- * @version $Id: DisconnectStressTest.java,v 1.1 2005/11/21 11:45:05 belaban Exp $
+ * @version $Id: DisconnectStressTest.java,v 1.2 2006/05/04 12:28:45 belaban Exp $
  */
 public class DisconnectStressTest extends TestCase {
     static CyclicBarrier    all_disconnected=null;
@@ -131,8 +131,7 @@ public class DisconnectStressTest extends TestCase {
 
 
     public static Test suite() {
-        TestSuite s=new TestSuite(DisconnectStressTest.class);
-        return s;
+        return new TestSuite(DisconnectStressTest.class);
     }
 
     public static void main(String[] args) {
