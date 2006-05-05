@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.17 2006/05/02 11:06:02 belaban Exp $
+// $Id: JChannelFactory.java,v 1.18 2006/05/05 07:41:52 belaban Exp $
 
 package org.jgroups;
 
@@ -21,6 +21,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.FileNotFoundException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -137,8 +138,13 @@ public class JChannelFactory implements ChannelFactory {
 
     public void setMultiplexerConfig(Object properties) throws Exception {
         InputStream input=ConfiguratorFactory.getConfigStream(properties);
+        if(input == null)
+            throw new FileNotFoundException(properties.toString());
         try {
             parse(input);
+        }
+        catch(Exception ex) {
+            throw new Exception("failed parsing " + properties, ex);
         }
         finally {
             Util.closeInputStream(input);
@@ -147,8 +153,13 @@ public class JChannelFactory implements ChannelFactory {
 
     public void setMultiplexerConfig(File file) throws Exception {
         InputStream input=ConfiguratorFactory.getConfigStream(file);
+        if(input == null)
+            throw new FileNotFoundException(file.toString());
         try {
             parse(input);
+        }
+        catch(Exception ex) {
+            throw new Exception("failed parsing " + file.toString(), ex);
         }
         finally {
             Util.closeInputStream(input);
@@ -161,8 +172,13 @@ public class JChannelFactory implements ChannelFactory {
 
     public void setMultiplexerConfig(URL url) throws Exception {
         InputStream input=ConfiguratorFactory.getConfigStream(url);
+        if(input == null)
+            throw new FileNotFoundException(url.toString());
         try {
             parse(input);
+        }
+        catch(Exception ex) {
+            throw new Exception("failed parsing " + url.toString(), ex);
         }
         finally {
             Util.closeInputStream(input);
@@ -173,14 +189,21 @@ public class JChannelFactory implements ChannelFactory {
 
     public void setMultiplexerConfig(String properties) throws Exception {
         InputStream input=ConfiguratorFactory.getConfigStream(properties);
+        if(input == null)
+            throw new FileNotFoundException(properties);
         try {
             parse(input);
             this.config=properties;
+        }
+        catch(Exception ex) {
+            throw new Exception("failed parsing " + properties, ex);
         }
         finally {
             Util.closeInputStream(input);
         }
     }
+
+
 
 
     public String getDomain() {
@@ -329,12 +352,13 @@ public class JChannelFactory implements ChannelFactory {
 
     public void close(MuxChannel ch) {
         Entry entry;
+        String stack_name=ch.getStackName();
         ch.setClosed(true);
         ch.setConnected(false);
         ch.closeMessageQueue(true);
 
         synchronized(channels) {
-            entry=(Entry)channels.get(ch.getStackName());
+            entry=(Entry)channels.get(stack_name);
         }
         if(entry != null) {
             synchronized(entry) {
@@ -344,7 +368,7 @@ public class JChannelFactory implements ChannelFactory {
                 }
             }
             synchronized(channels) {
-                channels.remove(entry);
+                channels.remove(stack_name);
                 if(expose_channels && server != null) {
                     try {
                         unregister(domain + ":*,cluster=" + ch.getStackName());
