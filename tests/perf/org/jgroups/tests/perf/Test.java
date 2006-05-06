@@ -363,7 +363,7 @@ public class Test implements Receiver {
     }
 
 
-    void sendMessages(long interval) throws Exception {
+    void sendMessages(long interval, int nanos, boolean busy_sleep) throws Exception {
         long total_msgs=0;
         int msgSize=Integer.parseInt(config.getProperty("msg_size"));
         int num_msgs=Integer.parseInt(config.getProperty("num_msgs"));
@@ -381,8 +381,12 @@ public class Test implements Receiver {
             if(total_msgs % log_interval == 0) {
                 System.out.println("++ sent " + total_msgs);
             }
-            if(interval > 0)
-                Util.sleep(interval);
+            if(interval > 0 || nanos > 0) {
+                if(busy_sleep)
+                    Util.sleep(interval, busy_sleep);
+                else
+                    Util.sleep(interval, nanos);
+            }
         }
     }
 
@@ -579,6 +583,8 @@ public class Test implements Receiver {
         Test t=null;
         String output=null;
         long interval=0;
+        int interval_nanos=0;
+        boolean busy_sleep=false;
 
         for(int i=0; i < args.length; i++) {
             if("-sender".equals(args[i])) {
@@ -617,6 +623,14 @@ public class Test implements Receiver {
                 interval=Long.parseLong(args[++i]);
                 continue;
             }
+            if("-nanos".equals(args[i])) {
+                interval_nanos=Integer.parseInt(args[++i]);
+                continue;
+            }
+            if("-busy_sleep".equals(args[i])) {
+                busy_sleep=true;
+                continue;
+            }
             if("-f".equals(args[i])) {
                 output=args[++i];
                 continue;
@@ -638,7 +652,7 @@ public class Test implements Receiver {
             t.start(config, verbose, jmx, output);
             t.runDiscoveryPhase();
             if(sender) {
-                t.sendMessages(interval);
+                t.sendMessages(interval, interval_nanos, busy_sleep);
             }
             synchronized(t) {
                 while(t.receivedFinalResults() == false) {
@@ -675,7 +689,8 @@ public class Test implements Receiver {
         System.out.println("Test [-help] ([-sender] | [-receiver]) " +
                 "[-config <config file>] " +
                 "[-props <stack config>] [-verbose] [-jmx] " +
-                "[-dump_stats] [-f <filename>] [-interval <ms between sends>]");
+                "[-dump_stats] [-f <filename>] [-interval <ms between sends>] " +
+                "[-nanos <additional nanos to sleep in interval>] [-busy_sleep (cancels out -nanos)]");
     }
 
 
