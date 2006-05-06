@@ -1,4 +1,4 @@
-// $Id: PullPushAdapter.java,v 1.16 2006/03/17 09:28:04 belaban Exp $
+// $Id: PullPushAdapter.java,v 1.17 2006/05/06 15:01:59 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -258,7 +258,7 @@ public class PullPushAdapter implements Runnable, ChannelListener {
             }
             catch(ChannelNotConnectedException conn) {
                 Address local_addr=((Channel)transport).getLocalAddress();
-                if(log.isWarnEnabled()) log.warn('[' + (local_addr == null ? "<null>" : local_addr.toString()) +
+                if(log.isTraceEnabled()) log.trace('[' + (local_addr == null ? "<null>" : local_addr.toString()) +
                         "] channel not connected, exception is " + conn);
                 Util.sleep(1000);
                 receiver_thread=null;
@@ -266,7 +266,7 @@ public class PullPushAdapter implements Runnable, ChannelListener {
             }
             catch(ChannelClosedException closed_ex) {
                 Address local_addr=((Channel)transport).getLocalAddress();
-                if(log.isWarnEnabled()) log.warn('[' + (local_addr == null ? "<null>" : local_addr.toString()) +
+                if(log.isTraceEnabled()) log.trace('[' + (local_addr == null ? "<null>" : local_addr.toString()) +
                         "] channel closed, exception is " + closed_ex);
                 // Util.sleep(1000);
                 receiver_thread=null;
