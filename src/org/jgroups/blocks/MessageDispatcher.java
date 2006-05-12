@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.50 2006/05/04 12:42:34 belaban Exp $
+// $Id: MessageDispatcher.java,v 1.51 2006/05/12 08:55:16 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -116,16 +116,13 @@ public class MessageDispatcher implements RequestHandler {
 
     public MessageDispatcher(Channel channel, MessageListener l, MembershipListener l2, RequestHandler req_handler,
                              boolean deadlock_detection) {
-        this(channel, l, l2);
-        this.deadlock_detection=deadlock_detection;
+        this(channel, l, l2, deadlock_detection, false);
         setRequestHandler(req_handler);
     }
 
     public MessageDispatcher(Channel channel, MessageListener l, MembershipListener l2, RequestHandler req_handler,
                              boolean deadlock_detection, boolean concurrent_processing) {
-        this(channel, l, l2);
-        this.deadlock_detection=deadlock_detection;
-        this.concurrent_processing=concurrent_processing;
+        this(channel, l, l2, deadlock_detection, concurrent_processing);
         setRequestHandler(req_handler);
     }
 
