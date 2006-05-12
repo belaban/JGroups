@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.35 2006/04/13 08:11:47 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.36 2006/05/12 10:00:22 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -29,6 +29,9 @@ public class STATE_TRANSFER extends Protocol {
 
     /** Map<String,Set> of state requesters. Keys are state IDs, values are Sets of Addresses (one for each requester) */
     final Map      state_requesters=new HashMap();
+
+    /** set to true while waiting for a STATE_RSP */
+    boolean        waiting_for_state_response=false;
 
     Digest         digest=null;
     final HashMap  map=new HashMap(); // to store configuration information
@@ -82,6 +85,11 @@ public class STATE_TRANSFER extends Protocol {
 
     public void start() throws Exception {
         passUp(new Event(Event.CONFIG, map));
+    }
+
+    public void stop() {
+        super.stop();
+        waiting_for_state_response=false;
     }
 
 
@@ -148,7 +156,6 @@ public class STATE_TRANSFER extends Protocol {
         Address target, requester;
         StateTransferInfo info;
         StateHeader hdr;
-        Message state_req, state_rsp;
 
         switch(evt.getType()) {
 
@@ -175,7 +182,7 @@ public class STATE_TRANSFER extends Protocol {
                     passUp(new Event(Event.GET_STATE_OK, new StateTransferInfo()));
                 }
                 else {
-                    state_req=new Message(target, null, null);
+                    Message state_req=new Message(target, null, null);
                     state_req.putHeader(name, new StateHeader(StateHeader.STATE_REQ, local_addr, state_id++, null, info.state_id));
                     if(log.isDebugEnabled()) log.debug("GET_STATE: asking " + target + " for state");
 
@@ -184,7 +191,7 @@ public class STATE_TRANSFER extends Protocol {
                     if(log.isDebugEnabled())
                         log.debug("passing down a SUSPEND_STABLE event");
                     passDown(new Event(Event.SUSPEND_STABLE, new Long(info.timeout)));
-
+                    waiting_for_state_response=true;
                     start=System.currentTimeMillis();
                     passDown(new Event(Event.MSG, state_req));
                 }
@@ -218,12 +225,22 @@ public class STATE_TRANSFER extends Protocol {
                     else {
                         for(Iterator it=requesters.iterator(); it.hasNext();) {
                             requester=(Address)it.next();
-                            state_rsp=new Message(requester, null, state);
+                            final Message state_rsp=new Message(requester, null, state);
                             hdr=new StateHeader(StateHeader.STATE_RSP, local_addr, 0, digest, id);
                             state_rsp.putHeader(name, hdr);
                             if(trace)
                                 log.trace("sending state for ID=" + id + " to " + requester + " (" + state.length + " bytes)");
-                            passDown(new Event(Event.MSG, state_rsp));
+
+                            // This has to be done in a separate thread, so we don't block on FC
+                            // (see http://jira.jboss.com/jira/browse/JGRP-225 for details). This will be reverted once
+                            // we have the threadless stack  (http://jira.jboss.com/jira/browse/JGRP-181)
+                            // and out-of-band messages (http://jira.jboss.com/jira/browse/JGRP-205)
+                            new Thread() {
+                                public void run() {
+                                   passDown(new Event(Event.MSG, state_rsp));
+                                }
+                            }.start();
+                            // passDown(new Event(Event.MSG, state_rsp));
                         }
                         state_requesters.remove(id);
                     }
@@ -260,10 +277,29 @@ public class STATE_TRANSFER extends Protocol {
 
 
     private void handleViewChange(View v) {
+        Address old_coord;
         Vector new_members=v.getMembers();
+        boolean send_up_null_state_rsp=false;
+
         synchronized(members) {
+            old_coord=(Address)(members.size() > 0? members.firstElement() : null);
             members.clear();
             members.addAll(new_members);
+
+            // this handles the case where a coord dies during a state transfer; prevents clients from hanging forever
+            // Note this only takes a coordinator crash into account, a getState(target, timeout), where target is not
+            // null is not handled ! (Usually we get the state from the coordinator)
+            // http://jira.jboss.com/jira/browse/JGRP-148
+            if(waiting_for_state_response && old_coord != null && !members.contains(old_coord)) {
+                send_up_null_state_rsp=true;
+            }
+        }
+
+        if(send_up_null_state_rsp) {
+            if(warn)
+                log.warn("discovered that the state provider (" + old_coord + ") crashed; will return null state to application");
+            StateHeader hdr=new StateHeader(StateHeader.STATE_RSP, local_addr, 0, null, null);
+            handleStateRsp(hdr, null); // sends up null GET_STATE_OK
         }
     }
 
@@ -307,6 +343,7 @@ public class STATE_TRANSFER extends Protocol {
         Digest tmp_digest=hdr.my_digest;
         String id=hdr.state_id;
 
+        waiting_for_state_response=false;
         if(tmp_digest == null) {
             if(warn)
                 log.warn("digest received from " + sender + " is null, skipping setting digest !");
