@@ -1,4 +1,4 @@
-// $Id: LargeState.java,v 1.18 2006/03/27 08:34:25 belaban Exp $
+// $Id: LargeState.java,v 1.19 2006/05/12 09:56:28 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -144,7 +144,7 @@ public class LargeState extends ReceiverAdapter {
                 "pbcast.NAKACK(gc_lag=50;retransmit_timeout=300,600,1200,2400,4800):" +
                 "UNICAST(timeout=300,600,900,1200,2400):" +
                 "pbcast.STABLE(desired_avg_gossip=20000):" +
-                "FRAG(frag_size=60000;down_thread=false;up_thread=false):" +
+                "FRAG2(frag_size=60000;down_thread=false;up_thread=false):" +
                 "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
                 "shun=false;print_local_addr=true):" +
                 "pbcast.STATE_TRANSFER";

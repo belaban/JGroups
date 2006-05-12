@@ -12,7 +12,7 @@ import java.io.NotSerializableException;
 
 /**
  * @author Bela Ban
- * @version $Id: RpcDispatcherExceptionTest.java,v 1.1 2006/04/05 05:39:49 belaban Exp $
+ * @version $Id: RpcDispatcherExceptionTest.java,v 1.2 2006/05/12 09:56:27 belaban Exp $
  */
 public class RpcDispatcherExceptionTest extends TestCase {
     RpcDispatcher disp;

@@ -1,39 +1,94 @@
-// $Id: RspList.java,v 1.5 2005/07/25 11:49:27 belaban Exp $
+// $Id: RspList.java,v 1.6 2006/05/12 09:58:33 belaban Exp $
 
 package org.jgroups.util;
 
 
 import org.jgroups.Address;
 
-import java.util.Vector;
-import java.util.Collection;
+import java.util.*;
 
 
 /**
  * Contains responses from all members. Marks faulty members.
  * A RspList is a response list used in peer-to-peer protocols.
  */
-public class RspList {
-    final Vector rsps=new Vector();
+public class RspList implements Map {
+
+    /** Map<Address, Rsp> */
+    final Map rsps=new HashMap();
 
     public RspList() {
-        
+
     }
 
+    /** Adds a lkist of responses
+     * @param responses Collection<Rsp>
+     */
     public RspList(Collection responses) {
-        this.rsps.addAll(responses);
+        if(responses != null) {
+            for(Iterator it=responses.iterator(); it.hasNext();) {
+                Rsp rsp=(Rsp)it.next();
+                rsps.put(rsp.getSender(), rsp);
+            }
+        }
     }
 
 
+    public boolean isEmpty() {
+        return rsps.isEmpty();
+    }
+
+    public boolean containsKey(Object key) {
+        return rsps.containsKey(key);
+    }
+
+    public boolean containsValue(Object value) {
+        return rsps.containsValue(value);
+    }
+
+    public Object get(Object key) {
+        return rsps.get(key);
+    }
+
+    public Object put(Object key, Object value) {
+        return rsps.put(key, value);
+    }
+
+    public Object remove(Object key) {
+        return rsps.remove(key);
+    }
+
+    public void putAll(Map m) {
+        rsps.putAll(m);
+    }
+
+    public void clear() {
+        rsps.clear();
+    }
+
+    public Set keySet() {
+        return rsps.keySet();
+    }
+
+    public Collection values() {
+        return rsps.values();
+    }
+
+    public Set entrySet() {
+        return rsps.entrySet();
+    }
+
+    /**
+     * Clears the response list
+     * @deprecated Use {@link #clear()} instead
+     */
     public void reset() {
-        rsps.removeAllElements();
+        clear();
     }
-
 
 
     public void addRsp(Address sender, Object retval) {
-        Rsp rsp=find(sender);
-
+        Rsp rsp=(Rsp)get(sender);
         if(rsp != null) {
             rsp.sender=sender;
             rsp.retval=retval;
@@ -41,21 +96,19 @@ public class RspList {
             rsp.suspected=false;
             return;
         }
-        rsps.addElement(new Rsp(sender, retval));
+        rsps.put(sender, new Rsp(sender, retval));
     }
 
 
     public void addNotReceived(Address sender) {
-        Rsp rsp=find(sender);
-
+        Rsp rsp=(Rsp)get(sender);
         if(rsp == null)
-            rsps.addElement(new Rsp(sender));
+            rsps.put(sender, new Rsp(sender));
     }
 
 
     public void addSuspect(Address sender) {
-        Rsp rsp=find(sender);
-
+        Rsp rsp=(Rsp)get(sender);
         if(rsp != null) {
             rsp.sender=sender;
             rsp.retval=null;
@@ -63,33 +116,37 @@ public class RspList {
             rsp.suspected=true;
             return;
         }
-        rsps.addElement(new Rsp(sender, true));
+        rsps.put(sender, new Rsp(sender, true));
     }
 
 
     public boolean isReceived(Address sender) {
-        Rsp rsp=find(sender);
-
+        Rsp rsp=(Rsp)get(sender);
         if(rsp == null) return false;
         return rsp.received;
     }
 
-
     public int numSuspectedMembers() {
         int num=0;
         Rsp rsp;
-
-        for(int i=0; i < rsps.size(); i++) {
-            rsp=(Rsp)rsps.elementAt(i);
+        Collection values=values();
+        for(Iterator it=values.iterator(); it.hasNext();) {
+            rsp=(Rsp)it.next();
             if(rsp.wasSuspected())
                 num++;
         }
         return num;
     }
 
-
+    /** Returns the first value in the response set. This is random, but we try to return a non-null value first */
     public Object getFirst() {
-        return rsps.size() > 0 ? ((Rsp)rsps.elementAt(0)).getValue() : null;
+        Collection values=values();
+        for(Iterator it=values.iterator(); it.hasNext();) {
+            Rsp rsp=(Rsp)it.next();
+            if(rsp.getValue() != null)
+                return rsp.getValue();
+        }
+        return null;
     }
 
 
@@ -101,8 +158,8 @@ public class RspList {
         Rsp rsp;
         Object val;
 
-        for(int i=0; i < rsps.size(); i++) {
-            rsp=(Rsp)rsps.elementAt(i);
+        for(Iterator it=values().iterator(); it.hasNext();) {
+            rsp=(Rsp)it.next();
             if(rsp.wasReceived() && (val=rsp.getValue()) != null)
                 ret.addElement(val);
         }
@@ -114,8 +171,8 @@ public class RspList {
         Vector retval=new Vector();
         Rsp rsp;
 
-        for(int i=0; i < rsps.size(); i++) {
-            rsp=(Rsp)rsps.elementAt(i);
+        for(Iterator it=values().iterator(); it.hasNext();) {
+            rsp=(Rsp)it.next();
             if(rsp.wasSuspected())
                 retval.addElement(rsp.getSender());
         }
@@ -124,18 +181,9 @@ public class RspList {
 
 
     public boolean isSuspected(Address sender) {
-        Rsp rsp=find(sender);
-
+        Rsp rsp=(Rsp)get(sender);
         if(rsp == null) return false;
         return rsp.suspected;
-    }
-
-
-    public Object get(Address sender) {
-        Rsp rsp=find(sender);
-
-        if(rsp == null) return null;
-        return rsp.retval;
     }
 
 
@@ -143,8 +191,19 @@ public class RspList {
         return rsps.size();
     }
 
+    /**
+     * Returns the Rsp at index i
+     * @param i The index
+     * @return a Rsp
+     * @throws ArrayIndexOutOfBoundsException
+     * @deprecated Use {@link #entrySet()} or {@link #values()} instead
+     */
     public Object elementAt(int i) throws ArrayIndexOutOfBoundsException {
-        return rsps.elementAt(i);
+        Set keys=new TreeSet(keySet());
+        if(keys == null) return null;
+        Object[] keys_array=keys.toArray();
+        Object key=keys_array[i];
+        return rsps.get(key);
     }
 
 
@@ -152,8 +211,8 @@ public class RspList {
         StringBuffer ret=new StringBuffer();
         Rsp rsp;
 
-        for(int i=0; i < rsps.size(); i++) {
-            rsp=(Rsp)rsps.elementAt(i);
+        for(Iterator it=values().iterator(); it.hasNext();) {
+            rsp=(Rsp)it.next();
             ret.append("[" + rsp + "]\n");
         }
         return ret.toString();
@@ -161,27 +220,7 @@ public class RspList {
 
 
     boolean contains(Address sender) {
-        Rsp rsp;
-
-        for(int i=0; i < rsps.size(); i++) {
-            rsp=(Rsp)rsps.elementAt(i);
-
-            if(rsp.sender != null && sender != null && rsp.sender.equals(sender))
-                return true;
-        }
-        return false;
-    }
-
-
-    Rsp find(Address sender) {
-        Rsp rsp;
-
-        for(int i=0; i < rsps.size(); i++) {
-            rsp=(Rsp)rsps.elementAt(i);
-            if(rsp.sender != null && sender != null && rsp.sender.equals(sender))
-                return rsp;
-        }
-        return null;
+        return containsKey(sender);
     }
 
 
