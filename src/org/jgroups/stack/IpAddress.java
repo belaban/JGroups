@@ -1,4 +1,4 @@
-// $Id: IpAddress.java,v 1.31 2006/01/14 14:00:42 belaban Exp $
+// $Id: IpAddress.java,v 1.32 2006/05/12 09:59:26 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -18,9 +18,9 @@ import java.net.InetAddress;
  * @author Bela Ban
  */
 public class IpAddress implements Address {
-    private InetAddress             ip_addr=null;
+    private InetAddress             ip_addr;
     private int                     port=0;
-    private byte[]                  additional_data=null;
+    private byte[]                  additional_data;
     protected static final Log      log=LogFactory.getLog(IpAddress.class);
     static boolean                  resolve_dns=false;
     transient int                   size=-1;
@@ -206,63 +206,29 @@ public class IpAddress implements Address {
 
 
     public void writeExternal(ObjectOutput out) throws IOException {
-        byte[] address = ip_addr.getAddress();   
-        out.write(address);   
+        if(ip_addr != null) {
+            byte[] address=ip_addr.getAddress();
+            out.writeByte(address.length); // 1 byte
+            out.write(address, 0, address.length);
+        }
+        else {
+            out.writeByte(0);
+        }
         out.writeInt(port);
         if(additional_data != null) {
-            out.writeInt(additional_data.length);
+            out.writeBoolean(true);
+            out.writeShort(additional_data.length);
             out.write(additional_data, 0, additional_data.length);
         }
         else
-            out.writeInt(0);
+            out.writeBoolean(false);
     } 
     
     
     
     
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        int len=0;   
-        //read the four bytes
-        byte[] a = new byte[4];   
-        //in theory readFully(byte[]) should be faster   
-        //than read(byte[]) since latter reads   
-        // 4 bytes one at a time   
-        in.readFully(a);   
-        //then read the port
-        port = in.readInt();
-        //look up an instance in the cache
-        this.ip_addr=InetAddress.getByAddress(a);
-        len=in.readInt();
-        if(len > 0) {
-            additional_data=new byte[len];
-            in.readFully(additional_data, 0, additional_data.length);        
-        }
-    }
-
-    public void writeTo(DataOutputStream out) throws IOException {
-        byte[] address;
-
-        if(ip_addr != null) {
-            address=ip_addr.getAddress();
-            out.writeShort(address.length); // 2 bytes
-            out.write(address, 0, address.length);
-        }
-        else {
-            out.writeShort(0);
-        }
-        out.writeInt(port);
-        if(additional_data != null) {
-            out.writeBoolean(true); // 1 byte
-            out.writeInt(additional_data.length);
-            out.write(additional_data, 0, additional_data.length);
-        }
-        else {
-            out.writeBoolean(false);
-        }
-    }
-
-    public void readFrom(DataInputStream in) throws IOException {
-        int len=in.readShort();
+        int len=in.readByte();
         if(len > 0) {
             //read the four bytes
             byte[] a = new byte[len];
@@ -278,7 +244,45 @@ public class IpAddress implements Address {
 
         if(in.readBoolean() == false)
             return;
-        len=in.readInt();
+        len=in.readShort();
+        if(len > 0) {
+            additional_data=new byte[len];
+            in.readFully(additional_data, 0, additional_data.length);
+        }
+    }
+
+    public void writeTo(DataOutputStream out) throws IOException {
+        if(ip_addr != null) {
+            byte[] address=ip_addr.getAddress();  // 4 bytes (IPv4) or 16 bytes (IPv6)
+            out.writeByte(address.length); // 1 byte
+            out.write(address, 0, address.length);
+        }
+        else {
+            out.writeByte(0);
+        }
+        out.writeInt(port);
+        if(additional_data != null) {
+            out.writeBoolean(true); // 1 byte
+            out.writeShort(additional_data.length);
+            out.write(additional_data, 0, additional_data.length);
+        }
+        else {
+            out.writeBoolean(false);
+        }
+    }
+
+    public void readFrom(DataInputStream in) throws IOException {
+        int len=in.readByte();
+        if(len > 0) {
+            byte[] a = new byte[len]; // 4 bytes (IPv4) or 16 bytes (IPv6)
+            in.readFully(a);
+            this.ip_addr=InetAddress.getByAddress(a);
+        }
+        port=in.readInt();
+
+        if(in.readBoolean() == false)
+            return;
+        len=in.readShort();
         if(len > 0) {
             additional_data=new byte[len];
             in.readFully(additional_data, 0, additional_data.length);
@@ -288,12 +292,12 @@ public class IpAddress implements Address {
     public int size() {
         if(size >= 0)
             return size;
-        // length + 4 bytes for port + 1 for additional_data available
-        int tmp_size=Global.SHORT_SIZE + Global.INT_SIZE + Global.BYTE_SIZE;
+        // length (1 bytes) + 4 bytes for port + 1 for additional_data available
+        int tmp_size=Global.BYTE_SIZE+ Global.INT_SIZE + Global.BYTE_SIZE;
         if(ip_addr != null)
             tmp_size+=ip_addr.getAddress().length; // 4 bytes for IPv4
         if(additional_data != null)
-            tmp_size+=additional_data.length+Global.INT_SIZE;
+            tmp_size+=additional_data.length+Global.SHORT_SIZE;
         size=tmp_size;
         return tmp_size;
     }
