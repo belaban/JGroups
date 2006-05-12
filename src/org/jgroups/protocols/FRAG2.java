@@ -1,4 +1,4 @@
-// $Id: FRAG2.java,v 1.22 2006/03/15 16:41:41 belaban Exp $
+// $Id: FRAG2.java,v 1.23 2006/05/12 10:01:36 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -27,7 +27,7 @@ import java.util.*;
  * size addition for headers and src and dest address is minimal when the transport finally has to serialize the
  * message, so we add a constant (1000 bytes).
  * @author Bela Ban
- * @version $Id: FRAG2.java,v 1.22 2006/03/15 16:41:41 belaban Exp $
+ * @version $Id: FRAG2.java,v 1.23 2006/05/12 10:01:36 belaban Exp $
  */
 public class FRAG2 extends Protocol {
 
@@ -36,7 +36,7 @@ public class FRAG2 extends Protocol {
 
     /** Number of bytes that we think the headers plus src and dest will take up when
         message is serialized by transport. This will be subtracted from frag_size */
-    int overhead=50;
+    int overhead=200;
 
     /*the fragmentation list contains a fragmentation table per sender
      *this way it becomes easier to clean up if a sender (member) leaves or crashes

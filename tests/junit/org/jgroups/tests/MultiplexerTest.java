@@ -11,7 +11,7 @@ import java.util.*;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.5 2006/04/13 08:45:42 belaban Exp $
+ * @version $Id: MultiplexerTest.java,v 1.6 2006/05/12 09:55:51 belaban Exp $
  */
 public class MultiplexerTest extends TestCase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -44,6 +44,11 @@ public class MultiplexerTest extends TestCase {
             ch1.close();
         if(ch2 != null)
             ch2.close();
+
+        if(c1 != null) c1.clear();
+        if(c2 != null) c2.clear();
+        if(c1_repl != null) c1_repl.clear();
+        if(c2_repl != null) c2_repl.clear();
     }
 
 
@@ -230,6 +235,10 @@ public class MultiplexerTest extends TestCase {
 
         assertEquals("cache-2", c2.get("name"));
         assertEquals("cache-2", c2_repl.get("name"));
+        c1.clear();
+        c1_repl.clear();
+        c2.clear();
+        c2_repl.clear();
     }
 
 
@@ -439,6 +448,11 @@ public class MultiplexerTest extends TestCase {
 
         public void setState(String state_id, byte[] state) {
             setState(state);
+        }
+
+
+        public void clear() {
+            data.clear();
         }
 
 
