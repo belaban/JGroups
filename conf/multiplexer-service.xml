@@ -10,7 +10,7 @@
     <!--
     An example for setting up the JChannelFactory MBean
     Author: Bela Ban
-    Version: $Id: multiplexer-service.xml,v 1.3 2006/05/02 11:06:00 belaban Exp $
+    Version: $Id: multiplexer-service.xml,v 1.4 2006/05/12 09:43:10 belaban Exp $
     -->
     <mbean code="org.jgroups.jmx.JChannelFactory" name="jgroups.mux:name=Multiplexer" xmbean-dd="resource:multiplexer-xmbean.xml">
         <attribute name="Domain">jgroups.mux</attribute>

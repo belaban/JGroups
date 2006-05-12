@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.51 2006/05/05 13:15:51 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.52 2006/05/12 09:42:32 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -29,7 +29,7 @@
     <property name="javadoc.packages" value="org.jgroups.*"/>
     <property name="unittest.timeout.low" value="120000"/>
     <property name="unittest.timeout.high" value="280000"/>
-    <property name="version" value="2.3beta 2"/>
+    <property name="version" value="2.3beta 3"/>
 
 
     <path id="jg.classpath">

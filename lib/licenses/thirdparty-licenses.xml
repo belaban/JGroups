@@ -1,0 +1,95 @@
+<thirdparty-licenses>
+    <module name='ant'
+            licenseType='apache-2.0'
+            version='1.6.5'
+            projectHome='http://ant.apache.org/'
+            description='ANT (compile time)'>
+        <jar name='ant.jar' />
+    </module>
+    <module name='ant-launcher'
+            licenseType='apache-2.0'
+            version='1.6.5'
+            projectHome='http://ant.apache.org/'
+            description='ANT launcher (compile time)'>
+        <jar name='ant-launcher.jar' />
+    </module>
+    <module name='ant-junit'
+            licenseType='apache-2.0'
+            version='1.6.5'
+            projectHome='http://ant.apache.org/'
+            description='ANT junit support (compile time)'>
+        <jar name='ant-junit.jar' />
+    </module>
+    <module name='ant-serializer'
+            licenseType='apache-2.0'
+            version='1.6.5'
+            projectHome='http://ant.apache.org/'
+            description='ANT (compile time), needed for generation of test reports'>
+        <jar name='serializer.jar' />
+    </module>
+    <module name='Bouncy castle'
+            licenseType='bouncycastle'
+            version='1.17'
+            projectHome='http://www.bouncycastle.org'
+            description='Encryption algorithms. Used by ENCRYPT and AUTH (runtime)'>
+        <jar name='bcprov-jdk14-117.har' />
+    </module>
+    <module name='Beanshell'
+            licenseType='lgpl (dual license, but LGPL may eb chosen)'
+            version='1.2b3'
+            projectHome='http://www.beanshell.org'
+            description='Lightweight Scripting for Java. Uused mainly by the BSH protocol (uncomplete) (runtime)'>
+        <jar name='bsh-1.2b3.jar' />
+    </module>
+    <module name='commons-logging'
+            licenseType='apache-2.0'
+            version='1.0.3'
+            projectHome='http://jakarta.apache.org/commons/logging/'
+            description='Apache commons logging. Used for logging (runtime)'>
+        <jar name='commons-logging.jar' />
+    </module>
+    <module name='concurrent'
+            licenseType='<none given>'
+            version='1.3.4'
+            projectHome='http://gee.cs.oswego.edu/dl/classes/EDU/oswego/cs/dl/util/concurrent/intro.html'
+            description='Oswego util.concurrent package (runtime)'>
+        <jar name='concurrent.jar' />
+    </module>
+    <module name='JMS'
+            licenseType='bcl'
+            version='1.02b'
+            projectHome='http://java.sun.com/products/jms'
+            description='JMS interfaces. Used by the JMS protocol (runtime)'>
+        <jar name='jms.jar' />
+    </module>
+    <module name='JMX RI by SUN'
+            licenseType='bcl'
+            version='1.2.1'
+            projectHome='http://java.sun.com/products/JavaManagement'
+            description='JMX standard classes (javax.management.*), used by classes in org.jgroups.jmx. Will
+                     be removed when JDK 5 becomes baseline (runtime)'>
+        <jar name='jmxri.jar' />
+    </module>
+    <module name='junit'
+            licenseType='cpl-1.0'
+            version='3.8.1'
+            projectHome='http://www.junit.org/index.htm'
+            description='Java unit testing framework (testing time)'>
+        <jar name='junit.jar' />
+    </module>
+    <module name='log4j'
+        licenseType='apache-2.0'
+        version='1.2.6'
+        projectHome='http://logging.apache.org/'
+        description='Java logging framework (runtime)'>
+        <jar name='log4j.jar' />
+    </module>
+    <module name='apache-xalan'
+            licenseType='apache-2.0'
+            version='2.4.D1'
+            projectHome='http://xml.apache.org/xalan-j/'
+            description='Xalan-Java is an XSLT processor for transforming XML documents.
+                         Used to generate HTML test reports from XML (testing time)'>
+        <jar name='xalan.jar' />
+	</module>
+</thirdparty-licenses>

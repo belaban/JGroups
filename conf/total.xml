@@ -1,7 +1,7 @@
 
 <!--
 Example of a protocol stack based on fc-fast-minimalthreads, but with total order (sequencer-based)
-Version: $Id: total.xml,v 1.1 2005/12/29 14:44:18 belaban Exp $
+Version: $Id: total.xml,v 1.2 2006/05/12 09:43:10 belaban Exp $
 -->
 <config>
     <UDP bind_addr="192.168.5.1"
@@ -41,9 +41,10 @@ Version: $Id: total.xml,v 1.1 2005/12/29 14:44:18 belaban Exp $
     <pbcast.GMS print_local_addr="true" join_timeout="3000" 
                 down_thread="false" up_thread="false"
                 join_retry_timeout="2000" shun="true"/>
-    <FC max_credits="2000000" down_thread="false" up_thread="false"
-        min_threshold="0.10"/>
+
     <TOTAL up_thread="false" down_thread="false" />
     <!-- FRAG2 frag_size="60000" down_thread="false" up_thread="true"/ -->
     <!-- pbcast.STATE_TRANSFER down_thread="false" up_thread="false"/ -->
+    <FC max_credits="2000000" down_thread="false" up_thread="false"
+        min_threshold="0.10"/>
 </config>
