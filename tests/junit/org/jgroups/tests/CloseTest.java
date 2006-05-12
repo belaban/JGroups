@@ -1,4 +1,4 @@
-// $Id: CloseTest.java,v 1.6 2005/10/27 09:05:51 belaban Exp $
+// $Id: CloseTest.java,v 1.7 2006/05/12 09:49:13 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -17,7 +17,7 @@ public class CloseTest extends TestCase {
     JChannel channel, channel1, channel2, c1, c2;
 
 
-    String props="UDP(mcast_addr=228.8.8.8;mcast_port=45566;ip_ttl=32;" +
+    String props="UDP(mcast_addr=228.8.8.3;mcast_port=45577;ip_ttl=32;" +
             "mcast_send_buf_size=150000;mcast_recv_buf_size=80000;" +
             "enable_bundling=true;max_bundle_timeout=30;use_incoming_packet_handler=true;loopback=true):" +
             "PING(timeout=2000;num_initial_members=3):" +
@@ -29,7 +29,7 @@ public class CloseTest extends TestCase {
             "pbcast.STABLE(desired_avg_gossip=20000):" +
             "FRAG(frag_size=4096;down_thread=false;up_thread=false):" +
             "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
-            "shun=true;print_local_addr=false)";
+            "shun=true;print_local_addr=true)";
 
     public CloseTest(String name) {
         super(name);

@@ -18,7 +18,7 @@ import java.util.Set;
 /**
  * Tests correct state transfer while other members continue sending messages to the group
  * @author Bela Ban
- * @version $Id: StateTransferTest.java,v 1.7 2006/05/04 12:26:04 belaban Exp $
+ * @version $Id: StateTransferTest.java,v 1.8 2006/05/12 09:50:25 belaban Exp $
  */
 public class StateTransferTest extends TestCase {
     final int NUM=10000;
@@ -224,8 +224,7 @@ public class StateTransferTest extends TestCase {
     }
 
     public static Test suite() {
-        TestSuite s=new TestSuite(StateTransferTest.class);
-        return s;
+        return new TestSuite(StateTransferTest.class);
     }
 
     public static void main(String[] args) {

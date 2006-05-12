@@ -1,4 +1,4 @@
-// $Id: FragTest.java,v 1.8 2005/05/30 14:31:32 belaban Exp $
+// $Id: FragTest.java,v 1.9 2006/05/12 09:49:40 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -65,8 +65,7 @@ public class FragTest extends TestCase {
 
 
     public static Test suite() {
-        TestSuite s=new TestSuite(FragTest.class);
-        return s;
+        return new TestSuite(FragTest.class);
     }
 
     public static void main(String[] args) {
