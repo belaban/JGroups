@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.48 2006/03/20 08:21:02 belaban Exp $
+// $Id: Message.java,v 1.49 2006/05/12 09:35:18 belaban Exp $
 
 package org.jgroups;
 
@@ -386,6 +386,14 @@ public class Message implements Externalizable, Streamable {
      * size.<p> Size estimations don't have to be very accurate since this is mainly used by FRAG to
      * determine whether to fragment a message or not. Fragmentation will then serialize the message,
      * therefore getting the correct value.
+     */
+
+
+    /**
+     * Returns the exact size of the marshalled message. Uses method size() of each header to compute the size, so if
+     * a Header subclass doesn't implement size() we will use an approximation. However, most relevant header subclasses
+     * have size() implemented correctly. (See org.jgroups.tests.SizeTest).
+     * @return The number of bytes for the marshalled message
      */
     public long size() {
         long retval=Global.BYTE_SIZE                  // leading byte
