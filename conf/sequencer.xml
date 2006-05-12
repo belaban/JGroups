@@ -1,7 +1,7 @@
 
 <!--
 Total order protocol stack using the SEQUENCER protocol
-Version: $Id: sequencer.xml,v 1.1 2005/12/30 13:55:28 belaban Exp $
+Version: $Id: sequencer.xml,v 1.2 2006/05/12 09:43:10 belaban Exp $
 -->
 <config>
     <UDP bind_addr="192.168.5.1"
@@ -43,8 +43,7 @@ Version: $Id: sequencer.xml,v 1.1 2005/12/30 13:55:28 belaban Exp $
                 join_retry_timeout="2000" shun="true" handle_concurrent_startup="true" />
     <SEQUENCER down_thread="false" up_thread="false" />
     <FC max_credits="2000000" down_thread="false" up_thread="false"
-        min_threshold="0.10"/>
-        <!-- FRAG2 frag_size="60000" down_thread="false" up_thread="true"/ -->
+           min_threshold="0.10"/>
+    <!-- FRAG2 frag_size="60000" down_thread="false" up_thread="true"/ -->
     <!-- pbcast.STATE_TRANSFER down_thread="false" up_thread="false"/-->
-
 </config>
