@@ -1,4 +1,4 @@
-// $Id: IpAddress.java,v 1.33 2006/05/13 08:09:38 belaban Exp $
+// $Id: IpAddress.java,v 1.34 2006/05/13 08:16:05 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -18,7 +18,7 @@ import java.net.InetAddress;
  * @author Bela Ban
  */
 public class IpAddress implements Address {
-    private InetAddress             ip_addr;
+    private InetAddress             ip_addr=null;
     private int                     port=0;
     private byte[]                  additional_data;
     protected static final Log      log=LogFactory.getLog(IpAddress.class);
@@ -105,7 +105,8 @@ public class IpAddress implements Address {
      * @param additional_data The additional_data to set
      */
     public final void setAdditionalData(byte[] additional_data) {
-        this.additional_data = additional_data;
+        this.additional_data=additional_data;
+        size=-1;  // changed May 13 2006 bela (suggested by Bruce Schuchardt)
         size=size();
     }
 
@@ -189,23 +190,6 @@ public class IpAddress implements Address {
         return sb.toString();
     }
 
-
-
-
-
-    /**
-     * Input: "daddy.nms.fnc.fujitsu.com", output: "daddy". Appends result to string buffer 'sb'.
-     * @param hostname The hostname in long form. Guaranteed not to be null
-     * @param sb The string buffer to which the result is to be appended
-     */
-    private static void appendShortName(String hostname, StringBuffer sb) {
-        if(hostname == null) return;
-        int  index=hostname.indexOf('.');
-        if(index > 0 && !Character.isDigit(hostname.charAt(0)))
-            sb.append(hostname.substring(0, index));
-        else
-            sb.append(hostname);
-    }
 
 
     public void writeExternal(ObjectOutput out) throws IOException {
