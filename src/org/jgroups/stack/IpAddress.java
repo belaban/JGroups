@@ -1,4 +1,4 @@
-// $Id: IpAddress.java,v 1.32 2006/05/12 09:59:26 belaban Exp $
+// $Id: IpAddress.java,v 1.33 2006/05/13 08:09:38 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -175,11 +175,14 @@ public class IpAddress implements Address {
                 sb.append(ip_addr.getHostAddress());
             else {
                 String host_name=null;
-                if(resolve_dns)
+                if(resolve_dns) {
                     host_name=ip_addr.getHostName();
-                else
+                    // appendShortName(host_name, sb);
+                }
+                else {
                     host_name=ip_addr.getHostAddress();
-                appendShortName(host_name, sb);
+                }
+                sb.append(host_name);
             }
         }
         sb.append(":").append(port);
