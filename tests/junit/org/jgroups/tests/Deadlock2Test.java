@@ -1,4 +1,4 @@
-// $Id: Deadlock2Test.java,v 1.9 2006/02/16 08:23:40 belaban Exp $
+// $Id: Deadlock2Test.java,v 1.10 2006/05/13 08:48:38 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -21,7 +21,7 @@ import java.util.Vector;
  * @author John Giorgiadis
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
  * *
- * @version $Revision: 1.9 $
+ * @version $Revision: 1.10 $
  */
 public class Deadlock2Test extends TestCase {
 
@@ -57,7 +57,7 @@ public class Deadlock2Test extends TestCase {
         log("results of outerMethod(): " + rspList);
 
         assertEquals(1, rspList.size());
-        assertEquals("outerMethod[innerMethod]", rspList.get(localAddress));
+        assertEquals("outerMethod[innerMethod]", rspList.getValue(localAddress));
         assertTrue(rspList.isReceived(localAddress));
         assertFalse(rspList.isSuspected(localAddress));
 

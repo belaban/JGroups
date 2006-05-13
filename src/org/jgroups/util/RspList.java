@@ -1,4 +1,4 @@
-// $Id: RspList.java,v 1.6 2006/05/12 09:58:33 belaban Exp $
+// $Id: RspList.java,v 1.7 2006/05/13 08:48:38 belaban Exp $
 
 package org.jgroups.util;
 
@@ -46,8 +46,23 @@ public class RspList implements Map {
         return rsps.containsValue(value);
     }
 
+    /**
+     * Returns the Rsp associated with address key
+     * @param key Address (key)
+     * @return Rsp
+     */
     public Object get(Object key) {
         return rsps.get(key);
+    }
+
+    /**
+     * Returns the value associated with address key
+     * @param key
+     * @return Object value
+     */
+    public Object getValue(Object key) {
+        Rsp rsp=(Rsp)get(key);
+        return rsp != null? rsp.getValue() : null;
     }
 
     public Object put(Object key, Object value) {
@@ -203,7 +218,7 @@ public class RspList implements Map {
         if(keys == null) return null;
         Object[] keys_array=keys.toArray();
         Object key=keys_array[i];
-        return rsps.get(key);
+        return get(key);
     }
 
 
