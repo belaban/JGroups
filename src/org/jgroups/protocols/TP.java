@@ -11,8 +11,8 @@ import org.jgroups.util.Queue;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.*;
-import java.text.NumberFormat;
 import java.util.*;
+import java.text.NumberFormat;
 
 
 /**
@@ -39,7 +39,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.64 2006/05/02 08:12:58 belaban Exp $
+ * @version $Id: TP.java,v 1.53.2.1 2006/05/16 04:20:38 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -116,7 +116,7 @@ public abstract class TP extends Protocol {
      * Packet handler is a separate thread taking care of de-serialization, receiver
      * thread(s) simply put packet in queue and return immediately. Setting this to
      * true adds one more thread */
-    boolean         use_incoming_packet_handler=true;
+    boolean         use_incoming_packet_handler=false;
 
     /** Used by packet handler to store incoming DatagramPackets */
     Queue           incoming_packet_queue=null;
@@ -160,11 +160,11 @@ public abstract class TP extends Protocol {
     /** Enabled bundling of smaller messages into bigger ones */
     boolean enable_bundling=false;
 
-    private Bundler    bundler=null;
+    Bundler            bundler=null;
 
     TimeScheduler      timer=null;
 
-    private DiagnosticsHandler diag_handler=null;
+    DiagnosticsHandler diag_handler=null;
     boolean enable_diagnostics=true;
     String diagnostics_addr="224.0.0.75";
     int    diagnostics_port=7500;
@@ -186,7 +186,7 @@ public abstract class TP extends Protocol {
 
     long num_msgs_sent=0, num_msgs_received=0, num_bytes_sent=0, num_bytes_received=0;
 
-    static  NumberFormat f;
+    transient static  NumberFormat f;
 
     static {
         f=NumberFormat.getNumberInstance();
@@ -294,7 +294,7 @@ public abstract class TP extends Protocol {
     public abstract void postUnmarshallingList(Message msg, Address dest, boolean multicast);
 
 
-    private StringBuffer _getInfo() {
+    private String _getInfo() {
         StringBuffer sb=new StringBuffer();
         sb.append(local_addr).append(" (").append(channel_name).append(") ").append("\n");
         sb.append("local_addr=").append(local_addr).append("\n");
@@ -302,7 +302,7 @@ public abstract class TP extends Protocol {
         sb.append("Version=").append(Version.description).append(", cvs=\"").append(Version.cvs).append("\"\n");
         sb.append("view: ").append(view).append('\n');
         sb.append(getInfo());
-        return sb;
+        return sb.toString();
     }
 
 
@@ -310,7 +310,7 @@ public abstract class TP extends Protocol {
         try {
             StringTokenizer tok=new StringTokenizer(request);
             String req=tok.nextToken();
-            StringBuffer info=new StringBuffer("n/a");
+            String info="n/a";
             if(req.trim().toLowerCase().startsWith("query")) {
                 ArrayList l=new ArrayList(tok.countTokens());
                 while(tok.hasMoreTokens())
@@ -319,6 +319,7 @@ public abstract class TP extends Protocol {
                 info=_getInfo();
 
                 if(l.contains("jmx")) {
+                    if(info == null) info="";
                     Channel ch=stack.getChannel();
                     if(ch != null) {
                         Map m=ch.dumpStats();
@@ -327,17 +328,17 @@ public abstract class TP extends Protocol {
                         for(Iterator it=m.entrySet().iterator(); it.hasNext();) {
                             sb.append(it.next()).append("\n");
                         }
-                        info.append(sb);
+                        info+=sb.toString();
                     }
                 }
                 if(l.contains("props")) {
                     String p=stack.printProtocolSpecAsXML();
-                    info.append("\nprops:\n").append(p);
+                    info+="\nprops:\n" + p;
                 }
             }
 
 
-            byte[] diag_rsp=info.toString().getBytes();
+            byte[] diag_rsp=info.getBytes();
             if(log.isDebugEnabled())
                 log.debug("sending diag response to " + sender);
             sendResponse(sock, sender, diag_rsp);
@@ -348,7 +349,7 @@ public abstract class TP extends Protocol {
         }
     }
 
-    private static void sendResponse(DatagramSocket sock, SocketAddress sender, byte[] buf) throws IOException {
+    private void sendResponse(DatagramSocket sock, SocketAddress sender, byte[] buf) throws IOException {
         DatagramPacket p=new DatagramPacket(buf, 0, buf.length, sender);
         sock.send(p);
     }
@@ -359,15 +360,6 @@ public abstract class TP extends Protocol {
 
     /*------------------------------ Protocol interface ------------------------------ */
 
-
-    public void init() throws Exception {
-        super.init();
-        if(bind_addr != null) {
-            Map m=new HashMap(1);
-            m.put("bind_addr", bind_addr);
-            passUp(new Event(Event.CONFIG, m));
-        }
-    }
 
     /**
      * Creates the unicast and multicast sockets and starts the unicast and multicast receiver threads
@@ -775,7 +767,7 @@ public abstract class TP extends Protocol {
         boolean mcast=dest == null || dest.isMulticastAddress();
         if(trace){
             StringBuffer sb=new StringBuffer("received (");
-            sb.append(mcast? "mcast) " : "ucast) ").append(length).append(" bytes from ").append(sender);
+            sb.append(mcast? "mcast)" : "ucast) ").append(length).append(" bytes from ").append(sender);
             log.trace(sb.toString());
         }
 
@@ -1081,7 +1073,7 @@ public abstract class TP extends Protocol {
         return interfaces;
     }
 
-    private static String print(java.util.List interfaces) {
+    private String print(java.util.List interfaces) {
         StringBuffer sb=new StringBuffer();
         boolean first=true;
         NetworkInterface intf;
@@ -1119,7 +1111,6 @@ public abstract class TP extends Protocol {
         case Event.CONNECT:
             channel_name=(String)evt.getArg();
             header=new TpHeader(channel_name);
-            setThreadNames();
 
             // removed March 18 2003 (bela), not needed (handled by GMS)
             // changed July 2 2003 (bela): we discard CONNECT_OK at the GMS level anyway, this might
@@ -1128,7 +1119,6 @@ public abstract class TP extends Protocol {
             break;
 
         case Event.DISCONNECT:
-            unsetThreadNames();
             passUp(new Event(Event.DISCONNECT_OK));
             break;
 
@@ -1138,87 +1128,6 @@ public abstract class TP extends Protocol {
             break;
         }
     }
-
-
-
-
-    protected void setThreadNames() {
-        if(channel_name != null) {
-            String tmp, prefix=Global.THREAD_PREFIX;
-            if(incoming_packet_handler != null) {
-                tmp=incoming_packet_handler.getName();
-                if(tmp != null && tmp.indexOf(prefix) == -1) {
-                    tmp+=prefix + channel_name + ")";
-                    incoming_packet_handler.setName(tmp);
-                }
-            }
-            if(incoming_msg_handler != null) {
-                tmp=incoming_msg_handler.getName();
-                if(tmp != null && tmp.indexOf(prefix) == -1) {
-                    tmp+=prefix + channel_name + ")";
-                    incoming_msg_handler.setName(tmp);
-                }
-            }
-            if(outgoing_packet_handler != null) {
-                tmp=outgoing_packet_handler.getName();
-                if(tmp != null && tmp.indexOf(prefix) == -1) {
-                    tmp+=prefix + channel_name + ")";
-                    outgoing_packet_handler.setName(tmp);
-                }
-            }
-            if(diag_handler != null) {
-                tmp=diag_handler.getName();
-                if(tmp != null && tmp.indexOf(prefix) == -1) {
-                    tmp+=prefix + channel_name + ")";
-                    diag_handler.setName(tmp);
-                }
-            }
-        }
-    }
-
-
-    protected void unsetThreadNames() {
-        if(channel_name != null) {
-            String tmp, prefix=Global.THREAD_PREFIX;
-            int index;
-
-            tmp=incoming_packet_handler != null? incoming_packet_handler.getName() : null;
-            if(tmp != null) {
-                index=tmp.indexOf(prefix);
-                if(index > -1) {
-                    tmp=tmp.substring(0, index);
-                    incoming_packet_handler.setName(tmp);
-                }
-            }
-
-            tmp=incoming_msg_handler != null? incoming_msg_handler.getName() : null;
-            if(tmp != null) {
-                index=tmp.indexOf(prefix);
-                if(index > -1) {
-                    tmp=tmp.substring(0, index);
-                    incoming_msg_handler.setName(tmp);
-                }
-            }
-
-            tmp=outgoing_packet_handler != null? outgoing_packet_handler.getName() : null;
-            if(tmp != null) {
-                index=tmp.indexOf(prefix);
-                if(index > -1) {
-                    tmp=tmp.substring(0, index);
-                    outgoing_packet_handler.setName(tmp);
-                }
-            }
-            tmp=diag_handler != null? diag_handler.getName() : null;
-            if(tmp != null) {
-                index=tmp.indexOf(prefix);
-                if(index > -1) {
-                    tmp=tmp.substring(0, index);
-                    diag_handler.setName(tmp);
-                }
-            }
-        }
-    }
-
 
 
     protected void handleConfigEvent(HashMap map) {
@@ -1235,7 +1144,7 @@ public abstract class TP extends Protocol {
 
     /* ----------------------------- Inner Classes ---------------------------------------- */
 
-    static class IncomingQueueEntry {
+    class IncomingQueueEntry {
         Address   dest=null;
         Address   sender=null;
         byte[]    buf;
@@ -1260,18 +1169,9 @@ public abstract class TP extends Protocol {
     class IncomingPacketHandler implements Runnable {
         Thread t=null;
 
-        String getName() {
-            return t != null? t.getName() : null;
-        }
-
-        void setName(String thread_name) {
-            if(t != null)
-                t.setName(thread_name);
-        }
-
         void start() {
             if(t == null || !t.isAlive()) {
-                t=new Thread(Util.getGlobalThreadGroup(), this, "IncomingPacketHandler");
+                t=new Thread(this, "IncomingPacketHandler");
                 t.setDaemon(true);
                 t.start();
             }
@@ -1306,19 +1206,9 @@ public abstract class TP extends Protocol {
         Thread t;
         int i=0;
 
-
-        String getName() {
-            return t != null? t.getName() : null;
-        }
-
-        void setName(String thread_name) {
-            if(t != null)
-                t.setName(thread_name);
-        }
-
         public void start() {
             if(t == null || !t.isAlive()) {
-                t=new Thread(Util.getGlobalThreadGroup(), this, "IncomingMessageHandler");
+                t=new Thread(this, "IncomingMessageHandler");
                 t.setDaemon(true);
                 t.start();
             }
@@ -1359,19 +1249,9 @@ public abstract class TP extends Protocol {
         byte[]             buf;
         DatagramPacket     packet;
 
-
-        String getName() {
-            return t != null? t.getName() : null;
-        }
-
-        void setName(String thread_name) {
-            if(t != null)
-                t.setName(thread_name);
-        }
-
         void start() {
             if(t == null || !t.isAlive()) {
-                t=new Thread(Util.getGlobalThreadGroup(), this, "OutgoingPacketHandler");
+                t=new Thread(this, "OutgoingPacketHandler");
                 t.setDaemon(true);
                 t.start();
             }
@@ -1423,141 +1303,141 @@ public abstract class TP extends Protocol {
      * <tt>max_bundle_timeout</tt> milliseconds have elapsed, whichever is first. Messages
      * are unbundled at the receiver.
      */
-//    private class BundlingOutgoingPacketHandler extends OutgoingPacketHandler {
-//        /** HashMap<Address, List<Message>>. Keys are destinations, values are lists of Messages */
-//        final HashMap       msgs=new HashMap(11);
-//        long                count=0;    // current number of bytes accumulated
-//        int                 num_msgs=0;
-//        long                start=0;
-//        long                wait_time=0; // wait for removing messages from the queue
-//
-//
-//
-//        private void init() {
-//            wait_time=start=count=0;
-//        }
-//
-//        void start() {
-//            init();
-//            super.start();
-//            t.setName("BundlingOutgoingPacketHandler");
-//        }
-//
-//        void stop() {
-//            // bundleAndSend();
-//            super.stop();
-//        }
-//
-//        public void run() {
-//            Message msg;
-//            long    length;
-//            while(t != null && Thread.currentThread().equals(t)) {
-//                try {
-//                    msg=(Message)outgoing_queue.poll(wait_time);
-//                    if(msg == null)
-//                        throw new TimeoutException();
-//                    length=msg.size();
-//                    checkLength(length);
-//                    if(start == 0)
-//                        start=System.currentTimeMillis();
-//
-//                    if(count + length >= max_bundle_size) {
-//                        bundleAndSend();
-//                        count=0;
-//                        start=System.currentTimeMillis();
-//                    }
-//
-//                    addMessage(msg);
-//                    count+=length;
-//
-//                    wait_time=max_bundle_timeout - (System.currentTimeMillis() - start);
-//                    if(wait_time <= 0) {
-//                        bundleAndSend();
-//                        init();
-//                    }
-//                }
-//                catch(QueueClosedException queue_closed_ex) {
-//                    bundleAndSend();
-//                    break;
-//                }
-//                catch(TimeoutException timeout_ex) {
-//                    bundleAndSend();
-//                    init();
-//                }
-//                catch(Throwable ex) {
-//                    log.error("failure in bundling", ex);
-//                }
-//            }
-//            if(trace) log.trace("BundlingOutgoingPacketHandler thread terminated");
-//        }
-//
-//
-//
-//
-//        private void checkLength(long len) throws Exception {
-//            if(len > max_bundle_size)
-//                throw new Exception("message size (" + len + ") is greater than max bundling size (" + max_bundle_size +
-//                        "). Set the fragmentation/bundle size in FRAG and TP correctly");
-//        }
-//
-//
-//        private void addMessage(Message msg) { // no sync needed, never called by multiple threads concurrently
-//            List    tmp;
-//            Address dst=msg.getDest();
-//            tmp=(List)msgs.get(dst);
-//            if(tmp == null) {
-//                tmp=new List();
-//                msgs.put(dst, tmp);
-//            }
-//            tmp.add(msg);
-//            num_msgs++;
-//        }
-//
-//
-//
-//        private void bundleAndSend() {
-//            Map.Entry      entry;
-//            Address        dst;
-//            Buffer         buffer;
-//            List           l;
-//            long           stop_time=System.currentTimeMillis();
-//
-//            if(msgs.size() == 0)
-//                return;
-//
-//            try {
-//                if(trace) {
-//                    StringBuffer sb=new StringBuffer("sending ").append(num_msgs).append(" msgs (");
-//                    sb.append(count).append(" bytes, ").append(stop_time-start).append("ms)");
-//                    sb.append(" to ").append(msgs.size()).append(" destination(s)");
-//                    if(msgs.size() > 1) sb.append(" (dests=").append(msgs.keySet()).append(")");
-//                    log.trace(sb.toString());
-//                }
-//                boolean multicast;
-//                for(Iterator it=msgs.entrySet().iterator(); it.hasNext();) {
-//                    entry=(Map.Entry)it.next();
-//                    l=(List)entry.getValue();
-//                    if(l.size() == 0)
-//                        continue;
-//                    dst=(Address)entry.getKey();
-//                    multicast=dst == null || dst.isMulticastAddress();
-//                    synchronized(out_stream) {
-//                        try {
-//                            buffer=listToBuffer(l, multicast);
-//                            doSend(buffer, dst, multicast);
-//                        }
-//                        catch(Throwable e) {
-//                            if(log.isErrorEnabled()) log.error("exception sending msg", e);
-//                        }
-//                    }
-//                }
-//            }
-//            finally {
-//                msgs.clear();
-//                num_msgs=0;
-//            }
-//        }
-//    }
+    private class BundlingOutgoingPacketHandler extends OutgoingPacketHandler {
+        /** HashMap<Address, List<Message>>. Keys are destinations, values are lists of Messages */
+        final HashMap       msgs=new HashMap(11);
+        long                count=0;    // current number of bytes accumulated
+        int                 num_msgs=0;
+        long                start=0;
+        long                wait_time=0; // wait for removing messages from the queue
+
+
+
+        private void init() {
+            wait_time=start=count=0;
+        }
+
+        void start() {
+            init();
+            super.start();
+            t.setName("BundlingOutgoingPacketHandler");
+        }
+
+        void stop() {
+            // bundleAndSend();
+            super.stop();
+        }
+
+        public void run() {
+            Message msg;
+            long    length;
+            while(t != null && Thread.currentThread().equals(t)) {
+                try {
+                    msg=(Message)outgoing_queue.poll(wait_time);
+                    if(msg == null)
+                        throw new TimeoutException();
+                    length=msg.size();
+                    checkLength(length);
+                    if(start == 0)
+                        start=System.currentTimeMillis();
+
+                    if(count + length >= max_bundle_size) {
+                        bundleAndSend();
+                        count=0;
+                        start=System.currentTimeMillis();
+                    }
+
+                    addMessage(msg);
+                    count+=length;
+
+                    wait_time=max_bundle_timeout - (System.currentTimeMillis() - start);
+                    if(wait_time <= 0) {
+                        bundleAndSend();
+                        init();
+                    }
+                }
+                catch(QueueClosedException queue_closed_ex) {
+                    bundleAndSend();
+                    break;
+                }
+                catch(TimeoutException timeout_ex) {
+                    bundleAndSend();
+                    init();
+                }
+                catch(Throwable ex) {
+                    log.error("failure in bundling", ex);
+                }
+            }
+            if(trace) log.trace("BundlingOutgoingPacketHandler thread terminated");
+        }
+
+
+
+
+        private void checkLength(long len) throws Exception {
+            if(len > max_bundle_size)
+                throw new Exception("message size (" + len + ") is greater than max bundling size (" + max_bundle_size +
+                        "). Set the fragmentation/bundle size in FRAG and TP correctly");
+        }
+
+
+        private void addMessage(Message msg) { // no sync needed, never called by multiple threads concurrently
+            List    tmp;
+            Address dst=msg.getDest();
+            tmp=(List)msgs.get(dst);
+            if(tmp == null) {
+                tmp=new List();
+                msgs.put(dst, tmp);
+            }
+            tmp.add(msg);
+            num_msgs++;
+        }
+
+
+
+        private void bundleAndSend() {
+            Map.Entry      entry;
+            Address        dst;
+            Buffer         buffer;
+            List           l;
+            long           stop_time=System.currentTimeMillis();
+
+            if(msgs.size() == 0)
+                return;
+
+            try {
+                if(trace) {
+                    StringBuffer sb=new StringBuffer("sending ").append(num_msgs).append(" msgs (");
+                    sb.append(count).append(" bytes, ").append(stop_time-start).append("ms)");
+                    sb.append(" to ").append(msgs.size()).append(" destination(s)");
+                    if(msgs.size() > 1) sb.append(" (dests=").append(msgs.keySet()).append(")");
+                    log.trace(sb.toString());
+                }
+                boolean multicast;
+                for(Iterator it=msgs.entrySet().iterator(); it.hasNext();) {
+                    entry=(Map.Entry)it.next();
+                    l=(List)entry.getValue();
+                    if(l.size() == 0)
+                        continue;
+                    dst=(Address)entry.getKey();
+                    multicast=dst == null || dst.isMulticastAddress();
+                    synchronized(out_stream) {
+                        try {
+                            buffer=listToBuffer(l, multicast);
+                            doSend(buffer, dst, multicast);
+                        }
+                        catch(Throwable e) {
+                            if(log.isErrorEnabled()) log.error("exception sending msg", e);
+                        }
+                    }
+                }
+            }
+            finally {
+                msgs.clear();
+                num_msgs=0;
+            }
+        }
+    }
 
 
 
@@ -1702,22 +1582,13 @@ public abstract class TP extends Protocol {
         DiagnosticsHandler() {
         }
 
-        String getName() {
-            return t != null? t.getName() : null;
-        }
-
-        void setName(String thread_name) {
-            if(t != null)
-                t.setName(thread_name);
-        }
-
         void start() throws IOException {
             diag_sock=new MulticastSocket(diagnostics_port);
             java.util.List interfaces=Util.getAllAvailableInterfaces();
             bindToInterfaces(interfaces, diag_sock);
 
             if(t == null || !t.isAlive()) {
-                t=new Thread(Util.getGlobalThreadGroup(), this, "DiagnosticsHandler");
+                t=new Thread(this, "DiagnosticsHandler");
                 t.setDaemon(true);
                 t.start();
             }
@@ -1744,11 +1615,12 @@ public abstract class TP extends Protocol {
             }
         }
 
-        private void bindToInterfaces(java.util.List interfaces, MulticastSocket s) {
+        private void bindToInterfaces(java.util.List interfaces, MulticastSocket s) throws IOException {
             SocketAddress group_addr=new InetSocketAddress(diagnostics_addr, diagnostics_port);
             for(Iterator it=interfaces.iterator(); it.hasNext();) {
                 NetworkInterface i=(NetworkInterface)it.next();
                 try {
+                    // JIRA issue:http://jira.jboss.com/jira/browse/JGRP-230
                     if (i.getInetAddresses().hasMoreElements()) { // fix for VM crash - suggested by JJalenak@netopia.com
                         s.joinGroup(group_addr, i);
                         if(trace)
