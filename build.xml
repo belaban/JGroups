@@ -1,13 +1,11 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.52 2006/05/12 09:42:32 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.34.2.1 2006/05/16 04:21:04 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
         build.xml file for JGroups. Needs Ant (jakarta.apache.org) to run
     </description>
-
-
 
     <property file="build.properties"/>
     <property name="root.dir" value="${basedir}"/>
@@ -18,18 +16,19 @@
     <property name="perf.dir" value="${root.dir}/tests/perf"/>
     <property name="compile.dir" value="${root.dir}/classes"/>
     <property name="lib.dir" value="${root.dir}/lib"/>
-    <property name="license.dir" value="${lib.dir}/licenses"/>
     <property name="dist.dir" value="${root.dir}/dist"/>
     <property name="tmp.dir" value="${root.dir}/tmp"/>
     <property name="doc.dir" value="${root.dir}/doc"/>
     <property name="javadoc.dir" value="${dist.dir}/javadoc"/>
     <property name="conf.dir" value="${root.dir}/conf"/>
+    <property name="pg.dir" value="${doc.dir}/progguide"/>
 	<property name="keystore.dir" value="${root.dir}/keystore"/>
+    <property name="docbook.dir" value="${pg.dir}/docbook-xsl"/>
     <property name="build.compiler.emacs" value="true"/>
     <property name="javadoc.packages" value="org.jgroups.*"/>
     <property name="unittest.timeout.low" value="120000"/>
     <property name="unittest.timeout.high" value="280000"/>
-    <property name="version" value="2.3beta 3"/>
+    <property name="version" value="2.2.9.1SP1"/>
 
 
     <path id="jg.classpath">
@@ -42,10 +41,20 @@
     </path>
 
 
+    <path id="fop.classpath">
+        <fileset dir="${lib.dir}">
+            <include name="*.jar"/>
+        </fileset>
+    </path>
+
+
     <target name="prepare">
         <property environment="env"/>
         <mkdir dir="${compile.dir}"/>
         <mkdir dir="${dist.dir}"/>
+        <mkdir dir="${dist.dir}/pg"/>
+        <mkdir dir="${dist.dir}/pg/html"/>
+        <mkdir dir="${dist.dir}/pg/pdf"/>
         <mkdir dir="${javadoc.dir}"/>
     </target>
 
@@ -93,10 +102,6 @@
      </target>
 
 
-    <target name="draw" depends="compile">
-        <java classname="org.jgroups.demos.Draw" classpathref="jg.classpath"/>
-    </target>
-
     <target name="jar"
         description="Compiles and creates JAR files in the ./dist directory"
         depends="compile,
@@ -124,8 +129,7 @@
     </target>
 
     <target name="jgroups-core.jar"
-        description="Creates the jgroups-core.jar. Includes only core file, no demos" depends="compile">
-        <mkdir dir="${dist.dir}"/>
+        description="Creates the jgroups-core.jar. Includes only core file, no demos">
         <jar jarfile="${dist.dir}/jgroups-core.jar"
             basedir="${compile.dir}"
             manifest="${conf.dir}/manifest.mf"
@@ -134,7 +138,7 @@
                       org/jgroups/tests/**,
                       org/jgroups/**/*Test.class,
                       org/jgroups/**/*Test\$*.class">
-            <fileset dir="${conf.dir}" includes="*.dtd, *.xml" excludes="*-service.xml"/>
+            <fileset dir="${conf.dir}" includes="*.dtd, *.xml" excludes="jboss-service.xml"/>
         </jar>
     </target>
 
@@ -174,7 +178,6 @@
                  <include name="log4j*.jar"/>
                  <include name="concurrent*.jar"/>
                  <include name="jmx*.jar"/>
-                 <include name="licenses/*"/>
              </fileset>
              <fileset dir="${dist.dir}">
                  <include name="jgroups-all*.jar"/>
@@ -185,50 +188,37 @@
          <delete dir="${tmp.dir}" failonerror="false"/>
     </target>
 
-    <target name="gossip-service"
-            description="Creates the service archive used to deploy GossipServer as a JBoss MBean"
-            depends="compile">
-        <mkdir dir="${dist.dir}/gossiptemp"/>
-        <copy  file="${conf.dir}/gossip-service.xml" tofile="${dist.dir}/gossiptemp/jboss-service.xml"/>
-        <jar jarfile="${dist.dir}/gossip-router.sar"
+    <target name="jboss-service"
+        description="Creates the service archive used to deploy GossipServer as a JBoss MBean">
+        <jar jarfile="${dist.dir}/jgroups-router.sar"
             basedir="${compile.dir}"
             includes="org/jgroups/**"
             excludes="org/jgroups/demos/**,
                       org/jgroups/tests/**,
                       org/jgroups/**/*Test.class,
                       org/jgroups/**/*Test\$*.class">
-            <metainf dir="${dist.dir}/gossiptemp"
+            <metainf dir="${src.dir}/org/jgroups/stack"
                 includes="jboss-service.xml"/>
-            <fileset dir="${conf.dir}" includes="jg-magic-map.xml"/>
+            <fileset dir="${conf.dir}" includes="*.dtd, *.xml" excludes="jboss-service.xml"/>
         </jar>
-        <delete dir="${dist.dir}/gossiptemp"/>
     </target>
 
-    <target name="multiplexer-service" depends="jgroups-core.jar"
-            description="Creates the service archive used to deploy the JChannelFactory (multiplexer) MBean">
-        <mkdir dir="${dist.dir}/muxtemp"/>
-        <copy  file="${conf.dir}/multiplexer-service.xml" tofile="${dist.dir}/muxtemp/jboss-service.xml"/>
-        <copy  file="${conf.dir}/multiplexer-xmbean.xml" todir="${dist.dir}/muxtemp/"/>
-        <jar jarfile="${dist.dir}/Multiplexer.sar">
-            <fileset dir="${dist.dir}" includes="jgroups-core.jar"/>
-            <fileset dir="${lib.dir}" includes="concurrent*.jar,commons-logging*.jar,log4j*.jar,jmx*.jar"/>
-            <fileset dir="${conf.dir}" includes="jg-magic-map.xml,stacks.xml"/>
-            <metainf dir="${dist.dir}/muxtemp"
-                     includes="*.xml"/>
-        </jar>
-        <delete dir="${dist.dir}/muxtemp"/>
-    </target>
 
-    <target name="jgroups-service" depends="jgroups-core.jar"
-            description="Creates the service archive used to deploy a JGroups channel as a JBoss MBean">
-        <jar jarfile="${dist.dir}/jgroups-service.sar">
-            <fileset dir="${dist.dir}" includes="jgroups-core.jar"/>
-            <fileset dir="${lib.dir}" includes="concurrent*.jar,commons-logging*.jar,log4j*.jar,jmx*.jar"/>
+    <target name="jgroups-service" depends="jar"
+        description="Creates the service archive used to deploy a JGroups channel as a JBoss MBean">
+        <jar jarfile="${dist.dir}/jgroups-service.sar"
+            basedir="${compile.dir}"
+            includes="org/jgroups/**"
+            excludes="org/jgroups/demos/**,
+                      org/jgroups/tests/**,
+                      org/jgroups/**/*Test.class,
+                      org/jgroups/**/*Test\$*.class">
             <metainf dir="${conf.dir}"
-                     includes="jboss-service.xml"/>
-            <fileset dir="${conf.dir}" includes="jg-magic-map.xml,stacks.xml"/>
+                includes="jboss-service.xml"/>
+            <fileset dir="${conf.dir}" includes="*.dtd, *.xml" excludes="jboss-service.xml"/>
         </jar>
     </target>
+
 
     <!-- generate java doc -->
     <target name="javadoc"
@@ -241,49 +231,44 @@
             author="true"
             version="true"
             use="true"
-            bottom="Copyright &#169; 1998-2006 Bela Ban. All Rights Reserved."
+            bottom="Copyright &#169; 1998-2005 Bela Ban. All Rights Reserved."
 			useexternalfile="yes"
 			doctitle="JGroups"
-			overview="${src.dir}/org/jgroups/overview.html"
-            source="1.4">
+			overview="${src.dir}/org/jgroups/overview.html">
 			<!-- The tag option for Javadoc is available in Java 1.4 or later. -->
 			<tag name="todo" description="To do:"/>
 			</javadoc>
     </target>
 
-
-    <target name="docs" description="Build all html and pdf docs" depends="check-docbook-support">
-        <echo message="Building docs from docbook ..."/>
-        <ant dir="${root.dir}/doc/manual" antfile="build.xml"
-             target="all.doc"/>
+    <!-- Create the programmer's guide in the dist directory -->
+    <target name="pg" depends="prepare"
+        description="Create the Programmer's Guide (HTML)">
+        <style in="${pg.dir}/main.xml"
+            style="${docbook.dir}/html/docbook.xsl"
+            out="${dist.dir}/pg/html/pg.html"/>
     </target>
 
-
-    <target name="pg" description="Build the html doc" depends="check-docbook-support">
-        <echo message="Building HTML doc from docbook ..."/>
-        <ant dir="${root.dir}/doc/manual" antfile="build.xml"
-             target="html"/>
+    <!--
+    <target name="chunkedhtml" depends="prepare"
+            description="Generates the Programmer's Guide in chunked HTML">
+	<style basedir="${pg.dir}"
+	       includes="*.xml"
+	       style="${docbook.dir}/html/chunk.xsl"
+	       destdir="${dist.dir}/pg/html"/>
     </target>
-
-    <target name="pdf" description="Build the PDF doc" depends="check-docbook-support">
-        <echo message="Building PDF doc from docbook ..."/>
-        <ant dir="${root.dir}/doc/manual" antfile="build.xml"
-             target="pdf"/>
-    </target>
+    -->
 
 
-    <target name="check-docbook-support">
-        <available file="${root.dir}/../docbook-support" type="dir"
-                   property="docbook.support.present"/>
-        <fail message="docbook-support directory does not exist, please check it out from jboss first (run target checkout-docbook-support)"
-              unless="docbook.support.present"/>
-    </target>
-
-
-    <target name="checkout-docbook-support" description="Checks out docbook-support from jboss.com (requires cvs on the path)">
-        <cvs cvsroot=":pserver:anonymous@anoncvs.forge.jboss.com:/cvsroot/jboss"
-                package="docbook-support"
-                dest="${root.dir}/.."/>
+    <target name="pdf" depends="prepare"
+        description="Generates PDF for Programmer's Guide">
+        <java classpathref="fop.classpath"
+            classname="org.apache.fop.apps.Fop"
+            fork="yes">
+            <!-- Must use fully realized relative paths in arg tag -->
+            <arg line="-xsl ${docbook.dir}/fo/docbook.xsl "/>
+            <arg line="-xml ${pg.dir}/main.xml "/>
+            <arg line="-pdf ${dist.dir}/pg/pdf/pg.pdf "/>
+        </java>
     </target>
 
 
@@ -293,7 +278,6 @@
         <delete dir="${compile.dir}" failonerror="false"/>
         <delete dir="${dist.dir}" failonerror="false"/>
         <delete dir="${tmp.dir}" failonerror="false"/>
-        <delete dir="${keystore.dir}" failonerror="false"/>
         <delete>
             <fileset dir="${root.dir}" defaultexcludes="no">
                 <include name="**/*~"/>
@@ -302,10 +286,17 @@
     </target>
 
 
-    <target name="name=cleanall" depends="clean">
-        <echo message="Cleaning documentation"/>
-        <ant dir="${root.dir}/doc/manual" antfile="build.xml"
-             target="clean"/>
+    <!-- clean up directories -->
+    <target name="cleanall"
+        description="Removes all class files and the ./dist directory">
+        <delete dir="${compile.dir}"/>
+        <delete dir="${dist.dir}"/>
+    	<delete dir="${keystore.dir}" failonerror="false"/>
+        <delete>
+            <fileset dir="${root.dir}" defaultexcludes="no">
+                <include name="**/*~"/>
+            </fileset>
+        </delete>
     </target>
 
 
@@ -351,7 +342,7 @@
             <formatter type="brief" usefile="false"/>
             <batchtest todir="${tmp.dir}">
                 <fileset dir="${junit.dir}"
-                    includes="**/AUTHTest.java"/>
+                    includes="**/*Test.java"/>
             </batchtest>
         </junit>
     	<delete dir="${keystore.dir}" failonerror="false"/>
@@ -368,7 +359,7 @@
             <formatter type="xml" usefile="true"/>
             <batchtest todir="${tmp.dir}/tests-results">
                 <fileset dir="${junit.dir}"
-                    includes="**/*Test.java" excludes="**/DistributedQueueTest.java"/>
+                    includes="**/*Test.java"/>
             </batchtest>
         </junit>
     </target>
@@ -385,22 +376,6 @@
         depends="findxalan,unittests-xml"
         if="xalan.available"
         description="Generates HTML from unit tests (target unitests-xml must have run before)">
-        <delete dir="${tmp.dir}/html"/>
-        <mkdir dir="${tmp.dir}/html"/>
-        <junitreport todir="${tmp.dir}/html">
-            <fileset dir="${tmp.dir}/tests-results" includes="**/TEST-*.xml"/>
-            <report todir="${tmp.dir}/html"/>
-        </junitreport>
-        <echo message="********************************************************************"/>
-        <echo message="The unit test report is available in ${tmp.dir}/html/index.html"/>
-        <echo message="********************************************************************"/>
-    </target>
-
-
-    <target name="report"
-            depends="findxalan"
-            if="xalan.available"
-            description="Generates HTML from unit tests (target unitests-xml must have run before)">
         <delete dir="${tmp.dir}/html"/>
         <mkdir dir="${tmp.dir}/html"/>
         <junitreport todir="${tmp.dir}/html">
