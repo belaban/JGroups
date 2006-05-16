@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.27 2006/05/16 04:03:57 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.24.2.1 2006/05/16 11:47:24 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -217,7 +217,7 @@ public class RequestCorrelator {
     /**
      * Helper method for {@link #sendRequest(long,List,Message,RspCollector)}.
      */
-    public void sendRequest(long id, Message msg, RspCollector coll) throws Exception {
+    public void sendRequest(long id, Message msg, RspCollector coll) {
         sendRequest(id, null, msg, coll);
     }
 
@@ -239,7 +239,7 @@ public class RequestCorrelator {
      * <code>suspect()</code> will be invoked when a message has been received
      * or a member is suspected, respectively.
      */
-    public void sendRequest(long id, List dest_mbrs, Message msg, RspCollector coll) throws Exception {
+    public void sendRequest(long id, List dest_mbrs, Message msg, RspCollector coll) {
         Header hdr;
 
         if(transport == null) {
@@ -253,7 +253,7 @@ public class RequestCorrelator {
         // coresponding entry in the pending requests table
         // iii. If deadlock detection is enabled, set/update the call stack
         // iv. Pass the msg down to the protocol layer below
-        hdr = new Header(Header.REQ, id, (coll != null), name);
+        hdr = new Header(Header.REQ, id, (coll!=null? true:false), name);
         hdr.dest_mbrs=dest_mbrs;
 
         if (coll != null) {
@@ -271,12 +271,19 @@ public class RequestCorrelator {
         }
         msg.putHeader(name, hdr);
 
-        if(transport instanceof Protocol)
-            ((Protocol)transport).passDown(new Event(Event.MSG, msg));
-        else if(transport instanceof Transport)
-            ((Transport)transport).send(msg);
-        else
-            throw new IllegalStateException("transport has to be either a Transport or a Protocol, however it is a " + transport.getClass());
+        try {
+            if(transport instanceof Protocol)
+                ((Protocol)transport).passDown(new Event(Event.MSG, msg));
+            else if(transport instanceof Transport)
+                ((Transport)transport).send(msg);
+            else
+                if(log.isErrorEnabled())
+                    log.error("transport object has to be either a " +
+                              "Transport or a Protocol, however it is a " + transport.getClass());
+        }
+        catch(Throwable e) {
+            if(log.isWarnEnabled()) log.warn(e.toString());
+        }
     }
 
 
@@ -330,7 +337,7 @@ public class RequestCorrelator {
 
     /**
      */
-    public final void start() {
+    public void start() {
         if(deadlock_detection) {
             startScheduler();
         }
