@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.18 2006/05/05 07:41:52 belaban Exp $
+// $Id: JChannelFactory.java,v 1.19 2006/05/16 04:03:58 belaban Exp $
 
 package org.jgroups;
 
@@ -356,6 +356,7 @@ public class JChannelFactory implements ChannelFactory {
         ch.setClosed(true);
         ch.setConnected(false);
         ch.closeMessageQueue(true);
+        boolean all_closed=false;
 
         synchronized(channels) {
             entry=(Entry)channels.get(stack_name);
@@ -364,18 +365,18 @@ public class JChannelFactory implements ChannelFactory {
             synchronized(entry) {
                 Multiplexer mux=entry.multiplexer;
                 if(mux != null) {
-                   mux.close(); // closes JChannel if all MuxChannels are in closed state
+                    all_closed=mux.close(); // closes JChannel if all MuxChannels are in closed state
                 }
             }
-            synchronized(channels) {
+            if(all_closed) {
                 channels.remove(stack_name);
-                if(expose_channels && server != null) {
-                    try {
-                        unregister(domain + ":*,cluster=" + ch.getStackName());
-                    }
-                    catch(Exception e) {
-                        log.error("failed unregistering channel " + ch.getStackName(), e);
-                    }
+            }
+            if(expose_channels && server != null) {
+                try {
+                    unregister(domain + ":*,cluster=" + stack_name);
+                }
+                catch(Exception e) {
+                    log.error("failed unregistering channel " + stack_name, e);
                 }
             }
         }
@@ -385,28 +386,30 @@ public class JChannelFactory implements ChannelFactory {
 
     public void shutdown(MuxChannel ch) {
         Entry entry;
+        String stack_name=ch.getStackName();
         ch.setClosed(true);
         ch.setConnected(false);
         ch.closeMessageQueue(true);
+        boolean all_closed=false;
 
         synchronized(channels) {
-            entry=(Entry)channels.get(ch.getStackName());
-        }
-        if(entry != null) {
-            synchronized(entry) {
-                Multiplexer mux=entry.multiplexer;
-                if(mux != null) {
-                   mux.shutdown(); // closes JChannel if all MuxChannels are in closed state
+            entry=(Entry)channels.get(stack_name);
+            if(entry != null) {
+                synchronized(entry) {
+                    Multiplexer mux=entry.multiplexer;
+                    if(mux != null) {
+                        all_closed=mux.shutdown(); // closes JChannel if all MuxChannels are in closed state
+                    }
                 }
-            }
-            synchronized(channels) {
-                channels.remove(entry);
+                if(all_closed) {
+                    channels.remove(stack_name);
+                }
                 if(expose_channels && server != null) {
                     try {
-                        unregister(domain + ":*,cluster=" + ch.getStackName());
+                        unregister(domain + ":*,cluster=" + stack_name);
                     }
                     catch(Exception e) {
-                        log.error("failed unregistering channel " + ch.getStackName(), e);
+                        log.error("failed unregistering channel " + stack_name, e);
                     }
                 }
             }
@@ -457,10 +460,8 @@ public class JChannelFactory implements ChannelFactory {
         synchronized(channels) {
             Entry entry;
             Map.Entry tmp;
-            String stack_name;
             for(Iterator it=channels.entrySet().iterator(); it.hasNext();) {
                 tmp=(Map.Entry)it.next();
-                stack_name=(String)tmp.getKey();
                 entry=(Entry)tmp.getValue();
                 if(entry.multiplexer != null)
                     entry.multiplexer.closeAll();

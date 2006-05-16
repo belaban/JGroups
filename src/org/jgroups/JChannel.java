@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.69 2006/05/03 08:20:16 belaban Exp $
+// $Id: JChannel.java,v 1.70 2006/05/16 04:03:58 belaban Exp $
 
 package org.jgroups;
 
@@ -65,7 +65,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Revision: 1.69 $
+ * @version $Revision: 1.70 $
  */
 public class JChannel extends Channel {
 
@@ -76,7 +76,7 @@ public class JChannel extends Channel {
             "UDP(down_thread=false;mcast_send_buf_size=640000;mcast_port=45566;discard_incompatible_packets=true;" +
                     "ucast_recv_buf_size=20000000;mcast_addr=228.10.10.10;up_thread=false;loopback=false;" +
                     "mcast_recv_buf_size=25000000;max_bundle_size=64000;max_bundle_timeout=30;" +
-                    "use_incoming_packet_handler=true;bind_addr=192.168.5.2;use_outgoing_packet_handler=false;" +
+                    "use_incoming_packet_handler=true;use_outgoing_packet_handler=false;" +
                     "ucast_send_buf_size=640000;tos=16;enable_bundling=true;ip_ttl=2):" +
             "PING(timeout=2000;down_thread=false;num_initial_members=3;up_thread=false):" +
             "MERGE2(max_interval=10000;down_thread=false;min_interval=5000;up_thread=false):" +
