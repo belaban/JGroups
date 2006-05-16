@@ -1,4 +1,4 @@
-// $Id: AckMcastReceiverWindow.java,v 1.7 2006/01/14 14:00:42 belaban Exp $
+// $Id: AckMcastReceiverWindow.java,v 1.8 2006/05/16 11:14:28 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -10,8 +10,7 @@ import org.jgroups.Address;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
-
-
+import java.net.UnknownHostException;
 
 
 /**
@@ -36,75 +35,75 @@ public class AckMcastReceiverWindow {
        @return boolean If false, message is already present. Otherwise true.
      */
     public boolean add(Object sender, long seqno) {
-	Vector seqnos=(Vector)msgs.get(sender);
-	Long   val=new Long(seqno);
+    Vector seqnos=(Vector)msgs.get(sender);
+    Long   val=new Long(seqno);
 
-	if(seqnos == null) {
-	    seqnos=new Vector();
-	    seqnos.addElement(val);
-	    msgs.put(sender, seqnos);
-	    return true;
-	}
+    if(seqnos == null) {
+        seqnos=new Vector();
+        seqnos.addElement(val);
+        msgs.put(sender, seqnos);
+        return true;
+    }
 
-	if(seqnos.contains(val))
-	    return false;
+    if(seqnos.contains(val))
+        return false;
 
-	seqnos.addElement(val);
-	return true;	
+    seqnos.addElement(val);
+    return true;
     }
 
 
 
 
     public void remove(Object sender, Vector seqnos) {
-	Vector v=(Vector)msgs.get(sender);
-	Long   seqno;
+    Vector v=(Vector)msgs.get(sender);
+    Long   seqno;
 
-	if(v != null && seqnos != null) {
-	    for(int i=0; i < seqnos.size(); i++) {
-		seqno=(Long)seqnos.elementAt(i);
-		v.removeElement(seqno);
-	    }
-	}
+    if(v != null && seqnos != null) {
+        for(int i=0; i < seqnos.size(); i++) {
+        seqno=(Long)seqnos.elementAt(i);
+        v.removeElement(seqno);
+        }
+    }
     }
 
 
 
     public long size() {
-	long ret=0;
+    long ret=0;
 
-	for(Enumeration e=msgs.elements(); e.hasMoreElements();) {
-	    ret+=((Vector)e.nextElement()).size();
-	}
+    for(Enumeration e=msgs.elements(); e.hasMoreElements();) {
+        ret+=((Vector)e.nextElement()).size();
+    }
 
-	return ret;
+    return ret;
     }
 
 
     public void reset() {
-	removeAll();
+    removeAll();
     }
-    
+
     public void removeAll() {msgs.clear();}
 
 
     public void suspect(Object sender) {
 
-	    if(log.isInfoEnabled()) log.info("suspect is " + sender);
-	msgs.remove(sender);
+        if(log.isInfoEnabled()) log.info("suspect is " + sender);
+    msgs.remove(sender);
     }
 
 
 
     public String toString() {
-	StringBuffer ret=new StringBuffer();
-	Object       sender;
-	
-	for(Enumeration e=msgs.keys(); e.hasMoreElements();) {
-	    sender=e.nextElement();
+    StringBuffer ret=new StringBuffer();
+    Object       sender;
+
+    for(Enumeration e=msgs.keys(); e.hasMoreElements();) {
+        sender=e.nextElement();
         ret.append(sender).append(" --> ").append(msgs.get(sender)).append('\n');
-	}
-	return ret.toString();
+    }
+    return ret.toString();
     }
 
 
@@ -112,51 +111,51 @@ public class AckMcastReceiverWindow {
 
 
 
-    public static void main(String[] args) {
-	AckMcastReceiverWindow win=new AckMcastReceiverWindow();
-	Address sender1=new IpAddress("janet", 1111);
-	Address sender2=new IpAddress("janet", 4444);
-	Address sender3=new IpAddress("janet", 6767);
-	Address sender4=new IpAddress("janet", 3333);
+    public static void main(String[] args) throws UnknownHostException {
+        AckMcastReceiverWindow win=new AckMcastReceiverWindow();
+        Address sender1=new IpAddress("janet", 1111);
+        Address sender2=new IpAddress("janet", 4444);
+        Address sender3=new IpAddress("janet", 6767);
+        Address sender4=new IpAddress("janet", 3333);
 
-	win.add(sender1, 1);
-	win.add(sender1, 2);
+        win.add(sender1, 1);
+        win.add(sender1, 2);
 
-	win.add(sender3, 2);
-	win.add(sender2, 2);
-	win.add(sender4, 2);
-	win.add(sender1, 3);
-	win.add(sender1, 2);
-
-
-	System.out.println(win);
-
-	win.suspect(sender1);
-	System.out.println(win);
-
-	win.add(sender1, 1);
-	win.add(sender1, 2);
-	win.add(sender1, 3);
-	win.add(sender1, 4);
-	win.add(sender1, 5);
-	win.add(sender1, 6);
-	win.add(sender1, 7);
-	win.add(sender1, 8);
-
-	System.out.println(win);
+        win.add(sender3, 2);
+        win.add(sender2, 2);
+        win.add(sender4, 2);
+        win.add(sender1, 3);
+        win.add(sender1, 2);
 
 
-	Vector seqnos=new Vector();
+        System.out.println(win);
 
-	seqnos.addElement(new Long(4));
-	seqnos.addElement(new Long(6));
-	seqnos.addElement(new Long(8));
+        win.suspect(sender1);
+        System.out.println(win);
 
-	win.remove(sender2, seqnos);
-	System.out.println(win);
+        win.add(sender1, 1);
+        win.add(sender1, 2);
+        win.add(sender1, 3);
+        win.add(sender1, 4);
+        win.add(sender1, 5);
+        win.add(sender1, 6);
+        win.add(sender1, 7);
+        win.add(sender1, 8);
 
-	win.remove(sender1, seqnos);
-	System.out.println(win);
+        System.out.println(win);
+
+
+        Vector seqnos=new Vector();
+
+        seqnos.addElement(new Long(4));
+        seqnos.addElement(new Long(6));
+        seqnos.addElement(new Long(8));
+
+        win.remove(sender2, seqnos);
+        System.out.println(win);
+
+        win.remove(sender1, seqnos);
+        System.out.println(win);
 
 
     }

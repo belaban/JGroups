@@ -1,4 +1,4 @@
-// $Id: TCPPING.java,v 1.24 2005/08/11 12:43:47 belaban Exp $
+// $Id: TCPPING.java,v 1.25 2006/05/16 11:14:27 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -9,6 +9,7 @@ import org.jgroups.Message;
 import org.jgroups.stack.IpAddress;
 
 import java.util.*;
+import java.net.UnknownHostException;
 
 
 /**
@@ -51,7 +52,7 @@ public class TCPPING extends Discovery {
         if(str != null) {                              // how many times can we increment the port
             port_range=Integer.parseInt(str);
             if (port_range < 1) {
-               port_range = 1;    
+               port_range = 1;
             }
             props.remove("port_range");
         }
@@ -59,7 +60,13 @@ public class TCPPING extends Discovery {
         str=props.getProperty("initial_hosts");
         if(str != null) {
             props.remove("initial_hosts");
-            initial_hosts=createInitialHosts(str);
+            try {
+                initial_hosts=createInitialHosts(str);
+            }
+            catch(UnknownHostException e) {
+                log.error("failed creating initial list of hosts", e);
+                return false;
+            }
         }
 
         return super.setProperties(props);
@@ -101,7 +108,7 @@ public class TCPPING extends Discovery {
     /**
      * Input is "daddy[8880],sindhu[8880],camille[5555]. Return List of IpAddresses
      */
-    private ArrayList createInitialHosts(String l) {
+    private ArrayList createInitialHosts(String l) throws UnknownHostException {
         StringTokenizer tok=new StringTokenizer(l, ",");
         String          t;
         IpAddress       addr;

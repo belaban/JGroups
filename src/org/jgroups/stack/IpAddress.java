@@ -1,4 +1,4 @@
-// $Id: IpAddress.java,v 1.34 2006/05/13 08:16:05 belaban Exp $
+// $Id: IpAddress.java,v 1.35 2006/05/16 11:14:28 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -9,7 +9,7 @@ import org.jgroups.Global;
 
 import java.io.*;
 import java.net.InetAddress;
-
+import java.net.UnknownHostException;
 
 
 /**
@@ -41,17 +41,10 @@ public class IpAddress implements Address {
     // Used only by Externalization
     public IpAddress() {
     }
-    
-    public IpAddress(String i, int p) {
+
+    public IpAddress(String i, int p) throws UnknownHostException {
         port=p;
-    	try {
-        	ip_addr=InetAddress.getByName(i);
-        }
-        catch(Exception e) {
-            if(log.isWarnEnabled()) log.warn("failed to get " + i + ": " + e);
-        }
-        if(this.ip_addr == null)
-            setAddressToLocalHost();
+        ip_addr=InetAddress.getByName(i);
     }
 
 
@@ -141,7 +134,7 @@ public class IpAddress implements Address {
         if(ip_addr == null)
             if (other.ip_addr == null) return port < other.port ? -1 : (port > other.port ? 1 : 0);
             else return -1;
-      
+
         h1=ip_addr.hashCode();
         h2=other.ip_addr.hashCode();
         rc=h1 < h2? -1 : h1 > h2? 1 : 0;
@@ -209,11 +202,11 @@ public class IpAddress implements Address {
         }
         else
             out.writeBoolean(false);
-    } 
-    
-    
-    
-    
+    }
+
+
+
+
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         int len=in.readByte();
         if(len > 0) {

@@ -1,4 +1,4 @@
-// $Id: AckCollectorTest.java,v 1.4 2005/11/18 15:12:40 belaban Exp $
+// $Id: AckCollectorTest.java,v 1.5 2006/05/16 11:14:28 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -12,6 +12,7 @@ import org.jgroups.stack.IpAddress;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.net.UnknownHostException;
 
 
 public class AckCollectorTest extends TestCase {
@@ -190,7 +191,7 @@ public class AckCollectorTest extends TestCase {
         coll.waitForAllAcks(1000);
     }
 
-    public void testOneList() throws TimeoutException {
+    public void testOneList() throws TimeoutException, UnknownHostException {
         List tmp=new ArrayList();
         Address addr=new IpAddress("127.0.0.1", 5555);
         tmp.add(addr);

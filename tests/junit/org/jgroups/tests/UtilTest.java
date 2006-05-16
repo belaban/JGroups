@@ -1,4 +1,4 @@
-// $Id: UtilTest.java,v 1.9 2006/04/05 05:34:45 belaban Exp $
+// $Id: UtilTest.java,v 1.10 2006/05/16 11:14:28 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -150,11 +150,9 @@ public class UtilTest extends TestCase {
         View v;
         IpAddress a1=new IpAddress("localhost", 1234);
         IpAddress a2=new IpAddress("127.0.0.1", 4444);
-        IpAddress a3=new IpAddress("thishostdoesnexist", 6666);
         IpAddress a4=new IpAddress("www.google.com", 7777);
         members.add(a1);
         members.add(a2);
-        members.add(a3);
         members.add(a4);
         v=new View(vid, members);
 

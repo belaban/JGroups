@@ -1,4 +1,4 @@
-// $Id: PING.java,v 1.28 2006/04/23 12:52:54 belaban Exp $
+// $Id: PING.java,v 1.29 2006/05/16 11:14:27 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -9,6 +9,7 @@ import org.jgroups.util.List;
 import org.jgroups.util.Util;
 
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Enumeration;
 import java.util.Properties;
 import java.util.StringTokenizer;
@@ -99,7 +100,14 @@ public class PING extends Discovery {
         str=props.getProperty("initial_hosts");
         if(str != null) {
             props.remove("initial_hosts");
-            initial_hosts=createInitialHosts(str);
+            try {
+                initial_hosts=createInitialHosts(str);
+            }
+            catch(UnknownHostException e) {
+                if(log.isErrorEnabled())
+                    log.error("failed constructing initial list of hosts", e);
+                return false;
+            }
         }
 
         return super.setProperties(props);
@@ -216,7 +224,7 @@ public class PING extends Discovery {
     /**
      * Input is "daddy[8880],sindhu[8880],camille[5555]. Return List of IpAddresses
      */
-    private List createInitialHosts(String l) {
+    private List createInitialHosts(String l) throws UnknownHostException {
         List tmp=new List();
         StringTokenizer tok=new StringTokenizer(l, ",");
         String t;
