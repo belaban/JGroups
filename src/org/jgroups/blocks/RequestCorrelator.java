@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.26 2006/04/05 05:31:07 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.27 2006/05/16 04:03:57 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -378,14 +378,14 @@ public class RequestCorrelator {
      */
     public void receiveSuspect(Address mbr) {
         RequestEntry entry;
-        ArrayList    copy;
+        // ArrayList    copy;
 
         if(mbr == null) return;
         if(log.isDebugEnabled()) log.debug("suspect=" + mbr);
 
         // copy so we don't run into bug #761804 - Bela June 27 2003
-        copy=new ArrayList(requests.values());
-        for(Iterator it=copy.iterator(); it.hasNext();) {
+        // copy=new ArrayList(requests.values()); // removed because ConcurrentReaderHashMap can tolerate concurrent mods (bela May 8 2006)
+        for(Iterator it=requests.values().iterator(); it.hasNext();) {
             entry=(RequestEntry)it.next();
             if(entry.coll != null)
                 entry.coll.suspect(mbr);
@@ -402,11 +402,11 @@ public class RequestCorrelator {
      */
     public void receiveView(View new_view) {
         RequestEntry entry;
-        ArrayList    copy;
+        // ArrayList    copy;
 
         // copy so we don't run into bug #761804 - Bela June 27 2003
-        copy=new ArrayList(requests.values());
-        for(Iterator it=copy.iterator(); it.hasNext();) {
+        // copy=new ArrayList(requests.values());  // removed because ConcurrentReaderHashMap can tolerate concurrent mods (bela May 8 2006)
+        for(Iterator it=requests.values().iterator(); it.hasNext();) {
             entry=(RequestEntry)it.next();
             if(entry.coll != null)
                 entry.coll.viewChange(new_view);
