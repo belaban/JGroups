@@ -1,4 +1,4 @@
-// $Id: IpAddressTest.java,v 1.15 2006/05/12 09:49:40 belaban Exp $
+// $Id: IpAddressTest.java,v 1.16 2006/05/16 11:14:28 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -39,9 +39,13 @@ public class IpAddressTest extends TestCase {
 
 
 
-    public void testUnknownAddress() throws UnknownHostException {
-        IpAddress addr=new IpAddress("idontknow.com", 55);
-        assertEquals(addr.getIpAddress(), InetAddress.getLocalHost());
+    public void testUnknownAddress() {
+        try {
+            IpAddress tmp=new IpAddress("idontknow.com", 55);
+            fail("should throw an UnknownHostException");
+        }
+        catch(UnknownHostException e1) {
+        }
     }
 
     public void testEquality() throws Exception {

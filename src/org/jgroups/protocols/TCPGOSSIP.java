@@ -1,4 +1,4 @@
-// $Id: TCPGOSSIP.java,v 1.17 2006/04/23 12:52:54 belaban Exp $
+// $Id: TCPGOSSIP.java,v 1.18 2006/05/16 11:14:27 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -11,6 +11,7 @@ import org.jgroups.stack.IpAddress;
 import java.util.Properties;
 import java.util.StringTokenizer;
 import java.util.Vector;
+import java.net.UnknownHostException;
 
 
 /**
@@ -54,7 +55,14 @@ public class TCPGOSSIP extends Discovery {
         str=props.getProperty("initial_hosts");
         if(str != null) {
             props.remove("initial_hosts");
-            initial_hosts=createInitialHosts(str);
+            try {
+                initial_hosts=createInitialHosts(str);
+            }
+            catch(UnknownHostException ex) {
+                if(log.isErrorEnabled())
+                    log.error("failed creating initial hosts", ex);
+                return false;
+            }
         }
 
         if(initial_hosts == null || initial_hosts.size() == 0) {
@@ -137,7 +145,7 @@ public class TCPGOSSIP extends Discovery {
     /**
      * Input is "daddy[8880],sindhu[8880],camille[5555]. Return list of IpAddresses
      */
-    private Vector createInitialHosts(String l) {
+    private Vector createInitialHosts(String l) throws UnknownHostException {
         Vector tmp=new Vector();
         String host;
         int port;

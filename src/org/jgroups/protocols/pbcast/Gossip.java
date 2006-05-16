@@ -1,4 +1,4 @@
-// $Id: Gossip.java,v 1.5 2005/08/08 12:45:38 belaban Exp $
+// $Id: Gossip.java,v 1.6 2006/05/16 11:14:27 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -6,6 +6,7 @@ import org.jgroups.Address;
 
 import java.io.Serializable;
 import java.util.Vector;
+import java.net.UnknownHostException;
 
 
 public class Gossip implements Serializable {
@@ -115,7 +116,7 @@ public class Gossip implements Serializable {
     }
 
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws UnknownHostException {
         Gossip id1, id2;
 
         id1=new Gossip(new org.jgroups.stack.IpAddress("daddy", 4567), 23);
