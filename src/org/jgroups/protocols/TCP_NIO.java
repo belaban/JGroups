@@ -6,6 +6,13 @@ import org.jgroups.blocks.ConnectionTable;
 import java.net.InetAddress;
 import java.util.Properties;
 
+/**
+ * Transport using NIO
+ * @author Scott Marlow
+ * @author Alex Fu
+ * @author Bela Ban
+ * @version $id$
+ */
 public class TCP_NIO extends TCP
 {
 
