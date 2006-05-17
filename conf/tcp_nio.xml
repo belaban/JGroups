@@ -1,5 +1,5 @@
 <config>
-    <TCP_NIO bind_addr="192.168.5.1"
+    <TCP_NIO bind_addr="192.168.5.2"
          recv_buf_size="20000000"
          send_buf_size="640000"
          loopback="false"
