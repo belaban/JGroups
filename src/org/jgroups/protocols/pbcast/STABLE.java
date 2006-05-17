@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.45 2006/05/17 06:29:34 belaban Exp $
+// $Id: STABLE.java,v 1.46 2006/05/17 10:54:38 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -207,17 +207,17 @@ public class STABLE extends Protocol {
             // fixes http://jira.jboss.com/jira/browse/JGRP-233
             if(max_bytes > 0) {
                 Address dest=msg.getDest();
-                if(dest != null && !dest.isMulticastAddress())
-                    break;
-                num_bytes_received+=(long)Math.max(msg.getLength(), 24);
-                if(num_bytes_received >= max_bytes) {
-                    if(trace) {
-                        log.trace(new StringBuffer("max_bytes has been reached (").append(max_bytes).
-                                  append(", bytes received=").append(num_bytes_received).append("): triggers stable msg"));
+                if(dest == null || dest.isMulticastAddress()) {
+                    num_bytes_received+=(long)Math.max(msg.getLength(), 24);
+                    if(num_bytes_received >= max_bytes) {
+                        if(trace) {
+                            log.trace(new StringBuffer("max_bytes has been reached (").append(max_bytes).
+                                    append(", bytes received=").append(num_bytes_received).append("): triggers stable msg"));
+                        }
+                        num_bytes_received=0;
+                        // asks the NAKACK protocol for the current digest, reply event is GET_DIGEST_STABLE_OK (arg=digest)
+                        passDown(new Event(Event.GET_DIGEST_STABLE));
                     }
-                    num_bytes_received=0;
-                    // asks the NAKACK protocol for the current digest, reply event is GET_DIGEST_STABLE_OK (arg=digest)
-                    passDown(new Event(Event.GET_DIGEST_STABLE));
                 }
             }
 
