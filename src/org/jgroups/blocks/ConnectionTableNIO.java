@@ -1,4 +1,4 @@
-// $Id: ConnectionTableNIO.java,v 1.13 2006/05/17 08:00:08 belaban Exp $
+// $Id: ConnectionTableNIO.java,v 1.14 2006/05/17 09:15:18 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -552,7 +552,7 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
                      }
                   } catch (IOException e)
                   {
-                     if (LOG.isInfoEnabled()) LOG.info("Read operation on socket failed" , e);
+                     if (LOG.isWarnEnabled()) LOG.warn("Read operation on socket failed" , e);
                      // The connection must be bad, cancel the key, close socket, then
                      // remove it from table!
                      Address peerAddr = conn.getPeerAddress();
