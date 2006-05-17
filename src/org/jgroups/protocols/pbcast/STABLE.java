@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.44 2006/02/27 14:14:12 belaban Exp $
+// $Id: STABLE.java,v 1.45 2006/05/17 06:29:34 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -202,7 +202,13 @@ public class STABLE extends Protocol {
 
         case Event.MSG:
             msg=(Message)evt.getArg();
-            if(max_bytes > 0) {  // message counting is enabled
+
+            // only if message counting is enabled, and only for multicast messages
+            // fixes http://jira.jboss.com/jira/browse/JGRP-233
+            if(max_bytes > 0) {
+                Address dest=msg.getDest();
+                if(dest != null && !dest.isMulticastAddress())
+                    break;
                 num_bytes_received+=(long)Math.max(msg.getLength(), 24);
                 if(num_bytes_received >= max_bytes) {
                     if(trace) {
