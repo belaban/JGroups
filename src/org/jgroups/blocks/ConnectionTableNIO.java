@@ -1,4 +1,4 @@
-// $Id: ConnectionTableNIO.java,v 1.12 2006/03/01 09:12:39 belaban Exp $
+// $Id: ConnectionTableNIO.java,v 1.13 2006/05/17 08:00:08 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -430,10 +430,17 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
       {
          try
          {
+            SocketAddress sockAddr;
             if (bind_addr == null)
-               m_serverSocketChannel.socket().bind(new InetSocketAddress(start_port));
+            {
+               sockAddr=new InetSocketAddress(start_port);
+               m_serverSocketChannel.socket().bind(sockAddr);
+            }
             else
-               m_serverSocketChannel.socket().bind(new InetSocketAddress(bind_addr, start_port), backlog);
+            {
+               sockAddr=new InetSocketAddress(bind_addr, start_port);
+               m_serverSocketChannel.socket().bind(sockAddr, backlog);
+            }
          }
          catch (BindException bind_ex)
          {
