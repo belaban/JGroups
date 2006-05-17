@@ -68,6 +68,9 @@ public class Test implements Receiver {
     long            msg_size=1000;
     boolean         jmx=false;
 
+    /** Number of ms to wait at the receiver to simulate processing of the received message (0 == don't wait) */
+    long            processing_delay=0;
+
 
     FileWriter      output=null;
 
@@ -163,6 +166,12 @@ public class Test implements Receiver {
             this.config.setProperty("jmx", "true");
         }
         this.jmx=new Boolean(this.config.getProperty("jmx")).booleanValue();
+
+        String tmp3=this.config.getProperty("processing_delay");
+        if(tmp3 != null)
+            this.processing_delay=Long.parseLong(tmp3);
+
+
         String transport_name=this.config.getProperty("transport");
         transport=(Transport)Util.loadClass(transport_name, this.getClass()).newInstance();
         transport.create(this.config);
@@ -318,6 +327,10 @@ public class Test implements Receiver {
                 info.done=true;
                 if(info.stop == 0)
                     info.stop=System.currentTimeMillis();
+            }
+            else {
+                if(processing_delay > 0)
+                    Util.sleep(processing_delay);
             }
         }
         else {

@@ -1,6 +1,6 @@
 #
 # This file contains configuration for the JGroups performance tests (org.jgroups.tests.perf package)
-# $Id: config.txt,v 1.8 2005/09/08 07:22:06 belaban Exp $
+# $Id: config.txt,v 1.9 2006/05/17 07:40:30 belaban Exp $
 #
 
 # Class implementing the org.jgroups.tests.perf.Transport interface
@@ -25,6 +25,9 @@ num_senders=1
 
 # dump stats every n msgs
 log_interval=1000
+
+# number of ms to wait at the receiver to simulate delay caused by processing of the message
+processing_delay=0
 
 # Needs to either contain the full property string, or an URL pointing to a valid
 # location (needs to be changed)
