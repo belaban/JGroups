@@ -10,7 +10,7 @@ import java.text.NumberFormat;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: MemberInfo.java,v 1.6 2005/07/29 08:59:38 belaban Exp $
+ * @version $Id: MemberInfo.java,v 1.7 2006/05/17 07:40:30 belaban Exp $
  */
 public class MemberInfo implements Streamable {
     public  long start=0;
@@ -20,7 +20,7 @@ public class MemberInfo implements Streamable {
     boolean done=false;
     long    total_bytes_received=0;
 
-    transient static  NumberFormat f;
+    static  NumberFormat f;
 
     static {
         f=NumberFormat.getNumberInstance();
