@@ -11,7 +11,7 @@ import java.util.Properties;
  * @author Scott Marlow
  * @author Alex Fu
  * @author Bela Ban
- * @version $id$
+ * @version $Id: TCP_NIO.java,v 1.6 2006/05/17 08:34:47 belaban Exp $
  */
 public class TCP_NIO extends TCP
 {
