@@ -361,10 +361,20 @@ public class Test implements Receiver {
 
     private void sendFinalResults() throws Exception {
         Data d=new Data(Data.FINAL_RESULTS);
-        byte[] buf;
         d.results=new ConcurrentReaderHashMap(this.results);
-        buf=generatePayload(d, null);
-        transport.send(null, buf);
+        final byte[] buf=generatePayload(d, null);
+        // transport.send(null, buf);
+
+        response_sender.execute(new Runnable() {
+            public void run() {
+                try {
+                    transport.send(null, buf);
+                }
+                catch(Exception e) {
+                    log.error("failed sending discovery response", e);
+                }
+            }
+        });
     }
 
     boolean allReceived() {
