@@ -1,4 +1,4 @@
-// $Id: ConnectionTableNIO.java,v 1.16 2006/05/18 13:03:30 smarlownovell Exp $
+// $Id: ConnectionTableNIO.java,v 1.17 2006/05/18 17:41:34 smarlownovell Exp $
 
 package org.jgroups.blocks;
 
@@ -28,6 +28,9 @@ import java.util.Set;
  * after some time.
  * <p/>
  * Incoming messages from any of the sockets can be received by setting the message listener.
+ *
+ * We currently require use_incoming_packet_handler=true (release 2.4 will support use_incoming_packet_handler=false
+ * due to threadless stack support).
  *
  * @author Bela Ban, Scott Marlow, Alex Fu
  */
@@ -212,9 +215,7 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
       }
 
       m_writeHandlers = WriteHandler.create(NIOreceiver.getWriterThreads());
-      m_readHandlers = new ReadHandler[NIOreceiver.getReaderThreads()];
-      for (int i = 0; i < m_readHandlers.length; i++)
-         m_readHandlers[i] = new ReadHandler();
+      m_readHandlers = ReadHandler.create(NIOreceiver.getReaderThreads(), this);
    }
 
 
@@ -430,7 +431,7 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
                {
                   if (LOG.isWarnEnabled())
                      LOG.warn("Attempt to configure read handler for accepted connection failed" , e);
-                  // What can we do? Remove it from table then. -- not in table yet since we moved hand shaking
+                  // close connection
                   conn.destroy();
                }
             }   // end of iteration
@@ -492,44 +493,68 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
       return m_serverSocketChannel.socket();
    }
 
+   protected void runRequest(Address addr, ByteBuffer buf) throws InterruptedException {
+      m_requestProcessors.execute(new ExecuteTask(addr, buf));
+   }
+
+
    // Represents shutdown
    private static class Shutdown {
    }
 
    // ReadHandler has selector to deal with read, it runs in seperated thread
-   private class ReadHandler implements Runnable {
-      private Selector m_readSelector = null;
-      private Thread m_th = null;
-      private LinkedQueue m_queueNewConns = new LinkedQueue();
+   private static class ReadHandler implements Runnable {
+      private final Selector SELECTOR = initHandler();
+      private final LinkedQueue QUEUE = new LinkedQueue();
+      private final ConnectionTableNIO connectTable;
 
-      public ReadHandler()
+      ReadHandler(ConnectionTableNIO ct) {
+         connectTable= ct;
+      }
+
+      public Selector initHandler()
       {
-         // Open the selector and register the pipe
+         // Open the selector
          try
          {
-            m_readSelector = Selector.open();
+            return Selector.open();
          } catch (IOException e)
          {
-            // Should never happen
-            e.printStackTrace();
+            if (LOG.isErrorEnabled()) LOG.error(e);
             throw new IllegalStateException(e.getMessage());
          }
 
-         // Start thread
-         m_th = new Thread(thread_group, this, "nioReadSelectorThread");
-         m_th.setDaemon(true);
-         m_th.start();
       }
+
+      /**
+       * create instances of ReadHandler threads for receiving data.
+       *
+       * @param workerThreads is the number of threads to create.
+       */
+      private static ReadHandler[] create(int workerThreads, ConnectionTableNIO ct)
+      {
+         ReadHandler[] handlers = new ReadHandler[workerThreads];
+         for (int looper = 0; looper < workerThreads; looper++)
+         {
+            handlers[looper] = new ReadHandler(ct);
+
+            Thread thread = new Thread(handlers[looper], "nioReadHandlerThread");
+            thread.setDaemon(true);
+            thread.start();
+         }
+         return handlers;
+      }
+
 
       private void add(Object conn) throws InterruptedException
       {
-         m_queueNewConns.put(conn);
+         QUEUE.put(conn);
          wakeup();
       }
 
       private void wakeup()
       {
-         m_readSelector.wakeup();
+         SELECTOR.wakeup();
       }
 
       public void run()
@@ -539,7 +564,7 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
             int events = 0;
             try
             {
-               events = m_readSelector.select();
+               events = SELECTOR.select();
             } catch (IOException e)
             {
                if (LOG.isWarnEnabled())
@@ -554,7 +579,7 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
 
             if (events > 0)
             {   // there are read-ready channels
-               Set readyKeys = m_readSelector.selectedKeys();
+               Set readyKeys = SELECTOR.selectedKeys();
                for (Iterator i = readyKeys.iterator(); i.hasNext();)
                {
                   SelectionKey key = (SelectionKey) i.next();
@@ -566,27 +591,17 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
                      if (conn.getSocketChannel().isOpen())
                         readOnce(conn);
                      else
-                     {  // no need to close connection or cancel key
-                        Address peerAddr = conn.getPeerAddress();
-                        synchronized (conns)
-                        {
-                           conns.remove(peerAddr);
-                        }
-                        notifyConnectionClosed(peerAddr);
+                     {  // socket connection is already closed, clean up connection state
+                        conn.closed();
                      }
                   } catch (IOException e)
                   {
                      if (LOG.isWarnEnabled()) LOG.warn("Read operation on socket failed" , e);
                      // The connection must be bad, cancel the key, close socket, then
                      // remove it from table!
-                     Address peerAddr = conn.getPeerAddress();
                      key.cancel();
                      conn.destroy();
-                     synchronized (conns)
-                     {
-                        conns.remove(peerAddr);
-                     }
-                     notifyConnectionClosed(peerAddr);
+                     conn.closed();
                   }
                }
             }
@@ -595,7 +610,7 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
             Object o = null;
             try
             {
-               o = m_queueNewConns.poll(0); // get a connection
+               o = QUEUE.poll(0); // get a connection
             } catch (InterruptedException e)
             {
                if (LOG.isInfoEnabled()) LOG.info("Thread ("+Thread.currentThread().getName() +") was interrupted while polling queue" ,e);
@@ -611,19 +626,14 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
             SocketChannel sc = conn.getSocketChannel();
             try
             {
-               sc.register(m_readSelector, SelectionKey.OP_READ, conn);
+               sc.register(SELECTOR, SelectionKey.OP_READ, conn);
             } catch (ClosedChannelException e)
             {
                if (LOG.isInfoEnabled()) LOG.info("Socket channel was closed while we were trying to register it to selector" , e);
                // Channel becomes bad. The connection must be bad,
                // close socket, then remove it from table!
-               Address peerAddr = conn.getPeerAddress();
                conn.destroy();
-               synchronized (conns)
-               {
-                  conns.remove(peerAddr);
-               }
-               notifyConnectionClosed(peerAddr);
+               conn.closed();
             }
          }   // end of the while true loop
       }
@@ -653,7 +663,7 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
          // Assign worker thread to execute call back
          try
          {
-            m_requestProcessors.execute(new ExecuteTask(addr, buf));
+            connectTable.runRequest(addr, buf);
          } catch (InterruptedException e)
          {
             // Cannot do call back, what can we do?
@@ -873,6 +883,16 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
          }
       }
 
+
+      void closed()
+      {
+         Address peerAddr = getPeerAddress();
+         synchronized (conns)
+         {
+            conns.remove(peerAddr);
+         }
+         notifyConnectionClosed(peerAddr);
+      }
    }
 
 
@@ -899,8 +919,8 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
          catch (IOException e)
          {
             if (LOG.isErrorEnabled()) LOG.error(e);
+            throw new IllegalStateException(e.getMessage());
          }
-         return null;
       }
 
       /**
