@@ -1,4 +1,4 @@
-// $Id: ConnectionTableNIO.java,v 1.14 2006/05/17 09:15:18 belaban Exp $
+// $Id: ConnectionTableNIO.java,v 1.15 2006/05/18 12:22:37 smarlownovell Exp $
 
 package org.jgroups.blocks;
 
@@ -6,7 +6,6 @@ import EDU.oswego.cs.dl.util.concurrent.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
-import org.jgroups.Version;
 import org.jgroups.protocols.TCP_NIO;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
@@ -122,18 +121,8 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
 
             conn.sendLocalAddress(local_addr);
             // This outbound connection is ready
-            conn.getReadState().setHandShakingStatus(ConnectionReadState.HANDSHAKINGFIN);
 
-            // Set channel to be non-block only after hand shaking
-            try
-            {
-               sock_ch.configureBlocking(false);
-            } catch (IOException e)
-            {
-               // No way to handle the blocking socket
-               conn.destroy();
-               throw e;
-            }
+            sock_ch.configureBlocking(false);
 
             try
             {
@@ -325,8 +314,8 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
                if (LOG.isInfoEnabled())
                   LOG.info("accepted connection, client_sock=" + client_sock_ch.socket());
 
-               try
-               {
+               try {
+
                   if (LOG.isTraceEnabled())
                      LOG.trace("About to change new connection send buff size from " + client_sock_ch.socket().getSendBufferSize() + " bytes");
                   client_sock_ch.socket().setSendBufferSize(send_buf_size);
@@ -343,6 +332,7 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
                   if (log.isErrorEnabled()) log.error("exception setting send buffer size to " +
                      send_buf_size + " bytes: " , e);
                }
+
                try
                {
                   if (LOG.isTraceEnabled())
@@ -363,12 +353,53 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
                }
 
                conn = new Connection(client_sock_ch, null);
-
-               // Set it to be nonblocking
                try
                {
-                  client_sock_ch.configureBlocking(false);
+                  conn.peer_addr = conn.readPeerAddress(client_sock_ch.socket());
 
+                  synchronized (conns)
+                  {
+                     if (conns.containsKey(conn.getPeerAddress()))
+                     {
+                        if (conn.getPeerAddress().equals(getLocalAddress()))
+                        {
+                           if (LOG.isWarnEnabled())
+                              LOG.warn(conn.getPeerAddress() + " is myself, not put it in table twice, but still read from it");
+                        } else
+                        {
+                           if (LOG.isWarnEnabled())
+                              LOG.warn(conn.getPeerAddress() + " is already there, will terminate connection");
+                           // keep existing connection, close this new one
+                           Address peerAddr = conn.getPeerAddress();
+                           conn.destroy();
+                           continue;
+                        }
+                     } else {
+                        addConnection(conn.getPeerAddress(), conn);
+                     }
+                  }
+                  notifyConnectionOpened(conn.getPeerAddress());
+                  client_sock_ch.configureBlocking(false);
+               }
+               catch (IOException e)
+               {
+                  if (LOG.isWarnEnabled())
+                     LOG.warn("Attempt to configure non-blocking mode failed", e);
+                  // Give up this connection
+                  conn.destroy();
+                  continue;
+               }
+               catch (Exception e)
+               {
+                  if (LOG.isWarnEnabled())
+                     LOG.warn("Attempt to handshake with other peer failed", e);
+                  // Give up this connection
+                  conn.destroy();
+                  continue;
+               }
+
+               try
+               {
                   int idx;
                   synchronized (m_lockNextWriteHandler)
                   {
@@ -376,13 +407,6 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
                   }
                   conn.setupWriteHandler(m_writeHandlers[idx]);
 
-               } catch (IOException e)
-               {
-                  if (LOG.isWarnEnabled())
-                     LOG.warn("Attempt to configure accepted connection failed" , e);
-                  // Give up this connection if we cannot set it to non-block
-                  conn.destroy();
-                  continue;
                }
                catch (InterruptedException e)
                {
@@ -567,11 +591,11 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
                }
             }
 
-            // Now we look at the connection queue to get new job
+            // Now we look at the connection queue to get any new connections added
             Object o = null;
             try
             {
-               o = m_queueNewConns.poll(0); // get a job
+               o = m_queueNewConns.poll(0); // get a connection
             } catch (InterruptedException e)
             {
                if (LOG.isInfoEnabled()) LOG.info("Thread ("+Thread.currentThread().getName() +") was interrupted while polling queue" ,e);
@@ -580,10 +604,10 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
             }
             if (null == o)
                continue;
-            if (o instanceof Shutdown) {
+            if (o instanceof Shutdown) {     // shutdown command?
                return;
             }
-            Connection conn = (Connection) o;
+            Connection conn = (Connection) o;// must be a new connection
             SocketChannel sc = conn.getSocketChannel();
             try
             {
@@ -601,39 +625,13 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
                }
                notifyConnectionClosed(peerAddr);
             }
-
-         }   // end of the for-ever loop
+         }   // end of the while true loop
       }
 
       private void readOnce(Connection conn)
          throws IOException
       {
          ConnectionReadState readState = conn.getReadState();
-         if (readState.getHandShakingStatus() != ConnectionReadState.HANDSHAKINGFIN)  // hand shaking not finished
-            if (!readForHandShaking(conn))
-            {  // not finished yet
-               return;
-            } else
-            {
-               synchronized (conns)
-               {
-                  if (conns.containsKey(conn.getPeerAddress()))
-                  {
-                     if (conn.getPeerAddress().equals(getLocalAddress()))
-                     {
-                        if (LOG.isWarnEnabled())
-                           LOG.warn(conn.getPeerAddress() + " is myself, not put it in table twice, but still read from it");
-                     } else
-                     {
-                        if (LOG.isWarnEnabled())
-                           LOG.warn(conn.getPeerAddress() + " is already there, will terminate connection");
-                        throw new IOException(conn.getPeerAddress() + " is already there, terminate");
-                     }
-                  } else
-                     addConnection(conn.getPeerAddress(), conn);
-               }
-               notifyConnectionOpened(conn.getPeerAddress());
-            }
          if (!readState.isHeadFinished())
          {  // a brand new message coming or header is not completed
             // Begin or continue to read header
@@ -676,59 +674,6 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
          return buf.remaining();
       }
 
-      /**
-       * Read data for hand shaking.  It doesn't try to complete. If there is nothing in
-       * the channel, the method returns immediately.
-       *
-       * @param conn The connection
-       * @return true if handshaking passes; false if it's not finished yet (not an error!).
-       * @throws IOException if handshaking fails
-       */
-      private boolean readForHandShaking(Connection conn)
-         throws IOException
-      {
-         ConnectionReadState readState = conn.getReadState();
-         int i = readState.getHandShakingStatus();
-         switch (i)
-         {
-            case 0:
-               // Step 1
-               ByteBuffer handBuf = readState.getHandShakingBufferFixed();
-               if (read(conn, handBuf) != 0)   // not finished step 1 yet
-                  return false;
-               readState.handShakingStep1Finished();
-               // Let's fall down to process step 2
-            case 1:
-               // Step 2
-               handBuf = readState.getHandShakingBufferDynamic();
-               if (read(conn, handBuf) != 0)   // not finished step 2 yet
-                  return false;
-               readState.handShakingStep2Finished();
-               // Let's fall down to process step 3
-            case 2:
-               // There is a chance that handshaking finishes in step 2
-               if (ConnectionReadState.HANDSHAKINGFIN == readState.getHandShakingStatus())
-                  return true;
-               // Step 3
-               handBuf = readState.getHandShakingBufferFixed();
-               if (read(conn, handBuf) != 0)   // not finished step 3 yet
-                  return false;
-               readState.handShakingStep3Finished();
-               // Let's fall down to process step 4
-            case 3:
-               // Again, there is a chance that handshaking finishes in step 3
-               if (ConnectionReadState.HANDSHAKINGFIN == readState.getHandShakingStatus())
-                  return true;
-               // Step 4
-               handBuf = readState.getHandShakingBufferDynamic();
-               if (read(conn, handBuf) != 0)   // not finished step 4 yet
-                  return false;
-               readState.handShakingStep4Finished();    // now all done
-               return true;
-         }
-         // never here
-         return true;
-      }
 
       /**
        * Read message header from channel. It doesn't try to complete. If there is nothing in
@@ -806,17 +751,6 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
    private class ConnectionReadState {
       private final Connection m_conn;
 
-      // Status for handshaking
-      private int m_handShakingStatus = 0;    // 0(begin), 1, 2, 3, 99(finished)
-      static final int HANDSHAKINGFIN = 99;
-      private final ByteBuffer m_handShakingBufFixed = ByteBuffer.allocate(4 + 2 + 2);
-      private ByteBuffer m_handShakingBufDynamic = null;
-      // Status 1: Cookie(4) + version(2) + IP_length(2) --> use fixed buffer
-      // Status 2: IP buffer(?) (4 for IPv4 but it could be IPv6)
-      //           + Port(4) + if_addition(1) --> use dynamic buffer
-      // Status 3: Addition_length(4) --> use fixed buffer
-      // Status 99: Addition data(?) --> use dynamic buffer
-
       // Status for receiving message
       private boolean m_headFinished = false;
       private ByteBuffer m_readBodyBuf = null;
@@ -825,23 +759,6 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
       public ConnectionReadState(Connection conn)
       {
          m_conn = conn;
-      }
-
-      private void init()
-      {
-         // Initialize the handshaking status
-         m_handShakingBufFixed.clear();
-         m_handShakingBufFixed.limit(4 + 2 + 2);
-      }
-
-      ByteBuffer getHandShakingBufferFixed()
-      {
-         return m_handShakingBufFixed;
-      }
-
-      ByteBuffer getHandShakingBufferDynamic()
-      {
-         return m_handShakingBufDynamic;
       }
 
       ByteBuffer getReadBodyBuffer()
@@ -881,99 +798,6 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
       {
          return m_headFinished;
       }
-
-      /**
-       * Status change for finishing hand shaking step1
-       *
-       * @throws IOException if hand shaking fails
-       */
-      void handShakingStep1Finished()
-         throws IOException
-      {
-         m_handShakingStatus = 1;
-
-         InetAddress clientIP = m_conn.sock_ch.socket().getInetAddress();
-         int clientPort = m_conn.sock_ch.socket().getPort();
-
-         m_handShakingBufFixed.flip();
-         // Cookie
-         byte[] bytesCookie = new byte[cookie.length];
-         m_handShakingBufFixed.get(bytesCookie);
-         if (!m_conn.matchCookie(bytesCookie))
-            throw new SocketException("ConnectionTable.Connection.readPeerAddress(): cookie received from "
-               + clientIP + ":" + clientPort
-               + " does not match own cookie; terminating connection");
-         // Version
-         short ver = m_handShakingBufFixed.getShort();
-         if (!Version.compareTo(ver))
-         {
-            if (LOG.isWarnEnabled())
-               LOG.warn(new StringBuffer("packet from ").append(clientIP).append(':').append(clientPort).
-                  append(" has different version (").append(ver).append(") from ours (").
-                  append(Version.version).append("). This may cause problems"));
-         }
-
-         // Length of peer IP address, could be 0
-         short len = m_handShakingBufFixed.getShort();
-         m_handShakingBufDynamic = ByteBuffer.allocate(len + 4 + 1);
-      }
-
-      void handShakingStep2Finished()
-         throws IOException
-      {
-         m_handShakingStatus = 2;
-         m_handShakingBufDynamic.flip();
-         // IP address
-         byte[] ip = new byte[m_handShakingBufDynamic.remaining() - 4 - 1];
-         m_handShakingBufDynamic.get(ip);
-         InetAddress addr = InetAddress.getByAddress(ip);
-         // Port
-         int port = m_handShakingBufDynamic.getInt();
-         m_conn.peer_addr = new IpAddress(addr, port);
-         // If there is additional data
-         boolean ifAddition = !(m_handShakingBufDynamic.get() == 0x00);
-         if (!ifAddition)
-         {  // handshaking finishes
-            m_handShakingStatus = HANDSHAKINGFIN;
-            return;
-         }
-         m_handShakingBufFixed.clear();
-         m_handShakingBufFixed.limit(4);
-      }
-
-      void handShakingStep3Finished()
-      {
-         m_handShakingStatus = 3;
-         m_handShakingBufFixed.flip();
-         // Length of additional data
-         int len = m_handShakingBufFixed.getInt();
-         if (0 == len)
-         {   // handshaking finishes
-            m_handShakingStatus = HANDSHAKINGFIN;
-            return;
-         }
-         m_handShakingBufDynamic = ByteBuffer.allocate(len);
-      }
-
-      void handShakingStep4Finished()
-      {
-         m_handShakingStatus = HANDSHAKINGFIN;    // Finishes
-         m_handShakingBufDynamic.flip();
-         // Additional data
-         byte[] addition = new byte[m_handShakingBufDynamic.remaining()];
-         m_handShakingBufDynamic.get(addition);
-         ((IpAddress) m_conn.peer_addr).setAdditionalData(addition);
-      }
-
-      int getHandShakingStatus()
-      {
-         return m_handShakingStatus;
-      }
-
-      void setHandShakingStatus(int s)
-      {
-         m_handShakingStatus = s;
-      }
    }
 
    class Connection extends ConnectionTable.Connection {
@@ -990,7 +814,6 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
          super(s.socket(), peer_addr);
          sock_ch = s;
          m_readState = new ConnectionReadState(this);
-         m_readState.init();
       }
 
       private ConnectionReadState getReadState()
