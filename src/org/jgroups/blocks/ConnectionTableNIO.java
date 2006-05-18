@@ -1,4 +1,4 @@
-// $Id: ConnectionTableNIO.java,v 1.15 2006/05/18 12:22:37 smarlownovell Exp $
+// $Id: ConnectionTableNIO.java,v 1.16 2006/05/18 13:03:30 smarlownovell Exp $
 
 package org.jgroups.blocks;
 
@@ -253,7 +253,7 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
          try
          {
             m_writeHandlers[i].QUEUE.put(new Shutdown());
-            m_writeHandlers[i].m_selector.wakeup();
+            m_writeHandlers[i].SELECTOR.wakeup();
          } catch (InterruptedException e)
          {
             LOG.error("Thread ("+Thread.currentThread().getName() +") was interrupted, failed to shutdown selector", e);
@@ -883,13 +883,25 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
       // Create a queue for write requests
       private final LinkedQueue QUEUE = new LinkedQueue();
 
-      private Selector m_selector;
+      private final Selector SELECTOR = initSelector();
       private int m_pendingChannels;                 // count of the number of channels that have pending writes
       // note that this variable is only accessed by one thread.
 
       // allocate and reuse the header for all buffer write operations
       private ByteBuffer m_headerBuffer = ByteBuffer.allocate(Connection.HEADER_SIZE);
 
+
+      Selector initSelector() {
+         try
+         {
+            return SelectorProvider.provider().openSelector();
+         }
+         catch (IOException e)
+         {
+            if (LOG.isErrorEnabled()) LOG.error(e);
+         }
+         return null;
+      }
 
       /**
        * create instances of WriteHandler threads for sending data.
@@ -902,14 +914,6 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
          for (int looper = 0; looper < workerThreads; looper++)
          {
             handlers[looper] = new WriteHandler();
-            try
-            {
-               handlers[looper].m_selector = SelectorProvider.provider().openSelector();
-            }
-            catch (IOException e)
-            {
-               if (LOG.isErrorEnabled()) LOG.error(e);
-            }
 
             Thread thread = new Thread(handlers[looper], "nioWriteHandlerThread");
             thread.setDaemon(true);
@@ -925,7 +929,7 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
        */
       private SelectorWriteHandler add(SocketChannel channel) throws InterruptedException
       {
-          return new SelectorWriteHandler(channel, m_selector, m_headerBuffer);
+          return new SelectorWriteHandler(channel, SELECTOR, m_headerBuffer);
       }
 
       /**
@@ -1002,7 +1006,7 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
 
       public void run()
       {
-         while (m_selector.isOpen())
+         while (SELECTOR.isOpen())
          {
             try
             {
@@ -1034,9 +1038,9 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
                   try
                   {
                      // process any connections ready to be written to.
-                     if (m_selector.selectNow() > 0)
+                     if (SELECTOR.selectNow() > 0)
                      {
-                        processWrite(m_selector);
+                        processWrite(SELECTOR);
                      }
                   }
                   catch (IOException e)
@@ -1062,9 +1066,9 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
                {
                   try
                   {
-                     if ((m_selector.select()) > 0)
+                     if ((SELECTOR.select()) > 0)
                      {
-                        processWrite(m_selector);
+                        processWrite(SELECTOR);
                      }
                   }
                   catch (IOException e)
