@@ -6,14 +6,12 @@ import junit.framework.TestSuite;
 import org.jgroups.*;
 import org.jgroups.util.Util;
 
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  * Tests concurrent startup and message sending directly after joining
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.1 2006/05/19 21:13:04 belaban Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.2 2006/05/19 21:37:49 belaban Exp $
  */
 public class ConcurrentStartupTest extends TestCase implements Receiver {
     final List list=Collections.synchronizedList(new LinkedList());
@@ -42,6 +40,7 @@ public class ConcurrentStartupTest extends TestCase implements Receiver {
         MyThread[] threads=new MyThread[NUM];
         for(int i=0; i < threads.length; i++) {
             threads[i]=new MyThread(String.valueOf(i));
+            Util.sleepRandom(1000);
             threads[i].start();
         }
 
@@ -60,6 +59,14 @@ public class ConcurrentStartupTest extends TestCase implements Receiver {
 
         printLists(list, lists);
 
+        Map[] modifications=new Map[NUM];
+        for(int i=0; i < threads.length; i++) {
+            MyThread thread=threads[i];
+            modifications[i]=thread.getModifications();
+        }
+
+        printModifications(modifications);
+
 
         int len=list.size();
         for(int i=0; i < lists.length; i++) {
@@ -68,8 +75,15 @@ public class ConcurrentStartupTest extends TestCase implements Receiver {
         }
     }
 
+    private void printModifications(Map[] modifications) {
+        for(int i=0; i < modifications.length; i++) {
+            Map modification=modifications[i];
+            System.out.println("modifications for #" + i + ": " + modification);
+        }
+    }
+
     private void printLists(List list, List[] lists) {
-        System.out.println("list=" + list);
+        System.out.println("\nlist=" + list);
         for(int i=0; i < lists.length; i++) {
             List l=lists[i];
             System.out.println(i + ": " + l);
@@ -111,6 +125,7 @@ public class ConcurrentStartupTest extends TestCase implements Receiver {
     }
 
     public void viewAccepted(View new_view) {
+        System.out.println("-- view: " + new_view);
     }
 
     public void suspect(Address suspected_mbr) {
@@ -123,6 +138,18 @@ public class ConcurrentStartupTest extends TestCase implements Receiver {
     private static class MyThread extends Thread {
         final List list=Collections.synchronizedList(new LinkedList());
         Channel ch;
+        int mod=1;
+        final Map modifications=new TreeMap();
+
+
+        int getMod() {
+            synchronized(this) {
+                int retval=mod;
+                mod++;
+                return retval;
+            }
+        }
+
 
         MyThread(String name) {
             super(name);
@@ -135,6 +162,10 @@ public class ConcurrentStartupTest extends TestCase implements Receiver {
                     public void receive(Message msg) {
                         Object obj=msg.getObject();
                         list.add(obj);
+                        synchronized(modifications) {
+                            Integer key=new Integer(getMod());
+                            modifications.put(key, obj);
+                        }
                     }
 
                     public void setState(byte[] state) {
@@ -143,6 +174,9 @@ public class ConcurrentStartupTest extends TestCase implements Receiver {
                             synchronized(list) {
                                 list.clear();
                                 list.addAll(tmp);
+                                System.out.println("-- [Thread #" + getName() + "]: state is " + list);
+                                Integer key=new Integer(getMod());
+                                modifications.put(key, tmp);
                             }
                         }
                         catch(Exception e) {
@@ -164,6 +198,7 @@ public class ConcurrentStartupTest extends TestCase implements Receiver {
                     }
                 });
                 ch.connect(GROUP);
+                ch.getState(null, 5000);
                 ch.send(null, null, ch.getLocalAddress());
             }
             catch(ChannelException e) {
@@ -172,6 +207,7 @@ public class ConcurrentStartupTest extends TestCase implements Receiver {
         }
 
         List getList() {return list;}
+        Map getModifications() {return modifications;}
     }
 
 
