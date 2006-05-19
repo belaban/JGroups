@@ -1,4 +1,4 @@
-// $Id: ConnectionTableNIO.java,v 1.17 2006/05/18 17:41:34 smarlownovell Exp $
+// $Id: ConnectionTableNIO.java,v 1.18 2006/05/19 19:25:28 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -364,14 +364,13 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
                      {
                         if (conn.getPeerAddress().equals(getLocalAddress()))
                         {
-                           if (LOG.isWarnEnabled())
-                              LOG.warn(conn.getPeerAddress() + " is myself, not put it in table twice, but still read from it");
+                           if (LOG.isTraceEnabled())
+                              LOG.trace(conn.getPeerAddress() + " is myself, not put it in table twice, but still read from it");
                         } else
                         {
                            if (LOG.isWarnEnabled())
                               LOG.warn(conn.getPeerAddress() + " is already there, will terminate connection");
                            // keep existing connection, close this new one
-                           Address peerAddr = conn.getPeerAddress();
                            conn.destroy();
                            continue;
                         }
