@@ -3,7 +3,7 @@ FLUSH protocol for default stack
 ================================
 
 Author: Bela Ban
-Version: $Id: FLUSH.txt,v 1.3 2006/03/17 11:00:54 belaban Exp $
+Version: $Id: FLUSH.txt,v 1.4 2006/05/19 19:05:41 belaban Exp $
 
 Overview
 --------
@@ -62,3 +62,34 @@ Notes
 *Multicasting* (as compared to unicasting) the FLUSH_OK message is required so we can be sure that the FLUSH_OK
 message sent by P is the last message received from P before P stopped sending messages. Since we're waiting on
 everyone's FLUSH_OK, we can be assured that everyone's previous messages were received (thanks to reliable mcast).
+
+
+FLUSH on view change
+--------------------
+Whenever there is a view change, GMS needs to use FLUSH to acquiesce the group, before sending the view change message
+and returning the new view to the joiner. Here's pseudo code of the coordinator A in group {A,B,C}:
+- On reception of JOIN(D):
+  - FLUSH(A,B,C) - wait until flush returns, we flush A, B and C, but onviously not D
+  - Compute new view V2={A,B,C,D}
+  - Multicast V2 to {A,B,C}, wait for all acks
+  - Send JOIN_RSP with V2 to D, wait for ack from D
+  - RESUME sending messages
+
+This algorithm also works for a number of JOIN and LEAVE requests (view bundling):
+- On handleJoinAndLeaveRequests(M, S, L, J), where M is the current membership, S the set of suspected members,
+  L the set of leaving members and J the set of joined members:
+  - FLUSH(M)
+  - Compute new view V2=M - S - L + J
+  - Multicast V2 to M-S, wait for all acks
+  - Send LEAVE_RSP to L, wait for all acks
+  - Send JOIN_RSP to J, wait for all acks
+  - Resume sending messages
+
+FLUSH with join & state transfer
+--------------------------------
+- A new method Channel.connect(String group, boolean transfer_state) will be added
+- The JOIN_REQ contains the boolean
+- The algorithm in GMS is the same as the two described above, except that before multicasting the new view and sending
+  the JOIN_RSPs and LEAVE_RSPs, we ask the application for its state (GET_APPLSTATE) and when received (GET_APPLSTATE_OK),
+  we send it back to the joining member(s), and the RESUME sending messages
+  
