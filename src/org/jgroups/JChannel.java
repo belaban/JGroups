@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.70 2006/05/16 04:03:58 belaban Exp $
+// $Id: JChannel.java,v 1.71 2006/05/19 21:34:39 belaban Exp $
 
 package org.jgroups;
 
@@ -65,7 +65,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Revision: 1.70 $
+ * @version $Revision: 1.71 $
  */
 public class JChannel extends Channel {
 
@@ -85,7 +85,7 @@ public class JChannel extends Channel {
             "pbcast.NAKACK(max_xmit_size=60000;down_thread=false;use_mcast_xmit=false;gc_lag=0;" +
                     "discard_delivered_msgs=true;up_thread=false;retransmit_timeout=100,200,300,600,1200,2400,4800):" +
             "UNICAST(timeout=300,600,1200,2400,3600;down_thread=false;up_thread=false):" +
-                    "pbcast.STABLE(stability_delay=1000;desired_avg_gossip=50000;max_bytes=400000;down_thread=false;" +
+            "pbcast.STABLE(stability_delay=1000;desired_avg_gossip=50000;max_bytes=400000;down_thread=false;" +
                     "up_thread=false):" +
             "VIEW_SYNC(down_thread=false;avg_send_interval=60000;up_thread=false):" +
             "pbcast.GMS(print_local_addr=true;join_timeout=3000;down_thread=false;" +
