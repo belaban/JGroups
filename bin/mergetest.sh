@@ -27,7 +27,7 @@ fi
 
 
 count=0
-while [ $count -lt 50 ]
+while [ $count -lt 20 ]
 do
   echo "Starting Draw instance #$count"
   java -classpath $CP org.jgroups.demos.Draw -props c:\\fc-fast-minimalthreads.xml &
