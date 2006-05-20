@@ -11,14 +11,16 @@ import java.util.*;
 /**
  * Tests concurrent startup and message sending directly after joining
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.2 2006/05/19 21:37:49 belaban Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.3 2006/05/20 21:32:46 belaban Exp $
  */
 public class ConcurrentStartupTest extends TestCase implements Receiver {
     final List list=Collections.synchronizedList(new LinkedList());
     JChannel channel;
     final static String GROUP="demo";
-    final static String PROPS=null; // use default properties
+    final static String PROPS="c:\\fc-fast-minimalthreads.xml"; // use default properties
     final int NUM=5;
+    int mod=1;
+    final Map modifications=new TreeMap();
 
 
     protected void setUp() throws Exception {
@@ -28,6 +30,16 @@ public class ConcurrentStartupTest extends TestCase implements Receiver {
     protected void tearDown() throws Exception {
         super.tearDown();
     }
+
+
+    int getMod() {
+        synchronized(this) {
+            int retval=mod;
+            mod++;
+            return retval;
+        }
+    }
+
 
     public void testMessageSendingAfterConnect() throws Exception {
         channel=new JChannel(PROPS);
@@ -59,13 +71,13 @@ public class ConcurrentStartupTest extends TestCase implements Receiver {
 
         printLists(list, lists);
 
-        Map[] modifications=new Map[NUM];
+        Map[] mods=new Map[NUM];
         for(int i=0; i < threads.length; i++) {
             MyThread thread=threads[i];
-            modifications[i]=thread.getModifications();
+            mods[i]=thread.getModifications();
         }
 
-        printModifications(modifications);
+        printModifications(modifications, mods);
 
 
         int len=list.size();
@@ -75,7 +87,8 @@ public class ConcurrentStartupTest extends TestCase implements Receiver {
         }
     }
 
-    private void printModifications(Map[] modifications) {
+    private void printModifications(Map mod, Map[] modifications) {
+        System.out.println("\nmodifications: " + mod);
         for(int i=0; i < modifications.length; i++) {
             Map modification=modifications[i];
             System.out.println("modifications for #" + i + ": " + modification);
@@ -95,6 +108,10 @@ public class ConcurrentStartupTest extends TestCase implements Receiver {
         Object obj=msg.getObject();
         synchronized(list) {
             list.add(obj);
+        }
+        synchronized(modifications) {
+            Integer key=new Integer(getMod());
+            modifications.put(key, obj);
         }
     }
 
@@ -126,6 +143,10 @@ public class ConcurrentStartupTest extends TestCase implements Receiver {
 
     public void viewAccepted(View new_view) {
         System.out.println("-- view: " + new_view);
+        synchronized(modifications) {
+            Integer key=new Integer(getMod());
+            modifications.put(key, new_view.getVid());
+        }
     }
 
     public void suspect(Address suspected_mbr) {
@@ -168,13 +189,20 @@ public class ConcurrentStartupTest extends TestCase implements Receiver {
                         }
                     }
 
+                    public void viewAccepted(View new_view) {
+                        synchronized(modifications) {
+                            Integer key=new Integer(getMod());
+                            modifications.put(key, new_view.getVid());
+                        }
+                    }
+
                     public void setState(byte[] state) {
                         try {
                             List tmp=(List)Util.objectFromByteBuffer(state);
                             synchronized(list) {
                                 list.clear();
                                 list.addAll(tmp);
-                                System.out.println("-- [Thread #" + getName() + "]: state is " + list);
+                                System.out.println("-- [#" + getName() + " (" +ch.getLocalAddress()+")]: state is " + list);
                                 Integer key=new Integer(getMod());
                                 modifications.put(key, tmp);
                             }
@@ -199,7 +227,9 @@ public class ConcurrentStartupTest extends TestCase implements Receiver {
                 });
                 ch.connect(GROUP);
                 ch.getState(null, 5000);
+                // Util.sleep(1000);
                 ch.send(null, null, ch.getLocalAddress());
+                Util.sleep(5000); // potential retransmissions
             }
             catch(ChannelException e) {
                 e.printStackTrace();
