@@ -1,0 +1,43 @@
+
+Notes regarding ConcurrentStartupTest
+=====================================
+
+// Author: Bela Ban
+// Version: $Id: ConcurrentStartupTest.txt,v 1.1 2006/05/20 22:00:03 belaban Exp $
+
+
+The unit test org.jgroups.tests.ConcurrentStartupTest simulates multiple nodes in a cluster being started at the same
+time fetching the state (simple list) and then multicasting a message with their local address, so that everyone adds
+the address to their list. A joining member fetches that list (= the state), and sets it as its own state, overwriting
+the existing list, and from now one adds all received addresses to the list.
+At the end of the run, all members should have the exact same state. The problem is this wasn't the case.
+
+Reason: when members B and C joined almost concurrently (coord == A), they received the right view, but when B multicast
+its message (say 4204), then the following scenario could ensue:
+- Concurrently:
+  - B (already received the state and now) mcasts 4204
+     and
+  - C requests state from A
+- C receives 4204 from B
+
+#1 Coord receives message from B before state transfer request from C
+- A receives 4204 from B
+- A adds the seqno for 4204 to its digest and updates its state (includes 4204 in its list)
+- A receives the state transfer request from C
+- A returns (a) the digest including the seqno for 4204 so it won't be received again and (b) the state (including 4204)
+
+#2 Coord receives state request from C first, then the message from B
+- A receives the state transfer request from C
+- A returns its list *excluding 4204* (not received yet)
+- A receives 4204
+- C receives digest (excluding seqno for 4204) and state (excluding 4204)
+- C sets its local state from the received state
+- When B multicasts the next message, or when STABLE kicks in, the last message from B will be determined to be lost
+  and C will ask B for retransmission of that message (4204). When received, 4204 will be added to the list.
+
+
+Issue: the last message dropped problem of #2 can only be solved if STABLE has enough time to determine that there is
+a last message dropped problem, or when B multicasts another message. In our test, it is the former. Therefore, if we run
+into issue #2, and *don't* allow for retransmission of 4204, then the state of the joining member will be inconsistent.
+This is the reason for the sleep of 5s in each MyThread after multicasting its message.
+
