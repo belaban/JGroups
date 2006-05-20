@@ -10,8 +10,9 @@ import java.util.*;
 
 /**
  * Tests concurrent startup and message sending directly after joining
+ * See doc/design/ConcurrentStartupTest.txt for details
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.3 2006/05/20 21:32:46 belaban Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.4 2006/05/20 22:02:19 belaban Exp $
  */
 public class ConcurrentStartupTest extends TestCase implements Receiver {
     final List list=Collections.synchronizedList(new LinkedList());

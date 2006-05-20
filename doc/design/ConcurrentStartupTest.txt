@@ -3,7 +3,7 @@ Notes regarding ConcurrentStartupTest
 =====================================
 
 // Author: Bela Ban
-// Version: $Id: ConcurrentStartupTest.txt,v 1.1 2006/05/20 22:00:03 belaban Exp $
+// Version: $Id: ConcurrentStartupTest.txt,v 1.2 2006/05/20 22:02:12 belaban Exp $
 
 
 The unit test org.jgroups.tests.ConcurrentStartupTest simulates multiple nodes in a cluster being started at the same
@@ -41,3 +41,6 @@ a last message dropped problem, or when B multicasts another message. In our tes
 into issue #2, and *don't* allow for retransmission of 4204, then the state of the joining member will be inconsistent.
 This is the reason for the sleep of 5s in each MyThread after multicasting its message.
 
+Note that issues like these will be completely solved with the introduction of FLUSH for (a) joining and (b) state transfer.
+Because the cluster will be acquiesced (nobody sending any messages) during the join and state transfer phases, we will
+not run into the problem of concurrent mcast messages and state transfer. see FLUSH.txt for more details.
