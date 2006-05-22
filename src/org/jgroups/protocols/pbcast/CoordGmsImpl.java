@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.44 2006/01/27 15:46:47 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.45 2006/05/22 09:50:44 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -343,11 +343,19 @@ public class CoordGmsImpl extends GmsImpl {
             if(join_rsp.getView() != null)
                 gms.passDown(new Event(Event.TMP_VIEW, join_rsp.getView()));
 
-            // 3. Return result to client
-            sendJoinResponse(join_rsp, mbr);
+            // we'll multicast the new view first and only, when everyone has replied with a VIEW_ACK (or timeout),
+            // send the JOIN_RSP back to the client. This prevents the client from sending multicast messages in
+            // view V2 which may get dropped by existing members because they're still in view V1.
+            // (http://jira.jboss.com/jira/browse/JGRP-235)
 
-            // 4. Broadcast the new view
-            gms.castViewChange(join_rsp.getView(), null);
+            // 3. Broadcast the new view
+            Vector tmp_mbrs=join_rsp.getView() != null? new Vector(join_rsp.getView().getMembers()) : null;
+            if(tmp_mbrs != null)
+                tmp_mbrs.remove(mbr); // exclude the newly joined member from VIEW_ACKs
+            gms.castViewChangeWithDest(join_rsp.getView(), null, tmp_mbrs);
+
+            // 4. Return result to client
+            sendJoinResponse(join_rsp, mbr);
         }
         finally {
             gms.passDown(new Event(Event.RESUME_STABLE));
@@ -388,6 +396,11 @@ public class CoordGmsImpl extends GmsImpl {
              gms.castViewChange(null, null, v);
          else
              gms.castViewChange(null, v, null);
+
+        if(leaving) {
+            gms.passUp(new Event(Event.DISCONNECT_OK));
+            gms.initState(); // in case connect() is called again
+        }
      }
 
 
