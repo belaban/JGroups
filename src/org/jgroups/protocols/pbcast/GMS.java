@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.54 2006/05/22 09:51:45 belaban Exp $
+// $Id: GMS.java,v 1.55 2006/05/22 10:03:10 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -1106,7 +1106,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.54 2006/05/22 09:51:45 belaban Exp $
+     * @version $Id: GMS.java,v 1.55 2006/05/22 10:03:10 belaban Exp $
      */
     class ViewHandler implements Runnable {
         Thread                    t;
@@ -1286,7 +1286,7 @@ public class GMS extends Protocol {
             merge_id=null;
             if(t == null || !t.isAlive()) {
                 t=new Thread(this, "ViewHandler");
-                t.setDaemon(true);
+                t.setDaemon(false); // thread cannot terminate if we have tasks left, e.g. when we as coord leave
                 t.start();
                 if(trace)
                     log.trace("ViewHandler started");
