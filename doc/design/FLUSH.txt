@@ -3,7 +3,7 @@ FLUSH protocol for default stack
 ================================
 
 Author: Bela Ban
-Version: $Id: FLUSH.txt,v 1.6 2006/05/22 07:04:50 belaban Exp $
+Version: $Id: FLUSH.txt,v 1.7 2006/05/22 15:48:26 vlada Exp $
 
 Overview
 --------
@@ -39,12 +39,12 @@ FLUSH protocol:
   - set suspended flag to true, all subsequent down() methods will block on mutex
   - *multicast* a FLUSH_OK message
 
-- On reception of FLUSH_OK at non-coordinator: discard
-
-- On reception of FLUSH_OK at coordinator:
+- On reception of FLUSH_OK at each member:
   - Record FLUSH_OK in vector (1 per member)
-  - Once FLUSH_OK messages have been received from all members --> send down SUSPEND_OK event
-    (in case of crash notification: mark that member's entry as received, so we don't hang forever)
+  - Once FLUSH_OK messages have been received from all members - send unicast FLUSH_COMPLETED to coordinator
+  (in case of crash notification: mark that member's entry as received, so we don't hang forever)
+  
+- After reception of FLUSH_COMPLETED (at coordinator) from all members - send down SUSPEND_OK event
 
 - On RESUME event: multicast STOP_FLUSH message
 
