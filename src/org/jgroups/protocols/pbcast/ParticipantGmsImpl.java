@@ -1,4 +1,4 @@
-// $Id: ParticipantGmsImpl.java,v 1.19 2006/01/27 12:13:12 belaban Exp $
+// $Id: ParticipantGmsImpl.java,v 1.20 2006/05/22 09:31:00 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -63,8 +63,17 @@ public class ParticipantGmsImpl extends GmsImpl {
     }
 
 
+    /** In case we get a different JOIN_RSP from a previous JOIN_REQ sent by us (as a client), we simply apply the
+     * new view if it is greater than ours
+     *
+     * @param join_rsp
+     */
     public void handleJoinResponse(JoinRsp join_rsp) {
-        // wrongMethod("handleJoinResponse");
+        View v=join_rsp.getView();
+        ViewId tmp_vid=v != null? v.getVid() : null;
+        if(tmp_vid != null && gms.view_id != null && tmp_vid.compareTo(gms.view_id) > 0) {
+            gms.installView(v);
+        }
     }
 
     public void handleLeaveResponse() {
