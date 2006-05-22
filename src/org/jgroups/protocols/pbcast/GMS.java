@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.53 2006/01/14 14:00:33 belaban Exp $
+// $Id: GMS.java,v 1.54 2006/05/22 09:51:45 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -74,7 +74,7 @@ public class GMS extends Protocol {
     final AckCollector ack_collector=new AckCollector();
 
     /** Time in ms to wait for all VIEW acks (0 == wait forever) */
-    long                      view_ack_collection_timeout=20000;
+    long                      view_ack_collection_timeout=2000;
 
     /** How long should a Resumer wait until resuming the ViewHandler */
     long                      resume_task_timeout=20000;
@@ -393,7 +393,7 @@ public class GMS extends Protocol {
                 log.trace("received all ACKs (" + size + ") for " + vid + " in " + (stop-start) + "ms");
         }
         catch(TimeoutException e) {
-            log.warn("failed to collect all ACKs (" + size + ") for view " + vid + " after " + view_ack_collection_timeout +
+            log.warn("failed to collect all ACKs (" + size + ") for view " + new_view + " after " + view_ack_collection_timeout +
                     "ms, missing ACKs from " + ack_collector.getMissing() + " (received=" + ack_collector.getReceived() +
                     "), local_addr=" + local_addr);
         }
@@ -641,6 +641,8 @@ public class GMS extends Protocol {
                         Message view_ack=new Message(coord, null, null);
                         GmsHeader tmphdr=new GmsHeader(GmsHeader.VIEW_ACK, hdr.view);
                         view_ack.putHeader(name, tmphdr);
+                        if(trace)
+                            log.trace("sending VIEW_ACK to " + coord);
                         passDown(new Event(Event.MSG, view_ack));
                         impl.handleViewChange(hdr.view, hdr.my_digest);
                         break;
@@ -746,8 +748,10 @@ public class GMS extends Protocol {
 
             case Event.DISCONNECT:
                 impl.leave((Address)evt.getArg());
-                passUp(new Event(Event.DISCONNECT_OK));
-                initState(); // in case connect() is called again
+                if(!(impl instanceof CoordGmsImpl)) {
+                    passUp(new Event(Event.DISCONNECT_OK));
+                    initState(); // in case connect() is called again
+                }
                 break;       // pass down
         }
 
@@ -851,7 +855,7 @@ public class GMS extends Protocol {
 
     /* ------------------------------- Private Methods --------------------------------- */
 
-    private final void initState() {
+    final void initState() {
         becomeClient();
         view_id=null;
         view=null;
@@ -1102,7 +1106,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.53 2006/01/14 14:00:33 belaban Exp $
+     * @version $Id: GMS.java,v 1.54 2006/05/22 09:51:45 belaban Exp $
      */
     class ViewHandler implements Runnable {
         Thread                    t;
