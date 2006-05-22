@@ -12,7 +12,7 @@ import java.util.*;
  * Tests concurrent startup and message sending directly after joining
  * See doc/design/ConcurrentStartupTest.txt for details
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.4 2006/05/20 22:02:19 belaban Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.5 2006/05/22 05:28:39 belaban Exp $
  */
 public class ConcurrentStartupTest extends TestCase implements Receiver {
     final List list=Collections.synchronizedList(new LinkedList());
@@ -47,7 +47,7 @@ public class ConcurrentStartupTest extends TestCase implements Receiver {
         channel.setReceiver(this);
         channel.connect(GROUP);
         channel.getState(null, 5000);
-        channel.send(null, null, channel.getLocalAddress());
+        // channel.send(null, null, channel.getLocalAddress());
         Util.sleep(2000);
 
         MyThread[] threads=new MyThread[NUM];
@@ -106,6 +106,8 @@ public class ConcurrentStartupTest extends TestCase implements Receiver {
 
 
     public void receive(Message msg) {
+        if(msg.getBuffer() == null)
+            return;
         Object obj=msg.getObject();
         synchronized(list) {
             list.add(obj);
@@ -182,6 +184,8 @@ public class ConcurrentStartupTest extends TestCase implements Receiver {
                 ch=new JChannel(PROPS);
                 ch.setReceiver(new ReceiverAdapter() {
                     public void receive(Message msg) {
+                        if(msg.getBuffer() == null)
+                            return;
                         Object obj=msg.getObject();
                         list.add(obj);
                         synchronized(modifications) {
