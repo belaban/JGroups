@@ -1,4 +1,4 @@
-$Id: DESIGN,v 1.1 2006/05/20 21:42:13 belaban Exp $
+$Id: varia1.txt,v 1.1 2006/05/22 06:34:43 belaban Exp $
 
 
 
