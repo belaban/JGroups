@@ -3,7 +3,7 @@ FLUSH protocol for default stack
 ================================
 
 Author: Bela Ban
-Version: $Id: FLUSH.txt,v 1.5 2006/05/19 19:25:55 belaban Exp $
+Version: $Id: FLUSH.txt,v 1.6 2006/05/22 07:04:50 belaban Exp $
 
 Overview
 --------
@@ -88,7 +88,7 @@ This algorithm also works for a number of JOIN and LEAVE requests (view bundling
 
 FLUSH with join & state transfer
 --------------------------------
-- A new method Channel.connect(String group, boolean transfer_state) will be added
+- A new method Channel.connect(String group, boolean transfer_state, String state_id) will be added
 - The JOIN_REQ contains the boolean
 - The algorithm in GMS is the same as the two described above, except that before multicasting the new view and sending
   the JOIN_RSPs and LEAVE_RSPs, we ask the application for its state (GET_APPLSTATE) and when received (GET_APPLSTATE_OK),
