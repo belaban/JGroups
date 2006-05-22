@@ -1,4 +1,4 @@
-// $Id: LargeState.java,v 1.19 2006/05/12 09:56:28 belaban Exp $
+// $Id: LargeState.java,v 1.20 2006/05/22 07:08:40 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -134,20 +134,7 @@ public class LargeState extends ReceiverAdapter {
     public static void main(String[] args) {
         boolean provider=false;
         int size=1024 * 1024;
-        String props="UDP(mcast_addr=239.255.0.35;mcast_port=7500;ip_ttl=2;" +
-                "mcast_send_buf_size=150000;mcast_recv_buf_size=80000;" +
-                "ucast_send_buf_size=80000;ucast_recv_buf_size=150000):" +
-                "PING(timeout=2000;num_initial_members=3):" +
-                "MERGE2(min_interval=5000;max_interval=10000):" +
-                "FD_SOCK:" +
-                "VERIFY_SUSPECT(timeout=1500):" +
-                "pbcast.NAKACK(gc_lag=50;retransmit_timeout=300,600,1200,2400,4800):" +
-                "UNICAST(timeout=300,600,900,1200,2400):" +
-                "pbcast.STABLE(desired_avg_gossip=20000):" +
-                "FRAG2(frag_size=60000;down_thread=false;up_thread=false):" +
-                "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
-                "shun=false;print_local_addr=true):" +
-                "pbcast.STATE_TRANSFER";
+        String props=null;
 
 
 
