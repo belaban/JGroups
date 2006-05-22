@@ -1,4 +1,4 @@
-$Id: GmsTests.txt,v 1.1 2006/05/22 07:07:59 belaban Exp $
+$Id: GmsTests.txt,v 1.2 2006/05/22 09:28:15 belaban Exp $
 
 
      Manual tests for the Group Membership Service (GMS) Protocol
@@ -42,6 +42,7 @@ Test 3
 - Kill B
   --> B should be suspected
   --> A should show 1 member
+(run with FD_SOCK first, then with FD only)
 
 
 Test 4
@@ -131,6 +132,12 @@ Test 12
 
 Test 13
 -------
+- Start A and B concurrently
+- They should form a group of 2
+
+
+Test 14
+-------
 
 - Start 20 instances
 - Mbrship should be 20
@@ -139,7 +146,7 @@ Test 13
 [ test with both FD and FD_SOCK ]
 
 
-Test 14
+Test 15
 -------
 
 - Start A, B
