@@ -39,19 +39,19 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.64 2006/05/02 08:12:58 belaban Exp $
+ * @version $Id: TP.java,v 1.65 2006/05/22 20:31:32 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
 
     /** The address (host and port) of this member */
-    Address         local_addr=null;
+    protected Address         local_addr=null;
 
     /** The name of the group to which this member is connected */
-    String          channel_name=null;
+    protected String          channel_name=null;
 
     /** The interface (NIC) which should be used by this transport */
-    InetAddress     bind_addr=null;
+    protected InetAddress     bind_addr=null;
 
     /** Overrides bind_addr and -Dbind.address: let's the OS return the local host address */
     boolean         use_local_host=false;
@@ -87,9 +87,9 @@ public abstract class TP extends Protocol {
     int				port_range=1; // 27-6-2003 bgooren, Only try one port by default
 
     /** The members of this group (updated when a member joins or leaves) */
-    final Vector    members=new Vector(11);
+    final protected Vector    members=new Vector(11);
 
-    View            view=null;
+    protected View            view=null;
 
     /** Pre-allocated byte stream. Used for marshalling messages. Will grow as needed */
     final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(1024);
@@ -162,7 +162,7 @@ public abstract class TP extends Protocol {
 
     private Bundler    bundler=null;
 
-    TimeScheduler      timer=null;
+    protected TimeScheduler      timer=null;
 
     private DiagnosticsHandler diag_handler=null;
     boolean enable_diagnostics=true;
