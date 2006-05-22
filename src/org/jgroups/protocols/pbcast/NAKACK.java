@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.76 2006/04/11 06:21:34 belaban Exp $
+// $Id: NAKACK.java,v 1.77 2006/05/22 09:42:20 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -29,13 +29,14 @@ import java.util.*;
  * @author Bela Ban
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
-    private long[]  retransmit_timeout={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
-    private boolean is_server=false;
-    private Address local_addr=null;
+    private long[]        retransmit_timeout={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
+    private boolean       is_server=false;
+    private Address       local_addr=null;
     private final Vector  members=new Vector(11);
-    private long    seqno=-1;                                  // current message sequence number (starts with 0)
-    private long    max_xmit_size=8192;                        // max size of a retransmit message (otherwise send multiple)
-    private int     gc_lag=20;                                 // number of msgs garbage collection lags behind
+    private View          view;
+    private long          seqno=-1;                                  // current message sequence number (starts with 0)
+    private long          max_xmit_size=8192;                        // max size of a retransmit message (otherwise send multiple)
+    private int           gc_lag=20;                                 // number of msgs garbage collection lags behind
 
     /**
      * Retransmit messages using multicast rather than unicast. This has the advantage that, if many receivers lost a
@@ -444,14 +445,16 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             return;
 
         case Event.TMP_VIEW:
-            mbrs=((View)evt.getArg()).getMembers();
+            View tmp_view=(View)evt.getArg();
+            mbrs=tmp_view.getMembers();
             members.clear();
             members.addAll(mbrs);
             adjustReceivers();
             break;
 
         case Event.VIEW_CHANGE:
-            mbrs=((View)evt.getArg()).getMembers();
+            tmp_view=(View)evt.getArg();
+            mbrs=tmp_view.getMembers();
             members.clear();
             members.addAll(mbrs);
             adjustReceivers();
@@ -461,6 +464,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             tmp.add(null); // for null destination (= mcast)
             sent.keySet().retainAll(tmp);
             received.keySet().retainAll(tmp);
+            view=tmp_view;
             break;
 
         case Event.BECOME_SERVER:
@@ -659,9 +663,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 return;
             if(warn) {
                 StringBuffer sb=new StringBuffer('[');
-                sb.append(local_addr).append("] discarded message from non-member ").append(sender);
-                if(warn)
-                    log.warn(sb);
+                sb.append(local_addr).append("] discarded message from non-member ")
+                        .append(sender).append(", my view is " ).append(this.view);
+                log.warn(sb);
             }
             return;
         }
@@ -880,13 +884,13 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             }
 
             // 2. Add newly joined members to received_msgs (starting seqno=0)
-            for(int i=0; i < members.size(); i++) {
-                sender=(Address)members.elementAt(i);
-                if(!received_msgs.containsKey(sender)) {
-                    win=createNakReceiverWindow(sender, 0);
-                    received_msgs.put(sender, win);
-                }
-            }
+           for(int i=0; i < members.size(); i++) {
+              sender=(Address)members.elementAt(i);
+              if(!received_msgs.containsKey(sender)) {
+                 win=createNakReceiverWindow(sender, 0);
+                 received_msgs.put(sender, win);
+              }
+           }
         }
     }
 
