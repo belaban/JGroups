@@ -20,8 +20,8 @@
          enable_bundling="true"/>
     <PING timeout="2000"
           down_thread="false" up_thread="false" num_initial_members="3"/>
-    <!-- MERGE2 max_interval="100000"
-            down_thread="false" up_thread="false" min_interval="20000"/ -->
+    <MERGE2 max_interval="100000"
+            down_thread="false" up_thread="false" min_interval="20000"/>
     <FD_SOCK down_thread="false" up_thread="false"/>
     <VERIFY_SUSPECT timeout="1500" down_thread="false" up_thread="false"/>
     <pbcast.NAKACK max_xmit_size="60000"
