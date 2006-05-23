@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.16 2006/04/28 15:15:20 belaban Exp $
+// $Id: Event.java,v 1.17 2006/05/23 21:28:36 vlada Exp $
 
 package org.jgroups;
 
@@ -74,7 +74,9 @@ public class Event {
     public static final int SUSPEND_STABLE            = 65;  // arg = Long (max_suspend_time)
     public static final int RESUME_STABLE             = 66;  // arg = null
     public static final int ENABLE_UNICASTS_TO        = 67;  // arg = Address (member)
-
+    public static final int SUSPEND					  = 68;  // arg = null
+    public static final int SUSPEND_OK				  = 69;	 // arg = null
+    public static final int RESUME					  = 70;  // arg = null
 
 
     public static final int USER_DEFINED=1000;// arg = <user def., e.g. evt type + data>

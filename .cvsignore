@@ -6,3 +6,4 @@ eclipse-bin
 *.iml
 jgroups.ipr
 jgroups.iws
+eclipse-classes
