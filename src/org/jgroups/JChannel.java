@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.71 2006/05/19 21:34:39 belaban Exp $
+// $Id: JChannel.java,v 1.72 2006/05/23 12:14:45 belaban Exp $
 
 package org.jgroups;
 
@@ -65,7 +65,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Revision: 1.71 $
+ * @version $Revision: 1.72 $
  */
 public class JChannel extends Channel {
 
@@ -848,8 +848,9 @@ public class JChannel extends Channel {
      * Retrieves the current group state. Sends GET_STATE event down to STATE_TRANSFER layer.
      * Blocks until STATE_TRANSFER sends up a GET_STATE_OK event or until <code>timeout</code>
      * milliseconds have elapsed. The argument of GET_STATE_OK should be a single object.
-     * @param target - the target member to receive the state from. if null, state is retrieved from coordinator
-     * @param timeout - the number of milliseconds to wait for the operation to complete successfully
+     * @param target the target member to receive the state from. if null, state is retrieved from coordinator
+     * @param timeout the number of milliseconds to wait for the operation to complete successfully. 0 waits until
+     * the state has been received
      * @return true of the state was received, false if the operation timed out
      */
     public boolean getState(Address target, long timeout) throws ChannelNotConnectedException, ChannelClosedException {
@@ -864,7 +865,8 @@ public class JChannel extends Channel {
      * Retrieves a substate (or partial state) from the target.
      * @param target State provider. If null, coordinator is used
      * @param state_id The ID of the substate. If null, the entire state will be transferred
-     * @param timeout
+     * @param timeout the number of milliseconds to wait for the operation to complete successfully. 0 waits until
+     * the state has been received
      * @return
      * @throws ChannelNotConnectedException
      * @throws ChannelClosedException
