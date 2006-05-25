@@ -1,4 +1,4 @@
-// $Id: NotificationBusDemo.java,v 1.6 2005/05/30 16:14:40 belaban Exp $
+// $Id: NotificationBusDemo.java,v 1.7 2006/05/25 12:10:19 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -36,12 +36,13 @@ public class NotificationBusDemo implements NotificationBus.Consumer {
 	try {
 
 	    bus=new NotificationBus(bus_name, props);
-	    bus.start();
+        bus.setConsumer(this);
+        bus.start();
 	    //System.out.println("Getting the cache from coordinator:");
 	    //cache=(Vector)bus.getCacheFromCoordinator(3000, 3);
 	    //if(cache == null) cache=new Vector();
 	    //System.out.println("cache is " + cache);
-	    bus.setConsumer(this);
+
 	    in=new BufferedReader(new InputStreamReader(System.in));	    
 	    while(true) {
 		try {

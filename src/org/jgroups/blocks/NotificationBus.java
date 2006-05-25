@@ -1,4 +1,4 @@
-// $Id: NotificationBus.java,v 1.10 2006/04/07 12:24:37 belaban Exp $
+// $Id: NotificationBus.java,v 1.11 2006/05/25 12:10:18 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -24,11 +24,10 @@ import java.util.Vector;
  *
  * @author Bela Ban
  */
-public class NotificationBus implements MessageListener, MembershipListener {
+public class NotificationBus implements Receiver {
     final Vector members=new Vector();
-    JChannel channel=null;
+    Channel channel=null;
     Address local_addr=null;
-    PullPushAdapter ad=null;
     Consumer consumer=null; // only a single consumer allowed
     String bus_name="notification_bus";
     final Promise get_cache_promise=new Promise();
@@ -53,7 +52,7 @@ public class NotificationBus implements MessageListener, MembershipListener {
 
 
     public NotificationBus() throws Exception {
-        this(null, null);
+        this((Channel)null, null);
     }
 
 
@@ -66,6 +65,13 @@ public class NotificationBus implements MessageListener, MembershipListener {
         if(bus_name != null) this.bus_name=bus_name;
         if(properties != null) props=properties;
         channel=new JChannel(props);
+        channel.setReceiver(this);
+    }
+
+    public NotificationBus(Channel channel, String bus_name) throws Exception {
+        if(bus_name != null) this.bus_name=bus_name;
+        this.channel=channel;
+        channel.setReceiver(this);
     }
 
 
@@ -119,15 +125,10 @@ public class NotificationBus implements MessageListener, MembershipListener {
 
     public void start() throws Exception {
         channel.connect(bus_name);
-        ad=new PullPushAdapter(channel, this, this);
     }
 
 
     public void stop() {
-        if(ad != null) {
-            ad.stop();
-            ad=null;
-        }
         if(channel != null) {
             channel.close();  // disconnects from channel and closes it
             channel=null;
@@ -405,6 +406,7 @@ public class NotificationBus implements MessageListener, MembershipListener {
 
         int type=0;
         Serializable data=null;  // if type == NOTIFICATION data is notification, if type == GET_CACHE_RSP, data is cache
+        private static final long serialVersionUID = -7198723001828406107L;
 
 
         public Info(int type) {
