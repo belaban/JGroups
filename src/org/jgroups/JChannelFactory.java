@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.19 2006/05/16 04:03:58 belaban Exp $
+// $Id: JChannelFactory.java,v 1.20 2006/05/28 05:40:26 belaban Exp $
 
 package org.jgroups;
 
@@ -437,12 +437,10 @@ public class JChannelFactory implements ChannelFactory {
 
     public void create() throws Exception{
         if(expose_channels) {
-            ArrayList servers=MBeanServerFactory.findMBeanServer(null);
-            if(servers == null || servers.size() == 0) {
+            server=getMBeanServer();
+            if(server == null)
                 throw new Exception("No MBeanServer found; JChannelFactory needs to be run with an MBeanServer present, " +
-                        "inside JDK 5, or with ExposeChannel set to false");
-            }
-            server=(MBeanServer)servers.get(0);
+                        "e.g. inside JBoss or JDK 5, or with ExposeChannel set to false");
             if(domain == null)
                 domain="jgroups:name=Multiplexer";
         }
@@ -501,6 +499,19 @@ public class JChannelFactory implements ChannelFactory {
         return sb.toString();
     }
 
+
+    private MBeanServer getMBeanServer() {
+        ArrayList servers=MBeanServerFactory.findMBeanServer("jboss"); // return JBoss server if available
+        if(servers != null && servers.size() > 0) {
+            return (MBeanServer)servers.get(0);
+        }
+        
+        servers=MBeanServerFactory.findMBeanServer(null); // return any available server
+        if(servers != null && servers.size() > 0) {
+            return (MBeanServer)servers.get(0);
+        }
+        return null;
+    }
 
 
 
