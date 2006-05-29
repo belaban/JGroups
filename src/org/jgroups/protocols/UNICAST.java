@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.57 2006/05/23 08:51:34 belaban Exp $
+// $Id: UNICAST.java,v 1.58 2006/05/29 08:43:08 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -323,7 +323,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                     Object mbr;
                     for(int i=0; i < left_members.size(); i++) {
                         mbr=left_members.elementAt(i);
-                        rc=removeConnection(mbr);
+                        rc=removeConnection(mbr); // removes from previous_members
                         if(rc && trace)
                             log.trace("removed " + mbr + " from connection table, member(s) " + left_members + " left");
                     }
@@ -332,9 +332,11 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 for(Enumeration e=previous_members.elements(); e.hasMoreElements();) {
                     Object mbr=e.nextElement();
                     if(members.contains(mbr)) {
-                        if(previous_members.removeElement(mbr) != null && trace)
-                            log.trace("removing " + mbr + " from previous_members as result of VIEW_CHANGE event, " +
-                                    "previous_members=" + previous_members);
+                        if(previous_members.removeElement(mbr) != null) {
+                            if(trace)
+                                log.trace("removing " + mbr + " from previous_members as result of VIEW_CHANGE event, " +
+                                        "previous_members=" + previous_members);
+                        }
                     }
                 }
                 break;
