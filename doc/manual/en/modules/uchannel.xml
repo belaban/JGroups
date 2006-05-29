@@ -830,29 +830,6 @@
             <variablelist>
                 <varlistentry>
                     <term>
-                        <constant>Channel.VIEW</constant>
-                    </term>
-                    <listitem>
-                        <para>The argument must be a boolean value
-                            <classname>Boolean</classname>
-                            . If true, views will be
-                            received (default is true). If false, no views will be
-                            received.
-                        </para>
-                    </listitem>
-                </varlistentry>
-                <varlistentry>
-                    <term>
-                        <constant>Channel.SUSPECT</constant>
-                    </term>
-                    <listitem>
-                        <para>The argument is also a boolean object. If
-                            set to true, suspicion messages will be received, otherwise
-                            not (default is false).</para>
-                    </listitem>
-                </varlistentry>
-                <varlistentry>
-                    <term>
                         <constant>Channel.BLOCK</constant>
                     </term>
                     <listitem>
@@ -878,15 +855,22 @@
                 </varlistentry>
                 <varlistentry>
                     <term>
-                        <constant>Channel.GET_STATE_EVENTS</constant>
+                        <constant>Channel.AUTO_RECONNECT</constant>
                     </term>
                     <listitem>
-                        <para>Reception of
-                            <classname>GetStateEvent</classname>
-                            s. If this option is
-                            turned off, then the group's state may be retrieved, but
-                            this member will not respond to requests for its state
-                            (client role).
+                        <para>When set to true, a shunned channel will leave the group and then try to automatically
+                            re-join. Default is false
+                        </para>
+                    </listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term>
+                        <constant>Channel.AUTO_GETSTATE</constant>
+                    </term>
+                    <listitem>
+                        <para>
+                            When set to true a shunned channel, after reconnection, will attempt to fetch the state from
+                            the coordinator. This requires AUTO_RECONNECT to be true as well. Default is false.
                         </para>
                     </listitem>
                 </varlistentry>
