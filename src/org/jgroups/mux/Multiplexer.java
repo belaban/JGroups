@@ -14,7 +14,7 @@ import java.util.*;
  * message is removed and the MuxChannel corresponding to the header's application ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.11 2006/05/16 04:03:58 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.12 2006/05/29 07:30:15 belaban Exp $
  */
 public class Multiplexer implements UpHandler {
     /** Map<String,MuxChannel>. Maintains the mapping between application IDs and their associated MuxChannels */
@@ -28,10 +28,6 @@ public class Multiplexer implements UpHandler {
     /** Map<String,Boolean>. Map of application IDs and booleans that determine whether getState() has already been called */
     private final Map state_transfer_listeners=new HashMap();
 
-    /** Set<String>. Set (no duplicates) of application IDs */
-    // private final Set state_transfer_rsps=new HashSet();
-
-    // private String current_state_id=null;
 
 
     public Multiplexer() {
@@ -327,32 +323,18 @@ public class Multiplexer implements UpHandler {
         }
         catch(Throwable ex) {
             ex.printStackTrace();
-            mux_ch.returnState(null, id); // todo: check whether id is correct
+            mux_ch.returnState(null, id);
         }
     }
 
 
-//    /** state_id: "myID;myID:mySubID;myID3" */
-//    private List parseStateIds(String state_id) {
-//        return Util.parseStringList(state_id, LIST_SEPARATOR);
-//    }
 
 
     private void handleStateResponse(Event evt) {
         StateTransferInfo info=(StateTransferInfo)evt.getArg();
         MuxChannel mux_ch;
 
-        // state_id might be "myID" or "myID::mySubID". if it is null, get all substates
-        // could be a list, e.g. "myID::subID;mySecondID::subID-2;myThirdID::subID-3 etc
-
-//        if(info.last_chunk) {
-//            System.out.println("last chunk - is ignored");
-//            return;
-//        }
-
-        // List states=Util.parseStringList(info.state_id, ";");
         String appl_id, substate_id, tmp;
-        //for(Iterator it=states.iterator(); it.hasNext();) {
         tmp=info.state_id;
 
         if(tmp == null) {
@@ -381,35 +363,9 @@ public class Multiplexer implements UpHandler {
             evt.setArg(tmp_info);
             mux_ch.up(evt); // state_id will be null, get regular state from the application named state_id
         }
-        //}
     }
 
 
-//    public static void main(String[] args) {
-//        Multiplexer mux=new Multiplexer();
-//
-//        String tmp="c::substate-1;c2;c3::substate-2";
-//        Event evt=new Event(Event.START, new StateTransferInfo(null, tmp, 0, null, true));
-//
-//        mux.handleStateResponse(evt);
-//    }
-
-
-/*    public void returnState(byte[] state, String id) { // id might be "myID" or "myID::mySubstateID"
-        //synchronized(state_transfer_rsps) {
-            //boolean was_present=state_transfer_rsps.remove(id);
-            if(!was_present) {
-                channel.returnState(state, id);
-                return;
-            }
-
-            channel.returnState(state, id, false); // this is not the last chunk of the state response
-            if(state_transfer_rsps.size() == 0) {
-                channel.returnState(state, current_state_id, true); // this *is* the last chunk of the state response
-                current_state_id=null;
-            }
-       // }
-    }*/
 
     /** Tell the underlying channel to start the flush protocol, this will be handled by FLUSH */
     void startFlush() {
@@ -420,26 +376,6 @@ public class Multiplexer implements UpHandler {
     void stopFlush() {
 
     }
-
-
-
-    /** Push all IDs and all byte[] buffer into a common byte[] buffer */
-//    private byte[] generateCombinedState() {
-//        byte[] metadata;
-//        synchronized(state_transfer_rsps) {
-//            int num=state_transfer_rsps.size();
-//
-//        }
-//
-//
-//        return null; // todo: implement
-//    }
-
-//
-//    private static class StateResponse {
-//        boolean received=false;
-//        byte[] state=null;
-//    }
 
 
 }
