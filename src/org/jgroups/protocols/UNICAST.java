@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.58 2006/05/29 08:43:08 belaban Exp $
+// $Id: UNICAST.java,v 1.59 2006/05/29 08:44:28 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -13,8 +13,6 @@ import org.jgroups.util.Util;
 
 import java.io.*;
 import java.util.*;
-
-import bsh.This;
 
 
 /**
