@@ -1,7 +1,9 @@
-// $Id: JChannelFactory.java,v 1.22 2006/06/01 09:10:26 belaban Exp $
+// $Id: JChannelFactory.java,v 1.23 2006/06/01 09:27:36 belaban Exp $
 
 package org.jgroups;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jgroups.conf.ClassPathEntityResolver;
 import org.jgroups.conf.ConfiguratorFactory;
 import org.jgroups.conf.ProtocolStackConfigurator;
@@ -11,19 +13,15 @@ import org.jgroups.mux.Multiplexer;
 import org.jgroups.mux.MuxChannel;
 import org.jgroups.util.Util;
 import org.w3c.dom.*;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 import javax.management.MBeanServer;
-import javax.management.MBeanServerFactory;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.FileNotFoundException;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;

@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.23 2006/06/01 09:25:07 belaban Exp $
+// $Id: Draw.java,v 1.24 2006/06/01 09:27:23 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -10,13 +10,11 @@ import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.util.Util;
 
 import javax.management.MBeanServer;
-import javax.management.MBeanServerFactory;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
-import java.util.ArrayList;
 import java.util.Random;
 
 
