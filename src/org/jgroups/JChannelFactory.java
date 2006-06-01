@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.20 2006/05/28 05:40:26 belaban Exp $
+// $Id: JChannelFactory.java,v 1.21 2006/06/01 09:08:03 belaban Exp $
 
 package org.jgroups;
 
@@ -500,17 +500,21 @@ public class JChannelFactory implements ChannelFactory {
     }
 
 
+
     private MBeanServer getMBeanServer() {
-        ArrayList servers=MBeanServerFactory.findMBeanServer("jboss"); // return JBoss server if available
-        if(servers != null && servers.size() > 0) {
-            return (MBeanServer)servers.get(0);
+        ArrayList servers=MBeanServerFactory.findMBeanServer(null);
+        if(servers == null || servers.size() == 0)
+            return null;
+
+        // return 'jboss' server if available
+        for(int i=0; i < servers.size(); i++) {
+            MBeanServer srv=(MBeanServer)servers.get(i);
+            if(srv.getDefaultDomain().equalsIgnoreCase("jboss"))
+                return srv;
         }
-        
-        servers=MBeanServerFactory.findMBeanServer(null); // return any available server
-        if(servers != null && servers.size() > 0) {
-            return (MBeanServer)servers.get(0);
-        }
-        return null;
+
+        // return first available server
+        return (MBeanServer)servers.get(0);
     }
 
 
