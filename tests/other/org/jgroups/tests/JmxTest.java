@@ -7,11 +7,13 @@ import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.util.Util;
 
 import javax.management.MBeanServer;
+import javax.management.MBeanServerFactory;
 import javax.management.ObjectName;
+import java.util.ArrayList;
 
 /**
  * @author Bela Ban
- * @version $Id: JmxTest.java,v 1.8 2006/06/01 09:26:45 belaban Exp $
+ * @version $Id: JmxTest.java,v 1.7 2006/06/01 09:25:15 belaban Exp $
  */
 public class JmxTest {
     MBeanServer server;
