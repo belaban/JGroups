@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.73 2006/05/12 09:58:33 belaban Exp $
+// $Id: Util.java,v 1.74 2006/06/01 09:09:52 belaban Exp $
 
 package org.jgroups.util;
 
@@ -12,6 +12,8 @@ import org.jgroups.protocols.UdpHeader;
 import org.jgroups.protocols.pbcast.NakAckHeader;
 import org.jgroups.stack.IpAddress;
 
+import javax.management.MBeanServer;
+import javax.management.MBeanServerFactory;
 import java.io.*;
 import java.net.*;
 import java.nio.ByteBuffer;
@@ -1653,6 +1655,23 @@ public class Util {
                 tmp.equals("no") ||
                 tmp.equals("off"));
 
+    }
+
+    
+    public static MBeanServer getMBeanServer() {
+        ArrayList servers=MBeanServerFactory.findMBeanServer(null);
+        if(servers == null || servers.size() == 0)
+            return null;
+
+        // return 'jboss' server if available
+        for(int i=0; i < servers.size(); i++) {
+            MBeanServer srv=(MBeanServer)servers.get(i);
+            if(srv.getDefaultDomain().equalsIgnoreCase("jboss"))
+                return srv;
+        }
+
+        // return first available server
+        return (MBeanServer)servers.get(0);
     }
 
 
