@@ -1,4 +1,4 @@
-// $Id: ReplicatedTree.java,v 1.13 2006/05/02 11:06:00 belaban Exp $
+// $Id: ReplicatedTree.java,v 1.14 2006/06/01 09:15:04 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -11,7 +11,6 @@ import org.jgroups.util.Queue;
 import org.jgroups.util.QueueClosedException;
 import org.jgroups.util.Util;
 
-import javax.management.MBeanServerFactory;
 import javax.management.MBeanServer;
 import java.io.Serializable;
 import java.util.*;
@@ -103,12 +102,9 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
         channel=new JChannel(this.props);
         channel.connect(this.groupname);
         if(jmx) {
-            ArrayList servers=MBeanServerFactory.findMBeanServer(null);
-            if(servers == null || servers.size() == 0) {
-                throw new Exception("No MBeanServers found;" +
-                                    "\nJmxTest needs to be run with an MBeanServer present, or inside JDK 5");
-            }
-            MBeanServer server=(MBeanServer)servers.get(0);
+            MBeanServer server=Util.getMBeanServer();
+            if(server == null)
+                throw new Exception("No MBeanServers found; need to run with an MBeanServer present, or inside JDK 5");
             JmxConfigurator.registerChannel(channel, server, "jgroups", channel.getChannelName() , true);
         }
         start();
@@ -178,10 +174,13 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
         adapter=new PullPushAdapter(channel, this, this);
         adapter.setListener(this);
         boolean rc=channel.getState(null, state_fetch_timeout);
-        if(rc)
-            if(log.isInfoEnabled()) log.info("state was retrieved successfully");
-        else
-            if(log.isInfoEnabled()) log.info("state could not be retrieved (first member)");
+
+        if(log.isInfoEnabled()) {
+            if(rc)
+                log.info("state was retrieved successfully");
+            else
+                log.info("state could not be retrieved (first member)");
+        }
     }
 
 
@@ -351,7 +350,7 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
      */
     public boolean exists(String fqn) {
         if(fqn == null) return false;
-        return findNode(fqn) != null? true : false;
+        return findNode(fqn) != null;
     }
 
 
@@ -577,7 +576,6 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
         }
         catch(Exception ex) {
             if(log.isErrorEnabled()) log.error("failed unmarshalling request: " + ex);
-            return;
         }
     }
 
@@ -635,12 +633,7 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
         }
 		//if size is bigger than one, there are more peers in the group
 		//otherwise there is only one server.
-        if(members.size() > 1) {
-            send_message=true;
-        }
-        else {
-            send_message=false;
-        }
+        send_message=members.size() > 1;
     }
 
 
@@ -798,6 +791,7 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
         Node parent=null;   // parent node
         TreeMap children=null; // keys: child name, value: Node
         HashMap data=null;     // data for current node
+        private static final long serialVersionUID = -3077676554440038890L;
         // Address       creator=null;  // member that created this node (needed ?)
 
 
@@ -840,7 +834,7 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
 
         boolean childExists(String child_name) {
             if(child_name == null) return false;
-            return children != null? children.containsKey(child_name) : false;
+            return children != null && children.containsKey(child_name);
         }
 
 
@@ -970,6 +964,7 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
         String key=null;
         Object value=null;
         HashMap data=null;
+        private static final long serialVersionUID = 7772753222127676782L;
 
         private Request(int type, String fqn) {
             this.type=type;
