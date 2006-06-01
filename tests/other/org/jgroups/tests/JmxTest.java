@@ -7,13 +7,11 @@ import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.util.Util;
 
 import javax.management.MBeanServer;
-import javax.management.MBeanServerFactory;
 import javax.management.ObjectName;
-import java.util.ArrayList;
 
 /**
  * @author Bela Ban
- * @version $Id: JmxTest.java,v 1.6 2006/05/02 11:06:03 belaban Exp $
+ * @version $Id: JmxTest.java,v 1.8 2006/06/01 09:26:45 belaban Exp $
  */
 public class JmxTest {
     MBeanServer server;
@@ -24,13 +22,12 @@ public class JmxTest {
 
 
     private boolean start(String props) throws Exception {
-        ArrayList servers=MBeanServerFactory.findMBeanServer(null);
-        if(servers == null || servers.size() == 0) {
+        server=Util.getMBeanServer();
+        if(server == null) {
             System.err.println("No MBeanServers found;" +
-                               "\nJmxTest needs to be run with an MBeanServer present, or inside JDK 5");
+                    "\nJmxTest needs to be run with an MBeanServer present, or inside JDK 5");
             return false;
         }
-        server=(MBeanServer)servers.get(0);
         channel=new JChannel(props);
         channel.connect("DemoChannel");
         JmxConfigurator.registerChannel(channel, server, channel_name, channel.getChannelName() , true);
@@ -39,13 +36,12 @@ public class JmxTest {
 
 
     void doWork() throws Exception {
-        ArrayList servers=MBeanServerFactory.findMBeanServer(null);
-        if(servers == null || servers.size() == 0) {
+        server=Util.getMBeanServer();
+        if(server == null) {
             System.err.println("No MBeanServers found;" +
-                               "\nJmxTest needs to be run with an MBeanServer present, or inside JDK 5");
+                    "\nJmxTest needs to be run with an MBeanServer present, or inside JDK 5");
             return;
         }
-        server=(MBeanServer)servers.get(0);
         ObjectName channelName=new ObjectName("JGroups:channel=DemoChannel");
 
         // 1. get view and print it

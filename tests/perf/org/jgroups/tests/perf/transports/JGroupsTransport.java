@@ -1,20 +1,21 @@
 package org.jgroups.tests.perf.transports;
 
-import org.jgroups.*;
+import org.jgroups.Address;
+import org.jgroups.JChannel;
+import org.jgroups.Message;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.tests.perf.Receiver;
 import org.jgroups.tests.perf.Transport;
+import org.jgroups.util.Util;
 
 import javax.management.MBeanServer;
-import javax.management.MBeanServerFactory;
-import java.util.ArrayList;
 import java.util.Map;
 import java.util.Properties;
 
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: JGroupsTransport.java,v 1.11 2006/05/02 11:06:04 belaban Exp $
+ * @version $Id: JGroupsTransport.java,v 1.13 2006/06/01 09:26:26 belaban Exp $
  */
 public class JGroupsTransport extends org.jgroups.ReceiverAdapter implements Transport  {
     Properties config=null;
@@ -44,12 +45,11 @@ public class JGroupsTransport extends org.jgroups.ReceiverAdapter implements Tra
     public void start() throws Exception {
         channel.connect(group_name);
         if(jmx) {
-            ArrayList servers=MBeanServerFactory.findMBeanServer(null);
-            if(servers == null || servers.size() == 0) {
+            MBeanServer server=Util.getMBeanServer();
+            if(server == null) {
                 throw new Exception("No MBeanServers found;" +
-                                    "\nneeds to be run with an MBeanServer present, or inside JDK 5");
+                        "\nneeds to be run with an MBeanServer present, or inside JDK 5");
             }
-            MBeanServer server=(MBeanServer)servers.get(0);
             JmxConfigurator.registerChannel(channel, server, "jgroups.perf", channel.getChannelName() , true);
         }
     }

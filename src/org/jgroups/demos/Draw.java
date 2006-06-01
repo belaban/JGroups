@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.22 2006/05/02 11:06:00 belaban Exp $
+// $Id: Draw.java,v 1.23 2006/06/01 09:25:07 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -177,12 +177,10 @@ public class Draw implements ActionListener, ChannelListener {
         if(!no_channel) {
             channel.connect(groupname);
             if(jmx) {
-                ArrayList servers=MBeanServerFactory.findMBeanServer(null);
-                if(servers == null || servers.size() == 0) {
+                MBeanServer server=Util.getMBeanServer();
+                if(server == null)
                     throw new Exception("No MBeanServers found;" +
-                                        "\nDraw needs to be run with an MBeanServer present, or inside JDK 5");
-                }
-                MBeanServer server=(MBeanServer)servers.get(0);
+                            "\nDraw needs to be run with an MBeanServer present, or inside JDK 5");
                 JmxConfigurator.registerChannel((JChannel)channel, server, "jgroups", channel.getChannelName(), true);
             }
         }
