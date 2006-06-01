@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.33 2006/05/12 10:01:00 belaban Exp $
+// $Id: FD.java,v 1.34 2006/06/01 10:50:28 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -29,7 +29,7 @@ import java.util.List;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Revision: 1.33 $
+ * @version $Revision: 1.34 $
  */
 public class FD extends Protocol {
     Address               ping_dest=null;
@@ -48,11 +48,11 @@ public class FD extends Protocol {
     TimeScheduler         timer=null;
     private Monitor       monitor=null;  // task that performs the actual monitoring for failure detection
     private final Object  monitor_mutex=new Object();
-    private int           num_heartbeats=0;
-    private int           num_suspect_events=0;
+    protected int         num_heartbeats=0;
+    protected int         num_suspect_events=0;
 
     /** Transmits SUSPECT message until view change or UNSUSPECT is received */
-    private final Broadcaster     bcast_task=new Broadcaster();
+    protected final Broadcaster  bcast_task=new Broadcaster();
     final static String   name="FD";
 
     BoundedList           suspect_history=new BoundedList(20);
@@ -107,7 +107,7 @@ public class FD extends Protocol {
         }
 
         if(props.size() > 0) {
-            log.error("FD.setProperties(): the following properties are not recognized: " + props);
+            log.error("the following properties are not recognized: " + props);
             return false;
         }
         return true;
@@ -449,7 +449,7 @@ public class FD extends Protocol {
     }
 
 
-    private class Monitor implements TimeScheduler.Task {
+    protected class Monitor implements TimeScheduler.Task {
         boolean started=true;
 
         public void stop() {
@@ -529,7 +529,7 @@ public class FD extends Protocol {
      * sure they are retransmitted until a view has been received which doesn't contain the suspected members
      * any longer. Then the task terminates.
      */
-    private class Broadcaster {
+    protected final class Broadcaster {
         final Vector suspected_mbrs=new Vector(7);
         BroadcastTask task=null;
         private final Object bcast_mutex=new Object();
@@ -569,7 +569,7 @@ public class FD extends Protocol {
         }
 
         /** Adds a suspected member. Starts the task if not yet running */
-        void addSuspectedMember(Address mbr) {
+        protected void addSuspectedMember(Address mbr) {
             if(mbr == null) return;
             if(!members.contains(mbr)) return;
             synchronized(suspected_mbrs) {
@@ -613,7 +613,7 @@ public class FD extends Protocol {
     }
 
 
-    private class BroadcastTask implements TimeScheduler.Task {
+    protected final class BroadcastTask implements TimeScheduler.Task {
         boolean cancelled=false;
         private final Vector suspected_members=new Vector();
 
