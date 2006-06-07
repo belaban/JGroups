@@ -1,8 +1,8 @@
 package org.jgroups.protocols;
 
 import org.apache.commons.logging.Log;
-import org.jgroups.Message;
-import org.jgroups.Event;
+import org.jgroups.stack.IpAddress;
+import org.jgroups.util.Util;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,12 +10,19 @@ import java.io.InputStreamReader;
 import java.util.Properties;
 
 /**
+ * Protocol which uses an executable (e.g. /sbin/ping, or a script) to check whether a given host is up or not,
+ * taking 1 argument; the host name of the host to be pinged. Property 'cmd' determines the program to be executed
+ * (use a fully qualified name if the program is not on the path).
  * @author Bela Ban
- * @version $Id: FD_PING.java,v 1.1 2006/06/01 10:51:04 belaban Exp $
+ * @version $Id: FD_PING.java,v 1.2 2006/06/07 19:34:08 belaban Exp $
  */
 public class FD_PING extends FD {
-    /** command to execute to ping host */
+    /** Command (script or executable) to ping a host: a return value of 0 means success, anything else is a failure.
+     * The only argument passed to cmd is the host's address (symbolic name or dotted-decimal IP address) */
     String cmd="ping";
+
+    /** Write the stdout of the command to the log */
+    boolean verbose=true;
 
     public String getName() {
         return "FD_PING";
@@ -24,14 +31,19 @@ public class FD_PING extends FD {
 
     public boolean setProperties(Properties props) {
         String str;
-
-        super.setProperties(props);
-
         str=props.getProperty("cmd");
         if(str != null) {
             cmd=str;
             props.remove("cmd");
         }
+
+        str=props.getProperty("verbose");
+        if(str != null) {
+            verbose=new Boolean(str).booleanValue();
+            props.remove("verbose");
+        }
+
+        super.setProperties(props);
 
         if(props.size() > 0) {
             log.error("the following properties are not recognized: " + props);
@@ -40,15 +52,18 @@ public class FD_PING extends FD {
         return true;
     }
 
+    protected Monitor createMonitor() {
+        return new PingMonitor();
+    }
 
 
-
-
+    /**
+     * Executes the ping command. Each time the command fails, we increment num_tries. If num_tries > max_tries, we
+     * emit a SUSPECT message. If ping_dest changes, or we do receive traffic from ping_dest, we reset num_tries to 0.
+     */
     protected class PingMonitor extends Monitor {
-         public void run() {
-            Message hb_req;
-            long not_heard_from; // time in msecs we haven't heard from ping_dest
 
+        public void run() {
             if(ping_dest == null) {
                 if(warn)
                     log.warn("ping_dest is null: members=" + members + ", pingable_mbrs=" +
@@ -57,25 +72,28 @@ public class FD_PING extends FD {
             }
 
 
-            // 1. send heartbeat request
-            hb_req=new Message(ping_dest, null, null);
-            hb_req.putHeader(name, new FdHeader(FdHeader.HEARTBEAT));  // send heartbeat request
+            // 1. execute ping command
+            String host=ping_dest instanceof IpAddress? ((IpAddress)ping_dest).getIpAddress().getHostAddress() : ping_dest.toString();
+            String command=cmd + " " + host;
             if(log.isDebugEnabled())
-                log.debug("sending are-you-alive msg to " + ping_dest + " (own address=" + local_addr + ')');
-            passDown(new Event(Event.MSG, hb_req));
-            num_heartbeats++;
+                log.debug("executing \"" + command + "\" (own address=" + local_addr + ')');
+            try {
+                Log tmp_log=verbose? log : null;
+                int rc=Pinger.execute(command, tmp_log);
+                num_heartbeats++;
+                if(rc == 0) { // success
+                    num_tries=0;
+                }
+                else { // failure
+                    num_tries++;
+                    if(log.isDebugEnabled())
+                        log.debug("could not ping " + ping_dest + " (tries=" + num_tries + ')');
+                }
 
-            // 2. If the time of the last heartbeat is > timeout and max_tries heartbeat messages have not been
-            //    received, then broadcast a SUSPECT message. Will be handled by coordinator, which may install
-            //    a new view
-            not_heard_from=System.currentTimeMillis() - last_ack;
-            // quick & dirty fix: increase timeout by 500msecs to allow for latency (bela June 27 2003)
-            if(not_heard_from > timeout + 500) { // no heartbeat ack for more than timeout msecs
                 if(num_tries >= max_tries) {
                     if(log.isDebugEnabled())
-                        log.debug("[" + local_addr + "]: received no heartbeat ack from " + ping_dest +
-                                " for " + (num_tries +1) + " times (" + ((num_tries+1) * timeout) +
-                                " milliseconds), suspecting it");
+                        log.debug("[" + local_addr + "]: could not ping " + ping_dest + " for " + (num_tries +1) +
+                                " times (" + ((num_tries+1) * timeout) + " milliseconds), suspecting it");
                     // broadcast a SUSPECT message to all members - loop until
                     // unsuspect or view change is received
                     bcast_task.addSuspectedMember(ping_dest);
@@ -85,11 +103,10 @@ public class FD_PING extends FD {
                         suspect_history.add(ping_dest);
                     }
                 }
-                else {
-                    if(log.isDebugEnabled())
-                        log.debug("heartbeat missing from " + ping_dest + " (number=" + num_tries + ')');
-                    num_tries++;
-                }
+            }
+            catch(Exception ex) {
+                if(log.isErrorEnabled())
+                    log.error("failed executing command " + command, ex);
             }
         }
     }
@@ -101,14 +118,20 @@ public class FD_PING extends FD {
         static int execute(String command, Log log) throws IOException, InterruptedException {
             Process p=Runtime.getRuntime().exec(command);
             InputStream in=p.getInputStream(), err=p.getErrorStream();
-            Reader in_reader, err_reader;
-            in_reader=new Reader(in, log);
-            err_reader=new Reader(err, log);
-            in_reader.start();
-            err_reader.start();
-            in_reader.join();
-            err_reader.join();
-            return p.exitValue();
+            try {
+                Reader in_reader, err_reader;
+                in_reader=new Reader(in, log);
+                err_reader=new Reader(err, log);
+                in_reader.start();
+                err_reader.start();
+                in_reader.join();
+                err_reader.join();
+                return p.exitValue();
+            }
+            finally {
+                Util.closeInputStream(in);
+                Util.closeInputStream(err);
+            }
         }
 
 
