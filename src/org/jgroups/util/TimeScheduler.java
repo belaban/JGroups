@@ -1,4 +1,4 @@
-// $Id: TimeScheduler.java,v 1.12 2006/01/19 09:53:39 belaban Exp $
+// $Id: TimeScheduler.java,v 1.13 2006/06/07 19:35:09 belaban Exp $
 
 package org.jgroups.util;
 
@@ -213,7 +213,7 @@ public class TimeScheduler {
 
 
     /** if it takes more than this to run a task, we emit a warning */
-    private static final long MAX_EXECUTION_TIME=3000;
+    private static final long MAX_EXECUTION_TIME=5000;
 
 
     /**
