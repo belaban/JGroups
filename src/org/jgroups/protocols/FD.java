@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.34 2006/06/01 10:50:28 belaban Exp $
+// $Id: FD.java,v 1.35 2006/06/07 19:33:51 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -29,7 +29,7 @@ import java.util.List;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Revision: 1.34 $
+ * @version $Revision: 1.35 $
  */
 public class FD extends Protocol {
     Address               ping_dest=null;
@@ -157,7 +157,7 @@ public class FD extends Protocol {
                 monitor=null;
             }
             if(monitor == null) {
-                monitor=new Monitor();
+                monitor=createMonitor();
                 last_ack=System.currentTimeMillis();  // start from scratch
                 timer.add(monitor, true);  // fixed-rate scheduling
                 num_tries=0;
@@ -172,6 +172,11 @@ public class FD extends Protocol {
                 monitor=null;
             }
         }
+    }
+
+
+    protected Monitor createMonitor() {
+        return new Monitor();
     }
 
 
