@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.190 2006/05/02 08:15:21 belaban Exp $
+Revision: $Id: history.txt,v 1.191 2006/06/10 19:11:03 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -23,6 +23,7 @@ romuald     = Romuald du Song
 yaronr		= Yaron Rosenbaum (yaronr@mercury.co.il)
 publicnmi	= Robert Schaffar-Taurok (robert@fusion.at)
 ossiejnr    = Chris Mills (chris.mills@jboss.com)
+
 
 
 
