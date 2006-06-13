@@ -2,16 +2,15 @@ package org.jgroups.tests;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 
+import org.jgroups.Address;
 import org.jgroups.ChannelClosedException;
 import org.jgroups.ChannelNotConnectedException;
 import org.jgroups.JChannel;
@@ -72,7 +71,7 @@ public class VirtualSynchronyTest extends TestCase {
 		
 		
 		for (; running;) {			
-			Util.sleep(20000);
+			Util.sleep(10000);
 			
 			//and then flip a coin
 			if(r.nextBoolean())
@@ -82,7 +81,7 @@ public class VirtualSynchronyTest extends TestCase {
 				member.start();			
 				members.add(member);
 			}
-			else
+			else if(members.size()>1)
 			{
 				GroupMemberThread unluckyBastard = (GroupMemberThread) members.get(r.nextInt(members.size()));
 				members.remove(unluckyBastard);
@@ -115,7 +114,7 @@ public class VirtualSynchronyTest extends TestCase {
 		int numberOfMessagesInView = 0;
 		View currentView;
 		View prevView;
-		Map payloads;
+		List payloads;
 		VSynchPayload payload;
 		volatile boolean running = true;
 		Random r;
@@ -123,9 +122,9 @@ public class VirtualSynchronyTest extends TestCase {
 
 		public GroupMemberThread(String name) {
 			super(name);			
-			payloads = new HashMap();
+			payloads = new ArrayList();
 			r = new Random();
-			messagesSentPerView = r.nextInt(100);
+			messagesSentPerView = r.nextInt(25);
 		}
 
 		public String getAddress() {
@@ -165,8 +164,9 @@ public class VirtualSynchronyTest extends TestCase {
 						gotMessage(msgReceived);
 					}
 				} catch (TimeoutException e) {
-				} catch (Exception e) {
-					e.printStackTrace();
+				} catch (Exception e) {					
+					ch.disconnect();
+					running=false;
 				}			
 			}					
 		}
@@ -178,20 +178,22 @@ public class VirtualSynchronyTest extends TestCase {
 			if (m instanceof VSynchPayload) {
 				VSynchPayload pay = (VSynchPayload) m;
 				if (prevView != null && prevView.getVid().equals(pay.viewId)) {
-					payloads.put(msg.getSrc(), pay);
-					if (payloads.size() > 1) {						
-						int numMsg = -1;
-						for (Iterator i = payloads.values().iterator(); i.hasNext();) {
+					payloads.add(pay);
+					boolean receivedAllPayloads = ((payloads.size() == prevView
+							.getMembers().size()) || (payloads.size() == currentView
+							.getMembers().size()));
+					if (receivedAllPayloads) {												
+						VSynchPayload first=(VSynchPayload) payloads.get(0);
+						for (Iterator i = payloads.listIterator(1); i.hasNext();) {
 							VSynchPayload p = (VSynchPayload) i.next();
-							if (numMsg == -1) {
-								numMsg = p.msgViewCount;
-							} else {
-								assertEquals("VS ok", numMsg, p.msgViewCount);
-
-							}
+							assertEquals("Member " + p + " and " + first
+									+ " failed VS", first.msgViewCount,
+									p.msgViewCount);
 						}
-						System.out.println("VS ok,all members in " + prevView.getVid() 
-								+ " view have received " + numMsg + " messages");
+						System.out.println("VS ok, all " + payloads.size()
+								+ " members in " + prevView.getVid()
+								+ " view have received " + first.msgViewCount
+								+ " messages");
 					}
 				}
 			} else if (m instanceof String) {
@@ -200,11 +202,10 @@ public class VirtualSynchronyTest extends TestCase {
 		}
 
 		private void gotView(Object msg) throws ChannelNotConnectedException, ChannelClosedException {
-			View tmpView = (View) msg;
-			System.out.println(ch.getLocalAddress() + " has view " + tmpView.getVid());
+			View tmpView = (View) msg;			
 			if (currentView != null) {
 				payload = new VSynchPayload(currentView.getVid(),
-						numberOfMessagesInView);
+						numberOfMessagesInView,ch.getLocalAddress());
 				ch.send(tmpView.getCreator(), null, payload);
 			}
 			numberOfMessagesInView = 0;
@@ -223,14 +224,17 @@ public class VirtualSynchronyTest extends TestCase {
 
 		public int msgViewCount;
 
-		public VSynchPayload(ViewId viewId, int numbreOfMessagesInView) {
+		public Address member;
+
+		public VSynchPayload(ViewId viewId, int numbreOfMessagesInView,Address a) {
 			super();
 			this.viewId = viewId;
 			this.msgViewCount = numbreOfMessagesInView;
+			this.member=a;
 		}
 
 		public String toString() {
-			return "[viewId=" + viewId.getId() + ",msgCount=" + msgViewCount
+			return "[member=" +member + ",viewId=" + viewId.getId() + ",msgCount=" + msgViewCount
 					+ "]";
 		}
 
