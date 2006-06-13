@@ -46,7 +46,7 @@ public class VirtualSynchronyTest extends TestCase {
 
 	private final static String CHANNEL_PROPS="fc-fast-minimalthreads.xml";
 	private final static int INITIAL_NUMBER_OF_MEMBERS=5;
-	private int runningTime = 1000*60*10; //10 minutes
+	private int runningTime = 1000*60*5; //5 minutes
 	
 	
 	public VirtualSynchronyTest(String arg0) {
@@ -70,26 +70,31 @@ public class VirtualSynchronyTest extends TestCase {
 		}
 		
 		
-		for (; running;) {			
-			Util.sleep(10000);
+		for (; running;) {						
 			
 			//and then flip a coin
 			if(r.nextBoolean())
 			{
-				GroupMemberThread member = new GroupMemberThread("Member");
-				System.out.println("Joining new member" + member);
+				GroupMemberThread member = new GroupMemberThread("Member");				
 				member.start();			
 				members.add(member);
+				Util.sleep(5000);
 			}
 			else if(members.size()>1)
 			{
 				GroupMemberThread unluckyBastard = (GroupMemberThread) members.get(r.nextInt(members.size()));
-				members.remove(unluckyBastard);
-				System.out.println("Killing member " + unluckyBastard.getAddress());
-				unluckyBastard.setRunning(false);			
+				members.remove(unluckyBastard);				
+				unluckyBastard.setRunning(false);
+				Util.sleep(5000);
 			}	
+			else
+			{
+				Util.sleep(1000);
+			}
 			running = System.currentTimeMillis()-start>runningTime?false:true;
-		}		
+			System.out.println("Running time " + ((System.currentTimeMillis()-start)/1000) + " secs");
+		}
+		System.out.println("Done, Virtual Synchrony satisfied in all tests ");
 	}
 
 	protected void setUp() throws Exception {
@@ -206,7 +211,7 @@ public class VirtualSynchronyTest extends TestCase {
 			if (currentView != null) {
 				payload = new VSynchPayload(currentView.getVid(),
 						numberOfMessagesInView,ch.getLocalAddress());
-				ch.send(tmpView.getCreator(), null, payload);
+				ch.send((Address)tmpView.getMembers().get(0), null, payload);
 			}
 			numberOfMessagesInView = 0;
 			payloads.clear();
