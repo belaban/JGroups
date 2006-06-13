@@ -18,6 +18,7 @@ import org.jgroups.Event;
 import org.jgroups.Header;
 import org.jgroups.Message;
 import org.jgroups.View;
+import org.jgroups.ViewId;
 import org.jgroups.stack.Protocol;
 
 /**
@@ -168,15 +169,28 @@ public class FLUSH extends Protocol {
 
 	private boolean isCurrentFlushMessage(FlushHeader fh) {
 		synchronized (sharedLock) {
-			return flushMembers != null
-					&& currentView.getVid().getId() <= fh.viewID;
+			ViewId viewId = currentView.getVid();
+			return flushMembers != null && viewId != null
+					&& viewId.getId() <= fh.viewID;
 		}
 	}	
 	
 	private void onViewChange(View view)
 	{
 		synchronized (sharedLock) {
-			currentView = view;					
+			currentView = view;
+			
+			//If coordinator leaves, its STOP FLUSH message will be discarded by 
+			//other members at NAKACK layer. Remaining members will be hung, waiting 
+			//for STOP_FLUSH message. If I am new coordinator I will complete the 
+			//FLUSH and send STOP_FLUSH on flush callers behalf.
+			if (flushCaller != null && !view.getMembers().contains(flushCaller)
+					&& localAddress.equals(view.getMembers().get(0))) {
+				log.debug("Coordinator left, " + localAddress
+						+ " will complete flush");
+				onResume();
+			}
+			
 		}	
 		log.debug("Installing view at  " + localAddress + " view is "
 				+ currentView);
