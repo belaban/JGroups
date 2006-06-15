@@ -1,4 +1,4 @@
-// $Id: RpcDispatcher.java,v 1.22 2006/02/16 08:23:24 belaban Exp $
+// $Id: RpcDispatcher.java,v 1.23 2006/06/15 23:39:56 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -215,7 +215,7 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
             body=marshaller != null? marshaller.objectFromByteBuffer(req.getBuffer()) : req.getObject();
         }
         catch(Throwable e) {
-            if(log.isErrorEnabled()) log.error("exception=" + e);
+            if(log.isErrorEnabled()) log.error("exception marshalling object", e);
             return e;
         }
 
