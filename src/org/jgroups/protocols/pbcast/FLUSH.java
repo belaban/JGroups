@@ -130,9 +130,9 @@ public class FLUSH extends Protocol {
 						onStopFlush();
 					} else if (isCurrentFlushMessage(fh)) {
 						if (fh.type == FlushHeader.FLUSH_OK) {
-							updateOnFlushOk((Address) msg.getSrc(), fh.viewID);
+							updateOnFlushOk(msg.getSrc(), fh.viewID);
 						} else if (fh.type == FlushHeader.FLUSH_COMPLETED) {
-							onFlushCompleted((Address) msg.getSrc());
+							onFlushCompleted(msg.getSrc());
 						}
 					} else {
 						log.debug(localAddress
