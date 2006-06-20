@@ -10,9 +10,10 @@ import java.util.*;
 
 /**
  * Tests concurrent startup and message sending directly after joining
- * See doc/design/ConcurrentStartupTest.txt for details
+ * See doc/design/ConcurrentStartupTest.txt for details. This will only work 100% correctly once we have
+ * FLUSH support (JGroups 2.4)
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.6 2006/05/22 07:10:59 belaban Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.7 2006/06/20 07:51:48 belaban Exp $
  */
 public class ConcurrentStartupTest extends TestCase implements Receiver {
     final List list=Collections.synchronizedList(new LinkedList());
