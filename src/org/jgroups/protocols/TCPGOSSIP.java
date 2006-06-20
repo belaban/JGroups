@@ -1,4 +1,4 @@
-// $Id: TCPGOSSIP.java,v 1.18 2006/05/16 11:14:27 belaban Exp $
+// $Id: TCPGOSSIP.java,v 1.19 2006/06/20 07:33:40 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -84,6 +84,13 @@ public class TCPGOSSIP extends Discovery {
         super.stop();
         if(gossip_client != null) {
             gossip_client.stop();
+            gossip_client=null;
+        }
+    }
+
+    public void destroy() {
+        if(gossip_client != null) {
+            gossip_client.destroy();
             gossip_client=null;
         }
     }

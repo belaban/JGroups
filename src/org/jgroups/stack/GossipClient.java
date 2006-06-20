@@ -1,4 +1,4 @@
-// $Id: GossipClient.java,v 1.11 2005/07/17 11:34:20 chrislott Exp $
+// $Id: GossipClient.java,v 1.12 2006/06/20 07:33:40 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -19,13 +19,13 @@ import java.util.*;
  * (using GossipData PDUs) based on TCP to connect to GossipServer.<p>
  * Requires JDK >= 1.3 due to the use of Timer.
  * 
- * @todo Make access to multiple GossipServer concurrent (1 thread/GossipServer).
+ * todo: make access to multiple GossipServer concurrent (1 thread/GossipServer).
  * @author Bela Ban Oct 4 2001
  */
 public class GossipClient {
     Timer timer=new Timer();
     final Hashtable groups=new Hashtable();               // groups - Vector of Addresses
-    Refresher refresher_task=new Refresher();
+    private Refresher refresher_task=new Refresher();
     final Vector gossip_servers=new Vector();          // a list of GossipServers (IpAddress)
     boolean timer_running=false;
     long EXPIRY_TIME=20000;                    // must be less than in GossipServer
@@ -66,6 +66,13 @@ public class GossipClient {
         timer=new Timer();
         refresher_task=new Refresher();
 
+    }
+
+
+    public void destroy() {
+        timer_running=false;
+        timer.cancel();
+        groups.clear();
     }
 
 
@@ -129,7 +136,7 @@ public class GossipClient {
     /* ------------------------------------- Private methods ----------------------------------- */
 
 
-    void init(IpAddress gossip_host, long expiry) {
+    final void init(IpAddress gossip_host, long expiry) {
         EXPIRY_TIME=expiry;
         addGossipServer(gossip_host);
     }
@@ -137,7 +144,7 @@ public class GossipClient {
 
     /**
      * Registers the group|mbr with *all* GossipServers.
-     * @todo Parallelize GossipServer access
+     * todo: parallelize GossipServer access
      */
     void _register(String group, Address mbr) {
         Socket sock;
@@ -317,13 +324,6 @@ public class GossipClient {
         if(!register && !get) {
             System.err.println("Neither get nor register command given, will not do anything");
             return;
-        }
-
-        try {
-
-        }
-        catch(Throwable ex) {
-            System.err.println("GossipClient.main(): error initailizing JGroups Trace: " + ex);
         }
 
         try {
