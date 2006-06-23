@@ -1,4 +1,4 @@
-// $Id: JMS.java,v 1.13 2005/08/08 12:45:43 belaban Exp $ 
+// $Id: JMS.java,v 1.14 2006/06/23 09:01:24 belaban Exp $ 
 
 package org.jgroups.protocols;
 
@@ -522,9 +522,17 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
     /**
      * Simple {@link Address} representing the JMS node ID or JMS topic group.
      */
-    protected static class JMSAddress implements Address {
+    public static class JMSAddress implements Address {
         private String address;
         private boolean isMCast;
+
+
+        /**
+         * Empty constructor to allow externalization work.
+         */
+        public JMSAddress() {
+        }
+
 
         /**
          * Create instance of this class for given address string.
@@ -547,11 +555,7 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
             this.isMCast = isMCast;
         }
 
-        /**
-         * Empty constructor to allow externalization work.
-         */
-        JMSAddress() {
-        }
+
 
         /**
          * Reconstruct the address from the string representation. If the 
