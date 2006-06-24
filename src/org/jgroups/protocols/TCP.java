@@ -1,21 +1,16 @@
-// $Id: TCP.java,v 1.32 2006/01/24 15:52:45 belaban Exp $
+// $Id: TCP.java,v 1.33 2006/06/24 13:17:32 smarlownovell Exp $
 
 package org.jgroups.protocols;
 
 
 import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Message;
-import org.jgroups.View;
 import org.jgroups.blocks.ConnectionTable;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.util.BoundedList;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Properties;
-import java.util.Vector;
-import java.util.Iterator;
+import java.util.Collection;
 
 
 /**
@@ -29,33 +24,13 @@ import java.util.Iterator;
  * registers with the connection table to receive all incoming messages.
  * @author Bela Ban
  */
-public class TCP extends TP implements ConnectionTable.Receiver {
+public class TCP extends BasicTCP implements ConnectionTable.Receiver {
     private ConnectionTable ct=null;
-    private InetAddress	    external_addr=null; // the IP address which is broadcast to other group members
-    private int             start_port=7800;    // find first available port starting at this port
-    private int	            end_port=0;         // maximum port to bind to
-    private long            reaper_interval=0;  // time in msecs between connection reaps
-    private long            conn_expire_time=0; // max time a conn can be idle before being reaped
-
-    /** List the maintains the currently suspected members. This is used so we don't send too many SUSPECT
-     * events up the stack (one per message !)
-     */
-    final BoundedList      suspected_mbrs=new BoundedList(20);
-
-    /** Should we drop unicast messages to suspected members or not */
-    boolean                skip_suspected_members=true;
-
-    /** Use separate send queues for each connection */
-    boolean                use_send_queues=true;
-
-    int                    recv_buf_size=150000;
-    int                    send_buf_size=150000;
-    int                    sock_conn_timeout=2000; // max time in millis for a socket creation in ConnectionTable
 
 
 
-    public TCP() {
-    }
+   public TCP() {
+   }
 
     public String getName() {
         return "TCP";
@@ -158,6 +133,13 @@ public class TCP extends TP implements ConnectionTable.Receiver {
         return true;
     }
 
+   public void send(Address dest, byte[] data, int offset, int length) throws Exception {
+      ct.send(dest, data, offset, length);
+   }
+
+   public void retainAll(Collection members) {
+      ct.retainAll(members);
+   }
 
     public void start() throws Exception {
         ct=getConnectionTable(reaper_interval,conn_expire_time,bind_addr,external_addr,start_port,end_port);
@@ -178,20 +160,6 @@ public class TCP extends TP implements ConnectionTable.Receiver {
     }
 
 
-    protected void handleDownEvent(Event evt) {
-        super.handleDownEvent(evt);
-        if(evt.getType() == Event.VIEW_CHANGE) {
-            suspected_mbrs.removeAll();
-            View v=(View)evt.getArg();
-            Vector tmp_mbrs=v != null? v.getMembers() : null;
-            if(tmp_mbrs != null) {
-                ct.retainAll(tmp_mbrs); // remove all connections from the ConnectionTable which are not members
-            }
-        }
-        else if(evt.getType() == Event.UNSUSPECT) {
-            suspected_mbrs.removeElement(evt.getArg());
-        }
-    }
 
 
    /**
@@ -226,69 +194,6 @@ public class TCP extends TP implements ConnectionTable.Receiver {
    }
 
 
-    /** ConnectionTable.Receiver interface */
-    public void receive(Address sender, byte[] data, int offset, int length) {
-        super.receive(local_addr, sender, data, offset, length);
-    }
-
-
-
-
-    public void sendToAllMembers(byte[] data, int offset, int length) throws Exception {
-        Address dest;
-        Vector mbrs=(Vector)members.clone();
-        for(int i=0; i < mbrs.size(); i++) {
-            dest=(Address)mbrs.elementAt(i);
-            sendToSingleMember(dest, data, offset, length);
-        }
-    }
-
-    public void sendToSingleMember(Address dest, byte[] data, int offset, int length) throws Exception {
-        if(trace) log.trace("dest=" + dest + " (" + data.length + " bytes)");
-        if(skip_suspected_members) {
-            if(suspected_mbrs.contains(dest)) {
-                if(trace)
-                    log.trace("will not send unicast message to " + dest + " as it is currently suspected");
-                return;
-            }
-        }
-
-//        if(dest.equals(local_addr)) {
-//            if(!loopback) // if loopback, we discard the message (was already looped back)
-//                receive(dest, data, offset, length); // else we loop it back here
-//            return;
-//        }
-        try {
-            ct.send(dest, data, offset, length);
-        }
-        catch(Exception e) {
-            if(members.contains(dest)) {
-                if(!suspected_mbrs.contains(dest)) {
-                    suspected_mbrs.add(dest);
-                    passUp(new Event(Event.SUSPECT, dest));
-                }
-            }
-        }
-    }
-
-
-    public String getInfo() {
-        StringBuffer sb=new StringBuffer();
-        sb.append("connections: ").append(printConnections()).append("\n");
-        return sb.toString();
-    }
-
-
-    public void postUnmarshalling(Message msg, Address dest, Address src, boolean multicast) {
-        if(multicast)
-            msg.setDest(null);
-        else
-            msg.setDest(dest);
-    }
-
-    public void postUnmarshallingList(Message msg, Address dest, boolean multicast) {
-        postUnmarshalling(msg, dest, null, multicast);
-    }
 
 
 }

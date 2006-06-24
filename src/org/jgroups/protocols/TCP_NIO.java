@@ -1,19 +1,21 @@
 package org.jgroups.protocols;
 
 import org.jgroups.blocks.ConnectionTableNIO;
-import org.jgroups.blocks.ConnectionTable;
+import org.jgroups.Address;
+import org.jgroups.stack.IpAddress;
 
 import java.net.InetAddress;
 import java.util.Properties;
+import java.util.Collection;
 
 /**
  * Transport using NIO
  * @author Scott Marlow
  * @author Alex Fu
  * @author Bela Ban
- * @version $Id: TCP_NIO.java,v 1.6 2006/05/17 08:34:47 belaban Exp $
+ * @version $Id: TCP_NIO.java,v 1.7 2006/06/24 13:17:32 smarlownovell Exp $
  */
-public class TCP_NIO extends TCP
+public class TCP_NIO extends BasicTCP implements ConnectionTableNIO.Receiver
 {
 
    /*
@@ -21,9 +23,9 @@ public class TCP_NIO extends TCP
    *
    * @see org.jgroups.protocols.TCP#getConnectionTable(long, long)
    */
-   protected ConnectionTable getConnectionTable(long ri, long cet,
-                                                InetAddress b_addr, InetAddress bc_addr, int s_port, int e_port) throws Exception {
-      ConnectionTableNIO ct = null;
+   protected ConnectionTableNIO getConnectionTable(long ri, long cet,
+                                                   InetAddress b_addr, InetAddress bc_addr, int s_port, int e_port) throws Exception {
+
       if (ri == 0 && cet == 0) {
          ct = new ConnectionTableNIO(this, b_addr, bc_addr, s_port, e_port );
       } else {
@@ -42,6 +44,34 @@ public class TCP_NIO extends TCP
       return ct;
    }
 
+   public String printConnections()     {return ct.toString();}
+
+   public void send(Address dest, byte[] data, int offset, int length) throws Exception {
+      ct.send(dest, data, offset, length);
+   }
+
+   public void start() throws Exception {
+       ct=getConnectionTable(reaper_interval,conn_expire_time,bind_addr,external_addr,start_port,end_port);
+       ct.setUseSendQueues(use_send_queues);
+       // ct.addConnectionListener(this);
+       ct.setReceiveBufferSize(recv_buf_size);
+       ct.setSendBufferSize(send_buf_size);
+       ct.setSocketConnectionTimeout(sock_conn_timeout);
+       local_addr=ct.getLocalAddress();
+       if(additional_data != null && local_addr instanceof IpAddress)
+           ((IpAddress)local_addr).setAdditionalData(additional_data);
+       super.start();
+   }
+
+   public void retainAll(Collection members) {
+      ct.retainAll(members);
+   }
+
+   public void stop() {
+       ct.stop();
+       super.stop();
+   }
+
    public String getName() {
         return "TCP_NIO";
     }
@@ -53,6 +83,20 @@ public class TCP_NIO extends TCP
    public int getProcessorMaxThreads() { return m_processor_maxThreads;}
    public int getProcessorQueueSize() { return m_processor_queueSize; }
    public int getProcessorKeepAliveTime() { return m_processor_keepAliveTime; }
+
+   public int getOpenConnections()      {return ct.getNumConnections();}
+   public InetAddress getBindAddr() {return bind_addr;}
+   public void setBindAddr(InetAddress bind_addr) {this.bind_addr=bind_addr;}
+   public int getStartPort() {return start_port;}
+   public void setStartPort(int start_port) {this.start_port=start_port;}
+   public int getEndPort() {return end_port;}
+   public void setEndPort(int end_port) {this.end_port=end_port;}
+   public long getReaperInterval() {return reaper_interval;}
+   public void setReaperInterval(long reaper_interval) {this.reaper_interval=reaper_interval;}
+   public long getConnExpireTime() {return conn_expire_time;}
+   public void setConnExpireTime(long conn_expire_time) {this.conn_expire_time=conn_expire_time;}
+   public boolean isLoopback() {return loopback;}
+   public void setLoopback(boolean loopback) {this.loopback=loopback;}
 
    /** Setup the Protocol instance acording to the configuration string */
    public boolean setProperties(Properties props) {
@@ -114,5 +158,5 @@ public class TCP_NIO extends TCP
                                                             // for a background thread to run the request.
    private int m_processor_keepAliveTime = -1;              // PooledExecutor.setKeepAliveTime( milliseconds);
                                                             // A negative value means to wait forever
-
+   private ConnectionTableNIO ct;
 }

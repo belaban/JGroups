@@ -1,4 +1,4 @@
-// $Id: ConnectionTableNIO.java,v 1.18 2006/05/19 19:25:28 belaban Exp $
+// $Id: ConnectionTableNIO.java,v 1.19 2006/06/24 13:17:31 smarlownovell Exp $
 
 package org.jgroups.blocks;
 
@@ -34,7 +34,7 @@ import java.util.Set;
  *
  * @author Bela Ban, Scott Marlow, Alex Fu
  */
-public class ConnectionTableNIO extends ConnectionTable implements Runnable {
+public class ConnectionTableNIO extends BasicConnectionTable implements Runnable {
 
    private ServerSocketChannel m_serverSocketChannel;
    private Selector m_acceptSelector;
@@ -50,14 +50,19 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
 
    // thread pool for processing read requests
    private Executor m_requestProcessors;
-
+   ServerSocket        srv_sock=null;
+   int                 max_port=0;                   // maximum port to bind to (if < srv_port, no limit)
+   InetAddress		    external_addr=null;
+   Thread              acceptor=null;               // continuously calls srv_sock.accept()
+   private volatile boolean serverStopping=false;
 
    /**
     * @param srv_port
     * @throws Exception
     */
    public ConnectionTableNIO(int srv_port) throws Exception {
-       super(srv_port);
+      this.srv_port=srv_port;
+      start();
    }
 
    /**
@@ -68,7 +73,10 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
     */
    public ConnectionTableNIO(int srv_port, long reaper_interval,
                              long conn_expire_time) throws Exception {
-       super(srv_port, reaper_interval, conn_expire_time);
+      this.srv_port=srv_port;
+      this.reaper_interval=reaper_interval;
+      this.conn_expire_time=conn_expire_time;
+      start();
    }
 
    /**
@@ -83,8 +91,13 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
    )
       throws Exception
    {
-      super(r, bind_addr, external_addr, srv_port, max_port);
-
+      setReceiver(r);
+      this.external_addr=external_addr;
+      this.bind_addr=bind_addr;
+      this.srv_port=srv_port;
+      this.max_port=max_port;
+      use_reaper=true;
+      start();
    }
 
    /**
@@ -101,7 +114,15 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
                              long reaper_interval, long conn_expire_time
                              ) throws Exception
    {
-      super(r, bind_addr, external_addr, srv_port, max_port, reaper_interval, conn_expire_time);
+      setReceiver(r);
+      this.bind_addr=bind_addr;
+      this.external_addr=external_addr;
+      this.srv_port=srv_port;
+      this.max_port=max_port;
+      this.reaper_interval=reaper_interval;
+      this.conn_expire_time=conn_expire_time;
+      use_reaper=true;
+      start();
    }
 
    /**
@@ -109,7 +130,7 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
     */
    ConnectionTable.Connection getConnection(Address dest) throws Exception
    {
-      Connection conn = null;
+      Connection conn;
       SocketChannel sock_ch;
 
       synchronized (conns)
@@ -189,6 +210,33 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
       }
    }
 
+   public final void start() throws Exception {
+       init();
+       srv_sock=createServerSocket(srv_port, max_port);
+
+       if (external_addr!=null)
+           local_addr=new IpAddress(external_addr, srv_sock.getLocalPort());
+       else if (bind_addr != null)
+           local_addr=new IpAddress(bind_addr, srv_sock.getLocalPort());
+       else
+           local_addr=new IpAddress(srv_sock.getLocalPort());
+
+       if(log.isInfoEnabled()) log.info("server socket created on " + local_addr);
+
+       //Roland Kurmann 4/7/2003, build new thread group
+       thread_group = new ThreadGroup(Util.getGlobalThreadGroup(), "ConnectionTableGroup");
+       //Roland Kurmann 4/7/2003, put in thread_group
+       acceptor=new Thread(thread_group, this, "ConnectionTable.AcceptorThread");
+       acceptor.setDaemon(true);
+       acceptor.start();
+
+       // start the connection reaper - will periodically remove unused connections
+       if(use_reaper && reaper == null) {
+           reaper=new Reaper();
+           reaper.start();
+       }
+   }
+
    protected void init()
       throws Exception
    {
@@ -224,20 +272,11 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
     */
    public void stop()
    {
-      if (m_serverSocketChannel.isOpen())
-      {
-         try
-         {
-            m_serverSocketChannel.close();
-         }
-         catch (Exception eat)
-         {
 
-         }
-      }
-
+      serverStopping = true;
       // Stop the main selector
       m_acceptSelector.wakeup();
+
       // Stop selector threads
       for (int i = 0; i < m_readHandlers.length; i++)
       {
@@ -265,7 +304,16 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
       if(m_requestProcessors instanceof PooledExecutor)
          ((PooledExecutor)m_requestProcessors).shutdownNow();
 
-      super.stop();
+      // then close the connections
+      synchronized(conns) {
+          Iterator it=conns.values().iterator();
+          while(it.hasNext()) {
+              Connection conn=(Connection)it.next();
+              conn.destroy();
+          }
+          conns.clear();
+      }
+
 
    }
 
@@ -275,11 +323,11 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
     */
    public void run()
    {
-      Connection conn = null;
+      Connection conn;
 
-      while (m_serverSocketChannel.isOpen())
+      while (m_serverSocketChannel.isOpen() && !serverStopping)
       {
-         int num = 0;
+         int num;
          try
          {
             num = m_acceptSelector.select();
@@ -300,7 +348,7 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
                // We only deal with new incoming connections
 
                ServerSocketChannel readyChannel = (ServerSocketChannel) key.channel();
-               SocketChannel client_sock_ch = null;
+               SocketChannel client_sock_ch;
                try
                {
                   client_sock_ch = readyChannel.accept();
@@ -398,28 +446,15 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
                   continue;
                }
 
-               try
+               int idx;
+               synchronized (m_lockNextWriteHandler)
                {
-                  int idx;
-                  synchronized (m_lockNextWriteHandler)
-                  {
-                     idx = m_nextWriteHandler = (m_nextWriteHandler + 1) % m_writeHandlers.length;
-                  }
-                  conn.setupWriteHandler(m_writeHandlers[idx]);
-
+                  idx = m_nextWriteHandler = (m_nextWriteHandler + 1) % m_writeHandlers.length;
                }
-               catch (InterruptedException e)
-               {
-                  if (LOG.isWarnEnabled())
-                     LOG.warn("Attempt to configure accepted connection was interrupted", e);
-                  // Give up this connection
-                  conn.destroy();
-                  continue;
-               }
+               conn.setupWriteHandler(m_writeHandlers[idx]);
 
                try
                {
-                  int idx;
                   synchronized (m_lockNextReadHandler)
                   {
                      idx = m_nextReadHandler = (m_nextReadHandler + 1) % m_readHandlers.length;
@@ -436,6 +471,18 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
             }   // end of iteration
          }   // end of selected key > 0
       }   // end of thread
+
+      if (m_serverSocketChannel.isOpen())
+      {
+         try
+         {
+            m_serverSocketChannel.close();
+         }
+         catch (Exception e)
+         {
+            log.error("exception closing server listening socket", e);
+         }
+      }
       if (LOG.isTraceEnabled())
          LOG.trace("acceptor thread terminated");
 
@@ -560,7 +607,7 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
       {
          while (true)
          {  // m_s can be closed by the management thread
-            int events = 0;
+            int events;
             try
             {
                events = SELECTOR.select();
@@ -606,7 +653,7 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
             }
 
             // Now we look at the connection queue to get any new connections added
-            Object o = null;
+            Object o;
             try
             {
                o = QUEUE.poll(0); // get a connection
@@ -619,7 +666,12 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
             if (null == o)
                continue;
             if (o instanceof Shutdown) {     // shutdown command?
-               return;
+               try {
+                  SELECTOR.close();
+               } catch(IOException e) {
+                  if (LOG.isInfoEnabled()) LOG.info("Read selector close operation failed" , e);
+               }
+               return;                       // stop reading
             }
             Connection conn = (Connection) o;// must be a new connection
             SocketChannel sc = conn.getSocketChannel();
@@ -670,19 +722,6 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
             LOG.error("Thread ("+Thread.currentThread().getName() +") was interrupted while assigning executor to process read request" , e);
          }
       }
-
-      private int read(Connection conn, ByteBuffer buf)
-         throws IOException
-      {
-         SocketChannel sc = conn.getSocketChannel();
-
-         int num = sc.read(buf);
-         if (-1 == num) // EOS
-            throw new IOException("Couldn't read from socket as peer closed the socket");
-
-         return buf.remaining();
-      }
-
 
       /**
        * Read message header from channel. It doesn't try to complete. If there is nothing in
@@ -830,7 +869,7 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
          return m_readState;
       }
 
-      private void setupWriteHandler(WriteHandler hdlr) throws InterruptedException
+      private void setupWriteHandler(WriteHandler hdlr)
       {
          m_writeHandler = hdlr;
          m_selectorWriteHandler = hdlr.add(sock_ch);
@@ -870,13 +909,13 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
          {
             try
             {
-               if(sock_ch.isConnected()) {
+               if(sock_ch.isConnected() && sock_ch.isOpen()) {
                   sock_ch.close();
                }
             }
-            catch (Exception eat)
+            catch (Exception e)
             {
-
+               log.error("error closing socket connection", e);
             }
             sock_ch = null;
          }
@@ -946,7 +985,7 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
        *
        * @param channel
        */
-      private SelectorWriteHandler add(SocketChannel channel) throws InterruptedException
+      private SelectorWriteHandler add(SocketChannel channel)
       {
           return new SelectorWriteHandler(channel, SELECTOR, m_headerBuffer);
       }
@@ -972,7 +1011,7 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
          entry.cancel();
       }
 
-      private void handleChannelError(Selector selector, SelectorWriteHandler entry, SelectionKey selKey, Throwable error)
+      private void handleChannelError( SelectorWriteHandler entry, Throwable error)
       {
          // notify callers of the exception and drain all of the send buffers for this channel.
          do
@@ -1012,7 +1051,7 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
             {
                needToDecrementPendingChannels = true;
                // connection must of closed
-               handleChannelError(selector, entry, key, e);
+               handleChannelError( entry, e);
             }
             finally
             {
@@ -1037,6 +1076,11 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
                {
                   if (o instanceof Shutdown)    // Stop the thread
                   {
+                     try {
+                        SELECTOR.close();
+                     } catch(IOException e) {
+                        if (LOG.isInfoEnabled()) LOG.info("Write selector close operation failed" , e);
+                     }
                      return;
                   }
                   queueEntry = (WriteRequest) o;
@@ -1074,6 +1118,11 @@ public class ConnectionTableNIO extends ConnectionTable implements Runnable {
                {
                   o = QUEUE.take();
                   if (o instanceof Shutdown){    // Stop the thread
+                     try {
+                        SELECTOR.close();
+                     } catch(IOException e) {
+                        if (LOG.isInfoEnabled()) LOG.info("Write selector close operation failed" , e);
+                     }
                      return;
                   }
                   queueEntry = (WriteRequest) o;
