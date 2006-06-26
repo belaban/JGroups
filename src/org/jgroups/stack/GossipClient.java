@@ -1,4 +1,4 @@
-// $Id: GossipClient.java,v 1.12 2006/06/20 07:33:40 belaban Exp $
+// $Id: GossipClient.java,v 1.13 2006/06/26 08:38:34 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -6,11 +6,15 @@ package org.jgroups.stack;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
+import org.jgroups.util.Util;
 
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.SocketAddress;
+import java.net.InetSocketAddress;
 import java.util.*;
 
 
@@ -29,6 +33,7 @@ public class GossipClient {
     final Vector gossip_servers=new Vector();          // a list of GossipServers (IpAddress)
     boolean timer_running=false;
     long EXPIRY_TIME=20000;                    // must be less than in GossipServer
+    final int SOCKET_TIMEOUT=5000;            // max number of ms to wait for socket establishment to GossipRouter
 
     protected final Log log=LogFactory.getLog(this.getClass());
 
@@ -181,9 +186,10 @@ public class GossipClient {
      */
     Vector _getMembers(String group) {
         Vector ret=new Vector();
-        Socket sock;
-        ObjectOutputStream out;
-        ObjectInputStream in;
+        Socket sock=null;
+        SocketAddress destAddr;
+        ObjectOutputStream out=null;
+        ObjectInputStream in=null;
         IpAddress entry;
         GossipData gossip_req, gossip_rsp;
         Address mbr;
@@ -194,10 +200,13 @@ public class GossipClient {
                 if(log.isErrorEnabled()) log.error("entry.host or entry.port is null");
                 continue;
             }
+            
             try {
-
                 if(log.isTraceEnabled()) log.trace("GET_REQ --> " + entry.getIpAddress() + ':' + entry.getPort());
-                sock=new Socket(entry.getIpAddress(), entry.getPort());
+                // sock=new Socket(entry.getIpAddress(), entry.getPort());
+                sock=new Socket();
+                destAddr=new InetSocketAddress(entry.getIpAddress(), entry.getPort());
+                sock.connect(destAddr, SOCKET_TIMEOUT);
                 out=new ObjectOutputStream(sock.getOutputStream());
 
                 gossip_req=new GossipData(GossipData.GET_REQ, group, null, null);
@@ -215,12 +224,16 @@ public class GossipClient {
                             ret.addElement(mbr);
                     }
                 }
-
-
-                sock.close();
             }
             catch(Exception ex) {
                 if(log.isErrorEnabled()) log.error("exception connecting to host " + entry + ": " + ex);
+            }
+            finally {
+                Util.closeOutputStream(out);
+                Util.closeInputStream(in);
+                if(sock != null) {
+                    try {sock.close();} catch(IOException e) {}
+                }
             }
         }
 
