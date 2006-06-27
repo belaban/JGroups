@@ -47,6 +47,7 @@ public class VirtualSynchronyTest extends TestCase {
 	private final static String CHANNEL_PROPS="fc-fast-minimalthreads.xml";
 	private final static int INITIAL_NUMBER_OF_MEMBERS=5;
 	private int runningTime = 1000*60*5; //5 minutes
+	private Random r = new Random();
 	
 	
 	public VirtualSynchronyTest(String arg0) {
@@ -57,8 +58,7 @@ public class VirtualSynchronyTest extends TestCase {
 	{
 		long start = System.currentTimeMillis();
 		boolean running=true;
-		List members=new ArrayList();	
-		Random r = new Random();
+		List members=new ArrayList();			
 		
 		//first spawn and join
 		for(int i =0;i<INITIAL_NUMBER_OF_MEMBERS;i++)
@@ -66,7 +66,7 @@ public class VirtualSynchronyTest extends TestCase {
 			GroupMemberThread member = new GroupMemberThread("Member");
 			member.start();			
 			members.add(member);					
-			Util.sleep(5000);
+			Util.sleep(getRandomDelayInSeconds(4,6)*1000);
 		}
 		
 		
@@ -75,26 +75,27 @@ public class VirtualSynchronyTest extends TestCase {
 			//and then flip a coin
 			if(r.nextBoolean())
 			{
+				Util.sleep(getRandomDelayInSeconds(3,8)*1000);
 				GroupMemberThread member = new GroupMemberThread("Member");				
 				member.start();			
-				members.add(member);
-				Util.sleep(5000);
+				members.add(member);				
 			}
 			else if(members.size()>1)
 			{
+				Util.sleep(getRandomDelayInSeconds(3,8)*1000);
 				GroupMemberThread unluckyBastard = (GroupMemberThread) members.get(r.nextInt(members.size()));
 				members.remove(unluckyBastard);				
-				unluckyBastard.setRunning(false);
-				Util.sleep(5000);
-			}	
-			else
-			{
-				Util.sleep(1000);
-			}
+				unluckyBastard.setRunning(false);				
+			}				
 			running = System.currentTimeMillis()-start>runningTime?false:true;
 			System.out.println("Running time " + ((System.currentTimeMillis()-start)/1000) + " secs");
 		}
 		System.out.println("Done, Virtual Synchrony satisfied in all tests ");
+	}
+	
+	protected int getRandomDelayInSeconds(int from,int to)
+	{
+		return from + r.nextInt(to-from);
 	}
 
 	protected void setUp() throws Exception {
@@ -146,7 +147,7 @@ public class VirtualSynchronyTest extends TestCase {
 		public void setRunning(boolean b) {
 			running=false;	
 			System.out.println("Disconnect " + getAddress());
-			if(ch!=null)ch.disconnect();
+			if(ch!=null)ch.close();
 		}
 
 		public void run() {
@@ -158,20 +159,27 @@ public class VirtualSynchronyTest extends TestCase {
 			}
 			
 			while (running) {
-				Object msgReceived = null;				
+				Object msgReceived = null;
 				try {
-					msgReceived = ch.receive(500);
-					if (msgReceived instanceof View) {
-						gotView(msgReceived);
+					msgReceived = ch.receive(0);
+					if (!running) {
+						// I am not a group member anymore so
+						// I will discard any transient message I
+						// receive
+					} else {
+						if (msgReceived instanceof View) {
+							gotView(msgReceived);
+						}
+
+						if (msgReceived instanceof Message) {
+							gotMessage(msgReceived);
+						}
 					}
 
-					if (msgReceived instanceof Message) {
-						gotMessage(msgReceived);
-					}
 				} catch (TimeoutException e) {
-				} catch (Exception e) {					
-					ch.disconnect();
-					running=false;
+				} catch (Exception e) {
+					ch.close();
+					running = false;
 				}			
 			}					
 		}
@@ -198,10 +206,15 @@ public class VirtualSynchronyTest extends TestCase {
 						System.out.println("VS ok, all " + payloads.size()
 								+ " members in " + prevView.getVid()
 								+ " view have received " + first.msgViewCount
-								+ " messages");
+								+ " messages.\nAll messages sent in "
+								+ prevView.getVid() + " were delivered in "
+								+ prevView.getVid());
 					}
 				}
 			} else if (m instanceof String) {
+				assertEquals("Member " + ch.getLocalAddress()
+							+ " received message from the wrong view. Message sender was "
+							+ msg.getSrc(), currentView.getVid().getId(), Long.parseLong((String) m));
 				numberOfMessagesInView++;
 			}
 		}
@@ -219,7 +232,7 @@ public class VirtualSynchronyTest extends TestCase {
 			currentView = tmpView;
 			// send our allotment of messages
 			for (int i = 0; i < messagesSentPerView; i++) {
-				ch.send(null, null, "vsynchtest");
+				ch.send(null, null, Long.toString(currentView.getVid().getId()));
 			}
 		}
 	}
