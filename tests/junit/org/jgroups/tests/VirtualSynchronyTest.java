@@ -44,7 +44,7 @@ import org.jgroups.util.Util;
  */
 public class VirtualSynchronyTest extends TestCase {
 
-	private final static String CHANNEL_PROPS="fc-fast-minimalthreads.xml";
+	private final static String CHANNEL_PROPS="flush-fc-fast-minimalthreads.xml";
 	private final static int INITIAL_NUMBER_OF_MEMBERS=5;
 	private int runningTime = 1000*60*5; //5 minutes
 	private Random r = new Random();
