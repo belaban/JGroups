@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.46 2006/06/27 17:55:24 vlada Exp $
+// $Id: CoordGmsImpl.java,v 1.47 2006/06/27 18:03:54 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -366,8 +366,7 @@ public class CoordGmsImpl extends GmsImpl {
                 
             	if(tmp_mbrs != null)
                     tmp_mbrs.remove(mbr); // exclude the newly joined member from VIEW_ACKs
-                
-                if(gms.use_flush)gms.startFlush(join_rsp.getView());               
+                                            
                 gms.castViewChangeWithDest(join_rsp.getView(), null, tmp_mbrs);
 
                 // 4. Return result to client
