@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.45 2006/05/22 09:50:44 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.46 2006/06/27 17:55:24 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -342,22 +342,41 @@ public class CoordGmsImpl extends GmsImpl {
             // Check NAKACK's TMP_VIEW handling for details
             if(join_rsp.getView() != null)
                 gms.passDown(new Event(Event.TMP_VIEW, join_rsp.getView()));
+           
+            Vector tmp_mbrs=join_rsp.getView() != null? new Vector(join_rsp.getView().getMembers()) : null;           
+            
+            if(gms.use_flush){
+            	
+            	//3a. FLUSH protocol is in use. First we FLUSH current members. Then we send a 
+            	// view to a joining member and we will wait for his ACK together with view 
+            	// ACKs from current members (castViewChangeWithDest). After all ACKS have been 
+            	// collected, FLUSH is stopped (below in finally clause) and thus members are 
+            	// allowed to send messages again.
+            	gms.startFlush(join_rsp.getView());            	
+            	sendJoinResponse(join_rsp, mbr);
+            	gms.castViewChangeWithDest(join_rsp.getView(), null, tmp_mbrs);            	
+            }
+            else
+            {
+            	//3b. Broadcast the new view
+            	// we'll multicast the new view first and only, when everyone has replied with a VIEW_ACK (or timeout),
+                // send the JOIN_RSP back to the client. This prevents the client from sending multicast messages in
+                // view V2 which may get dropped by existing members because they're still in view V1.
+                // (http://jira.jboss.com/jira/browse/JGRP-235)
+                
+            	if(tmp_mbrs != null)
+                    tmp_mbrs.remove(mbr); // exclude the newly joined member from VIEW_ACKs
+                
+                if(gms.use_flush)gms.startFlush(join_rsp.getView());               
+                gms.castViewChangeWithDest(join_rsp.getView(), null, tmp_mbrs);
 
-            // we'll multicast the new view first and only, when everyone has replied with a VIEW_ACK (or timeout),
-            // send the JOIN_RSP back to the client. This prevents the client from sending multicast messages in
-            // view V2 which may get dropped by existing members because they're still in view V1.
-            // (http://jira.jboss.com/jira/browse/JGRP-235)
-
-            // 3. Broadcast the new view
-            Vector tmp_mbrs=join_rsp.getView() != null? new Vector(join_rsp.getView().getMembers()) : null;
-            if(tmp_mbrs != null)
-                tmp_mbrs.remove(mbr); // exclude the newly joined member from VIEW_ACKs
-            gms.castViewChangeWithDest(join_rsp.getView(), null, tmp_mbrs);
-
-            // 4. Return result to client
-            sendJoinResponse(join_rsp, mbr);
+                // 4. Return result to client
+                sendJoinResponse(join_rsp, mbr);
+            }
+            
         }
         finally {
+        	if(gms.use_flush)gms.stopFlush();
             gms.passDown(new Event(Event.RESUME_STABLE));
         }
     }
@@ -371,7 +390,10 @@ public class CoordGmsImpl extends GmsImpl {
       this member crashed and therefore is forced to leave, otherwise it is leaving voluntarily.
       */
      public void handleLeave(Address mbr, boolean suspected) {
+    	 View new_view = null;
          Vector v=new Vector(1);
+         v.addElement(mbr);
+         
          // contains either leaving mbrs or suspected mbrs
          if(log.isDebugEnabled()) log.debug("mbr=" + mbr);
          if(!gms.members.contains(mbr)) {
@@ -387,16 +409,23 @@ public class CoordGmsImpl extends GmsImpl {
                            "); the new coordinator will handle the leave request");
              return;
          }
+         try {
+			sendLeaveResponse(mbr); // send an ack to the leaving member
+			if (suspected) {
+				new_view = gms.getNextView(null, null, v);
+			} else {
+				new_view = gms.getNextView(null, v, null);
+			}
 
-         sendLeaveResponse(mbr); // send an ack to the leaving member
-
-         v.addElement(mbr);
-
-         if(suspected)
-             gms.castViewChange(null, null, v);
-         else
-             gms.castViewChange(null, v, null);
-
+			if (gms.use_flush) {
+				gms.startFlush(new_view);
+			}
+			gms.castViewChange(new_view, null);
+		} finally {
+			if (gms.use_flush) {
+				gms.stopFlush();
+			}
+		}
         if(leaving) {
             gms.passUp(new Event(Event.DISCONNECT_OK));
             gms.initState(); // in case connect() is called again

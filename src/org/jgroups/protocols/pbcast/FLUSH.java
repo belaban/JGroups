@@ -2,11 +2,14 @@
 package org.jgroups.protocols.pbcast;
 
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
@@ -20,6 +23,8 @@ import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.ViewId;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.Streamable;
+import org.jgroups.util.Util;
 
 /**
  * Flush, as it name implies, forces group members to flush their pending messages 
@@ -58,7 +63,7 @@ public class FLUSH extends Protocol {
 	private Set flushCompletedSet;
 	private final Object sharedLock = new Object();
 	private final Object blockMutex=new Object();
-	private volatile boolean isBlockState = false;
+	private volatile boolean isBlockState = true;
 	private long timeout = 4000;
 	
 	public FLUSH() {
@@ -177,6 +182,13 @@ public class FLUSH extends Protocol {
 	
 	private void onViewChange(View view)
 	{
+		Vector members = view.getMembers();	
+		//Am I the only member? If yes, unblock me so I can send messages		
+		if((members!= null && members.size()==1)&& localAddress.equals(members.get(0)))
+		{
+			isBlockState=false;
+		}
+		
 		synchronized (sharedLock) {
 			currentView = view;
 			
@@ -209,9 +221,15 @@ public class FLUSH extends Protocol {
 		Message msg = null;
 		synchronized(sharedLock)
 		{						
-			//initiate FLUSH only on group members that we need to flush 
-			flushMembers = new ArrayList(view.getMembers());
-			flushMembers.retainAll(currentView.getMembers());			
+			//initiate FLUSH only on group members that we need to flush
+			if (view != null) {
+				flushMembers = new ArrayList(view.getMembers());
+				flushMembers.retainAll(currentView.getMembers());
+			}	
+			else
+			{
+				flushMembers = new ArrayList(currentView.getMembers());
+			}
 			msg = new Message(null, localAddress, null);
 			msg.putHeader(getName(), new FlushHeader(FlushHeader.START_FLUSH,
 					currentView.getVid().getId(), flushMembers));
@@ -338,7 +356,7 @@ public class FLUSH extends Protocol {
 		return isBlockState;
 	}	
 
-	public static class FlushHeader extends Header {
+	public static class FlushHeader extends Header implements Streamable{
 		public static final byte START_FLUSH = 0;
 
 		public static final byte FLUSH_OK = 1;
@@ -397,6 +415,37 @@ public class FLUSH extends Protocol {
 			type = in.readByte();
 			viewID = in.readLong();
 			flushParticipants = (Collection) in.readObject();
+		}
+
+		public void writeTo(DataOutputStream out) throws IOException {
+			out.writeByte(type);
+			out.writeLong(viewID);
+			if(flushParticipants!= null && !flushParticipants.isEmpty())
+			{
+				out.writeInt(flushParticipants.size());
+				for (Iterator iter = flushParticipants.iterator(); iter.hasNext();) {
+					Address address = (Address) iter.next();
+					Util.writeAddress(address,out);					
+				}
+			}
+			else
+			{
+				out.writeInt(0);
+			}			
+		}
+
+		public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {			
+			type = in.readByte();
+			viewID = in.readLong();
+			int flushParticipantsSize = in.readInt();
+			if(flushParticipantsSize>0)
+			{
+				flushParticipants = new ArrayList(flushParticipantsSize);
+				for(int i = 0;i<flushParticipantsSize;i++)
+				{
+					flushParticipants.add(Util.readAddress(in));
+				}
+			}
 		}		
 	}
 }

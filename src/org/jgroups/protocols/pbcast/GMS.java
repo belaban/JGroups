@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.55 2006/05/22 10:03:10 belaban Exp $
+// $Id: GMS.java,v 1.56 2006/06/27 17:55:24 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -36,12 +36,16 @@ public class GMS extends Protocol {
     private long              ltime=0;
     long                      join_timeout=5000;
     long                      join_retry_timeout=2000;
+    long 					  flush_timeout=10000;	
     long                      leave_timeout=5000;
     private long              digest_timeout=0;              // time to wait for a digest (from PBCAST). should be fast
     long                      merge_timeout=10000;           // time to wait for all MERGE_RSPS
     private final Object      impl_mutex=new Object();       // synchronizes event entry into impl
     private final Object      digest_mutex=new Object();
     private final Promise     digest_promise=new Promise();  // holds result of GET_DIGEST event
+    private final Object      flush_mutex=new Object();
+    boolean 				  use_flush=false;
+	private boolean		 	  isWaitingForFlushResponse = false;
     private final Hashtable   impls=new Hashtable(3);
     private boolean           shun=true;
     boolean                   merge_leader=false;         // can I initiate a merge ?
@@ -595,6 +599,34 @@ public class GMS extends Protocol {
             return ret;
         }
     }
+    
+    void startFlush(View new_view) {
+		synchronized (flush_mutex) {			
+			isWaitingForFlushResponse = true;
+			if (log.isDebugEnabled()) {
+				log.debug("Starting FLUSH, sending SUSPEND event");
+			}
+			passUp(new Event(Event.SUSPEND,new_view));			
+			while (isWaitingForFlushResponse) {
+				try {
+					flush_mutex.wait(flush_timeout);
+				} catch (InterruptedException e) {
+				}
+				if(isWaitingForFlushResponse)
+				{
+					log.warn(local_addr + " timed out on startFlush");
+					isWaitingForFlushResponse=false;
+				}
+			}
+		}
+	}
+    
+    void stopFlush() {
+		if (log.isDebugEnabled()) {
+			log.debug("Sending RESUME event");
+		}
+		passUp(new Event(Event.RESUME));
+	}
 
 
     public void up(Event evt) {
@@ -753,6 +785,12 @@ public class GMS extends Protocol {
                     initState(); // in case connect() is called again
                 }
                 break;       // pass down
+            case Event.SUSPEND_OK:
+            	synchronized (flush_mutex) {
+            		isWaitingForFlushResponse = false;
+            		flush_mutex.notifyAll();
+				}
+            	return;        
         }
 
         if(impl.handleDownEvent(evt))
@@ -841,6 +879,18 @@ public class GMS extends Protocol {
         if(str != null) {
             num_prev_mbrs=Integer.parseInt(str);
             props.remove("num_prev_mbrs");
+        }
+        
+        str=props.getProperty("use_flush");
+        if(str != null) {
+            use_flush=Boolean.valueOf(str).booleanValue();
+            props.remove("use_flush");
+        }
+        
+        str=props.getProperty("flush_timeout");
+        if(str != null) {
+        	flush_timeout=Long.parseLong(str);
+            props.remove("flush_timeout");
         }
 
         if(props.size() > 0) {
@@ -1106,7 +1156,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.55 2006/05/22 10:03:10 belaban Exp $
+     * @version $Id: GMS.java,v 1.56 2006/06/27 17:55:24 vlada Exp $
      */
     class ViewHandler implements Runnable {
         Thread                    t;
@@ -1263,7 +1313,12 @@ public class GMS extends Protocol {
                     impl.merge(req.coordinators);
                     break;
                 case Request.VIEW:
-                    castViewChangeWithDest(req.view, req.digest, req.target_members);
+                	try {
+						if (use_flush) startFlush(req.view);
+						castViewChangeWithDest(req.view, req.digest, req.target_members);
+					} finally {
+						if (use_flush) stopFlush();
+					}
                     break;
                 default:
                     log.error("Request " + req.type + " is unknown; discarded");
