@@ -65,6 +65,7 @@ public class FLUSH extends Protocol {
 	private final Object blockMutex=new Object();
 	private volatile boolean isBlockState = true;
 	private long timeout = 4000;
+	private Set suspected;
 	
 	public FLUSH() {
 		super();
@@ -73,6 +74,7 @@ public class FLUSH extends Protocol {
 		flushOkSet = new TreeSet();
 		flushCompletedSet = new TreeSet();
 		flushMembers=new ArrayList();
+		suspected = new TreeSet();		
 	}
 
 	public String getName() {
@@ -130,12 +132,12 @@ public class FLUSH extends Protocol {
 				if (fh != null) {
 					if (fh.type == FlushHeader.START_FLUSH) {
 						passUp(new Event(Event.BLOCK));
-						onFlushStart(msg.getSrc(), fh);
+						onStartFlush(msg.getSrc(), fh);
 					} else if (fh.type == FlushHeader.STOP_FLUSH) {
 						onStopFlush();
 					} else if (isCurrentFlushMessage(fh)) {
 						if (fh.type == FlushHeader.FLUSH_OK) {
-							updateOnFlushOk(msg.getSrc(), fh.viewID);
+							onFlushOk(msg.getSrc(), fh.viewID);
 						} else if (fh.type == FlushHeader.FLUSH_COMPLETED) {
 							onFlushCompleted(msg.getSrc());
 						}
@@ -175,8 +177,7 @@ public class FLUSH extends Protocol {
 	private boolean isCurrentFlushMessage(FlushHeader fh) {
 		synchronized (sharedLock) {
 			ViewId viewId = currentView.getVid();
-			return flushMembers != null && viewId != null
-					&& viewId.getId() <= fh.viewID;
+			return viewId != null && viewId.getId() <= fh.viewID;
 		}
 	}	
 	
@@ -190,6 +191,7 @@ public class FLUSH extends Protocol {
 		}
 		
 		synchronized (sharedLock) {
+			suspected.retainAll(view.getMembers());
 			currentView = view;
 			
 			//If coordinator leaves, its STOP FLUSH message will be discarded by 
@@ -204,8 +206,7 @@ public class FLUSH extends Protocol {
 			}
 			
 		}	
-		log.debug("Installing view at  " + localAddress + " view is "
-				+ currentView);
+		log.debug("Installing view at  " + localAddress + " view is " + currentView);
 	}
 
 	private void onStopFlush() {
@@ -214,29 +215,41 @@ public class FLUSH extends Protocol {
 			isBlockState = false;
 			blockMutex.notifyAll();
 		}	
+		
+		synchronized (sharedLock) {
+			flushCompletedSet.clear();
+			flushOkSet.clear();		
+			flushCaller=null;
+			flushMembers=new TreeSet();
+		}
 	}
 	
 	private void onSuspend(View view)
 	{			
 		Message msg = null;
+		Collection participantsInFlush=null;
 		synchronized(sharedLock)
 		{						
 			//initiate FLUSH only on group members that we need to flush
 			if (view != null) {
-				flushMembers = new ArrayList(view.getMembers());
-				flushMembers.retainAll(currentView.getMembers());
+				participantsInFlush = new ArrayList(view.getMembers());
+				participantsInFlush.retainAll(currentView.getMembers());
 			}	
 			else
 			{
-				flushMembers = new ArrayList(currentView.getMembers());
+				participantsInFlush = new ArrayList(currentView.getMembers());
 			}
 			msg = new Message(null, localAddress, null);
 			msg.putHeader(getName(), new FlushHeader(FlushHeader.START_FLUSH,
-					currentView.getVid().getId(), flushMembers));
+					currentView.getVid().getId(), participantsInFlush));
 		}
-		passDown(new Event(Event.MSG, msg));
-		log.debug("Received SUSPEND at " + localAddress
-				+ ", sent START_FLUSH to " + flushMembers);
+		if (participantsInFlush.isEmpty()) {
+			passDown(new Event(Event.SUSPEND_OK));
+		} else {
+			passDown(new Event(Event.MSG, msg));
+			log.debug("Received SUSPEND at " + localAddress
+					+ ", sent START_FLUSH to " + participantsInFlush);
+		}
 	}
 	
 	private void onResume()
@@ -248,23 +261,22 @@ public class FLUSH extends Protocol {
 				+ ", sent STOP_FLUSH to all");
 	}
 
-	private void onFlushStart(Address flushStarter, FlushHeader fh) {		
-		synchronized (blockMutex) {
-			isBlockState = true;
-		}
-		synchronized (sharedLock) {
-			flushCompletedSet.clear();
-			flushOkSet.clear();
-			flushCaller = flushStarter;
-			flushMembers=fh.flushParticipants;
-		}
-		Message msg = new Message(null, localAddress, null);
-		msg.putHeader(getName(), new FlushHeader(FlushHeader.FLUSH_OK,fh.viewID));
-		passDown(new Event(Event.MSG, msg));	
-		log.debug("Received START_FLUSH at " + localAddress + " responded with FLUSH_OK");
+	private void onStartFlush(Address flushStarter, FlushHeader fh) {						
+			synchronized (blockMutex) {
+				isBlockState = true;
+			}
+			synchronized (sharedLock) {				
+				flushCaller = flushStarter;
+				flushMembers = fh.flushParticipants;
+				flushMembers.removeAll(suspected);
+			}
+			Message msg = new Message(null, localAddress, null);
+			msg.putHeader(getName(), new FlushHeader(FlushHeader.FLUSH_OK,fh.viewID));
+			passDown(new Event(Event.MSG, msg));
+			log.debug("Received START_FLUSH at " + localAddress + " responded with FLUSH_OK");		
 	}
 	
-	private void updateOnFlushOk(Address address, long viewID) {
+	private void onFlushOk(Address address, long viewID) {
 
 		boolean flushOkCompleted = false;
 		Message m = null;
@@ -304,54 +316,32 @@ public class FLUSH extends Protocol {
 					+ " sent SUSPEND_OK down");
 		}
 	}
-
-	private void onSuspect(Address address) {				
-		boolean restartFlush = false;
-		long viewID = 0;	
-		Collection membersToFlush=null;
+	
+	private void onSuspect(Address address) {
+		boolean flushOkCompleted = false;
+		Message m = null;
+		long viewID = 0;
 		synchronized (sharedLock) {
-			viewID = currentView.getVid().getId();
-			restartFlush = isFlushCaller(address)
-					&& amIFlushCallersNeighbor(address);
-			if (restartFlush) {
-				membersToFlush = new ArrayList(currentView.getMembers());
-				membersToFlush.remove(address);
-			}
-		}
-		if (restartFlush) {				
-			Message msg = new Message(null, localAddress, null);
-			msg.putHeader(getName(), new FlushHeader(FlushHeader.START_FLUSH,viewID,membersToFlush));
-			passDown(new Event(Event.MSG, msg));
-			log.debug("SUSPECT was FLUSH caller. " + localAddress
-					+ " is neighbor that restarted FLUSH ");
+			suspected.add(address);
+			flushMembers.removeAll(suspected);
+			viewID = currentView.getVid().getId();			
+			flushOkCompleted = flushOkSet.size() > 0
+					&& flushOkSet.containsAll(flushMembers);
+			if (flushOkCompleted) {
+				m = new Message(flushCaller, localAddress, null);
+			}			
 		}		
-	}
-	
-	private boolean isFlushCaller(Address address)
-	{
-		return address.equals(flushCaller);		
-	}
-	
-	private boolean amIFlushCallersNeighbor(Address address)
-	{		
-		boolean amINeighbor = false;
-		if(currentView.size()>1)
-		{			
-			Vector members = currentView.getMembers();
-			int suspectsIndex = members.indexOf(address);
-			boolean isLast = members.size()==suspectsIndex+1;
-			if(isLast)
-			{
-				amINeighbor = localAddress.equals(currentView.getCreator());
-			}
-			else
-			{
-				amINeighbor = localAddress.equals(members.get(suspectsIndex+1));
-			}
+		if (flushOkCompleted) {
+			m.putHeader(getName(), new FlushHeader(FlushHeader.FLUSH_COMPLETED, viewID));
+			passDown(new Event(Event.MSG, m));
+			log.debug(localAddress + " sent FLUSH_COMPLETED message to "
+					+ flushCaller);
 		}
-		return amINeighbor;
+		log.debug("Suspect is " + address + ",completed " + flushOkCompleted
+				+ ",  flushOkSet " + flushOkSet + " flushMembers "
+				+ flushMembers);		
 	}
-
+	
 	private boolean isFlushRunning() {
 		return isBlockState;
 	}	
@@ -422,7 +412,7 @@ public class FLUSH extends Protocol {
 			out.writeLong(viewID);
 			if(flushParticipants!= null && !flushParticipants.isEmpty())
 			{
-				out.writeInt(flushParticipants.size());
+				out.writeShort(flushParticipants.size());
 				for (Iterator iter = flushParticipants.iterator(); iter.hasNext();) {
 					Address address = (Address) iter.next();
 					Util.writeAddress(address,out);					
@@ -430,14 +420,14 @@ public class FLUSH extends Protocol {
 			}
 			else
 			{
-				out.writeInt(0);
+				out.writeShort(0);
 			}			
 		}
 
 		public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {			
 			type = in.readByte();
 			viewID = in.readLong();
-			int flushParticipantsSize = in.readInt();
+			int flushParticipantsSize = in.readShort();
 			if(flushParticipantsSize>0)
 			{
 				flushParticipants = new ArrayList(flushParticipantsSize);
