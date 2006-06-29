@@ -175,11 +175,20 @@ public class FLUSH extends Protocol {
 	}
 
 	private boolean isCurrentFlushMessage(FlushHeader fh) {
-		synchronized (sharedLock) {
-			ViewId viewId = currentView.getVid();
-			return viewId != null && viewId.getId() <= fh.viewID;
-		}
+		return currentViewId() <= fh.viewID;		
 	}	
+	
+	private long currentViewId(){
+		long viewId = 0;
+		synchronized (sharedLock) {
+			ViewId view = currentView.getVid();
+			if(view!=null)
+			{
+				viewId = view.getId();
+			}			
+		}
+		return viewId;		
+	}
 	
 	private void onViewChange(View view)
 	{
@@ -218,9 +227,9 @@ public class FLUSH extends Protocol {
 		
 		synchronized (sharedLock) {
 			flushCompletedSet.clear();
-			flushOkSet.clear();		
-			flushCaller=null;
-			flushMembers=new TreeSet();
+			flushOkSet.clear();
+			flushMembers.clear();
+			flushCaller=null;			
 		}
 	}
 	
@@ -241,7 +250,7 @@ public class FLUSH extends Protocol {
 			}
 			msg = new Message(null, localAddress, null);
 			msg.putHeader(getName(), new FlushHeader(FlushHeader.START_FLUSH,
-					currentView.getVid().getId(), participantsInFlush));
+					currentViewId(), participantsInFlush));
 		}
 		if (participantsInFlush.isEmpty()) {
 			passDown(new Event(Event.SUSPEND_OK));
@@ -324,7 +333,7 @@ public class FLUSH extends Protocol {
 		synchronized (sharedLock) {
 			suspected.add(address);
 			flushMembers.removeAll(suspected);
-			viewID = currentView.getVid().getId();			
+			viewID = currentViewId();			
 			flushOkCompleted = flushOkSet.size() > 0
 					&& flushOkSet.containsAll(flushMembers);
 			if (flushOkCompleted) {
