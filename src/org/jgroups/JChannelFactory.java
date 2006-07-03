@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.23 2006/06/01 09:27:36 belaban Exp $
+// $Id: JChannelFactory.java,v 1.24 2006/07/03 11:05:54 belaban Exp $
 
 package org.jgroups;
 
@@ -364,6 +364,7 @@ public class JChannelFactory implements ChannelFactory {
                 Multiplexer mux=entry.multiplexer;
                 if(mux != null) {
                     all_closed=mux.close(); // closes JChannel if all MuxChannels are in closed state
+                    mux.unregister(ch.getId());
                 }
             }
             if(all_closed) {
@@ -397,6 +398,7 @@ public class JChannelFactory implements ChannelFactory {
                     Multiplexer mux=entry.multiplexer;
                     if(mux != null) {
                         all_closed=mux.shutdown(); // closes JChannel if all MuxChannels are in closed state
+                        mux.unregister(ch.getId());
                     }
                 }
                 if(all_closed) {
