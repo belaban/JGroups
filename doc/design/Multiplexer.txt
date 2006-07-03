@@ -4,7 +4,7 @@ Multiplexing functionality
 ===========================
 
 Author: Bela Ban
-Version: $Id: Multiplexer.txt,v 1.14 2006/04/05 05:31:24 belaban Exp $
+Version: $Id: Multiplexer.txt,v 1.15 2006/07/03 12:50:48 belaban Exp $
 JIRA: http://jira.jboss.com/jira/browse/JGRP-119, http://jira.jboss.com/jira/browse/JGRP-112
 
 Overview
@@ -192,6 +192,10 @@ Preventing multiple FLUSH phases
     MuxChannel.connect() calls go through the JChannelFactory), the factory tells the Multiplexer to fetch *all*
     substates for that JChannel. This is essentially the same as fetching the entire state, but the returned state
     contains a list of <application-id/state> pairs, so the Multiplexer will call setState() on each application
+  NOTE: this design doesn't work in JBoss as the dependency management does *not* guarantee that all create() methods
+        will be called before all start() methods. Currently, this is disabled in JBoss
+
+
 
 
 
