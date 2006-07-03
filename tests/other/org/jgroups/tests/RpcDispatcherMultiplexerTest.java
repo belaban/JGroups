@@ -11,11 +11,14 @@ import java.util.Vector;
 /**
  * Tests cluster method invocations on disconnected and connected services
  * @author Bela Ban
- * @version $Id: RpcDispatcherMultiplexerTest.java,v 1.1 2006/06/29 07:44:52 belaban Exp $
+ * @version $Id: RpcDispatcherMultiplexerTest.java,v 1.2 2006/07/03 09:10:16 belaban Exp $
  */
 public class RpcDispatcherMultiplexerTest implements MembershipListener, RequestHandler, ChannelListener {
     Channel           channel;
+    JChannelFactory factory=null;
     RpcDispatcher     disp;
+    String props=null;
+    boolean spurious_channel_created=false;
 
 
     public static void main(String[] args) throws Exception {
@@ -33,27 +36,36 @@ public class RpcDispatcherMultiplexerTest implements MembershipListener, Request
     }
 
     private void start(String props) throws Exception {
-        JChannelFactory factory=new JChannelFactory();
+        if(factory == null)
+            factory=new JChannelFactory();
         if(props == null)
-            props="stacks.xml";
-        factory.setMultiplexerConfig(props);
+            this.props="stacks.xml";
+        else
+            this.props=props;
+        factory.setMultiplexerConfig(this.props);
         channel=factory.createMultiplexerChannel("fc-fast-minimalthreads", "MyId");
+
+        if(!spurious_channel_created) {
+            // create one additional channel so that we don't close the JGroups channel when disconnecting from MuxChannel !
+            Channel tmp=factory.createMultiplexerChannel("fc-fast-minimalthreads", "tempChannel");
+            tmp.connect("bla");
+            spurious_channel_created=true;
+        }
 
         channel.addChannelListener(this);
         channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
         disp=new RpcDispatcher(channel, null, this, this,
                                false, // deadlock detection is disabled
                                true); // concurrent processing is enabled
-        startService();
+        channel.connect("MessageDispatcherTestGroup");
         mainLoop();
     }
 
-    private void startService() throws ChannelException {
-        channel.connect("MessageDispatcherTestGroup");
-    }
 
-    private void stopService() {
-        channel.disconnect();
+
+    private void stop() {
+        disp.stop();
+        channel.close();
     }
 
     private void mainLoop() throws Exception  {
@@ -69,10 +81,10 @@ public class RpcDispatcherMultiplexerTest implements MembershipListener, Request
                 invokeGroupMethod();
                 break;
             case '2':
-                startService();
+                start(this.props);
                 break;
             case '3':
-                stopService();
+                stop();
                 break;
             case '4':
                 View v=channel.getView();
