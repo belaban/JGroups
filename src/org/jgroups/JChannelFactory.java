@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.24 2006/07/03 11:05:54 belaban Exp $
+// $Id: JChannelFactory.java,v 1.25 2006/07/03 12:58:08 belaban Exp $
 
 package org.jgroups;
 
@@ -268,7 +268,7 @@ public class JChannelFactory implements ChannelFactory {
 
     public Channel createMultiplexerChannel(String stack_name, String id, boolean register_for_state_transfer, String substate_id) throws Exception {
         if(stack_name == null || id == null)
-            throw new IllegalArgumentException("stack name and application ID have to be non null");
+            throw new IllegalArgumentException("stack name and service ID have to be non null");
         Entry entry;
         synchronized(channels) {
             entry=(Entry)channels.get(stack_name);
@@ -494,7 +494,7 @@ public class JChannelFactory implements ChannelFactory {
         StringBuffer sb=new StringBuffer();
         for(Iterator it=channels.entrySet().iterator(); it.hasNext();) {
             Map.Entry entry=(Map.Entry)it.next();
-            sb.append(entry.getKey()).append(": ").append(((Entry)entry.getValue()).multiplexer.getApplicationIds()).append("\n");
+            sb.append(entry.getKey()).append(": ").append(((Entry)entry.getValue()).multiplexer.getServiceIds()).append("\n");
         }
         return sb.toString();
     }

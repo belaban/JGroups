@@ -11,21 +11,21 @@ import java.util.*;
 /**
  * Used for dispatching incoming messages. The Multiplexer implements UpHandler and registers with the associated
  * JChannel (there can only be 1 Multiplexer per JChannel). When up() is called with a message, the header of the
- * message is removed and the MuxChannel corresponding to the header's application ID is retrieved from the map,
+ * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.13 2006/07/03 11:05:08 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.14 2006/07/03 12:58:07 belaban Exp $
  */
 public class Multiplexer implements UpHandler {
-    /** Map<String,MuxChannel>. Maintains the mapping between application IDs and their associated MuxChannels */
-    private final Map apps=new HashMap();
+    /** Map<String,MuxChannel>. Maintains the mapping between service IDs and their associated MuxChannels */
+    private final Map services=new HashMap();
     private final JChannel channel;
     static final Log log=LogFactory.getLog(Multiplexer.class);
     static final String SEPARATOR="::";
     static final short SEPARATOR_LEN=(short)SEPARATOR.length();
     static final String LIST_SEPARATOR=";";
 
-    /** Map<String,Boolean>. Map of application IDs and booleans that determine whether getState() has already been called */
+    /** Map<String,Boolean>. Map of service IDs and booleans that determine whether getState() has already been called */
     private final Map state_transfer_listeners=new HashMap();
 
 
@@ -39,8 +39,16 @@ public class Multiplexer implements UpHandler {
         this.channel.setUpHandler(this);
     }
 
+    /**
+     * @deprecated Use ${link #getServiceIds()} instead
+     * @return The set of service IDs
+     */
     public Set getApplicationIds() {
-        return apps != null? apps.keySet() : null;
+        return services != null? services.keySet() : null;
+    }
+
+    public Set getServiceIds() {
+        return services != null? services.keySet() : null;
     }
 
     public boolean stateTransferListenersPresent() {
@@ -86,7 +94,7 @@ public class Multiplexer implements UpHandler {
         try {
             startFlush();
             Set keys=new HashSet(state_transfer_listeners.keySet());
-            rc=fetchApplicationStates(target, keys, timeout);
+            rc=fetchServiceStates(target, keys, timeout);
             state_transfer_listeners.clear();
         }
         finally {
@@ -95,14 +103,11 @@ public class Multiplexer implements UpHandler {
         return rc;
     }
 
-    /** Fetches the app states for all application IDs in keys.
+    /** Fetches the app states for all service IDs in keys.
      * The keys are a duplicate list, so it cannot be modified by the caller of this method
      * @param keys
      */
-    private boolean fetchApplicationStates(Address target, Set keys, long timeout) throws ChannelClosedException, ChannelNotConnectedException {
-        // String combined_id=Util.generateList(keys, ";");
-        // return channel.getState(target, combined_id, timeout);
-
+    private boolean fetchServiceStates(Address target, Set keys, long timeout) throws ChannelClosedException, ChannelNotConnectedException {
         boolean rc, all_rcs=true;
         String appl_id;
         for(Iterator it=keys.iterator(); it.hasNext();) {
@@ -128,9 +133,9 @@ public class Multiplexer implements UpHandler {
                     log.error("MuxHeader not present - discarding message " + msg);
                     return;
                 }
-                MuxChannel mux_ch=(MuxChannel)apps.get(hdr.id);
+                MuxChannel mux_ch=(MuxChannel)services.get(hdr.id);
                 if(mux_ch == null) {
-                    log.error("didn't find an application for id=" + hdr.id + " discarding messgage " + msg);
+                    log.error("didn't find a service for id=" + hdr.id + " discarding messgage " + msg);
                     return;
                 }
                 if(log.isTraceEnabled())
@@ -164,26 +169,26 @@ public class Multiplexer implements UpHandler {
 
 
     public Channel createMuxChannel(JChannelFactory f, String id, String stack_name) throws Exception {
-        synchronized(apps) {
-            if(apps.containsKey(id))
-                throw new Exception("application ID \"" + id + "\" is already registered, cannot register duplicate ID");
+        synchronized(services) {
+            if(services.containsKey(id))
+                throw new Exception("service ID \"" + id + "\" is already registered, cannot register duplicate ID");
             MuxChannel ch=new MuxChannel(f, channel, id, stack_name, this);
-            apps.put(id, ch);
+            services.put(id, ch);
             return ch;
         }
     }
 
 
     private void passToAllMuxChannels(Event evt) {
-        for(Iterator it=apps.values().iterator(); it.hasNext();) {
+        for(Iterator it=services.values().iterator(); it.hasNext();) {
             MuxChannel ch=(MuxChannel)it.next();
             ch.up(evt);
         }
     }
 
     public MuxChannel remove(String id) {
-        synchronized(apps) {
-            return (MuxChannel)apps.remove(id);
+        synchronized(services) {
+            return (MuxChannel)services.remove(id);
         }
     }
 
@@ -193,8 +198,8 @@ public class Multiplexer implements UpHandler {
     public void disconnect() {
         MuxChannel mux_ch;
         boolean all_disconnected=true;
-        synchronized(apps) {
-            for(Iterator it=apps.values().iterator(); it.hasNext();) {
+        synchronized(services) {
+            for(Iterator it=services.values().iterator(); it.hasNext();) {
                 mux_ch=(MuxChannel)it.next();
                 if(mux_ch.isConnected()) {
                     all_disconnected=false;
@@ -212,16 +217,16 @@ public class Multiplexer implements UpHandler {
 
 
     public void unregister(String appl_id) {
-        synchronized(apps) {
-            apps.remove(appl_id);
+        synchronized(services) {
+            services.remove(appl_id);
         }
     }
 
     public boolean close() {
         MuxChannel mux_ch;
         boolean all_closed=true;
-        synchronized(apps) {
-            for(Iterator it=apps.values().iterator(); it.hasNext();) {
+        synchronized(services) {
+            for(Iterator it=services.values().iterator(); it.hasNext();) {
                 mux_ch=(MuxChannel)it.next();
                 if(mux_ch.isOpen()) {
                     all_closed=false;
@@ -233,16 +238,16 @@ public class Multiplexer implements UpHandler {
                     log.trace("closing underlying JChannel as all MuxChannels are closed");
                 }
                 channel.close();
-                apps.clear();
+                services.clear();
             }
             return all_closed;
         }
     }
 
     public void closeAll() {
-        synchronized(apps) {
+        synchronized(services) {
             MuxChannel mux_ch;
-            for(Iterator it=apps.values().iterator(); it.hasNext();) {
+            for(Iterator it=services.values().iterator(); it.hasNext();) {
                 mux_ch=(MuxChannel)it.next();
                 mux_ch.setConnected(false);
                 mux_ch.setClosed(true);
@@ -254,8 +259,8 @@ public class Multiplexer implements UpHandler {
     public boolean shutdown() {
         MuxChannel mux_ch;
         boolean all_closed=true;
-        synchronized(apps) {
-            for(Iterator it=apps.values().iterator(); it.hasNext();) {
+        synchronized(services) {
+            for(Iterator it=services.values().iterator(); it.hasNext();) {
                 mux_ch=(MuxChannel)it.next();
                 if(mux_ch.isOpen()) {
                     all_closed=false;
@@ -267,7 +272,7 @@ public class Multiplexer implements UpHandler {
                     log.trace("shutting down underlying JChannel as all MuxChannels are closed");
                 }
                 channel.shutdown();
-                apps.clear();
+                services.clear();
             }
             return all_closed;
         }
@@ -321,12 +326,12 @@ public class Multiplexer implements UpHandler {
                 info.state_id=null;
             }
 
-            mux_ch=(MuxChannel)apps.get(id);
+            mux_ch=(MuxChannel)services.get(id);
             if(mux_ch == null)
-                throw new IllegalArgumentException("didn't find application with ID=" + id + " to fetch state from");
+                throw new IllegalArgumentException("didn't find service with ID=" + id + " to fetch state from");
 
             // evt.setArg(info);
-            mux_ch.up(evt); // state_id will be null, get regular state from tha application named state_id
+            mux_ch.up(evt); // state_id will be null, get regular state from the service named state_id
         }
         catch(Throwable ex) {
             ex.printStackTrace();
@@ -360,15 +365,15 @@ public class Multiplexer implements UpHandler {
             substate_id=null;
         }
 
-        mux_ch=(MuxChannel)apps.get(appl_id);
+        mux_ch=(MuxChannel)services.get(appl_id);
         if(mux_ch == null) {
-            log.error("didn't find application with ID=" + appl_id + " to fetch state from");
+            log.error("didn't find service with ID=" + appl_id + " to fetch state from");
         }
         else {
             StateTransferInfo tmp_info=info.copy();
             tmp_info.state_id=substate_id;
             evt.setArg(tmp_info);
-            mux_ch.up(evt); // state_id will be null, get regular state from the application named state_id
+            mux_ch.up(evt); // state_id will be null, get regular state from the service named state_id
         }
     }
 

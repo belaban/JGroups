@@ -174,13 +174,13 @@
         </para>
         <para>
             The goal of the Multiplexer is to combine all stacks with the <emphasis>same</emphasis> configuration into one, and have multiple
-            apps on top of that same channel.
+            services on top of that same channel.
         </para>
         <para>
-            To do this we have to introduce multiplexing and demultiplexing functionality, ie. each app will have to have
-            a unique application ID (a string), and when sending a message, the message has to be tagged with that ID. When
-            receiving a message, it will be dispatched to the right app based on the ID attached to the message.
-            We require special handling for VIEW and SUSPECT messages: those need to be dispatched to *all* apps.
+            To do this we have to introduce multiplexing and demultiplexing functionality, ie. each service will have to have
+            a unique service ID (a string), and when sending a message, the message has to be tagged with that ID. When
+            receiving a message, it will be dispatched to the right destination service based on the ID attached to the message.
+            We require special handling for VIEW and SUSPECT messages: those need to be dispatched to *all* services.
             State transfer also needs to be handled specially, here we probably have to use thread locals, or change the API (TBD).
         </para>
         <para>
@@ -206,7 +206,7 @@
                 file, and has a few additional methods to get a Channel. The channel returned is actually an instance of
                 MuxChannel, which transparently forwards all invocations to the underlying JChannel, and performs
                 multiplexing and demultiplexing. Multiple MuxChannels can share the same underlying JChannel, and each
-                message sent by an application over the MuxChannel will add the application's ID to the message
+                message sent by a service over the MuxChannel will add the services's ID to the message
                 (as a header). That ID is then used to demultiplex the message to the correct MuxChannel when received.
             </para>
             <para>
@@ -220,7 +220,7 @@
                 The stack_name parameter refers to a channel configuration defined in a separate file (see below).
             </para>
             <para>
-                The id parameter is the application ID and has to be unique for all applications sitting on the same
+                The id parameter is the service ID and has to be unique for all services sitting on the same
                 channel. If an ID is used more than once, when trying to call createMultiplexerChannel(), an exception
                 will be thrown.
             </para>
@@ -273,11 +273,11 @@
                 &lt;/protocol_stacks&gt;
             </screen>
             <para>
-                This file defines 4 configurations: fc-fast-minimalthreads, sequencer, tcp and discovery. The first application
+                This file defines 4 configurations: fc-fast-minimalthreads, sequencer, tcp and discovery. The first service
                 to call JChannelFactory.createMultiplexerChannel() with a stack_name of "tcp" will create the JChannel
                 with the "tcp" configuration, all subsequent method calls for the <emphasis>same</emphasis> stack_name
-                ("tcp") will simply get a MuxChannel which has a reference to the same underlying JChannel. When an
-                application closes a MuxChannel, the underlying JChannel will only be closed when there are no more
+                ("tcp") will simply get a MuxChannel which has a reference to the same underlying JChannel. When a
+                service closes a MuxChannel, the underlying JChannel will only be closed when there are no more
                 MuxChannels referring to it.
             </para>
             <para>For more information on Multiplexing refer to JGroups/doc/design/Multiplexer.txt</para>
@@ -286,7 +286,7 @@
             <section id="MultipleStateTransfers">
                 <title>Batching state transfers</title>
                 <para>
-                    When multiple applications are sharing a JChannel, and each of the applications requires state transfer
+                    When multiple services are sharing a JChannel, and each of the services requires state transfer
                     at a different time, then we need FLUSH (see ./doc/design/PartialStateTransfer.txt for a description
                     of the problem). FLUSH is also called the stop-the-world model, and essentially stops everyone in
                     a group from sending messages until the state has been transferred, and then everyone can resume
@@ -300,8 +300,8 @@
                 </para>
 
                 <para>
-                    When multiple applications share one JChannel, then we have to run the FLUSH protocol for every application
-                    which requires state, so if we have applications A, B, C, D and E running on top of a JChannel J, and
+                    When multiple services share one JChannel, then we have to run the FLUSH protocol for every service
+                    which requires state, so if we have services A, B, C, D and E running on top of a JChannel J, and
                     B,C and E require state, then the FLUSH protocol has to be run 3 times, which slows down startup (e.g.)
                     of JBoss.
                 </para>
@@ -311,7 +311,7 @@
                     FLUSH protocol has to be run only once.
                 </para>
                 <para>
-                    To do this, an application has to register with the JChannelFactory when creating the MuxChannel, and
+                    To do this, a service has to register with the JChannelFactory when creating the MuxChannel, and
                     know that getState() will be a no-op until the last registered application has called getState().
                     This works as follows:
                     <itemizedlist>
@@ -324,7 +324,7 @@
                     </itemizedlist>
                 </para>
                 <para>
-                    The code below (a snipper from MultiplexerTest) shows how applications can register for state transfers.
+                    The code below (a snipper from MultiplexerTest) shows how services can register for state transfers.
                     In an MBean (JBoss) environment, the registration could be done in the create() callback, and
                     the actual getState() call in start().
                 </para>
@@ -343,7 +343,7 @@
     }
                 </screen>
                 <para>
-                    The example above shows that 2 applications ("c1" and "c2") share a common JChannel because they use
+                    The example above shows that 2 services ("c1" and "c2") share a common JChannel because they use
                     the same stack_name (STACK_NAME). It also shows that only the second getState() invocation will
                     actually transfer the 2 states (for "c1" and "c2").
                 </para>
