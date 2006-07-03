@@ -14,7 +14,7 @@ import java.util.*;
  * message is removed and the MuxChannel corresponding to the header's application ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.12 2006/05/29 07:30:15 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.13 2006/07/03 11:05:08 belaban Exp $
  */
 public class Multiplexer implements UpHandler {
     /** Map<String,MuxChannel>. Maintains the mapping between application IDs and their associated MuxChannels */
@@ -207,6 +207,13 @@ public class Multiplexer implements UpHandler {
                 }
                 channel.disconnect();
             }
+        }
+    }
+
+
+    public void unregister(String appl_id) {
+        synchronized(apps) {
+            apps.remove(appl_id);
         }
     }
 
