@@ -4,7 +4,7 @@ Multiplexing functionality
 ===========================
 
 Author: Bela Ban
-Version: $Id: Multiplexer.txt,v 1.15 2006/07/03 12:50:48 belaban Exp $
+Version: $Id: Multiplexer.txt,v 1.16 2006/07/03 13:23:55 belaban Exp $
 JIRA: http://jira.jboss.com/jira/browse/JGRP-119, http://jira.jboss.com/jira/browse/JGRP-112
 
 Overview
@@ -192,8 +192,28 @@ Preventing multiple FLUSH phases
     MuxChannel.connect() calls go through the JChannelFactory), the factory tells the Multiplexer to fetch *all*
     substates for that JChannel. This is essentially the same as fetching the entire state, but the returned state
     contains a list of <application-id/state> pairs, so the Multiplexer will call setState() on each application
+
   NOTE: this design doesn't work in JBoss as the dependency management does *not* guarantee that all create() methods
         will be called before all start() methods. Currently, this is disabled in JBoss
+
+
+Service views with the Multiplexer
+==================================
+
+Issue
+-----
+When switching to a services-oriented architecture, where multiple services can run on the same JGroups channel, then
+we need to adapt the notion of 'view' slightly. The problem is that if not all services are deployed on all nodes in
+a cluster, certain services might run into problems (JIRA issue: http://jira.jboss.com/jira/browse/JGRP-247). Consider
+a cluster {A,B,C,D}. If service S1 is deployed on A and C only, then - when that service wants to make a cluster-wide
+synchronous call - it cannot wait for responses from B and D because S1 is not deployed on those 2 nodes.
+
+Solution
+--------
+S1's view should therefore be {A,C}, rather than {A,B,C,D}. This is called a *service view* (as compared to a cluster view).
+A service view is always derived from the current cluster view, except that the hosts not running the given service
+will be excluded from the service view, so the service view acts like a filter for the cluster view.
+A service view is always applicable only to a given service, e.g. service S1 might see a different service view than S2.
 
 
 
