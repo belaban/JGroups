@@ -4,7 +4,7 @@ Multiplexing functionality
 ===========================
 
 Author: Bela Ban
-Version: $Id: Multiplexer.txt,v 1.16 2006/07/03 13:23:55 belaban Exp $
+Version: $Id: Multiplexer.txt,v 1.17 2006/07/05 12:14:45 belaban Exp $
 JIRA: http://jira.jboss.com/jira/browse/JGRP-119, http://jira.jboss.com/jira/browse/JGRP-112
 
 Overview
@@ -214,6 +214,57 @@ S1's view should therefore be {A,C}, rather than {A,B,C,D}. This is called a *se
 A service view is always derived from the current cluster view, except that the hosts not running the given service
 will be excluded from the service view, so the service view acts like a filter for the cluster view.
 A service view is always applicable only to a given service, e.g. service S1 might see a different service view than S2.
+
+Design of Multiplexer
+---------------------
+
+Data structures
+---------------
+- Every Multiplexer maintains a Map<Service,List<Host>>, where it keeps track of which hosts are currently running a
+  service. This is called the *service state*
+
+New JChannel is connected (JChannelFactory.connect())
+-----------------------------------------------------
+- Gets service state from coordinator, blocks until state is available (doesn't block if coordinator)
+- Loops until state has been received, or no members available
+
+New service S is started (Multiplexer.createMuxChannel())
+---------------------------------------------------------
+- Multicast serviceUp(S,H). The message includes the host H (JGroups address) on which the service was started
+
+Service is stopped
+------------------
+- Multicast serviceDown(S,H)
+
+On reception of serviceUp(S,H)
+------------------------------
+- Create new service view SV (based on view V and service state)
+- If service S is affected (hosts joined or left): call viewAccepted(SV) on S
+
+On reception of serviceDown(S,H)
+--------------------------------
+- Create new service view SV (based on view V and service state)
+- If service S is affected (hosts joined or left): call viewAccepted(SV) on S
+
+On Multiplexer.disconnect()/close()/shutdown()
+----------------------------------------------
+- Multicast serviceDown(S,H) for the service whose MuxChannel called disconnect()/close()/shutdown()
+
+On Multiplexer.closeAll()
+-------------------------
+- Multicast serviceDown(S,H) for all services currently registered with the Multiplexer
+
+On view V
+---------
+- If coordinator:
+  - for each host H which left:
+    - multicast serviceDown(S,H) for each service S that was running on H
+
+On MergeView
+------------
+- If coordinator:
+  - for each new host H:
+    - multicast serviceUp(S,H) for all services that are running on S
 
 
 
