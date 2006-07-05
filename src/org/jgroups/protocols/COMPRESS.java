@@ -17,13 +17,11 @@ import java.util.zip.Inflater;
  * Compresses the payload of a message. Goal is to reduce the number of messages sent across the wire.
  * Should ideally be layered somewhere above a fragmentation protocol (e.g. FRAG).
  * @author Bela Ban
- * @version $Id: COMPRESS.java,v 1.11 2006/07/05 07:28:59 belaban Exp $
+ * @version $Id: COMPRESS.java,v 1.12 2006/07/05 08:22:02 belaban Exp $
  */
 public class COMPRESS extends Protocol {
-    Deflater deflater=null;
-    Inflater inflater=null;
-    final Object inflater_mutex=new Object();
-    final Object deflater_mutex=new Object();
+    Deflater[] deflater_pool=null;
+    Inflater[] inflater_pool=null;
 
 
     /** Values are from 0-9 (0=no compression, 9=best compression) */
@@ -32,22 +30,61 @@ public class COMPRESS extends Protocol {
     /** Minimal payload size of a message (in bytes) for compression to kick in */
     long min_size=500;
 
+    /** Number of inflaters/deflaters, for concurrency, increase this to the max number of concurrent requests possible */
+    int pool_size=2;
+
+    private int inflater_index=0;
+    private int deflater_index=0;
+
     final static String name="COMPRESS";
 
     public String getName() {
         return name;
     }
 
+
+    private final int getInflaterIndex() {
+        synchronized(this) {
+            int retval=inflater_index++;
+            if(inflater_index >= pool_size) {
+                inflater_index=0;
+            }
+            return retval;
+        }
+    }
+
+
+    private final int getDeflaterIndex() {
+        synchronized(this) {
+            int retval=deflater_index++;
+            if(deflater_index >= pool_size) {
+                deflater_index=0;
+            }
+            return retval;
+        }
+    }
+
+
     public void init() throws Exception {
-        deflater=new Deflater(compression_level);
-        inflater=new Inflater();
+        deflater_pool=new Deflater[pool_size];
+        for(int i=0; i < deflater_pool.length; i++) {
+            deflater_pool[i]=new Deflater(compression_level);
+        }
+        inflater_pool=new Inflater[pool_size];
+        for(int i=0; i < inflater_pool.length; i++) {
+            inflater_pool[i]=new Inflater();
+        }
     }
 
     public void destroy() {
-        deflater.end();
-        deflater=null;
-        inflater.end();
-        inflater=null;
+        for(int i=0; i < deflater_pool.length; i++) {
+            Deflater deflater=deflater_pool[i];
+            deflater.end();
+        }
+        for(int i=0; i < inflater_pool.length; i++) {
+            Inflater inflater=inflater_pool[i];
+            inflater.end();
+        }
     }
 
 
@@ -65,6 +102,16 @@ public class COMPRESS extends Protocol {
         if(str != null) {
             min_size=Long.parseLong(str);
             props.remove("min_size");
+        }
+
+        str=props.getProperty("pool_size");
+        if(str != null) {
+            pool_size=Integer.parseInt(str);
+            if(pool_size <= 0) {
+                log.warn("pool_size must be > 0, setting it to 1");
+                pool_size=1;
+            }
+            props.remove("pool_size");
         }
 
         if(props.size() > 0) {
@@ -91,7 +138,9 @@ public class COMPRESS extends Protocol {
                 byte[] payload=msg.getRawBuffer(); // here we get the ref so we can avoid copying
                 byte[] compressed_payload=new byte[length];
                 int compressed_size;
-                synchronized(deflater_mutex) {
+                int tmp_index=getDeflaterIndex();
+                Deflater deflater=deflater_pool[tmp_index]; // must be guaranteed to be non-null !
+                synchronized(deflater) {
                     deflater.reset();
                     deflater.setInput(payload, msg.getOffset(), length);
                     deflater.finish();
@@ -103,7 +152,8 @@ public class COMPRESS extends Protocol {
                 msg.setBuffer(new_payload);
                 msg.putHeader(name, new CompressHeader(length));
                 if(trace)
-                    log.trace("compressed payload from " + length + " bytes to " + compressed_size + " bytes");
+                    log.trace("compressed payload from " + length + " bytes to " + compressed_size + " bytes (inflater #" +
+                    tmp_index + ")");
             }
         }
         passDown(evt);
@@ -124,13 +174,16 @@ public class COMPRESS extends Protocol {
                 if(compressed_payload != null && compressed_payload.length > 0) {
                     int original_size=hdr.original_size;
                     byte[] uncompressed_payload=new byte[original_size];
-                    synchronized(inflater_mutex) {
+                    int tmp_index=getInflaterIndex();
+                    Inflater inflater=inflater_pool[tmp_index];
+                    synchronized(inflater) {
                         inflater.reset();
                         inflater.setInput(compressed_payload, msg.getOffset(), msg.getLength());
                         try {
                             inflater.inflate(uncompressed_payload);
                             if(trace)
-                                log.trace("uncompressed " + compressed_payload.length + " bytes to " + original_size + " bytes");
+                                log.trace("uncompressed " + compressed_payload.length + " bytes to " + original_size +
+                                        " bytes (deflater #" + tmp_index + ")");
                             msg.setBuffer(uncompressed_payload);
                         }
                         catch(DataFormatException e) {
