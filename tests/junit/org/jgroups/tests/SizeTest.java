@@ -1,4 +1,4 @@
-// $Id: SizeTest.java,v 1.14 2006/07/06 10:24:13 belaban Exp $$
+// $Id: SizeTest.java,v 1.15 2006/07/06 10:32:28 belaban Exp $$
 
 package org.jgroups.tests;
 
@@ -7,6 +7,7 @@ import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.jgroups.*;
 import org.jgroups.mux.ServiceInfo;
+import org.jgroups.mux.MuxHeader;
 import org.jgroups.blocks.RequestCorrelator;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.*;
@@ -379,6 +380,35 @@ public class SizeTest extends TestCase {
         _testSize(si);
     }
 
+
+    public void testMuxHeader() throws Exception {
+        MuxHeader hdr=new MuxHeader();
+        _testSize(hdr);
+
+        hdr=new MuxHeader("bla");
+        _testSize(hdr);
+
+        ServiceInfo si=new ServiceInfo();
+        hdr=new MuxHeader(si);
+        _testSize(hdr);
+
+        si=new ServiceInfo(ServiceInfo.STATE_REQ, null, null, null);
+        _testSize(new MuxHeader(si));
+
+        si=new ServiceInfo(ServiceInfo.STATE_REQ, "bla", null, null);
+        _testSize(new MuxHeader(si));
+
+        si=new ServiceInfo(ServiceInfo.STATE_REQ, null, new IpAddress(3333), null);
+        _testSize(new MuxHeader(si));
+
+        si=new ServiceInfo(ServiceInfo.STATE_REQ, null, null, new byte[]{'b', 'e', 'l', 'a'});
+        _testSize(new MuxHeader(si));
+
+        si=new ServiceInfo(ServiceInfo.STATE_REQ, "bla", new IpAddress(3333), new byte[]{'b', 'e', 'l', 'a'});
+        _testSize(new MuxHeader(si));
+    }
+
+
     private void _testSize(Header hdr) throws Exception {
         long size=hdr.size();
         byte[] serialized_form=Util.streamableToByteBuffer((Streamable)hdr);
@@ -429,6 +459,14 @@ public class SizeTest extends TestCase {
         System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
         assertEquals(serialized_form.length, size);
     }
+
+
+    private void _testSize(MuxHeader hdr) throws Exception {
+         long size=hdr.size();
+         byte[] serialized_form=Util.streamableToByteBuffer(hdr);
+         System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
+         assertEquals(serialized_form.length, size);
+     }
 
 
 
