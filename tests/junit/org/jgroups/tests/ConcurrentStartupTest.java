@@ -13,13 +13,13 @@ import java.util.*;
  * See doc/design/ConcurrentStartupTest.txt for details. This will only work 100% correctly once we have
  * FLUSH support (JGroups 2.4)
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.7 2006/06/20 07:51:48 belaban Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.8 2006/07/06 09:11:35 belaban Exp $
  */
 public class ConcurrentStartupTest extends TestCase implements Receiver {
     final List list=Collections.synchronizedList(new LinkedList());
     JChannel channel;
     final static String GROUP="demo";
-    final static String PROPS="fc-fast-minimalthreads.xml"; // use default properties
+    final static String PROPS="flush-fc-fast-minimalthreads.xml"; // use flush properties
     final int NUM=5;
     int mod=1;
     final Map modifications=new TreeMap();
