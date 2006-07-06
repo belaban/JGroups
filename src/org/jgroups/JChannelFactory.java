@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.25 2006/07/03 12:58:08 belaban Exp $
+// $Id: JChannelFactory.java,v 1.26 2006/07/06 07:51:27 belaban Exp $
 
 package org.jgroups;
 
@@ -325,7 +325,6 @@ public class JChannelFactory implements ChannelFactory {
         }
         ch.setClosed(false);
         ch.setConnected(true);
-        // entry.multiplexer.checkForStateTransfer(ch.getId());
     }
 
 
