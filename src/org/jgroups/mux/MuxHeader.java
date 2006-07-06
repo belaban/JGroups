@@ -9,7 +9,7 @@ import java.io.*;
 
 /**
  * @author Bela Ban
- * @version $Id: MuxHeader.java,v 1.3 2006/07/06 10:33:46 belaban Exp $
+ * @version $Id: MuxHeader.java,v 1.4 2006/07/06 10:34:22 belaban Exp $
  */
 public class MuxHeader extends Header implements Streamable {
     String      id=null;
@@ -71,6 +71,7 @@ public class MuxHeader extends Header implements Streamable {
         if(id != null)
             return id;
         if(info != null)
-            return info;
+            return info.toString();
+        return "";
     }
 }
