@@ -8,11 +8,13 @@ import org.jgroups.util.Util;
 import java.io.*;
 
 /**
+ * Header used for multiplexing and de-multiplexing between service components on top of a Multiplexer (Channel)
  * @author Bela Ban
- * @version $Id: MuxHeader.java,v 1.4 2006/07/06 10:34:22 belaban Exp $
+ * @version $Id: MuxHeader.java,v 1.5 2006/07/06 12:26:54 belaban Exp $
  */
 public class MuxHeader extends Header implements Streamable {
     String      id=null;
+
     /** Used for service state communication between Multiplexers */
     ServiceInfo info;
 
