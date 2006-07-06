@@ -9,43 +9,68 @@ import java.io.*;
 
 /**
  * @author Bela Ban
- * @version $Id: MuxHeader.java,v 1.2 2006/03/12 11:49:27 belaban Exp $
+ * @version $Id: MuxHeader.java,v 1.3 2006/07/06 10:33:46 belaban Exp $
  */
 public class MuxHeader extends Header implements Streamable {
-    String id=null;
+    String      id=null;
+    /** Used for service state communication between Multiplexers */
+    ServiceInfo info;
+
+    public MuxHeader() {
+    }
 
     public MuxHeader(String id) {
         this.id=id;
     }
 
-    public MuxHeader() {
+    public MuxHeader(ServiceInfo info) {
+        this.info=info;
     }
 
     public void writeExternal(ObjectOutput out) throws IOException {
         out.writeUTF(id);
+        out.writeObject(info);
     }
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         id=in.readUTF();
+        info=(ServiceInfo)in.readObject();
     }
 
 
     public long size() {
         long retval=Global.BYTE_SIZE; // presence byte in Util.writeString
         if(id != null)
-            retval+=id.length() +2; // for UTF
+            retval+=id.length() +2;   // for UTF
+        retval+=Global.BYTE_SIZE;     // presence for info
+        if(info != null)
+            retval+=info.size();
         return retval;
     }
 
     public void writeTo(DataOutputStream out) throws IOException {
         Util.writeString(id, out);
+        if(info != null) {
+            out.writeBoolean(true);
+            info.writeTo(out);
+        }
+        else {
+            out.writeBoolean(false);
+        }
     }
 
     public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
         id=Util.readString(in);
+        if(in.readBoolean()) {
+            info=new ServiceInfo();
+            info.readFrom(in);
+        }
     }
 
     public String toString() {
-        return id;
+        if(id != null)
+            return id;
+        if(info != null)
+            return info;
     }
 }
