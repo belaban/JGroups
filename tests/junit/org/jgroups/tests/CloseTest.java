@@ -1,4 +1,4 @@
-// $Id: CloseTest.java,v 1.7 2006/05/12 09:49:13 belaban Exp $
+// $Id: CloseTest.java,v 1.8 2006/07/07 13:42:24 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -50,6 +50,19 @@ public class CloseTest extends TestCase {
         }
     }
 
+
+    public void testDoubleClose() throws ChannelException {
+        System.out.println("-- creating channel1 --");
+        channel1=new JChannel(props);
+        System.out.println("-- connecting channel1 --");
+        channel1.connect("bla");
+        System.out.println("-- closing channel1 --");
+        channel1.close();
+        System.out.println("-- closing channel1 (again) --");
+        channel1.close();
+        System.out.println("-- done, threads are ");
+        Util.printThreads();
+    }
 
     public void testCreationAndClose() throws Exception {
         System.out.println("-- creating channel1 --");
