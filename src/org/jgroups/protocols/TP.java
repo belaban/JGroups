@@ -39,7 +39,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.65 2006/05/22 20:31:32 belaban Exp $
+ * @version $Id: TP.java,v 1.66 2006/07/10 13:08:17 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -1616,7 +1616,7 @@ public abstract class TP extends Protocol {
         }
 
 
-        private void bundleAndSend() {
+  /*      private void bundleAndSend() {
             Map.Entry      entry;
             Address        dst;
             Buffer         buffer;
@@ -1663,7 +1663,65 @@ public abstract class TP extends Protocol {
                     count=0;
                 }
             }
+        }*/
+
+
+        private void bundleAndSend() {
+            Map.Entry      entry;
+            Address        dst;
+            Buffer         buffer;
+            List           l;
+            Map copy;
+
+            synchronized(msgs) {
+                if(msgs.size() == 0)
+                    return;
+                copy=new HashMap(msgs);
+                if(trace) {
+                    long stop=System.currentTimeMillis();
+                    double percentage=100.0 / max_bundle_size * count;
+                    StringBuffer sb=new StringBuffer("sending ").append(num_msgs).append(" msgs (");
+                    num_msgs=0;
+                    sb.append(count).append(" bytes (" + f.format(percentage) + "% of max_bundle_size), collected in "+
+                            + (stop-start) + "ms) to ").append(copy.size()).
+                            append(" destination(s)");
+                    if(copy.size() > 1) sb.append(" (dests=").append(copy.keySet()).append(")");
+                    log.trace(sb.toString());
+                }
+                msgs.clear();
+                count=0;
+            }
+
+            try {
+
+                boolean multicast;
+                for(Iterator it=copy.entrySet().iterator(); it.hasNext();) {
+                    entry=(Map.Entry)it.next();
+                    l=(List)entry.getValue();
+                    if(l.size() == 0)
+                        continue;
+                    dst=(Address)entry.getKey();
+                    multicast=dst == null || dst.isMulticastAddress();
+                    synchronized(out_stream) {
+                        try {
+                            buffer=listToBuffer(l, multicast);
+                            doSend(buffer, dst, multicast);
+                        }
+                        catch(Throwable e) {
+                            if(log.isErrorEnabled()) log.error("exception sending msg", e);
+                        }
+                    }
+                }
+            }
+            finally {
+                // msgs.clear();
+                // num_msgs=0;
+                start=0;
+                // count=0;
+            }
         }
+
+
 
         private void checkLength(long len) throws Exception {
             if(len > max_bundle_size)
