@@ -39,7 +39,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.67 2006/07/10 13:25:17 belaban Exp $
+ * @version $Id: TP.java,v 1.68 2006/07/10 13:36:12 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -1616,55 +1616,6 @@ public abstract class TP extends Protocol {
         }
 
 
-  /*      private void bundleAndSend() {
-            Map.Entry      entry;
-            Address        dst;
-            Buffer         buffer;
-            List           l;
-
-            synchronized(msgs) {
-                if(msgs.size() == 0)
-                    return;
-
-                try {
-                    if(trace) {
-                        long stop=System.currentTimeMillis();
-                        double percentage=100.0 / max_bundle_size * count;
-                        StringBuffer sb=new StringBuffer("sending ").append(num_msgs).append(" msgs (");
-                        sb.append(count).append(" bytes (" + f.format(percentage) + "% of max_bundle_size), collected in "+
-                                + (stop-start) + "ms) to ").append(msgs.size()).
-                                append(" destination(s)");
-                        if(msgs.size() > 1) sb.append(" (dests=").append(msgs.keySet()).append(")");
-                        log.trace(sb.toString());
-                    }
-                    boolean multicast;
-                    for(Iterator it=msgs.entrySet().iterator(); it.hasNext();) {
-                        entry=(Map.Entry)it.next();
-                        l=(List)entry.getValue();
-                        if(l.size() == 0)
-                            continue;
-                        dst=(Address)entry.getKey();
-                        multicast=dst == null || dst.isMulticastAddress();
-                        synchronized(out_stream) {
-                            try {
-                                buffer=listToBuffer(l, multicast);
-                                doSend(buffer, dst, multicast);
-                            }
-                            catch(Throwable e) {
-                                if(log.isErrorEnabled()) log.error("exception sending msg", e);
-                            }
-                        }
-                    }
-                }
-                finally {
-                    msgs.clear();
-                    num_msgs=0;
-                    start=0;
-                    count=0;
-                }
-            }
-        }*/
-
 
         private void bundleAndSend() {
             Map.Entry      entry;
@@ -1693,7 +1644,6 @@ public abstract class TP extends Protocol {
             }
 
             try {
-
                 boolean multicast;
                 for(Iterator it=copy.entrySet().iterator(); it.hasNext();) {
                     entry=(Map.Entry)it.next();
