@@ -39,7 +39,7 @@ import java.text.NumberFormat;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.53.2.2 2006/07/10 13:37:29 belaban Exp $
+ * @version $Id: TP.java,v 1.53.2.3 2006/07/10 14:02:45 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -1524,7 +1524,7 @@ public abstract class TP extends Protocol {
 
             try {
                 boolean multicast;
-                for(Iterator it=msgs.entrySet().iterator(); it.hasNext();) {
+                for(Iterator it=copy.entrySet().iterator(); it.hasNext();) {
                     entry=(Map.Entry)it.next();
                     l=(List)entry.getValue();
                     if(l.size() == 0)
