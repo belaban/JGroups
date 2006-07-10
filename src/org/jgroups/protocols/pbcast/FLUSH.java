@@ -115,6 +115,14 @@ public class FLUSH extends Protocol {
 					}
 				}
 				break;
+				
+			case Event.SUSPEND:
+				onSuspend((View) evt.getArg());
+				return;
+				
+			case Event.RESUME:
+				onResume();
+				return;	
 		}
 		passDown(evt);
 	}
@@ -317,7 +325,8 @@ public class FLUSH extends Protocol {
 				+ flushCompletedSet.toString());
 
 		if (flushCompleted) {
-			passDown(new Event(Event.SUSPEND_OK));
+			passUp(new Event(Event.SUSPEND_OK));
+			passDown(new Event(Event.SUSPEND_OK));			
 			log.debug("All FLUSH_COMPLETED received at " + localAddress
 					+ " sent SUSPEND_OK down");
 		}

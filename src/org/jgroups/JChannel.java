@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.72 2006/05/23 12:14:45 belaban Exp $
+// $Id: JChannel.java,v 1.73 2006/07/10 16:38:31 vlada Exp $
 
 package org.jgroups;
 
@@ -65,7 +65,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Revision: 1.72 $
+ * @version $Revision: 1.73 $
  */
 public class JChannel extends Channel {
 
@@ -123,6 +123,8 @@ public class JChannel extends Channel {
     private final Promise disconnect_promise=new Promise();
 
     private final Promise state_promise=new Promise();
+    
+    private final Promise flush_promise=new Promise();
 
     /** wait until we have a non-null local_addr */
     private long LOCAL_ADDR_TIMEOUT=30000; //=Long.parseLong(System.getProperty("local_addr.timeout", "30000"));
@@ -985,6 +987,10 @@ public class JChannel extends Channel {
         case Event.CONNECT_OK:
             connect_promise.setResult(evt.getArg());
             break;
+            
+        case Event.SUSPEND_OK:
+        	flush_promise.setResult(Boolean.TRUE);
+        	break;
 
         case Event.DISCONNECT_OK:
             disconnect_promise.setResult(Boolean.TRUE);
@@ -1319,6 +1325,23 @@ public class JChannel extends Channel {
             closer=new CloserThread(evt);
             closer.start();
         }
+    }
+    
+    private boolean startFlush()
+    {
+    	boolean successfulFlush=false;
+    	down(new Event(Event.SUSPEND));
+    	try {
+    		flush_promise.reset();
+			flush_promise.getResultWithTimeout(10*1000);
+			successfulFlush=true;
+		} catch (TimeoutException e) {			
+		}
+		return successfulFlush;
+    }
+    
+    private void stopFlush(){
+    	down(new Event(Event.RESUME));
     }
 
     /* ------------------------------- End of Private Methods ---------------------------------- */
