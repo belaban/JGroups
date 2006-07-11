@@ -1,4 +1,4 @@
-package org.jgroups.tests;
+package org.jgroups.demos;
 
 import org.jgroups.*;
 import org.jgroups.blocks.GroupRequest;
@@ -11,7 +11,7 @@ import java.util.Vector;
 /**
  * Tests cluster method invocations on disconnected and connected services
  * @author Bela Ban
- * @version $Id: DrawMultiplexer.java,v 1.1 2006/07/11 11:41:42 belaban Exp $
+ * @version $Id: DrawMultiplexer.java,v 1.1 2006/07/11 11:42:36 belaban Exp $
  */
 public class DrawMultiplexer implements MembershipListener, RequestHandler, ChannelListener {
     Channel           channel;
