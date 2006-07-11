@@ -10,7 +10,7 @@ import java.io.*;
 /**
  * Class used for service state communication between Multiplexers
  * @author Bela Ban
- * @version $Id: ServiceInfo.java,v 1.1 2006/07/06 10:22:44 belaban Exp $
+ * @version $Id: ServiceInfo.java,v 1.2 2006/07/11 05:48:26 belaban Exp $
  */
 public class ServiceInfo implements Externalizable, Streamable {
     public static final byte STATE_REQ    = 1;
@@ -112,6 +112,16 @@ public class ServiceInfo implements Externalizable, Streamable {
             case SERVICE_UP:   return "SERVICE_UP(" + service + "," + host + ")";
             case SERVICE_DOWN: return "SERVICE_DOWN(" + service + "," + host + ")";
             default: return "n/a";
+        }
+    }
+
+    public static String typeToString(int t) {
+        switch(t) {
+            case STATE_REQ:    return "STATE_REQ";
+            case STATE_RSP:    return "STATE_RSP";
+            case SERVICE_UP:   return "SERVICE_UP";
+            case SERVICE_DOWN: return "SERVICE_DOWN";
+            default:           return "n/a";
         }
     }
 }
