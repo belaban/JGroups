@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.73 2006/07/10 16:38:31 vlada Exp $
+// $Id: JChannel.java,v 1.74 2006/07/11 14:29:26 belaban Exp $
 
 package org.jgroups;
 
@@ -65,7 +65,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Revision: 1.73 $
+ * @version $Revision: 1.74 $
  */
 public class JChannel extends Channel {
 
@@ -1327,13 +1327,13 @@ public class JChannel extends Channel {
         }
     }
     
-    private boolean startFlush()
+    private boolean startFlush(long timeout)
     {
     	boolean successfulFlush=false;
     	down(new Event(Event.SUSPEND));
     	try {
     		flush_promise.reset();
-			flush_promise.getResultWithTimeout(10*1000);
+			flush_promise.getResultWithTimeout(timeout);
 			successfulFlush=true;
 		} catch (TimeoutException e) {			
 		}
