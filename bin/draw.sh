@@ -3,9 +3,11 @@
 # Convenience launcher for the Draw demo
 #
 
+SEP=":"
 case "`uname`" in
     CYGWIN*)
         cygwin=true
+        SEP=";"
         ;;
 
     Darwin*)
@@ -21,7 +23,8 @@ while [ "$1" != "" ]; do
     shift
 done
 
-CLASSPATH="$relpath/../classes;$relpath/../conf;$relpath/../lib/commons-logging.jar;$relpath/../lib/log4j-1.2.6.jar;$relpath/../lib/concurrent.jar"
+
+CLASSPATH="$relpath/../classes$SEP$relpath/../conf$SEP$relpath/../lib/commons-logging.jar$SEP$relpath/../lib/log4j-1.2.6.jar$SEP$relpath/../lib/concurrent.jar"
 
 if [ "$debug" = "true" ]; then
     JAVA_OPTS="-Xdebug -Xnoagent -Djava.compiler=NONE -Xrunjdwp:transport=dt_shmem,server=y,suspend=y,address=jgc1"

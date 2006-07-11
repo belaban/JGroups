@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.74 2006/06/01 09:09:52 belaban Exp $
+// $Id: Util.java,v 1.75 2006/07/11 06:59:10 belaban Exp $
 
 package org.jgroups.util;
 
@@ -396,10 +396,16 @@ public class Util {
             if(use_magic_number == 1) {
                 magic_number=in.readInt();
                 clazz=ClassConfigurator.getInstance(false).get(magic_number);
+                if (clazz==null) {
+                   throw new ClassNotFoundException("Class for magic number "+magic_number+" cannot be found.");
+                }
             }
             else {
                 classname=in.readUTF();
                 clazz=ClassConfigurator.getInstance(false).get(classname);
+                if (clazz==null) {
+                   throw new ClassNotFoundException(classname);
+                }
             }
 
             retval=(Streamable)clazz.newInstance();
