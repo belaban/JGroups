@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.74 2006/07/11 14:29:26 belaban Exp $
+// $Id: JChannel.java,v 1.75 2006/07/11 15:55:41 vlada Exp $
 
 package org.jgroups;
 
@@ -65,7 +65,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Revision: 1.74 $
+ * @version $Revision: 1.75 $
  */
 public class JChannel extends Channel {
 
@@ -856,11 +856,7 @@ public class JChannel extends Channel {
      * @return true of the state was received, false if the operation timed out
      */
     public boolean getState(Address target, long timeout) throws ChannelNotConnectedException, ChannelClosedException {
-        StateTransferInfo info=new StateTransferInfo(target, timeout);
-        boolean rc=_getState(new Event(Event.GET_STATE, info), info);
-        if(rc == false)
-            down(new Event(Event.RESUME_STABLE));
-        return rc;
+        return getState(target,null,timeout);
     }
 
     /**
