@@ -1,4 +1,4 @@
-// $Id: GossipRouter.java,v 1.18 2006/01/19 09:53:38 belaban Exp $
+// $Id: GossipRouter.java,v 1.19 2006/07/11 06:59:01 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -13,6 +13,7 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
+import org.jgroups.conf.ClassConfigurator;
 
 /**
  * Router for TCP based group comunication (using layer TCP instead of UDP). 
@@ -1116,6 +1117,7 @@ public class GossipRouter {
         System.out.println("GossipRouter is starting...");
 
         try {
+            ClassConfigurator.getInstance(true);
             router= new GossipRouter(port, address, expiry, timeout, routingTimeout);
             router.start();
         }
