@@ -5,9 +5,9 @@ import org.jgroups.JChannelFactory;
 
 /**
  * @author Bela Ban
- * @version $Id: JChannelFactoryDemo.java,v 1.3 2006/03/14 09:08:16 belaban Exp $
+ * @version $Id: DrawMultiplexer.java,v 1.1 2006/07/11 11:54:49 belaban Exp $
  */
-public class JChannelFactoryDemo {
+public class DrawMultiplexer {
     JChannelFactory factory;
 
     public static void main(String[] args) throws Exception {
@@ -18,10 +18,10 @@ public class JChannelFactoryDemo {
                 props=args[++i];
                 continue;
             }
-            System.out.println("JChannelFactoryDemo [-help] [-props <stack config file>");
+            System.out.println("DrawMultiplexer [-help] [-props <stack config file>");
             return;
         }
-        new JChannelFactoryDemo().start(props);
+        new DrawMultiplexer().start(props);
     }
 
     private void start(String props) throws Exception {
