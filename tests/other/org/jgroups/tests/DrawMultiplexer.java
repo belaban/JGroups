@@ -11,9 +11,9 @@ import java.util.Vector;
 /**
  * Tests cluster method invocations on disconnected and connected services
  * @author Bela Ban
- * @version $Id: RpcDispatcherMultiplexerTest.java,v 1.2 2006/07/03 09:10:16 belaban Exp $
+ * @version $Id: DrawMultiplexer.java,v 1.1 2006/07/11 11:41:42 belaban Exp $
  */
-public class RpcDispatcherMultiplexerTest implements MembershipListener, RequestHandler, ChannelListener {
+public class DrawMultiplexer implements MembershipListener, RequestHandler, ChannelListener {
     Channel           channel;
     JChannelFactory factory=null;
     RpcDispatcher     disp;
@@ -32,7 +32,7 @@ public class RpcDispatcherMultiplexerTest implements MembershipListener, Request
             help();
             return;
         }
-        new RpcDispatcherMultiplexerTest().start(props);
+        new DrawMultiplexer().start(props);
     }
 
     private void start(String props) throws Exception {
