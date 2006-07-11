@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.26 2006/07/06 07:51:27 belaban Exp $
+// $Id: JChannelFactory.java,v 1.27 2006/07/11 12:37:52 belaban Exp $
 
 package org.jgroups;
 
@@ -319,8 +319,28 @@ public class JChannelFactory implements ChannelFactory {
             synchronized(entry) {
                 if(entry.channel == null)
                     throw new ChannelException("channel has to be created before it can be connected");
-                if(!entry.channel.isConnected())
+                if(!entry.channel.isConnected()) {
                     entry.channel.connect(ch.getStackName());
+                    if(entry.multiplexer != null) {
+                        try {
+                            entry.multiplexer.fetchServiceInformation();
+                        }
+                        catch(Exception e) {
+                            if(log.isErrorEnabled())
+                                log.error("failed fetching service state", e);
+                        }
+                    }
+                }
+                if(entry.multiplexer != null) {
+                    try {
+                        Address addr=entry.channel.getLocalAddress();
+                        entry.multiplexer.sendServiceUpMessage(ch.getId(), addr);
+                    }
+                    catch(Exception e) {
+                        if(log.isErrorEnabled())
+                            log.error("failed sending SERVICE_UP message", e);
+                    }
+                }
             }
         }
         ch.setClosed(false);
@@ -340,6 +360,14 @@ public class JChannelFactory implements ChannelFactory {
             synchronized(entry) {
                 Multiplexer mux=entry.multiplexer;
                 if(mux != null) {
+                    Address addr=entry.channel.getLocalAddress();
+                    try {
+                        mux.sendServiceDownMessage(ch.getId(), addr);
+                    }
+                    catch(Exception e) {
+                        if(log.isErrorEnabled())
+                            log.error("failed sending SERVICE_DOWN message", e);
+                    }
                     mux.disconnect(); // disconnects JChannel if all MuxChannels are in disconnected state
                 }
             }
@@ -362,8 +390,16 @@ public class JChannelFactory implements ChannelFactory {
             synchronized(entry) {
                 Multiplexer mux=entry.multiplexer;
                 if(mux != null) {
+                    Address addr=entry.channel.getLocalAddress();
+                    try {
+                        mux.sendServiceDownMessage(ch.getId(), addr);
+                    }
+                    catch(Exception e) {
+                        if(log.isErrorEnabled())
+                            log.error("failed sending SERVICE_DOWN message", e);
+                    }
                     all_closed=mux.close(); // closes JChannel if all MuxChannels are in closed state
-                    mux.unregister(ch.getId());
+                    //mux.unregister(ch.getId());
                 }
             }
             if(all_closed) {
@@ -396,8 +432,17 @@ public class JChannelFactory implements ChannelFactory {
                 synchronized(entry) {
                     Multiplexer mux=entry.multiplexer;
                     if(mux != null) {
+                        Address addr=entry.channel.getLocalAddress();
+                        try {
+                            mux.sendServiceDownMessage(ch.getId(), addr);
+                        }
+                        catch(Exception e) {
+                            if(log.isErrorEnabled())
+                                log.error("failed sending SERVICE_DOWN message", e);
+                        }
                         all_closed=mux.shutdown(); // closes JChannel if all MuxChannels are in closed state
-                        mux.unregister(ch.getId());
+
+                        //mux.unregister(ch.getId());
                     }
                 }
                 if(all_closed) {
