@@ -1,0 +1,233 @@
+
+Streaming state transfer
+========================
+
+Author:  Vladimir Blagojevic
+Date:    July 2006
+Version: $Id: StreamingStateTransfer.txt,v 1.1 2006/07/11 06:36:33 belaban Exp $
+
+
+Overview
+-----------------------------------------
+
+In order to transfer application state to a joining member of a group we currently have to load entire state 
+into memory and send it to a joining member. Major limitation of this approach is that the state transfer that 
+is very large (>1Gb) would likely result in OutOfMemoryException. In order to alleviate this problem a new state 
+transfer methodology, based on a streaming state transfer, will be introduced in JGroups 2.4 
+(see http://jira.jboss.com/jira/browse/JGRP-89)
+
+
+Design approaches
+-----------------------------------------
+
+There are two distinct approaches to add streaming state transfer and have it coexist with the current byte 
+state transfer. For the sake of simplicity let's call them solution A and B.
+
+Solution A:
+
+- support both state transfer types using one channel config
+- support both state transfer types at channel.connect() using one channel config
+- let application choose at runtime whether to use byte or streaming state transfer (using particular getState method)
+
+
+Solution B:
+
+- support both state transfer types using different channel config (one for byte and one for streaming transfer)
+- support both state transfer types at channel.connect() using separate channel config files
+- state transfer type is static (determined by channel configuration and cannot use both at one time)
+
+
+
+Advantages 									Disadvantages:
+
+Solution A:
+
+- ideal solution 							     - harder to implement, debug, more error prone
+- runtime choice of state transfer type			     - needs new getState and connect method	
+- less configuration issues
+
+
+
+Solution B:
+
+- a good solution 						     - easier to implement, less error prone 
+- no JChannel API changes needed* 				     - static configuration of state transfer
+									     - more configuration issues		
+
+
+
+Design elaboration
+------------------------------------------
+
+
+New API
+
+In order to introduce streaming state transfer both solutions require additional interface ExtendedMessageListener2 
+with the following method signatures:
+
+public getState(OutputStream ostream);
+public setState(InputStream istream);
+
+
+Similarly to current getState and setState method of org.jgroups.MessageListener, application interested in 
+streaming state transfer would implement streaming getState method by sending/writing state through provided 
+OutputStream reference and setState method by receiving/reading state through provided InputStream reference. 
+
+
+
+Additional API changes 
+
+Solution A allows user to select state transfer type at runtime. User would simply use appropriate API to invoke 
+particular type of state transfer. A new method JChannel.connect(String group, byte transferType) is introduced 
+rather than JChannel.connect(String group, boolean useStreaming) because in the future we might come up with 
+additional transfer types. User would therefore invoke state transfer at connect like this: 
+
+channel.connect("test",JChannel.STREAMING_TRANSFER);*
+
+Solution A requires additional getState() method: JChannel.getState(Address address,byte transferType, long timeout). 
+Current implementation becomes JChannel.getState(address,JChannel.BYTE_TRANSFER,timeout).
+
+Solution B does not need new getState and possibly connect API changes since tranfer type becomes implicit 
+from stack configuration. If user configures stack with STREAMING_STATE_TRANSFER then streaming state transfer will 
+be used when JChannel.getState() is invoked. We can possibly add boolean parameter to both STREAMING_STATE_TRANSFER 
+and current STATE_TRANSFER called "invoke_on_connect" that would initiate state transfer on join? 
+
+
+*Other options of transfer are JChannel.BYTE_TRANSFER and JChannel.NO_STATE_TRANSFER 
+
+Implementation and configuration impact
+
+The main question is whether to separate streaming state transfer into new protocol or integrate it into existing 
+STATE_TRANSFER. If we integrate streaming into STATE_TRANSFER then obviously STATE_TRANSFER implementation becomes 
+a bit messy and hard to maintain. Solution B becomes unclear from user's point of view since we would have to introduce 
+static "use_streaming" parameter in STATE_TRANSFER to enable streaming. The big advantage is that users would 
+migrate easier to JGroups 2.4 solution A since they would not need change to their configuration stack file. 
+However, they have to use above mentioned new API.
+
+If we create separate protocol STREAMING_STATE_TRANSFER - obviously implementation becomes much cleaner. We are 
+not touching STATE_TRANSFER and potentially introducing new bugs. Both protocols are easier to maintain separately. 
+For solution A we would list both STATE_TRANSFER *and* STREAMING_STATE_TRANSFER in the protocol stack. Runtime 
+parametrization is needed to differentiate which transfer should be used. For example, GET_STATE eventing needs 
+to be reworked with additional parameter etc etc. Solution B becomes very nice and clean since transfer type is 
+implicit from the protocol stack. 
+
+
+Solution B with separate state transfer protocols does seem like a reasonable solution. However, we have to drop it if 
+there is a need to support at runtime both state transfer types with one stack configuration.
+
+
+
+Streaming state transfer implementation
+--------------------------------------------
+
+Streaming state transfer can be implemented using TCP sockets. Joining member would open TCP socket to a member providing 
+state, appropriate IO streams would be obtained and passed to each member's application level and thus state transfer 
+could be completed. TCP layer will chunk up messages automatically and the entire state does not have to be in-memory 
+in order to complete state transfer. Lets recap how current byte transfer works so we can compare it side-by-side 
+to a proposed streaming state transfer.
+
+
+BYTE STATE TRANSFER (current implementation)
+
+MEMBER A									Member C (coordinator)
+
+- Joining member A sends down GET_STATE event
+- A sends state request to coordinator C
+
+
+										- C receives state requests and gets digest from NAKACK
+										- When digest is returned from NAKACK 
+										  request state from application layer
+										- When application sends state bundle digest and state 
+										  and send state response to A
+
+
+
+
+- A receives state response with digest
+- A sets digest and gives state up to application
+
+
+
+
+
+STREAMABLE STATE TRANSFER (proposed solution)
+
+
+MEMBER A									Member C (coordinator)
+
+- Joining member A sends down GET_STATE event
+- A sends state request to coordinator C
+
+										- C responds with tcp server socket's host:port
+
+
+- A creates tcp socket Sa, Sa receive buffer size is set, 
+  and connected to C's server socket 
+
+
+										- A connects to C's server socket, socket Sc is returned, 
+										- Sc send buffer size is set; thread T is spawned at C
+										- Running on T we get digest from C's NAKACK and send it 
+										  back to A
+										- Running on T we get Sc socket's OutputStream, pass it up to
+										  channel level and invoke C's getState(OutputStream ostream);
+										- When done, cleanup resources
+
+
+
+- A receives and sets digest from C
+- Get Sa socket's InputStream, pass it up to channel level 
+  and Invoke A's setState(InputStream istream);
+- When done, cleanup resources
+
+
+Implementation issues
+----------------------------------------------
+
+Which thread do we use for state writing in a member providing state? Seems like we need spawn a new thread T! 
+Can we piggyback somehow on stack upthread? If we piggyback, do not use flush, and the state is huge we can run 
+out of memory since receiving messages are either going to be piled up in one of the protocols below or 
+if we use receiver thread OS buffers will drop receiving messages.
+
+Which thread are we going to use on receiving members end? What is the impact?
+
+If we use stack's thread, no flush and the state is huge we are running into similar problems of messages 
+being dropped. But if we use seperate thread then we continue receiving messages during state transfer?
+
+
+
+
+
+Implementation of JChannel.connect() with state transfer - http://jira.jboss.com/jira/browse/JGRP-236
+-----------------------------------------------
+
+There are essentially three major different implementations possibilites for new JChannel.connect with state 
+transfer.
+
+Solution A:
+
+	- implement state transfer within CoordGmsImpl.handleJoin running on ViewHandler thread
+	- tightly ties state transfer to CoordGmsImpl and further bloats CoordGmsImpl.handleJoin 
+	- can we even keep ViewHandler thread so busy? Possibly run state transfer on a new thread spawned 
+	  from CoordGmsImpl.handleJoin? 
+
+Solution B: 
+	
+	- listen for SUSPEND_OK in STATE_TRANSFER (flush succeded/cluster is quiet) at coordinator
+	- add additional info to SUSPEND_OK so we know the joining member
+	- do state transfer on SUSPEND_OK running on stack thread
+	- use longer flush timeout for large states or periodically update timout to notify it of large transfer?
+
+Solution C:
+
+	- initiate state transfer within JChannel.connect() after connect_promise is set
+	- call JChannel.startFlush() and JChannel.stopFlush()
+	- we do extra flush in this case
+
+
+
+Solution C is the most viable option for regular state transfer with flush. startFlush() and stopFlush() will be 
+exposed on JChannel level and will be called by initiator of state transfer. Nice and clean solution. However, if 
+we employ solution C for new JChannel.connect method the overhead of extra flush does not seem acceptable?	 
+	 
