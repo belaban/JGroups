@@ -276,18 +276,19 @@ public class FLUSH extends Protocol {
 	}
 
 	private void onStartFlush(Address flushStarter, FlushHeader fh) {
-			synchronized (blockMutex) {
-				isBlockState = true;
-			}
-			synchronized (sharedLock) {
-				flushCaller = flushStarter;
-				flushMembers = fh.flushParticipants;
-				flushMembers.removeAll(suspected);
-			}
-			Message msg = new Message(null, localAddress, null);
-			msg.putHeader(getName(), new FlushHeader(FlushHeader.FLUSH_OK,fh.viewID));
-			passDown(new Event(Event.MSG, msg));
-			log.debug("Received START_FLUSH at " + localAddress + " responded with FLUSH_OK");
+        synchronized (blockMutex) {
+            isBlockState = true;
+        }
+        synchronized (sharedLock) {
+            flushCaller = flushStarter;
+            flushMembers = fh.flushParticipants;
+            flushMembers.removeAll(suspected);
+        }
+        Message msg = new Message(null, localAddress, null);
+        msg.putHeader(getName(), new FlushHeader(FlushHeader.FLUSH_OK,fh.viewID));
+        passDown(new Event(Event.MSG, msg));
+        if(log.isDebugEnabled())
+            log.debug("Received START_FLUSH at " + localAddress + " responded with FLUSH_OK");
 	}
 
 	private void onFlushOk(Address address, long viewID) {
