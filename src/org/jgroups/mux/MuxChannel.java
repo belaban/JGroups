@@ -11,7 +11,7 @@ import java.util.Map;
  * {@link org.jgroups.ChannelFactory#createMultiplexerChannel(String,String,boolean,String)}. Maintains the multiplexer
  * ID, which is used to add a header to each message, so that the message can be demultiplexed at the receiver
  * @author Bela Ban
- * @version $Id: MuxChannel.java,v 1.16 2006/07/03 12:58:07 belaban Exp $
+ * @version $Id: MuxChannel.java,v 1.17 2006/07/12 14:34:58 belaban Exp $
  */
 public class MuxChannel extends JChannel {
 
@@ -60,7 +60,21 @@ public class MuxChannel extends JChannel {
         return ch != null? ch.getLocalAddress() : null;
     }
 
+    /**
+     * Returns the <em>service</em> view, ie. the cluster view (see {@link #getView()}) <em>minus</em> the nodes on
+     * which this service is not running, e.g. if S1 runs on A and C, and the cluster view is {A,B,C}, then the service
+     * view is {A,C}
+     * @return The service view (list of nodes on which this service is running)
+     */
     public View getView() {
+        return mux.getServiceView(id);
+    }
+
+    /** Returns the JGroups view of a cluster, e.g. if we have nodes A, B and C, then the view will
+     * be {A,B,C}
+     * @return The JGroups view
+     */
+    public View getClusterView() {
         return ch != null? ch.getView() : null;
     }
 
@@ -105,6 +119,7 @@ public class MuxChannel extends JChannel {
 
     public synchronized void disconnect() {
         factory.disconnect(this);
+        connected=false;
         notifyChannelDisconnected(this);
     }
 
@@ -116,6 +131,7 @@ public class MuxChannel extends JChannel {
 
     public synchronized void close() {
         factory.close(this);
+        closed=true;
         notifyChannelClosed(this);
     }
 
