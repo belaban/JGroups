@@ -102,7 +102,8 @@ public class FLUSH extends Protocol {
 			case Event.MSG:
 				synchronized (blockMutex) {
 					while (isFlushRunning()) {
-						log.debug("FLUSH block at  " + localAddress + " for " + timeout);
+						if (log.isDebugEnabled())
+							log.debug("FLUSH block at " + localAddress + " for " + timeout);
 						try {
 							blockMutex.wait(timeout);
 							if (isFlushRunning()) {
@@ -147,7 +148,8 @@ public class FLUSH extends Protocol {
 							onFlushCompleted(msg.getSrc());
 						}
 					} else {
-						log.debug(localAddress
+						if(log.isDebugEnabled())
+							log.debug(localAddress
 								+ " received outdated FLUSH message " + fh
 								+ ",ignoring it.");
 					}
@@ -214,17 +216,20 @@ public class FLUSH extends Protocol {
 			//FLUSH and send STOP_FLUSH on flush callers behalf.
 			if (flushCaller != null && !view.getMembers().contains(flushCaller)
 					&& localAddress.equals(view.getMembers().get(0))) {
-				log.debug("Coordinator left, " + localAddress
+				if(log.isDebugEnabled())
+					log.debug("Coordinator left, " + localAddress
 						+ " will complete flush");
 				onResume();
 			}
 
 		}
-		log.debug("Installing view at  " + localAddress + " view is " + currentView);
+		if(log.isDebugEnabled())
+			log.debug("Installing view at  " + localAddress + " view is " + currentView);
 	}
 
 	private void onStopFlush() {
-		log.debug("Received STOP_FLUSH at " + localAddress);
+		if(log.isDebugEnabled())
+			log.debug("Received STOP_FLUSH at " + localAddress);
 		synchronized (blockMutex) {
 			isBlockState = false;
 			blockMutex.notifyAll();
@@ -261,7 +266,8 @@ public class FLUSH extends Protocol {
 			passDown(new Event(Event.SUSPEND_OK));
 		} else {
 			passDown(new Event(Event.MSG, msg));
-			log.debug("Received SUSPEND at " + localAddress
+			if(log.isDebugEnabled())
+				log.debug("Received SUSPEND at " + localAddress
 					+ ", sent START_FLUSH to " + participantsInFlush);
 		}
 	}
@@ -271,7 +277,8 @@ public class FLUSH extends Protocol {
 		Message msg = new Message(null, localAddress, null);
 		msg.putHeader(getName(), new FlushHeader(FlushHeader.STOP_FLUSH));
 		passDown(new Event(Event.MSG, msg));
-		log.debug("Received RESUME at " + localAddress
+		if(log.isDebugEnabled())
+			log.debug("Received RESUME at " + localAddress
 				+ ", sent STOP_FLUSH to all");
 	}
 
@@ -304,13 +311,15 @@ public class FLUSH extends Protocol {
 			}
 		}
 
-		log.debug("FLUSH_OK from " + address + ",completed " + flushOkCompleted
+		if(log.isDebugEnabled())
+			log.debug("FLUSH_OK from " + address + ",completed " + flushOkCompleted
 				+ ",  flushOkSet " + flushOkSet.toString());
 
 		if (flushOkCompleted) {
 			m.putHeader(getName(), new FlushHeader(FlushHeader.FLUSH_COMPLETED,viewID));
 			passDown(new Event(Event.MSG, m));
-			log.debug(localAddress + " sent FLUSH_COMPLETED message to " +flushCaller);
+			if(log.isDebugEnabled())
+				log.debug(localAddress + " sent FLUSH_COMPLETED message to " +flushCaller);
 		}
 	}
 
@@ -321,14 +330,16 @@ public class FLUSH extends Protocol {
 			flushCompleted = flushCompletedSet.containsAll(flushMembers);
 		}
 
-		log.debug("FLUSH_COMPLETED from " + address + ",completed "
+		if(log.isDebugEnabled())
+			log.debug("FLUSH_COMPLETED from " + address + ",completed "
 				+ flushCompleted + ",flushCompleted "
 				+ flushCompletedSet.toString());
 
 		if (flushCompleted) {
 			passUp(new Event(Event.SUSPEND_OK));
-			passDown(new Event(Event.SUSPEND_OK));			
-			log.debug("All FLUSH_COMPLETED received at " + localAddress
+			passDown(new Event(Event.SUSPEND_OK));	
+			if(log.isDebugEnabled())
+				log.debug("All FLUSH_COMPLETED received at " + localAddress
 					+ " sent SUSPEND_OK down");
 		}
 	}
@@ -350,10 +361,12 @@ public class FLUSH extends Protocol {
 		if (flushOkCompleted) {
 			m.putHeader(getName(), new FlushHeader(FlushHeader.FLUSH_COMPLETED, viewID));
 			passDown(new Event(Event.MSG, m));
-			log.debug(localAddress + " sent FLUSH_COMPLETED message to "
+			if(log.isDebugEnabled())
+				log.debug(localAddress + " sent FLUSH_COMPLETED message to "
 					+ flushCaller);
 		}
-		log.debug("Suspect is " + address + ",completed " + flushOkCompleted
+		if(log.isDebugEnabled())
+			log.debug("Suspect is " + address + ",completed " + flushOkCompleted
 				+ ",  flushOkSet " + flushOkSet + " flushMembers "
 				+ flushMembers);
 	}
