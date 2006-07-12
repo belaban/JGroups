@@ -15,7 +15,7 @@ import java.util.*;
  * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.15 2006/07/11 12:37:52 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.16 2006/07/12 14:35:53 belaban Exp $
  */
 public class Multiplexer implements UpHandler {
     /** Map<String,MuxChannel>. Maintains the mapping between service IDs and their associated MuxChannels */
@@ -29,6 +29,8 @@ public class Multiplexer implements UpHandler {
 
     /** Cluster view */
     View view=null;
+
+    Address local_addr=null;
 
     /** Map<String,Boolean>. Map of service IDs and booleans that determine whether getState() has already been called */
     private final Map state_transfer_listeners=new HashMap();
@@ -61,6 +63,17 @@ public class Multiplexer implements UpHandler {
 
     public Set getServiceIds() {
         return services != null? services.keySet() : null;
+    }
+
+    /** Returns a copy of the current view <em>minus</em> the nodes on which service service_id is <em>not</em> running
+     *
+     * @param service_id
+     * @return The service view
+     */
+    public View getServiceView(String service_id) {
+        List hosts=(List)service_state.get(service_id);
+        if(hosts == null) return null;
+        return generateServiceView(hosts);
     }
 
     public boolean stateTransferListenersPresent() {
@@ -137,8 +150,8 @@ public class Multiplexer implements UpHandler {
      */
     public void fetchServiceInformation() throws Exception {
         while(true) {
-            Address coord=getCoordinator(), local_addr=channel != null? channel.getLocalAddress() : null;
-            boolean is_coord=coord != null && local_addr != null && local_addr.equals(coord);
+            Address coord=getCoordinator(), local_address=channel != null? channel.getLocalAddress() : null;
+            boolean is_coord=coord != null && local_address != null && local_address.equals(coord);
             if(is_coord) {
                 if(log.isTraceEnabled())
                     log.trace("I'm coordinator, will not fetch service state information");
@@ -180,11 +193,15 @@ public class Multiplexer implements UpHandler {
 
     public void sendServiceUpMessage(String service, Address host) throws Exception {
         sendServiceMessage(ServiceInfo.SERVICE_UP, service, host);
+        if(local_addr != null && host != null && local_addr.equals(host))
+            handleServiceUp(service, host, false);
     }
 
 
-    public void sendServiceDownMessage(String service, Address addr) throws Exception {
-        sendServiceMessage(ServiceInfo.SERVICE_DOWN, service, addr);
+    public void sendServiceDownMessage(String service, Address host) throws Exception {
+        sendServiceMessage(ServiceInfo.SERVICE_DOWN, service, host);
+        if(local_addr != null && host != null && local_addr.equals(host))
+            handleServiceDown(service, host, false);
     }
 
 
@@ -245,6 +262,11 @@ public class Multiplexer implements UpHandler {
 
             case Event.GET_STATE_OK:
                 handleStateResponse(evt);
+                break;
+
+            case Event.SET_LOCAL_ADDRESS:
+                local_addr=(Address)evt.getArg();
+                passToAllMuxChannels(evt);
                 break;
 
             default:
@@ -402,9 +424,11 @@ public class Multiplexer implements UpHandler {
 
 
     private Address getLocalAddress() {
+        if(local_addr != null)
+            return local_addr;
         if(channel != null)
-            return channel.getLocalAddress();
-        return null;
+            local_addr=channel.getLocalAddress();
+        return local_addr;
     }
 
     private Address getCoordinator() {
@@ -522,10 +546,10 @@ public class Multiplexer implements UpHandler {
                 service_state_promise.setResult(info.state);
                 break;
             case ServiceInfo.SERVICE_UP:
-                handleServiceUp(info.service, info.host);
+                handleServiceUp(info.service, info.host, true);
                 break;
             case ServiceInfo.SERVICE_DOWN:
-                handleServiceDown(info.service, info.host);
+                handleServiceDown(info.service, info.host, true);
                 break;
             default:
                 if(log.isErrorEnabled())
@@ -535,9 +559,15 @@ public class Multiplexer implements UpHandler {
     }
 
 
-    private void handleServiceDown(String service, Address host) {
+    private void handleServiceDown(String service, Address host, boolean received) {
         List    hosts, hosts_copy;
         boolean removed=false;
+
+        // discard if we sent this message
+        if(received && host != null && local_addr != null && local_addr.equals(host)) {
+            // System.out.println("received SERVICE_DOWN(" + host + ")");
+            return;
+        }
 
         synchronized(service_state) {
             hosts=(List)service_state.get(service);
@@ -562,14 +592,21 @@ public class Multiplexer implements UpHandler {
             }
         }
 
-        Address local_addr=getLocalAddress();
-        if(local_addr != null && host != null && host.equals(local_addr))
+        Address local_address=getLocalAddress();
+        if(local_address != null && host != null && host.equals(local_address))
             unregister(service);
     }
 
-    private void handleServiceUp(String service, Address host) {
+
+    private void handleServiceUp(String service, Address host, boolean received) {
         List    hosts, hosts_copy;
         boolean added=false;
+
+        // discard if we sent this message
+        if(received && host != null && local_addr != null && local_addr.equals(host)) {
+            // System.out.println("received SERVICE_UP(" + host + ")");
+            return;
+        }
 
         synchronized(service_state) {
             hosts=(List)service_state.get(service);
