@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.27 2006/07/11 12:37:52 belaban Exp $
+// $Id: JChannelFactory.java,v 1.28 2006/07/12 14:36:02 belaban Exp $
 
 package org.jgroups;
 
@@ -391,15 +391,16 @@ public class JChannelFactory implements ChannelFactory {
                 Multiplexer mux=entry.multiplexer;
                 if(mux != null) {
                     Address addr=entry.channel.getLocalAddress();
-                    try {
-                        mux.sendServiceDownMessage(ch.getId(), addr);
-                    }
-                    catch(Exception e) {
-                        if(log.isErrorEnabled())
-                            log.error("failed sending SERVICE_DOWN message", e);
+                    if(addr != null) {
+                        try {
+                            mux.sendServiceDownMessage(ch.getId(), addr);
+                        }
+                        catch(Exception e) {
+                            if(log.isErrorEnabled())
+                                log.error("failed sending SERVICE_DOWN message", e);
+                        }
                     }
                     all_closed=mux.close(); // closes JChannel if all MuxChannels are in closed state
-                    //mux.unregister(ch.getId());
                 }
             }
             if(all_closed) {
