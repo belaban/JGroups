@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.21 2006/03/01 16:20:26 belaban Exp $
+// $Id: TUNNEL.java,v 1.22 2006/07/12 11:00:26 belaban Exp $
 
 
 package org.jgroups.protocols;
@@ -62,6 +62,8 @@ public class TUNNEL extends Protocol implements Runnable {
     long            reconnect_interval=5000;
 
 
+
+
     public TUNNEL() {
     }
 
@@ -75,6 +77,9 @@ public class TUNNEL extends Protocol implements Runnable {
         return stub != null && stub.isConnected();
     }
 
+    public RouterStub getRouterStub() {
+        return stub;
+    }
 
     /*------------------------------ Protocol interface ------------------------------ */
 
