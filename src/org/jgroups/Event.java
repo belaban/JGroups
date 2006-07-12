@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.17 2006/05/23 21:28:36 vlada Exp $
+// $Id: Event.java,v 1.18 2006/07/12 20:19:11 vlada Exp $
 
 package org.jgroups;
 
@@ -74,9 +74,11 @@ public class Event {
     public static final int SUSPEND_STABLE            = 65;  // arg = Long (max_suspend_time)
     public static final int RESUME_STABLE             = 66;  // arg = null
     public static final int ENABLE_UNICASTS_TO        = 67;  // arg = Address (member)
-    public static final int SUSPEND					  = 68;  // arg = null
+    public static final int SUSPEND					  = 68;  // arg = View|null
     public static final int SUSPEND_OK				  = 69;	 // arg = null
     public static final int RESUME					  = 70;  // arg = null
+    public static final int STATE_TRANSFER_INPUTSTREAM= 71;	 // arg=java.io.InputStream
+    public static final int STATE_TRANSFER_OUTPUTSTREAM= 72; // arg=java.io.OutputStream
 
 
     public static final int USER_DEFINED=1000;// arg = <user def., e.g. evt type + data>
@@ -180,6 +182,11 @@ public class Event {
             case SUSPEND_STABLE:         return "SUSPEND_STABLE";
             case RESUME_STABLE:          return "RESUME_STABLE";
             case ENABLE_UNICASTS_TO:     return "ENABLE_UNICASTS_TO";
+            case SUSPEND:        		 return "SUSPEND";
+            case SUSPEND_OK:             return "SUSPEND_OK";
+            case RESUME:     			 return "RESUME";
+            case STATE_TRANSFER_INPUTSTREAM: return "STATE_TRANSFER_INPUTSTREAM";
+            case STATE_TRANSFER_OUTPUTSTREAM:return "STATE_TRANSFER_OUTPUTSTREAM";
 
             case USER_DEFINED:           return "USER_DEFINED";
             default:                     return "UNDEFINED";
