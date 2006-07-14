@@ -1,10 +1,11 @@
-// $Id: STATE_TRANSFER.java,v 1.36 2006/05/12 10:00:22 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.37 2006/07/14 19:27:44 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
 import org.jgroups.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.StateTransferInfo;
+import org.jgroups.util.Promise;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
@@ -40,6 +41,10 @@ public class STATE_TRANSFER extends Protocol {
     long           num_bytes_sent=0;
     double         avg_state_size=0;
     final static   String name="STATE_TRANSFER";
+    
+    boolean use_flush;
+    long flush_timeout;
+    Promise flush_promise;
 
 
     /** All protocol names have to be unique ! */
@@ -69,6 +74,12 @@ public class STATE_TRANSFER extends Protocol {
     public boolean setProperties(Properties props) {
         super.setProperties(props);
 
+        use_flush = Util.parseBoolean(props,"use_flush",false);
+        if(use_flush)
+        {
+        	flush_promise = new Promise();
+        }
+        flush_timeout = Util.parseLong(props,"flush_timeout",10*1000);
         if(props.size() > 0) {
             log.error("the following properties are not recognized: " + props);
 
@@ -139,6 +150,10 @@ public class STATE_TRANSFER extends Protocol {
                 break;
             case StateHeader.STATE_RSP:
                 handleStateRsp(hdr, msg.getBuffer());
+                if(use_flush)
+            	{
+            		stopFlush();
+            	}
                 break;
             default:
                 if(log.isErrorEnabled()) log.error("type " + hdr.type + " not known in StateHeader");
@@ -182,6 +197,10 @@ public class STATE_TRANSFER extends Protocol {
                     passUp(new Event(Event.GET_STATE_OK, new StateTransferInfo()));
                 }
                 else {
+                	if(use_flush)
+                	{
+                		startFlush(flush_timeout);
+                	}
                     Message state_req=new Message(target, null, null);
                     state_req.putHeader(name, new StateHeader(StateHeader.STATE_REQ, local_addr, state_id++, null, info.state_id));
                     if(log.isDebugEnabled()) log.debug("GET_STATE: asking " + target + " for state");
@@ -246,6 +265,10 @@ public class STATE_TRANSFER extends Protocol {
                     }
                 }
                 return;             // don't pass down any further !
+            case Event.SUSPEND_OK:
+            	flush_promise.setResult(Boolean.TRUE);
+            	break;                
+                
         }
 
         passDown(evt);              // pass on to the layer below us
@@ -367,6 +390,23 @@ public class STATE_TRANSFER extends Protocol {
             log.debug("received state, size=" + state.length + " bytes. Time=" + (stop-start) + " milliseconds");
         StateTransferInfo info=new StateTransferInfo(null, id, 0L, state);
         passUp(new Event(Event.GET_STATE_OK, info));
+    }
+    
+    private boolean startFlush(long timeout)
+    {
+    	boolean successfulFlush=false;
+    	passUp(new Event(Event.SUSPEND));
+    	try {
+    		flush_promise.reset();
+			flush_promise.getResultWithTimeout(timeout);
+			successfulFlush=true;
+		} catch (TimeoutException e) {			
+		}
+		return successfulFlush;
+    }
+    
+    private void stopFlush(){
+    	passUp(new Event(Event.RESUME));
     }
 
 
