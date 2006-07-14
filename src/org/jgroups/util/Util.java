@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.75 2006/07/11 06:59:10 belaban Exp $
+// $Id: Util.java,v 1.76 2006/07/14 11:39:46 belaban Exp $
 
 package org.jgroups.util;
 
@@ -83,10 +83,16 @@ public class Util {
      */
     public static Object objectFromByteBuffer(byte[] buffer) throws Exception {
         if(buffer == null) return null;
+        return objectFromByteBuffer(buffer, 0, buffer.length);
+    }
+
+
+    public static Object objectFromByteBuffer(byte[] buffer, int offset, int length) throws Exception {
+        if(buffer == null) return null;
         Object retval=null;
 
         try {  // to read the object as an Externalizable
-            ByteArrayInputStream in_stream=new ByteArrayInputStream(buffer);
+            ByteArrayInputStream in_stream=new ByteArrayInputStream(buffer, offset, length);
             ObjectInputStream in=new ContextObjectInputStream(in_stream); // changed Nov 29 2004 (bela)
             retval=in.readObject();
             in.close();
@@ -109,6 +115,9 @@ public class Util {
             return null;
         return retval;
     }
+
+
+
 
     /**
      * Serializes/Streams an object into a byte buffer.
