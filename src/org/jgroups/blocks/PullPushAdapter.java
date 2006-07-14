@@ -1,4 +1,4 @@
-// $Id: PullPushAdapter.java,v 1.17 2006/05/06 15:01:59 belaban Exp $
+// $Id: PullPushAdapter.java,v 1.18 2006/07/14 16:17:15 vlada Exp $
 
 package org.jgroups.blocks;
 
@@ -245,6 +245,20 @@ public class PullPushAdapter implements Runnable, ChannelListener {
                                     ((SetStateEvent)obj).getArg() + " is not serializable ! Discarding message.");
                         }
                     }
+                }
+                else if(obj instanceof StreamingGetStateEvent) {
+                	StreamingGetStateEvent evt=(StreamingGetStateEvent)obj;
+                	if(listener instanceof StreamingMessageListener)
+                	{
+                		((StreamingMessageListener)listener).getState(evt.getArg());
+                	}
+                }
+                else if(obj instanceof StreamingSetStateEvent) {
+                	StreamingSetStateEvent evt=(StreamingSetStateEvent)obj;
+                	if(listener instanceof StreamingMessageListener)
+                	{
+                		((StreamingMessageListener)listener).setState(evt.getArg());
+                	}
                 }
                 else if(obj instanceof View) {
                     notifyViewChange((View)obj);

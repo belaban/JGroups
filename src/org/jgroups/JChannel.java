@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.76 2006/07/14 12:17:12 belaban Exp $
+// $Id: JChannel.java,v 1.77 2006/07/14 16:17:15 vlada Exp $
 
 package org.jgroups;
 
@@ -12,6 +12,8 @@ import org.jgroups.util.*;
 import org.w3c.dom.Element;
 
 import java.io.File;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.Serializable;
 import java.net.URL;
 import java.util.HashMap;
@@ -65,7 +67,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Revision: 1.76 $
+ * @version $Revision: 1.77 $
  */
 public class JChannel extends Channel {
 
@@ -1017,7 +1019,29 @@ public class JChannel extends Channel {
                 }
             }
             break;
+            
+        case Event.STATE_TRANSFER_INPUTSTREAM:
+        	InputStream is = (InputStream) evt.getArg();
+			state_promise.setResult(is != null ? Boolean.TRUE
+					: Boolean.FALSE);
 
+			if (up_handler != null) {
+				up_handler.up(evt);
+				return;
+			}
+
+			if (is != null) {
+				if (receiver instanceof StreamingReceiver) {
+					((StreamingReceiver) receiver).setState(is);
+				} else {
+					try {
+						mq.add(new Event(Event.STATE_TRANSFER_INPUTSTREAM, is));
+					} catch (Exception e) {
+					}
+				}
+			}
+			break;			       
+        	
         case Event.SET_LOCAL_ADDRESS:
             local_addr_promise.setResult(evt.getArg());
             break;
@@ -1071,6 +1095,15 @@ public class JChannel extends Channel {
                     return;
                 }
                 break;
+            case Event.STATE_TRANSFER_OUTPUTSTREAM:
+            	if (receiver != null) {
+					OutputStream os = (OutputStream) evt.getArg();
+					if (os != null && receiver instanceof StreamingReceiver) {
+						((StreamingReceiver) receiver).getState(os);
+					}
+					return;
+				}
+				break;    
             case Event.BLOCK:
                 if(receiver != null) {
                     receiver.block();
@@ -1082,7 +1115,8 @@ public class JChannel extends Channel {
         }
 
         if(type == Event.MSG || type == Event.VIEW_CHANGE || type == Event.SUSPECT ||
-                type == Event.GET_APPLSTATE || type == Event.BLOCK) {
+                type == Event.GET_APPLSTATE || type== Event.STATE_TRANSFER_OUTPUTSTREAM
+                || type == Event.BLOCK) {
             try {
                 mq.add(evt);
             }
@@ -1223,6 +1257,12 @@ public class JChannel extends Channel {
             case Event.STATE_RECEIVED:
                 info=(StateTransferInfo)evt.getArg();
                 return new SetStateEvent(info.state, info.state_id);
+            case Event.STATE_TRANSFER_OUTPUTSTREAM:
+            	OutputStream os=(OutputStream)evt.getArg();
+                return new StreamingGetStateEvent(os);      
+            case Event.STATE_TRANSFER_INPUTSTREAM:
+            	InputStream is=(InputStream)evt.getArg();
+                return new StreamingSetStateEvent(is);    
             case Event.EXIT:
                 return new ExitEvent();
             default:

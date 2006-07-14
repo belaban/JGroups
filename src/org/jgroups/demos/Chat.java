@@ -19,9 +19,9 @@ import java.io.*;
 /**
  * Simple chat demo
  * @author Bela Ban
- * @version $Id: Chat.java,v 1.12 2006/03/27 08:34:24 belaban Exp $
+ * @version $Id: Chat.java,v 1.13 2006/07/14 16:17:15 vlada Exp $
  */
-public class Chat implements MouseListener, WindowListener, MessageListener, MembershipListener {
+public class Chat implements MouseListener, WindowListener, StreamingMessageListener, MembershipListener {
     Channel channel;
     PullPushAdapter ad;
     Thread mainThread;
@@ -161,6 +161,39 @@ public class Chat implements MouseListener, WindowListener, MessageListener, Mem
         catch(Exception e) {
             e.printStackTrace();
         }
+    }
+    
+    public void getState(OutputStream os) {
+    	ObjectOutputStream oos =null;
+		try {
+			oos = new ObjectOutputStream(os);			
+			oos.writeObject(history);   
+	    	oos.flush();
+		} catch (IOException e) {}  
+		finally
+		{
+			try {				
+				oos.close();
+			} catch (IOException e) {
+				System.err.println(e);
+			}
+		}
+    }
+    
+    public void setState(InputStream is) {
+    	ObjectInputStream ois = null;
+		try {			
+			ois = new ObjectInputStream(is);
+			history = (LinkedList)ois.readObject();  
+		} catch (Exception e) {} 
+		finally
+		{
+			try {				
+				ois.close();
+			} catch (IOException e) {
+				System.err.println(e);
+			}
+		}
     }
 
     /* ----------------- End of Interface MessageListener --------------- */

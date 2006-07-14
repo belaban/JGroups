@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.76 2006/07/14 11:39:46 belaban Exp $
+// $Id: Util.java,v 1.77 2006/07/14 16:17:15 vlada Exp $
 
 package org.jgroups.util;
 
@@ -1403,6 +1403,65 @@ public class Util {
 
          return tmp;
      }
+    
+    public static int parseInt(Properties props,String property,int defaultValue)
+    {
+    	int result = defaultValue;
+    	String str=props.getProperty(property);
+        if(str != null) {
+            result=Integer.parseInt(str);
+            props.remove(property);
+        }
+        return result;
+    }
+    
+    
+    public static long parseLong(Properties props,String property,long defaultValue)
+    {
+    	long result = defaultValue;
+    	String str=props.getProperty(property);
+        if(str != null) {
+            result=Integer.parseInt(str);
+            props.remove(property);
+        }
+        return result;
+    }
+    
+    public static boolean parseBoolean(Properties props,String property,boolean defaultValue)
+    {
+    	boolean result = defaultValue;
+    	String str=props.getProperty(property);
+        if(str != null) {
+            result=Boolean.parseBoolean(property);
+            props.remove(property);
+        }
+        return result;
+    }
+    
+    public static InetAddress parseBindAddress(Properties props, String property)
+			throws UnknownHostException {
+		String tmp = null;
+		String str = null;
+		InetAddress bind_addr = null;
+		// PropertyPermission not granted if running in an untrusted environment
+		// with JNLP.
+		try {
+			tmp = System.getProperty("bind.address");
+			if (Util.isBindAddressPropertyIgnored()) {
+				tmp = null;
+			}
+		} catch (SecurityException ex) {
+		}
+		if (tmp != null)
+			str = tmp;
+		else
+			str = props.getProperty(property);
+		if (str != null) {
+			bind_addr = InetAddress.getByName(str);
+			props.remove(property);
+		}
+		return bind_addr;
+	}
 
 
 
