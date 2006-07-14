@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.75 2006/07/11 15:55:41 vlada Exp $
+// $Id: JChannel.java,v 1.76 2006/07/14 12:17:12 belaban Exp $
 
 package org.jgroups;
 
@@ -65,7 +65,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Revision: 1.75 $
+ * @version $Revision: 1.76 $
  */
 public class JChannel extends Channel {
 
@@ -1087,7 +1087,7 @@ public class JChannel extends Channel {
                 mq.add(evt);
             }
             catch(Exception e) {
-                if(log.isErrorEnabled()) log.error("exception: " + e);
+                if(log.isErrorEnabled()) log.error("exception adding event " + evt + " to message queue", e);
             }
         }
     }
