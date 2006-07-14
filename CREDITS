@@ -34,6 +34,8 @@ Filip Hanik (filip@filip.net)
 Vladimir Blagojevic  (vladimir@cs.yorku.ca)
 - Causal order protocol (CAUSAL)
 - Token based total order protocol (TOTAL_TOKEN)
+- FLUSH
+- Streaming state transfer
 
 
 Roman Rokytskyy (roman@gate5.de)
