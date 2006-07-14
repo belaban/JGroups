@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.28 2006/07/12 14:36:02 belaban Exp $
+// $Id: JChannelFactory.java,v 1.29 2006/07/14 12:17:24 belaban Exp $
 
 package org.jgroups;
 
@@ -350,8 +350,6 @@ public class JChannelFactory implements ChannelFactory {
 
     public void disconnect(MuxChannel ch) {
         Entry entry;
-        ch.setClosed(false);
-        ch.setConnected(false);
 
         synchronized(channels) {
             entry=(Entry)channels.get(ch.getStackName());
@@ -378,9 +376,6 @@ public class JChannelFactory implements ChannelFactory {
     public void close(MuxChannel ch) {
         Entry entry;
         String stack_name=ch.getStackName();
-        ch.setClosed(true);
-        ch.setConnected(false);
-        ch.closeMessageQueue(true);
         boolean all_closed=false;
 
         synchronized(channels) {
@@ -422,9 +417,6 @@ public class JChannelFactory implements ChannelFactory {
     public void shutdown(MuxChannel ch) {
         Entry entry;
         String stack_name=ch.getStackName();
-        ch.setClosed(true);
-        ch.setConnected(false);
-        ch.closeMessageQueue(true);
         boolean all_closed=false;
 
         synchronized(channels) {
