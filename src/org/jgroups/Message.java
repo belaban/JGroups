@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.49 2006/05/12 09:35:18 belaban Exp $
+// $Id: Message.java,v 1.50 2006/07/14 11:40:17 belaban Exp $
 
 package org.jgroups;
 
@@ -258,12 +258,13 @@ public class Message implements Externalizable, Streamable {
     }
 
     final public Object getObject() {
-        if(buf == null) return null;
+        // if(buf == null) return null;
         try {
-            ByteArrayInputStream in_stream=new ByteArrayInputStream(buf, offset, length);
+            return Util.objectFromByteBuffer(buf, offset, length);
+            /*ByteArrayInputStream in_stream=new ByteArrayInputStream(buf, offset, length);
             // ObjectInputStream in=new ObjectInputStream(in_stream);
             ObjectInputStream in=new ContextObjectInputStream(in_stream); // put it back on norbert's request
-            return in.readObject();
+            return in.readObject();*/
         }
         catch(Exception ex) {
             throw new IllegalArgumentException(ex.toString());
