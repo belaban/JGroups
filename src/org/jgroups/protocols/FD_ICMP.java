@@ -15,8 +15,11 @@ import java.util.Properties;
  * Protocol which uses InetAddress.isReachable() to check whether a given host is up or not,
  * taking 1 argument; the host name of the host to be pinged.
  * <em>Note that this protocol only works with JDK 5 !</em>
+ * The implementation of this may or may not use ICMP ! An alternative is to create a TCP connection to port 7 (echo service)
+ * and see whether it works ! This is obviously done in JDK 5, so unless an echo service is configured to run, this
+ * won't work...
  * @author Bela Ban
- * @version $Id: FD_ICMP.java,v 1.2 2006/07/14 15:34:09 belaban Exp $
+ * @version $Id: FD_ICMP.java,v 1.3 2006/07/14 15:49:14 belaban Exp $
  */
 public class FD_ICMP extends FD {
 
@@ -144,7 +147,7 @@ public class FD_ICMP extends FD {
                 throw new IllegalArgumentException("ping_dest is not of type IpAddress - FD_ICMP only works with these");
             try {
                 if(trace)
-                    log.trace("pinging " + host + " (ping_dest=" + ping_dest + ")");
+                    log.trace("pinging " + host + " (ping_dest=" + ping_dest + ") using interface " + intf);
                 start=System.currentTimeMillis();
                 Boolean rc=(Boolean)is_reacheable.invoke(host, new Object[]{intf, new Integer(ttl), new Integer((int)timeout)});
                 stop=System.currentTimeMillis();
@@ -157,7 +160,7 @@ public class FD_ICMP extends FD {
                 else { // failure
                     num_tries++;
                     if(log.isDebugEnabled())
-                        log.debug("could not ping " + ping_dest + " (tries=" + num_tries + ')');
+                        log.debug("could not ping " + ping_dest + " (tries=" + num_tries + ") after " + (stop-start) + "ms)");
                 }
 
                 if(num_tries >= max_tries) {
