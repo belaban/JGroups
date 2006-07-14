@@ -13,9 +13,10 @@ import java.util.Properties;
 
 /**
  * Protocol which uses InetAddress.isReachable() to check whether a given host is up or not,
- * taking 1 argument; the host name of the host to be pinged
+ * taking 1 argument; the host name of the host to be pinged.
+ * <em>Note that this protocol only works with JDK 5 !</em>
  * @author Bela Ban
- * @version $Id: FD_ICMP.java,v 1.1 2006/07/14 14:47:09 belaban Exp $
+ * @version $Id: FD_ICMP.java,v 1.2 2006/07/14 15:34:09 belaban Exp $
  */
 public class FD_ICMP extends FD {
 
@@ -127,6 +128,7 @@ public class FD_ICMP extends FD {
      * emit a SUSPECT message. If ping_dest changes, or we do receive traffic from ping_dest, we reset num_tries to 0.
      */
     protected class PingMonitor extends Monitor {
+        long start, stop;
 
         public void run() {
             if(ping_dest == null) {
@@ -136,16 +138,21 @@ public class FD_ICMP extends FD {
                 return;
             }
 
-
             // 1. execute ping command
             InetAddress host=ping_dest instanceof IpAddress? ((IpAddress)ping_dest).getIpAddress() : null;
             if(host == null)
                 throw new IllegalArgumentException("ping_dest is not of type IpAddress - FD_ICMP only works with these");
             try {
+                if(trace)
+                    log.trace("pinging " + host + " (ping_dest=" + ping_dest + ")");
+                start=System.currentTimeMillis();
                 Boolean rc=(Boolean)is_reacheable.invoke(host, new Object[]{intf, new Integer(ttl), new Integer((int)timeout)});
+                stop=System.currentTimeMillis();
                 num_heartbeats++;
                 if(rc.booleanValue()) { // success
                     num_tries=0;
+                    if(trace)
+                        log.trace("successfully received response from " + host + " (after " + (stop-start) + "ms)");
                 }
                 else { // failure
                     num_tries++;
