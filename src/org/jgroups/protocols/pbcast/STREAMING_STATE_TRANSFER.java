@@ -38,6 +38,41 @@ import EDU.oswego.cs.dl.util.concurrent.PooledExecutor;
 
 
 /**
+ * <code>STREAMING_STATE_TRANSFER</code>, as its name implies, allows a streaming 
+ * state transfer between two channel instances. 
+ * 
+ * <p>
+ * 
+ * Major advantage of this approach is that transfering application state to a 
+ * joining member of a group does not entail loading of the complete application 
+ * state into memory. Application state, for example, might be located entirely 
+ * in some form of disk based storage. The default <code>STATE_TRANSFER</code> 
+ * requires this state be loaded entirely into memory before being transferred 
+ * to a group member while <code>STREAMING_STATE_TRANSFER</code> does not. 
+ * Thus <code>STREAMING_STATE_TRANSFER</code> protocol is able to transfer 
+ * application state that is very large (>1Gb) without a likelihood of such transfer 
+ * resulting in OutOfMemoryException.
+ * 
+ * <p>
+ * 
+ * Channel instance can be configured with either <code>STREAMING_STATE_TRANSFER</code> 
+ * or <code>STATE_TRANSFER</code> but not both protocols at the same time. 
+ * 
+ * <p>
+ * 
+ * In order to process streaming state transfer an application has to implement 
+ * <code>StreamingMessageListener</code> if it is using channel in a push style 
+ * mode or it has to process <code>StreamingSetStateEvent</code> and 
+ * <code>StreamingGetStateEvent</code> if it is using channel in a pull style mode.    
+ * 
+ * 
+ * @author Vladimir Blagojevic
+ * @see org.jgroups.StreamingMessageListener
+ * @see org.jgroups.StreamingGetStateEvent
+ * @see org.jgroups.StreamingSetStateEvent
+ * @see org.jgroups.protocols.pbcast.STATE_TRANSFER
+ * @since 2.4
+ * 
  * 
  */
 public class STREAMING_STATE_TRANSFER extends Protocol {
