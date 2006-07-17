@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.37 2006/07/14 19:27:44 vlada Exp $
+// $Id: STATE_TRANSFER.java,v 1.38 2006/07/17 19:07:03 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -60,6 +60,16 @@ public class STATE_TRANSFER extends Protocol {
         Vector retval=new Vector();
         retval.addElement(new Integer(Event.GET_DIGEST_STATE));
         retval.addElement(new Integer(Event.SET_DIGEST));
+        return retval;
+    }
+    
+    public Vector requiredUpServices() {
+        Vector retval=new Vector();
+        if(use_flush)
+        {
+        	retval.addElement(new Integer(Event.SUSPEND));
+        	retval.addElement(new Integer(Event.RESUME));
+        }
         return retval;
     }
 
