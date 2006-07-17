@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.56 2006/06/27 17:55:24 vlada Exp $
+// $Id: GMS.java,v 1.57 2006/07/17 19:07:03 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -163,6 +163,16 @@ public class GMS extends Protocol {
         retval.addElement(new Integer(Event.GET_DIGEST));
         retval.addElement(new Integer(Event.SET_DIGEST));
         retval.addElement(new Integer(Event.FIND_INITIAL_MBRS));
+        return retval;
+    }
+    
+    public Vector requiredUpServices() {
+        Vector retval=new Vector(2);
+        if(use_flush)
+        {
+        	retval.addElement(new Integer(Event.SUSPEND));
+        	retval.addElement(new Integer(Event.RESUME));
+        }
         return retval;
     }
 
@@ -1156,7 +1166,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.56 2006/06/27 17:55:24 vlada Exp $
+     * @version $Id: GMS.java,v 1.57 2006/07/17 19:07:03 vlada Exp $
      */
     class ViewHandler implements Runnable {
         Thread                    t;

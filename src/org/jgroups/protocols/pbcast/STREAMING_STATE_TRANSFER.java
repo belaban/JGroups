@@ -23,13 +23,16 @@ import java.util.Properties;
 import java.util.Vector;
 
 import org.jgroups.Address;
+import org.jgroups.Channel;
 import org.jgroups.Event;
 import org.jgroups.Header;
 import org.jgroups.Message;
+import org.jgroups.TimeoutException;
 import org.jgroups.View;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.StateTransferInfo;
+import org.jgroups.util.Promise;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
@@ -98,6 +101,10 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 	private int pool_buffer_length;	
 	private long pool_thread_keep_alive;
 	private int socket_buffer_size;
+	
+	private Promise flush_promise;
+	private volatile boolean use_flush;
+	private long flush_timeout;
     
     public String getName() {
         return NAME;
@@ -109,10 +116,26 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
         retval.addElement(new Integer(Event.SET_DIGEST));
         return retval;
     }
+    
+    public Vector requiredUpServices() {
+        Vector retval=new Vector();
+        if(use_flush)
+        {
+        	retval.addElement(new Integer(Event.SUSPEND));
+        	retval.addElement(new Integer(Event.RESUME));
+        }
+        return retval;
+    }
+    
 
     public boolean setProperties(Properties props) {
         super.setProperties(props);
-        
+        use_flush = Util.parseBoolean(props,"use_flush",false);
+        if(use_flush)
+        {
+        	flush_promise = new Promise();
+        }
+        flush_timeout = Util.parseLong(props,"flush_timeout",10*1000);
         try {
 			bind_addr = Util.parseBindAddress(props,"bind_addr");
 		} catch (UnknownHostException e) {
@@ -236,6 +259,10 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
                     passUp(new Event(Event.GET_STATE_OK, new StateTransferInfo()));
                 }
                 else {
+                	if(use_flush)
+                	{
+                		startFlush(flush_timeout);
+                	}
                     Message state_req=new Message(target, null, null);
                     state_req.putHeader(NAME, new StateHeader(StateHeader.STATE_REQ, local_addr));
                     if(log.isDebugEnabled()) log.debug("GET_STATE: asking " + target + " for state");
@@ -250,6 +277,26 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
                     passDown(new Event(Event.MSG, state_req));
                 }
                 return;                 // don't pass down any further !
+                
+            case Event.STATE_TRANSFER_INPUTSTREAM_CLOSED:
+            	
+            	if(use_flush)
+            	{
+            		stopFlush();
+            	}
+            	
+            	if(log.isDebugEnabled())
+                    log.debug("STATE_TRANSFER_INPUTSTREAM_CLOSED received");
+            	//resume sending and handling of message garbage collection gossip messages,
+                // fixes bugs #943480 and #938584). Wakes up a previously suspended message garbage
+                // collection protocol (e.g. STABLE)
+                if(log.isDebugEnabled())
+                    log.debug("passing down a RESUME_STABLE event");
+                passDown(new Event(Event.RESUME_STABLE));                   
+                return;
+            case Event.SUSPEND_OK:
+	            flush_promise.setResult(Boolean.TRUE);
+	            break;	    
         }
 
         passDown(evt);              // pass on to the layer below us
@@ -323,6 +370,22 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 			}
 		}
 	}	
+	private boolean startFlush(long timeout)
+    {
+    	boolean successfulFlush=false;
+    	passUp(new Event(Event.SUSPEND));
+    	try {
+    		flush_promise.reset();
+			flush_promise.getResultWithTimeout(timeout);
+			successfulFlush=true;
+		} catch (TimeoutException e) {			
+		}
+		return successfulFlush;
+    }
+    
+    private void stopFlush(){
+    	passUp(new Event(Event.RESUME));
+    }
 
 	private PooledExecutor setupThreadPool() {
 		PooledExecutor threadPool = new PooledExecutor(new BoundedBuffer(
@@ -426,7 +489,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 				log.debug("Connected to state provider, my end of the socket is "
 						+ socket.getLocalAddress() + ":"
 						+ socket.getLocalPort() + " passing inputstream up...");
-			wrapper = new StreamingInputStreamWrapper(socket,socket.getInputStream());
+			wrapper = new StreamingInputStreamWrapper(socket);
 			passUp(new Event(Event.STATE_TRANSFER_INPUTSTREAM,wrapper));
 		} catch (IOException e) {
 			if(log.isErrorEnabled())
@@ -547,7 +610,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 									+ socket.getSendBufferSize()+ 
 									", passing outputstream up... ");
 				
-				wrapper = new StreamingOutputStreamWrapper(socket, socket.getOutputStream());
+				wrapper = new StreamingOutputStreamWrapper(socket);
 				passUp(new Event(Event.STATE_TRANSFER_OUTPUTSTREAM,wrapper));
 			} catch (IOException e) {				
 				if(log.isErrorEnabled())
@@ -581,11 +644,13 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
     	
     	private Socket inputStreamOwner;
     	private InputStream delegate;
+    	private Channel channelOwner;
     	
-		public StreamingInputStreamWrapper(Socket inputStreamOwner, InputStream delegate) {
+		public StreamingInputStreamWrapper(Socket inputStreamOwner) throws IOException {
 			super();			
 			this.inputStreamOwner = inputStreamOwner;
-			this.delegate = delegate;
+			this.delegate = inputStreamOwner.getInputStream();
+			this.channelOwner = stack.getChannel();
 		}
 
 		public int available() throws IOException {			
@@ -596,7 +661,11 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 			if (log.isDebugEnabled()) {
 				log.debug("State reader " + inputStreamOwner + " is closing the socket ");
 			}
-			inputStreamOwner.close();
+			if(channelOwner!=null)
+			{
+				channelOwner.down(new Event(Event.STATE_TRANSFER_INPUTSTREAM_CLOSED));
+			}
+			inputStreamOwner.close();			
 		}
 
 		public synchronized void mark(int readlimit) {			
@@ -633,10 +702,10 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
     	private Socket outputStreamOwner;
     	private OutputStream delegate;
     	
-		public StreamingOutputStreamWrapper(Socket outputStreamOwner, OutputStream delegate) {
+		public StreamingOutputStreamWrapper(Socket outputStreamOwner) throws IOException {
 			super();			
 			this.outputStreamOwner = outputStreamOwner;
-			this.delegate = delegate;
+			this.delegate = outputStreamOwner.getOutputStream();
 		}
 
 		public void close() throws IOException {

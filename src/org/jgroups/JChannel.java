@@ -1,4 +1,4 @@
-// $Id: JChannel.java,v 1.77 2006/07/14 16:17:15 vlada Exp $
+// $Id: JChannel.java,v 1.78 2006/07/17 19:07:04 vlada Exp $
 
 package org.jgroups;
 
@@ -67,7 +67,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Revision: 1.77 $
+ * @version $Revision: 1.78 $
  */
 public class JChannel extends Channel {
 
@@ -150,6 +150,9 @@ public class JChannel extends Channel {
 
     /** True if a state transfer protocol is available, false otherwise */
     private boolean state_transfer_supported=false; // set by CONFIG event from STATE_TRANSFER protocol
+    
+    /** True if a flush protocol is available, false otherwise */
+    private volatile boolean flush_supported=false; // set by CONFIG event from FLUSH protocol
 
     /** Used to maintain additional data across channel disconnects/reconnects. This is a kludge and will be remove
      * as soon as JGroups supports logical addresses
@@ -965,8 +968,16 @@ public class JChannel extends Channel {
 
         case Event.CONFIG:
             HashMap config=(HashMap)evt.getArg();
-            if(config != null && config.containsKey("state_transfer"))
-                state_transfer_supported=((Boolean)config.get("state_transfer")).booleanValue();
+            if(config != null){ 
+            	if(config.containsKey("state_transfer"))
+            	{
+            		state_transfer_supported=((Boolean)config.get("state_transfer")).booleanValue();
+            	}
+            	if(config.containsKey("flush_supported"))
+            	{
+            		flush_supported = ((Boolean)config.get("flush_supported")).booleanValue();
+            	}
+            }                
             break;
 
         case Event.BLOCK:
@@ -1365,6 +1376,11 @@ public class JChannel extends Channel {
     
     private boolean startFlush(long timeout)
     {
+    	if (!flush_supported) {
+			throw new IllegalStateException("Using flush is not supported. "
+							+ "Add pbcast.FLUSH protocol to your protocol configuration");
+		}
+    	
     	boolean successfulFlush=false;
     	down(new Event(Event.SUSPEND));
     	try {
@@ -1377,6 +1393,10 @@ public class JChannel extends Channel {
     }
     
     private void stopFlush(){
+    	if (!flush_supported) {
+			throw new IllegalStateException("Using flush is not supported. "
+							+ "Add pbcast.FLUSH protocol to your protocol configuration");
+		}
     	down(new Event(Event.RESUME));
     }
 

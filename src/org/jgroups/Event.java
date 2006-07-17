@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.18 2006/07/12 20:19:11 vlada Exp $
+// $Id: Event.java,v 1.19 2006/07/17 19:07:04 vlada Exp $
 
 package org.jgroups;
 
@@ -77,8 +77,9 @@ public class Event {
     public static final int SUSPEND					  = 68;  // arg = View|null
     public static final int SUSPEND_OK				  = 69;	 // arg = null
     public static final int RESUME					  = 70;  // arg = null
-    public static final int STATE_TRANSFER_INPUTSTREAM= 71;	 // arg=java.io.InputStream
-    public static final int STATE_TRANSFER_OUTPUTSTREAM= 72; // arg=java.io.OutputStream
+    public static final int STATE_TRANSFER_INPUTSTREAM= 71;	 // arg=java.io.InputStream subclass
+    public static final int STATE_TRANSFER_OUTPUTSTREAM= 72; // arg=java.io.OutputStream subclass
+    public static final int STATE_TRANSFER_INPUTSTREAM_CLOSED= 73;//arg=null
 
 
     public static final int USER_DEFINED=1000;// arg = <user def., e.g. evt type + data>

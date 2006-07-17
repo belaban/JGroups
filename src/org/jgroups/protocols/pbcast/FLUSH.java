@@ -8,7 +8,9 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
@@ -97,6 +99,12 @@ public class FLUSH extends Protocol {
 		return true;
 	}
 
+    public void start() throws Exception {
+    	Map map = new HashMap();
+        map.put("flush_supported", Boolean.TRUE);
+        passUp(new Event(Event.CONFIG, map));
+    }
+
 	public void down(Event evt) {
 		switch (evt.getType()) {
 			case Event.MSG:
@@ -180,6 +188,13 @@ public class FLUSH extends Protocol {
 
 		passUp(evt);
 	}
+	
+	public Vector providedDownServices() {
+        Vector retval=new Vector(2);
+        retval.addElement(new Integer(Event.SUSPEND));
+        retval.addElement(new Integer(Event.RESUME));
+        return retval;
+    }
 
 	private boolean isCurrentFlushMessage(FlushHeader fh) {
 		return currentViewId() <= fh.viewID;
@@ -340,7 +355,7 @@ public class FLUSH extends Protocol {
 			passDown(new Event(Event.SUSPEND_OK));	
 			if(log.isDebugEnabled())
 				log.debug("All FLUSH_COMPLETED received at " + localAddress
-					+ " sent SUSPEND_OK down");
+					+ " sent SUSPEND_OK down/up");
 		}
 	}
 
