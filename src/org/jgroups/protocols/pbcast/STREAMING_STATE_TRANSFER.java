@@ -36,8 +36,8 @@ import org.jgroups.util.Promise;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
-import EDU.oswego.cs.dl.util.concurrent.BoundedBuffer;
 import EDU.oswego.cs.dl.util.concurrent.PooledExecutor;
+import EDU.oswego.cs.dl.util.concurrent.ThreadFactory;
 
 
 /**
@@ -97,14 +97,16 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 	private InetAddress bind_addr;
 	private int port = 0;
 	private StateProviderThreadSpawner spawner;
-	private int max_pool;
-	private int pool_buffer_length;	
+	private int max_pool;	
 	private long pool_thread_keep_alive;
 	private int socket_buffer_size;
+	private boolean use_reading_thread;
 	
 	private Promise flush_promise;
 	private volatile boolean use_flush;
 	private long flush_timeout;
+	private final Object poolLock= new Object();
+	private int threadCounter;
     
     public String getName() {
         return NAME;
@@ -144,9 +146,9 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 		}	
         port = Util.parseInt(props,"start_port",0);
         socket_buffer_size = Util.parseInt(props,"socket_buffer_size",8*1024); //8K
-        max_pool = Util.parseInt(props,"max_pool",5);  
-        pool_buffer_length = Util.parseInt(props,"pool_buffer_length",2);        
-        pool_thread_keep_alive = Util.parseLong(props,"pool_thread_keep_alive",2000);        
+        max_pool = Util.parseInt(props,"max_pool",5);              
+        pool_thread_keep_alive = Util.parseLong(props,"pool_thread_keep_alive",1000*30); //30 sec 
+        use_reading_thread = Util.parseBoolean(props,"use_reading_thread",false);
         if(props.size() > 0) {
             log.error("the following properties are not recognized: " + props);
 
@@ -388,10 +390,32 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
     }
 
 	private PooledExecutor setupThreadPool() {
-		PooledExecutor threadPool = new PooledExecutor(new BoundedBuffer(
-				pool_buffer_length), max_pool);
+		PooledExecutor threadPool = new PooledExecutor(max_pool);
+		threadPool.waitWhenBlocked();
 		threadPool.setMinimumPoolSize(1);
 		threadPool.setKeepAliveTime(pool_thread_keep_alive);
+		threadPool.setThreadFactory(new ThreadFactory() {
+		
+			public Thread newThread(final Runnable command) {
+				 synchronized (poolLock) {
+                     threadCounter++;
+                 }
+                return new Thread("STREAMING_STATE_TRANSFER.poolid=" + threadCounter) {
+                    public void run() { 
+                    	if(log.isDebugEnabled())
+                    	{
+                    		log.debug(Thread.currentThread() + " started.");
+                    	}
+                        command.run();     
+                        if(log.isDebugEnabled())
+                    	{
+                    		log.debug(Thread.currentThread() + " stopped.");
+                    	}
+                    }
+                };
+            }
+		
+		});		
 		return threadPool;
 	}
 	  
@@ -470,7 +494,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 
     private void connectToStateProvider(IpAddress address) {	
     	Socket socket = null; 
-    	StreamingInputStreamWrapper wrapper = null;
+    	StreamingInputStreamWrapper wrapperRef=null;
 		try {
 			socket = new Socket();			
 			int bufferSize = socket.getReceiveBufferSize();
@@ -489,23 +513,40 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 				log.debug("Connected to state provider, my end of the socket is "
 						+ socket.getLocalAddress() + ":"
 						+ socket.getLocalPort() + " passing inputstream up...");
-			wrapper = new StreamingInputStreamWrapper(socket);
-			passUp(new Event(Event.STATE_TRANSFER_INPUTSTREAM,wrapper));
-		} catch (IOException e) {
-			if(log.isErrorEnabled())
+			final StreamingInputStreamWrapper wrapper = new StreamingInputStreamWrapper(socket);
+			wrapperRef = wrapper;
+			
+			Runnable readingThread = new Runnable()
 			{
-				log.error("State reader socket thread spawned abnormaly",e);
+				public void run() {
+					passUp(new Event(Event.STATE_TRANSFER_INPUTSTREAM,wrapper));
+				}				
+			};
+			if(use_reading_thread)
+			{
+				new Thread (readingThread,"STREAMING_STATE_TRANSFER.reader").start();
+				
+			}
+			else
+			{
+				readingThread.run();
+			}
+			
+		} catch (IOException e) {
+			if(log.isWarnEnabled())
+			{
+				log.warn("State reader socket thread spawned abnormaly",e);
 			}
 		}
 		finally
 		{
 			if(!socket.isConnected())
 			{
-				if (log.isErrorEnabled())
-					log.error("Could not connect to state provider. Closing socket...");
+				if (log.isWarnEnabled())
+					log.warn("Could not connect to state provider. Closing socket...");
 				try {
-					if (wrapper != null) {
-						wrapper.close();
+					if (wrapperRef != null) {
+						wrapperRef.close();
 					} else {
 						socket.close();
 					}
@@ -543,6 +584,8 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 					if (log.isDebugEnabled())
 						log.debug("StateProviderThreadSpawner listening at "
 								+ getServerSocketAddress() + "...");
+					if (log.isDebugEnabled())
+						log.debug("Pool has " + pool.getPoolSize() + " active threads");
 					final Socket socket = serverSocket.accept();										
 					pool.execute(new Runnable() {
 						public void run() {		
@@ -557,13 +600,13 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 					});
 					
 				} catch (IOException e) {
-					if (log.isErrorEnabled())
+					if (log.isWarnEnabled())
 					{
 						//we get this exception when we close server socket
 						//exclude that case
 						if(serverSocket!=null && !serverSocket.isClosed())
 						{
-							log.error("Spawning socket from server socket finished abnormaly",e);
+							log.warn("Spawning socket from server socket finished abnormaly",e);
 						}
 					}
 				} catch (InterruptedException e) {
@@ -600,29 +643,26 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
     			int bufferSize = socket.getSendBufferSize();					
 				socket.setSendBufferSize(socket_buffer_size);
 				if (log.isDebugEnabled())
-					log.debug("Accepted request for state transfer from "
-									+ socket.getInetAddress()
-									+ ":"
-									+ socket.getPort()
-									+ ", original buffer size was "
-									+ bufferSize
-									+ " and was reset to "
-									+ socket.getSendBufferSize()+ 
-									", passing outputstream up... ");
+					log.debug("Running on " + Thread.currentThread()
+							+ ". Accepted request for state transfer from "
+							+ socket.getInetAddress() + ":" + socket.getPort()
+							+ ", original buffer size was " + bufferSize
+							+ " and was reset to " + socket.getSendBufferSize()
+							+ ", passing outputstream up... ");
 				
 				wrapper = new StreamingOutputStreamWrapper(socket);
 				passUp(new Event(Event.STATE_TRANSFER_OUTPUTSTREAM,wrapper));
 			} catch (IOException e) {				
-				if(log.isErrorEnabled())
+				if(log.isWarnEnabled())
 				{
-					log.error("State writer socket thread spawned abnormaly",e);
+					log.warn("State writer socket thread spawned abnormaly",e);
 				}
 			}
 			finally
 			{
 				if (socket!=null && !socket.isConnected()) {
-					if (log.isErrorEnabled())
-						log.error("Accepted request for state transfer but socket "
+					if (log.isWarnEnabled())
+						log.warn("Accepted request for state transfer but socket "
 										+ socket
 										+ " not connected properly. Closing it...");
 					try {
@@ -661,7 +701,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 			if (log.isDebugEnabled()) {
 				log.debug("State reader " + inputStreamOwner + " is closing the socket ");
 			}
-			if(channelOwner!=null)
+			if(channelOwner!=null && channelOwner.isConnected())
 			{
 				channelOwner.down(new Event(Event.STATE_TRANSFER_INPUTSTREAM_CLOSED));
 			}
