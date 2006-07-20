@@ -11,31 +11,48 @@ import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 
+import org.jgroups.Address;
 import org.jgroups.Channel;
 import org.jgroups.ChannelClosedException;
 import org.jgroups.ChannelNotConnectedException;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.StreamingGetStateEvent;
-import org.jgroups.StreamingMessageListener;
+import org.jgroups.StreamingReceiver;
 import org.jgroups.StreamingSetStateEvent;
 import org.jgroups.TimeoutException;
 import org.jgroups.View;
+import org.jgroups.ViewId;
 import org.jgroups.util.Util;
 
 /**
+ * Tests streaming state transfer for both pull and push mode of channel 
+ * operations. Size of the transfer is configurable. Test runner should 
+ * specify "pull" and "size" parameter as JVM parameters when running this 
+ * test. If not specified default values are to use push mode and transfer 
+ * size of 100 MB. 
+ * 
+ *  <p>
+ *  
+ *  To specify pull mode and size transfer of 500 MB test runner should pass 
+ *  JVM parameters:
+ *  
+ *  <p>
+ *  -Dpull=true -Dsize=500
  *
  * 
  * @author Vladimir Blagojevic
  * @version $Id$ 
  *
  */
-public class StreamingStateTransferTest extends TestCase {
+public class StreamingStateTransferTest extends TestCase{
 
 	private final static String CHANNEL_PROPS="streaming-state-transfer.xml";
 	private final static int INITIAL_NUMBER_OF_MEMBERS=5;
-	private int runningTime = 1000*60*1; //1 minute
+	private int runningTime = 1000*60*3; //3 minutes
 	private Random r = new Random();
+	private boolean usePullMode = false;
+	private int size = 100; //100MB
 	
 	private final static int MEGABYTE = 1048576;
 	
@@ -53,11 +70,11 @@ public class StreamingStateTransferTest extends TestCase {
 		//first spawn and join
 		for(int i =0;i<INITIAL_NUMBER_OF_MEMBERS;i++)
 		{
-			GroupMember member = new GroupMember("Member");			
+			GroupMember member = new GroupMember(usePullMode,size);			
 			members.add(member);
 			Thread t = new Thread(member);
 			t.start();
-			Util.sleep(getRandomDelayInSeconds(15,16)*1000);
+			Util.sleep(getRandomDelayInSeconds(10,12)*1000);
 		}
 		
 		for (; running;) {						
@@ -65,8 +82,8 @@ public class StreamingStateTransferTest extends TestCase {
 			//and then flip a coin
 			if(r.nextBoolean())
 			{
-				Util.sleep(getRandomDelayInSeconds(15,16)*1000);
-				GroupMember member = new GroupMember("Member");					
+				Util.sleep(getRandomDelayInSeconds(10,12)*1000);
+				GroupMember member = new GroupMember(usePullMode,size);					
 				members.add(member);				
 				Thread t = new Thread(member);
 				t.start();
@@ -75,8 +92,15 @@ public class StreamingStateTransferTest extends TestCase {
 			{
 				Util.sleep(getRandomDelayInSeconds(3,8)*1000);
 				GroupMember unluckyBastard = (GroupMember) members.get(r.nextInt(members.size()));
-				members.remove(unluckyBastard);				
-				unluckyBastard.setRunning(false);				
+				if(!unluckyBastard.isCoordinator())
+				{
+					members.remove(unluckyBastard);				
+					unluckyBastard.setRunning(false);					
+				}
+				else
+				{
+					System.out.println("Not killing coordinator ");
+				}
 			}				
 			running = System.currentTimeMillis()-start>runningTime?false:true;
 			System.out.println("Running time " + ((System.currentTimeMillis()-start)/1000) + " secs");
@@ -90,31 +114,52 @@ public class StreamingStateTransferTest extends TestCase {
 	}
 
 	protected void setUp() throws Exception {
+		
+		//NOTE use -Dpull=true|false -Dsize=int (size of transfer)
+		String prop = System.getProperty("pull");
+		if(prop!=null)
+		{
+			usePullMode = Boolean.parseBoolean(prop);
+			System.out.println("Using parameter usePullMode=" + usePullMode);
+		}
+		
+		prop = System.getProperty("size");
+		if(prop!=null)
+		{
+			size = Integer.parseInt(System.getProperty("size"));
+			System.out.println("Using parameter size=" + size);
+		}
 		super.setUp();
 	}
 
 	protected void tearDown() throws Exception {
-		super.tearDown();
+		super.tearDown();		
 	}
 	
-	public static Test suite() {
+	public static Test suite() {		  
 	      return new TestSuite(StreamingStateTransferTest.class);
 	}
 	 
-	public static void main(String[] args) {
+	public static void main(String[] args) {		
 		 String[] testCaseName={StreamingStateTransferTest.class.getName()};
 	     junit.textui.TestRunner.main(testCaseName);
 	}
 	
-	private static class GroupMember implements Runnable,StreamingMessageListener{
+	private static class GroupMember implements Runnable,StreamingReceiver{
 		JChannel ch = null;		
 		View currentView;		
 		volatile boolean running = true;		
 		private int stateSize;	
 		private int bufferSize = 8*1024;
+		private boolean usePullMode;		
 
-		public GroupMember(String name) {				
-			setStateSize(1024*MEGABYTE); //1GB
+		public GroupMember(boolean usePullMode,int size) {				
+			setStateSize(size*MEGABYTE); //1GB
+			setUsePullMode(usePullMode);
+		}
+		
+		public void setUsePullMode(boolean usePullMode) {
+			this.usePullMode = usePullMode;
 		}
 
 		public String getAddress() {
@@ -129,7 +174,25 @@ public class StreamingStateTransferTest extends TestCase {
 			running=false;	
 			System.out.println("Disconnect " + getAddress());
 			if(ch!=null)ch.close();
-		}		
+		}	
+		
+		protected boolean isCoordinator() {
+			if (ch == null)
+				return false;
+			Object local_addr = ch.getLocalAddress();
+			if (local_addr == null)
+				return false;
+			View view = ch.getView();
+			if (view == null)
+				return false;
+			ViewId vid = view.getVid();
+			if (vid == null)
+				return false;
+			Object coord = vid.getCoordAddress();
+			if (coord == null)
+				return false;
+			return local_addr.equals(coord);
+		}
 
 		public void setStateSize(int stateSize) {
 			this.stateSize = stateSize;
@@ -140,6 +203,10 @@ public class StreamingStateTransferTest extends TestCase {
 				ch = new JChannel(CHANNEL_PROPS);
 				ch.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
 	            ch.setOpt(Channel.AUTO_GETSTATE, Boolean.TRUE);
+	            if(!usePullMode)
+	            {
+	            	ch.setReceiver(this);
+	            }
 				ch.connect("transfer");				
 				ch.getState(null,5000);
 			} catch (Exception e) {
@@ -179,8 +246,11 @@ public class StreamingStateTransferTest extends TestCase {
 		}
 
 		public void getState(OutputStream ostream) {			
-			InputStream stream = Thread.currentThread().getContextClassLoader().getResourceAsStream("org/jgroups/JChannel.class");
-			System.out.println(getAddress() +" is sending state of " + (stateSize/MEGABYTE) + " MB");
+			InputStream stream = Thread.currentThread().getContextClassLoader()
+					.getResourceAsStream("org/jgroups/JChannel.class");
+			System.out.println(Thread.currentThread() + " at " + getAddress()
+					+ " is sending state of " + (stateSize / MEGABYTE) + " MB");
+			
 			int markSize = 1024*100; //100K should be enough
 			byte buffer [] = new byte[bufferSize];
 			int bytesRead=-1;	
@@ -207,11 +277,6 @@ public class StreamingStateTransferTest extends TestCase {
 				}				
 			}
 		}
-		
-		public byte[] getState()
-		{
-			return null;
-		}
 
 		public void setState(InputStream istream) {
 			int totalRead=0;
@@ -235,8 +300,9 @@ public class StreamingStateTransferTest extends TestCase {
 				}
 			}
 			long readingTime = System.currentTimeMillis()-start;
-			System.out.println(getAddress() + " read state of " + (totalRead / MEGABYTE)
-					+ " MB in " + readingTime + " msec");						
+			System.out.println(Thread.currentThread() + " at " + getAddress()
+					+ " read state of " + (totalRead / MEGABYTE) + " MB in "
+					+ readingTime + " msec");						
 		}
 
 		public void receive(Message msg) {
@@ -247,6 +313,25 @@ public class StreamingStateTransferTest extends TestCase {
 		public void setState(byte[] state) {
 			// TODO Auto-generated method stub
 			
+		}
+
+		public void viewAccepted(View new_view) {
+			
+		}
+
+		public void suspect(Address suspected_mbr) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		public void block() {
+			// TODO Auto-generated method stub
+			
+		}
+
+		public byte[] getState() {
+			// TODO Auto-generated method stub
+			return null;
 		}
 	}
 }
