@@ -7,5 +7,5 @@ package org.jgroups;
  * @author Vladimir Blagojevic
  * @since 2.4
  */
-public interface StreamingReceiver extends StreamingMessageListener, MembershipListener {
+public interface StreamingReceiver extends Receiver,StreamingMessageListener{
 }
