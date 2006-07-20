@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.38 2006/07/17 19:07:03 vlada Exp $
+// $Id: STATE_TRANSFER.java,v 1.39 2006/07/20 19:24:05 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -276,7 +276,10 @@ public class STATE_TRANSFER extends Protocol {
                 }
                 return;             // don't pass down any further !
             case Event.SUSPEND_OK:
-            	flush_promise.setResult(Boolean.TRUE);
+            	if(use_flush)
+            	{
+            		flush_promise.setResult(Boolean.TRUE);
+            	}
             	break;                
                 
         }
