@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.78 2006/07/14 17:50:55 vlada Exp $
+// $Id: Util.java,v 1.79 2006/07/24 16:16:13 bstansberry Exp $
 
 package org.jgroups.util;
 
@@ -1432,7 +1432,7 @@ public class Util {
     	boolean result = defaultValue;
     	String str=props.getProperty(property);
         if(str != null) {
-            result=Boolean.parseBoolean(str);
+            result=str.equalsIgnoreCase("true");
             props.remove(property);
         }
         return result;
