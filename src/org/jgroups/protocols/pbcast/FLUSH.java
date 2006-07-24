@@ -64,9 +64,10 @@ public class FLUSH extends Protocol {
 	private Set flushCompletedSet;
 	private final Object sharedLock = new Object();
 	private final Object blockMutex=new Object();
-	private volatile boolean isBlockState = true;
+	private boolean isBlockState = true;
 	private long timeout = 4000;
 	private Set suspected;
+	private boolean receivedFirstView = false;
 
 	public FLUSH() {
 		super();
@@ -117,7 +118,9 @@ public class FLUSH extends Protocol {
 							if (isFlushRunning()) {
 								log.warn("Forcing FLUSH unblock at " + localAddress);
 								passDown(new Event(Event.SUSPEND_OK));
-								isBlockState=false;
+								synchronized (blockMutex) {
+									isBlockState = false;									
+								}
 							}
 						} catch (InterruptedException e) {
 						}
@@ -214,13 +217,14 @@ public class FLUSH extends Protocol {
 
 	private void onViewChange(View view)
 	{
-		Vector members = view.getMembers();
-		//Am I the only member? If yes, unblock me so I can send messages
-		if((members!= null && members.size()==1)&& localAddress.equals(members.get(0)))
-		{
-			isBlockState=false;
+		
+		synchronized (blockMutex) {
+			if (!receivedFirstView) {
+				isBlockState = false;
+				blockMutex.notifyAll();
+				receivedFirstView = true;
+			}
 		}
-
 		synchronized (sharedLock) {
 			suspected.retainAll(view.getMembers());
 			currentView = view;
@@ -387,7 +391,9 @@ public class FLUSH extends Protocol {
 	}
 
 	private boolean isFlushRunning() {
-		return isBlockState;
+		synchronized (blockMutex) {
+			return isBlockState;
+		}		
 	}
 
 	public static class FlushHeader extends Header implements Streamable{
