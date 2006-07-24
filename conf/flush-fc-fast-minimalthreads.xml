@@ -35,12 +35,12 @@
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000" 
                    down_thread="false" up_thread="false"
                    max_bytes="400000"/>
-    <pbcast.GMS print_local_addr="true" join_timeout="3000" use_flush="true"  
-                down_thread="false" up_thread="false"
-                join_retry_timeout="2000" shun="true"/>
+    <pbcast.GMS print_local_addr="true" join_timeout="10000" use_flush="true"  
+                down_thread="false" up_thread="false" view_ack_collection_timeout="7000" 
+                join_retry_timeout="4000" shun="true"/>
      <FC max_credits="2000000" down_thread="false" up_thread="false"
          min_threshold="0.10"/>
     <FRAG2 frag_size="60000" down_thread="false" up_thread="false"/>
-    <pbcast.STATE_TRANSFER down_thread="false" up_thread="false" use_flush="true"/>
+    <pbcast.STATE_TRANSFER down_thread="false" up_thread="false" use_flush="false"/>
     <pbcast.FLUSH down_thread="false" up_thread="false"/>
 </config>

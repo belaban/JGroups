@@ -13,7 +13,7 @@ import java.util.*;
  * See doc/design/ConcurrentStartupTest.txt for details. This will only work 100% correctly once we have
  * FLUSH support (JGroups 2.4)
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.8 2006/07/06 09:11:35 belaban Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.9 2006/07/24 21:59:01 vlada Exp $
  */
 public class ConcurrentStartupTest extends TestCase implements Receiver {
     final List list=Collections.synchronizedList(new LinkedList());
@@ -47,7 +47,7 @@ public class ConcurrentStartupTest extends TestCase implements Receiver {
         channel=new JChannel(PROPS);
         channel.setReceiver(this);
         channel.connect(GROUP);
-        channel.getState(null, 5000);
+        channel.getState(null, 10000);
         // channel.send(null, null, channel.getLocalAddress());
         Util.sleep(2000);
 
@@ -60,7 +60,7 @@ public class ConcurrentStartupTest extends TestCase implements Receiver {
 
         for(int i=0; i < threads.length; i++) {
             MyThread thread=threads[i];
-            thread.join(10000);
+            thread.join(15000);
             if(thread.isAlive())
                 System.err.println("thread " + i + " is still alive");
         }
@@ -232,10 +232,10 @@ public class ConcurrentStartupTest extends TestCase implements Receiver {
                     }
                 });
                 ch.connect(GROUP);
-                ch.getState(null, 5000);
+                ch.getState(null, 10000);
                 // Util.sleep(1000);
                 ch.send(null, null, ch.getLocalAddress());
-                Util.sleep(5000); // potential retransmissions
+                Util.sleep(10000); // potential retransmissions
             }
             catch(ChannelException e) {
                 e.printStackTrace();
