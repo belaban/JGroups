@@ -119,7 +119,7 @@ public class StreamingStateTransferTest extends TestCase{
 		String prop = System.getProperty("pull");
 		if(prop!=null)
 		{
-			usePullMode = Boolean.parseBoolean(prop);
+			usePullMode = prop.equalsIgnoreCase("true");
 			System.out.println("Using parameter usePullMode=" + usePullMode);
 		}
 		
