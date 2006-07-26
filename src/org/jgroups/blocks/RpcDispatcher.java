@@ -1,4 +1,4 @@
-// $Id: RpcDispatcher.java,v 1.23 2006/06/15 23:39:56 belaban Exp $
+// $Id: RpcDispatcher.java,v 1.24 2006/07/26 11:14:49 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -88,6 +88,10 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
     public Marshaller getMarshaller()             {return marshaller;}
 
     public Object getServerObject() {return server_obj;}
+
+    public void setServerObject(Object server_obj) {
+        this.server_obj=server_obj;
+    }
 
     public MethodLookup getMethodLookup() {
         return method_lookup;
