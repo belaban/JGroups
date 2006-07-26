@@ -11,7 +11,7 @@ import java.util.*;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.6 2006/05/12 09:55:51 belaban Exp $
+ * @version $Id: MultiplexerTest.java,v 1.7 2006/07/26 21:41:27 bstansberry Exp $
  */
 public class MultiplexerTest extends TestCase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -104,6 +104,30 @@ public class MultiplexerTest extends TestCase {
 
         assertEquals("Centurion", c1.get("bike"));
         assertEquals("Centurion", c1_repl.get("bike"));
+    }
+    
+    public void testReplicationWithReconnect() throws Exception
+    {
+       ch1=factory.createMultiplexerChannel(STACK_NAME, "c1");
+       ch1.connect("bla");
+       c1=new Cache(ch1, "cache-1");
+       assertEquals("cache has to be empty initially", 0, c1.size());
+       c1.put("name", "Bela");
+       Util.sleep(300); // we need to wait because replication is asynchronous here
+       assertEquals(1, c1.size());
+       assertEquals("Bela", c1.get("name"));
+       
+       ch1.disconnect();
+       
+       ch1.connect("bla");
+       
+       c2 = new Cache(ch1, "cache-1"); 
+       assertEquals("cache has to be empty initially", 0, c2.size());
+       c2.put("name", "Bela");
+       Util.sleep(300); // we need to wait because replication is asynchronous here
+       assertEquals(1, c2.size());
+       assertEquals("Bela", c2.get("name"));
+       
     }
 
 
@@ -239,6 +263,60 @@ public class MultiplexerTest extends TestCase {
         c1_repl.clear();
         c2.clear();
         c2_repl.clear();
+    }
+
+
+    public void testStateTransferWithReconnect() throws Exception {
+        ch1=factory.createMultiplexerChannel(STACK_NAME, "c1");
+        ch1.connect("bla");
+        c1=new Cache(ch1, "cache-1");
+        assertEquals("cache has to be empty initially", 0, c1.size());
+
+        ch1_repl=factory2.createMultiplexerChannel(STACK_NAME, "c1");
+
+        c1.put("name", "Bela");
+        c1.put("id", new Long(322649));
+        c1.put("hobbies", "biking");
+        c1.put("bike", "Centurion");
+
+
+        ch1_repl.connect("bla");
+        c1_repl=new Cache(ch1_repl, "cache-1-repl");
+        boolean rc=ch1_repl.getState(null, 5000);
+        System.out.println("state transfer: " + rc);
+        Util.sleep(500);
+
+        System.out.println("c1_repl: " + c1_repl);
+        assertEquals("initial state should have been transferred", 4, c1_repl.size());
+
+        assertEquals(new Long(322649), c1.get("id"));
+        assertEquals(new Long(322649), c1_repl.get("id"));
+
+        assertEquals("biking", c1.get("hobbies"));
+        assertEquals("biking", c1_repl.get("hobbies"));
+
+        assertEquals("Centurion", c1.get("bike"));
+        assertEquals("Centurion", c1_repl.get("bike"));
+        
+        ch1_repl.disconnect();
+        
+        ch1_repl.connect("bla");
+        c2_repl=new Cache(ch1_repl, "cache-2-repl");
+        rc=ch1_repl.getState(null, 5000);
+        System.out.println("state transfer: " + rc);
+        Util.sleep(500);
+
+        System.out.println("c2_repl: " + c2_repl);
+        assertEquals("initial state should have been transferred", 4, c2_repl.size());
+
+        assertEquals(new Long(322649), c1.get("id"));
+        assertEquals(new Long(322649), c2_repl.get("id"));
+
+        assertEquals("biking", c1.get("hobbies"));
+        assertEquals("biking", c2_repl.get("hobbies"));
+
+        assertEquals("Centurion", c1.get("bike"));
+        assertEquals("Centurion", c2_repl.get("bike"));
     }
 
 
