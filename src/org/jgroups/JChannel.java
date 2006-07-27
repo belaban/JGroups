@@ -66,7 +66,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.79 2006/07/27 09:28:16 belaban Exp $
+ * @version $Id: JChannel.java,v 1.80 2006/07/27 09:31:55 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -967,15 +967,13 @@ public class JChannel extends Channel {
 
         case Event.CONFIG:
             HashMap config=(HashMap)evt.getArg();
-            if(config != null){
-            	if(config.containsKey("state_transfer"))
-            	{
-            		state_transfer_supported=((Boolean)config.get("state_transfer")).booleanValue();
-            	}
-            	if(config.containsKey("flush_supported"))
-            	{
-            		flush_supported = ((Boolean)config.get("flush_supported")).booleanValue();
-            	}
+            if(config != null) {
+                if(config.containsKey("state_transfer")) {
+                    state_transfer_supported=((Boolean)config.get("state_transfer")).booleanValue();
+                }
+                if(config.containsKey("flush_supported")) {
+                    flush_supported=((Boolean)config.get("flush_supported")).booleanValue();
+                }
             }
             break;
 
@@ -1373,30 +1371,28 @@ public class JChannel extends Channel {
         }
     }
 
-    private boolean startFlush(long timeout)
-    {
-    	if (!flush_supported) {
-			throw new IllegalStateException("Using flush is not supported. "
-							+ "Add pbcast.FLUSH protocol to your protocol configuration");
-		}
+    boolean startFlush(long timeout) {
+        if(!flush_supported) {
+            throw new IllegalStateException("Flush is not supported, add pbcast.FLUSH protocol to your configuration");
+        }
 
-    	boolean successfulFlush=false;
-    	down(new Event(Event.SUSPEND));
-    	try {
-    		flush_promise.reset();
-			flush_promise.getResultWithTimeout(timeout);
-			successfulFlush=true;
-		} catch (TimeoutException e) {
-		}
-		return successfulFlush;
+        boolean successfulFlush=false;
+        down(new Event(Event.SUSPEND));
+        try {
+            flush_promise.reset();
+            flush_promise.getResultWithTimeout(timeout);
+            successfulFlush=true;
+        }
+        catch(TimeoutException e) {
+        }
+        return successfulFlush;
     }
 
-    private void stopFlush(){
-    	if (!flush_supported) {
-			throw new IllegalStateException("Using flush is not supported. "
-							+ "Add pbcast.FLUSH protocol to your protocol configuration");
-		}
-    	down(new Event(Event.RESUME));
+    void stopFlush() {
+        if(!flush_supported) {
+            throw new IllegalStateException("Flush is not supported, add pbcast.FLUSH protocol to your configuration");
+        }
+        down(new Event(Event.RESUME));
     }
 
     /* ------------------------------- End of Private Methods ---------------------------------- */
