@@ -66,7 +66,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.80 2006/07/27 09:31:55 belaban Exp $
+ * @version $Id: JChannel.java,v 1.81 2006/07/27 18:29:25 vlada Exp $
  */
 public class JChannel extends Channel {
 
@@ -1029,7 +1029,8 @@ public class JChannel extends Channel {
             break;
 
         case Event.STATE_TRANSFER_INPUTSTREAM:
-        	InputStream is = (InputStream) evt.getArg();
+        	StateTransferInfo sti = (StateTransferInfo)evt.getArg();
+        	InputStream is = sti.inputStream;
 			state_promise.setResult(is != null ? Boolean.TRUE
 					: Boolean.FALSE);
 
@@ -1039,11 +1040,18 @@ public class JChannel extends Channel {
 			}
 
 			if (is != null) {
-				if (receiver instanceof StreamingReceiver) {
-					((StreamingReceiver) receiver).setState(is);
+				if (receiver instanceof ExtendedReceiver) {
+					if(sti.state_id==null)
+					{
+						((ExtendedReceiver) receiver).setState(is);
+					}
+					else
+					{
+						((ExtendedReceiver) receiver).setState(sti.state_id,is);
+					}
 				} else {
 					try {
-						mq.add(new Event(Event.STATE_TRANSFER_INPUTSTREAM, is));
+						mq.add(new Event(Event.STATE_TRANSFER_INPUTSTREAM, sti));
 					} catch (Exception e) {
 					}
 				}
@@ -1105,9 +1113,17 @@ public class JChannel extends Channel {
                 break;
             case Event.STATE_TRANSFER_OUTPUTSTREAM:
             	if (receiver != null) {
-					OutputStream os = (OutputStream) evt.getArg();
-					if (os != null && receiver instanceof StreamingReceiver) {
-						((StreamingReceiver) receiver).getState(os);
+            		StateTransferInfo sti = (StateTransferInfo) evt.getArg();
+					OutputStream os = sti.outputStream;
+					if (os != null && receiver instanceof ExtendedReceiver) {
+						if(sti.state_id==null)
+						{
+							((ExtendedReceiver) receiver).getState(os);
+						}
+						else
+						{
+							((ExtendedReceiver) receiver).getState(sti.state_id,os);
+						}
 					}
 					return;
 				}
@@ -1266,11 +1282,11 @@ public class JChannel extends Channel {
                 info=(StateTransferInfo)evt.getArg();
                 return new SetStateEvent(info.state, info.state_id);
             case Event.STATE_TRANSFER_OUTPUTSTREAM:
-            	OutputStream os=(OutputStream)evt.getArg();
-                return new StreamingGetStateEvent(os);
+            	info = (StateTransferInfo)evt.getArg();            	
+                return new StreamingGetStateEvent(info.outputStream,info.state_id);      
             case Event.STATE_TRANSFER_INPUTSTREAM:
-            	InputStream is=(InputStream)evt.getArg();
-                return new StreamingSetStateEvent(is);
+            	info = (StateTransferInfo)evt.getArg();            	
+                return new StreamingSetStateEvent(info.inputStream,info.state_id);    
             case Event.EXIT:
                 return new ExitEvent();
             default:

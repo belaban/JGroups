@@ -22,9 +22,9 @@ import java.io.InputStream;
  *  Object obj=channel.receive(0);
  *  if(obj instanceof StreamingSetStateEvent) {
  *   	StreamingSetStateEvent evt=(StreamingSetStateEvent)obj;
- *    	ObjectInputStream ois = evt.getInputStream();    	
+ *    	ObjectInputStream ois = null;   	
  *		try {			
- *			ois = new ObjectInputStream(is);
+ *			ois = new ObjectInputStream(evt.getArg());
  *			state = (LinkedList)ois.readObject();  
  *		} catch (Exception e) {} 
  *		finally
@@ -48,10 +48,12 @@ import java.io.InputStream;
 public class StreamingSetStateEvent {
 
 	InputStream is;
+	String state_id;
 	
-	public StreamingSetStateEvent(InputStream is) {
+	public StreamingSetStateEvent(InputStream is,String state_id) {
 		super();
 		this.is=is;
+		this.state_id=state_id;
 	}
 	
 	/**
@@ -63,5 +65,19 @@ public class StreamingSetStateEvent {
 	{
 		return is;
 	}
+	
+	
+	/**
+	 * Returns id of the partial state if partial state was requested. 
+	 * If full state transfer was requested this method will return null.
+	 * 
+	 * @see JChannel#getState(Address, long)
+	 * @see JChannel#getState(Address, String, long)
+	 * @return partial state id
+	 */
+	public String getStateId()
+	{
+		return state_id;
+	}	
 
 }

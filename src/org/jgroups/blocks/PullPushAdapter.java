@@ -1,4 +1,4 @@
-// $Id: PullPushAdapter.java,v 1.18 2006/07/14 16:17:15 vlada Exp $
+// $Id: PullPushAdapter.java,v 1.19 2006/07/27 18:29:25 vlada Exp $
 
 package org.jgroups.blocks;
 
@@ -248,16 +248,30 @@ public class PullPushAdapter implements Runnable, ChannelListener {
                 }
                 else if(obj instanceof StreamingGetStateEvent) {
                 	StreamingGetStateEvent evt=(StreamingGetStateEvent)obj;
-                	if(listener instanceof StreamingMessageListener)
+                	if(listener instanceof ExtendedMessageListener)
                 	{
-                		((StreamingMessageListener)listener).getState(evt.getArg());
+                		if(evt.getStateId()==null)
+                		{
+                			((ExtendedMessageListener)listener).getState(evt.getArg());	
+                		}                		
+                		else
+                		{
+                			((ExtendedMessageListener)listener).getState(evt.getStateId(),evt.getArg());
+                		}
                 	}
                 }
                 else if(obj instanceof StreamingSetStateEvent) {
                 	StreamingSetStateEvent evt=(StreamingSetStateEvent)obj;
-                	if(listener instanceof StreamingMessageListener)
+                	if(listener instanceof ExtendedMessageListener)
                 	{
-                		((StreamingMessageListener)listener).setState(evt.getArg());
+                		if(evt.getStateId()==null)
+                		{
+                			((ExtendedMessageListener)listener).setState(evt.getArg());
+                		}
+                		else                			
+                		{
+                			((ExtendedMessageListener)listener).setState(evt.getStateId(),evt.getArg());
+                		}
                 	}
                 }
                 else if(obj instanceof View) {

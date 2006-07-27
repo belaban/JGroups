@@ -4,6 +4,8 @@ import org.jgroups.Message;
 import org.jgroups.MessageListener;
 import org.jgroups.ExtendedMessageListener;
 
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.HashSet;
 
 /**
@@ -77,6 +79,18 @@ public class MessageListenerAdapter implements ExtendedMessageListener {
             return stateListener.getState();
         }
     }
+    
+    public void getState(OutputStream ostream) {
+    	if (stateListener instanceof ExtendedMessageListener) {
+			((ExtendedMessageListener) stateListener).getState(ostream);
+		}		
+	}
+
+	public void getState(String state_id, OutputStream ostream) {
+		if (stateListener instanceof ExtendedMessageListener && state_id!=null) {
+			((ExtendedMessageListener) stateListener).getState(state_id,ostream);
+		}		
+	}
 
     /**
      * Receive message from group. This method will send this message to each 
@@ -108,6 +122,19 @@ public class MessageListenerAdapter implements ExtendedMessageListener {
             }
         }
     }
+    
+
+	public void setState(InputStream istream) {
+		if (stateListener instanceof ExtendedMessageListener) {
+			((ExtendedMessageListener) stateListener).setState(istream);
+		}
+	}
+
+	public void setState(String state_id, InputStream istream) {
+		if (stateListener instanceof ExtendedMessageListener && state_id != null) {
+			((ExtendedMessageListener) stateListener).setState(state_id,istream);
+		}		
+	}
 
     /**
      * Add message listener to this adapter. This method registers 
