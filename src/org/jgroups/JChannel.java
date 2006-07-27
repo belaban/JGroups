@@ -1,4 +1,3 @@
-// $Id: JChannel.java,v 1.78 2006/07/17 19:07:04 vlada Exp $
 
 package org.jgroups;
 
@@ -67,7 +66,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Revision: 1.78 $
+ * @version $Id: JChannel.java,v 1.79 2006/07/27 09:28:16 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -125,7 +124,7 @@ public class JChannel extends Channel {
     private final Promise disconnect_promise=new Promise();
 
     private final Promise state_promise=new Promise();
-    
+
     private final Promise flush_promise=new Promise();
 
     /** wait until we have a non-null local_addr */
@@ -150,7 +149,7 @@ public class JChannel extends Channel {
 
     /** True if a state transfer protocol is available, false otherwise */
     private boolean state_transfer_supported=false; // set by CONFIG event from STATE_TRANSFER protocol
-    
+
     /** True if a flush protocol is available, false otherwise */
     private volatile boolean flush_supported=false; // set by CONFIG event from FLUSH protocol
 
@@ -577,7 +576,7 @@ public class JChannel extends Channel {
     /**
      * Sends a message through the protocol stack.
      * Implements the Transport interface.
-     * 
+     *
      * @param msg the message to be sent through the protocol stack,
      *        the destination of the message is specified inside the message itself
      * @exception ChannelNotConnectedException
@@ -968,7 +967,7 @@ public class JChannel extends Channel {
 
         case Event.CONFIG:
             HashMap config=(HashMap)evt.getArg();
-            if(config != null){ 
+            if(config != null){
             	if(config.containsKey("state_transfer"))
             	{
             		state_transfer_supported=((Boolean)config.get("state_transfer")).booleanValue();
@@ -977,7 +976,7 @@ public class JChannel extends Channel {
             	{
             		flush_supported = ((Boolean)config.get("flush_supported")).booleanValue();
             	}
-            }                
+            }
             break;
 
         case Event.BLOCK:
@@ -996,7 +995,7 @@ public class JChannel extends Channel {
         case Event.CONNECT_OK:
             connect_promise.setResult(evt.getArg());
             break;
-            
+
         case Event.SUSPEND_OK:
         	flush_promise.setResult(Boolean.TRUE);
         	break;
@@ -1030,7 +1029,7 @@ public class JChannel extends Channel {
                 }
             }
             break;
-            
+
         case Event.STATE_TRANSFER_INPUTSTREAM:
         	InputStream is = (InputStream) evt.getArg();
 			state_promise.setResult(is != null ? Boolean.TRUE
@@ -1051,8 +1050,8 @@ public class JChannel extends Channel {
 					}
 				}
 			}
-			break;			       
-        	
+			break;
+
         case Event.SET_LOCAL_ADDRESS:
             local_addr_promise.setResult(evt.getArg());
             break;
@@ -1114,7 +1113,7 @@ public class JChannel extends Channel {
 					}
 					return;
 				}
-				break;    
+				break;
             case Event.BLOCK:
                 if(receiver != null) {
                     receiver.block();
@@ -1270,10 +1269,10 @@ public class JChannel extends Channel {
                 return new SetStateEvent(info.state, info.state_id);
             case Event.STATE_TRANSFER_OUTPUTSTREAM:
             	OutputStream os=(OutputStream)evt.getArg();
-                return new StreamingGetStateEvent(os);      
+                return new StreamingGetStateEvent(os);
             case Event.STATE_TRANSFER_INPUTSTREAM:
             	InputStream is=(InputStream)evt.getArg();
-                return new StreamingSetStateEvent(is);    
+                return new StreamingSetStateEvent(is);
             case Event.EXIT:
                 return new ExitEvent();
             default:
@@ -1373,25 +1372,25 @@ public class JChannel extends Channel {
             closer.start();
         }
     }
-    
+
     private boolean startFlush(long timeout)
     {
     	if (!flush_supported) {
 			throw new IllegalStateException("Using flush is not supported. "
 							+ "Add pbcast.FLUSH protocol to your protocol configuration");
 		}
-    	
+
     	boolean successfulFlush=false;
     	down(new Event(Event.SUSPEND));
     	try {
     		flush_promise.reset();
 			flush_promise.getResultWithTimeout(timeout);
 			successfulFlush=true;
-		} catch (TimeoutException e) {			
+		} catch (TimeoutException e) {
 		}
 		return successfulFlush;
     }
-    
+
     private void stopFlush(){
     	if (!flush_supported) {
 			throw new IllegalStateException("Using flush is not supported. "
