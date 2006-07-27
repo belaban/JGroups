@@ -1,29 +1,17 @@
 package org.jgroups.tests;
 
+import junit.framework.Test;
+import junit.framework.TestCase;
+import junit.framework.TestSuite;
+import org.jgroups.*;
+import org.jgroups.util.Util;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
-
-import org.jgroups.Address;
-import org.jgroups.Channel;
-import org.jgroups.ChannelClosedException;
-import org.jgroups.ChannelNotConnectedException;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
-import org.jgroups.StreamingGetStateEvent;
-import org.jgroups.StreamingReceiver;
-import org.jgroups.StreamingSetStateEvent;
-import org.jgroups.TimeoutException;
-import org.jgroups.View;
-import org.jgroups.ViewId;
-import org.jgroups.util.Util;
 
 /**
  * Tests streaming state transfer for both pull and push mode of channel 
@@ -49,7 +37,7 @@ public class StreamingStateTransferTest extends TestCase{
 
 	private final static String CHANNEL_PROPS="streaming-state-transfer.xml";
 	private final static int INITIAL_NUMBER_OF_MEMBERS=5;
-	private int runningTime = 1000*60*3; //3 minutes
+	private int runningTime = 1000 * 50; // 50 secs
 	private Random r = new Random();
 	private boolean usePullMode = false;
 	private int size = 100; //100MB
@@ -102,7 +90,7 @@ public class StreamingStateTransferTest extends TestCase{
 					System.out.println("Not killing coordinator ");
 				}
 			}				
-			running = System.currentTimeMillis()-start>runningTime?false:true;
+			running =System.currentTimeMillis() - start <= runningTime;
 			System.out.println("Running time " + ((System.currentTimeMillis()-start)/1000) + " secs");
 		}
 		System.out.println("Done");
@@ -158,7 +146,7 @@ public class StreamingStateTransferTest extends TestCase{
 			setUsePullMode(usePullMode);
 		}
 		
-		public void setUsePullMode(boolean usePullMode) {
+		public final void setUsePullMode(boolean usePullMode) {
 			this.usePullMode = usePullMode;
 		}
 
@@ -194,7 +182,7 @@ public class StreamingStateTransferTest extends TestCase{
 			return local_addr.equals(coord);
 		}
 
-		public void setStateSize(int stateSize) {
+		public final void setStateSize(int stateSize) {
 			this.stateSize = stateSize;
 		}
 
@@ -222,9 +210,7 @@ public class StreamingStateTransferTest extends TestCase{
 						// I will discard any transient message I
 						// receive
 					} else {
-						if (msgReceived instanceof View) {
-							gotView(msgReceived);
-						} else if (msgReceived instanceof StreamingGetStateEvent) {
+						if (msgReceived instanceof StreamingGetStateEvent) {
 							StreamingGetStateEvent evt = (StreamingGetStateEvent) msgReceived;
 							this.getState(evt.getArg());
 						} else if (msgReceived instanceof StreamingSetStateEvent) {
@@ -241,9 +227,6 @@ public class StreamingStateTransferTest extends TestCase{
 			}					
 		}
 
-		private void gotView(Object msg) throws ChannelNotConnectedException, ChannelClosedException {
-			
-		}
 
 		public void getState(OutputStream ostream) {			
 			InputStream stream = Thread.currentThread().getContextClassLoader()
@@ -306,31 +289,22 @@ public class StreamingStateTransferTest extends TestCase{
 		}
 
 		public void receive(Message msg) {
-			// TODO Auto-generated method stub
-			
+
 		}
 
 		public void setState(byte[] state) {
-			// TODO Auto-generated method stub
-			
 		}
 
 		public void viewAccepted(View new_view) {
-			
 		}
 
 		public void suspect(Address suspected_mbr) {
-			// TODO Auto-generated method stub
-			
 		}
 
 		public void block() {
-			// TODO Auto-generated method stub
-			
 		}
 
 		public byte[] getState() {
-			// TODO Auto-generated method stub
 			return null;
 		}
 	}
