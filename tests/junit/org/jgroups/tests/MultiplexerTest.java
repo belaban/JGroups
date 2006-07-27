@@ -11,7 +11,7 @@ import java.util.*;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.7 2006/07/26 21:41:27 bstansberry Exp $
+ * @version $Id: MultiplexerTest.java,v 1.8 2006/07/27 09:58:15 belaban Exp $
  */
 public class MultiplexerTest extends TestCase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -105,29 +105,28 @@ public class MultiplexerTest extends TestCase {
         assertEquals("Centurion", c1.get("bike"));
         assertEquals("Centurion", c1_repl.get("bike"));
     }
-    
-    public void testReplicationWithReconnect() throws Exception
-    {
-       ch1=factory.createMultiplexerChannel(STACK_NAME, "c1");
-       ch1.connect("bla");
-       c1=new Cache(ch1, "cache-1");
-       assertEquals("cache has to be empty initially", 0, c1.size());
-       c1.put("name", "Bela");
-       Util.sleep(300); // we need to wait because replication is asynchronous here
-       assertEquals(1, c1.size());
-       assertEquals("Bela", c1.get("name"));
-       
-       ch1.disconnect();
-       
-       ch1.connect("bla");
-       
-       c2 = new Cache(ch1, "cache-1"); 
-       assertEquals("cache has to be empty initially", 0, c2.size());
-       c2.put("name", "Bela");
-       Util.sleep(300); // we need to wait because replication is asynchronous here
-       assertEquals(1, c2.size());
-       assertEquals("Bela", c2.get("name"));
-       
+
+    public void testReplicationWithReconnect() throws Exception {
+        ch1=factory.createMultiplexerChannel(STACK_NAME, "c1");
+        ch1.connect("bla");
+        c1=new Cache(ch1, "cache-1");
+        assertEquals("cache has to be empty initially", 0, c1.size());
+        c1.put("name", "Bela");
+        Util.sleep(300); // we need to wait because replication is asynchronous here
+        assertEquals(1, c1.size());
+        assertEquals("Bela", c1.get("name"));
+
+        ch1.disconnect();
+
+        ch1.connect("bla");
+
+        c2=new Cache(ch1, "cache-1");
+        assertEquals("cache has to be empty initially", 0, c2.size());
+        c2.put("name", "Bela");
+        Util.sleep(300); // we need to wait because replication is asynchronous here
+        assertEquals(1, c2.size());
+        assertEquals("Bela", c2.get("name"));
+
     }
 
 
@@ -297,9 +296,9 @@ public class MultiplexerTest extends TestCase {
 
         assertEquals("Centurion", c1.get("bike"));
         assertEquals("Centurion", c1_repl.get("bike"));
-        
+
         ch1_repl.disconnect();
-        
+
         ch1_repl.connect("bla");
         c2_repl=new Cache(ch1_repl, "cache-2-repl");
         rc=ch1_repl.getState(null, 5000);
