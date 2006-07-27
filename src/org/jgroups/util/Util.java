@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.79 2006/07/24 16:16:13 bstansberry Exp $
+// $Id: Util.java,v 1.80 2006/07/27 09:34:40 belaban Exp $
 
 package org.jgroups.util;
 
@@ -25,6 +25,8 @@ import java.util.List;
 
 /**
  * Collection of various utility routines that can not be assigned to other classes.
+ * @author Bela Ban
+ * @version $Id: Util.java,v 1.80 2006/07/27 09:34:40 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
