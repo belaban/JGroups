@@ -1,4 +1,3 @@
-// $Id: STATE_TRANSFER.java,v 1.39 2006/07/20 19:24:05 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -20,6 +19,7 @@ import java.util.*;
  * its current state S. Then the member returns both S and D to the requester. The requester
  * first sets its digest to D and then returns the state to the application.
  * @author Bela Ban
+ * @version $Id: STATE_TRANSFER.java,v 1.40 2006/07/27 09:44:20 belaban Exp $
  */
 public class STATE_TRANSFER extends Protocol {
     Address        local_addr=null;
@@ -41,10 +41,9 @@ public class STATE_TRANSFER extends Protocol {
     long           num_bytes_sent=0;
     double         avg_state_size=0;
     final static   String name="STATE_TRANSFER";
-    
-    boolean use_flush;
-    long flush_timeout;
-    Promise flush_promise;
+    boolean        use_flush=false;
+    long           flush_timeout=10*1000;
+    Promise        flush_promise;
 
 
     /** All protocol names have to be unique ! */
@@ -62,13 +61,12 @@ public class STATE_TRANSFER extends Protocol {
         retval.addElement(new Integer(Event.SET_DIGEST));
         return retval;
     }
-    
+
     public Vector requiredUpServices() {
         Vector retval=new Vector();
-        if(use_flush)
-        {
-        	retval.addElement(new Integer(Event.SUSPEND));
-        	retval.addElement(new Integer(Event.RESUME));
+        if(use_flush) {
+            retval.addElement(new Integer(Event.SUSPEND));
+            retval.addElement(new Integer(Event.RESUME));
         }
         return retval;
     }
@@ -84,15 +82,13 @@ public class STATE_TRANSFER extends Protocol {
     public boolean setProperties(Properties props) {
         super.setProperties(props);
 
-        use_flush = Util.parseBoolean(props,"use_flush",false);
-        if(use_flush)
-        {
-        	flush_promise = new Promise();
+        use_flush=Util.parseBoolean(props, "use_flush", false);
+        if(use_flush) {
+            flush_promise=new Promise();
         }
-        flush_timeout = Util.parseLong(props,"flush_timeout",10*1000);
+        flush_timeout=Util.parseLong(props, "flush_timeout", 10 * 1000);
         if(props.size() > 0) {
             log.error("the following properties are not recognized: " + props);
-
             return false;
         }
         return true;
@@ -160,8 +156,7 @@ public class STATE_TRANSFER extends Protocol {
                 break;
             case StateHeader.STATE_RSP:
                 handleStateRsp(hdr, msg.getBuffer());
-                if(use_flush)
-            	{
+                if(use_flush) {
             		stopFlush();
             	}
                 break;
@@ -207,10 +202,9 @@ public class STATE_TRANSFER extends Protocol {
                     passUp(new Event(Event.GET_STATE_OK, new StateTransferInfo()));
                 }
                 else {
-                	if(use_flush)
-                	{
-                		startFlush(flush_timeout);
-                	}
+                    if(use_flush) {
+                        startFlush(flush_timeout);
+                    }
                     Message state_req=new Message(target, null, null);
                     state_req.putHeader(name, new StateHeader(StateHeader.STATE_REQ, local_addr, state_id++, null, info.state_id));
                     if(log.isDebugEnabled()) log.debug("GET_STATE: asking " + target + " for state");
@@ -276,12 +270,11 @@ public class STATE_TRANSFER extends Protocol {
                 }
                 return;             // don't pass down any further !
             case Event.SUSPEND_OK:
-            	if(use_flush)
-            	{
+            	if(use_flush) {
             		flush_promise.setResult(Boolean.TRUE);
             	}
-            	break;                
-                
+            	break;
+
         }
 
         passDown(evt);              // pass on to the layer below us
@@ -404,22 +397,22 @@ public class STATE_TRANSFER extends Protocol {
         StateTransferInfo info=new StateTransferInfo(null, id, 0L, state);
         passUp(new Event(Event.GET_STATE_OK, info));
     }
-    
-    private boolean startFlush(long timeout)
-    {
-    	boolean successfulFlush=false;
-    	passUp(new Event(Event.SUSPEND));
-    	try {
-    		flush_promise.reset();
-			flush_promise.getResultWithTimeout(timeout);
-			successfulFlush=true;
-		} catch (TimeoutException e) {			
-		}
-		return successfulFlush;
+
+    private boolean startFlush(long timeout) {
+        boolean successfulFlush=false;
+        passUp(new Event(Event.SUSPEND));
+        try {
+            flush_promise.reset();
+            flush_promise.getResultWithTimeout(timeout);
+            successfulFlush=true;
+        }
+        catch(TimeoutException e) {
+        }
+        return successfulFlush;
     }
-    
-    private void stopFlush(){
-    	passUp(new Event(Event.RESUME));
+
+    private void stopFlush() {
+        passUp(new Event(Event.RESUME));
     }
 
 
