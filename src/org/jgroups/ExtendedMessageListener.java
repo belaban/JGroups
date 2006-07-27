@@ -5,17 +5,16 @@ import java.io.OutputStream;
 
 /**
  * 
- * <code>ExtendedMessageListener</code> adds additional callbacks for:
+ * <code>ExtendedMessageListener</code> has additional callbacks for:
  * <ul>
  * <li>partial state transfer - http://jira.jboss.com/jira/browse/JGRP-118 
  * <li>streaming state transfer - http://jira.jboss.com/jira/browse/JGRP-89  
  * </ul>
  * <p>
- * Applications interested in streaming state transfer beside implementing this 
- * interface have to be configured with <code>STREAMING_STATE_TRANSFER</code> 
- * protocol rather than the default <code>STATE_TRANSFER</code> protocol in order 
- * to receive stream based <code>getState</code> and <code>setState</code> 
- * callbacks. 
+ * Application channels interested in using streaming state transfer, beside 
+ * implementing this interface, have to be configured with 
+ * <code>STREAMING_STATE_TRANSFER</code> protocol rather than the default 
+ * <code>STATE_TRANSFER</code> protocol. 
  * 
  * <p>
  * Note:
@@ -28,7 +27,7 @@ import java.io.OutputStream;
  * @see org.jgroups.JChannel#getState(Address, String, long)
  * @since 2.3
  *  
- * @version $Id: ExtendedMessageListener.java,v 1.2 2006/07/27 18:29:24 vlada Exp $
+ * @version $Id: ExtendedMessageListener.java,v 1.3 2006/07/27 18:44:01 vlada Exp $
  */
 public interface ExtendedMessageListener extends MessageListener {
     
@@ -61,6 +60,7 @@ public interface ExtendedMessageListener extends MessageListener {
 	/**
 	 * Allows an application to write a partial state through a provided OutputStream. 
 	 * An application is obligated to always close the given OutputStream reference. 
+	 * 
 	 * @param state_id id of the partial state requested 
 	 * @param ostream the OutputStream
 	 * 
@@ -81,6 +81,7 @@ public interface ExtendedMessageListener extends MessageListener {
 	/**
 	 * Allows an application to read a partial state through a provided InputStream. 
 	 * An application is obligated to always close the given InputStream reference. 
+	 * 
 	 * @param state_id id of the partial state requested
 	 * @param istream the InputStream
 	 * 
