@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.51 2006/05/12 08:55:16 belaban Exp $
+// $Id: MessageDispatcher.java,v 1.52 2006/07/27 18:29:25 vlada Exp $
 
 package org.jgroups.blocks;
 
@@ -9,6 +9,8 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.stack.StateTransferInfo;
 import org.jgroups.util.*;
 
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.Serializable;
 import java.util.Vector;
 import java.util.Collection;
@@ -826,7 +828,35 @@ public class MessageDispatcher implements RequestHandler {
                 }
             }
         }
-        /* --------------------- End of MessageListener interface ------------------- */
+        
+        public void getState(OutputStream ostream) {
+			if (msg_listener instanceof ExtendedMessageListener) {
+				((ExtendedMessageListener) msg_listener).getState(ostream);
+			}
+		}
+
+		public void getState(String state_id, OutputStream ostream) {
+			if (msg_listener instanceof ExtendedMessageListener && state_id!=null) {
+				((ExtendedMessageListener) msg_listener).getState(state_id,ostream);
+			}
+			
+		}
+
+		public void setState(InputStream istream) {
+			if (msg_listener instanceof ExtendedMessageListener) {
+				((ExtendedMessageListener) msg_listener).setState(istream);
+			}
+		}
+
+		public void setState(String state_id, InputStream istream) {
+			if (msg_listener instanceof ExtendedMessageListener && state_id != null) {
+				((ExtendedMessageListener) msg_listener).setState(state_id,istream);
+			}
+		}
+        /*
+		 * --------------------- End of MessageListener interface
+		 * -------------------
+		 */
 
 
         /* ------------------------ MembershipListener interface -------------------- */
@@ -855,8 +885,9 @@ public class MessageDispatcher implements RequestHandler {
             if(membership_listener != null) {
                 membership_listener.block();
             }
-        }
-        /* --------------------- End of MembershipListener interface ---------------- */
+        }       
+		
+		/* --------------------- End of MembershipListener interface ---------------- */
 
 
 

@@ -19,9 +19,9 @@ import java.io.*;
 /**
  * Simple chat demo
  * @author Bela Ban
- * @version $Id: Chat.java,v 1.13 2006/07/14 16:17:15 vlada Exp $
+ * @version $Id: Chat.java,v 1.14 2006/07/27 18:29:26 vlada Exp $
  */
-public class Chat implements MouseListener, WindowListener, StreamingMessageListener, MembershipListener {
+public class Chat implements MouseListener, WindowListener, ExtendedMessageListener, MembershipListener {
     Channel channel;
     PullPushAdapter ad;
     Thread mainThread;
@@ -144,7 +144,12 @@ public class Chat implements MouseListener, WindowListener, StreamingMessageList
             ta.append("Chat.receive(): " + e);
         }
     }
-
+    
+    public byte[] getState(String state_id) {
+    	//partial state transfer not used
+		return null;
+	}
+    
     public byte[] getState() {
         try {
             return Util.objectToByteBuffer(history);
@@ -162,6 +167,10 @@ public class Chat implements MouseListener, WindowListener, StreamingMessageList
             e.printStackTrace();
         }
     }
+    
+    public void setState(String state_id, byte[] state) {
+    	//partial state transfer not used		
+	}
     
     public void getState(OutputStream os) {
     	ObjectOutputStream oos =null;
@@ -195,6 +204,17 @@ public class Chat implements MouseListener, WindowListener, StreamingMessageList
 			}
 		}
     }
+    
+    public void getState(String state_id, OutputStream ostream) {
+		//partial state transfer not used
+		
+	}
+
+
+	public void setState(String state_id, InputStream istream) {
+		//partial state transfer not used		
+	}
+
 
     /* ----------------- End of Interface MessageListener --------------- */
 

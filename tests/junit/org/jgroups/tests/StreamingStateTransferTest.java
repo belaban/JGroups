@@ -1,17 +1,27 @@
 package org.jgroups.tests;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
-import org.jgroups.*;
-import org.jgroups.util.Util;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+
+import junit.framework.Test;
+import junit.framework.TestCase;
+import junit.framework.TestSuite;
+
+import org.jgroups.Address;
+import org.jgroups.Channel;
+import org.jgroups.ExtendedReceiver;
+import org.jgroups.JChannel;
+import org.jgroups.Message;
+import org.jgroups.StreamingGetStateEvent;
+import org.jgroups.StreamingSetStateEvent;
+import org.jgroups.TimeoutException;
+import org.jgroups.View;
+import org.jgroups.ViewId;
+import org.jgroups.util.Util;
 
 /**
  * Tests streaming state transfer for both pull and push mode of channel 
@@ -37,7 +47,7 @@ public class StreamingStateTransferTest extends TestCase{
 
 	private final static String CHANNEL_PROPS="streaming-state-transfer.xml";
 	private final static int INITIAL_NUMBER_OF_MEMBERS=5;
-	private int runningTime = 1000 * 50; // 50 secs
+	private int runningTime = 1000*60*3; //3 minutes
 	private Random r = new Random();
 	private boolean usePullMode = false;
 	private int size = 100; //100MB
@@ -90,7 +100,7 @@ public class StreamingStateTransferTest extends TestCase{
 					System.out.println("Not killing coordinator ");
 				}
 			}				
-			running =System.currentTimeMillis() - start <= runningTime;
+			running = System.currentTimeMillis()-start>runningTime?false:true;
 			System.out.println("Running time " + ((System.currentTimeMillis()-start)/1000) + " secs");
 		}
 		System.out.println("Done");
@@ -133,20 +143,21 @@ public class StreamingStateTransferTest extends TestCase{
 	     junit.textui.TestRunner.main(testCaseName);
 	}
 	
-	private static class GroupMember implements Runnable,StreamingReceiver{
+	private static class GroupMember implements Runnable,ExtendedReceiver{
 		JChannel ch = null;		
 		View currentView;		
 		volatile boolean running = true;		
 		private int stateSize;	
 		private int bufferSize = 8*1024;
-		private boolean usePullMode;		
+		private boolean usePullMode;	
+		private Random ran = new Random();
 
 		public GroupMember(boolean usePullMode,int size) {				
 			setStateSize(size*MEGABYTE); //1GB
 			setUsePullMode(usePullMode);
 		}
 		
-		public final void setUsePullMode(boolean usePullMode) {
+		public void setUsePullMode(boolean usePullMode) {
 			this.usePullMode = usePullMode;
 		}
 
@@ -182,7 +193,7 @@ public class StreamingStateTransferTest extends TestCase{
 			return local_addr.equals(coord);
 		}
 
-		public final void setStateSize(int stateSize) {
+		public void setStateSize(int stateSize) {
 			this.stateSize = stateSize;
 		}
 
@@ -195,8 +206,16 @@ public class StreamingStateTransferTest extends TestCase{
 	            {
 	            	ch.setReceiver(this);
 	            }
-				ch.connect("transfer");				
-				ch.getState(null,5000);
+				ch.connect("transfer");	
+				if(ran.nextBoolean())
+				{
+					ch.getState(null,5000);
+				}
+				else
+				{
+					String randomStateId = Long.toString(Math.abs(ran.nextLong()), 36);
+					ch.getState(null,randomStateId,5000);
+				}
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -210,12 +229,27 @@ public class StreamingStateTransferTest extends TestCase{
 						// I will discard any transient message I
 						// receive
 					} else {
-						if (msgReceived instanceof StreamingGetStateEvent) {
+						if (msgReceived instanceof View) {							
+						} else if (msgReceived instanceof StreamingGetStateEvent) {
 							StreamingGetStateEvent evt = (StreamingGetStateEvent) msgReceived;
-							this.getState(evt.getArg());
+							if(evt.getStateId()!=null)
+							{
+								this.getState(evt.getStateId(),evt.getArg());	
+							}
+							else
+							{
+								this.getState(evt.getArg());
+							}
 						} else if (msgReceived instanceof StreamingSetStateEvent) {
 							StreamingSetStateEvent evt = (StreamingSetStateEvent) msgReceived;
-							this.setState(evt.getArg());
+							if(evt.getStateId()!=null)
+							{
+								this.setState(evt.getStateId(),evt.getArg());
+							}
+							else
+							{
+								this.setState(evt.getArg());
+							}
 						}
 					}
 
@@ -226,8 +260,7 @@ public class StreamingStateTransferTest extends TestCase{
 				}			
 			}					
 		}
-
-
+	
 		public void getState(OutputStream ostream) {			
 			InputStream stream = Thread.currentThread().getContextClassLoader()
 					.getResourceAsStream("org/jgroups/JChannel.class");
@@ -288,24 +321,40 @@ public class StreamingStateTransferTest extends TestCase{
 					+ readingTime + " msec");						
 		}
 
-		public void receive(Message msg) {
-
+		public void receive(Message msg) {		
 		}
 
-		public void setState(byte[] state) {
+		public void setState(byte[] state) {			
 		}
 
-		public void viewAccepted(View new_view) {
+		public void viewAccepted(View new_view) {			
 		}
 
-		public void suspect(Address suspected_mbr) {
+		public void suspect(Address suspected_mbr) {		
 		}
 
-		public void block() {
+		public void block() {			
 		}
 
-		public byte[] getState() {
+		public byte[] getState() {			
 			return null;
 		}
+		
+		public byte[] getState(String state_id) {		
+			return null;
+		}
+
+		public void setState(String state_id, byte[] state) {						
+		}
+
+		public void getState(String state_id, OutputStream ostream) {
+			System.out.println("Writing partial streaming state transfer for " + state_id);
+			getState(ostream);
+		}
+
+		public void setState(String state_id, InputStream istream) {
+			System.out.println("Reading partial streaming state transfer for " + state_id);
+			setState(istream);			
+		}		
 	}
 }
