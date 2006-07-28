@@ -4,6 +4,7 @@ import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.jgroups.*;
+import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
 
 import java.util.*;
@@ -11,7 +12,7 @@ import java.util.*;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.9 2006/07/28 15:07:17 belaban Exp $
+ * @version $Id: MultiplexerTest.java,v 1.10 2006/07/28 15:43:15 belaban Exp $
  */
 public class MultiplexerTest extends TestCase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -340,6 +341,67 @@ public class MultiplexerTest extends TestCase {
         ch2.connect("foo");
         rc=ch2.getState(null, 2000);
         assertFalse("getState() on singleton should return false", rc);
+    }
+
+
+    public void testAdditionalData() throws Exception {
+        byte[] additional_data=new byte[]{'b', 'e', 'l', 'a'};
+        ch1=factory.createMultiplexerChannel(STACK_NAME, "c1");
+        Map m=new HashMap(1);
+        m.put("additional_data", additional_data);
+        ch1.down(new Event(Event.CONFIG, m));
+        ch1.connect("bla");
+        IpAddress local_addr=(IpAddress)ch1.getLocalAddress();
+        assertNotNull(local_addr);
+        byte[] tmp=local_addr.getAdditionalData();
+        assertNotNull(tmp);
+        assertEquals(tmp, additional_data);
+
+        ch2=factory.createMultiplexerChannel(STACK_NAME, "c2");
+        ch2.connect("foo");
+        local_addr=(IpAddress)ch2.getLocalAddress();
+        assertNotNull(local_addr);
+        tmp=local_addr.getAdditionalData();
+        assertNotNull(tmp);
+        assertEquals(tmp, additional_data);
+    }
+
+    public void testAdditionalData2() throws Exception {
+        byte[] additional_data=new byte[]{'b', 'e', 'l', 'a'};
+        byte[] additional_data2=new byte[]{'m', 'i', 'c', 'h', 'i'};
+        ch1=factory.createMultiplexerChannel(STACK_NAME, "c1");
+        ch1.connect("bla");
+        IpAddress local_addr=(IpAddress)ch1.getLocalAddress();
+        assertNotNull(local_addr);
+        byte[] tmp=local_addr.getAdditionalData();
+        assertNull(tmp);
+
+        ch2=factory.createMultiplexerChannel(STACK_NAME, "c2");
+        Map m=new HashMap(1);
+        m.put("additional_data", additional_data);
+        ch2.down(new Event(Event.CONFIG, m));
+        ch2.connect("foo");
+        local_addr=(IpAddress)ch2.getLocalAddress();
+        assertNotNull(local_addr);
+        tmp=local_addr.getAdditionalData();
+        assertNotNull(tmp);
+        assertEquals(tmp, additional_data);
+
+        local_addr=(IpAddress)ch1.getLocalAddress();
+        assertNotNull(local_addr);
+        tmp=local_addr.getAdditionalData();
+        assertNotNull(tmp);
+        assertEquals(tmp, additional_data);
+
+        m.clear();
+        m.put("additional_data", additional_data2);
+        ch2.down(new Event(Event.CONFIG, m));
+        local_addr=(IpAddress)ch2.getLocalAddress();
+        assertNotNull(local_addr);
+        tmp=local_addr.getAdditionalData();
+        assertNotNull(tmp);
+        assertEquals(tmp, additional_data2);
+        assertFalse(Arrays.equals(tmp, additional_data));
     }
 
     public void testGetSubstates() throws Exception {
