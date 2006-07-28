@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.115 2006/05/04 11:55:42 belaban Exp $
+// $Id: UDP.java,v 1.116 2006/07/28 15:30:21 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -874,50 +874,23 @@ public class UDP extends TP implements Runnable {
 
 
     protected void handleConfigEvent(HashMap map) {
+        boolean set_buffers=false;
         super.handleConfigEvent(map);
         if(map == null) return;
+
         if(map.containsKey("send_buf_size")) {
             mcast_send_buf_size=((Integer)map.get("send_buf_size")).intValue();
             ucast_send_buf_size=mcast_send_buf_size;
+            set_buffers=true;
         }
         if(map.containsKey("recv_buf_size")) {
             mcast_recv_buf_size=((Integer)map.get("recv_buf_size")).intValue();
             ucast_recv_buf_size=mcast_recv_buf_size;
+            set_buffers=true;
         }
-        setBufferSizes();
+        if(set_buffers)
+            setBufferSizes();
     }
-
-
-//    private void nullAddresses(Message msg, IpAddress dest, IpAddress src) {
-//        if(src != null) {
-//            if(null_src_addresses)
-//                msg.setSrc(new IpAddress(src.getPort(), false));  // null the host part, leave the port
-//            if(src.getAdditionalData() != null)
-//                ((IpAddress)msg.getSrc()).setAdditionalData(src.getAdditionalData());
-//        }
-//        else if(dest != null && !dest.isMulticastAddress()) { // unicast
-//            msg.setSrc(null);
-//        }
-//    }
-
-  //  private void setAddresses(Message msg, Address dest) {
-   //     msg.setDest(dest);
-//
-//        // set the source address if not set
-//        IpAddress src_addr=(IpAddress)msg.getSrc();
-//        if(src_addr == null) {
-//            msg.setSrc(sender);
-//        }
-//        else {
-//            byte[] tmp_additional_data=src_addr.getAdditionalData();
-//            if(src_addr.getIpAddress() == null) {
-//                IpAddress tmp=new IpAddress(sender.getIpAddress(), src_addr.getPort());
-//                msg.setSrc(tmp);
-//            }
-//            if(tmp_additional_data != null)
-//                ((IpAddress)msg.getSrc()).setAdditionalData(tmp_additional_data);
-//        }
- //   }
 
 
 
