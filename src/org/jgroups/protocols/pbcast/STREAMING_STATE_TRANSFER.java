@@ -67,18 +67,19 @@ import EDU.oswego.cs.dl.util.concurrent.ThreadFactory;
  * <p>
  * 
  * In order to process streaming state transfer an application has to implement 
- * <code>StreamingMessageListener</code> if it is using channel in a push style 
+ * <code>ExtendedMessageListener</code> if it is using channel in a push style 
  * mode or it has to process <code>StreamingSetStateEvent</code> and 
  * <code>StreamingGetStateEvent</code> if it is using channel in a pull style mode.    
  * 
  * 
  * @author Vladimir Blagojevic
- * @see org.jgroups.StreamingMessageListener
+ * @see org.jgroups.ExtendedMessageListener
  * @see org.jgroups.StreamingGetStateEvent
  * @see org.jgroups.StreamingSetStateEvent
  * @see org.jgroups.protocols.pbcast.STATE_TRANSFER
- * @since 2.4
+ * @since 2.3
  * 
+ * @version $Id$
  * 
  */
 public class STREAMING_STATE_TRANSFER extends Protocol {
@@ -549,7 +550,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 						+ socket.getLocalPort() + " passing inputstream up...");
 			
 			//write out our state_id and address so state provider can clear this request
-			final ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+			ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
 			out.writeObject(state_id);
 			out.writeObject(local_addr);			
 						
@@ -919,6 +920,8 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
                     return "STATE_REQ";
                 case STATE_RSP:
                     return "STATE_RSP";
+                case STATE_REMOVE_REQUESTER:
+                    return "STATE_REMOVE_REQUESTER";    
                 default:
                     return "<unknown>";
             }
