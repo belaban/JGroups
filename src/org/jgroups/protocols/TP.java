@@ -4,6 +4,7 @@ package org.jgroups.protocols;
 import EDU.oswego.cs.dl.util.concurrent.BoundedLinkedQueue;
 import org.jgroups.*;
 import org.jgroups.stack.Protocol;
+import org.jgroups.stack.IpAddress;
 import org.jgroups.util.*;
 import org.jgroups.util.List;
 import org.jgroups.util.Queue;
@@ -39,7 +40,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.68 2006/07/10 13:36:12 belaban Exp $
+ * @version $Id: TP.java,v 1.69 2006/07/28 16:00:01 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -1223,8 +1224,11 @@ public abstract class TP extends Protocol {
 
     protected void handleConfigEvent(HashMap map) {
         if(map == null) return;
-        if(map.containsKey("additional_data"))
+        if(map.containsKey("additional_data")) {
             additional_data=(byte[])map.get("additional_data");
+            if(local_addr instanceof IpAddress)
+                ((IpAddress)local_addr).setAdditionalData(additional_data);
+        }
     }
 
 
