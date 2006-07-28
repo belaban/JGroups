@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.29 2006/07/14 12:17:24 belaban Exp $
+// $Id: JChannelFactory.java,v 1.30 2006/07/28 08:26:06 belaban Exp $
 
 package org.jgroups;
 
@@ -319,6 +319,10 @@ public class JChannelFactory implements ChannelFactory {
             synchronized(entry) {
                 if(entry.channel == null)
                     throw new ChannelException("channel has to be created before it can be connected");
+
+                if(entry.multiplexer != null)
+                    entry.multiplexer.addServiceIfNotPresent(ch.getId(), ch);
+                
                 if(!entry.channel.isConnected()) {
                     entry.channel.connect(ch.getStackName());
                     if(entry.multiplexer != null) {
