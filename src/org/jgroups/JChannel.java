@@ -66,7 +66,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.82 2006/07/28 07:24:18 belaban Exp $
+ * @version $Id: JChannel.java,v 1.83 2006/07/28 14:33:36 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -1456,7 +1456,7 @@ public class JChannel extends Channel {
                     }
                     try {
                         if(additional_data != null) {
-                            // set previously set additional data
+                            // send previously set additional_data down the stack - other protocols (e.g. TP) use it
                             Map m=new HashMap(11);
                             m.put("additional_data", additional_data);
                             down(new Event(Event.CONFIG, m));
