@@ -324,6 +324,18 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 
     /* --------------------------- Private Methods -------------------------------- */
 
+	/**
+	 * When FLUSH is used we do not need to pass digests between members
+	 * 
+	 * see JGroups/doc/design/PArtialStateTransfer.txt
+	 * see JGroups/doc/design/FLUSH.txt
+	 * 
+	 * @return true if use of digests is required, false otherwise
+	 */
+	private boolean isDigestNeeded()
+	{
+		return !use_flush;
+	}
 
 	private void respondToStateRequester() {
 
@@ -340,14 +352,13 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 					log.warn("Should be responding to state requester, but there are no requesters !");
 				return;
 			}
-			if (digest == null)
+			
+			if (digest == null && isDigestNeeded()){
 				if (warn)
 					log.warn("Should be responding to state requester, but there is no digest !");
 				else
 					digest = digest.copy();
-			if (stats) {
-				num_state_reqs++;
-			}
+			}			
 			
 			if (log.isDebugEnabled())
 				log.debug("Iterating state requesters " + state_requesters);
@@ -367,7 +378,10 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 								+ requester + " with address "
 								+ spawner.getServerSocketAddress()
 								+ " and digest " + digest);
-					passDown(new Event(Event.MSG, state_rsp));							
+					passDown(new Event(Event.MSG, state_rsp));	
+					if (stats) {
+						num_state_reqs++;
+					}
 				}									
 			}
 		}
@@ -471,12 +485,16 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
                 requesters=new HashSet();                
             }
             requesters.add(sender);
-            state_requesters.put(id, requesters);           
-            if (empty){               
-                digest=null;
-                if(log.isDebugEnabled()) log.debug("passing down GET_DIGEST_STATE");
-                passDown(new Event(Event.GET_DIGEST_STATE));
-            }
+            state_requesters.put(id, requesters);
+            
+            if (!isDigestNeeded()) {
+				respondToStateRequester();
+			} else if (empty) {
+				digest = null;
+				if (log.isDebugEnabled())
+					log.debug("passing down GET_DIGEST_STATE");
+				passDown(new Event(Event.GET_DIGEST_STATE));
+			}
         }
     }
     
@@ -484,14 +502,15 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 		Digest tmp_digest = hdr.my_digest;
 
 		waiting_for_state_response = false;
-		if (tmp_digest == null) {
-			if (warn)
-				log.warn("digest received from " + hdr.sender
-						+ " is null, skipping setting digest !");
-		} else {
-			passDown(new Event(Event.SET_DIGEST, tmp_digest)); // set the
-																// digest (e.g.
-																// in NAKACK)
+		if (isDigestNeeded()) {
+			if (tmp_digest == null) {
+				if (warn)
+					log.warn("digest received from " + hdr.sender
+							+ " is null, skipping setting digest !");
+			} else {
+				// set the digest (e.g.in NAKACK)
+				passDown(new Event(Event.SET_DIGEST, tmp_digest)); 
+			}
 		}
 		stop = System.currentTimeMillis();
 		connectToStateProvider(hdr);
