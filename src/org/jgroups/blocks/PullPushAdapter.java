@@ -1,4 +1,4 @@
-// $Id: PullPushAdapter.java,v 1.19 2006/07/27 18:29:25 vlada Exp $
+// $Id: PullPushAdapter.java,v 1.20 2006/07/28 19:46:31 vlada Exp $
 
 package org.jgroups.blocks;
 
@@ -204,7 +204,7 @@ public class PullPushAdapter implements Runnable, ChannelListener {
                     String state_id=evt.getStateId();
                     if(listener != null) {
                         try {
-                            if(listener instanceof ExtendedMessageListener) {
+                            if(listener instanceof ExtendedMessageListener && state_id!=null) {
                                 retval=((ExtendedMessageListener)listener).getState(state_id);
                             }
                             else {
@@ -233,8 +233,8 @@ public class PullPushAdapter implements Runnable, ChannelListener {
                     String state_id=evt.getStateId();
                     if(listener != null) {
                         try {
-                            if(listener instanceof ExtendedMessageListener) {
-                                ((ExtendedMessageListener)listener).setState(evt.getStateId(), evt.getArg());
+                            if(listener instanceof ExtendedMessageListener && state_id!=null) {
+                                ((ExtendedMessageListener)listener).setState(state_id, evt.getArg());
                             }
                             else {
                                 listener.setState(evt.getArg());
