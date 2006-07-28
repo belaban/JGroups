@@ -1,4 +1,4 @@
-// $Id: StateTransferInfo.java,v 1.11 2006/07/27 18:29:25 vlada Exp $
+// $Id: StateTransferInfo.java,v 1.12 2006/07/28 07:21:08 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -14,14 +14,14 @@ import org.jgroups.Address;
  * layer. The state is retrieved from 'target'. If target is null, then the state will be retrieved from the oldest
  * member (usually the coordinator).
  * @author Bela Ban
- * @version $Id: StateTransferInfo.java,v 1.11 2006/07/27 18:29:25 vlada Exp $
+ * @version $Id: StateTransferInfo.java,v 1.12 2006/07/28 07:21:08 belaban Exp $
  */
 public class StateTransferInfo {
-    public Address target=null;
-    public long    timeout=0;
-    public byte[]  state=null;
-    public String  state_id=null;
-    public InputStream inputStream = null;
+    public Address      target=null;
+    public long         timeout=0;
+    public byte[]       state=null;
+    public String       state_id=null;
+    public InputStream  inputStream = null;
     public OutputStream outputStream = null;
 
 
@@ -50,15 +50,15 @@ public class StateTransferInfo {
         this.state_id=state_id;
         this.timeout=timeout;
     }
-    
+
     public StateTransferInfo(Address target, InputStream is, String state_id) {
-        this.target=target;       
+        this.target=target;
         this.state_id=state_id;
         this.inputStream=is;
     }
-    
+
     public StateTransferInfo(Address target, OutputStream os, String state_id) {
-        this.target=target;       
+        this.target=target;
         this.state_id=state_id;
         this.outputStream=os;
     }
