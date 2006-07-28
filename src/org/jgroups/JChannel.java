@@ -7,6 +7,7 @@ import org.jgroups.conf.ConfiguratorFactory;
 import org.jgroups.conf.ProtocolStackConfigurator;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.stack.StateTransferInfo;
+import org.jgroups.stack.IpAddress;
 import org.jgroups.util.*;
 import org.w3c.dom.Element;
 
@@ -66,7 +67,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.83 2006/07/28 14:33:36 belaban Exp $
+ * @version $Id: JChannel.java,v 1.84 2006/07/28 15:43:50 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -1155,6 +1156,8 @@ public class JChannel extends Channel {
                 Map m=(Map)evt.getArg();
                 if(m != null && m.containsKey("additional_data")) {
                     additional_data=(byte[])m.get("additional_data");
+                    if(local_addr instanceof IpAddress)
+                        ((IpAddress)local_addr).setAdditionalData(additional_data);
                 }
             }
             catch(Throwable t) {
