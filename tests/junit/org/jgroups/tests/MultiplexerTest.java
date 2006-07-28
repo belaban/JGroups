@@ -11,7 +11,7 @@ import java.util.*;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.8 2006/07/27 09:58:15 belaban Exp $
+ * @version $Id: MultiplexerTest.java,v 1.9 2006/07/28 15:07:17 belaban Exp $
  */
 public class MultiplexerTest extends TestCase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -318,6 +318,29 @@ public class MultiplexerTest extends TestCase {
         assertEquals("Centurion", c2_repl.get("bike"));
     }
 
+
+    public void testStateTransferFromSelfWithRegularChannel() throws Exception {
+        JChannel ch=new JChannel();
+        ch.connect("X");
+        try {
+            boolean rc=ch.getState(null, 2000);
+            assertFalse("getState() on singleton should return false", rc);
+        }
+        finally {
+            ch.close();
+        }
+    }
+
+    public void testStateTransferFromSelf() throws Exception {
+        ch1=factory.createMultiplexerChannel(STACK_NAME, "c1");
+        ch1.connect("bla");
+        boolean rc=ch1.getState(null, 2000);
+        assertFalse("getState() on singleton should return false", rc);
+        ch2=factory.createMultiplexerChannel(STACK_NAME, "c2");
+        ch2.connect("foo");
+        rc=ch2.getState(null, 2000);
+        assertFalse("getState() on singleton should return false", rc);
+    }
 
     public void testGetSubstates() throws Exception {
         ch1=factory.createMultiplexerChannel(STACK_NAME, "c1");
