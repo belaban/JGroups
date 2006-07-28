@@ -66,7 +66,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.81 2006/07/27 18:29:25 vlada Exp $
+ * @version $Id: JChannel.java,v 1.82 2006/07/28 07:24:18 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -1015,12 +1015,10 @@ public class JChannel extends Channel {
             if(state != null) {
                 String state_id=info.state_id;
                 if(receiver != null) {
-                    if(receiver instanceof ExtendedReceiver) {
+                    if(receiver instanceof ExtendedReceiver)
                         ((ExtendedReceiver)receiver).setState(state_id, state);
-                    }
-                    else {
+                    else
                         receiver.setState(state);
-                    }
                 }
                 else {
                     try {mq.add(new Event(Event.STATE_RECEIVED, info));} catch(Exception e) {}
@@ -1029,33 +1027,30 @@ public class JChannel extends Channel {
             break;
 
         case Event.STATE_TRANSFER_INPUTSTREAM:
-        	StateTransferInfo sti = (StateTransferInfo)evt.getArg();
-        	InputStream is = sti.inputStream;
-			state_promise.setResult(is != null ? Boolean.TRUE
-					: Boolean.FALSE);
+            StateTransferInfo sti=(StateTransferInfo)evt.getArg();
+            InputStream is=sti.inputStream;
+            state_promise.setResult(is != null? Boolean.TRUE : Boolean.FALSE);
 
-			if (up_handler != null) {
-				up_handler.up(evt);
-				return;
-			}
+            if(up_handler != null) {
+                up_handler.up(evt);
+                return;
+            }
 
-			if (is != null) {
-				if (receiver instanceof ExtendedReceiver) {
-					if(sti.state_id==null)
-					{
-						((ExtendedReceiver) receiver).setState(is);
-					}
-					else
-					{
-						((ExtendedReceiver) receiver).setState(sti.state_id,is);
-					}
-				} else {
-					try {
-						mq.add(new Event(Event.STATE_TRANSFER_INPUTSTREAM, sti));
-					} catch (Exception e) {
-					}
-				}
-			}
+            if(is != null) {
+                if(receiver instanceof ExtendedReceiver) {
+                    if(sti.state_id == null)
+                        ((ExtendedReceiver)receiver).setState(is);
+                    else
+                        ((ExtendedReceiver)receiver).setState(sti.state_id, is);
+                }
+                else {
+                    try {
+                        mq.add(new Event(Event.STATE_TRANSFER_INPUTSTREAM, sti));
+                    }
+                    catch(Exception e) {
+                    }
+                }
+            }
 			break;
 
         case Event.SET_LOCAL_ADDRESS:
@@ -1112,21 +1107,17 @@ public class JChannel extends Channel {
                 }
                 break;
             case Event.STATE_TRANSFER_OUTPUTSTREAM:
-            	if (receiver != null) {
-            		StateTransferInfo sti = (StateTransferInfo) evt.getArg();
-					OutputStream os = sti.outputStream;
-					if (os != null && receiver instanceof ExtendedReceiver) {
-						if(sti.state_id==null)
-						{
-							((ExtendedReceiver) receiver).getState(os);
-						}
-						else
-						{
-							((ExtendedReceiver) receiver).getState(sti.state_id,os);
-						}
-					}
-					return;
-				}
+                if(receiver != null) {
+                    StateTransferInfo sti=(StateTransferInfo)evt.getArg();
+                    OutputStream os=sti.outputStream;
+                    if(os != null && receiver instanceof ExtendedReceiver) {
+                        if(sti.state_id == null)
+                            ((ExtendedReceiver)receiver).getState(os);
+                        else
+                            ((ExtendedReceiver)receiver).getState(sti.state_id, os);
+                    }
+                    return;
+                }
 				break;
             case Event.BLOCK:
                 if(receiver != null) {

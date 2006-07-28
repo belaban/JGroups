@@ -5,7 +5,7 @@ import java.io.OutputStream;
 
 /**
  * @author Bela Ban
- * @version $Id: ExtendedReceiverAdapter.java,v 1.2 2006/07/27 18:29:24 vlada Exp $
+ * @version $Id: ExtendedReceiverAdapter.java,v 1.3 2006/07/28 07:19:50 belaban Exp $
  */
 public class ExtendedReceiverAdapter implements ExtendedReceiver {
     public byte[] getState(String state_id) {
@@ -35,22 +35,15 @@ public class ExtendedReceiverAdapter implements ExtendedReceiver {
     }
 
 	public void getState(OutputStream ostream) {
-		// TODO Auto-generated method stub
-		
+
 	}
 
 	public void getState(String state_id, OutputStream ostream) {
-		// TODO Auto-generated method stub
-		
 	}
 
 	public void setState(InputStream istream) {
-		// TODO Auto-generated method stub
-		
 	}
 
 	public void setState(String state_id, InputStream istream) {
-		// TODO Auto-generated method stub
-		
 	}
 }
