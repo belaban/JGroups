@@ -1,4 +1,4 @@
-// $Id: DistributedHashtable.java,v 1.22 2006/03/27 08:34:24 belaban Exp $
+// $Id: DistributedHashtable.java,v 1.23 2006/07/31 09:21:58 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -35,7 +35,7 @@ import java.util.*;
  * initial state (using the state exchange funclet <code>StateExchangeFunclet</code>.
  * @author Bela Ban
  * @author <a href="mailto:aolias@yahoo.com">Alfonso Olias-Sanz</a>
- * @version $Id: DistributedHashtable.java,v 1.22 2006/03/27 08:34:24 belaban Exp $
+ * @version $Id: DistributedHashtable.java,v 1.23 2006/07/31 09:21:58 belaban Exp $
  */
 public class DistributedHashtable extends Hashtable implements MessageListener, MembershipListener {
 
@@ -122,7 +122,7 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
 
     public DistributedHashtable(JChannel channel, boolean persistent, long state_timeout)
         throws ChannelNotConnectedException, ChannelClosedException {
-        this.groupname = channel.getChannelName();
+        this.groupname = channel.getClusterName();
         this.channel = channel;
         this.persistent=persistent;
         init(state_timeout);
@@ -144,7 +144,7 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
         throws ChannelNotConnectedException, ChannelClosedException {
         initSignatures();
         this.channel = (Channel)adapter.getTransport();
-        this.groupname = this.channel.getChannelName();
+        this.groupname = this.channel.getClusterName();
         disp=new RpcDispatcher(adapter, id, this, this, this);
         start(state_timeout);
     }
@@ -152,7 +152,7 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
     public DistributedHashtable(PullPushAdapter adapter, Serializable id) {
         initSignatures();
         this.channel = (Channel)adapter.getTransport();
-        this.groupname = this.channel.getChannelName();
+        this.groupname = this.channel.getClusterName();
         disp=new RpcDispatcher(adapter, id, this, this, this);
     }
 

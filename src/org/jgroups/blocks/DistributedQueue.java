@@ -1,4 +1,4 @@
-// $Id: DistributedQueue.java,v 1.18 2006/03/27 08:34:24 belaban Exp $
+// $Id: DistributedQueue.java,v 1.19 2006/07/31 09:21:58 belaban Exp $
 package org.jgroups.blocks;
 
 import org.apache.commons.logging.Log;
@@ -84,7 +84,7 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
 
     public DistributedQueue(JChannel channel)
     {
-        this.groupname = channel.getChannelName();
+        this.groupname = channel.getClusterName();
         this.channel = channel;
         init();
     }
@@ -104,7 +104,7 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
     public DistributedQueue(PullPushAdapter adapter, Serializable id)
     {
         this.channel = (Channel)adapter.getTransport();
-        this.groupname = this.channel.getChannelName();
+        this.groupname = this.channel.getClusterName();
 
         initSignatures();
         internalQueue = new LinkedList();

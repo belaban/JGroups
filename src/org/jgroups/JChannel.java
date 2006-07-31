@@ -67,7 +67,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.84 2006/07/28 15:43:50 belaban Exp $
+ * @version $Id: JChannel.java,v 1.85 2006/07/31 09:21:59 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -104,7 +104,7 @@ public class JChannel extends Channel {
     /*the address of this JChannel instance*/
     private Address local_addr=null;
     /*the channel (also know as group) name*/
-    private String channel_name=null;  // group name
+    private String cluster_name=null;  // group name
     /*the latest view of the group membership*/
     private View my_view=null;
     /*the queue that is used to receive messages (events) from the protocol stack*/
@@ -372,27 +372,27 @@ public class JChannel extends Channel {
      * Once the CONNECT_OK event arrives from the protocol stack, any channel listeners are notified
      * and the channel is considered connected.
      *
-     * @param channel_name A <code>String</code> denoting the group name. Cannot be null.
+     * @param cluster_name A <code>String</code> denoting the group name. Cannot be null.
      * @exception ChannelException The protocol stack cannot be started
      * @exception ChannelClosedException The channel is closed and therefore cannot be used any longer.
      *                                   A new channel has to be created first.
      */
-    public synchronized void connect(String channel_name) throws ChannelException, ChannelClosedException {
+    public synchronized void connect(String cluster_name) throws ChannelException, ChannelClosedException {
         /*make sure the channel is not closed*/
         checkClosed();
 
         /*if we already are connected, then ignore this*/
         if(connected) {
-            if(log.isTraceEnabled()) log.trace("already connected to " + channel_name);
+            if(log.isTraceEnabled()) log.trace("already connected to " + cluster_name);
             return;
         }
 
         /*make sure we have a valid channel name*/
-        if(channel_name == null) {
-            if(log.isInfoEnabled()) log.info("channel_name is null, assuming unicast channel");
+        if(cluster_name == null) {
+            if(log.isInfoEnabled()) log.info("cluster_name is null, assuming unicast channel");
         }
         else
-            this.channel_name=channel_name;
+            this.cluster_name=cluster_name;
 
         try {
             prot_stack.startStack(); // calls start() in all protocols, from top to bottom
@@ -424,9 +424,9 @@ public class JChannel extends Channel {
         my_view=new View(local_addr, 0, t);  // create a dummy view
 
         // only connect if we are not a unicast channel
-        if(channel_name != null) {
+        if(cluster_name != null) {
             connect_promise.reset();
-            Event connect_event=new Event(Event.CONNECT, channel_name);
+            Event connect_event=new Event(Event.CONNECT, cluster_name);
             down(connect_event);
             Object res=connect_promise.getResult();  // waits forever until connected (or channel is closed)
             if(res != null && res instanceof Exception) { // the JOIN was rejected by the coordinator
@@ -456,7 +456,7 @@ public class JChannel extends Channel {
 
         if(connected) {
 
-            if(channel_name != null) {
+            if(cluster_name != null) {
 
                 /* Send down a DISCONNECT event. The DISCONNECT event travels down to the GMS, where a
                 *  DISCONNECT_OK response is generated and sent up the stack. JChannel blocks until a
@@ -712,9 +712,14 @@ public class JChannel extends Channel {
     /**
      * returns the name of the channel
      * if the channel is not connected or if it is closed it will return null
+     * @deprecated Use {@link #getClusterName()} instead
      */
     public String getChannelName() {
-        return closed ? null : !connected ? null : channel_name;
+        return closed ? null : !connected ? null : cluster_name;
+    }
+
+    public String getClusterName() {
+        return cluster_name;
     }
 
 
@@ -1176,7 +1181,7 @@ public class JChannel extends Channel {
     public String toString(boolean details) {
         StringBuffer sb=new StringBuffer();
         sb.append("local_addr=").append(local_addr).append('\n');
-        sb.append("channel_name=").append(channel_name).append('\n');
+        sb.append("cluster_name=").append(cluster_name).append('\n');
         sb.append("my_view=").append(my_view).append('\n');
         sb.append("connected=").append(connected).append('\n');
         sb.append("closed=").append(closed).append('\n');
@@ -1204,7 +1209,7 @@ public class JChannel extends Channel {
      */
     private void init() {
         local_addr=null;
-        channel_name=null;
+        cluster_name=null;
         my_view=null;
 
         // changed by Bela Sept 25 2003
@@ -1422,7 +1427,7 @@ public class JChannel extends Channel {
 
         public void run() {
             try {
-                String old_channel_name=channel_name; // remember because close() will null it
+                String old_cluster_name=cluster_name; // remember because close() will null it
                 if(log.isInfoEnabled())
                     log.info("closing the channel");
                 _close(false, false); // do not disconnect before closing channel, do not close mq (yet !)
@@ -1450,7 +1455,7 @@ public class JChannel extends Channel {
 
                 if(auto_reconnect) {
                     try {
-                        if(log.isInfoEnabled()) log.info("reconnecting to group " + old_channel_name);
+                        if(log.isInfoEnabled()) log.info("reconnecting to group " + old_cluster_name);
                         open();
                     }
                     catch(Exception ex) {
@@ -1464,7 +1469,7 @@ public class JChannel extends Channel {
                             m.put("additional_data", additional_data);
                             down(new Event(Event.CONFIG, m));
                         }
-                        connect(old_channel_name);
+                        connect(old_cluster_name);
                         notifyChannelReconnected(local_addr);
                     }
                     catch(Exception ex) {

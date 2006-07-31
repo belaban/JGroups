@@ -1,4 +1,4 @@
-// $Id: Channel.java,v 1.20 2006/03/27 08:25:26 belaban Exp $
+// $Id: Channel.java,v 1.21 2006/07/31 09:21:59 belaban Exp $
 
 package org.jgroups;
 
@@ -69,13 +69,15 @@ public abstract class Channel implements Transport {
      sent to the group will be received by all channels connected to the same
      channel name.<p>
 
-     @param channel_name The name of the chanel to connect to.
+     @param cluster_name The name of the chanel to connect to.
      @exception ChannelException The protocol stack cannot be started
      @exception ChannelClosedException The channel is closed and therefore cannot be used any longer.
      A new channel has to be created first.
      @see Channel#disconnect
      */
-    abstract public void connect(String channel_name) throws ChannelException, ChannelClosedException;
+    abstract public void connect(String cluster_name) throws ChannelException, ChannelClosedException;
+
+
 
 
     /** Disconnects the channel from the current group (if connected), leaving the group.
@@ -268,11 +270,18 @@ public abstract class Channel implements Transport {
 
     /**
      Returns the group address of the group of which the channel is a member. This is
-     the object that was the argument to <code>Connect</code>. Calling this method on a closed
+     the object that was the argument to <code>connect()</code>. Calling this method on a closed
      channel returns <code>null</code>.
-
-     @return The group address */
+     @return The group address
+     @deprecated Use {@link #getClusterName()} instead */
     abstract public String getChannelName();
+
+    /**
+     Returns the cluster name of the group of which the channel is a member. This is
+     the object that was the argument to <code>connect()</code>. Calling this method on a closed
+     channel returns <code>null</code>.
+     @return The cluster name */
+    abstract public String getClusterName();
 
 
     /**

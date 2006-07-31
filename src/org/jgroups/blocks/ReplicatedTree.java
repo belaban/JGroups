@@ -1,4 +1,4 @@
-// $Id: ReplicatedTree.java,v 1.14 2006/06/01 09:15:04 belaban Exp $
+// $Id: ReplicatedTree.java,v 1.15 2006/07/31 09:21:58 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -105,7 +105,7 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
             MBeanServer server=Util.getMBeanServer();
             if(server == null)
                 throw new Exception("No MBeanServers found; need to run with an MBeanServer present, or inside JDK 5");
-            JmxConfigurator.registerChannel(channel, server, "jgroups", channel.getChannelName() , true);
+            JmxConfigurator.registerChannel(channel, server, "jgroups", channel.getClusterName() , true);
         }
         start();
     }
