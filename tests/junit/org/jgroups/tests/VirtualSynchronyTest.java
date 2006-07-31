@@ -46,7 +46,7 @@ public class VirtualSynchronyTest extends TestCase {
 
 	private final static String CHANNEL_PROPS="flush-fc-fast-minimalthreads.xml";
 	private final static int INITIAL_NUMBER_OF_MEMBERS=5;
-	private int runningTime = 1000*60*5; //5 minutes
+	private int runningTime = 1000*5; // 50 secs
 	private Random r = new Random();
 	
 	
@@ -87,7 +87,7 @@ public class VirtualSynchronyTest extends TestCase {
 				members.remove(unluckyBastard);				
 				unluckyBastard.setRunning(false);				
 			}				
-			running = System.currentTimeMillis()-start>runningTime?false:true;
+			running =System.currentTimeMillis() - start <= runningTime;
 			System.out.println("Running time " + ((System.currentTimeMillis()-start)/1000) + " secs");
 		}
 		System.out.println("Done, Virtual Synchrony satisfied in all tests ");
