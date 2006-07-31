@@ -4,7 +4,7 @@ Streaming state transfer
 
 Author:  Vladimir Blagojevic
 Date:    July 2006
-Version: $Id: StreamingStateTransfer.txt,v 1.3 2006/07/31 16:02:26 vlada Exp $
+Version: $Id: StreamingStateTransfer.txt,v 1.4 2006/07/31 16:12:20 vlada Exp $
 
 
 Overview
@@ -180,17 +180,19 @@ MEMBER A									Member C (coordinator)
 - When done, cleanup resources
 
 
-Additional implementation considerations
+Threading model considerations
 ----------------------------------------------
 
-One of the additional considerations is a threading model used for state writing in a member providing 
-state. We will use configurable uti.concurrent thread pool to spawn threads providing state. Thus 
-member providing state will be able to concurrently serve N state requests where N is max_threads 
-configuration parameter of the thread pool. If there are no further state transfer requests threads
-from the thread pool will be automatically reaped after configurable "pool_thread_keep_alive" timeout 
+Threading model used for state writing in a member providing state and state reading in a member receiving 
+a state is tunable. 
+
+For state provider we will use configurable uti.concurrent thread pool to spawn threads providing state. 
+Thus member providing state, in a push mode, will be able to concurrently serve N state requests where 
+N is max_threads configuration parameter of the thread pool. If there are no further state transfer 
+requests pool threads will be automatically reaped after configurable "pool_thread_keep_alive" timeout 
 expires.
 
-In a push mode of a channel operation state reader channel can read state by piggybacking on jgroups protocol 
+For a channel operating in the push mode state reader channel can read state by piggybacking on jgroups protocol 
 stack thread or optionally use a separate thread. State reader should use a separate thread if state reading 
 is expensive (eg. large state, serialization) thus potentially affecting liveness of jgroups protocol thread. 
 Since most state transfers are very short (<2-3 sec) by default we do not use a separate thread. Channel 
