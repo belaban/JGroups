@@ -339,7 +339,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 		if (spawner==null) {			
 			ServerSocket serverSocket = Util.createServerSocket(bind_addr, port); 				
 			spawner = new StateProviderThreadSpawner(setupThreadPool(), serverSocket);
-			new Thread(Util.getGlobalThreadGroup(), spawner, "StateProviderThreadSpawner").start();			
+			new Thread(Util.getGlobalThreadGroup(), spawner, "StateProviderThreadSpawner").start();
 		}
 		
 		synchronized (state_requesters) {
@@ -410,7 +410,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 				 synchronized (poolLock) {
                      threadCounter++;
                  }
-                return new Thread("STREAMING_STATE_TRANSFER.poolid=" + threadCounter) {
+                return new Thread(Util.getGlobalThreadGroup(), "STREAMING_STATE_TRANSFER.poolid=" + threadCounter) {
                     public void run() { 
                     	if(log.isDebugEnabled())
                     	{
@@ -581,7 +581,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 			};
 			if(use_reading_thread)
 			{
-				new Thread (readingThread,"STREAMING_STATE_TRANSFER.reader").start();
+				new Thread (Util.getGlobalThreadGroup(), readingThread,"STREAMING_STATE_TRANSFER.reader").start();
 				
 			}
 			else
