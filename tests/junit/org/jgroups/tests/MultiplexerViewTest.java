@@ -13,7 +13,7 @@ import org.jgroups.mux.MuxChannel;
 /**
  * Test the multiplexer functionality provided by JChannelFactory, especially the service views and cluster views
  * @author Bela Ban
- * @version $Id: MultiplexerViewTest.java,v 1.2 2006/07/14 12:17:24 belaban Exp $
+ * @version $Id: MultiplexerViewTest.java,v 1.3 2006/07/31 09:06:07 belaban Exp $
  */
 public class MultiplexerViewTest extends TestCase {
     private Channel c1, c2, c3, c4;
@@ -183,12 +183,6 @@ public class MultiplexerViewTest extends TestCase {
         assertEquals(2, v.size());
 
         c4.close();
-        Util.sleep(500);
-        v=c1.getView();
-        assertEquals(1, v.size());
-
-        c3=factory2.createMultiplexerChannel(STACK_NAME, "service-1");
-        c3.connect("whocares");
         Util.sleep(500);
         v=c1.getView();
         assertEquals(2, v.size());
