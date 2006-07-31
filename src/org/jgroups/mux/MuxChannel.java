@@ -11,7 +11,7 @@ import java.util.Map;
  * {@link org.jgroups.ChannelFactory#createMultiplexerChannel(String,String,boolean,String)}. Maintains the multiplexer
  * ID, which is used to add a header to each message, so that the message can be demultiplexed at the receiver
  * @author Bela Ban
- * @version $Id: MuxChannel.java,v 1.20 2006/07/28 15:08:14 belaban Exp $
+ * @version $Id: MuxChannel.java,v 1.21 2006/07/31 09:21:59 belaban Exp $
  */
 public class MuxChannel extends JChannel {
 
@@ -54,6 +54,10 @@ public class MuxChannel extends JChannel {
 
     public String getChannelName() {
         return ch.getChannelName();
+    }
+
+    public String getClusterName() {
+        return ch.getClusterName();
     }
 
     public Address getLocalAddress() {

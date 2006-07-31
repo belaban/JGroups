@@ -7,13 +7,11 @@ import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.util.Util;
 
 import javax.management.MBeanServer;
-import javax.management.MBeanServerFactory;
 import javax.management.ObjectName;
-import java.util.ArrayList;
 
 /**
  * @author Bela Ban
- * @version $Id: JmxTest.java,v 1.7 2006/06/01 09:25:15 belaban Exp $
+ * @version $Id: JmxTest.java,v 1.9 2006/07/31 09:21:59 belaban Exp $
  */
 public class JmxTest {
     MBeanServer server;
@@ -32,7 +30,7 @@ public class JmxTest {
         }
         channel=new JChannel(props);
         channel.connect("DemoChannel");
-        JmxConfigurator.registerChannel(channel, server, channel_name, channel.getChannelName() , true);
+        JmxConfigurator.registerChannel(channel, server, channel_name, channel.getClusterName() , true);
         return true;
     }
 

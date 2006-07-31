@@ -1,21 +1,21 @@
 package org.jgroups.tests.perf.transports;
 
-import org.jgroups.*;
-import org.jgroups.util.Util;
+import org.jgroups.Address;
+import org.jgroups.JChannel;
+import org.jgroups.Message;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.tests.perf.Receiver;
 import org.jgroups.tests.perf.Transport;
+import org.jgroups.util.Util;
 
 import javax.management.MBeanServer;
-import javax.management.MBeanServerFactory;
-import java.util.ArrayList;
 import java.util.Map;
 import java.util.Properties;
 
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: JGroupsTransport.java,v 1.12 2006/06/01 09:25:36 belaban Exp $
+ * @version $Id: JGroupsTransport.java,v 1.14 2006/07/31 09:21:59 belaban Exp $
  */
 public class JGroupsTransport extends org.jgroups.ReceiverAdapter implements Transport  {
     Properties config=null;
@@ -50,7 +50,7 @@ public class JGroupsTransport extends org.jgroups.ReceiverAdapter implements Tra
                 throw new Exception("No MBeanServers found;" +
                         "\nneeds to be run with an MBeanServer present, or inside JDK 5");
             }
-            JmxConfigurator.registerChannel(channel, server, "jgroups.perf", channel.getChannelName() , true);
+            JmxConfigurator.registerChannel(channel, server, "jgroups.perf", channel.getClusterName() , true);
         }
     }
 

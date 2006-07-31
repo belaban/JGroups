@@ -12,7 +12,7 @@ import java.util.Iterator;
 
 /**
  * @author Bela Ban
- * @version $Id: JmxConfigurator.java,v 1.8 2006/05/02 11:06:00 belaban Exp $
+ * @version $Id: JmxConfigurator.java,v 1.9 2006/07/31 09:21:58 belaban Exp $
  */
 public class JmxConfigurator {
     static final Log log=LogFactory.getLog(JmxConfigurator.class);
@@ -32,7 +32,7 @@ public class JmxConfigurator {
                                                            boolean register_protocols) throws Exception {
         JChannel retval=new JChannel(channel);
         if(cluster_name == null)
-            cluster_name=channel != null? channel.getChannelName() : null;
+            cluster_name=channel != null? channel.getClusterName() : null;
         if(cluster_name == null)
             cluster_name="null";
         server.registerMBean(retval, new ObjectName(domain + ":type=channel,cluster=" +cluster_name));
