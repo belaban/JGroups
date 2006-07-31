@@ -47,7 +47,7 @@ public class StreamingStateTransferTest extends TestCase{
 
 	private final static String CHANNEL_PROPS="streaming-state-transfer.xml";
 	private final static int INITIAL_NUMBER_OF_MEMBERS=5;
-	private int runningTime = 1000*60*3; //3 minutes
+	private int runningTime = 1000*50; // 50 secs 
 	private Random r = new Random();
 	private boolean usePullMode = false;
 	private int size = 100; //100MB
@@ -100,7 +100,7 @@ public class StreamingStateTransferTest extends TestCase{
 					System.out.println("Not killing coordinator ");
 				}
 			}				
-			running = System.currentTimeMillis()-start>runningTime?false:true;
+			running =System.currentTimeMillis() - start <= runningTime;
 			System.out.println("Running time " + ((System.currentTimeMillis()-start)/1000) + " secs");
 		}
 		System.out.println("Done");
