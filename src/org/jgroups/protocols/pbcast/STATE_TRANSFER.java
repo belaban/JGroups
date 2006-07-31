@@ -19,7 +19,7 @@ import java.util.*;
  * its current state S. Then the member returns both S and D to the requester. The requester
  * first sets its digest to D and then returns the state to the application.
  * @author Bela Ban
- * @version $Id: STATE_TRANSFER.java,v 1.41 2006/07/28 20:00:55 vlada Exp $
+ * @version $Id: STATE_TRANSFER.java,v 1.42 2006/07/31 13:21:52 belaban Exp $
  */
 public class STATE_TRANSFER extends Protocol {
     Address        local_addr=null;
@@ -285,31 +285,30 @@ public class STATE_TRANSFER extends Protocol {
 
 
     /* --------------------------- Private Methods -------------------------------- */
-    
+
     /**
 	 * When FLUSH is used we do not need to pass digests between members
-	 * 
+	 *
 	 * see JGroups/doc/design/PartialStateTransfer.txt
 	 * see JGroups/doc/design/FLUSH.txt
-	 * 
+	 *
 	 * @return true if use of digests is required, false otherwise
 	 */
 	private boolean isDigestNeeded(){
 		return !use_flush;
 	}
-	
-	private void requestApplicationStates() {
-		synchronized(state_requesters)
-		{
-			Set appl_ids=new HashSet(state_requesters.keySet());
-			String id;
-			for(Iterator it=appl_ids.iterator(); it.hasNext();) {
-			    id=(String)it.next();
-			    StateTransferInfo info=new StateTransferInfo(null, id, 0L, null);
-			    passUp(new Event(Event.GET_APPLSTATE, info));
-			}
-		}
-	}
+
+    private void requestApplicationStates() {
+        synchronized(state_requesters) {
+            Set appl_ids=new HashSet(state_requesters.keySet());
+            String id;
+            for(Iterator it=appl_ids.iterator(); it.hasNext();) {
+                id=(String)it.next();
+                StateTransferInfo info=new StateTransferInfo(null, id, 0L, null);
+                passUp(new Event(Event.GET_APPLSTATE, info));
+            }
+        }
+    }
 
 
     /** Return the first element of members which is not me. Otherwise return null. */
@@ -374,11 +373,11 @@ public class STATE_TRANSFER extends Protocol {
                 state_requesters.put(id, requesters);
             }
             requesters.add(sender);
-            
+
             if(!isDigestNeeded()) { // state transfer is in progress, digest was already requested
                 requestApplicationStates();
             }
-            else if(empty){                
+            else if(empty){
                 digest=null;
                 if(log.isDebugEnabled()) log.debug("passing down GET_DIGEST_STATE");
                 passDown(new Event(Event.GET_DIGEST_STATE));

@@ -1,4 +1,3 @@
-// $Id$
 
 package org.jgroups.protocols.pbcast;
 
@@ -77,7 +76,7 @@ import EDU.oswego.cs.dl.util.concurrent.ThreadFactory;
  * @see org.jgroups.StreamingGetStateEvent
  * @see org.jgroups.StreamingSetStateEvent
  * @see org.jgroups.protocols.pbcast.STATE_TRANSFER
- * @since 2.3
+ * @since 2.4
  * 
  * @version $Id$
  * 
@@ -86,12 +85,10 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
     Address        local_addr=null;
     final Vector   members=new Vector();
     long           state_id=1; 
-    
-    final Map     state_requesters=new HashMap();
+    final Map      state_requesters=new HashMap();
 
     /** set to true while waiting for a STATE_RSP */
     boolean        waiting_for_state_response=false;
-
     Digest         digest=null;
     final HashMap  map=new HashMap(); // to store configuration information
     long           start, stop; // to measure state transfer time
@@ -99,9 +96,9 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
     final static   String NAME="STREAMING_STATE_TRANSFER";
     
 	private InetAddress bind_addr;
-	private int port = 0;
+	private int         port = 0;
 	private StateProviderThreadSpawner spawner;
-	private int max_pool;	
+	private int max_pool=5;
 	private long pool_thread_keep_alive;
 	private int socket_buffer_size;
 	private boolean use_reading_thread;
@@ -111,8 +108,10 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 	private long flush_timeout;
 	private final Object poolLock= new Object();
 	private int threadCounter;
-    
-    public String getName() {
+
+
+
+    public final String getName() {
         return NAME;
     }
 
@@ -220,8 +219,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 							break;
 						default:
 							if (log.isErrorEnabled())
-								log.error("type " + hdr.type
-										+ " not known in StateHeader");
+								log.error("type " + hdr.type + " not known in StateHeader");
 							break;
 					}
 					return;
@@ -232,8 +230,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 					Map config = (Map) evt.getArg();
 					bind_addr = (InetAddress) config.get("bind_addr");
 					if (log.isDebugEnabled())
-						log.debug("using bind_addr from CONFIG event "
-								+ bind_addr);
+						log.debug("using bind_addr from CONFIG event " + bind_addr);
 				}
 				break;
 		}
@@ -288,7 +285,6 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
                 return;                 // don't pass down any further !
                 
             case Event.STATE_TRANSFER_INPUTSTREAM_CLOSED:
-            	
             	if(use_flush)
             	{
             		stopFlush();
@@ -343,7 +339,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 		if (spawner==null) {			
 			ServerSocket serverSocket = Util.createServerSocket(bind_addr, port); 				
 			spawner = new StateProviderThreadSpawner(setupThreadPool(), serverSocket);
-			new Thread(spawner,"StateProviderThreadSpawner").start();			
+			new Thread(Util.getGlobalThreadGroup(), spawner, "StateProviderThreadSpawner").start();			
 		}
 		
 		synchronized (state_requesters) {
@@ -364,13 +360,13 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 				log.debug("Iterating state requesters " + state_requesters);
 						
 			for (Iterator it = state_requesters.keySet().iterator(); it.hasNext();) {
-				String state_id = (String) it.next();
-				Set requesters = (Set) state_requesters.get(state_id);
+				String tmp_state_id = (String) it.next();
+				Set requesters = (Set) state_requesters.get(tmp_state_id);
 				for (Iterator iter = requesters.iterator(); iter.hasNext();) {
 					Address requester = (Address) iter.next();
 					Message state_rsp = new Message(requester);
 					StateHeader hdr = new StateHeader(StateHeader.STATE_RSP,
-							local_addr,spawner.getServerSocketAddress(), digest,state_id);
+							local_addr,spawner.getServerSocketAddress(), digest,tmp_state_id);
 					state_rsp.putHeader(NAME, hdr);
 					
 					if (log.isDebugEnabled())
@@ -547,7 +543,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
     private void connectToStateProvider(StateHeader hdr) {	
     	Socket socket = null; 
     	IpAddress address = hdr.bind_addr;
-    	String state_id = hdr.getStateId();
+    	String tmp_state_id = hdr.getStateId();
     	StreamingInputStreamWrapper wrapperRef=null;
 		try {
 			socket = new Socket();			
@@ -570,11 +566,11 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 			
 			//write out our state_id and address so state provider can clear this request
 			ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
-			out.writeObject(state_id);
+			out.writeObject(tmp_state_id);
 			out.writeObject(local_addr);			
 						
 			StreamingInputStreamWrapper wrapper = new StreamingInputStreamWrapper(socket);
-			final StateTransferInfo sti = new StateTransferInfo(hdr.sender,wrapper,state_id);
+			final StateTransferInfo sti = new StateTransferInfo(hdr.sender,wrapper,tmp_state_id);
 			wrapperRef = wrapper;
 			
 			Runnable readingThread = new Runnable()
@@ -618,7 +614,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 				Message m = new Message(hdr.sender);
 				StateHeader mhdr = new StateHeader(
 						StateHeader.STATE_REMOVE_REQUESTER, local_addr,
-						state_id);
+						tmp_state_id);
 				m.putHeader(NAME, mhdr);
 				passDown(new Event(Event.MSG, m));
 			}						
@@ -858,12 +854,12 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
         public static final byte STATE_REMOVE_REQUESTER=3;
 
 
-        long    id=0;               // state transfer ID (to separate multiple state transfers at the same time)
-        byte    type=0;
-        Address sender;             // sender of state STATE_REQ or STATE_RSP
-        Digest  my_digest=null;     // digest of sender (if type is STATE_RSP)
+        long      id=0;               // state transfer ID (to separate multiple state transfers at the same time)
+        byte      type=0;
+        Address   sender;             // sender of state STATE_REQ or STATE_RSP
+        Digest    my_digest=null;     // digest of sender (if type is STATE_RSP)
 		IpAddress bind_addr=null;
-		 String  state_id=null;      // for partial state transfer
+		String    state_id=null;      // for partial state transfer
                 
 
         public StateHeader() {  // for externalization
