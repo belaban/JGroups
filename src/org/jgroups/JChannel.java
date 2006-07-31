@@ -67,7 +67,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.85 2006/07/31 09:21:59 belaban Exp $
+ * @version $Id: JChannel.java,v 1.86 2006/07/31 09:29:09 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -437,6 +437,11 @@ public class JChannel extends Channel {
         /*notify any channel listeners*/
         connected=true;
         notifyChannelConnected(this);
+    }
+
+
+    public synchronized boolean connect(String cluster_name, Address target, String state_id, long timeout) throws ChannelException {
+        throw new UnsupportedOperationException("not yet implemented");
     }
 
 

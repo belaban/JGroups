@@ -11,7 +11,7 @@ import java.util.Map;
  * {@link org.jgroups.ChannelFactory#createMultiplexerChannel(String,String,boolean,String)}. Maintains the multiplexer
  * ID, which is used to add a header to each message, so that the message can be demultiplexed at the receiver
  * @author Bela Ban
- * @version $Id: MuxChannel.java,v 1.21 2006/07/31 09:21:59 belaban Exp $
+ * @version $Id: MuxChannel.java,v 1.22 2006/07/31 09:29:09 belaban Exp $
  */
 public class MuxChannel extends JChannel {
 
@@ -119,6 +119,11 @@ public class MuxChannel extends JChannel {
     public synchronized void connect(String channel_name) throws ChannelException, ChannelClosedException {
         factory.connect(this);
         notifyChannelConnected(this);
+    }
+
+
+    public synchronized boolean connect(String cluster_name, Address target, String state_id, long timeout) throws ChannelException {
+        throw new UnsupportedOperationException("not yet implemented");
     }
 
     public synchronized void disconnect() {
