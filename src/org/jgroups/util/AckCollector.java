@@ -11,11 +11,11 @@ import java.util.Vector;
 
 /**
  * @author Bela Ban
- * @version $Id: AckCollector.java,v 1.9 2006/08/01 15:59:28 belaban Exp $
+ * @version $Id: AckCollector.java,v 1.10 2006/08/01 16:08:01 belaban Exp $
  */
 public class AckCollector {
     /** List<Object>: list of members from whom we haven't received an ACK yet */
-    private final java.util.List missing_acks=new ArrayList();
+    private final java.util.List missing_acks;
     private final Set            received_acks=new HashSet();
     private final Promise        all_acks_received=new Promise();
     private ViewId               proposed_view;
@@ -23,9 +23,11 @@ public class AckCollector {
 
 
     public AckCollector() {
+        missing_acks=new ArrayList();
     }
 
     public AckCollector(ViewId v, java.util.List l) {
+        missing_acks=new ArrayList(l);
         proposed_view=v;
     }
 
