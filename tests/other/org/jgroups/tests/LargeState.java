@@ -1,4 +1,4 @@
-// $Id: LargeState.java,v 1.20 2006/05/22 07:08:40 belaban Exp $
+// $Id: LargeState.java,v 1.21 2006/08/01 15:07:11 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -6,6 +6,10 @@ package org.jgroups.tests;
 
 import org.jgroups.*;
 import org.jgroups.util.Util;
+
+import java.io.OutputStream;
+import java.io.InputStream;
+import java.io.IOException;
 
 
 /**
@@ -23,7 +27,7 @@ import org.jgroups.util.Util;
  * 
  * @author Bela Ban Dec 13 2001
  */
-public class LargeState extends ReceiverAdapter {
+public class LargeState extends ExtendedReceiverAdapter {
     Channel  channel;
     byte[]   state=null;
     Thread   getter=null;
@@ -31,6 +35,9 @@ public class LargeState extends ReceiverAdapter {
     String   props;
     long     start, stop;
     boolean  provider=true;
+    int      size=100000;
+    int      total_received=0;
+    final int STREAMING_CHUNK_SIZE=10000;
 
 
     public void start(boolean provider, int size, String props) throws Exception {
@@ -41,9 +48,10 @@ public class LargeState extends ReceiverAdapter {
         System.out.println("-- connected to channel");
 
         if(provider) {
-            System.out.println("Creating state of " + size + " bytes");
-            state=createLargeState(size);
-            System.out.println("Done. Waiting for other members to join and fetch large state");
+            this.size=size;
+            // System.out.println("Creating state of " + size + " bytes");
+            // state=createLargeState(size);
+            System.out.println("Waiting for other members to join and fetch large state");
 
 //            System.out.println("sending a few messages");
 //            for(int i=0; i < 100; i++) {
@@ -53,6 +61,7 @@ public class LargeState extends ReceiverAdapter {
         else {
             System.out.println("Getting state");
             start=System.currentTimeMillis();
+            // total_received=0;
             rc=channel.getState(null, 0);
             System.out.println("getState(), rc=" + rc);
         }
@@ -65,39 +74,6 @@ public class LargeState extends ReceiverAdapter {
             for(;;) {
                 Util.sleep(10000);
             }
-        }
-    }
-
-
-    public void mainLoop() {
-        Object ret;
-
-        try {
-            while(true) {
-                ret=channel.receive(0);
-
-                if(ret instanceof Message) {
-                    System.out.println("-- received msg " + ((Message)ret).getObject() + " from " +
-                            ((Message)ret).getSrc());
-                }
-                else if(ret instanceof GetStateEvent) {
-                    System.out.println("--> returning state: " + ret);
-                    channel.returnState(state);
-                }
-                else if(ret instanceof SetStateEvent) {
-                    stop=System.currentTimeMillis();
-                    byte[] new_state=((SetStateEvent)ret).getArg();
-                    if(new_state != null) {
-                        state=new_state;
-                        System.out.println("<-- Received state, size = " + state.length +
-                                " bytes (took " + (stop-start) + "ms)");
-                    }
-                    if(!provider)
-                        break;
-                }
-            }
-        }
-        catch(Exception e) {
         }
     }
 
@@ -116,6 +92,10 @@ public class LargeState extends ReceiverAdapter {
     }
 
     public byte[] getState() {
+        if(state == null) {
+            System.out.println("creating state of " + size + " bytes");
+            state=createLargeState(size);
+        }
         System.out.println("--> returning state: " + state.length + " bytes");
         return state;
     }
@@ -124,11 +104,85 @@ public class LargeState extends ReceiverAdapter {
         stop=System.currentTimeMillis();
         if(state != null) {
             this.state=state;
-            System.out.println("<-- Received state, size =" + state.length +
-                    " (took " + (stop-start) + "ms)");
+            System.out.println("<-- Received state, size =" + state.length + " (took " + (stop-start) + "ms)");
         }
     }
 
+    public byte[] getState(String state_id) {
+        if(state_id == null)
+            return getState();
+        throw new UnsupportedOperationException("not yet implemented");
+    }
+
+    public void setState(String state_id, byte[] state) {
+        if(state_id == null) {
+            setState(state);
+            return;
+        }
+        throw new UnsupportedOperationException("not yet implemented");
+    }
+
+    public void getState(String state_id, OutputStream ostream) {
+        throw new UnsupportedOperationException("not yet implemented");
+    }
+
+    public void setState(InputStream istream) {
+        try {
+            total_received=0;
+            int received=0;
+            while(true) {
+                byte[] buf=new byte[10000];
+                try {
+                    received=istream.read(buf);
+                    if(received < 0)
+                        break;
+                    // System.out.println("received " + received + " bytes");
+                    total_received+=received;
+                }
+                catch(IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            stop=System.currentTimeMillis();
+            System.out.println("<-- Received state, size=" + total_received + " (took " + (stop-start) + "ms)");
+        }
+        finally {
+            Util.closeInputStream(istream);
+        }
+    }
+
+    public void setState(String state_id, InputStream istream) {
+        throw new UnsupportedOperationException("not yet implemented");
+    }
+
+    public void getState(OutputStream ostream) {
+        try {
+            int frag_size=size / 10;
+            for(int i=0; i < 10; i++) {
+                byte[] buf=new byte[frag_size];
+                try {
+                    ostream.write(buf);
+                }
+                catch(IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            int remaining=size - (10 * frag_size);
+            if(remaining > 0) {
+                byte[] buf=new byte[remaining];
+                try {
+                    ostream.write(buf);
+                }
+                catch(IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        finally {
+            Util.closeOutputStream(ostream);
+        }
+    }
 
 
     public static void main(String[] args) {
