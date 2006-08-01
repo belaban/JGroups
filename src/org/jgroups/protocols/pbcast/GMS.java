@@ -18,7 +18,7 @@ import java.util.List;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.58 2006/07/27 09:49:38 belaban Exp $
+ * @version $Id: GMS.java,v 1.59 2006/08/01 15:59:27 belaban Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -408,7 +408,7 @@ public class GMS extends Protocol {
         }
         catch(TimeoutException e) {
             log.warn("failed to collect all ACKs (" + size + ") for view " + new_view + " after " + view_ack_collection_timeout +
-                    "ms, missing ACKs from " + ack_collector.getMissing() + " (received=" + ack_collector.getReceived() +
+                    "ms, missing ACKs from " + ack_collector.printMissing() + " (received=" + ack_collector.printReceived() +
                     "), local_addr=" + local_addr);
         }
     }
@@ -1166,7 +1166,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.58 2006/07/27 09:49:38 belaban Exp $
+     * @version $Id: GMS.java,v 1.59 2006/08/01 15:59:27 belaban Exp $
      */
     class ViewHandler implements Runnable {
         Thread                    t;
