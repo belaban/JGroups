@@ -11,11 +11,11 @@ import java.util.Vector;
 
 /**
  * @author Bela Ban
- * @version $Id: AckCollector.java,v 1.8 2006/02/10 07:23:09 belaban Exp $
+ * @version $Id: AckCollector.java,v 1.9 2006/08/01 15:59:28 belaban Exp $
  */
 public class AckCollector {
     /** List<Object>: list of members from whom we haven't received an ACK yet */
-    private final java.util.List missing_acks;
+    private final java.util.List missing_acks=new ArrayList();
     private final Set            received_acks=new HashSet();
     private final Promise        all_acks_received=new Promise();
     private ViewId               proposed_view;
@@ -23,20 +23,22 @@ public class AckCollector {
 
 
     public AckCollector() {
-        missing_acks=new ArrayList();
     }
 
     public AckCollector(ViewId v, java.util.List l) {
-        missing_acks=new ArrayList(l);
         proposed_view=v;
     }
 
-    public java.util.List getMissing() {
-        return missing_acks;
+    public String printMissing() {
+        synchronized(this) {
+            return missing_acks.toString();
+        }
     }
 
-    public Set getReceived() {
-        return received_acks;
+    public String printReceived() {
+        synchronized(this) {
+            return received_acks.toString();
+        }
     }
 
     public ViewId getViewId() {
@@ -78,7 +80,9 @@ public class AckCollector {
     }
 
     public void unsuspect(Object member) {
-        suspected_mbrs.remove(member);
+        synchronized(this) {
+            suspected_mbrs.remove(member);
+        }
     }
 
     public void handleView(View v) {
@@ -102,6 +106,6 @@ public class AckCollector {
     }
 
     public String toString() {
-        return "missing=" + missing_acks + ", received=" + received_acks;
+        return "missing=" + printMissing() + ", received=" + printReceived();
     }
 }
