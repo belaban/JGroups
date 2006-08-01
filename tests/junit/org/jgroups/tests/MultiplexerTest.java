@@ -12,7 +12,7 @@ import java.util.*;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.10 2006/07/28 15:43:15 belaban Exp $
+ * @version $Id: MultiplexerTest.java,v 1.11 2006/08/01 21:13:27 belaban Exp $
  */
 public class MultiplexerTest extends TestCase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -77,7 +77,7 @@ public class MultiplexerTest extends TestCase {
         assertEquals("cache has to be empty initially", 0, c1_repl.size());
 
         c1.put("name", "Bela");
-        Util.sleep(500);
+        Util.sleep(1000);
 
         System.out.println("c1: " + c1 + ", c1_repl: " + c1_repl);
 
