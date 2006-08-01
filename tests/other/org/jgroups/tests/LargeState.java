@@ -1,4 +1,4 @@
-// $Id: LargeState.java,v 1.21 2006/08/01 15:07:11 belaban Exp $
+// $Id: LargeState.java,v 1.22 2006/08/01 15:39:13 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -6,6 +6,7 @@ package org.jgroups.tests;
 
 import org.jgroups.*;
 import org.jgroups.util.Util;
+import org.jgroups.util.Promise;
 
 import java.io.OutputStream;
 import java.io.InputStream;
@@ -37,6 +38,7 @@ public class LargeState extends ExtendedReceiverAdapter {
     boolean  provider=true;
     int      size=100000;
     int      total_received=0;
+    final    Promise state_promise=new Promise();
     final int STREAMING_CHUNK_SIZE=10000;
 
 
@@ -62,8 +64,11 @@ public class LargeState extends ExtendedReceiverAdapter {
             System.out.println("Getting state");
             start=System.currentTimeMillis();
             // total_received=0;
+            state_promise.reset();
             rc=channel.getState(null, 0);
             System.out.println("getState(), rc=" + rc);
+            if(rc)
+                state_promise.getResult(10000);
         }
 
         // mainLoop();
@@ -106,6 +111,7 @@ public class LargeState extends ExtendedReceiverAdapter {
             this.state=state;
             System.out.println("<-- Received state, size =" + state.length + " (took " + (stop-start) + "ms)");
         }
+        state_promise.setResult(Boolean.TRUE);
     }
 
     public byte[] getState(String state_id) {
@@ -117,6 +123,7 @@ public class LargeState extends ExtendedReceiverAdapter {
     public void setState(String state_id, byte[] state) {
         if(state_id == null) {
             setState(state);
+            state_promise.setResult(Boolean.TRUE);
             return;
         }
         throw new UnsupportedOperationException("not yet implemented");
@@ -146,6 +153,7 @@ public class LargeState extends ExtendedReceiverAdapter {
 
             stop=System.currentTimeMillis();
             System.out.println("<-- Received state, size=" + total_received + " (took " + (stop-start) + "ms)");
+            state_promise.setResult(Boolean.TRUE);
         }
         finally {
             Util.closeInputStream(istream);
