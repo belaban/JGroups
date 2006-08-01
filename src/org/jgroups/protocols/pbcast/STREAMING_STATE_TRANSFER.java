@@ -100,7 +100,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 	private StateProviderThreadSpawner spawner;
 	private int max_pool=5;
 	private long pool_thread_keep_alive;
-	private int socket_buffer_size;
+	private int socket_buffer_size=8*1024;
 	private boolean use_reading_thread;
 	
 	private Promise flush_promise;
