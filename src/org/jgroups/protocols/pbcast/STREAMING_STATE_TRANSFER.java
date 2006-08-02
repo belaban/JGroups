@@ -93,6 +93,8 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
     final HashMap  map=new HashMap(); // to store configuration information
     long           start, stop; // to measure state transfer time
     int            num_state_reqs=0;
+    long           num_bytes_sent=0;
+    double         avg_state_size=0;    
     final static   String NAME="STREAMING_STATE_TRANSFER";
     
 	private InetAddress bind_addr;
@@ -114,7 +116,11 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
     public final String getName() {
         return NAME;
     }
-
+    
+    public int getNumberOfStateRequests() {return num_state_reqs;}
+    public long getNumberOfStateBytesSent() {return num_bytes_sent;}
+    public double getAverageStateSize() {return avg_state_size;}    
+    
     public Vector requiredDownServices() {
         Vector retval=new Vector();
         retval.addElement(new Integer(Event.GET_DIGEST_STATE));
@@ -130,6 +136,13 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
         	retval.addElement(new Integer(Event.RESUME));
         }
         return retval;
+    }
+    
+    public void resetStats() {
+        super.resetStats();
+        num_state_reqs=0;
+        num_bytes_sent=0;
+        avg_state_size=0;
     }
     
 
@@ -817,6 +830,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
     {
     	private Socket outputStreamOwner;
     	private OutputStream delegate;
+    	private long bytesWrittenCounter = 0;
     	
 		public StreamingOutputStreamWrapper(Socket outputStreamOwner) throws IOException {
 			super();			
@@ -828,7 +842,18 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 			if (log.isDebugEnabled()) {
 				log.debug("State writer " + outputStreamOwner + " is closing the socket ");
 			}
-			outputStreamOwner.close();
+			try {
+				outputStreamOwner.close();
+			} catch (IOException e) {
+				throw e;
+			} finally {
+				if (stats) {
+					synchronized (state_requesters) {
+						num_bytes_sent += bytesWrittenCounter;
+						avg_state_size = num_bytes_sent / num_state_reqs;
+					}					
+				}
+			}
 		}
 
 		public void flush() throws IOException {			
@@ -837,14 +862,19 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 
 		public void write(byte[] b, int off, int len) throws IOException {			
 			delegate.write(b, off, len);
+			bytesWrittenCounter+=len;
 		}
 
 		public void write(byte[] b) throws IOException {			
 			delegate.write(b);
+			if(b!=null){
+				bytesWrittenCounter+=b.length;
+			}
 		}
 
 		public void write(int b) throws IOException {			
 			delegate.write(b);
+			bytesWrittenCounter+=1;
 		}
     }
     
