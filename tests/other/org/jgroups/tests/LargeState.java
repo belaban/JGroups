@@ -1,4 +1,4 @@
-// $Id: LargeState.java,v 1.22 2006/08/01 15:39:13 belaban Exp $
+// $Id: LargeState.java,v 1.23 2006/08/02 05:10:35 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -148,6 +148,7 @@ public class LargeState extends ExtendedReceiverAdapter {
                 }
                 catch(IOException e) {
                     e.printStackTrace();
+                    break;
                 }
             }
 
@@ -174,6 +175,7 @@ public class LargeState extends ExtendedReceiverAdapter {
                 }
                 catch(IOException e) {
                     e.printStackTrace();
+                    break;
                 }
             }
             int remaining=size - (10 * frag_size);
