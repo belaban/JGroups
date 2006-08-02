@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.47 2006/06/27 18:03:54 vlada Exp $
+// $Id: CoordGmsImpl.java,v 1.48 2006/08/02 05:53:40 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -345,7 +345,7 @@ public class CoordGmsImpl extends GmsImpl {
            
             Vector tmp_mbrs=join_rsp.getView() != null? new Vector(join_rsp.getView().getMembers()) : null;           
             
-            if(gms.use_flush){
+            if(gms.use_flush) {
             	
             	//3a. FLUSH protocol is in use. First we FLUSH current members. Then we send a 
             	// view to a joining member and we will wait for his ACK together with view 
@@ -356,8 +356,7 @@ public class CoordGmsImpl extends GmsImpl {
             	sendJoinResponse(join_rsp, mbr);
             	gms.castViewChangeWithDest(join_rsp.getView(), null, tmp_mbrs);            	
             }
-            else
-            {
+            else {
             	//3b. Broadcast the new view
             	// we'll multicast the new view first and only, when everyone has replied with a VIEW_ACK (or timeout),
                 // send the JOIN_RSP back to the client. This prevents the client from sending multicast messages in
@@ -375,7 +374,8 @@ public class CoordGmsImpl extends GmsImpl {
             
         }
         finally {
-        	if(gms.use_flush)gms.stopFlush();
+        	if(gms.use_flush)
+                gms.stopFlush();
             gms.passDown(new Event(Event.RESUME_STABLE));
         }
     }
@@ -388,48 +388,48 @@ public class CoordGmsImpl extends GmsImpl {
       Exclude <code>mbr</code> from the membership. If <code>suspected</code> is true, then
       this member crashed and therefore is forced to leave, otherwise it is leaving voluntarily.
       */
-     public void handleLeave(Address mbr, boolean suspected) {
-    	 View new_view = null;
-         Vector v=new Vector(1);
-         v.addElement(mbr);
-         
-         // contains either leaving mbrs or suspected mbrs
-         if(log.isDebugEnabled()) log.debug("mbr=" + mbr);
-         if(!gms.members.contains(mbr)) {
-             if(trace) log.trace("mbr " + mbr + " is not a member !");
-             return;
-         }
+    public void handleLeave(Address mbr, boolean suspected) {
+        View new_view=null;
+        Vector v=new Vector(1);
+        v.addElement(mbr);
 
-         if(gms.view_id == null) {
-             // we're probably not the coord anymore (we just left ourselves), let someone else do it
-             // (client will retry when it doesn't get a response
-             if(log.isDebugEnabled())
-                 log.debug("gms.view_id is null, I'm not the coordinator anymore (leaving=" + leaving +
-                           "); the new coordinator will handle the leave request");
-             return;
-         }
-         try {
-			sendLeaveResponse(mbr); // send an ack to the leaving member
-			if (suspected) {
-				new_view = gms.getNextView(null, null, v);
-			} else {
-				new_view = gms.getNextView(null, v, null);
-			}
+        // contains either leaving mbrs or suspected mbrs
+        if(log.isDebugEnabled()) log.debug("mbr=" + mbr);
+        if(!gms.members.contains(mbr)) {
+            if(trace) log.trace("mbr " + mbr + " is not a member !");
+            return;
+        }
 
-			if (gms.use_flush) {
-				gms.startFlush(new_view);
-			}
-			gms.castViewChange(new_view, null);
-		} finally {
-			if (gms.use_flush) {
-				gms.stopFlush();
-			}
-		}
+        if(gms.view_id == null) {
+            // we're probably not the coord anymore (we just left ourselves), let someone else do it
+            // (client will retry when it doesn't get a response
+            if(log.isDebugEnabled())
+                log.debug("gms.view_id is null, I'm not the coordinator anymore (leaving=" + leaving +
+                        "); the new coordinator will handle the leave request");
+            return;
+        }
+        try {
+            sendLeaveResponse(mbr); // send an ack to the leaving member
+            if(suspected)
+                new_view=gms.getNextView(null, null, v);
+            else
+                new_view=gms.getNextView(null, v, null);
+
+            if(gms.use_flush) {
+                gms.startFlush(new_view);
+            }
+            gms.castViewChange(new_view, null);
+        }
+        finally {
+            if(gms.use_flush) {
+                gms.stopFlush();
+            }
+        }
         if(leaving) {
             gms.passUp(new Event(Event.DISCONNECT_OK));
             gms.initState(); // in case connect() is called again
         }
-     }
+    }
 
 
 
