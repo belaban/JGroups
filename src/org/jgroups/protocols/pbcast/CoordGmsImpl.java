@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.49 2006/08/03 07:53:12 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.50 2006/08/03 09:20:58 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -503,6 +503,8 @@ public class CoordGmsImpl extends GmsImpl {
                 join_rsp=new JoinRsp(new_view, d);
             }
 
+            sendLeaveResponses(leaving_mbrs); // no-op if no leaving members
+
             // Send down a local TMP_VIEW event. This is needed by certain layers (e.g. NAKACK) to compute correct digest
             // in case client's next request (e.g. getState()) reaches us *before* our own view change multicast.
             // Check NAKACK's TMP_VIEW handling for details
@@ -512,15 +514,13 @@ public class CoordGmsImpl extends GmsImpl {
             Vector tmp_mbrs=new_view != null? new Vector(new_view.getMembers()) : null;
             if(tmp_mbrs != null) // exclude the newly joined member from VIEW_ACKs
                 tmp_mbrs.removeAll(new_mbrs);
-            sendLeaveResponses(leaving_mbrs);
-            sendLeaveResponses(suspected_mbrs);
 
             if(gms.use_flush) {
                 // First we flush current members. Then we send a view to all joining member and we wait for their ACKs
                 // together with ACKs from current members. After all ACKS have been collected, FLUSH is stopped
                 // (below in finally clause) and members are allowed to send messages again
                 gms.startFlush(new_view);
-                sendJoinResponses(join_rsp, new_mbrs);
+                sendJoinResponses(join_rsp, new_mbrs); // might be a no-op if no joining members
                 gms.castViewChangeWithDest(new_view, null, tmp_mbrs);
             }
             else {
