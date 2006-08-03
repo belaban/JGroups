@@ -18,7 +18,7 @@ import java.util.List;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.60 2006/08/03 07:53:12 belaban Exp $
+ * @version $Id: GMS.java,v 1.61 2006/08/03 15:50:31 belaban Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -59,6 +59,7 @@ public class GMS extends Protocol {
      * false forces each JOIN/LEAVE/SUPSECT request to be handled separately. By default these requests are processed
      * together if they are queued at approximately the same time */
     private boolean           view_bundling=true;
+    private long              max_bundling_time=50; // 50ms max to wait for other JOIN, LEAVE or SUSPECT requests
     static final String       CLIENT="Client";
     static final String       COORD="Coordinator";
     static final String       PART="Participant";
@@ -735,7 +736,7 @@ public class GMS extends Protocol {
 
             case Event.SUSPECT:
                 Address suspected=(Address)evt.getArg();
-                view_handler.add(new Request(Request.LEAVE, suspected, true, null));
+                view_handler.add(new Request(Request.SUSPECT, suspected, true, null));
                 ack_collector.suspect(suspected);
                 break;                               // pass up
 
@@ -910,6 +911,13 @@ public class GMS extends Protocol {
             view_bundling=Boolean.valueOf(str).booleanValue();
             props.remove("view_bundling");
         }
+
+        str=props.getProperty("max_bundling_time");
+        if(str != null) {
+            max_bundling_time=Long.parseLong(str);
+            props.remove("max_bundling_time");
+        }
+
 
         if(props.size() > 0) {
             log.error("the following properties are not recognized: " + props);
@@ -1188,7 +1196,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.60 2006/08/03 07:53:12 belaban Exp $
+     * @version $Id: GMS.java,v 1.61 2006/08/03 15:50:31 belaban Exp $
      */
     class ViewHandler implements Runnable {
         Thread                    t;
@@ -1288,11 +1296,13 @@ public class GMS extends Protocol {
         }
 
         public void run() {
+            long start, stop, wait_time;
             List requests=new LinkedList();
             while(!q.closed() && Thread.currentThread().equals(t)) {
                 requests.clear();
                 try {
                     boolean keepGoing=false;
+                    start=System.currentTimeMillis();
                     do {
                         Request firstRequest=(Request)q.remove(INTERVAL); // throws a TimeoutException if it runs into timeout
                         requests.add(firstRequest);
@@ -1300,8 +1310,14 @@ public class GMS extends Protocol {
                             Request nextReq=(Request)q.peek();
                             keepGoing=view_bundling && firstRequest.canBeProcessedTogether(nextReq);
                         }
-                        else
-                            keepGoing=false;
+                        else {
+                            stop=System.currentTimeMillis();
+                            wait_time=max_bundling_time - (stop-start);
+                            if(wait_time > 0)
+                                Util.sleep(wait_time);
+                            keepGoing=q.size() > 0;
+                            // keepGoing=false;
+                        }
                     }
                     while(keepGoing);
                     process(requests);
