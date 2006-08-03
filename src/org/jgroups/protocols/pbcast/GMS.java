@@ -18,7 +18,7 @@ import java.util.List;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.59 2006/08/01 15:59:27 belaban Exp $
+ * @version $Id: GMS.java,v 1.60 2006/08/03 07:53:12 belaban Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -55,6 +55,10 @@ public class GMS extends Protocol {
     /** Setting this to false disables concurrent startups. This is only used by unit testing code
      * for testing merging. To everybody else: don't change it to false ! */
     boolean                   handle_concurrent_startup=true;
+    /** Whether view bundling (http://jira.jboss.com/jira/browse/JGRP-144) should be enabled or not. Setting this to
+     * false forces each JOIN/LEAVE/SUPSECT request to be handled separately. By default these requests are processed
+     * together if they are queued at approximately the same time */
+    private boolean           view_bundling=true;
     static final String       CLIENT="Client";
     static final String       COORD="Coordinator";
     static final String       PART="Participant";
@@ -273,7 +277,7 @@ public class GMS extends Protocol {
      * Computes the next view. Returns a copy that has <code>old_mbrs</code> and
      * <code>suspected_mbrs</code> removed and <code>new_mbrs</code> added.
      */
-    public View getNextView(Vector new_mbrs, Vector old_mbrs, Vector suspected_mbrs) {
+    public View getNextView(Collection new_mbrs, Collection old_mbrs, Collection suspected_mbrs) {
         Vector mbrs;
         long vid;
         View v;
@@ -299,8 +303,8 @@ public class GMS extends Protocol {
 
             // Update joining list (see DESIGN for explanation)
             if(new_mbrs != null) {
-                for(int i=0; i < new_mbrs.size(); i++) {
-                    tmp_mbr=(Address)new_mbrs.elementAt(i);
+                for(Iterator it=new_mbrs.iterator(); it.hasNext();) {
+                    tmp_mbr=(Address)it.next();
                     if(!joining.contains(tmp_mbr))
                         joining.addElement(tmp_mbr);
                 }
@@ -321,8 +325,6 @@ public class GMS extends Protocol {
                         leaving.add(addr);
                 }
             }
-
-            if(log.isDebugEnabled()) log.debug("new view is " + v);
             return v;
         }
     }
@@ -336,7 +338,7 @@ public class GMS extends Protocol {
 
      The members for the new view are computed as follows:
      <pre>
-     existing          leaving        suspected          joining
+                   existing          leaving        suspected          joining
 
      1. new_view      y                 n               n                 y
      2. tmp_view      y                 y               n                 y
@@ -903,9 +905,14 @@ public class GMS extends Protocol {
             props.remove("flush_timeout");
         }
 
-        if(props.size() > 0) {
-            log.error("GMS.setProperties(): the following properties are not recognized: " + props);
+        str=props.getProperty("view_bundling");
+        if(str != null) {
+            view_bundling=Boolean.valueOf(str).booleanValue();
+            props.remove("view_bundling");
+        }
 
+        if(props.size() > 0) {
+            log.error("the following properties are not recognized: " + props);
             return false;
         }
         return true;
@@ -1148,6 +1155,10 @@ public class GMS extends Protocol {
             this.coordinators=coordinators;
         }
 
+        public int getType() {
+            return type;
+        }
+
         public String toString() {
             switch(type) {
                 case JOIN:    return "JOIN(" + mbr + ")";
@@ -1158,6 +1169,17 @@ public class GMS extends Protocol {
             }
             return "<invalid (type=" + type + ")";
         }
+
+        /**
+         * Specifies whether this request can be processed with other request simultaneously
+         */
+        public boolean canBeProcessedTogether(Request other) {
+            if(other == null)
+                return false;
+            int other_type=other.getType();
+            return (type == JOIN || type == LEAVE || type == SUSPECT) &&
+                    (other_type == JOIN || other_type == LEAVE || other_type == SUSPECT);
+        }
     }
 
 
@@ -1166,7 +1188,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.59 2006/08/01 15:59:27 belaban Exp $
+     * @version $Id: GMS.java,v 1.60 2006/08/03 07:53:12 belaban Exp $
      */
     class ViewHandler implements Runnable {
         Thread                    t;
@@ -1266,11 +1288,23 @@ public class GMS extends Protocol {
         }
 
         public void run() {
-            Request req;
+            List requests=new LinkedList();
             while(!q.closed() && Thread.currentThread().equals(t)) {
+                requests.clear();
                 try {
-                    req=(Request)q.remove(INTERVAL); // throws a TimeoutException if it runs into timeout
-                    process(req);
+                    boolean keepGoing=false;
+                    do {
+                        Request firstRequest=(Request)q.remove(INTERVAL); // throws a TimeoutException if it runs into timeout
+                        requests.add(firstRequest);
+                        if(q.size() > 0) {
+                            Request nextReq=(Request)q.peek();
+                            keepGoing=view_bundling && firstRequest.canBeProcessedTogether(nextReq);
+                        }
+                        else
+                            keepGoing=false;
+                    }
+                    while(keepGoing);
+                    process(requests);
                 }
                 catch(QueueClosedException e) {
                     break;
@@ -1303,40 +1337,63 @@ public class GMS extends Protocol {
             return sb.toString();
         }
 
-        private void process(Request req) {
+        private void process(List requests) {
+            if(requests.isEmpty())
+                return;
             if(trace)
-                log.trace("processing " + req);
-            switch(req.type) {
+                log.trace("processing " + requests);
+            Request firstReq=(Request)requests.get(0);
+            switch(firstReq.type) {
                 case Request.JOIN:
-                    impl.handleJoin(req.mbr);
-                    break;
                 case Request.LEAVE:
-                    if(req.suspected)
-                        impl.suspect(req.mbr);
-                    else
-                        impl.handleLeave(req.mbr, req.suspected);
-                    break;
                 case Request.SUSPECT:
-                    impl.suspect(req.mbr);
+                    Collection newMembers=new LinkedHashSet(requests.size());
+                    Collection suspectedMembers=new LinkedHashSet(requests.size());
+                    Collection oldMembers=new LinkedHashSet(requests.size());
+                    for(Iterator i=requests.iterator(); i.hasNext();) {
+                        Request req=(Request)i.next();
+                        switch(req.type) {
+                            case Request.JOIN:
+                                newMembers.add(req.mbr);
+                                break;
+                            case Request.LEAVE:
+                                if(req.suspected)
+                                    suspectedMembers.add(req.mbr);
+                                else
+                                    oldMembers.add(req.mbr);
+                                break;
+                            case Request.SUSPECT:
+                                suspectedMembers.add(req.mbr);
+                                break;
+                        }
+                    }
+                    impl.handleMembershipChange(newMembers, oldMembers, suspectedMembers);
                     break;
                 case Request.MERGE:
-                    impl.merge(req.coordinators);
+                    if(requests.size() > 1)
+                        log.error("more than one MERGE request to process, ignoring the others");
+                    impl.merge(firstReq.coordinators);
                     break;
                 case Request.VIEW:
-                	try {
-						if(use_flush)
-                            startFlush(req.view);
-						castViewChangeWithDest(req.view, req.digest, req.target_members);
-					}
+                    if(requests.size() > 1)
+                        log.error("more than one VIEW request to process, ignoring the others");
+                    try {
+                        if(use_flush)
+                            startFlush(firstReq.view);
+                        castViewChangeWithDest(firstReq.view, firstReq.digest, firstReq.target_members);
+                    }
                     finally {
-						if(use_flush)
+                        if(use_flush)
                             stopFlush();
-					}
+                    }
                     break;
                 default:
-                    log.error("Request " + req.type + " is unknown; discarded");
+                    log.error("request " + firstReq.type + " is unknown; discarded");
             }
         }
+
+
+
 
         synchronized void start(boolean unsuspend) {
             if(q.closed())

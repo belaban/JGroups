@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.48 2006/08/02 05:53:40 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.49 2006/08/03 07:53:12 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -6,10 +6,7 @@ package org.jgroups.protocols.pbcast;
 import org.jgroups.*;
 import org.jgroups.util.TimeScheduler;
 
-import java.util.Iterator;
-import java.util.Vector;
-
-
+import java.util.*;
 
 
 /**
@@ -79,7 +76,6 @@ public class CoordGmsImpl extends GmsImpl {
         }
         if(mbr.equals(gms.local_addr))
             leaving=true;
-        // handleLeave(mbr, false); // regular leave
         gms.getViewHandler().add(new GMS.Request(GMS.Request.LEAVE, mbr, false, null));
         gms.getViewHandler().stop(true); // wait until all requests have been processed, then close the queue and leave
         gms.getViewHandler().waitUntilCompleted(gms.leave_timeout);
@@ -93,7 +89,14 @@ public class CoordGmsImpl extends GmsImpl {
     }
 
     public void suspect(Address mbr) {
-        handleSuspect(mbr);
+        if(mbr.equals(gms.local_addr)) {
+            if(warn) log.warn("I am the coord and I'm being am suspected -- will probably leave shortly");
+            return;
+        }
+        Collection emptyVector=new LinkedHashSet(0);
+        Collection suspected=new LinkedHashSet(1);
+        suspected.add(mbr);
+        handleMembershipChange(emptyVector, emptyVector, suspected);
     }
 
     public void unsuspect(Address mbr) {
@@ -259,7 +262,7 @@ public class CoordGmsImpl extends GmsImpl {
         req.digest=data.digest;
         req.target_members=my_members;
         gms.getViewHandler().add(req, true, // at head so it is processed next
-                             true);     // un-suspend the queue
+                                 true);     // un-suspend the queue
         merging=false;
     }
 
@@ -294,7 +297,7 @@ public class CoordGmsImpl extends GmsImpl {
      * Computes the new view (including the newly joined member) and get the digest from PBCAST.
      * Returns both in the form of a JoinRsp
      */
-    public synchronized void handleJoin(Address mbr) {
+    /*private synchronized void handleJoin(Address mbr) {
         View v;
         Digest d, tmp;
         JoinRsp join_rsp;
@@ -342,44 +345,44 @@ public class CoordGmsImpl extends GmsImpl {
             // Check NAKACK's TMP_VIEW handling for details
             if(join_rsp.getView() != null)
                 gms.passDown(new Event(Event.TMP_VIEW, join_rsp.getView()));
-           
-            Vector tmp_mbrs=join_rsp.getView() != null? new Vector(join_rsp.getView().getMembers()) : null;           
-            
+
+            Vector tmp_mbrs=join_rsp.getView() != null? new Vector(join_rsp.getView().getMembers()) : null;
+
             if(gms.use_flush) {
-            	
-            	//3a. FLUSH protocol is in use. First we FLUSH current members. Then we send a 
-            	// view to a joining member and we will wait for his ACK together with view 
-            	// ACKs from current members (castViewChangeWithDest). After all ACKS have been 
-            	// collected, FLUSH is stopped (below in finally clause) and thus members are 
-            	// allowed to send messages again.
-            	gms.startFlush(join_rsp.getView());            	
-            	sendJoinResponse(join_rsp, mbr);
-            	gms.castViewChangeWithDest(join_rsp.getView(), null, tmp_mbrs);            	
+
+                //3a. FLUSH protocol is in use. First we FLUSH current members. Then we send a
+                // view to a joining member and we will wait for his ACK together with view
+                // ACKs from current members (castViewChangeWithDest). After all ACKS have been
+                // collected, FLUSH is stopped (below in finally clause) and thus members are
+                // allowed to send messages again.
+                gms.startFlush(join_rsp.getView());
+                sendJoinResponse(join_rsp, mbr);
+                gms.castViewChangeWithDest(join_rsp.getView(), null, tmp_mbrs);
             }
             else {
-            	//3b. Broadcast the new view
-            	// we'll multicast the new view first and only, when everyone has replied with a VIEW_ACK (or timeout),
+                //3b. Broadcast the new view
+                // we'll multicast the new view first and only, when everyone has replied with a VIEW_ACK (or timeout),
                 // send the JOIN_RSP back to the client. This prevents the client from sending multicast messages in
                 // view V2 which may get dropped by existing members because they're still in view V1.
                 // (http://jira.jboss.com/jira/browse/JGRP-235)
-                
-            	if(tmp_mbrs != null)
+
+                if(tmp_mbrs != null)
                     tmp_mbrs.remove(mbr); // exclude the newly joined member from VIEW_ACKs
-                                            
+
                 gms.castViewChangeWithDest(join_rsp.getView(), null, tmp_mbrs);
 
                 // 4. Return result to client
                 sendJoinResponse(join_rsp, mbr);
             }
-            
+
         }
         finally {
-        	if(gms.use_flush)
+            if(gms.use_flush)
                 gms.stopFlush();
             gms.passDown(new Event(Event.RESUME_STABLE));
         }
     }
-
+*/
 
 
 
@@ -388,7 +391,7 @@ public class CoordGmsImpl extends GmsImpl {
       Exclude <code>mbr</code> from the membership. If <code>suspected</code> is true, then
       this member crashed and therefore is forced to leave, otherwise it is leaving voluntarily.
       */
-    public void handleLeave(Address mbr, boolean suspected) {
+    /*private void handleLeave(Address mbr, boolean suspected) {
         View new_view=null;
         Vector v=new Vector(1);
         v.addElement(mbr);
@@ -429,17 +432,120 @@ public class CoordGmsImpl extends GmsImpl {
             gms.passUp(new Event(Event.DISCONNECT_OK));
             gms.initState(); // in case connect() is called again
         }
+    }*/
+
+
+    public void handleMembershipChange(Collection new_mbrs, Collection leaving_mbrs, Collection suspected_mbrs) {
+        if(new_mbrs       == null) new_mbrs=new LinkedHashSet(0);
+        if(suspected_mbrs == null) suspected_mbrs=new LinkedHashSet(0);
+        if(leaving_mbrs   == null) leaving_mbrs=new LinkedHashSet(0);
+        boolean joining_mbrs=!new_mbrs.isEmpty();
+
+        new_mbrs.remove(gms.local_addr); // remove myself - should I be in the JOIN set
+
+        if(gms.view_id == null) {
+            // we're probably not the coord anymore (we just left ourselves), let someone else do it
+            // (client will retry when it doesn't get a response)
+            if(log.isDebugEnabled())
+                log.debug("gms.view_id is null, I'm not the coordinator anymore (leaving=" + leaving +
+                        "); the new coordinator will handle the leave request");
+            return;
+        }
+
+        Vector current_members=gms.members.getMembers();
+        leaving_mbrs.retainAll(current_members); // remove all elements of leaving_mbrs which are not current members
+        if(suspected_mbrs.remove(gms.local_addr)) {
+            if(warn) log.warn("I am the coord and I'm being suspected -- will probably leave shortly");
+        }
+        suspected_mbrs.retainAll(current_members); // remove all elements of suspected_mbrs which are not current members
+
+        // for the members that have already joined, return the current digest and membership
+        for(Iterator it=new_mbrs.iterator(); it.hasNext();) {
+            Address mbr=(Address)it.next();
+            if(gms.members.contains(mbr)) { // already joined: return current digest and membership
+                if(warn)
+                    log.warn(mbr + " already present; returning existing view " + gms.view);
+                JoinRsp join_rsp=new JoinRsp(new View(gms.view_id, gms.members.getMembers()), gms.getDigest());
+                sendJoinResponse(join_rsp, mbr);
+                it.remove();
+            }
+        }
+
+        if(new_mbrs.isEmpty() && leaving_mbrs.isEmpty() && suspected_mbrs.isEmpty()) {
+            if(trace)
+                log.trace("found no members to add or remove, will not create new view");
+            return;
+        }
+
+        JoinRsp join_rsp=null;
+        try {
+            View new_view=gms.getNextView(new_mbrs, leaving_mbrs, suspected_mbrs);
+            if(log.isDebugEnabled())
+                log.debug("new=" + new_mbrs + ", suspected=" + suspected_mbrs + ", leaving=" + leaving_mbrs +
+                        ", new view: " + new_view);
+
+            // we cannot garbage collect during joining a new member *if* we're the only member
+            // Example: {A}, B joins, after returning JoinRsp to B, A garbage collects messages higher than those
+            // in the digest returned to the client, so the client will *not* be able to ask for retransmission
+            // of those messages if he misses them
+            if(joining_mbrs) {
+                gms.passDown(new Event(Event.SUSPEND_STABLE, MAX_SUSPEND_TIMEOUT));
+                Digest d=null, tmp=gms.getDigest(); // get existing digest
+                if(tmp == null)
+                    log.error("received null digest from GET_DIGEST: will cause JOIN to fail");
+                else {
+                    // create a new digest, which contains the new member
+                    d=new Digest(tmp.size() + new_mbrs.size());
+                    d.add(tmp); // add the existing digest to the new one
+                    for(Iterator i=new_mbrs.iterator(); i.hasNext();)
+                        d.add((Address)i.next(), 0, 0); // ... and add the new members. their first seqno will be 1
+                }
+                join_rsp=new JoinRsp(new_view, d);
+            }
+
+            // Send down a local TMP_VIEW event. This is needed by certain layers (e.g. NAKACK) to compute correct digest
+            // in case client's next request (e.g. getState()) reaches us *before* our own view change multicast.
+            // Check NAKACK's TMP_VIEW handling for details
+            if(new_view != null)
+                gms.passDown(new Event(Event.TMP_VIEW, new_view));
+
+            Vector tmp_mbrs=new_view != null? new Vector(new_view.getMembers()) : null;
+            if(tmp_mbrs != null) // exclude the newly joined member from VIEW_ACKs
+                tmp_mbrs.removeAll(new_mbrs);
+            sendLeaveResponses(leaving_mbrs);
+            sendLeaveResponses(suspected_mbrs);
+
+            if(gms.use_flush) {
+                // First we flush current members. Then we send a view to all joining member and we wait for their ACKs
+                // together with ACKs from current members. After all ACKS have been collected, FLUSH is stopped
+                // (below in finally clause) and members are allowed to send messages again
+                gms.startFlush(new_view);
+                sendJoinResponses(join_rsp, new_mbrs);
+                gms.castViewChangeWithDest(new_view, null, tmp_mbrs);
+            }
+            else {
+                // Broadcast the new view
+                // we'll multicast the new view first and only, when everyone has replied with a VIEW_ACK (or timeout),
+                // send the JOIN_RSP back to the client. This prevents the client from sending multicast messages in
+                // view V2 which may get dropped by existing members because they're still in view V1.
+                // (http://jira.jboss.com/jira/browse/JGRP-235)
+                gms.castViewChangeWithDest(new_view, null, tmp_mbrs);
+                sendJoinResponses(join_rsp, new_mbrs); // Return result to newly joined clients (if there are any)
+            }
+        }
+        finally {
+            if(gms.use_flush)
+                gms.stopFlush();
+            if(joining_mbrs)
+                gms.passDown(new Event(Event.RESUME_STABLE));
+            if(leaving) {
+                gms.passUp(new Event(Event.DISCONNECT_OK));
+                gms.initState(); // in case connect() is called again
+            }
+        }
     }
 
 
-
-
-    void sendLeaveResponse(Address mbr) {
-        Message msg=new Message(mbr, null, null);
-        GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.LEAVE_RSP);
-        msg.putHeader(gms.getName(), hdr);
-        gms.passDown(new Event(Event.MSG, msg));
-    }
 
     /**
      * Called by the GMS when a VIEW is received.
@@ -459,14 +565,6 @@ public class CoordGmsImpl extends GmsImpl {
         if(leaving && !mbrs.contains(gms.local_addr))
             return;
         gms.installView(new_view, digest);
-    }
-
-    public void handleSuspect(Address mbr) {
-        if(mbr.equals(gms.local_addr)) {
-            if(warn) log.warn("I am the coord and I'm being am suspected -- will probably leave shortly");
-            return;
-        }
-        handleLeave(mbr, true); // irregular leave - forced
     }
 
     public void handleExit() {
@@ -492,12 +590,31 @@ public class CoordGmsImpl extends GmsImpl {
         }
     }
 
+    private void sendJoinResponses(JoinRsp rsp, Collection c) {
+        if(c != null && rsp != null) {
+            for(Iterator it=c.iterator(); it.hasNext();) {
+                sendJoinResponse(rsp, (Address)it.next());
+            }
+        }
+    }
+
+
     private void sendJoinResponse(JoinRsp rsp, Address dest) {
         Message m=new Message(dest, null, null);
         GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.JOIN_RSP, rsp);
         m.putHeader(gms.getName(), hdr);
         gms.passDown(new Event(Event.MSG, m));
     }
+
+    private void sendLeaveResponses(Collection c) {
+        for(Iterator i=c.iterator(); i.hasNext();) {
+            Message msg=new Message((Address)i.next(), null, null); // send an ack to the leaving member
+            GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.LEAVE_RSP);
+            msg.putHeader(gms.getName(), hdr);
+            gms.passDown(new Event(Event.MSG, msg));
+        }
+    }
+
 
     /**
      * Sends a MERGE_REQ to all coords and populates a list of MergeData (in merge_rsps). Returns after coords.size()
