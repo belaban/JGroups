@@ -1,0 +1,49 @@
+
+Release Notes JGroups 2.4
+=========================
+
+Version: $Id: ReleaseNotes-2.4.txt,v 1.1 2006/08/03 16:18:42 belaban Exp $
+Author: Bela Ban
+
+
+FLUSH protocol
+--------------
+
+
+Partial state transfer
+----------------------
+
+
+
+Streaming state transfer
+------------------------
+
+
+View bundling
+-------------
+
+
+Failure detection: FD_PING
+--------------------------
+
+
+Failure detection: FD_ICMP
+--------------------------
+
+
+
+Incompatibilities to previous version
+-------------------------------------
+
+
+
+
+Enhancements and bug fixes
+--------------------------
+- COMPRESS now uses multiple deflaters/inflaters, this results in more concurrent compression, more performance
+
+
+
+Documentation
+-------------
+- The user's guide has been updated (http://www.jgroups.org/javagroupsnew/docs/manual/html/index.html)
