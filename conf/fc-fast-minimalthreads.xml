@@ -23,7 +23,7 @@
     <MERGE2 max_interval="100000"
             down_thread="false" up_thread="false" min_interval="20000"/>
     <FD_SOCK down_thread="false" up_thread="false"/>
-    <!-- FD timeout="2000" max_tries="3" down_thread="false" up_thread="false" shun="true"/ -->
+    <FD timeout="3000" max_tries="5" down_thread="false" up_thread="false" shun="true"/>
     <VERIFY_SUSPECT timeout="1500" down_thread="false" up_thread="false"/>
     <pbcast.NAKACK max_xmit_size="60000"
                    use_mcast_xmit="false" gc_lag="0"
@@ -38,7 +38,8 @@
     <VIEW_SYNC avg_send_interval="60000" down_thread="false" up_thread="false" />
     <pbcast.GMS print_local_addr="true" join_timeout="3000" 
                 down_thread="false" up_thread="false"
-                join_retry_timeout="2000" shun="true"/>
+                join_retry_timeout="2000" shun="true"
+                view_bundling="true"/>
      <FC max_credits="2000000" down_thread="false" up_thread="false"
          min_threshold="0.10"/>
     <FRAG2 frag_size="60000" down_thread="false" up_thread="false"/>
