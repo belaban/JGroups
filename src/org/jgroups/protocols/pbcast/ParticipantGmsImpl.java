@@ -1,4 +1,4 @@
-// $Id: ParticipantGmsImpl.java,v 1.21 2006/08/03 07:53:12 belaban Exp $
+// $Id: ParticipantGmsImpl.java,v 1.22 2006/08/03 09:20:58 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -188,10 +188,7 @@ public class ParticipantGmsImpl extends GmsImpl {
     boolean wouldIBeCoordinator() {
         Address new_coord;
         Vector mbrs=gms.members.getMembers(); // getMembers() returns a *copy* of the membership vector
-
-        for(int i=0; i < suspected_mbrs.size(); i++)
-            mbrs.removeElement(suspected_mbrs.elementAt(i));
-
+        mbrs.removeAll(suspected_mbrs);
         if(mbrs.size() < 1) return false;
         new_coord=(Address)mbrs.elementAt(0);
         return gms.local_addr.equals(new_coord);
