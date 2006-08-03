@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.50 2006/08/03 09:20:58 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.51 2006/08/03 12:50:59 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -82,7 +82,6 @@ public class CoordGmsImpl extends GmsImpl {
     }
 
     public void handleJoinResponse(JoinRsp join_rsp) {
-        wrongMethod("handleJoinResponse");
     }
 
     public void handleLeaveResponse() {
@@ -441,7 +440,7 @@ public class CoordGmsImpl extends GmsImpl {
         if(leaving_mbrs   == null) leaving_mbrs=new LinkedHashSet(0);
         boolean joining_mbrs=!new_mbrs.isEmpty();
 
-        new_mbrs.remove(gms.local_addr); // remove myself - should I be in the JOIN set
+        new_mbrs.remove(gms.local_addr); // remove myself - cannot join myself (already joined)
 
         if(gms.view_id == null) {
             // we're probably not the coord anymore (we just left ourselves), let someone else do it
@@ -534,10 +533,10 @@ public class CoordGmsImpl extends GmsImpl {
             }
         }
         finally {
-            if(gms.use_flush)
-                gms.stopFlush();
             if(joining_mbrs)
                 gms.passDown(new Event(Event.RESUME_STABLE));
+            if(gms.use_flush)
+                gms.stopFlush();
             if(leaving) {
                 gms.passUp(new Event(Event.DISCONNECT_OK));
                 gms.initState(); // in case connect() is called again
