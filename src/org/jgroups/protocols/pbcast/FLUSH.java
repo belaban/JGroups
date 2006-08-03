@@ -21,9 +21,11 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Header;
 import org.jgroups.Message;
+import org.jgroups.TimeoutException;
 import org.jgroups.View;
 import org.jgroups.ViewId;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.Promise;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
@@ -68,6 +70,11 @@ public class FLUSH extends Protocol {
 	private long timeout = 4000;
 	private Set suspected;
 	private boolean receivedFirstView = false;
+	private long startFlushTime;
+	private long totalTimeInFlush;
+	private int numberOfFlushes;
+	private double averageFlushDuration;
+	private Promise flush_promise;
 
 	public FLUSH() {
 		super();
@@ -105,7 +112,40 @@ public class FLUSH extends Protocol {
         map.put("flush_supported", Boolean.TRUE);
         passUp(new Event(Event.CONFIG, map));
     }
+    
+    /* -------------------JMX attributes and operations --------------------- */
+    
+    public double getAverageFlushDuration(){
+		return averageFlushDuration;
+	}
+	
+	public long getTotalTimeInFlush() {
+		return totalTimeInFlush;
+	}
+	
+	public int getNumberOfFlushes(){
+		return numberOfFlushes;
+	}
+	
+    public boolean startFlush(long timeout) {
+        boolean successfulFlush=false;
+        down(new Event(Event.SUSPEND));
+        flush_promise = new Promise();
+        try {           
+            flush_promise.getResultWithTimeout(timeout);            
+            successfulFlush=true;
+        }
+        catch(TimeoutException e) {
+        }
+        return successfulFlush;
+    }
 
+    public void stopFlush() {        
+        down(new Event(Event.RESUME));
+    }
+
+    /* ------------------- end JMX attributes and operations --------------------- */
+    
 	public void down(Event evt) {
 		switch (evt.getType()) {
 			case Event.MSG:
@@ -247,6 +287,13 @@ public class FLUSH extends Protocol {
 	}
 
 	private void onStopFlush() {
+		if (stats) {
+			long stopFlushTime = System.currentTimeMillis();
+			totalTimeInFlush += (stopFlushTime - startFlushTime);
+			if (numberOfFlushes > 0) {
+				averageFlushDuration = totalTimeInFlush / numberOfFlushes;
+			}
+		}
 		if(log.isDebugEnabled())
 			log.debug("Received STOP_FLUSH at " + localAddress);
 		synchronized (blockMutex) {
@@ -302,6 +349,10 @@ public class FLUSH extends Protocol {
 	}
 
 	private void onStartFlush(Address flushStarter, FlushHeader fh) {
+		if (stats) {
+			startFlushTime = System.currentTimeMillis();
+			numberOfFlushes += 1;
+		}
         synchronized (blockMutex) {
             isBlockState = true;
         }
@@ -355,6 +406,10 @@ public class FLUSH extends Protocol {
 				+ flushCompletedSet.toString());
 
 		if (flushCompleted) {
+			if(flush_promise!=null) {
+				//needed for jmx startFlush(timoue);
+				flush_promise.setResult(Boolean.TRUE); 
+			}
 			passUp(new Event(Event.SUSPEND_OK));
 			passDown(new Event(Event.SUSPEND_OK));	
 			if(log.isDebugEnabled())
