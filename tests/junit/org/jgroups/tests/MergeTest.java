@@ -6,13 +6,14 @@ import junit.framework.TestCase;
 import org.jgroups.JChannel;
 import org.jgroups.ReceiverAdapter;
 import org.jgroups.View;
+import org.jgroups.util.Util;
 import org.jgroups.stack.GossipRouter;
 
 
 /**
  * Tests merging
  * @author Bela Ban
- * @version $Id: MergeTest.java,v 1.7 2006/02/15 12:38:06 belaban Exp $
+ * @version $Id: MergeTest.java,v 1.8 2006/08/03 13:08:49 belaban Exp $
  */
 public class MergeTest extends TestCase {
     JChannel     channel;
@@ -49,6 +50,7 @@ public class MergeTest extends TestCase {
         ch2=new JChannel(props);
         ch2.setReceiver(checker);
         ch2.connect("demo");
+        Util.sleep(1000);
     }
 
     public void tearDown() throws Exception {
