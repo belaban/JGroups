@@ -14,15 +14,14 @@
         <!ENTITY uchannel     SYSTEM "modules/uchannel.xml">
         <!ENTITY ublocks      SYSTEM "modules/ublocks.xml">
         <!ENTITY advanced     SYSTEM "modules/advanced.xml">
-        <!ENTITY tracing      SYSTEM "modules/tracing.xml">
         ]>
 
 <book>
 
     <bookinfo>
         <title>Reliable Multicasting with the JGroups Toolkit</title>
-        <pubdate>$Date: 2006/04/25 11:49:50 $</pubdate>
-        <releaseinfo>$Revision: 1.1 $</releaseinfo>
+        <pubdate>$Date: 2006/08/03 16:24:53 $</pubdate>
+        <releaseinfo>$Revision: 1.2 $</releaseinfo>
         <authorgroup>
             <author>
                 <firstname>Bela</firstname>
@@ -193,7 +192,6 @@
         &uchannel;
         &ublocks;
         &advanced;
-        &tracing;
     </part>
 
     <part>
