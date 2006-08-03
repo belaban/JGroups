@@ -2,45 +2,76 @@
 Release Notes JGroups 2.4
 =========================
 
-Version: $Id: ReleaseNotes-2.4.txt,v 1.1 2006/08/03 16:18:42 belaban Exp $
+Version: $Id: ReleaseNotes-2.4.txt,v 1.2 2006/08/03 16:50:20 belaban Exp $
 Author: Bela Ban
+
+JGroups 2.4 is a backward compatible release, that is it can replace previous versions (2.3 - 2.2.7) by simply replacing
+the JGroups JAR file. The new features are described below.
+
 
 
 FLUSH protocol
 --------------
+This essentially adds another virtual synchrony implementation for JGroups (the old one being vsync.xml), however it
+is based on the default stack which has been used for quite a while now, and which is well tested.
+FLUSH is required when we have multiple services sitting on the same Multiplexer, and more than 1 of them requires
+state transfer (for an explanation see JGroups/doc/design/PartialStateTransfer.txt).
 
 
 Partial state transfer
 ----------------------
-
+Sometimes an application doesn't want to transfer the entire state, but just a subset. Example: JBossCache in JBoss,
+where we may want to transfer just a subtree, not the entire tree.
 
 
 Streaming state transfer
 ------------------------
+When we need to transfer large state, the existing state transfer requires an application programmer to provide the
+state as a byte[] buffer. If the state is large, or needs to be retrieved by traversing a tree structure (e.g.
+a DOM tree), then providing a byte[] buffer may not make much sense.
+Streaming state transfer provides an InputStream to read state and an OutputStream to write state, and transfer the
+written bytes in *chunks*, so that the memory requirements are smaller. Example: if we have a huge DOM tree, whose
+aggregate size is 2GB (and which has partly been passivated to disk), then the state provider (ie. the coordinator) can
+simply iterate over the DOM tree (activating the parts which have been passivated out to disk), and writing to the
+OutputStream as he traverses the tree. The receiver will simply read from the InputStream and reconstruct the tree
+on his side, possibly again passivating parts to disk. Rather than having to provide a 2GB byte[] buffer (besides the
+state, so the needed memory is ca 4GB temporarily), streaming state transfer transfers the state in chunks of N bytes
+(user configurable).
+Check out the documentation for details and sample code.
 
 
 View bundling
 -------------
+When we have many concurrent JOINS, LEAVES or SUSPECTs, then we emit a view for each and every one of them. Say we have
+20 JOINs, then we will have 20 views. With view bundling, we can reduce this by simply handling multiple
+JOIN/LEAVE/SUSPECT requests together as one. This might generate 5 views rather than 20 (config-dependent).
 
 
 Failure detection: FD_PING
 --------------------------
+This allows to run a script to probe for liveness of a host. Default is /sbin/ping (ping.exe on Windows). Can be used
+in addition with FD_SOCK/FD.
 
 
 Failure detection: FD_ICMP
 --------------------------
+Uses InetAddress.isReachable() to determine whether a given host is reachable. Note that this may or may not use
+ICMP pings, depending on the JDK implementation. Can be used in conjunction with FD_SOCK/FD/FD_PING.
 
 
 
 Incompatibilities to previous version
 -------------------------------------
-
+- ExtendedMessageListener: we added 4 methods, so if you used ExtendedReceiverAdapter you're fine. Otherwise you will
+  have to recompile. Note that this does *not* affect just linking against JGroups, so if you simply replace your
+  jgroups.jar, you're fine
 
 
 
 Enhancements and bug fixes
 --------------------------
 - COMPRESS now uses multiple deflaters/inflaters, this results in more concurrent compression, more performance
+- Multiplexer: few bug fixes (detected by integrating into JBoss), there are now 2 new unit tests that cover the bugs fixed
 
 
 
