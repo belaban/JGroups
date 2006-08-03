@@ -1,4 +1,4 @@
-$Id: GmsTests.txt,v 1.2 2006/05/22 09:28:15 belaban Exp $
+$Id: GmsTests.txt,v 1.3 2006/08/03 15:50:31 belaban Exp $
 
 
      Manual tests for the Group Membership Service (GMS) Protocol
@@ -94,6 +94,7 @@ Test 8
 Test 9
 ------
 
+- (use with FD only)
 - Start A, B
 - Kill B and immediately restart B
   --> Both A and B should show 2 members
@@ -102,6 +103,7 @@ Test 9
 Test 10
 -------
 
+- (use with FD only)
 - Start A and B
 - Kill A (coordinator) and immediately restart A
   --> B should become new coordinator
@@ -124,6 +126,7 @@ Test 11
 Test 12
 -------
 
+- (only use with FD)
 - Start A, B, C
 - Kill A and simultaneously leave C
 - C should block until B becomes coordinator (and shows mbrship=2)
