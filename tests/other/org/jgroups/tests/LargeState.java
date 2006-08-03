@@ -1,4 +1,4 @@
-// $Id: LargeState.java,v 1.24 2006/08/02 20:36:26 vlada Exp $
+// $Id: LargeState.java,v 1.25 2006/08/03 07:56:51 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -27,7 +27,7 @@ import javax.management.MBeanServer;
  * causing it to drop some packets (default size is 8096 bytes). Therefore the send (and receive) buffers for the unicast
  * socket have been increased (see ucast_send_buf_size and ucast_recv_buf_size below).<p>
  * If we didn't do this, we would have some retransmission, slowing the state transfer down.
- * 
+ *
  * @author Bela Ban Dec 13 2001
  */
 public class LargeState extends ExtendedReceiverAdapter {
@@ -244,7 +244,7 @@ public class LargeState extends ExtendedReceiverAdapter {
     }
 
     static void help() {
-        System.out.println("LargeState [-help] [-size <size of state in bytes] [-provider] [-props <properties>]");
+        System.out.println("LargeState [-help] [-size <size of state in bytes] [-provider] [-props <properties>] [-jmx]");
     }
 
 }
