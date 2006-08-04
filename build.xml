@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.55 2006/06/11 19:15:23 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.56 2006/08/04 11:22:32 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -259,7 +259,7 @@
     </target>
 
 
-    <target name="pg" description="Build the html doc" depends="check-docbook-support">
+    <target name="manual" description="Build the html doc" depends="check-docbook-support">
         <echo message="Building HTML doc from docbook ..."/>
         <ant dir="${root.dir}/doc/manual" antfile="build.xml"
              target="html"/>
