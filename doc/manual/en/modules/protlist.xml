@@ -1,443 +1,450 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <chapter id="protlist">
-    <title>List of Protocols</title>
+  <title>List of Protocols</title>
 
-    <para>For each protocol define:</para>
+  <para>For each protocol define:</para>
 
-    <itemizedlist>
+  <itemizedlist>
+    <listitem>
+      <para>Properties provided</para>
+    </listitem>
+
+    <listitem>
+      <para>Required services</para>
+    </listitem>
+
+    <listitem>
+      <para>Provided services</para>
+    </listitem>
+
+    <listitem>
+      <para>Behavior</para>
+    </listitem>
+  </itemizedlist>
+
+  <section>
+    <title>Transport</title>
+
+    <section>
+      <title>UDP</title>
+
+      <para></para>
+    </section>
+
+    <section>
+      <title>TCP</title>
+
+      <para></para>
+    </section>
+
+    <section>
+      <title>TUNNEL</title>
+
+      <para></para>
+    </section>
+
+    <section>
+      <title>JMS</title>
+
+      <para></para>
+    </section>
+
+    <section>
+      <title>LOOPBACK</title>
+
+      <para></para>
+    </section>
+  </section>
+
+  <section>
+    <title>Initinial membership discovery</title>
+
+    <section>
+      <title>PING</title>
+
+      <para></para>
+    </section>
+
+    <section>
+      <title>TCPPING</title>
+
+      <para></para>
+    </section>
+
+    <section>
+      <title>TCPGOSSIP</title>
+
+      <para></para>
+    </section>
+
+    <section>
+      <title>MPING</title>
+
+      <para></para>
+    </section>
+  </section>
+
+  <section>
+    <title>Fragmentation</title>
+
+    <section>
+      <title>FRAG and FRAG2</title>
+
+      <para></para>
+    </section>
+  </section>
+
+  <section>
+    <title>Reliable message transmission</title>
+
+    <section>
+      <title>NAKACK</title>
+
+      <para></para>
+    </section>
+
+    <section>
+      <title>pbcast.NAKACK</title>
+
+      <para></para>
+    </section>
+
+    <section>
+      <title>SMACK</title>
+
+      <para></para>
+    </section>
+
+    <section>
+      <title>UNICAST</title>
+
+      <para></para>
+    </section>
+  </section>
+
+  <section>
+    <title>Ordering (FIFO covered by NAKACK)</title>
+
+    <section>
+      <title>CAUSAL</title>
+
+      <para></para>
+    </section>
+
+    <section>
+      <title>Total Order (sequencer: TOTAL, token-passing: TOTAL_TOKEN</title>
+
+      <para></para>
+    </section>
+  </section>
+
+  <section>
+    <title>Group Membership</title>
+
+    <section>
+      <title>GMS, pbcast.GMS</title>
+
+      <para></para>
+    </section>
+
+    <section>
+      <title>Disabling the initial coordinator</title>
+
+      <para>Consider the following situation: a new member wants to join a
+      group. The prodedure to do so is:</para>
+
+      <itemizedlist>
         <listitem>
-            <para>Properties provided</para>
+          <para>Multicast an (unreliable) discovery request (ping)</para>
         </listitem>
 
         <listitem>
-            <para>Required services</para>
+          <para>Wait for n responses or m milliseconds (whichever is
+          first)</para>
         </listitem>
 
         <listitem>
-            <para>Provided services</para>
+          <para>Every member responds with the address of the
+          coordinator</para>
         </listitem>
 
         <listitem>
-            <para>Behavior</para>
+          <para>If the initial responses are &gt; 0: determine the coordinator
+          and start the JOIN protocolg</para>
         </listitem>
-    </itemizedlist>
+
+        <listitem>
+          <para>If the initial response are 0: become coordinator, assuming
+          that no one else is out there</para>
+        </listitem>
+      </itemizedlist>
+
+      <para>However, the problem is that the initial mcast discovery request
+      might get lost, e.g. when multiple members start at the same time, the
+      outgoing network buffer might overflow, and the mcast packet might get
+      dropped. Nobody receives it and thus the sender will not receive any
+      responses, resulting in an initial membership of 0. This could result in
+      multiple coordinators, and multiple subgroups forming. How can we
+      overcome this problem ? There are 3 solutions:</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Increase the timeout, or number of responses received. This
+          will only help if the reason of the empty membership was a slow
+          host. If the mcast packet was dropped, this solution won't
+          help</para>
+        </listitem>
+
+        <listitem>
+          <para>Add the MERGE(2) protocol. This doesn't actually prevent
+          multiple initial cordinators, but rectifies the problem by merging
+          different subgroups back into one. Note that this involves state
+          merging which needs to be done by the application.</para>
+        </listitem>
+
+        <listitem>
+          <para>(new) Prevent members from becoming coordinator on initial
+          startup. This solution is applicable when we know which member is
+          going to be the initial coordinator of a fresh group. We don't care
+          about afterwards, then coordinatorship can migrate to another
+          member. In this case, we configure the member that is always
+          supposed to be started first with disable_initial_coord=false (the
+          default) and all other members with disable_initial_coord=true.This
+          works as described below.</para>
+        </listitem>
+      </orderedlist>
+
+      <para>When the initial membership is received, and is null, and the
+      property disable_initial_coord is true, then we just continue in the
+      loop and retry receving the initial membership (until it is non-null).
+      If the property is false, we are allowed to become coordinator, and will
+      do so. Note that - if a member is started as first member of a group -
+      but its property is set to true, then it will loop until another member
+      whose disable_initial_coord property is set to false, is started.</para>
+    </section>
+  </section>
+
+  <section>
+
+
+    <title>Failure Detection</title>
+
+     The task of failure detection is to probe members of a group and see whether they are alive. When a member is suspected (= deemed dead), then a SUSPECT message is sent to all nodes of the cluster. It is not the task of the failure detection layer to exclude a crashed member (this is done by the group membership protocol, GMS), but simply to notify everyone that a node in the cluster is suspected of having crashed.
 
     <section>
-        <title>Transport</title>
+      <title>FD</title>
 
-        <section>
-            <title>UDP</title>
+      <para />
+    </section>
 
-            <para></para>
-        </section>
 
-        <section>
-            <title>TCP</title>
 
-            <para></para>
-        </section>
+    <section>
+      <title>FD_SIMPLE</title>
 
-        <section>
-            <title>TUNNEL</title>
+      <para />
+    </section>
 
-            <para></para>
-        </section>
 
-        <section>
-            <title>JMS</title>
 
-            <para></para>
-        </section>
+    <section><title>FD_PING</title> FD_PING uses a script or command that is
+    run with 1 argument (the host to be pinged) and needs to return 0
+    (success) or 1 (failure). The default command is /sbin/ping (ping.exe on
+    Windows), but this is user configurable and can be replaced with any
+    user-provided script or executable. <table>
+        <title>Properties</title>
 
-        <section>
-            <title>LOOPBACK</title>
+        <tgroup cols="2">
+          <colspec align="left" />
 
-            <para></para>
-        </section>
+          <thead>
+            <row>
+              <entry align="center">Name</entry>
+
+              <entry align="center">Description</entry>
+            </row>
+          </thead>
+
+          <tbody>
+            <row>
+              <entry>cmd</entry>
+
+              <entry>The command to be executed, e.g. "/sbin/ping" (or "ping"
+              if found on path)</entry>
+            </row>
+
+            <row>
+              <entry>verbose</entry>
+
+              <entry>Whether or not to show the output of the command. Valid:
+              "true" or "false"</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </table></section>
+
+
+
+    <section><title>FD_ICMP</title> Uses InetAddress.isReachable() to
+    determine whether a host is up or not. Note that this is only available in
+    JDK 5, so reflection is used to determine whether InetAddress provides
+    such a method. If not, an exception will be thrown at protocol
+    initialization time. <para /> The problem with InetAddress.isReachable()
+    is that it may or may not use ICMP in its implementation ! For example, an
+    implementation might try to establish a TCP connection to port 9 (echo
+    service), and - if the echo service is not running - the host would be
+    suspected, although a real ICMP packet would <emphasis>not</emphasis> have suspected the host !
+    Please check your JDK/OS combo before running this protocol. <table>
+        <title>Properties</title>
+
+        <tgroup cols="2">
+          <colspec align="left" />
+
+          <thead>
+            <row>
+              <entry align="center">Name</entry>
+
+              <entry align="center">Description</entry>
+            </row>
+          </thead>
+
+          <tbody>
+            <row>
+              <entry>bind_addr</entry>
+
+              <entry>The network interface to be used for sending ICMP
+              packets, e.g. <code>bind_addr="192.16.8.0.2"</code></entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </table></section>
+
+
+
+    <section>
+      <title>FD_SOCK</title>
+
+      <para />
+    </section>
+
+
+
+    <section>
+      <title>VERIFY_SUSPECT</title>
+
+      <para />
+    </section>
+
+
+  </section>
+
+  <section>
+    <title>Probabilistic Broadcast</title>
+
+    <section>
+      <title>PBCAST</title>
+
+      <para></para>
+    </section>
+  </section>
+
+  <section>
+    <title>Encryption and AUTH</title>
+
+    <para></para>
+  </section>
+
+  <section>
+    <title>State Transfer</title>
+
+    <section>
+      <title>pbcast.STATE_TRANSFER</title>
+
+      <para></para>
     </section>
 
     <section>
-        <title>Initinial membership discovery</title>
+      <title>pbcast.STREAMING_STATE_TRANSFER</title>
 
-        <section>
-            <title>PING</title>
+      <para></para>
+    </section>
+  </section>
 
-            <para></para>
-        </section>
+  <section>
+    <title>Merge</title>
 
-        <section>
-            <title>TCPPING</title>
+    <section>
+      <title>MERGE, MERGE2</title>
 
-            <para></para>
-        </section>
+      <para></para>
+    </section>
+  </section>
 
-        <section>
-            <title>TCPGOSSIP</title>
+  <section>
+    <title>Debugging</title>
 
-            <para></para>
-        </section>
+    <section>
+      <title>PERF</title>
 
-        <section>
-            <title>MPING</title>
-
-            <para></para>
-        </section>
+      <para></para>
     </section>
 
     <section>
-        <title>Fragmentation</title>
+      <title>SIZE</title>
 
-        <section>
-            <title>FRAG and FRAG2</title>
-
-            <para></para>
-        </section>
+      <para></para>
     </section>
 
     <section>
-        <title>Reliable message transmission</title>
+      <title>TRACE</title>
 
-        <section>
-            <title>NAKACK</title>
-
-            <para></para>
-        </section>
-
-        <section>
-            <title>pbcast.NAKACK</title>
-
-            <para></para>
-        </section>
-
-        <section>
-            <title>SMACK</title>
-
-            <para></para>
-        </section>
-
-        <section>
-            <title>UNICAST</title>
-
-            <para></para>
-        </section>
+      <para></para>
     </section>
 
     <section>
-        <title>Ordering (FIFO covered by NAKACK)</title>
+      <title>PRINTOBJS</title>
 
-        <section>
-            <title>CAUSAL</title>
+      <para></para>
+    </section>
+  </section>
 
-            <para></para>
-        </section>
+  <section>
+    <title>Misc</title>
 
-        <section>
-            <title>Total Order (sequencer: TOTAL, token-passing: TOTAL_TOKEN</title>
+    <section>
+      <title>COMPRESS</title>
 
-            <para></para>
-        </section>
+      <para></para>
     </section>
 
     <section>
-        <title>Group Membership</title>
+      <title>pbcast.STABLE</title>
 
-        <section>
-            <title>GMS, pbcast.GMS</title>
-
-            <para></para>
-        </section>
-
-        <section>
-            <title>Disabling the initial coordinator</title>
-
-            <para>Consider the following situation: a new member wants to join a
-                group. The prodedure to do so is:</para>
-
-            <itemizedlist>
-                <listitem>
-                    <para>Multicast an (unreliable) discovery request (ping)</para>
-                </listitem>
-
-                <listitem>
-                    <para>Wait for n responses or m milliseconds (whichever is
-                        first)</para>
-                </listitem>
-
-                <listitem>
-                    <para>Every member responds with the address of the
-                        coordinator</para>
-                </listitem>
-
-                <listitem>
-                    <para>If the initial responses are &gt; 0: determine the coordinator
-                        and start the JOIN protocolg</para>
-                </listitem>
-
-                <listitem>
-                    <para>If the initial response are 0: become coordinator, assuming
-                        that no one else is out there</para>
-                </listitem>
-            </itemizedlist>
-
-            <para>However, the problem is that the initial mcast discovery request
-                might get lost, e.g. when multiple members start at the same time, the
-                outgoing network buffer might overflow, and the mcast packet might get
-                dropped. Nobody receives it and thus the sender will not receive any
-                responses, resulting in an initial membership of 0. This could result in
-                multiple coordinators, and multiple subgroups forming. How can we
-                overcome this problem ? There are 3 solutions:</para>
-
-            <orderedlist>
-                <listitem>
-                    <para>Increase the timeout, or number of responses received. This
-                        will only help if the reason of the empty membership was a slow
-                        host. If the mcast packet was dropped, this solution won't
-                        help</para>
-                </listitem>
-
-                <listitem>
-                    <para>Add the MERGE(2) protocol. This doesn't actually prevent
-                        multiple initial cordinators, but rectifies the problem by merging
-                        different subgroups back into one. Note that this involves state
-                        merging which needs to be done by the application.</para>
-                </listitem>
-
-                <listitem>
-                    <para>(new) Prevent members from becoming coordinator on initial
-                        startup. This solution is applicable when we know which member is
-                        going to be the initial coordinator of a fresh group. We don't care
-                        about afterwards, then coordinatorship can migrate to another
-                        member. In this case, we configure the member that is always
-                        supposed to be started first with disable_initial_coord=false (the
-                        default) and all other members with disable_initial_coord=true.This
-                        works as described below.</para>
-                </listitem>
-            </orderedlist>
-
-            <para>When the initial membership is received, and is null, and the
-                property disable_initial_coord is true, then we just continue in the
-                loop and retry receving the initial membership (until it is non-null).
-                If the property is false, we are allowed to become coordinator, and will
-                do so. Note that - if a member is started as first member of a group -
-                but its property is set to true, then it will loop until another member
-                whose disable_initial_coord property is set to false, is started.</para>
-        </section>
+      <para></para>
     </section>
 
     <section>
+      <title>pbcast.FLUSH</title>
 
-
-        <title>Failure Detection</title>
-
-        The task of failure detection is to probe members of a group and see whether they are alive. When a member is
-        suspected (= deemed dead), then a SUSPECT message is sent to all nodes of the cluster. It is not the task of the
-        failure detection layer to exclude a crashed member (this is done by the group membership protocol, GMS), but
-        simply to notify everyone that a node in the cluster is suspected of having crashed.
-
-        <section>
-            <title>FD</title>
-
-            <para/>
-        </section>
-
-
-        <section>
-            <title>FD_SIMPLE</title>
-
-            <para/>
-        </section>
-
-
-        <section>
-            <title>FD_PING</title>
-            FD_PING uses a script or command that is
-            run with 1 argument (the host to be pinged) and needs to return 0
-            (success) or 1 (failure). The default command is /sbin/ping (ping.exe on
-            Windows), but this is user configurable and can be replaced with any
-            user-provided script or executable.
-
-            <table>
-                <title>Properties</title>
-                <tgroup cols="2">
-                    <colspec align="left"/>
-                    <thead>
-                        <row>
-                            <entry align="center">Name</entry>
-                            <entry align="center">Description</entry>
-                        </row>
-                    </thead>
-                    <tbody>
-                        <row>
-                            <entry>cmd</entry>
-                            <entry>The command to be executed, e.g. "/sbin/ping" (or "ping" if found on path)</entry>
-                        </row>
-                        <row>
-                            <entry>verbose</entry>
-                            <entry>Whether or not to show the output of the command. Valid: "true" or "false"</entry>
-                        </row>
-                    </tbody>
-                </tgroup>
-            </table>
-        </section>
-
-
-        <section>
-            <title>FD_ICMP</title>
-            Uses InetAddress.isReachable() to determine whether a host is up or not. Note that this is only available
-            in JDK 5, so reflection is used to determine whether InetAddress provides such a method. If not, an exception
-            will be thrown at protocol initialization time. <para/>
-            The problem with InetAddress.isReachable() is that it may or may not use ICMP in its implementation !
-            For example, an implementation might try to establish a TCP connection to port 9 (echo service), and -
-            if the echo service is not running - the host would be suspected, although a real ICMP packet would not
-            have suspected the host ! Please check your JDK/OS combo before running this protocol.
-
-            <table>
-                <title>Properties</title>
-                <tgroup cols="2">
-                    <colspec align="left"/>
-                    <thead>
-                        <row>
-                            <entry align="center">Name</entry>
-                            <entry align="center">Description</entry>
-                        </row>
-                    </thead>
-                    <tbody>
-                        <row>
-                            <entry>bind_addr</entry>
-                            <entry>The network interface to be used for sending ICMP packets,
-                                e.g. bind_addr="192.16.8.0.2"</entry>
-                        </row>
-                    </tbody>
-                </tgroup>
-            </table>
-
-
-        </section>
-
-
-        <section>
-            <title>FD_SOCK</title>
-
-            <para/>
-        </section>
-
-
-        <section>
-            <title>VERIFY_SUSPECT</title>
-
-            <para/>
-        </section>
-
-
+      <para></para>
     </section>
+  </section>
 
-    <section>
-        <title>Probabilistic Broadcast</title>
+  <section>
+    <title>Use case: joining a group</title>
 
-        <section>
-            <title>PBCAST</title>
+    <para></para>
+  </section>
 
-            <para></para>
-        </section>
-    </section>
+  <section>
+    <title>Use case: leaving a group</title>
 
-    <section>
-        <title>Encryption and AUTH</title>
+    <para></para>
+  </section>
 
-        <para></para>
-    </section>
+  <section>
+    <title>Use case: removing a crashed member</title>
 
-    <section>
-        <title>State Transfer</title>
-
-        <section>
-            <title>pbcast.STATE_TRANSFER</title>
-
-            <para></para>
-        </section>
-
-        <section>
-            <title>pbcast.STREAMING_STATE_TRANSFER</title>
-
-            <para></para>
-        </section>
-    </section>
-
-    <section>
-        <title>Merge</title>
-
-        <section>
-            <title>MERGE, MERGE2</title>
-
-            <para></para>
-        </section>
-    </section>
-
-    <section>
-        <title>Debugging</title>
-
-        <section>
-            <title>PERF</title>
-
-            <para></para>
-        </section>
-
-        <section>
-            <title>SIZE</title>
-
-            <para></para>
-        </section>
-
-        <section>
-            <title>TRACE</title>
-
-            <para></para>
-        </section>
-
-        <section>
-            <title>PRINTOBJS</title>
-
-            <para></para>
-        </section>
-    </section>
-
-    <section>
-        <title>Misc</title>
-
-        <section>
-            <title>COMPRESS</title>
-
-            <para></para>
-        </section>
-
-        <section>
-            <title>pbcast.STABLE</title>
-
-            <para></para>
-        </section>
-
-        <section>
-            <title>pbcast.FLUSH</title>
-
-            <para></para>
-        </section>
-    </section>
-
-    <section>
-        <title>Use case: joining a group</title>
-
-        <para></para>
-    </section>
-
-    <section>
-        <title>Use case: leaving a group</title>
-
-        <para></para>
-    </section>
-
-    <section>
-        <title>Use case: removing a crashed member</title>
-
-        <para></para>
-    </section>
+    <para></para>
+  </section>
 </chapter>
