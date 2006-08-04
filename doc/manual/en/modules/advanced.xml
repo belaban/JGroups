@@ -128,7 +128,7 @@
     <emphasis>same</emphasis> configuration into one, and have multiple
     services on top of that same channel.</para>
 
-    <para>To do this we have to introduce multiplexing and demultiplexing
+    <para>To do this, we have to introduce multiplexing and demultiplexing
     functionality, ie. each service will have to have a unique service ID (a
     string), and when sending a message, the message has to be tagged with
     that ID. When receiving a message, it will be dispatched to the right
@@ -337,7 +337,7 @@
       <title>Service views</title>
 
       <para>When we have multiple service running on the same channel, then
-      some services might get redeployed or stopped independent from the other
+      some services might get redeployed or stopped independently from the other
       services. So we might have a situation where we have services S1, S2 and
       S3 running on host H1, but on host H2, only services S2 and S3 are
       running.</para>
