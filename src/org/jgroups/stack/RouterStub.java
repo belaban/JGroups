@@ -1,4 +1,4 @@
-// $Id: RouterStub.java,v 1.16 2006/02/07 13:27:58 belaban Exp $
+// $Id: RouterStub.java,v 1.17 2006/08/04 11:01:51 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -35,7 +35,12 @@ public class RouterStub {
     private volatile boolean reconnect=false;   // controls reconnect() loop
 
     protected static final Log log=LogFactory.getLog(RouterStub.class);
+    protected ConnectionListener conn_listener;
 
+
+    public interface ConnectionListener {
+        void connectionStatusChange(boolean connected);
+    }
 
     /**
      Creates a stub for a remote Router object.
@@ -50,6 +55,10 @@ public class RouterStub {
 
     public boolean isConnected() {
         return connected;
+    }
+
+    public void setConnectionListener(ConnectionListener conn_listener) {
+        this.conn_listener=conn_listener;
     }
 
     /**
@@ -75,10 +84,10 @@ public class RouterStub {
             input.readFully(buf);
             ret=(Address)Util.objectFromByteBuffer(buf);
             output=new DataOutputStream(sock.getOutputStream());
-            connected=true;
+            setConnected(true);
         }
         catch(Exception e) {
-            connected=false;
+            setConnected(false);
             if(sock != null)
                 sock.close();
             throw e;
@@ -124,7 +133,7 @@ public class RouterStub {
             catch(Exception e) {
             }
         }
-        connected=false;
+        setConnected(false);
         // stop the TUNNEL receiver thread
         reconnect=false;
     }
@@ -140,7 +149,7 @@ public class RouterStub {
 
         if(sock == null || output == null || input == null) {
             if(log.isErrorEnabled()) log.error("no connection to router (groupname=" + groupname + ')');
-            connected=false;
+            setConnected(false);
             return false;
         }
 
@@ -164,7 +173,7 @@ public class RouterStub {
         }
         catch(Exception e) {
             if(log.isErrorEnabled()) log.error("failure: " + Util.getStackTrace(e));
-            connected=false;
+            setConnected(false);
             return false;
         }
         return true;
@@ -244,7 +253,7 @@ public class RouterStub {
 
         if(sock == null || output == null || input == null) {
             if(log.isErrorEnabled()) log.error("no connection to router (groupname=" + groupname + ')');
-            connected=false;
+            setConnected(false);
             return false;
         }
 
@@ -282,7 +291,7 @@ public class RouterStub {
         }
         catch(Exception e) {
             if(log.isErrorEnabled()) log.error("failed sending message to " + dst_addr, e);
-            connected=false;
+            setConnected(false);
             return false;
         }
         return true;
@@ -298,7 +307,7 @@ public class RouterStub {
 
         if(sock == null || output == null || input == null) {
             if(log.isErrorEnabled()) log.error("no connection to router");
-            connected=false;
+            setConnected(false);
             return null;
         }
         Address dest;
@@ -323,7 +332,7 @@ public class RouterStub {
             if (connected) {
                 if(log.isTraceEnabled()) log.trace("failed receiving message", e);
             }
-            connected=false;
+            setConnected(false);
             return null;
         }
 
@@ -359,9 +368,29 @@ public class RouterStub {
     }
 
 
-     public boolean reconnect() {
-         return reconnect(-1);
-     }
+    public boolean reconnect() {
+        return reconnect(-1);
+    }
+
+
+    private void notifyConnectionListener(boolean connected) {
+        if(conn_listener != null) {
+            conn_listener.connectionStatusChange(connected);
+        }
+    }
+
+    private void setConnected(boolean connected) {
+        boolean notify=this.connected != connected;
+        this.connected=connected;
+        if(notify) {
+            try {
+                notifyConnectionListener(this.connected);
+            }
+            catch(Throwable t) {
+                log.error("failed notifying ConnectionListener " + conn_listener, t);
+            }
+        }
+    }
 
     public static void main(String[] args) {
         if(args.length != 2) {
