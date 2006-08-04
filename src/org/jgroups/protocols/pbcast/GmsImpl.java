@@ -1,4 +1,4 @@
-// $Id: GmsImpl.java,v 1.17 2006/08/03 07:57:26 belaban Exp $
+// $Id: GmsImpl.java,v 1.18 2006/08/04 15:53:33 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -50,7 +50,6 @@ public abstract class GmsImpl {
     public          void      handleExit() {}
 
     public boolean            handleUpEvent(Event evt) {return true;}
-    public boolean            handleDownEvent(Event evt) {return true;}
 
     public void               init() throws Exception {leaving=false;}
     public void               start() throws Exception {leaving=false;}
