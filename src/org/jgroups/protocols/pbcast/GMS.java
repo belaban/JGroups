@@ -18,7 +18,7 @@ import java.util.List;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.61 2006/08/03 15:50:31 belaban Exp $
+ * @version $Id: GMS.java,v 1.62 2006/08/04 15:54:35 belaban Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -806,8 +806,7 @@ public class GMS extends Protocol {
             	return;
         }
 
-        if(impl.handleDownEvent(evt))
-            passDown(evt);
+        passDown(evt);
     }
 
 
@@ -1196,7 +1195,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.61 2006/08/03 15:50:31 belaban Exp $
+     * @version $Id: GMS.java,v 1.62 2006/08/04 15:54:35 belaban Exp $
      */
     class ViewHandler implements Runnable {
         Thread                    t;
