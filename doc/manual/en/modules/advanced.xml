@@ -1008,4 +1008,37 @@
       JGroups.</para>
     </section>
   </section>
+
+    <section>
+        <title>Misc</title>
+        <section>
+            <title>Shunning</title>
+            Let's say we have 4 members in a group: {A,B,C,D}. When a member (say D) is expelled from the group, e.g.
+            because it didn't respond to are-you-alive messages, and later comes back, then it is shunned. Shunning
+            causes a member to leave the group and re-join, if this is enabled on the Channel. To enable automatic
+            re-connects, the AUTO_RECONNECT option has to be set on the Channel:
+            <screen>
+                channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
+            </screen><para/>
+
+            To enable shunning, set FD.shun and GMS.shun to true.<para/>
+
+            Let's look at a more detailed example. Say member D is overloaded, and doesn't respond to are-you-alive
+            messages (done by the failure detection (FD) protocol). It is therefore suspected and excluded. The new
+            view for A, B and C will be {A,B,C}, however for D the view is still {A,B,C,D}. So when D comes back and
+            sends messages to the group, or any individiual member, those messages will be discarded, because A,B and
+            C don't see D in their view. D is shunned when A,B or C receive an are-you-alive message from D, or D
+            shuns itself when it receives a view which doesn't include D.<para/>
+
+            So shunning is always a unilateral decision. However, things may be different if all members exclude each
+            other from the group. For example, say we have a switch connecting A, B, C and D. If someone pulls all
+            plugs on the switch, or powers the switch down, then A, B, C and D will all form singleton groups, that is,
+            each member thinks it's the only member in the group. When the switch goes back to normal, then each member
+            will shun everybody else (a real shun fest :-)). This is clearly not desirable, so in this case shunning
+            should be turned off:
+            <screen>
+            &lt;FD timeout="2000" max_tries="3" shun="false"/&gt; ... &lt;pbcast.GMS join_timeout="3000" join_retry_timeout="2000" shun="false"/&gt;
+            </screen>
+        </section>
+    </section>
 </chapter>

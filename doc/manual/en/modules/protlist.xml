@@ -254,7 +254,12 @@
                     </row>
                     <row>
                         <entry>view_bundling</entry>
-                        <entry>Whether to enable view bundling (default is true)</entry>
+                        <entry>Whether to enable view bundling (default is true). View bundling means that multiple
+                        view-affecting requests to GNS, such as JOIN, LEAVE or SUSPECT, are bundled for a number
+                        of milliseconds in order to avoid having to generate one view per request.<para/>
+                        This is especially interesting if we have many members joining or leaving a group at
+                        the same time.
+                        </entry>
                     </row>
                     <row>
                         <entry>max_bundling_time</entry>
