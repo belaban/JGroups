@@ -8,7 +8,7 @@ import java.util.Vector;
 /**
  * Class that measure RTT between a client and server
  * @author Bela Ban
- * @version $Id: RoundTrip.java,v 1.1 2006/08/04 13:44:59 belaban Exp $
+ * @version $Id: RoundTrip.java,v 1.2 2006/08/04 13:53:30 belaban Exp $
  */
 public class RoundTrip extends ReceiverAdapter {
     JChannel channel;
@@ -81,14 +81,14 @@ public class RoundTrip extends ReceiverAdapter {
             buf[i]=0; // 0=request
         }
 
-        /*Address dest;
+        Address dest;
         Vector v=new Vector(channel.getView().getMembers());
         v.remove(channel.getLocalAddress());
-        dest=(Address)v.firstElement();*/
+        dest=(Address)v.firstElement();
 
         start=System.currentTimeMillis();
         for(int i=0; i < num; i++) {
-            msg=new Message(null, null, null);
+            msg=new Message(dest, null, null);
             msg.setBuffer(buf);
             try {
                 channel.send(msg);
