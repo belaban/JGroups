@@ -1,4 +1,4 @@
-// $Id: PerfHeader.java,v 1.9 2005/08/08 12:45:43 belaban Exp $
+// $Id: PerfHeader.java,v 1.10 2006/08/05 11:11:21 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -366,7 +366,7 @@ class PerfEntry implements Externalizable {
 
 
     // Needed for externalization
-    PerfEntry() {
+    public PerfEntry() {
 
     }
 
