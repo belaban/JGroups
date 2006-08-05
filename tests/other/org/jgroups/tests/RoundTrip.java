@@ -8,7 +8,7 @@ import java.util.Vector;
 /**
  * Class that measure RTT between a client and server
  * @author Bela Ban
- * @version $Id: RoundTrip.java,v 1.2 2006/08/04 13:53:30 belaban Exp $
+ * @version $Id: RoundTrip.java,v 1.3 2006/08/05 11:11:21 belaban Exp $
  */
 public class RoundTrip extends ReceiverAdapter {
     JChannel channel;
@@ -19,6 +19,7 @@ public class RoundTrip extends ReceiverAdapter {
     final byte[] RSP_BUF=new byte[]{1}; // 1=response
     int   num_responses=0;
     final Object mutex=new Object(); // to sync sending and reception of a message
+    private int num_requests=0;
 
 
     private void start(boolean server, int num, int msg_size, String props) throws ChannelException {
@@ -29,7 +30,7 @@ public class RoundTrip extends ReceiverAdapter {
 
         channel=new JChannel(props);
         channel.setReceiver(this);
-        channel.connect("RoudTripTestCluster");
+        channel.connect("rt");
 
         if(server) {
             System.out.println("server started (ctrl-c to kill)");
@@ -38,7 +39,10 @@ public class RoundTrip extends ReceiverAdapter {
             }
         }
         else {
+            channel.setOpt(Channel.LOCAL, Boolean.FALSE);
+            System.out.println("sending " + num + " requests");
             sendRequests();
+            channel.close();
         }
     }
 
@@ -48,9 +52,16 @@ public class RoundTrip extends ReceiverAdapter {
      */
     public void receive(Message msg) {
         byte[] buf=msg.getRawBuffer();
+        if(buf == null) {
+            System.err.println("buffer was null !");
+            return;
+        }
         if(buf[0] == 0) { // request
-            if(!server) // client ignores requests
+            if(!server) {// client ignores requests
                 return;
+            }
+            num_requests++;
+            // System.out.println("-- SERVER: received " + num_requests + " requests");
             Message response=new Message(msg.getSrc(), null, null);
             response.setBuffer(RSP_BUF, 0, RSP_BUF.length);
             try {
@@ -63,6 +74,7 @@ public class RoundTrip extends ReceiverAdapter {
         else { // response
             synchronized(mutex) {
                 num_responses++;
+                // System.out.println("-- SERVER: received " + num_responses + " responses");
                 mutex.notify();
             }
         }
@@ -81,14 +93,14 @@ public class RoundTrip extends ReceiverAdapter {
             buf[i]=0; // 0=request
         }
 
-        Address dest;
+/*        Address dest;
         Vector v=new Vector(channel.getView().getMembers());
         v.remove(channel.getLocalAddress());
-        dest=(Address)v.firstElement();
+        dest=(Address)v.firstElement();*/
 
         start=System.currentTimeMillis();
         for(int i=0; i < num; i++) {
-            msg=new Message(dest, null, null);
+            msg=new Message(null, null, null);
             msg.setBuffer(buf);
             try {
                 channel.send(msg);
@@ -97,7 +109,7 @@ public class RoundTrip extends ReceiverAdapter {
                         System.out.println("received all responses (" + num_responses + ")");
                         break;
                     }
-                    mutex.wait();
+                    mutex.wait(1000);
                 }
                 if(num_responses % print == 0) {
                     System.out.println("- received " + num_responses);
