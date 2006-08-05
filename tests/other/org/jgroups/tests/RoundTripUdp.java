@@ -1,6 +1,5 @@
 package org.jgroups.tests;
 
-import org.jgroups.ChannelException;
 import org.jgroups.ReceiverAdapter;
 
 import java.io.IOException;
@@ -11,7 +10,7 @@ import java.net.InetAddress;
 /**
  * Class that measure RTT between a client and server using datagram sockets
  * @author Bela Ban
- * @version $Id: RoundTripUdp.java,v 1.1 2006/08/05 13:10:56 belaban Exp $
+ * @version $Id: RoundTripUdp.java,v 1.2 2006/08/05 19:30:59 belaban Exp $
  */
 public class RoundTripUdp extends ReceiverAdapter {
     DatagramSocket sock;
@@ -97,11 +96,10 @@ public class RoundTripUdp extends ReceiverAdapter {
     }
 
 
-    public static void main(String[] args) throws ChannelException, IOException {
+    public static void main(String[] args) throws IOException {
         boolean server=false;
         int num=100;
         int msg_size=10; // 10 bytes
-        String props=null;
         InetAddress host=null;
         int port=7500;
 
