@@ -12,7 +12,7 @@ import java.net.Socket;
 /**
  * Class that measure RTT between a client and server using ServerSocket/Socket
  * @author Bela Ban
- * @version $Id: RoundTripTcp.java,v 1.1 2006/08/05 12:51:58 belaban Exp $
+ * @version $Id: RoundTripTcp.java,v 1.2 2006/08/05 12:57:32 belaban Exp $
  */
 public class RoundTripTcp {
     ServerSocket srv_sock;
@@ -48,13 +48,11 @@ public class RoundTripTcp {
                         out.write(RSP_BUF, 0, RSP_BUF.length);
                     }
                     catch(Exception ex) {
-                        ex.printStackTrace();
-                        break;
-                    }
-                    finally {
+                        // ex.printStackTrace();
                         Util.closeInputStream(in);
                         Util.closeOutputStream(out);
                         client_sock.close();
+                        break;
                     }
                 }
             }
