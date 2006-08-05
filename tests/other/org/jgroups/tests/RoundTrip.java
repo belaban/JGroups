@@ -3,12 +3,10 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.util.Util;
 
-import java.util.Vector;
-
 /**
  * Class that measure RTT between a client and server
  * @author Bela Ban
- * @version $Id: RoundTrip.java,v 1.3 2006/08/05 11:11:21 belaban Exp $
+ * @version $Id: RoundTrip.java,v 1.4 2006/08/05 12:32:44 belaban Exp $
  */
 public class RoundTrip extends ReceiverAdapter {
     JChannel channel;
@@ -19,7 +17,6 @@ public class RoundTrip extends ReceiverAdapter {
     final byte[] RSP_BUF=new byte[]{1}; // 1=response
     int   num_responses=0;
     final Object mutex=new Object(); // to sync sending and reception of a message
-    private int num_requests=0;
 
 
     private void start(boolean server, int num, int msg_size, String props) throws ChannelException {
@@ -60,7 +57,6 @@ public class RoundTrip extends ReceiverAdapter {
             if(!server) {// client ignores requests
                 return;
             }
-            num_requests++;
             // System.out.println("-- SERVER: received " + num_requests + " requests");
             Message response=new Message(msg.getSrc(), null, null);
             response.setBuffer(RSP_BUF, 0, RSP_BUF.length);
