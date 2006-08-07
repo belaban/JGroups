@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.80 2006/07/27 09:34:40 belaban Exp $
+// $Id: Util.java,v 1.81 2006/08/07 08:37:10 belaban Exp $
 
 package org.jgroups.util;
 
@@ -26,7 +26,7 @@ import java.util.List;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.80 2006/07/27 09:34:40 belaban Exp $
+ * @version $Id: Util.java,v 1.81 2006/08/07 08:37:10 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -146,18 +146,32 @@ public class Util {
     }
 
 
-     public static Streamable streamableFromByteBuffer(Class cl, byte[] buffer) throws Exception {
-         if(buffer == null) return null;
-         Streamable retval=null;
-         ByteArrayInputStream in_stream=new ByteArrayInputStream(buffer);
-         DataInputStream in=new DataInputStream(in_stream); // changed Nov 29 2004 (bela)
-         retval=(Streamable)cl.newInstance();
-         retval.readFrom(in);
-         in.close();
-         if(retval == null)
-             return null;
-         return retval;
-     }
+    public static Streamable streamableFromByteBuffer(Class cl, byte[] buffer) throws Exception {
+        if(buffer == null) return null;
+        Streamable retval=null;
+        ByteArrayInputStream in_stream=new ByteArrayInputStream(buffer);
+        DataInputStream in=new DataInputStream(in_stream); // changed Nov 29 2004 (bela)
+        retval=(Streamable)cl.newInstance();
+        retval.readFrom(in);
+        in.close();
+        if(retval == null)
+            return null;
+        return retval;
+    }
+
+
+    public static Streamable streamableFromByteBuffer(Class cl, byte[] buffer, int offset, int length) throws Exception {
+        if(buffer == null) return null;
+        Streamable retval=null;
+        ByteArrayInputStream in_stream=new ByteArrayInputStream(buffer, offset, length);
+        DataInputStream in=new DataInputStream(in_stream); // changed Nov 29 2004 (bela)
+        retval=(Streamable)cl.newInstance();
+        retval.readFrom(in);
+        in.close();
+        if(retval == null)
+            return null;
+        return retval;
+    }
 
     public static byte[] streamableToByteBuffer(Streamable obj) throws Exception {
         byte[] result=null;
