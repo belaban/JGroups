@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.38 2006/05/02 08:12:58 belaban Exp $
+// $Id: FD_SOCK.java,v 1.39 2006/08/08 10:23:28 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -59,6 +59,8 @@ public class FD_SOCK extends Protocol implements Runnable {
     Socket              ping_sock=null;                    // socket to the member we monitor
     InputStream         ping_input=null;                   // input stream of the socket to the member we monitor
     Thread              pinger_thread=null;                // listens on ping_sock, suspects member if socket is closed
+    final Object        pinger_mutex=new Object();
+
     final Hashtable     cache=new Hashtable(11);           // keys=Addresses, vals=IpAddresses (socket:port)
 
     /** Start port for server socket (uses first available port starting at start_port). A value of 0 (default)
@@ -326,12 +328,14 @@ public class FD_SOCK extends Protocol implements Runnable {
                         srv_sock_handler.setName(tmp);
                     }
                 }
-                tmp=pinger_thread != null? pinger_thread.getName() : null;
-                if(tmp != null) {
-                    index=tmp.indexOf(prefix);
-                    if(index > -1) {
-                        tmp=tmp.substring(0, index);
-                        pinger_thread.setName(tmp);
+                synchronized(pinger_mutex) {
+                    tmp=pinger_thread != null? pinger_thread.getName() : null;
+                    if(tmp != null) {
+                        index=tmp.indexOf(prefix);
+                        if(index > -1) {
+                            tmp=tmp.substring(0, index);
+                            pinger_thread.setName(tmp);
+                        }
                     }
                 }
                 break;
@@ -375,14 +379,16 @@ public class FD_SOCK extends Protocol implements Runnable {
                     }
 
                     if(members.size() > 1) {
-                        if(pinger_thread != null && pinger_thread.isAlive()) {
-                            tmp_ping_dest=determinePingDest();
-                            if(ping_dest != null && tmp_ping_dest != null && !ping_dest.equals(tmp_ping_dest)) {
-                                interruptPingerThread(); // allows the thread to use the new socket
+                        synchronized(pinger_mutex) {
+                            if(pinger_thread != null && pinger_thread.isAlive()) {
+                                tmp_ping_dest=determinePingDest();
+                                if(ping_dest != null && tmp_ping_dest != null && !ping_dest.equals(tmp_ping_dest)) {
+                                    interruptPingerThread(); // allows the thread to use the new socket
+                                }
                             }
+                            else
+                                startPingerThread(); // only starts if not yet running
                         }
-                        else
-                            startPingerThread(); // only starts if not yet running
                     }
                     else {
                         ping_dest=null;
@@ -418,7 +424,9 @@ public class FD_SOCK extends Protocol implements Runnable {
                 log.debug("determinePingDest()=" + tmp_ping_dest + ", pingable_mbrs=" + pingable_mbrs);
             if(tmp_ping_dest == null) {
                 ping_dest=null;
-                pinger_thread=null;
+                synchronized(pinger_mutex) {
+                    pinger_thread=null;
+                }
                 break;
             }
             ping_dest=tmp_ping_dest;
@@ -449,7 +457,9 @@ public class FD_SOCK extends Protocol implements Runnable {
                         case NORMAL_TEMINATION:
                             if(log.isDebugEnabled())
                                 log.debug("peer closed socket normally");
-                            pinger_thread=null;
+                            synchronized(pinger_mutex) {
+                                pinger_thread=null;
+                            }
                             break;
                         case ABNORMAL_TEMINATION:
                             handleSocketClose(null);
@@ -467,7 +477,9 @@ public class FD_SOCK extends Protocol implements Runnable {
             }
         }
         if(log.isDebugEnabled()) log.debug("pinger thread terminated");
-        pinger_thread=null;
+        synchronized(pinger_mutex) {
+            pinger_thread=null;
+        }
     }
 
 
@@ -491,6 +503,9 @@ public class FD_SOCK extends Protocol implements Runnable {
     }
 
 
+    /**
+     * Does *not* need to be synchronized on pinger_mutex because the caller (down()) already has the mutex acquired
+     */
     void startPingerThread() {
         if(pinger_thread == null) {
             pinger_thread=new Thread(Util.getGlobalThreadGroup(), this, "FD_SOCK Ping thread");
@@ -510,11 +525,13 @@ public class FD_SOCK extends Protocol implements Runnable {
 
 
     void stopPingerThread() {
-        if(pinger_thread != null && pinger_thread.isAlive()) {
-            regular_sock_close=true;
-            teardownPingSocket();
+        synchronized(pinger_mutex) {
+            if(pinger_thread != null && pinger_thread.isAlive()) {
+                regular_sock_close=true;
+                teardownPingSocket();
+            }
+            pinger_thread=null;
         }
-        pinger_thread=null;
     }
 
 
@@ -523,7 +540,8 @@ public class FD_SOCK extends Protocol implements Runnable {
      * (JDK 1.2.2 had no problems here), therefore we close the socket (setSoLinger has to be set !) if we are
      * running under Linux. This should be tested under Windows. (Solaris 8 and JDK 1.3.1 definitely works).<p>
      * Oct 29 2001 (bela): completely removed Thread.interrupt(), but used socket close on all OSs. This makes this
-     * code portable and we don't have to check for OSs.
+     * code portable and we don't have to check for OSs.<p/>
+     * Does *not* need to be synchronized on pinger_mutex because the caller (down()) already has the mutex acquired
      * @see org.jgroups.tests.InterruptTest to determine whether Thread.interrupt() works for InputStream.read().
      */
     void interruptPingerThread() {
