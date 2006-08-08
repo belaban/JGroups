@@ -2,7 +2,7 @@
 <!--
   Sample file that defines a number of stacks, used by multiplexer JGroups channel
   Author: Bela Ban
-  Version: $Id: stacks.xml,v 1.3 2006/05/12 09:43:10 belaban Exp $
+  Version: $Id: stacks.xml,v 1.4 2006/08/08 10:08:16 belaban Exp $
 -->
 <protocol_stacks>
     <stack name="fc-fast-minimalthreads" description="Flow control, no up or down threads (default stack)">
@@ -48,7 +48,51 @@
               min_threshold="0.10"/>
           <FRAG2 frag_size="60000" down_thread="false" up_thread="false"/>
           <pbcast.STATE_TRANSFER down_thread="false" up_thread="false"/>
+        </config>
+    </stack>
 
+    <stack name="fc-fast-minimalthreads-no-bundling-no-flowcontrol"
+           description="Same as fc-fast-minimalthreads, but no bundling and no flow control. Recommended for synchronous cluster RPCs">
+        <config>
+          <UDP
+             mcast_port="45566"
+             mcast_addr="228.10.10.10"
+             tos="16"
+             ucast_recv_buf_size="20000000"
+             ucast_send_buf_size="640000"
+             mcast_recv_buf_size="25000000"
+             mcast_send_buf_size="640000"
+             loopback="false"
+             discard_incompatible_packets="true"
+             max_bundle_size="64000"
+             max_bundle_timeout="30"
+             use_incoming_packet_handler="true"
+             use_outgoing_packet_handler="false"
+             ip_ttl="2"
+             down_thread="false" up_thread="false"
+             enable_bundling="false"/>
+          <PING timeout="2000"
+             down_thread="false" up_thread="false" num_initial_members="3"/>
+          <MERGE2 max_interval="100000"
+             down_thread="false" up_thread="false" min_interval="20000"/>
+          <FD_SOCK down_thread="false" up_thread="false"/>
+          <VERIFY_SUSPECT timeout="1500" down_thread="false" up_thread="false"/>
+          <pbcast.NAKACK max_xmit_size="60000"
+                   use_mcast_xmit="false" gc_lag="0"
+                   retransmit_timeout="100,200,300,600,1200,2400,4800"
+                   down_thread="false" up_thread="false"
+                   discard_delivered_msgs="true"/>
+          <UNICAST timeout="300,600,1200,2400,3600"
+             down_thread="false" up_thread="false"/>
+          <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
+                   down_thread="false" up_thread="false"
+                   max_bytes="400000"/>
+          <VIEW_SYNC avg_send_interval="60000" down_thread="false" up_thread="false" />
+          <pbcast.GMS print_local_addr="true" join_timeout="3000"
+                down_thread="false" up_thread="false"
+                join_retry_timeout="2000" shun="true"/>
+          <FRAG2 frag_size="60000" down_thread="false" up_thread="false"/>
+          <pbcast.STATE_TRANSFER down_thread="false" up_thread="false"/>
         </config>
     </stack>
 
