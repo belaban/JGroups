@@ -502,10 +502,246 @@
         </section>
 
         <section>
-            <title>pbcast.STREAMING_STATE_TRANSFER</title>
+      <title>pbcast.STREAMING_STATE_TRANSFER</title>
 
-            <para></para>
-        </section>
+      <section>
+        <title>Overview</title>
+
+        <para>In order to transfer application state to a joining member of a
+        group pbcast.STATE_TRANSFER has to load entire state into memory and
+        send it to a joining member. Major limitation of this approach is that
+        the state transfer that is very large (&gt;1Gb) would likely result in
+        OutOfMemoryException. In order to alleviate this problem a new state
+        transfer methodology, based on a streaming state transfer, was
+        introduced in JGroups 2.4</para>
+
+        <para>Streaming state transfer supports both partial and full state
+        transfer.</para>
+
+        <para>Streaming state transfer provides an InputStream to a state
+        reader and an OutputStream to a state writer. OutputStream and
+        InputStream abstractions enable state transfer in byte chunks thus
+        resulting in smaller memory requirements. For example, if application
+        state consists a huge DOM tree, whose aggregate size is 2GB (and which
+        has partly been passivated to disk), then the state provider (ie. the
+        coordinator) can simply iterate over the DOM tree (activating the
+        parts which have been passivated out to disk), and write to the
+        OutputStream as it traverses the tree. The state receiver will simply
+        read from the InputStream and reconstruct the tree on its side,
+        possibly again passivating parts to disk.</para>
+
+        <para>Rather than having to provide a 2GB byte[] buffer, streaming
+        state transfer transfers the state in chunks of N bytes where N is
+        user configurable.</para>
+      </section>
+
+      <section>
+        <title>API</title>
+
+        <para>Streaming state transfer, just as regular byte based state
+        transfer, can be used in both pull and push mode. Similarly to the
+        current getState and setState methods of org.jgroups.MessageListener,
+        application interested in streaming state transfer in a push mode
+        would implement streaming getState method(s) by sending/writing state
+        through a provided OutputStream reference and setState method(s) by
+        receiving/reading state through a provided InputStream reference. In
+        order to use streaming state transfer in a push mode, existing
+        ExtendedMessageListener has been expanded to include additional four
+        methods:</para>
+
+        <para><screen>
+public interface ExtendedMessageListener
+{ 
+
+/*non-streaming callback methods ommitted for clarity*/
+
+
+    /**
+ * Allows an application to write a state through a provided OutputStream.
+ * An application is obligated to always close the given OutputStream reference.
+ *
+ * @param ostream the OutputStream
+ * @see OutputStream#close()
+ */
+public void getState(OutputStream ostream);
+
+/**
+ * Allows an application to write a partial state through a provided OutputStream.
+ * An application is obligated to always close the given OutputStream reference.
+ *
+ * @param state_id id of the partial state requested
+ * @param ostream the OutputStream
+ *
+ * @see OutputStream#close()
+ */
+public void getState(String state_id, OutputStream ostream);
+
+
+/**
+ * Allows an application to read a state through a provided InputStream.
+ * An application is obligated to always close the given InputStream reference.
+ * 
+ * @param istream the InputStream
+ * @see InputStream#close()
+ */
+public void setState(InputStream istream);
+
+/**
+ * Allows an application to read a partial state through a provided InputStream.
+ * An application is obligated to always close the given InputStream reference.
+ *
+ * @param state_id id of the partial state requested
+ * @param istream the InputStream
+ *
+ * @see InputStream#close()
+ */
+public void setState(String state_id, InputStream istream);
+
+}
+            </screen></para>
+
+        <para>For a pull mode (when application uses channel.receive() to
+        fetch events) two new event classes will be introduced:</para>
+
+        <para><itemizedlist>
+            <listitem>
+              <para>StreamingGetStateEvent</para>
+            </listitem>
+
+            <listitem>
+              <para>StreamingSetStateEvent</para>
+            </listitem>
+          </itemizedlist> These two events/classes are very similar to
+        existing GetStateEvent and SetStateEvent but introduce a new field;
+        StreamingGetStateEvent has an OutputStream and StreamingSetStateEvent
+        has an InputStream.</para>
+
+        <para>The following code snippet demonstrates how to pull events from
+        a channel, processing StreamingGetStateEvent and sending hypothetical
+        state through a provided OutputStream reference. Handling of
+        StreamingSetStateEvent is analogous to this example:</para>
+
+        <screen>   ...
+   Object obj=channel.receive(0);
+   if(obj instanceof StreamingGetStateEvent) {
+     StreamingGetStateEvent evt=(StreamingGetStateEvent)obj;
+     OutputStream oos = null;
+     try {
+       oos = new ObjectOutputStream(evt.getArg());
+       oos.writeObject(state);   
+       oos.flush();
+     } catch (Exception e) {} 
+     finally{
+       try {
+         oos.close();
+       } catch (IOException e) {
+           System.err.println(e);
+       }
+    }
+  }                
+  ...</screen>
+
+        <para>API that initiates state transfer on a JChannel level has the
+        following methods:</para>
+
+        <para><screen>public boolean getState(Address target,long timeout)throws ChannelNotConnectedException,ChannelClosedException;
+public boolean getState(Address target,String state_id,long timeout)throws ChannelNotConnectedException,ChannelClosedException;</screen>
+        Introduction of STREAMING_STATE_TRANSFER does <emphasis>not</emphasis>
+        change the current API.</para>
+      </section>
+
+      <section>
+        <title>Configuration</title>
+
+        <para>State transfer type choice is static, implicit and mutually
+        exclusive. JChannel cannot use both STREAMING_STATE_TRANSFER and
+        STATE_TRANSFER in one JChannel configuration.</para>
+
+        <para>STREAMING_STATE_TRANSFER allows the following confguration
+        parameters:</para>
+
+        <table>
+          <title>Properties</title>
+
+          <tgroup cols="2">
+            <colspec align="left" />
+
+            <thead>
+              <row>
+                <entry align="center">Name</entry>
+
+                <entry align="center">Description</entry>
+              </row>
+            </thead>
+
+            <tbody>
+              <row>
+                <entry>bind_addr</entry>
+
+                <entry>The network interface to be used for receiving of state
+                requests, e.g. <code>bind_addr="192.16.8.0.2"</code></entry>
+              </row>
+
+              <row>
+                <entry>start_port</entry>
+
+                <entry>Port on the bind_addr network interface to be used for
+                receiving of state requests, e.g.
+                <code>start_port="4444"</code></entry>
+              </row>
+
+              <row>
+                <entry>max_pool</entry>
+
+                <entry>Maximum number of threads in the pool providing state
+                requests, default=5, e.g. <code>max_pool="10"</code></entry>
+              </row>
+
+              <row>
+                <entry>pool_thread_keep_alive</entry>
+
+                <entry>Pool thread keep alive in msec, default=30000, e.g.
+                <code>pool_thread_keep_alive="60000"</code></entry>
+              </row>
+
+              <row>
+                <entry>use_reading_thread</entry>
+
+                <entry>Use separate thread for reading state, default=false,
+                e.g. <code>use_reading_thread="true"</code></entry>
+              </row>
+
+              <row>
+                <entry>socket_buffer_size</entry>
+
+                <entry>Chunk size used for state transfer, default=8192 e.g.
+                <code>socket_buffer_size="32768"</code></entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </table>
+      </section>
+
+      <section>
+        <title>Other considerations</title>
+
+        <para>Threading model used for state writing in a member providing
+        state and state reading in a member receiving a state is tunable. For
+        state provider thread pool is used to spawn threads providing state.
+        Thus member providing state, in a push mode, will be able to
+        concurrently serve N state requests where N is max_threads
+        configuration parameter of the thread pool. If there are no further
+        state transfer requests pool threads will be automatically reaped
+        after configurable "pool_thread_keep_alive" timeout expires. For a
+        channel operating in the push mode state reader channel can read state
+        by piggybacking on jgroups protocol stack thread or optionally use a
+        separate thread. State reader should use a separate thread if state
+        reading is expensive (eg. large state, serialization) thus potentially
+        affecting liveness of jgroups protocol thread. Since most state
+        transfers are very short (&lt;2-3 sec) by default we do not use a
+        separate thread.</para>
+      </section>
+    </section>
     </section>
 
     <section>
