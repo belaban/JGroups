@@ -53,6 +53,8 @@ public class PerformanceTestGenerator {
 				}
                 continue;
             }
+            System.out.println("PerformanceTestGenerator -config <file>");
+            return;
         }
 
         try {
@@ -63,8 +65,6 @@ public class PerformanceTestGenerator {
         }
         catch(Exception e) {
             e.printStackTrace();
-        }
-        finally {
         }
 	}
 
@@ -90,7 +90,6 @@ public class PerformanceTestGenerator {
 			fw.write("gnuplot_output=true\n");
 			fw.close();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
