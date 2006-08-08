@@ -18,7 +18,7 @@ import java.util.List;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.63 2006/08/08 15:22:31 belaban Exp $
+ * @version $Id: GMS.java,v 1.64 2006/08/08 17:59:28 belaban Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -1144,12 +1144,12 @@ public class GMS extends Protocol {
 
 
         int     type=-1;
-        Address mbr=null;
+        Address mbr;
         boolean suspected;
-        Vector  coordinators=null;
-        View    view=null;
-        Digest  digest=null;
-        List    target_members=null;
+        Vector  coordinators;
+        View    view;
+        Digest  digest;
+        List    target_members;
 
         Request(int type) {
             this.type=type;
@@ -1195,7 +1195,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.63 2006/08/08 15:22:31 belaban Exp $
+     * @version $Id: GMS.java,v 1.64 2006/08/08 17:59:28 belaban Exp $
      */
     class ViewHandler implements Runnable {
         Thread                    thread;
@@ -1235,7 +1235,11 @@ public class GMS extends Protocol {
         }
 
 
-        synchronized void waitUntilCompleted(long timeout) {
+        void waitUntilCompleted(long timeout) {
+            waitUntilCompleted(timeout, false);
+        }
+
+        synchronized void waitUntilCompleted(long timeout, boolean resume) {
             if(thread != null) {
                 try {
                     thread.join(timeout);
@@ -1243,6 +1247,8 @@ public class GMS extends Protocol {
                 catch(InterruptedException e) {
                 }
             }
+            if(resume)
+                resumeForce();
         }
 
         /**
@@ -1443,7 +1449,7 @@ public class GMS extends Protocol {
                 resume_tasks.clear();
             }
             merge_id=null;
-            resumeForce();
+            // resumeForce();
         }
     }
 
