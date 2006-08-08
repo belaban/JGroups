@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.39 2006/08/08 10:23:28 belaban Exp $
+// $Id: FD_SOCK.java,v 1.40 2006/08/08 15:15:38 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -72,8 +72,8 @@ public class FD_SOCK extends Protocol implements Runnable {
     private final BroadcastTask bcast_task=new BroadcastTask();    // to transmit SUSPECT message (until view change)
     boolean             regular_sock_close=false;         // used by interruptPingerThread() when new ping_dest is computed
     int                 num_suspect_events=0;
-    private static final int NORMAL_TEMINATION=9;
-    private static final int ABNORMAL_TEMINATION=-1;
+    private static final int NORMAL_TERMINATION=9;
+    private static final int ABNORMAL_TERMINATION=-1;
     private static final String name="FD_SOCK";
 
     BoundedList          suspect_history=new BoundedList(20);
@@ -454,14 +454,14 @@ public class FD_SOCK extends Protocol implements Runnable {
                 if(ping_input != null) {
                     int c=ping_input.read();
                     switch(c) {
-                        case NORMAL_TEMINATION:
+                        case NORMAL_TERMINATION:
                             if(log.isDebugEnabled())
                                 log.debug("peer closed socket normally");
                             synchronized(pinger_mutex) {
                                 pinger_thread=null;
                             }
                             break;
-                        case ABNORMAL_TEMINATION:
+                        case ABNORMAL_TERMINATION:
                             handleSocketClose(null);
                             break;
                         default:
@@ -528,11 +528,27 @@ public class FD_SOCK extends Protocol implements Runnable {
         synchronized(pinger_mutex) {
             if(pinger_thread != null && pinger_thread.isAlive()) {
                 regular_sock_close=true;
+                sendPingTermination(); // PATCH by Bruce Schuchardt (http://jira.jboss.com/jira/browse/JGRP-246)
                 teardownPingSocket();
             }
             pinger_thread=null;
         }
     }
+
+    // PATCH: send something so the connection handler can exit
+    synchronized void sendPingTermination() {
+        if(ping_sock != null) {
+            try {
+                ping_sock.getOutputStream().write(NORMAL_TERMINATION);
+                ping_sock.getOutputStream().flush();
+            }
+            catch(Throwable t) {
+                if(trace)
+                    log.trace("problem terminating ping socket", t);
+            }
+        }
+    }
+
 
 
     /**
@@ -547,6 +563,7 @@ public class FD_SOCK extends Protocol implements Runnable {
     void interruptPingerThread() {
         if(pinger_thread != null && pinger_thread.isAlive()) {
             regular_sock_close=true;
+            sendPingTermination(); // PATCH by Bruce Schuchardt (http://jira.jboss.com/jira/browse/JGRP-246)
             teardownPingSocket(); // will wake up the pinger thread. less elegant than Thread.interrupt(), but does the job
         }
     }
@@ -1073,7 +1090,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                 if(client_sock != null) {
                     try {
                         OutputStream out=client_sock.getOutputStream();
-                        out.write(NORMAL_TEMINATION);
+                        out.write(NORMAL_TERMINATION);
                     }
                     catch(Throwable t) {
                     }
@@ -1102,13 +1119,18 @@ public class FD_SOCK extends Protocol implements Runnable {
                         return;
                     in=client_sock.getInputStream();
                 }
-                while((in.read()) != -1) {
+                int b=0;
+                do {
+                    b=in.read();
                 }
+                while(b != ABNORMAL_TERMINATION && b != NORMAL_TERMINATION);
             }
             catch(IOException io_ex1) {
             }
             finally {
-                closeClientSocket();
+                Socket sock=client_sock; // PATCH: avoid race condition causing NPE
+                if (sock != null && !sock.isClosed())
+                    closeClientSocket();
                 synchronized(clients) {
                     clients.remove(this);
                 }
