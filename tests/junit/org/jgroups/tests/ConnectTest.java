@@ -1,4 +1,4 @@
-// $Id: ConnectTest.java,v 1.7 2005/10/10 12:17:55 belaban Exp $
+// $Id: ConnectTest.java,v 1.8 2006/08/08 08:13:10 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -162,7 +162,7 @@ public class ConnectTest extends TestCase {
 
 
 
-    private class PromisedMessageListener implements MessageListener {
+    private static class PromisedMessageListener implements MessageListener {
 
         private Promise promise;
 
