@@ -1,22 +1,22 @@
-// $Id: UtilTest.java,v 1.10 2006/05/16 11:14:28 belaban Exp $
+// $Id: UtilTest.java,v 1.11 2006/08/08 07:40:22 belaban Exp $
 
 package org.jgroups.tests;
 
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
-import org.jgroups.Message;
 import org.jgroups.ChannelException;
-import org.jgroups.ViewId;
+import org.jgroups.Message;
 import org.jgroups.View;
-import org.jgroups.stack.IpAddress;
+import org.jgroups.ViewId;
 import org.jgroups.conf.ClassConfigurator;
+import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
 
 import java.io.*;
-import java.util.Vector;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Vector;
 
 
 public class UtilTest extends TestCase {
@@ -103,6 +103,25 @@ public class UtilTest extends TestCase {
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
         assertEquals("1.2GB", s);
+    }
+
+
+    public void testObjectToFromByteBuffer() throws Exception {
+        byte[] buf;
+        IpAddress addr=new IpAddress("localhost", 5000), addr2;
+        List list=new ArrayList(), list2;
+        list.add("Bela");
+        list.add("Jeannette");
+
+        buf=Util.objectToByteBuffer(addr);
+        addr2=(IpAddress)Util.objectFromByteBuffer(buf);
+        System.out.println("addr=" + addr + ", addr2=" + addr2);
+        assertEquals(addr, addr2);
+
+        buf=Util.objectToByteBuffer(list);
+        list2=(List)Util.objectFromByteBuffer(buf);
+        System.out.println("list=" + list + ", list2=" + list2);
+        assertEquals(list, list2);
     }
 
 
