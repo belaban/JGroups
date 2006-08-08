@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.27 2006/05/16 04:03:57 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.28 2006/08/08 09:34:59 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -576,7 +576,7 @@ public class RequestCorrelator {
      */
     private void handleRequest(Message req) {
         Object        retval;
-        byte[]        rsp_buf=null;
+        byte[]        rsp_buf;
         Header        hdr, rsp_hdr;
         Message       rsp;
 
@@ -656,7 +656,7 @@ public class RequestCorrelator {
      * Associates an ID with an <tt>RspCollector</tt>
      */
     private static class RequestEntry {
-        public RspCollector coll = null;
+        public RspCollector coll;
 
         public RequestEntry(RspCollector coll) {
             this.coll = coll;
