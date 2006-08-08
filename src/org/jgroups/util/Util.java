@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.81 2006/08/07 08:37:10 belaban Exp $
+// $Id: Util.java,v 1.82 2006/08/08 08:14:26 belaban Exp $
 
 package org.jgroups.util;
 
@@ -26,7 +26,7 @@ import java.util.List;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.81 2006/08/07 08:37:10 belaban Exp $
+ * @version $Id: Util.java,v 1.82 2006/08/08 08:14:26 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -93,26 +93,20 @@ public class Util {
         if(buffer == null) return null;
         Object retval=null;
 
-        try {  // to read the object as an Externalizable
-            ByteArrayInputStream in_stream=new ByteArrayInputStream(buffer, offset, length);
+        ByteArrayInputStream in_stream=new ByteArrayInputStream(buffer, offset, length);
+        byte b=(byte)in_stream.read();
+
+        if(b == 1) { // to read the object as a Streamable
+            DataInputStream in=new DataInputStream(in_stream);
+            retval=readGenericStreamable(in);
+            in.close();
+
+        }
+        else { // otherwise it is Externalizable or Serializable
             ObjectInputStream in=new ContextObjectInputStream(in_stream); // changed Nov 29 2004 (bela)
             retval=in.readObject();
             in.close();
         }
-        catch(StreamCorruptedException sce) {
-            try {  // is it Streamable?
-                ByteArrayInputStream in_stream=new ByteArrayInputStream(buffer);
-                DataInputStream in=new DataInputStream(in_stream);
-                retval=readGenericStreamable(in);
-                in.close();
-            }
-            catch(Exception ee) {
-                IOException tmp=new IOException("unmarshalling failed");
-                tmp.initCause(ee);
-                throw tmp;
-            }
-        }
-
         if(retval == null)
             return null;
         return retval;
@@ -131,11 +125,13 @@ public class Util {
         synchronized(out_stream) {
             out_stream.reset();
             if(obj instanceof Streamable) {  // use Streamable if we can
+                out_stream.write(1);
                 DataOutputStream out=new DataOutputStream(out_stream);
                 writeGenericStreamable((Streamable)obj, out);
                 out.close();
             }
             else {
+                out_stream.write(0);
                 ObjectOutputStream out=new ObjectOutputStream(out_stream);
                 out.writeObject(obj);
                 out.close();
