@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.50 2006/07/14 11:40:17 belaban Exp $
+// $Id: Message.java,v 1.51 2006/08/08 08:16:07 belaban Exp $
 
 package org.jgroups;
 
@@ -8,7 +8,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.util.ContextObjectInputStream;
 import org.jgroups.util.Marshaller;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
@@ -247,12 +246,10 @@ public class Message implements Externalizable, Streamable {
     final public void setObject(Serializable obj) {
         if(obj == null) return;
         try {
-            ByteArrayOutputStream out_stream=new ByteArrayOutputStream();
-            ObjectOutputStream out=new ObjectOutputStream(out_stream);
-            out.writeObject(obj);
-            setBuffer(out_stream.toByteArray());
+            byte[] tmp=Util.objectToByteBuffer(obj);
+            setBuffer(tmp);
         }
-        catch(IOException ex) {
+        catch(Exception ex) {
             throw new IllegalArgumentException(ex.toString());
         }
     }
@@ -261,10 +258,6 @@ public class Message implements Externalizable, Streamable {
         // if(buf == null) return null;
         try {
             return Util.objectFromByteBuffer(buf, offset, length);
-            /*ByteArrayInputStream in_stream=new ByteArrayInputStream(buf, offset, length);
-            // ObjectInputStream in=new ObjectInputStream(in_stream);
-            ObjectInputStream in=new ContextObjectInputStream(in_stream); // put it back on norbert's request
-            return in.readObject();*/
         }
         catch(Exception ex) {
             throw new IllegalArgumentException(ex.toString());
