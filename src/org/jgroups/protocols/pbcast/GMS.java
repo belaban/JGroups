@@ -18,7 +18,7 @@ import java.util.List;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.62 2006/08/04 15:54:35 belaban Exp $
+ * @version $Id: GMS.java,v 1.63 2006/08/08 15:22:31 belaban Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -1195,10 +1195,10 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.62 2006/08/04 15:54:35 belaban Exp $
+     * @version $Id: GMS.java,v 1.63 2006/08/08 15:22:31 belaban Exp $
      */
     class ViewHandler implements Runnable {
-        Thread                    t;
+        Thread                    thread;
         Queue                     q=new Queue(); // Queue<Request>
         boolean                   suspended=false;
         final static long         INTERVAL=5000;
@@ -1236,9 +1236,9 @@ public class GMS extends Protocol {
 
 
         synchronized void waitUntilCompleted(long timeout) {
-            if(t != null) {
+            if(thread != null) {
                 try {
-                    t.join(timeout);
+                    thread.join(timeout);
                 }
                 catch(InterruptedException e) {
                 }
@@ -1297,7 +1297,7 @@ public class GMS extends Protocol {
         public void run() {
             long start, stop, wait_time;
             List requests=new LinkedList();
-            while(!q.closed() && Thread.currentThread().equals(t)) {
+            while(!q.closed() && Thread.currentThread().equals(thread)) {
                 requests.clear();
                 try {
                     boolean keepGoing=false;
@@ -1315,7 +1315,6 @@ public class GMS extends Protocol {
                             if(wait_time > 0)
                                 Util.sleep(wait_time);
                             keepGoing=q.size() > 0;
-                            // keepGoing=false;
                         }
                     }
                     while(keepGoing);
@@ -1424,10 +1423,10 @@ public class GMS extends Protocol {
                 }
             }
             merge_id=null;
-            if(t == null || !t.isAlive()) {
-                t=new Thread(this, "ViewHandler");
-                t.setDaemon(false); // thread cannot terminate if we have tasks left, e.g. when we as coord leave
-                t.start();
+            if(thread == null || !thread.isAlive()) {
+                thread=new Thread(Util.getGlobalThreadGroup(), this, "ViewHandler");
+                thread.setDaemon(false); // thread cannot terminate if we have tasks left, e.g. when we as coord leave
+                thread.start();
                 if(trace)
                     log.trace("ViewHandler started");
             }
