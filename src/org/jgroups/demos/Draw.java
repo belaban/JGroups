@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.25 2006/07/31 09:21:58 belaban Exp $
+// $Id: Draw.java,v 1.26 2006/08/08 10:53:50 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -26,7 +26,6 @@ import java.util.Random;
  * @author Bela Ban, Oct 17 2001
  */
 public class Draw implements ActionListener, ChannelListener {
-    private final ByteArrayOutputStream  out=new ByteArrayOutputStream();
     String                         groupname="DrawGroupDemo";
     private Channel                channel=null;
     private int                    member_size=1;
@@ -335,11 +334,7 @@ public class Draw implements ActionListener, ChannelListener {
         ObjectOutputStream   os;
 
         try {
-            out.reset();
-            os=new ObjectOutputStream(out);
-            os.writeObject(comm);
-            os.flush();
-            channel.send(new Message(null, null, out.toByteArray()));
+            channel.send(new Message(null, null, comm));
         }
         catch(Exception ex) {
             System.err.println(ex);
@@ -452,11 +447,7 @@ public class Draw implements ActionListener, ChannelListener {
             }
 
             try {
-                out.reset();
-                os=new ObjectOutputStream(out);
-                os.writeObject(comm);
-                os.flush();
-                channel.send(new Message(null, null, out.toByteArray()));
+                channel.send(new Message(null, null, comm));
                 Thread.yield(); // gives the repainter some breath
             }
             catch(Exception ex) {

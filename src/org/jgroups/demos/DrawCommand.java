@@ -1,4 +1,4 @@
-// $Id: DrawCommand.java,v 1.4 2005/07/17 11:36:42 chrislott Exp $
+// $Id: DrawCommand.java,v 1.5 2006/08/08 10:53:50 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -18,10 +18,11 @@ public class DrawCommand implements Serializable {
     int r=0;
     int g=0;
     int b=0;
+    private static final long serialVersionUID = -539152912005072037L;
 
-	
+
     DrawCommand(int mode) {
-	this.mode=mode;
+    this.mode=mode;
     }
 	
     DrawCommand(int mode, int x, int y, int r, int g, int b) {
