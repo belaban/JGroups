@@ -12,7 +12,7 @@ import java.nio.ByteBuffer;
 /**
  * Class that measure RTT between a client and server using multicast sockets
  * @author Bela Ban
- * @version $Id: RoundTripMulticast.java,v 1.1 2006/08/07 10:22:24 belaban Exp $
+ * @version $Id: RoundTripMulticast.java,v 1.2 2006/08/08 06:28:19 belaban Exp $
  */
 public class RoundTripMulticast extends ReceiverAdapter {
     MulticastSocket mcast_recv_sock;  // to receive mcast traffic
@@ -62,16 +62,19 @@ public class RoundTripMulticast extends ReceiverAdapter {
 
         if(server) {
             Receiver r=new Receiver() {
-                public void receive(byte[] buffer, int offset, int length, InetAddress sender, int sender_port) {
-
-
-
-
-                    DatagramPacket packet=new DatagramPacket(RSP_BUF, 0, RSP_BUF.length, sender, sender_port);
+                public void receive(byte[] buf, int offset, int length, InetAddress sender, int sender_port) {
+                    ByteBuffer buffer=ByteBuffer.wrap(buf, offset, length);
+                    byte r=buffer.get();
+                    // System.out.println("received " + (r == 0? "request" : "response"));
+                    short len=buffer.getShort();
+                    byte[] tmp=new byte[len];
+                    buffer.get(tmp, 0, len);
                     try {
+                        IpAddress real_sender=(IpAddress)Util.streamableFromByteBuffer(IpAddress.class, tmp);
+                        DatagramPacket packet=new DatagramPacket(RSP_BUF, 0, RSP_BUF.length, real_sender.getIpAddress(), real_sender.getPort());
                         ucast_sock.send(packet); // send the response via DatagramSocket
                     }
-                    catch(IOException e) {
+                    catch(Exception e) {
                         e.printStackTrace();
                     }
                 }
@@ -102,11 +105,11 @@ public class RoundTripMulticast extends ReceiverAdapter {
                 Global.SHORT_SIZE + // length of marshalled IpAddress
                 marshalled_addr.length +
                 msg_size;
-        byte[]  buf=new byte[length];
         long    start, stop, total;
         double  requests_per_sec;
         double  ms_per_req;
         int     print=num / 10;
+        int     count=0;
 
         num_responses=0;
 
@@ -114,12 +117,14 @@ public class RoundTripMulticast extends ReceiverAdapter {
         buffer.put((byte)0); // request
         buffer.putShort((short)marshalled_addr.length);
         buffer.put(marshalled_addr, 0, marshalled_addr.length);
-        buffer.put(buf, 0, buf.length);
+        byte[] payload=new byte[msg_size];
+        buffer.put(payload, 0, payload.length);
+        byte[] array=buffer.array();
 
         ReceiverThread mcast_receiver=new ReceiverThread(
                 new Receiver() {
                     public void receive(byte[] buffer, int offset, int length, InetAddress sender, int sender_port) {
-                        System.out.println("mcast from " + sender + ":" + sender_port + " was discarded");
+                        // System.out.println("mcast from " + sender + ":" + sender_port + " was discarded");
                     }
                 },
                 mcast_recv_sock
@@ -138,10 +143,35 @@ public class RoundTripMulticast extends ReceiverAdapter {
                 ucast_sock);
         ucast_receiver.start();
 
-
         start=System.currentTimeMillis();
         for(int i=0; i < num; i++) {
-            DatagramPacket packet=new DatagramPacket(buf, 0, buf.length, mcast_addr, mcast_port);
+            DatagramPacket packet=new DatagramPacket(array, 0, array.length, mcast_addr, mcast_port);
+            try {
+                mcast_send_sock.send(packet);
+                synchronized(mutex) {
+                    while(num_responses != count +1) {
+                        mutex.wait(1000);
+                    }
+                    count=num_responses;
+                    if(num_responses >= num) {
+                        System.out.println("received all responses (" + num_responses + ")");
+                        break;
+                    }
+                }
+                if(num_responses % print == 0) {
+                    System.out.println("- received " + num_responses);
+                }
+            }
+            catch(Exception e) {
+                e.printStackTrace();
+            }
+        }
+        stop=System.currentTimeMillis();
+
+
+        /*start=System.currentTimeMillis();
+        for(int i=0; i < num; i++) {
+            DatagramPacket packet=new DatagramPacket(array, 0, array.length, mcast_addr, mcast_port);
             try {
                 mcast_send_sock.send(packet);
 
@@ -161,7 +191,7 @@ public class RoundTripMulticast extends ReceiverAdapter {
                 e.printStackTrace();
             }
         }
-        stop=System.currentTimeMillis();
+        stop=System.currentTimeMillis();*/
         total=stop-start;
         requests_per_sec=num / (total / 1000.0);
         ms_per_req=total / (double)num;

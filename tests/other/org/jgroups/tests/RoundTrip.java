@@ -6,7 +6,7 @@ import org.jgroups.util.Util;
 /**
  * Class that measure RTT between a client and server
  * @author Bela Ban
- * @version $Id: RoundTrip.java,v 1.4 2006/08/05 12:32:44 belaban Exp $
+ * @version $Id: RoundTrip.java,v 1.5 2006/08/08 06:28:19 belaban Exp $
  */
 public class RoundTrip extends ReceiverAdapter {
     JChannel channel;
@@ -83,6 +83,7 @@ public class RoundTrip extends ReceiverAdapter {
         double    ms_per_req;
         Message msg;
         int     print=num / 10;
+        int     count=0;
 
         num_responses=0;
         for(int i=0; i < buf.length; i++) {
@@ -101,11 +102,14 @@ public class RoundTrip extends ReceiverAdapter {
             try {
                 channel.send(msg);
                 synchronized(mutex) {
+                    while(num_responses != count +1) {
+                        mutex.wait(1000);
+                    }
+                    count=num_responses;
                     if(num_responses >= num) {
                         System.out.println("received all responses (" + num_responses + ")");
                         break;
                     }
-                    mutex.wait(1000);
                 }
                 if(num_responses % print == 0) {
                     System.out.println("- received " + num_responses);
