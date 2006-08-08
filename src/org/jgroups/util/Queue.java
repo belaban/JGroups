@@ -1,4 +1,4 @@
-// $Id: Queue.java,v 1.28 2005/12/21 17:08:32 belaban Exp $
+// $Id: Queue.java,v 1.29 2006/08/08 15:34:22 belaban Exp $
 
 package org.jgroups.util;
 
@@ -556,7 +556,7 @@ public class Queue {
      * prints the size of the queue
      */
     public String toString() {
-        return "Queue (" + size() + ") messages";
+        return "Queue (" + size() + ") elements";
     }
 
 
