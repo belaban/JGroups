@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.77 2006/05/22 09:42:20 belaban Exp $
+// $Id: NAKACK.java,v 1.78 2006/08/08 15:20:46 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -449,7 +449,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             mbrs=tmp_view.getMembers();
             members.clear();
             members.addAll(mbrs);
-            adjustReceivers();
+            adjustReceivers(false);
             break;
 
         case Event.VIEW_CHANGE:
@@ -457,7 +457,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             mbrs=tmp_view.getMembers();
             members.clear();
             members.addAll(mbrs);
-            adjustReceivers();
+            adjustReceivers(true);
             is_server=true;  // check vids from now on
 
             Set tmp=new LinkedHashSet(members);
@@ -864,22 +864,23 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * Remove old members from NakReceiverWindows and add new members (starting seqno=0). Essentially removes all
      * entries from received_msgs that are not in <code>members</code>
      */
-    private void adjustReceivers() {
+    private void adjustReceivers(boolean remove) {
         Address sender;
         NakReceiverWindow win;
 
         synchronized(received_msgs) {
-
-            // 1. Remove all senders in received_msgs that are not members anymore
-            for(Iterator it=received_msgs.keySet().iterator(); it.hasNext();) {
-                sender=(Address)it.next();
-                if(!members.contains(sender)) {
-                    win=(NakReceiverWindow)received_msgs.get(sender);
-                    win.reset();
-                    if(log.isDebugEnabled()) {
-                        log.debug("removing " + sender + " from received_msgs (not member anymore)");
+            if(remove) {
+                // 1. Remove all senders in received_msgs that are not members anymore
+                for(Iterator it=received_msgs.keySet().iterator(); it.hasNext();) {
+                    sender=(Address)it.next();
+                    if(!members.contains(sender)) {
+                        win=(NakReceiverWindow)received_msgs.get(sender);
+                        win.reset();
+                        if(log.isDebugEnabled()) {
+                            log.debug("removing " + sender + " from received_msgs (not member anymore)");
+                        }
+                        it.remove();
                     }
-                    it.remove();
                 }
             }
 
