@@ -16,7 +16,7 @@ import java.lang.reflect.Method;
 /**
  * Interactive test for measuring group RPCs using different invocation techniques.
  * @author Bela Ban
- * @version $Revision: 1.12 $
+ * @version $Revision: 1.13 $
  */
 public class RpcDispatcherSpeedTest implements MembershipListener {
     Channel             channel;
@@ -33,7 +33,10 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
     static final long   TIMEOUT=10000;
     static final Class  LONG_CLASS=long.class;
     static final String LONG=long.class.getName();
-    final Method[] METHODS=new Method[1];
+    final Method[]      METHODS=new Method[1];
+    final Object[]      EMPTY_OBJECT_ARRAY=new Object[]{};
+    final Class[]       EMPTY_CLASS_ARRAY=new Class[]{};
+    final String[]      EMPTY_STRING_ARRAY=new String[]{};
 
 
 
@@ -46,7 +49,7 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
         initMethods();
     }
 
-    void initMethods() throws NoSuchMethodException {
+    final void initMethods() throws NoSuchMethodException {
         Class cl=this.getClass();
         METHODS[0]=cl.getMethod("measure", null);
     }
@@ -97,8 +100,8 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
     void invokeRpcs(int num, int mode) throws Exception {
         long    start, stop;
         int     show=num/10;
-        Method measure_method=getClass().getMethod("measure", new Class[]{});
-        MethodCall measure_method_call=new MethodCall(measure_method, new Object[]{});
+        Method measure_method=getClass().getMethod("measure", EMPTY_CLASS_ARRAY);
+        MethodCall measure_method_call=new MethodCall(measure_method, EMPTY_OBJECT_ARRAY);
 
         if(show <=0) show=1;
         start=System.currentTimeMillis();
@@ -108,8 +111,8 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
             for(int i=1; i <= num; i++) {
                 disp.callRemoteMethods(null,
                                        "measure",
-                                       new Object[] {},
-                                       new Class[]{},
+                                       EMPTY_OBJECT_ARRAY,
+                                       EMPTY_CLASS_ARRAY,
                                        GroupRequest.GET_ALL, TIMEOUT);
                 if(i % show == 0)
                     System.out.println(i);
@@ -129,8 +132,8 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
             System.out.println("-- invoking " + num + " methods using mode=TYPES");
             for(int i=1; i <= num; i++) {
                 disp.callRemoteMethods(null, "measure",
-                                       new Object[]{},
-                                       new Class[]{},
+                                       EMPTY_OBJECT_ARRAY,
+                                       EMPTY_CLASS_ARRAY,
                                        GroupRequest.GET_ALL,
                                        TIMEOUT);
                 if(i % show == 0)
@@ -142,8 +145,8 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
             System.out.println("-- invoking " + num + " methods using mode=SIGNATURE");
             for(int i=1; i <= num; i++) {
                 disp.callRemoteMethods(null, "measure",
-                                       new Object[]{},
-                                       new String[]{},
+                                       EMPTY_OBJECT_ARRAY,
+                                       EMPTY_STRING_ARRAY,
                                        GroupRequest.GET_ALL,
                                        TIMEOUT);
                 if(i % show == 0)
