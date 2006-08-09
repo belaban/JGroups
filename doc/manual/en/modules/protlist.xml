@@ -1,152 +1,150 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <chapter id="protlist">
-    <title>List of Protocols</title>
+  <title>List of Protocols</title>
 
-    <para>For each protocol define:</para>
+  <para>For each protocol define:</para>
 
-    <itemizedlist>
-        <listitem>
-            <para>Properties provided</para>
-        </listitem>
+  <itemizedlist>
+    <listitem>
+      <para>Properties provided</para>
+    </listitem>
 
-        <listitem>
-            <para>Required services</para>
-        </listitem>
+    <listitem>
+      <para>Required services</para>
+    </listitem>
 
-        <listitem>
-            <para>Provided services</para>
-        </listitem>
+    <listitem>
+      <para>Provided services</para>
+    </listitem>
 
-        <listitem>
-            <para>Behavior</para>
-        </listitem>
-    </itemizedlist>
+    <listitem>
+      <para>Behavior</para>
+    </listitem>
+  </itemizedlist>
+
+  <section>
+    <title>Transport</title>
 
     <section>
-        <title>Transport</title>
+      <title>UDP</title>
 
-        <section>
-            <title>UDP</title>
-
-            <para></para>
-        </section>
-
-        <section>
-            <title>TCP</title>
-
-            <para></para>
-        </section>
-
-        <section>
-            <title>TUNNEL</title>
-
-            <para></para>
-        </section>
-
-        <section>
-            <title>JMS</title>
-
-            <para></para>
-        </section>
-
-        <section>
-            <title>LOOPBACK</title>
-
-            <para></para>
-        </section>
+      <para></para>
     </section>
 
     <section>
-        <title>Initinial membership discovery</title>
+      <title>TCP</title>
 
-        <section>
-            <title>PING</title>
-
-            <para></para>
-        </section>
-
-        <section>
-            <title>TCPPING</title>
-
-            <para></para>
-        </section>
-
-        <section>
-            <title>TCPGOSSIP</title>
-
-            <para></para>
-        </section>
-
-        <section>
-            <title>MPING</title>
-
-            <para></para>
-        </section>
+      <para></para>
     </section>
 
     <section>
-        <title>Fragmentation</title>
+      <title>TUNNEL</title>
 
-        <section>
-            <title>FRAG and FRAG2</title>
-
-            <para></para>
-        </section>
+      <para></para>
     </section>
 
     <section>
-        <title>Reliable message transmission</title>
+      <title>JMS</title>
 
-        <section>
-            <title>NAKACK</title>
-
-            <para></para>
-        </section>
-
-        <section>
-            <title>pbcast.NAKACK</title>
-
-            <para></para>
-        </section>
-
-        <section>
-            <title>SMACK</title>
-
-            <para></para>
-        </section>
-
-        <section>
-            <title>UNICAST</title>
-
-            <para></para>
-        </section>
+      <para></para>
     </section>
 
     <section>
-        <title>Ordering (FIFO covered by NAKACK)</title>
+      <title>LOOPBACK</title>
 
-        <section>
-            <title>CAUSAL</title>
+      <para></para>
+    </section>
+  </section>
 
-            <para></para>
-        </section>
+  <section>
+    <title>Initinial membership discovery</title>
 
-        <section>
-            <title>Total Order (sequencer: TOTAL, token-passing: TOTAL_TOKEN</title>
+    <section>
+      <title>PING</title>
 
-            <para></para>
-        </section>
+      <para></para>
     </section>
 
     <section>
-        <title>Group Membership</title>
+      <title>TCPPING</title>
 
-        <para>
-            Group membership takes care of joining new members, handling leave requests by existing members, and
-            handling
-            SUSPECT messages for crashed members, as emitted by failure detection protocols.
-            The algorithm for joining a new member is essentially:
-            <screen>
+      <para></para>
+    </section>
+
+    <section>
+      <title>TCPGOSSIP</title>
+
+      <para></para>
+    </section>
+
+    <section>
+      <title>MPING</title>
+
+      <para></para>
+    </section>
+  </section>
+
+  <section>
+    <title>Fragmentation</title>
+
+    <section>
+      <title>FRAG and FRAG2</title>
+
+      <para></para>
+    </section>
+  </section>
+
+  <section>
+    <title>Reliable message transmission</title>
+
+    <section>
+      <title>NAKACK</title>
+
+      <para></para>
+    </section>
+
+    <section>
+      <title>pbcast.NAKACK</title>
+
+      <para></para>
+    </section>
+
+    <section>
+      <title>SMACK</title>
+
+      <para></para>
+    </section>
+
+    <section>
+      <title>UNICAST</title>
+
+      <para></para>
+    </section>
+  </section>
+
+  <section>
+    <title>Ordering (FIFO covered by NAKACK)</title>
+
+    <section>
+      <title>CAUSAL</title>
+
+      <para></para>
+    </section>
+
+    <section>
+      <title>Total Order (sequencer: TOTAL, token-passing: TOTAL_TOKEN</title>
+
+      <para></para>
+    </section>
+  </section>
+
+  <section>
+    <title>Group Membership</title>
+
+    <para>Group membership takes care of joining new members, handling leave
+    requests by existing members, and handling SUSPECT messages for crashed
+    members, as emitted by failure detection protocols. The algorithm for
+    joining a new member is essentially: <screen>
                   - loop
                       - find initial members (discovery)
                       - if no responses:
@@ -159,349 +157,476 @@
                                - install view and break out of the loop
                           - else
                                - sleep for 5 seconds and continue the loop
-            </screen>
-        </para>
-    </section>
+            </screen></para>
+  </section>
 
-    <section>
-        <title>pbcast.GMS</title>
+  <section>
+    <title>pbcast.GMS</title>
 
-        <para></para>
+    <para></para>
 
+    <table>
+      <title>Properties</title>
 
-        <table>
-            <title>Properties</title>
+      <tgroup cols="2">
+        <colspec align="left" />
 
-            <tgroup cols="2">
-                <colspec align="left"/>
-                <thead>
-                    <row>
-                        <entry align="center">Name</entry>
-                        <entry align="center">Description</entry>
-                    </row>
-                </thead>
-                <tbody>
-                    <row>
-                        <entry>join_timeout</entry>
-                        <entry>Number of milliseconds to wait for a JOIN response from the coordinator, until we send
-                        a new JOIN request. Default=5000</entry>
-                    </row>
-                    <row>
-                        <entry>join_retry_timeou</entry>
-                        <entry>Number of ms to wait before sending a new JOIN request</entry>
-                    </row>
-                    <row>
-                        <entry>leave_timeout</entry>
-                        <entry>Number of ms to wait until a LEAVE response has been received from the coordinator. Once
-                        this time has elapsed, we leave anyway.</entry>
-                    </row>
-                    <row>
-                        <entry>shun</entry>
-                        <entry></entry>
-                    </row>
-                    <row>
-                        <entry>merge_leader</entry>
-                        <entry></entry>
-                    </row>
-                    <row>
-                        <entry>print_local_addr</entry>
-                        <entry>Whether or not to print to stdout the local address of a newly started member.
-                        Default is "true". Example:
-                            <screen>
+        <thead>
+          <row>
+            <entry align="center">Name</entry>
+
+            <entry align="center">Description</entry>
+          </row>
+        </thead>
+
+        <tbody>
+          <row>
+            <entry>join_timeout</entry>
+
+            <entry>Number of milliseconds to wait for a JOIN response from the
+            coordinator, until we send a new JOIN request.
+            Default=5000</entry>
+          </row>
+
+          <row>
+            <entry>join_retry_timeou</entry>
+
+            <entry>Number of ms to wait before sending a new JOIN
+            request</entry>
+          </row>
+
+          <row>
+            <entry>leave_timeout</entry>
+
+            <entry>Number of ms to wait until a LEAVE response has been
+            received from the coordinator. Once this time has elapsed, we
+            leave anyway.</entry>
+          </row>
+
+          <row>
+            <entry>shun</entry>
+
+            <entry></entry>
+          </row>
+
+          <row>
+            <entry>merge_leader</entry>
+
+            <entry></entry>
+          </row>
+
+          <row>
+            <entry>print_local_addr</entry>
+
+            <entry>Whether or not to print to stdout the local address of a
+            newly started member. Default is "true". Example: <screen>
                                 -------------------------------------------------------
                                 GMS: address is 192.168.5.2:4682
                                 -------------------------------------------------------
                             </screen></entry>
-                    </row>
-                    <row>
-                        <entry>merge_timeout</entry>
-                        <entry></entry>
-                    </row>
-                    <row>
-                        <entry>digest_timeout</entry>
-                        <entry></entry>
-                    </row>
-                    <row>
-                        <entry>view_ack_collection_timeout</entry>
-                        <entry></entry>
-                    </row>
-                    <row>
-                        <entry>resume_task_timeout</entry>
-                        <entry></entry>
-                    </row>
-                    <row>
-                        <entry>disable_initial_coord</entry>
-                        <entry></entry>
-                    </row>
-                    <row>
-                        <entry>handle_concurrent_startup</entry>
-                        <entry>Default: "true". Handles concurrent starting of N <emphasis>initial</emphasis>
-                            members. Setting it to false is only used for unit tests, where the correctness of
-                            the subsequent merge is tested, we don't recommend setting it to false.
-                        </entry>
-                    </row>
-                    <row>
-                        <entry>num_prev_mbrs</entry>
-                        <entry></entry>
-                    </row>
-                    <row>
-                        <entry>use_flush</entry>
-                        <entry></entry>
-                    </row>
-                    <row>
-                        <entry>flush_timeout</entry>
-                        <entry></entry>
-                    </row>
-                    <row>
-                        <entry>view_bundling</entry>
-                        <entry>Whether to enable view bundling (default is true). View bundling means that multiple
-                        view-affecting requests to GNS, such as JOIN, LEAVE or SUSPECT, are bundled for a number
-                        of milliseconds in order to avoid having to generate one view per request.<para/>
-                        This is especially interesting if we have many members joining or leaving a group at
-                        the same time.
-                        </entry>
-                    </row>
-                    <row>
-                        <entry>max_bundling_time</entry>
-                        <entry>Max number of milliseconds to wait for subsequent JOIN/LEAVE/SUSPECT requests
-                            (default is 50). Therefore, when 5 JOIN or LEAVE requests are received within 50ms, only
-                            1 view will be generated</entry>
-                    </row>
-                </tbody>
-            </tgroup>
-        </table>
+          </row>
 
+          <row>
+            <entry>merge_timeout</entry>
 
+            <entry></entry>
+          </row>
+
+          <row>
+            <entry>digest_timeout</entry>
+
+            <entry></entry>
+          </row>
+
+          <row>
+            <entry>view_ack_collection_timeout</entry>
+
+            <entry></entry>
+          </row>
+
+          <row>
+            <entry>resume_task_timeout</entry>
+
+            <entry></entry>
+          </row>
+
+          <row>
+            <entry>disable_initial_coord</entry>
+
+            <entry></entry>
+          </row>
+
+          <row>
+            <entry>handle_concurrent_startup</entry>
+
+            <entry>Default: "true". Handles concurrent starting of N
+            <emphasis>initial</emphasis> members. Setting it to false is only
+            used for unit tests, where the correctness of the subsequent merge
+            is tested, we don't recommend setting it to false.</entry>
+          </row>
+
+          <row>
+            <entry>num_prev_mbrs</entry>
+
+            <entry></entry>
+          </row>
+
+          <row>
+            <entry>use_flush</entry>
+
+            <entry></entry>
+          </row>
+
+          <row>
+            <entry>flush_timeout</entry>
+
+            <entry></entry>
+          </row>
+
+          <row>
+            <entry>view_bundling</entry>
+
+            <entry>Whether to enable view bundling (default is true). View
+            bundling means that multiple view-affecting requests to GNS, such
+            as JOIN, LEAVE or SUSPECT, are bundled for a number of
+            milliseconds in order to avoid having to generate one view per
+            request.<para></para> This is especially interesting if we have
+            many members joining or leaving a group at the same time.</entry>
+          </row>
+
+          <row>
+            <entry>max_bundling_time</entry>
+
+            <entry>Max number of milliseconds to wait for subsequent
+            JOIN/LEAVE/SUSPECT requests (default is 50). Therefore, when 5
+            JOIN or LEAVE requests are received within 50ms, only 1 view will
+            be generated</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </table>
+  </section>
+
+  <section>
+    <title>Disabling the initial coordinator</title>
+
+    <para>Consider the following situation: a new member wants to join a
+    group. The prodedure to do so is:</para>
+
+    <itemizedlist>
+      <listitem>
+        <para>Multicast an (unreliable) discovery request (ping)</para>
+      </listitem>
+
+      <listitem>
+        <para>Wait for n responses or m milliseconds (whichever is
+        first)</para>
+      </listitem>
+
+      <listitem>
+        <para>Every member responds with the address of the coordinator</para>
+      </listitem>
+
+      <listitem>
+        <para>If the initial responses are &gt; 0: determine the coordinator
+        and start the JOIN protocolg</para>
+      </listitem>
+
+      <listitem>
+        <para>If the initial response are 0: become coordinator, assuming that
+        no one else is out there</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>However, the problem is that the initial mcast discovery request
+    might get lost, e.g. when multiple members start at the same time, the
+    outgoing network buffer might overflow, and the mcast packet might get
+    dropped. Nobody receives it and thus the sender will not receive any
+    responses, resulting in an initial membership of 0. This could result in
+    multiple coordinators, and multiple subgroups forming. How can we overcome
+    this problem ? There are 3 solutions:</para>
+
+    <orderedlist>
+      <listitem>
+        <para>Increase the timeout, or number of responses received. This will
+        only help if the reason of the empty membership was a slow host. If
+        the mcast packet was dropped, this solution won't help</para>
+      </listitem>
+
+      <listitem>
+        <para>Add the MERGE(2) protocol. This doesn't actually prevent
+        multiple initial cordinators, but rectifies the problem by merging
+        different subgroups back into one. Note that this involves state
+        merging which needs to be done by the application.</para>
+      </listitem>
+
+      <listitem>
+        <para>(new) Prevent members from becoming coordinator on initial
+        startup. This solution is applicable when we know which member is
+        going to be the initial coordinator of a fresh group. We don't care
+        about afterwards, then coordinatorship can migrate to another member.
+        In this case, we configure the member that is always supposed to be
+        started first with disable_initial_coord=false (the default) and all
+        other members with disable_initial_coord=true.This works as described
+        below.</para>
+      </listitem>
+    </orderedlist>
+
+    <para>When the initial membership is received, and is null, and the
+    property disable_initial_coord is true, then we just continue in the loop
+    and retry receving the initial membership (until it is non-null). If the
+    property is false, we are allowed to become coordinator, and will do so.
+    Note that - if a member is started as first member of a group - but its
+    property is set to true, then it will loop until another member whose
+    disable_initial_coord property is set to false, is started.</para>
+  </section>
+
+  <section>
+     
+
+    <title>Failure Detection</title>
+
+     The task of failure detection is to probe members of a group and see whether they are alive. When a member is suspected (= deemed dead), then a SUSPECT message is sent to all nodes of the cluster. It is not the task of the failure detection layer to exclude a crashed member (this is done by the group membership protocol, GMS), but simply to notify everyone that a node in the cluster is suspected of having crashed. 
+
+    <section>
+      <title>FD</title>
+
+      <para>Failure detection based on heartbeat messages. If reply is not
+      received without timeout ms, max_tries times, a member is declared
+      suspected, and will be excluded by GMS</para>
+
+      <para>Each member send a message containing a "FD" - HEARTBEAT header to
+      its neighbor to the right (identified by the ping_dest address). The
+      heartbeats are sent by the inner class Monitor. When the neighbor
+      receives the HEARTBEAT, it replies with a message containing a "FD" -
+      HEARTBEAT_ACK header. The first member watches for "FD" - HEARTBEAT_ACK
+      replies from its neigbor. For each received reply, it resets the
+      last_ack timestamp (sets it to current time) and num_tries counter (sets
+      it to 0). The same Monitor instance that sends heartbeats whatches the
+      difference between current time and last_ack. If this difference grows
+      over timeout, the Monitor cycles several more times (until max_tries) is
+      reached) and then sends a SUSPECT message for the neighbor's address.
+      The SUSPECT message is sent down the stack, is addressed to all members,
+      and is as a regular message with a FdHeader.SUSPECT header.</para>
+
+      <table>
+        <title>Properties</title>
+
+        <tgroup cols="2">
+          <colspec align="left" />
+
+          <thead>
+            <row>
+              <entry align="center">Name</entry>
+
+              <entry align="center">Description</entry>
+            </row>
+          </thead>
+
+          <tbody>
+            <row>
+              <entry>timeout</entry>
+
+              <entry>Max number of ms to wait for a response, e.g
+              timeout="2500"</entry>
+            </row>
+
+            <row>
+              <entry>max_tries</entry>
+
+              <entry>Max number of missed responses until a member is declare
+              suspected., e.g. <code>max_tries="5"</code></entry>
+            </row>
+
+            <row>
+              <entry>shun</entry>
+
+              <entry>Once a member is excluded from the group, and then
+              rejoins (e.g. because it didn't crash, but was just slow, or a
+              router that had crashed came back), it will be excluded
+              (shunned) and then has to rejoin. JGroups allows to configure
+              itself such that shunning leads to automatic rejoins and state
+              transfer (default in JBoss). , e.g.
+              <code>shun="true"</code></entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </table>
+    </section>
+
+     
+
+    <section>
+      <title>FD_SIMPLE</title>
+
+      <para />
+    </section>
+
+     
+
+    <section><title>FD_PING</title> FD_PING uses a script or command that is
+    run with 1 argument (the host to be pinged) and needs to return 0
+    (success) or 1 (failure). The default command is /sbin/ping (ping.exe on
+    Windows), but this is user configurable and can be replaced with any
+    user-provided script or executable. <table>
+        <title>Properties</title>
+
+        <tgroup cols="2">
+          <colspec align="left" />
+
+          <thead>
+            <row>
+              <entry align="center">Name</entry>
+
+              <entry align="center">Description</entry>
+            </row>
+          </thead>
+
+          <tbody>
+            <row>
+              <entry>cmd</entry>
+
+              <entry>The command to be executed, e.g. "/sbin/ping" (or "ping"
+              if found on path)</entry>
+            </row>
+
+            <row>
+              <entry>verbose</entry>
+
+              <entry>Whether or not to show the output of the command. Valid:
+              "true" or "false"</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </table></section>
+
+     
+
+    <section><title>FD_ICMP</title> Uses InetAddress.isReachable() to
+    determine whether a host is up or not. Note that this is only available in
+    JDK 5, so reflection is used to determine whether InetAddress provides
+    such a method. If not, an exception will be thrown at protocol
+    initialization time. <para /> The problem with InetAddress.isReachable()
+    is that it may or may not use ICMP in its implementation ! For example, an
+    implementation might try to establish a TCP connection to port 9 (echo
+    service), and - if the echo service is not running - the host would be
+    suspected, although a real ICMP packet would <emphasis>not</emphasis> have
+    suspected the host ! Please check your JDK/OS combo before running this
+    protocol. <table>
+        <title>Properties</title>
+
+        <tgroup cols="2">
+          <colspec align="left" />
+
+          <thead>
+            <row>
+              <entry align="center">Name</entry>
+
+              <entry align="center">Description</entry>
+            </row>
+          </thead>
+
+          <tbody>
+            <row>
+              <entry>bind_addr</entry>
+
+              <entry>The network interface to be used for sending ICMP
+              packets, e.g. <code>bind_addr="192.16.8.0.2"</code></entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </table></section>
+
+     
+
+    <section>
+      <title>FD_SOCK</title>
+
+      <para>Failure detection protocol based on a ring of TCP sockets created
+      between group members. Each member in a group connects to its neighbor
+      (last member connects to first) thus forming a ring. Member B is
+      suspected when its neighbor A detects abnormally closed TCP socket
+      (presumably due to a node B crash). However, if a member B is about to
+      leave gracefully, it lets its neighbor A know, so that it does not
+      become suspected.</para>
+
+      <para>If you are using a multi NIC machine note that JGroups versions
+      prior to 2.2.8 have FD_SOCK implementation that does not assume this
+      possibility. Therefore JVM can possibly select NIC unreachable to its
+      neighbor and setup FD_SOCK server socket on it. Neighbor would be unable
+      to connect to that server socket thus resulting in immediate suspecting
+      of a member. Suspected member is kicked out of the group, tries to
+      rejoin, and thus goes into join/leave loop. JGroups version 2.2.8
+      introduces srv_sock_bind_addr property so you can specify network
+      interface where FD_SOCK TCP server socket should be bound. This network
+      interface is most likely the same interface used for other JGroups
+      traffic. JGroups versions 2.2.9 and newer consult bind.address system
+      property or you can specify network interface directly as FD_SOCK
+      bind_addr property.</para>
+
+      <table>
+        <title>Properties</title>
+
+        <tgroup cols="2">
+          <colspec align="left" />
+
+          <thead>
+            <row>
+              <entry align="center">Name</entry>
+
+              <entry align="center">Description</entry>
+            </row>
+          </thead>
+
+          <tbody>
+            <row>
+              <entry>bind_addr</entry>
+
+              <entry>The network interface to be used for sending ICMP
+              packets, e.g. <code>bind_addr="192.16.8.0.2"</code></entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </table>
+    </section>
+
+     
+
+    <section>
+      <title>VERIFY_SUSPECT</title>
+
+      <para />
+    </section>
+
+     
+  </section>
+
+  <section>
+    <title>Probabilistic Broadcast</title>
+
+    <section>
+      <title>PBCAST</title>
+
+      <para></para>
+    </section>
+  </section>
+
+  <section>
+    <title>Encryption and AUTH</title>
+
+    <para></para>
+  </section>
+
+  <section>
+    <title>State Transfer</title>
+
+    <section>
+      <title>pbcast.STATE_TRANSFER</title>
+
+      <para></para>
     </section>
 
     <section>
-        <title>Disabling the initial coordinator</title>
-
-        <para>Consider the following situation: a new member wants to join a
-            group. The prodedure to do so is:</para>
-
-        <itemizedlist>
-            <listitem>
-                <para>Multicast an (unreliable) discovery request (ping)</para>
-            </listitem>
-
-            <listitem>
-                <para>Wait for n responses or m milliseconds (whichever is
-                    first)</para>
-            </listitem>
-
-            <listitem>
-                <para>Every member responds with the address of the
-                    coordinator</para>
-            </listitem>
-
-            <listitem>
-                <para>If the initial responses are &gt; 0: determine the coordinator
-                    and start the JOIN protocolg</para>
-            </listitem>
-
-            <listitem>
-                <para>If the initial response are 0: become coordinator, assuming
-                    that no one else is out there</para>
-            </listitem>
-        </itemizedlist>
-
-        <para>However, the problem is that the initial mcast discovery request
-            might get lost, e.g. when multiple members start at the same time, the
-            outgoing network buffer might overflow, and the mcast packet might get
-            dropped. Nobody receives it and thus the sender will not receive any
-            responses, resulting in an initial membership of 0. This could result in
-            multiple coordinators, and multiple subgroups forming. How can we
-            overcome this problem ? There are 3 solutions:</para>
-
-        <orderedlist>
-            <listitem>
-                <para>Increase the timeout, or number of responses received. This
-                    will only help if the reason of the empty membership was a slow
-                    host. If the mcast packet was dropped, this solution won't
-                    help</para>
-            </listitem>
-
-            <listitem>
-                <para>Add the MERGE(2) protocol. This doesn't actually prevent
-                    multiple initial cordinators, but rectifies the problem by merging
-                    different subgroups back into one. Note that this involves state
-                    merging which needs to be done by the application.</para>
-            </listitem>
-
-            <listitem>
-                <para>(new) Prevent members from becoming coordinator on initial
-                    startup. This solution is applicable when we know which member is
-                    going to be the initial coordinator of a fresh group. We don't care
-                    about afterwards, then coordinatorship can migrate to another
-                    member. In this case, we configure the member that is always
-                    supposed to be started first with disable_initial_coord=false (the
-                    default) and all other members with disable_initial_coord=true.This
-                    works as described below.</para>
-            </listitem>
-        </orderedlist>
-
-        <para>When the initial membership is received, and is null, and the
-            property disable_initial_coord is true, then we just continue in the
-            loop and retry receving the initial membership (until it is non-null).
-            If the property is false, we are allowed to become coordinator, and will
-            do so. Note that - if a member is started as first member of a group -
-            but its property is set to true, then it will loop until another member
-            whose disable_initial_coord property is set to false, is started.</para>
-    </section>
-
-    <section>
-
-
-        <title>Failure Detection</title>
-
-        The task of failure detection is to probe members of a group and see whether they are alive. When a member is
-        suspected (= deemed dead), then a SUSPECT message is sent to all nodes of the cluster. It is not the task of the
-        failure detection layer to exclude a crashed member (this is done by the group membership protocol, GMS), but
-        simply to notify everyone that a node in the cluster is suspected of having crashed.
-
-        <section>
-            <title>FD</title>
-
-            <para/>
-        </section>
-
-
-        <section>
-            <title>FD_SIMPLE</title>
-
-            <para/>
-        </section>
-
-
-        <section>
-            <title>FD_PING</title>
-            FD_PING uses a script or command that is
-            run with 1 argument (the host to be pinged) and needs to return 0
-            (success) or 1 (failure). The default command is /sbin/ping (ping.exe on
-            Windows), but this is user configurable and can be replaced with any
-            user-provided script or executable.
-            <table>
-                <title>Properties</title>
-
-                <tgroup cols="2">
-                    <colspec align="left"/>
-
-                    <thead>
-                        <row>
-                            <entry align="center">Name</entry>
-
-                            <entry align="center">Description</entry>
-                        </row>
-                    </thead>
-
-                    <tbody>
-                        <row>
-                            <entry>cmd</entry>
-
-                            <entry>The command to be executed, e.g. "/sbin/ping" (or "ping"
-                                if found on path)</entry>
-                        </row>
-
-                        <row>
-                            <entry>verbose</entry>
-
-                            <entry>Whether or not to show the output of the command. Valid:
-                                "true" or "false"</entry>
-                        </row>
-                    </tbody>
-                </tgroup>
-            </table>
-        </section>
-
-
-        <section>
-            <title>FD_ICMP</title>
-            Uses InetAddress.isReachable() to
-            determine whether a host is up or not. Note that this is only available in
-            JDK 5, so reflection is used to determine whether InetAddress provides
-            such a method. If not, an exception will be thrown at protocol
-            initialization time.
-            <para/>
-            The problem with InetAddress.isReachable()
-            is that it may or may not use ICMP in its implementation ! For example, an
-            implementation might try to establish a TCP connection to port 9 (echo
-            service), and - if the echo service is not running - the host would be
-            suspected, although a real ICMP packet would
-            <emphasis>not</emphasis>
-            have suspected the host !
-            Please check your JDK/OS combo before running this protocol.
-            <table>
-                <title>Properties</title>
-
-                <tgroup cols="2">
-                    <colspec align="left"/>
-
-                    <thead>
-                        <row>
-                            <entry align="center">Name</entry>
-
-                            <entry align="center">Description</entry>
-                        </row>
-                    </thead>
-
-                    <tbody>
-                        <row>
-                            <entry>bind_addr</entry>
-
-                            <entry>The network interface to be used for sending ICMP
-                                packets, e.g.
-                                <code>bind_addr="192.16.8.0.2"</code>
-                            </entry>
-                        </row>
-                    </tbody>
-                </tgroup>
-            </table>
-        </section>
-
-
-        <section>
-            <title>FD_SOCK</title>
-
-            <para/>
-        </section>
-
-
-        <section>
-            <title>VERIFY_SUSPECT</title>
-
-            <para/>
-        </section>
-
-
-    </section>
-
-    <section>
-        <title>Probabilistic Broadcast</title>
-
-        <section>
-            <title>PBCAST</title>
-
-            <para></para>
-        </section>
-    </section>
-
-    <section>
-        <title>Encryption and AUTH</title>
-
-        <para></para>
-    </section>
-
-    <section>
-        <title>State Transfer</title>
-
-        <section>
-            <title>pbcast.STATE_TRANSFER</title>
-
-            <para></para>
-        </section>
-
-        <section>
       <title>pbcast.STREAMING_STATE_TRANSFER</title>
 
       <section>
@@ -742,83 +867,83 @@ public boolean getState(Address target,String state_id,long timeout)throws Chann
         separate thread.</para>
       </section>
     </section>
+  </section>
+
+  <section>
+    <title>Merge</title>
+
+    <section>
+      <title>MERGE, MERGE2</title>
+
+      <para></para>
+    </section>
+  </section>
+
+  <section>
+    <title>Debugging</title>
+
+    <section>
+      <title>PERF</title>
+
+      <para></para>
     </section>
 
     <section>
-        <title>Merge</title>
+      <title>SIZE</title>
 
-        <section>
-            <title>MERGE, MERGE2</title>
-
-            <para></para>
-        </section>
+      <para></para>
     </section>
 
     <section>
-        <title>Debugging</title>
+      <title>TRACE</title>
 
-        <section>
-            <title>PERF</title>
-
-            <para></para>
-        </section>
-
-        <section>
-            <title>SIZE</title>
-
-            <para></para>
-        </section>
-
-        <section>
-            <title>TRACE</title>
-
-            <para></para>
-        </section>
-
-        <section>
-            <title>PRINTOBJS</title>
-
-            <para></para>
-        </section>
+      <para></para>
     </section>
 
     <section>
-        <title>Misc</title>
+      <title>PRINTOBJS</title>
 
-        <section>
-            <title>COMPRESS</title>
+      <para></para>
+    </section>
+  </section>
 
-            <para></para>
-        </section>
+  <section>
+    <title>Misc</title>
 
-        <section>
-            <title>pbcast.STABLE</title>
+    <section>
+      <title>COMPRESS</title>
 
-            <para></para>
-        </section>
-
-        <section>
-            <title>pbcast.FLUSH</title>
-
-            <para></para>
-        </section>
+      <para></para>
     </section>
 
     <section>
-        <title>Use case: joining a group</title>
+      <title>pbcast.STABLE</title>
 
-        <para></para>
+      <para></para>
     </section>
 
     <section>
-        <title>Use case: leaving a group</title>
+      <title>pbcast.FLUSH</title>
 
-        <para></para>
+      <para></para>
     </section>
+  </section>
 
-    <section>
-        <title>Use case: removing a crashed member</title>
+  <section>
+    <title>Use case: joining a group</title>
 
     <para></para>
-    </section>
+  </section>
+
+  <section>
+    <title>Use case: leaving a group</title>
+
+    <para></para>
+  </section>
+
+  <section>
+    <title>Use case: removing a crashed member</title>
+
+    <para></para>
+  </section>
 </chapter>
