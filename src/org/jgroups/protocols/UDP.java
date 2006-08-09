@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.116 2006/07/28 15:30:21 belaban Exp $
+// $Id: UDP.java,v 1.117 2006/08/09 08:39:23 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -613,9 +613,9 @@ public class UDP extends TP implements Runnable {
         int rcv_port=bind_port, max_port=bind_port + port_range;
         while(rcv_port <= max_port) {
             try {
-                    tmp=new DatagramSocket(rcv_port, bind_addr);
-                    break;
-                }
+                tmp=new DatagramSocket(rcv_port, bind_addr);
+                break;
+            }
             catch(SocketException bind_ex) {	// Cannot listen on this port
                 rcv_port++;
             }
