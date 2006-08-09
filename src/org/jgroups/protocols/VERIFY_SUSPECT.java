@@ -1,4 +1,3 @@
-// $Id: VERIFY_SUSPECT.java,v 1.16 2005/12/16 16:08:17 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -7,6 +6,7 @@ import org.jgroups.Event;
 import org.jgroups.Header;
 import org.jgroups.Message;
 import org.jgroups.stack.Protocol;
+import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
@@ -14,12 +14,19 @@ import java.io.*;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Properties;
+import java.util.Map;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.net.NetworkInterface;
+import java.lang.reflect.Method;
 
 
 /**
  * Catches SUSPECT events traveling up the stack. Verifies that the suspected member is really dead. If yes,
  * passes SUSPECT event up the stack, otherwise discards it. Has to be placed somewhere above the FD layer and
  * below the GMS layer (receiver of the SUSPECT event). Note that SUSPECT events may be reordered by this protocol.
+ * @author Bela Ban
+ * @version $Id: VERIFY_SUSPECT.java,v 1.17 2006/08/09 09:13:17 belaban Exp $
  */
 public class VERIFY_SUSPECT extends Protocol implements Runnable {
     private Address     local_addr=null;
@@ -27,6 +34,11 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     private             int num_msgs=1;     // number of are-you-alive msgs and i-am-not-dead responses (for redundancy)
     final Hashtable     suspects=new Hashtable();  // keys=Addresses, vals=time in mcses since added
     private Thread      timer=null;
+    private boolean     use_icmp=false;     // use InetAddress.isReachable() to double-check (rather than an are-you-alive msg)
+    private InetAddress bind_addr;          // interface for ICMP pings
+    /** network interface to be used to send the ICMP packets */
+    private NetworkInterface intf=null;
+    private Method      is_reacheable;
     static final String name="VERIFY_SUSPECT";
 
 
@@ -36,9 +48,31 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
 
 
     public boolean setProperties(Properties props) {
-        String str;
+        String str=null;
 
         super.setProperties(props);
+
+        try {
+            str=System.getProperty("bind.address");
+            if(Util.isBindAddressPropertyIgnored())
+                str=null;
+        }
+        catch (SecurityException ex){
+        }
+
+        if(str == null)
+            str=props.getProperty("bind_addr");
+        if(str != null) {
+            try {
+                bind_addr=InetAddress.getByName(str);
+            }
+            catch(UnknownHostException unknown) {
+                if(log.isFatalEnabled()) log.fatal("(bind_addr): host " + str + " not known");
+                return false;
+            }
+            props.remove("bind_addr");
+        }
+
         str=props.getProperty("timeout");
         if(str != null) {
             timeout=Long.parseLong(str);
@@ -49,16 +83,31 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         if(str != null) {
             num_msgs=Integer.parseInt(str);
             if(num_msgs <= 0) {
-                if(warn) log.warn("num_msgs is invalid (" +
-                        num_msgs + "): setting it to 1");
+                if(warn)
+                    log.warn("num_msgs is invalid (" + num_msgs + "): setting it to 1");
                 num_msgs=1;
             }
             props.remove("num_msgs");
         }
 
-        if(props.size() > 0) {
-            log.error("VERIFY_SUSPECT.setProperties(): the following properties are not recognized: " + props);
+        str=props.getProperty("use_icmp");
+        if(str != null) {
+            use_icmp=Boolean.valueOf(str).booleanValue();
+            props.remove("use_icmp");
 
+            try { // only test for the (JDK 5 method) if use_icmp is true
+                is_reacheable=InetAddress.class.getMethod("isReachable", new Class[]{NetworkInterface.class, int.class, int.class});
+            }
+            catch(NoSuchMethodException e) {
+                // log.error("didn't find InetAddress.isReachable() method - requires JDK 5 or higher");
+                Error error= new NoSuchMethodError("didn't find InetAddress.isReachable() method - requires JDK 5 or higher");
+                error.initCause(e);
+                throw error;
+            }
+        }
+
+        if(props.size() > 0) {
+            log.error("the following properties are not recognized: " + props);
             return false;
         }
         return true;
@@ -73,48 +122,58 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
 
         switch(evt.getType()) {
 
-        case Event.SET_LOCAL_ADDRESS:
-            local_addr=(Address)evt.getArg();
-            break;
-
-        case Event.SUSPECT:  // it all starts here ...
-            suspected_mbr=(Address)evt.getArg();
-            if(suspected_mbr == null) {
-                if(log.isErrorEnabled()) log.error("suspected member is null");
-                return;
-            }
-            suspect(suspected_mbr);
-            return;  // don't pass up; we will decide later (after verification) whether to pass it up
-
-
-        case Event.MSG:
-            msg=(Message)evt.getArg();
-            obj=msg.getHeader(name);
-            if(obj == null || !(obj instanceof VerifyHeader))
+            case Event.SET_LOCAL_ADDRESS:
+                local_addr=(Address)evt.getArg();
                 break;
-            hdr=(VerifyHeader)msg.removeHeader(name);
-            switch(hdr.type) {
-            case VerifyHeader.ARE_YOU_DEAD:
-                if(hdr.from == null) {
-                    if(log.isErrorEnabled()) log.error("ARE_YOU_DEAD: hdr.from is null");
-                }
-                else {
-                    for(int i=0; i < num_msgs; i++) {
-                        rsp=new Message(hdr.from, null, null);
-                        rsp.putHeader(name, new VerifyHeader(VerifyHeader.I_AM_NOT_DEAD, local_addr));
-                        passDown(new Event(Event.MSG, rsp));
-                    }
-                }
-                return;
-            case VerifyHeader.I_AM_NOT_DEAD:
-                if(hdr.from == null) {
-                    if(log.isErrorEnabled()) log.error("I_AM_NOT_DEAD: hdr.from is null");
+
+            case Event.SUSPECT:  // it all starts here ...
+                suspected_mbr=(Address)evt.getArg();
+                if(suspected_mbr == null) {
+                    if(log.isErrorEnabled()) log.error("suspected member is null");
                     return;
                 }
-                unsuspect(hdr.from);
+                if(!use_icmp)
+                    verifySuspect(suspected_mbr);
+                else
+                verifySuspectWithICMP(suspected_mbr);
+                return;  // don't pass up; we will decide later (after verification) whether to pass it up
+
+
+            case Event.MSG:
+                msg=(Message)evt.getArg();
+                obj=msg.getHeader(name);
+                if(obj == null || !(obj instanceof VerifyHeader))
+                    break;
+                hdr=(VerifyHeader)msg.removeHeader(name);
+                switch(hdr.type) {
+                    case VerifyHeader.ARE_YOU_DEAD:
+                        if(hdr.from == null) {
+                            if(log.isErrorEnabled()) log.error("ARE_YOU_DEAD: hdr.from is null");
+                        }
+                        else {
+                            for(int i=0; i < num_msgs; i++) {
+                                rsp=new Message(hdr.from, null, null);
+                                rsp.putHeader(name, new VerifyHeader(VerifyHeader.I_AM_NOT_DEAD, local_addr));
+                                passDown(new Event(Event.MSG, rsp));
+                            }
+                        }
+                        return;
+                    case VerifyHeader.I_AM_NOT_DEAD:
+                        if(hdr.from == null) {
+                            if(log.isErrorEnabled()) log.error("I_AM_NOT_DEAD: hdr.from is null");
+                            return;
+                        }
+                        unsuspect(hdr.from);
+                        return;
+                }
                 return;
-            }
-            return;
+
+
+            case Event.CONFIG:
+                if(bind_addr == null) {
+                    Map config=(Map)evt.getArg();
+                    bind_addr=(InetAddress)config.get("bind_addr");
+                }
         }
         passUp(evt);
     }
@@ -165,7 +224,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     /**
      * Sends ARE_YOU_DEAD message to suspected_mbr, wait for return or timeout
      */
-    void suspect(Address mbr) {
+    void verifySuspect(Address mbr) {
         Message msg;
         if(mbr == null) return;
 
@@ -182,6 +241,38 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         }
         if(timer == null)
             startTimer();
+    }
+
+
+    void verifySuspectWithICMP(Address suspected_mbr) {
+        InetAddress host=suspected_mbr instanceof IpAddress? ((IpAddress)suspected_mbr).getIpAddress() : null;
+        if(host == null)
+            throw new IllegalArgumentException("suspected_mbr is not of type IpAddress - FD_ICMP only works with these");
+        try {
+            if(trace)
+                log.trace("pinging host " + suspected_mbr + " using interface " + intf);
+            long start=System.currentTimeMillis(), stop;
+            Boolean rc=(Boolean)is_reacheable.invoke(host,
+                                                     new Object[]{intf,
+                                                             new Integer(0), // 0 == use the default TTL
+                                                             new Integer((int)timeout)});
+            stop=System.currentTimeMillis();
+            if(rc.booleanValue()) { // success
+                if(trace)
+                    log.trace("successfully received response from " + host + " (after " + (stop-start) + "ms)");
+            }
+            else { // failure
+                if(trace)
+                    log.debug("could not ping " + suspected_mbr + " after " + (stop-start) + "ms; " +
+                            "passing up SUSPECT event");
+                suspects.remove(suspected_mbr);
+                passUp(new Event(Event.SUSPECT, suspected_mbr));
+            }
+        }
+        catch(Exception ex) {
+            if(log.isErrorEnabled())
+                log.error("failed pinging " + suspected_mbr, ex);
+        }
     }
 
     void unsuspect(Address mbr) {
@@ -204,6 +295,13 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
             timer.start();
         }
     }
+
+    public void init() throws Exception {
+        super.init();
+        if(bind_addr != null)
+            intf=NetworkInterface.getByInetAddress(bind_addr);
+    }
+
 
     public void stop() {
         Thread tmp;
