@@ -12,7 +12,7 @@ import java.util.Iterator;
 
 /**
  * @author Bela Ban
- * @version $Id: JmxConfigurator.java,v 1.9 2006/07/31 09:21:58 belaban Exp $
+ * @version $Id: JmxConfigurator.java,v 1.10 2006/08/09 13:02:21 belaban Exp $
  */
 public class JmxConfigurator {
     static final Log log=LogFactory.getLog(JmxConfigurator.class);
@@ -30,19 +30,34 @@ public class JmxConfigurator {
     public static org.jgroups.jmx.JChannel registerChannel(org.jgroups.JChannel channel,
                                                            MBeanServer server, String domain, String cluster_name,
                                                            boolean register_protocols) throws Exception {
-        JChannel retval=new JChannel(channel);
         if(cluster_name == null)
             cluster_name=channel != null? channel.getClusterName() : null;
         if(cluster_name == null)
             cluster_name="null";
-        server.registerMBean(retval, new ObjectName(domain + ":type=channel,cluster=" +cluster_name));
         if(register_protocols) {
             String tmp=domain + ":type=protocol,cluster=" +cluster_name;
             registerProtocols(server, channel, tmp);
         }
-        return retval;
+        return registerChannel(channel, server, domain + ":type=channel,cluster=" +cluster_name);
     }
 
+    /**
+     * Registers an already created channel with the MBeanServer. Creates an org.jgroups.jmx.JChannel which
+     * delegates to the org.jgroups.JChannel and registers it.
+     * @param channel
+     * @param server
+     * @param name The JMX ObjectName 
+     * @return org.jgroups.jmx.JChannel for the specified org.jgroups.JChannel
+     */
+    public static org.jgroups.jmx.JChannel registerChannel(org.jgroups.JChannel channel,
+                                                           MBeanServer server, String name) throws Exception {
+        JChannel retval=new JChannel(channel);
+        server.registerMBean(retval, new ObjectName(name));
+        return retval;
+    }
+    
+    
+    
     public static void unregisterChannel(MBeanServer server, ObjectName name) throws Exception {
         if(server != null)
             server.unregisterMBean(name);
