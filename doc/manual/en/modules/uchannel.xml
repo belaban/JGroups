@@ -33,7 +33,6 @@
       an exception if the object cannot be serialized or unseriali</para>
     </section>
 
-
     <section>
       <title>printMessage()</title>
 
@@ -117,13 +116,21 @@
     <section>
       <title>ExtendedMessageListener</title>
 
-      <para>Subinterface of MessageListener, adds partial state transfer
-      (refer to <xref linkend="PartialStateTransfer" /> ):</para>
+      <para>JGroups release 2.3 introduces ExtendedMessageListener enabling
+      partial state transfer (refer to <xref linkend="PartialStateTransfer" />
+      ) while release 2.4 further expands ExtendedMessageListener with
+      streaming state transfer callbacks:</para>
 
       <screen>
                 public interface ExtendedMessageListener extends MessageListener {
                     byte[] getState(String state_id);
                     void setState(String state_id, byte[] state);
+                      
+                    /*** since JGroups 2.4 *****/
+                    void getState(OutputStream ostream);
+                    void getState(String state_id, OutputStream ostream);
+                    void setState(InputStream istream);
+                    void setState(String state_id, InputStream istream);
                 }
             </screen>
 
@@ -442,15 +449,7 @@
     <figure id="ChannelStatesFig">
       <title>Channel states</title>
 
-      <mediaobject>
-        <!--imageobject>
-              <imagedata align="center" fileref="ChannelStates.png"/>
-                </imageobject-->
-
-        <textobject>
-          <phrase>A diagram representing the channel states.</phrase>
-        </textobject>
-      </mediaobject>
+      <graphic align="center" fileref="images/ChannelStates.png" format="PNG" />
     </figure>
 
     <para>When a channel is first created, it is in the unconnected state. An
@@ -938,6 +937,18 @@
         </varlistentry>
 
         <varlistentry>
+          <term>StreamingGetStateEvent</term>
+
+          <listitem>
+            <para>Received when the application's current state should be
+            provided to a state requesting group member. If state transfer
+            events are not enabled on the channel (default), or if channel is
+            not configured with pbcast.STREAMING_STATE_TRANSFER then this
+            event will never be received. </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
           <term>SetStateEvent</term>
 
           <listitem>
@@ -947,6 +958,18 @@
             of all members ( <classname>Vector</classname> ). Since the state
             of a single member could also be a vector, the interpretation of
             the argument is left to the application.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>StreamingSetStateEvent</term>
+
+          <listitem>
+            <para>Received at state requesting member when the state
+            InputStream becomes ready for reading. If state transfer events
+            are not enabled on the channel (default), or if channel is not
+            configured with pbcast.STREAMING_STATE_TRANSFER then this event
+            will never be received. </para>
           </listitem>
         </varlistentry>
       </variablelist>
@@ -1159,19 +1182,19 @@
       calling Channel.getState(), the following sequence of callbacks happens:
       <itemizedlist>
           <listitem>
-            D calls Channel.getState(). The state will be retrieved from the oldest member, A
+             D calls Channel.getState(). The state will be retrieved from the oldest member, A 
           </listitem>
 
           <listitem>
-            A.MyReceiver.getState() is called. A returns a copy of its hashmap
+             A.MyReceiver.getState() is called. A returns a copy of its hashmap 
           </listitem>
 
           <listitem>
-            D: getState() returns true
+             D: getState() returns true 
           </listitem>
 
           <listitem>
-            D.MyReceiver.setState() is called with the serialized state. D unserializes the state and sets it
+             D.MyReceiver.setState() is called with the serialized state. D unserializes the state and sets it 
           </listitem>
         </itemizedlist></para>
     </section>
@@ -1221,7 +1244,7 @@
 
                     public void setState(String substate_id, byte[] state) {
                         synchronized(m) {
-                            if(substate_id == null) {
+                            if(substate_id != null) {
                                 Object value=Util.objectFromByteBuffer(state);
                                 m.put(substate_id, value);
                             }
@@ -1249,6 +1272,94 @@
       byte[] state)</methodname> has a non-null substate_id, only that part of
       the current state will be overwritten, otherwise (if null) the entire
       state will be overwritten.</para>
+    </section>
+
+    <section>
+      <title>Streaming state transfer</title>
+
+      <para>Streaming state transfer allows transfer of application (partial)
+      state without having to load entire state into memory prior to sending
+      it to a joining member. Streaming state transfer is especially useful if
+      the state is very large (&gt;1Gb), and use of regular state transfer
+      would likely result in OutOfMemoryException. Streaming state transfer
+      was introduced in JGroups 2.4. JGroups channel has to be configured with
+      either regular or streaming state transfer. JChannel API that invokes
+      state transfer (i.e. JChannel.getState(long timeout, Address member))
+      remains the same. </para>
+
+      <para>Streaming state transfer, just as regular byte based state
+      transfer, can be used in both pull and push mode. Similarly to the
+      current getState and setState methods of org.jgroups.MessageListener,
+      application interested in streaming state transfer in a push mode would
+      implement streaming getState method(s) by sending/writing state through
+      a provided OutputStream reference and setState method(s) by
+      receiving/reading state through a provided InputStream reference. In
+      order to use streaming state transfer in a push mode, existing
+      ExtendedMessageListener has been expanded to include additional four
+      methods:</para>
+
+      <screen>
+public interface ExtendedMessageListener
+{ 
+
+      /*non-streaming callback methods ommitted for clarity*/
+ 
+       void getState(OutputStream ostream);
+       void getState(String state_id, OutputStream ostream);
+       void setState(InputStream istream);
+       void setState(String state_id, InputStream istream);
+
+}            </screen>
+
+      <para>For a pull mode (when application uses channel.receive() to fetch
+      events) two new event classes will be introduced:</para>
+
+      <para><itemizedlist>
+          <listitem>
+            <para>StreamingGetStateEvent</para>
+          </listitem>
+
+          <listitem>
+            <para>StreamingSetStateEvent</para>
+          </listitem>
+        </itemizedlist> These two events/classes are very similar to existing
+      GetStateEvent and SetStateEvent but introduce a new field;
+      StreamingGetStateEvent has an OutputStream and StreamingSetStateEvent
+      has an InputStream.</para>
+
+      <para>The following code snippet demonstrates how to pull events from a
+      channel, processing StreamingGetStateEvent and sending hypothetical
+      state through a provided OutputStream reference. Handling of
+      StreamingSetStateEvent is analogous to this example:</para>
+
+      <screen>   ...
+   Object obj=channel.receive(0);
+   if(obj instanceof StreamingGetStateEvent) {
+     StreamingGetStateEvent evt=(StreamingGetStateEvent)obj;
+     OutputStream oos = null;
+     try {
+       oos = new ObjectOutputStream(evt.getArg());
+       oos.writeObject(state);   
+       oos.flush();
+     } catch (Exception e) {} 
+     finally{
+       try {
+         oos.close();
+       } catch (IOException e) {
+           System.err.println(e);
+       }
+    }
+  }                
+  ...</screen>
+
+      <para>JGroups has a great flexibility with state transfer methodology by
+      allowing application developers to implement both byte based and
+      streaming based state transfers. Application can, for example, implement
+      streaming and byte based state transfer callbacks and then interchange
+      state transfer protocol in channel configuration to use either streaming
+      or byte based state transfer. However, one cannot configure a channel
+      with both state transfers at the same time and then in runtime choose
+      which particular state transfer type to use.</para>
     </section>
 
     <section>
