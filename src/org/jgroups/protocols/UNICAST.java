@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.60 2006/06/07 19:32:50 belaban Exp $
+// $Id: UNICAST.java,v 1.61 2006/08/09 21:30:22 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -146,13 +146,13 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         str=props.getProperty("window_size");
         if(str != null) {
             props.remove("window_size");
-            log.error("window_size is deprecated and will be ignored");
+            log.warn("window_size is deprecated and will be ignored");
         }
 
         str=props.getProperty("min_threshold");
         if(str != null) {
             props.remove("min_threshold");
-            log.error("min_threshold is deprecated and will be ignored");
+            log.warn("min_threshold is deprecated and will be ignored");
         }
 
         str=props.getProperty("use_gms");
@@ -162,8 +162,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         }
 
         if(props.size() > 0) {
-            log.error("UNICAST.setProperties(): these properties are not recognized: " + props);
-
+            log.error("these properties are not recognized: " + props);
             return false;
         }
         return true;
