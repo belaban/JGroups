@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.52 2006/07/27 18:29:25 vlada Exp $
+// $Id: MessageDispatcher.java,v 1.53 2006/08/09 16:38:57 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -15,6 +15,7 @@ import java.io.Serializable;
 import java.util.Vector;
 import java.util.Collection;
 import java.util.TreeSet;
+import java.util.ArrayList;
 
 
 /**
@@ -229,6 +230,13 @@ public class MessageDispatcher implements RequestHandler {
         }
 
         start();
+    }
+
+    /** Returns a copy of members */
+    protected Collection getMembers() {
+        synchronized(members) {
+            return new ArrayList(members);
+        }
     }
 
 
@@ -828,31 +836,31 @@ public class MessageDispatcher implements RequestHandler {
                 }
             }
         }
-        
+
         public void getState(OutputStream ostream) {
-			if (msg_listener instanceof ExtendedMessageListener) {
-				((ExtendedMessageListener) msg_listener).getState(ostream);
-			}
-		}
+            if (msg_listener instanceof ExtendedMessageListener) {
+                ((ExtendedMessageListener) msg_listener).getState(ostream);
+            }
+        }
 
-		public void getState(String state_id, OutputStream ostream) {
-			if (msg_listener instanceof ExtendedMessageListener && state_id!=null) {
-				((ExtendedMessageListener) msg_listener).getState(state_id,ostream);
-			}
-			
-		}
+        public void getState(String state_id, OutputStream ostream) {
+            if (msg_listener instanceof ExtendedMessageListener && state_id!=null) {
+                ((ExtendedMessageListener) msg_listener).getState(state_id,ostream);
+            }
 
-		public void setState(InputStream istream) {
-			if (msg_listener instanceof ExtendedMessageListener) {
-				((ExtendedMessageListener) msg_listener).setState(istream);
-			}
-		}
+        }
 
-		public void setState(String state_id, InputStream istream) {
-			if (msg_listener instanceof ExtendedMessageListener && state_id != null) {
-				((ExtendedMessageListener) msg_listener).setState(state_id,istream);
-			}
-		}
+        public void setState(InputStream istream) {
+            if (msg_listener instanceof ExtendedMessageListener) {
+                ((ExtendedMessageListener) msg_listener).setState(istream);
+            }
+        }
+
+        public void setState(String state_id, InputStream istream) {
+            if (msg_listener instanceof ExtendedMessageListener && state_id != null) {
+                ((ExtendedMessageListener) msg_listener).setState(state_id,istream);
+            }
+        }
         /*
 		 * --------------------- End of MessageListener interface
 		 * -------------------
@@ -885,9 +893,9 @@ public class MessageDispatcher implements RequestHandler {
             if(membership_listener != null) {
                 membership_listener.block();
             }
-        }       
-		
-		/* --------------------- End of MembershipListener interface ---------------- */
+        }
+
+        /* --------------------- End of MembershipListener interface ---------------- */
 
 
 
