@@ -1,4 +1,4 @@
-// $Id: README,v 1.6 2005/12/20 07:51:14 belaban Exp $
+// $Id: README,v 1.7 2006/08/09 13:08:02 belaban Exp $
 
 
 
@@ -29,7 +29,7 @@ getting the shared group state, and registering for notifications when
 a member joins, or an existing member leaves or crashes.
 
 The protocol stack is a linked list of protocols, through which each
-message has to be passed. Each protocol implements an Up() and Down()
+message has to be passed. Each protocol implements an up() and down()
 method, and may modify, reorder, encrypt, fragment/unfragment, drop a
 message, or pass it up/down unchanged. The protocol stack is created
 according to a specification given when a channel is created. New
