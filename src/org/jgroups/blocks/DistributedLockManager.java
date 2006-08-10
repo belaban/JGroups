@@ -3,13 +3,16 @@ package org.jgroups.blocks;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.ChannelException;
+import org.jgroups.MembershipListener;
+import org.jgroups.View;
+import org.jgroups.Address;
 import org.jgroups.blocks.VotingAdapter.FailureVoteResult;
 import org.jgroups.blocks.VotingAdapter.VoteResult;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
 
 import java.io.Serializable;
-import java.util.HashMap;
+import java.util.*;
 
 /**
  * Distributed lock manager is responsible for maintaining the lock information
@@ -17,9 +20,9 @@ import java.util.HashMap;
  * 
  * @author Roman Rokytskyy (rrokytskyy@acm.org)
  * @author Robert Schaffar-Taurok (robert@fusion.at)
- * @version $Id: DistributedLockManager.java,v 1.6 2005/06/08 15:56:54 publicnmi Exp $
+ * @version $Id: DistributedLockManager.java,v 1.7 2006/08/10 06:43:42 belaban Exp $
  */
-public class DistributedLockManager implements TwoPhaseVotingListener, LockManager, VoteResponseProcessor {
+public class DistributedLockManager implements TwoPhaseVotingListener, LockManager, VoteResponseProcessor, MembershipListener {
     /**
      * Definitions for the implementation of the VoteResponseProcessor
      */
@@ -33,25 +36,27 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
      * is treated as expired and is removed from the prepared locks table.
      */
     private static final long ACQUIRE_EXPIRATION = 5000;
-    
+
     /**
      * This parameter is used during lock releasing. If group fails to release
      * the lock during the specified period of time, unlocking fails.
      */
     private static final long VOTE_TIMEOUT = 10000;
 
-	// list of all prepared locks
-	private final HashMap preparedLocks = new HashMap();
+    /** HashMap<Object,LockDecree>. List of all prepared locks */
+    private final HashMap preparedLocks = new HashMap();
 
-	// list of all prepared releases
-	private final HashMap preparedReleases = new HashMap();
+    /** HashMap<Object,LockDecree>. List of all prepared releases */
+    private final HashMap preparedReleases = new HashMap();
 
-	// list of locks on the node
-	private final HashMap heldLocks = new HashMap();
+    /* HashMap<Object,LockDecree>. List of locks on the node */
+    private final HashMap heldLocks = new HashMap();
 
-	private final TwoPhaseVotingAdapter votingAdapter;
+    private final TwoPhaseVotingAdapter votingAdapter;
 
-	private final Object id;
+    private final Object id;
+
+    final Vector current_members=new Vector();
 
     protected final Log log=LogFactory.getLog(getClass());
 
@@ -65,7 +70,7 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
      * 
      * @param id the unique identifier of this lock manager.
      * 
-     * @todo check if the node with the same id is already in the group.
+     * todo check if the node with the same id is already in the group.
      */
     public DistributedLockManager(VotingAdapter voteChannel, Object id) {
         this(new TwoPhaseVotingAdapter(voteChannel), id);
@@ -85,7 +90,18 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
         this.id = id;
         this.votingAdapter = channel;
         this.votingAdapter.addListener(this);
+        if(votingAdapter != null && votingAdapter.getVoteChannel() != null)
+            votingAdapter.getVoteChannel().addMembershipListener(this);
+        setInitialMembership(votingAdapter.getVoteChannel().getMembers());
     }
+
+    private void setInitialMembership(Collection members) {
+        if(members != null) {
+            current_members.clear();
+            current_members.addAll(members);
+        }
+    }
+
 
     /**
      * Performs local lock. This method also performs the clean-up of the lock
@@ -96,7 +112,7 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
         removeExpired(lockDecree);
 
         LockDecree localLock =
-            (LockDecree) heldLocks.get(lockDecree.getKey());
+                (LockDecree) heldLocks.get(lockDecree.getKey());
 
         if (localLock == null) {
 
@@ -111,12 +127,7 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
             // everything is fine :)
             return true;
         } else
-        if (localLock.requester.equals(lockDecree.requester))
-            // requester already owns the lock
-            return true;
-        else
-            // lock does not belong to requester
-            return false;
+            return localLock.requester.equals(lockDecree.requester);
 
     }
 
@@ -202,7 +213,8 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
      * <code>owner</code>.
      * 
      * @param lockId <code>Object</code> representing the object to be locked.
-     * @param owner object that requests the lock.
+     * @param owner object that requests the lock. This should be the Address of a JGroups member, otherwise we cannot
+     * release the locks for a crashed member !
      * @param timeout time during which group members should decide
      * whether to grant a lock or not.
      *
@@ -216,14 +228,13 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
         throws LockNotGrantedException, ChannelException
     {
         if (!(lockId instanceof Serializable) || !(owner instanceof Serializable))
-            throw new ClassCastException("DistributedLockManager " +
-                "works only with serializable objects.");
+            throw new ClassCastException("DistributedLockManager works only with serializable objects.");
 
         boolean acquired = votingAdapter.vote(
             new AcquireLockDecree(lockId, owner, id), timeout);
 
         if (!acquired)
-            throw new LockNotGrantedException("Lock cannot be granted.");
+            throw new LockNotGrantedException("Lock " + lockId + " cannot be granted.");
     }
 
     /**
@@ -282,7 +293,7 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
         } else {
             released = votingAdapter.vote(releaseLockDecree, VOTE_TIMEOUT);
         }
-        
+
         if (!released)
             throw new LockNotReleasedException("Lock cannot be unlocked.");
     }
@@ -299,8 +310,8 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
      * @param requestedDecree instance of <code>LockDecree</code> representing
      * the lock.
      */
-    private boolean checkPrepared(HashMap preparedContainer, 
-        LockDecree requestedDecree)
+    private boolean checkPrepared(HashMap preparedContainer,
+                                  LockDecree requestedDecree)
     {
         LockDecree preparedDecree =
             (LockDecree)preparedContainer.get(requestedDecree.getKey());
@@ -313,10 +324,7 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
         }
 
         if (preparedDecree != null) {
-            if (requestedDecree.requester.equals(preparedDecree.requester))
-                return true;
-            else
-                return false;
+            return requestedDecree.requester.equals(preparedDecree.requester);
         } else
             // it was not prepared... sorry...
             return true;
@@ -336,11 +344,11 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
     public synchronized boolean prepare(Object decree) throws VoteException {
         if (!(decree instanceof LockDecree))
             throw new VoteException("Uknown decree type. Ignore me.");
-            
+
         if (decree instanceof AcquireLockDecree) {
             AcquireLockDecree acquireDecree = (AcquireLockDecree)decree;
             if(log.isDebugEnabled()) log.debug("Preparing to acquire decree " + acquireDecree.lockId);
-            
+
             if (!checkPrepared(preparedLocks, acquireDecree))
                 // there is a prepared lock owned by third party
                 return false;
@@ -354,7 +362,7 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
         } else
         if (decree instanceof ReleaseLockDecree) {
             ReleaseLockDecree releaseDecree = (ReleaseLockDecree)decree;
-            
+
 
                 if(log.isDebugEnabled()) log.debug("Preparing to release decree " + releaseDecree.lockId);
 
@@ -373,7 +381,7 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
         if (decree instanceof MultiLockDecree) {
             // Here we abuse the voting mechanism for notifying the other lockManagers of multiple locked objects.
             MultiLockDecree multiLockDecree = (MultiLockDecree)decree;
-            
+
             if(log.isDebugEnabled()) {
                 log.debug("Marking " + multiLockDecree.getKey() + " as multilocked");
             }
@@ -405,10 +413,10 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
             throw new VoteException("Uknown decree type. Ignore me.");
 
         if (decree instanceof AcquireLockDecree) {
-            
+
 
                 if(log.isDebugEnabled()) log.debug("Committing decree acquisition " + ((LockDecree)decree).lockId);
-            
+
             if (!checkPrepared(preparedLocks, (LockDecree)decree))
                 // there is a prepared lock owned by third party
                 return false;
@@ -420,10 +428,10 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
                 return false;
         } else
         if (decree instanceof ReleaseLockDecree) {
-            
+
 
                 if(log.isDebugEnabled()) log.debug("Committing decree release " + ((LockDecree)decree).lockId);
-            
+
             if (!checkPrepared(preparedReleases, (LockDecree)decree))
                 // there is a prepared release owned by third party
                 return false;
@@ -456,10 +464,10 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
             throw new VoteException("Uknown decree type. Ignore me.");
 
         if (decree instanceof AcquireLockDecree) {
-            
+
 
                 if(log.isDebugEnabled()) log.debug("Aborting decree acquisition " + ((LockDecree)decree).lockId);
-            
+
             if (!checkPrepared(preparedLocks, (LockDecree)decree))
                 // there is a prepared lock owned by third party
                 return;
@@ -467,10 +475,10 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
             preparedLocks.remove(((LockDecree)decree).getKey());
         } else
         if (decree instanceof ReleaseLockDecree) {
-            
+
 
                 if(log.isDebugEnabled()) log.debug("Aborting decree release " + ((LockDecree)decree).lockId);
-            
+
             if (!checkPrepared(preparedReleases, (LockDecree)decree))
                 // there is a prepared release owned by third party
                 return;
@@ -480,7 +488,7 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
 
     }
 
-    
+
     /**
      * Processes the response list and votes like the default processResponses method with the consensusType VOTE_ALL
      * If the result of the voting is false, but this DistributedLockManager owns the lock, the result is changed to
@@ -518,30 +526,30 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
         if (decree instanceof TwoPhaseVotingAdapter.TwoPhaseWrapper) {
             TwoPhaseVotingAdapter.TwoPhaseWrapper wrappedDecree = (TwoPhaseVotingAdapter.TwoPhaseWrapper)decree;
             if (wrappedDecree.isPrepare()) {
-	            Object unwrappedDecree = wrappedDecree.getDecree();
-	            if (unwrappedDecree instanceof ReleaseLockDecree) {
-	                ReleaseLockDecree releaseLockDecree = (ReleaseLockDecree)unwrappedDecree;
-	                LockDecree lock = null;
-	                if ((lock = (LockDecree)heldLocks.get(releaseLockDecree.getKey())) != null) {
-	                    // If there is a local lock...
-	                    if (!voteResult) {
-	                        // ... and another DLM voted negatively, but this DLM owns the lock
-	                        // we inform the other node, that it's lock is multiple locked
-	                        if (informLockingNodes(releaseLockDecree)) {
-	                        
-		                        // we set the local lock to multiple locked
-		                        lock.setMultipleLocked(true);
-		                        
-		                        voteResult = true;
-	                        }
-	                    }
-	                    if (lock.isMultipleLocked()) {
-	                        //... and the local lock is marked as multilocked
-	                        // we mark the releaseLockDecree als multiple locked for evaluation when unlock returns
-	                        releaseLockDecree.setMultipleLocked(true);
-	                    }
-	                }
-	            }
+                Object unwrappedDecree = wrappedDecree.getDecree();
+                if (unwrappedDecree instanceof ReleaseLockDecree) {
+                    ReleaseLockDecree releaseLockDecree = (ReleaseLockDecree)unwrappedDecree;
+                    LockDecree lock = null;
+                    if ((lock = (LockDecree)heldLocks.get(releaseLockDecree.getKey())) != null) {
+                        // If there is a local lock...
+                        if (!voteResult) {
+                            // ... and another DLM voted negatively, but this DLM owns the lock
+                            // we inform the other node, that it's lock is multiple locked
+                            if (informLockingNodes(releaseLockDecree)) {
+
+                                // we set the local lock to multiple locked
+                                lock.setMultipleLocked(true);
+
+                                voteResult = true;
+                            }
+                        }
+                        if (lock.isMultipleLocked()) {
+                            //... and the local lock is marked as multilocked
+                            // we mark the releaseLockDecree als multiple locked for evaluation when unlock returns
+                            releaseLockDecree.setMultipleLocked(true);
+                        }
+                    }
+                }
             }
         }
 
@@ -607,11 +615,53 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
         // everything is fine :)
         return PROCESS_CONTINUE;
     }
-    
+
     private boolean informLockingNodes(ReleaseLockDecree releaseLockDecree) throws ChannelException {
         return votingAdapter.vote(new MultiLockDecree(releaseLockDecree), VOTE_TIMEOUT);
     }
-    
+
+    /** Remove all locks held by members who left the previous view */
+    public void viewAccepted(View new_view) {
+        Vector prev_view=new Vector(current_members);
+        current_members.clear();
+        current_members.addAll(new_view.getMembers());
+
+        System.out.println("-- VIEW: " + current_members + ", old view: " + prev_view);
+
+        prev_view.removeAll(current_members);
+        if(prev_view.size() > 0) { // we have left members, so we need to check for locks which are still held by them
+            for(Iterator it=prev_view.iterator(); it.hasNext();) {
+                Object mbr=it.next();
+                removeLocksHeldBy(preparedLocks, mbr);
+                removeLocksHeldBy(preparedReleases, mbr);
+                removeLocksHeldBy(heldLocks, mbr);
+            }
+        }
+    }
+
+    /** Remove from preparedLocks, preparedReleases and heldLocks */
+    private void removeLocksHeldBy(Map lock_table, Object mbr) {
+        Map.Entry entry;
+        LockDecree val;
+        Object holder;
+        for(Iterator it=lock_table.entrySet().iterator(); it.hasNext();) {
+            entry=(Map.Entry)it.next();
+            val=(LockDecree)entry.getValue();
+            holder=val.requester;
+            if(holder != null && holder.equals(mbr)) {
+                if(log.isTraceEnabled())
+                    log.trace("removing a leftover lock held by " + mbr + " for " + entry.getKey() + ": " + val);
+                it.remove();
+            }
+        }
+    }
+
+    public void suspect(Address suspected_mbr) {
+    }
+
+    public void block() {
+    }
+
     /**
      * This class represents the lock
      */
@@ -622,8 +672,9 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
         protected final Object managerId;
 
         protected boolean commited;
-        
+
         private boolean multipleLocked = false;
+        private static final long serialVersionUID = 7264104838035219212L;
 
         private LockDecree(Object lockId, Object requester, Object managerId) {
             this.lockId = lockId;
@@ -708,7 +759,7 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
             super(lockId, requester, managerId);
         }
     }
-    
+
     /**
      * This class represents the lock that has to be marked as multilocked 
      */

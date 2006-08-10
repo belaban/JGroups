@@ -7,9 +7,7 @@ import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
 
 import java.io.Serializable;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Voting adapter provides a voting functionality for an application. There 
@@ -29,41 +27,44 @@ import java.util.Set;
  * 
  * @author Roman Rokytskyy (rrokytskyy@acm.org)
  * @author Robert Schaffar-Taurok (robert@fusion.at)
- * @version $Id: VotingAdapter.java,v 1.8 2005/06/08 15:56:54 publicnmi Exp $
+ * @version $Id: VotingAdapter.java,v 1.9 2006/08/10 06:43:42 belaban Exp $
  */
 public class VotingAdapter implements MessageListener, MembershipListener, VoteResponseProcessor {
-    
+
     /**
      * This consensus type means that at least one positive vote is required
      * for the voting to succeed.
      */
     public static final	int VOTE_ANY = 0;
-    
+
     /**
      * This consensus type means that at least one positive vote and no negative
      * votes are required for the voting to succeed.
      */
     public static final int VOTE_ALL = 1;
-    
+
     /**
      * This consensus type means that number of positive votes should be greater
      * than number of negative votes.
      */
     public static final int VOTE_MAJORITY = 2;
-    
-    
+
+
     private static final int PROCESS_CONTINUE = 0;
     private static final int PROCESS_SKIP = 1;
     private static final int PROCESS_BREAK = 2;
-    
+
 
     private final RpcDispatcher rpcDispatcher;
 
     protected final Log log=LogFactory.getLog(getClass());
 
     private final HashSet suspectedNodes = new HashSet();
-    private boolean blocked = false;
     private boolean closed;
+
+    private final List membership_listeners=new LinkedList();
+
+
 
     /**
      * Creates an instance of the VoteChannel that uses JGroups
@@ -79,12 +80,27 @@ public class VotingAdapter implements MessageListener, MembershipListener, VoteR
     }
 
 
+    public Collection getMembers() {
+        return rpcDispatcher != null? rpcDispatcher.getMembers() : null;
+    }
+
+    public void addMembershipListener(MembershipListener l) {
+        if(l != null && !membership_listeners.contains(l))
+            membership_listeners.add(l);
+    }
+
+    public void removeMembershipListener(MembershipListener l) {
+        if(l != null)
+            membership_listeners.remove(l);
+    }
+
+
     /**
      * Performs actual voting on the VoteChannel using the JGroups
      * facilities for communication.
      */
     public boolean vote(Object decree, int consensusType, long timeout)
-	throws ChannelException {
+    throws ChannelException {
         return vote(decree, consensusType, timeout, null);
     }
 
@@ -93,60 +109,60 @@ public class VotingAdapter implements MessageListener, MembershipListener, VoteR
      * facilities for communication.
      */
     public boolean vote(Object decree, int consensusType, long timeout, VoteResponseProcessor voteResponseProcessor)
-	throws ChannelException
+    throws ChannelException
     {
         if (closed)
             throw new ChannelException("Channel was closed.");
-            
+
 
             if(log.isDebugEnabled()) log.debug("Conducting voting on decree " + decree + ", consensus type " +
-			getConsensusStr(consensusType) + ", timeout " + timeout);
+            getConsensusStr(consensusType) + ", timeout " + timeout);
 
         int mode = GroupRequest.GET_ALL;
 
         // perform the consensus mapping
         switch (consensusType) {
-	case VotingAdapter.VOTE_ALL : mode = GroupRequest.GET_ALL; break;
-	case VotingAdapter.VOTE_ANY : mode = GroupRequest.GET_FIRST; break;
-	case VotingAdapter.VOTE_MAJORITY : mode = GroupRequest.GET_MAJORITY; break;
-	default : mode = GroupRequest.GET_ALL;
+    case VotingAdapter.VOTE_ALL : mode = GroupRequest.GET_ALL; break;
+    case VotingAdapter.VOTE_ANY : mode = GroupRequest.GET_FIRST; break;
+    case VotingAdapter.VOTE_MAJORITY : mode = GroupRequest.GET_MAJORITY; break;
+    default : mode = GroupRequest.GET_ALL;
         }
 
         try {
             java.lang.reflect.Method method = this.getClass().getMethod(
-									"localVote", new Class[] { Object.class });
+                                    "localVote", new Class[] { Object.class });
 
             MethodCall methodCall = new MethodCall(method, new Object[] {decree});
 
 
             if(log.isDebugEnabled()) log.debug("Calling remote methods...");
-    
+
             // vote
             RspList responses = rpcDispatcher.callRemoteMethods(
-									 null, methodCall, mode, timeout);
-                
+                                     null, methodCall, mode, timeout);
+
 
             if(log.isDebugEnabled()) log.debug("Checking responses.");
 
             if (voteResponseProcessor == null) {
                 voteResponseProcessor = this;
-            } 
+            }
 
             return voteResponseProcessor.processResponses(responses, consensusType, decree);
         } catch(NoSuchMethodException nsmex) {
-            
+
             // UPS!!! How can this happen?!
-            
+
             if(log.isErrorEnabled()) log.error("Could not find method localVote(Object). " +
-			nsmex.toString());
+            nsmex.toString());
 
             throw new UnsupportedOperationException(
-						    "Cannot execute voting because of absence of " + 
-						    this.getClass().getName() + ".localVote(Object) method.");
-        } 
+                            "Cannot execute voting because of absence of " +
+                            this.getClass().getName() + ".localVote(Object) method.");
+        }
     }
 
-    
+
     /**
      * Processes the response list and makes a decision according to the
      * type of the consensus for current voting.
@@ -155,7 +171,7 @@ public class VotingAdapter implements MessageListener, MembershipListener, VoteR
      * when the node responds with the fault message.
      */
     public boolean processResponses(RspList responses, int consensusType, Object decree)
-	throws ChannelException 
+    throws ChannelException
     {
         if (responses == null) {
             return false;
@@ -169,25 +185,25 @@ public class VotingAdapter implements MessageListener, MembershipListener, VoteR
             Rsp response = (Rsp)responses.elementAt(i);
 
             switch(checkResponse(response)) {
-	    case PROCESS_SKIP : continue;
-	    case PROCESS_BREAK : return false;
+        case PROCESS_SKIP : continue;
+        case PROCESS_BREAK : return false;
             }
 
             VoteResult result = (VoteResult)response.getValue();
-            
+
             totalPositiveVotes += result.getPositiveVotes();
             totalNegativeVotes += result.getNegativeVotes();
         }
 
         switch(consensusType) {
-	case VotingAdapter.VOTE_ALL :
-	    voteResult = (totalNegativeVotes == 0 && totalPositiveVotes > 0);
-	    break;
-	case VotingAdapter.VOTE_ANY :
-	    voteResult = (totalPositiveVotes > 0);
-	    break;
-	case VotingAdapter.VOTE_MAJORITY :
-	    voteResult = (totalPositiveVotes > totalNegativeVotes);
+    case VotingAdapter.VOTE_ALL :
+        voteResult = (totalNegativeVotes == 0 && totalPositiveVotes > 0);
+        break;
+    case VotingAdapter.VOTE_ANY :
+        voteResult = (totalPositiveVotes > 0);
+        break;
+    case VotingAdapter.VOTE_MAJORITY :
+        voteResult = (totalPositiveVotes > totalNegativeVotes);
         }
 
         return voteResult;
@@ -205,11 +221,11 @@ public class VotingAdapter implements MessageListener, MembershipListener, VoteR
     private int checkResponse(Rsp response) throws ChannelException {
 
         if (!response.wasReceived()) {
-            
+
 
                 if(log.isDebugEnabled()) log.debug("Response from node " + response.getSender() +
-			    " was not received.");
-            
+                " was not received.");
+
             // what do we do when one node failed to respond?
             //throw new ChannelException("Node " + response.GetSender() +
             //	" failed to respond.");
@@ -218,10 +234,8 @@ public class VotingAdapter implements MessageListener, MembershipListener, VoteR
 
         /**@todo check what to do here */
         if (response.wasSuspected()) {
-            
+            if(log.isDebugEnabled()) log.debug("Node " + response.getSender() + " was suspected.");
 
-                if(log.isDebugEnabled()) log.debug("Node " + response.getSender() + " was suspected.");
-            
             // wat do we do when one node is suspected?
             return PROCESS_SKIP ;
         }
@@ -232,7 +246,7 @@ public class VotingAdapter implements MessageListener, MembershipListener, VoteR
         // on one of the nodes... and we do not handle such faults
         if (object instanceof Throwable) {
             throw new ChannelException("Node " + response.getSender() +
-				       " is faulty.");
+                       " is faulty.");
         }
 
         if (object == null) {
@@ -245,14 +259,14 @@ public class VotingAdapter implements MessageListener, MembershipListener, VoteR
 
             // ...but we do not handle byzantine faults
             throw new ChannelException("Node " + response.getSender() +
-				       " generated fault (class " + faultClass + ')');
+                       " generated fault (class " + faultClass + ')');
         }
 
         // what if we received the response from faulty node?
         if (object instanceof FailureVoteResult) {
-            
+
             if(log.isErrorEnabled()) log.error(((FailureVoteResult)object).getReason());
-            
+
             return PROCESS_BREAK;
         }
 
@@ -273,7 +287,16 @@ public class VotingAdapter implements MessageListener, MembershipListener, VoteR
                 iterator.remove();
         }
 
-        blocked = false;
+        for(Iterator it=membership_listeners.iterator(); it.hasNext();) {
+            MembershipListener listener=(MembershipListener)it.next();
+            try {
+                listener.viewAccepted(newView);
+            }
+            catch(Throwable t) {
+                if(log.isErrorEnabled())
+                    log.error("failed calling viewAccepted() on " + listener, t);
+            }
+        }
     }
 
     /**
@@ -281,13 +304,32 @@ public class VotingAdapter implements MessageListener, MembershipListener, VoteR
      */
     public void suspect(Address suspected) {
         suspectedNodes.add(suspected);
+        for(Iterator it=membership_listeners.iterator(); it.hasNext();) {
+            MembershipListener listener=(MembershipListener)it.next();
+            try {
+                listener.suspect(suspected);
+            }
+            catch(Throwable t) {
+                if(log.isErrorEnabled())
+                    log.error("failed calling suspect() on " + listener, t);
+            }
+        }
     }
 
     /**
      * Blocks the channel until the ViewAccepted is invoked.
      */
     public void block() {
-        blocked = true;
+        for(Iterator it=membership_listeners.iterator(); it.hasNext();) {
+            MembershipListener listener=(MembershipListener)it.next();
+            try {
+                listener.block();
+            }
+            catch(Throwable t) {
+                if(log.isErrorEnabled())
+                    log.error("failed calling block() on " + listener, t);
+            }
+        }
     }
 
     /**
@@ -315,7 +357,7 @@ public class VotingAdapter implements MessageListener, MembershipListener, VoteR
     public void setState(byte[] state) {
         // ignore the state, we do not have any.
     }
-            
+
     private final Set voteListeners = new HashSet();
     private VotingListener[] listeners;
 
@@ -333,7 +375,7 @@ public class VotingAdapter implements MessageListener, MembershipListener, VoteR
     public boolean vote(Object decree, long timeout) throws ChannelException {
         return vote(decree, timeout, null);
     }
-    
+
     /**
      * Vote on the specified decree requiring all nodes to vote.
      * 
@@ -356,7 +398,7 @@ public class VotingAdapter implements MessageListener, MembershipListener, VoteR
     public void addVoteListener(VotingListener listener) {
         voteListeners.add(listener);
         listeners = (VotingListener[])voteListeners.toArray(
-							    new VotingListener[voteListeners.size()]);
+                                new VotingListener[voteListeners.size()]);
     }
 
     /**
@@ -366,7 +408,7 @@ public class VotingAdapter implements MessageListener, MembershipListener, VoteR
         voteListeners.remove(listener);
 
         listeners = (VotingListener[])voteListeners.toArray(
-							    new VotingListener[voteListeners.size()]);
+                                new VotingListener[voteListeners.size()]);
     }
 
     /**
@@ -376,7 +418,7 @@ public class VotingAdapter implements MessageListener, MembershipListener, VoteR
     public VoteResult localVote(Object decree) {
 
         VoteResult voteResult = new VoteResult();
-    
+
         for(int i = 0; i < listeners.length; i++) {
             VotingListener listener = listeners[i];
 
@@ -385,9 +427,9 @@ public class VotingAdapter implements MessageListener, MembershipListener, VoteR
             } catch (VoteException vex) {
                 // do nothing here.
             } catch(RuntimeException ex) {
-                
+
                 if(log.isErrorEnabled()) log.error(ex.toString());
-                
+
                 // if we are here, then listener 
                 // had thrown a RuntimeException
                 return new FailureVoteResult(ex.getMessage());
@@ -396,7 +438,7 @@ public class VotingAdapter implements MessageListener, MembershipListener, VoteR
 
 
             if(log.isDebugEnabled()) log.debug("Voting on decree " + decree.toString() + " : " +
-			voteResult.toString());
+            voteResult.toString());
 
         return voteResult;
     }
@@ -411,10 +453,10 @@ public class VotingAdapter implements MessageListener, MembershipListener, VoteR
      */
     public static String getConsensusStr(int consensusType) {
         switch(consensusType) {
-	case VotingAdapter.VOTE_ALL : return "VOTE_ALL";
-	case VotingAdapter.VOTE_ANY : return "VOTE_ANY";
-	case VotingAdapter.VOTE_MAJORITY : return "VOTE_MAJORITY";
-	default : return "UNKNOWN";
+    case VotingAdapter.VOTE_ALL : return "VOTE_ALL";
+    case VotingAdapter.VOTE_ANY : return "VOTE_ANY";
+    case VotingAdapter.VOTE_MAJORITY : return "VOTE_MAJORITY";
+    default : return "UNKNOWN";
         }
     }
 
@@ -448,14 +490,14 @@ public class VotingAdapter implements MessageListener, MembershipListener, VoteR
      */
     public static class FailureVoteResult extends VoteResult {
         private final String reason;
-        
+
         public FailureVoteResult(String reason) {
             this.reason = reason;
         }
-        
+
         public String getReason() {
             return reason;
         }
     }
-    
+
 }
