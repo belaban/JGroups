@@ -67,7 +67,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.86 2006/07/31 09:29:09 belaban Exp $
+ * @version $Id: JChannel.java,v 1.87 2006/08/10 12:14:48 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -838,6 +838,10 @@ public class JChannel extends Channel {
             	return receive_blocks ? Boolean.TRUE : Boolean.FALSE;
             case SUSPECT:
             	return Boolean.TRUE;
+            case AUTO_RECONNECT:
+                return auto_reconnect ? Boolean.TRUE : Boolean.FALSE;
+            case AUTO_GETSTATE:
+                return auto_getstate ? Boolean.TRUE : Boolean.FALSE;
             case GET_STATE_EVENTS:
                 return Boolean.TRUE;
             case LOCAL:
