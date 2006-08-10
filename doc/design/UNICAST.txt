@@ -1,0 +1,32 @@
+
+UNICAST and membership
+======================
+
+Author: Bela Ban
+Date: Aug 10 2006
+Version: $Id: UNICAST.txt,v 1.1 2006/08/10 12:09:18 belaban Exp $
+
+
+Sending a unicast message to P
+------------------------------
+- When sending the first unicast message to a member P, we tag it with first=true
+- The message is added to the AckSenderWindow, which keeps resending the message until
+  it is acked by P, or P leaves the group (or crashes)
+
+
+View change
+-----------
+When a member P leaves, the connection for P is removed from the connection table
+
+
+Receiving a unicast message from P
+----------------------------------
+- When receiving a message from P:
+  - If there is no entry for P in the connection table:
+    - If the message has first=true:
+      - Create a new entry for P in the connection table
+      - Add the message to the entry for P (AckReceiverWindow) and ack it back to P
+    - Else:
+      - Discard the message and do *not* ack it ! This is necessary, so P keeps retransmitting it !
+  - Else:
+    - Add the message to the entry for P (AckReceiverWindow) and ack it back to P
