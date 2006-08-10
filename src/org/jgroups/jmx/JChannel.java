@@ -15,7 +15,7 @@ import java.util.Map;
 
 /**
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.13 2006/04/28 15:39:41 belaban Exp $
+ * @version $Id: JChannel.java,v 1.14 2006/08/10 08:05:00 belaban Exp $
  */
 public class JChannel implements JChannelMBean {
     /** Ref to the original JGroups channel */
@@ -44,6 +44,19 @@ public class JChannel implements JChannelMBean {
 
     public JChannel(org.jgroups.JChannel channel) {
         this.channel=channel;
+        setValues();
+    }
+
+
+    protected final void setValues() {
+        if(channel != null) {
+            props=getProperties();
+            group_name=channel.getClusterName();
+            receive_blocks=getReceiveBlockEvents();
+            receive_local_msgs=getReceiveLocalMessages();
+            auto_reconnect=getAutoReconnect();
+            auto_getstate=getAutoGetState();
+        }
     }
 
     //void jbossInternalLifecycle(String method) throws Exception;
@@ -64,6 +77,7 @@ public class JChannel implements JChannelMBean {
     }
 
     public String getProperties() {
+        props=channel.getProperties();
         return props;
     }
 
@@ -126,6 +140,8 @@ public class JChannel implements JChannelMBean {
     }
 
     public String getGroupName() {
+        if(channel != null)
+            group_name=channel.getClusterName();
         return group_name;
     }
 
@@ -141,8 +157,9 @@ public class JChannel implements JChannelMBean {
         setGroupName(cluster_name);
     }
 
-
     public boolean getReceiveBlockEvents() {
+        if(channel != null)
+            receive_blocks=((Boolean)channel.getOpt(Channel.BLOCK)).booleanValue();
         return receive_blocks;
     }
 
@@ -153,6 +170,8 @@ public class JChannel implements JChannelMBean {
     }
 
     public boolean getReceiveLocalMessages() {
+        if(channel != null)
+            receive_local_msgs=((Boolean)channel.getOpt(Channel.LOCAL)).booleanValue();
         return receive_local_msgs;
     }
 
@@ -163,6 +182,8 @@ public class JChannel implements JChannelMBean {
     }
 
     public boolean getAutoReconnect() {
+        if(channel != null)
+            auto_reconnect=((Boolean)channel.getOpt(Channel.AUTO_RECONNECT)).booleanValue();
         return auto_reconnect;
     }
 
@@ -173,6 +194,8 @@ public class JChannel implements JChannelMBean {
     }
 
     public boolean getAutoGetState() {
+        if(channel != null)
+            auto_getstate=((Boolean)channel.getOpt(Channel.AUTO_GETSTATE)).booleanValue();
         return auto_getstate;
     }
 
@@ -209,6 +232,7 @@ public class JChannel implements JChannelMBean {
             channel.close();
         channel=new org.jgroups.JChannel(props);
         setOptions();
+        setValues();
         MBeanServer server=(MBeanServer)MBeanServerFactory.findMBeanServer(mbean_server_name).get(0);
         JmxConfigurator.registerProtocols(server, channel, getObjectName());
     }
