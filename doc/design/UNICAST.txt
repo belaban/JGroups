@@ -4,12 +4,12 @@ UNICAST and membership
 
 Author: Bela Ban
 Date: Aug 10 2006
-Version: $Id: UNICAST.txt,v 1.1 2006/08/10 12:09:18 belaban Exp $
+Version: $Id: UNICAST.txt,v 1.2 2006/08/11 06:49:02 belaban Exp $
 
 
 Sending a unicast message to P
 ------------------------------
-- When sending the first unicast message to a member P, we tag it with first=true
+- When sending the first unicast message to a member P, its seqno is 1 (meaning this is the first message)
 - The message is added to the AckSenderWindow, which keeps resending the message until
   it is acked by P, or P leaves the group (or crashes)
 
@@ -23,10 +23,12 @@ Receiving a unicast message from P
 ----------------------------------
 - When receiving a message from P:
   - If there is no entry for P in the connection table:
-    - If the message has first=true:
+    - If the message has seqno=1:
       - Create a new entry for P in the connection table
       - Add the message to the entry for P (AckReceiverWindow) and ack it back to P
     - Else:
       - Discard the message and do *not* ack it ! This is necessary, so P keeps retransmitting it !
   - Else:
     - Add the message to the entry for P (AckReceiverWindow) and ack it back to P
+
+    
