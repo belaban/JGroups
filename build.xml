@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.57 2006/08/07 10:22:25 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.58 2006/08/11 12:48:05 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -362,6 +362,7 @@
         <delete dir="${tmp.dir}/tests-results"/>
         <mkdir dir="${tmp.dir}/tests-results"/>
         <junit printsummary="yes" timeout="${unittest.timeout.low}" fork="yes">
+            <jvmarg value="-Dbind.address=127.0.0.1"/>
             <jvmarg value="-Dtests.tmp.dir=${tmp.dir}"/>
             <jvmarg value="-Dlog4j.configuration=file:c:\log4j.properties"/>
             <classpath refid="jg.classpath"/>
