@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.61 2006/08/09 21:30:22 belaban Exp $
+// $Id: UNICAST.java,v 1.62 2006/08/11 12:50:57 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -203,8 +203,8 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             src=msg.getSrc();
             switch(hdr.type) {
             case UnicastHeader.DATA:      // received regular message
-                handleDataReceived(src, hdr.seqno, msg);
-                sendAck(src, hdr.seqno); // only send an ACK if added to the received_msgs table (bela Aug 2006)
+                if(handleDataReceived(src, hdr.seqno, msg))
+                    sendAck(src, hdr.seqno); // only send an ACK if added to the received_msgs table (bela Aug 2006)
                 return; // we pass the deliverable message up in handleDataReceived()
             case UnicastHeader.ACK:  // received ACK for previously sent message
                 handleAckReceived(src, hdr.seqno);
@@ -422,12 +422,19 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
      * Check whether the hashtable contains an entry e for <code>sender</code> (create if not). If
      * e.received_msgs is null and <code>first</code> is true: create a new AckReceiverWindow(seqno) and
      * add message. Set e.received_msgs to the new window. Else just add the message.
+     * @return boolean True if we can send an ack, false otherwise
      */
-    private void handleDataReceived(Object sender, long seqno, Message msg) {
+    private boolean handleDataReceived(Object sender, long seqno, Message msg) {
         if(trace)
             log.trace(new StringBuffer().append(local_addr).append(" <-- DATA(").append(sender).append(": #").append(seqno));
 
         if(previous_members.contains(sender)) {
+            // we don't want to see messages from departed members
+            if(seqno > DEFAULT_FIRST_SEQNO) {
+                if(trace)
+                    log.trace("discarding message " + seqno + " from previous member " + sender);
+                return false; // don't ack this message so the sender keeps resending it !
+            }
             if(trace)
                 log.trace("removed " + sender + " from previous_members as we received a message from it");
             previous_members.removeElement(sender);
@@ -463,6 +470,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             while((m=entry.received_msgs.remove()) != null)
                 passUp(new Event(Event.MSG, m));
         }
+        return true; // msg was successfully received - send an ack back to the sender
     }
 
 
