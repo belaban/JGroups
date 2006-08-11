@@ -4,7 +4,7 @@ UNICAST and membership
 
 Author: Bela Ban
 Date: Aug 10 2006
-Version: $Id: UNICAST.txt,v 1.2 2006/08/11 06:49:02 belaban Exp $
+Version: $Id: UNICAST.txt,v 1.3 2006/08/11 07:55:17 belaban Exp $
 
 
 Sending a unicast message to P
@@ -16,7 +16,7 @@ Sending a unicast message to P
 
 View change
 -----------
-When a member P leaves, the connection for P is removed from the connection table
+When a member P leaves, the connection for P is removed from the connection table and added to previous_members
 
 
 Receiving a unicast message from P
@@ -31,4 +31,3 @@ Receiving a unicast message from P
   - Else:
     - Add the message to the entry for P (AckReceiverWindow) and ack it back to P
 
-    
