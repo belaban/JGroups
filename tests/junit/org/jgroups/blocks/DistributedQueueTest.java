@@ -1,11 +1,12 @@
-// $Id: DistributedQueueTest.java,v 1.8 2005/12/27 14:38:35 belaban Exp $
+// $Id: DistributedQueueTest.java,v 1.9 2006/08/13 09:05:10 mimbert Exp $
 
 package org.jgroups.blocks;
 
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
-import org.apache.log4j.Logger;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import java.util.Vector;
 
@@ -13,7 +14,7 @@ public class DistributedQueueTest extends TestCase
 {
 
 	final int NUM_ITEMS = 10;
-	static Logger logger = Logger.getLogger(DistributedQueueTest.class.getName());
+	static Log logger = LogFactory.getLog(DistributedQueueTest.class);
     String props;
 
 	public DistributedQueueTest(String testName)
