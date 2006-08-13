@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.51 2006/08/08 08:16:07 belaban Exp $
+// $Id: Message.java,v 1.52 2006/08/13 09:05:10 mimbert Exp $
 
 package org.jgroups;
 
@@ -60,7 +60,18 @@ public class Message implements Externalizable, Streamable {
 
     /** Map<Address,Address>. Maintains mappings to canonical addresses */
     private static final Map canonicalAddresses=new ConcurrentReaderHashMap();
-    private static final boolean DISABLE_CANONICALIZATION=Boolean.getBoolean("disable_canonicalization");
+    private static final boolean DISABLE_CANONICALIZATION;
+    static {
+        boolean b;
+        try {
+            b=Boolean.getBoolean("disable_canonicalization");
+        }
+        catch (java.security.AccessControlException e) {
+            // this will happen in an applet context
+            b=false;
+        }
+        DISABLE_CANONICALIZATION=b;
+    }
 
 
     /** Public constructor

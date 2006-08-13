@@ -1,7 +1,8 @@
-// $Id: TotalTokenProtocolObserver.java,v 1.5 2004/07/05 14:15:02 belaban Exp $
+// $Id: TotalTokenProtocolObserver.java,v 1.6 2006/08/13 09:05:10 mimbert Exp $
 package org.jgroups.blocks;
 
-import org.apache.log4j.Logger;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jgroups.Event;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
@@ -13,7 +14,7 @@ import java.util.Vector;
 public class TotalTokenProtocolObserver  implements ProtocolObserver
 {
 	String name;
-	static Logger logger = Logger.getLogger(TotalTokenProtocolObserver.class.getName());
+    static Log logger = LogFactory.getLog(TotalTokenProtocolObserver.class);
 
     
 	public TotalTokenProtocolObserver(JChannel c)

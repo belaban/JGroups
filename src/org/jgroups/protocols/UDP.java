@@ -1,4 +1,4 @@
-// $Id: UDP.java,v 1.117 2006/08/09 08:39:23 belaban Exp $
+// $Id: UDP.java,v 1.118 2006/08/13 09:05:10 mimbert Exp $
 
 package org.jgroups.protocols;
 
@@ -163,18 +163,25 @@ public class UDP extends TP implements Runnable {
             props.remove("mcast_addr");
         }
 
-        str=System.getProperty("jboss.partition.udpGroup");
-        if(str != null)
-            mcast_addr_name=str;
+        try {
+            str=System.getProperty("jboss.partition.udpGroup");
+            if(str != null)
+                mcast_addr_name=str;
+        }
+        catch (SecurityException e) {} // if in applet context
 
         str=props.getProperty("mcast_port");
         if(str != null) {
             mcast_port=Integer.parseInt(str);
             props.remove("mcast_port");
         }
-        str=System.getProperty("jboss.partition.udpPort");
-        if(str != null)
-            mcast_port=Integer.parseInt(str);
+
+        try {
+            str=System.getProperty("jboss.partition.udpPort");
+            if(str != null)
+                mcast_port=Integer.parseInt(str);
+        }
+        catch (SecurityException e) {} // if in applet context
 
         str=props.getProperty("ip_mcast");
         if(str != null) {
