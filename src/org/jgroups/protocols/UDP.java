@@ -1,4 +1,3 @@
-// $Id: UDP.java,v 1.118 2006/08/13 09:05:10 mimbert Exp $
 
 package org.jgroups.protocols;
 
@@ -39,6 +38,7 @@ import java.util.*;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
+ * @version $Id: UDP.java,v 1.119 2006/08/13 15:37:22 belaban Exp $
  */
 public class UDP extends TP implements Runnable {
 
