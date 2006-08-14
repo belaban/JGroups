@@ -1,4 +1,4 @@
-// $Id: View.java,v 1.11 2006/01/14 13:00:21 belaban Exp $
+// $Id: View.java,v 1.12 2006/08/14 16:11:37 belaban Exp $
 
 package org.jgroups;
 
@@ -125,6 +125,10 @@ public class View implements Externalizable, Cloneable, Streamable {
             if(members != null && ((View)obj).members != null) {
                 return members.equals(((View)obj).members);
             }
+        }
+        else {
+            if(((View)obj).vid == null)
+                return true;
         }
         return false;
     }
