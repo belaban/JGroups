@@ -1,4 +1,4 @@
-// $Id: DistributedHashtable.java,v 1.23 2006/07/31 09:21:58 belaban Exp $
+// $Id: DistributedHashtable.java,v 1.24 2006/08/14 10:12:50 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -35,7 +35,7 @@ import java.util.*;
  * initial state (using the state exchange funclet <code>StateExchangeFunclet</code>.
  * @author Bela Ban
  * @author <a href="mailto:aolias@yahoo.com">Alfonso Olias-Sanz</a>
- * @version $Id: DistributedHashtable.java,v 1.23 2006/07/31 09:21:58 belaban Exp $
+ * @version $Id: DistributedHashtable.java,v 1.24 2006/08/14 10:12:50 belaban Exp $
  */
 public class DistributedHashtable extends Hashtable implements MessageListener, MembershipListener {
 
@@ -114,14 +114,12 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
     }
 
 
-    public DistributedHashtable(JChannel channel, long state_timeout)
-        throws ChannelNotConnectedException, ChannelClosedException {
+    public DistributedHashtable(JChannel channel, long state_timeout) {
         this(channel, false, state_timeout);
     }
 
 
-    public DistributedHashtable(JChannel channel, boolean persistent, long state_timeout)
-        throws ChannelNotConnectedException, ChannelClosedException {
+    public DistributedHashtable(JChannel channel, boolean persistent, long state_timeout) {
         this.groupname = channel.getClusterName();
         this.channel = channel;
         this.persistent=persistent;
@@ -156,7 +154,7 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
         disp=new RpcDispatcher(adapter, id, this, this, this);
     }
 
-    protected final void init(long state_timeout) throws ChannelClosedException, ChannelNotConnectedException {
+    protected final void init(long state_timeout) {
         initSignatures();
         disp = new RpcDispatcher(channel, this, this, this);
 
@@ -516,12 +514,7 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
         }
         //if size is bigger than one, there are more peers in the group
         //otherwise there is only one server.
-        if(members.size() > 1) {
-            send_message=true;
-        }
-        else {
-            send_message=false;
-        }
+        send_message=members.size() > 1;
     }
 
 
