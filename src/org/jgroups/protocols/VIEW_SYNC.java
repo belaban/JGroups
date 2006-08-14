@@ -19,7 +19,7 @@ import java.util.Vector;
  * install it. Otherwise we simply discard it. This is used to solve the problem for unreliable view
  * dissemination outlined in JGroups/doc/ReliableViewInstallation.txt. This protocol is supposed to be just below GMS.
  * @author Bela Ban
- * @version $Id: VIEW_SYNC.java,v 1.8 2006/04/23 12:52:54 belaban Exp $
+ * @version $Id: VIEW_SYNC.java,v 1.9 2006/08/14 16:23:32 belaban Exp $
  */
 public class VIEW_SYNC extends Protocol {
     Address              local_addr=null;
@@ -276,6 +276,13 @@ public class VIEW_SYNC extends Protocol {
             this.view=view;
         }
 
+        public int getType() {
+            return type;
+        }
+
+        public View getView() {
+            return view;
+        }
 
         static String type2String(int t) {
             switch(t) {
@@ -320,7 +327,7 @@ public class VIEW_SYNC extends Protocol {
         }
 
         public long size() {
-            long retval=Global.INT_SIZE + Global.BYTE_SIZE; // type + presence for digest
+            long retval=Global.INT_SIZE + Global.BYTE_SIZE + Global.BYTE_SIZE; // type + view type + presence for digest
             if(view != null)
                 retval+=view.serializedSize();
             return retval;
@@ -328,12 +335,17 @@ public class VIEW_SYNC extends Protocol {
 
         public void writeTo(DataOutputStream out) throws IOException {
             out.writeInt(type);
+            // 0 == null, 1 == View, 2 == MergeView
+            byte b=(byte)(view == null? 0 : (view instanceof MergeView? 2 : 1));
+            out.writeByte(b);
             Util.writeStreamable(view, out);
         }
 
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
             type=in.readInt();
-            view=(View)Util.readStreamable(View.class, in);
+            byte b=in.readByte();
+            Class clazz=b == 2? MergeView.class : View.class;
+            view=(View)Util.readStreamable(clazz, in);
         }
 
 
