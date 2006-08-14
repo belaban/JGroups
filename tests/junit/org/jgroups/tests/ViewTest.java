@@ -1,4 +1,4 @@
-// $Id: ViewTest.java,v 1.4 2006/01/14 12:51:12 belaban Exp $
+// $Id: ViewTest.java,v 1.5 2006/08/14 16:10:25 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -72,6 +72,14 @@ public class ViewTest extends TestCase {
         assertFalse(v1.equals(v3));
         v2.getMembers().add(f);
         assertFalse(v1.equals(v2));
+    }
+
+
+    public void testEquals3() {
+        View v1, v2;
+        v1=new View();
+        v2=new View();
+        assertEquals(v1, v2);
     }
 
     public void tearDown() throws Exception {
