@@ -1,4 +1,4 @@
-// $Id: ViewId.java,v 1.10 2005/07/12 11:45:42 belaban Exp $
+// $Id: ViewId.java,v 1.11 2006/08/14 16:05:09 belaban Exp $
 
 package org.jgroups;
 
@@ -105,7 +105,7 @@ public class ViewId implements Externalizable, Comparable, Cloneable, Streamable
 
 
     public boolean equals(Object other_view) {
-        return compareTo(other_view) == 0 ? true : false;
+        return compareTo(other_view) == 0;
     }
 
 
