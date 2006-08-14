@@ -1,4 +1,4 @@
-// $Id: SizeTest.java,v 1.15 2006/07/06 10:32:28 belaban Exp $$
+// $Id: SizeTest.java,v 1.16 2006/08/14 16:21:00 belaban Exp $$
 
 package org.jgroups.tests;
 
@@ -210,6 +210,28 @@ public class SizeTest extends TestCase {
         _testSize(view_all);
     }
 
+
+    public void testViewSyncHeader() throws Exception {
+        Address creator=new IpAddress("localhost", 12345);
+        Vector members=new Vector();
+        members.add(new IpAddress(5555));
+        members.add(creator);
+        View view=new View(creator, 322649, members);
+        VIEW_SYNC.ViewSyncHeader hdr=new VIEW_SYNC.ViewSyncHeader(VIEW_SYNC.ViewSyncHeader.VIEW_SYNC, view);
+        _testSize(hdr);
+
+        view=new MergeView();
+        hdr=new VIEW_SYNC.ViewSyncHeader(VIEW_SYNC.ViewSyncHeader.VIEW_SYNC, view);
+        _testSize(hdr);
+
+        Vector subgroups=new Vector();
+        subgroups.add(view);
+        view=new MergeView(creator, 322649, members, subgroups);
+        hdr=new VIEW_SYNC.ViewSyncHeader(VIEW_SYNC.ViewSyncHeader.VIEW_SYNC, view);
+        _testSize(hdr);
+    }
+
+
     public void testJoinRsp() throws Exception {
         JoinRsp rsp;
         Vector members=new Vector();
@@ -414,6 +436,23 @@ public class SizeTest extends TestCase {
         byte[] serialized_form=Util.streamableToByteBuffer((Streamable)hdr);
         System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
         assertEquals(serialized_form.length, size);
+    }
+
+
+    private void _testSize(VIEW_SYNC.ViewSyncHeader hdr) throws Exception {
+        long size=hdr.size();
+        byte[] serialized_form=Util.streamableToByteBuffer(hdr);
+        System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
+        assertEquals(serialized_form.length, size);
+
+        VIEW_SYNC.ViewSyncHeader hdr2=(VIEW_SYNC.ViewSyncHeader)Util.streamableFromByteBuffer(VIEW_SYNC.ViewSyncHeader.class, serialized_form);
+
+        int my_type=hdr.getType(), other_type=hdr2.getType();
+        View my_view=hdr.getView(), other_view=hdr2.getView();
+        System.out.println("my_type=" + my_type + ", other_type=" + other_type);
+        System.out.println("my_view=" + my_view + ", other_view=" + other_view);
+        assertEquals(my_type, other_type);
+        assertEquals(my_view, other_view);
     }
 
 
