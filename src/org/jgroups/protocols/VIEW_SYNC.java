@@ -19,7 +19,7 @@ import java.util.Vector;
  * install it. Otherwise we simply discard it. This is used to solve the problem for unreliable view
  * dissemination outlined in JGroups/doc/ReliableViewInstallation.txt. This protocol is supposed to be just below GMS.
  * @author Bela Ban
- * @version $Id: VIEW_SYNC.java,v 1.9 2006/08/14 16:23:32 belaban Exp $
+ * @version $Id: VIEW_SYNC.java,v 1.10 2006/08/14 16:30:06 belaban Exp $
  */
 public class VIEW_SYNC extends Protocol {
     Address              local_addr=null;
@@ -174,7 +174,7 @@ public class VIEW_SYNC extends Protocol {
         Vector members=v.getMembers();
         if(!members.contains(local_addr)) {
             if(log.isWarnEnabled())
-            log.warn("discarding view as I (" + local_addr + ") am not member of view (" + v + ")");
+                log.warn("discarding view as I (" + local_addr + ") am not member of view (" + v + ")");
             return;
         }
 
