@@ -1,4 +1,4 @@
-// $Id: UtilTest.java,v 1.11 2006/08/08 07:40:22 belaban Exp $
+// $Id: UtilTest.java,v 1.12 2006/08/15 05:50:08 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -328,6 +328,41 @@ public class UtilTest extends TestCase {
         assertEquals(4, list.size());
         assertEquals("myID1::subID1", list.get(0));
         assertEquals("myID4::blaSubID4", list.get(list.size() -1));
+    }
+
+
+    public void testVariableSubstitution() {
+        String val="hello world", replacement;
+        replacement=Util.substituteVariable(val);
+        assertEquals(val, replacement); // no substitution
+
+        val="my name is ${user.name}";
+        replacement=Util.substituteVariable(val);
+        assertNotSame(val, replacement);
+        assertFalse(val.equals(replacement));
+
+        val="my name is ${user.name} and ${user.name}";
+        replacement=Util.substituteVariable(val);
+        assertFalse(val.equals(replacement));
+        assertEquals(-1, replacement.indexOf("${"));
+
+        val="my name is ${unknown.var:Bela Ban}";
+        replacement=Util.substituteVariable(val);
+        assertTrue(replacement.indexOf("Bela Ban") >= 0);
+        assertEquals(-1, replacement.indexOf("${"));
+
+        val="my name is ${unknown.var}";
+        replacement=Util.substituteVariable(val);
+        assertTrue(replacement.indexOf("${") >= 0);
+
+        val="here is an invalid ${argument because it doesn't contains a closing bracket";
+        try {
+            replacement=Util.substituteVariable(val);
+            fail("should be an IllegalArgumentException");
+        }
+        catch(Throwable t) {
+            assertEquals(IllegalArgumentException.class, t.getClass());
+        }
     }
 
 

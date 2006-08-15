@@ -1,4 +1,3 @@
-// $Id: ConfiguratorFactory.java,v 1.18 2006/03/10 15:09:44 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -16,6 +15,9 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 import java.util.Properties;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Iterator;
 import java.security.AccessControlException;
 
 /**
@@ -28,7 +30,8 @@ import java.security.AccessControlException;
  * 2. PlainConfigurator - uses the old style strings UDP:FRAG: etc etc<BR>
  *
  * @author Filip Hanik (<a href="mailto:filip@filip.net">filip@filip.net)
- * @version 1.0
+ * @author Bela Ban
+ * @version $Id: ConfiguratorFactory.java,v 1.19 2006/08/15 05:50:06 belaban Exp $
  */
 public class ConfiguratorFactory {
     public static final String JAXP_MISSING_ERROR_MSG=
@@ -499,4 +502,40 @@ public class ConfiguratorFactory {
             throw tmp;
         }
     }
+
+    /** Replace variables of the form ${var:default} with the getProperty(var, default)
+     * @param configurator
+     */
+    public static void substituteVariables(ProtocolStackConfigurator configurator) {
+        ProtocolData[] protocols=configurator.getProtocolStack();
+        if(protocols == null)
+            return;
+        for(int i=0; i < protocols.length; i++) {
+            ProtocolData protocol=protocols[i];
+            if(protocol != null) {
+                HashMap parms=protocol.getParameters();
+                Map.Entry entry;
+                ProtocolParameter parm;
+                for(Iterator it=parms.entrySet().iterator(); it.hasNext();) {
+                    entry=(Map.Entry)it.next();
+                    parm=(ProtocolParameter)entry.getValue();
+                    String val=parm.getValue();
+                    String replacement=Util.substituteVariable(val);
+                    if(!replacement.equals(val)) {
+                        parm.setValue(replacement);
+                    }
+                }
+            }
+        }
+
+    }
 }
+
+
+
+
+
+
+
+
+

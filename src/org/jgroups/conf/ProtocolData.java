@@ -1,17 +1,17 @@
-// $Id: ProtocolData.java,v 1.6 2004/09/23 16:29:14 belaban Exp $
 
 package org.jgroups.conf;
 
 /**
  * Data holder for protocol
  * @author Filip Hanik (<a href="mailto:filip@filip.net">filip@filip.net)
- * @version 1.0
+ * @version $Id: ProtocolData.java,v 1.7 2006/08/15 05:50:06 belaban Exp $
  */
 
 import java.util.HashMap;
 import java.util.Iterator;
 
 public class ProtocolData {
+    /** Map<String,ProtocolParameter> of property keys and values */
     private final HashMap mParameters=new HashMap();
     private final String mProtocolName;
     private final String mDescription;

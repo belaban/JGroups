@@ -67,7 +67,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.87 2006/08/10 12:14:48 belaban Exp $
+ * @version $Id: JChannel.java,v 1.88 2006/08/15 05:50:07 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -256,19 +256,11 @@ public class JChannel extends Channel {
      *                          the protocol stack.
      */
     protected JChannel(ProtocolStackConfigurator configurator) throws ChannelException {
-        props = configurator.getProtocolStackString();
-
-        /*create the new protocol stack*/
-        prot_stack=new ProtocolStack(this, props);
-
-        /* Setup protocol stack (create layers, queues between them */
-        try {
-            prot_stack.setup();
-        }
-        catch(Throwable e) {
-            throw new ChannelException("unable to setup the protocol stack", e);
-        }
+        init(configurator);
     }
+
+
+
 
     /**
      * Creates a new JChannel with the protocol stack as defined in the properties
@@ -284,28 +276,18 @@ public class JChannel extends Channel {
      * @deprecated Use the constructors with specific parameter types instead.
      */
     public JChannel(Object properties) throws ChannelException {
-        if (properties == null) {
+        if (properties == null)
             properties = DEFAULT_PROTOCOL_STACK;
-        }
+
+        ProtocolStackConfigurator c=null;
 
         try {
-            ProtocolStackConfigurator c=ConfiguratorFactory.getStackConfigurator(properties);
-            props=c.getProtocolStackString();
+            c=ConfiguratorFactory.getStackConfigurator(properties);
         }
         catch(Exception x) {
             throw new ChannelException("unable to load protocol stack", x);
         }
-
-        /*create the new protocol stack*/
-        prot_stack=new ProtocolStack(this, props);
-
-        /* Setup protocol stack (create layers, queues between them */
-        try {
-            prot_stack.setup();
-        }
-        catch(Throwable e) {
-            throw new ChannelException("failed to setup protocol stack", e);
-        }
+        init(c);
     }
 
 
@@ -1210,6 +1192,19 @@ public class JChannel extends Channel {
 
 
     /* ----------------------------------- Private Methods ------------------------------------- */
+
+
+    protected final void init(ProtocolStackConfigurator configurator) throws ChannelException {
+        ConfiguratorFactory.substituteVariables(configurator); // replace vars with system props
+        props=configurator.getProtocolStackString();
+        prot_stack=new ProtocolStack(this, props);
+        try {
+            prot_stack.setup(); // Setup protocol stack (create layers, queues between them
+        }
+        catch(Throwable e) {
+            throw new ChannelException("unable to setup the protocol stack", e);
+        }
+    }
 
 
     /**

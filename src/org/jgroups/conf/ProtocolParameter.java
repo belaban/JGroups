@@ -1,4 +1,3 @@
-// $Id: ProtocolParameter.java,v 1.4 2004/09/23 16:29:14 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -6,16 +5,17 @@ package org.jgroups.conf;
  * Data holder for protocol data
  *
  * @author Filip Hanik (<a href="mailto:filip@filip.net">filip@filip.net)
- * @version 1.0
+ * @author Bela Ban
+ * @version $Id: ProtocolParameter.java,v 1.5 2006/08/15 05:50:06 belaban Exp $
  */
 
 public class ProtocolParameter {
 
     private final String mParameterName;
-    private final Object mParameterValue;
+    private String mParameterValue;
 
     public ProtocolParameter(String parameterName,
-                             Object parameterValue) {
+                             String parameterValue) {
         mParameterName=parameterName;
         mParameterValue=parameterValue;
     }
@@ -24,8 +24,12 @@ public class ProtocolParameter {
         return mParameterName;
     }
 
-    public Object getValue() {
+    public String getValue() {
         return mParameterValue;
+    }
+
+    public void setValue(String replacement) {
+        mParameterValue=replacement;
     }
 
     public int hashCode() {
@@ -45,14 +49,16 @@ public class ProtocolParameter {
     public String getParameterString() {
         StringBuffer buf=new StringBuffer(mParameterName);
         if(mParameterValue != null)
-            buf.append('=').append(mParameterValue.toString());
+            buf.append('=').append(mParameterValue);
         return buf.toString();
     }
 
     public String getParameterStringXml() {
         StringBuffer buf=new StringBuffer(mParameterName);
         if(mParameterValue != null)
-            buf.append("=\"").append(mParameterValue.toString()).append('\"');
+            buf.append("=\"").append(mParameterValue).append('\"');
         return buf.toString();
     }
+
+
 }

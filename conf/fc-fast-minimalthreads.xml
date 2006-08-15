@@ -1,9 +1,9 @@
 <!-- ************ JGroups Protocol Stack Configuration ************** -->
 
 <config>
-    <UDP
-         mcast_port="45566" 
-         mcast_addr="228.10.10.10"
+    <UDP bind_addr="${bind.address:127.0.0.1}"
+         mcast_port="${jboss.partition.udpPort:45566}" 
+         mcast_addr="${jboss.partition.udpGroup:228.10.10.10}"
          tos="16"
          ucast_recv_buf_size="20000000"
          ucast_send_buf_size="640000"
