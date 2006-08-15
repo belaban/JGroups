@@ -20,7 +20,7 @@ import java.util.*;
  * 
  * @author Roman Rokytskyy (rrokytskyy@acm.org)
  * @author Robert Schaffar-Taurok (robert@fusion.at)
- * @version $Id: DistributedLockManager.java,v 1.7 2006/08/10 06:43:42 belaban Exp $
+ * @version $Id: DistributedLockManager.java,v 1.8 2006/08/15 09:18:53 belaban Exp $
  */
 public class DistributedLockManager implements TwoPhaseVotingListener, LockManager, VoteResponseProcessor, MembershipListener {
     /**
@@ -257,12 +257,25 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
         throws LockNotReleasedException, ChannelException
     {
         try {
-            unlock(lockId, owner, false);
+            unlock(lockId, owner, false, VOTE_TIMEOUT);
         } catch (LockMultiLockedException e) {
             // This should never happen when releaseMultiLocked is false
             log.error("Caught MultiLockedException but releaseMultiLocked is false", e);
         }
     }
+
+
+    public void unlock(Object lockId, Object owner, long timeout)
+            throws LockNotReleasedException, ChannelException
+    {
+        try {
+            unlock(lockId, owner, false, timeout);
+        } catch (LockMultiLockedException e) {
+            // This should never happen when releaseMultiLocked is false
+            log.error("Caught MultiLockedException but releaseMultiLocked is false", e);
+        }
+    }
+
 
     /**
      * Unlocks an object with <code>lockId</code> on behalf of the specified
@@ -278,25 +291,34 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
     public void unlock(Object lockId, Object owner, boolean releaseMultiLocked)
         throws LockNotReleasedException, ChannelException, LockMultiLockedException
     {
+        unlock(lockId, owner, releaseMultiLocked, VOTE_TIMEOUT);
+    }
+
+
+    public void unlock(Object lockId, Object owner, boolean releaseMultiLocked, long timeout)
+            throws LockNotReleasedException, ChannelException, LockMultiLockedException
+    {
 
         if (!(lockId instanceof Serializable) || !(owner instanceof Serializable))
             throw new ClassCastException("DistributedLockManager " +
-                "works only with serializable objects.");
+                    "works only with serializable objects.");
 
         ReleaseLockDecree releaseLockDecree = new ReleaseLockDecree(lockId, owner, id);
         boolean released = false;
         if (releaseMultiLocked) {
-            released = votingAdapter.vote(releaseLockDecree, VOTE_TIMEOUT, this);
+            released = votingAdapter.vote(releaseLockDecree, timeout, this);
             if (releaseLockDecree.isMultipleLocked()) {
                 throw new LockMultiLockedException("Lock was also locked by other DistributedLockManager(s)");
             }
         } else {
-            released = votingAdapter.vote(releaseLockDecree, VOTE_TIMEOUT);
+            released = votingAdapter.vote(releaseLockDecree, timeout);
         }
 
         if (!released)
             throw new LockNotReleasedException("Lock cannot be unlocked.");
     }
+
+
 
     /**
      * Checks the list of prepared locks/unlocks to determine if we are in the
