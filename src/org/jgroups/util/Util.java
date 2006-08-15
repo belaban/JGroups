@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.82 2006/08/08 08:14:26 belaban Exp $
+// $Id: Util.java,v 1.83 2006/08/15 05:50:06 belaban Exp $
 
 package org.jgroups.util;
 
@@ -26,7 +26,7 @@ import java.util.List;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.82 2006/08/08 08:14:26 belaban Exp $
+ * @version $Id: Util.java,v 1.83 2006/08/15 05:50:06 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -1849,4 +1849,66 @@ public class Util {
         }
         return sb.toString();
     }
+
+    /**
+     * Replaces variables of ${var:default} with System.getProperty(var, default). If no variables are found, returns
+     * the same string, otherwise a copy of the string with variables substituted
+     * @param val
+     * @return A string with vars replaced, or the same string if no vars found
+     */
+    public static String substituteVariable(String val) {
+        if(val == null)
+            return val;
+        String retval=val, prev;
+
+        while(retval.indexOf("${") >= 0) { // handle multiple variables in val
+            prev=retval;
+            retval=_substituteVar(retval);
+            if(retval.equals(prev))
+                break;
+        }
+        return retval;
+    }
+
+    private static String _substituteVar(String val) {
+        int start_index, end_index;
+        start_index=val.indexOf("${");
+        if(start_index == -1)
+            return val;
+        end_index=val.indexOf("}", start_index+2);
+        if(end_index == -1)
+            throw new IllegalArgumentException("missing \"}\" in " + val);
+
+        String tmp=getProperty(val.substring(start_index +2, end_index));
+        if(tmp == null)
+            return val;
+        StringBuffer sb=new StringBuffer();
+        sb.append(val.substring(0, start_index));
+        sb.append(tmp);
+        sb.append(val.substring(end_index+1));
+        return sb.toString();
+    }
+
+    private static String getProperty(String s) {
+        String var, default_val, retval=null;
+        int index=s.indexOf(":");
+        if(index >= 0) {
+            var=s.substring(0, index);
+            default_val=s.substring(index+1);
+            retval=System.getProperty(var, default_val);
+        }
+        else {
+            var=s;
+            retval=System.getProperty(var);
+        }
+        return retval;
+    }
+
+
 }
+
+
+
+
+
+
