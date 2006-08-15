@@ -31,7 +31,7 @@ import java.security.AccessControlException;
  *
  * @author Filip Hanik (<a href="mailto:filip@filip.net">filip@filip.net)
  * @author Bela Ban
- * @version $Id: ConfiguratorFactory.java,v 1.19 2006/08/15 05:50:06 belaban Exp $
+ * @version $Id: ConfiguratorFactory.java,v 1.20 2006/08/15 06:06:39 belaban Exp $
  */
 public class ConfiguratorFactory {
     public static final String JAXP_MISSING_ERROR_MSG=
@@ -507,7 +507,15 @@ public class ConfiguratorFactory {
      * @param configurator
      */
     public static void substituteVariables(ProtocolStackConfigurator configurator) {
-        ProtocolData[] protocols=configurator.getProtocolStack();
+        ProtocolData[] protocols;
+
+        try {
+            protocols=configurator.getProtocolStack();
+        }
+        catch(Exception e) {
+            protocols=null;
+        }
+
         if(protocols == null)
             return;
         for(int i=0; i < protocols.length; i++) {
