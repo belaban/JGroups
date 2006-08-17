@@ -2,7 +2,7 @@
 Release Notes JGroups 2.4
 =========================
 
-Version: $Id: ReleaseNotes-2.4.txt,v 1.3 2006/08/15 05:31:53 belaban Exp $
+Version: $Id: ReleaseNotes-2.4.txt,v 1.4 2006/08/17 13:37:51 belaban Exp $
 Author: Bela Ban
 
 JGroups 2.4 is a backward compatible release, that is it can replace previous versions (2.3 - 2.2.7) by simply replacing
@@ -78,6 +78,7 @@ Enhancements and bug fixes
 - COMPRESS now uses multiple deflaters/inflaters, this results in more concurrent compression, more performance
 - Multiplexer: few bug fixes (detected by integrating into JBoss), there are now 2 new unit tests that cover the bugs fixed
 - Bug fix for VIEW_SYNC after network partition and subsequent merge (http://jira.jboss.com/jira/browse/JGRP-217)
+- DistributedLockManager now releases locks leftover by a crashed process
 
 
 Documentation
