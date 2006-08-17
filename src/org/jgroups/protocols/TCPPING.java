@@ -1,4 +1,4 @@
-// $Id: TCPPING.java,v 1.25 2006/05/16 11:14:27 belaban Exp $
+// $Id: TCPPING.java,v 1.26 2006/08/17 13:27:08 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -116,8 +116,9 @@ public class TCPPING extends Discovery {
 
         while(tok.hasMoreTokens()) {
             try {
-                t=tok.nextToken();
+                t=tok.nextToken().trim();
                 String host=t.substring(0, t.indexOf('['));
+                host=host.trim();
                 int port=Integer.parseInt(t.substring(t.indexOf('[') + 1, t.indexOf(']')));
                 for(int i=port; i < port + port_range; i++) {
                     addr=new IpAddress(host, i);
