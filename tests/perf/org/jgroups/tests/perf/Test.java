@@ -440,6 +440,7 @@ public class Test implements Receiver {
         Map.Entry   entry;
         MemberInfo  val;
         double      combined_msgs_sec, tmp=0;
+        long        combined_tp;
         StringBuffer sb=new StringBuffer();
         sb.append("\n-- results:\n");
 
@@ -456,8 +457,11 @@ public class Test implements Receiver {
             sb.append('\n');
         }
         combined_msgs_sec=tmp / final_results.size();
+        combined_tp=(long)combined_msgs_sec * msg_size;
+
+
         sb.append("\ncombined: ").append(f.format(combined_msgs_sec)).
-                append(" msgs/sec averaged over all receivers\n");
+                append(" msgs/sec averaged over all receivers (throughput=" + Util.printBytes(combined_tp) + "/sec)\n");
         System.out.println(sb.toString());
         output(sb.toString());
     }
