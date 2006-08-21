@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.53 2006/08/09 16:38:57 belaban Exp $
+// $Id: MessageDispatcher.java,v 1.54 2006/08/21 17:09:45 vlada Exp $
 
 package org.jgroups.blocks;
 
@@ -687,6 +687,33 @@ public class MessageDispatcher implements RequestHandler {
                         }
                     }
                     break;
+                    
+                case Event.STATE_TRANSFER_OUTPUTSTREAM:
+                    if(msg_listener != null) {
+                        StateTransferInfo sti=(StateTransferInfo)evt.getArg();
+                        OutputStream os=sti.outputStream;
+                        if(os != null && msg_listener instanceof ExtendedMessageListener) {
+                            if(sti.state_id == null)
+                                ((ExtendedMessageListener)msg_listener).getState(os);
+                            else
+                                ((ExtendedMessageListener)msg_listener).getState(sti.state_id, os);
+                        }
+                        return;
+                    }
+    				break;  
+    				
+                case Event.STATE_TRANSFER_INPUTSTREAM:
+                    if(msg_listener != null) {
+                    	StateTransferInfo sti=(StateTransferInfo)evt.getArg();
+                        InputStream is=sti.inputStream; 
+                        if(msg_listener instanceof ExtendedMessageListener) {
+                            if(sti.state_id == null)
+                                ((ExtendedMessageListener)msg_listener).setState(is);
+                            else
+                                ((ExtendedMessageListener)msg_listener).setState(sti.state_id, is);
+                        }                       
+                    }
+        			break;	
 
                 case Event.VIEW_CHANGE:
                     View v=(View) evt.getArg();
