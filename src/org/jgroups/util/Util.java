@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.83 2006/08/15 05:50:06 belaban Exp $
+// $Id: Util.java,v 1.84 2006/08/21 07:08:55 belaban Exp $
 
 package org.jgroups.util;
 
@@ -26,7 +26,7 @@ import java.util.List;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.83 2006/08/15 05:50:06 belaban Exp $
+ * @version $Id: Util.java,v 1.84 2006/08/21 07:08:55 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -1752,7 +1752,7 @@ public class Util {
         // return 'jboss' server if available
         for(int i=0; i < servers.size(); i++) {
             MBeanServer srv=(MBeanServer)servers.get(i);
-            if(srv.getDefaultDomain().equalsIgnoreCase("jboss"))
+            if("jboss".equalsIgnoreCase(srv.getDefaultDomain()))
                 return srv;
         }
 
