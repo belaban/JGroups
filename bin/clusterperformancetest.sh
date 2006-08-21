@@ -24,8 +24,8 @@ CLASSPATH='commons-logging.jar:log4j-1.2.6.jar:concurrent.jar:jgroups-all.jar'
 CONFIG_FILES=`find . -name 'config_*.txt'`
 
 #JGroups configuration stack used in performance tests
-JGROUPS_CONFIG_FILE='/home/${USERID}/fc-fast-minimalthreads.xml'
-#JGROUPS_CONFIG_FILE='/home/${USERID}/tcp_nio.xml'
+JGROUPS_CONFIG_FILE="/home/${USERID}/fc-fast-minimalthreads.xml"
+#JGROUPS_CONFIG_FILE="/home/${USERID}/tcp_nio.xml"
 
 #sleeptime between performance test rounds (should be big enough to prevent test
 #overlapping)
