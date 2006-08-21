@@ -22,7 +22,7 @@ import java.util.Properties;
  */
 public class PerformanceTestGenerator {
 	Properties configProperties = null;
-	private int totalDataBytes;
+	private long totalDataBytes;
 	private int[] numOfSenders;
 	private int[] messageSizes;
 	private int numNodes;
@@ -71,14 +71,14 @@ public class PerformanceTestGenerator {
 	private void parse() throws Exception{
 		
 		numNodes = Integer.parseInt(configProperties.getProperty("nodes"));		
-		totalDataBytes = Integer.parseInt(configProperties.getProperty("total_data"));		
+		totalDataBytes = Long.parseLong(configProperties.getProperty("total_data"));
 		numOfSenders = tokenizeAndConvert(configProperties.getProperty("number_of_senders"),",");		
 		messageSizes = tokenizeAndConvert(configProperties.getProperty("message_sizes"),",");		
 		dataLogPoints = Integer.parseInt(configProperties.getProperty("log_data_points"));		
 	}
 	private void generateFile(int numOfSenders, int messageSize,int nodeCount) {	
 		FileWriter fw = null;
-		int numOfMessages = (totalDataBytes/messageSize);
+		long numOfMessages = (totalDataBytes/messageSize);
 		try {
 			fw = new FileWriter("config_"+numOfSenders + "_" +nodeCount +"_"+ messageSize + ".txt");
 			fw.write("transport=org.jgroups.tests.perf.transports.JGroupsTransport\n");
