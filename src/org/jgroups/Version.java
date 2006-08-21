@@ -10,7 +10,7 @@ public class Version {
 	
     public static final String description="2.4CR1";
     public static final short version=241;
-    public static final String cvs="$Id: Version.java,v 1.37 2006/08/15 06:12:24 belaban Exp $";
+    public static final String cvs="$Id: Version.java,v 1.38 2006/08/21 07:14:26 belaban Exp $";
 
     /**
      * Prints the value of the description and cvs fields to System.out.
@@ -27,7 +27,7 @@ public class Version {
      * @return String with description
      */
     public static String printDescription() {
-        return "JGroups " + description + "[ " + cvs + "]";
+        return "JGroups " + description + " [" + cvs + "]";
     }
 
     /**
