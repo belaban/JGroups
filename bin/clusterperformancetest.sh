@@ -4,13 +4,16 @@
 #performance tests input files.
 #
 #For a succesful performance test running user should ensure the following:
-# - can log into all machines listed in CLUSTER_NODES variable using LOGIN_COMMAND
+# - can log into all machines listed in CLUSTER_NODES variable
 # - CLASSPATH variable points to existing lib files
 # - CONFIG_FILES is initialized to proper performance tests input files
 # - JGROUPS_CONFIG_FILE is initialized to an existing JGroups stack conf file   
 
 #lists all the computer nodes used for performance tests
 CLUSTER_NODES=( cluster01.qa.atl.jboss.com cluster02.qa.atl.jboss.com cluster03.qa.atl.jboss.com cluster04.qa.atl.jboss.com cluster05.qa.atl.jboss.com cluster06.qa.atl.jboss.com cluster07.qa.atl.jboss.com cluster08.qa.atl.jboss.com )
+
+USERID=bela
+
 
 #classpath for performance tests
 CLASSPATH='commons-logging.jar:log4j-1.2.6.jar:concurrent.jar:jgroups-all.jar'
@@ -21,17 +24,22 @@ CLASSPATH='commons-logging.jar:log4j-1.2.6.jar:concurrent.jar:jgroups-all.jar'
 CONFIG_FILES=`find . -name 'config_*.txt'`
 
 #JGroups configuration stack used in performance tests
-JGROUPS_CONFIG_FILE='fc-fast-minimalthreads.xml' 
+JGROUPS_CONFIG_FILE='/home/${USERID}/fc-fast-minimalthreads.xml'
+#JGROUPS_CONFIG_FILE='/home/${USERID}/tcp_nio.xml'
 
 #sleeptime between performance test rounds (should be big enough to prevent test
 #overlapping)
-SLEEP_TIME=400
+SLEEP_TIME=30
 
 LOGIN_COMMAND='ssh -i rgreathouse@jboss.com.id_dsa vblagojevic@'
 
 JVM_COMMAND='/opt/jdk1.5.0_06/bin/java -Djava.net.preferIPv4Stack=true'
 
-JVM_PARAM=''
+LOGIN_COMMAND="${USERID}@"
+
+JVM_COMMAND='java -Djava.net.preferIPv4Stack=true'
+
+JVM_PARAM="-Xmx500M -Xms500M -XX:NewRatio=1 -XX:+AggressiveHeap -XX:+DisableExplicitGC -XX:CompileThreshold=100 -Dbind.address=\${MYTESTIP_1}"
 
 #verify that we found configuration files
 config_file_count=${#CONFIG_FILES[*]}
@@ -56,7 +64,6 @@ do
 	for (( i = 0 ; i < node_count ; i++ ))
 	do
     	node=${CLUSTER_NODES[$i]}
-		
 		if [ $sender_count -le $num_senders ] ; then
 			let "sender_count++"
 		else
@@ -64,16 +71,16 @@ do
 		fi
 		let j=$i+1
 		if [ $j -eq $node_count ] ; then
-			fork=""
+			SSH_CMD="ssh"
 			output_file="-f result-${file#.*/}"
 		else
-			fork="&"
+			SSH_CMD="ssh -f"
 			output_file=""
 		fi
-		args="-config $file -props $JGROUPS_CONFIG_FILE $sender_or_receiver $output_file $fork"
-		final_command="$LOGIN_COMMAND$node $JVM_COMMAND $JVM_PARAM -cp $CLASSPATH org.jgroups.tests.perf.Test $args"
+		args="-config $file -props $JGROUPS_CONFIG_FILE $sender_or_receiver $output_file"
+		final_command="$SSH_CMD $LOGIN_COMMAND$node $JVM_COMMAND $JVM_PARAM  org.jgroups.tests.perf.Test $args > /dev/null"
 		echo starting $final_command on $node
-		$final_command &
+		$final_command
 		sleep 5
 	done
 	echo "Tests round is now running, waiting $SLEEP_TIME seconds for this test round to finish..."

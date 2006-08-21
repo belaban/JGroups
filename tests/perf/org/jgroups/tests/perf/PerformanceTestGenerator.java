@@ -26,7 +26,7 @@ public class PerformanceTestGenerator {
 	private int[] numOfSenders;
 	private int[] messageSizes;
 	private int numNodes;
-	private int dataLogPoints;
+	private int interval;
 	
 	
 	public PerformanceTestGenerator(Properties config) {
@@ -74,7 +74,7 @@ public class PerformanceTestGenerator {
 		totalDataBytes = Long.parseLong(configProperties.getProperty("total_data"));
 		numOfSenders = tokenizeAndConvert(configProperties.getProperty("number_of_senders"),",");		
 		messageSizes = tokenizeAndConvert(configProperties.getProperty("message_sizes"),",");		
-		dataLogPoints = Integer.parseInt(configProperties.getProperty("log_data_points"));		
+		interval = Integer.parseInt(configProperties.getProperty("interval"));
 	}
 	private void generateFile(int numOfSenders, int messageSize,int nodeCount) {	
 		FileWriter fw = null;
@@ -86,7 +86,7 @@ public class PerformanceTestGenerator {
 			fw.write("num_msgs="+(numOfMessages/numOfSenders) +"\n");
 			fw.write("num_senders="+numOfSenders+"\n");
 			fw.write("num_members="+nodeCount+"\n");
-			fw.write("log_interval="+(numOfMessages/dataLogPoints)+"\n");
+			fw.write("log_interval="+interval+"\n");
 			fw.close();
 		} catch (IOException e) {
 			e.printStackTrace();
