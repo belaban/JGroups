@@ -60,7 +60,7 @@ public class Test implements Receiver {
 
     boolean         dump_transport_stats=false;
 
-    /** Log every n msgs received (if gnuplot_output == true) */
+    /** Log every n msgs received */
     long            log_interval=1000;
 
 
@@ -391,7 +391,6 @@ public class Test implements Receiver {
         int msgSize=Integer.parseInt(config.getProperty("msg_size"));
         int num_msgs=Integer.parseInt(config.getProperty("num_msgs"));
         // int logInterval=Integer.parseInt(config.getProperty("log_interval"));
-        // boolean gnuplot_output=Boolean.getBoolean(config.getProperty("gnuplot_output", "false"));
         byte[] buf=new byte[msgSize];
         for(int k=0; k < msgSize; k++)
             buf[k]='.';

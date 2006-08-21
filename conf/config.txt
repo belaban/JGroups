@@ -1,6 +1,6 @@
 #
 # This file contains configuration for the JGroups performance tests (org.jgroups.tests.perf package)
-# $Id: config.txt,v 1.9 2006/05/17 07:40:30 belaban Exp $
+# $Id: config.txt,v 1.10 2006/08/21 11:18:30 belaban Exp $
 #
 
 # Class implementing the org.jgroups.tests.perf.Transport interface
@@ -33,10 +33,8 @@ processing_delay=0
 # location (needs to be changed)
 props=file:c:\\default.xml
 
-# dump throughput data in column format, easy to read for gnuplot
-gnuplot_output=false
 
-# Dumps statistics about the transport alongside the gnuplot output
+# Dumps statistics about the transport
 dump_transport_stats=false
 
 # Register JGroups channel and protocols with MBeanServer, don't terminate at the end

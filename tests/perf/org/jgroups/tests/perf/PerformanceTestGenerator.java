@@ -87,7 +87,6 @@ public class PerformanceTestGenerator {
 			fw.write("num_senders="+numOfSenders+"\n");
 			fw.write("num_members="+nodeCount+"\n");
 			fw.write("log_interval="+(numOfMessages/dataLogPoints)+"\n");
-			fw.write("gnuplot_output=true\n");
 			fw.close();
 		} catch (IOException e) {
 			e.printStackTrace();
