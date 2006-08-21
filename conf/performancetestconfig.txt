@@ -1,4 +1,5 @@
-#
+# Author: Vladimir Blagojevic
+# Version: $Id$
 #This file is used as an input for org.jgroups.tests.perf.PerformanceTestGenerator 
 #utility. PerformanceTestGenerator, given this input file with -config flag,  then 
 #in turn generates test files that are used in conjunction with 
@@ -13,7 +14,7 @@
 # - total_data: total size of data in bytes
 # - number_of_sender: specifies how many nodes will be senders in each test 
 # - message_sizes: specifies message size used in each test
-# - log_data_points: specifies how many log points will be captured in test output
+# - interval: log after interval messages
 #
 #
 
@@ -30,5 +31,5 @@ number_of_senders=1,4,8
 #Message size in bytes for each performance round
 message_sizes=100,1000,10000,100000
 
-#How many data log points we want in a result of a performance round
-log_data_points=100
+#Log after receiving interval messages
+interval=100000
