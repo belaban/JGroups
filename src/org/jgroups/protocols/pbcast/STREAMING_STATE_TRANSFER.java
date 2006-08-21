@@ -560,6 +560,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
     	StreamingInputStreamWrapper wrapperRef=null;
 		try {
 			socket = new Socket();
+			socket.bind(new InetSocketAddress(bind_addr,0));
 			int bufferSize = socket.getReceiveBufferSize();
 			socket.setReceiveBufferSize(socket_buffer_size);
 			if (log.isDebugEnabled())
