@@ -23,9 +23,9 @@ import java.util.*;
  * Compared to FRAG, this protocol does <em>not</em> need to serialize the message in order to break it into
  * smaller fragments: it looks only at the message's buffer, which is a byte[] array anyway. We assume that the
  * size addition for headers and src and dest address is minimal when the transport finally has to serialize the
- * message, so we add a constant (1000 bytes).
+ * message, so we add a constant (200 bytes).
  * @author Bela Ban
- * @version $Id: FRAG2.java,v 1.24 2006/05/16 04:03:58 belaban Exp $
+ * @version $Id: FRAG2.java,v 1.25 2006/08/23 07:20:12 belaban Exp $
  */
 public class FRAG2 extends Protocol {
 
