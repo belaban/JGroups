@@ -1,4 +1,4 @@
-// $Id: MessageDispatcher.java,v 1.54 2006/08/21 17:09:45 vlada Exp $
+// $Id: MessageDispatcher.java,v 1.55 2006/08/24 18:26:39 vlada Exp $
 
 package org.jgroups.blocks;
 
@@ -654,7 +654,7 @@ public class MessageDispatcher implements RequestHandler {
                     byte[] tmp_state=null;
                     if(msg_listener != null) {
                         try {
-                            if(msg_listener instanceof ExtendedMessageListener) {
+                            if(msg_listener instanceof ExtendedMessageListener && state_id!=null) {
                                 tmp_state=((ExtendedMessageListener)msg_listener).getState(state_id);
                             }
                             else {
@@ -672,8 +672,8 @@ public class MessageDispatcher implements RequestHandler {
                     if(msg_listener != null) {
                         try {
                             info=(StateTransferInfo)evt.getArg();
-                            if(msg_listener instanceof ExtendedMessageListener) {
-                                String id=info.state_id;
+                            String id=info.state_id;
+                            if(msg_listener instanceof ExtendedMessageListener && id!=null) {                                
                                 ((ExtendedMessageListener)msg_listener).setState(id, info.state);
                             }
                             else {
