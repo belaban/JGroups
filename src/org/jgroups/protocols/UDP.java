@@ -38,7 +38,7 @@ import java.util.*;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.119 2006/08/13 15:37:22 belaban Exp $
+ * @version $Id: UDP.java,v 1.120 2006/08/24 11:05:29 belaban Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -78,7 +78,7 @@ public class UDP extends TP implements Runnable {
      * <LI><CODE>IPTOS_LOWDELAY (0x10)</CODE>, <b>decimal</b> 16</LI>
      * </UL>
      */
-    int             tos=0; // valid values: 2, 4, 8, 16
+    int             tos=8; // valid values: 2, 4, 8 (default), 16
 
 
     /** The multicast address (mcast address and port) this member uses */
