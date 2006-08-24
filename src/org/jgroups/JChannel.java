@@ -67,7 +67,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.89 2006/08/21 07:14:26 belaban Exp $
+ * @version $Id: JChannel.java,v 1.90 2006/08/24 18:26:39 vlada Exp $
  */
 public class JChannel extends Channel {
 
@@ -1012,7 +1012,7 @@ public class JChannel extends Channel {
             if(state != null) {
                 String state_id=info.state_id;
                 if(receiver != null) {
-                    if(receiver instanceof ExtendedReceiver)
+                    if(receiver instanceof ExtendedReceiver && state_id!=null)
                         ((ExtendedReceiver)receiver).setState(state_id, state);
                     else
                         receiver.setState(state);
@@ -1093,7 +1093,7 @@ public class JChannel extends Channel {
                     StateTransferInfo info=(StateTransferInfo)evt.getArg();
                     byte[] tmp_state;
                     String state_id=info.state_id;
-                    if(receiver instanceof ExtendedReceiver) {
+                    if(receiver instanceof ExtendedReceiver && state_id!=null) {
                         tmp_state=((ExtendedReceiver)receiver).getState(state_id);
                     }
                     else {
