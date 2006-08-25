@@ -1,4 +1,3 @@
-// $Id: MessageDispatcher.java,v 1.55 2006/08/24 18:26:39 vlada Exp $
 
 package org.jgroups.blocks;
 
@@ -19,23 +18,24 @@ import java.util.ArrayList;
 
 
 /**
- * Provides synchronous and asynchronous message sending with request-response 
- * correlation; i.e., matching responses with the original request. 
- * It also offers push-style message reception (by internally using the PullPushAdapter). 
+ * Provides synchronous and asynchronous message sending with request-response
+ * correlation; i.e., matching responses with the original request.
+ * It also offers push-style message reception (by internally using the PullPushAdapter).
  * <p>
- * Channels are simple patterns to asynchronously send a receive messages. 
- * However, a significant number of communication patterns in group communication 
- * require synchronous communication. For example, a sender would like to send a 
- * message to the group and wait for all responses. Or another application would 
- * like to send a message to the group and wait only until the majority of the 
- * receivers have sent a response, or until a timeout occurred.  MessageDispatcher 
+ * Channels are simple patterns to asynchronously send a receive messages.
+ * However, a significant number of communication patterns in group communication
+ * require synchronous communication. For example, a sender would like to send a
+ * message to the group and wait for all responses. Or another application would
+ * like to send a message to the group and wait only until the majority of the
+ * receivers have sent a response, or until a timeout occurred.  MessageDispatcher
  * offers a combination of the above pattern with other patterns.
  * <p>
- * Used on top of channel to implement group requests. Client's <code>handle()</code> 
- * method is called when request is received. Is the equivalent of RpcProtocol on 
+ * Used on top of channel to implement group requests. Client's <code>handle()</code>
+ * method is called when request is received. Is the equivalent of RpcProtocol on
  * the application instead of protocol level.
  *
  * @author Bela Ban
+ * @version $Id: MessageDispatcher.java,v 1.56 2006/08/25 04:35:17 belaban Exp $
  */
 public class MessageDispatcher implements RequestHandler {
     protected Channel channel=null;
@@ -316,7 +316,7 @@ public class MessageDispatcher implements RequestHandler {
     }
 
     /**
-     * Offers access to the underlying Channel. 
+     * Offers access to the underlying Channel.
      * @return a reference to the underlying Channel.
      */
     public Channel getChannel() {
@@ -673,7 +673,7 @@ public class MessageDispatcher implements RequestHandler {
                         try {
                             info=(StateTransferInfo)evt.getArg();
                             String id=info.state_id;
-                            if(msg_listener instanceof ExtendedMessageListener && id!=null) {                                
+                            if(msg_listener instanceof ExtendedMessageListener && id!=null) {
                                 ((ExtendedMessageListener)msg_listener).setState(id, info.state);
                             }
                             else {
@@ -687,7 +687,7 @@ public class MessageDispatcher implements RequestHandler {
                         }
                     }
                     break;
-                    
+
                 case Event.STATE_TRANSFER_OUTPUTSTREAM:
                     if(msg_listener != null) {
                         StateTransferInfo sti=(StateTransferInfo)evt.getArg();
@@ -700,20 +700,20 @@ public class MessageDispatcher implements RequestHandler {
                         }
                         return;
                     }
-    				break;  
-    				
+    				break;
+
                 case Event.STATE_TRANSFER_INPUTSTREAM:
                     if(msg_listener != null) {
                     	StateTransferInfo sti=(StateTransferInfo)evt.getArg();
-                        InputStream is=sti.inputStream; 
+                        InputStream is=sti.inputStream;
                         if(msg_listener instanceof ExtendedMessageListener) {
                             if(sti.state_id == null)
                                 ((ExtendedMessageListener)msg_listener).setState(is);
                             else
                                 ((ExtendedMessageListener)msg_listener).setState(sti.state_id, is);
-                        }                       
+                        }
                     }
-        			break;	
+        			break;
 
                 case Event.VIEW_CHANGE:
                     View v=(View) evt.getArg();
