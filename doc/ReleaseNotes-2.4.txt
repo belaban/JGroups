@@ -2,7 +2,7 @@
 Release Notes JGroups 2.4
 =========================
 
-Version: $Id: ReleaseNotes-2.4.txt,v 1.4 2006/08/17 13:37:51 belaban Exp $
+Version: $Id: ReleaseNotes-2.4.txt,v 1.5 2006/08/25 06:56:01 belaban Exp $
 Author: Bela Ban
 
 JGroups 2.4 is a backward compatible release, that is it can replace previous versions (2.3 - 2.2.7) by simply replacing
@@ -57,6 +57,11 @@ Failure detection: FD_ICMP
 --------------------------
 Uses InetAddress.isReachable() to determine whether a given host is reachable. Note that this may or may not use
 ICMP pings, depending on the JDK implementation. Can be used in conjunction with FD_SOCK/FD/FD_PING.
+
+
+Performance measurements
+------------------------
+Performed on 4, 6 and 8 node clusters. Results are available at http://www.jgroups.org/javagroupsnew/perf/Report.html.
 
 
 Use of variables in configuration files
