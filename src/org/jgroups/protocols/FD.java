@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.35 2006/06/07 19:33:51 belaban Exp $
+// $Id: FD.java,v 1.36 2006/08/26 12:53:01 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -29,7 +29,7 @@ import java.util.List;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Revision: 1.35 $
+ * @version $Revision: 1.36 $
  */
 public class FD extends Protocol {
     Address               ping_dest=null;
@@ -187,53 +187,112 @@ public class FD extends Protocol {
 
         switch(evt.getType()) {
 
-        case Event.SET_LOCAL_ADDRESS:
-            local_addr=(Address)evt.getArg();
-            break;
+            case Event.SET_LOCAL_ADDRESS:
+                local_addr=(Address)evt.getArg();
+                break;
 
-        case Event.MSG:
-            msg=(Message)evt.getArg();
-            tmphdr=msg.getHeader(name);
-            if(tmphdr == null || !(tmphdr instanceof FdHeader)) {
-                if(ping_dest != null && (sender=msg.getSrc()) != null) {
-                    if(ping_dest.equals(sender)) {
-                        last_ack=System.currentTimeMillis();
-                        if(trace)
-                            log.trace("received msg from " + sender + " (counts as ack)");
-                        num_tries=0;
+            case Event.MSG:
+                msg=(Message)evt.getArg();
+                tmphdr=msg.getHeader(name);
+                if(tmphdr == null || !(tmphdr instanceof FdHeader)) {
+                    if(ping_dest != null && (sender=msg.getSrc()) != null) {
+                        if(ping_dest.equals(sender)) {
+                            last_ack=System.currentTimeMillis();
+                            if(trace)
+                                log.trace("received msg from " + sender + " (counts as ack)");
+                            num_tries=0;
+                        }
                     }
+                    break;  // message did not originate from FD layer, just pass up
                 }
-                break;  // message did not originate from FD layer, just pass up
-            }
 
-            hdr=(FdHeader)msg.removeHeader(name);
-            switch(hdr.type) {
-            case FdHeader.HEARTBEAT:                       // heartbeat request; send heartbeat ack
-                Address hb_sender=msg.getSrc();
-                Message hb_ack=new Message(hb_sender, null, null);
-                FdHeader tmp_hdr=new FdHeader(FdHeader.HEARTBEAT_ACK);
+                hdr=(FdHeader)msg.removeHeader(name);
+                switch(hdr.type) {
+                    case FdHeader.HEARTBEAT:                       // heartbeat request; send heartbeat ack
+                        Address hb_sender=msg.getSrc();
+                        Message hb_ack=new Message(hb_sender, null, null);
+                        FdHeader tmp_hdr=new FdHeader(FdHeader.HEARTBEAT_ACK);
 
-                // 1.  Send an ack
-                tmp_hdr.from=local_addr;
-                hb_ack.putHeader(name, tmp_hdr);
-                if(trace)
-                    log.trace("received are-you-alive from " + hb_sender + ", sending response");
-                passDown(new Event(Event.MSG, hb_ack));
+                        // 1.  Send an ack
+                        tmp_hdr.from=local_addr;
+                        hb_ack.putHeader(name, tmp_hdr);
+                        if(trace)
+                            log.trace("received are-you-alive from " + hb_sender + ", sending response");
+                        passDown(new Event(Event.MSG, hb_ack));
 
-                // 2. Shun the sender of a HEARTBEAT message if that sender is not a member. This will cause
-                //    the sender to leave the group (and possibly rejoin it later)
-                if(shun)
-                    shunInvalidHeartbeatSender(hb_sender);
-                break;                                     // don't pass up !
+                        // 2. Shun the sender of a HEARTBEAT message if that sender is not a member. This will cause
+                        //    the sender to leave the group (and possibly rejoin it later)
+                        if(shun)
+                            shunInvalidHeartbeatSender(hb_sender);
+                        break;                                     // don't pass up !
 
-            case FdHeader.HEARTBEAT_ACK:                   // heartbeat ack
-                if(ping_dest != null && ping_dest.equals(hdr.from)) {
-                    last_ack=System.currentTimeMillis();
-                    num_tries=0;
-                    if(log.isDebugEnabled()) log.debug("received ack from " + hdr.from);
+                    case FdHeader.HEARTBEAT_ACK:                   // heartbeat ack
+                        if(ping_dest != null && ping_dest.equals(hdr.from)) {
+                            last_ack=System.currentTimeMillis();
+                            num_tries=0;
+                            if(log.isDebugEnabled()) log.debug("received ack from " + hdr.from);
+                        }
+                        else {
+                            stop();
+                            ping_dest=(Address)getPingDest(pingable_mbrs);
+                            if(ping_dest != null) {
+                                try {
+                                    startMonitor();
+                                }
+                                catch(Exception ex) {
+                                    if(warn) log.warn("exception when calling startMonitor(): " + ex);
+                                }
+                            }
+                        }
+                        break;
+
+                    case FdHeader.SUSPECT:
+                        if(hdr.mbrs != null) {
+                            if(trace) log.trace("[SUSPECT] suspect hdr is " + hdr);
+                            for(int i=0; i < hdr.mbrs.size(); i++) {
+                                Address m=(Address)hdr.mbrs.elementAt(i);
+                                if(local_addr != null && m.equals(local_addr)) {
+                                    if(warn)
+                                        log.warn("I was suspected, but will not remove myself from membership " +
+                                                "(waiting for EXIT message)");
+                                }
+                                else {
+                                    pingable_mbrs.remove(m);
+                                    ping_dest=(Address)getPingDest(pingable_mbrs);
+                                }
+                                passUp(new Event(Event.SUSPECT, m));
+                                passDown(new Event(Event.SUSPECT, m));
+                            }
+                        }
+                        break;
+
+                    case FdHeader.NOT_MEMBER:
+                        if(shun) {
+                            if(log.isDebugEnabled()) log.debug("[NOT_MEMBER] I'm being shunned; exiting");
+                            passUp(new Event(Event.EXIT));
+                        }
+                        break;
                 }
-                else {
+                return;
+        }
+        passUp(evt); // pass up to the layer above us
+    }
+
+
+    public void down(Event evt) {
+        View v;
+
+        switch(evt.getType()) {
+            case Event.VIEW_CHANGE:
+                synchronized(this) {
                     stop();
+                    v=(View)evt.getArg();
+                    members.clear();
+                    members.addAll(v.getMembers());
+                    bcast_task.adjustSuspectedMembers(members);
+                    pingable_mbrs.clear();
+                    pingable_mbrs.addAll(members);
+                    passDown(evt);
                     ping_dest=(Address)getPingDest(pingable_mbrs);
                     if(ping_dest != null) {
                         try {
@@ -246,73 +305,14 @@ public class FD extends Protocol {
                 }
                 break;
 
-            case FdHeader.SUSPECT:
-                if(hdr.mbrs != null) {
-                    if(trace) log.trace("[SUSPECT] suspect hdr is " + hdr);
-                    for(int i=0; i < hdr.mbrs.size(); i++) {
-                        Address m=(Address)hdr.mbrs.elementAt(i);
-                        if(local_addr != null && m.equals(local_addr)) {
-                            if(warn)
-                                log.warn("I was suspected, but will not remove myself from membership " +
-                                         "(waiting for EXIT message)");
-                        }
-                        else {
-                            pingable_mbrs.remove(m);
-                            ping_dest=(Address)getPingDest(pingable_mbrs);
-                        }
-                        passUp(new Event(Event.SUSPECT, m));
-                        passDown(new Event(Event.SUSPECT, m));
-                    }
-                }
-                break;
-
-            case FdHeader.NOT_MEMBER:
-                if(shun) {
-                    if(log.isDebugEnabled()) log.debug("[NOT_MEMBER] I'm being shunned; exiting");
-                    passUp(new Event(Event.EXIT));
-                }
-                break;
-            }
-            return;
-        }
-        passUp(evt); // pass up to the layer above us
-    }
-
-
-    public void down(Event evt) {
-        View v;
-
-        switch(evt.getType()) {
-        case Event.VIEW_CHANGE:
-            synchronized(this) {
-                stop();
-                v=(View)evt.getArg();
-                members.clear();
-                members.addAll(v.getMembers());
-                bcast_task.adjustSuspectedMembers(members);
-                pingable_mbrs.clear();
-                pingable_mbrs.addAll(members);
+            case Event.UNSUSPECT:
+                unsuspect((Address)evt.getArg());
                 passDown(evt);
-                ping_dest=(Address)getPingDest(pingable_mbrs);
-                if(ping_dest != null) {
-                    try {
-                        startMonitor();
-                    }
-                    catch(Exception ex) {
-                        if(warn) log.warn("exception when calling startMonitor(): " + ex);
-                    }
-                }
-            }
-            break;
+                break;
 
-        case Event.UNSUSPECT:
-            unsuspect((Address)evt.getArg());
-            passDown(evt);
-            break;
-
-        default:
-            passDown(evt);
-            break;
+            default:
+                passDown(evt);
+                break;
         }
     }
 
