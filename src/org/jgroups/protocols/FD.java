@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.36 2006/08/26 12:53:01 belaban Exp $
+// $Id: FD.java,v 1.37 2006/08/26 13:17:55 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -29,7 +29,7 @@ import java.util.List;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Revision: 1.36 $
+ * @version $Revision: 1.37 $
  */
 public class FD extends Protocol {
     Address               ping_dest=null;
@@ -210,15 +210,9 @@ public class FD extends Protocol {
                 switch(hdr.type) {
                     case FdHeader.HEARTBEAT:                       // heartbeat request; send heartbeat ack
                         Address hb_sender=msg.getSrc();
-                        Message hb_ack=new Message(hb_sender, null, null);
-                        FdHeader tmp_hdr=new FdHeader(FdHeader.HEARTBEAT_ACK);
-
-                        // 1.  Send an ack
-                        tmp_hdr.from=local_addr;
-                        hb_ack.putHeader(name, tmp_hdr);
                         if(trace)
                             log.trace("received are-you-alive from " + hb_sender + ", sending response");
-                        passDown(new Event(Event.MSG, hb_ack));
+                        sendHeartbeatResponse(hb_sender);
 
                         // 2. Shun the sender of a HEARTBEAT message if that sender is not a member. This will cause
                         //    the sender to leave the group (and possibly rejoin it later)
@@ -253,8 +247,10 @@ public class FD extends Protocol {
                                 Address m=(Address)hdr.mbrs.elementAt(i);
                                 if(local_addr != null && m.equals(local_addr)) {
                                     if(warn)
-                                        log.warn("I was suspected, but will not remove myself from membership " +
-                                                "(waiting for EXIT message)");
+                                        log.warn("I was suspected by " + msg.getSrc() + "; ignoring the SUSPECT " +
+                                                "message and sending back a HEARTBEAT_ACK");
+                                    sendHeartbeatResponse(msg.getSrc());
+                                    continue;
                                 }
                                 else {
                                     pingable_mbrs.remove(m);
@@ -277,6 +273,9 @@ public class FD extends Protocol {
         }
         passUp(evt); // pass up to the layer above us
     }
+
+
+
 
 
     public void down(Event evt) {
@@ -316,6 +315,14 @@ public class FD extends Protocol {
         }
     }
 
+
+    private void sendHeartbeatResponse(Address dest) {
+        Message hb_ack=new Message(dest, null, null);
+        FdHeader tmp_hdr=new FdHeader(FdHeader.HEARTBEAT_ACK);
+        tmp_hdr.from=local_addr;
+        hb_ack.putHeader(name, tmp_hdr);
+        passDown(new Event(Event.MSG, hb_ack));
+    }
 
     private void unsuspect(Address mbr) {
         bcast_task.removeSuspectedMember(mbr);

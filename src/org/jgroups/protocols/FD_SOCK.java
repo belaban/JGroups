@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.40 2006/08/08 15:15:38 belaban Exp $
+// $Id: FD_SOCK.java,v 1.41 2006/08/26 13:18:11 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -215,6 +215,12 @@ public class FD_SOCK extends Protocol implements Runnable {
                 if(hdr.mbrs != null) {
                     if(log.isDebugEnabled()) log.debug("[SUSPECT] hdr=" + hdr);
                     for(int i=0; i < hdr.mbrs.size(); i++) {
+                        Address m=(Address)hdr.mbrs.elementAt(i);
+                        if(local_addr != null && m.equals(local_addr)) {
+                            if(warn)
+                                log.warn("I was suspected by " + msg.getSrc() + "; ignoring the SUSPECT message");
+                            continue;
+                        }
                         passUp(new Event(Event.SUSPECT, hdr.mbrs.elementAt(i)));
                         passDown(new Event(Event.SUSPECT, hdr.mbrs.elementAt(i)));
                     }
@@ -808,6 +814,7 @@ public class FD_SOCK extends Protocol implements Runnable {
     Address determineCoordinator() {
         return members.size() > 0 ? (Address) members.elementAt(0) : null;
     }
+
 
 
 
