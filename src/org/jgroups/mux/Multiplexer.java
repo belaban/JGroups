@@ -15,7 +15,7 @@ import java.util.*;
  * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.19 2006/08/25 12:57:00 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.20 2006/08/26 13:32:42 belaban Exp $
  */
 public class Multiplexer implements UpHandler {
     /** Map<String,MuxChannel>. Maintains the mapping between service IDs and their associated MuxChannels */
@@ -472,10 +472,10 @@ public class Multiplexer implements UpHandler {
     private void handleStateRequest(Event evt) {
         StateTransferInfo info=(StateTransferInfo)evt.getArg();
         String id=info.state_id;
+        String original_id=id;
         MuxChannel mux_ch=null;
 
         try {
-
             int index=id.indexOf(SEPARATOR);
             if(index > -1) {
                 info.state_id=id.substring(index + SEPARATOR_LEN);
@@ -493,8 +493,9 @@ public class Multiplexer implements UpHandler {
             mux_ch.up(evt); // state_id will be null, get regular state from the service named state_id
         }
         catch(Throwable ex) {
-            ex.printStackTrace();
-            mux_ch.returnState(null, id);
+            if(log.isErrorEnabled())
+                log.error("failed returning the application state, will return null", ex);
+            channel.returnState(null, original_id); // we cannot use mux_ch because it might be null due to the lookup above
         }
     }
 
