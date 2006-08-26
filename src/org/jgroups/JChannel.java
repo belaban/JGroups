@@ -67,7 +67,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.90 2006/08/24 18:26:39 vlada Exp $
+ * @version $Id: JChannel.java,v 1.91 2006/08/26 13:31:47 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -165,6 +165,8 @@ public class JChannel extends Channel {
     protected boolean stats=true;
 
     protected long sent_msgs=0, received_msgs=0, sent_bytes=0, received_bytes=0;
+
+
 
 
     /** Used by subclass to create a JChannel without a protocol stack, don't use as application programmer */
@@ -871,6 +873,14 @@ public class JChannel extends Channel {
      * @throws ChannelClosedException
      */
     public boolean getState(Address target, String state_id, long timeout) throws ChannelNotConnectedException, ChannelClosedException {
+        if(target == null)
+            target=determineCoordinator();
+        if(target != null && local_addr != null && target.equals(local_addr)) {
+            if(log.isTraceEnabled())
+                log.trace("cannot get state from myself (" + target + "): probably the first member");
+            return false;
+        }
+
         StateTransferInfo info=new StateTransferInfo(target, state_id, timeout);
         boolean rc=_getState(new Event(Event.GET_STATE, info), info);
         if(rc == false)
@@ -1414,6 +1424,15 @@ public class JChannel extends Channel {
             throw new IllegalStateException("Flush is not supported, add pbcast.FLUSH protocol to your configuration");
         }
         down(new Event(Event.RESUME));
+    }
+
+    Address determineCoordinator() {
+        Vector mbrs=my_view != null? my_view.getMembers() : null;
+        if(mbrs == null)
+            return null;
+        if(mbrs.size() > 0)
+            return (Address)mbrs.firstElement();
+        return null;
     }
 
     /* ------------------------------- End of Private Methods ---------------------------------- */
