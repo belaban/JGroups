@@ -26,7 +26,7 @@ import java.lang.reflect.Method;
  * passes SUSPECT event up the stack, otherwise discards it. Has to be placed somewhere above the FD layer and
  * below the GMS layer (receiver of the SUSPECT event). Note that SUSPECT events may be reordered by this protocol.
  * @author Bela Ban
- * @version $Id: VERIFY_SUSPECT.java,v 1.17 2006/08/09 09:13:17 belaban Exp $
+ * @version $Id: VERIFY_SUSPECT.java,v 1.18 2006/08/26 13:26:05 belaban Exp $
  */
 public class VERIFY_SUSPECT extends Protocol implements Runnable {
     private Address     local_addr=null;
@@ -132,10 +132,17 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
                     if(log.isErrorEnabled()) log.error("suspected member is null");
                     return;
                 }
+
+                if(local_addr != null && local_addr.equals(suspected_mbr)) {
+                    if(log.isTraceEnabled())
+                        log.trace("I was suspected; ignoring SUSPECT message");
+                    return;
+                }
+
                 if(!use_icmp)
                     verifySuspect(suspected_mbr);
                 else
-                verifySuspectWithICMP(suspected_mbr);
+                    verifySuspectWithICMP(suspected_mbr);
                 return;  // don't pass up; we will decide later (after verification) whether to pass it up
 
 
