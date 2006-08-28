@@ -1,4 +1,4 @@
-// $Id: RpcDispatcher.java,v 1.24 2006/07/26 11:14:49 belaban Exp $
+// $Id: RpcDispatcher.java,v 1.25 2006/08/28 06:51:53 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -83,7 +83,11 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
 
     public String getName() {return "RpcDispatcher";}
 
-    public void       setMarshaller(Marshaller m) {this.marshaller=m;}
+    public void setMarshaller(Marshaller m) {
+        this.marshaller=m;
+        if(corr != null)
+            corr.setMarshaller(m);
+    }
 
     public Marshaller getMarshaller()             {return marshaller;}
 
@@ -194,7 +198,10 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
     }
 
 
-
+    protected void correlatorStarted() {
+        if(corr != null)
+            corr.setMarshaller(marshaller);
+    }
 
 
     /**
