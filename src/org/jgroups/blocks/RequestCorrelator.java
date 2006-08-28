@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.28 2006/08/08 09:34:59 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.29 2006/08/28 06:51:53 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -43,9 +43,11 @@ public class RequestCorrelator {
     /** The table of pending requests (keys=Long (request IDs), values=<tt>RequestEntry</tt>) */
     protected final Map requests=new ConcurrentReaderHashMap();
 
-    /** The handler for the incoming requests. It is called from inside the
-     * dispatcher thread */
+    /** The handler for the incoming requests. It is called from inside the dispatcher thread */
     protected RequestHandler request_handler=null;
+
+    /** Possibility for an external marshaller */
+    protected RpcDispatcher.Marshaller marshaller=null;
 
     /** makes the instance unique (together with IDs) */
     protected String name=null;
@@ -219,6 +221,15 @@ public class RequestCorrelator {
      */
     public void sendRequest(long id, Message msg, RspCollector coll) throws Exception {
         sendRequest(id, null, msg, coll);
+    }
+
+
+    public RpcDispatcher.Marshaller getMarshaller() {
+        return marshaller;
+    }
+
+    public void setMarshaller(RpcDispatcher.Marshaller marshaller) {
+        this.marshaller=marshaller;
     }
 
 
@@ -501,7 +512,22 @@ public class RequestCorrelator {
                 msg.removeHeader(name);
                 RspCollector coll=findEntry(hdr.id);
                 if(coll != null) {
-                    coll.receiveResponse(msg);
+                    Address sender=msg.getSrc();
+                    Object retval=null;
+                    byte[] buf=msg.getBuffer();
+                    try {
+                        retval=marshaller != null? marshaller.objectFromByteBuffer(buf) : Util.objectFromByteBuffer(buf);
+                    }
+                    catch(Exception e) {
+                        log.error("failed unmarshalling buffer into return value", e);
+                        try {
+                            retval=marshaller != null? marshaller.objectToByteBuffer(e) : Util.objectToByteBuffer(e);
+                        }
+                        catch(Exception e1) {
+                            log.error("failed marshalling exception " + e1 + " into buffer", e1);
+                        }
+                    }
+                    coll.receiveResponse(retval, sender);
                 }
                 break;
 
@@ -511,7 +537,7 @@ public class RequestCorrelator {
                 break;
         }
 
-        return (false);
+        return false;
     }
 
     public Address getLocalAddress() {
@@ -586,7 +612,7 @@ public class RequestCorrelator {
         // ii. If a reply is expected, pack the return value from the request
         // handler to a reply msg and send it back. The reply msg has the same
         // ID as the request and the name of the sender request correlator
-        hdr    = (Header)req.removeHeader(name);
+        hdr=(Header)req.removeHeader(name);
 
         if(log.isTraceEnabled()) {
             log.trace(new StringBuffer("calling (").append((request_handler != null? request_handler.getClass().getName() : "null")).
@@ -594,7 +620,7 @@ public class RequestCorrelator {
         }
 
         try {
-            retval = request_handler.handle(req);
+            retval=request_handler.handle(req);
         }
         catch(Throwable t) {
             if(log.isErrorEnabled()) log.error("error invoking method", t);
@@ -610,12 +636,12 @@ public class RequestCorrelator {
         }
 
         // changed (bela Feb 20 2004): catch exception and return exception
-        try {
-            rsp_buf=Util.objectToByteBuffer(retval);  // retval could be an exception, or a real value
+        try {  // retval could be an exception, or a real value
+            rsp_buf=marshaller != null? marshaller.objectToByteBuffer(retval) : Util.objectToByteBuffer(retval);
         }
         catch(Throwable t) {
-            try {
-                rsp_buf=Util.objectToByteBuffer(t); // this call should succeed (all exceptions are serializable)
+            try {  // this call should succeed (all exceptions are serializable)
+                rsp_buf=marshaller != null? marshaller.objectToByteBuffer(t) : Util.objectToByteBuffer(t);
             }
             catch(Throwable tt) {
                 if(log.isErrorEnabled()) log.error("failed sending rsp: return value (" + retval + ") is not serializable");

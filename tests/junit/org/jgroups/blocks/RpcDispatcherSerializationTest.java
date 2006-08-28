@@ -7,8 +7,10 @@ import org.jgroups.Channel;
 import org.jgroups.JChannel;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
+import org.jgroups.util.Util;
 
-import java.io.NotSerializableException;
+import java.io.*;
+import java.util.Iterator;
 import java.util.Vector;
 
 
@@ -21,6 +23,21 @@ public class RpcDispatcherSerializationTest extends TestCase {
     public RpcDispatcherSerializationTest(String testName) {
         super(testName);
     }
+
+
+    public void methodA(boolean b, long l) {
+        System.out.println("methodA(" + b + ", " + l + ") called");
+    }
+
+
+    public boolean methodB() {
+        return true;
+    }
+
+    public void methodC() {
+        throw new IllegalArgumentException("dummy exception - for testing only");
+    }
+
 
     protected void setUp() throws Exception {
         super.setUp();
@@ -65,7 +82,7 @@ public class RpcDispatcherSerializationTest extends TestCase {
     public void testTargetMethodNotFound() {
         Vector members=channel.getView().getMembers();
         System.out.println("members are: " + members);
-        RspList rsps=disp.callRemoteMethods(members, "foo", new Object[]{"one", "two"}, new Class[]{String.class, String.class},
+        RspList rsps=disp.callRemoteMethods(members, "foo", null, new Class[]{String.class, String.class},
                                             GroupRequest.GET_ALL, 8000);
         System.out.println("responses:\n" + rsps + ", channel.view: " + channel.getView() + ", channel2.view: " + channel2.getView());
         assertEquals(members.size(), rsps.size());
@@ -74,6 +91,115 @@ public class RpcDispatcherSerializationTest extends TestCase {
             assertTrue(rsp.getValue() instanceof NoSuchMethodException);
         }
     }
+
+
+    public void testMarshaller() {
+        RpcDispatcher.Marshaller old=disp.getMarshaller(), old2=disp2.getMarshaller();
+
+        RpcDispatcher.Marshaller m=new MyMarshaller();
+        disp.setMarshaller(m);
+        disp2.setMarshaller(m);
+
+        RspList rsps;
+        rsps=disp.callRemoteMethods(null, "methodA", new Object[]{Boolean.TRUE, new Long(322649)},
+                                    new Class[]{boolean.class, long.class},
+                                    GroupRequest.GET_ALL, 0);
+        assertEquals(2, rsps.size());
+        for(Iterator it=rsps.values().iterator(); it.hasNext();) {
+            Rsp rsp=(Rsp)it.next();
+            assertNull(rsp.getValue());
+            assertTrue(rsp.wasReceived());
+            assertFalse(rsp.wasSuspected());
+        }
+
+        rsps=disp.callRemoteMethods(null, "methodB", null, (Class[])null, GroupRequest.GET_ALL, 0);
+        assertEquals(2, rsps.size());
+        for(Iterator it=rsps.values().iterator(); it.hasNext();) {
+            Rsp rsp=(Rsp)it.next();
+            assertNotNull(rsp.getValue());
+            assertEquals(Boolean.TRUE, rsp.getValue());
+            assertTrue(rsp.wasReceived());
+            assertFalse(rsp.wasSuspected());
+        }
+
+
+        rsps=disp.callRemoteMethods(null, "methodC", null, (Class[])null, GroupRequest.GET_ALL, 0);
+        assertEquals(2, rsps.size());
+        for(Iterator it=rsps.values().iterator(); it.hasNext();) {
+            Rsp rsp=(Rsp)it.next();
+            assertNotNull(rsp.getValue());
+            assertTrue(rsp.getValue() instanceof Throwable);
+            assertTrue(rsp.wasReceived());
+            assertFalse(rsp.wasSuspected());
+        }
+
+        if(old != null)
+            disp.setMarshaller(old);
+        if(old2 != null)
+            disp2.setMarshaller(old2);
+    }
+
+
+
+    static class MyMarshaller implements RpcDispatcher.Marshaller {
+        static final byte NULL  = 0;
+        static final byte BOOL  = 1;
+        static final byte LONG  = 2;
+        static final byte OBJ   = 3;
+
+        public byte[] objectToByteBuffer(Object obj) throws Exception {
+            ByteArrayOutputStream out=new ByteArrayOutputStream(24);
+            ObjectOutputStream oos=new ObjectOutputStream(out);
+
+            try {
+                if(obj == null) {
+                    oos.writeByte(NULL);
+                }
+                else if(obj instanceof Boolean) {
+                    oos.writeByte(BOOL);
+                    oos.writeBoolean(((Boolean)obj).booleanValue());
+                }
+                else if(obj instanceof Long) {
+                    oos.writeByte(LONG);
+                    oos.writeLong(((Long)obj).longValue());
+                }
+                else {
+                    oos.writeByte(OBJ);
+                    oos.writeObject(obj);
+                }
+                oos.flush();
+                return out.toByteArray();
+            }
+            finally {
+                Util.closeOutputStream(oos);
+            }
+        }
+
+        public Object objectFromByteBuffer(byte[] buf) throws Exception {
+            ByteArrayInputStream inp=new ByteArrayInputStream(buf);
+            ObjectInputStream in=new ObjectInputStream(inp);
+
+            try {
+                int type=in.readByte();
+                switch(type) {
+                    case NULL:
+                        return null;
+                    case BOOL:
+                        return new Boolean(in.readBoolean());
+                    case LONG:
+                        return new Long(in.readLong());
+                    case OBJ:
+                        return in.readObject();
+                    default:
+                        throw new IllegalArgumentException("incorrect type " + type);
+                }
+            }
+            finally {
+                Util.closeInputStream(in);
+            }
+        }
+    }
+
 
     public static Test suite() {
         return new TestSuite(RpcDispatcherSerializationTest.class);

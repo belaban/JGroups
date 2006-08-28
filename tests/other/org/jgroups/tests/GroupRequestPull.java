@@ -1,4 +1,4 @@
-// $Id: GroupRequestPull.java,v 1.10 2006/04/23 12:52:54 belaban Exp $
+// $Id: GroupRequestPull.java,v 1.11 2006/08/28 06:51:54 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -7,6 +7,7 @@ import org.jgroups.*;
 import org.jgroups.blocks.GroupRequest;
 import org.jgroups.blocks.PullPushAdapter;
 import org.jgroups.util.RspList;
+import org.jgroups.util.Util;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -93,8 +94,17 @@ public class GroupRequestPull implements MessageListener, MembershipListener, Tr
             return;
         }
         if(hdr.type == MyHeader.RESPONSE) {
-            if(group_req != null)
-                group_req.receiveResponse(msg);
+            if(group_req != null) {
+                Address sender=msg.getSrc();
+                Object retval=null;
+                try {
+                    retval=Util.objectFromByteBuffer(msg.getBuffer());
+                }
+                catch(Exception e) {
+                    e.printStackTrace();
+                }
+                group_req.receiveResponse(retval, sender);
+            }
         }
         else if(hdr.type == MyHeader.REQUEST) {
             // System.out.println("-- received REQUEST from " + msg.getSrc());

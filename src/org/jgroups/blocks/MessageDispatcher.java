@@ -35,7 +35,7 @@ import java.util.ArrayList;
  * the application instead of protocol level.
  *
  * @author Bela Ban
- * @version $Id: MessageDispatcher.java,v 1.56 2006/08/25 04:35:17 belaban Exp $
+ * @version $Id: MessageDispatcher.java,v 1.57 2006/08/28 06:51:53 belaban Exp $
  */
 public class MessageDispatcher implements RequestHandler {
     protected Channel channel=null;
@@ -275,11 +275,16 @@ public class MessageDispatcher implements RequestHandler {
                                            this, deadlock_detection, local_addr, concurrent_processing);
             }
         }
+        correlatorStarted();
         corr.start();
         if(channel != null) {
             Vector tmp_mbrs=channel.getView() != null ? channel.getView().getMembers() : null;
             setMembers(tmp_mbrs);
         }
+    }
+
+    protected void correlatorStarted() {
+        ;
     }
 
 
@@ -518,8 +523,7 @@ public class MessageDispatcher implements RequestHandler {
 
         if(dest == null) {
             if(log.isErrorEnabled())
-                log.error("the message's destination is null, " +
-                        "cannot send message");
+                log.error("the message's destination is null, cannot send message");
             return null;
         }
 
@@ -549,7 +553,7 @@ public class MessageDispatcher implements RequestHandler {
             if(log.isWarnEnabled())
                 log.warn("response list contains more that 1 response; returning first response !");
         }
-        rsp=(Rsp) rsp_list.elementAt(0);
+        rsp=(Rsp)rsp_list.elementAt(0);
         if(rsp.wasSuspected()) {
             throw new SuspectedException(dest);
         }

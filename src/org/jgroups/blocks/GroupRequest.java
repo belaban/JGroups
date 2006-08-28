@@ -1,4 +1,4 @@
-// $Id: GroupRequest.java,v 1.20 2006/08/08 09:34:59 belaban Exp $
+// $Id: GroupRequest.java,v 1.21 2006/08/28 06:51:53 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -41,7 +41,7 @@ import java.util.*;
  * to do so.<p>
  * <b>Requirements</b>: lossless delivery, e.g. acknowledgment-based message confirmation.
  * @author Bela Ban
- * @version $Revision: 1.20 $
+ * @version $Revision: 1.21 $
  */
 public class GroupRequest implements RspCollector, Command {
     /** return only first response */
@@ -239,9 +239,7 @@ public class GroupRequest implements RspCollector, Command {
      * Adds a response to the response table. When all responses have been received,
      * <code>execute()</code> returns.
      */
-    public void receiveResponse(Message m) {
-        Address sender=m.getSrc();
-        Object val=null;
+    public void receiveResponse(Object response_value, Address sender) {
         if(done) {
             if(log.isWarnEnabled()) log.warn("command is done; cannot add response !");
             return;
@@ -250,24 +248,16 @@ public class GroupRequest implements RspCollector, Command {
             if(log.isWarnEnabled()) log.warn("received response from suspected member " + sender + "; discarding");
             return;
         }
-        if(m.getLength() > 0) {
-            try {
-                val=m.getObject();
-            }
-            catch(Exception e) {
-                if(log.isErrorEnabled()) log.error("exception=" + e);
-            }
-        }
 
         synchronized(requests) {
             Rsp rsp=(Rsp)requests.get(sender);
             if(rsp != null) {
                 if(rsp.wasReceived() == false) {
-                    rsp.setValue(val);
+                    rsp.setValue(response_value);
                     rsp.setReceived(true);
                     if(log.isTraceEnabled())
                         log.trace(new StringBuffer("received response for request ").append(req_id).append(", sender=").
-                                  append(sender).append(", val=").append(val));
+                                  append(sender).append(", val=").append(response_value));
                     requests.notifyAll(); // wakes up execute()
                 }
             }

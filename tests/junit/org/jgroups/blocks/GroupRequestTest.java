@@ -1,4 +1,4 @@
-// $Id: GroupRequestTest.java,v 1.2 2006/04/05 05:38:36 belaban Exp $$
+// $Id: GroupRequestTest.java,v 1.3 2006/08/28 06:51:53 belaban Exp $$
 
 package org.jgroups.blocks;
 
@@ -8,6 +8,7 @@ import junit.framework.TestSuite;
 import org.jgroups.*;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.RspList;
+import org.jgroups.util.Util;
 
 import java.util.Vector;
 
@@ -172,8 +173,18 @@ public class GroupRequestTest extends TestCase {
                         System.err.println("object was null");
                         continue;
                     }
-                    if(obj instanceof Message)
-                        request.receiveResponse((Message)obj);
+                    if(obj instanceof Message) {
+                        Message msg=(Message)obj;
+                        Address sender=msg.getSrc();
+                        Object retval=null;
+                        try {
+                            retval=Util.objectFromByteBuffer(msg.getBuffer());
+                        }
+                        catch(Exception e) {
+                            e.printStackTrace();
+                        }
+                        request.receiveResponse(retval, sender);
+                    }
                     else if(obj instanceof SuspectEvent)
                         request.suspect((Address)((SuspectEvent)obj).getMember());
                     else if(obj instanceof View)

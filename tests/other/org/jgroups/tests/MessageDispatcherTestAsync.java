@@ -1,4 +1,4 @@
-// $Id: MessageDispatcherTestAsync.java,v 1.10 2005/05/30 16:15:11 belaban Exp $
+// $Id: MessageDispatcherTestAsync.java,v 1.11 2006/08/28 06:51:54 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -47,11 +47,10 @@ public class MessageDispatcherTestAsync implements RequestHandler {
             "shun=false;print_local_addr=true)";
 
 
-    class MyCollector implements RspCollector {
+    static class MyCollector implements RspCollector {
 
-        public void receiveResponse(Message msg) {
-            Object tmp=msg.getObject();
-            System.out.println("** received response " + tmp + " [sender=" + msg.getSrc() + ']');
+        public void receiveResponse(Object retval, Address sender) {
+            System.out.println("** received response " + retval + " [sender=" + sender + ']');
         }
 
         public void suspect(Address mbr) {
@@ -144,7 +143,6 @@ public class MessageDispatcherTestAsync implements RequestHandler {
             }
             if("-cummulative".equals(args[i])) {
                 cummulative=true;
-                continue;
             }
         }
 
