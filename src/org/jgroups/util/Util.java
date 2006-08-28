@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.85 2006/08/28 07:06:24 belaban Exp $
+// $Id: Util.java,v 1.86 2006/08/28 08:29:37 belaban Exp $
 
 package org.jgroups.util;
 
@@ -26,12 +26,27 @@ import java.util.List;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.85 2006/08/28 07:06:24 belaban Exp $
+ * @version $Id: Util.java,v 1.86 2006/08/28 08:29:37 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
 
     private static  NumberFormat f;
+
+    private static Map PRIMITIVE_TYPES=new HashMap(10);
+    private static final byte TYPE_NULL         =  0;
+    private static final byte TYPE_STREAMABLE   =  1;
+    private static final byte TYPE_SERIALIZABLE =  2;
+
+    private static final byte TYPE_BOOLEAN      = 10;
+    private static final byte TYPE_BYTE         = 11;
+    private static final byte TYPE_CHAR         = 12;
+    private static final byte TYPE_DOUBLE       = 13;
+    private static final byte TYPE_FLOAT        = 14;
+    private static final byte TYPE_INT          = 15;
+    private static final byte TYPE_LONG         = 16;
+    private static final byte TYPE_SHORT        = 17;
+    private static final byte TYPE_STRING       = 18;
 
     // constants
     public static final int MAX_PORT=65535; // highest port allocatable
@@ -65,6 +80,16 @@ public class Util {
         f=NumberFormat.getNumberInstance();
         f.setGroupingUsed(false);
         f.setMaximumFractionDigits(2);
+
+        PRIMITIVE_TYPES.put(Boolean.class, new Byte(TYPE_BOOLEAN));
+        PRIMITIVE_TYPES.put(Byte.class, new Byte(TYPE_BYTE));
+        PRIMITIVE_TYPES.put(Character.class, new Byte(TYPE_CHAR));
+        PRIMITIVE_TYPES.put(Double.class, new Byte(TYPE_DOUBLE));
+        PRIMITIVE_TYPES.put(Float.class, new Byte(TYPE_FLOAT));
+        PRIMITIVE_TYPES.put(Integer.class, new Byte(TYPE_INT));
+        PRIMITIVE_TYPES.put(Long.class, new Byte(TYPE_LONG));
+        PRIMITIVE_TYPES.put(Short.class, new Byte(TYPE_SHORT));
+        PRIMITIVE_TYPES.put(String.class, new Byte(TYPE_STRING));
     }
 
 
@@ -92,23 +117,66 @@ public class Util {
     public static Object objectFromByteBuffer(byte[] buffer, int offset, int length) throws Exception {
         if(buffer == null) return null;
         Object retval=null;
-
+        InputStream in=null;
         ByteArrayInputStream in_stream=new ByteArrayInputStream(buffer, offset, length);
         byte b=(byte)in_stream.read();
 
-        if(b == 1) { // to read the object as a Streamable
-            DataInputStream in=new DataInputStream(in_stream);
-            retval=readGenericStreamable(in);
-            in.close();
+        try {
+            switch(b) {
+                case TYPE_NULL:
+                    return null;
+                case TYPE_STREAMABLE:
+                    in=new DataInputStream(in_stream);
+                    retval=readGenericStreamable((DataInputStream)in);
+                    break;
+                case TYPE_SERIALIZABLE: // the object is Externalizable or Serializable
+                    in=new ContextObjectInputStream(in_stream); // changed Nov 29 2004 (bela)
+                    retval=((ContextObjectInputStream)in).readObject();
+                    break;
+                case TYPE_BOOLEAN:
+                    in=new DataInputStream(in_stream);
+                    retval=new Boolean(((DataInputStream)in).readBoolean());
+                    break;
+                case TYPE_BYTE:
+                    in=new DataInputStream(in_stream);
+                    retval=new Byte(((DataInputStream)in).readByte());
+                    break;
+                case TYPE_CHAR:
+                    in=new DataInputStream(in_stream);
+                    retval=new Character(((DataInputStream)in).readChar());
+                    break;
+                case TYPE_DOUBLE:
+                    in=new DataInputStream(in_stream);
+                    retval=new Double(((DataInputStream)in).readDouble());
+                    break;
+                case TYPE_FLOAT:
+                    in=new DataInputStream(in_stream);
+                    retval=new Float(((DataInputStream)in).readFloat());
+                    break;
+                case TYPE_INT:
+                    in=new DataInputStream(in_stream);
+                    retval=new Integer(((DataInputStream)in).readInt());
+                    break;
+                case TYPE_LONG:
+                    in=new DataInputStream(in_stream);
+                    retval=new Long(((DataInputStream)in).readLong());
+                    break;
+                case TYPE_SHORT:
+                    in=new DataInputStream(in_stream);
+                    retval=new Short(((DataInputStream)in).readShort());
+                    break;
+                case TYPE_STRING:
+                    in=new DataInputStream(in_stream);
+                    retval=((DataInputStream)in).readUTF();
+                    break;
+                default:
+                    throw new IllegalArgumentException("type " + b + " is invalid");
+            }
+            return retval;
         }
-        else { // otherwise it is Externalizable or Serializable
-            ObjectInputStream in=new ContextObjectInputStream(in_stream); // changed Nov 29 2004 (bela)
-            retval=in.readObject();
-            in.close();
+        finally {
+            Util.closeInputStream(in);
         }
-        if(retval == null)
-            return null;
-        return retval;
     }
 
 
@@ -121,19 +189,66 @@ public class Util {
      */
     public static byte[] objectToByteBuffer(Object obj) throws Exception {
         byte[] result=null;
+
         synchronized(out_stream) {
             out_stream.reset();
-            if(obj instanceof Streamable) {  // use Streamable if we can
-                out_stream.write(1);
-                DataOutputStream out=new DataOutputStream(out_stream);
-                writeGenericStreamable((Streamable)obj, out);
-                out.close();
+            if(obj == null) {
+                out_stream.write(TYPE_NULL);
+                out_stream.flush();
+                return out_stream.toByteArray();
             }
-            else {
-                out_stream.write(0);
-                ObjectOutputStream out=new ObjectOutputStream(out_stream);
-                out.writeObject(obj);
-                out.close();
+
+            OutputStream out=null;
+            Byte type;
+            try {
+                if(obj instanceof Streamable) {  // use Streamable if we can
+                    out_stream.write(TYPE_STREAMABLE);
+                    out=new DataOutputStream(out_stream);
+                    writeGenericStreamable((Streamable)obj, (DataOutputStream)out);
+                }
+                else if((type=(Byte)PRIMITIVE_TYPES.get(obj.getClass())) != null) {
+                    out_stream.write(type.byteValue());
+                    out=new DataOutputStream(out_stream);
+                    switch(type.byteValue()) {
+                        case TYPE_BOOLEAN:
+                            ((DataOutputStream)out).writeBoolean(((Boolean)obj).booleanValue());
+                            break;
+                        case TYPE_BYTE:
+                            ((DataOutputStream)out).writeByte(((Byte)obj).byteValue());
+                            break;
+                        case TYPE_CHAR:
+                            ((DataOutputStream)out).writeChar(((Character)obj).charValue());
+                            break;
+                        case TYPE_DOUBLE:
+                            ((DataOutputStream)out).writeDouble(((Double)obj).doubleValue());
+                            break;
+                        case TYPE_FLOAT:
+                            ((DataOutputStream)out).writeFloat(((Float)obj).floatValue());
+                            break;
+                        case TYPE_INT:
+                            ((DataOutputStream)out).writeInt(((Integer)obj).intValue());
+                            break;
+                        case TYPE_LONG:
+                            ((DataOutputStream)out).writeLong(((Long)obj).longValue());
+                            break;
+                        case TYPE_SHORT:
+                            ((DataOutputStream)out).writeShort(((Short)obj).shortValue());
+                            break;
+                        case TYPE_STRING:
+                            ((DataOutputStream)out).writeUTF((String)obj);
+                            break;
+                        default:
+                            throw new IllegalArgumentException("type " + type + " is invalid");
+                    }
+                }
+                else { // will throw an exception if object is not serializable
+                    out_stream.write(TYPE_SERIALIZABLE);
+                    out=new ObjectOutputStream(out_stream);
+                    ((ObjectOutputStream)out).writeObject(obj);
+                }
+            }
+            finally {
+                Util.closeOutputStream(out);
             }
             result=out_stream.toByteArray();
         }
