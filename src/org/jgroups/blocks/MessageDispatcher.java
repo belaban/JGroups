@@ -35,7 +35,7 @@ import java.util.ArrayList;
  * the application instead of protocol level.
  *
  * @author Bela Ban
- * @version $Id: MessageDispatcher.java,v 1.57 2006/08/28 06:51:53 belaban Exp $
+ * @version $Id: MessageDispatcher.java,v 1.58 2006/08/28 16:07:33 vlada Exp $
  */
 public class MessageDispatcher implements RequestHandler {
     protected Channel channel=null;
@@ -843,7 +843,7 @@ public class MessageDispatcher implements RequestHandler {
 
         public byte[] getState(String state_id) {
             if(msg_listener == null) return null;
-            if(msg_listener instanceof ExtendedMessageListener) {
+            if(msg_listener instanceof ExtendedMessageListener && state_id!=null) {
                 return ((ExtendedMessageListener)msg_listener).getState(state_id);
             }
             else {
@@ -859,7 +859,7 @@ public class MessageDispatcher implements RequestHandler {
 
         public void setState(String state_id, byte[] state) {
             if(msg_listener != null) {
-                if(msg_listener instanceof ExtendedMessageListener) {
+                if(msg_listener instanceof ExtendedMessageListener && state_id!=null) {
                     ((ExtendedMessageListener)msg_listener).setState(state_id, state);
                 }
                 else {
