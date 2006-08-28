@@ -21,6 +21,7 @@ import org.jgroups.StreamingSetStateEvent;
 import org.jgroups.TimeoutException;
 import org.jgroups.View;
 import org.jgroups.ViewId;
+import org.jgroups.blocks.RpcDispatcher;
 import org.jgroups.util.Util;
 
 /**
@@ -50,6 +51,7 @@ public class StreamingStateTransferTest extends TestCase{
 	private int runningTime = 1000*50; // 50 secs 
 	private Random r = new Random();
 	private boolean usePullMode = false;
+    private boolean useDisp = false;
 	private int size = 100; //100MB
 	
 	private final static int MEGABYTE = 1048576;
@@ -68,7 +70,7 @@ public class StreamingStateTransferTest extends TestCase{
 		//first spawn and join
 		for(int i =0;i<INITIAL_NUMBER_OF_MEMBERS;i++)
 		{
-			GroupMember member = new GroupMember(usePullMode,size);			
+			GroupMember member = new GroupMember(usePullMode,useDisp,size);			
 			members.add(member);
 			Thread t = new Thread(member);
 			t.start();
@@ -81,7 +83,7 @@ public class StreamingStateTransferTest extends TestCase{
 			if(r.nextBoolean())
 			{
 				Util.sleep(getRandomDelayInSeconds(10,12)*1000);
-				GroupMember member = new GroupMember(usePullMode,size);					
+				GroupMember member = new GroupMember(usePullMode,useDisp,size);					
 				members.add(member);				
 				Thread t = new Thread(member);
 				t.start();
@@ -113,8 +115,15 @@ public class StreamingStateTransferTest extends TestCase{
 
 	protected void setUp() throws Exception {
 		
-		//NOTE use -Dpull=true|false -Dsize=int (size of transfer)
-		String prop = System.getProperty("pull");
+		//NOTE use -Ddisp=true|false -Dpull=true|false -Dsize=int (size of transfer)
+       
+        String prop = System.getProperty("disp");
+        if(prop!=null)
+        {
+            useDisp = prop.equalsIgnoreCase("true");
+            System.out.println("Using parameter disp=" + useDisp);
+        }
+		prop = System.getProperty("pull");
 		if(prop!=null)
 		{
 			usePullMode = prop.equalsIgnoreCase("true");
@@ -151,15 +160,21 @@ public class StreamingStateTransferTest extends TestCase{
 		private int bufferSize = 8*1024;
 		private boolean usePullMode;	
 		private Random ran = new Random();
+        private boolean useDispacher;
 
-		public GroupMember(boolean usePullMode,int size) {				
-			setStateSize(size*MEGABYTE); //1GB
-			setUsePullMode(usePullMode);
+		public GroupMember(boolean pullMode,boolean dispMode,int size) {				
+			setStateSize(size*MEGABYTE);
+			setUsePullMode(pullMode);
+            setUseDispatcher(dispMode);
 		}
 		
 		public void setUsePullMode(boolean usePullMode) {
 			this.usePullMode = usePullMode;
 		}
+        
+        public void setUseDispatcher(boolean useDispacher) {
+            this.useDispacher = useDispacher;
+        }
 
 		public String getAddress() {
 			if(ch!=null && ch.isConnected())
@@ -202,10 +217,13 @@ public class StreamingStateTransferTest extends TestCase{
 				ch = new JChannel(CHANNEL_PROPS);
 				ch.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
 	            ch.setOpt(Channel.AUTO_GETSTATE, Boolean.TRUE);
-	            if(!usePullMode)
-	            {
+                if(useDispacher)
+                {
+                   RpcDispatcher disp = new RpcDispatcher(ch,this,this,this);                  
+                } else if (!usePullMode)
+	            {                   
 	            	ch.setReceiver(this);
-	            }
+	            }                
 				ch.connect("transfer");	
 				if(ran.nextBoolean())
 				{
