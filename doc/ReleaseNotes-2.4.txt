@@ -2,7 +2,7 @@
 Release Notes JGroups 2.4
 =========================
 
-Version: $Id: ReleaseNotes-2.4.txt,v 1.5 2006/08/25 06:56:01 belaban Exp $
+Version: $Id: ReleaseNotes-2.4.txt,v 1.6 2006/08/28 06:56:14 belaban Exp $
 Author: Bela Ban
 
 JGroups 2.4 is a backward compatible release, that is it can replace previous versions (2.3 - 2.2.7) by simply replacing
@@ -69,6 +69,19 @@ Use of variables in configuration files
 Variables of type ${var:default} or ${var} can now be used in configuration files (both XML and plain text).
 They will get replaced by the result of System.getProperty(var, default). If no system property is set, the
 variables will not get substituted. Note that variables and default values cannot contains characters '{', '}' or ':'.
+
+
+User-defined Marshaller is now used for return values too
+---------------------------------------------------------
+Before, a user defined Marshaller in RpcDispatcher was only used for marshalling of a request at the caller and
+unmarshalling of the request at the receiver, but not for marshalling the response at the receiver and
+unmarshalling the response at the caller. In the latter 2 cases, Util.objectTo/FromByteBuffer() was used.
+Now, in all 4 cases, the Marshaller will be used (if set).
+
+
+Optmization in Util.objectTo/FromByteBuffer()
+---------------------------------------------
+We don't create an ObjectInput/OutputStream for null values and simple primitive types.
 
 
 Incompatibilities to previous version
