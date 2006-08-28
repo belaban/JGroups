@@ -7,12 +7,17 @@ import org.jgroups.*;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.util.*;
 
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.13 2006/08/21 00:48:05 bstansberry Exp $
+ * @version $Id: MultiplexerTest.java,v 1.14 2006/08/28 19:03:00 vlada Exp $
  */
 public class MultiplexerTest extends TestCase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -647,8 +652,56 @@ public class MultiplexerTest extends TestCase {
         public void setState(String state_id, byte[] state) {
             setState(state);
         }
-
-
+                
+        public void getState(OutputStream ostream){
+            ObjectOutputStream oos = null;
+            try{
+               oos = new ObjectOutputStream(ostream);
+               synchronized(data){
+                  oos.writeObject(data);
+               }
+               oos.flush();
+            }
+            catch (IOException e){}
+            finally{
+               try{
+                  oos.close();
+               }
+               catch (IOException e){
+                  System.err.println(e);
+               }
+            }
+        }
+        
+        public void getState(String state_id, OutputStream ostream) {
+           getState(ostream);
+        }
+        
+        public void setState(InputStream istream) {
+           ObjectInputStream ois = null;
+           try {           
+               ois = new ObjectInputStream(istream);
+               Map m = (Map)ois.readObject(); 
+               synchronized (data)
+               {
+                  data.clear();
+                  data.putAll(m);
+               }
+               
+           } catch (Exception e) {} 
+           finally{
+               try {               
+                   ois.close();
+               } catch (IOException e) {
+                   System.err.println(e);
+               }
+           }
+        }
+        
+        public void setState(String state_id, InputStream istream) {
+           setState(istream);
+        }
+        
         public void clear() {
             data.clear();
         }
