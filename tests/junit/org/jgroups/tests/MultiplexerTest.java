@@ -7,17 +7,13 @@ import org.jgroups.*;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
 import java.util.*;
+import java.io.*;
 
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.14 2006/08/28 19:03:00 vlada Exp $
+ * @version $Id: MultiplexerTest.java,v 1.15 2006/08/28 19:28:57 belaban Exp $
  */
 public class MultiplexerTest extends TestCase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -55,6 +51,11 @@ public class MultiplexerTest extends TestCase {
         if(c2 != null) c2.clear();
         if(c1_repl != null) c1_repl.clear();
         if(c2_repl != null) c2_repl.clear();
+
+        ch1_repl=ch2_repl=ch1=ch2=null;
+        c1=c2=c1_repl=c2_repl=null;
+
+        System.out.println(Util.activeThreads());
     }
 
 
@@ -67,6 +68,50 @@ public class MultiplexerTest extends TestCase {
         Util.sleep(300); // we need to wait because replication is asynchronous here
         assertEquals(1, c1.size());
         assertEquals("Bela", c1.get("name"));
+    }
+
+
+    public void testLifecycle() throws Exception {
+        ch1=factory.createMultiplexerChannel(STACK_NAME, "c1");
+        assertTrue(ch1.isOpen());
+        assertFalse(ch1.isConnected());
+
+        ch1.connect("bla");
+        assertTrue(ch1.isOpen());
+        assertTrue(ch1.isConnected());
+
+        ch2=factory.createMultiplexerChannel(STACK_NAME, "c2");
+        assertTrue(ch2.isOpen());
+        assertFalse(ch2.isConnected());
+
+        ch2.connect("bla");
+        assertTrue(ch2.isOpen());
+        assertTrue(ch2.isConnected());
+
+        ch2.disconnect();
+        assertTrue(ch2.isOpen());
+        assertFalse(ch2.isConnected());
+
+        ch2.connect("bla");
+        assertTrue(ch2.isOpen());
+        assertTrue(ch2.isConnected());
+
+        ch2.disconnect();
+        assertTrue(ch2.isOpen());
+        assertFalse(ch2.isConnected());
+
+        ch2.close();
+        assertFalse(ch2.isOpen());
+        assertFalse(ch2.isConnected());
+
+        ch2=factory.createMultiplexerChannel(STACK_NAME, "c2");
+        ch2.connect("bla");
+        assertTrue(ch2.isOpen());
+        assertTrue(ch2.isConnected());
+
+        ch2.close();
+        assertFalse(ch2.isOpen());
+        assertFalse(ch2.isConnected());
     }
 
 
@@ -310,11 +355,11 @@ public class MultiplexerTest extends TestCase {
 
         ch1_repl.disconnect();
         c1_repl.clear();
-        
+
         ch1_repl.connect("bla");
 //        c2_repl=new Cache(ch1_repl, "cache-2-repl");
         assertEquals("cache has to be empty initially", 0, c1_repl.size());
-        
+
         rc=ch1_repl.getState(null, 5000);
         System.out.println("state transfer: " + rc);
         Util.sleep(500);
@@ -330,19 +375,19 @@ public class MultiplexerTest extends TestCase {
 
         assertEquals("Centurion", c1.get("bike"));
         assertEquals("Centurion", c1_repl.get("bike"));
-        
+
         // Now see what happens if we reconnect the first channel
-        // But first, add another MuxChannel on that JChannel 
+        // But first, add another MuxChannel on that JChannel
         // just so it remains coordinator (test that it doesn't
         // ask for state from itself)
         ch2 = factory.createMultiplexerChannel(STACK_NAME, "c2");
-        
+
         ch1.disconnect();
         c1.clear();
-        
+
         ch1.connect("bla");
         assertEquals("cache has to be empty initially", 0, c1.size());
-        
+
         rc=ch1.getState(null, 5000);
         System.out.println("state transfer: " + rc);
         Util.sleep(500);
@@ -652,7 +697,7 @@ public class MultiplexerTest extends TestCase {
         public void setState(String state_id, byte[] state) {
             setState(state);
         }
-                
+
         public void getState(OutputStream ostream){
             ObjectOutputStream oos = null;
             try{
@@ -672,36 +717,36 @@ public class MultiplexerTest extends TestCase {
                }
             }
         }
-        
+
         public void getState(String state_id, OutputStream ostream) {
            getState(ostream);
         }
-        
+
         public void setState(InputStream istream) {
            ObjectInputStream ois = null;
-           try {           
+           try {
                ois = new ObjectInputStream(istream);
-               Map m = (Map)ois.readObject(); 
+               Map m = (Map)ois.readObject();
                synchronized (data)
                {
                   data.clear();
                   data.putAll(m);
                }
-               
-           } catch (Exception e) {} 
+
+           } catch (Exception e) {}
            finally{
-               try {               
+               try {
                    ois.close();
                } catch (IOException e) {
                    System.err.println(e);
                }
            }
         }
-        
+
         public void setState(String state_id, InputStream istream) {
            setState(istream);
         }
-        
+
         public void clear() {
             data.clear();
         }
