@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.84 2006/08/21 07:08:55 belaban Exp $
+// $Id: Util.java,v 1.85 2006/08/28 07:06:24 belaban Exp $
 
 package org.jgroups.util;
 
@@ -26,7 +26,7 @@ import java.util.List;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.84 2006/08/21 07:08:55 belaban Exp $
+ * @version $Id: Util.java,v 1.85 2006/08/28 07:06:24 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -100,7 +100,6 @@ public class Util {
             DataInputStream in=new DataInputStream(in_stream);
             retval=readGenericStreamable(in);
             in.close();
-
         }
         else { // otherwise it is Externalizable or Serializable
             ObjectInputStream in=new ContextObjectInputStream(in_stream); // changed Nov 29 2004 (bela)
