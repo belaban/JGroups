@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.41 2006/08/26 13:18:11 belaban Exp $
+// $Id: FD_SOCK.java,v 1.42 2006/08/28 15:11:17 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -423,7 +423,6 @@ public class FD_SOCK extends Protocol implements Runnable {
         int max_fetch_tries=10;  // number of times a socket address is to be requested before giving up
 
         if(trace) log.trace("pinger_thread started"); // +++ remove
-
         while(pinger_thread != null) {
             tmp_ping_dest=determinePingDest(); // gets the neighbor to our right
             if(log.isDebugEnabled())
@@ -534,10 +533,10 @@ public class FD_SOCK extends Protocol implements Runnable {
         synchronized(pinger_mutex) {
             if(pinger_thread != null && pinger_thread.isAlive()) {
                 regular_sock_close=true;
+                pinger_thread=null;
                 sendPingTermination(); // PATCH by Bruce Schuchardt (http://jira.jboss.com/jira/browse/JGRP-246)
                 teardownPingSocket();
             }
-            pinger_thread=null;
         }
     }
 
