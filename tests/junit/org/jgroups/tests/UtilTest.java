@@ -1,4 +1,4 @@
-// $Id: UtilTest.java,v 1.12 2006/08/15 05:50:08 belaban Exp $
+// $Id: UtilTest.java,v 1.13 2006/08/28 08:29:37 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -122,6 +122,41 @@ public class UtilTest extends TestCase {
         list2=(List)Util.objectFromByteBuffer(buf);
         System.out.println("list=" + list + ", list2=" + list2);
         assertEquals(list, list2);
+
+        Object obj=null;
+        buf=Util.objectToByteBuffer(obj);
+        assertNotNull(buf);
+        assertTrue(buf.length > 0);
+        obj=Util.objectFromByteBuffer(buf);
+        assertNull(obj);
+
+        Object[] values=new Object[]{
+                Boolean.TRUE,
+                Boolean.FALSE,
+                new Byte((byte)22),
+                new Byte("2"),
+                new Character('5'),
+                new Double(3.14),
+                new Float(352.3),
+                new Integer(100),
+                new Long(322649),
+                new Short((short)22),
+                "Bela Ban"
+        };
+        for(int i=0; i < values.length; i++) {
+            Object value=values[i];
+            marshal(value);
+        }
+    }
+
+
+    void marshal(Object obj) throws Exception {
+        byte[] buf=Util.objectToByteBuffer(obj);
+        assertNotNull(buf);
+        assertTrue(buf.length > 0);
+        Object obj2=Util.objectFromByteBuffer(buf);
+        System.out.println("obj=" + obj + ", obj2=" + obj2 + " (type=" + obj.getClass().getName() + ", length=" + buf.length + " bytes)");
+        assertEquals(obj, obj2);
     }
 
 
