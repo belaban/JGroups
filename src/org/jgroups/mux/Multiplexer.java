@@ -15,7 +15,7 @@ import java.util.*;
  * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.20 2006/08/26 13:32:42 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.21 2006/08/28 12:13:53 belaban Exp $
  */
 public class Multiplexer implements UpHandler {
     /** Map<String,MuxChannel>. Maintains the mapping between service IDs and their associated MuxChannels */
@@ -243,12 +243,17 @@ public class Multiplexer implements UpHandler {
                 break;
 
             case Event.VIEW_CHANGE:
+                Vector old_members=view != null? view.getMembers() : null;
                 view=(View)evt.getArg();
+                Vector new_members=view != null? view.getMembers() : null;
+                Vector left_members=Util.determineLeftMembers(old_members, new_members);
 
                 if(view instanceof MergeView) {
                     // handle merges here
                 }
 
+                if(left_members.size() > 0)
+                    adjustServiceViews(left_members);
                 // passToAllMuxChannels(evt);
                 break;
 
@@ -612,7 +617,6 @@ public class Multiplexer implements UpHandler {
 
         // discard if we sent this message
         if(received && host != null && local_addr != null && local_addr.equals(host)) {
-            // System.out.println("received SERVICE_UP(" + host + ")");
             return;
         }
 
@@ -644,6 +648,58 @@ public class Multiplexer implements UpHandler {
             }
         }
     }
+
+    private void adjustServiceViews(Vector left_members) {
+        if(left_members != null)
+            for(int i=0; i < left_members.size(); i++) {
+                try {
+                    adjustServiceView((Address)left_members.elementAt(i));
+                }
+                catch(Throwable t) {
+                    if(log.isErrorEnabled())
+                        log.error("failed adjusting service views", t);
+                }
+            }
+    }
+
+    private void adjustServiceView(Address host) {
+        Map.Entry entry;
+        List hosts, hosts_copy;
+        String service;
+        boolean removed=false;
+
+        synchronized(service_state) {
+            for(Iterator it=service_state.entrySet().iterator(); it.hasNext();) {
+                entry=(Map.Entry)it.next();
+                service=(String)entry.getKey();
+                hosts=(List)entry.getValue();
+                if(hosts == null)
+                    continue;
+
+                removed=hosts.remove(host);
+                hosts_copy=new ArrayList(hosts); // make a copy so we don't modify hosts in generateServiceView()
+
+                if(removed) {
+                    View service_view=generateServiceView(hosts_copy);
+                    if(service_view != null) {
+                        MuxChannel ch=(MuxChannel)services.get(service);
+                        if(ch != null) {
+                            Event view_evt=new Event(Event.VIEW_CHANGE, service_view);
+                            ch.up(view_evt);
+                        }
+                        else {
+                            if(log.isTraceEnabled())
+                                log.trace("service " + service + " not found, cannot dispatch service view " + service_view);
+                        }
+                    }
+                }
+                Address local_address=getLocalAddress();
+                if(local_address != null && host != null && host.equals(local_address))
+                    unregister(service);
+            }
+        }
+    }
+
 
     /**
      * Create a copy of view which contains only members which are present in hosts. Call viewAccepted() on the MuxChannel
