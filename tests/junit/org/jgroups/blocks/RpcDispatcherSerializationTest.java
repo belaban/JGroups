@@ -94,11 +94,11 @@ public class RpcDispatcherSerializationTest extends TestCase {
 
 
     public void testMarshaller() {
-        RpcDispatcher.Marshaller old=disp.getMarshaller(), old2=disp2.getMarshaller();
-
         RpcDispatcher.Marshaller m=new MyMarshaller();
-        disp.setMarshaller(m);
-        disp2.setMarshaller(m);
+        disp.setRequestMarshaller(m);
+        disp.setResponseMarshaller(m);
+        disp2.setRequestMarshaller(m);
+        disp2.setResponseMarshaller(m);
 
         RspList rsps;
         rsps=disp.callRemoteMethods(null, "methodA", new Object[]{Boolean.TRUE, new Long(322649)},
@@ -133,10 +133,10 @@ public class RpcDispatcherSerializationTest extends TestCase {
             assertFalse(rsp.wasSuspected());
         }
 
-        if(old != null)
-            disp.setMarshaller(old);
-        if(old2 != null)
-            disp2.setMarshaller(old2);
+        disp.setRequestMarshaller(null);
+        disp.setResponseMarshaller(null);
+        disp2.setRequestMarshaller(null);
+        disp2.setResponseMarshaller(null);
     }
 
 
