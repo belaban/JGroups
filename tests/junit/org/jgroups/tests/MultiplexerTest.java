@@ -13,7 +13,7 @@ import java.io.*;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.15 2006/08/28 19:28:57 belaban Exp $
+ * @version $Id: MultiplexerTest.java,v 1.16 2006/08/29 02:33:12 vlada Exp $
  */
 public class MultiplexerTest extends TestCase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -790,6 +790,36 @@ public class MultiplexerTest extends TestCase {
                 e.printStackTrace();
                 return null;
             }
+        }
+        
+        public void getState(String state_id,OutputStream os) {
+           Map copy=new HashMap(data);
+           for(Iterator it=copy.keySet().iterator(); it.hasNext();) {
+               Integer key=(Integer)it.next();
+               if(state_id.equals("odd") && key.intValue() % 2 != 0)
+                   it.remove();
+               else if(state_id.equals("even") && key.intValue() % 2 == 0)
+                   it.remove();
+           }
+           ObjectOutputStream oos = null;           
+           try {               
+               oos=new ObjectOutputStream(os);
+               oos.writeObject(copy);
+               oos.flush();               
+           }
+           catch (IOException e){}
+           finally{
+              try{
+                 oos.close();
+              }
+              catch (IOException e){
+                 System.err.println(e);
+              }
+           }
+        }
+        
+        public void setState(String state_id, InputStream is){
+           setState(is);
         }
 
         public void setState(String state_id, byte[] state) {
