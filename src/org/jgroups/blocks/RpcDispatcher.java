@@ -1,4 +1,4 @@
-// $Id: RpcDispatcher.java,v 1.25 2006/08/28 06:51:53 belaban Exp $
+// $Id: RpcDispatcher.java,v 1.26 2006/08/29 08:11:35 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -30,7 +30,11 @@ import java.util.Vector;
  */
 public class RpcDispatcher extends MessageDispatcher implements ChannelListener {
     protected Object        server_obj=null;
-    protected Marshaller    marshaller=null;
+    /** Marshaller to marshall requests at the caller and unmarshal requests at the receiver(s) */
+    protected Marshaller    req_marshaller=null;
+
+    /** Marshaller to marshal responses at the receiver(s) and unmarshal responses at the caller */
+    protected Marshaller    rsp_marshaller=null;
     protected final List    additionalChannelListeners=new ArrayList();
     protected MethodLookup  method_lookup=null;
 
@@ -83,13 +87,23 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
 
     public String getName() {return "RpcDispatcher";}
 
-    public void setMarshaller(Marshaller m) {
-        this.marshaller=m;
+    public Marshaller getRequestMarshaller()             {return req_marshaller;}
+
+    public void setRequestMarshaller(Marshaller m) {
+        this.req_marshaller=m;
+    }
+
+    public Marshaller getResponseMarshaller()             {return rsp_marshaller;}
+
+    public void setResponseMarshaller(Marshaller m) {
+        this.rsp_marshaller=m;
         if(corr != null)
             corr.setMarshaller(m);
     }
 
-    public Marshaller getMarshaller()             {return marshaller;}
+    public Marshaller getMarshaller() {return req_marshaller;}
+    
+    public void setMarshaller(Marshaller m) {req_marshaller=m;}
 
     public Object getServerObject() {return server_obj;}
 
@@ -150,7 +164,7 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
 
         byte[] buf;
         try {
-            buf=marshaller != null? marshaller.objectToByteBuffer(method_call) : Util.objectToByteBuffer(method_call);
+            buf=req_marshaller != null? req_marshaller.objectToByteBuffer(method_call) : Util.objectToByteBuffer(method_call);
         }
         catch(Exception e) {
             // if(log.isErrorEnabled()) log.error("exception", e);
@@ -188,7 +202,7 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         if(log.isTraceEnabled())
             log.trace("dest=" + dest + ", method_call=" + method_call + ", mode=" + mode + ", timeout=" + timeout);
 
-        buf=marshaller != null? marshaller.objectToByteBuffer(method_call) : Util.objectToByteBuffer(method_call);
+        buf=req_marshaller != null? req_marshaller.objectToByteBuffer(method_call) : Util.objectToByteBuffer(method_call);
         msg=new Message(dest, null, buf);
         retval=super.sendMessage(msg, mode, timeout);
         if(log.isTraceEnabled()) log.trace("retval: " + retval);
@@ -200,7 +214,7 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
 
     protected void correlatorStarted() {
         if(corr != null)
-            corr.setMarshaller(marshaller);
+           corr.setMarshaller(rsp_marshaller);
     }
 
 
@@ -223,7 +237,7 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         }
 
         try {
-            body=marshaller != null? marshaller.objectFromByteBuffer(req.getBuffer()) : req.getObject();
+            body=req_marshaller != null? req_marshaller.objectFromByteBuffer(req.getBuffer()) : req.getObject();
         }
         catch(Throwable e) {
             if(log.isErrorEnabled()) log.error("exception marshalling object", e);
