@@ -2,7 +2,7 @@
 Release Notes JGroups 2.4
 =========================
 
-Version: $Id: ReleaseNotes-2.4.txt,v 1.6 2006/08/28 06:56:14 belaban Exp $
+Version: $Id: ReleaseNotes-2.4.txt,v 1.7 2006/08/29 12:46:35 belaban Exp $
 Author: Bela Ban
 
 JGroups 2.4 is a backward compatible release, that is it can replace previous versions (2.3 - 2.2.7) by simply replacing
@@ -79,8 +79,8 @@ unmarshalling the response at the caller. In the latter 2 cases, Util.objectTo/F
 Now, in all 4 cases, the Marshaller will be used (if set).
 
 
-Optmization in Util.objectTo/FromByteBuffer()
----------------------------------------------
+Optimization in Util.objectTo/FromByteBuffer()
+----------------------------------------------
 We don't create an ObjectInput/OutputStream for null values and simple primitive types.
 
 
