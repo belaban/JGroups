@@ -30,7 +30,7 @@ count=0
 while [ $count -lt 20 ]
 do
   echo "Starting Draw instance #$count"
-  java -classpath $CP org.jgroups.demos.Draw -props c:\\fc-fast-minimalthreads.xml &
+  java -classpath $CP -Dbind.address=192.168.5.2 org.jgroups.demos.Draw -props c:\\fc-fast-minimalthreads.xml &
   sleep 1
   count=$(($count+1))
 done
