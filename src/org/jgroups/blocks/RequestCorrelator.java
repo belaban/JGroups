@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.29 2006/08/28 06:51:53 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.30 2006/08/29 07:27:14 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -46,7 +46,7 @@ public class RequestCorrelator {
     /** The handler for the incoming requests. It is called from inside the dispatcher thread */
     protected RequestHandler request_handler=null;
 
-    /** Possibility for an external marshaller */
+    /** Possibility for an external marshaller to marshal/unmarshal responses */
     protected RpcDispatcher.Marshaller marshaller=null;
 
     /** makes the instance unique (together with IDs) */
