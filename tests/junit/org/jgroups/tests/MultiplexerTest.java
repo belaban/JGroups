@@ -4,6 +4,7 @@ import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.jgroups.*;
+import org.jgroups.mux.MuxChannel;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
 
@@ -13,7 +14,7 @@ import java.io.*;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.16 2006/08/29 02:33:12 vlada Exp $
+ * @version $Id: MultiplexerTest.java,v 1.17 2006/08/29 11:33:12 belaban Exp $
  */
 public class MultiplexerTest extends TestCase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -46,6 +47,22 @@ public class MultiplexerTest extends TestCase {
             ch1.close();
         if(ch2 != null)
             ch2.close();
+        if(ch1 != null) {
+            assertFalse(((MuxChannel)ch1).getChannel().isOpen());
+            assertFalse(((MuxChannel)ch1).getChannel().isConnected());
+        }
+        if(ch2 != null) {
+            assertFalse(((MuxChannel)ch2).getChannel().isOpen());
+            assertFalse(((MuxChannel)ch2).getChannel().isConnected());
+        }
+        if(ch1_repl != null) {
+            assertFalse(((MuxChannel)ch1_repl).getChannel().isOpen());
+            assertFalse(((MuxChannel)ch1_repl).getChannel().isConnected());
+        }
+        if(ch2_repl != null) {
+            assertFalse(((MuxChannel)ch2_repl).getChannel().isOpen());
+            assertFalse(((MuxChannel)ch2_repl).getChannel().isConnected());
+        }
 
         if(c1 != null) c1.clear();
         if(c2 != null) c2.clear();
@@ -54,8 +71,7 @@ public class MultiplexerTest extends TestCase {
 
         ch1_repl=ch2_repl=ch1=ch2=null;
         c1=c2=c1_repl=c2_repl=null;
-
-        System.out.println(Util.activeThreads());
+        // System.out.println(Util.activeThreads());
     }
 
 
@@ -112,6 +128,82 @@ public class MultiplexerTest extends TestCase {
         ch2.close();
         assertFalse(ch2.isOpen());
         assertFalse(ch2.isConnected());
+    }
+
+
+    public void testDisconnect() throws Exception {
+        ch1=factory.createMultiplexerChannel(STACK_NAME, "c1");
+        assertTrue(ch1.isOpen());
+        assertFalse(ch1.isConnected());
+        assertTrue(((MuxChannel)ch1).getChannel().isOpen());
+        assertFalse(((MuxChannel)ch1).getChannel().isConnected());
+
+        ch1.connect("bla");
+        assertTrue(ch1.isOpen());
+        assertTrue(ch1.isConnected());
+        assertTrue(((MuxChannel)ch1).getChannel().isOpen());
+        assertTrue(((MuxChannel)ch1).getChannel().isConnected());
+
+        ch2=factory.createMultiplexerChannel(STACK_NAME, "c2");
+        assertTrue(ch2.isOpen());
+        assertFalse(ch2.isConnected());
+
+        ch1.disconnect();
+        assertTrue(ch1.isOpen());
+        assertFalse(ch1.isConnected());
+
+        ch1.connect("bla");
+        assertTrue(ch1.isOpen());
+        assertTrue(ch1.isConnected());
+
+        ch1.close();
+        assertFalse(ch1.isOpen());
+        assertFalse(ch1.isConnected());
+        assertTrue(((MuxChannel)ch1).getChannel().isOpen());
+        assertTrue(((MuxChannel)ch1).getChannel().isConnected());
+
+        ch2.close();
+        assertFalse(ch2.isOpen());
+        assertFalse(ch2.isConnected());
+    }
+
+    public void testDisconnect2() throws Exception {
+        ch1=factory.createMultiplexerChannel(STACK_NAME, "c1");
+        assertTrue(ch1.isOpen());
+        assertFalse(ch1.isConnected());
+
+        ch1.connect("bla");
+        assertTrue(ch1.isOpen());
+        assertTrue(ch1.isConnected());
+
+        ch2=factory.createMultiplexerChannel(STACK_NAME, "c2");
+        assertTrue(ch2.isOpen());
+        assertFalse(ch2.isConnected());
+
+        ch1.disconnect();
+        assertTrue(ch1.isOpen());
+        assertFalse(ch1.isConnected());
+
+        assertTrue(ch2.isOpen());
+        assertFalse(ch2.isConnected());
+
+        ch1.connect("bla");
+        assertTrue(ch1.isOpen());
+        assertTrue(ch1.isConnected());
+
+        assertTrue(ch2.isOpen());
+        assertFalse(ch2.isConnected());
+    }
+
+
+    public void testClose() throws Exception {
+        ch1=factory.createMultiplexerChannel(STACK_NAME, "c1");
+        ch1.connect("bla");
+        ch2=factory.createMultiplexerChannel(STACK_NAME, "c2");
+        ch2.connect("bla");
+        ch1.close();
+        ch2.close();
+        System.out.println(Util.activeThreads());
     }
 
 
@@ -323,11 +415,17 @@ public class MultiplexerTest extends TestCase {
 
     public void testStateTransferWithReconnect() throws Exception {
         ch1=factory.createMultiplexerChannel(STACK_NAME, "c1");
+        assertTrue(ch1.isOpen());
+        assertFalse(ch1.isConnected());
         ch1.connect("bla");
+        assertTrue(ch1.isOpen());
+        assertTrue(ch1.isConnected());
         c1=new Cache(ch1, "cache-1");
         assertEquals("cache has to be empty initially", 0, c1.size());
 
         ch1_repl=factory2.createMultiplexerChannel(STACK_NAME, "c1");
+        assertTrue(ch1_repl.isOpen());
+        assertFalse(ch1_repl.isConnected());
 
         c1.put("name", "Bela");
         c1.put("id", new Long(322649));
@@ -336,6 +434,9 @@ public class MultiplexerTest extends TestCase {
 
 
         ch1_repl.connect("bla");
+        assertTrue(ch1_repl.isOpen());
+        assertTrue(ch1_repl.isConnected());
+
         c1_repl=new Cache(ch1_repl, "cache-1-repl");
         boolean rc=ch1_repl.getState(null, 5000);
         System.out.println("state transfer: " + rc);
@@ -354,10 +455,15 @@ public class MultiplexerTest extends TestCase {
         assertEquals("Centurion", c1_repl.get("bike"));
 
         ch1_repl.disconnect();
+        assertTrue(ch1_repl.isOpen());
+        assertFalse(ch1_repl.isConnected());
+
         c1_repl.clear();
 
         ch1_repl.connect("bla");
-//        c2_repl=new Cache(ch1_repl, "cache-2-repl");
+        assertTrue(ch1_repl.isOpen());
+        assertTrue(ch1_repl.isConnected());
+
         assertEquals("cache has to be empty initially", 0, c1_repl.size());
 
         rc=ch1_repl.getState(null, 5000);
@@ -380,12 +486,26 @@ public class MultiplexerTest extends TestCase {
         // But first, add another MuxChannel on that JChannel
         // just so it remains coordinator (test that it doesn't
         // ask for state from itself)
-        ch2 = factory.createMultiplexerChannel(STACK_NAME, "c2");
+        ch2=factory.createMultiplexerChannel(STACK_NAME, "c2");
+        assertTrue(ch2.isOpen());
+        assertFalse(ch2.isConnected());
 
         ch1.disconnect();
+        assertTrue(ch1.isOpen());
+        assertFalse(ch1.isConnected());
+
+        assertTrue(ch2.isOpen());
+        assertFalse(ch2.isConnected());
+
         c1.clear();
 
         ch1.connect("bla");
+        assertTrue(ch1.isOpen());
+        assertTrue(ch1.isConnected());
+
+        assertTrue(ch2.isOpen());
+        assertFalse(ch2.isConnected());
+
         assertEquals("cache has to be empty initially", 0, c1.size());
 
         rc=ch1.getState(null, 5000);
@@ -791,7 +911,7 @@ public class MultiplexerTest extends TestCase {
                 return null;
             }
         }
-        
+
         public void getState(String state_id,OutputStream os) {
            Map copy=new HashMap(data);
            for(Iterator it=copy.keySet().iterator(); it.hasNext();) {
@@ -801,11 +921,11 @@ public class MultiplexerTest extends TestCase {
                else if(state_id.equals("even") && key.intValue() % 2 == 0)
                    it.remove();
            }
-           ObjectOutputStream oos = null;           
-           try {               
+           ObjectOutputStream oos = null;
+           try {
                oos=new ObjectOutputStream(os);
                oos.writeObject(copy);
-               oos.flush();               
+               oos.flush();
            }
            catch (IOException e){}
            finally{
@@ -817,7 +937,7 @@ public class MultiplexerTest extends TestCase {
               }
            }
         }
-        
+
         public void setState(String state_id, InputStream is){
            setState(is);
         }
