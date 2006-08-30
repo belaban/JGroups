@@ -2,7 +2,7 @@
 <!--
   Sample file that defines a number of stacks, used by the multiplexer
   Author: Bela Ban
-  Version: $Id: stacks.xml,v 1.6 2006/08/30 15:37:16 belaban Exp $
+  Version: $Id: stacks.xml,v 1.7 2006/08/30 16:06:41 belaban Exp $
 -->
 <protocol_stacks>
     <stack name="fc-fast-minimalthreads"
@@ -60,7 +60,8 @@
     <stack name="fc-fast-minimalthreads-sync"
            description="IP multicast based stack, without flow control and without message bundling. This should be used
            instead of fc-fast-minimalthreads if (1) synchronous calls are used and (2) the message volume (rate and size)
-            is not that large">
+            is not that large. Don't use this configuration if you send messages at a high sustained rate, or you might
+            run out of memory">
         <config>
             <UDP bind_addr="${bind.address:localhost}"
                  mcast_port="${jboss.partition.udpPort:56677}"
