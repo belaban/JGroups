@@ -2,7 +2,7 @@
 Release Notes JGroups 2.4
 =========================
 
-Version: $Id: ReleaseNotes-2.4.txt,v 1.7 2006/08/29 12:46:35 belaban Exp $
+Version: $Id: ReleaseNotes-2.4.txt,v 1.8 2006/08/30 09:07:35 belaban Exp $
 Author: Bela Ban
 
 JGroups 2.4 is a backward compatible release, that is it can replace previous versions (2.3 - 2.2.7) by simply replacing
@@ -97,6 +97,14 @@ Enhancements and bug fixes
 - Multiplexer: few bug fixes (detected by integrating into JBoss), there are now 2 new unit tests that cover the bugs fixed
 - Bug fix for VIEW_SYNC after network partition and subsequent merge (http://jira.jboss.com/jira/browse/JGRP-217)
 - DistributedLockManager now releases locks leftover by a crashed process
+- Multiplexer: problem with state transfer (http://jira.jboss.com/jira/browse/JGRP-280)
+- Issue when members would suspect themselves after a network partition and subsequent merge
+  (FD, FD_SOCK and VERIFY_SUSPECT) (http://jira.jboss.com/jira/browse/JGRP-282, http://jira.jboss.com/jira/browse/JGRP-283)
+- Optimization of marshalling in Util.object{To,From}ByteBuffer() (http://jira.jboss.com/jira/browse/JGRP-284)
+- Incorrect suspect warning with FD_SOCK (http://jira.jboss.com/jira/browse/JGRP-285)
+- Multiplexer: view not sent when member crashes (http://jira.jboss.com/jira/browse/JGRP-286)
+- Multiplexer: underlying JChannel not closed in MuxChannel in certain scenarios
+  (http://jira.jboss.com/jira/browse/JGRP-288)
 
 
 Documentation
