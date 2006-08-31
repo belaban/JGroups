@@ -15,7 +15,7 @@ import java.util.*;
  * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.22 2006/08/29 02:43:32 vlada Exp $
+ * @version $Id: Multiplexer.java,v 1.23 2006/08/31 10:56:28 belaban Exp $
  */
 public class Multiplexer implements UpHandler {
     /** Map<String,MuxChannel>. Maintains the mapping between service IDs and their associated MuxChannels */
@@ -24,7 +24,6 @@ public class Multiplexer implements UpHandler {
     static final Log log=LogFactory.getLog(Multiplexer.class);
     static final String SEPARATOR="::";
     static final short SEPARATOR_LEN=(short)SEPARATOR.length();
-    //static final String LIST_SEPARATOR=";";
     static final String NAME="MUX";
 
     /** Cluster view */
@@ -249,12 +248,18 @@ public class Multiplexer implements UpHandler {
                 Vector left_members=Util.determineLeftMembers(old_members, new_members);
 
                 if(view instanceof MergeView) {
-                    // handle merges here
+                    Thread merge_view_handler=new Thread() {
+                        public void run() {
+                            handleMergeView((MergeView)view);
+                        }
+                    };
+                    merge_view_handler.setName("Multiplexer MergeView handler");
+                    merge_view_handler.start();
+                    try {merge_view_handler.join(10000);} catch(InterruptedException e) {}
                 }
 
                 if(left_members.size() > 0)
                     adjustServiceViews(left_members);
-                // passToAllMuxChannels(evt);
                 break;
 
             case Event.SUSPECT:
@@ -649,6 +654,16 @@ public class Multiplexer implements UpHandler {
                 }
             }
         }
+    }
+
+
+    /**
+     * Fetches the service states from everyone else in the cluster. Once all states have been received and inserted into
+     * service_state, compute a service view (a copy of MergeView) for each service and pass it up
+     * @param view
+     */
+    private void handleMergeView(MergeView view) {
+        
     }
 
     private void adjustServiceViews(Vector left_members) {
