@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.30 2006/07/28 08:26:06 belaban Exp $
+// $Id: JChannelFactory.java,v 1.31 2006/08/31 10:55:33 belaban Exp $
 
 package org.jgroups;
 
@@ -604,6 +604,8 @@ public class JChannelFactory implements ChannelFactory {
                     throw new IOException("invalid configuration: didn't find a \"" + CONFIG + "\" element under \"" + STACK + "\"");
 
                 XmlConfigurator conf=XmlConfigurator.getInstance(cfg);
+                // fixes http://jira.jboss.com/jira/browse/JGRP-290
+                ConfiguratorFactory.substituteVariables(conf); // replace vars with system props
                 String val=conf.getProtocolStackString();
                 this.stacks.put(st_name, val);
             }
