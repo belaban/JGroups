@@ -1,4 +1,4 @@
-// $Id: DigestTest.java,v 1.5 2005/07/12 10:14:50 belaban Exp $
+// $Id: DigestTest.java,v 1.6 2006/08/31 13:48:13 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -35,7 +35,7 @@ public class DigestTest extends TestCase {
 
     public void testSize() {
         d2=new Digest(3);
-        assertEquals(d2.size(), 0);
+        assertEquals(0, d2.size());
     }
 
     public void testEquals() {
@@ -48,17 +48,17 @@ public class DigestTest extends TestCase {
     }
 
     public void testAdd() {
-        assertEquals(d.size(), 3);
+        assertEquals(3, d.size());
         d.add(a1, 100, 200, 201);
-        assertEquals(d.size(), 3);
+        assertEquals(3, d.size());
         d.add(new IpAddress(14526), 1,2,3);
-        assertEquals(d.size(), 4);
+        assertEquals(4, d.size());
     }
 
     public void testAddDigest() {
         d2=d.copy();
         d.add(d2);
-        assertEquals(d.size(), 3);
+        assertEquals(3, d.size());
     }
 
     public void testAddDigest2() {
@@ -68,7 +68,7 @@ public class DigestTest extends TestCase {
         d2.add(new IpAddress(5555), 1,2,3);
         d2.add(new IpAddress(6666), 1,2,3);
         d.add(d2);
-        assertEquals(d.size(), 5);
+        assertEquals(5, d.size());
     }
 
     public void testGet() {
@@ -102,17 +102,17 @@ public class DigestTest extends TestCase {
 
 
     public void testConstructor() {
-        assertTrue(d.size() == 3);
+        assertEquals(3, d.size());
         d.clear();
-        assertTrue(d.size() == 0);
+        assertEquals(0, d.size());
         d.clear();
-        assertTrue(d.size() == 0);
+        assertEquals(0, d.size());
     }
 
 
     public void testConstructor2() {
         Digest dd=new Digest(3);
-        assertEquals(dd.size(), 0);
+        assertEquals(0, dd.size());
     }
 
 
@@ -126,29 +126,29 @@ public class DigestTest extends TestCase {
 
     public void testResetAt() {
         d.resetAt(a1);
-        assertTrue(d.lowSeqnoAt(a1) == 0);
-        assertTrue(d.highSeqnoAt(a1) == 0);
-        assertTrue(d.highSeqnoSeenAt(a1) == -1);
+        assertEquals(0, d.lowSeqnoAt(a1));
+        assertEquals(0, d.highSeqnoAt(a1));
+        assertEquals(d.highSeqnoSeenAt(a1), -1);
     }
 
 
     public void testLowSeqnoAt() {
-        assertTrue(d.lowSeqnoAt(a1) == 4);
-        assertTrue(d.lowSeqnoAt(a2) == 25);
-        assertTrue(d.lowSeqnoAt(a3) == 20);
+        assertEquals(4, d.lowSeqnoAt(a1));
+        assertEquals(25, d.lowSeqnoAt(a2));
+        assertEquals(20, d.lowSeqnoAt(a3));
     }
 
 
     public void testHighSeqnoAt() {
-        assertTrue(d.highSeqnoAt(a1) == 500);
-        assertTrue(d.highSeqnoAt(a2) == 26);
-        assertTrue(d.highSeqnoAt(a3) == 25);
+        assertEquals(500, d.highSeqnoAt(a1));
+        assertEquals(26, d.highSeqnoAt(a2));
+        assertEquals(25, d.highSeqnoAt(a3));
     }
 
     public void testHighSeqnoSeenAt() {
-        assertTrue(d.highSeqnoSeenAt(a1) == 501);
-        assertTrue(d.highSeqnoSeenAt(a2) == 26);
-        assertTrue(d.highSeqnoSeenAt(a3) == 33);
+        assertEquals(501, d.highSeqnoSeenAt(a1));
+        assertEquals(26, d.highSeqnoSeenAt(a2));
+        assertEquals(33, d.highSeqnoSeenAt(a3));
     }
 
     public void testCopy() {
@@ -170,25 +170,25 @@ public class DigestTest extends TestCase {
         // System.out.println("\ncons_d before: " + cons_d);
         cons_d.merge(d);
 
-        assertEquals(cons_d.size(), 5);
+        assertEquals(5, cons_d.size());
         //System.out.println("\ncons_d after: " + cons_d);
-        assertTrue(cons_d.lowSeqnoAt(ip1) == 1);
-        assertTrue(cons_d.lowSeqnoAt(ip2) == 2);
-        assertTrue(cons_d.lowSeqnoAt(a1) == 4);
-        assertTrue(cons_d.lowSeqnoAt(a2) == 25);
-        assertTrue(cons_d.lowSeqnoAt(a3) == 20);
+        assertEquals(1, cons_d.lowSeqnoAt(ip1));
+        assertEquals(2, cons_d.lowSeqnoAt(ip2));
+        assertEquals(4, cons_d.lowSeqnoAt(a1));
+        assertEquals(25, cons_d.lowSeqnoAt(a2));
+        assertEquals(20, cons_d.lowSeqnoAt(a3));
 
-        assertTrue(cons_d.highSeqnoAt(ip1) == 10);
-        assertTrue(cons_d.highSeqnoAt(ip2) == 20);
-        assertTrue(cons_d.highSeqnoAt(a1) == 500);
-        assertTrue(cons_d.highSeqnoAt(a2) == 26);
-        assertTrue(cons_d.highSeqnoAt(a3) == 25);
+        assertEquals(10, cons_d.highSeqnoAt(ip1));
+        assertEquals(20, cons_d.highSeqnoAt(ip2));
+        assertEquals(500, cons_d.highSeqnoAt(a1));
+        assertEquals(26, cons_d.highSeqnoAt(a2));
+        assertEquals(25, cons_d.highSeqnoAt(a3));
 
-        assertTrue(cons_d.highSeqnoSeenAt(ip1) == 10);
-        assertTrue(cons_d.highSeqnoSeenAt(ip2) == 20);
-        assertTrue(cons_d.highSeqnoSeenAt(a1) == 501);
-        assertTrue(cons_d.highSeqnoSeenAt(a2) == 26);
-        assertTrue(cons_d.highSeqnoSeenAt(a3) == 33);
+        assertEquals(10, cons_d.highSeqnoSeenAt(ip1));
+        assertEquals(20, cons_d.highSeqnoSeenAt(ip2));
+        assertEquals(501, cons_d.highSeqnoSeenAt(a1));
+        assertEquals(26, cons_d.highSeqnoSeenAt(a2));
+        assertEquals(33, cons_d.highSeqnoSeenAt(a3));
     }
 
 
@@ -200,20 +200,20 @@ public class DigestTest extends TestCase {
         //System.out.println("new_: " + new_d);
         d.merge(new_d);
 
-        assertEquals(d.size(), 3);
+        assertEquals(3, d.size());
         //System.out.println("d after: " + d);
 
-        assertTrue(d.lowSeqnoAt(a1) == 4);  // low_seqno should *not* have changed
-        assertTrue(d.highSeqnoAt(a1) == 500);  // high_seqno should *not* have changed
-        assertTrue(d.highSeqnoSeenAt(a1) == 501);  // high_seqno_seen should *not* have changed
+        assertEquals(4, d.lowSeqnoAt(a1));  // low_seqno should *not* have changed
+        assertEquals(500, d.highSeqnoAt(a1));  // high_seqno should *not* have changed
+        assertEquals(501, d.highSeqnoSeenAt(a1));  // high_seqno_seen should *not* have changed
 
-        assertTrue(d.lowSeqnoAt(a2) == 25);  // low_seqno should *not* have changed
-        assertTrue(d.highSeqnoAt(a2) == 26);  // high_seqno should *not* have changed
-        assertTrue(d.highSeqnoSeenAt(a2) == 26);  // high_seqno_seen should *not* have changed
+        assertEquals(25, d.lowSeqnoAt(a2));  // low_seqno should *not* have changed
+        assertEquals(26, d.highSeqnoAt(a2));  // high_seqno should *not* have changed
+        assertEquals(26, d.highSeqnoSeenAt(a2));  // high_seqno_seen should *not* have changed
 
-        assertTrue(d.lowSeqnoAt(a3) == 18);  // low_seqno should *not* have changed
-        assertTrue(d.highSeqnoAt(a3) == 28);  // high_seqno should *not* have changed
-        assertTrue(d.highSeqnoSeenAt(a3) == 35);  // high_seqno_seen should *not* have changed
+        assertEquals(18, d.lowSeqnoAt(a3));  // low_seqno should *not* have changed
+        assertEquals(28, d.highSeqnoAt(a3));  // high_seqno should *not* have changed
+        assertEquals(35, d.highSeqnoSeenAt(a3));  // high_seqno_seen should *not* have changed
     }
 
 
@@ -273,8 +273,7 @@ public class DigestTest extends TestCase {
 
 
     public static Test suite() {
-        TestSuite s=new TestSuite(DigestTest.class);
-        return s;
+        return new TestSuite(DigestTest.class);
     }
 
     public static void main(String[] args) {
