@@ -1,17 +1,15 @@
 package org.jgroups.tests;
 
+import EDU.oswego.cs.dl.util.concurrent.ReentrantLock;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
-import EDU.oswego.cs.dl.util.concurrent.ReentrantLock;
-import EDU.oswego.cs.dl.util.concurrent.Mutex;
-import EDU.oswego.cs.dl.util.concurrent.Semaphore;
 
 
 /**
  * Tests the ReentrantLock
  * @author Bela Ban
- * @version $Id: ReentrantLockTest.java,v 1.1 2006/08/31 14:08:32 belaban Exp $
+ * @version $Id: ReentrantLockTest.java,v 1.2 2006/08/31 14:08:49 belaban Exp $
  */
 public class ReentrantLockTest extends TestCase {
     ReentrantLock lock;
