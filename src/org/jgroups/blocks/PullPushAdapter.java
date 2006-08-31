@@ -1,4 +1,4 @@
-// $Id: PullPushAdapter.java,v 1.20 2006/07/28 19:46:31 vlada Exp $
+// $Id: PullPushAdapter.java,v 1.21 2006/08/31 11:13:17 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -68,6 +68,16 @@ public class PullPushAdapter implements Runnable, ChannelListener {
         addMembershipListener(ml);
         start();
     }
+
+
+    public PullPushAdapter(Transport transport, MessageListener l, MembershipListener ml, boolean start) {
+        this.transport=transport;
+        setListener(l);
+        addMembershipListener(ml);
+        if(start)
+            start();
+    }
+
 
 
     public Transport getTransport() {
