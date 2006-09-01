@@ -2,14 +2,14 @@
 <!--
   Sample file that defines a number of stacks, used by the multiplexer
   Author: Bela Ban
-  Version: $Id: stacks.xml,v 1.7 2006/08/30 16:06:41 belaban Exp $
+  Version: $Id: stacks.xml,v 1.8 2006/09/01 07:44:15 belaban Exp $
 -->
 <protocol_stacks>
-    <stack name="fc-fast-minimalthreads"
+    <stack name="udp"
            description="Default: IP multicast based stack, with flow control and message bundling">
         <config>
-            <UDP bind_addr="${bind.address:localhost}"
-                 mcast_port="${jboss.partition.udpPort:45566}"
+            <UDP
+                 mcast_port="${jboss.partition.udpPort:45588}"
                  mcast_addr="${jboss.partition.udpGroup:228.10.10.10}"
                  tos="8"
                  ucast_recv_buf_size="20000000"
@@ -22,7 +22,7 @@
                  max_bundle_timeout="30"
                  use_incoming_packet_handler="true"
                  use_outgoing_packet_handler="false"
-                 ip_ttl="2"
+                 ip_ttl="${jboss.mcast.ip.ttl:2}"
                  down_thread="false" up_thread="false"
                  enable_bundling="true"/>
             <PING timeout="2000"
@@ -51,20 +51,21 @@
             <FRAG2 frag_size="60000" down_thread="false" up_thread="false"/>
             <pbcast.STREAMING_STATE_TRANSFER down_thread="false" up_thread="false"
                                              use_flush="true" use_reading_thread="true"/>
+            <!-- pbcast.STATE_TRANSFER down_thread="false" up_thread="false" use_flush="false"/ -->
             <pbcast.FLUSH down_thread="false" up_thread="false"/>
         </config>
     </stack>
 
 
 
-    <stack name="fc-fast-minimalthreads-sync"
+    <stack name="udp-sync"
            description="IP multicast based stack, without flow control and without message bundling. This should be used
-           instead of fc-fast-minimalthreads if (1) synchronous calls are used and (2) the message volume (rate and size)
+           instead of udp if (1) synchronous calls are used and (2) the message volume (rate and size)
             is not that large. Don't use this configuration if you send messages at a high sustained rate, or you might
             run out of memory">
         <config>
-            <UDP bind_addr="${bind.address:localhost}"
-                 mcast_port="${jboss.partition.udpPort:56677}"
+            <UDP
+                 mcast_port="${jboss.partition.udpPort:45599}"
                  mcast_addr="${jboss.partition.udpGroup:229.10.10.10}"
                  tos="8"
                  ucast_recv_buf_size="20000000"
@@ -77,7 +78,7 @@
                  max_bundle_timeout="30"
                  use_incoming_packet_handler="true"
                  use_outgoing_packet_handler="false"
-                 ip_ttl="2"
+                 ip_ttl="${jboss.mcast.ip.ttl:2}"
                  down_thread="false" up_thread="false"
                  enable_bundling="false"/>
             <PING timeout="2000"
@@ -104,6 +105,7 @@
             <FRAG2 frag_size="60000" down_thread="false" up_thread="false"/>
             <pbcast.STREAMING_STATE_TRANSFER down_thread="false" up_thread="false"
                                              use_flush="true" use_reading_thread="true"/>
+            <!-- pbcast.STATE_TRANSFER down_thread="false" up_thread="false" use_flush="false"/ -->
             <pbcast.FLUSH down_thread="false" up_thread="false"/>
         </config>
     </stack>
@@ -113,7 +115,7 @@
            description="TCP based stack, with flow control and message bundling. This is usually used when IP
            multicasting cannot be used in a network, e.g. because it is disabled (routers discard multicast)">
         <config>
-            <TCP_NIO bind_addr="${bind.address:localhost}"
+            <TCP_NIO
                      recv_buf_size="20000000"
                      send_buf_size="640000"
                      loopback="false"
@@ -127,11 +129,11 @@
                      start_port="7800"
                      use_send_queues="false"
                      sock_conn_timeout="300" skip_suspected_members="true"
-                     reader_threads="3"
-                     writer_threads="3"
-                     processor_threads="3"
-                     processor_minThreads="3"
-                     processor_maxThreads="3"
+                     reader_threads="8"
+                     writer_threads="8"
+                     processor_threads="8"
+                     processor_minThreads="8"
+                     processor_maxThreads="8"
                      processor_queueSize="100"
                      processor_keepAliveTime="-1"/>
             <TCPPING timeout="3000"
@@ -160,6 +162,7 @@
             <FRAG2 frag_size="60000" down_thread="false" up_thread="false"/>
             <pbcast.STREAMING_STATE_TRANSFER down_thread="false" up_thread="false"
                                              use_flush="true" use_reading_thread="true"/>
+            <!-- pbcast.STATE_TRANSFER down_thread="false" up_thread="false" use_flush="false"/ -->
             <pbcast.FLUSH down_thread="false" up_thread="false"/>
         </config>
     </stack>
@@ -171,7 +174,7 @@
            configuration should be used instead of tcp when (1) synchronous calls are used and (2) the message volume
            (rate and size) is not that large">
         <config>
-            <TCP_NIO bind_addr="${bind.address:localhost}"
+            <TCP_NIO
                      recv_buf_size="20000000"
                      send_buf_size="640000"
                      loopback="false"
@@ -185,11 +188,11 @@
                      start_port="7900"
                      use_send_queues="false"
                      sock_conn_timeout="300" skip_suspected_members="true"
-                     reader_threads="3"
-                     writer_threads="3"
-                     processor_threads="3"
-                     processor_minThreads="3"
-                     processor_maxThreads="3"
+                     reader_threads="8"
+                     writer_threads="8"
+                     processor_threads="8"
+                     processor_minThreads="8"
+                     processor_maxThreads="8"
                      processor_queueSize="100"
                      processor_keepAliveTime="-1"/>
             <TCPPING timeout="3000"
@@ -215,6 +218,7 @@
                         view_bundling="true"/>
             <pbcast.STREAMING_STATE_TRANSFER down_thread="false" up_thread="false"
                                              use_flush="true" use_reading_thread="true"/>
+            <!-- pbcast.STATE_TRANSFER down_thread="false" up_thread="false" use_flush="false"/ -->
             <pbcast.FLUSH down_thread="false" up_thread="false"/>
         </config>
     </stack>

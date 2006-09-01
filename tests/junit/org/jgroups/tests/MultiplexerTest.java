@@ -14,13 +14,13 @@ import java.io.*;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.17 2006/08/29 11:33:12 belaban Exp $
+ * @version $Id: MultiplexerTest.java,v 1.18 2006/09/01 07:44:15 belaban Exp $
  */
 public class MultiplexerTest extends TestCase {
     private Cache c1, c2, c1_repl, c2_repl;
     private Channel ch1, ch2, ch1_repl, ch2_repl;
     static final String CFG="stacks.xml";
-    static final String STACK_NAME="fc-fast-minimalthreads";
+    static final String STACK_NAME="udp";
     JChannelFactory factory, factory2;
 
     public MultiplexerTest(String name) {

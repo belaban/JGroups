@@ -11,7 +11,7 @@ import java.util.Vector;
 /**
  * Tests cluster method invocations on disconnected and connected services
  * @author Bela Ban
- * @version $Id: RpcDispatcherMultiplexerTest.java,v 1.4 2006/07/11 11:52:48 belaban Exp $
+ * @version $Id: RpcDispatcherMultiplexerTest.java,v 1.5 2006/09/01 07:44:16 belaban Exp $
  */
 public class RpcDispatcherMultiplexerTest implements MembershipListener, RequestHandler, ChannelListener {
     Channel           channel;
@@ -43,11 +43,11 @@ public class RpcDispatcherMultiplexerTest implements MembershipListener, Request
         else
             this.props=props;
         factory.setMultiplexerConfig(this.props);
-        channel=factory.createMultiplexerChannel("fc-fast-minimalthreads", "MyId");
+        channel=factory.createMultiplexerChannel("udp", "MyId");
 
         if(!spurious_channel_created) {
             // create one additional channel so that we don't close the JGroups channel when disconnecting from MuxChannel !
-            Channel tmp=factory.createMultiplexerChannel("fc-fast-minimalthreads", "tempChannel");
+            Channel tmp=factory.createMultiplexerChannel("udp", "tempChannel");
             tmp.connect("bla");
             spurious_channel_created=true;
         }

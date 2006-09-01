@@ -5,7 +5,7 @@ import org.jgroups.JChannelFactory;
 
 /**
  * @author Bela Ban
- * @version $Id: DrawMultiplexer.java,v 1.1 2006/07/11 11:54:49 belaban Exp $
+ * @version $Id: DrawMultiplexer.java,v 1.2 2006/09/01 07:44:15 belaban Exp $
  */
 public class DrawMultiplexer {
     JChannelFactory factory;
@@ -29,10 +29,10 @@ public class DrawMultiplexer {
         factory.setMultiplexerConfig(props);
 
         final Channel ch1, ch2, ch3;
-        ch1=factory.createMultiplexerChannel("fc-fast-minimalthreads", "id-1");
+        ch1=factory.createMultiplexerChannel("udp", "id-1");
         ch1.connect("bela");
 
-        ch2=factory.createMultiplexerChannel("fc-fast-minimalthreads", "id-2");
+        ch2=factory.createMultiplexerChannel("udp", "id-2");
         ch2.connect("ban");
 
         // ch3=factory.createMultiplexerChannel("tcp", "TCP-based");
