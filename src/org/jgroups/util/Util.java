@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.86 2006/08/28 08:29:37 belaban Exp $
+// $Id: Util.java,v 1.87 2006/09/01 09:45:54 belaban Exp $
 
 package org.jgroups.util;
 
@@ -26,7 +26,7 @@ import java.util.List;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.86 2006/08/28 08:29:37 belaban Exp $
+ * @version $Id: Util.java,v 1.87 2006/09/01 09:45:54 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -53,6 +53,8 @@ public class Util {
     public static final String DIAG_GROUP="DIAG_GROUP-BELA-322649"; // unique
     static boolean resolve_dns=false;
     static final String IGNORE_BIND_ADDRESS_PROPERTY="ignore.bind.address";
+    static final String JBOSS_MARSHALLING_COMPAT="jboss.marshalling.compat";
+    static boolean      JBOSS_COMPAT=false;
 
     /**
      * Global thread group to which all (most!) JGroups threads belong
@@ -80,6 +82,12 @@ public class Util {
         f=NumberFormat.getNumberInstance();
         f.setGroupingUsed(false);
         f.setMaximumFractionDigits(2);
+
+        try {
+            JBOSS_COMPAT=Boolean.valueOf(System.getProperty(JBOSS_MARSHALLING_COMPAT, "false")).booleanValue();
+        }
+        catch (SecurityException ex){
+        }
 
         PRIMITIVE_TYPES.put(Boolean.class, new Byte(TYPE_BOOLEAN));
         PRIMITIVE_TYPES.put(Byte.class, new Byte(TYPE_BYTE));
@@ -110,12 +118,16 @@ public class Util {
      */
     public static Object objectFromByteBuffer(byte[] buffer) throws Exception {
         if(buffer == null) return null;
+        if(JBOSS_COMPAT)
+            return oldObjectFromByteBuffer(buffer);
         return objectFromByteBuffer(buffer, 0, buffer.length);
     }
 
 
     public static Object objectFromByteBuffer(byte[] buffer, int offset, int length) throws Exception {
         if(buffer == null) return null;
+        if(JBOSS_COMPAT)
+            return oldObjectFromByteBuffer(buffer, offset, length);
         Object retval=null;
         InputStream in=null;
         ByteArrayInputStream in_stream=new ByteArrayInputStream(buffer, offset, length);
@@ -254,6 +266,72 @@ public class Util {
         }
         return result;
     }
+
+
+
+
+    /** For backward compatibility in JBoss 4.0.2 */
+    public static Object oldObjectFromByteBuffer(byte[] buffer) throws Exception {
+        if(buffer == null) return null;
+        return oldObjectFromByteBuffer(buffer, 0, buffer.length);
+    }
+
+    public static Object oldObjectFromByteBuffer(byte[] buffer, int offset, int length) throws Exception {
+        if(buffer == null) return null;
+        Object retval=null;
+
+        try {  // to read the object as an Externalizable
+            ByteArrayInputStream in_stream=new ByteArrayInputStream(buffer, offset, length);
+            ObjectInputStream in=new ContextObjectInputStream(in_stream); // changed Nov 29 2004 (bela)
+            retval=in.readObject();
+            in.close();
+        }
+        catch(StreamCorruptedException sce) {
+            try {  // is it Streamable?
+                ByteArrayInputStream in_stream=new ByteArrayInputStream(buffer, offset, length);
+                DataInputStream in=new DataInputStream(in_stream);
+                retval=readGenericStreamable(in);
+                in.close();
+            }
+            catch(Exception ee) {
+                IOException tmp=new IOException("unmarshalling failed");
+                tmp.initCause(ee);
+                throw tmp;
+            }
+        }
+
+        if(retval == null)
+            return null;
+        return retval;
+    }
+
+
+
+
+    /**
+     * Serializes/Streams an object into a byte buffer.
+     * The object has to implement interface Serializable or Externalizable
+     * or Streamable.  Only Streamable objects are interoperable w/ jgroups-me
+     */
+    public static byte[] oldObjectToByteBuffer(Object obj) throws Exception {
+        byte[] result=null;
+        synchronized(out_stream) {
+            out_stream.reset();
+            if(obj instanceof Streamable) {  // use Streamable if we can
+                DataOutputStream out=new DataOutputStream(out_stream);
+                writeGenericStreamable((Streamable)obj, out);
+                out.close();
+            }
+            else {
+                ObjectOutputStream out=new ObjectOutputStream(out_stream);
+                out.writeObject(obj);
+                out.close();
+            }
+            result=out_stream.toByteArray();
+        }
+        return result;
+    }
+
 
 
     public static Streamable streamableFromByteBuffer(Class cl, byte[] buffer) throws Exception {
