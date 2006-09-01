@@ -1,4 +1,4 @@
-// $Id: DistributedHashtable.java,v 1.25 2006/08/14 10:24:41 belaban Exp $
+// $Id: DistributedHashtable.java,v 1.26 2006/09/01 14:40:26 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -35,7 +35,7 @@ import java.util.*;
  * initial state (using the state exchange funclet <code>StateExchangeFunclet</code>.
  * @author Bela Ban
  * @author <a href="mailto:aolias@yahoo.com">Alfonso Olias-Sanz</a>
- * @version $Id: DistributedHashtable.java,v 1.25 2006/08/14 10:24:41 belaban Exp $
+ * @version $Id: DistributedHashtable.java,v 1.26 2006/09/01 14:40:26 belaban Exp $
  */
 public class DistributedHashtable extends Hashtable implements MessageListener, MembershipListener {
 
@@ -77,7 +77,8 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
      * Creates a DistributedHashtable
      * @param groupname The name of the group to join
      * @param factory The ChannelFactory which will be used to create a channel
-     * @param properties The property string to be used to define the channel
+     * @param properties The property string to be used to define the channel. This will override the properties of
+     * the factory. If null, then the factory properties will be used
      * @param state_timeout The time to wait until state is retrieved in milliseconds. A value of 0 means wait forever.
      */
     public DistributedHashtable(String groupname, ChannelFactory factory,
@@ -85,7 +86,12 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
             throws ChannelException {
         this.groupname=groupname;
         initSignatures();
-        channel=factory != null ? factory.createChannel(properties) : new JChannel(properties);
+        if(factory != null) {
+            channel=properties != null? factory.createChannel(properties) : factory.createChannel();
+        }
+        else {
+            channel=new JChannel(properties);
+        }
         disp=new RpcDispatcher(channel, this, this, this);
         channel.connect(groupname);
         start(state_timeout);
@@ -96,7 +102,8 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
      * persistemt storage using the {@link PersistenceManager}.
      * @param groupname Name of the group to join
      * @param factory Instance of a ChannelFactory to create the channel
-     * @param properties Protocol stack properties
+     * @param properties Protocol stack properties. This will override the properties of the factory. If
+     * null, then the factory properties will be used
      * @param persistent Whether the contents should be persisted
      * @param state_timeout Max number of milliseconds to wait until state is
      * retrieved
@@ -107,7 +114,12 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
         this.groupname=groupname;
         this.persistent=persistent;
         initSignatures();
-        channel=factory != null ? factory.createChannel(properties) : new JChannel(properties);
+        if(factory != null) {
+            channel=properties != null? factory.createChannel(properties) : factory.createChannel();
+        }
+        else {
+            channel=new JChannel(properties);
+        }
         disp=new RpcDispatcher(channel, this, this, this);
         channel.connect(groupname);
         start(state_timeout);

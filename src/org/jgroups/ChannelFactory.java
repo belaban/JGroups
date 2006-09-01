@@ -1,4 +1,4 @@
-// $Id: ChannelFactory.java,v 1.8 2006/04/13 08:45:42 belaban Exp $
+// $Id: ChannelFactory.java,v 1.9 2006/09/01 14:40:27 belaban Exp $
 
 package org.jgroups;
 
@@ -54,4 +54,7 @@ public interface ChannelFactory {
     Channel createMultiplexerChannel(String stack_name, String id) throws Exception;
 
     Channel createChannel(Object props) throws ChannelException;
+
+    /** Create a new channel with the properties defined in the factory */
+    Channel createChannel() throws ChannelException;
 }
