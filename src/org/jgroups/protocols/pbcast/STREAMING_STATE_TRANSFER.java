@@ -1,5 +1,7 @@
 package org.jgroups.protocols.pbcast;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -897,7 +899,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
       {
          super();
          this.inputStreamOwner = inputStreamOwner;
-         this.delegate = inputStreamOwner.getInputStream();
+         this.delegate = new BufferedInputStream(inputStreamOwner.getInputStream());
          this.channelOwner = stack.getChannel();
       }
 
@@ -967,7 +969,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
       {
          super();
          this.outputStreamOwner = outputStreamOwner;
-         this.delegate = outputStreamOwner.getOutputStream();
+         this.delegate = new BufferedOutputStream(outputStreamOwner.getOutputStream());
       }
 
       public void close() throws IOException
