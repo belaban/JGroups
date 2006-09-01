@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.87 2006/09/01 09:45:54 belaban Exp $
+// $Id: Util.java,v 1.88 2006/09/01 14:45:07 belaban Exp $
 
 package org.jgroups.util;
 
@@ -26,7 +26,7 @@ import java.util.List;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.87 2006/09/01 09:45:54 belaban Exp $
+ * @version $Id: Util.java,v 1.88 2006/09/01 14:45:07 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -53,7 +53,7 @@ public class Util {
     public static final String DIAG_GROUP="DIAG_GROUP-BELA-322649"; // unique
     static boolean resolve_dns=false;
     static final String IGNORE_BIND_ADDRESS_PROPERTY="ignore.bind.address";
-    static final String JBOSS_MARSHALLING_COMPAT="jboss.marshalling.compat";
+    static final String JBOSS_MARSHALLING_COMPAT="jboss.marshalling.compatible";
     static boolean      JBOSS_COMPAT=false;
 
     /**
