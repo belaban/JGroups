@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.89 2006/09/01 19:35:49 bstansberry Exp $
+// $Id: Util.java,v 1.90 2006/09/02 13:13:31 belaban Exp $
 
 package org.jgroups.util;
 
@@ -22,11 +22,13 @@ import java.text.NumberFormat;
 import java.util.*;
 import java.util.List;
 
+import EDU.oswego.cs.dl.util.concurrent.Sync;
+
 
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.89 2006/09/01 19:35:49 bstansberry Exp $
+ * @version $Id: Util.java,v 1.90 2006/09/02 13:13:31 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -110,6 +112,22 @@ public class Util {
         if(out != null) {
             try {out.close();} catch(IOException e) {}
         }
+    }
+
+
+    public static boolean acquire(Sync sync) {
+        try {
+            sync.acquire();
+            return true;
+        }
+        catch(InterruptedException e) {
+            return false;
+        }
+    }
+
+
+    public static void release(Sync sync) {
+        sync.release();
     }
 
 
@@ -1611,65 +1629,65 @@ public class Util {
 
          return tmp;
      }
-    
+
     public static int parseInt(Properties props,String property,int defaultValue)
     {
-    	int result = defaultValue;
-    	String str=props.getProperty(property);
+        int result = defaultValue;
+        String str=props.getProperty(property);
         if(str != null) {
             result=Integer.parseInt(str);
             props.remove(property);
         }
         return result;
     }
-    
-    
+
+
     public static long parseLong(Properties props,String property,long defaultValue)
     {
-    	long result = defaultValue;
-    	String str=props.getProperty(property);
+        long result = defaultValue;
+        String str=props.getProperty(property);
         if(str != null) {
             result=Integer.parseInt(str);
             props.remove(property);
         }
         return result;
     }
-    
+
     public static boolean parseBoolean(Properties props,String property,boolean defaultValue)
     {
-    	boolean result = defaultValue;
-    	String str=props.getProperty(property);
+        boolean result = defaultValue;
+        String str=props.getProperty(property);
         if(str != null) {
             result=str.equalsIgnoreCase("true");
             props.remove(property);
         }
         return result;
     }
-    
+
     public static InetAddress parseBindAddress(Properties props, String property)
-			throws UnknownHostException {
-		String tmp = null;
-		String str = null;
-		InetAddress bind_addr = null;
-		// PropertyPermission not granted if running in an untrusted environment
-		// with JNLP.
-		try {
-			tmp = System.getProperty("bind.address");
-			if (Util.isBindAddressPropertyIgnored()) {
-				tmp = null;
-			}
-		} catch (SecurityException ex) {
-		}
-		if (tmp != null)
-			str = tmp;
-		else
-			str = props.getProperty(property);
-		if (str != null) {
-			bind_addr = InetAddress.getByName(str);
-			props.remove(property);
-		}
-		return bind_addr;
-	}
+            throws UnknownHostException {
+        String tmp = null;
+        String str = null;
+        InetAddress bind_addr = null;
+        // PropertyPermission not granted if running in an untrusted environment
+        // with JNLP.
+        try {
+            tmp = System.getProperty("bind.address");
+            if (Util.isBindAddressPropertyIgnored()) {
+                tmp = null;
+            }
+        } catch (SecurityException ex) {
+        }
+        if (tmp != null)
+            str = tmp;
+        else
+            str = props.getProperty(property);
+        if (str != null) {
+            bind_addr = InetAddress.getByName(str);
+            props.remove(property);
+        }
+        return bind_addr;
+    }
 
 
 
@@ -1939,7 +1957,7 @@ public class Util {
 
     }
 
-    
+
     public static MBeanServer getMBeanServer() {
         ArrayList servers=MBeanServerFactory.findMBeanServer(null);
         if(servers == null || servers.size() == 0)
