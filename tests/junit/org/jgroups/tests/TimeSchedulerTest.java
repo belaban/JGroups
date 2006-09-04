@@ -1,4 +1,4 @@
-// $Id: TimeSchedulerTest.java,v 1.8 2006/09/04 07:14:09 belaban Exp $
+// $Id: TimeSchedulerTest.java,v 1.9 2006/09/04 07:32:26 belaban Exp $
 package org.jgroups.tests;
 
 
@@ -47,7 +47,7 @@ public class TimeSchedulerTest extends TestCase {
     }
 
 
-    static class ImmediateTask implements TimeScheduler.Task {
+    static private class ImmediateTask implements TimeScheduler.Task {
         Promise p;
         boolean executed=false;
 
