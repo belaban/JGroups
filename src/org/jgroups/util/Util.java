@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.90 2006/09/02 13:13:31 belaban Exp $
+// $Id: Util.java,v 1.91 2006/09/04 12:36:32 belaban Exp $
 
 package org.jgroups.util;
 
@@ -28,7 +28,7 @@ import EDU.oswego.cs.dl.util.concurrent.Sync;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.90 2006/09/02 13:13:31 belaban Exp $
+ * @version $Id: Util.java,v 1.91 2006/09/04 12:36:32 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -218,10 +218,10 @@ public class Util {
      * or Streamable.  Only Streamable objects are interoperable w/ jgroups-me
      */
     public static byte[] objectToByteBuffer(Object obj) throws Exception {
-       
+
         if(JBOSS_COMPAT)
             return oldObjectToByteBuffer(obj);
-        
+
         byte[] result=null;
 
         synchronized(out_stream) {
@@ -1060,6 +1060,11 @@ public class Util {
     }
 
     public static String printBytes(long bytes) {
+        return printBytes((double)bytes);
+    }
+
+
+    public static String printBytes(double bytes) {
         double tmp;
 
         if(bytes < 1000)
