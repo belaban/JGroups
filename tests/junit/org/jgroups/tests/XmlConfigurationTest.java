@@ -28,30 +28,15 @@ public class XmlConfigurationTest extends TestCase {
             assertTrue("Successfully parsed a valid XML configuration file.", true);
         }
         catch(Exception x) {
-            assertTrue(x.getMessage(), false);
+            fail(x.getMessage());
         }
     }
 
-    /* We currently have no inherited property file to test
-    public void testInherited()
-    {
-        try
-        {
-            XmlConfigurator conf = XmlConfigurator.getInstance(new java.net.URL("http://www.filip.net/jgroups/jgroups-protocol-inherited.xml"));
-            if(log.isDebugEnabled()) log.debug("XmlConfigurationTest",conf.getProtocolStackString());
-            assertTrue("Successfully parsed a valid XML configuration file that inherits another one.",true);
-        }
-        catch ( Exception x )
-        {
-            assertTrue(x.getMessage(),false);
-        }
-    }
-    */
 
     
     public static void main(String[] args) {
         String[] testCaseName={XmlConfigurationTest.class.getName()};
         junit.swingui.TestRunner.main(testCaseName);
-    } //public static void main(String[] args)
+    }
 
-} //public class XmlConfigurationTest extends TestCase
+}
