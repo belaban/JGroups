@@ -1,4 +1,4 @@
-// $Id: TimeSchedulerTest.java,v 1.7 2005/11/09 20:42:28 belaban Exp $
+// $Id: TimeSchedulerTest.java,v 1.8 2006/09/04 07:14:09 belaban Exp $
 package org.jgroups.tests;
 
 
@@ -8,6 +8,8 @@ import junit.framework.TestSuite;
 import org.jgroups.stack.Interval;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
+import org.jgroups.util.Promise;
+import org.jgroups.TimeoutException;
 
 import java.util.HashMap;
 
@@ -45,6 +47,43 @@ public class TimeSchedulerTest extends TestCase {
     }
 
 
+    static class ImmediateTask implements TimeScheduler.Task {
+        Promise p;
+        boolean executed=false;
+
+        public ImmediateTask(Promise p) {
+            this.p=p;
+        }
+
+        public boolean cancelled() {
+            return executed;
+        }
+
+        public long nextInterval() {
+            return 0;
+        }
+
+        public void run() {
+            p.setResult(Boolean.TRUE);
+            executed=true;
+        }
+    }
+
+    public void testImmediateExecution() {
+        Promise p=new Promise();
+        ImmediateTask task=new ImmediateTask(p);
+        timer.add(task);
+        try {
+            long start=System.currentTimeMillis(), stop;
+            p.getResultWithTimeout(5);
+            stop=System.currentTimeMillis();
+            System.out.println("task took " + (stop-start) + "ms");
+        }
+        catch(TimeoutException e) {
+            fail("ran into timeout - task should have executed immediately");
+        }
+    }
+
 //    class MyTask implements TimeScheduler.Task {
 //        String name;
 //        long timeout=0;
@@ -77,7 +116,7 @@ public class TimeSchedulerTest extends TestCase {
 //    }
 
 
-    class MyTask implements TimeScheduler.Task {
+    static class MyTask implements TimeScheduler.Task {
         boolean done=false;
         private long timeout=0;
 
@@ -99,7 +138,7 @@ public class TimeSchedulerTest extends TestCase {
         }
     }
 
-    class StressTask implements TimeScheduler.Task {
+    static class StressTask implements TimeScheduler.Task {
         boolean cancelled=false;
 
         public void cancel() {
@@ -145,11 +184,11 @@ public class TimeSchedulerTest extends TestCase {
         timer.add(new MyTask(500));
         size=timer.size();
         System.out.println("queue size=" + size);
-        assertEquals(size, 1);
+        assertEquals(1, size);
         Util.sleep(1000);
         size=timer.size();
         System.out.println("queue size=" + size);
-        assertEquals(size, 0);
+        assertEquals(0, size);
 
         Util.sleep(1500);
         System.out.println(System.currentTimeMillis() + ": adding task");
@@ -163,12 +202,12 @@ public class TimeSchedulerTest extends TestCase {
 
         size=timer.size();
         System.out.println("queue size=" + size);
-        assertEquals(size, 3);
+        assertEquals(3, size);
 
         Util.sleep(1000);
         size=timer.size();
         System.out.println("queue size=" + size);
-        assertEquals(size, 0);
+        assertEquals(0, size);
     }
 
 
@@ -225,7 +264,7 @@ public class TimeSchedulerTest extends TestCase {
                     System.out.println(i + ": " + entry);
             }
         }
-        assertTrue(num_non_correct_entries == 0);
+        assertEquals(0, num_non_correct_entries);
     }
 
 
