@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.91 2006/09/04 12:36:32 belaban Exp $
+// $Id: Util.java,v 1.92 2006/09/04 12:38:30 belaban Exp $
 
 package org.jgroups.util;
 
@@ -28,7 +28,7 @@ import EDU.oswego.cs.dl.util.concurrent.Sync;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.91 2006/09/04 12:36:32 belaban Exp $
+ * @version $Id: Util.java,v 1.92 2006/09/04 12:38:30 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -1060,7 +1060,22 @@ public class Util {
     }
 
     public static String printBytes(long bytes) {
-        return printBytes((double)bytes);
+        double tmp;
+
+        if(bytes < 1000)
+            return bytes + "b";
+        if(bytes < 1000000) {
+            tmp=bytes / 1000.0;
+            return f.format(tmp) + "KB";
+        }
+        if(bytes < 1000000000) {
+            tmp=bytes / 1000000.0;
+            return f.format(tmp) + "MB";
+        }
+        else {
+            tmp=bytes / 1000000000.0;
+            return f.format(tmp) + "GB";
+        }
     }
 
 
