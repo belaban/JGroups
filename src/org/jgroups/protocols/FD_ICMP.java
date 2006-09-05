@@ -1,6 +1,7 @@
 package org.jgroups.protocols;
 
 import org.jgroups.Event;
+import org.jgroups.Global;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
 
@@ -19,7 +20,7 @@ import java.util.Properties;
  * and see whether it works ! This is obviously done in JDK 5, so unless an echo service is configured to run, this
  * won't work...
  * @author Bela Ban
- * @version $Id: FD_ICMP.java,v 1.3 2006/07/14 15:49:14 belaban Exp $
+ * @version $Id: FD_ICMP.java,v 1.4 2006/09/05 11:16:25 belaban Exp $
  */
 public class FD_ICMP extends FD {
 
@@ -41,22 +42,9 @@ public class FD_ICMP extends FD {
 
 
     public boolean setProperties(Properties props) {
-        String str, tmp=null;
-
-        // PropertyPermission not granted if running in an untrusted environment with JNLP.
-        try {
-            tmp=System.getProperty("bind.address");
-            if(Util.isBindAddressPropertyIgnored()) {
-                tmp=null;
-            }
-        }
-        catch (SecurityException ex){
-        }
-
-        if(tmp != null)
-            str=tmp;
-        else
-            str=props.getProperty("bind_addr");
+        boolean ignore_systemprops=Util.isBindAddressPropertyIgnored();
+        String str=Util.getProperty(new String[]{Global.BIND_ADDR, Global.BIND_ADDR_OLD}, props, "bind_addr",
+                             ignore_systemprops, null);
         if(str != null) {
             try {
                 bind_addr=InetAddress.getByName(str);
