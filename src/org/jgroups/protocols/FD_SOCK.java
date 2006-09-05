@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.43 2006/09/05 11:17:39 belaban Exp $
+// $Id: FD_SOCK.java,v 1.44 2006/09/05 11:20:56 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -100,7 +100,7 @@ public class FD_SOCK extends Protocol implements Runnable {
     }
 
     public boolean setProperties(Properties props) {
-        String str, tmp=null;
+        String str;
 
         super.setProperties(props);
         str=props.getProperty("get_cache_timeout");
