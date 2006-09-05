@@ -1,4 +1,4 @@
-// $Id: UtilTest.java,v 1.14 2006/09/05 07:44:26 belaban Exp $
+// $Id: UtilTest.java,v 1.15 2006/09/05 08:17:19 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -72,6 +72,42 @@ public class UtilTest extends TestCase {
         retval=Util.getProperty(new String[]{"name2", "name"}, props, "name2", true, null);
         assertNull(retval);
         props.setProperty("name", "Bela"); props.setProperty("key", "val");
+    }
+
+
+    public void testIgnoreBindAddress() {
+        boolean retval;
+
+        retval=Util.isBindAddressPropertyIgnored();
+        assertFalse(retval);
+
+        System.setProperty(Util.IGNORE_BIND_ADDRESS_PROPERTY, "true");
+        retval=Util.isBindAddressPropertyIgnored();
+        assertTrue(retval);
+
+        System.setProperty(Util.IGNORE_BIND_ADDRESS_PROPERTY, "true2");
+        retval=Util.isBindAddressPropertyIgnored();
+        assertFalse(retval);
+
+        System.setProperty(Util.IGNORE_BIND_ADDRESS_PROPERTY, "false");
+        retval=Util.isBindAddressPropertyIgnored();
+        assertFalse(retval);
+
+        System.clearProperty(Util.IGNORE_BIND_ADDRESS_PROPERTY);
+        System.setProperty(Util.IGNORE_BIND_ADDRESS_PROPERTY_OLD, "false");
+        retval=Util.isBindAddressPropertyIgnored();
+        assertFalse(retval);
+
+        System.clearProperty(Util.IGNORE_BIND_ADDRESS_PROPERTY);
+        System.setProperty(Util.IGNORE_BIND_ADDRESS_PROPERTY_OLD, "true");
+        retval=Util.isBindAddressPropertyIgnored();
+        assertTrue(retval);
+
+
+        System.setProperty(Util.IGNORE_BIND_ADDRESS_PROPERTY, "true");
+        System.setProperty(Util.IGNORE_BIND_ADDRESS_PROPERTY_OLD, "true");
+        retval=Util.isBindAddressPropertyIgnored();
+        assertTrue(retval);
     }
 
 
