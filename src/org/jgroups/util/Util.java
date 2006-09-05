@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.93 2006/09/04 12:54:36 belaban Exp $
+// $Id: Util.java,v 1.94 2006/09/05 07:44:25 belaban Exp $
 
 package org.jgroups.util;
 
@@ -28,7 +28,7 @@ import EDU.oswego.cs.dl.util.concurrent.Sync;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.93 2006/09/04 12:54:36 belaban Exp $
+ * @version $Id: Util.java,v 1.94 2006/09/05 07:44:25 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -1969,6 +1969,44 @@ public class Util {
         }
         return retval;
     }
+
+
+    /**
+     * Returns a value associated wither with one or more system properties, or found in the props map
+     * @param system_props
+     * @param props List of properties read from the configuration file
+     * @param prop_name The name of the property, will be removed from props if found
+     * @param ignore_sysprops If true, system properties are not used and the values will only be retrieved from
+     * props (not system_props)
+     * @param default_value Used to return a default value if the properties or system properties didn't have the value
+     * @return The value, or null if not found
+     */
+    public static String getProperty(String[] system_props, Properties props, String prop_name,
+                                     boolean ignore_sysprops, String default_value) {
+        String retval=null;
+        if(props != null && prop_name != null) {
+            retval=props.getProperty(prop_name);
+            props.remove(prop_name);
+        }
+
+        if(!ignore_sysprops) {
+            String tmp, prop;
+            if(system_props != null) {
+                for(int i=0; i < system_props.length; i++) {
+                    prop=system_props[i];
+                    if(prop != null) {
+                        tmp=System.getProperty(prop);
+                        if(tmp != null)
+                            return tmp; // system properties override config file definitions
+                    }
+                }
+            }
+        }
+        if(retval == null)
+            return default_value;
+        return retval;
+    }
+
 
 
     public static boolean isBindAddressPropertyIgnored() {

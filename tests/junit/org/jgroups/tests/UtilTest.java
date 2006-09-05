@@ -1,4 +1,4 @@
-// $Id: UtilTest.java,v 1.13 2006/08/28 08:29:37 belaban Exp $
+// $Id: UtilTest.java,v 1.14 2006/09/05 07:44:26 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -17,6 +17,7 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
+import java.util.Properties;
 
 
 public class UtilTest extends TestCase {
@@ -32,6 +33,45 @@ public class UtilTest extends TestCase {
 
     public UtilTest(String name) {
         super(name);
+    }
+
+
+    public void testGetProperty() {
+        Properties props=new Properties();
+        props.setProperty("name", "Bela");
+        props.setProperty("key", "val");
+
+        System.setProperty("name", "Michelle");
+        System.setProperty("name2", "Nicole");
+        String retval;
+
+        retval=Util.getProperty(new String[]{"name", "name2"}, props, "name", false, "Jeannette");
+        assertEquals("Michelle", retval);
+        props.setProperty("name", "Bela"); props.setProperty("key", "val");
+
+        retval=Util.getProperty(new String[]{"name2", "name"}, props, "name", false, "Jeannette");
+        assertEquals("Nicole", retval);
+        props.setProperty("name", "Bela"); props.setProperty("key", "val");
+
+        retval=Util.getProperty(new String[]{"name3", "name"}, props, "name", false, "Jeannette");
+        assertEquals("Michelle", retval);
+        props.setProperty("name", "Bela"); props.setProperty("key", "val");
+
+        retval=Util.getProperty(new String[]{"name3", "name4"}, props, "name", false, "Jeannette");
+        assertEquals("Bela", retval);
+        props.setProperty("name", "Bela"); props.setProperty("key", "val");
+
+        retval=Util.getProperty(new String[]{"name2", "name"}, props, "name", true, "Jeannette");
+        assertEquals("Bela", retval);
+        props.setProperty("name", "Bela"); props.setProperty("key", "val");
+
+        retval=Util.getProperty(new String[]{"name2", "name"}, props, "name2", true, "Jeannette");
+        assertEquals("Jeannette", retval);
+        props.setProperty("name", "Bela"); props.setProperty("key", "val");
+
+        retval=Util.getProperty(new String[]{"name2", "name"}, props, "name2", true, null);
+        assertNull(retval);
+        props.setProperty("name", "Bela"); props.setProperty("key", "val");
     }
 
 
