@@ -40,7 +40,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.69 2006/07/28 16:00:01 belaban Exp $
+ * @version $Id: TP.java,v 1.70 2006/09/05 08:38:01 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -439,25 +439,12 @@ public abstract class TP extends Protocol {
      *         properties are left over and not handled by the protocol stack
      */
     public boolean setProperties(Properties props) {
-        String str;
-        String tmp = null;
-
         super.setProperties(props);
 
-        // PropertyPermission not granted if running in an untrusted environment with JNLP.
-        try {
-            tmp=System.getProperty("bind.address");
-            if(Util.isBindAddressPropertyIgnored()) {
-                tmp=null;
-            }
-        }
-        catch (SecurityException ex){
-        }
+        boolean ignore_systemprops=Util.isBindAddressPropertyIgnored();
+        String str=Util.getProperty(new String[]{Global.BIND_ADDR, Global.BIND_ADDR_OLD}, props, "bind_addr",
+                             ignore_systemprops, null);
 
-        if(tmp != null)
-            str=tmp;
-        else
-            str=props.getProperty("bind_addr");
         if(str != null) {
             try {
                 bind_addr=InetAddress.getByName(str);
