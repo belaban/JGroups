@@ -1,10 +1,7 @@
 
 package org.jgroups.protocols;
 
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Header;
-import org.jgroups.Message;
+import org.jgroups.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Streamable;
@@ -26,7 +23,7 @@ import java.lang.reflect.Method;
  * passes SUSPECT event up the stack, otherwise discards it. Has to be placed somewhere above the FD layer and
  * below the GMS layer (receiver of the SUSPECT event). Note that SUSPECT events may be reordered by this protocol.
  * @author Bela Ban
- * @version $Id: VERIFY_SUSPECT.java,v 1.18 2006/08/26 13:26:05 belaban Exp $
+ * @version $Id: VERIFY_SUSPECT.java,v 1.19 2006/09/05 11:23:41 belaban Exp $
  */
 public class VERIFY_SUSPECT extends Protocol implements Runnable {
     private Address     local_addr=null;
@@ -48,20 +45,11 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
 
 
     public boolean setProperties(Properties props) {
-        String str=null;
-
         super.setProperties(props);
 
-        try {
-            str=System.getProperty("bind.address");
-            if(Util.isBindAddressPropertyIgnored())
-                str=null;
-        }
-        catch (SecurityException ex){
-        }
-
-        if(str == null)
-            str=props.getProperty("bind_addr");
+        boolean ignore_systemprops=Util.isBindAddressPropertyIgnored();
+        String str=Util.getProperty(new String[]{Global.BIND_ADDR, Global.BIND_ADDR_OLD}, props, "bind_addr",
+                             ignore_systemprops, null);
         if(str != null) {
             try {
                 bind_addr=InetAddress.getByName(str);
