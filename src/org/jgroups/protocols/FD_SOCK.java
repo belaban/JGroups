@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.42 2006/08/28 15:11:17 belaban Exp $
+// $Id: FD_SOCK.java,v 1.43 2006/09/05 11:17:39 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -139,20 +139,9 @@ public class FD_SOCK extends Protocol implements Runnable {
             props.remove("srv_sock_bind_addr");
         }
 
-        // PropertyPermission not granted if running in an untrusted environment with JNLP.
-        try {
-            tmp=System.getProperty("bind.address");
-            if(Util.isBindAddressPropertyIgnored()) {
-                tmp=null;
-            }
-        }
-        catch (SecurityException ex){
-        }
-
-        if(tmp != null)
-            str=tmp;
-        else
-            str=props.getProperty("bind_addr");
+        boolean ignore_systemprops=Util.isBindAddressPropertyIgnored();
+        str=Util.getProperty(new String[]{Global.BIND_ADDR, Global.BIND_ADDR_OLD}, props, "bind_addr",
+                             ignore_systemprops, null);
         if(str != null) {
             try {
                 bind_addr=InetAddress.getByName(str);
