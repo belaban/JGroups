@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.94 2006/09/05 07:44:25 belaban Exp $
+// $Id: Util.java,v 1.95 2006/09/05 08:17:19 belaban Exp $
 
 package org.jgroups.util;
 
@@ -28,7 +28,7 @@ import EDU.oswego.cs.dl.util.concurrent.Sync;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.94 2006/09/05 07:44:25 belaban Exp $
+ * @version $Id: Util.java,v 1.95 2006/09/05 08:17:19 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -54,8 +54,9 @@ public class Util {
     public static final int MAX_PORT=65535; // highest port allocatable
     public static final String DIAG_GROUP="DIAG_GROUP-BELA-322649"; // unique
     static boolean resolve_dns=false;
-    static final String IGNORE_BIND_ADDRESS_PROPERTY="ignore.bind.address";
-    static final String JBOSS_MARSHALLING_COMPAT="jboss.marshalling.compatible";
+    public static final String IGNORE_BIND_ADDRESS_PROPERTY="jgroups.ignore.bind_addr";
+    public static final String IGNORE_BIND_ADDRESS_PROPERTY_OLD="ignore.bind.address";
+    public static final String JBOSS_MARSHALLING_COMPAT="jboss.marshalling.compatible";
     static boolean      JBOSS_COMPAT=false;
 
     /**
@@ -1995,9 +1996,12 @@ public class Util {
                 for(int i=0; i < system_props.length; i++) {
                     prop=system_props[i];
                     if(prop != null) {
-                        tmp=System.getProperty(prop);
-                        if(tmp != null)
-                            return tmp; // system properties override config file definitions
+                        try {
+                            tmp=System.getProperty(prop);
+                            if(tmp != null)
+                                return tmp; // system properties override config file definitions
+                        }
+                        catch(SecurityException ex) {}
                     }
                 }
             }
@@ -2010,15 +2014,21 @@ public class Util {
 
 
     public static boolean isBindAddressPropertyIgnored() {
-        String tmp=System.getProperty(IGNORE_BIND_ADDRESS_PROPERTY);
-        if(tmp == null)
+        try {
+            String tmp=System.getProperty(IGNORE_BIND_ADDRESS_PROPERTY);
+            if(tmp == null) {
+                tmp=System.getProperty(IGNORE_BIND_ADDRESS_PROPERTY_OLD);
+                if(tmp == null)
+                    return false;
+            }
+            tmp=tmp.trim().toLowerCase();
+            if(tmp.equals("false") || tmp.equals("no") || tmp.equals("off"))
+                return false;
+            else return tmp.equals("true") || tmp.equals("yes") || tmp.equals("on");
+        }
+        catch(SecurityException ex) {
             return false;
-
-        tmp=tmp.trim().toLowerCase();
-        return !(tmp.equals("false") ||
-                tmp.equals("no") ||
-                tmp.equals("off"));
-
+        }
     }
 
 
