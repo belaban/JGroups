@@ -1,14 +1,11 @@
-// $Id: UtilTest.java,v 1.15 2006/09/05 08:17:19 belaban Exp $
+// $Id: UtilTest.java,v 1.16 2006/09/05 08:38:02 belaban Exp $
 
 package org.jgroups.tests;
 
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
-import org.jgroups.ChannelException;
-import org.jgroups.Message;
-import org.jgroups.View;
-import org.jgroups.ViewId;
+import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
@@ -81,31 +78,31 @@ public class UtilTest extends TestCase {
         retval=Util.isBindAddressPropertyIgnored();
         assertFalse(retval);
 
-        System.setProperty(Util.IGNORE_BIND_ADDRESS_PROPERTY, "true");
+        System.setProperty(Global.IGNORE_BIND_ADDRESS_PROPERTY, "true");
         retval=Util.isBindAddressPropertyIgnored();
         assertTrue(retval);
 
-        System.setProperty(Util.IGNORE_BIND_ADDRESS_PROPERTY, "true2");
+        System.setProperty(Global.IGNORE_BIND_ADDRESS_PROPERTY, "true2");
         retval=Util.isBindAddressPropertyIgnored();
         assertFalse(retval);
 
-        System.setProperty(Util.IGNORE_BIND_ADDRESS_PROPERTY, "false");
+        System.setProperty(Global.IGNORE_BIND_ADDRESS_PROPERTY, "false");
         retval=Util.isBindAddressPropertyIgnored();
         assertFalse(retval);
 
-        System.clearProperty(Util.IGNORE_BIND_ADDRESS_PROPERTY);
-        System.setProperty(Util.IGNORE_BIND_ADDRESS_PROPERTY_OLD, "false");
+        System.clearProperty(Global.IGNORE_BIND_ADDRESS_PROPERTY);
+        System.setProperty(Global.IGNORE_BIND_ADDRESS_PROPERTY_OLD, "false");
         retval=Util.isBindAddressPropertyIgnored();
         assertFalse(retval);
 
-        System.clearProperty(Util.IGNORE_BIND_ADDRESS_PROPERTY);
-        System.setProperty(Util.IGNORE_BIND_ADDRESS_PROPERTY_OLD, "true");
+        System.clearProperty(Global.IGNORE_BIND_ADDRESS_PROPERTY);
+        System.setProperty(Global.IGNORE_BIND_ADDRESS_PROPERTY_OLD, "true");
         retval=Util.isBindAddressPropertyIgnored();
         assertTrue(retval);
 
 
-        System.setProperty(Util.IGNORE_BIND_ADDRESS_PROPERTY, "true");
-        System.setProperty(Util.IGNORE_BIND_ADDRESS_PROPERTY_OLD, "true");
+        System.setProperty(Global.IGNORE_BIND_ADDRESS_PROPERTY, "true");
+        System.setProperty(Global.IGNORE_BIND_ADDRESS_PROPERTY_OLD, "true");
         retval=Util.isBindAddressPropertyIgnored();
         assertTrue(retval);
     }

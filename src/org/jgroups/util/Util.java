@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.95 2006/09/05 08:17:19 belaban Exp $
+// $Id: Util.java,v 1.96 2006/09/05 08:38:02 belaban Exp $
 
 package org.jgroups.util;
 
@@ -28,7 +28,7 @@ import EDU.oswego.cs.dl.util.concurrent.Sync;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.95 2006/09/05 08:17:19 belaban Exp $
+ * @version $Id: Util.java,v 1.96 2006/09/05 08:38:02 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -54,9 +54,7 @@ public class Util {
     public static final int MAX_PORT=65535; // highest port allocatable
     public static final String DIAG_GROUP="DIAG_GROUP-BELA-322649"; // unique
     static boolean resolve_dns=false;
-    public static final String IGNORE_BIND_ADDRESS_PROPERTY="jgroups.ignore.bind_addr";
-    public static final String IGNORE_BIND_ADDRESS_PROPERTY_OLD="ignore.bind.address";
-    public static final String JBOSS_MARSHALLING_COMPAT="jboss.marshalling.compatible";
+
     static boolean      JBOSS_COMPAT=false;
 
     /**
@@ -87,7 +85,7 @@ public class Util {
         f.setMaximumFractionDigits(2);
 
         try {
-            JBOSS_COMPAT=Boolean.valueOf(System.getProperty(JBOSS_MARSHALLING_COMPAT, "false")).booleanValue();
+            JBOSS_COMPAT=Boolean.valueOf(System.getProperty(Global.JBOSS_MARSHALLING_COMPAT, "false")).booleanValue();
         }
         catch (SecurityException ex){
         }
@@ -2015,9 +2013,9 @@ public class Util {
 
     public static boolean isBindAddressPropertyIgnored() {
         try {
-            String tmp=System.getProperty(IGNORE_BIND_ADDRESS_PROPERTY);
+            String tmp=System.getProperty(Global.IGNORE_BIND_ADDRESS_PROPERTY);
             if(tmp == null) {
-                tmp=System.getProperty(IGNORE_BIND_ADDRESS_PROPERTY_OLD);
+                tmp=System.getProperty(Global.IGNORE_BIND_ADDRESS_PROPERTY_OLD);
                 if(tmp == null)
                     return false;
             }
