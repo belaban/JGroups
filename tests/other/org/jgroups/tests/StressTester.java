@@ -5,8 +5,10 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 /**
+ * Test driver for testing JGroups-based HttpSession replication.
+ * 
  * @author Brian Stansberry
- * @version $Id: StressTester.java,v 1.1 2006/09/04 06:19:49 belaban Exp $
+ * @version $Id: StressTester.java,v 1.2 2006/09/05 02:22:08 bstansberry Exp $
  */
 public class StressTester implements Runnable
 {
@@ -71,8 +73,6 @@ public class StressTester implements Runnable
                sb.append(cookie);
                System.out.println(sb.toString());
             }
-
-            conn.disconnect();
          }
          catch (Exception e)
          {
