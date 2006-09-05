@@ -21,7 +21,7 @@ import java.util.Map;
  * back via the regular transport (e.g. TCP) to the sender (discovery request contained sender's regular address,
  * e.g. 192.168.0.2:7800).
  * @author Bela Ban
- * @version $Id: MPING.java,v 1.16 2006/09/05 11:26:22 belaban Exp $
+ * @version $Id: MPING.java,v 1.15 2006/09/05 11:25:20 belaban Exp $
  */
 public class MPING extends PING implements Runnable {
     MulticastSocket     mcast_sock=null;
@@ -35,6 +35,7 @@ public class MPING extends PING implements Runnable {
     /** Pre-allocated byte stream. Used for serializing datagram packets. Will grow as needed */
     final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(512);
     byte                receive_buf[]=new byte[1024];
+    static final String IGNORE_BIND_ADDRESS_PROPERTY="ignore.bind.address";
 
 
     public String getName() {
