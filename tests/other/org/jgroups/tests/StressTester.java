@@ -8,7 +8,7 @@ import java.net.URL;
  * Test driver for testing JGroups-based HttpSession replication.
  * 
  * @author Brian Stansberry
- * @version $Id: StressTester.java,v 1.2 2006/09/05 02:22:08 bstansberry Exp $
+ * @version $Id: StressTester.java,v 1.3 2006/09/05 03:50:55 bstansberry Exp $
  */
 public class StressTester implements Runnable
 {
@@ -85,9 +85,10 @@ public class StressTester implements Runnable
    /**
     * Args are:
     *
+    * 0) # of client threads to create
     * 1) hostname:port of node 0; e.g 192.168.1.164:8080
     * 2) hostname:port of node 1
-    * 3) # of client threads to create
+    * x) and so on for as many servers as there are
     *
     * @param args
     */
@@ -95,14 +96,20 @@ public class StressTester implements Runnable
    {
       try
       {
-         URL  u1 = new URL("http://" + args[0] + "/jbento-httpsession/SetListOfString16");
-         URL  u2 = new URL("http://" + args[1] + "/jbento-httpsession/SetListOfString16");
+         int threadCount = Integer.parseInt(args[0]);
 
-         int count = Integer.parseInt(args[2]);
-
-         for (int i = 0; i < count; i++)
+         int serverCount = args.length - 1;
+         
+         URL[] urls = new URL[serverCount];
+         for (int i = 1; i < args.length; i++)
          {
-            StressTester tester = new StressTester((i % 2 == 0 ? u1 : u2), "Thread"+i);
+            urls[i -1] = new URL("http://" + args[i] + "/jbento-httpsession/SetListOfString16");
+         }
+         
+
+         for (int i = 0; i < threadCount; i++)
+         {
+            StressTester tester = new StressTester(urls[i % serverCount], "Thread"+i);
             Thread t = new Thread(tester);
             t.start();
          }
