@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.96 2006/09/05 08:38:02 belaban Exp $
+// $Id: Util.java,v 1.97 2006/09/05 11:14:55 belaban Exp $
 
 package org.jgroups.util;
 
@@ -28,7 +28,7 @@ import EDU.oswego.cs.dl.util.concurrent.Sync;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.96 2006/09/05 08:38:02 belaban Exp $
+ * @version $Id: Util.java,v 1.97 2006/09/05 11:14:55 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -1689,32 +1689,17 @@ public class Util {
         return result;
     }
 
-    public static InetAddress parseBindAddress(Properties props, String property)
-            throws UnknownHostException {
-        String tmp = null;
-        String str = null;
-        InetAddress bind_addr = null;
-        // PropertyPermission not granted if running in an untrusted environment
-        // with JNLP.
-        try {
-            tmp = System.getProperty("bind.address");
-            if (Util.isBindAddressPropertyIgnored()) {
-                tmp = null;
-            }
-        } catch (SecurityException ex) {
-        }
-        if (tmp != null)
-            str = tmp;
-        else
-            str = props.getProperty(property);
-        if (str != null) {
-            bind_addr = InetAddress.getByName(str);
+    public static InetAddress parseBindAddress(Properties props, String property) throws UnknownHostException {
+        InetAddress bind_addr=null;
+        boolean ignore_systemprops=Util.isBindAddressPropertyIgnored();
+        String str=Util.getProperty(new String[]{Global.BIND_ADDR, Global.BIND_ADDR_OLD}, props, "bind_addr",
+                                    ignore_systemprops, null);
+        if(str != null) {
+            bind_addr=InetAddress.getByName(str);
             props.remove(property);
         }
         return bind_addr;
     }
-
-
 
 
     public static String shortName(String hostname) {
