@@ -9,6 +9,10 @@ import org.jgroups.*;
 import org.jgroups.util.Util;
 import org.jgroups.util.Promise;
 
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -18,16 +22,22 @@ import java.util.Set;
 /**
  * Tests correct state transfer while other members continue sending messages to the group
  * @author Bela Ban
- * @version $Id: StateTransferTest.java,v 1.8 2006/05/12 09:50:25 belaban Exp $
+ * @version $Id: StateTransferTest.java,v 1.9 2006/09/06 20:41:34 vlada Exp $
  */
 public class StateTransferTest extends TestCase {
     final int NUM=10000;
     final int NUM_THREADS=2;
-    final String props="fc-fast-minimalthreads.xml";
+    String props="fc-fast-minimalthreads.xml";
 
 
     public StateTransferTest(String name) {
         super(name);
+    }
+    
+    protected void setUp() throws Exception {                    
+       props = System.getProperty("props",props);   
+       log("Using configuration file " + props);
+       super.setUp();
     }
 
 
@@ -208,6 +218,23 @@ public class StateTransferTest extends TestCase {
                         }
                         promise.setResult(Boolean.TRUE);
                     }
+                    else if(obj instanceof StreamingGetStateEvent) {
+                        StreamingGetStateEvent evt=(StreamingGetStateEvent)obj;
+                        OutputStream stream = evt.getArg();
+                        ObjectOutputStream out = new ObjectOutputStream(stream);
+                        synchronized(map){
+                           out.writeObject(map);
+                        }
+                        out.close();
+                   }
+                   else if(obj instanceof StreamingSetStateEvent) {
+                        StreamingSetStateEvent evt=(StreamingSetStateEvent)obj;
+                        InputStream stream = evt.getArg();
+                        ObjectInputStream in = new ObjectInputStream(stream);
+                        map=Collections.synchronizedMap((Map) in.readObject());
+                        in.close();
+                        promise.setResult(Boolean.TRUE);
+                   }
                 }
                 catch(Exception e) {
                     log("receiver thread terminated due to exception: " + e);
