@@ -1,22 +1,29 @@
 package org.jgroups.tests;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.jgroups.ChannelException;
+import org.jgroups.ExtendedReceiverAdapter;
 import org.jgroups.JChannel;
-import org.jgroups.ReceiverAdapter;
 import org.jgroups.util.Promise;
+import org.jgroups.util.Util;
 
 /**
  * Tests transfer of large states (http://jira.jboss.com/jira/browse/JGRP-225)
  * @author Bela Ban
- * @version $Id: LargeStateTransferTest.java,v 1.1 2006/05/12 09:49:40 belaban Exp $
+ * @version $Id: LargeStateTransferTest.java,v 1.2 2006/09/06 20:41:34 vlada Exp $
  */
 public class LargeStateTransferTest extends TestCase {
     JChannel provider, requester;
     Promise p=new Promise();
-    final String props="fc-fast-minimalthreads.xml";
+    String props="fc-fast-minimalthreads.xml";
     long start, stop;
     final static int SIZE_1=100000, SIZE_2=1000000, SIZE_3=5000000, SIZE_4=10000000;
 
@@ -30,6 +37,8 @@ public class LargeStateTransferTest extends TestCase {
 
     protected void setUp() throws Exception {
         super.setUp();
+        props = System.getProperty("props",props);   
+        log("Using configuration file " + props);
         provider=new JChannel(props);
         requester=new JChannel(props);
     }
@@ -92,7 +101,7 @@ public class LargeStateTransferTest extends TestCase {
     }
 
 
-    private static class Provider extends ReceiverAdapter {
+    private static class Provider extends ExtendedReceiverAdapter {
         byte[] state;
 
         public Provider(int size) {
@@ -102,14 +111,26 @@ public class LargeStateTransferTest extends TestCase {
         public byte[] getState() {
             return state;
         }
-
+        
+        public void getState(OutputStream ostream){      
+            ObjectOutputStream oos =null;
+            try{
+               oos=new ObjectOutputStream(ostream);
+               oos.writeInt(state.length); 
+               oos.write(state);
+            }
+            catch (IOException e){}
+            finally{
+               Util.closeOutputStream(ostream);
+            }
+        }
         public void setState(byte[] state) {
             throw new UnsupportedOperationException("not implemented by provider");
         }
     }
 
 
-    private static class Requester extends ReceiverAdapter {
+    private static class Requester extends ExtendedReceiverAdapter {
         Promise p;
 
         public Requester(Promise p) {
@@ -122,6 +143,21 @@ public class LargeStateTransferTest extends TestCase {
 
         public void setState(byte[] state) {
             p.setResult(new Integer(state.length));
+        }
+        public void setState(InputStream istream) {
+            ObjectInputStream ois=null;
+            int size=0;
+            try{
+               ois= new ObjectInputStream(istream);
+               size = ois.readInt();
+               byte []stateReceived= new byte[size];
+               ois.read(stateReceived);
+            }
+            catch (IOException e){                        }
+            finally{
+               Util.closeInputStream(ois);
+            }
+            p.setResult(new Integer(size));
         }
     }
 
