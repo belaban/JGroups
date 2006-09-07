@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.78 2006/08/08 15:20:46 belaban Exp $
+// $Id: NAKACK.java,v 1.79 2006/09/07 07:40:36 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -592,8 +592,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             return;
         }
 
+        long msg_id;
         synchronized(sent_msgs) {
-            long msg_id;
             try { // incrementing seqno and adding the msg to sent_msgs needs to be atomic
                 msg_id=seqno +1;
                 msg.putHeader(name, new NakAckHeader(NakAckHeader.MSG, msg_id));
@@ -614,16 +614,16 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                     throw new RuntimeException("failure adding msg " + msg + " to the retransmit table", t);
                 }
             }
+        }
 
-            try {
-                if(trace)
-                    log.trace(local_addr + ": sending msg #" + msg_id);
-                passDown(evt); // if this fails, since msg is in sent_msgs, it can be retransmitted
-            }
-            catch(Throwable t) { // eat the exception, don't pass it up the stack
-                if(warn) {
-                    log.warn("failure passing message down", t);
-                }
+        try { // moved passDown() out of synchronized clause (bela Sept 7 2006) http://jira.jboss.com/jira/browse/JGRP-300
+            if(trace)
+                log.trace(local_addr + ": sending msg #" + msg_id);
+            passDown(evt); // if this fails, since msg is in sent_msgs, it can be retransmitted
+        }
+        catch(Throwable t) { // eat the exception, don't pass it up the stack
+            if(warn) {
+                log.warn("failure passing message down", t);
             }
         }
     }
