@@ -6,9 +6,9 @@ import java.net.URL;
 
 /**
  * Test driver for testing JGroups-based HttpSession replication.
- * 
+ *
  * @author Brian Stansberry
- * @version $Id: StressTester.java,v 1.3 2006/09/05 03:50:55 bstansberry Exp $
+ * @version $Id: StressTester.java,v 1.4 2006/09/07 18:35:29 belaban Exp $
  */
 public class StressTester implements Runnable
 {
@@ -62,7 +62,7 @@ public class StressTester implements Runnable
              }
              is.close();
 
-            if (rc != 200 || count % 100 == 0)
+            if (rc != 200 || count % 1000 == 0)
             {
                StringBuffer sb = new StringBuffer(name);
                sb.append('-');
@@ -99,13 +99,13 @@ public class StressTester implements Runnable
          int threadCount = Integer.parseInt(args[0]);
 
          int serverCount = args.length - 1;
-         
+
          URL[] urls = new URL[serverCount];
          for (int i = 1; i < args.length; i++)
          {
             urls[i -1] = new URL("http://" + args[i] + "/jbento-httpsession/SetListOfString16");
          }
-         
+
 
          for (int i = 0; i < threadCount; i++)
          {
