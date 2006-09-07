@@ -1,4 +1,4 @@
-// $Id: UtilTest.java,v 1.16 2006/09/05 08:38:02 belaban Exp $
+// $Id: UtilTest.java,v 1.17 2006/09/07 18:36:23 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -90,12 +90,12 @@ public class UtilTest extends TestCase {
         retval=Util.isBindAddressPropertyIgnored();
         assertFalse(retval);
 
-        System.clearProperty(Global.IGNORE_BIND_ADDRESS_PROPERTY);
+        System.getProperties().remove(Global.IGNORE_BIND_ADDRESS_PROPERTY);
         System.setProperty(Global.IGNORE_BIND_ADDRESS_PROPERTY_OLD, "false");
         retval=Util.isBindAddressPropertyIgnored();
         assertFalse(retval);
 
-        System.clearProperty(Global.IGNORE_BIND_ADDRESS_PROPERTY);
+        System.getProperties().remove(Global.IGNORE_BIND_ADDRESS_PROPERTY);
         System.setProperty(Global.IGNORE_BIND_ADDRESS_PROPERTY_OLD, "true");
         retval=Util.isBindAddressPropertyIgnored();
         assertTrue(retval);
