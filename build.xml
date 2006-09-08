@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.62 2006/09/01 15:52:38 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.63 2006/09/08 16:09:59 vlada Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -373,7 +373,75 @@
             </batchtest>
         </junit>
     </target>
-
+	
+	<target name="one-test" depends="compile,makeKeystore" description="Runs a single unit test">
+	 	<mkdir dir="${tmp.dir}/tests-results"/>
+	    <junit printsummary="yes" timeout="${unittest.timeout.low}" fork="yes">
+		     <sysproperty key="log4j.configuration" value="file:${conf.dir}/log4j.properties" />
+		  	 <sysproperty key="tests.tmp.dir" value="${tmp.dir}" />
+		  	 <classpath refid="jg.classpath"/>
+		     <formatter type="xml" usefile="true"/>
+		     <test name="${test}" todir="${tmp.dir}/tests-results"/>
+	    </junit>		
+	</target>		
+		
+	<target name="mux-test-udp" depends="compile" description="Runs mux for udp">
+			
+		    <echo message="Multiplexer test for udp stack config"/>
+			<junit printsummary="yes" taskname="udp" timeout="${unittest.timeout.low}" fork="yes" showoutput="true" description="mux tests using udp-sync">
+			     <sysproperty key="log4j.configuration" value="${conf.dir}/log4j.properties" />
+			  	 <sysproperty key="tests.tmp.dir" value="${tmp.dir}" />
+			  	 <sysproperty key="cfg" value="${conf.dir}/stacks.xml" />
+				 <sysproperty key="stack" value="udp" />
+			  	 <classpath refid="jg.classpath"/>
+			     <formatter type="xml" usefile="true"/>
+			     <test name="org.jgroups.tests.MultiplexerTest" todir="${tmp.dir}/tests-results"/>
+			</junit>	
+	</target>
+	
+	<target name="mux-test-udp-sync" depends="compile" description="Runs mux test for udp-sync">
+			
+			<echo message="Multiplexer test for udp-sync stack config"/>
+			<junit printsummary="yes" taskname="udp-sync" timeout="${unittest.timeout.low}" fork="yes" showoutput="true" description="mux tests using udp-sync">
+			     <sysproperty key="log4j.configuration" value="${conf.dir}/log4j.properties" />
+			  	 <sysproperty key="tests.tmp.dir" value="${tmp.dir}" />
+			  	 <sysproperty key="cfg" value="${conf.dir}/stacks.xml" />
+				 <sysproperty key="stack" value="udp-sync" />
+			  	 <classpath refid="jg.classpath"/>
+			     <formatter type="xml" usefile="true"/>
+			     <test name="org.jgroups.tests.MultiplexerTest" todir="${tmp.dir}/tests-results"/>
+			</junit>
+							
+	</target>
+	
+	<target name="mux-test-tcp" depends="compile" description="Runs mux test for tcp">
+			
+			<echo message="Multiplexer test for tcp stack config"/>
+			<junit printsummary="yes" taskname="tcp" timeout="${unittest.timeout.low}" fork="yes" showoutput="true" description="mux tests using tcp">
+			     <sysproperty key="log4j.configuration" value="${conf.dir}/log4j.properties" />
+			  	 <sysproperty key="tests.tmp.dir" value="${tmp.dir}" />
+			  	 <sysproperty key="cfg" value="${conf.dir}/stacks.xml" />
+				 <sysproperty key="stack" value="tcp" />
+			  	 <classpath refid="jg.classpath"/>
+			     <formatter type="xml" usefile="true"/>
+			     <test name="org.jgroups.tests.MultiplexerTest" todir="${tmp.dir}/tests-results"/>
+			</junit>				
+	</target>
+	
+	<target name="mux-test-tcp-sync" depends="compile" description="Runs mux test for tcp-sync">
+			
+			<echo message="Multiplexer test for tcp-sync stack config"/>
+			<junit printsummary="yes" taskname="tcp" timeout="${unittest.timeout.low}" fork="yes" showoutput="true" description="mux tests using tcp-sync">
+			     <sysproperty key="log4j.configuration" value="${conf.dir}/log4j.properties" />
+			  	 <sysproperty key="tests.tmp.dir" value="${tmp.dir}" />
+			  	 <sysproperty key="cfg" value="${conf.dir}/stacks.xml" />
+				 <sysproperty key="stack" value="tcp-sync" />
+			  	 <classpath refid="jg.classpath"/>
+			     <formatter type="xml" usefile="true"/>
+			     <test name="org.jgroups.tests.MultiplexerTest" todir="${tmp.dir}/tests-results"/>
+			</junit>				
+	</target>
+	
 
     <target name="findxalan">
         <available property="xalan.available" classname="org.apache.xalan.Version"/>
