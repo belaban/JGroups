@@ -14,13 +14,13 @@ import java.io.*;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.18 2006/09/01 07:44:15 belaban Exp $
+ * @version $Id: MultiplexerTest.java,v 1.19 2006/09/08 16:04:50 vlada Exp $
  */
 public class MultiplexerTest extends TestCase {
     private Cache c1, c2, c1_repl, c2_repl;
     private Channel ch1, ch2, ch1_repl, ch2_repl;
-    static final String CFG="stacks.xml";
-    static final String STACK_NAME="udp";
+    static String CFG="stacks.xml";
+    static String STACK_NAME="udp";
     JChannelFactory factory, factory2;
 
     public MultiplexerTest(String name) {
@@ -30,6 +30,9 @@ public class MultiplexerTest extends TestCase {
 
     public void setUp() throws Exception {
         super.setUp();
+        CFG = System.getProperty("cfg",CFG); 
+        STACK_NAME = System.getProperty("stack",STACK_NAME);
+        log("Using stack configuration file " + CFG + " and stack name " + STACK_NAME);
         factory=new JChannelFactory();
         factory.setMultiplexerConfig(CFG);
 
@@ -738,6 +741,10 @@ public class MultiplexerTest extends TestCase {
 
     public static void main(String[] args) {
         junit.textui.TestRunner.run(MultiplexerTest.suite());
+    }
+    
+    private static void log(String msg) {
+       System.out.println(Thread.currentThread() + " -- "+ msg);
     }
 
 
