@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.33 2006/06/24 13:17:32 smarlownovell Exp $
+// $Id: TCP.java,v 1.34 2006/09/09 12:44:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -118,6 +118,12 @@ public class TCP extends BasicTCP implements ConnectionTable.Receiver {
         if(str != null) {
             skip_suspected_members=Boolean.valueOf(str).booleanValue();
             props.remove("skip_suspected_members");
+        }
+
+        str=props.getProperty("suspect_on_send_failure");
+        if(str != null) {
+            suspect_on_send_failure=Boolean.valueOf(str).booleanValue();
+            props.remove("suspect_on_send_failure");
         }
 
         str=props.getProperty("use_send_queues");
