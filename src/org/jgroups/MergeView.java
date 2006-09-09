@@ -1,4 +1,4 @@
-// $Id: MergeView.java,v 1.6 2006/01/14 13:00:21 belaban Exp $
+// $Id: MergeView.java,v 1.7 2006/09/09 13:21:55 belaban Exp $
 
 
 package org.jgroups;
@@ -20,6 +20,7 @@ import java.util.Vector;
  * V2:(p,q,r) and V2:(s,t).
  */
 public class MergeView extends View {
+    /** Vector<View> */
     protected Vector subgroups=null; // subgroups that merged into this single view (a list of Views)
 
 
@@ -105,6 +106,10 @@ public class MergeView extends View {
         View v;
         for(Iterator it=subgroups.iterator(); it.hasNext();) {
             v=(View)it.next();
+            if(v instanceof MergeView)
+                out.writeBoolean(true);
+            else
+                out.writeBoolean(false);
             v.writeTo(out);
         }
     }
@@ -116,7 +121,8 @@ public class MergeView extends View {
             View v;
             subgroups=new Vector();
             for(int i=0; i < len; i++) {
-                v=new View();
+                boolean is_merge_view=in.readBoolean();
+                v=is_merge_view? new MergeView() : new View();
                 v.readFrom(in);
                 subgroups.add(v);
             }
@@ -132,6 +138,7 @@ public class MergeView extends View {
         View v;
         for(Iterator it=subgroups.iterator(); it.hasNext();) {
             v=(View)it.next();
+            retval+=Global.BYTE_SIZE; // boolean for View or MergeView
             retval+=v.serializedSize();
         }
         return retval;
