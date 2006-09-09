@@ -1,4 +1,4 @@
-// $Id: SizeTest.java,v 1.16 2006/08/14 16:21:00 belaban Exp $$
+// $Id: SizeTest.java,v 1.17 2006/09/09 13:16:35 belaban Exp $$
 
 package org.jgroups.tests;
 
@@ -204,6 +204,39 @@ public class SizeTest extends TestCase {
         subgroups.add(v1);
         subgroups.add(v2);
         subgroups.add(v3);
+
+        view_all=new MergeView(a, 5, all, subgroups);
+        System.out.println("MergeView: " + view_all);
+        _testSize(view_all);
+    }
+
+
+    public void testMergeView3() throws Exception {
+        Vector m1, m2 , m3, all, subgroups;
+        Address a,b,c,d,e,f;
+        View v1, v2, v3, v4, v5, view_all;
+
+        a=new IpAddress(1000);
+        b=new IpAddress(2000);
+        c=new IpAddress(3000);
+        d=new IpAddress(4000);
+        e=new IpAddress(5000);
+        f=new IpAddress(6000);
+
+        m1=new Vector(); m2=new Vector(); m3=new Vector(); all=new Vector(); subgroups=new Vector();
+        m1.add(a); m1.add(b); m1.add(c);
+        m2.add(d);
+        m3.add(e); m3.add(f);
+        all.add(a); all.add(b); all.add(c); all.add(d); all.add(e); all.add(f);
+
+        v1=new View(a, 1, m1);
+        v2=new MergeView(d, 2, m2, new Vector());
+        v3=new View(e, 3, m3);
+        v4=new MergeView(e, 4, m3, null);
+        subgroups.add(v1);
+        subgroups.add(v2);
+        subgroups.add(v3);
+        subgroups.add(v4);
 
         view_all=new MergeView(a, 5, all, subgroups);
         System.out.println("MergeView: " + view_all);
