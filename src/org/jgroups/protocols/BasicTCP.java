@@ -16,17 +16,22 @@ import java.net.InetAddress;
  */
 public abstract class BasicTCP extends TP {
 
-   /** Should we drop unicast messages to suspected members or not */
-   boolean                skip_suspected_members=true;
+    /** Should we drop unicast messages to suspected members or not */
+    boolean               skip_suspected_members=true;
+
+    /** When we cannot send a message to P (on an exception), then we send a SUSPECT message up the stack */
+    boolean               suspect_on_send_failure=false;
+
+
    /** List the maintains the currently suspected members. This is used so we don't send too many SUSPECT
     * events up the stack (one per message !)
     */
    final BoundedList      suspected_mbrs=new BoundedList(20);
-   protected InetAddress	    external_addr=null; // the IP address which is broadcast to other group members
-   protected int             start_port=7800;    // find first available port starting at this port
-   protected int	            end_port=0;         // maximum port to bind to
-   protected long            reaper_interval=0;  // time in msecs between connection reaps
-   protected long            conn_expire_time=0; // max time a conn can be idle before being reaped
+   protected InetAddress  external_addr=null; // the IP address which is broadcast to other group members
+   protected int          start_port=7800;    // find first available port starting at this port
+   protected int	      end_port=0;         // maximum port to bind to
+   protected long         reaper_interval=0;  // time in msecs between connection reaps
+   protected long         conn_expire_time=0; // max time a conn can be idle before being reaped
    /** Use separate send queues for each connection */
    boolean                use_send_queues=true;
    int                    recv_buf_size=150000;
@@ -52,16 +57,11 @@ public abstract class BasicTCP extends TP {
            }
        }
 
-//        if(dest.equals(local_addr)) {
-//            if(!loopback) // if loopback, we discard the message (was already looped back)
-//                receive(dest, data, offset, length); // else we loop it back here
-//            return;
-//        }
        try {
            send(dest, data, offset, length);
        }
        catch(Exception e) {
-           if(members.contains(dest)) {
+           if(suspect_on_send_failure && members.contains(dest)) {
                if(!suspected_mbrs.contains(dest)) {
                    suspected_mbrs.add(dest);
                    passUp(new Event(Event.SUSPECT, dest));
