@@ -4,7 +4,7 @@ package org.jgroups;
  * Globals used by JGroups packages.
  * 
  * @author Bela Ban Mar 29, 2004
- * @version $Id: Global.java,v 1.10 2006/09/11 13:49:10 belaban Exp $
+ * @version $Id: Global.java,v 1.11 2006/09/11 13:54:43 belaban Exp $
  */
 public class Global {
     /** Allows for conditional compilation; e.g., if(log.isTraceEnabled()) if(log.isInfoEnabled()) log.info(...) would be removed from the code
@@ -44,5 +44,6 @@ public class Global {
     public static final String MPING_MCAST_PORT="jgroups.mping.mcast_port";
     public static final String  MPING_IP_TTL="jgroups.mping.ip_ttl";
 
+    public static final String MAGIC_NUMBER_FILE="jgroups.conf.magic_number_file";
     
 }
