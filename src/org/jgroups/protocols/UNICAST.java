@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.62 2006/08/11 12:50:57 belaban Exp $
+// $Id: UNICAST.java,v 1.63 2006/09/11 13:12:19 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -261,9 +261,10 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                     }
                 }
 
+                Message tmp;
                 synchronized(entry) { // threads will only sync if they access the same entry
                     long seqno=-2;
-                    Message tmp;
+
                     try {
                         seqno=entry.sent_msgs_seqno;
                         UnicastHeader hdr=new UnicastHeader(UnicastHeader.DATA, seqno);
@@ -288,18 +289,22 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                             throw new RuntimeException("failure adding msg " + msg + " to the retransmit table", t);
                         }
                     }
-
-                    try {
-                        passDown(new Event(Event.MSG, tmp));
-                        num_msgs_sent++;
-                        num_bytes_sent+=msg.getLength();
-                    }
-                    catch(Throwable t) { // eat the exception, don't pass it up the stack
-                        if(warn) {
-                            log.warn("failure passing message down", t);
-                        }
+                }
+                // moved passing down of message out of the synchronized block: similar to NAKACK, we do *not* need
+                // to send unicast messages in order of sequence numbers because they will be sorted into the correct
+                // order at the receiver anyway. Of course, most of the time, the order will be correct (FIFO), so
+                // the cost of reordering is minimal. This is part of http://jira.jboss.com/jira/browse/JGRP-303
+                try {
+                    passDown(new Event(Event.MSG, tmp));
+                    num_msgs_sent++;
+                    num_bytes_sent+=msg.getLength();
+                }
+                catch(Throwable t) { // eat the exception, don't pass it up the stack
+                    if(warn) {
+                        log.warn("failure passing message down", t);
                     }
                 }
+
                 msg=null;
                 return; // we already passed the msg down
 
