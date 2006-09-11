@@ -56,6 +56,9 @@ else
     echo "  to the installation directory of java."
 fi
 
-
-java -classpath "${CP}" org.apache.tools.ant.Main -buildfile ${JG_HOME}/build.xml $*
+if [ -n "$JAVA_HOME" ]; then
+	${JAVA_HOME}/bin/java -classpath "${CP}" org.apache.tools.ant.Main -buildfile ${JG_HOME}/build.xml $*
+else
+	java -classpath "${CP}" org.apache.tools.ant.Main -buildfile ${JG_HOME}/build.xml $*
+fi
 #echo "CP is ${CP}"
