@@ -67,7 +67,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.91 2006/08/26 13:31:47 belaban Exp $
+ * @version $Id: JChannel.java,v 1.92 2006/09/11 14:04:16 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -385,13 +385,9 @@ public class JChannel extends Channel {
             throw new ChannelException("failed to start protocol stack", e);
         }
 
-        /* try to get LOCAL_ADDR_TIMEOUT. Catch SecurityException if called in an untrusted environment (e.g. using JNLP) */
-        try {
-            LOCAL_ADDR_TIMEOUT=Long.parseLong(System.getProperty("local_addr.timeout","30000"));
-        }
-        catch (SecurityException e1) {
-            /* Use the default value specified above*/
-        }
+        String tmp=Util.getProperty(new String[]{Global.CHANNEL_LOCAL_ADDR_TIMEOUT, "local_addr.timeout"},
+                                    null, null, false, "30000");
+        LOCAL_ADDR_TIMEOUT=Long.parseLong(tmp);
 
 		/* Wait LOCAL_ADDR_TIMEOUT milliseconds for local_addr to have a non-null value (set by SET_LOCAL_ADDRESS) */
         local_addr=(Address)local_addr_promise.getResult(LOCAL_ADDR_TIMEOUT);
