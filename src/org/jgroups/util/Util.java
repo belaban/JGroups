@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.97 2006/09/05 11:14:55 belaban Exp $
+// $Id: Util.java,v 1.98 2006/09/11 13:28:20 belaban Exp $
 
 package org.jgroups.util;
 
@@ -28,7 +28,7 @@ import EDU.oswego.cs.dl.util.concurrent.Sync;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.97 2006/09/05 11:14:55 belaban Exp $
+ * @version $Id: Util.java,v 1.98 2006/09/11 13:28:20 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -55,7 +55,7 @@ public class Util {
     public static final String DIAG_GROUP="DIAG_GROUP-BELA-322649"; // unique
     static boolean resolve_dns=false;
 
-    static boolean      JBOSS_COMPAT=false;
+    static boolean      JGROUPS_COMPAT=false;
 
     /**
      * Global thread group to which all (most!) JGroups threads belong
@@ -85,7 +85,7 @@ public class Util {
         f.setMaximumFractionDigits(2);
 
         try {
-            JBOSS_COMPAT=Boolean.valueOf(System.getProperty(Global.JBOSS_MARSHALLING_COMPAT, "false")).booleanValue();
+            JGROUPS_COMPAT=Boolean.valueOf(System.getProperty(Global.MARSHALLING_COMPAT, "false")).booleanValue();
         }
         catch (SecurityException ex){
         }
@@ -141,7 +141,7 @@ public class Util {
      */
     public static Object objectFromByteBuffer(byte[] buffer) throws Exception {
         if(buffer == null) return null;
-        if(JBOSS_COMPAT)
+        if(JGROUPS_COMPAT)
             return oldObjectFromByteBuffer(buffer);
         return objectFromByteBuffer(buffer, 0, buffer.length);
     }
@@ -149,7 +149,7 @@ public class Util {
 
     public static Object objectFromByteBuffer(byte[] buffer, int offset, int length) throws Exception {
         if(buffer == null) return null;
-        if(JBOSS_COMPAT)
+        if(JGROUPS_COMPAT)
             return oldObjectFromByteBuffer(buffer, offset, length);
         Object retval=null;
         InputStream in=null;
@@ -224,7 +224,7 @@ public class Util {
      */
     public static byte[] objectToByteBuffer(Object obj) throws Exception {
 
-        if(JBOSS_COMPAT)
+        if(JGROUPS_COMPAT)
             return oldObjectToByteBuffer(obj);
 
         byte[] result=null;

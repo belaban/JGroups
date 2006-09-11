@@ -1,4 +1,4 @@
-// $Id: TCPPING.java,v 1.26 2006/08/17 13:27:08 belaban Exp $
+// $Id: TCPPING.java,v 1.27 2006/09/11 13:28:20 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -6,6 +6,8 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
+import org.jgroups.Global;
+import org.jgroups.util.Util;
 import org.jgroups.stack.IpAddress;
 
 import java.util.*;
@@ -57,7 +59,7 @@ public class TCPPING extends Discovery {
             props.remove("port_range");
         }
 
-        str=props.getProperty("initial_hosts");
+        str=Util.getProperty(new String[]{Global.TCPPING_INITIAL_HOSTS}, props, "initial_hosts", false, null);
         if(str != null) {
             props.remove("initial_hosts");
             try {
