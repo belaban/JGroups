@@ -1,4 +1,4 @@
-// $Id: IpAddress.java,v 1.35 2006/05/16 11:14:28 belaban Exp $
+// $Id: IpAddress.java,v 1.36 2006/09/11 13:57:57 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -6,6 +6,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.Global;
+import org.jgroups.util.Util;
 
 import java.io.*;
 import java.net.InetAddress;
@@ -29,7 +30,8 @@ public class IpAddress implements Address {
         /* Trying to get value of resolve_dns. PropertyPermission not granted if
         * running in an untrusted environment  with JNLP */
         try {
-            resolve_dns=Boolean.valueOf(System.getProperty("resolve.dns", "false")).booleanValue();
+            String tmp=Util.getProperty(new String[]{Global.RESOLVE_DNS, "resolve.dns"}, null, null, false, "false"); 
+            resolve_dns=Boolean.valueOf(tmp).booleanValue();
         }
         catch (SecurityException ex){
             resolve_dns=false;
