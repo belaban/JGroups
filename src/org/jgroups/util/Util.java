@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.98 2006/09/11 13:28:20 belaban Exp $
+// $Id: Util.java,v 1.99 2006/09/11 14:07:06 belaban Exp $
 
 package org.jgroups.util;
 
@@ -28,7 +28,7 @@ import EDU.oswego.cs.dl.util.concurrent.Sync;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.98 2006/09/11 13:28:20 belaban Exp $
+ * @version $Id: Util.java,v 1.99 2006/09/11 14:07:06 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -85,7 +85,8 @@ public class Util {
         f.setMaximumFractionDigits(2);
 
         try {
-            JGROUPS_COMPAT=Boolean.valueOf(System.getProperty(Global.MARSHALLING_COMPAT, "false")).booleanValue();
+            String tmp=Util.getProperty(new String[]{Global.MARSHALLING_COMPAT}, null, null, false, "false");
+            JGROUPS_COMPAT=Boolean.valueOf(tmp).booleanValue();
         }
         catch (SecurityException ex){
         }
