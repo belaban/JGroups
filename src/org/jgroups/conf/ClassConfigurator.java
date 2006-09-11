@@ -1,4 +1,4 @@
-// $Id: ClassConfigurator.java,v 1.19 2006/02/27 14:08:45 belaban Exp $
+// $Id: ClassConfigurator.java,v 1.20 2006/09/11 13:54:42 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -6,6 +6,7 @@ package org.jgroups.conf;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.ChannelException;
+import org.jgroups.Global;
 import org.jgroups.util.Util;
 
 import java.io.ObjectStreamClass;
@@ -55,7 +56,8 @@ public class ClassConfigurator {
             
             // PropertyPermission not granted if running in an untrusted environment with JNLP.
             try {
-                String mnfile = System.getProperty("org.jgroups.conf.magicNumberFile");
+                String mnfile=Util.getProperty(new String[]{Global.MAGIC_NUMBER_FILE, "org.jgroups.conf.magicNumberFile"},
+                                               null, null, false, null);
                 if(mnfile != null) {
                     if(log.isDebugEnabled()) log.debug("Using " + mnfile + " as magic number file");
                     reader.setFilename(mnfile);
