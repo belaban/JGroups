@@ -215,9 +215,8 @@ public abstract class BasicConnectionTable {
            conn.send(data, offset, length);
        }
        catch(Throwable ex) {
-           ex.printStackTrace();
            if(log.isTraceEnabled())
-               log.trace("sending msg to " + dest + " failed (" + ex.getClass().getName() + "); removing from connection table");
+               log.trace("sending msg to " + dest + " failed (" + ex.getClass().getName() + "); removing from connection table", ex);
            remove(dest);
        }
    }
