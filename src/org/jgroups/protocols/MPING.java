@@ -21,7 +21,7 @@ import java.util.Map;
  * back via the regular transport (e.g. TCP) to the sender (discovery request contained sender's regular address,
  * e.g. 192.168.0.2:7800).
  * @author Bela Ban
- * @version $Id: MPING.java,v 1.15 2006/09/05 11:25:20 belaban Exp $
+ * @version $Id: MPING.java,v 1.17 2006/09/11 13:49:10 belaban Exp $
  */
 public class MPING extends PING implements Runnable {
     MulticastSocket     mcast_sock=null;
@@ -35,7 +35,6 @@ public class MPING extends PING implements Runnable {
     /** Pre-allocated byte stream. Used for serializing datagram packets. Will grow as needed */
     final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(512);
     byte                receive_buf[]=new byte[1024];
-    static final String IGNORE_BIND_ADDRESS_PROPERTY="ignore.bind.address";
 
 
     public String getName() {
@@ -98,7 +97,7 @@ public class MPING extends PING implements Runnable {
             props.remove("bind_addr");
         }
 
-        str=props.getProperty("mcast_addr");
+        str=Util.getProperty(new String[]{Global.MPING_MCAST_ADDR}, props, "mcast_addr", false, "230.5.6.7");
         if(str != null) {
             try {
                 mcast_addr=InetAddress.getByName(str);
@@ -110,13 +109,13 @@ public class MPING extends PING implements Runnable {
             props.remove("mcast_addr");
         }
 
-        str=props.getProperty("mcast_port");
+        str=Util.getProperty(new String[]{Global.MPING_MCAST_PORT}, props, "mcast_port", false, "7555");
         if(str != null) {
             mcast_port=Integer.parseInt(str);
             props.remove("mcast_port");
         }
 
-        str=props.getProperty("ip_ttl");
+        str=Util.getProperty(new String[]{Global.MPING_IP_TTL}, props, "ip_ttl", false, "16");
         if(str != null) {
             ip_ttl=Integer.parseInt(str);
             props.remove("ip_ttl");
