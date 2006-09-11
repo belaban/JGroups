@@ -4,7 +4,7 @@ package org.jgroups;
  * Globals used by JGroups packages.
  * 
  * @author Bela Ban Mar 29, 2004
- * @version $Id: Global.java,v 1.13 2006/09/11 14:04:16 belaban Exp $
+ * @version $Id: Global.java,v 1.14 2006/09/11 14:09:52 belaban Exp $
  */
 public class Global {
     /** Allows for conditional compilation; e.g., if(log.isTraceEnabled()) if(log.isInfoEnabled()) log.info(...) would be removed from the code
@@ -49,4 +49,5 @@ public class Global {
 
     public static final String CHANNEL_LOCAL_ADDR_TIMEOUT="jgroups.channel.local_addr_timeout";
 
+    public static final String SCHEDULER_MAX_THREADS="jgroups.scheduler.max_threads";
 }

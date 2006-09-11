@@ -1,10 +1,11 @@
-// $Id: Scheduler.java,v 1.12 2004/09/23 16:29:56 belaban Exp $
+// $Id: Scheduler.java,v 1.13 2006/09/11 14:09:51 belaban Exp $
 
 package org.jgroups.util;
 
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jgroups.Global;
 
 
 /**
@@ -46,13 +47,8 @@ public class Scheduler implements Runnable {
 
 
     public Scheduler() {
-    	// PropertyPermission not granted if running in an untrusted environment with JNLP.
-        try {
-            this.NUM_THREADS=Integer.parseInt(System.getProperty("scheduler.max.threads", "128"));
-        }
-        catch (SecurityException ex){
-          //The default value specified above is used.
-        }
+        String tmp=Util.getProperty(new String[]{Global.SCHEDULER_MAX_THREADS}, null, null, false, "128");
+        this.NUM_THREADS=Integer.parseInt(tmp);
     }
 
 
@@ -134,14 +130,12 @@ public class Scheduler implements Runnable {
                     current_task.suspended=true;
                 }
                 Thread.interrupted(); // clears the interrupt-flag
-                continue;
             }
             catch(QueueClosedException closed_ex) {
                 return;
             }
             catch(Throwable ex) {
                 if(log.isErrorEnabled()) log.error("exception=" + Util.print(ex));
-                continue;
             }
         }
          if(log.isTraceEnabled()) log.trace("scheduler thread terminated");
@@ -207,7 +201,7 @@ public class Scheduler implements Runnable {
 
         // 1. Close the queue
         queue.close(false); // will stop thread at next peek();
-	
+
         // 2. Interrupt the scheduler thread
         if(sched_thread != null && sched_thread.isAlive()) {
             tmp=sched_thread;
@@ -233,7 +227,7 @@ public class Scheduler implements Runnable {
 
 
 
-    public class Task {
+    public static class Task {
         ReusableThread thread=null;
         Runnable target=null;
         boolean suspended=false;
