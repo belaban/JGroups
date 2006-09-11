@@ -38,7 +38,7 @@ import java.util.*;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.120 2006/08/24 11:05:29 belaban Exp $
+ * @version $Id: UDP.java,v 1.121 2006/09/11 13:40:34 belaban Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -157,27 +157,31 @@ public class UDP extends TP implements Runnable {
             props.remove("num_last_ports");
         }
 
-        str=props.getProperty("mcast_addr");
-        if(str != null) {
-            mcast_addr_name=str;
-            props.remove("mcast_addr");
-        }
+//        str=props.getProperty("mcast_addr");
+//        if(str != null) {
+//            mcast_addr_name=str;
+//            props.remove("mcast_addr");
+//        }
 
         try {
-            str=System.getProperty("jboss.partition.udpGroup");
+            // str=System.getProperty("jboss.partition.udpGroup");
+            str=Util.getProperty(new String[]{Global.UDP_MCAST_ADDR, "jboss.partition.udpGroup"}, props,
+                                 "mcast_addr", false, "228.8.8.8");
             if(str != null)
                 mcast_addr_name=str;
         }
         catch (SecurityException e) {} // if in applet context
 
-        str=props.getProperty("mcast_port");
-        if(str != null) {
-            mcast_port=Integer.parseInt(str);
-            props.remove("mcast_port");
-        }
+//        str=props.getProperty("mcast_port");
+//        if(str != null) {
+//            mcast_port=Integer.parseInt(str);
+//            props.remove("mcast_port");
+//        }
 
         try {
-            str=System.getProperty("jboss.partition.udpPort");
+            // str=System.getProperty("jboss.partition.udpPort");
+            str=Util.getProperty(new String[]{Global.UDP_MCAST_PORT, "jboss.partition.udpPort"},
+                                 props, "mcast_port", false, "7600");
             if(str != null)
                 mcast_port=Integer.parseInt(str);
         }
