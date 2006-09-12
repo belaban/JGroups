@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.44 2006/09/05 11:20:56 belaban Exp $
+// $Id: FD_SOCK.java,v 1.45 2006/09/12 12:31:38 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -336,15 +336,16 @@ public class FD_SOCK extends Protocol implements Runnable {
                 break;
 
             case Event.VIEW_CHANGE:
+                v=(View) evt.getArg();
+                Vector new_mbrs=v.getMembers();
+                passDown(evt);
+
                 synchronized(this) {
-                    v=(View) evt.getArg();
                     members.removeAllElements();
-                    members.addAll(v.getMembers());
+                    members.addAll(new_mbrs);
                     bcast_task.adjustSuspectedMembers(members);
                     pingable_mbrs.removeAllElements();
                     pingable_mbrs.addAll(members);
-                    passDown(evt);
-
                     if(log.isDebugEnabled()) log.debug("VIEW_CHANGE received: " + members);
 
                     // 1. Get the addr:pid cache from the coordinator (only if not already fetched)
@@ -352,7 +353,6 @@ public class FD_SOCK extends Protocol implements Runnable {
                         getCacheFromCoordinator();
                         got_cache_from_coord=true;
                     }
-
 
                     // 2. Broadcast my own addr:sock to all members so they can update their cache
                     if(!srv_sock_sent) {
