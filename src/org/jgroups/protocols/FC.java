@@ -1,4 +1,3 @@
-// $Id: FC.java,v 1.52 2006/09/04 12:56:37 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -26,7 +25,7 @@ import java.util.*;
  * <br/>This is the second simplified implementation of the same model. The algorithm is sketched out in
  * doc/FlowControl.txt
  * @author Bela Ban
- * @version $Revision: 1.52 $
+ * @version $Id: FC.java,v 1.53 2006/09/12 12:36:12 belaban Exp $
  */
 public class FC extends Protocol {
 
@@ -229,23 +228,6 @@ public class FC extends Protocol {
                 Util.release(lock);
             }
         }
-
-
-//        synchronized(mutex) {
-//            if(trace)
-//                log.trace("unblocking the sender and replenishing all members, creditors are " + creditors);
-//
-//            Map.Entry entry;
-//            for(Iterator it=sent.entrySet().iterator(); it.hasNext();) {
-//                entry=(Map.Entry)it.next();
-//                entry.setValue(max_credits_constant);
-//            }
-//
-//            lowest_credit=computeLowestCredit(sent);
-//            creditors.clear();
-//            insufficient_credit=false;
-//            mutex.notifyAll();
-//        }
     }
 
 
