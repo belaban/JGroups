@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.63 2006/09/08 16:09:59 vlada Exp $ -->
+<!-- $Id: build.xml,v 1.64 2006/09/12 07:00:29 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -344,17 +344,18 @@
 	
 	
     <target name="unittests"
-        depends="compile, makeKeystore"    	
-        description="Runs all unit tests in tests/junit and prints results to stdout">
+            depends="compile, makeKeystore"
+            description="Runs all unit tests in tests/junit and prints results to stdout">
         <junit printsummary="yes" timeout="${unittest.timeout.low}" fork="yes">
+            <jvmarg value="-Dbind.address=${jgroups.bind_addr}"/>
             <classpath refid="jg.classpath"/>
             <formatter type="brief" usefile="false"/>
             <batchtest todir="${tmp.dir}">
                 <fileset dir="${junit.dir}"
-                    includes="**/AUTHTest.java"/>
+                         includes="**/AUTHTest.java"/>
             </batchtest>
         </junit>
-    	<delete dir="${keystore.dir}" failonerror="false"/>
+        <delete dir="${keystore.dir}" failonerror="false"/>
     </target>
 
 
@@ -362,91 +363,95 @@
         <delete dir="${tmp.dir}/tests-results"/>
         <mkdir dir="${tmp.dir}/tests-results"/>
         <junit printsummary="yes" timeout="${unittest.timeout.low}" fork="yes">
-            <jvmarg value="-Dbind.address=127.0.0.1"/>
+            <jvmarg value="-Dbind.address=${jgroups.bind_addr}"/>
             <jvmarg value="-Dtests.tmp.dir=${tmp.dir}"/>
             <jvmarg value="-Dlog4j.configuration=file:c:\log4j.properties"/>
             <classpath refid="jg.classpath"/>
             <formatter type="xml" usefile="true"/>
             <batchtest todir="${tmp.dir}/tests-results">
                 <fileset dir="${junit.dir}"
-                    includes="**/*Test.java" excludes="**/DistributedQueueTest.java"/>
+                         includes="**/*Test.java" excludes="**/DistributedQueueTest.java"/>
             </batchtest>
         </junit>
     </target>
 	
-	<target name="one-test" depends="compile,makeKeystore" description="Runs a single unit test">
-	 	<mkdir dir="${tmp.dir}/tests-results"/>
-	    <junit printsummary="yes" timeout="${unittest.timeout.low}" fork="yes">
-		     <sysproperty key="log4j.configuration" value="file:${conf.dir}/log4j.properties" />
-		  	 <sysproperty key="tests.tmp.dir" value="${tmp.dir}" />
-		  	 <classpath refid="jg.classpath"/>
-		     <formatter type="xml" usefile="true"/>
-		     <test name="${test}" todir="${tmp.dir}/tests-results"/>
-	    </junit>		
-	</target>		
+    <target name="one-test" depends="compile,makeKeystore" description="Runs a single unit test">
+        <mkdir dir="${tmp.dir}/tests-results"/>
+        <junit printsummary="yes" timeout="${unittest.timeout.low}" fork="yes">
+            <jvmarg value="-Dbind.address=${jgroups.bind_addr}"/>
+            <sysproperty key="log4j.configuration" value="file:${conf.dir}/log4j.properties" />
+            <sysproperty key="tests.tmp.dir" value="${tmp.dir}" />
+            <classpath refid="jg.classpath"/>
+            <formatter type="xml" usefile="true"/>
+            <test name="${test}" todir="${tmp.dir}/tests-results"/>
+        </junit>
+    </target>
 		
-	<target name="mux-test-udp" depends="compile" description="Runs mux for udp">
+    <target name="mux-test-udp" depends="compile" description="Runs mux for udp">
 			
-		    <echo message="Multiplexer test for udp stack config"/>
-			<junit printsummary="yes" taskname="udp" timeout="${unittest.timeout.low}" fork="yes" showoutput="true" description="mux tests using udp-sync">
-			     <sysproperty key="log4j.configuration" value="${conf.dir}/log4j.properties" />
-			  	 <sysproperty key="tests.tmp.dir" value="${tmp.dir}" />
-			  	 <sysproperty key="cfg" value="${conf.dir}/stacks.xml" />
-				 <sysproperty key="stack" value="udp" />
-			  	 <classpath refid="jg.classpath"/>
-			     <formatter type="xml" usefile="true"/>
-			     <test name="org.jgroups.tests.MultiplexerTest" todir="${tmp.dir}/tests-results"/>
-			</junit>	
-	</target>
+        <echo message="Multiplexer test for udp stack config"/>
+        <junit printsummary="yes" taskname="udp" timeout="${unittest.timeout.low}" fork="yes" showoutput="true" description="mux tests using udp-sync">
+            <jvmarg value="-Dbind.address=${jgroups.bind_addr}"/>
+            <sysproperty key="log4j.configuration" value="${conf.dir}/log4j.properties" />
+            <sysproperty key="tests.tmp.dir" value="${tmp.dir}" />
+            <sysproperty key="cfg" value="${conf.dir}/stacks.xml" />
+            <sysproperty key="stack" value="udp" />
+            <classpath refid="jg.classpath"/>
+            <formatter type="xml" usefile="true"/>
+            <test name="org.jgroups.tests.MultiplexerTest" todir="${tmp.dir}/tests-results"/>
+        </junit>
+    </target>
 	
-	<target name="mux-test-udp-sync" depends="compile" description="Runs mux test for udp-sync">
+    <target name="mux-test-udp-sync" depends="compile" description="Runs mux test for udp-sync">
 			
-			<echo message="Multiplexer test for udp-sync stack config"/>
-			<junit printsummary="yes" taskname="udp-sync" timeout="${unittest.timeout.low}" fork="yes" showoutput="true" description="mux tests using udp-sync">
-			     <sysproperty key="log4j.configuration" value="${conf.dir}/log4j.properties" />
-			  	 <sysproperty key="tests.tmp.dir" value="${tmp.dir}" />
-			  	 <sysproperty key="cfg" value="${conf.dir}/stacks.xml" />
-				 <sysproperty key="stack" value="udp-sync" />
-			  	 <classpath refid="jg.classpath"/>
-			     <formatter type="xml" usefile="true"/>
-			     <test name="org.jgroups.tests.MultiplexerTest" todir="${tmp.dir}/tests-results"/>
-			</junit>
+        <echo message="Multiplexer test for udp-sync stack config"/>
+        <junit printsummary="yes" taskname="udp-sync" timeout="${unittest.timeout.low}" fork="yes" showoutput="true" description="mux tests using udp-sync">
+            <jvmarg value="-Dbind.address=${jgroups.bind_addr}"/>
+            <sysproperty key="log4j.configuration" value="${conf.dir}/log4j.properties" />
+            <sysproperty key="tests.tmp.dir" value="${tmp.dir}" />
+            <sysproperty key="cfg" value="${conf.dir}/stacks.xml" />
+            <sysproperty key="stack" value="udp-sync" />
+            <classpath refid="jg.classpath"/>
+            <formatter type="xml" usefile="true"/>
+            <test name="org.jgroups.tests.MultiplexerTest" todir="${tmp.dir}/tests-results"/>
+        </junit>
 							
-	</target>
+    </target>
 	
-	<target name="mux-test-tcp" depends="compile" description="Runs mux test for tcp">
+    <target name="mux-test-tcp" depends="compile" description="Runs mux test for tcp">
 			
-			<echo message="Multiplexer test for tcp stack config"/>
-			<junit printsummary="yes" taskname="tcp" timeout="${unittest.timeout.low}" fork="yes" showoutput="true" description="mux tests using tcp">
-			     <sysproperty key="log4j.configuration" value="${conf.dir}/log4j.properties" />
-			  	 <sysproperty key="tests.tmp.dir" value="${tmp.dir}" />
-			  	 <sysproperty key="cfg" value="${conf.dir}/stacks.xml" />
-				 <sysproperty key="stack" value="tcp" />
-			  	 <classpath refid="jg.classpath"/>
-			     <formatter type="xml" usefile="true"/>
-			     <test name="org.jgroups.tests.MultiplexerTest" todir="${tmp.dir}/tests-results"/>
-			</junit>				
-	</target>
+        <echo message="Multiplexer test for tcp stack config"/>
+        <junit printsummary="yes" taskname="tcp" timeout="${unittest.timeout.low}" fork="yes" showoutput="true" description="mux tests using tcp">
+            <jvmarg value="-Dbind.address=${jgroups.bind_addr}"/>
+            <sysproperty key="log4j.configuration" value="${conf.dir}/log4j.properties" />
+            <sysproperty key="tests.tmp.dir" value="${tmp.dir}" />
+            <sysproperty key="cfg" value="${conf.dir}/stacks.xml" />
+            <sysproperty key="stack" value="tcp" />
+            <classpath refid="jg.classpath"/>
+            <formatter type="xml" usefile="true"/>
+            <test name="org.jgroups.tests.MultiplexerTest" todir="${tmp.dir}/tests-results"/>
+        </junit>
+    </target>
 	
-	<target name="mux-test-tcp-sync" depends="compile" description="Runs mux test for tcp-sync">
-			
-			<echo message="Multiplexer test for tcp-sync stack config"/>
-			<junit printsummary="yes" taskname="tcp" timeout="${unittest.timeout.low}" fork="yes" showoutput="true" description="mux tests using tcp-sync">
-			     <sysproperty key="log4j.configuration" value="${conf.dir}/log4j.properties" />
-			  	 <sysproperty key="tests.tmp.dir" value="${tmp.dir}" />
-			  	 <sysproperty key="cfg" value="${conf.dir}/stacks.xml" />
-				 <sysproperty key="stack" value="tcp-sync" />
-			  	 <classpath refid="jg.classpath"/>
-			     <formatter type="xml" usefile="true"/>
-			     <test name="org.jgroups.tests.MultiplexerTest" todir="${tmp.dir}/tests-results"/>
-			</junit>				
-	</target>
+    <target name="mux-test-tcp-sync" depends="compile" description="Runs mux test for tcp-sync">
+        <echo message="Multiplexer test for tcp-sync stack config"/>
+        <junit printsummary="yes" taskname="tcp" timeout="${unittest.timeout.low}" fork="yes" showoutput="true" description="mux tests using tcp-sync">
+            <jvmarg value="-Dbind.address=${jgroups.bind_addr}"/>
+            <sysproperty key="log4j.configuration" value="${conf.dir}/log4j.properties" />
+            <sysproperty key="tests.tmp.dir" value="${tmp.dir}" />
+            <sysproperty key="cfg" value="${conf.dir}/stacks.xml" />
+            <sysproperty key="stack" value="tcp-sync" />
+            <classpath refid="jg.classpath"/>
+            <formatter type="xml" usefile="true"/>
+            <test name="org.jgroups.tests.MultiplexerTest" todir="${tmp.dir}/tests-results"/>
+        </junit>
+    </target>
 	
 
     <target name="findxalan">
         <available property="xalan.available" classname="org.apache.xalan.Version"/>
         <fail unless="xalan.available"
-            message="Xalan was not found. Please add the xalan.jar file from the lib directory to the CLASSPATH and retry"/>
+              message="Xalan was not found. Please add the xalan.jar file from the lib directory to the CLASSPATH and retry"/>
     </target>
 
 
