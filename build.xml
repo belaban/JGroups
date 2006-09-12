@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.64 2006/09/12 07:00:29 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.65 2006/09/12 12:55:57 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -347,7 +347,8 @@
             depends="compile, makeKeystore"
             description="Runs all unit tests in tests/junit and prints results to stdout">
         <junit printsummary="yes" timeout="${unittest.timeout.low}" fork="yes">
-            <jvmarg value="-Dbind.address=${jgroups.bind_addr}"/>
+            <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
+            <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
             <classpath refid="jg.classpath"/>
             <formatter type="brief" usefile="false"/>
             <batchtest todir="${tmp.dir}">
@@ -363,7 +364,8 @@
         <delete dir="${tmp.dir}/tests-results"/>
         <mkdir dir="${tmp.dir}/tests-results"/>
         <junit printsummary="yes" timeout="${unittest.timeout.low}" fork="yes">
-            <jvmarg value="-Dbind.address=${jgroups.bind_addr}"/>
+            <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
+            <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
             <jvmarg value="-Dtests.tmp.dir=${tmp.dir}"/>
             <jvmarg value="-Dlog4j.configuration=file:c:\log4j.properties"/>
             <classpath refid="jg.classpath"/>
@@ -378,7 +380,8 @@
     <target name="one-test" depends="compile,makeKeystore" description="Runs a single unit test">
         <mkdir dir="${tmp.dir}/tests-results"/>
         <junit printsummary="yes" timeout="${unittest.timeout.low}" fork="yes">
-            <jvmarg value="-Dbind.address=${jgroups.bind_addr}"/>
+            <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
+            <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
             <sysproperty key="log4j.configuration" value="file:${conf.dir}/log4j.properties" />
             <sysproperty key="tests.tmp.dir" value="${tmp.dir}" />
             <classpath refid="jg.classpath"/>
@@ -391,7 +394,8 @@
 			
         <echo message="Multiplexer test for udp stack config"/>
         <junit printsummary="yes" taskname="udp" timeout="${unittest.timeout.low}" fork="yes" showoutput="true" description="mux tests using udp-sync">
-            <jvmarg value="-Dbind.address=${jgroups.bind_addr}"/>
+            <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
+            <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
             <sysproperty key="log4j.configuration" value="${conf.dir}/log4j.properties" />
             <sysproperty key="tests.tmp.dir" value="${tmp.dir}" />
             <sysproperty key="cfg" value="${conf.dir}/stacks.xml" />
@@ -406,7 +410,8 @@
 			
         <echo message="Multiplexer test for udp-sync stack config"/>
         <junit printsummary="yes" taskname="udp-sync" timeout="${unittest.timeout.low}" fork="yes" showoutput="true" description="mux tests using udp-sync">
-            <jvmarg value="-Dbind.address=${jgroups.bind_addr}"/>
+            <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
+            <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
             <sysproperty key="log4j.configuration" value="${conf.dir}/log4j.properties" />
             <sysproperty key="tests.tmp.dir" value="${tmp.dir}" />
             <sysproperty key="cfg" value="${conf.dir}/stacks.xml" />
@@ -422,7 +427,8 @@
 			
         <echo message="Multiplexer test for tcp stack config"/>
         <junit printsummary="yes" taskname="tcp" timeout="${unittest.timeout.low}" fork="yes" showoutput="true" description="mux tests using tcp">
-            <jvmarg value="-Dbind.address=${jgroups.bind_addr}"/>
+            <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
+            <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
             <sysproperty key="log4j.configuration" value="${conf.dir}/log4j.properties" />
             <sysproperty key="tests.tmp.dir" value="${tmp.dir}" />
             <sysproperty key="cfg" value="${conf.dir}/stacks.xml" />
@@ -436,7 +442,8 @@
     <target name="mux-test-tcp-sync" depends="compile" description="Runs mux test for tcp-sync">
         <echo message="Multiplexer test for tcp-sync stack config"/>
         <junit printsummary="yes" taskname="tcp" timeout="${unittest.timeout.low}" fork="yes" showoutput="true" description="mux tests using tcp-sync">
-            <jvmarg value="-Dbind.address=${jgroups.bind_addr}"/>
+            <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
+            <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
             <sysproperty key="log4j.configuration" value="${conf.dir}/log4j.properties" />
             <sysproperty key="tests.tmp.dir" value="${tmp.dir}" />
             <sysproperty key="cfg" value="${conf.dir}/stacks.xml" />
