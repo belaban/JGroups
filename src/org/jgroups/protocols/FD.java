@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.37 2006/08/26 13:17:55 belaban Exp $
+// $Id: FD.java,v 1.38 2006/09/12 12:25:55 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -29,7 +29,7 @@ import java.util.List;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Revision: 1.37 $
+ * @version $Revision: 1.38 $
  */
 public class FD extends Protocol {
     Address               ping_dest=null;
@@ -283,15 +283,15 @@ public class FD extends Protocol {
 
         switch(evt.getType()) {
             case Event.VIEW_CHANGE:
+                passDown(evt);
+                stop();
                 synchronized(this) {
-                    stop();
                     v=(View)evt.getArg();
                     members.clear();
                     members.addAll(v.getMembers());
                     bcast_task.adjustSuspectedMembers(members);
                     pingable_mbrs.clear();
                     pingable_mbrs.addAll(members);
-                    passDown(evt);
                     ping_dest=(Address)getPingDest(pingable_mbrs);
                     if(ping_dest != null) {
                         try {
@@ -584,12 +584,15 @@ public class FD extends Protocol {
         protected void addSuspectedMember(Address mbr) {
             if(mbr == null) return;
             if(!members.contains(mbr)) return;
+            boolean added=false;
             synchronized(suspected_mbrs) {
                 if(!suspected_mbrs.contains(mbr)) {
                     suspected_mbrs.addElement(mbr);
-                    startBroadcastTask(mbr);
+                    added=true;
                 }
             }
+            if(added)
+                startBroadcastTask(mbr);
         }
 
         void removeSuspectedMember(Address suspected_mbr) {
