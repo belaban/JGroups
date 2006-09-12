@@ -2,15 +2,15 @@
 <!--
   Sample file that defines a number of stacks, used by the multiplexer
   Author: Bela Ban
-  Version: $Id: stacks.xml,v 1.8 2006/09/01 07:44:15 belaban Exp $
+  Version: $Id: stacks.xml,v 1.9 2006/09/12 07:34:34 belaban Exp $
 -->
 <protocol_stacks>
     <stack name="udp"
            description="Default: IP multicast based stack, with flow control and message bundling">
         <config>
             <UDP
-                 mcast_port="${jboss.partition.udpPort:45588}"
-                 mcast_addr="${jboss.partition.udpGroup:228.10.10.10}"
+                 mcast_addr="${jgroups.udp.mcast_addr:228.10.10.10}"
+                 mcast_port="${jgroups.udp.mcast_port:45588}"
                  tos="8"
                  ucast_recv_buf_size="20000000"
                  ucast_send_buf_size="640000"
@@ -22,7 +22,7 @@
                  max_bundle_timeout="30"
                  use_incoming_packet_handler="true"
                  use_outgoing_packet_handler="false"
-                 ip_ttl="${jboss.mcast.ip.ttl:2}"
+                 ip_ttl="${jgroups.udp.ip_ttl:2}"
                  down_thread="false" up_thread="false"
                  enable_bundling="true"/>
             <PING timeout="2000"
@@ -65,8 +65,8 @@
             run out of memory">
         <config>
             <UDP
-                 mcast_port="${jboss.partition.udpPort:45599}"
-                 mcast_addr="${jboss.partition.udpGroup:229.10.10.10}"
+                 mcast_addr="${jgroups.udp.mcast_addr:229.10.10.10}"
+                 mcast_port="${jgroups.udp.mcast_port:45599}"
                  tos="8"
                  ucast_recv_buf_size="20000000"
                  ucast_send_buf_size="640000"
@@ -78,7 +78,7 @@
                  max_bundle_timeout="30"
                  use_incoming_packet_handler="true"
                  use_outgoing_packet_handler="false"
-                 ip_ttl="${jboss.mcast.ip.ttl:2}"
+                 ip_ttl="${jgroups.udp.ip_ttl:2}"
                  down_thread="false" up_thread="false"
                  enable_bundling="false"/>
             <PING timeout="2000"
@@ -137,7 +137,7 @@
                      processor_queueSize="100"
                      processor_keepAliveTime="-1"/>
             <TCPPING timeout="3000"
-                     initial_hosts="${jboss.tcpping.initial_hosts:localhost[7800],localhost[7801]}"
+                     initial_hosts="${jgroups.tcpping.initial_hosts:localhost[7800],localhost[7801]}"
                      port_range="1"
                      num_initial_members="3"/>
             <MERGE2 max_interval="100000"
@@ -196,7 +196,7 @@
                      processor_queueSize="100"
                      processor_keepAliveTime="-1"/>
             <TCPPING timeout="3000"
-                     initial_hosts="${jboss.tcpping.initial_hosts:localhost[7900],localhost[7901]}"
+                     initial_hosts="${jgroups.tcpping.initial_hosts:localhost[7900],localhost[7901]}"
                      port_range="1"
                      num_initial_members="3"/>
             <MERGE2 max_interval="100000"
