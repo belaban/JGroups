@@ -8,10 +8,7 @@ import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
 import java.io.*;
-import java.util.Enumeration;
-import java.util.Hashtable;
-import java.util.Properties;
-import java.util.Map;
+import java.util.*;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.net.NetworkInterface;
@@ -23,7 +20,7 @@ import java.lang.reflect.Method;
  * passes SUSPECT event up the stack, otherwise discards it. Has to be placed somewhere above the FD layer and
  * below the GMS layer (receiver of the SUSPECT event). Note that SUSPECT events may be reordered by this protocol.
  * @author Bela Ban
- * @version $Id: VERIFY_SUSPECT.java,v 1.20 2006/09/09 12:36:20 belaban Exp $
+ * @version $Id: VERIFY_SUSPECT.java,v 1.21 2006/09/12 12:01:01 belaban Exp $
  */
 public class VERIFY_SUSPECT extends Protocol implements Runnable {
     private Address     local_addr=null;
@@ -188,6 +185,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         while(timer != null && Thread.currentThread().equals(timer) && suspects.size() > 0) {
             diff=0;
 
+            List tmp=null;
             synchronized(suspects) {
                 for(Enumeration e=suspects.keys(); e.hasMoreElements();) {
                     mbr=(Address)e.nextElement();
@@ -197,12 +195,17 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
                     if(diff >= timeout) {  // haven't been unsuspected, pass up SUSPECT
                         if(trace)
                             log.trace("diff=" + diff + ", mbr " + mbr + " is dead (passing up SUSPECT event)");
-                        passUp(new Event(Event.SUSPECT, mbr));
+                        if(tmp == null) tmp=new LinkedList();
+                        tmp.add(mbr);
                         suspects.remove(mbr);
                         continue;
                     }
                     diff=Math.max(diff, timeout - diff);
                 }
+            }
+            if(tmp != null && tmp.size() > 0) {
+                for(Iterator it=tmp.iterator(); it.hasNext();)
+                    passUp(new Event(Event.SUSPECT, it.next()));
             }
 
             if(diff > 0)
@@ -273,13 +276,17 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
 
     void unsuspect(Address mbr) {
         if(mbr == null) return;
+        boolean removed=false;
         synchronized(suspects) {
             if(suspects.containsKey(mbr)) {
                 if(trace) log.trace("member " + mbr + " is not dead !");
                 suspects.remove(mbr);
-                passDown(new Event(Event.UNSUSPECT, mbr));
-                passUp(new Event(Event.UNSUSPECT, mbr));
+                removed=true;
             }
+        }
+        if(removed) {
+            passDown(new Event(Event.UNSUSPECT, mbr));
+            passUp(new Event(Event.UNSUSPECT, mbr));
         }
     }
 
