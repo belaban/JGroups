@@ -2,7 +2,7 @@
 <!--
   Sample file that defines a number of stacks, used by the multiplexer
   Author: Bela Ban
-  Version: $Id: stacks.xml,v 1.9 2006/09/12 07:34:34 belaban Exp $
+  Version: $Id: stacks.xml,v 1.10 2006/09/12 07:55:13 belaban Exp $
 -->
 <protocol_stacks>
     <stack name="udp"
@@ -137,6 +137,7 @@
                      processor_queueSize="100"
                      processor_keepAliveTime="-1"/>
             <TCPPING timeout="3000"
+                     down_thread="false" up_thread="false"
                      initial_hosts="${jgroups.tcpping.initial_hosts:localhost[7800],localhost[7801]}"
                      port_range="1"
                      num_initial_members="3"/>
@@ -169,7 +170,7 @@
 
 
     <stack name="tcp-sync"
-           description="TCP based stack, with flow control and message bundling. This is usually used when IP
+           description="TCP based stack, without flow control and without message bundling. This is usually used when IP
            multicasting cannot be used in a network, e.g. because it is disabled (routers discard multicast). This
            configuration should be used instead of tcp when (1) synchronous calls are used and (2) the message volume
            (rate and size) is not that large">
@@ -196,6 +197,7 @@
                      processor_queueSize="100"
                      processor_keepAliveTime="-1"/>
             <TCPPING timeout="3000"
+                     down_thread="false" up_thread="false"
                      initial_hosts="${jgroups.tcpping.initial_hosts:localhost[7900],localhost[7901]}"
                      port_range="1"
                      num_initial_members="3"/>
