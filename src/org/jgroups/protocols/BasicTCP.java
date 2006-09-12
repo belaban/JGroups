@@ -61,6 +61,8 @@ public abstract class BasicTCP extends TP {
            send(dest, data, offset, length);
        }
        catch(Exception e) {
+           if(log.isTraceEnabled())
+               log.trace("failure sending message to " + dest, e);
            if(suspect_on_send_failure && members.contains(dest)) {
                if(!suspected_mbrs.contains(dest)) {
                    suspected_mbrs.add(dest);
