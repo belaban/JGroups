@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.32 2006/01/24 15:52:45 belaban Exp $
+// $Id: TCP.java,v 1.31.2.1 2006/09/13 13:08:08 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -6,7 +6,6 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
-import org.jgroups.View;
 import org.jgroups.blocks.ConnectionTable;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.BoundedList;
@@ -15,7 +14,8 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Properties;
 import java.util.Vector;
-import java.util.Iterator;
+
+
 
 
 /**
@@ -182,17 +182,12 @@ public class TCP extends TP implements ConnectionTable.Receiver {
         super.handleDownEvent(evt);
         if(evt.getType() == Event.VIEW_CHANGE) {
             suspected_mbrs.removeAll();
-            View v=(View)evt.getArg();
-            Vector tmp_mbrs=v != null? v.getMembers() : null;
-            if(tmp_mbrs != null) {
-                ct.retainAll(tmp_mbrs); // remove all connections from the ConnectionTable which are not members
-            }
         }
         else if(evt.getType() == Event.UNSUSPECT) {
             suspected_mbrs.removeElement(evt.getArg());
         }
     }
-
+    
 
    /**
     * @param reaperInterval
@@ -219,7 +214,7 @@ public class TCP extends TP implements ConnectionTable.Receiver {
                connExpireTime=1000 * 60 * 5;
                if(warn) log.warn("conn_expire_time was 0, set it to " + connExpireTime);
            }
-           cTable=new ConnectionTable(this, bindAddress, externalAddress, startPort, endPort,
+           cTable=new ConnectionTable(this, bindAddress, externalAddress, startPort, endPort, 
                                       reaperInterval, connExpireTime);
        }
        return cTable;
@@ -265,7 +260,7 @@ public class TCP extends TP implements ConnectionTable.Receiver {
             if(members.contains(dest)) {
                 if(!suspected_mbrs.contains(dest)) {
                     suspected_mbrs.add(dest);
-                    passUp(new Event(Event.SUSPECT, dest));
+                    // passUp(new Event(Event.SUSPECT, dest)); // commented bela Sept 13 2006, job is done by FD/FD_SOCK
                 }
             }
         }

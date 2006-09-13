@@ -1,4 +1,4 @@
-// $Id: VERIFY_SUSPECT.java,v 1.16 2005/12/16 16:08:17 belaban Exp $
+// $Id: VERIFY_SUSPECT.java,v 1.16.2.1 2006/09/13 13:08:08 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -173,12 +173,12 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
             if(suspects.containsKey(mbr))
                 return;
             suspects.put(mbr, new Long(System.currentTimeMillis()));
-            if(trace) log.trace("verifying that " + mbr + " is dead");
-            for(int i=0; i < num_msgs; i++) {
-                msg=new Message(mbr, null, null);
-                msg.putHeader(name, new VerifyHeader(VerifyHeader.ARE_YOU_DEAD, local_addr));
-                passDown(new Event(Event.MSG, msg));
-            }
+        }
+        if(trace) log.trace("verifying that " + mbr + " is dead");
+        for(int i=0; i < num_msgs; i++) {
+            msg=new Message(mbr, null, null);
+            msg.putHeader(name, new VerifyHeader(VerifyHeader.ARE_YOU_DEAD, local_addr));
+            passDown(new Event(Event.MSG, msg));
         }
         if(timer == null)
             startTimer();
