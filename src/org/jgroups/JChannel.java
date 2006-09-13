@@ -67,7 +67,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.93 2006/09/13 11:36:37 belaban Exp $
+ * @version $Id: JChannel.java,v 1.94 2006/09/13 11:40:17 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -1124,7 +1124,16 @@ public class JChannel extends Channel {
 				break;
             case Event.BLOCK:
                 if(receiver != null) {
-                    receiver.block();
+                    try {
+                        receiver.block();
+                    }
+                    catch(Throwable t) {
+                        if(log.isErrorEnabled())
+                            log.error("failed calling block() on Receiver", t);
+                    }
+                    finally {
+                        blockOk();
+                    }
                     return;
                 }
                 break;
