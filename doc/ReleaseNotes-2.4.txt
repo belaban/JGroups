@@ -2,7 +2,7 @@
 Release Notes JGroups 2.4
 =========================
 
-Version: $Id: ReleaseNotes-2.4.txt,v 1.8 2006/08/30 09:07:35 belaban Exp $
+Version: $Id: ReleaseNotes-2.4.txt,v 1.9 2006/09/13 12:36:53 belaban Exp $
 Author: Bela Ban
 
 JGroups 2.4 is a backward compatible release, that is it can replace previous versions (2.3 - 2.2.7) by simply replacing
@@ -105,6 +105,10 @@ Enhancements and bug fixes
 - Multiplexer: view not sent when member crashes (http://jira.jboss.com/jira/browse/JGRP-286)
 - Multiplexer: underlying JChannel not closed in MuxChannel in certain scenarios
   (http://jira.jboss.com/jira/browse/JGRP-288)
+- Pull-the-plug scenarios with TCP, lead to incorrect behavior before, is now fixed:
+  - http://jira.jboss.com/jira/browse/JGRP-217
+  - http://jira.jboss.com/jira/browse/JGRP-302
+  - http://jira.jboss.com/jira/browse/JGRP-304
 
 
 Documentation
