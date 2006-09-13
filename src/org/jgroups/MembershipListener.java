@@ -1,4 +1,4 @@
-// $Id: MembershipListener.java,v 1.4 2005/07/17 11:38:05 chrislott Exp $
+// $Id: MembershipListener.java,v 1.5 2006/09/13 11:27:47 belaban Exp $
 
 package org.jgroups;
 
@@ -36,8 +36,6 @@ public interface MembershipListener {
      * When the next view is received (viewAccepted()), the member can resume sending 
      * messages. If a member does not comply, the message(s) sent between a block() 
      * and a matching viewAccepted() callback will probably be delivered in the next view.
-     * The block() callback is only needed by the Virtual Synchrony suite of protocols 
-     * (FLUSH protocol)3.2, otherwise it will never be invoked. 
      */
     void block();
 
