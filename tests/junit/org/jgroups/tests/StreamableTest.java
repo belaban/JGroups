@@ -1,13 +1,12 @@
-// $Id: StreamableTest.java,v 1.4 2005/08/29 11:52:09 belaban Exp $
+// $Id: StreamableTest.java,v 1.4.2.1 2006/09/13 12:59:19 belaban Exp $
 
 package org.jgroups.tests;
 
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
-import org.jgroups.Message;
-import org.jgroups.Address;
-import org.jgroups.ChannelException;
+import org.jgroups.*;
+import org.jgroups.util.Util;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.PingHeader;
 import org.jgroups.protocols.UdpHeader;
@@ -19,6 +18,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.util.Vector;
 
 
 
@@ -166,6 +166,60 @@ public class StreamableTest extends TestCase {
         stream(msg);
     }
 
+
+    public void testMergeView() throws Exception {
+        Vector tmp_m1, tmp_m2 , m3, all, subgroups;
+        Address a,b,c,d,e,f;
+        View v1, v2, v3, v4, v5, view_all;
+
+        a=new IpAddress(1000);
+        b=new IpAddress(2000);
+        c=new IpAddress(3000);
+        d=new IpAddress(4000);
+        e=new IpAddress(5000);
+        f=new IpAddress(6000);
+
+        tmp_m1=new Vector(); tmp_m2=new Vector(); m3=new Vector(); all=new Vector(); subgroups=new Vector();
+        tmp_m1.add(a); tmp_m1.add(b); tmp_m1.add(c);
+        tmp_m2.add(d);
+        m3.add(e); m3.add(f);
+        all.add(a); all.add(b); all.add(c); all.add(d); all.add(e); all.add(f);
+
+        v1=new View(a, 1, tmp_m1);
+        v2=new MergeView(d, 2, tmp_m2, new Vector());
+        v3=new View(e, 3, m3);
+        v4=new MergeView(e, 4, m3, null);
+        v5=new View(e, 5, m3);
+        subgroups.add(v1);
+        subgroups.add(v2);
+        subgroups.add(v3);
+        subgroups.add(v4);
+        subgroups.add(v5);
+
+        view_all=new MergeView(a, 5, all, subgroups);
+        System.out.println("MergeView: " + view_all);
+        Vector sub=((MergeView)view_all).getSubgroups();
+        assertTrue(sub.get(0) instanceof View);
+        assertTrue(sub.get(1) instanceof MergeView);
+        assertTrue(sub.get(2) instanceof View);
+        assertTrue(sub.get(3) instanceof MergeView);
+        assertTrue(sub.get(4) instanceof View);
+
+        byte[] buf=Util.streamableToByteBuffer(view_all);
+        assertNotNull(buf);
+        assertTrue(buf.length > 0);
+
+        MergeView merge_view=(MergeView)Util.streamableFromByteBuffer(MergeView.class, buf);
+        assertNotNull(merge_view);
+        System.out.println("MergeView: " + merge_view);
+        sub=merge_view.getSubgroups();
+        assertTrue(sub.get(0) instanceof View);
+        assertTrue(sub.get(1) instanceof MergeView);
+        assertTrue(sub.get(2) instanceof View);
+        assertTrue(sub.get(3) instanceof MergeView);
+        assertTrue(sub.get(4) instanceof View);
+    }
+
     private void stream(Message msg) throws Exception {
         int length, bufLength;
         byte[] tmp;
@@ -224,8 +278,7 @@ public class StreamableTest extends TestCase {
 
 
     public static Test suite() {
-        TestSuite s=new TestSuite(StreamableTest.class);
-        return s;
+        return new TestSuite(StreamableTest.class);
     }
 
     public static void main(String[] args) {
