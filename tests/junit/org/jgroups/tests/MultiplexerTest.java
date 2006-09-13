@@ -14,7 +14,7 @@ import java.io.*;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.19 2006/09/08 16:04:50 vlada Exp $
+ * @version $Id: MultiplexerTest.java,v 1.20 2006/09/13 11:25:00 belaban Exp $
  */
 public class MultiplexerTest extends TestCase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -74,7 +74,7 @@ public class MultiplexerTest extends TestCase {
 
         ch1_repl=ch2_repl=ch1=ch2=null;
         c1=c2=c1_repl=c2_repl=null;
-        // System.out.println(Util.activeThreads());
+        System.out.println(Util.activeThreads());
     }
 
 
