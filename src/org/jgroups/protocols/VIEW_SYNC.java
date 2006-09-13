@@ -19,24 +19,24 @@ import java.util.Vector;
  * install it. Otherwise we simply discard it. This is used to solve the problem for unreliable view
  * dissemination outlined in JGroups/doc/ReliableViewInstallation.txt. This protocol is supposed to be just below GMS.
  * @author Bela Ban
- * @version $Id: VIEW_SYNC.java,v 1.8 2006/04/23 12:52:54 belaban Exp $
+ * @version $Id: VIEW_SYNC.java,v 1.5.2.1 2006/09/13 12:54:37 belaban Exp $
  */
 public class VIEW_SYNC extends Protocol {
-    Address              local_addr=null;
-    final Vector         mbrs=new Vector();
-    View                 my_view=null;
-    ViewId               my_vid=null;
+    Address             local_addr=null;
+    final Vector        mbrs=new Vector();
+    View                my_view=null;
+    ViewId              my_vid=null;
 
     /** Sends a VIEW_SYNC message to the group every 20 seconds on average. 0 disables sending of VIEW_SYNC messages */
-    long                 avg_send_interval=60000;
+    long                avg_send_interval=60000;
 
-    private int          num_views_sent=0;
-    private int          num_views_adjusted=0;
+    private int         num_views_sent=0;
+    private int         num_views_adjusted=0;
 
-    private volatile ViewSendTask view_send_task=null;             // bcasts periodic STABLE message (added to timer below)
-    final Object         view_send_task_mutex=new Object(); // to sync on stable_task
-    TimeScheduler        timer=null;                   // to send periodic STABLE msgs (and STABILITY messages)
-    static final String  name="VIEW_SYNC";
+    ViewSendTask        view_send_task=null;             // bcasts periodic STABLE message (added to timer below)
+    final Object        view_send_task_mutex=new Object(); // to sync on stable_task
+    TimeScheduler       timer=null;                   // to send periodic STABLE msgs (and STABILITY messages)
+    static final String name="VIEW_SYNC";
 
 
 
@@ -99,7 +99,7 @@ public class VIEW_SYNC extends Protocol {
 
     /** Sends a VIEW_SYNC_REQ to all members, every member replies with a VIEW multicast */
     public void sendViewRequest() {
-        Message msg=new Message(null);
+        Message msg=new Message(null, null, null);
         ViewSyncHeader hdr=new ViewSyncHeader(ViewSyncHeader.VIEW_SYNC_REQ, null);
         msg.putHeader(name, hdr);
         passDown(new Event(Event.MSG, msg));
@@ -209,7 +209,7 @@ public class VIEW_SYNC extends Protocol {
     private void sendView() {
         View tmp=(View)(my_view != null? my_view.clone() : null);
         if(tmp == null) return;
-        Message msg=new Message(null); // send to the group
+        Message msg=new Message(null, null, null); // send to the group
         ViewSyncHeader hdr=new ViewSyncHeader(ViewSyncHeader.VIEW_SYNC, tmp);
         msg.putHeader(name, hdr);
         passDown(new Event(Event.MSG, msg));
@@ -320,7 +320,7 @@ public class VIEW_SYNC extends Protocol {
         }
 
         public long size() {
-            long retval=Global.INT_SIZE + Global.BYTE_SIZE; // type + presence for digest
+            long retval=Global.INT_SIZE + Global.BYTE_SIZE + Global.BYTE_SIZE; // type + view type + presence for digest
             if(view != null)
                 retval+=view.serializedSize();
             return retval;
@@ -328,12 +328,17 @@ public class VIEW_SYNC extends Protocol {
 
         public void writeTo(DataOutputStream out) throws IOException {
             out.writeInt(type);
+            // 0 == null, 1 == View, 2 == MergeView
+            byte b=(byte)(view == null? 0 : (view instanceof MergeView? 2 : 1));
+            out.writeByte(b);
             Util.writeStreamable(view, out);
         }
 
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
             type=in.readInt();
-            view=(View)Util.readStreamable(View.class, in);
+            byte b=in.readByte();
+            Class clazz=b == 2? MergeView.class : View.class;
+            view=(View)Util.readStreamable(clazz, in);
         }
 
 
