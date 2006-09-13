@@ -158,26 +158,35 @@
                 }
             </screen>
 
-      <para>Oftentimes the only method containing any functionality will be
-      <methodname>viewAccepted()</methodname> which notifies the receiver that
-      a new member has joined the group or that an existing member has left or
-      crashed. The <methodname>suspect()</methodname> callback is invoked by
-      JGroups whenever a member if suspected of having crashed, but not yet
-      excluded <footnote>
-          <para>It could be that the member is suspected falsely, in which
-          case the next view would still contain the suspected member (there
-          is currently no <methodname>unsuspect()</methodname> method</para>
-        </footnote> . The <methodname>block</methodname> method is called
-      whenever the member needs to stop sending messages. When the next view
-      is received ( <methodname>viewAccepted()</methodname> ), the member can
-      resume sending messages. If a member does not comply, the message(s)
-      sent between a <methodname>block()</methodname> and a matching
-      <methodname>viewAccepted()</methodname> callback will probably be
-      delivered in the next view. The <methodname>block()</methodname>
-      callback is only needed by the Virtual Synchrony suite of protocols
-      (FLUSH protocol) <footnote>
-          <para>see Programer's Guide</para>
-        </footnote> , otherwise it will never be invoked.</para>
+        <para>Oftentimes the only method containing any functionality will be
+            <methodname>viewAccepted()</methodname> which notifies the receiver that
+            a new member has joined the group or that an existing member has left or
+            crashed. The <methodname>suspect()</methodname> callback is invoked by
+            JGroups whenever a member if suspected of having crashed, but not yet
+            excluded <footnote>
+            <para>It could be that the member is suspected falsely, in which
+                case the next view would still contain the suspected member (there
+                is currently no <methodname>unsuspect()</methodname> method</para>
+        </footnote>.</para>
+        <para>
+            The <methodname>block()</methodname> method is called
+            to notify the member that it will soon be blocked sending messages. This
+            is done by the FLUSH protocol, for example to ensure that nobody is sending
+            messages while a state transfer is in progress. When block() returns, any thread
+            sending messages will be blocked, until FLUSH unblocks the thread again, e.g.
+            after the state has been transferred successfully.
+         </para>
+
+        <para>
+            Therefore, block() can be used to send pending messages or complete some other work. However,
+            sending of messages should be done on a different thread, e.g. the current thread blocks on a mutex,
+            starts a different thread which notifies the mutex once the work has been done.
+         </para>
+
+        <para>
+            Note that block() should take a small amount of time to complete, otherwise the entire FLUSH protocol
+            is blocked.
+        </para>
     </section>
 
     <section>
@@ -901,22 +910,15 @@
           <term>BlockEvent</term>
 
           <listitem>
-            <para>The application has to stop sending messages <emphasis>until
-            a new view has been received</emphasis> . It is used to
-            synchronize messages between views, so that all messages are
-            received in the view in which they are sent. When the application
+            <para>The application has to stop sending messages. When the application
             has stopped sending messages, it needs to acknowledge this message
-            with a <methodname>Channel.blockOk()</methodname> method. Messages
-            of this type are not usually enabled on a channel (see <xref
-            linkend="SettingOptions" /> ), therefore an application will not
-            receive blocks at all. In case they <emphasis>are</emphasis>
-            enabled, <methodname>blockOk()</methodname> has been invoked, and
-            the application sends a message before having received the next
-            view, the view in which the message will be delivered is not
-            determined: it may be the next view, or any the message may even
-            be discarded ! When blocks are not enabled, the view in which a
-            message will be delivered, is not determined (but no message will
-            be discarded !)</para>
+            with a <methodname>Channel.blockOk()</methodname> method.</para>
+
+            <para>
+            The BlockEvent reception can be used to complete pending tasks, e.g. send pending
+            messages, but once Channel.blockOk() has been called, all threads that send messages
+            (calling Channel.send() or Channel.down()) will be blocked until FLUSH unblocks them.
+            </para>
           </listitem>
         </varlistentry>
 
