@@ -91,6 +91,8 @@ public class FLUSH extends Protocol
    private double averageFlushDuration;
 
    private Promise flush_promise;
+   
+   private Promise blockok_promise;
 
    public FLUSH()
    {
@@ -101,6 +103,8 @@ public class FLUSH extends Protocol
       flushCompletedSet = new TreeSet();
       flushMembers = new ArrayList();
       suspected = new TreeSet();
+      flush_promise = new Promise();
+      blockok_promise = new Promise();
    }
 
    public String getName()
@@ -109,16 +113,9 @@ public class FLUSH extends Protocol
    }
 
    public boolean setProperties(Properties props)
-   {
-      String str;
-
+   {      
       super.setProperties(props);
-      str = props.getProperty("timeout");
-      if (str != null)
-      {
-         timeout = Long.parseLong(str);
-         props.remove("timeout");
-      }
+      timeout = Util.parseLong(props, "timeout", timeout);
 
       if (props.size() > 0)
       {
@@ -156,7 +153,7 @@ public class FLUSH extends Protocol
    {
       boolean successfulFlush = false;
       down(new Event(Event.SUSPEND));
-      flush_promise = new Promise();
+      flush_promise.reset();
       try
       {
          flush_promise.getResultWithTimeout(timeout);
@@ -215,6 +212,10 @@ public class FLUSH extends Protocol
          case Event.RESUME :
             onResume();
             return;
+            
+         case Event.BLOCK_OK:
+            blockok_promise.setResult(Boolean.TRUE);
+            return;
       }
       passDown(evt);
    }
@@ -232,7 +233,11 @@ public class FLUSH extends Protocol
             {
                if (fh.type == FlushHeader.START_FLUSH)
                {
-                  passUp(new Event(Event.BLOCK));
+                  boolean successfulBlock = sendBlockToChannel();
+                  if (successfulBlock && log.isDebugEnabled())
+                  {
+                     log.debug("Blocking of channel completed successfully");
+                  }                  
                   onStartFlush(msg.getSrc(), fh);
                }
                else if (fh.type == FlushHeader.STOP_FLUSH)
@@ -289,6 +294,32 @@ public class FLUSH extends Protocol
       retval.addElement(new Integer(Event.SUSPEND));
       retval.addElement(new Integer(Event.RESUME));
       return retval;
+   }
+   
+   private boolean sendBlockToChannel()
+   {
+      boolean successfulBlock = false;
+      Runnable blockRunnable = new Runnable()
+      {
+         public void run()
+         {
+            passUp(new Event(Event.BLOCK));
+         }
+      };
+      
+      new Thread(Util.getGlobalThreadGroup(), blockRunnable, "FLUSH block notifier").start();
+
+      blockok_promise.reset();
+      try
+      {
+         blockok_promise.getResultWithTimeout(timeout);
+         successfulBlock = true;
+      }
+      catch (TimeoutException e)
+      {
+         log.warn("Blocking of channel using BLOCK event timed out");
+      }
+      return successfulBlock;
    }
 
    private boolean isCurrentFlushMessage(FlushHeader fh)
@@ -427,7 +458,11 @@ public class FLUSH extends Protocol
       synchronized (sharedLock)
       {
          flushCaller = flushStarter;
-         flushMembers = fh.flushParticipants;
+         flushMembers.clear();
+         if(fh.flushParticipants!=null)
+         {
+            flushMembers.addAll(fh.flushParticipants);
+         }        
          flushMembers.removeAll(suspected);
       }
       Message msg = new Message(null, localAddress, null);
@@ -480,11 +515,8 @@ public class FLUSH extends Protocol
 
       if (flushCompleted)
       {
-         if (flush_promise != null)
-         {
-            //needed for jmx startFlush(timoue);
-            flush_promise.setResult(Boolean.TRUE);
-         }
+         //needed for jmx startFlush(timoue);
+         flush_promise.setResult(Boolean.TRUE);
          passUp(new Event(Event.SUSPEND_OK));
          passDown(new Event(Event.SUSPEND_OK));
          if (log.isDebugEnabled())
@@ -502,7 +534,7 @@ public class FLUSH extends Protocol
          suspected.add(address);
          flushMembers.removeAll(suspected);
          viewID = currentViewId();
-         flushOkCompleted = flushOkSet.size() > 0 && flushOkSet.containsAll(flushMembers);
+         flushOkCompleted = !flushOkSet.isEmpty() && flushOkSet.containsAll(flushMembers);
          if (flushOkCompleted)
          {
             m = new Message(flushCaller, localAddress, null);
