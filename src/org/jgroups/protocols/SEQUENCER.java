@@ -12,9 +12,9 @@ import java.util.*;
 
 
 /**
- * Implementation of total order protocol using a sequencer. Consult doc/SEQUENCER.txt for details
+ * Implementation of total order protocol using a sequencer. Consult doc/design/SEQUENCER.txt for details
  * @author Bela Ban
- * @version $Id: SEQUENCER.java,v 1.10 2006/04/07 11:49:52 belaban Exp $
+ * @version $Id: SEQUENCER.java,v 1.11 2006/09/14 07:27:53 belaban Exp $
  */
 public class SEQUENCER extends Protocol {
     private Address           local_addr=null, coord=null;
