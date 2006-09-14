@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.34 2006/09/09 12:44:24 belaban Exp $
+// $Id: TCP.java,v 1.35 2006/09/14 07:25:26 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -154,6 +154,7 @@ public class TCP extends BasicTCP implements ConnectionTable.Receiver {
         ct.setReceiveBufferSize(recv_buf_size);
         ct.setSendBufferSize(send_buf_size);
         ct.setSocketConnectionTimeout(sock_conn_timeout);
+        ct.setTcpNodelay(tcp_nodelay);
         local_addr=ct.getLocalAddress();
         if(additional_data != null && local_addr instanceof IpAddress)
             ((IpAddress)local_addr).setAdditionalData(additional_data);

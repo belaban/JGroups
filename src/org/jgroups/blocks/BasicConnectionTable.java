@@ -30,27 +30,28 @@ import java.util.Collection;
  * @author Scott Marlow
  */
 public abstract class BasicConnectionTable {
-   final HashMap       conns=new HashMap();       // keys: Addresses (peer address), values: Connection
-   Receiver            receiver=null;
-   boolean             use_send_queues=true;
-   InetAddress         bind_addr=null;
-   Address             local_addr=null;             // bind_addr + port of srv_sock
-   int                 srv_port=7800;
-   int                 recv_buf_size=120000;
-   int                 send_buf_size=60000;
-   final Vector        conn_listeners=new Vector(); // listeners to be notified when a conn is established/torn down
-   final Object        recv_mutex=new Object();     // to serialize simultaneous access to receive() from multiple Connections
-   Reaper              reaper=null;                 // closes conns that have been idle for more than n secs
-   long                reaper_interval=60000;       // reap unused conns once a minute
-   long                conn_expire_time=300000;     // connections can be idle for 5 minutes before they are reaped
-   int                 sock_conn_timeout=1000;      // max time in millis to wait for Socket.connect() to return
-   ThreadGroup         thread_group=null;
-   protected final Log log= LogFactory.getLog(getClass());
-   final byte[]        cookie={'b', 'e', 'l', 'a'};
-   boolean             use_reaper=false;            // by default we don't reap idle conns
-   static final int    backlog=20;                  // 20 conn requests are queued by ServerSocket (addtl will be discarded)
-   ServerSocket        srv_sock=null;
+    final HashMap       conns=new HashMap();       // keys: Addresses (peer address), values: Connection
+    Receiver            receiver=null;
+    boolean             use_send_queues=true;
+    InetAddress         bind_addr=null;
+    Address             local_addr=null;             // bind_addr + port of srv_sock
+    int                 srv_port=7800;
+    int                 recv_buf_size=120000;
+    int                 send_buf_size=60000;
+    final Vector        conn_listeners=new Vector(); // listeners to be notified when a conn is established/torn down
+    final Object        recv_mutex=new Object();     // to serialize simultaneous access to receive() from multiple Connections
+    Reaper              reaper=null;                 // closes conns that have been idle for more than n secs
+    long                reaper_interval=60000;       // reap unused conns once a minute
+    long                conn_expire_time=300000;     // connections can be idle for 5 minutes before they are reaped
+    int                 sock_conn_timeout=1000;      // max time in millis to wait for Socket.connect() to return
+    ThreadGroup         thread_group=null;
+    protected final Log log= LogFactory.getLog(getClass());
+    final byte[]        cookie={'b', 'e', 'l', 'a'};
+    boolean             use_reaper=false;            // by default we don't reap idle conns
+    static final int    backlog=20;                  // 20 conn requests are queued by ServerSocket (addtl will be discarded)
+    ServerSocket        srv_sock=null;
     boolean             reuse_addr=false;
+    boolean             tcp_nodelay=false;
 
    /**
     * The address which will be broadcast to the group (the externally visible address which this host should
@@ -60,9 +61,9 @@ public abstract class BasicConnectionTable {
     int                 max_port=0;                   // maximum port to bind to (if < srv_port, no limit)
     Thread              acceptor=null;               // continuously calls srv_sock.accept()
 
-   public final void setReceiver(Receiver r) {
-       receiver=r;
-   }
+    public final void setReceiver(Receiver r) {
+        receiver=r;
+    }
 
    public void addConnectionListener(ConnectionListener l) {
        if(l != null && !conn_listeners.contains(l))
@@ -107,7 +108,15 @@ public abstract class BasicConnectionTable {
        return conns.size();
    }
 
-   public boolean getUseSendQueues() {return use_send_queues;}
+    public boolean getTcpNodelay() {
+        return tcp_nodelay;
+    }
+
+    public void setTcpNodelay(boolean tcp_nodelay) {
+        this.tcp_nodelay=tcp_nodelay;
+    }
+
+    public boolean getUseSendQueues() {return use_send_queues;}
 
    public void setUseSendQueues(boolean flag) {this.use_send_queues=flag;}
 

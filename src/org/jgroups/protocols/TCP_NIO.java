@@ -13,7 +13,7 @@ import java.util.Collection;
  * @author Scott Marlow
  * @author Alex Fu
  * @author Bela Ban
- * @version $Id: TCP_NIO.java,v 1.7 2006/06/24 13:17:32 smarlownovell Exp $
+ * @version $Id: TCP_NIO.java,v 1.8 2006/09/14 07:25:26 belaban Exp $
  */
 public class TCP_NIO extends BasicTCP implements ConnectionTableNIO.Receiver
 {
@@ -25,9 +25,9 @@ public class TCP_NIO extends BasicTCP implements ConnectionTableNIO.Receiver
    */
    protected ConnectionTableNIO getConnectionTable(long ri, long cet,
                                                    InetAddress b_addr, InetAddress bc_addr, int s_port, int e_port) throws Exception {
-
+       ConnectionTableNIO retval=null;
       if (ri == 0 && cet == 0) {
-         ct = new ConnectionTableNIO(this, b_addr, bc_addr, s_port, e_port );
+         retval = new ConnectionTableNIO(this, b_addr, bc_addr, s_port, e_port );
       } else {
          if (ri == 0) {
             ri = 5000;
@@ -39,9 +39,9 @@ public class TCP_NIO extends BasicTCP implements ConnectionTableNIO.Receiver
             if(warn) log.warn("conn_expire_time was 0, set it to "
                   + cet);
          }
-         ct = new ConnectionTableNIO(this, b_addr, bc_addr, s_port, e_port, ri, cet);
+         retval = new ConnectionTableNIO(this, b_addr, bc_addr, s_port, e_port, ri, cet);
       }
-      return ct;
+      return retval;
    }
 
    public String printConnections()     {return ct.toString();}
@@ -57,6 +57,7 @@ public class TCP_NIO extends BasicTCP implements ConnectionTableNIO.Receiver
        ct.setReceiveBufferSize(recv_buf_size);
        ct.setSendBufferSize(send_buf_size);
        ct.setSocketConnectionTimeout(sock_conn_timeout);
+       ct.setTcpNodelay(tcp_nodelay);
        local_addr=ct.getLocalAddress();
        if(additional_data != null && local_addr instanceof IpAddress)
            ((IpAddress)local_addr).setAdditionalData(additional_data);

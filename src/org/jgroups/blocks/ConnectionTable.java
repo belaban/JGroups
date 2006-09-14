@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.45 2006/06/24 13:17:31 smarlownovell Exp $
+// $Id: ConnectionTable.java,v 1.46 2006/09/14 07:25:25 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -135,6 +135,7 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
                sock=new Socket();
                sock.bind(tmpBindAddr);
                sock.setKeepAlive(true);
+               sock.setTcpNoDelay(tcp_nodelay);
                sock.connect(destAddr, sock_conn_timeout);
 
                try {
