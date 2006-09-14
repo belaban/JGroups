@@ -1,4 +1,4 @@
-// $Id: QueueTest.java,v 1.22 2006/08/08 15:37:00 belaban Exp $
+// $Id: QueueTest.java,v 1.23 2006/09/14 13:24:33 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -458,6 +458,29 @@ public class QueueTest extends TestCase {
         catch(TimeoutException e) {
             assertNull(el);
         }
+    }
+
+
+    public void testRemoveAndInterrupt() {
+
+        Thread closer=new Thread() {
+            public void run() {
+                Util.sleep(1000);
+                System.out.println("-- closing queue");
+                queue.close(false);
+            }
+        };
+        closer.start();
+
+        System.out.println("-- removing element");
+        try {
+            queue.remove();
+            fail("we should not get here, as the queue is closed");
+        }
+        catch(QueueClosedException e) {
+            System.out.println("-- received queue closed exception - as expected");
+        }
+
     }
 
     public void testClear() throws QueueClosedException {
