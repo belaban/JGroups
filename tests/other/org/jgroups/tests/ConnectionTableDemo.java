@@ -1,4 +1,4 @@
-// $Id: ConnectionTableTest.java,v 1.8 2005/06/30 15:35:57 belaban Exp $
+// $Id: ConnectionTableDemo.java,v 1.1 2006/09/14 08:11:41 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -10,7 +10,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
 
-public class ConnectionTableTest implements ConnectionTable.Receiver, ConnectionTable.ConnectionListener {
+public class ConnectionTableDemo implements ConnectionTable.Receiver, ConnectionTable.ConnectionListener {
     ConnectionTable ct=null;
     String dst_host=null;
     int dst_port=0;
@@ -110,10 +110,10 @@ public class ConnectionTableTest implements ConnectionTable.Receiver, Connection
             if(reaper_interval > 0 || conn_expire_time > 0) {
                 if(reaper_interval <= 0) reaper_interval=60000;
                 if(conn_expire_time <= 0) conn_expire_time=300000;
-                new ConnectionTableTest().start(local_port, host, port, reaper_interval, conn_expire_time);
+                new ConnectionTableDemo().start(local_port, host, port, reaper_interval, conn_expire_time);
             }
             else {
-                new ConnectionTableTest().start(local_port, host, port, 0, 0);
+                new ConnectionTableDemo().start(local_port, host, port, 0, 0);
             }
         }
         catch(Exception ex) {
