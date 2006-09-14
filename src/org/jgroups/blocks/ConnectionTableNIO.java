@@ -1,4 +1,4 @@
-// $Id: ConnectionTableNIO.java,v 1.19 2006/06/24 13:17:31 smarlownovell Exp $
+// $Id: ConnectionTableNIO.java,v 1.20 2006/09/14 07:25:26 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -141,6 +141,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
             InetSocketAddress destAddress = new InetSocketAddress(((IpAddress) dest).getIpAddress(),
                ((IpAddress) dest).getPort());
             sock_ch = SocketChannel.open(destAddress);
+             sock_ch.socket().setTcpNoDelay(tcp_nodelay);
             conn = new Connection(sock_ch, dest);
 
             conn.sendLocalAddress(local_addr);

@@ -8,7 +8,9 @@ import org.jgroups.util.BoundedList;
 
 import java.util.Vector;
 import java.util.Collection;
+import java.util.Properties;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 /**
  * Shared base class for tcpip protocols
@@ -23,20 +25,37 @@ public abstract class BasicTCP extends TP {
     boolean               suspect_on_send_failure=false;
 
 
-   /** List the maintains the currently suspected members. This is used so we don't send too many SUSPECT
-    * events up the stack (one per message !)
-    */
-   final BoundedList      suspected_mbrs=new BoundedList(20);
-   protected InetAddress  external_addr=null; // the IP address which is broadcast to other group members
-   protected int          start_port=7800;    // find first available port starting at this port
-   protected int	      end_port=0;         // maximum port to bind to
-   protected long         reaper_interval=0;  // time in msecs between connection reaps
-   protected long         conn_expire_time=0; // max time a conn can be idle before being reaped
-   /** Use separate send queues for each connection */
-   boolean                use_send_queues=true;
-   int                    recv_buf_size=150000;
-   int                    send_buf_size=150000;
-   int                    sock_conn_timeout=2000; // max time in millis for a socket creation in ConnectionTable
+    /** List the maintains the currently suspected members. This is used so we don't send too many SUSPECT
+     * events up the stack (one per message !)
+     */
+    final BoundedList      suspected_mbrs=new BoundedList(20);
+    protected InetAddress  external_addr=null; // the IP address which is broadcast to other group members
+    protected int          start_port=7800;    // find first available port starting at this port
+    protected int	       end_port=0;         // maximum port to bind to
+    protected long         reaper_interval=0;  // time in msecs between connection reaps
+    protected long         conn_expire_time=0; // max time a conn can be idle before being reaped
+    /** Use separate send queues for each connection */
+    boolean                use_send_queues=true;
+    int                    recv_buf_size=150000;
+    int                    send_buf_size=150000;
+    int                    sock_conn_timeout=2000; // max time in millis for a socket creation in ConnectionTable
+    boolean                tcp_nodelay=false;
+
+
+    public boolean setProperties(Properties props) {
+        String str;
+
+        super.setProperties(props);
+        str=props.getProperty("tcp_nodelay");
+        if(str != null) {
+            tcp_nodelay=new Boolean(str).booleanValue();
+            props.remove("tcp_nodelay");
+        }
+
+        return true;
+    }
+
+
 
    public void sendToAllMembers(byte[] data, int offset, int length) throws Exception {
        Address dest;
