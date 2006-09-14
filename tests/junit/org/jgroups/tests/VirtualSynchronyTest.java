@@ -11,6 +11,7 @@ import junit.framework.TestCase;
 import junit.framework.TestSuite;
 
 import org.jgroups.Address;
+import org.jgroups.BlockEvent;
 import org.jgroups.ChannelClosedException;
 import org.jgroups.ChannelNotConnectedException;
 import org.jgroups.JChannel;
@@ -174,6 +175,10 @@ public class VirtualSynchronyTest extends TestCase {
 						if (msgReceived instanceof Message) {
 							gotMessage(msgReceived);
 						}
+                        
+                        if (msgReceived instanceof BlockEvent){
+                           ch.blockOk();
+                        }
 					}
 
 				} catch (TimeoutException e) {
