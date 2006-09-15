@@ -1,20 +1,12 @@
 package org.jgroups.blocks;
 
-import junit.framework.TestCase;
 import junit.framework.Test;
+import junit.framework.TestCase;
 import junit.framework.TestSuite;
-import org.jgroups.JChannel;
-import org.jgroups.Channel;
-import org.jgroups.ReceiverAdapter;
 import org.jgroups.Address;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.util.RspList;
-import org.jgroups.util.Rsp;
 import org.jgroups.util.Util;
 
-import java.io.*;
-import java.util.Vector;
-import java.util.Iterator;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
@@ -22,13 +14,14 @@ import java.net.UnknownHostException;
 /**
  * Tests ConnectionTable
  * @author Bela Ban
- * @version $Id: ConnectionTableTest.java,v 1.1 2006/09/14 08:34:27 belaban Exp $
+ * @version $Id: ConnectionTableTest.java,v 1.2 2006/09/15 12:06:43 belaban Exp $
  */
 public class ConnectionTableTest extends TestCase {
     private BasicConnectionTable ct1, ct2;
     static InetAddress loopback_addr=null;
     static byte[] data=new byte[]{'b', 'e', 'l', 'a'};
     Address addr1, addr2;
+    int active_threads=0;
 
     static {
         try {
@@ -47,6 +40,8 @@ public class ConnectionTableTest extends TestCase {
 
     protected void setUp() throws Exception {
         super.setUp();
+        active_threads=Thread.activeCount();
+        System.out.println("active threads before (" + active_threads + "):\n" + Util.activeThreads());
         addr1=new IpAddress(loopback_addr, 7500);
         addr2=new IpAddress(loopback_addr, 8000);
     }
@@ -67,22 +62,21 @@ public class ConnectionTableTest extends TestCase {
 
 
     public void testStopConnectionTable() throws Exception {
-        ct1=new ConnectionTable(new DummyReceiver(), loopback_addr, null, 7500, 10, 10, 300);
-        ct2=new ConnectionTable(new DummyReceiver(), loopback_addr, null, 8000, 10, 10, 300);
+        ct1=new ConnectionTable(new DummyReceiver(), loopback_addr, null, 7500, 7000, 60000, 120000);
+        ct2=new ConnectionTable(new DummyReceiver(), loopback_addr, null, 8000, 8000, 60000, 120000);
         _testStop(ct1, ct2);
     }
 
     public void testStopConnectionTableNIO() throws Exception {
-        ct1=new ConnectionTableNIO(new DummyReceiver(), loopback_addr, null, 7500, 10, 10, 300);
-        ct2=new ConnectionTableNIO(new DummyReceiver(), loopback_addr, null, 8000, 10, 10, 300);
+        ct1=new ConnectionTableNIO(new DummyReceiver(), loopback_addr, null, 7500, 7500, 60000, 120000, false);
+        ct2=new ConnectionTableNIO(new DummyReceiver(), loopback_addr, null, 8000, 8000, 60000, 120000, false);
+        ct1.start();
+        ct2.start();
         _testStop(ct1, ct2);
     }
 
 
     private void _testStop(BasicConnectionTable table1, BasicConnectionTable table2) throws Exception {
-        int active_threads=Thread.activeCount();
-        System.out.println("active threads before (" + active_threads + "):\n" + Util.activeThreads());
-
         table1.send(addr1, data, 0, data.length); // send to self
         table1.send(addr2, data, 0, data.length); // send to other
 
@@ -97,11 +91,42 @@ public class ConnectionTableTest extends TestCase {
         assertEquals(0, table1.getNumConnections());
         assertEquals(0, table2.getNumConnections());
 
+        // Util.sleep(1000);
+
         int current_active_threads=Thread.activeCount();
         System.out.println("active threads after (" + current_active_threads + "):\n" + Util.activeThreads());
+        // System.out.println("thread:\n" + dumpThreads());
         assertEquals(active_threads, current_active_threads);
     }
 
+
+
+
+    /* CAUTION: JDK 5 specific code
+
+
+    private String dumpThreads() {
+        StringBuffer sb=new StringBuffer();
+        ThreadMXBean bean=ManagementFactory.getThreadMXBean();
+        long[] ids=bean.getAllThreadIds();
+        ThreadInfo[] threads=bean.getThreadInfo(ids, 20);
+        for(int i=0; i < threads.length; i++) {
+            ThreadInfo info=threads[i];
+            if(info == null)
+                continue;
+            sb.append(info.getThreadName()).append(":\n");
+            StackTraceElement[] stack_trace=info.getStackTrace();
+            for(int j=0; j < stack_trace.length; j++) {
+                StackTraceElement el=stack_trace[j];
+                sb.append("at ").append(el.getClassName()).append(".").append(el.getMethodName());
+                sb.append("(").append(el.getFileName()).append(":").append(el.getLineNumber()).append(")");
+                sb.append("\n");
+            }
+            sb.append("\n\n");
+        }
+        return sb.toString();
+    }
+    */
 
     public static Test suite() {
         return new TestSuite(ConnectionTableTest.class);
@@ -113,6 +138,11 @@ public class ConnectionTableTest extends TestCase {
     }
 
     static class DummyReceiver implements ConnectionTable.Receiver {
+        public void receive(Address sender, byte[] data, int offset, int length) {
+        }
+    }
+
+    static class DummyReceiverNIO implements ConnectionTableNIO.Receiver {
         public void receive(Address sender, byte[] data, int offset, int length) {
         }
     }
