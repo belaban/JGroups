@@ -60,6 +60,10 @@ public abstract class BasicConnectionTable {
     InetAddress		    external_addr=null;
     int                 max_port=0;                   // maximum port to bind to (if < srv_port, no limit)
     Thread              acceptor=null;               // continuously calls srv_sock.accept()
+    boolean             running=false;
+
+    final static long   MAX_JOIN_TIMEOUT=10000;
+
 
     public final void setReceiver(Receiver r) {
         receiver=r;
@@ -120,9 +124,13 @@ public abstract class BasicConnectionTable {
 
    public void setUseSendQueues(boolean flag) {this.use_send_queues=flag;}
 
-   public abstract void start() throws Exception;
+   public void start() throws Exception {
+       running=true;
+   }
 
-   public abstract void stop();
+   public void stop() {
+       running=false;
+   }
 
    /**
     Remove <code>addr</code>from connection table. This is typically triggered when a member is suspected.
@@ -210,6 +218,12 @@ public abstract class BasicConnectionTable {
            return;
        }
 
+       if(!running) {
+           if(log.isWarnEnabled())
+               log.warn("connection table is not running, discarding message to " + dest);
+           return;
+       }
+
        // 1. Try to obtain correct Connection (or create one if not yet existent)
        try {
            conn=getConnection(dest);
@@ -263,7 +277,8 @@ public abstract class BasicConnectionTable {
 
        /** Queue<byte[]> of data to be sent to the peer of this connection */
        Queue            send_queue=new Queue();
-       ConnectionTable.Connection.Sender           sender=new ConnectionTable.Connection.Sender();
+       Sender           sender=new ConnectionTable.Connection.Sender();
+       boolean          is_running=false;
 
 
        private String getSockAddress() {
@@ -292,8 +307,6 @@ public abstract class BasicConnectionTable {
                // bela Sept 7 2006
                out=new DataOutputStream(new BufferedOutputStream(sock.getOutputStream()));
                in=new DataInputStream(new BufferedInputStream(sock.getInputStream()));
-
-               // in=new DataInputStream(sock.getInputStream());
            }
            catch(Exception ex) {
                if(log.isErrorEnabled()) log.error("exception is " + ex);
@@ -318,6 +331,7 @@ public abstract class BasicConnectionTable {
 
        void init() {
            // if(log.isInfoEnabled()) log.info("connection was created to " + peer_addr);
+           is_running=true;
            if(receiverThread == null || !receiverThread.isAlive()) {
                // Roland Kurmann 4/7/2003, put in thread_group
                receiverThread=new Thread(thread_group, this, "ConnectionTable.Connection.Receiver [" + getSockAddress() + "]");
@@ -326,13 +340,27 @@ public abstract class BasicConnectionTable {
                if(log.isTraceEnabled())
                    log.trace("ConnectionTable.Connection.Receiver started");
            }
+
        }
 
 
        void destroy() {
+           is_running=false;
            closeSocket(); // should terminate handler as well
            sender.stop();
+           Thread tmp=receiverThread;
            receiverThread=null;
+           if(tmp != null) {
+               try {
+                   tmp.join(MAX_JOIN_TIMEOUT);
+               }
+               catch(InterruptedException e) {
+               }
+               if(tmp.isAlive()) {
+                   if(log.isWarnEnabled())
+                   log.warn("stopped receiver thread, but thread (" + tmp + ") is still alive !");
+               }
+           }
        }
 
 
@@ -343,6 +371,11 @@ public abstract class BasicConnectionTable {
         * @param length
         */
        void send(byte[] data, int offset, int length) {
+           if(!is_running) {
+               if(log.isWarnEnabled())
+                   log.warn("Connection is not running, discarding message");
+               return;
+           }
            if(use_send_queues) {
                try {
                    // we need to copy the byte[] buffer here because the original buffer might get changed meanwhile
@@ -369,7 +402,7 @@ public abstract class BasicConnectionTable {
                }
                catch(IOException io_ex) {
                    if(log.isWarnEnabled())
-                       log.warn("peer closed connection, trying to re-establish connection and re-send msg");
+                       log.warn("peer closed connection, trying to re-send msg");
                    try {
                        doSend(data, offset, length);
                        updateLastAccessed();
@@ -400,8 +433,6 @@ public abstract class BasicConnectionTable {
                }
            }
            catch(Exception ex) {
-               if(log.isErrorEnabled())
-                   log.error("failure sending to " + peer_addr, ex);
                remove(peer_addr);
                throw ex;
            }
@@ -480,7 +511,6 @@ public abstract class BasicConnectionTable {
 
        boolean matchCookie(byte[] input) {
            if(input == null || input.length < cookie.length) return false;
-           if(log.isInfoEnabled()) log.info("input_cookie is " + printCookie(input));
            for(int i=0; i < cookie.length; i++)
                if(cookie[i] != input[i]) return false;
            return true;
@@ -497,7 +527,7 @@ public abstract class BasicConnectionTable {
            byte[] buf=new byte[256]; // start with 256, increase as we go
            int len=0;
 
-           while(receiverThread != null && receiverThread.equals(Thread.currentThread())) {
+           while(receiverThread != null && receiverThread.equals(Thread.currentThread()) && is_running) {
                try {
                    if(in == null) {
                        if(log.isErrorEnabled()) log.error("input stream is null !");
@@ -515,12 +545,12 @@ public abstract class BasicConnectionTable {
                    break; // continue;
                }
                catch(EOFException eof_ex) {  // peer closed connection
-                   if(log.isInfoEnabled()) log.info("exception is " + eof_ex);
+                   if(log.isTraceEnabled()) log.trace("exception is " + eof_ex);
                    notifyConnectionClosed(peer_addr);
                    break;
                }
                catch(IOException io_ex) {
-                   if(log.isInfoEnabled()) log.info("exception is " + io_ex);
+                   if(log.isTraceEnabled()) log.trace("exception is " + io_ex);
                    notifyConnectionClosed(peer_addr);
                    break;
                }
@@ -532,7 +562,7 @@ public abstract class BasicConnectionTable {
                log.trace("ConnectionTable.Connection.Receiver terminated");
            receiverThread=null;
            closeSocket();
-           remove(peer_addr);
+           // remove(peer_addr);
        }
 
 
@@ -592,37 +622,46 @@ public abstract class BasicConnectionTable {
 
        class Sender implements Runnable {
            Thread senderThread;
-           private boolean running=false;
+           private boolean is_it_running=false;
 
            void start() {
                if(senderThread == null || !senderThread.isAlive()) {
                    senderThread=new Thread(thread_group, this, "ConnectionTable.Connection.Sender [" + getSockAddress() + "]");
                    senderThread.setDaemon(true);
                    senderThread.start();
-                   running=true;
+                   is_it_running=true;
                    if(log.isTraceEnabled())
                        log.trace("ConnectionTable.Connection.Sender thread started");
                }
            }
 
            void stop() {
+               if(send_queue != null)
+                   send_queue.close(false);
                if(senderThread != null) {
-                   if(send_queue != null)
-                       send_queue.close(false);
                    Thread tmp=senderThread;
                    senderThread=null;
                    tmp.interrupt();
-                   running=false;
+                   is_it_running=false;
+                   try {
+                       tmp.join(MAX_JOIN_TIMEOUT);
+                   }
+                   catch(InterruptedException e) {
+                   }
+                   if(tmp.isAlive()) {
+                       if(log.isWarnEnabled())
+                           log.warn("sender thread was interrupted, but is still alive: " + tmp);
+                   }
                }
            }
 
            boolean isRunning() {
-               return running && senderThread != null;
+               return is_it_running && senderThread != null;
            }
 
            public void run() {
                byte[] data;
-               while(senderThread != null && senderThread.equals(Thread.currentThread())) {
+               while(senderThread != null && senderThread.equals(Thread.currentThread()) && is_it_running) {
                    try {
                        data=(byte[])send_queue.remove();
                        if(data == null)
@@ -633,7 +672,7 @@ public abstract class BasicConnectionTable {
                        break;
                    }
                }
-               running=false;
+               is_it_running=false;
                if(log.isTraceEnabled())
                    log.trace("ConnectionTable.Connection.Sender thread terminated");
            }
@@ -663,8 +702,21 @@ public abstract class BasicConnectionTable {
        }
 
        public void stop() {
+           Thread tmp=t;
            if(t != null)
                t=null;
+           if(tmp != null) {
+               tmp.interrupt(); // interrupts the sleep()
+               try {
+                   tmp.join(MAX_JOIN_TIMEOUT);
+               }
+               catch(InterruptedException e) {
+               }
+               if(tmp.isAlive()) {
+                   if(log.isWarnEnabled())
+                       log.warn("reaper thread was interrupted, but is still alive: " + tmp);
+               }
+           }
        }
 
 
@@ -682,8 +734,9 @@ public abstract class BasicConnectionTable {
                                             conn_expire_time);
 
            while(conns.size() > 0 && t != null && t.equals(Thread.currentThread())) {
-               // first sleep
                Util.sleep(reaper_interval);
+               if(t == null || !Thread.currentThread().equals(t))
+                   break;
                synchronized(conns) {
                    curr_time=System.currentTimeMillis();
                    for(Iterator it=conns.entrySet().iterator(); it.hasNext();) {

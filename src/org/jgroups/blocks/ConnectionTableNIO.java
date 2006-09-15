@@ -1,4 +1,4 @@
-// $Id: ConnectionTableNIO.java,v 1.20 2006/09/14 07:25:26 belaban Exp $
+// $Id: ConnectionTableNIO.java,v 1.21 2006/09/15 12:21:12 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -6,7 +6,6 @@ import EDU.oswego.cs.dl.util.concurrent.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
-import org.jgroups.protocols.TCP_NIO;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
 
@@ -50,11 +49,22 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
 
    // thread pool for processing read requests
    private Executor m_requestProcessors;
-   ServerSocket        srv_sock=null;
-   int                 max_port=0;                   // maximum port to bind to (if < srv_port, no limit)
-   InetAddress		    external_addr=null;
-   Thread              acceptor=null;               // continuously calls srv_sock.accept()
    private volatile boolean serverStopping=false;
+
+
+    private int m_reader_threads = 8;
+
+    private int m_writer_threads = 8;
+
+    private int m_processor_threads = 10;                    // PooledExecutor.createThreads()
+    private int m_processor_minThreads = 10;                 // PooledExecutor.setMinimumPoolSize()
+    private int m_processor_maxThreads = 10;                 // PooledExecutor.setMaxThreads()
+    private int m_processor_queueSize=100;                   // Number of queued requests that can be pending waiting
+    // for a background thread to run the request.
+    private int m_processor_keepAliveTime = -1;              // PooledExecutor.setKeepAliveTime( milliseconds);
+    // A negative value means to wait forever
+
+
 
    /**
     * @param srv_port
@@ -100,6 +110,23 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
       start();
    }
 
+
+    public ConnectionTableNIO(Receiver r, InetAddress bind_addr, InetAddress external_addr, int srv_port, int max_port,
+                              boolean doStart
+    )
+            throws Exception
+    {
+        setReceiver(r);
+        this.external_addr=external_addr;
+        this.bind_addr=bind_addr;
+        this.srv_port=srv_port;
+        this.max_port=max_port;
+        use_reaper=true;
+        if(doStart)
+            start();
+    }
+
+
    /**
     * @param r
     * @param bind_addr
@@ -125,7 +152,69 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
       start();
    }
 
-   /**
+
+    public ConnectionTableNIO(Receiver r, InetAddress bind_addr, InetAddress external_addr, int srv_port, int max_port,
+                              long reaper_interval, long conn_expire_time, boolean doStart
+    ) throws Exception
+    {
+        setReceiver(r);
+        this.bind_addr=bind_addr;
+        this.external_addr=external_addr;
+        this.srv_port=srv_port;
+        this.max_port=max_port;
+        this.reaper_interval=reaper_interval;
+        this.conn_expire_time=conn_expire_time;
+        use_reaper=true;
+        if(doStart)
+            start();
+    }
+
+
+
+    public int getReaderThreads() { return m_reader_threads; }
+
+    public void setReaderThreads(int m_reader_threads) {
+        this.m_reader_threads=m_reader_threads;
+    }
+
+    public int getWriterThreads() { return m_writer_threads; }
+
+    public void setWriterThreads(int m_writer_threads) {
+        this.m_writer_threads=m_writer_threads;
+    }
+
+    public int getProcessorThreads() { return m_processor_threads; }
+
+    public void setProcessorThreads(int m_processor_threads) {
+        this.m_processor_threads=m_processor_threads;
+    }
+
+    public int getProcessorMinThreads() { return m_processor_minThreads;}
+
+    public void setProcessorMinThreads(int m_processor_minThreads) {
+        this.m_processor_minThreads=m_processor_minThreads;
+    }
+
+    public int getProcessorMaxThreads() { return m_processor_maxThreads;}
+
+    public void setProcessorMaxThreads(int m_processor_maxThreads) {
+        this.m_processor_maxThreads=m_processor_maxThreads;
+    }
+
+    public int getProcessorQueueSize() { return m_processor_queueSize; }
+
+    public void setProcessorQueueSize(int m_processor_queueSize) {
+        this.m_processor_queueSize=m_processor_queueSize;
+    }
+
+    public int getProcessorKeepAliveTime() { return m_processor_keepAliveTime; }
+
+    public void setProcessorKeepAliveTime(int m_processor_keepAliveTime) {
+        this.m_processor_keepAliveTime=m_processor_keepAliveTime;
+    }
+
+
+    /**
     * Try to obtain correct Connection (or create one if not yet existent)
     */
    ConnectionTable.Connection getConnection(Address dest) throws Exception
@@ -212,6 +301,9 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
    }
 
    public final void start() throws Exception {
+       super.start();
+       //Roland Kurmann 4/7/2003, build new thread group
+       thread_group = new ThreadGroup(Util.getGlobalThreadGroup(), "ConnectionTableThreads");
        init();
        srv_sock=createServerSocket(srv_port, max_port);
 
@@ -224,8 +316,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
 
        if(log.isInfoEnabled()) log.info("server socket created on " + local_addr);
 
-       //Roland Kurmann 4/7/2003, build new thread group
-       thread_group = new ThreadGroup(Util.getGlobalThreadGroup(), "ConnectionTableGroup");
+
        //Roland Kurmann 4/7/2003, put in thread_group
        acceptor=new Thread(thread_group, this, "ConnectionTable.AcceptorThread");
        acceptor.setDaemon(true);
@@ -242,29 +333,31 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
       throws Exception
    {
 
-      TCP_NIO NIOreceiver = (TCP_NIO)receiver;
       // use directExector if max thread pool size is less than or equal to zero.
-      if(NIOreceiver.getProcessorMaxThreads() <= 0) {
+      if(getProcessorMaxThreads() <= 0) {
          m_requestProcessors = new DirectExecutor();
       }
       else
       {
          // Create worker thread pool for processing incoming buffers
-         PooledExecutor requestProcessors = new PooledExecutor(new BoundedBuffer(NIOreceiver.getProcessorQueueSize()), NIOreceiver.getProcessorMaxThreads());
+         PooledExecutor requestProcessors = new PooledExecutor(new BoundedBuffer(getProcessorQueueSize()), getProcessorMaxThreads());
           requestProcessors.setThreadFactory(new ThreadFactory() {
               public Thread newThread(Runnable runnable) {
-                  return new Thread(Util.getGlobalThreadGroup(), runnable);
+                  Thread new_thread=new Thread(thread_group, runnable);
+                  new_thread.setDaemon(true);
+                  new_thread.setName("ConnectionTableNIO.Thread");
+                  return new_thread;
               }
           });
-         requestProcessors.setMinimumPoolSize(NIOreceiver.getProcessorMinThreads());
-         requestProcessors.setKeepAliveTime(NIOreceiver.getProcessorKeepAliveTime());
+         requestProcessors.setMinimumPoolSize(getProcessorMinThreads());
+         requestProcessors.setKeepAliveTime(getProcessorKeepAliveTime());
          requestProcessors.waitWhenBlocked();
-         requestProcessors.createThreads(NIOreceiver.getProcessorThreads());
+         requestProcessors.createThreads(getProcessorThreads());
          m_requestProcessors = requestProcessors;
       }
 
-      m_writeHandlers = WriteHandler.create(NIOreceiver.getWriterThreads());
-      m_readHandlers = ReadHandler.create(NIOreceiver.getReaderThreads(), this);
+      m_writeHandlers = WriteHandler.create(getWriterThreads(), thread_group);
+      m_readHandlers = ReadHandler.create(getReaderThreads(), this, thread_group);
    }
 
 
@@ -273,8 +366,12 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
     */
    public void stop()
    {
-
+       super.stop();
       serverStopping = true;
+
+       if(reaper != null)
+           reaper.stop();
+
       // Stop the main selector
       m_acceptSelector.wakeup();
 
@@ -578,14 +675,14 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
        *
        * @param workerThreads is the number of threads to create.
        */
-      private static ReadHandler[] create(int workerThreads, ConnectionTableNIO ct)
+      private static ReadHandler[] create(int workerThreads, ConnectionTableNIO ct, ThreadGroup tg)
       {
          ReadHandler[] handlers = new ReadHandler[workerThreads];
          for (int looper = 0; looper < workerThreads; looper++)
          {
             handlers[looper] = new ReadHandler(ct);
 
-            Thread thread = new Thread(handlers[looper], "nioReadHandlerThread");
+            Thread thread = new Thread(tg, handlers[looper], "nioReadHandlerThread");
             thread.setDaemon(true);
             thread.start();
          }
@@ -643,7 +740,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
                      }
                   } catch (IOException e)
                   {
-                     if (LOG.isWarnEnabled()) LOG.warn("Read operation on socket failed" , e);
+                     if (LOG.isTraceEnabled()) LOG.trace("Read operation on socket failed" , e);
                      // The connection must be bad, cancel the key, close socket, then
                      // remove it from table!
                      key.cancel();
@@ -863,6 +960,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
          super(s.socket(), peer_addr);
          sock_ch = s;
          m_readState = new ConnectionReadState(this);
+          is_running=true;
       }
 
       private ConnectionReadState getReadState()
@@ -876,10 +974,10 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
          m_selectorWriteHandler = hdlr.add(sock_ch);
       }
 
-      void destroy()
-      {
-         closeSocket();
-      }
+//      void destroy()
+//      {
+//         closeSocket();
+//      }
 
       void doSend(byte[] buffie, int offset, int length) throws Exception
       {
@@ -967,14 +1065,14 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
        *
        * @param workerThreads is the number of threads to create.
        */
-      private static WriteHandler[] create(int workerThreads)
+      private static WriteHandler[] create(int workerThreads, ThreadGroup tg)
       {
          WriteHandler[] handlers = new WriteHandler[workerThreads];
          for (int looper = 0; looper < workerThreads; looper++)
          {
             handlers[looper] = new WriteHandler();
 
-            Thread thread = new Thread(handlers[looper], "nioWriteHandlerThread");
+            Thread thread = new Thread(tg, handlers[looper], "nioWriteHandlerThread");
             thread.setDaemon(true);
             thread.start();
          }
