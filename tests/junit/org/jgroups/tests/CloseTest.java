@@ -1,4 +1,4 @@
-// $Id: CloseTest.java,v 1.8 2006/07/07 13:42:24 belaban Exp $
+// $Id: CloseTest.java,v 1.9 2006/09/15 14:56:46 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -14,8 +14,7 @@ import java.util.Vector;
  * more threads running)
  */
 public class CloseTest extends TestCase {
-    JChannel channel, channel1, channel2, c1, c2;
-
+    JChannel channel, channel1, channel2, c1, c2, c3;
 
     String props="UDP(mcast_addr=228.8.8.3;mcast_port=45577;ip_ttl=32;" +
             "mcast_send_buf_size=150000;mcast_recv_buf_size=80000;" +
@@ -35,6 +34,14 @@ public class CloseTest extends TestCase {
         super(name);
     }
 
+    protected void setUp() throws Exception {
+        super.setUp();
+        String cfg=System.getProperty("config");
+        if(cfg != null)
+            props=cfg;
+    }
+
+
     protected void tearDown() throws Exception {
         super.tearDown();
         closeChannel(channel);
@@ -42,6 +49,7 @@ public class CloseTest extends TestCase {
         closeChannel(channel2);
         closeChannel(c1);
         closeChannel(c2);
+        closeChannel(c3);
     }
 
     private void closeChannel(JChannel c) {
@@ -109,7 +117,7 @@ public class CloseTest extends TestCase {
         v=(View)obj;
         members=v.getMembers();
         System.out.println("-- second view of c1: " + v);
-        assertEquals(members.size(), 1);
+        assertEquals(1, members.size());
         assertTrue(members.contains(a1));
         assertFalse(members.contains(a2));
     }
@@ -132,7 +140,7 @@ public class CloseTest extends TestCase {
         a2=c2.getLocalAddress();
         v=(View)c2.receive(1);
         members=v.getMembers();
-        assertEquals(members.size(), 2);
+        assertEquals(2, members.size());
         assertTrue(members.contains(a2));
 
         c1.close();
@@ -144,7 +152,7 @@ public class CloseTest extends TestCase {
         assertTrue(obj instanceof View);
         v=(View)obj;
         members=v.getMembers();
-        assertEquals(members.size(), 1);
+        assertEquals(1, members.size());
         assertFalse(members.contains(a1));
         assertTrue(members.contains(a2));
 
@@ -266,6 +274,74 @@ public class CloseTest extends TestCase {
             System.out.println(threads[i]);
         assertTrue(threads.length < 5);
     }
+
+
+     public void testMultipleConnectsAndDisconnects() throws Exception {
+        c1=new JChannel(props);
+        assertTrue(c1.isOpen());
+        assertFalse(c1.isConnected());
+        c1.connect("bla");
+        assertTrue(c1.isOpen());
+        assertTrue(c1.isConnected());
+        assertServiceAndClusterView(c1, 1);
+
+        c2=new JChannel(props);
+        assertTrue(c2.isOpen());
+        assertFalse(c2.isConnected());
+
+        c2.connect("bla");
+        assertTrue(c2.isOpen());
+        assertTrue(c2.isConnected());
+        assertServiceAndClusterView(c2, 2);
+        Util.sleep(500);
+        assertServiceAndClusterView(c1, 2);
+
+        c2.disconnect();
+        assertTrue(c2.isOpen());
+        assertFalse(c2.isConnected());
+        Util.sleep(500);
+        assertServiceAndClusterView(c1, 1);
+
+        c2.connect("bla");
+        assertTrue(c2.isOpen());
+        assertTrue(c2.isConnected());
+        assertServiceAndClusterView(c2, 2);
+        Util.sleep(300);
+        assertServiceAndClusterView(c1, 2);
+
+        // Now see what happens if we reconnect the first channel
+        c3=new JChannel(props);
+        assertTrue(c3.isOpen());
+        assertFalse(c3.isConnected());
+        assertServiceAndClusterView(c1, 2);
+        assertServiceAndClusterView(c2, 2);
+
+        c1.disconnect();
+        assertTrue(c1.isOpen());
+        assertFalse(c1.isConnected());
+        assertServiceAndClusterView(c2, 1);
+        assertTrue(c3.isOpen());
+        assertFalse(c3.isConnected());
+
+        c1.connect("bla");
+        assertTrue(c1.isOpen());
+        assertTrue(c1.isConnected());
+        assertServiceAndClusterView(c1, 2);
+        Util.sleep(500);
+        assertServiceAndClusterView(c2, 2);
+        assertTrue(c3.isOpen());
+        assertFalse(c3.isConnected());
+    }
+
+
+    private void assertServiceAndClusterView(Channel ch, int num) {
+           View view=ch.getView();
+           String msg="view=" + view;
+           assertNotNull(view);
+           assertEquals(msg, num, view.size());
+       }
+
+
 
     public static void main(String[] args) {
         String[] testCaseName={CloseTest.class.getName()};
