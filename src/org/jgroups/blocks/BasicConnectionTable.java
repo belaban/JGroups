@@ -408,14 +408,15 @@ public abstract class BasicConnectionTable {
                        updateLastAccessed();
                    }
                    catch(IOException io_ex2) {
-                        if(log.isErrorEnabled()) log.error("2nd attempt to send data failed too");
+                       if(log.isErrorEnabled()) log.error("2nd attempt to send data failed too");
                    }
                    catch(Exception ex2) {
-                        if(log.isErrorEnabled()) log.error("exception is " + ex2);
+                       if(log.isErrorEnabled()) log.error("exception is " + ex2);
                    }
                }
+               catch(InterruptedException iex) {}
                catch(Throwable ex) {
-                    if(log.isErrorEnabled()) log.error("exception is " + ex);
+                   if(log.isErrorEnabled()) log.error("exception is " + ex);
                }
            }
        }
