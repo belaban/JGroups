@@ -1,4 +1,4 @@
-// $Id: TCPPING.java,v 1.27 2006/09/11 13:28:20 belaban Exp $
+// $Id: TCPPING.java,v 1.28 2006/09/15 16:33:26 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -49,6 +49,7 @@ public class TCPPING extends Discovery {
 
     public boolean setProperties(Properties props) {
         String str;
+        this.props.putAll(props); // redundant
 
         str=props.getProperty("port_range");           // if member cannot be contacted on base port,
         if(str != null) {                              // how many times can we increment the port
