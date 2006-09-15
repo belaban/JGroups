@@ -1,4 +1,4 @@
-// $Id: ConnectionTableNIO.java,v 1.22 2006/09/15 12:30:22 belaban Exp $
+// $Id: ConnectionTableNIO.java,v 1.23 2006/09/15 16:49:28 smarlownovell Exp $
 
 package org.jgroups.blocks;
 
@@ -51,17 +51,18 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
    private Executor m_requestProcessors;
    private volatile boolean serverStopping=false;
 
+   private final LinkedList m_backGroundThreads = new LinkedList();  // Collection of all created threads
 
-    private int m_reader_threads = 8;
+   private int m_reader_threads = 8;
 
-    private int m_writer_threads = 8;
+   private int m_writer_threads = 8;
 
-    private int m_processor_threads = 10;                    // PooledExecutor.createThreads()
-    private int m_processor_minThreads = 10;                 // PooledExecutor.setMinimumPoolSize()
-    private int m_processor_maxThreads = 10;                 // PooledExecutor.setMaxThreads()
-    private int m_processor_queueSize=100;                   // Number of queued requests that can be pending waiting
-    // for a background thread to run the request.
-    private int m_processor_keepAliveTime = -1;              // PooledExecutor.setKeepAliveTime( milliseconds);
+   private int m_processor_threads = 10;                    // PooledExecutor.createThreads()
+   private int m_processor_minThreads = 10;                 // PooledExecutor.setMinimumPoolSize()
+   private int m_processor_maxThreads = 10;                 // PooledExecutor.setMaxThreads()
+   private int m_processor_queueSize=100;                   // Number of queued requests that can be pending waiting
+   // for a background thread to run the request.
+   private int m_processor_keepAliveTime = -1;              // PooledExecutor.setKeepAliveTime( milliseconds);
     // A negative value means to wait forever
 
 
@@ -321,6 +322,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
        acceptor=new Thread(thread_group, this, "ConnectionTable.AcceptorThread");
        acceptor.setDaemon(true);
        acceptor.start();
+       m_backGroundThreads.add(acceptor);
 
        // start the connection reaper - will periodically remove unused connections
        if(use_reaper && reaper == null) {
@@ -346,6 +348,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
                   Thread new_thread=new Thread(thread_group, runnable);
                   new_thread.setDaemon(true);
                   new_thread.setName("ConnectionTableNIO.Thread");
+                  m_backGroundThreads.add(new_thread);
                   return new_thread;
               }
           });
@@ -356,8 +359,8 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
          m_requestProcessors = requestProcessors;
       }
 
-      m_writeHandlers = WriteHandler.create(getWriterThreads(), thread_group);
-      m_readHandlers = ReadHandler.create(getReaderThreads(), this, thread_group);
+      m_writeHandlers = WriteHandler.create(getWriterThreads(), thread_group, m_backGroundThreads);
+      m_readHandlers = ReadHandler.create(getReaderThreads(), this, thread_group, m_backGroundThreads);
    }
 
 
@@ -420,6 +423,15 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
           conns.clear();
       }
 
+      while(m_backGroundThreads.size() > 0) {
+          Thread t = (Thread)m_backGroundThreads.remove();
+          try {
+            t.join();
+          } catch(InterruptedException e) {
+            LOG.error("Thread ("+Thread.currentThread().getName() +") was interrupted while waiting on thread " + t.getName() + " to finish.");              
+          }
+      }
+      m_backGroundThreads.clear();
 
    }
 
@@ -683,7 +695,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
        *
        * @param workerThreads is the number of threads to create.
        */
-      private static ReadHandler[] create(int workerThreads, ConnectionTableNIO ct, ThreadGroup tg)
+      private static ReadHandler[] create(int workerThreads, ConnectionTableNIO ct, ThreadGroup tg, LinkedList backGroundThreads)
       {
          ReadHandler[] handlers = new ReadHandler[workerThreads];
          for (int looper = 0; looper < workerThreads; looper++)
@@ -693,6 +705,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
             Thread thread = new Thread(tg, handlers[looper], "nioReadHandlerThread");
             thread.setDaemon(true);
             thread.start();
+            backGroundThreads.add(thread);
          }
          return handlers;
       }
@@ -1073,7 +1086,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
        *
        * @param workerThreads is the number of threads to create.
        */
-      private static WriteHandler[] create(int workerThreads, ThreadGroup tg)
+      private static WriteHandler[] create(int workerThreads, ThreadGroup tg, LinkedList backGroundThreads)
       {
          WriteHandler[] handlers = new WriteHandler[workerThreads];
          for (int looper = 0; looper < workerThreads; looper++)
@@ -1083,6 +1096,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
             Thread thread = new Thread(tg, handlers[looper], "nioWriteHandlerThread");
             thread.setDaemon(true);
             thread.start();
+            backGroundThreads.add(thread);
          }
          return handlers;
       }
