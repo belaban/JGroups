@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.26 2006/08/08 10:53:50 belaban Exp $
+// $Id: Draw.java,v 1.27 2006/09/15 10:51:37 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -120,20 +120,26 @@ public class Draw implements ActionListener, ChannelListener {
         }
 
         if(props == null) {
-            props="UDP(mcast_addr=228.8.8.8;mcast_port=45566;ip_ttl=32;" +
-                    "mcast_send_buf_size=64000;mcast_recv_buf_size=64000):" +
-                    //"PIGGYBACK(max_wait_time=100;max_size=32000):" +
-                    "PING(timeout=2000;num_initial_members=3):" +
-                    "MERGE2(min_interval=5000;max_interval=10000):" +
-                    "FD_SOCK:" +
-                    "VERIFY_SUSPECT(timeout=1500):" +
-                    "pbcast.NAKACK(max_xmit_size=8096;gc_lag=50;retransmit_timeout=600,1200,2400,4800):" +
-                    "UNICAST(timeout=600,1200,2400,4800):" +
-                    "pbcast.STABLE(desired_avg_gossip=20000):" +
-                    "FRAG(frag_size=8096;down_thread=false;up_thread=false):" +
-                    // "CAUSAL:" +
-                    "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
-                    "shun=false;print_local_addr=true)";
+            props="UDP(down_thread=false;mcast_send_buf_size=640000;mcast_port=45566;discard_incompatible_packets=true;" +
+                    "ucast_recv_buf_size=20000000;mcast_addr=228.10.10.10;up_thread=false;loopback=false;" +
+                    "mcast_recv_buf_size=25000000;max_bundle_size=64000;max_bundle_timeout=30;" +
+                    "use_incoming_packet_handler=true;use_outgoing_packet_handler=false;" +
+                    "ucast_send_buf_size=640000;tos=16;enable_bundling=true;ip_ttl=2):" +
+                  "PING(timeout=2000;down_thread=false;num_initial_members=3;up_thread=false):" +
+                  "MERGE2(max_interval=10000;down_thread=false;min_interval=5000;up_thread=false):" +
+                  "FD(timeout=2000;max_tries=3;down_thread=false;up_thread=false):" +
+                  "VERIFY_SUSPECT(timeout=1500;down_thread=false;up_thread=false):" +
+                  "pbcast.NAKACK(max_xmit_size=60000;down_thread=false;use_mcast_xmit=false;gc_lag=0;" +
+                    "discard_delivered_msgs=true;up_thread=false;retransmit_timeout=100,200,300,600,1200,2400,4800):" +
+                  "UNICAST(timeout=300,600,1200,2400,3600;down_thread=false;up_thread=false):" +
+                    "pbcast.STABLE(stability_delay=1000;desired_avg_gossip=50000;max_bytes=400000;down_thread=false;" +
+                    "up_thread=false):" +
+                  "VIEW_SYNC(down_thread=false;avg_send_interval=60000;up_thread=false):" +
+                    "pbcast.GMS(print_local_addr=true;join_timeout=3000;down_thread=false;" +
+                    "join_retry_timeout=2000;up_thread=false;shun=true):" +
+                  "FC(max_credits=2000000;down_thread=false;up_thread=false;min_threshold=0.10):" +
+                  "FRAG2(frag_size=60000;down_thread=false;up_thread=false):" +
+                    "pbcast.STATE_TRANSFER(down_thread=false;up_thread=false)";
         }
 
 
