@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.46 2006/09/14 07:25:25 belaban Exp $
+// $Id: ConnectionTable.java,v 1.47 2006/09/15 12:20:53 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -190,6 +190,7 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
             reaper=new Reaper();
             reaper.start();
         }
+        super.start();
     }
 
     protected void init() throws Exception {
@@ -197,14 +198,16 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
 
     /** Closes all open sockets, the server socket and all threads waiting for incoming messages */
     public void stop() {
-        Iterator it=null;
-        Connection conn;
-        ServerSocket tmp;
+        super.stop();
 
-        // 1. close the server socket (this also stops the acceptor thread)
+        // 1. Stop the reaper
+        if(reaper != null)
+            reaper.stop();
+
+        // 2. close the server socket (this also stops the acceptor thread)
         if(srv_sock != null) {
             try {
-                tmp=srv_sock;
+                ServerSocket tmp=srv_sock;
                 srv_sock=null;
                 tmp.close();
             }
@@ -212,15 +215,19 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
             }
         }
 
-
-        // 2. then close the connections
+        // 3. then close the connections
+        Connection conn;
+        Collection tmp=null;
         synchronized(conns) {
-            it=conns.values().iterator();
-            while(it.hasNext()) {
+            tmp=new LinkedList(conns.values());
+            conns.clear();
+        }
+        if(tmp != null) {
+            for(Iterator it=tmp.iterator(); it.hasNext();) {
                 conn=(Connection)it.next();
                 conn.destroy();
             }
-            conns.clear();
+            tmp.clear();
         }
         local_addr=null;
     }
@@ -232,13 +239,19 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
     * interrupted by the thread creator.
     */
    public void run() {
-       Socket     client_sock;
+       Socket     client_sock=null;
        Connection conn=null;
        Address    peer_addr;
 
        while(srv_sock != null) {
            try {
+               conn=null;
                client_sock=srv_sock.accept();
+               if(!running) {
+                   if(log.isWarnEnabled())
+                       log.warn("cannot accept connection from " + client_sock.getRemoteSocketAddress() + " as I'm closed");
+                   break;
+               }
                if(log.isTraceEnabled())
                    log.trace("accepted connection from " + client_sock.getInetAddress() + ":" + client_sock.getPort());
                try {
@@ -295,6 +308,8 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
                    break;  // socket was closed, therefore stop
            }
        }
+       if(client_sock != null)
+           try {client_sock.close();} catch(IOException e) {}
        if(log.isTraceEnabled())
            log.trace(Thread.currentThread().getName() + " terminated");
    }
