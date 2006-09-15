@@ -31,7 +31,7 @@ import java.security.AccessControlException;
  *
  * @author Filip Hanik (<a href="mailto:filip@filip.net">filip@filip.net)
  * @author Bela Ban
- * @version $Id: ConfiguratorFactory.java,v 1.20 2006/08/15 06:06:39 belaban Exp $
+ * @version $Id: ConfiguratorFactory.java,v 1.21 2006/09/15 13:03:28 belaban Exp $
  */
 public class ConfiguratorFactory {
     public static final String JAXP_MISSING_ERROR_MSG=
@@ -346,12 +346,25 @@ public class ConfiguratorFactory {
         if (propertiesOverride != null)
             return getConfigStream(propertiesOverride);
 
-        // Check to see if the properties string is a URL.
+        // Check to see if the properties string is the name of a file.
         try {
-            configStream=new URL(properties).openStream();
+            configStream=new FileInputStream(properties);
         }
-        catch (MalformedURLException mre) {
-            // the properties string is not a URL
+        catch(FileNotFoundException fnfe) {
+            // the properties string is likely not a file
+        }
+        catch(AccessControlException access_ex) {
+            // fixes http://jira.jboss.com/jira/browse/JGRP-94
+        }
+
+        // Check to see if the properties string is a URL.
+        if(configStream == null) {
+            try {
+                configStream=new URL(properties).openStream();
+            }
+            catch (MalformedURLException mre) {
+                // the properties string is not a URL
+            }
         }
         // Commented so the caller is notified of this condition, but left in
         // the code for documentation purposes.
@@ -365,20 +378,6 @@ public class ConfiguratorFactory {
         if(configStream == null && properties.endsWith("xml")) {
             configStream=Util.getResourceAsStream(properties, ConfiguratorFactory.class);
         }
-
-        // Check to see if the properties string is the name of a file.
-        if (configStream == null) {
-            try {
-                configStream=new FileInputStream(properties);
-            }
-            catch(FileNotFoundException fnfe) {
-                // the properties string is likely not a file
-            }
-            catch(AccessControlException access_ex) {
-                // fixes http://jira.jboss.com/jira/browse/JGRP-94
-            }
-        }
-
         return configStream;
     }
 
