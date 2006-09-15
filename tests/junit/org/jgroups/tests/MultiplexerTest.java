@@ -14,7 +14,7 @@ import java.io.*;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.20 2006/09/13 11:25:00 belaban Exp $
+ * @version $Id: MultiplexerTest.java,v 1.21 2006/09/15 12:32:56 belaban Exp $
  */
 public class MultiplexerTest extends TestCase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -206,7 +206,6 @@ public class MultiplexerTest extends TestCase {
         ch2.connect("bla");
         ch1.close();
         ch2.close();
-        System.out.println(Util.activeThreads());
     }
 
 
@@ -423,6 +422,8 @@ public class MultiplexerTest extends TestCase {
         ch1.connect("bla");
         assertTrue(ch1.isOpen());
         assertTrue(ch1.isConnected());
+        assertServiceAndClusterView(ch1, 1, 1);
+
         c1=new Cache(ch1, "cache-1");
         assertEquals("cache has to be empty initially", 0, c1.size());
 
@@ -435,10 +436,11 @@ public class MultiplexerTest extends TestCase {
         c1.put("hobbies", "biking");
         c1.put("bike", "Centurion");
 
-
         ch1_repl.connect("bla");
         assertTrue(ch1_repl.isOpen());
         assertTrue(ch1_repl.isConnected());
+        assertServiceAndClusterView(ch1, 2, 2);
+        assertServiceAndClusterView(ch1_repl, 2, 2);
 
         c1_repl=new Cache(ch1_repl, "cache-1-repl");
         boolean rc=ch1_repl.getState(null, 5000);
@@ -447,7 +449,6 @@ public class MultiplexerTest extends TestCase {
 
         System.out.println("c1_repl: " + c1_repl);
         assertEquals("initial state should have been transferred", 4, c1_repl.size());
-
         assertEquals(new Long(322649), c1.get("id"));
         assertEquals(new Long(322649), c1_repl.get("id"));
 
@@ -460,12 +461,16 @@ public class MultiplexerTest extends TestCase {
         ch1_repl.disconnect();
         assertTrue(ch1_repl.isOpen());
         assertFalse(ch1_repl.isConnected());
+        assertServiceAndClusterView(ch1, 1, 1);
+        assertServiceAndClusterView(ch1_repl, 1, 1);
 
         c1_repl.clear();
 
         ch1_repl.connect("bla");
         assertTrue(ch1_repl.isOpen());
         assertTrue(ch1_repl.isConnected());
+        assertServiceAndClusterView(ch1, 2, 2);
+        assertServiceAndClusterView(ch1_repl, 2, 2);
 
         assertEquals("cache has to be empty initially", 0, c1_repl.size());
 
@@ -492,11 +497,14 @@ public class MultiplexerTest extends TestCase {
         ch2=factory.createMultiplexerChannel(STACK_NAME, "c2");
         assertTrue(ch2.isOpen());
         assertFalse(ch2.isConnected());
+        assertServiceAndClusterView(ch1, 2, 2);
+        assertServiceAndClusterView(ch1_repl, 2, 2);
+
 
         ch1.disconnect();
         assertTrue(ch1.isOpen());
         assertFalse(ch1.isConnected());
-
+        assertServiceAndClusterView(ch1_repl, 1, 1);
         assertTrue(ch2.isOpen());
         assertFalse(ch2.isConnected());
 
@@ -505,7 +513,8 @@ public class MultiplexerTest extends TestCase {
         ch1.connect("bla");
         assertTrue(ch1.isOpen());
         assertTrue(ch1.isConnected());
-
+        assertServiceAndClusterView(ch1, 2, 2);
+        assertServiceAndClusterView(ch1_repl, 2, 2);
         assertTrue(ch2.isOpen());
         assertFalse(ch2.isConnected());
 
@@ -526,6 +535,19 @@ public class MultiplexerTest extends TestCase {
 
         assertEquals("Centurion", c1.get("bike"));
         assertEquals("Centurion", c1_repl.get("bike"));
+    }
+
+
+    private void assertServiceAndClusterView(Channel ch, int num_service_view_mbrs, int num_cluster_view_mbrs) {
+        View service_view, cluster_view;
+        service_view=ch.getView();
+        cluster_view=((MuxChannel)ch).getClusterView();
+
+        assertNotNull(service_view);
+        assertNotNull(cluster_view);
+
+        assertEquals(num_service_view_mbrs, service_view.size());
+        assertEquals(num_cluster_view_mbrs, cluster_view.size());
     }
 
 
