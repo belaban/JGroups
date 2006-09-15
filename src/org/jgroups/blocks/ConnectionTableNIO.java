@@ -1,4 +1,4 @@
-// $Id: ConnectionTableNIO.java,v 1.21 2006/09/15 12:21:12 belaban Exp $
+// $Id: ConnectionTableNIO.java,v 1.22 2006/09/15 12:30:22 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -401,6 +401,14 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
       // Stop the callback thread pool
       if(m_requestProcessors instanceof PooledExecutor)
          ((PooledExecutor)m_requestProcessors).shutdownNow();
+
+       if(m_requestProcessors instanceof PooledExecutor) {
+           try {
+               ((PooledExecutor)m_requestProcessors).awaitTerminationAfterShutdown(1000);
+           }
+           catch(InterruptedException e) {
+           }
+       }
 
       // then close the connections
       synchronized(conns) {
