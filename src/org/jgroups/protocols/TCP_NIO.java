@@ -1,6 +1,7 @@
 package org.jgroups.protocols;
 
 import org.jgroups.blocks.ConnectionTableNIO;
+import org.jgroups.blocks.BasicConnectionTable;
 import org.jgroups.Address;
 import org.jgroups.stack.IpAddress;
 
@@ -13,9 +14,9 @@ import java.util.Collection;
  * @author Scott Marlow
  * @author Alex Fu
  * @author Bela Ban
- * @version $Id: TCP_NIO.java,v 1.8 2006/09/14 07:25:26 belaban Exp $
+ * @version $Id: TCP_NIO.java,v 1.9 2006/09/15 12:08:09 belaban Exp $
  */
-public class TCP_NIO extends BasicTCP implements ConnectionTableNIO.Receiver
+public class TCP_NIO extends BasicTCP implements BasicConnectionTable.Receiver
 {
 
    /*
@@ -26,25 +27,31 @@ public class TCP_NIO extends BasicTCP implements ConnectionTableNIO.Receiver
    protected ConnectionTableNIO getConnectionTable(long ri, long cet,
                                                    InetAddress b_addr, InetAddress bc_addr, int s_port, int e_port) throws Exception {
        ConnectionTableNIO retval=null;
-      if (ri == 0 && cet == 0) {
-         retval = new ConnectionTableNIO(this, b_addr, bc_addr, s_port, e_port );
-      } else {
-         if (ri == 0) {
-            ri = 5000;
-            if(warn) log.warn("reaper_interval was 0, set it to "
-                  + ri);
-         }
-         if (cet == 0) {
-            cet = 1000 * 60 * 5;
-            if(warn) log.warn("conn_expire_time was 0, set it to "
-                  + cet);
-         }
-         retval = new ConnectionTableNIO(this, b_addr, bc_addr, s_port, e_port, ri, cet);
-      }
-      return retval;
+       if (ri == 0 && cet == 0) {
+           retval = new ConnectionTableNIO(this, b_addr, bc_addr, s_port, e_port, false );
+       }
+       else {
+           if (ri == 0) {
+               ri = 5000;
+               if(warn) log.warn("reaper_interval was 0, set it to " + ri);
+           }
+           if (cet == 0) {
+               cet = 1000 * 60 * 5;
+               if(warn) log.warn("conn_expire_time was 0, set it to " + cet);
+           }
+           retval = new ConnectionTableNIO(this, b_addr, bc_addr, s_port, e_port, ri, cet, false);
+       }
+
+       retval.setProcessorMaxThreads(getProcessorMaxThreads());
+       retval.setProcessorQueueSize(getProcessorQueueSize());
+       retval.setProcessorMinThreads(getProcessorMinThreads());
+       retval.setProcessorKeepAliveTime(getProcessorKeepAliveTime());
+       retval.setProcessorThreads(getProcessorThreads());
+       retval.start();
+       return retval;
    }
 
-   public String printConnections()     {return ct.toString();}
+    public String printConnections()     {return ct.toString();}
 
    public void send(Address dest, byte[] data, int offset, int length) throws Exception {
       ct.send(dest, data, offset, length);
