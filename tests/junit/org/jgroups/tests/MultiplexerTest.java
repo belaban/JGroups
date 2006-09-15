@@ -6,6 +6,8 @@ import junit.framework.TestSuite;
 import org.jgroups.*;
 import org.jgroups.mux.MuxChannel;
 import org.jgroups.stack.IpAddress;
+import org.jgroups.stack.ProtocolStack;
+import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 
 import java.util.*;
@@ -14,7 +16,7 @@ import java.io.*;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.21 2006/09/15 12:32:56 belaban Exp $
+ * @version $Id: MultiplexerTest.java,v 1.22 2006/09/15 16:33:15 belaban Exp $
  */
 public class MultiplexerTest extends TestCase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -415,8 +417,29 @@ public class MultiplexerTest extends TestCase {
     }
 
 
+    private void setCorrectPortRange(Channel ch) {
+        ProtocolStack stack=((MuxChannel)ch).getProtocolStack();
+        Protocol tcpping=stack.findProtocol("TCPPING");
+        if(tcpping == null)
+            return;
+
+        Properties props=tcpping.getProperties();
+        String port_range=props.getProperty("port_range");
+        if(port_range != null) {
+            System.out.println("port_range in TCPPING: " + port_range + ", setting it to 2");
+            port_range="2";
+            Properties p=new Properties();
+            p.putAll(props);
+            p.setProperty("port_range", port_range);
+            tcpping.setProperties(p);
+        }
+    }
+
+
     public void testStateTransferWithReconnect() throws Exception {
         ch1=factory.createMultiplexerChannel(STACK_NAME, "c1");
+        setCorrectPortRange(ch1);
+
         assertTrue(ch1.isOpen());
         assertFalse(ch1.isConnected());
         ch1.connect("bla");
@@ -428,6 +451,7 @@ public class MultiplexerTest extends TestCase {
         assertEquals("cache has to be empty initially", 0, c1.size());
 
         ch1_repl=factory2.createMultiplexerChannel(STACK_NAME, "c1");
+        setCorrectPortRange(ch1_repl);
         assertTrue(ch1_repl.isOpen());
         assertFalse(ch1_repl.isConnected());
 
@@ -439,8 +463,9 @@ public class MultiplexerTest extends TestCase {
         ch1_repl.connect("bla");
         assertTrue(ch1_repl.isOpen());
         assertTrue(ch1_repl.isConnected());
-        assertServiceAndClusterView(ch1, 2, 2);
         assertServiceAndClusterView(ch1_repl, 2, 2);
+        Util.sleep(500);
+        assertServiceAndClusterView(ch1, 2, 2);
 
         c1_repl=new Cache(ch1_repl, "cache-1-repl");
         boolean rc=ch1_repl.getState(null, 5000);
@@ -461,16 +486,17 @@ public class MultiplexerTest extends TestCase {
         ch1_repl.disconnect();
         assertTrue(ch1_repl.isOpen());
         assertFalse(ch1_repl.isConnected());
+        Util.sleep(500);
         assertServiceAndClusterView(ch1, 1, 1);
-        assertServiceAndClusterView(ch1_repl, 1, 1);
 
         c1_repl.clear();
 
         ch1_repl.connect("bla");
         assertTrue(ch1_repl.isOpen());
         assertTrue(ch1_repl.isConnected());
-        assertServiceAndClusterView(ch1, 2, 2);
         assertServiceAndClusterView(ch1_repl, 2, 2);
+        Util.sleep(300);
+        assertServiceAndClusterView(ch1, 2, 2);
 
         assertEquals("cache has to be empty initially", 0, c1_repl.size());
 
@@ -495,6 +521,7 @@ public class MultiplexerTest extends TestCase {
         // just so it remains coordinator (test that it doesn't
         // ask for state from itself)
         ch2=factory.createMultiplexerChannel(STACK_NAME, "c2");
+        setCorrectPortRange(ch2);
         assertTrue(ch2.isOpen());
         assertFalse(ch2.isConnected());
         assertServiceAndClusterView(ch1, 2, 2);
@@ -514,6 +541,7 @@ public class MultiplexerTest extends TestCase {
         assertTrue(ch1.isOpen());
         assertTrue(ch1.isConnected());
         assertServiceAndClusterView(ch1, 2, 2);
+        Util.sleep(500);
         assertServiceAndClusterView(ch1_repl, 2, 2);
         assertTrue(ch2.isOpen());
         assertFalse(ch2.isConnected());
@@ -543,11 +571,13 @@ public class MultiplexerTest extends TestCase {
         service_view=ch.getView();
         cluster_view=((MuxChannel)ch).getClusterView();
 
+        String msg="cluster view=" + cluster_view + ", service view=" + service_view;
+
         assertNotNull(service_view);
         assertNotNull(cluster_view);
 
-        assertEquals(num_service_view_mbrs, service_view.size());
-        assertEquals(num_cluster_view_mbrs, cluster_view.size());
+        assertEquals(msg, num_service_view_mbrs, service_view.size());
+        assertEquals(msg, num_cluster_view_mbrs, cluster_view.size());
     }
 
 
