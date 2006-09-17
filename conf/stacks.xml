@@ -2,7 +2,7 @@
 <!--
   Sample file that defines a number of stacks, used by the multiplexer
   Author: Bela Ban
-  Version: $Id: stacks.xml,v 1.12 2006/09/15 06:07:32 belaban Exp $
+  Version: $Id: stacks.xml,v 1.13 2006/09/17 20:51:03 bstansberry Exp $
 -->
 <protocol_stacks>
     <stack name="udp"
@@ -168,7 +168,7 @@
            configuration should be used instead of tcp when (1) synchronous calls are used and (2) the message volume
            (rate and size) is not that large">
         <config>
-            <TCP start_port="7800"
+            <TCP start_port="7900"
                  loopback="true"
                  recv_buf_size="20000000"
                  send_buf_size="640000"
