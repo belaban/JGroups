@@ -1,4 +1,4 @@
-// $Id: CloseTest.java,v 1.9 2006/09/15 14:56:46 belaban Exp $
+// $Id: CloseTest.java,v 1.10 2006/09/17 07:56:22 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -15,6 +15,7 @@ import java.util.Vector;
  */
 public class CloseTest extends TestCase {
     JChannel channel, channel1, channel2, c1, c2, c3;
+    int active_threads=0;
 
     String props="UDP(mcast_addr=228.8.8.3;mcast_port=45577;ip_ttl=32;" +
             "mcast_send_buf_size=150000;mcast_recv_buf_size=80000;" +
@@ -39,6 +40,8 @@ public class CloseTest extends TestCase {
         String cfg=System.getProperty("config");
         if(cfg != null)
             props=cfg;
+        active_threads=Thread.activeCount();
+        System.out.println("active threads before (" + active_threads + "):\n" + Util.activeThreads());
     }
 
 
@@ -50,6 +53,11 @@ public class CloseTest extends TestCase {
         closeChannel(c1);
         closeChannel(c2);
         closeChannel(c3);
+
+        int current_active_threads=Thread.activeCount();
+        System.out.println("active threads after (" + current_active_threads + "):\n" + Util.activeThreads());
+        // System.out.println("thread:\n" + dumpThreads());
+        assertEquals(active_threads, current_active_threads);
     }
 
     private void closeChannel(JChannel c) {
