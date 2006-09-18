@@ -6,6 +6,11 @@ import junit.framework.TestSuite;
 import org.jgroups.*;
 import org.jgroups.util.Util;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.util.*;
 
 /**
@@ -13,13 +18,13 @@ import java.util.*;
  * See doc/design/ConcurrentStartupTest.txt for details. This will only work 100% correctly once we have
  * FLUSH support (JGroups 2.4)
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.9 2006/07/24 21:59:01 vlada Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.10 2006/09/18 17:16:23 vlada Exp $
  */
-public class ConcurrentStartupTest extends TestCase implements Receiver {
+public class ConcurrentStartupTest extends TestCase implements ExtendedReceiver {
     final List list=Collections.synchronizedList(new LinkedList());
     JChannel channel;
     final static String GROUP="demo";
-    final static String PROPS="flush-fc-fast-minimalthreads.xml"; // use flush properties
+    static String PROPS="flush-fc-fast-minimalthreads.xml"; // use flush properties
     final int NUM=5;
     int mod=1;
     final Map modifications=new TreeMap();
@@ -27,6 +32,7 @@ public class ConcurrentStartupTest extends TestCase implements Receiver {
 
     protected void setUp() throws Exception {
         super.setUp();
+        PROPS = System.getProperty("props",PROPS); 
     }
 
     protected void tearDown() throws Exception {
@@ -110,17 +116,15 @@ public class ConcurrentStartupTest extends TestCase implements Receiver {
         if(msg.getBuffer() == null)
             return;
         Object obj=msg.getObject();
-        synchronized(list) {
-            list.add(obj);
-        }
-        synchronized(modifications) {
+        synchronized(this) {
+            list.add(obj);              
             Integer key=new Integer(getMod());
             modifications.put(key, obj);
         }
     }
 
     public byte[] getState() {
-        synchronized(list) {
+        synchronized(this) {
             List tmp=new LinkedList(list);
             try {
                 return Util.objectToByteBuffer(tmp);
@@ -135,7 +139,7 @@ public class ConcurrentStartupTest extends TestCase implements Receiver {
     public void setState(byte[] state) {
         try {
             List tmp=(List)Util.objectFromByteBuffer(state);
-            synchronized(list) {
+            synchronized(this) {
                 list.clear();
                 list.addAll(tmp);
             }
@@ -144,10 +148,69 @@ public class ConcurrentStartupTest extends TestCase implements Receiver {
             e.printStackTrace();
         }
     }
+    public byte[] getState(String state_id) {
+    	//not needed
+		return null;
+	}
+
+	public void getState(OutputStream ostream) {		
+		ObjectOutputStream oos = null;
+        try{
+           oos = new ObjectOutputStream(ostream);
+           List tmp = null;
+           synchronized (this){
+              tmp = new LinkedList(list);
+           }
+           oos.writeObject(tmp);
+           oos.flush();
+        }
+        catch (IOException e){
+           // TODO Auto-generated catch block
+           e.printStackTrace();
+        }
+        finally{
+           Util.closeOutputStream(oos);
+        }
+		
+	}
+
+	public void getState(String state_id, OutputStream ostream) {
+		//not used
+
+	}
+
+	public void setState(String state_id, byte[] state) {
+		// not used
+
+	}
+
+	public void setState(InputStream istream) {
+		ObjectInputStream ois = null;
+        try{
+           ois = new ObjectInputStream(istream);
+           List tmp = (List) ois.readObject();
+           synchronized (this){
+              list.clear();
+              list.addAll(tmp);                        
+           }                         
+        }
+        catch (Exception e){
+           // TODO Auto-generated catch block
+           e.printStackTrace();
+        }
+        finally{
+           Util.closeInputStream(ois);
+        } 
+	}
+
+	public void setState(String state_id, InputStream istream) {
+		// not used
+
+	}
 
     public void viewAccepted(View new_view) {
         System.out.println("-- view: " + new_view);
-        synchronized(modifications) {
+        synchronized(this) {
             Integer key=new Integer(getMod());
             modifications.put(key, new_view.getVid());
         }
@@ -161,19 +224,17 @@ public class ConcurrentStartupTest extends TestCase implements Receiver {
 
 
     private static class MyThread extends Thread {
-        final List list=Collections.synchronizedList(new LinkedList());
+        final List list=new LinkedList();
         Channel ch;
         int mod=1;
         final Map modifications=new TreeMap();
 
 
         int getMod() {
-            synchronized(this) {
-                int retval=mod;
-                mod++;
-                return retval;
-            }
-        }
+			int retval = mod;
+			mod++;
+			return retval;
+		}
 
 
         MyThread(String name) {
@@ -183,20 +244,20 @@ public class ConcurrentStartupTest extends TestCase implements Receiver {
         public void run() {
             try {
                 ch=new JChannel(PROPS);
-                ch.setReceiver(new ReceiverAdapter() {
+                ch.setReceiver(new ExtendedReceiverAdapter() {
                     public void receive(Message msg) {
                         if(msg.getBuffer() == null)
                             return;
                         Object obj=msg.getObject();
-                        list.add(obj);
-                        synchronized(modifications) {
-                            Integer key=new Integer(getMod());
+                        synchronized (this) {
+                        	list.add(obj);
+                        	Integer key=new Integer(getMod());
                             modifications.put(key, obj);
-                        }
+						}                        
                     }
 
                     public void viewAccepted(View new_view) {
-                        synchronized(modifications) {
+                        synchronized(this) {
                             Integer key=new Integer(getMod());
                             modifications.put(key, new_view.getVid());
                         }
@@ -205,7 +266,7 @@ public class ConcurrentStartupTest extends TestCase implements Receiver {
                     public void setState(byte[] state) {
                         try {
                             List tmp=(List)Util.objectFromByteBuffer(state);
-                            synchronized(list) {
+                            synchronized(this) {
                                 list.clear();
                                 list.addAll(tmp);
                                 System.out.println("-- [#" + getName() + " (" +ch.getLocalAddress()+")]: state is " + list);
@@ -219,17 +280,59 @@ public class ConcurrentStartupTest extends TestCase implements Receiver {
                     }
 
                     public byte[] getState() {
-                        synchronized(list) {
-                            List tmp=new LinkedList(list);
-                            try {
-                                return Util.objectToByteBuffer(tmp);
-                            }
-                            catch(Exception e) {
-                                e.printStackTrace();
-                                return null;
-                            }
+						List tmp = null;
+						synchronized (this) {
+							tmp = new LinkedList(list);
+							try {
+								return Util.objectToByteBuffer(tmp);
+							} catch (Exception e) {
+								e.printStackTrace();
+								return null;
+							}
+						}
+					}
+                    
+                    public void getState(OutputStream ostream){
+                        ObjectOutputStream oos = null;
+                        try{
+                           oos = new ObjectOutputStream(ostream);
+                           List tmp = null;
+                           synchronized (this){
+                              tmp = new LinkedList(list);
+                           }
+                           oos.writeObject(tmp);
+                           oos.flush();
+                        }
+                        catch (IOException e){
+                           // TODO Auto-generated catch block
+                           e.printStackTrace();
+                        }
+                        finally{
+                           Util.closeOutputStream(oos);
                         }
                     }
+                   
+                    public void setState(InputStream istream) {
+                       ObjectInputStream ois = null;
+                       try{
+                          ois = new ObjectInputStream(istream);
+                          List tmp = (List) ois.readObject();
+                          synchronized (this){
+                             list.clear();
+                             list.addAll(tmp);
+                             System.out.println("-- [#" + getName() + " (" +ch.getLocalAddress()+")]: state is " + list);
+                             Integer key=new Integer(getMod());
+                             modifications.put(key, tmp);
+                          }                         
+                       }
+                       catch (Exception e){
+                          // TODO Auto-generated catch block
+                          e.printStackTrace();
+                       }
+                       finally{
+                          Util.closeInputStream(ois);
+                       }                    
+                    }                                        
                 });
                 ch.connect(GROUP);
                 ch.getState(null, 10000);
@@ -255,5 +358,5 @@ public class ConcurrentStartupTest extends TestCase implements Receiver {
     public static void main(String[] args) {
         String[] testCaseName={ConcurrentStartupTest.class.getName()};
         junit.textui.TestRunner.main(testCaseName);
-    }
+    }  
 }
