@@ -18,7 +18,7 @@ import java.util.*;
  * See doc/design/ConcurrentStartupTest.txt for details. This will only work 100% correctly once we have
  * FLUSH support (JGroups 2.4)
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.10 2006/09/18 17:16:23 vlada Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.11 2006/09/18 20:08:50 belaban Exp $
  */
 public class ConcurrentStartupTest extends TestCase implements ExtendedReceiver {
     final List list=Collections.synchronizedList(new LinkedList());
@@ -32,7 +32,7 @@ public class ConcurrentStartupTest extends TestCase implements ExtendedReceiver 
 
     protected void setUp() throws Exception {
         super.setUp();
-        PROPS = System.getProperty("props",PROPS); 
+        PROPS = System.getProperty("props",PROPS);
     }
 
     protected void tearDown() throws Exception {
@@ -117,7 +117,7 @@ public class ConcurrentStartupTest extends TestCase implements ExtendedReceiver 
             return;
         Object obj=msg.getObject();
         synchronized(this) {
-            list.add(obj);              
+            list.add(obj);
             Integer key=new Integer(getMod());
             modifications.put(key, obj);
         }
@@ -153,7 +153,7 @@ public class ConcurrentStartupTest extends TestCase implements ExtendedReceiver 
 		return null;
 	}
 
-	public void getState(OutputStream ostream) {		
+	public void getState(OutputStream ostream) {
 		ObjectOutputStream oos = null;
         try{
            oos = new ObjectOutputStream(ostream);
@@ -165,13 +165,12 @@ public class ConcurrentStartupTest extends TestCase implements ExtendedReceiver 
            oos.flush();
         }
         catch (IOException e){
-           // TODO Auto-generated catch block
            e.printStackTrace();
         }
         finally{
            Util.closeOutputStream(oos);
         }
-		
+
 	}
 
 	public void getState(String state_id, OutputStream ostream) {
@@ -191,16 +190,15 @@ public class ConcurrentStartupTest extends TestCase implements ExtendedReceiver 
            List tmp = (List) ois.readObject();
            synchronized (this){
               list.clear();
-              list.addAll(tmp);                        
-           }                         
+              list.addAll(tmp);
+           }
         }
         catch (Exception e){
-           // TODO Auto-generated catch block
            e.printStackTrace();
         }
         finally{
            Util.closeInputStream(ois);
-        } 
+        }
 	}
 
 	public void setState(String state_id, InputStream istream) {
@@ -253,7 +251,7 @@ public class ConcurrentStartupTest extends TestCase implements ExtendedReceiver 
                         	list.add(obj);
                         	Integer key=new Integer(getMod());
                             modifications.put(key, obj);
-						}                        
+						}
                     }
 
                     public void viewAccepted(View new_view) {
@@ -291,7 +289,7 @@ public class ConcurrentStartupTest extends TestCase implements ExtendedReceiver 
 							}
 						}
 					}
-                    
+
                     public void getState(OutputStream ostream){
                         ObjectOutputStream oos = null;
                         try{
@@ -304,14 +302,13 @@ public class ConcurrentStartupTest extends TestCase implements ExtendedReceiver 
                            oos.flush();
                         }
                         catch (IOException e){
-                           // TODO Auto-generated catch block
                            e.printStackTrace();
                         }
                         finally{
                            Util.closeOutputStream(oos);
                         }
                     }
-                   
+
                     public void setState(InputStream istream) {
                        ObjectInputStream ois = null;
                        try{
@@ -323,16 +320,15 @@ public class ConcurrentStartupTest extends TestCase implements ExtendedReceiver 
                              System.out.println("-- [#" + getName() + " (" +ch.getLocalAddress()+")]: state is " + list);
                              Integer key=new Integer(getMod());
                              modifications.put(key, tmp);
-                          }                         
+                          }
                        }
                        catch (Exception e){
-                          // TODO Auto-generated catch block
                           e.printStackTrace();
                        }
                        finally{
                           Util.closeInputStream(ois);
-                       }                    
-                    }                                        
+                       }
+                    }
                 });
                 ch.connect(GROUP);
                 ch.getState(null, 10000);
@@ -358,5 +354,5 @@ public class ConcurrentStartupTest extends TestCase implements ExtendedReceiver 
     public static void main(String[] args) {
         String[] testCaseName={ConcurrentStartupTest.class.getName()};
         junit.textui.TestRunner.main(testCaseName);
-    }  
+    }
 }
