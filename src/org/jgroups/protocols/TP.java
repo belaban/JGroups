@@ -40,7 +40,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.72 2006/09/15 13:43:52 belaban Exp $
+ * @version $Id: TP.java,v 1.73 2006/09/18 20:10:29 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -892,7 +892,7 @@ public abstract class TP extends Protocol {
                     !ch_name.equals(Util.DIAG_GROUP)) {
                 if(warn)
                     log.warn(new StringBuffer("discarded message from different group \"").append(ch_name).
-                            append("\" (our group is \"").append(channel_name).append("\"). Sender was").append(msg.getSrc()));
+                            append("\" (our group is \"").append(channel_name).append("\"). Sender was ").append(msg.getSrc()));
                 return;
             }
         }
