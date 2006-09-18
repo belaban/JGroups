@@ -1,4 +1,4 @@
-// $Id: ConnectionTableNIO.java,v 1.23 2006/09/15 16:49:28 smarlownovell Exp $
+// $Id: ConnectionTableNIO.java,v 1.24 2006/09/18 18:00:37 bstansberry Exp $
 
 package org.jgroups.blocks;
 
@@ -424,7 +424,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
       }
 
       while(m_backGroundThreads.size() > 0) {
-          Thread t = (Thread)m_backGroundThreads.remove();
+          Thread t = (Thread)m_backGroundThreads.removeFirst();
           try {
             t.join();
           } catch(InterruptedException e) {
