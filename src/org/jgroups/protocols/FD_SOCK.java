@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.45 2006/09/12 12:31:38 belaban Exp $
+// $Id: FD_SOCK.java,v 1.46 2006/09/18 20:11:19 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -80,6 +80,8 @@ public class FD_SOCK extends Protocol implements Runnable {
 
     /** whether to use KEEP_ALIVE on the ping socket or not */
     private boolean      keep_alive=true;
+
+    private boolean      running=false;
 
 
     public String getName() {
@@ -169,7 +171,13 @@ public class FD_SOCK extends Protocol implements Runnable {
     }
 
 
+    public void start() throws Exception {
+        super.start();
+        running=true;
+    }
+
     public void stop() {
+        running=false;
         bcast_task.removeAll();
         stopPingerThread();
         stopServerSocket();
@@ -411,8 +419,17 @@ public class FD_SOCK extends Protocol implements Runnable {
         IpAddress ping_addr;
         int max_fetch_tries=10;  // number of times a socket address is to be requested before giving up
 
+        if(!running) {
+            if(log.isWarnEnabled())
+                log.warn("pinger thread is not started as running=false");
+            synchronized(pinger_mutex) {
+                pinger_thread=null;
+            }
+            return;
+        }
+
         if(trace) log.trace("pinger_thread started"); // +++ remove
-        while(pinger_thread != null) {
+        while(pinger_thread != null && Thread.currentThread().equals(pinger_thread) && running) {
             tmp_ping_dest=determinePingDest(); // gets the neighbor to our right
             if(log.isDebugEnabled())
                 log.debug("determinePingDest()=" + tmp_ping_dest + ", pingable_mbrs=" + pingable_mbrs);
@@ -505,7 +522,6 @@ public class FD_SOCK extends Protocol implements Runnable {
             pinger_thread=new Thread(Util.getGlobalThreadGroup(), this, "FD_SOCK Ping thread");
             pinger_thread.setDaemon(true);
             pinger_thread.start();
-
             if(group_name != null) {
                 String tmp, prefix=Global.THREAD_PREFIX;
                 tmp=pinger_thread.getName();
@@ -525,6 +541,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                 pinger_thread=null;
                 sendPingTermination(); // PATCH by Bruce Schuchardt (http://jira.jboss.com/jira/browse/JGRP-246)
                 teardownPingSocket();
+                ping_addr_promise.setResult(null);
             }
         }
     }
