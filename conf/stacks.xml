@@ -2,7 +2,7 @@
 <!--
   Sample file that defines a number of stacks, used by the multiplexer
   Author: Bela Ban
-  Version: $Id: stacks.xml,v 1.13 2006/09/17 20:51:03 bstansberry Exp $
+  Version: $Id: stacks.xml,v 1.14 2006/09/19 03:54:39 bstansberry Exp $
 -->
 <protocol_stacks>
     <stack name="udp"
@@ -178,7 +178,7 @@
                  use_incoming_packet_handler="true"
                  use_outgoing_packet_handler="false"
                  down_thread="false" up_thread="false"
-                 enable_bundling="true"
+                 enable_bundling="false"
                  use_send_queues="false"
                  sock_conn_timeout="300"
                  skip_suspected_members="true"/>
