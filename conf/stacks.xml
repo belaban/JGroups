@@ -2,7 +2,7 @@
 <!--
   Sample file that defines a number of stacks, used by the multiplexer
   Author: Bela Ban
-  Version: $Id: stacks.xml,v 1.14 2006/09/19 03:54:39 bstansberry Exp $
+  Version: $Id: stacks.xml,v 1.15 2006/09/19 21:22:09 vlada Exp $
 -->
 <protocol_stacks>
     <stack name="udp"
@@ -42,7 +42,7 @@
             <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
                            down_thread="false" up_thread="false"
                            max_bytes="400000"/>
-            <pbcast.GMS print_local_addr="true" join_timeout="3000"
+            <pbcast.GMS print_local_addr="true" join_timeout="3000" use_flush="true" 
                         down_thread="false" up_thread="false"
                         join_retry_timeout="2000" shun="true"
                         view_bundling="true"/>
@@ -98,7 +98,7 @@
             <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
                            down_thread="false" up_thread="false"
                            max_bytes="400000"/>
-            <pbcast.GMS print_local_addr="true" join_timeout="3000"
+            <pbcast.GMS print_local_addr="true" join_timeout="3000" use_flush="true"
                         down_thread="false" up_thread="false"
                         join_retry_timeout="2000" shun="true"
                         view_bundling="true"/>
@@ -147,7 +147,7 @@
             <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
                            down_thread="false" up_thread="false"
                            max_bytes="400000"/>
-            <pbcast.GMS print_local_addr="true" join_timeout="3000"
+            <pbcast.GMS print_local_addr="true" join_timeout="3000" use_flush="true" 
                         down_thread="false" up_thread="false"
                         join_retry_timeout="2000" shun="true"
                         view_bundling="true"/>
@@ -200,7 +200,7 @@
             <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
                            down_thread="false" up_thread="false"
                            max_bytes="400000"/>
-            <pbcast.GMS print_local_addr="true" join_timeout="3000"
+            <pbcast.GMS print_local_addr="true" join_timeout="3000" use_flush="true"
                         down_thread="false" up_thread="false"
                         join_retry_timeout="2000" shun="true"
                         view_bundling="true"/>
@@ -255,7 +255,7 @@
             <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
                            down_thread="false" up_thread="false"
                            max_bytes="400000"/>
-            <pbcast.GMS print_local_addr="true" join_timeout="3000"
+            <pbcast.GMS print_local_addr="true" join_timeout="3000" use_flush="true"
                         down_thread="false" up_thread="false"
                         join_retry_timeout="2000" shun="true"
                         view_bundling="true"/>
@@ -315,7 +315,7 @@
             <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
                            down_thread="false" up_thread="false"
                            max_bytes="400000"/>
-            <pbcast.GMS print_local_addr="true" join_timeout="3000"
+            <pbcast.GMS print_local_addr="true" join_timeout="3000" use_flush="true"
                         down_thread="false" up_thread="false"
                         join_retry_timeout="2000" shun="true"
                         view_bundling="true"/>
