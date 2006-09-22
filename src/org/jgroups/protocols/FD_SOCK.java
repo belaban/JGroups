@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.46 2006/09/18 20:11:19 belaban Exp $
+// $Id: FD_SOCK.java,v 1.47 2006/09/22 12:02:43 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -419,15 +419,6 @@ public class FD_SOCK extends Protocol implements Runnable {
         IpAddress ping_addr;
         int max_fetch_tries=10;  // number of times a socket address is to be requested before giving up
 
-        if(!running) {
-            if(log.isWarnEnabled())
-                log.warn("pinger thread is not started as running=false");
-            synchronized(pinger_mutex) {
-                pinger_thread=null;
-            }
-            return;
-        }
-
         if(trace) log.trace("pinger_thread started"); // +++ remove
         while(pinger_thread != null && Thread.currentThread().equals(pinger_thread) && running) {
             tmp_ping_dest=determinePingDest(); // gets the neighbor to our right
@@ -443,6 +434,8 @@ public class FD_SOCK extends Protocol implements Runnable {
             ping_dest=tmp_ping_dest;
             ping_addr=fetchPingAddress(ping_dest);
             if(ping_addr == null) {
+                if(!running)
+                    break;
                 if(log.isErrorEnabled()) log.error("socket address for " + ping_dest + " could not be fetched, retrying");
                 if(--max_fetch_tries <= 0)
                     break;
@@ -518,6 +511,7 @@ public class FD_SOCK extends Protocol implements Runnable {
      * Does *not* need to be synchronized on pinger_mutex because the caller (down()) already has the mutex acquired
      */
     void startPingerThread() {
+        running=true;
         if(pinger_thread == null) {
             pinger_thread=new Thread(Util.getGlobalThreadGroup(), this, "FD_SOCK Ping thread");
             pinger_thread.setDaemon(true);
@@ -535,6 +529,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
 
     void stopPingerThread() {
+        running=false;
         synchronized(pinger_mutex) {
             if(pinger_thread != null && pinger_thread.isAlive()) {
                 regular_sock_close=true;
@@ -753,7 +748,7 @@ public class FD_SOCK extends Protocol implements Runnable {
      Attempts to obtain the ping_addr first from the cache, then by unicasting q request to <code>mbr</code>,
      then by multicasting a request to all members.
      */
-    IpAddress fetchPingAddress(Address mbr) {
+    private IpAddress fetchPingAddress(Address mbr) {
         IpAddress ret;
         Message ping_addr_req;
         FdHeader hdr;
@@ -781,7 +776,8 @@ public class FD_SOCK extends Protocol implements Runnable {
         hdr.mbr=mbr;
         ping_addr_req.putHeader(name, hdr);
         passDown(new Event(Event.MSG, ping_addr_req));
-        ret=(IpAddress) ping_addr_promise.getResult(3000);
+        if(!running) return null;
+        ret=(IpAddress)ping_addr_promise.getResult(3000);
         if(ret != null) {
             return ret;
         }
