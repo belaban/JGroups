@@ -18,7 +18,7 @@ import java.util.List;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.64 2006/08/08 17:59:28 belaban Exp $
+ * @version $Id: GMS.java,v 1.65 2006/09/22 12:05:09 belaban Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -48,7 +48,7 @@ public class GMS extends Protocol {
     boolean 				  use_flush=false;
 	private boolean		 	  isWaitingForFlushResponse = false;
     private final Hashtable   impls=new Hashtable(3);
-    private boolean           shun=true;
+    private boolean           shun=false;
     boolean                   merge_leader=false;         // can I initiate a merge ?
     private boolean           print_local_addr=true;
     boolean                   disable_initial_coord=false; // can the member become a coord on startup or not ?
@@ -1195,7 +1195,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.64 2006/08/08 17:59:28 belaban Exp $
+     * @version $Id: GMS.java,v 1.65 2006/09/22 12:05:09 belaban Exp $
      */
     class ViewHandler implements Runnable {
         Thread                    thread;
