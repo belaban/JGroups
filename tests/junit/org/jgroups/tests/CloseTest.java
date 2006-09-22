@@ -1,4 +1,4 @@
-// $Id: CloseTest.java,v 1.10 2006/09/17 07:56:22 belaban Exp $
+// $Id: CloseTest.java,v 1.11 2006/09/22 11:57:20 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -7,6 +7,9 @@ import org.jgroups.*;
 import org.jgroups.util.Util;
 
 import java.util.Vector;
+import java.lang.management.ThreadMXBean;
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
 
 
 /**
@@ -57,7 +60,11 @@ public class CloseTest extends TestCase {
         int current_active_threads=Thread.activeCount();
         System.out.println("active threads after (" + current_active_threads + "):\n" + Util.activeThreads());
         // System.out.println("thread:\n" + dumpThreads());
-        assertEquals(active_threads, current_active_threads);
+        String msg="";
+        if(active_threads != current_active_threads) {
+            msg="active threads:\n" + dumpThreads(); 
+        }
+        assertEquals(msg, active_threads, current_active_threads);
     }
 
     private void closeChannel(JChannel c) {
@@ -210,14 +217,8 @@ public class CloseTest extends TestCase {
         channel1.close();
 
         Util.sleep(2000);
-
         System.out.println("-- closing channel --");
         channel.close();
-
-
-
-        System.out.println("-- done, threads are ");
-        Util.printThreads();
     }
 
 
@@ -343,13 +344,36 @@ public class CloseTest extends TestCase {
 
 
     private void assertServiceAndClusterView(Channel ch, int num) {
-           View view=ch.getView();
-           String msg="view=" + view;
-           assertNotNull(view);
-           assertEquals(msg, num, view.size());
-       }
+        View view=ch.getView();
+        String msg="view=" + view;
+        assertNotNull(view);
+        assertEquals(msg, num, view.size());
+    }
+
+  /* CAUTION: JDK 5 specific code */
 
 
+    private String dumpThreads() {
+        StringBuffer sb=new StringBuffer();
+        ThreadMXBean bean=ManagementFactory.getThreadMXBean();
+        long[] ids=bean.getAllThreadIds();
+        ThreadInfo[] threads=bean.getThreadInfo(ids, 20);
+        for(int i=0; i < threads.length; i++) {
+            ThreadInfo info=threads[i];
+            if(info == null)
+                continue;
+            sb.append(info.getThreadName()).append(":\n");
+            StackTraceElement[] stack_trace=info.getStackTrace();
+            for(int j=0; j < stack_trace.length; j++) {
+                StackTraceElement el=stack_trace[j];
+                sb.append("at ").append(el.getClassName()).append(".").append(el.getMethodName());
+                sb.append("(").append(el.getFileName()).append(":").append(el.getLineNumber()).append(")");
+                sb.append("\n");
+            }
+            sb.append("\n\n");
+        }
+        return sb.toString();
+    }
 
     public static void main(String[] args) {
         String[] testCaseName={CloseTest.class.getName()};
