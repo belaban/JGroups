@@ -1,4 +1,4 @@
-// $Id: PromiseTest.java,v 1.2 2006/01/24 22:44:27 belaban Exp $
+// $Id: PromiseTest.java,v 1.3 2006/09/22 11:34:16 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -68,6 +68,27 @@ public class PromiseTest extends TestCase {
         Object result=p.getResult(500);
         assertNull(result);
     }
+
+
+    public void testGetResultWithTimeoutAndResultSetter() {
+        Thread t=new Thread() {
+            public void run() {
+                Util.sleep(500);
+                System.out.println("-- setting promise to \"Bela\"");
+                p.setResult("Bela");
+            }
+        };
+        t.start();
+        long start=System.currentTimeMillis(), stop;
+        Object result=p.getResult(100000);
+        stop=System.currentTimeMillis();
+        System.out.println("-- waited for " + (stop-start) + "ms, result is " + result);
+        assertNotNull(result);
+        assertEquals("Bela", result);
+        assertFalse("promise was reset after getResult()", p.hasResult());
+    }
+
+
 
 
     static class ResultSetter extends Thread {
