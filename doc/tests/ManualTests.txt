@@ -1,4 +1,4 @@
-$Id: GmsTests.txt,v 1.4 2006/08/29 12:21:59 belaban Exp $
+$Id: ManualTests.txt,v 1.1 2006/09/22 12:48:59 belaban Exp $
 
 
      Manual tests for the Group Membership Service (GMS) Protocol
