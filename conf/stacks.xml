@@ -2,7 +2,7 @@
 <!--
   Sample file that defines a number of stacks, used by the multiplexer
   Author: Bela Ban
-  Version: $Id: stacks.xml,v 1.15 2006/09/19 21:22:09 vlada Exp $
+  Version: $Id: stacks.xml,v 1.16 2006/09/22 12:46:45 belaban Exp $
 -->
 <protocol_stacks>
     <stack name="udp"
@@ -113,7 +113,9 @@
 
     <stack name="tcp"
            description="TCP based stack, with flow control and message bundling. This is usually used when IP
-           multicasting cannot be used in a network, e.g. because it is disabled (routers discard multicast)">
+           multicasting cannot be used in a network, e.g. because it is disabled (routers discard multicast).
+           Note that TCP.bind_addr and TCPPING.initial_hosts should be set, possibly via system properties, e.g.
+           -Djgroups.bind_addr=192.168.5.2 and -Djgroups.tcpping.initial_hosts=192.168.5.2[7800]">
         <config>
             <TCP start_port="7800"
                  loopback="true"
@@ -214,7 +216,11 @@
 
     <stack name="tcp-nio"
            description="TCP based stack, with flow control and message bundling. This is usually used when IP
-           multicasting cannot be used in a network, e.g. because it is disabled (routers discard multicast)">
+           multicasting cannot be used in a network, e.g. because it is disabled (routers discard multicast).
+           Note that TCP.bind_addr and TCPPING.initial_hosts should be set, possibly via system properties, e.g.
+           -Djgroups.bind_addr=192.168.5.2 and -Djgroups.tcpping.initial_hosts=192.168.5.2[7800]
+           We currently require use_incoming_packet_handler=true (release 2.4 will support use_incoming_packet_handler=false
+           due to threadless stack support).">
         <config>
             <TCP_NIO
                      recv_buf_size="20000000"
