@@ -18,12 +18,12 @@ import org.jgroups.util.Util;
 /**
  * Tests transfer of large states (http://jira.jboss.com/jira/browse/JGRP-225)
  * @author Bela Ban
- * @version $Id: LargeStateTransferTest.java,v 1.2 2006/09/06 20:41:34 vlada Exp $
+ * @version $Id: LargeStateTransferTest.java,v 1.3 2006/09/22 12:32:15 belaban Exp $
  */
 public class LargeStateTransferTest extends TestCase {
     JChannel provider, requester;
     Promise p=new Promise();
-    String props="fc-fast-minimalthreads.xml";
+    String props="udp.xml";
     long start, stop;
     final static int SIZE_1=100000, SIZE_2=1000000, SIZE_3=5000000, SIZE_4=10000000;
 

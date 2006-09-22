@@ -22,12 +22,12 @@ import java.util.Set;
 /**
  * Tests correct state transfer while other members continue sending messages to the group
  * @author Bela Ban
- * @version $Id: StateTransferTest.java,v 1.9 2006/09/06 20:41:34 vlada Exp $
+ * @version $Id: StateTransferTest.java,v 1.10 2006/09/22 12:33:12 belaban Exp $
  */
 public class StateTransferTest extends TestCase {
     final int NUM=10000;
     final int NUM_THREADS=2;
-    String props="fc-fast-minimalthreads.xml";
+    String props="udp.xml";
 
 
     public StateTransferTest(String name) {
