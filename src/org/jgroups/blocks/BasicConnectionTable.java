@@ -351,6 +351,7 @@ public abstract class BasicConnectionTable {
            receiverThread=null;
            if(tmp != null) {
                try {
+                   tmp.interrupt();
                    tmp.join(MAX_JOIN_TIMEOUT);
                }
                catch(InterruptedException e) {
