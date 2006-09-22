@@ -16,7 +16,7 @@ import java.io.*;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.22 2006/09/15 16:33:15 belaban Exp $
+ * @version $Id: MultiplexerTest.java,v 1.23 2006/09/22 13:23:34 belaban Exp $
  */
 public class MultiplexerTest extends TestCase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -429,7 +429,7 @@ public class MultiplexerTest extends TestCase {
             System.out.println("port_range in TCPPING: " + port_range + ", setting it to 2");
             port_range="2";
             Properties p=new Properties();
-            p.putAll(props);
+            // p.putAll(props);
             p.setProperty("port_range", port_range);
             tcpping.setProperties(p);
         }
