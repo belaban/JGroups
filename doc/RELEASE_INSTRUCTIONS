@@ -1,18 +1,12 @@
-// $Id: RELEASE_INSTRUCTIONS,v 1.3 2006/04/27 08:44:44 belaban Exp $
+// $Id: RELEASE_INSTRUCTIONS,v 1.4 2006/09/22 12:50:32 belaban Exp $
 
 	       Things to do before packaging a release
 	       ---------------------------------------
 
-- Use JDK 1.4 to build the JARs !
-
-- Remove all "// +++ remove" statements
-
-- Run all tests in ./tests (runtests)
-
-- Run all demos in ./demos
-
-- cvs tag before releasing
-
+- Run all unit tests
+- Run the manual tests in doc/tests/ManualTests.txt
+- Run the performance tests to see whether performance is about the same
+- Create a CVS tag: JGroups_x_y_z
 
 
 
