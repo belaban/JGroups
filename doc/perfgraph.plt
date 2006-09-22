@@ -9,7 +9,7 @@ set yrange [1:100000]
 set xrange [1:1000000]
 set style fill solid 1.0
 set boxwidth 0.10
-set title "Throughput in msg/sec(cluster of 8 machines,fc-fast-minimalthreads.xml,JGroups 2.3)"
+set title "Throughput in msg/sec(cluster of 8 machines,udp.xml,JGroups 2.3)"
 set xlabel "Message size"
 set ylabel "Number of messages per sec"
 set xtics ("100B" 100,"1K" 1000, "10K" 10000, "100K" 100000)

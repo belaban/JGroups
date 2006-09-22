@@ -1,7 +1,7 @@
 
 <!--
-Example of a protocol stack based on fc-fast-minimalthreads, but with total order (sequencer-based)
-Version: $Id: total.xml,v 1.2 2006/05/12 09:43:10 belaban Exp $
+Example of a protocol stack based on udp, but with total order (sequencer-based)
+Version: $Id: total.xml,v 1.3 2006/09/22 12:36:28 belaban Exp $
 -->
 <config>
     <UDP bind_addr="192.168.5.1"
