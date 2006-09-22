@@ -330,7 +330,6 @@ public abstract class BasicConnectionTable {
        }
 
        void init() {
-           // if(log.isInfoEnabled()) log.info("connection was created to " + peer_addr);
            is_running=true;
            if(receiverThread == null || !receiverThread.isAlive()) {
                // Roland Kurmann 4/7/2003, put in thread_group
@@ -637,13 +636,13 @@ public abstract class BasicConnectionTable {
            }
 
            void stop() {
+               is_it_running=false;
                if(send_queue != null)
                    send_queue.close(false);
                if(senderThread != null) {
                    Thread tmp=senderThread;
                    senderThread=null;
                    tmp.interrupt();
-                   is_it_running=false;
                    try {
                        tmp.join(MAX_JOIN_TIMEOUT);
                    }
