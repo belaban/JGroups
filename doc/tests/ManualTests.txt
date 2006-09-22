@@ -1,8 +1,8 @@
-$Id: ManualTests.txt,v 1.1 2006/09/22 12:48:59 belaban Exp $
+$Id: ManualTests.txt,v 1.2 2006/09/22 13:00:35 belaban Exp $
 
 
-     Manual tests for the Group Membership Service (GMS) Protocol
-     ------------------------------------------------------------
+Group Membership Service (GMS) Protocol
+=======================================
 
 
 Hopefully these tests can be automated some time in the
@@ -156,3 +156,49 @@ Test 15
 - Shun A (CTRL-Z and then fg)
 - When B has rejoined the group, kill A
 - The view needs to be {B} now
+
+
+
+Pull-the-plug scenarios
+=======================
+
+- Run Draw with udp.xml, tcp.xml and tcp-nio.xml, those configurations may need to be adjusted to use
+  the IP addresses of the 2 nodes
+- Make sure loopback=true in UDP/TCP/TCP_NIO if running on Windows
+- 2 nodes, node 1 and node 2, connected to a switch
+
+
+Test 1
+------
+
+- Pull the plug on node 2
+- Node 1 and node 2 should each show 1 member
+- Put the plug back in
+- Nodes 1 and 2 should merge into a group of 2
+
+Test 2
+-------
+
+- Pull the plug on node 1 and node 2
+- Node 1 and node 2 should each show 1 member
+- Put the plugs back in
+- Nodes 1 and 2 should merge into a group of 2
+
+
+Test 3
+-------
+
+- Pull the plug of nodes 1 and 2 *on the switch side*
+- Node 1 and node 2 should each show 1 member
+- Put the plugs back in
+- Nodes 1 and 2 should merge into a group of 2
+
+
+Test 3
+-------
+
+- Kill the switch (pull the power)
+- Node 1 and node 2 should each show 1 member
+- Power the switch back up
+- Nodes 1 and 2 should merge into a group of 2
+
