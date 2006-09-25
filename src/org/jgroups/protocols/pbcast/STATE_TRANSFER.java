@@ -19,7 +19,7 @@ import java.util.*;
  * its current state S. Then the member returns both S and D to the requester. The requester
  * first sets its digest to D and then returns the state to the application.
  * @author Bela Ban
- * @version $Id: STATE_TRANSFER.java,v 1.42 2006/07/31 13:21:52 belaban Exp $
+ * @version $Id: STATE_TRANSFER.java,v 1.43 2006/09/25 17:14:27 vlada Exp $
  */
 public class STATE_TRANSFER extends Protocol {
     Address        local_addr=null;
@@ -42,7 +42,7 @@ public class STATE_TRANSFER extends Protocol {
     double         avg_state_size=0;
     final static   String name="STATE_TRANSFER";
     boolean        use_flush=false;
-    long           flush_timeout=10*1000;
+    long           flush_timeout=4000;
     Promise        flush_promise;
 
 
@@ -82,11 +82,10 @@ public class STATE_TRANSFER extends Protocol {
     public boolean setProperties(Properties props) {
         super.setProperties(props);
 
-        use_flush=Util.parseBoolean(props, "use_flush", false);
-        if(use_flush) {
-            flush_promise=new Promise();
-        }
-        flush_timeout=Util.parseLong(props, "flush_timeout", 10 * 1000);
+        use_flush=Util.parseBoolean(props, "use_flush", false);        
+        flush_promise=new Promise();
+        
+        flush_timeout = Util.parseLong(props, "flush_timeout", flush_timeout);       
         if(props.size() > 0) {
             log.error("the following properties are not recognized: " + props);
             return false;
@@ -270,6 +269,15 @@ public class STATE_TRANSFER extends Protocol {
             		flush_promise.setResult(Boolean.TRUE);
             	}
             	break;
+                
+            case Event.CONFIG :
+               Map config = (Map) evt.getArg();               
+               if(config != null && config.containsKey("flush_timeout")){
+                  Long ftimeout = (Long) config.get("flush_timeout");
+                  use_flush = true;                  
+                  flush_timeout = ftimeout.longValue();                               
+               }
+               break;     
 
         }
 
@@ -429,6 +437,9 @@ public class STATE_TRANSFER extends Protocol {
             successfulFlush=true;
         }
         catch(TimeoutException e) {
+           log.warn("Initiator of flush and state requesting member " + local_addr
+                 + " timed out waiting for flush responses after " 
+                 + flush_timeout + " msec");
         }
         return successfulFlush;
     }

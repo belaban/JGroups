@@ -2,7 +2,7 @@
 <!--
   Sample file that defines a number of stacks, used by the multiplexer
   Author: Bela Ban
-  Version: $Id: stacks.xml,v 1.16 2006/09/22 12:46:45 belaban Exp $
+  Version: $Id: stacks.xml,v 1.17 2006/09/25 17:14:27 vlada Exp $
 -->
 <protocol_stacks>
     <stack name="udp"
@@ -42,17 +42,16 @@
             <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
                            down_thread="false" up_thread="false"
                            max_bytes="400000"/>
-            <pbcast.GMS print_local_addr="true" join_timeout="3000" use_flush="true" 
+            <pbcast.GMS print_local_addr="true" join_timeout="3000"  
                         down_thread="false" up_thread="false"
                         join_retry_timeout="2000" shun="true"
                         view_bundling="true"/>
             <FC max_credits="2000000" down_thread="false" up_thread="false"
                 min_threshold="0.10"/>
             <FRAG2 frag_size="60000" down_thread="false" up_thread="false"/>
-            <pbcast.STREAMING_STATE_TRANSFER down_thread="false" up_thread="false"
-                                             use_flush="true" use_reading_thread="true"/>
-            <!-- pbcast.STATE_TRANSFER down_thread="false" up_thread="false" use_flush="false"/ -->
-            <pbcast.FLUSH down_thread="false" up_thread="false"/>
+            <pbcast.STREAMING_STATE_TRANSFER down_thread="false" up_thread="false" use_reading_thread="true"/>
+            <!-- pbcast.STATE_TRANSFER down_thread="false" up_thread="false"/ -->
+            <pbcast.FLUSH down_thread="false" up_thread="false" timeout="2000"/>
         </config>
     </stack>
 
@@ -98,14 +97,13 @@
             <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
                            down_thread="false" up_thread="false"
                            max_bytes="400000"/>
-            <pbcast.GMS print_local_addr="true" join_timeout="3000" use_flush="true"
+            <pbcast.GMS print_local_addr="true" join_timeout="3000" 
                         down_thread="false" up_thread="false"
                         join_retry_timeout="2000" shun="true"
                         view_bundling="true"/>
             <FRAG2 frag_size="60000" down_thread="false" up_thread="false"/>
-            <pbcast.STREAMING_STATE_TRANSFER down_thread="false" up_thread="false"
-                                             use_flush="true" use_reading_thread="true"/>
-            <!-- pbcast.STATE_TRANSFER down_thread="false" up_thread="false" use_flush="false"/ -->
+            <pbcast.STREAMING_STATE_TRANSFER down_thread="false" up_thread="false" use_reading_thread="true"/>
+            <!-- pbcast.STATE_TRANSFER down_thread="false" up_thread="false"/ -->
             <pbcast.FLUSH down_thread="false" up_thread="false"/>
         </config>
     </stack>
@@ -149,16 +147,15 @@
             <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
                            down_thread="false" up_thread="false"
                            max_bytes="400000"/>
-            <pbcast.GMS print_local_addr="true" join_timeout="3000" use_flush="true" 
+            <pbcast.GMS print_local_addr="true" join_timeout="3000" 
                         down_thread="false" up_thread="false"
                         join_retry_timeout="2000" shun="true"
                         view_bundling="true"/>
             <FC max_credits="2000000" down_thread="false" up_thread="false"
                 min_threshold="0.10"/>
             <FRAG2 frag_size="60000" down_thread="false" up_thread="false"/>
-            <pbcast.STREAMING_STATE_TRANSFER down_thread="false" up_thread="false"
-                                             use_flush="true" use_reading_thread="true"/>
-            <!-- pbcast.STATE_TRANSFER down_thread="false" up_thread="false" use_flush="false"/ -->
+            <pbcast.STREAMING_STATE_TRANSFER down_thread="false" up_thread="false" use_reading_thread="true"/>
+            <!-- pbcast.STATE_TRANSFER down_thread="false" up_thread="false"/ -->
             <pbcast.FLUSH down_thread="false" up_thread="false"/>
         </config>
     </stack>
@@ -202,13 +199,12 @@
             <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
                            down_thread="false" up_thread="false"
                            max_bytes="400000"/>
-            <pbcast.GMS print_local_addr="true" join_timeout="3000" use_flush="true"
+            <pbcast.GMS print_local_addr="true" join_timeout="3000" 
                         down_thread="false" up_thread="false"
                         join_retry_timeout="2000" shun="true"
                         view_bundling="true"/>
-            <pbcast.STREAMING_STATE_TRANSFER down_thread="false" up_thread="false"
-                                             use_flush="true" use_reading_thread="true"/>
-            <!-- pbcast.STATE_TRANSFER down_thread="false" up_thread="false" use_flush="false"/ -->
+            <pbcast.STREAMING_STATE_TRANSFER down_thread="false" up_thread="false" use_reading_thread="true"/>
+            <!-- pbcast.STATE_TRANSFER down_thread="false" up_thread="false"/ -->
             <pbcast.FLUSH down_thread="false" up_thread="false"/>
         </config>
     </stack>
@@ -261,16 +257,15 @@
             <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
                            down_thread="false" up_thread="false"
                            max_bytes="400000"/>
-            <pbcast.GMS print_local_addr="true" join_timeout="3000" use_flush="true"
+            <pbcast.GMS print_local_addr="true" join_timeout="3000" 
                         down_thread="false" up_thread="false"
                         join_retry_timeout="2000" shun="true"
                         view_bundling="true"/>
             <FC max_credits="2000000" down_thread="false" up_thread="false"
                 min_threshold="0.10"/>
             <FRAG2 frag_size="60000" down_thread="false" up_thread="false"/>
-            <pbcast.STREAMING_STATE_TRANSFER down_thread="false" up_thread="false"
-                                             use_flush="true" use_reading_thread="true"/>
-            <!-- pbcast.STATE_TRANSFER down_thread="false" up_thread="false" use_flush="false"/ -->
+            <pbcast.STREAMING_STATE_TRANSFER down_thread="false" up_thread="false" use_reading_thread="true"/>
+            <!-- pbcast.STATE_TRANSFER down_thread="false" up_thread="false"/ -->
             <pbcast.FLUSH down_thread="false" up_thread="false"/>
         </config>
     </stack>
@@ -321,13 +316,12 @@
             <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
                            down_thread="false" up_thread="false"
                            max_bytes="400000"/>
-            <pbcast.GMS print_local_addr="true" join_timeout="3000" use_flush="true"
+            <pbcast.GMS print_local_addr="true" join_timeout="3000" 
                         down_thread="false" up_thread="false"
                         join_retry_timeout="2000" shun="true"
                         view_bundling="true"/>
-            <pbcast.STREAMING_STATE_TRANSFER down_thread="false" up_thread="false"
-                                             use_flush="true" use_reading_thread="true"/>
-            <!-- pbcast.STATE_TRANSFER down_thread="false" up_thread="false" use_flush="false"/ -->
+            <pbcast.STREAMING_STATE_TRANSFER down_thread="false" up_thread="false" use_reading_thread="true"/>
+            <!-- pbcast.STATE_TRANSFER down_thread="false" up_thread="false"/ -->
             <pbcast.FLUSH down_thread="false" up_thread="false"/>
         </config>
     </stack>

@@ -126,7 +126,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
 
    private volatile boolean use_flush;
 
-   private long flush_timeout;
+   private long flush_timeout = 4000;
 
    private final Object poolLock = new Object();
 
@@ -183,11 +183,10 @@ public class STREAMING_STATE_TRANSFER extends Protocol
    {
       super.setProperties(props);
       use_flush = Util.parseBoolean(props, "use_flush", false);
-      if (use_flush)
-      {
-         flush_promise = new Promise();
-      }
-      flush_timeout = Util.parseLong(props, "flush_timeout", 10 * 1000);
+      flush_promise=new Promise();
+      
+      flush_timeout = Util.parseLong(props, "flush_timeout", flush_timeout);
+      
       try
       {
          bind_addr = Util.parseBindAddress(props, "bind_addr");
@@ -283,13 +282,13 @@ public class STREAMING_STATE_TRANSFER extends Protocol
             }
             break;
          case Event.CONFIG :
-            if (bind_addr == null)
-            {
-               Map config = (Map) evt.getArg();
+            Map config = (Map) evt.getArg();
+            if (bind_addr == null && (config != null && config.containsKey("bind_addr")))
+            {               
                bind_addr = (InetAddress) config.get("bind_addr");
                if (log.isDebugEnabled())
                   log.debug("using bind_addr from CONFIG event " + bind_addr);
-            }
+            }    
             break;
       }
       passUp(evt);
@@ -373,6 +372,16 @@ public class STREAMING_STATE_TRANSFER extends Protocol
                flush_promise.setResult(Boolean.TRUE);
             }
             break;
+         case Event.CONFIG :
+            Map config = (Map) evt.getArg();           
+            if(config != null && config.containsKey("flush_timeout"))
+            {
+               Long ftimeout = (Long) config.get("flush_timeout");
+               use_flush = true;             
+               flush_timeout = ftimeout.longValue();                             
+            }
+            break;   
+            
       }
 
       passDown(evt); // pass on to the layer below us
@@ -461,6 +470,9 @@ public class STREAMING_STATE_TRANSFER extends Protocol
       }
       catch (TimeoutException e)
       {
+         log.warn("Initiator of flush and state requesting member " + local_addr
+               + " timed out waiting for flush responses after " 
+               + flush_timeout + " msec");
       }
       return successfulFlush;
    }
