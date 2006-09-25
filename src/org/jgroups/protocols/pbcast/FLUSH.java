@@ -77,6 +77,8 @@ public class FLUSH extends Protocol
    private boolean isBlockState = true;
 
    private long timeout = 4000;
+   
+   private long block_timeout = 10000;
 
    private Set suspected;
 
@@ -93,6 +95,8 @@ public class FLUSH extends Protocol
    private Promise flush_promise;
    
    private Promise blockok_promise;
+   
+   private boolean auto_flush_conf = true;
 
    public FLUSH()
    {
@@ -116,13 +120,26 @@ public class FLUSH extends Protocol
    {      
       super.setProperties(props);
       timeout = Util.parseLong(props, "timeout", timeout);
-
+      block_timeout = Util.parseLong(props, "block_timeout", block_timeout);
+      auto_flush_conf = Util.parseBoolean(props, "auto_flush_conf", auto_flush_conf);
+      
       if (props.size() > 0)
       {
          log.error("the following properties are not recognized: " + props);
          return false;
       }
       return true;
+   }
+   
+   public void init() throws Exception
+   {
+      if(auto_flush_conf)
+      {
+         Map map = new HashMap();
+         map.put("flush_timeout", new Long(timeout));
+         passUp(new Event(Event.CONFIG, map));
+         passDown(new Event(Event.CONFIG, map));
+      }
    }
 
    public void start() throws Exception
@@ -233,7 +250,7 @@ public class FLUSH extends Protocol
             {
                if (fh.type == FlushHeader.START_FLUSH)
                {
-                  boolean successfulBlock = sendBlockToChannel();
+                  boolean successfulBlock = sendBlockUpToChannel(block_timeout);
                   if (successfulBlock && log.isDebugEnabled())
                   {
                      log.debug("Blocking of channel completed successfully");
@@ -296,28 +313,27 @@ public class FLUSH extends Protocol
       return retval;
    }
    
-   private boolean sendBlockToChannel()
+   private boolean sendBlockUpToChannel(long btimeout)
    {
       boolean successfulBlock = false;
-      Runnable blockRunnable = new Runnable()
+      blockok_promise.reset();
+      
+      new Thread(Util.getGlobalThreadGroup(), new Runnable()
       {
          public void run()
          {
             passUp(new Event(Event.BLOCK));
          }
-      };
+      }, "FLUSH block").start();
       
-      new Thread(Util.getGlobalThreadGroup(), blockRunnable, "FLUSH block notifier").start();
-
-      blockok_promise.reset();
       try
       {
-         blockok_promise.getResultWithTimeout(timeout);
+         blockok_promise.getResultWithTimeout(btimeout);
          successfulBlock = true;
       }
       catch (TimeoutException e)
       {
-         log.warn("Blocking of channel using BLOCK event timed out");
+         log.warn("Blocking of channel using BLOCK event timed out after " + btimeout + " msec.");
       }
       return successfulBlock;
    }

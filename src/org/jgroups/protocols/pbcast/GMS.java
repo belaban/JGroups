@@ -18,7 +18,7 @@ import java.util.List;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.65 2006/09/22 12:05:09 belaban Exp $
+ * @version $Id: GMS.java,v 1.66 2006/09/25 17:14:27 vlada Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -37,16 +37,15 @@ public class GMS extends Protocol {
     private long              ltime=0;
     long                      join_timeout=5000;
     long                      join_retry_timeout=2000;
-    long 					  flush_timeout=10000;
+    long 					  flush_timeout=4000;
     long                      leave_timeout=5000;
     private long              digest_timeout=0;              // time to wait for a digest (from PBCAST). should be fast
     long                      merge_timeout=10000;           // time to wait for all MERGE_RSPS
     private final Object      impl_mutex=new Object();       // synchronizes event entry into impl
     private final Object      digest_mutex=new Object();
-    private final Promise     digest_promise=new Promise();  // holds result of GET_DIGEST event
-    private final Object      flush_mutex=new Object();
-    boolean 				  use_flush=false;
-	private boolean		 	  isWaitingForFlushResponse = false;
+    private final Promise     digest_promise=new Promise();  // holds result of GET_DIGEST event    
+    private final Promise     flush_promise = new Promise();
+    boolean 				  use_flush=false;	
     private final Hashtable   impls=new Hashtable(3);
     private boolean           shun=false;
     boolean                   merge_leader=false;         // can I initiate a merge ?
@@ -613,25 +612,19 @@ public class GMS extends Protocol {
         }
     }
 
-    void startFlush(View new_view) {
-        synchronized (flush_mutex) {
-            isWaitingForFlushResponse = true;
-            if (log.isDebugEnabled()) {
-                log.debug("starting FLUSH, sending SUSPEND event");
-            }
-            passUp(new Event(Event.SUSPEND,new_view));
-            while (isWaitingForFlushResponse) {
-                try {
-                    flush_mutex.wait(flush_timeout);
-                }
-                catch (InterruptedException e) {
-                }
-                if(isWaitingForFlushResponse) {
-                    log.warn(local_addr + " timed out on startFlush()");
-                    isWaitingForFlushResponse=false;
-                }
-            }
-        }
+    void startFlush(View new_view) {            
+         if (log.isDebugEnabled()) {
+             log.debug("starting FLUSH, sending SUSPEND event");
+         }
+         passUp(new Event(Event.SUSPEND,new_view));
+         try {
+            flush_promise.getResultWithTimeout(flush_timeout);
+         }
+         catch(TimeoutException e) {
+            log.warn("Initiator of flush and group coordinator " + local_addr
+                  + " timed out waiting for flush responses after " 
+                  + flush_timeout + " msec");
+         }       
     }
 
     void stopFlush() {
@@ -798,12 +791,18 @@ public class GMS extends Protocol {
                     initState(); // in case connect() is called again
                 }
                 break;       // pass down
-            case Event.SUSPEND_OK:
-            	synchronized (flush_mutex) {
-            		isWaitingForFlushResponse = false;
-            		flush_mutex.notifyAll();
-				}
+            case Event.SUSPEND_OK:            	  	
+            	flush_promise.setResult(Boolean.TRUE);			
             	return;
+                
+            case Event.CONFIG :
+               Map config = (Map) evt.getArg();               
+               if(config != null && config.containsKey("flush_timeout")){
+                  Long ftimeout = (Long) config.get("flush_timeout");
+                  use_flush = true;                  
+                  flush_timeout = ftimeout.longValue();                               
+               }
+               break;    
         }
 
         passDown(evt);
@@ -1195,7 +1194,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.65 2006/09/22 12:05:09 belaban Exp $
+     * @version $Id: GMS.java,v 1.66 2006/09/25 17:14:27 vlada Exp $
      */
     class ViewHandler implements Runnable {
         Thread                    thread;

@@ -47,7 +47,7 @@ public class VirtualSynchronyTest extends TestCase {
 
 	private final static String CHANNEL_PROPS="flush-udp.xml";
 	private final static int INITIAL_NUMBER_OF_MEMBERS=5;
-	private int runningTime = 1000*5; // 50 secs
+	private int runningTime = 1000*50; // 50 secs
 	private Random r = new Random();
 	
 	
