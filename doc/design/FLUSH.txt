@@ -3,7 +3,7 @@ FLUSH protocol for default stack
 ================================
 
 Author: Bela Ban
-Version: $Id: FLUSH.txt,v 1.7 2006/05/22 15:48:26 vlada Exp $
+Version: $Id: FLUSH.txt,v 1.8 2006/09/25 21:10:24 vlada Exp $
 
 Overview
 --------
@@ -13,9 +13,9 @@ send messages while a flush is in process.
 
 When is it needed ?
 -------------------
-(1) On state transfer. When a member requests state transfer, the coordinator tells everyone to stop sending messages
-and waits for everyone's ack. Then it asks the application for its state and ships it back to the requester. After
-the requester has received and set the state successfully, the coordinator tells everyone to resume sending messages.
+(1) On state transfer. When a member requests state transfer it tells everyone to stop sending messages and waits 
+for everyone's ack. Then it asks the application for its state and ships it back to the requester. After the 
+requester has received and set the state successfully, the requester tells everyone to resume sending messages.
 
 (2) On view changes (e.g.a join). Before installing a new view V2, flushing would ensure that all messages *sent* in the
 current view V1 are indeed *delivered* in V1, rather than in V2 (in all non-faulty members). This is essentially
@@ -41,20 +41,20 @@ FLUSH protocol:
 
 - On reception of FLUSH_OK at each member:
   - Record FLUSH_OK in vector (1 per member)
-  - Once FLUSH_OK messages have been received from all members - send unicast FLUSH_COMPLETED to coordinator
+  - Once FLUSH_OK messages have been received from all members - send unicast FLUSH_COMPLETED to flush requester
   (in case of crash notification: mark that member's entry as received, so we don't hang forever)
   
-- After reception of FLUSH_COMPLETED (at coordinator) from all members - send down SUSPEND_OK event
+- After reception of FLUSH_COMPLETED (at flush requester) from all members - send down SUSPEND_OK event
 
 - On RESUME event: multicast STOP_FLUSH message
 
-- On reception of STOP_FLUSH message: unblock down()
+- On reception of STOP_FLUSH message: unblock mutex at down()
 
 - On view change:
   - Mark crashed member as 'received' (see above)
 
 - On suspect(P)
-  - If P is the coordinator and we're next in line
+  - If P is the flush requester and we're next in line
     - Run the FLUSH protocol from scratch
 
 Notes
