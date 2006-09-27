@@ -3,7 +3,7 @@ FLUSH protocol for default stack
 ================================
 
 Author: Bela Ban
-Version: $Id: FLUSH.txt,v 1.8 2006/09/25 21:10:24 vlada Exp $
+Version: $Id: FLUSH.txt,v 1.9 2006/09/27 14:09:49 belaban Exp $
 
 Overview
 --------
@@ -13,8 +13,8 @@ send messages while a flush is in process.
 
 When is it needed ?
 -------------------
-(1) On state transfer. When a member requests state transfer it tells everyone to stop sending messages and waits 
-for everyone's ack. Then it asks the application for its state and ships it back to the requester. After the 
+(1) On state transfer. When a member requests state transfer it tells everyone to stop sending messages and waits
+for everyone's ack. Then it asks the application for its state and ships it back to the requester. After the
 requester has received and set the state successfully, the requester tells everyone to resume sending messages.
 
 (2) On view changes (e.g.a join). Before installing a new view V2, flushing would ensure that all messages *sent* in the
@@ -35,7 +35,7 @@ FLUSH protocol:
 - On SUSPEND event: multicast START_FLUSH to everyone (including self)
 
 - On reception of START_FLUSH:
-  - invoke the blockOK() callback
+  - invoke the block() callback
   - set suspended flag to true, all subsequent down() methods will block on mutex
   - *multicast* a FLUSH_OK message
 
@@ -43,7 +43,7 @@ FLUSH protocol:
   - Record FLUSH_OK in vector (1 per member)
   - Once FLUSH_OK messages have been received from all members - send unicast FLUSH_COMPLETED to flush requester
   (in case of crash notification: mark that member's entry as received, so we don't hang forever)
-  
+
 - After reception of FLUSH_COMPLETED (at flush requester) from all members - send down SUSPEND_OK event
 
 - On RESUME event: multicast STOP_FLUSH message
@@ -93,3 +93,60 @@ FLUSH with join & state transfer
 - The algorithm in GMS is the same as the two described above, except that before multicasting the new view and sending
   the JOIN_RSPs and LEAVE_RSPs, we ask the application for its state (GET_APPLSTATE) and when received (GET_APPLSTATE_OK),
   we send it back to the joining member(s), and the RESUME sending messages
+
+Design change: flushing and block() / unblock() callbacks
+---------------------------------------------------------
+
+The change consists of moving the blocking of message sending in FLUSH.down() from the first phase to the second phase:
+
+Phase #1: send START_FLUSH across the cluster, on reception everyone invokes block(). We do *not* (as previously done)
+          block messages in FLUSH.down(). Method block() might send some messages, but when block() returns (or
+          Channel.blockOk() is called), FLUSH_OK will be broadcast across the cluster. Because FIFO is in place, we
+          can be sure that all *multicast* (group) messages from member P are received *before* P's FLUSH_OK message.
+
+Phase #2: send FLUSH_OK across the cluster. When every member has received all FLUSK_OKs from all other member, every
+          member blocks messages in FLUSH.down().
+
+Phase #3: send FLUSH_COMPLETED to the initiator of the flush
+
+Phase #4: send STOP_FLUSH across the cluster, e.g. when state has been transferred, or member has joined
+
+
+Use case: block() callback needs to complete transactions which are in the 2PC (two-phase commit) phase
+- Members {A,B,C}
+- C just joined and now starts a state transfer, to acquire the state from A
+- A and B have transactions in PREPARED or PREPARING state, so these need to be completed
+- C initiates the flush protocol
+- START_FLUSH is broadcast across the cluster
+- A and B have their block() method invoked, they broadcast PREPARE and/or COMMIT messages to complete existing
+  prepared or preparing transaction, and blocks or rolls back other transactions
+- A and B have to wait for PREPARE or COMMIT acks from all members, they block until these are received (inside
+  of the block() callback)
+- Once all acks have been received, A and B return from block(), they now broadcast FLUSH_OK messages across the cluster
+- Once everyone has received FLUSH_OK messages from A, B and C, we can be assured that we have also received all
+  PREPARE/COMMIT/ROLLBACK messages and their acks from all members
+- Now FLUSH.down() at A,B,C starts blocking sending of messages
+
+Issues:
+- What happens is a member sends another message M *after* returning from block() but *before* that member has received
+  all FLUSH_OK messages and therefore blocks ?
+- This algorithm only works for multicast messages, not unicast messages because multicast and unicast messages are not
+  ordered with respect to each other
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
