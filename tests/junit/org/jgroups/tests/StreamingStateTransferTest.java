@@ -168,11 +168,11 @@ public class StreamingStateTransferTest extends TestCase{
             setUseDispatcher(dispMode);
 		}
 		
-		public void setUsePullMode(boolean usePullMode) {
+		public final void setUsePullMode(boolean usePullMode) {
 			this.usePullMode = usePullMode;
 		}
         
-        public void setUseDispatcher(boolean useDispacher) {
+        public final void setUseDispatcher(boolean useDispacher) {
             this.useDispacher = useDispacher;
         }
 
@@ -208,7 +208,7 @@ public class StreamingStateTransferTest extends TestCase{
 			return local_addr.equals(coord);
 		}
 
-		public void setStateSize(int stateSize) {
+		public final void setStateSize(int stateSize) {
 			this.stateSize = stateSize;
 		}
 
@@ -354,7 +354,10 @@ public class StreamingStateTransferTest extends TestCase{
 		public void block() {			
 		}
 
-		public byte[] getState() {			
+        public void unblock() {
+        }
+
+        public byte[] getState() {
 			return null;
 		}
 		

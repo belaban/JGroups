@@ -18,7 +18,7 @@ import java.util.*;
  * See doc/design/ConcurrentStartupTest.txt for details. This will only work 100% correctly once we have
  * FLUSH support (JGroups 2.4)
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.12 2006/09/22 12:28:49 belaban Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.13 2006/09/27 12:39:14 belaban Exp $
  */
 public class ConcurrentStartupTest extends TestCase implements ExtendedReceiver {
     final List list=Collections.synchronizedList(new LinkedList());
@@ -218,6 +218,9 @@ public class ConcurrentStartupTest extends TestCase implements ExtendedReceiver 
     }
 
     public void block() {
+    }
+
+    public void unblock() {
     }
 
 

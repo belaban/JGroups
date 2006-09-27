@@ -5,7 +5,7 @@ import java.io.OutputStream;
 
 /**
  * @author Bela Ban
- * @version $Id: ExtendedReceiverAdapter.java,v 1.3 2006/07/28 07:19:50 belaban Exp $
+ * @version $Id: ExtendedReceiverAdapter.java,v 1.4 2006/09/27 12:39:14 belaban Exp $
  */
 public class ExtendedReceiverAdapter implements ExtendedReceiver {
     public byte[] getState(String state_id) {
@@ -34,7 +34,10 @@ public class ExtendedReceiverAdapter implements ExtendedReceiver {
     public void block() {
     }
 
-	public void getState(OutputStream ostream) {
+    public void unblock() {
+    }
+
+    public void getState(OutputStream ostream) {
 
 	}
 

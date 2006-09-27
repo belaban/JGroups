@@ -1,4 +1,4 @@
-// $Id: MembershipListener.java,v 1.5 2006/09/13 11:27:47 belaban Exp $
+// $Id: MembershipListener.java,v 1.6 2006/09/27 12:39:14 belaban Exp $
 
 package org.jgroups;
 
@@ -32,10 +32,7 @@ public interface MembershipListener {
     void suspect(Address suspected_mbr);
 
     /** 
-     * Called whenever the member needs to stop sending messages. 
-     * When the next view is received (viewAccepted()), the member can resume sending 
-     * messages. If a member does not comply, the message(s) sent between a block() 
-     * and a matching viewAccepted() callback will probably be delivered in the next view.
+     * Called (usually by the FLUSH protocol), as an indication that the member should stop sending messages
      */
     void block();
 
