@@ -27,7 +27,7 @@ import java.util.*;
  * 
  * @author Roman Rokytskyy (rrokytskyy@acm.org)
  * @author Robert Schaffar-Taurok (robert@fusion.at)
- * @version $Id: VotingAdapter.java,v 1.9 2006/08/10 06:43:42 belaban Exp $
+ * @version $Id: VotingAdapter.java,v 1.10 2006/09/27 12:42:53 belaban Exp $
  */
 public class VotingAdapter implements MessageListener, MembershipListener, VoteResponseProcessor {
 
@@ -181,8 +181,8 @@ public class VotingAdapter implements MessageListener, MembershipListener, VoteR
         int totalPositiveVotes = 0;
         int totalNegativeVotes = 0;
 
-        for(int i = 0; i < responses.size(); i++) {
-            Rsp response = (Rsp)responses.elementAt(i);
+        for(Iterator it=responses.values().iterator(); it.hasNext();) {
+            Rsp response = (Rsp)it.next();
 
             switch(checkResponse(response)) {
         case PROCESS_SKIP : continue;
@@ -467,6 +467,7 @@ public class VotingAdapter implements MessageListener, MembershipListener, VoteR
     public static class VoteResult implements Serializable {
         private int positiveVotes = 0;
         private int negativeVotes = 0;
+        private static final long serialVersionUID = 2868605599965196746L;
 
         public void addVote(boolean vote) {
             if (vote)
