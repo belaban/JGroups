@@ -1,4 +1,4 @@
-// $Id: Channel.java,v 1.22 2006/07/31 09:29:09 belaban Exp $
+// $Id: Channel.java,v 1.23 2006/09/27 12:53:22 belaban Exp $
 
 package org.jgroups;
 
@@ -211,7 +211,11 @@ public abstract class Channel implements Transport {
      <li><code>Message</code>. Normal message
      <li><code>Event</code>. All other events (used by JChannel)
      <li><code>View</code>. A view change.
-     <li><code>BlockEvent</code>. A block event indicating an impending view change.
+     <li><code>BlockEvent</code>. A block event indicating that a flush protocol has been started, and we should not
+     send any more messages. This event should be ack'ed by calling {@link org.jgroups.Channel#blockOk()} .
+     Any messages sent after blockOk() returns might get blocked until the flush protocol has completed.
+     <li><code>UnblockEvent</code>. An unblock event indicating that the flush protocol has completed and we can resume
+     sending messages
      <li><code>SuspectEvent</code>. A notification of a suspected member.
      <li><code>GetStateEvent</code>. The current state of the application should be
      returned using <code>ReturnState</code>.
