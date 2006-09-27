@@ -253,12 +253,15 @@ public class FLUSH extends Protocol
                   boolean successfulBlock = sendBlockUpToChannel(block_timeout);
                   if (successfulBlock && log.isDebugEnabled())
                   {
-                     log.debug("Blocking of channel completed successfully");
+                     log.debug("Blocking of channel " + localAddress + " completed successfully");
                   }                  
                   onStartFlush(msg.getSrc(), fh);
                }
                else if (fh.type == FlushHeader.STOP_FLUSH)
-               {
+               {                  
+                  passUp(new Event(Event.UNBLOCK));  
+                  if (log.isDebugEnabled())
+                      log.debug("Unblocked " + localAddress);
                   onStopFlush();
                }
                else if (isCurrentFlushMessage(fh))
@@ -404,12 +407,7 @@ public class FLUSH extends Protocol
          }
       }
       if (log.isDebugEnabled())
-         log.debug("Received STOP_FLUSH at " + localAddress);
-      synchronized (blockMutex)
-      {
-         isBlockState = false;
-         blockMutex.notifyAll();
-      }
+         log.debug("Received STOP_FLUSH at " + localAddress);      
 
       synchronized (sharedLock)
       {
@@ -417,7 +415,12 @@ public class FLUSH extends Protocol
          flushOkSet.clear();
          flushMembers.clear();
          flushCaller = null;
-      }
+      }              
+      synchronized (blockMutex)
+      {
+         isBlockState = false;
+         blockMutex.notifyAll();
+      }           
    }
 
    private void onSuspend(View view)

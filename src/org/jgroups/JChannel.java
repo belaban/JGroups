@@ -67,7 +67,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.95 2006/09/15 13:05:45 belaban Exp $
+ * @version $Id: JChannel.java,v 1.96 2006/09/27 19:21:54 vlada Exp $
  */
 public class JChannel extends Channel {
 
@@ -992,6 +992,13 @@ public class JChannel extends Channel {
                 return;
             }
             break;
+            
+        case Event.UNBLOCK:
+            //discard if client has not set 'receiving blocks' to 'on'
+            if(!receive_blocks) {                
+                return;
+            }
+            break;    
 
         case Event.CONNECT_OK:
             connect_promise.setResult(evt.getArg());
@@ -1137,13 +1144,25 @@ public class JChannel extends Channel {
                     return;
                 }
                 break;
+            case Event.UNBLOCK:
+               if(receiver instanceof ExtendedReceiver) {
+                   try {
+                      ((ExtendedReceiver)receiver).unblock();
+                   }
+                   catch(Throwable t) {
+                       if(log.isErrorEnabled())
+                           log.error("failed calling unblock() on Receiver", t);
+                   }                   
+                   return;
+               }
+               break;    
             default:
                 break;
         }
 
         if(type == Event.MSG || type == Event.VIEW_CHANGE || type == Event.SUSPECT ||
                 type == Event.GET_APPLSTATE || type== Event.STATE_TRANSFER_OUTPUTSTREAM
-                || type == Event.BLOCK) {
+                || type == Event.BLOCK || type == Event.UNBLOCK) {
             try {
                 mq.add(evt);
             }
@@ -1295,6 +1314,8 @@ public class JChannel extends Channel {
                 return new SuspectEvent(evt.getArg());
             case Event.BLOCK:
                 return new BlockEvent();
+            case Event.UNBLOCK:
+                return new UnblockEvent();                
             case Event.GET_APPLSTATE:
                 StateTransferInfo info=(StateTransferInfo)evt.getArg();
                 return new GetStateEvent(info.target, info.state_id);

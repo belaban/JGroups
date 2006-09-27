@@ -1,4 +1,4 @@
-// $Id: PullPushAdapter.java,v 1.21 2006/08/31 11:13:17 belaban Exp $
+// $Id: PullPushAdapter.java,v 1.22 2006/09/27 19:21:53 vlada Exp $
 
 package org.jgroups.blocks;
 
@@ -292,6 +292,12 @@ public class PullPushAdapter implements Runnable, ChannelListener {
                 }
                 else if(obj instanceof BlockEvent) {
                     notifyBlock();
+                    if(transport instanceof Channel) {
+                       ((Channel)transport).blockOk();
+                    }
+                }
+                else if(obj instanceof UnblockEvent) {
+                   notifyUnblock();
                 }
             }
             catch(ChannelNotConnectedException conn) {
@@ -385,6 +391,22 @@ public class PullPushAdapter implements Runnable, ChannelListener {
             }
         }
     }
+    
+    protected void notifyUnblock() {
+       MembershipListener l;
+
+       for(Iterator it=membership_listeners.iterator(); it.hasNext();) {
+           l=(MembershipListener)it.next();
+           if(l instanceof ExtendedMembershipListener){             
+              try {
+                 ((ExtendedMembershipListener)l).unblock();
+              }
+              catch(Throwable ex) {
+                  if(log.isErrorEnabled()) log.error("exception notifying " + l + ": " + ex);
+              }
+           }
+       }
+   }
 
     public void channelConnected(Channel channel) {
         if(log.isTraceEnabled())
