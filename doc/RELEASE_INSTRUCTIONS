@@ -1,4 +1,4 @@
-// $Id: RELEASE_INSTRUCTIONS,v 1.4 2006/09/22 12:50:32 belaban Exp $
+// $Id: RELEASE_INSTRUCTIONS,v 1.5 2006/09/27 13:02:44 belaban Exp $
 
 	       Things to do before packaging a release
 	       ---------------------------------------
@@ -7,6 +7,9 @@
 - Run the manual tests in doc/tests/ManualTests.txt
 - Run the performance tests to see whether performance is about the same
 - Create a CVS tag: JGroups_x_y_z
+- Create a distribution: ./build.sh dist, upload to web site
+- Create PDF and HTML documentation: ./build.sh docs, upload to web site
+- Create javadoc: ./build.sh javadoc and upload to web site
 
 
 
