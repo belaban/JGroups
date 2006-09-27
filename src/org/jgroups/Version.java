@@ -3,47 +3,65 @@
 
 package org.jgroups;
 
-/**
- * Holds version information for JGroups.
- */
-public class Version {
-	
-    public static final String description="2.4CR3";
-    public static final short version=243;
-    public static final String cvs="$Id: Version.java,v 1.40 2006/09/01 15:52:49 belaban Exp $";
 
-    /**
-     * Prints the value of the description and cvs fields to System.out.
-     * @param args
-     */
+public class Version {
+    public static String version="2.2.7SP1";
+    public static byte[] version_id={'0', '2', '2', '7', '1'};
+    public static String cvs="$Id: Version.java,v 1.13.4.1 2006/09/27 18:46:14 belaban Exp $";
+
     public static void main(String[] args) {
-        System.out.println("\nVersion: \t" + description);
+        System.out.println("\nVersion: \t" + version);
         System.out.println("CVS: \t\t" + cvs);
         System.out.println("History: \t(see doc/history.txt for details)\n");
     }
 
-    /**
-     * Returns the catenation of the description and cvs fields.
-     * @return String with description
-     */
-    public static String printDescription() {
-        return "JGroups " + description + " [" + cvs + "]";
-    }
 
-    /**
-     * Returns the version field as a String.
-     * @return String with version
-     */
     public static String printVersion() {
-        return Short.toString(version);
+        return "JGroups " + version + "[ " + cvs + "]";
+    }
+
+    public static String printVersionId(byte[] v, int len) {
+        StringBuffer sb=new StringBuffer();
+        if(v != null) {
+            if(len <= 0)
+                len=v.length;
+            for(int i=0; i < len; i++)
+                sb.append((char)v[i]);
+        }
+        return sb.toString();
+    }
+
+       public static String printVersionId(byte[] v) {
+        StringBuffer sb=new StringBuffer();
+        if(v != null) {
+            for(int i=0; i < v.length; i++)
+                sb.append((char)v[i]);
+        }
+        return sb.toString();
     }
 
     /**
-     * Compares the specified version number against the current version number.
-     * @param v short
-     * @return Result of == operator.
+     * Don't use this method; used by unit testing only.
+     * @param v
      */
-    public static boolean compareTo(short v) {
-        return version == v;
+    public static void setVersion(byte[] v) {
+        version_id=v;
     }
+
+    public static boolean compareTo(byte[] v) {
+        if(v == null)
+            return false;
+        if(v.length < version_id.length)
+            return false;
+        for(int i=0; i < version_id.length; i++) {
+            if(version_id[i] != v[i])
+                return false;
+        }
+        return true;
+    }
+
+    public static int getLength() {
+        return version_id.length;
+    }
+
 }
