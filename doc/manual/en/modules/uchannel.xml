@@ -189,6 +189,30 @@
         </para>
     </section>
 
+
+      <section id="ExtendedMembershipListener">
+          <title>ExtendedMembershipListener</title>
+
+          <para>The <classname>ExtendedMembershipListener</classname> interface extends
+              <classname>MessageListener</classname>:</para>
+
+          <screen>
+              public interface MembershipListener {
+                  public void unblock();
+              }
+          </screen>
+
+          <para>
+              The <methodname>unblock()</methodname> method is called
+              to notify the member that the flush protocol has completed and the member can resume
+              sending messages. If the member did not stop sending messages on block(), FLUSH simply blocked them and
+              will resume, so no action is required from a member. Implementation of the unblock() callback is optional.
+          </para>
+
+      </section>
+
+
+
     <section>
       <title>ChannelListener</title>
 
@@ -921,6 +945,16 @@
             </para>
           </listitem>
         </varlistentry>
+
+
+          <varlistentry>
+              <term>UnblockEvent</term>
+
+              <listitem>
+                  <para>The application can resume sending messages. Any previously messages blocked by FLUSH
+                  will be unblocked; when the UnblockEvent is received the channel has already been unblocked.</para>
+              </listitem>
+          </varlistentry>
 
         <varlistentry>
           <term>GetStateEvent</term>
