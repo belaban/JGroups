@@ -3,6 +3,7 @@ package org.jgroups.blocks;
 import org.jgroups.Address;
 import org.jgroups.MembershipListener;
 import org.jgroups.View;
+import org.jgroups.ExtendedMembershipListener;
 
 import java.util.HashSet;
 
@@ -31,6 +32,14 @@ public class MembershipListenerAdapter implements MembershipListener {
         for(int i = 0; i < membershipListenersCache.length; i++)
             membershipListenersCache[i].block();
     }
+
+    public void unblock() {
+        for(int i = 0; i < membershipListenersCache.length; i++) {
+            if(membershipListenersCache[i] instanceof ExtendedMembershipListener)
+                ((ExtendedMembershipListener)membershipListenersCache[i]).unblock();
+        }
+    }
+
 
     /**
      * Notify membership listener that some node was suspected. This method
