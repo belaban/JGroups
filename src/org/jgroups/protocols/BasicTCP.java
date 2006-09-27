@@ -6,11 +6,10 @@ import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.util.BoundedList;
 
-import java.util.Vector;
+import java.net.InetAddress;
 import java.util.Collection;
 import java.util.Properties;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
+import java.util.Vector;
 
 /**
  * Shared base class for tcpip protocols
