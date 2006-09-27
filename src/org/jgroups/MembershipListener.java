@@ -1,4 +1,4 @@
-// $Id: MembershipListener.java,v 1.6 2006/09/27 12:39:14 belaban Exp $
+// $Id: MembershipListener.java,v 1.7 2006/09/27 12:53:22 belaban Exp $
 
 package org.jgroups;
 
@@ -32,7 +32,11 @@ public interface MembershipListener {
     void suspect(Address suspected_mbr);
 
     /** 
-     * Called (usually by the FLUSH protocol), as an indication that the member should stop sending messages
+     * Called (usually by the FLUSH protocol), as an indication that the member should stop sending messages.
+     * Any messages sent after returning from this callback might get blocked by the FLUSH protocol. When the FLUSH
+     * protocol is done, and messages can be sent again, the FLUSH protocol will simply unblock all pending messages.
+     * If a callback for unblocking is desired, implement {@link org.jgroups.ExtendedMembershipListener#unblock()}.
+     * Note that block() is the equivalent of reception of a BlockEvent in the pull mode.
      */
     void block();
 
