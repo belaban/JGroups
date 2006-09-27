@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.21 2006/07/27 09:24:40 belaban Exp $
+// $Id: Event.java,v 1.22 2006/09/27 19:21:54 vlada Exp $
 
 package org.jgroups;
 
@@ -80,6 +80,7 @@ public class Event {
     public static final int STATE_TRANSFER_INPUTSTREAM= 71;	 // arg=java.io.InputStream subclass
     public static final int STATE_TRANSFER_OUTPUTSTREAM= 72; // arg=java.io.OutputStream subclass
     public static final int STATE_TRANSFER_INPUTSTREAM_CLOSED= 73;//arg=null
+    public static final int UNBLOCK                   =74;  //arg=null (indicate end of flush round)
 
 
     public static final int USER_DEFINED=1000;// arg = <user def., e.g. evt type + data>
@@ -189,6 +190,7 @@ public class Event {
             case STATE_TRANSFER_INPUTSTREAM: return "STATE_TRANSFER_INPUTSTREAM";
             case STATE_TRANSFER_OUTPUTSTREAM:return "STATE_TRANSFER_OUTPUTSTREAM";
             case STATE_TRANSFER_INPUTSTREAM_CLOSED: return "STATE_TRANSFER_INPUTSTREAM_CLOSED";
+            case UNBLOCK:                return "UNBLOCK";
 
             case USER_DEFINED:           return "USER_DEFINED";
             default:                     return "UNDEFINED(" + t + ")";

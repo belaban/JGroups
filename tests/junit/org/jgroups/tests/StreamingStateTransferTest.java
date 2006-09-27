@@ -12,6 +12,7 @@ import junit.framework.TestCase;
 import junit.framework.TestSuite;
 
 import org.jgroups.Address;
+import org.jgroups.BlockEvent;
 import org.jgroups.Channel;
 import org.jgroups.ExtendedReceiver;
 import org.jgroups.JChannel;
@@ -19,6 +20,7 @@ import org.jgroups.Message;
 import org.jgroups.StreamingGetStateEvent;
 import org.jgroups.StreamingSetStateEvent;
 import org.jgroups.TimeoutException;
+import org.jgroups.UnblockEvent;
 import org.jgroups.View;
 import org.jgroups.ViewId;
 import org.jgroups.blocks.RpcDispatcher;
@@ -95,7 +97,7 @@ public class StreamingStateTransferTest extends TestCase{
 				if(!unluckyBastard.isCoordinator())
 				{
 					members.remove(unluckyBastard);				
-					unluckyBastard.setRunning(false);					
+					unluckyBastard.stopRunning();					
 				}
 				else
 				{
@@ -162,10 +164,24 @@ public class StreamingStateTransferTest extends TestCase{
 		private Random ran = new Random();
         private boolean useDispacher;
 
-		public GroupMember(boolean pullMode,boolean dispMode,int size) {				
-			setStateSize(size*MEGABYTE);
+		public GroupMember(boolean pullMode, boolean dispMode, int size) {
+			setStateSize(size * MEGABYTE);
 			setUsePullMode(pullMode);
-            setUseDispatcher(dispMode);
+			setUseDispatcher(dispMode);
+			try {
+				ch = new JChannel(CHANNEL_PROPS);
+				ch.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
+				ch.setOpt(Channel.AUTO_GETSTATE, Boolean.TRUE);
+				ch.setOpt(Channel.BLOCK, Boolean.TRUE);
+				if (useDispacher) {
+					RpcDispatcher disp = new RpcDispatcher(ch, this, this, this);
+				} else if (!usePullMode) {
+					ch.setReceiver(this);
+				}
+				ch.connect("transfer");				
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 		
 		public final void setUsePullMode(boolean usePullMode) {
@@ -184,7 +200,7 @@ public class StreamingStateTransferTest extends TestCase{
 			return null;
 		}
 
-		public void setRunning(boolean b) {
+		public void stopRunning() {
 			running=false;	
 			System.out.println("Disconnect " + getAddress());
 			if(ch!=null)ch.close();
@@ -213,35 +229,41 @@ public class StreamingStateTransferTest extends TestCase{
 		}
 
 		public void run() {
-			try {
-				ch = new JChannel(CHANNEL_PROPS);
-				ch.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
-	            ch.setOpt(Channel.AUTO_GETSTATE, Boolean.TRUE);
-                if(useDispacher)
-                {
-                   RpcDispatcher disp = new RpcDispatcher(ch,this,this,this);                  
-                } else if (!usePullMode)
-	            {                   
-	            	ch.setReceiver(this);
-	            }                
-				ch.connect("transfer");	
-				if(ran.nextBoolean())
-				{
-					ch.getState(null,5000);
+			Runnable r = new Runnable() {
+				public void run() {
+					try {
+						if (ran.nextBoolean()) {
+							ch.getState(null, 5000);
+						} else {
+							String randomStateId = Long.toString(Math.abs(ran.nextLong()), 36);
+							ch.getState(null, randomStateId, 5000);
+						}
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
 				}
-				else
-				{
-					String randomStateId = Long.toString(Math.abs(ran.nextLong()), 36);
-					ch.getState(null,randomStateId,5000);
-				}
-			} catch (Exception e) {
-				e.printStackTrace();
+			};
+			if (usePullMode) {	
+				
+				//when BLOCK events are turned on, pbcast.FLUSH is used and we use pull channel mode 
+				//we have to getState on a separate thread. Why? Because joining member has to immediatelly 
+				//go into receive and fetch/respond to block event which is received as part of state transfer.
+				new Thread(r).start();
 			}
-			
+			else
+			{
+				r.run();
+			}
 			while (running) {
 				Object msgReceived = null;
-				try {
+				try {					
 					msgReceived = ch.receive(0);
+                    if (msgReceived instanceof BlockEvent) {
+                       this.block();
+                       ch.blockOk();
+                    } else if (msgReceived instanceof UnblockEvent) {
+                       this.unblock();                           
+                    }
 					if (!running) {
 						// I am not a group member anymore so
 						// I will discard any transient message I
@@ -268,11 +290,11 @@ public class StreamingStateTransferTest extends TestCase{
 							{
 								this.setState(evt.getArg());
 							}
-						}
-					}
+						} 
+					}                    
 
-				} catch (TimeoutException e) {
-				} catch (Exception e) {
+				} catch (TimeoutException e) {					
+				} catch (Exception e) {					
 					ch.close();
 					running = false;
 				}			
@@ -351,10 +373,12 @@ public class StreamingStateTransferTest extends TestCase{
 		public void suspect(Address suspected_mbr) {		
 		}
 
-		public void block() {			
+		public void block() {	
+           System.out.println("Block at " + ch.getLocalAddress());
 		}
 
         public void unblock() {
+           System.out.println("Unblock at " + ch.getLocalAddress());
         }
 
         public byte[] getState() {

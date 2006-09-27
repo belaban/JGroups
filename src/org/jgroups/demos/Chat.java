@@ -19,9 +19,9 @@ import java.io.*;
 /**
  * Simple chat demo
  * @author Bela Ban
- * @version $Id: Chat.java,v 1.14 2006/07/27 18:29:26 vlada Exp $
+ * @version $Id: Chat.java,v 1.15 2006/09/27 19:21:54 vlada Exp $
  */
-public class Chat implements MouseListener, WindowListener, ExtendedMessageListener, MembershipListener {
+public class Chat implements MouseListener, WindowListener, ExtendedMessageListener, ExtendedMembershipListener {
     Channel channel;
     PullPushAdapter ad;
     Thread mainThread;
@@ -107,6 +107,7 @@ public class Chat implements MouseListener, WindowListener, ExtendedMessageListe
             channel=new JChannel(props);
             channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
             channel.setOpt(Channel.AUTO_GETSTATE, Boolean.TRUE);
+            channel.setOpt(Channel.BLOCK, Boolean.TRUE);
             System.out.println("Connecting to " + group_name);
             channel.connect(group_name);
             ad=new PullPushAdapter(channel, this, this);
@@ -233,7 +234,9 @@ public class Chat implements MouseListener, WindowListener, ExtendedMessageListe
     }
 
 
-    public void block() {
+    public void block() {      
+    }
+    public void unblock() {     
     }
 
     /* --------------- End of Interface MembershipListener -------------- */
