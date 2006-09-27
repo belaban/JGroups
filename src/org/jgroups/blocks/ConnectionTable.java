@@ -1,12 +1,19 @@
-// $Id: ConnectionTable.java,v 1.47 2006/09/15 12:20:53 belaban Exp $
+// $Id: ConnectionTable.java,v 1.7.4.1 2006/09/27 19:05:23 belaban Exp $
 
 package org.jgroups.blocks;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
+import org.jgroups.Message;
+import org.jgroups.Version;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
 
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.EOFException;
+import java.io.IOException;
 import java.net.*;
 import java.util.*;
 
@@ -17,27 +24,54 @@ import java.util.*;
  * connection.  For incoming messages, one server socket is created at startup. For each new incoming
  * client connecting, a new thread from a thread pool is allocated and listens for incoming messages
  * until the socket is closed by the peer.<br>Sockets/threads with no activity will be killed
- * after some time.
- * <p>
- * Incoming messages from any of the sockets can be received by setting the message listener.
+ * after some time.<br> Incoming messages from any of the sockets can be received by setting the
+ * message listener.
  * @author Bela Ban
  */
-public class ConnectionTable extends BasicConnectionTable implements Runnable {
+public class ConnectionTable implements Runnable {
+    Hashtable     conns=new Hashtable();       // keys: Addresses (peer address), values: Connection
+    Receiver      receiver=null;
+    ServerSocket  srv_sock=null;
+    InetAddress   bind_addr=null;
+    Address       local_addr=null;             // bind_addr + port of srv_sock
+    int           srv_port=7800;
+    Thread        acceptor=null;               // continuously calls srv_sock.accept()
+    final int     backlog=20;                  // 20 conn requests are queued by ServerSocket (addtl will be discarded)
+    int           recv_buf_size=120000;
+    int           send_buf_size=60000;
+    Vector        conn_listeners=new Vector(); // listeners to be notified when a conn is established/torn down
+    Object        recv_mutex=new Object();     // to serialize simultaneous access to receive() from multiple Connections
+    Reaper        reaper=null;                 // closes conns that have been idle for more than n secs
+    long          reaper_interval=60000;       // reap unused conns once a minute
+    long          conn_expire_time=300000;     // connections can be idle for 5 minutes before they are reaped
+    boolean       use_reaper=false;            // by default we don't reap idle conns
+    ThreadGroup   thread_group=null;
+    boolean       tcp_nodelay=true;
+    protected Log log=LogFactory.getLog(getClass());
+    final byte[]  cookie={'b', 'e', 'l', 'a'};
 
-   /**
-    * Regular ConnectionTable without expiration of idle connections
-    * @param srv_port The port on which the server will listen. If this port is reserved, the next
-    *                 free port will be taken (incrementing srv_port).
-    */
-   public ConnectionTable(int srv_port) throws Exception {
-       this.srv_port=srv_port;
-       start();
-   }
+
+    /** Used for message reception */
+    public interface Receiver {
+        void receive(Message msg);
+    }
 
 
-    public ConnectionTable(InetAddress bind_addr, int srv_port) throws Exception {
+
+    /** Used to be notified about connection establishment and teardown */
+    public interface ConnectionListener {
+        void connectionOpened(Address peer_addr);
+        void connectionClosed(Address peer_addr);
+    }
+
+
+    /**
+     * Regular ConnectionTable without expiration of idle connections
+     * @param srv_port The port on which the server will listen. If this port is reserved, the next
+     *                 free port will be taken (incrementing srv_port).
+     */
+    public ConnectionTable(int srv_port) throws Exception {
         this.srv_port=srv_port;
-        this.bind_addr=bind_addr;
         start();
     }
 
@@ -67,21 +101,22 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
      *                  This is interesting only in multi-homed systems. If bind_addr is null, the
      *	  	        server socket will bind to the first available interface (e.g. /dev/hme0 on
      *                  Solaris or /dev/eth0 on Linux systems).
-     * @param external_addr The address which will be broadcast to the group (the externally visible address
-     *                   which this host should be contacted on). If external_addr is null, it will default to
-     *                   the same address that the server socket is bound to.
      * @param srv_port The port to which the server socket will bind to. If this port is reserved, the next
      *                 free port will be taken (incrementing srv_port).
-     * @param max_port The largest port number that the server socket will be bound to. If max_port < srv_port
-     *                 then there is no limit.
      */
-    public ConnectionTable(Receiver r, InetAddress bind_addr, InetAddress external_addr, int srv_port, int max_port) throws Exception {
+    public ConnectionTable(Receiver r, InetAddress bind_addr, int srv_port) throws Exception {
         setReceiver(r);
         this.bind_addr=bind_addr;
-        this.external_addr=external_addr;
         this.srv_port=srv_port;
-        this.max_port=max_port;
         start();
+    }
+
+    public ConnectionTable(Receiver r, InetAddress bind_addr, int srv_port, boolean start) throws Exception {
+        setReceiver(r);
+        this.bind_addr=bind_addr;
+        this.srv_port=srv_port;
+        if(start)
+            start();
     }
 
 
@@ -89,29 +124,23 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
      * ConnectionTable including a connection reaper. Connections that have been idle for more than conn_expire_time
      * milliseconds will be closed and removed from the connection table. On next access they will be re-created.
      *
-     * @param r The Receiver
+     * @param srv_port The port on which the server will listen.If this port is reserved, the next
+     *                 free port will be taken (incrementing srv_port).
      * @param bind_addr The host name or IP address of the interface to which the server socket will bind.
      *                  This is interesting only in multi-homed systems. If bind_addr is null, the
      *		        server socket will bind to the first available interface (e.g. /dev/hme0 on
      *		        Solaris or /dev/eth0 on Linux systems).
-     * @param external_addr The address which will be broadcast to the group (the externally visible address
-     *                   which this host should be contacted on). If external_addr is null, it will default to
-     *                   the same address that the server socket is bound to.
      * @param srv_port The port to which the server socket will bind to. If this port is reserved, the next
      *                 free port will be taken (incrementing srv_port).
-     * @param max_port The largest port number that the server socket will be bound to. If max_port < srv_port
-     *                 then there is no limit.
      * @param reaper_interval Number of milliseconds to wait for reaper between attepts to reap idle connections
      * @param conn_expire_time Number of milliseconds a connection can be idle (no traffic sent or received until
      *                         it will be reaped
      */
-    public ConnectionTable(Receiver r, InetAddress bind_addr, InetAddress external_addr, int srv_port, int max_port,
+    public ConnectionTable(Receiver r, InetAddress bind_addr, int srv_port,
                            long reaper_interval, long conn_expire_time) throws Exception {
         setReceiver(r);
         this.bind_addr=bind_addr;
-        this.external_addr=external_addr;
         this.srv_port=srv_port;
-        this.max_port=max_port;
         this.reaper_interval=reaper_interval;
         this.conn_expire_time=conn_expire_time;
         use_reaper=true;
@@ -119,59 +148,155 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
     }
 
 
-
-   /** Try to obtain correct Connection (or create one if not yet existent) */
-   Connection getConnection(Address dest) throws Exception {
-       Connection conn=null;
-       Socket sock;
-
-       synchronized(conns) {
-           conn=(Connection)conns.get(dest);
-           if(conn == null) {
-               // changed by bela Jan 18 2004: use the bind address for the client sockets as well
-               SocketAddress tmpBindAddr=new InetSocketAddress(bind_addr, 0);
-               InetAddress tmpDest=((IpAddress)dest).getIpAddress();
-               SocketAddress destAddr=new InetSocketAddress(tmpDest, ((IpAddress)dest).getPort());
-               sock=new Socket();
-               sock.bind(tmpBindAddr);
-               sock.setKeepAlive(true);
-               sock.setTcpNoDelay(tcp_nodelay);
-               sock.connect(destAddr, sock_conn_timeout);
-
-               try {
-                   sock.setSendBufferSize(send_buf_size);
-               }
-               catch(IllegalArgumentException ex) {
-                   if(log.isErrorEnabled()) log.error("exception setting send buffer size to " +
-                           send_buf_size + " bytes", ex);
-               }
-               try {
-                   sock.setReceiveBufferSize(recv_buf_size);
-               }
-               catch(IllegalArgumentException ex) {
-                   if(log.isErrorEnabled()) log.error("exception setting receive buffer size to " +
-                           send_buf_size + " bytes", ex);
-               }
-               conn=new Connection(sock, dest);
-               conn.sendLocalAddress(local_addr);
-               notifyConnectionOpened(dest);
-               // conns.put(dest, conn);
-               addConnection(dest, conn);
-               conn.init();
-               if(log.isInfoEnabled()) log.info("created socket to " + dest);
-           }
-           return conn;
-       }
-   }
+    public ConnectionTable(Receiver r, InetAddress bind_addr, int srv_port,
+                           long reaper_interval, long conn_expire_time, boolean start) throws Exception {
+        setReceiver(r);
+        this.bind_addr=bind_addr;
+        this.srv_port=srv_port;
+        this.reaper_interval=reaper_interval;
+        this.conn_expire_time=conn_expire_time;
+        use_reaper=true;
+        if(start)
+            start();
+    }
 
 
-    public final void start() throws Exception {
-        init();
-        srv_sock=createServerSocket(srv_port, max_port);
+    public void setReceiver(Receiver r) {
+        receiver=r;
+    }
 
-        if (external_addr!=null)
-            local_addr=new IpAddress(external_addr, srv_sock.getLocalPort());
-        else if (bind_addr != null)
+
+    public void addConnectionListener(ConnectionListener l) {
+        if(l != null && !conn_listeners.contains(l))
+            conn_listeners.addElement(l);
+    }
+
+
+    public void removeConnectionListener(ConnectionListener l) {
+        if(l != null) conn_listeners.removeElement(l);
+    }
+
+
+    public Address getLocalAddress() {
+        if(local_addr == null)
+            local_addr=bind_addr != null ? new IpAddress(bind_addr, srv_port) : null;
+        return local_addr;
+    }
+
+
+    public boolean isTcpNoDelay() {
+        return tcp_nodelay;
+    }
+
+    public void setTcpNoDelay(boolean tcp_nodelay) {
+        this.tcp_nodelay=tcp_nodelay;
+    }
+
+
+    public int getSendBufferSize() {
+        return send_buf_size;
+    }
+
+    public void setSendBufferSize(int send_buf_size) {
+        this.send_buf_size=send_buf_size;
+    }
+
+    public int getReceiveBufferSize() {
+        return recv_buf_size;
+    }
+
+    public void setReceiveBufferSize(int recv_buf_size) {
+        this.recv_buf_size=recv_buf_size;
+    }
+
+    /** Sends a message to a unicast destination. The destination has to be set
+     * @param msg The message to send
+     * @throws SocketException Thrown if connection cannot be established
+     */
+    public void send(Message msg) throws SocketException {
+        Address dest=msg != null ? msg.getDest() : null;
+        Connection conn;
+
+        if(dest == null) {
+            if(log.isErrorEnabled())
+                log.error("msg is null or message's destination is null");
+            return;
+        }
+
+        // 1. Try to obtain correct Connection (or create one if not yet existent)
+        try {
+            conn=getConnection(dest);
+            if(conn == null) return;
+        }
+        catch(SocketException sock_ex) {
+            throw sock_ex;
+        }
+        catch(Throwable ex) {
+            if(log.isInfoEnabled()) log.info("connection to " + dest + " could not be established: " + ex);
+            throw new SocketException(ex.toString());
+        }
+
+        // 2. Send the message using that connection
+        try {
+            conn.send(msg);
+        }
+        catch(Throwable ex) {
+
+                if(log.isInfoEnabled()) log.info("sending message to " + dest + " failed (ex=" +
+                                                     ex.getClass().getName() + "); removing from connection table");
+            remove(dest);
+        }
+    }
+
+
+    /** Try to obtain correct Connection (or create one if not yet existent) */
+    Connection getConnection(Address dest) throws Exception {
+        Connection conn=null;
+        Socket sock;
+
+        synchronized(conns) {
+            conn=(Connection)conns.get(dest);
+            if(conn == null) {
+                // changed by bela Jan 18 2004: use the bind address for the client sockets as well
+                sock=new Socket(((IpAddress)dest).getIpAddress(), ((IpAddress)dest).getPort(), bind_addr, 0);
+                try {
+                    sock.setSendBufferSize(send_buf_size);
+                }
+                catch(IllegalArgumentException ex) {
+                    if(log.isErrorEnabled()) log.error("exception setting send buffer size to " +
+                            send_buf_size + " bytes: " + ex);
+                }
+                try {
+                    sock.setReceiveBufferSize(recv_buf_size);
+                }
+                catch(IllegalArgumentException ex) {
+                    if(log.isErrorEnabled()) log.error("exception setting receive buffer size to " +
+                            send_buf_size + " bytes: " + ex);
+                }
+                try {
+                    sock.setTcpNoDelay(tcp_nodelay);
+                }
+                catch(IllegalArgumentException ex) {
+                    if(log.isErrorEnabled()) log.error("exception setting TCP_NODELAY to" + tcp_nodelay, ex);
+                }
+
+                conn=new Connection(sock, dest);
+                conn.sendLocalAddress(local_addr);
+                notifyConnectionOpened(dest);
+                // conns.put(dest, conn);
+                addConnection(dest, conn);
+                conn.init();
+                 if(log.isInfoEnabled()) log.info("created socket to " + dest);
+            }
+            return conn;
+        }
+    }
+
+
+    public void start() throws Exception {
+        srv_sock=createServerSocket(srv_port);
+
+        if(bind_addr != null)
             local_addr=new IpAddress(bind_addr, srv_sock.getLocalPort());
         else
             local_addr=new IpAddress(srv_sock.getLocalPort());
@@ -179,7 +304,7 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
         if(log.isInfoEnabled()) log.info("server socket created on " + local_addr);
 
         //Roland Kurmann 4/7/2003, build new thread group
-        thread_group = new ThreadGroup(Util.getGlobalThreadGroup(), "ConnectionTableGroup");
+        thread_group = new ThreadGroup(Thread.currentThread().getThreadGroup(), "ConnectionTableGroup");
         //Roland Kurmann 4/7/2003, put in thread_group
         acceptor=new Thread(thread_group, this, "ConnectionTable.AcceptorThread");
         acceptor.setDaemon(true);
@@ -190,24 +315,19 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
             reaper=new Reaper();
             reaper.start();
         }
-        super.start();
     }
 
-    protected void init() throws Exception {
-    }
 
     /** Closes all open sockets, the server socket and all threads waiting for incoming messages */
     public void stop() {
-        super.stop();
+        Iterator it=null;
+        Connection conn;
+        ServerSocket tmp;
 
-        // 1. Stop the reaper
-        if(reaper != null)
-            reaper.stop();
-
-        // 2. close the server socket (this also stops the acceptor thread)
+        // 1. close the server socket (this also stops the acceptor thread)
         if(srv_sock != null) {
             try {
-                ServerSocket tmp=srv_sock;
+                tmp=srv_sock;
                 srv_sock=null;
                 tmp.close();
             }
@@ -215,141 +335,571 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
             }
         }
 
-        // 3. then close the connections
-        Connection conn;
-        Collection tmp=null;
+
+        // 2. then close the connections
         synchronized(conns) {
-            tmp=new LinkedList(conns.values());
-            conns.clear();
-        }
-        if(tmp != null) {
-            for(Iterator it=tmp.iterator(); it.hasNext();) {
+            it=conns.values().iterator();
+            while(it.hasNext()) {
                 conn=(Connection)it.next();
                 conn.destroy();
             }
-            tmp.clear();
+            conns.clear();
         }
         local_addr=null;
     }
 
 
-   /**
-    * Acceptor thread. Continuously accept new connections. Create a new thread for each new
-    * connection and put it in conns. When the thread should stop, it is
-    * interrupted by the thread creator.
-    */
-   public void run() {
-       Socket     client_sock=null;
-       Connection conn=null;
-       Address    peer_addr;
+    /**
+     Remove <code>addr</code>from connection table. This is typically triggered when a member is suspected.
+     */
+    public void remove(Address addr) {
+        Connection conn;
 
-       while(srv_sock != null) {
-           try {
-               conn=null;
-               client_sock=srv_sock.accept();
-               if(!running) {
-                   if(log.isWarnEnabled())
-                       log.warn("cannot accept connection from " + client_sock.getRemoteSocketAddress() + " as I'm closed");
-                   break;
-               }
-               if(log.isTraceEnabled())
-                   log.trace("accepted connection from " + client_sock.getInetAddress() + ":" + client_sock.getPort());
-               try {
-                   client_sock.setSendBufferSize(send_buf_size);
-               }
-               catch(IllegalArgumentException ex) {
-                   if(log.isErrorEnabled()) log.error("exception setting send buffer size to " +
-                          send_buf_size + " bytes", ex);
-               }
-               try {
-                   client_sock.setReceiveBufferSize(recv_buf_size);
-               }
-               catch(IllegalArgumentException ex) {
-                   if(log.isErrorEnabled()) log.error("exception setting receive buffer size to " +
-                          send_buf_size + " bytes", ex);
-               }
+        synchronized(conns) {
+            conn=(Connection)conns.get(addr);
 
-               client_sock.setKeepAlive(true);
+            if(conn != null) {
+                try {
+                    conn.destroy();  // won't do anything if already destroyed
+                }
+                catch(Exception e) {
+                }
+                conns.remove(addr);
+            }
 
-               // create new thread and add to conn table
-               conn=new Connection(client_sock, null); // will call receive(msg)
-               // get peer's address
-               peer_addr=conn.readPeerAddress(client_sock);
-
-               // client_addr=new IpAddress(client_sock.getInetAddress(), client_port);
-               conn.setPeerAddress(peer_addr);
-
-               synchronized(conns) {
-                   if(conns.containsKey(peer_addr)) {
-                       if(log.isTraceEnabled())
-                           log.trace(peer_addr + " is already there, will reuse connection");
-                       //conn.destroy();
-                       //continue; // return; // we cannot terminate the thread (bela Sept 2 2004)
-                   }
-                   else {
-                       // conns.put(peer_addr, conn);
-                       addConnection(peer_addr, conn);
-                       notifyConnectionOpened(peer_addr);
-                   }
-               }
-
-               conn.init(); // starts handler thread on this socket
-           }
-           catch(SocketException sock_ex) {
-               if(log.isInfoEnabled()) log.info("exception is " + sock_ex);
-               if(conn != null)
-                   conn.destroy();
-               if(srv_sock == null)
-                   break;  // socket was closed, therefore stop
-           }
-           catch(Throwable ex) {
-               if(log.isWarnEnabled()) log.warn("exception is " + ex);
-               if(srv_sock == null)
-                   break;  // socket was closed, therefore stop
-           }
-       }
-       if(client_sock != null)
-           try {client_sock.close();} catch(IOException e) {}
-       if(log.isTraceEnabled())
-           log.trace(Thread.currentThread().getName() + " terminated");
-   }
+                if(log.isInfoEnabled()) log.info("addr=" + addr + ", connections are " + toString());
+        }
+    }
 
 
-   /** Finds first available port starting at start_port and returns server socket.
-     * Will not bind to port >end_port. Sets srv_port */
-   protected ServerSocket createServerSocket(int start_port, int end_port) throws Exception {
-       ServerSocket ret=null;
+    /**
+     * Acceptor thread. Continuously accept new connections. Create a new thread for each new
+     * connection and put it in conns. When the thread should stop, it is
+     * interrupted by the thread creator.
+     */
+    public void run() {
+        Socket     client_sock;
+        Connection conn=null;
+        Address    peer_addr;
 
-       while(true) {
-           try {
-               if(bind_addr == null)
-                   ret=new ServerSocket(start_port);
-               else {
+        while(srv_sock != null) {
+            try {
+                client_sock=srv_sock.accept();
+                if(log.isInfoEnabled()) log.info("accepted connection, client_sock=" + client_sock);
 
-                   ret=new ServerSocket(start_port, backlog, bind_addr);
-               }
-           }
-           catch(BindException bind_ex) {
-               if (start_port==end_port) throw new BindException("No available port to bind to");
-               if(bind_addr != null) {
-                   NetworkInterface nic=NetworkInterface.getByInetAddress(bind_addr);
-                   if(nic == null)
-                       throw new BindException("bind_addr " + bind_addr + " is not a valid interface");
-               }
-               start_port++;
-               continue;
-           }
-           catch(IOException io_ex) {
-               if(log.isErrorEnabled()) log.error("exception is " + io_ex);
-           }
-           srv_port=start_port;
-           break;
-       }
-       return ret;
-   }
+                // create new thread and add to conn table
+                conn=new Connection(client_sock, null); // will call receive(msg)
+                // get peer's address
+                peer_addr=conn.readPeerAddress(client_sock);
+
+                // client_addr=new IpAddress(client_sock.getInetAddress(), client_port);
+                conn.setPeerAddress(peer_addr);
+
+                synchronized(conns) {
+                    if(conns.contains(peer_addr)) {
+                        if(log.isWarnEnabled()) log.warn(peer_addr + " is already there, will terminate connection");
+                        conn.destroy();
+                        continue; // return; // we cannot terminate the thread (bela Sept 2 2004)
+                    }
+                    // conns.put(peer_addr, conn);
+                    addConnection(peer_addr, conn);
+                }
+                notifyConnectionOpened(peer_addr);
+                conn.init(); // starts handler thread on this socket
+            }
+            catch(SocketTimeoutException timeout_ex) {
+                if(srv_sock == null)
+                    break;  // socket was closed, therefore stop
+            }
+            catch(SocketException sock_ex) {
+                if(log.isInfoEnabled()) log.info("exception is " + sock_ex);
+                if(conn != null)
+                    conn.destroy();
+                if(srv_sock == null)
+                    break;  // socket was closed, therefore stop
+            }
+            catch(Throwable ex) {
+                if(log.isWarnEnabled()) log.warn("exception is " + ex);
+                if(srv_sock == null)
+                    break;  // socket was closed, therefore stop
+            }
+        }
+    }
 
 
+    /**
+     * Calls the receiver callback. We serialize access to this method because it may be called concurrently
+     * by several Connection handler threads. Therefore the receiver doesn't need to synchronize.
+     */
+    public void receive(Message msg) {
+        if(receiver != null) {
+            synchronized(recv_mutex) {
+                receiver.receive(msg);
+            }
+        }
+        else
+            if(log.isErrorEnabled()) log.error("receiver is null (not set) !");
+    }
+
+
+    public String toString() {
+        StringBuffer ret=new StringBuffer();
+        Address key;
+        Connection val;
+
+        synchronized(conns) {
+            ret.append("connections (" + conns.size() + "):\n");
+            for(Enumeration e=conns.keys(); e.hasMoreElements();) {
+                key=(Address)e.nextElement();
+                val=(Connection)conns.get(key);
+                ret.append("key: " + key.toString() + ": " + val.toString() + '\n');
+            }
+        }
+        ret.append('\n');
+        return ret.toString();
+    }
+
+
+    /** Finds first available port starting at start_port and returns server socket. Sets srv_port */
+    protected ServerSocket createServerSocket(int start_port) throws Exception {
+        ServerSocket ret=null;
+
+        while(true) {
+            try {
+                if(bind_addr == null)
+                    ret=new ServerSocket(start_port);
+                else
+                    ret=new ServerSocket(start_port, backlog, bind_addr);
+            }
+            catch(BindException bind_ex) {
+                start_port++;
+                continue;
+            }
+            catch(IOException io_ex) {
+                if(log.isErrorEnabled()) log.error("exception is " + io_ex);
+            }
+            srv_port=start_port;
+            break;
+        }
+        return ret;
+    }
+
+
+    void notifyConnectionOpened(Address peer) {
+        if(peer == null) return;
+        for(int i=0; i < conn_listeners.size(); i++)
+            ((ConnectionListener)conn_listeners.elementAt(i)).connectionOpened(peer);
+    }
+
+    void notifyConnectionClosed(Address peer) {
+        if(peer == null) return;
+        for(int i=0; i < conn_listeners.size(); i++)
+            ((ConnectionListener)conn_listeners.elementAt(i)).connectionClosed(peer);
+    }
+
+
+    void addConnection(Address peer, Connection c) {
+        conns.put(peer, c);
+        if(reaper != null && !reaper.isRunning())
+            reaper.start();
+    }
+
+
+    class Connection implements Runnable {
+        Socket           sock=null;                // socket to/from peer (result of srv_sock.accept() or new Socket())
+        DataOutputStream out=null;                 // for sending messages
+        DataInputStream  in=null;                  // for receiving messages
+        Thread           handler=null;             // thread for receiving messages
+        Address          peer_addr=null;           // address of the 'other end' of the connection
+        Object           send_mutex=new Object();  // serialize sends
+        long             last_access=System.currentTimeMillis(); // last time a message was sent or received
+        // final byte[]     cookie={(byte)'b', (byte)'e', (byte)'l', (byte)'a'};
+
+
+        Connection(Socket s, Address peer_addr) {
+            sock=s;
+            this.peer_addr=peer_addr;
+            try {
+                out=new DataOutputStream(sock.getOutputStream());
+                in=new DataInputStream(sock.getInputStream());
+            }
+            catch(Exception ex) {
+                if(log.isErrorEnabled()) log.error("exception is " + ex);
+            }
+        }
+
+
+        boolean established() {
+            return handler != null;
+        }
+
+
+        void setPeerAddress(Address peer_addr) {
+            this.peer_addr=peer_addr;
+        }
+
+        void updateLastAccessed() {
+            //
+            ///if(log.isInfoEnabled()) log.info("ConnectionTable.Connection.updateLastAccessed()", "connections are " + conns);
+            last_access=System.currentTimeMillis();
+        }
+
+        void init() {
+
+                if(log.isInfoEnabled()) log.info("connection was created to " + peer_addr);
+            if(handler == null) {
+                // Roland Kurmann 4/7/2003, put in thread_group
+                handler=new Thread(thread_group, this, "ConnectionTable.Connection.HandlerThread");
+                handler.setDaemon(true);
+                handler.start();
+            }
+        }
+
+
+        void destroy() {
+            closeSocket(); // should terminate handler as well
+            handler=null;
+        }
+
+
+        void send(Message msg) {
+            synchronized(send_mutex) {
+                try {
+                    doSend(msg);
+                    updateLastAccessed();
+                }
+                catch(IOException io_ex) {
+
+                        if(log.isWarnEnabled()) log.warn("peer closed connection, " +
+                                                                        "trying to re-establish connection and re-send msg.");
+                    try {
+                        doSend(msg);
+                        updateLastAccessed();
+                    }
+                    catch(IOException io_ex2) {
+                         if(log.isErrorEnabled()) log.error("2nd attempt to send data failed too");
+                    }
+                    catch(Exception ex2) {
+                         if(log.isErrorEnabled()) log.error("exception is " + ex2);
+                    }
+                }
+                catch(Exception ex) {
+                     if(log.isErrorEnabled()) log.error("exception is " + ex);
+                }
+            }
+        }
+
+
+        void doSend(Message msg) throws Exception {
+            IpAddress dst_addr=(IpAddress)msg.getDest();
+            byte[]    buffie=null;
+
+            if(dst_addr == null || dst_addr.getIpAddress() == null) {
+                if(log.isErrorEnabled()) log.error("the destination address is null; aborting send");
+                return;
+            }
+
+            try {
+                // set the source address if not yet set
+                if(msg.getSrc() == null)
+                    msg.setSrc(local_addr);
+
+                buffie=Util.objectToByteBuffer(msg);
+                if(buffie.length <= 0) {
+                    if(log.isErrorEnabled()) log.error("buffer.length is 0. Will not send message");
+                    return;
+                }
+
+
+                // we're using 'double-writes', sending the buffer to the destination in 2 pieces. this would
+                // ensure that, if the peer closed the connection while we were idle, we would get an exception.
+                // this won't happen if we use a single write (see Stevens, ch. 5.13).
+                if(out != null) {
+                    out.writeInt(buffie.length); // write the length of the data buffer first
+                    Util.doubleWrite(buffie, out);
+                    out.flush();  // may not be very efficient (but safe)
+                }
+            }
+            catch(Exception ex) {
+
+                    if(log.isErrorEnabled()) log.error("to " + dst_addr + ", exception is " + ex + ", stack trace:\n" +
+                                Util.printStackTrace(ex));
+                remove(dst_addr);
+                throw ex;
+            }
+        }
+
+
+        /**
+         * Reads the peer's address. First a cookie has to be sent which has to match my own cookie, otherwise
+         * the connection will be refused
+         */
+        Address readPeerAddress(Socket client_sock) throws Exception {
+            Address     peer_addr=null;
+            byte[]      version, buf, input_cookie=new byte[cookie.length];
+            int         len=0, client_port=client_sock != null? client_sock.getPort() : 0;
+            InetAddress client_addr=client_sock != null? client_sock.getInetAddress() : null;
+
+            if(in != null) {
+                initCookie(input_cookie);
+
+                // read the cookie first
+                in.read(input_cookie, 0, input_cookie.length);
+                if(!matchCookie(input_cookie))
+                    throw new SocketException("ConnectionTable.Connection.readPeerAddress(): cookie sent by " +
+                                              peer_addr + " does not match own cookie; terminating connection");
+                // then read the version
+                version=new byte[Version.version_id.length];
+                in.read(version, 0, version.length);
+
+                if(Version.compareTo(version) == false) {
+                    if(log.isWarnEnabled()) log.warn("packet from " + client_addr + ':' + client_port +
+                               " has different version (" +
+                               Version.printVersionId(version, Version.version_id.length) +
+                               ") from ours (" + Version.printVersionId(Version.version_id) +
+                               "). This may cause problems");
+                }
+
+                // read the length of the address
+                len=in.readInt();
+
+                // finally read the address itself
+                buf=new byte[len];
+                in.readFully(buf, 0, len);
+                peer_addr=(Address)Util.objectFromByteBuffer(buf);
+                updateLastAccessed();
+            }
+            return peer_addr;
+        }
+
+
+        /**
+         * Send the cookie first, then the our port number. If the cookie doesn't match the receiver's cookie,
+         * the receiver will reject the connection and close it.
+         */
+        void sendLocalAddress(Address local_addr) {
+            byte[] buf;
+
+            if(local_addr == null) {
+                if(log.isWarnEnabled()) log.warn("local_addr is null");
+                return;
+            }
+            if(out != null) {
+                try {
+                    buf=Util.objectToByteBuffer(local_addr);
+
+                    // write the cookie
+                    out.write(cookie, 0, cookie.length);
+
+                    // write the version
+                    out.write(Version.version_id, 0, Version.version_id.length);
+
+                    // write the length of the buffer
+                    out.writeInt(buf.length);
+
+                    // and finally write the buffer itself
+                    out.write(buf, 0, buf.length);
+                    out.flush(); // needed ?
+                    updateLastAccessed();
+                }
+                catch(Throwable t) {
+                    if(log.isErrorEnabled()) log.error("exception is " + t);
+                }
+            }
+        }
+
+
+        void initCookie(byte[] c) {
+            if(c != null)
+                for(int i=0; i < c.length; i++)
+                    c[i]=0;
+        }
+
+        boolean matchCookie(byte[] input) {
+            if(input == null || input.length < cookie.length) return false;
+
+                if(log.isInfoEnabled()) log.info("input_cookie is " + printCookie(input));
+            for(int i=0; i < cookie.length; i++)
+                if(cookie[i] != input[i]) return false;
+            return true;
+        }
+
+
+        String printCookie(byte[] c) {
+            if(c == null) return "";
+            return new String(c);
+        }
+
+
+        public void run() {
+            Message msg;
+            byte[] buf=new byte[256];
+            int len=0;
+
+            while(handler != null) {
+                try {
+                    if(in == null) {
+                        if(log.isErrorEnabled()) log.error("input stream is null !");
+                        break;
+                    }
+                    len=in.readInt();
+                    if(len > buf.length)
+                        buf=new byte[len];
+                    in.readFully(buf, 0, len);
+                    updateLastAccessed();
+                    msg=(Message)Util.objectFromByteBuffer(buf);
+                    receive(msg); // calls receiver.receiver(msg)
+                }
+                catch(OutOfMemoryError mem_ex) {
+                    if(log.isWarnEnabled()) log.warn("dropped invalid message, closing connection");
+                    break; // continue;
+                }
+                catch(EOFException eof_ex) {  // peer closed connection
+                    if(log.isInfoEnabled()) log.info("exception is " + eof_ex);
+                    notifyConnectionClosed(peer_addr);
+                    break;
+                }
+                catch(IOException io_ex) {
+                    if(log.isInfoEnabled()) log.info("exception is " + io_ex);
+                    notifyConnectionClosed(peer_addr);
+                    break;
+                }
+                catch(Exception e) {
+                    if(log.isWarnEnabled()) log.warn("exception is " + e);
+                }
+            }
+            handler=null;
+            closeSocket();
+            remove(peer_addr);
+        }
+
+
+        public String toString() {
+            StringBuffer ret=new StringBuffer();
+            InetAddress local=null, remote=null;
+            String local_str, remote_str;
+
+            if(sock == null)
+                ret.append("<null socket>");
+            else {
+                //since the sock variable gets set to null we want to make
+                //make sure we make it through here without a nullpointer exception
+                Socket tmp_sock=sock;
+                local=tmp_sock.getLocalAddress();
+                remote=tmp_sock.getInetAddress();
+                local_str=local != null ? Util.shortName(local.getHostName()) : "<null>";
+                remote_str=remote != null ? Util.shortName(local.getHostName()) : "<null>";
+                ret.append('<' + local_str + ':' + tmp_sock.getLocalPort() +
+                           " --> " + remote_str + ':' + tmp_sock.getPort() + "> (" +
+                           ((System.currentTimeMillis() - last_access) / 1000) + " secs old)");
+                tmp_sock=null;
+            }
+
+            return ret.toString();
+        }
+
+
+        void closeSocket() {
+            if(sock != null) {
+                try {
+                    sock.close(); // should actually close in/out (so we don't need to close them explicitly)
+                }
+                catch(Exception e) {
+                }
+                sock=null;
+            }
+            if(out != null) {
+                try {
+                    out.close(); // flushes data
+                }
+                catch(Exception e) {
+                }
+                // removed 4/22/2003 (request by Roland Kurmann)
+                // out=null;
+            }
+            if(in != null) {
+                try {
+                    in.close();
+                }
+                catch(Exception ex) {
+                }
+                in=null;
+            }
+        }
+    }
+
+
+    class Reaper implements Runnable {
+        Thread t=null;
+
+        Reaper() {
+            ;
+        }
+
+        public void start() {
+            if(conns.size() == 0)
+                return;
+            if(t != null && !t.isAlive())
+                t=null;
+            if(t == null) {
+                //RKU 7.4.2003, put in threadgroup
+                t=new Thread(thread_group, this, "ConnectionTable.ReaperThread");
+                t.setDaemon(true); // will allow us to terminate if all remaining threads are daemons
+                t.start();
+            }
+        }
+
+        public void stop() {
+            if(t != null)
+                t=null;
+        }
+
+
+        public boolean isRunning() {
+            return t != null;
+        }
+
+        public void run() {
+            Connection value;
+            Map.Entry entry;
+            long curr_time;
+
+
+                if(log.isInfoEnabled()) log.info("connection reaper thread was started. Number of connections=" +
+                                                           conns.size() + ", reaper_interval=" + reaper_interval + ", conn_expire_time=" +
+                                                           conn_expire_time);
+
+            while(conns.size() > 0 && t != null) {
+                // first sleep
+                Util.sleep(reaper_interval);
+                synchronized(conns) {
+                    curr_time=System.currentTimeMillis();
+                    for(Iterator it=conns.entrySet().iterator(); it.hasNext();) {
+                        entry=(Map.Entry)it.next();
+                        value=(Connection)entry.getValue();
+
+                            if(log.isInfoEnabled()) log.info("connection is " +
+                                                                       ((curr_time - value.last_access) / 1000) + " seconds old (curr-time=" +
+                                                                       curr_time + ", last_access=" + value.last_access + ')');
+                        if(value.last_access + conn_expire_time < curr_time) {
+
+                                if(log.isInfoEnabled()) log.info("connection " + value +
+                                                                           " has been idle for too long (conn_expire_time=" + conn_expire_time +
+                                                                           "), will be removed");
+
+                            value.destroy();
+                            it.remove();
+                        }
+                    }
+                }
+            }
+
+                if(log.isInfoEnabled()) log.info("reaper terminated");
+            t=null;
+        }
+    }
 
 
 }
+
 
