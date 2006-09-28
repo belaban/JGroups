@@ -67,7 +67,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.97 2006/09/28 07:27:12 belaban Exp $
+ * @version $Id: JChannel.java,v 1.98 2006/09/28 08:13:19 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -133,7 +133,7 @@ public class JChannel extends Channel {
     /*if the states is fetched automatically, this is the default timeout, 5 secs*/
     private static final long GET_STATE_DEFAULT_TIMEOUT=5000;
     /*flag to indicate whether to receive blocks, if this is set to true, receive_views is set to true*/
-    private boolean receive_blocks=true;
+    private boolean receive_blocks=false;
     /*flag to indicate whether to receive local messages
      *if this is set to false, the JChannel will not receive messages sent by itself*/
     private boolean receive_local_msgs=true;
@@ -980,26 +980,6 @@ public class JChannel extends Channel {
             }
             break;
 
-        case Event.BLOCK:
-            // If BLOCK is received by application, then we trust the application to not send
-            // any more messages until a VIEW_CHANGE is received. Otherwise (BLOCKs are disabled),
-            // we queue any messages sent until the next VIEW_CHANGE (they will be sent in the
-            // next view)
-
-            if(!receive_blocks) {  // discard if client has not set 'receiving blocks' to 'on'
-                down(new Event(Event.BLOCK_OK));
-                down(new Event(Event.START_QUEUEING));
-                return;
-            }
-            break;
-            
-        case Event.UNBLOCK:
-            //discard if client has not set 'receiving blocks' to 'on'
-            if(!receive_blocks) {                
-                return;
-            }
-            break;    
-
         case Event.CONNECT_OK:
             connect_promise.setResult(evt.getArg());
             break;
@@ -1129,7 +1109,14 @@ public class JChannel extends Channel {
                     return;
                 }
 				break;
+
             case Event.BLOCK:
+                if(!receive_blocks) {  // discard if client has not set 'receiving blocks' to 'on'
+                    down(new Event(Event.BLOCK_OK));
+                    down(new Event(Event.START_QUEUEING));
+                    return;
+                }
+
                 if(receiver != null) {
                     try {
                         receiver.block();
@@ -1145,17 +1132,21 @@ public class JChannel extends Channel {
                 }
                 break;
             case Event.UNBLOCK:
-               if(receiver instanceof ExtendedReceiver) {
-                   try {
-                      ((ExtendedReceiver)receiver).unblock();
-                   }
-                   catch(Throwable t) {
-                       if(log.isErrorEnabled())
-                           log.error("failed calling unblock() on Receiver", t);
-                   }                   
-                   return;
-               }
-               break;    
+                //discard if client has not set 'receiving blocks' to 'on'
+                if(!receive_blocks) {
+                    return;
+                }
+                if(receiver instanceof ExtendedReceiver) {
+                    try {
+                        ((ExtendedReceiver)receiver).unblock();
+                    }
+                    catch(Throwable t) {
+                        if(log.isErrorEnabled())
+                            log.error("failed calling unblock() on Receiver", t);
+                    }
+                    return;
+                }
+                break;
             default:
                 break;
         }
