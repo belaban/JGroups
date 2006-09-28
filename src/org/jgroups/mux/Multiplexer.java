@@ -15,7 +15,7 @@ import java.util.*;
  * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.23 2006/08/31 10:56:28 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.24 2006/09/28 15:13:31 belaban Exp $
  */
 public class Multiplexer implements UpHandler {
     /** Map<String,MuxChannel>. Maintains the mapping between service IDs and their associated MuxChannels */
@@ -25,6 +25,9 @@ public class Multiplexer implements UpHandler {
     static final String SEPARATOR="::";
     static final short SEPARATOR_LEN=(short)SEPARATOR.length();
     static final String NAME="MUX";
+    private final BlockOkCollector block_ok_collector=new BlockOkCollector();
+
+
 
     /** Cluster view */
     View view=null;
@@ -50,6 +53,7 @@ public class Multiplexer implements UpHandler {
     public Multiplexer(JChannel channel) {
         this.channel=channel;
         this.channel.setUpHandler(this);
+        this.channel.setOpt(Channel.BLOCK, Boolean.TRUE); // we want to handle BLOCK events ourselves
     }
 
     /**
@@ -77,6 +81,13 @@ public class Multiplexer implements UpHandler {
 
     public boolean stateTransferListenersPresent() {
         return state_transfer_listeners != null && state_transfer_listeners.size() > 0;
+    }
+
+    /**
+     * Called by a MuxChannel when BLOCK_OK is sent down
+     */
+    public void blockOk() {
+        block_ok_collector.increment();
     }
 
     public synchronized void registerForStateTransfer(String appl_id, String substate_id) {
@@ -280,6 +291,14 @@ public class Multiplexer implements UpHandler {
                 local_addr=(Address)evt.getArg();
                 passToAllMuxChannels(evt);
                 break;
+
+            case Event.BLOCK:
+                block_ok_collector.reset();
+                passToAllMuxChannels(evt);
+                int num_services=services.size();
+                block_ok_collector.waitUntil(num_services);
+                channel.blockOk();
+                return;
 
             default:
                 passToAllMuxChannels(evt);
@@ -750,6 +769,33 @@ public class Multiplexer implements UpHandler {
             if(tmp == null) {
                 services.put(id, ch);
             }
+        }
+    }
+
+
+    private static class BlockOkCollector {
+        int num_block_oks=0;
+
+        synchronized void reset() {
+            num_block_oks=0;
+        }
+
+        synchronized void increment() {
+            num_block_oks++;
+        }
+
+        synchronized void waitUntil(int num) {
+            while(num_block_oks < num) {
+                try {
+                    this.wait();
+                }
+                catch(InterruptedException e) {
+                }
+            }
+        }
+
+        public String toString() {
+            return String.valueOf(num_block_oks);
         }
     }
 }
