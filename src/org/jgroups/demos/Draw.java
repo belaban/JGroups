@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.27 2006/09/15 10:51:37 belaban Exp $
+// $Id: Draw.java,v 1.28 2006/09/28 08:27:32 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -51,6 +51,7 @@ public class Draw implements ActionListener, ChannelListener {
             return;
 
         channel=new JChannel(props);
+        // channel.setOpt(Channel.BLOCK, Boolean.TRUE);
         if(debug) {
             debugger=new Debugger((JChannel)channel, cummulative);
             debugger.start();
@@ -268,6 +269,17 @@ public class Draw implements ActionListener, ChannelListener {
                     System.out.println("-- Draw.main(): received EXIT, waiting for ChannelReconnected callback");
                     setTitle(" Draw Demo - shunned ");
                     break;
+                }
+
+                if(tmp instanceof BlockEvent) {
+                    System.out.println("--  received BlockEvent");
+                    channel.blockOk();
+                    continue;
+                }
+
+                if(tmp instanceof UnblockEvent) {
+                    System.out.println("-- received UnblockEvent");
+                    continue;
                 }
 
                 if(!(tmp instanceof Message))
