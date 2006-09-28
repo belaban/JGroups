@@ -6,7 +6,6 @@ import junit.framework.TestSuite;
 import org.jgroups.*;
 import org.jgroups.util.Util;
 
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -14,7 +13,7 @@ import java.util.List;
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.2 2006/09/28 10:29:13 belaban Exp $
+ * @version $Id: FlushTest.java,v 1.3 2006/09/28 15:08:35 belaban Exp $
  */
 public class FlushTest extends TestCase {
     Channel c1, c2;
@@ -46,12 +45,16 @@ public class FlushTest extends TestCase {
         MyReceiver receiver=new MyReceiver("c1");
         c1.setReceiver(receiver);
         c1.connect("bla");
+        Util.sleep(100);
         List events=receiver.getEvents();
         System.out.println("events: " + events);
-        assertEquals(0, events.size());
+        assertEquals(1, events.size());
+        Object obj=events.remove(0);
+        assertTrue(obj instanceof View);
         receiver.clear();
 
         c1.close();
+        Util.sleep(100);
         events=receiver.getEvents();
         System.out.println("events: " + events);
         assertFalse(events.contains(new BlockEvent()));
