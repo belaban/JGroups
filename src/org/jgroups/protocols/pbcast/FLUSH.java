@@ -259,10 +259,10 @@ public class FLUSH extends Protocol
                }
                else if (fh.type == FlushHeader.STOP_FLUSH)
                {                  
-                  passUp(new Event(Event.UNBLOCK));  
+                  onStopFlush();
+                  passUp(new Event(Event.UNBLOCK));
                   if (log.isDebugEnabled())
                       log.debug("Unblocked " + localAddress);
-                  onStopFlush();
                }
                else if (isCurrentFlushMessage(fh))
                {
