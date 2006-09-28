@@ -3,10 +3,8 @@ package org.jgroups.tests;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
-import org.jgroups.Channel;
-import org.jgroups.ChannelException;
-import org.jgroups.ExtendedReceiverAdapter;
-import org.jgroups.JChannel;
+import org.jgroups.*;
+import org.jgroups.util.Util;
 
 import java.util.Collections;
 import java.util.LinkedList;
@@ -16,7 +14,7 @@ import java.util.List;
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.1 2006/09/28 10:04:09 belaban Exp $
+ * @version $Id: FlushTest.java,v 1.2 2006/09/28 10:29:13 belaban Exp $
  */
 public class FlushTest extends TestCase {
     Channel c1, c2;
@@ -45,21 +43,75 @@ public class FlushTest extends TestCase {
 
     public void testSingleChannel() throws ChannelException {
         c1=createChannel();
-        MyReceiver receiver=new MyReceiver();
+        MyReceiver receiver=new MyReceiver("c1");
         c1.setReceiver(receiver);
         c1.connect("bla");
         List events=receiver.getEvents();
         System.out.println("events: " + events);
         assertEquals(0, events.size());
+        receiver.clear();
 
         c1.close();
         events=receiver.getEvents();
         System.out.println("events: " + events);
-        assertEquals(0, events.size());
+        assertFalse(events.contains(new BlockEvent()));
+    }
+
+
+    public void testTwoChannels() throws ChannelException {
+        c1=createChannel();
+        MyReceiver receiver=new MyReceiver("c1");
+        c1.setReceiver(receiver);
+        c1.connect("bla");
+        List events=receiver.getEvents();
+        System.out.println("events c1: " + events);
+        assertEquals(1, events.size());
+        Object obj=events.remove(0);
+        assertTrue(obj instanceof View);
+        receiver.clear();
+
+        c2=createChannel();
+        MyReceiver receiver2=new MyReceiver("c2");
+        c2.setReceiver(receiver2);
+        c2.connect("bla");
+        View view=c2.getView();
+        assertEquals(2, view.size());
+        Util.sleep(100);
+
+        events=receiver.getEvents();
+        System.out.println("events c1: " + events);
+        assertEquals(3, events.size());
+        obj=events.remove(0);
+        assertTrue(obj instanceof BlockEvent);
+        obj=events.remove(0);
+        assertTrue("should be a View but is " + obj, obj instanceof View);
+        obj=events.remove(0);
+        assertTrue(obj instanceof UnblockEvent);
+        receiver.clear();
+
+        events=receiver2.getEvents();
+        System.out.println("events c2: " + events);
+        assertFalse(events.contains(new BlockEvent()));
+        receiver2.clear();
+
+        c2.close();
+        Util.sleep(200);
+        events=receiver.getEvents();
+        System.out.println("events c1: " + events);
+        assertEquals(3, events.size());
+        obj=events.remove(0);
+        assertTrue(obj instanceof BlockEvent);
+        obj=events.remove(0);
+        assertTrue(obj instanceof View);
+        obj=events.remove(0);
+        assertTrue(obj instanceof UnblockEvent);
     }
 
 
 
+    public void testWithStateTransfer() {
+        throw new UnsupportedOperationException("implement this !");
+    }
 
 
 
@@ -80,19 +132,31 @@ public class FlushTest extends TestCase {
 
     private static class MyReceiver extends ExtendedReceiverAdapter {
         List events=new LinkedList();
+        String name;
+
+        public MyReceiver(String name) {
+            this.name=name;
+        }
 
         public void clear() {
             events.clear();
         }
 
-        public List getEvents() {return Collections.unmodifiableList(events);}
+        public List getEvents() {return new LinkedList(events);}
 
         public void block() {
-
+            System.out.println("[" + name + "]: BLOCK");
+            events.add(new BlockEvent());
         }
 
         public void unblock() {
+            System.out.println("[" + name + "]: UNBLOCK");
+            events.add(new UnblockEvent());
+        }
 
+        public void viewAccepted(View new_view) {
+            System.out.println("[" + name + "]: " + new_view);
+            events.add(new_view);
         }
     }
 }
