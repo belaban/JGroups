@@ -6,6 +6,9 @@ import junit.framework.TestSuite;
 import org.jgroups.*;
 import org.jgroups.util.Util;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -13,7 +16,7 @@ import java.util.List;
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.4 2006/09/28 15:29:26 belaban Exp $
+ * @version $Id: FlushTest.java,v 1.5 2006/09/28 17:13:26 vlada Exp $
  */
 public class FlushTest extends TestCase {
     Channel c1, c2;
@@ -23,18 +26,19 @@ public class FlushTest extends TestCase {
     public FlushTest(String name) {
         super(name);
     }
-
-
-    public void setUp() throws Exception {
-        super.setUp();
+    
+    public void tearDown() throws Exception {
+        super.tearDown();
 
         if(c2 != null) {
             c2.close();
+            Util.sleep(2000);
             c2=null;
         }
 
         if(c1 != null) {
             c1.close();
+            Util.sleep(2000);
             c1=null;
         }
     }
@@ -45,19 +49,11 @@ public class FlushTest extends TestCase {
         MyReceiver receiver=new MyReceiver("c1");
         c1.setReceiver(receiver);
         c1.connect("bla");
-        Util.sleep(100);
-        List events=receiver.getEvents();
-        System.out.println("events: " + events);
-        assertEquals(1, events.size());
-        Object obj=events.remove(0);
-        assertTrue(obj instanceof View);
-        receiver.clear();
+        checkSingleMemberJoinSequence(receiver);
 
         c1.close();
-        Util.sleep(100);
-        events=receiver.getEvents();
-        System.out.println("events: " + events);
-        assertFalse(events.contains(new BlockEvent()));
+        Util.sleep(500);  
+        assertEquals(0, receiver.getEvents().size());
     }
 
 
@@ -66,12 +62,7 @@ public class FlushTest extends TestCase {
         MyReceiver receiver=new MyReceiver("c1");
         c1.setReceiver(receiver);
         c1.connect("bla");
-        List events=receiver.getEvents();
-        System.out.println("events c1: " + events);
-        assertEquals(1, events.size());
-        Object obj=events.remove(0);
-        assertTrue(obj instanceof View);
-        receiver.clear();
+        checkSingleMemberJoinSequence(receiver);
 
         c2=createChannel();
         MyReceiver receiver2=new MyReceiver("c2");
@@ -79,35 +70,16 @@ public class FlushTest extends TestCase {
         c2.connect("bla");
         View view=c2.getView();
         assertEquals(2, view.size());
-        Util.sleep(100);
+        Util.sleep(500);
 
-        events=receiver.getEvents();
-        System.out.println("events c1: " + events);
-        assertEquals(3, events.size());
-        obj=events.remove(0);
-        assertTrue(obj instanceof BlockEvent);
-        obj=events.remove(0);
-        assertTrue("should be a View but is " + obj, obj instanceof View);
-        obj=events.remove(0);
-        assertTrue(obj instanceof UnblockEvent);
-        receiver.clear();
-
-        events=receiver2.getEvents();
-        System.out.println("events c2: " + events);
-        assertFalse(events.contains(new BlockEvent()));
-        receiver2.clear();
+        checkExistingMemberAfterJoinSequence(receiver);
+        
+        checkNewMemberAfterJoinSequence(receiver2);
 
         c2.close();
-        Util.sleep(200);
-        events=receiver.getEvents();
-        System.out.println("events c1: " + events);
-        assertEquals(3, events.size());
-        obj=events.remove(0);
-        assertTrue(obj instanceof BlockEvent);
-        obj=events.remove(0);
-        assertTrue(obj instanceof View);
-        obj=events.remove(0);
-        assertTrue(obj instanceof UnblockEvent);
+        Util.sleep(500);     
+        
+        checkExistingMemberAfterLeaveSequence(receiver);
     }
 
 
@@ -122,12 +94,12 @@ public class FlushTest extends TestCase {
         MyReceiver receiver2=new MyReceiver("c2");
         c2.setReceiver(receiver2);
         c2.connect("bla");
-        Util.sleep(200);
+        Util.sleep(2000);
 
         receiver.clear(); receiver2.clear();
         System.out.println("=== fetching the state ====");
         c2.getState(null, 10000);
-        Util.sleep(200);
+        Util.sleep(3000);
 
         List events=receiver.getEvents();
         checkBlockStateUnBlockSequence(events, "c1");
@@ -138,16 +110,58 @@ public class FlushTest extends TestCase {
 
 
 
-    private void checkBlockStateUnBlockSequence(List events, String name) {
-        System.out.println("events " + name + ": " + events);
+    private void checkBlockStateUnBlockSequence(List events, String name) {        
         assertNotNull(events);
-        assertEquals(name, 3, events.size());
+        assertEquals("Should have three events [block,get|setstate,unblock] but " + name + " has "
+				+ events, 3, events.size());
         Object obj=events.remove(0);
         assertTrue(name, obj instanceof BlockEvent);
         obj=events.remove(0);
         assertTrue(name, obj instanceof GetStateEvent || obj instanceof SetStateEvent);
         obj=events.remove(0);
         assertTrue(name, obj instanceof UnblockEvent);
+    }
+    
+    private void checkSingleMemberJoinSequence(MyReceiver receiver) {
+		List events = receiver.getEvents();
+		assertNotNull(events);
+		assertEquals("Should have one event [view] but " +receiver.getName()+" has " + events, 1,events.size());
+		Object obj = events.remove(0);
+		assertTrue("should be view instance but it is " + obj,obj instanceof View);
+		receiver.clear();
+	}
+    
+    private void checkExistingMemberAfterJoinSequence(MyReceiver receiver) {
+		List events = receiver.getEvents();
+		assertNotNull(events);
+		assertEquals("Should have three events [block,view,unblock] but " + receiver.getName() + " has "
+						+ events, 3, events.size());
+		
+		Object obj = events.remove(0);
+		assertTrue(obj instanceof BlockEvent);
+		obj = events.remove(0);
+		assertTrue("should be a View but is " + obj, obj instanceof View);
+		obj = events.remove(0);
+		assertTrue(obj instanceof UnblockEvent);
+		receiver.clear();
+	}
+    
+    private void checkExistingMemberAfterLeaveSequence(MyReceiver receiver)
+    {
+    	checkExistingMemberAfterJoinSequence(receiver);
+    }
+    
+    private void checkNewMemberAfterJoinSequence(MyReceiver receiver)
+    {
+    	List events = receiver.getEvents();    
+        assertNotNull(events);               
+        assertEquals("Should have two events [view,unblock] but " + receiver.getName() + " has "
+				+ events, 2, events.size());
+        Object obj=events.remove(0);
+        assertTrue("should be a View but is " + obj, obj instanceof View);
+        obj=events.remove(0);
+        assertTrue(obj instanceof UnblockEvent);        
+        receiver.clear();
     }
 
     private Channel createChannel() throws ChannelException {
@@ -171,6 +185,11 @@ public class FlushTest extends TestCase {
 
         public MyReceiver(String name) {
             this.name=name;
+        }
+        
+        public String getName()
+        {
+        	return name;
         }
 
         public void clear() {
@@ -204,5 +223,26 @@ public class FlushTest extends TestCase {
             System.out.println("[" + name + "]: SetStateEvent");
             events.add(new SetStateEvent(null, null));
         }
+        
+        public void getState(OutputStream ostream) {
+        	System.out.println("[" + name + "]: GetStateEvent streamed");
+        	events.add(new GetStateEvent(null, null));
+        	try {
+				ostream.close();
+			} catch (IOException e) {				
+				e.printStackTrace();
+			}
+
+    	}    
+
+    	public void setState(InputStream istream) {
+			System.out.println("[" + name + "]: SetStateEvent streamed");
+			events.add(new SetStateEvent(null, null));
+			try {
+				istream.close();
+			} catch (IOException e) {				
+				e.printStackTrace();
+			}
+		}
     }
 }
