@@ -67,7 +67,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.96 2006/09/27 19:21:54 vlada Exp $
+ * @version $Id: JChannel.java,v 1.97 2006/09/28 07:27:12 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -133,7 +133,7 @@ public class JChannel extends Channel {
     /*if the states is fetched automatically, this is the default timeout, 5 secs*/
     private static final long GET_STATE_DEFAULT_TIMEOUT=5000;
     /*flag to indicate whether to receive blocks, if this is set to true, receive_views is set to true*/
-    private boolean receive_blocks=false;
+    private boolean receive_blocks=true;
     /*flag to indicate whether to receive local messages
      *if this is set to false, the JChannel will not receive messages sent by itself*/
     private boolean receive_local_msgs=true;
