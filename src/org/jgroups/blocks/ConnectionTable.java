@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.7.4.1 2006/09/27 19:05:23 belaban Exp $
+// $Id: ConnectionTable.java,v 1.7.4.2 2006/09/28 16:05:55 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -386,6 +386,23 @@ public class ConnectionTable implements Runnable {
             try {
                 client_sock=srv_sock.accept();
                 if(log.isInfoEnabled()) log.info("accepted connection, client_sock=" + client_sock);
+                try {
+                    client_sock.setSendBufferSize(send_buf_size);
+                }
+                catch(IllegalArgumentException ex) {
+                    if(log.isErrorEnabled()) log.error("exception setting send buffer size to " +
+                            send_buf_size + " bytes", ex);
+                }
+                try {
+                    client_sock.setReceiveBufferSize(recv_buf_size);
+                }
+                catch(IllegalArgumentException ex) {
+                    if(log.isErrorEnabled()) log.error("exception setting receive buffer size to " +
+                            send_buf_size + " bytes", ex);
+                }
+
+                client_sock.setKeepAlive(true);
+                client_sock.setTcpNoDelay(tcp_nodelay);
 
                 // create new thread and add to conn table
                 conn=new Connection(client_sock, null); // will call receive(msg)
