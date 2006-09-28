@@ -13,7 +13,7 @@ import java.util.List;
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.3 2006/09/28 15:08:35 belaban Exp $
+ * @version $Id: FlushTest.java,v 1.4 2006/09/28 15:29:26 belaban Exp $
  */
 public class FlushTest extends TestCase {
     Channel c1, c2;
@@ -112,11 +112,43 @@ public class FlushTest extends TestCase {
 
 
 
-    public void testWithStateTransfer() {
-        throw new UnsupportedOperationException("implement this !");
+    public void testWithStateTransfer() throws ChannelException {
+        c1=createChannel();
+        MyReceiver receiver=new MyReceiver("c1");
+        c1.setReceiver(receiver);
+        c1.connect("bla");
+
+        c2=createChannel();
+        MyReceiver receiver2=new MyReceiver("c2");
+        c2.setReceiver(receiver2);
+        c2.connect("bla");
+        Util.sleep(200);
+
+        receiver.clear(); receiver2.clear();
+        System.out.println("=== fetching the state ====");
+        c2.getState(null, 10000);
+        Util.sleep(200);
+
+        List events=receiver.getEvents();
+        checkBlockStateUnBlockSequence(events, "c1");
+
+        events=receiver2.getEvents();
+        checkBlockStateUnBlockSequence(events, "c2");
     }
 
 
+
+    private void checkBlockStateUnBlockSequence(List events, String name) {
+        System.out.println("events " + name + ": " + events);
+        assertNotNull(events);
+        assertEquals(name, 3, events.size());
+        Object obj=events.remove(0);
+        assertTrue(name, obj instanceof BlockEvent);
+        obj=events.remove(0);
+        assertTrue(name, obj instanceof GetStateEvent || obj instanceof SetStateEvent);
+        obj=events.remove(0);
+        assertTrue(name, obj instanceof UnblockEvent);
+    }
 
     private Channel createChannel() throws ChannelException {
         Channel ret=new JChannel(CONFIG);
@@ -160,6 +192,17 @@ public class FlushTest extends TestCase {
         public void viewAccepted(View new_view) {
             System.out.println("[" + name + "]: " + new_view);
             events.add(new_view);
+        }
+
+        public byte[] getState() {
+            System.out.println("[" + name + "]: GetStateEvent");
+            events.add(new GetStateEvent(null, null));
+            return new byte[]{'b', 'e', 'l', 'a'};
+        }
+
+        public void setState(byte[] state) {
+            System.out.println("[" + name + "]: SetStateEvent");
+            events.add(new SetStateEvent(null, null));
         }
     }
 }
