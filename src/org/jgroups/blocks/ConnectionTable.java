@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.47 2006/09/15 12:20:53 belaban Exp $
+// $Id: ConnectionTable.java,v 1.48 2006/09/28 15:59:42 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -270,6 +270,7 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
                }
 
                client_sock.setKeepAlive(true);
+               client_sock.setTcpNoDelay(tcp_nodelay);
 
                // create new thread and add to conn table
                conn=new Connection(client_sock, null); // will call receive(msg)
