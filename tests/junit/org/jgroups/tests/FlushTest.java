@@ -9,6 +9,7 @@ import org.jgroups.util.Util;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -16,10 +17,10 @@ import java.util.List;
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.5 2006/09/28 17:13:26 vlada Exp $
+ * @version $Id: FlushTest.java,v 1.6 2006/09/29 01:20:05 vlada Exp $
  */
 public class FlushTest extends TestCase {
-    Channel c1, c2;
+    Channel c1, c2,c3;
     static final String CONFIG="flush-udp.xml";
 
 
@@ -41,6 +42,12 @@ public class FlushTest extends TestCase {
             Util.sleep(2000);
             c1=null;
         }
+        
+        if(c3 != null) {
+            c3.close();
+            Util.sleep(2000);
+            c3=null;
+        }
     }
 
 
@@ -54,63 +61,234 @@ public class FlushTest extends TestCase {
         c1.close();
         Util.sleep(500);  
         assertEquals(0, receiver.getEvents().size());
+    }     
+    
+    public void testTwoChannelsWithMessages() throws ChannelException {
+    	twoChannelsTestHelper(true);
+    }
+    
+    public void testTwoChannelsNoMessages() throws ChannelException {
+    	twoChannelsTestHelper(false);
     }
 
-
-    public void testTwoChannels() throws ChannelException {
+    public void testThreeChannelsWithMessages() throws ChannelException {
+    	threeChannelsTestHelper(true);
+    }
+    
+    public void testThreeChannelsNoMessages() throws ChannelException {
+    	threeChannelsTestHelper(false);
+    }
+    
+    public void testStateTransferWithMessages() throws ChannelException {
+    	stateTransferTestHelper(true);
+    }
+    
+    public void testStateTransferNoMessages() throws ChannelException {
+    	stateTransferTestHelper(false);
+    }
+    
+    private void twoChannelsTestHelper(boolean sendMessages) throws ChannelException {
         c1=createChannel();
         MyReceiver receiver=new MyReceiver("c1");
         c1.setReceiver(receiver);
         c1.connect("bla");
+        if(sendMessages){
+        	c1.send(new Message());
+        }
         checkSingleMemberJoinSequence(receiver);
 
         c2=createChannel();
         MyReceiver receiver2=new MyReceiver("c2");
         c2.setReceiver(receiver2);
-        c2.connect("bla");
+        c2.connect("bla");        
         View view=c2.getView();
         assertEquals(2, view.size());
-        Util.sleep(500);
+        Util.sleep(1000);
+        if(sendMessages){
+	        c1.send(new Message());    
+	        c2.send(new Message());
+        }
 
         checkExistingMemberAfterJoinSequence(receiver);
         
         checkNewMemberAfterJoinSequence(receiver2);
 
         c2.close();
+        Util.sleep(500); 
+        if(sendMessages){
+        	c1.send(new Message());
+        }
         Util.sleep(500);     
         
         checkExistingMemberAfterLeaveSequence(receiver);
     }
-
-
-
-    public void testWithStateTransfer() throws ChannelException {
+    
+    
+    private void threeChannelsTestHelper(boolean sendMessages) throws ChannelException {
         c1=createChannel();
         MyReceiver receiver=new MyReceiver("c1");
         c1.setReceiver(receiver);
         c1.connect("bla");
+        if(sendMessages){
+        	c1.send(new Message());
+        }
+        
+        checkSingleMemberJoinSequence(receiver);
 
         c2=createChannel();
         MyReceiver receiver2=new MyReceiver("c2");
         c2.setReceiver(receiver2);
-        c2.connect("bla");
-        Util.sleep(2000);
+        c2.connect("bla");        
+        View view=c2.getView();
+        assertEquals(2, view.size());
+        Util.sleep(1000);
+        
+        if(sendMessages){
+	        c1.send(new Message());       
+	        c2.send(new Message());
+        }
 
-        receiver.clear(); receiver2.clear();
-        System.out.println("=== fetching the state ====");
-        c2.getState(null, 10000);
-        Util.sleep(3000);
-
-        List events=receiver.getEvents();
-        checkBlockStateUnBlockSequence(events, "c1");
-
-        events=receiver2.getEvents();
-        checkBlockStateUnBlockSequence(events, "c2");
+        checkExistingMemberAfterJoinSequence(receiver);                              
+        checkNewMemberAfterJoinSequence(receiver2);
+        
+        c3=createChannel();
+        MyReceiver receiver3=new MyReceiver("c3");
+        c3.setReceiver(receiver3);
+        c3.connect("bla");        
+        view=c3.getView();
+        assertEquals(3, view.size());
+        Util.sleep(1000);
+        if(sendMessages){
+	        c1.send(new Message());        
+	        c2.send(new Message());       
+	        c3.send(new Message());
+        }
+        
+        checkExistingMemberAfterJoinSequence(receiver); 
+        checkExistingMemberAfterJoinSequence(receiver2);                              
+        checkNewMemberAfterJoinSequence(receiver3);
+                
+        //close coordinator
+        c1.close();
+        if(sendMessages){
+	        c2.send(new Message());
+	        c2.send(new Message()); 
+        }
+        Util.sleep(1000);     
+        
+        checkExistingMemberAfterLeaveSequence(receiver2);
+        checkExistingMemberAfterLeaveSequence(receiver3);
+        
+        //close coordinator one more time
+        c2.close();        
+        Util.sleep(1000);     
+        
+        checkExistingMemberAfterLeaveSequence(receiver3);
     }
 
 
 
-    private void checkBlockStateUnBlockSequence(List events, String name) {        
+    private void stateTransferTestHelper(boolean sendMessages) throws ChannelException {
+        c1=createChannel();
+        MyReceiver receiver=new MyReceiver("c1");
+        c1.setReceiver(receiver);
+        c1.connect("bla");
+        Util.sleep(1000);
+        if(sendMessages){
+	        c1.send(new Message());
+	        c1.send(new Message());
+        }
+        checkSingleMemberJoinSequence(receiver);        
+        
+        c2=createChannel();
+        MyReceiver receiver2=new MyReceiver("c2");
+        c2.setReceiver(receiver2);
+        c2.connect("bla");
+        Util.sleep(1000);
+        
+        checkExistingMemberAfterJoinSequence(receiver);                                  
+        checkNewMemberAfterJoinSequence(receiver2);
+        
+        c3=createChannel();
+        MyReceiver receiver3=new MyReceiver("c3");
+        c3.setReceiver(receiver3);
+        c3.connect("bla");  
+        Util.sleep(1000);
+        if(sendMessages){
+	        c1.send(new Message());        
+	        c2.send(new Message()); 
+        }
+        
+        checkExistingMemberAfterJoinSequence(receiver); 
+        checkExistingMemberAfterJoinSequence(receiver2);                              
+        checkNewMemberAfterJoinSequence(receiver3);
+       
+        Util.sleep(500);
+        if(sendMessages){
+	        c1.send(new Message());        
+	        c2.send(new Message());       
+	        c3.send(new Message());
+        }
+        
+        System.out.println("=== fetching the state ====");
+        c2.getState(null, 10000);
+        Util.sleep(2000);
+        if(sendMessages){
+	        c1.send(new Message());
+	        c1.send(new Message());
+	        c2.send(new Message());
+	        c2.send(new Message());   
+        }
+        
+        //state transfer nodes
+        checkBlockStateUnBlockSequence(receiver);     
+        checkBlockStateUnBlockSequence(receiver2);
+        
+        //this node did not participate in state transfer
+        checkNonStateTransferMemberSequence(receiver3);
+        
+        c2.close();
+        c2=null;
+        Util.sleep(2000);   
+        checkExistingMemberAfterLeaveSequence(receiver);
+        checkExistingMemberAfterLeaveSequence(receiver3);      
+        
+        
+        c2=createChannel();
+        receiver2=new MyReceiver("c2");
+        c2.setReceiver(receiver2);
+        c2.connect("bla");
+        Util.sleep(2000);
+        if(sendMessages){
+        	c1.send(new Message());
+        }
+        
+        checkNewMemberAfterJoinSequence(receiver2);
+        checkExistingMemberAfterJoinSequence(receiver); 
+        checkExistingMemberAfterJoinSequence(receiver3);  
+        
+        
+        System.out.println("=== fetching the state ====");
+        c3.getState(null, 10000);
+        if(sendMessages){
+	        c1.send(new Message());       
+	        c2.send(new Message());
+        }
+        Util.sleep(2000);
+        
+        //state transfer nodes
+        checkBlockStateUnBlockSequence(receiver);     
+        checkBlockStateUnBlockSequence(receiver3);
+        
+        //this node did not participate in state transfer
+        checkNonStateTransferMemberSequence(receiver2);                              
+    }
+
+
+
+    private void checkBlockStateUnBlockSequence(MyReceiver receiver) {  
+    	List events = receiver.getEvents();
+    	String name = receiver.getName();
         assertNotNull(events);
         assertEquals("Should have three events [block,get|setstate,unblock] but " + name + " has "
 				+ events, 3, events.size());
@@ -120,15 +298,21 @@ public class FlushTest extends TestCase {
         assertTrue(name, obj instanceof GetStateEvent || obj instanceof SetStateEvent);
         obj=events.remove(0);
         assertTrue(name, obj instanceof UnblockEvent);
+        receiver.clear();
     }
     
     private void checkSingleMemberJoinSequence(MyReceiver receiver) {
-		List events = receiver.getEvents();
-		assertNotNull(events);
-		assertEquals("Should have one event [view] but " +receiver.getName()+" has " + events, 1,events.size());
-		Object obj = events.remove(0);
-		assertTrue("should be view instance but it is " + obj,obj instanceof View);
-		receiver.clear();
+       List events = receiver.getEvents();  
+       String name = receiver.getName();
+       assertNotNull(events);      
+       System.out.println("[" + name + "]:" + events);
+       assertEquals("Should have two events [view,unblock] but " + name + " has "
+                + events, 2, events.size());
+       Object obj=events.remove(0);       
+       assertTrue("should be a View but is " + obj, obj instanceof View);
+       obj=events.remove(0);
+       assertTrue(obj instanceof UnblockEvent);        
+       receiver.clear();
 	}
     
     private void checkExistingMemberAfterJoinSequence(MyReceiver receiver) {
@@ -146,6 +330,19 @@ public class FlushTest extends TestCase {
 		receiver.clear();
 	}
     
+    private void checkNonStateTransferMemberSequence(MyReceiver receiver) {
+		List events = receiver.getEvents();
+		assertNotNull(events);
+		assertEquals("Should have two events [block,unblock] but " + receiver.getName() + " has "
+						+ events, 2, events.size());
+		
+		Object obj = events.remove(0);
+		assertTrue(obj instanceof BlockEvent);
+		obj = events.remove(0);		
+		assertTrue(obj instanceof UnblockEvent);
+		receiver.clear();
+	}
+    
     private void checkExistingMemberAfterLeaveSequence(MyReceiver receiver)
     {
     	checkExistingMemberAfterJoinSequence(receiver);
@@ -153,11 +350,13 @@ public class FlushTest extends TestCase {
     
     private void checkNewMemberAfterJoinSequence(MyReceiver receiver)
     {
-    	List events = receiver.getEvents();    
-        assertNotNull(events);               
-        assertEquals("Should have two events [view,unblock] but " + receiver.getName() + " has "
+    	List events = receiver.getEvents();  
+    	String name = receiver.getName();
+        assertNotNull(events);      
+        System.out.println("[" + name + "]:" + events);
+        assertEquals("Should have two events [view,unblock] but " + name + " has "
 				+ events, 2, events.size());
-        Object obj=events.remove(0);
+        Object obj=events.remove(0);       
         assertTrue("should be a View but is " + obj, obj instanceof View);
         obj=events.remove(0);
         assertTrue(obj instanceof UnblockEvent);        
@@ -180,11 +379,13 @@ public class FlushTest extends TestCase {
     }
 
     private static class MyReceiver extends ExtendedReceiverAdapter {
-        List events=new LinkedList();
+        List events;
         String name;
+        boolean verbose = true;
 
         public MyReceiver(String name) {
             this.name=name;
+            events=Collections.synchronizedList(new LinkedList());
         }
         
         public String getName()
@@ -199,33 +400,39 @@ public class FlushTest extends TestCase {
         public List getEvents() {return new LinkedList(events);}
 
         public void block() {
-            System.out.println("[" + name + "]: BLOCK");
+        	if(verbose)
+        		System.out.println("[" + name + "]: BLOCK");
             events.add(new BlockEvent());
         }
 
         public void unblock() {
-            System.out.println("[" + name + "]: UNBLOCK");
+        	if(verbose)
+        		System.out.println("[" + name + "]: UNBLOCK");
             events.add(new UnblockEvent());
         }
 
         public void viewAccepted(View new_view) {
-            System.out.println("[" + name + "]: " + new_view);
+        	if(verbose)
+        		System.out.println("[" + name + "]: " + new_view);
             events.add(new_view);
         }
 
         public byte[] getState() {
-            System.out.println("[" + name + "]: GetStateEvent");
+        	if(verbose)
+        		System.out.println("[" + name + "]: GetStateEvent");
             events.add(new GetStateEvent(null, null));
             return new byte[]{'b', 'e', 'l', 'a'};
         }
 
         public void setState(byte[] state) {
-            System.out.println("[" + name + "]: SetStateEvent");
+        	if(verbose)
+        		System.out.println("[" + name + "]: SetStateEvent");
             events.add(new SetStateEvent(null, null));
         }
         
         public void getState(OutputStream ostream) {
-        	System.out.println("[" + name + "]: GetStateEvent streamed");
+        	if(verbose)
+        		System.out.println("[" + name + "]: GetStateEvent streamed");
         	events.add(new GetStateEvent(null, null));
         	try {
 				ostream.close();
@@ -236,7 +443,8 @@ public class FlushTest extends TestCase {
     	}    
 
     	public void setState(InputStream istream) {
-			System.out.println("[" + name + "]: SetStateEvent streamed");
+    		if(verbose)
+    			System.out.println("[" + name + "]: SetStateEvent streamed");
 			events.add(new SetStateEvent(null, null));
 			try {
 				istream.close();
