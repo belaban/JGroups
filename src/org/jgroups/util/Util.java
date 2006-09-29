@@ -1,4 +1,4 @@
-// $Id: Util.java,v 1.99 2006/09/11 14:07:06 belaban Exp $
+// $Id: Util.java,v 1.100 2006/09/29 21:47:07 bstansberry Exp $
 
 package org.jgroups.util;
 
@@ -28,7 +28,7 @@ import EDU.oswego.cs.dl.util.concurrent.Sync;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.99 2006/09/11 14:07:06 belaban Exp $
+ * @version $Id: Util.java,v 1.100 2006/09/29 21:47:07 bstansberry Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -171,7 +171,7 @@ public class Util {
                     break;
                 case TYPE_BOOLEAN:
                     in=new DataInputStream(in_stream);
-                    retval=new Boolean(((DataInputStream)in).readBoolean());
+                    retval=Boolean.valueOf(((DataInputStream)in).readBoolean());
                     break;
                 case TYPE_BYTE:
                     in=new DataInputStream(in_stream);
