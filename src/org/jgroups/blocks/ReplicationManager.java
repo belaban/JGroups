@@ -1,4 +1,4 @@
-// $Id: ReplicationManager.java,v 1.7 2004/09/23 16:29:11 belaban Exp $
+// $Id: ReplicationManager.java,v 1.8 2006/09/29 21:49:02 bstansberry Exp $
 
 package org.jgroups.blocks;
 
@@ -114,10 +114,12 @@ public class ReplicationManager implements RequestHandler {
     public void setMembershipListener(MembershipListener l) {
         if(l == null)
             return;
-        if(disp == null)
+        if(disp == null) {
             if(log.isErrorEnabled()) log.error("dispatcher is null, cannot set MembershipListener");
-        else
+        }
+        else {
             disp.setMembershipListener(l);
+        }
     }
     
 

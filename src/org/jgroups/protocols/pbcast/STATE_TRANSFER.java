@@ -19,7 +19,7 @@ import java.util.*;
  * its current state S. Then the member returns both S and D to the requester. The requester
  * first sets its digest to D and then returns the state to the application.
  * @author Bela Ban
- * @version $Id: STATE_TRANSFER.java,v 1.43 2006/09/25 17:14:27 vlada Exp $
+ * @version $Id: STATE_TRANSFER.java,v 1.44 2006/09/29 21:48:17 bstansberry Exp $
  */
 public class STATE_TRANSFER extends Protocol {
     Address        local_addr=null;
@@ -224,10 +224,12 @@ public class STATE_TRANSFER extends Protocol {
                         return;
                     }
                     if(isDigestNeeded()){
-	                    if(digest == null)
+	                    if(digest == null) {
 	                        if(warn) log.warn("GET_APPLSTATE_OK: received application state, but there is no digest !");
-	                    else
+                        }
+	                    else {
 	                        digest=digest.copy();
+                        }
                     }
                     if(stats) {
                         num_state_reqs++;
