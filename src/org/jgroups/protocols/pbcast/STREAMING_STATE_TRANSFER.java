@@ -87,8 +87,6 @@ public class STREAMING_STATE_TRANSFER extends Protocol
 
    final Vector members = new Vector();
 
-   long state_id = 1;
-
    final Map state_requesters = new HashMap();
 
    /** set to true while waiting for a STATE_RSP */
@@ -97,8 +95,6 @@ public class STREAMING_STATE_TRANSFER extends Protocol
    Digest digest = null;
 
    final HashMap map = new HashMap(); // to store configuration information
-
-   long start, stop; // to measure state transfer time
 
    int num_state_reqs = 0;
 
@@ -122,7 +118,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
 
    private boolean use_reading_thread;
 
-   private Promise flush_promise;
+   private Promise flush_promise = new Promise();;
 
    private volatile boolean use_flush;
 
@@ -182,9 +178,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
    public boolean setProperties(Properties props)
    {
       super.setProperties(props);
-      use_flush = Util.parseBoolean(props, "use_flush", false);
-      flush_promise=new Promise();
-      
+      use_flush = Util.parseBoolean(props, "use_flush", false);            
       flush_timeout = Util.parseLong(props, "flush_timeout", flush_timeout);
       
       try
@@ -345,8 +339,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
                if (log.isDebugEnabled())
                   log.debug("passing down a SUSPEND_STABLE event");
                passDown(new Event(Event.SUSPEND_STABLE, new Long(info.timeout)));
-               waiting_for_state_response = true;
-               start = System.currentTimeMillis();
+               waiting_for_state_response = true;             
                passDown(new Event(Event.MSG, state_req));
             }
             return; // don't pass down any further !
@@ -472,7 +465,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
       {
          log.warn("Initiator of flush and state requesting member " + local_addr
                + " timed out waiting for flush responses after " 
-               + flush_timeout + " msec");
+               + timeout + " msec");
       }
       return successfulFlush;
    }
@@ -614,8 +607,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
             // set the digest (e.g.in NAKACK)
             passDown(new Event(Event.SET_DIGEST, tmp_digest));
          }
-      }
-      stop = System.currentTimeMillis();
+      }      
       connectToStateProvider(hdr);
    }
 
@@ -652,15 +644,14 @@ public class STREAMING_STATE_TRANSFER extends Protocol
    }
 
    private void connectToStateProvider(StateHeader hdr)
-   {
-      Socket socket = null;
+   {      
       IpAddress address = hdr.bind_addr;
       String tmp_state_id = hdr.getStateId();
       StreamingInputStreamWrapper wrapper = null;
       StateTransferInfo sti = null;
+      Socket socket = new Socket();
       try
       {
-         socket = new Socket();
          socket.bind(new InetSocketAddress(bind_addr, 0));
          int bufferSize = socket.getReceiveBufferSize();
          socket.setReceiveBufferSize(socket_buffer_size);
@@ -1005,7 +996,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
                synchronized (state_requesters)
                {
                   num_bytes_sent += bytesWrittenCounter;
-                  avg_state_size = num_bytes_sent / num_state_reqs;
+                  avg_state_size = num_bytes_sent / (double) num_state_reqs;
                }
             }
          }
