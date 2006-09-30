@@ -39,6 +39,7 @@ public abstract class BasicTCP extends TP {
     int                    send_buf_size=150000;
     int                    sock_conn_timeout=2000; // max time in millis for a socket creation in ConnectionTable
     boolean                tcp_nodelay=false;
+    int                    linger=-1; // SO_LINGER (number of ms, -1 disables it)
 
 
     public boolean setProperties(Properties props) {
@@ -49,6 +50,12 @@ public abstract class BasicTCP extends TP {
         if(str != null) {
             tcp_nodelay=new Boolean(str).booleanValue();
             props.remove("tcp_nodelay");
+        }
+
+        str=props.getProperty("linger");
+        if(str != null) {
+            linger=Integer.parseInt(str);
+            props.remove("linger");
         }
 
         return true;

@@ -14,7 +14,7 @@ import java.util.Collection;
  * @author Scott Marlow
  * @author Alex Fu
  * @author Bela Ban
- * @version $Id: TCP_NIO.java,v 1.9 2006/09/15 12:08:09 belaban Exp $
+ * @version $Id: TCP_NIO.java,v 1.10 2006/09/30 16:17:31 belaban Exp $
  */
 public class TCP_NIO extends BasicTCP implements BasicConnectionTable.Receiver
 {
@@ -65,6 +65,7 @@ public class TCP_NIO extends BasicTCP implements BasicConnectionTable.Receiver
        ct.setSendBufferSize(send_buf_size);
        ct.setSocketConnectionTimeout(sock_conn_timeout);
        ct.setTcpNodelay(tcp_nodelay);
+       ct.setLinger(linger);
        local_addr=ct.getLocalAddress();
        if(additional_data != null && local_addr instanceof IpAddress)
            ((IpAddress)local_addr).setAdditionalData(additional_data);

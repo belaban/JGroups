@@ -52,6 +52,7 @@ public abstract class BasicConnectionTable {
     ServerSocket        srv_sock=null;
     boolean             reuse_addr=false;
     boolean             tcp_nodelay=false;
+    int                 linger=-1;
 
    /**
     * The address which will be broadcast to the group (the externally visible address which this host should
@@ -118,6 +119,14 @@ public abstract class BasicConnectionTable {
 
     public void setTcpNodelay(boolean tcp_nodelay) {
         this.tcp_nodelay=tcp_nodelay;
+    }
+
+    public int getLinger() {
+        return linger;
+    }
+
+    public void setLinger(int linger) {
+        this.linger=linger;
     }
 
     public boolean getUseSendQueues() {return use_send_queues;}
