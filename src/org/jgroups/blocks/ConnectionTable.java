@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.48 2006/09/28 15:59:42 belaban Exp $
+// $Id: ConnectionTable.java,v 1.49 2006/09/30 16:17:30 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -136,6 +136,10 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
                sock.bind(tmpBindAddr);
                sock.setKeepAlive(true);
                sock.setTcpNoDelay(tcp_nodelay);
+               if(linger > 0)
+                   sock.setSoLinger(true, linger);
+               else
+                   sock.setSoLinger(false, -1);
                sock.connect(destAddr, sock_conn_timeout);
 
                try {
@@ -271,6 +275,10 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
 
                client_sock.setKeepAlive(true);
                client_sock.setTcpNoDelay(tcp_nodelay);
+               if(linger > 0)
+                   client_sock.setSoLinger(true, linger);
+               else
+                   client_sock.setSoLinger(false, -1);
 
                // create new thread and add to conn table
                conn=new Connection(client_sock, null); // will call receive(msg)
