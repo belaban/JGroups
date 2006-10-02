@@ -1,9 +1,7 @@
 package org.jgroups.protocols;
 
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Message;
-import org.jgroups.View;
+import org.jgroups.*;
+import org.jgroups.stack.Protocol;
 import org.jgroups.util.BoundedList;
 
 import java.net.InetAddress;
@@ -11,6 +9,7 @@ import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.Properties;
 import java.util.Vector;
+import java.util.Map;
 
 /**
  * Shared base class for tcpip protocols
@@ -145,82 +144,100 @@ public abstract class BasicTCP extends TP {
         return true;
     }
 
+    public void init() throws Exception {
+        super.init();
+        if(start_port <= 0) {
+            Protocol dynamic_discovery_prot=stack.findProtocol("MPING");
+            if(dynamic_discovery_prot == null)
+                dynamic_discovery_prot=stack.findProtocol("TCPGOSSIP");
+
+            if(dynamic_discovery_prot != null) {
+                if(log.isInfoEnabled())
+                    log.info("dynamic discovery is present (" + dynamic_discovery_prot + "), so start_port=" + start_port + " is okay");
+            }
+            else {
+                throw new IllegalArgumentException("start_port cannot be set to " + start_port +
+                        ", as no dynamic discovery protocol (e.g. MPING or TCPGOSSIP) has been detected.");
+            }
+        }
+    }
 
 
-   public void sendToAllMembers(byte[] data, int offset, int length) throws Exception {
-       Address dest;
-       Vector mbrs=(Vector)members.clone();
-       for(int i=0; i < mbrs.size(); i++) {
-           dest=(Address)mbrs.elementAt(i);
-           sendToSingleMember(dest, data, offset, length);
-       }
-   }
 
-   public void sendToSingleMember(Address dest, byte[] data, int offset, int length) throws Exception {
-       if(trace) log.trace("dest=" + dest + " (" + data.length + " bytes)");
-       if(skip_suspected_members) {
-           if(suspected_mbrs.contains(dest)) {
-               if(trace)
-                   log.trace("will not send unicast message to " + dest + " as it is currently suspected");
-               return;
-           }
-       }
+    public void sendToAllMembers(byte[] data, int offset, int length) throws Exception {
+        Address dest;
+        Vector mbrs=(Vector)members.clone();
+        for(int i=0; i < mbrs.size(); i++) {
+            dest=(Address)mbrs.elementAt(i);
+            sendToSingleMember(dest, data, offset, length);
+        }
+    }
 
-       try {
-           send(dest, data, offset, length);
-       }
-       catch(Exception e) {
-           if(log.isTraceEnabled())
-               log.trace("failure sending message to " + dest, e);
-           if(suspect_on_send_failure && members.contains(dest)) {
-               if(!suspected_mbrs.contains(dest)) {
-                   suspected_mbrs.add(dest);
-                   passUp(new Event(Event.SUSPECT, dest));
-               }
-           }
-       }
-   }
+    public void sendToSingleMember(Address dest, byte[] data, int offset, int length) throws Exception {
+        if(trace) log.trace("dest=" + dest + " (" + data.length + " bytes)");
+        if(skip_suspected_members) {
+            if(suspected_mbrs.contains(dest)) {
+                if(trace)
+                    log.trace("will not send unicast message to " + dest + " as it is currently suspected");
+                return;
+            }
+        }
 
-   public String getInfo() {
-       StringBuffer sb=new StringBuffer();
-       sb.append("connections: ").append(printConnections()).append("\n");
-       return sb.toString();
-   }
+        try {
+            send(dest, data, offset, length);
+        }
+        catch(Exception e) {
+            if(log.isTraceEnabled())
+                log.trace("failure sending message to " + dest, e);
+            if(suspect_on_send_failure && members.contains(dest)) {
+                if(!suspected_mbrs.contains(dest)) {
+                    suspected_mbrs.add(dest);
+                    passUp(new Event(Event.SUSPECT, dest));
+                }
+            }
+        }
+    }
 
-   public void postUnmarshalling(Message msg, Address dest, Address src, boolean multicast) {
-       if(multicast)
-           msg.setDest(null);
-       else
-           msg.setDest(dest);
-   }
+    public String getInfo() {
+        StringBuffer sb=new StringBuffer();
+        sb.append("connections: ").append(printConnections()).append("\n");
+        return sb.toString();
+    }
 
-   public void postUnmarshallingList(Message msg, Address dest, boolean multicast) {
-       postUnmarshalling(msg, dest, null, multicast);
-   }
+    public void postUnmarshalling(Message msg, Address dest, Address src, boolean multicast) {
+        if(multicast)
+            msg.setDest(null);
+        else
+            msg.setDest(dest);
+    }
 
-   public abstract String printConnections();
+    public void postUnmarshallingList(Message msg, Address dest, boolean multicast) {
+        postUnmarshalling(msg, dest, null, multicast);
+    }
 
-   public abstract void send(Address dest, byte[] data, int offset, int length) throws Exception;
+    public abstract String printConnections();
 
-   public abstract void retainAll(Collection members);
+    public abstract void send(Address dest, byte[] data, int offset, int length) throws Exception;
 
-   /** ConnectionTable.Receiver interface */
-   public void receive(Address sender, byte[] data, int offset, int length) {
-       receive(local_addr, sender, data, offset, length);
-   }
+    public abstract void retainAll(Collection members);
 
-   protected void handleDownEvent(Event evt) {
-       super.handleDownEvent(evt);
-       if(evt.getType() == Event.VIEW_CHANGE) {
-           suspected_mbrs.removeAll();
-           View v=(View)evt.getArg();
-           Vector tmp_mbrs=v != null? v.getMembers() : null;
-           if(tmp_mbrs != null) {
-               retainAll(tmp_mbrs); // remove all connections from the ConnectionTable which are not members
-           }
-       }
-       else if(evt.getType() == Event.UNSUSPECT) {
-           suspected_mbrs.removeElement(evt.getArg());
-       }
-   }
+    /** ConnectionTable.Receiver interface */
+    public void receive(Address sender, byte[] data, int offset, int length) {
+        receive(local_addr, sender, data, offset, length);
+    }
+
+    protected void handleDownEvent(Event evt) {
+        super.handleDownEvent(evt);
+        if(evt.getType() == Event.VIEW_CHANGE) {
+            suspected_mbrs.removeAll();
+            View v=(View)evt.getArg();
+            Vector tmp_mbrs=v != null? v.getMembers() : null;
+            if(tmp_mbrs != null) {
+                retainAll(tmp_mbrs); // remove all connections from the ConnectionTable which are not members
+            }
+        }
+        else if(evt.getType() == Event.UNSUSPECT) {
+            suspected_mbrs.removeElement(evt.getArg());
+        }
+    }
 }
