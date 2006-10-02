@@ -19,7 +19,7 @@ import java.lang.management.ThreadInfo;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.24 2006/09/22 13:37:14 belaban Exp $
+ * @version $Id: MultiplexerTest.java,v 1.25 2006/10/02 09:20:33 belaban Exp $
  */
 public class MultiplexerTest extends TestCase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -82,6 +82,8 @@ public class MultiplexerTest extends TestCase {
 
         ch1_repl=ch2_repl=ch1=ch2=null;
         c1=c2=c1_repl=c2_repl=null;
+
+        Util.sleep(500); // remove this in 2.5 !
 
         int current_active_threads=Thread.activeCount();
         System.out.println("active threads after (" + current_active_threads + "):\n" + Util.activeThreads());
