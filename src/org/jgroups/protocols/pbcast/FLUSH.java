@@ -207,11 +207,14 @@ public class FLUSH extends Protocol
                while (isFlushRunning())
                {
                   if (log.isDebugEnabled())
-                     log.debug("FLUSH block at " + localAddress + " for " + timeout);
+                     log.debug("FLUSH block at " + localAddress + " for " + (timeout <= 0? " ever" : timeout + "ms"));
                   try
                   {
                      start=System.currentTimeMillis();
-                     blockMutex.wait(timeout);
+                     if(timeout <= 0)
+                        blockMutex.wait();
+                     else
+                        blockMutex.wait(timeout);
                      stop=System.currentTimeMillis();
                      if (isFlushRunning())
                      {                        
