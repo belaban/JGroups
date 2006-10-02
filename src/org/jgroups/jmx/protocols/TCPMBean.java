@@ -1,15 +1,13 @@
 package org.jgroups.jmx.protocols;
 
-import java.net.InetAddress;
-
 /**
  * @author Bela Ban
- * @version $Id: TCPMBean.java,v 1.2 2005/08/17 07:32:29 belaban Exp $
+ * @version $Id: TCPMBean.java,v 1.3 2006/10/02 06:47:53 belaban Exp $
  */
 public interface TCPMBean extends TPMBean {
     int getOpenConnections();
-    InetAddress getBindAddr();
-    void setBindAddr(InetAddress bind_addr);
+    String getBindAddr();
+    void setBindAddr(String bind_addr);
     int getStartPort();
     void setStartPort(int start_port);
     int getEndPort();

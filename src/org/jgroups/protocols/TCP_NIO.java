@@ -14,7 +14,7 @@ import java.util.Collection;
  * @author Scott Marlow
  * @author Alex Fu
  * @author Bela Ban
- * @version $Id: TCP_NIO.java,v 1.10 2006/09/30 16:17:31 belaban Exp $
+ * @version $Id: TCP_NIO.java,v 1.11 2006/10/02 06:47:53 belaban Exp $
  */
 public class TCP_NIO extends BasicTCP implements BasicConnectionTable.Receiver
 {
@@ -92,20 +92,9 @@ public class TCP_NIO extends BasicTCP implements BasicConnectionTable.Receiver
    public int getProcessorMaxThreads() { return m_processor_maxThreads;}
    public int getProcessorQueueSize() { return m_processor_queueSize; }
    public int getProcessorKeepAliveTime() { return m_processor_keepAliveTime; }
-
    public int getOpenConnections()      {return ct.getNumConnections();}
-   public InetAddress getBindAddr() {return bind_addr;}
-   public void setBindAddr(InetAddress bind_addr) {this.bind_addr=bind_addr;}
-   public int getStartPort() {return start_port;}
-   public void setStartPort(int start_port) {this.start_port=start_port;}
-   public int getEndPort() {return end_port;}
-   public void setEndPort(int end_port) {this.end_port=end_port;}
-   public long getReaperInterval() {return reaper_interval;}
-   public void setReaperInterval(long reaper_interval) {this.reaper_interval=reaper_interval;}
-   public long getConnExpireTime() {return conn_expire_time;}
-   public void setConnExpireTime(long conn_expire_time) {this.conn_expire_time=conn_expire_time;}
-   public boolean isLoopback() {return loopback;}
-   public void setLoopback(boolean loopback) {this.loopback=loopback;}
+
+    
 
    /** Setup the Protocol instance acording to the configuration string */
    public boolean setProperties(Properties props) {

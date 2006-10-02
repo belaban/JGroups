@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.36 2006/09/30 16:17:31 belaban Exp $
+// $Id: TCP.java,v 1.37 2006/10/02 06:47:53 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -8,9 +8,8 @@ import org.jgroups.blocks.ConnectionTable;
 import org.jgroups.stack.IpAddress;
 
 import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.Properties;
 import java.util.Collection;
+import java.util.Properties;
 
 
 /**
@@ -38,100 +37,12 @@ public class TCP extends BasicTCP implements ConnectionTable.Receiver {
 
 
     public int getOpenConnections()      {return ct.getNumConnections();}
-    public InetAddress getBindAddr() {return bind_addr;}
-    public void setBindAddr(InetAddress bind_addr) {this.bind_addr=bind_addr;}
-    public int getStartPort() {return start_port;}
-    public void setStartPort(int start_port) {this.start_port=start_port;}
-    public int getEndPort() {return end_port;}
-    public void setEndPort(int end_port) {this.end_port=end_port;}
-    public long getReaperInterval() {return reaper_interval;}
-    public void setReaperInterval(long reaper_interval) {this.reaper_interval=reaper_interval;}
-    public long getConnExpireTime() {return conn_expire_time;}
-    public void setConnExpireTime(long conn_expire_time) {this.conn_expire_time=conn_expire_time;}
-    public boolean isLoopback() {return loopback;}
-    public void setLoopback(boolean loopback) {this.loopback=loopback;}
-
-
     public String printConnections()     {return ct.toString();}
 
 
     /** Setup the Protocol instance acording to the configuration string */
     public boolean setProperties(Properties props) {
-        String str;
-
         super.setProperties(props);
-        str=props.getProperty("start_port");
-        if(str != null) {
-            start_port=Integer.parseInt(str);
-            props.remove("start_port");
-        }
-
-        str=props.getProperty("end_port");
-        if(str != null) {
-            end_port=Integer.parseInt(str);
-            props.remove("end_port");
-        }
-
-        str=props.getProperty("external_addr");
-        if(str != null) {
-            try {
-                external_addr=InetAddress.getByName(str);
-            }
-            catch(UnknownHostException unknown) {
-                if(log.isFatalEnabled()) log.fatal("(external_addr): host " + str + " not known");
-                return false;
-            }
-            props.remove("external_addr");
-        }
-
-        str=props.getProperty("reaper_interval");
-        if(str != null) {
-            reaper_interval=Long.parseLong(str);
-            props.remove("reaper_interval");
-        }
-
-        str=props.getProperty("conn_expire_time");
-        if(str != null) {
-            conn_expire_time=Long.parseLong(str);
-            props.remove("conn_expire_time");
-        }
-
-        str=props.getProperty("sock_conn_timeout");
-        if(str != null) {
-            sock_conn_timeout=Integer.parseInt(str);
-            props.remove("sock_conn_timeout");
-        }
-
-        str=props.getProperty("recv_buf_size");
-        if(str != null) {
-            recv_buf_size=Integer.parseInt(str);
-            props.remove("recv_buf_size");
-        }
-
-        str=props.getProperty("send_buf_size");
-        if(str != null) {
-            send_buf_size=Integer.parseInt(str);
-            props.remove("send_buf_size");
-        }
-
-        str=props.getProperty("skip_suspected_members");
-        if(str != null) {
-            skip_suspected_members=Boolean.valueOf(str).booleanValue();
-            props.remove("skip_suspected_members");
-        }
-
-        str=props.getProperty("suspect_on_send_failure");
-        if(str != null) {
-            suspect_on_send_failure=Boolean.valueOf(str).booleanValue();
-            props.remove("suspect_on_send_failure");
-        }
-
-        str=props.getProperty("use_send_queues");
-        if(str != null) {
-            use_send_queues=Boolean.valueOf(str).booleanValue();
-            props.remove("use_send_queues");
-        }
-
         if(props.size() > 0) {
             log.error("the following properties are not recognized: " + props);
             return false;
@@ -139,13 +50,13 @@ public class TCP extends BasicTCP implements ConnectionTable.Receiver {
         return true;
     }
 
-   public void send(Address dest, byte[] data, int offset, int length) throws Exception {
-      ct.send(dest, data, offset, length);
-   }
+    public void send(Address dest, byte[] data, int offset, int length) throws Exception {
+        ct.send(dest, data, offset, length);
+    }
 
-   public void retainAll(Collection members) {
-      ct.retainAll(members);
-   }
+    public void retainAll(Collection members) {
+        ct.retainAll(members);
+    }
 
     public void start() throws Exception {
         ct=getConnectionTable(reaper_interval,conn_expire_time,bind_addr,external_addr,start_port,end_port);
