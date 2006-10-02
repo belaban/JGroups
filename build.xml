@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.65 2006/09/12 12:55:57 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.66 2006/10/02 06:23:22 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -119,7 +119,7 @@
             basedir="${compile.dir}"
             manifest="${conf.dir}/manifest.mf"
             includes="org/jgroups/**">
-            <fileset dir="${conf.dir}" includes="*.dtd, *.xml" excludes="jboss-service.xml" />
+            <fileset dir="${conf.dir}" includes="*.dtd, *.xml" excludes="*-service.xml" />
         </jar>
     </target>
 
