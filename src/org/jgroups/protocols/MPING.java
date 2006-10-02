@@ -1,8 +1,8 @@
 package org.jgroups.protocols;
 
 import org.jgroups.Event;
-import org.jgroups.Message;
 import org.jgroups.Global;
+import org.jgroups.Message;
 import org.jgroups.util.Buffer;
 import org.jgroups.util.ExposedByteArrayOutputStream;
 import org.jgroups.util.Util;
@@ -10,8 +10,8 @@ import org.jgroups.util.Util;
 import java.io.*;
 import java.net.*;
 import java.util.Enumeration;
-import java.util.Properties;
 import java.util.Map;
+import java.util.Properties;
 
 /**
  * Uses its own IP multicast socket to send and receive discovery requests/responses. Can be used in
@@ -21,7 +21,7 @@ import java.util.Map;
  * back via the regular transport (e.g. TCP) to the sender (discovery request contained sender's regular address,
  * e.g. 192.168.0.2:7800).
  * @author Bela Ban
- * @version $Id: MPING.java,v 1.17 2006/09/11 13:49:10 belaban Exp $
+ * @version $Id: MPING.java,v 1.18 2006/10/02 07:39:51 belaban Exp $
  */
 public class MPING extends PING implements Runnable {
     MulticastSocket     mcast_sock=null;
@@ -85,7 +85,7 @@ public class MPING extends PING implements Runnable {
     public boolean setProperties(Properties props) {
         boolean ignore_systemprops=Util.isBindAddressPropertyIgnored();
         String str=Util.getProperty(new String[]{Global.BIND_ADDR, Global.BIND_ADDR_OLD}, props, "bind_addr",
-                             ignore_systemprops, null);
+                                    ignore_systemprops, null);
         if(str != null) {
             try {
                 bind_addr=InetAddress.getByName(str);
@@ -127,7 +127,7 @@ public class MPING extends PING implements Runnable {
             props.remove("bind_to_all_interfaces");
         }
 
-        if(mcast_addr == null)
+        if(mcast_addr == null) {
             try {
                 mcast_addr=InetAddress.getByName("230.5.6.7");
             }
@@ -135,7 +135,7 @@ public class MPING extends PING implements Runnable {
                 log.error("failed getting default mcast address", e);
                 return false;
             }
-
+        }
         return super.setProperties(props);
     }
 
@@ -151,7 +151,6 @@ public class MPING extends PING implements Runnable {
         }
         super.up(evt);
     }
-
 
 
     public void start() throws Exception {
