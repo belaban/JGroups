@@ -102,6 +102,8 @@ public class FLUSH extends Protocol
    
    private boolean auto_flush_conf = true;
 
+
+
    public FLUSH()
    {
       super();
@@ -199,6 +201,7 @@ public class FLUSH extends Protocol
       {
          case Event.MSG :
             boolean shouldSuspendByItself = false;
+             long start=0, stop=0;
             synchronized (blockMutex)
             {
                while (isFlushRunning())
@@ -207,7 +210,9 @@ public class FLUSH extends Protocol
                      log.debug("FLUSH block at " + localAddress + " for " + timeout);
                   try
                   {
+                     start=System.currentTimeMillis();
                      blockMutex.wait(timeout);
+                     stop=System.currentTimeMillis();
                      if (isFlushRunning())
                      {                        
                         isBlockState = false;
@@ -221,7 +226,7 @@ public class FLUSH extends Protocol
             }
             if(shouldSuspendByItself)
             {
-               log.warn("Forcing FLUSH unblock at " + localAddress);
+               log.warn("Forcing FLUSH unblock at " + localAddress + " after " + (stop-start) + "ms");
                passDown(new Event(Event.SUSPEND_OK));
             }
             break;
@@ -442,7 +447,7 @@ public class FLUSH extends Protocol
       {
          isBlockState = false;
          blockMutex.notifyAll();
-      }           
+      }
    }
 
    private void onSuspend(View view)
