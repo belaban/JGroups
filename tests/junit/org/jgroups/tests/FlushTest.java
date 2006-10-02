@@ -17,7 +17,7 @@ import java.util.List;
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.6 2006/09/29 01:20:05 vlada Exp $
+ * @version $Id: FlushTest.java,v 1.7 2006/10/02 08:39:19 belaban Exp $
  */
 public class FlushTest extends TestCase {
     Channel c1, c2,c3;
@@ -33,19 +33,19 @@ public class FlushTest extends TestCase {
 
         if(c2 != null) {
             c2.close();
-            Util.sleep(2000);
+            Util.sleep(500);
             c2=null;
         }
 
         if(c1 != null) {
             c1.close();
-            Util.sleep(2000);
+            Util.sleep(500);
             c1=null;
         }
         
         if(c3 != null) {
             c3.close();
-            Util.sleep(2000);
+            Util.sleep(500);
             c3=null;
         }
     }
