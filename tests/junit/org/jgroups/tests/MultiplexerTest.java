@@ -19,7 +19,7 @@ import java.lang.management.ThreadInfo;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.25 2006/10/02 09:20:33 belaban Exp $
+ * @version $Id: MultiplexerTest.java,v 1.26 2006/10/02 12:20:45 belaban Exp $
  */
 public class MultiplexerTest extends TestCase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -28,6 +28,7 @@ public class MultiplexerTest extends TestCase {
     static String STACK_NAME="udp";
     JChannelFactory factory, factory2;
     int active_threads=0;
+    String thread_dump=null;
 
     public MultiplexerTest(String name) {
         super(name);
@@ -37,7 +38,7 @@ public class MultiplexerTest extends TestCase {
     public void setUp() throws Exception {
         super.setUp();
         active_threads=Thread.activeCount();
-        System.out.println("active threads before (" + active_threads + "):\n" + Util.activeThreads());
+        thread_dump="active threads before (" + active_threads + "):\n" + Util.activeThreads();
         CFG = System.getProperty("cfg",CFG);
         STACK_NAME = System.getProperty("stack",STACK_NAME);
         log("Using stack configuration file " + CFG + " and stack name " + STACK_NAME);
@@ -86,10 +87,11 @@ public class MultiplexerTest extends TestCase {
         Util.sleep(500); // remove this in 2.5 !
 
         int current_active_threads=Thread.activeCount();
-        System.out.println("active threads after (" + current_active_threads + "):\n" + Util.activeThreads());
-        // System.out.println("thread:\n" + dumpThreads());
+
         String msg="";
         if(active_threads != current_active_threads) {
+            System.out.println(thread_dump);
+            System.out.println("active threads after (" + current_active_threads + "):\n" + Util.activeThreads());
             msg="active threads:\n" + dumpThreads();
         }
         assertEquals(msg, active_threads, current_active_threads);
