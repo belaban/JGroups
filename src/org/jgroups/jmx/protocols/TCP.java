@@ -1,10 +1,10 @@
 package org.jgroups.jmx.protocols;
 
-import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 /**
  * @author Bela Ban
- * @version $Id: TCP.java,v 1.2 2005/08/17 07:32:29 belaban Exp $
+ * @version $Id: TCP.java,v 1.3 2006/10/02 06:47:53 belaban Exp $
  */
 public class TCP extends TP implements TCPMBean {
     org.jgroups.protocols.TCP p;
@@ -27,12 +27,17 @@ public class TCP extends TP implements TCPMBean {
         return p.getOpenConnections();
     }
 
-    public InetAddress getBindAddr() {
-        return p.getBindAddr();
+    public String getBindAddr() {
+        return p.getBindAddress();
     }
 
-    public void setBindAddr(InetAddress bind_addr) {
-        p.setBindAddr(bind_addr);
+    public void setBindAddr(String bind_addr) {
+        try {
+            p.setBindAddress(bind_addr);
+        }
+        catch(UnknownHostException e) {
+            throw new IllegalArgumentException(e);
+        }
     }
 
     public int getStartPort() {

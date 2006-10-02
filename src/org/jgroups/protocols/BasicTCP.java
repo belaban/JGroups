@@ -7,6 +7,7 @@ import org.jgroups.View;
 import org.jgroups.util.BoundedList;
 
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.Properties;
 import java.util.Vector;
@@ -42,10 +43,93 @@ public abstract class BasicTCP extends TP {
     int                    linger=-1; // SO_LINGER (number of ms, -1 disables it)
 
 
+
+    public int getStartPort() {return start_port;}
+    public void setStartPort(int start_port) {this.start_port=start_port;}
+    public int getEndPort() {return end_port;}
+    public void setEndPort(int end_port) {this.end_port=end_port;}
+    public long getReaperInterval() {return reaper_interval;}
+    public void setReaperInterval(long reaper_interval) {this.reaper_interval=reaper_interval;}
+    public long getConnExpireTime() {return conn_expire_time;}
+    public void setConnExpireTime(long conn_expire_time) {this.conn_expire_time=conn_expire_time;}
+
     public boolean setProperties(Properties props) {
         String str;
 
         super.setProperties(props);
+
+        str=props.getProperty("start_port");
+        if(str != null) {
+            start_port=Integer.parseInt(str);
+            props.remove("start_port");
+        }
+
+        str=props.getProperty("end_port");
+        if(str != null) {
+            end_port=Integer.parseInt(str);
+            props.remove("end_port");
+        }
+
+        str=props.getProperty("external_addr");
+        if(str != null) {
+            try {
+                external_addr=InetAddress.getByName(str);
+            }
+            catch(UnknownHostException unknown) {
+                if(log.isFatalEnabled()) log.fatal("(external_addr): host " + str + " not known");
+                return false;
+            }
+            props.remove("external_addr");
+        }
+
+        str=props.getProperty("reaper_interval");
+        if(str != null) {
+            reaper_interval=Long.parseLong(str);
+            props.remove("reaper_interval");
+        }
+
+        str=props.getProperty("conn_expire_time");
+        if(str != null) {
+            conn_expire_time=Long.parseLong(str);
+            props.remove("conn_expire_time");
+        }
+
+        str=props.getProperty("sock_conn_timeout");
+        if(str != null) {
+            sock_conn_timeout=Integer.parseInt(str);
+            props.remove("sock_conn_timeout");
+        }
+
+        str=props.getProperty("recv_buf_size");
+        if(str != null) {
+            recv_buf_size=Integer.parseInt(str);
+            props.remove("recv_buf_size");
+        }
+
+        str=props.getProperty("send_buf_size");
+        if(str != null) {
+            send_buf_size=Integer.parseInt(str);
+            props.remove("send_buf_size");
+        }
+
+        str=props.getProperty("skip_suspected_members");
+        if(str != null) {
+            skip_suspected_members=Boolean.valueOf(str).booleanValue();
+            props.remove("skip_suspected_members");
+        }
+
+        str=props.getProperty("suspect_on_send_failure");
+        if(str != null) {
+            suspect_on_send_failure=Boolean.valueOf(str).booleanValue();
+            props.remove("suspect_on_send_failure");
+        }
+
+        str=props.getProperty("use_send_queues");
+        if(str != null) {
+            use_send_queues=Boolean.valueOf(str).booleanValue();
+            props.remove("use_send_queues");
+        }
+
         str=props.getProperty("tcp_nodelay");
         if(str != null) {
             tcp_nodelay=new Boolean(str).booleanValue();
