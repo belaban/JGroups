@@ -19,7 +19,7 @@ import java.lang.management.ThreadInfo;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.26 2006/10/02 12:20:45 belaban Exp $
+ * @version $Id: MultiplexerTest.java,v 1.27 2006/10/03 03:18:12 vlada Exp $
  */
 public class MultiplexerTest extends TestCase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -547,6 +547,8 @@ public class MultiplexerTest extends TestCase {
 
 
         ch1.disconnect();
+        //sleep a bit and thus let asynch VIEW to propagate to other channel
+        Util.sleep(500);
         assertTrue(ch1.isOpen());
         assertFalse(ch1.isConnected());
         assertServiceAndClusterView(ch1_repl, 1, 1);
@@ -932,7 +934,8 @@ public class MultiplexerTest extends TestCase {
             catch (IOException e){}
             finally{
                try{
-                  oos.close();
+                  if(oos != null)
+                     oos.close();
                }
                catch (IOException e){
                   System.err.println(e);
@@ -958,7 +961,8 @@ public class MultiplexerTest extends TestCase {
            } catch (Exception e) {}
            finally{
                try {
-                   ois.close();
+                   if(ois != null)
+                      ois.close();
                } catch (IOException e) {
                    System.err.println(e);
                }
@@ -970,7 +974,9 @@ public class MultiplexerTest extends TestCase {
         }
 
         public void clear() {
-            data.clear();
+            synchronized (data){
+               data.clear();  
+            }            
         }
 
 
@@ -997,7 +1003,10 @@ public class MultiplexerTest extends TestCase {
 
 
         public byte[] getState(String state_id) {
-            Map copy=new HashMap(data);
+            Map copy=null;
+            synchronized (data){
+               copy=new HashMap(data); 
+            }
             for(Iterator it=copy.keySet().iterator(); it.hasNext();) {
                 Integer key=(Integer)it.next();
                 if(state_id.equals("odd") && key.intValue() % 2 != 0)
@@ -1015,7 +1024,10 @@ public class MultiplexerTest extends TestCase {
         }
 
         public void getState(String state_id,OutputStream os) {
-           Map copy=new HashMap(data);
+           Map copy=null;
+           synchronized (data){
+              copy=new HashMap(data); 
+           }           
            for(Iterator it=copy.keySet().iterator(); it.hasNext();) {
                Integer key=(Integer)it.next();
                if(state_id.equals("odd") && key.intValue() % 2 != 0)
@@ -1032,7 +1044,8 @@ public class MultiplexerTest extends TestCase {
            catch (IOException e){}
            finally{
               try{
-                 oos.close();
+                 if(oos != null)
+                    oos.close();
               }
               catch (IOException e){
                  System.err.println(e);
