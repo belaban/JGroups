@@ -19,7 +19,7 @@ import java.util.Properties;
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.8 2006/10/02 12:30:14 belaban Exp $
+ * @version $Id: FlushTest.java,v 1.9 2006/10/03 07:57:26 belaban Exp $
  */
 public class FlushTest extends TestCase {
     Channel c1, c2,c3;
@@ -63,6 +63,33 @@ public class FlushTest extends TestCase {
         c1.close();
         Util.sleep(500);
         assertEquals(0, receiver.getEvents().size());
+    }
+
+    /**
+     * Tests issue #1 in http://jira.jboss.com/jira/browse/JGRP-335
+     */
+    public void testJoinFollowedByUnicast() throws ChannelException {
+        c1=createChannel();
+        c1.setReceiver(new MySimpleReplier(c1));
+        c1.connect("X");
+
+        Address target=c1.getLocalAddress();
+        Message unicast_msg=new Message(target);
+
+        c2=createChannel();
+        c2.connect("X");
+
+        // now send unicast, this might block as described in the case
+        c2.send(unicast_msg);
+        // if we don't get here this means we'd time out
+    }
+
+
+    /**
+     * Tests issue #2 in http://jira.jboss.com/jira/browse/JGRP-335
+     */
+    public void testStateTransferFollowedByUnicast() {
+
     }
 
     public void testTwoChannelsWithMessages() throws ChannelException {
@@ -460,5 +487,30 @@ public class FlushTest extends TestCase {
                 e.printStackTrace();
             }
         }
+    }
+
+    private static class MySimpleReplier extends ReceiverAdapter {
+        Channel channel;
+
+        public MySimpleReplier(Channel channel) {
+            this.channel=channel;
+        }
+
+        public void receive(Message msg) {
+            Message reply=new Message(msg.getSrc());
+            try {
+                System.out.println("-- MySimpleReplier: received message from " + msg.getSrc() + ", sending reply");
+                channel.send(reply);
+            }
+            catch(Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        public void block() {
+            System.out.println("-- MySimpleReplier: block(" + channel.getLocalAddress() + ")");
+        }
+
+
     }
 }
