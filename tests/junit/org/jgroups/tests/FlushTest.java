@@ -16,7 +16,7 @@ import java.util.*;
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.10 2006/10/03 08:12:06 belaban Exp $
+ * @version $Id: FlushTest.java,v 1.11 2006/10/03 13:55:04 belaban Exp $
  */
 public class FlushTest extends TestCase {
     Channel c1, c2,c3;
@@ -528,6 +528,10 @@ public class FlushTest extends TestCase {
             catch(Exception e) {
                 e.printStackTrace();
             }
+        }
+
+        public void viewAccepted(View new_view) {
+            System.out.println("-- MySimpleReplier[" + channel.getLocalAddress() + "]: viewAccepted(" + new_view + ")");
         }
 
         public void block() {
