@@ -15,7 +15,7 @@ import java.util.*;
  * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.26 2006/10/02 12:20:12 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.27 2006/10/03 15:32:49 belaban Exp $
  */
 public class Multiplexer implements UpHandler {
     /** Map<String,MuxChannel>. Maintains the mapping between service IDs and their associated MuxChannels */
@@ -42,6 +42,12 @@ public class Multiplexer implements UpHandler {
 
     /** Used to wait on service state information */
     private final Promise service_state_promise=new Promise();
+
+    /** Map<Address, Set<String>>. Keys are senders, values are a set of services hosted by that sender.
+     * Used to collect responses to LIST_SERVICES_REQ */
+    private final Map service_responses=new HashMap();
+
+    private static long SERVICES_RSP_TIMEOUT=5000;
 
 
 
@@ -274,6 +280,11 @@ public class Multiplexer implements UpHandler {
                 break;
 
             case Event.SUSPECT:
+                Address suspected_mbr=(Address)evt.getArg();
+                synchronized(service_responses) {
+                    service_responses.put(suspected_mbr, new HashSet());
+                    service_responses.notifyAll();
+                }
                 passToAllMuxChannels(evt);
                 break;
 
@@ -594,10 +605,38 @@ public class Multiplexer implements UpHandler {
             case ServiceInfo.SERVICE_DOWN:
                 handleServiceDown(info.service, info.host, true);
                 break;
+            case ServiceInfo.LIST_SERVICES_REQ:
+                if(local_addr.equals(sender)) {
+                    // we don't need to send back our own list; we already have it
+                    break;
+                }
+                Set my_services=services.keySet();
+                byte[] data=Util.objectToByteBuffer(my_services);
+                ServiceInfo sinfo=new ServiceInfo(ServiceInfo.LIST_SERVICES_RSP, null, channel.getLocalAddress(), data);
+                Message rsp=new Message(sender);
+                hdr=new MuxHeader(sinfo);
+                rsp.putHeader(NAME, hdr);
+                channel.send(rsp);
+                break;
+            case ServiceInfo.LIST_SERVICES_RSP:
+                handleServicesRsp(sender, info.state);
+                break;
             default:
                 if(log.isErrorEnabled())
                     log.error("service request type " + info.type + " not known");
                 break;
+        }
+    }
+
+    private void handleServicesRsp(Address sender, byte[] state) throws Exception {
+        Set s=(Set)Util.objectFromByteBuffer(state);
+        synchronized(service_responses) {
+            Set tmp=(Set)service_responses.get(sender);
+            if(tmp == null)
+                tmp=new HashSet();
+            tmp.addAll(s);
+            service_responses.put(sender, tmp);
+            service_responses.notifyAll();
         }
     }
 
@@ -686,7 +725,37 @@ public class Multiplexer implements UpHandler {
      * @param view
      */
     private void handleMergeView(MergeView view) {
-        
+        long time_to_wait=SERVICES_RSP_TIMEOUT, start;
+        ServiceInfo info=new ServiceInfo(ServiceInfo.LIST_SERVICES_REQ, null, channel.getLocalAddress(), null);
+        MuxHeader hdr=new MuxHeader(info);
+        Message req=new Message(); // send to all
+        req.putHeader(NAME, hdr);
+        int num_members=view.size() -1; // exclude myself
+
+        Map copy=null;
+        synchronized(service_responses) {
+            service_responses.clear();
+            start=System.currentTimeMillis();
+            try {
+                channel.send(req);
+                while(time_to_wait > 0 && service_responses.size() < num_members) {
+                    service_responses.wait(time_to_wait);
+                    time_to_wait-=System.currentTimeMillis() - start;
+                }
+                copy=new HashMap(service_responses);
+            }
+            catch(Exception ex) {
+                if(log.isErrorEnabled())
+                    log.error("failed fetching a list of services from other members in the cluster, cannot handle merge view " + view, ex);
+            }
+        }
+
+        // merges service_responses with service_state and emits MergeViews for the services affected (MuxChannel)
+        mergeServiceState(view, copy);
+    }
+
+    private void mergeServiceState(MergeView view, Map copy) {
+        throw new UnsupportedOperationException("bla");
     }
 
     private void adjustServiceViews(Vector left_members) {
