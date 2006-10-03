@@ -746,6 +746,8 @@ public class STREAMING_STATE_TRANSFER extends Protocol
       ServerSocket serverSocket;
 
       IpAddress address;
+      
+      Thread runner;
 
       volatile boolean running = true;
 
@@ -759,6 +761,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
 
       public void run()
       {
+         runner = Thread.currentThread();
          for (; running;)
          {
             try
@@ -820,9 +823,34 @@ public class STREAMING_STATE_TRANSFER extends Protocol
          finally
          {
             if (log.isDebugEnabled())
+               log.debug("Waiting for StateProviderThreadSpawner to die ... ");
+
+            if (runner != null)
+            {
+               try
+               {
+                  runner.join(3000);
+               }
+               catch (InterruptedException ignored)
+               {
+               }
+            }
+
+            if (log.isDebugEnabled())
                log.debug("Shutting the thread pool down... ");
+
             pool.shutdownNow();
+            try
+            {
+               //TODO use some system wide timeout eventually
+               pool.awaitTerminationAfterShutdown(5000);
+            }
+            catch (InterruptedException ignored)
+            {
+            }
          }
+         if (log.isDebugEnabled())
+            log.debug("Thread pool is shutdown. All pool threads are cleaned up.");
       }
    }
 
