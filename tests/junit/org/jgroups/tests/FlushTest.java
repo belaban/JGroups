@@ -10,16 +10,13 @@ import org.jgroups.util.Util;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
 
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.9 2006/10/03 07:57:26 belaban Exp $
+ * @version $Id: FlushTest.java,v 1.10 2006/10/03 08:12:06 belaban Exp $
  */
 public class FlushTest extends TestCase {
     Channel c1, c2,c3;
@@ -70,7 +67,7 @@ public class FlushTest extends TestCase {
      */
     public void testJoinFollowedByUnicast() throws ChannelException {
         c1=createChannel();
-        c1.setReceiver(new MySimpleReplier(c1));
+        c1.setReceiver(new MySimpleReplier(c1, true));
         c1.connect("X");
 
         Address target=c1.getLocalAddress();
@@ -88,8 +85,21 @@ public class FlushTest extends TestCase {
     /**
      * Tests issue #2 in http://jira.jboss.com/jira/browse/JGRP-335
      */
-    public void testStateTransferFollowedByUnicast() {
+    public void testStateTransferFollowedByUnicast() throws ChannelException {
+        c1=createChannel();
+        c1.setReceiver(new MySimpleReplier(c1, true));
+        c1.connect("X");
 
+        Address target=c1.getLocalAddress();
+        Message unicast_msg=new Message(target);
+
+        c2=createChannel();
+        c2.setReceiver(new MySimpleReplier(c2, false));
+        c2.connect("X");
+
+        c2.getState(null, 10000);
+        // now send unicast, this might block as described in the case
+        c2.send(unicast_msg);
     }
 
     public void testTwoChannelsWithMessages() throws ChannelException {
@@ -400,6 +410,12 @@ public class FlushTest extends TestCase {
             Properties p=new Properties();
             p.setProperty("timeout", "0");
             flush.setProperties(p);
+
+            // send timeout up and down the stack, so other protocols can use the same value too
+            Map map = new HashMap();
+            map.put("flush_timeout", new Long(0));
+            flush.passUp(new Event(Event.CONFIG, map));
+            flush.passDown(new Event(Event.CONFIG, map));
         }
         return ret;
     }
@@ -489,18 +505,25 @@ public class FlushTest extends TestCase {
         }
     }
 
-    private static class MySimpleReplier extends ReceiverAdapter {
+    private static class MySimpleReplier extends ExtendedReceiverAdapter {
         Channel channel;
+        boolean handle_requests=false;
 
-        public MySimpleReplier(Channel channel) {
+        public MySimpleReplier(Channel channel, boolean handle_requests) {
             this.channel=channel;
+            this.handle_requests=handle_requests;
         }
 
         public void receive(Message msg) {
             Message reply=new Message(msg.getSrc());
             try {
-                System.out.println("-- MySimpleReplier: received message from " + msg.getSrc() + ", sending reply");
-                channel.send(reply);
+                System.out.print("-- MySimpleReplier[" + channel.getLocalAddress() + "]: received message from " + msg.getSrc());
+                if(handle_requests) {
+                    System.out.println(", sending reply");
+                    channel.send(reply);
+                }
+                else
+                    System.out.println("\n");
             }
             catch(Exception e) {
                 e.printStackTrace();
@@ -508,7 +531,11 @@ public class FlushTest extends TestCase {
         }
 
         public void block() {
-            System.out.println("-- MySimpleReplier: block(" + channel.getLocalAddress() + ")");
+            System.out.println("-- MySimpleReplier[" + channel.getLocalAddress() + "]: block()");
+        }
+
+        public void unblock() {
+            System.out.println("-- MySimpleReplier[" + channel.getLocalAddress() + "]: unblock()");
         }
 
 
