@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.22 2006/07/12 11:00:26 belaban Exp $
+// $Id: TUNNEL.java,v 1.23 2006/10/04 12:19:50 belaban Exp $
 
 
 package org.jgroups.protocols;
@@ -42,7 +42,7 @@ public class TUNNEL extends Protocol implements Runnable {
     int router_port=0;
     Address local_addr=null;  // sock's local addr and local port
     Thread receiver=null;
-    RouterStub stub=null;
+    RouterStub stub=new RouterStub();
     private final Object stub_mutex=new Object();
 
     /** If true, messages sent to self are treated specially: unicast messages are
@@ -74,7 +74,7 @@ public class TUNNEL extends Protocol implements Runnable {
 
 
     public boolean isConnected() {
-        return stub != null && stub.isConnected();
+        return stub.isConnected();
     }
 
     public RouterStub getRouterStub() {
@@ -229,8 +229,8 @@ public class TUNNEL extends Protocol implements Runnable {
             throw new Exception("router_host and/or router_port not set correctly; tunnel cannot be created");
 
         synchronized(stub_mutex) {
-            stub=new RouterStub(router_host, router_port);
-            local_addr=stub.connect();
+            // stub=new RouterStub(router_host, router_port);
+            local_addr=stub.connect(router_host, router_port);
             if(additional_data != null && local_addr instanceof IpAddress)
                 ((IpAddress)local_addr).setAdditionalData(additional_data);
         }
@@ -241,12 +241,7 @@ public class TUNNEL extends Protocol implements Runnable {
 
     /** Tears the TCP connection to the router down */
     void teardownTunnel() {
-        synchronized(stub_mutex) {
-            if(stub != null) {
-                stub.disconnect();
-                stub=null;
-            }
-        }
+        stub.disconnect();
     }
 
     /*--------------------------- End of Protocol interface -------------------------- */
@@ -258,11 +253,6 @@ public class TUNNEL extends Protocol implements Runnable {
 
     public void run() {
         Message msg;
-
-        if(stub == null) {
-            if(log.isErrorEnabled()) log.error("router stub is null; cannot receive messages from router !");
-            return;
-        }
 
         while(receiver != null) {
             msg=stub.receive();
@@ -360,8 +350,7 @@ public class TUNNEL extends Protocol implements Runnable {
         case Event.DISCONNECT:
             if(receiver != null) {
                 receiver=null;
-                if(stub != null)
-                    stub.disconnect();
+                stub.disconnect();
             }
             teardownTunnel();
             passUp(new Event(Event.DISCONNECT_OK));
