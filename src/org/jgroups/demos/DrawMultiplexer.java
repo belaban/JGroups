@@ -5,34 +5,39 @@ import org.jgroups.JChannelFactory;
 
 /**
  * @author Bela Ban
- * @version $Id: DrawMultiplexer.java,v 1.2 2006/09/01 07:44:15 belaban Exp $
+ * @version $Id: DrawMultiplexer.java,v 1.3 2006/10/04 08:21:57 belaban Exp $
  */
 public class DrawMultiplexer {
     JChannelFactory factory;
 
     public static void main(String[] args) throws Exception {
         String props="stacks.xml";
+        String stack_name="udp";
         for(int i=0; i < args.length; i++) {
             String arg=args[i];
             if(arg.equals("-props")) {
                 props=args[++i];
                 continue;
             }
-            System.out.println("DrawMultiplexer [-help] [-props <stack config file>");
+            if(arg.equals("-stack_name")) {
+                stack_name=args[++i];
+                continue;
+            }
+            System.out.println("DrawMultiplexer [-help] [-props <stack config file>] [-stack_name <name>]");
             return;
         }
-        new DrawMultiplexer().start(props);
+        new DrawMultiplexer().start(props, stack_name);
     }
 
-    private void start(String props) throws Exception {
+    private void start(String props, String stack_name) throws Exception {
         factory=new JChannelFactory();
         factory.setMultiplexerConfig(props);
 
         final Channel ch1, ch2, ch3;
-        ch1=factory.createMultiplexerChannel("udp", "id-1");
+        ch1=factory.createMultiplexerChannel(stack_name, "id-1");
         ch1.connect("bela");
 
-        ch2=factory.createMultiplexerChannel("udp", "id-2");
+        ch2=factory.createMultiplexerChannel(stack_name, "id-2");
         ch2.connect("ban");
 
         // ch3=factory.createMultiplexerChannel("tcp", "TCP-based");
