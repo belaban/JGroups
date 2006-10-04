@@ -1,4 +1,4 @@
-// $Id: RouterStub.java,v 1.17 2006/08/04 11:01:51 belaban Exp $
+// $Id: RouterStub.java,v 1.18 2006/10/04 12:19:34 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -42,6 +42,9 @@ public class RouterStub {
         void connectionStatusChange(boolean connected);
     }
 
+    public RouterStub() {
+    }
+
     /**
      Creates a stub for a remote Router object.
      @param router_host The name of the router's host
@@ -49,6 +52,23 @@ public class RouterStub {
      */
     public RouterStub(String router_host, int router_port) {
         this.router_host=router_host != null? router_host : "localhost";
+        this.router_port=router_port;
+    }
+
+
+    public String getRouterHost() {
+        return router_host;
+    }
+
+    public void setRouterHost(String router_host) {
+        this.router_host=router_host;
+    }
+
+    public int getRouterPort() {
+        return router_port;
+    }
+
+    public void setRouterPort(int router_port) {
         this.router_port=router_port;
     }
 
@@ -102,6 +122,13 @@ public class RouterStub {
             local_addr=ret;
 
         return ret;
+    }
+
+
+    public synchronized Address connect(String router_host, int router_port) throws Exception {
+        setRouterHost(router_host);
+        setRouterPort(router_port);
+        return connect();
     }
 
 
@@ -306,7 +333,7 @@ public class RouterStub {
         int len;
 
         if(sock == null || output == null || input == null) {
-            if(log.isErrorEnabled()) log.error("no connection to router");
+            // if(log.isErrorEnabled()) log.error("no connection to router");
             setConnected(false);
             return null;
         }
