@@ -15,7 +15,7 @@ import java.util.*;
  * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.28 2006/10/04 08:36:44 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.29 2006/10/04 12:20:22 belaban Exp $
  */
 public class Multiplexer implements UpHandler {
     /** Map<String,MuxChannel>. Maintains the mapping between service IDs and their associated MuxChannels */
@@ -757,8 +757,47 @@ public class Multiplexer implements UpHandler {
         mergeServiceState(view, copy);
     }
 
+
     private void mergeServiceState(MergeView view, Map copy) {
-        throw new UnsupportedOperationException("bla");
+        Set modified_services=new HashSet();
+        Map.Entry entry;
+        Address host;     // address of the sender
+        Set service_list; // Set<String> of services
+        List my_services;
+        String service;
+
+        synchronized(service_state) {
+            for(Iterator it=copy.entrySet().iterator(); it.hasNext();) {
+                entry=(Map.Entry)it.next();
+                host=(Address)entry.getKey();
+                service_list=(Set)entry.getValue();
+
+                for(Iterator it2=service_list.iterator(); it2.hasNext();) {
+                    service=(String)it2.next();
+                    my_services=(List)service_state.get(service);
+                    if(my_services == null) {
+                        my_services=new ArrayList();
+                        service_state.put(service, my_services);
+                    }
+
+                    boolean was_modified=my_services.add(host);
+                    if(was_modified) {
+                        modified_services.add(service);
+                    }
+                }
+            }
+        }
+
+        // now emit MergeViews for all services which were modified
+        for(Iterator it=modified_services.iterator(); it.hasNext();) {
+            service=(String)it.next();
+            MuxChannel ch=(MuxChannel)services.get(service);
+            my_services=(List)service_state.get(service);
+            MergeView v=(MergeView)view.clone();
+            v.getMembers().retainAll(my_services);
+            Event evt=new Event(Event.VIEW_CHANGE, v);
+            ch.up(evt);
+        }
     }
 
     private void adjustServiceViews(Vector left_members) {
