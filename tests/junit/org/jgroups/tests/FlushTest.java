@@ -16,7 +16,7 @@ import java.util.*;
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.11 2006/10/03 13:55:04 belaban Exp $
+ * @version $Id: FlushTest.java,v 1.12 2006/10/04 20:00:28 vlada Exp $
  */
 public class FlushTest extends TestCase {
     Channel c1, c2,c3;
@@ -32,19 +32,19 @@ public class FlushTest extends TestCase {
 
         if(c2 != null) {
             c2.close();
-            Util.sleep(500);
+            Util.sleep(1000);
             c2=null;
         }
 
         if(c1 != null) {
             c1.close();
-            Util.sleep(500);
+            Util.sleep(1000);
             c1=null;
         }
 
         if(c3 != null) {
             c3.close();
-            Util.sleep(500);
+            Util.sleep(1000);
             c3=null;
         }
     }
@@ -55,11 +55,8 @@ public class FlushTest extends TestCase {
         MyReceiver receiver=new MyReceiver("c1");
         c1.setReceiver(receiver);
         c1.connect("bla");
-        checkSingleMemberJoinSequence(receiver);
-
-        c1.close();
-        Util.sleep(500);
-        assertEquals(0, receiver.getEvents().size());
+        Util.sleep(1000);
+        checkEventSequence(receiver);  
     }
 
     /**
@@ -68,13 +65,14 @@ public class FlushTest extends TestCase {
     public void testJoinFollowedByUnicast() throws ChannelException {
         c1=createChannel();
         c1.setReceiver(new MySimpleReplier(c1, true));
-        c1.connect("X");
+        c1.connect("bla");
 
         Address target=c1.getLocalAddress();
         Message unicast_msg=new Message(target);
 
         c2=createChannel();
-        c2.connect("X");
+        c2.setReceiver(new MySimpleReplier(c2, false));
+        c2.connect("bla");
 
         // now send unicast, this might block as described in the case
         c2.send(unicast_msg);
@@ -88,16 +86,16 @@ public class FlushTest extends TestCase {
     public void testStateTransferFollowedByUnicast() throws ChannelException {
         c1=createChannel();
         c1.setReceiver(new MySimpleReplier(c1, true));
-        c1.connect("X");
+        c1.connect("bla");
 
         Address target=c1.getLocalAddress();
         Message unicast_msg=new Message(target);
 
         c2=createChannel();
         c2.setReceiver(new MySimpleReplier(c2, false));
-        c2.connect("X");
+        c2.connect("bla");
 
-        c2.getState(null, 10000);
+        c2.getState(null, 10000);       
         // now send unicast, this might block as described in the case
         c2.send(unicast_msg);
     }
@@ -134,7 +132,7 @@ public class FlushTest extends TestCase {
         if(sendMessages){
             c1.send(new Message());
         }
-        checkSingleMemberJoinSequence(receiver);
+        Util.sleep(1000);       
 
         c2=createChannel();
         MyReceiver receiver2=new MyReceiver("c2");
@@ -147,19 +145,17 @@ public class FlushTest extends TestCase {
             c1.send(new Message());
             c2.send(new Message());
         }
-
-        checkExistingMemberAfterJoinSequence(receiver);
-
-        checkNewMemberAfterJoinSequence(receiver2);
-
+        
+        checkEventSequence(receiver2);
+        
         c2.close();
         Util.sleep(500);
         if(sendMessages){
             c1.send(new Message());
         }
-        Util.sleep(500);
-
-        checkExistingMemberAfterLeaveSequence(receiver);
+        Util.sleep(1000);
+        
+        checkEventSequence(receiver);
     }
 
 
@@ -172,7 +168,7 @@ public class FlushTest extends TestCase {
             c1.send(new Message());
         }
 
-        checkSingleMemberJoinSequence(receiver);
+        Util.sleep(1000);         
 
         c2=createChannel();
         MyReceiver receiver2=new MyReceiver("c2");
@@ -186,10 +182,7 @@ public class FlushTest extends TestCase {
             c1.send(new Message());
             c2.send(new Message());
         }
-
-        checkExistingMemberAfterJoinSequence(receiver);
-        checkNewMemberAfterJoinSequence(receiver2);
-
+        
         c3=createChannel();
         MyReceiver receiver3=new MyReceiver("c3");
         c3.setReceiver(receiver3);
@@ -201,28 +194,24 @@ public class FlushTest extends TestCase {
             c1.send(new Message());
             c2.send(new Message());
             c3.send(new Message());
-        }
-
-        checkExistingMemberAfterJoinSequence(receiver);
-        checkExistingMemberAfterJoinSequence(receiver2);
-        checkNewMemberAfterJoinSequence(receiver3);
+        }       
 
         //close coordinator
+        checkEventSequence(receiver);
+        
         c1.close();
         if(sendMessages){
             c2.send(new Message());
             c2.send(new Message());
         }
         Util.sleep(1000);
-
-        checkExistingMemberAfterLeaveSequence(receiver2);
-        checkExistingMemberAfterLeaveSequence(receiver3);
-
+        
         //close coordinator one more time
+        checkEventSequence(receiver2);
         c2.close();
         Util.sleep(1000);
 
-        checkExistingMemberAfterLeaveSequence(receiver3);
+        checkEventSequence(receiver3);
     }
 
 
@@ -237,7 +226,8 @@ public class FlushTest extends TestCase {
             c1.send(new Message());
             c1.send(new Message());
         }
-        checkSingleMemberJoinSequence(receiver);
+        
+        Util.sleep(1000);
 
         c2=createChannel();
         MyReceiver receiver2=new MyReceiver("c2");
@@ -245,9 +235,7 @@ public class FlushTest extends TestCase {
         c2.connect("bla");
         Util.sleep(1000);
 
-        checkExistingMemberAfterJoinSequence(receiver);
-        checkNewMemberAfterJoinSequence(receiver2);
-
+        
         c3=createChannel();
         MyReceiver receiver3=new MyReceiver("c3");
         c3.setReceiver(receiver3);
@@ -257,11 +245,7 @@ public class FlushTest extends TestCase {
             c1.send(new Message());
             c2.send(new Message());
         }
-
-        checkExistingMemberAfterJoinSequence(receiver);
-        checkExistingMemberAfterJoinSequence(receiver2);
-        checkNewMemberAfterJoinSequence(receiver3);
-
+       
         Util.sleep(500);
         if(sendMessages){
             c1.send(new Message());
@@ -269,6 +253,10 @@ public class FlushTest extends TestCase {
             c3.send(new Message());
         }
 
+        checkEventSequence(receiver);
+        checkEventSequence(receiver2);
+        checkEventSequence(receiver3);
+        
         System.out.println("=== fetching the state ====");
         c2.getState(null, 10000);
         Util.sleep(2000);
@@ -278,20 +266,14 @@ public class FlushTest extends TestCase {
             c2.send(new Message());
             c2.send(new Message());
         }
-
-        //state transfer nodes
+         
+        checkNonStateTransferMemberSequence(receiver3);        
         checkBlockStateUnBlockSequence(receiver);
         checkBlockStateUnBlockSequence(receiver2);
-
-        //this node did not participate in state transfer
-        checkNonStateTransferMemberSequence(receiver3);
-
+        
         c2.close();
         c2=null;
-        Util.sleep(2000);
-        checkExistingMemberAfterLeaveSequence(receiver);
-        checkExistingMemberAfterLeaveSequence(receiver3);
-
+        Util.sleep(2000);              
 
         c2=createChannel();
         receiver2=new MyReceiver("c2");
@@ -300,27 +282,23 @@ public class FlushTest extends TestCase {
         Util.sleep(2000);
         if(sendMessages){
             c1.send(new Message());
-        }
-
-        checkNewMemberAfterJoinSequence(receiver2);
-        checkExistingMemberAfterJoinSequence(receiver);
-        checkExistingMemberAfterJoinSequence(receiver3);
-
-
+        }      
+        
+        checkEventSequence(receiver);
+        checkEventSequence(receiver2);
+        checkEventSequence(receiver3);
+        
         System.out.println("=== fetching the state ====");
         c3.getState(null, 10000);
         if(sendMessages){
             c1.send(new Message());
             c2.send(new Message());
         }
-        Util.sleep(2000);
-
-        //state transfer nodes
+        Util.sleep(2000);            
+        
+        checkNonStateTransferMemberSequence(receiver2);        
         checkBlockStateUnBlockSequence(receiver);
         checkBlockStateUnBlockSequence(receiver3);
-
-        //this node did not participate in state transfer
-        checkNonStateTransferMemberSequence(receiver2);
     }
 
 
@@ -338,36 +316,47 @@ public class FlushTest extends TestCase {
         obj=events.remove(0);
         assertTrue(name, obj instanceof UnblockEvent);
         receiver.clear();
-    }
-
-    private void checkSingleMemberJoinSequence(MyReceiver receiver) {
+    }  
+    
+    private void checkEventSequence(MyReceiver receiver) {
        List events = receiver.getEvents();
-       String name = receiver.getName();
        assertNotNull(events);
-       System.out.println("[" + name + "]:" + events);
-       assertEquals("Should have two events [view,unblock] but " + name + " has "
-                + events, 2, events.size());
-       Object obj=events.remove(0);
-       assertTrue("should be a View but is " + obj, obj instanceof View);
-       obj=events.remove(0);
-       assertTrue(obj instanceof UnblockEvent);
+       int size = events.size();
+       for (int i = 0; i < size; i++)
+       {
+          Object event = events.get(i);
+          if(event instanceof BlockEvent)
+          {
+             if(i+1<size)
+             {
+                assertTrue("After Block should be View ",events.get(i+1) instanceof View);
+             }
+             if(i!=0)
+             {
+                assertTrue("Before Block should be Unblock ",events.get(i-1) instanceof UnblockEvent);
+             }
+          }
+          if(event instanceof View)
+          {
+             if(i+1<size)
+             {
+                assertTrue("After View should be Unblock ",events.get(i+1) instanceof UnblockEvent);
+             }
+             assertTrue("Before View should be Block ",events.get(i-1) instanceof BlockEvent);             
+          }
+          if(event instanceof UnblockEvent)
+          {
+             if(i+1<size)
+             {
+                assertTrue("After UnBlock should be Block ",events.get(i+1) instanceof BlockEvent);
+             }            
+             assertTrue("Before UnBlock should be View ",events.get(i-1) instanceof View);             
+          }
+          
+          
+       }       
        receiver.clear();
-    }
-
-    private void checkExistingMemberAfterJoinSequence(MyReceiver receiver) {
-        List events = receiver.getEvents();
-        assertNotNull(events);
-        assertEquals("Should have three events [block,view,unblock] but " + receiver.getName() + " has "
-                        + events, 3, events.size());
-
-        Object obj = events.remove(0);
-        assertTrue(obj instanceof BlockEvent);
-        obj = events.remove(0);
-        assertTrue("should be a View but is " + obj, obj instanceof View);
-        obj = events.remove(0);
-        assertTrue(obj instanceof UnblockEvent);
-        receiver.clear();
-    }
+   }
 
     private void checkNonStateTransferMemberSequence(MyReceiver receiver) {
         List events = receiver.getEvents();
@@ -381,27 +370,7 @@ public class FlushTest extends TestCase {
         assertTrue(obj instanceof UnblockEvent);
         receiver.clear();
     }
-
-    private void checkExistingMemberAfterLeaveSequence(MyReceiver receiver)
-    {
-        checkExistingMemberAfterJoinSequence(receiver);
-    }
-
-    private void checkNewMemberAfterJoinSequence(MyReceiver receiver)
-    {
-        List events = receiver.getEvents();
-        String name = receiver.getName();
-        assertNotNull(events);
-        System.out.println("[" + name + "]:" + events);
-        assertEquals("Should have two events [view,unblock] but " + name + " has "
-                + events, 2, events.size());
-        Object obj=events.remove(0);
-        assertTrue("should be a View but is " + obj, obj instanceof View);
-        obj=events.remove(0);
-        assertTrue(obj instanceof UnblockEvent);
-        receiver.clear();
-    }
-
+    
     private Channel createChannel() throws ChannelException {
         Channel ret=new JChannel(CONFIG);
         ret.setOpt(Channel.BLOCK, Boolean.TRUE);

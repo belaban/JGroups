@@ -19,7 +19,7 @@ import java.lang.management.ThreadInfo;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.27 2006/10/03 03:18:12 vlada Exp $
+ * @version $Id: MultiplexerTest.java,v 1.28 2006/10/04 20:00:28 vlada Exp $
  */
 public class MultiplexerTest extends TestCase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -504,7 +504,7 @@ public class MultiplexerTest extends TestCase {
         ch1_repl.disconnect();
         assertTrue(ch1_repl.isOpen());
         assertFalse(ch1_repl.isConnected());
-        Util.sleep(500);
+        Util.sleep(1000);
         assertServiceAndClusterView(ch1, 1, 1);
 
         c1_repl.clear();
