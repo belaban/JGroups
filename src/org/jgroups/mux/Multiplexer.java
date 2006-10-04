@@ -15,7 +15,7 @@ import java.util.*;
  * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.27 2006/10/03 15:32:49 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.28 2006/10/04 08:36:44 belaban Exp $
  */
 public class Multiplexer implements UpHandler {
     /** Map<String,MuxChannel>. Maintains the mapping between service IDs and their associated MuxChannels */
@@ -610,7 +610,7 @@ public class Multiplexer implements UpHandler {
                     // we don't need to send back our own list; we already have it
                     break;
                 }
-                Set my_services=services.keySet();
+                Object[] my_services=services.keySet().toArray();
                 byte[] data=Util.objectToByteBuffer(my_services);
                 ServiceInfo sinfo=new ServiceInfo(ServiceInfo.LIST_SERVICES_RSP, null, channel.getLocalAddress(), data);
                 Message rsp=new Message(sender);
@@ -629,7 +629,10 @@ public class Multiplexer implements UpHandler {
     }
 
     private void handleServicesRsp(Address sender, byte[] state) throws Exception {
-        Set s=(Set)Util.objectFromByteBuffer(state);
+        Object[] keys=(Object[])Util.objectFromByteBuffer(state);
+        Set s=new HashSet();
+        for(int i=0; i < keys.length; i++)
+            s.add(keys[i]);
         synchronized(service_responses) {
             Set tmp=(Set)service_responses.get(sender);
             if(tmp == null)
