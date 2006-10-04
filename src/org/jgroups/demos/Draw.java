@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.28 2006/09/28 08:27:32 belaban Exp $
+// $Id: Draw.java,v 1.29 2006/10/04 13:25:36 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -370,19 +370,24 @@ public class Draw implements ActionListener, ChannelListener {
             sendClearPanelMsg();
         }
         else if("Leave & Exit".equals(command)) {
-            if(!no_channel) {
-                try {
-                    channel.close();
-                }
-                catch(Exception ex) {
-                    System.err.println(ex);
-                }
-            }
-            mainFrame.setVisible(false);
-            mainFrame.dispose();
+            stop();
         }
         else
             System.out.println("Unknown action");
+    }
+
+
+    public void stop() {
+        if(!no_channel) {
+            try {
+                channel.close();
+            }
+            catch(Exception ex) {
+                System.err.println(ex);
+            }
+        }
+        mainFrame.setVisible(false);
+        mainFrame.dispose();
     }
 
 
