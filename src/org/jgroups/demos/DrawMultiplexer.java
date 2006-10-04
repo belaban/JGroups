@@ -5,7 +5,7 @@ import org.jgroups.JChannelFactory;
 
 /**
  * @author Bela Ban
- * @version $Id: DrawMultiplexer.java,v 1.3 2006/10/04 08:21:57 belaban Exp $
+ * @version $Id: DrawMultiplexer.java,v 1.4 2006/10/04 13:34:20 belaban Exp $
  */
 public class DrawMultiplexer {
     JChannelFactory factory;
@@ -48,6 +48,7 @@ public class DrawMultiplexer {
                 try {
                     Draw draw1=new Draw(ch1);
                     draw1.go();
+                    draw1.stop();
                 }
                 catch(Throwable t) {
                     t.printStackTrace();
@@ -62,6 +63,7 @@ public class DrawMultiplexer {
                 try {
                     Draw draw2=new Draw(ch2);
                     draw2.go();
+                    draw2.stop();
                 }
                 catch(Throwable t) {
                     t.printStackTrace();
@@ -75,5 +77,8 @@ public class DrawMultiplexer {
         t1.join();
         t2.join();
 
+        ch2.close();
+        ch1.close();
+        System.exit(0);
     }
 }
