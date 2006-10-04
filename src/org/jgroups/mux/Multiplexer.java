@@ -15,7 +15,7 @@ import java.util.*;
  * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.29 2006/10/04 12:20:22 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.30 2006/10/04 13:34:51 belaban Exp $
  */
 public class Multiplexer implements UpHandler {
     /** Map<String,MuxChannel>. Maintains the mapping between service IDs and their associated MuxChannels */
@@ -650,7 +650,6 @@ public class Multiplexer implements UpHandler {
 
         // discard if we sent this message
         if(received && host != null && local_addr != null && local_addr.equals(host)) {
-            // System.out.println("received SERVICE_DOWN(" + host + ")");
             return;
         }
 
@@ -859,7 +858,7 @@ public class Multiplexer implements UpHandler {
      * @return the servicd view (a modified copy of the real view), or null if the view was not modified
      */
     private View generateServiceView(List hosts) {
-        View copy=(View)view.clone();
+        View copy=new View(view.getVid(), new Vector(view.getMembers()));
         Vector members=copy.getMembers();
         members.retainAll(hosts);
         return copy;
