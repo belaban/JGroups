@@ -1,4 +1,4 @@
-$Id: ManualTests.txt,v 1.2 2006/09/22 13:00:35 belaban Exp $
+$Id: ManualTests.txt,v 1.3 2006/10/05 12:24:39 belaban Exp $
 
 
 Group Membership Service (GMS) Protocol
@@ -201,4 +201,17 @@ Test 3
 - Node 1 and node 2 should each show 1 member
 - Power the switch back up
 - Nodes 1 and 2 should merge into a group of 2
+
+
+Test 4
+------
+- Run tests 1-4 with 3 nodes
+
+Test 5
+------
+- Run Test 4 with DrawMultiplexer with "udp" stack
+
+Test 6
+------
+- Run test 4 with DrawMultiplexer with "tunnel" stack
 
