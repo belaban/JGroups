@@ -16,7 +16,7 @@ import java.util.*;
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.12 2006/10/04 20:00:28 vlada Exp $
+ * @version $Id: FlushTest.java,v 1.13 2006/10/05 07:12:56 belaban Exp $
  */
 public class FlushTest extends TestCase {
     Channel c1, c2,c3;
@@ -56,7 +56,7 @@ public class FlushTest extends TestCase {
         c1.setReceiver(receiver);
         c1.connect("bla");
         Util.sleep(1000);
-        checkEventSequence(receiver);  
+        checkEventSequence(receiver);
     }
 
     /**
@@ -95,7 +95,9 @@ public class FlushTest extends TestCase {
         c2.setReceiver(new MySimpleReplier(c2, false));
         c2.connect("bla");
 
-        c2.getState(null, 10000);       
+        Util.sleep(100);
+        System.out.println("\n** Getting the state **");
+        c2.getState(null, 10000);
         // now send unicast, this might block as described in the case
         c2.send(unicast_msg);
     }
@@ -132,7 +134,7 @@ public class FlushTest extends TestCase {
         if(sendMessages){
             c1.send(new Message());
         }
-        Util.sleep(1000);       
+        Util.sleep(1000);
 
         c2=createChannel();
         MyReceiver receiver2=new MyReceiver("c2");
@@ -145,16 +147,16 @@ public class FlushTest extends TestCase {
             c1.send(new Message());
             c2.send(new Message());
         }
-        
+
         checkEventSequence(receiver2);
-        
+
         c2.close();
         Util.sleep(500);
         if(sendMessages){
             c1.send(new Message());
         }
         Util.sleep(1000);
-        
+
         checkEventSequence(receiver);
     }
 
@@ -168,7 +170,7 @@ public class FlushTest extends TestCase {
             c1.send(new Message());
         }
 
-        Util.sleep(1000);         
+        Util.sleep(1000);
 
         c2=createChannel();
         MyReceiver receiver2=new MyReceiver("c2");
@@ -182,7 +184,7 @@ public class FlushTest extends TestCase {
             c1.send(new Message());
             c2.send(new Message());
         }
-        
+
         c3=createChannel();
         MyReceiver receiver3=new MyReceiver("c3");
         c3.setReceiver(receiver3);
@@ -194,18 +196,18 @@ public class FlushTest extends TestCase {
             c1.send(new Message());
             c2.send(new Message());
             c3.send(new Message());
-        }       
+        }
 
         //close coordinator
         checkEventSequence(receiver);
-        
+
         c1.close();
         if(sendMessages){
             c2.send(new Message());
             c2.send(new Message());
         }
         Util.sleep(1000);
-        
+
         //close coordinator one more time
         checkEventSequence(receiver2);
         c2.close();
@@ -226,7 +228,7 @@ public class FlushTest extends TestCase {
             c1.send(new Message());
             c1.send(new Message());
         }
-        
+
         Util.sleep(1000);
 
         c2=createChannel();
@@ -235,7 +237,7 @@ public class FlushTest extends TestCase {
         c2.connect("bla");
         Util.sleep(1000);
 
-        
+
         c3=createChannel();
         MyReceiver receiver3=new MyReceiver("c3");
         c3.setReceiver(receiver3);
@@ -245,7 +247,7 @@ public class FlushTest extends TestCase {
             c1.send(new Message());
             c2.send(new Message());
         }
-       
+
         Util.sleep(500);
         if(sendMessages){
             c1.send(new Message());
@@ -256,7 +258,7 @@ public class FlushTest extends TestCase {
         checkEventSequence(receiver);
         checkEventSequence(receiver2);
         checkEventSequence(receiver3);
-        
+
         System.out.println("=== fetching the state ====");
         c2.getState(null, 10000);
         Util.sleep(2000);
@@ -266,14 +268,14 @@ public class FlushTest extends TestCase {
             c2.send(new Message());
             c2.send(new Message());
         }
-         
-        checkNonStateTransferMemberSequence(receiver3);        
+
+        checkNonStateTransferMemberSequence(receiver3);
         checkBlockStateUnBlockSequence(receiver);
         checkBlockStateUnBlockSequence(receiver2);
-        
+
         c2.close();
         c2=null;
-        Util.sleep(2000);              
+        Util.sleep(2000);
 
         c2=createChannel();
         receiver2=new MyReceiver("c2");
@@ -282,21 +284,21 @@ public class FlushTest extends TestCase {
         Util.sleep(2000);
         if(sendMessages){
             c1.send(new Message());
-        }      
-        
+        }
+
         checkEventSequence(receiver);
         checkEventSequence(receiver2);
         checkEventSequence(receiver3);
-        
+
         System.out.println("=== fetching the state ====");
         c3.getState(null, 10000);
         if(sendMessages){
             c1.send(new Message());
             c2.send(new Message());
         }
-        Util.sleep(2000);            
-        
-        checkNonStateTransferMemberSequence(receiver2);        
+        Util.sleep(2000);
+
+        checkNonStateTransferMemberSequence(receiver2);
         checkBlockStateUnBlockSequence(receiver);
         checkBlockStateUnBlockSequence(receiver3);
     }
@@ -316,8 +318,8 @@ public class FlushTest extends TestCase {
         obj=events.remove(0);
         assertTrue(name, obj instanceof UnblockEvent);
         receiver.clear();
-    }  
-    
+    }
+
     private void checkEventSequence(MyReceiver receiver) {
        List events = receiver.getEvents();
        assertNotNull(events);
@@ -342,19 +344,19 @@ public class FlushTest extends TestCase {
              {
                 assertTrue("After View should be Unblock ",events.get(i+1) instanceof UnblockEvent);
              }
-             assertTrue("Before View should be Block ",events.get(i-1) instanceof BlockEvent);             
+             assertTrue("Before View should be Block ",events.get(i-1) instanceof BlockEvent);
           }
           if(event instanceof UnblockEvent)
           {
              if(i+1<size)
              {
                 assertTrue("After UnBlock should be Block ",events.get(i+1) instanceof BlockEvent);
-             }            
-             assertTrue("Before UnBlock should be View ",events.get(i-1) instanceof View);             
+             }
+             assertTrue("Before UnBlock should be View ",events.get(i-1) instanceof View);
           }
-          
-          
-       }       
+
+
+       }
        receiver.clear();
    }
 
@@ -370,7 +372,7 @@ public class FlushTest extends TestCase {
         assertTrue(obj instanceof UnblockEvent);
         receiver.clear();
     }
-    
+
     private Channel createChannel() throws ChannelException {
         Channel ret=new JChannel(CONFIG);
         ret.setOpt(Channel.BLOCK, Boolean.TRUE);
