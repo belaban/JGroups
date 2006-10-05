@@ -15,7 +15,7 @@ import java.util.*;
  * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.31 2006/10/05 10:16:18 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.32 2006/10/05 14:50:18 belaban Exp $
  */
 public class Multiplexer implements UpHandler {
     /** Map<String,MuxChannel>. Maintains the mapping between service IDs and their associated MuxChannels */
@@ -52,7 +52,7 @@ public class Multiplexer implements UpHandler {
      * Used to collect responses to LIST_SERVICES_REQ */
     private final Map service_responses=new HashMap();
 
-    private static long SERVICES_RSP_TIMEOUT=50000;
+    private long SERVICES_RSP_TIMEOUT=10000;
 
 
 
@@ -79,6 +79,15 @@ public class Multiplexer implements UpHandler {
 
     public Set getServiceIds() {
         return services != null? services.keySet() : null;
+    }
+
+
+    public long getServicesResponseTimeout() {
+        return SERVICES_RSP_TIMEOUT;
+    }
+
+    public void setServicesResponseTimeout(long services_rsp_timeout) {
+        this.SERVICES_RSP_TIMEOUT=services_rsp_timeout;
     }
 
     /** Returns a copy of the current view <em>minus</em> the nodes on which service service_id is <em>not</em> running
@@ -269,6 +278,9 @@ public class Multiplexer implements UpHandler {
                 Vector new_members=view != null? view.getMembers() : null;
                 Vector left_members=Util.determineLeftMembers(old_members, new_members);
 
+
+                System.out.println("===> " + view + " <===");
+
                 if(view instanceof MergeView) {
                     temp_merge_view=(MergeView)view.clone();
                     if(log.isTraceEnabled())
@@ -314,7 +326,7 @@ public class Multiplexer implements UpHandler {
                 Address suspected_mbr=(Address)evt.getArg();
 
                 synchronized(service_responses) {
-                    service_responses.put(suspected_mbr, new HashSet());
+                    service_responses.put(suspected_mbr, null);
                     service_responses.notifyAll();
                 }
                 passToAllMuxChannels(evt);
@@ -781,10 +793,17 @@ public class Multiplexer implements UpHandler {
         synchronized(service_responses) {
             start=System.currentTimeMillis();
             try {
-                while(time_to_wait > 0 && service_responses.size() < num_members) {
+                while(time_to_wait > 0 && numResponses(service_responses) < num_members) {
+                    System.out.println("time_to_wait=" + time_to_wait + ", numResponses(service_responses)=" + numResponses(service_responses) +
+                            ", num_members=" + num_members + ", service_state=" + service_state);
                     service_responses.wait(time_to_wait);
                     time_to_wait-=System.currentTimeMillis() - start;
                 }
+
+
+                System.out.println("wait terminated: time_to_wait=" + time_to_wait + ", numResponses(service_responses)=" + numResponses(service_responses) +
+                        ", num_members=" + num_members + ", service_state=" + service_state);
+
                 copy=new HashMap(service_responses);
             }
             catch(Exception ex) {
@@ -802,6 +821,17 @@ public class Multiplexer implements UpHandler {
         temp_merge_view=null;
     }
 
+    private int numResponses(Map m) {
+        int num=0;
+        Collection values=m.values();
+        for(Iterator it=values.iterator(); it.hasNext();) {
+            if(it.next() != null)
+                num++;
+        }
+
+        return num;
+    }
+
 
     private void mergeServiceState(MergeView view, Map copy) {
         Set modified_services=new HashSet();
@@ -816,6 +846,8 @@ public class Multiplexer implements UpHandler {
                 entry=(Map.Entry)it.next();
                 host=(Address)entry.getKey();
                 service_list=(Set)entry.getValue();
+                if(service_list == null)
+                    continue;
 
                 for(Iterator it2=service_list.iterator(); it2.hasNext();) {
                     service=(String)it2.next();
