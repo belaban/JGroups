@@ -2,7 +2,7 @@
 <!--
   Sample file that defines a number of stacks, used by the multiplexer
   Author: Bela Ban
-  Version: $Id: stacks.xml,v 1.17 2006/09/25 17:14:27 vlada Exp $
+  Version: $Id: stacks.xml,v 1.18 2006/10/05 15:00:30 belaban Exp $
 -->
 <protocol_stacks>
     <stack name="udp"
@@ -30,7 +30,7 @@
             <MERGE2 max_interval="100000"
                     down_thread="false" up_thread="false" min_interval="20000"/>
             <FD_SOCK down_thread="false" up_thread="false"/>
-            <FD timeout="10000" max_tries="5" down_thread="false" up_thread="false" shun="true"/>
+            <FD timeout="10000" max_tries="5" down_thread="false" up_thread="false" shun="false"/>
             <VERIFY_SUSPECT timeout="1500" down_thread="false" up_thread="false"/>
             <pbcast.NAKACK max_xmit_size="60000"
                            use_mcast_xmit="false" gc_lag="0"
@@ -44,8 +44,9 @@
                            max_bytes="400000"/>
             <pbcast.GMS print_local_addr="true" join_timeout="3000"  
                         down_thread="false" up_thread="false"
-                        join_retry_timeout="2000" shun="true"
-                        view_bundling="true"/>
+                        join_retry_timeout="2000" shun="false"
+                        view_bundling="true"
+                        view_ack_collection_timeout="5000"/>
             <FC max_credits="2000000" down_thread="false" up_thread="false"
                 min_threshold="0.10"/>
             <FRAG2 frag_size="60000" down_thread="false" up_thread="false"/>
@@ -85,7 +86,7 @@
             <MERGE2 max_interval="100000"
                     down_thread="false" up_thread="false" min_interval="20000"/>
             <FD_SOCK down_thread="false" up_thread="false"/>
-            <FD timeout="10000" max_tries="5" down_thread="false" up_thread="false" shun="true"/>
+            <FD timeout="10000" max_tries="5" down_thread="false" up_thread="false" shun="false"/>
             <VERIFY_SUSPECT timeout="1500" down_thread="false" up_thread="false"/>
             <pbcast.NAKACK max_xmit_size="60000"
                            use_mcast_xmit="false" gc_lag="0"
@@ -99,7 +100,7 @@
                            max_bytes="400000"/>
             <pbcast.GMS print_local_addr="true" join_timeout="3000" 
                         down_thread="false" up_thread="false"
-                        join_retry_timeout="2000" shun="true"
+                        join_retry_timeout="2000" shun="false"
                         view_bundling="true"/>
             <FRAG2 frag_size="60000" down_thread="false" up_thread="false"/>
             <pbcast.STREAMING_STATE_TRANSFER down_thread="false" up_thread="false" use_reading_thread="true"/>
@@ -137,7 +138,7 @@
             <MERGE2 max_interval="100000"
                     down_thread="false" up_thread="false" min_interval="20000"/>
             <FD_SOCK down_thread="false" up_thread="false"/>
-            <FD timeout="10000" max_tries="5" down_thread="false" up_thread="false" shun="true"/>
+            <FD timeout="10000" max_tries="5" down_thread="false" up_thread="false" shun="false"/>
             <VERIFY_SUSPECT timeout="1500" down_thread="false" up_thread="false"/>
             <pbcast.NAKACK max_xmit_size="60000"
                            use_mcast_xmit="false" gc_lag="0"
@@ -149,7 +150,7 @@
                            max_bytes="400000"/>
             <pbcast.GMS print_local_addr="true" join_timeout="3000" 
                         down_thread="false" up_thread="false"
-                        join_retry_timeout="2000" shun="true"
+                        join_retry_timeout="2000" shun="false"
                         view_bundling="true"/>
             <FC max_credits="2000000" down_thread="false" up_thread="false"
                 min_threshold="0.10"/>
@@ -189,7 +190,7 @@
             <MERGE2 max_interval="100000"
                     down_thread="false" up_thread="false" min_interval="20000"/>
             <FD_SOCK down_thread="false" up_thread="false"/>
-            <FD timeout="10000" max_tries="5" down_thread="false" up_thread="false" shun="true"/>
+            <FD timeout="10000" max_tries="5" down_thread="false" up_thread="false" shun="false"/>
             <VERIFY_SUSPECT timeout="1500" down_thread="false" up_thread="false"/>
             <pbcast.NAKACK max_xmit_size="60000"
                            use_mcast_xmit="false" gc_lag="0"
@@ -201,7 +202,7 @@
                            max_bytes="400000"/>
             <pbcast.GMS print_local_addr="true" join_timeout="3000" 
                         down_thread="false" up_thread="false"
-                        join_retry_timeout="2000" shun="true"
+                        join_retry_timeout="2000" shun="false"
                         view_bundling="true"/>
             <pbcast.STREAMING_STATE_TRANSFER down_thread="false" up_thread="false" use_reading_thread="true"/>
             <!-- pbcast.STATE_TRANSFER down_thread="false" up_thread="false"/ -->
@@ -247,7 +248,7 @@
             <MERGE2 max_interval="100000"
                     down_thread="false" up_thread="false" min_interval="20000"/>
             <FD_SOCK down_thread="false" up_thread="false"/>
-            <FD timeout="10000" max_tries="5" down_thread="false" up_thread="false" shun="true"/>
+            <FD timeout="10000" max_tries="5" down_thread="false" up_thread="false" shun="false"/>
             <VERIFY_SUSPECT timeout="1500" down_thread="false" up_thread="false"/>
             <pbcast.NAKACK max_xmit_size="60000"
                            use_mcast_xmit="false" gc_lag="0"
@@ -259,7 +260,7 @@
                            max_bytes="400000"/>
             <pbcast.GMS print_local_addr="true" join_timeout="3000" 
                         down_thread="false" up_thread="false"
-                        join_retry_timeout="2000" shun="true"
+                        join_retry_timeout="2000" shun="false"
                         view_bundling="true"/>
             <FC max_credits="2000000" down_thread="false" up_thread="false"
                 min_threshold="0.10"/>
@@ -306,7 +307,7 @@
             <MERGE2 max_interval="100000"
                     down_thread="false" up_thread="false" min_interval="20000"/>
             <FD_SOCK down_thread="false" up_thread="false"/>
-            <FD timeout="10000" max_tries="5" down_thread="false" up_thread="false" shun="true"/>
+            <FD timeout="10000" max_tries="5" down_thread="false" up_thread="false" shun="false"/>
             <VERIFY_SUSPECT timeout="1500" down_thread="false" up_thread="false"/>
             <pbcast.NAKACK max_xmit_size="60000"
                            use_mcast_xmit="false" gc_lag="0"
@@ -318,7 +319,7 @@
                            max_bytes="400000"/>
             <pbcast.GMS print_local_addr="true" join_timeout="3000" 
                         down_thread="false" up_thread="false"
-                        join_retry_timeout="2000" shun="true"
+                        join_retry_timeout="2000" shun="false"
                         view_bundling="true"/>
             <pbcast.STREAMING_STATE_TRANSFER down_thread="false" up_thread="false" use_reading_thread="true"/>
             <!-- pbcast.STATE_TRANSFER down_thread="false" up_thread="false"/ -->
@@ -326,6 +327,44 @@
         </config>
     </stack>
 
+
+    <stack name="tunnel"
+           description="Used with a GossipRouter">
+        <config>
+            <TUNNEL router_port="12001" router_host="127.0.0.1"/>
+            <PING timeout="2000"
+                  down_thread="false" up_thread="false" num_initial_members="3"
+                  gossip_refresh="10000"
+                  gossip_host="127.0.0.1"
+                  gossip_port="12001"/>
+            <MERGE2 max_interval="20000"
+                    down_thread="false" up_thread="false" min_interval="5000"/>
+            <FD_SOCK down_thread="false" up_thread="false"/>
+            <FD timeout="2000" max_tries="3" down_thread="false" up_thread="false" shun="false"/>
+            <VERIFY_SUSPECT timeout="1500" down_thread="false" up_thread="false"/>
+            <pbcast.NAKACK max_xmit_size="60000"
+                           use_mcast_xmit="false" gc_lag="0"
+                           retransmit_timeout="300,600,1200,2400,4800"
+                           down_thread="false" up_thread="false"
+                           discard_delivered_msgs="true"/>
+            <UNICAST timeout="300,600,1200,2400,3600"
+                     down_thread="false" up_thread="false"/>
+            <pbcast.STABLE stability_delay="1000" desired_avg_gossip="5000"
+                           down_thread="false" up_thread="false"
+                           max_bytes="400000"/>
+            <pbcast.GMS print_local_addr="true" join_timeout="3000"
+                        down_thread="false" up_thread="false"
+                        join_retry_timeout="2000" shun="false"
+                        view_bundling="true"
+                        view_ack_collection_timeout="5000"/>
+            <FC max_credits="2000000" down_thread="false" up_thread="false"
+                min_threshold="0.10"/>
+            <FRAG2 frag_size="60000" down_thread="false" up_thread="false"/>
+            <pbcast.STREAMING_STATE_TRANSFER down_thread="false" up_thread="false" use_reading_thread="true"/>
+            <!-- pbcast.STATE_TRANSFER down_thread="false" up_thread="false"/ -->
+            <pbcast.FLUSH down_thread="false" up_thread="false" timeout="0"/>
+        </config>
+    </stack>
 
 
 </protocol_stacks>
