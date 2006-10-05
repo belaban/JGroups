@@ -10,15 +10,14 @@ import java.io.*;
 /**
  * Class used for service state communication between Multiplexers
  * @author Bela Ban
- * @version $Id: ServiceInfo.java,v 1.3 2006/10/03 15:32:20 belaban Exp $
+ * @version $Id: ServiceInfo.java,v 1.4 2006/10/05 08:06:21 belaban Exp $
  */
 public class ServiceInfo implements Externalizable, Streamable {
     public static final byte STATE_REQ         = 1;
     public static final byte STATE_RSP         = 2;
     public static final byte SERVICE_UP        = 3;
     public static final byte SERVICE_DOWN      = 4;
-    public static final byte LIST_SERVICES_REQ = 5; // which services are available on this node ?
-    public static final byte LIST_SERVICES_RSP = 6; // list of services available on a given node (available in 'state')
+    public static final byte LIST_SERVICES_RSP = 5; // list of services available on a given node (available in 'state')
 
     byte    type=0;
     String  service=null;
@@ -113,6 +112,14 @@ public class ServiceInfo implements Externalizable, Streamable {
                 return tmp;
             case SERVICE_UP:   return "SERVICE_UP(" + service + "," + host + ")";
             case SERVICE_DOWN: return "SERVICE_DOWN(" + service + "," + host + ")";
+            case LIST_SERVICES_RSP:
+                String services=null;
+                try {
+                    services=Util.objectFromByteBuffer(state).toString();
+                }
+                catch(Exception e) {
+                }
+                return "LIST_SERVICES_RSP(" + services + ")";
             default: return "n/a";
         }
     }
@@ -123,6 +130,7 @@ public class ServiceInfo implements Externalizable, Streamable {
             case STATE_RSP:    return "STATE_RSP";
             case SERVICE_UP:   return "SERVICE_UP";
             case SERVICE_DOWN: return "SERVICE_DOWN";
+            case LIST_SERVICES_RSP: return "LIST_SERVICES_RSP";
             default:           return "n/a";
         }
     }
