@@ -15,7 +15,7 @@ import java.util.*;
  * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.32 2006/10/05 14:50:18 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.33 2006/10/05 15:02:11 belaban Exp $
  */
 public class Multiplexer implements UpHandler {
     /** Map<String,MuxChannel>. Maintains the mapping between service IDs and their associated MuxChannels */
@@ -277,9 +277,6 @@ public class Multiplexer implements UpHandler {
                 view=(View)evt.getArg();
                 Vector new_members=view != null? view.getMembers() : null;
                 Vector left_members=Util.determineLeftMembers(old_members, new_members);
-
-
-                System.out.println("===> " + view + " <===");
 
                 if(view instanceof MergeView) {
                     temp_merge_view=(MergeView)view.clone();
@@ -794,16 +791,14 @@ public class Multiplexer implements UpHandler {
             start=System.currentTimeMillis();
             try {
                 while(time_to_wait > 0 && numResponses(service_responses) < num_members) {
-                    System.out.println("time_to_wait=" + time_to_wait + ", numResponses(service_responses)=" + numResponses(service_responses) +
-                            ", num_members=" + num_members + ", service_state=" + service_state);
+                    // System.out.println("time_to_wait=" + time_to_wait + ", numResponses(service_responses)=" + numResponses(service_responses) +
+                       //     ", num_members=" + num_members + ", service_state=" + service_state);
                     service_responses.wait(time_to_wait);
                     time_to_wait-=System.currentTimeMillis() - start;
                 }
 
-
-                System.out.println("wait terminated: time_to_wait=" + time_to_wait + ", numResponses(service_responses)=" + numResponses(service_responses) +
-                        ", num_members=" + num_members + ", service_state=" + service_state);
-
+                // System.out.println("wait terminated: time_to_wait=" + time_to_wait + ", numResponses(service_responses)=" + numResponses(service_responses) +
+                   //     ", num_members=" + num_members + ", service_state=" + service_state);
                 copy=new HashMap(service_responses);
             }
             catch(Exception ex) {
