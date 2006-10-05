@@ -1,11 +1,11 @@
 package org.jgroups.mux;
 
-import org.jgroups.*;
-import org.jgroups.util.Util;
-import org.jgroups.util.Promise;
-import org.jgroups.stack.StateTransferInfo;
-import org.apache.commons.logging.LogFactory;
 import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.jgroups.*;
+import org.jgroups.stack.StateTransferInfo;
+import org.jgroups.util.Promise;
+import org.jgroups.util.Util;
 
 import java.util.*;
 
@@ -15,7 +15,7 @@ import java.util.*;
  * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.30 2006/10/04 13:34:51 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.31 2006/10/05 10:16:18 belaban Exp $
  */
 public class Multiplexer implements UpHandler {
     /** Map<String,MuxChannel>. Maintains the mapping between service IDs and their associated MuxChannels */
@@ -26,6 +26,11 @@ public class Multiplexer implements UpHandler {
     static final short SEPARATOR_LEN=(short)SEPARATOR.length();
     static final String NAME="MUX";
     private final BlockOkCollector block_ok_collector=new BlockOkCollector();
+
+    private MergeView temp_merge_view=null;
+
+    private boolean flush_present=true;
+    private boolean blocked=false;
 
 
 
@@ -47,19 +52,21 @@ public class Multiplexer implements UpHandler {
      * Used to collect responses to LIST_SERVICES_REQ */
     private final Map service_responses=new HashMap();
 
-    private static long SERVICES_RSP_TIMEOUT=5000;
+    private static long SERVICES_RSP_TIMEOUT=50000;
 
 
 
 
     public Multiplexer() {
         this.channel=null;
+        flush_present=isFlushPresent();
     }
 
     public Multiplexer(JChannel channel) {
         this.channel=channel;
         this.channel.setUpHandler(this);
         this.channel.setOpt(Channel.BLOCK, Boolean.TRUE); // we want to handle BLOCK events ourselves
+        flush_present=isFlushPresent();
     }
 
     /**
@@ -253,8 +260,6 @@ public class Multiplexer implements UpHandler {
                     log.warn("service " + hdr.id + " not currently running, discarding messgage " + msg);
                     return;
                 }
-                if(log.isTraceEnabled())
-                    log.trace("dispatching message to " + hdr.id);
                 mux_ch.up(evt);
                 break;
 
@@ -265,22 +270,49 @@ public class Multiplexer implements UpHandler {
                 Vector left_members=Util.determineLeftMembers(old_members, new_members);
 
                 if(view instanceof MergeView) {
-                    Thread merge_view_handler=new Thread() {
-                        public void run() {
-                            handleMergeView((MergeView)view);
+                    temp_merge_view=(MergeView)view.clone();
+                    if(log.isTraceEnabled())
+                        log.trace("received a MergeView: " + temp_merge_view + ", adjusting the service view");
+                    if(!flush_present) {
+                        try {
+                            if(log.isTraceEnabled())
+                                log.trace("calling handleMergeView() from VIEW_CHANGE (flush_present=" + flush_present + ")");
+                            Thread merge_handler=new Thread() {
+                                public void run() {
+                                    try {
+                                        handleMergeView(temp_merge_view);
+                                    }
+                                    catch(Exception e) {
+                                        if(log.isErrorEnabled())
+                                            log.error("problems handling merge view", e);
+                                    }
+                                }
+                            };
+                            merge_handler.setName("merge handler view_change");
+                            merge_handler.setDaemon(false);
+                            merge_handler.start();
                         }
-                    };
-                    merge_view_handler.setName("Multiplexer MergeView handler");
-                    merge_view_handler.start();
-                    try {merge_view_handler.join(10000);} catch(InterruptedException e) {}
+                        catch(Exception e) {
+                            if(log.isErrorEnabled())
+                                log.error("failed handling merge view", e);
+                        }
+                    }
+                    else {
+                        ; // don't do anything because we are blocked sending messages anyway
+                    }
                 }
-
+                else { // regular view
+                    synchronized(service_responses) {
+                        service_responses.clear();
+                    }
+                }
                 if(left_members.size() > 0)
                     adjustServiceViews(left_members);
                 break;
 
             case Event.SUSPECT:
                 Address suspected_mbr=(Address)evt.getArg();
+
                 synchronized(service_responses) {
                     service_responses.put(suspected_mbr, new HashSet());
                     service_responses.notifyAll();
@@ -304,6 +336,7 @@ public class Multiplexer implements UpHandler {
                 break;
 
             case Event.BLOCK:
+                blocked=true;
                 int num_services=services.size();
                 if(num_services == 0) {
                     channel.blockOk();
@@ -314,6 +347,40 @@ public class Multiplexer implements UpHandler {
                 block_ok_collector.waitUntil(num_services);
                 channel.blockOk();
                 return;
+
+            case Event.UNBLOCK: // process queued-up MergeViews
+                if(!blocked) {
+                    passToAllMuxChannels(evt);
+                    return;
+                }
+                else
+                    blocked=false;
+                if(temp_merge_view != null) {
+                    if(log.isTraceEnabled())
+                        log.trace("calling handleMergeView() from UNBLOCK (flush_present=" + flush_present + ")");
+                    try {
+                        Thread merge_handler=new Thread() {
+                            public void run() {
+                                try {
+                                    handleMergeView(temp_merge_view);
+                                }
+                                catch(Exception e) {
+                                    if(log.isErrorEnabled())
+                                        log.error("problems handling merge view", e);
+                                }
+                            }
+                        };
+                        merge_handler.setName("merge handler (unblock)");
+                        merge_handler.setDaemon(false);
+                        merge_handler.start();
+                    }
+                    catch(Exception e) {
+                        if(log.isErrorEnabled())
+                            log.error("failed handling merge view", e);
+                    }
+                }
+                passToAllMuxChannels(evt);
+                break;
 
             default:
                 passToAllMuxChannels(evt);
@@ -438,35 +505,20 @@ public class Multiplexer implements UpHandler {
     }
 
 
+    private boolean isFlushPresent() {
+        return channel.getProtocolStack().findProtocol("FLUSH") != null;
+    }
 
-/*    private void handleStateRequest(Event evt) {
-        StateTransferInfo info=(StateTransferInfo)evt.getArg();
-        String state_id=info.state_id;
-        MuxChannel mux_ch;
 
-        // state_id might be "myID" or "myID::mySubID". if it is null, get all substates
-        // could be a list, e.g. "myID::subID;mySecondID::subID-2;myThirdID::subID-3 etc
-
-        // current_state_id=state_id;
-
-        // List ids=parseStateIds(state_id);
-        synchronized(state_transfer_rsps) {
-            for(Iterator it=ids.iterator(); it.hasNext();) {
-                String id=(String)it.next();
-                String appl_id=id;  // e.g. "myID::myStateID"
-                int index=id.indexOf(SEPARATOR);
-                if(index > -1) {
-                    appl_id=id.substring(0, index);  // similar reuse as above...
-                }
-                state_transfer_rsps.add(appl_id);
-            }
-        }
-
-        for(Iterator it=ids.iterator(); it.hasNext();) {
-            String id=(String)it.next();
-            _handleStateRequest(id, evt, info);
-        }
-    }*/
+    private void sendServiceState() throws Exception {
+        Object[] my_services=services.keySet().toArray();
+        byte[] data=Util.objectToByteBuffer(my_services);
+        ServiceInfo sinfo=new ServiceInfo(ServiceInfo.LIST_SERVICES_RSP, null, channel.getLocalAddress(), data);
+        Message rsp=new Message(); // send to everyone
+        MuxHeader hdr=new MuxHeader(sinfo);
+        rsp.putHeader(NAME, hdr);
+        channel.send(rsp);
+    }
 
 
     private Address getLocalAddress() {
@@ -605,19 +657,6 @@ public class Multiplexer implements UpHandler {
             case ServiceInfo.SERVICE_DOWN:
                 handleServiceDown(info.service, info.host, true);
                 break;
-            case ServiceInfo.LIST_SERVICES_REQ:
-                if(local_addr.equals(sender)) {
-                    // we don't need to send back our own list; we already have it
-                    break;
-                }
-                Object[] my_services=services.keySet().toArray();
-                byte[] data=Util.objectToByteBuffer(my_services);
-                ServiceInfo sinfo=new ServiceInfo(ServiceInfo.LIST_SERVICES_RSP, null, channel.getLocalAddress(), data);
-                Message rsp=new Message(sender);
-                hdr=new MuxHeader(sinfo);
-                rsp.putHeader(NAME, hdr);
-                channel.send(rsp);
-                break;
             case ServiceInfo.LIST_SERVICES_RSP:
                 handleServicesRsp(sender, info.state);
                 break;
@@ -633,12 +672,18 @@ public class Multiplexer implements UpHandler {
         Set s=new HashSet();
         for(int i=0; i < keys.length; i++)
             s.add(keys[i]);
+
+
+
         synchronized(service_responses) {
             Set tmp=(Set)service_responses.get(sender);
             if(tmp == null)
                 tmp=new HashSet();
             tmp.addAll(s);
+
             service_responses.put(sender, tmp);
+            if(log.isTraceEnabled())
+                log.trace("received service response: " + sender + "(" + s.toString() + ")");
             service_responses.notifyAll();
         }
     }
@@ -726,20 +771,16 @@ public class Multiplexer implements UpHandler {
      * service_state, compute a service view (a copy of MergeView) for each service and pass it up
      * @param view
      */
-    private void handleMergeView(MergeView view) {
+    private void handleMergeView(MergeView view) throws Exception {
         long time_to_wait=SERVICES_RSP_TIMEOUT, start;
-        ServiceInfo info=new ServiceInfo(ServiceInfo.LIST_SERVICES_REQ, null, channel.getLocalAddress(), null);
-        MuxHeader hdr=new MuxHeader(info);
-        Message req=new Message(); // send to all
-        req.putHeader(NAME, hdr);
-        int num_members=view.size() -1; // exclude myself
-
+        int num_members=view.size(); // include myself
         Map copy=null;
+
+        sendServiceState();
+
         synchronized(service_responses) {
-            service_responses.clear();
             start=System.currentTimeMillis();
             try {
-                channel.send(req);
                 while(time_to_wait > 0 && service_responses.size() < num_members) {
                     service_responses.wait(time_to_wait);
                     time_to_wait-=System.currentTimeMillis() - start;
@@ -752,8 +793,13 @@ public class Multiplexer implements UpHandler {
             }
         }
 
+        if(log.isTraceEnabled())
+            log.trace("merging service state, my service_state: " + service_state + ", received responses: " + copy);
+
         // merges service_responses with service_state and emits MergeViews for the services affected (MuxChannel)
         mergeServiceState(view, copy);
+        service_responses.clear();
+        temp_merge_view=null;
     }
 
 
