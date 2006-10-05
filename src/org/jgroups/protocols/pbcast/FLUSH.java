@@ -523,8 +523,7 @@ public class FLUSH extends Protocol
    }
 
    private void onStartFlush(Address flushStarter, FlushHeader fh)
-   {
-      isBlockState = true;
+   {      
       if (stats)
       {
          startFlushTime = System.currentTimeMillis();
@@ -569,10 +568,11 @@ public class FLUSH extends Protocol
 
       if (flushOkCompleted)
       {
+         isBlockState = true;
          m.putHeader(getName(), new FlushHeader(FlushHeader.FLUSH_COMPLETED, viewID));
          passDown(new Event(Event.MSG, m));
          if (log.isDebugEnabled())
-            log.debug(localAddress + " sent FLUSH_COMPLETED message to " + flushCaller);
+            log.debug(localAddress + " is blocking FLUSH.down(). Sent FLUSH_COMPLETED message to " + flushCaller);
       }
    }
    
