@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.29 2006/10/04 13:25:36 belaban Exp $
+// $Id: Draw.java,v 1.30 2006/10/09 11:35:33 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -13,8 +13,6 @@ import javax.management.MBeanServer;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectOutputStream;
 import java.util.Random;
 
 
@@ -25,7 +23,7 @@ import java.util.Random;
  * mouse moves are broadcast to all group members, which then apply them to their canvas<p>
  * @author Bela Ban, Oct 17 2001
  */
-public class Draw implements ActionListener, ChannelListener {
+public class Draw extends ExtendedReceiverAdapter implements ActionListener, ChannelListener {
     String                         groupname="DrawGroupDemo";
     private Channel                channel=null;
     private int                    member_size=1;
@@ -51,18 +49,20 @@ public class Draw implements ActionListener, ChannelListener {
             return;
 
         channel=new JChannel(props);
-        // channel.setOpt(Channel.BLOCK, Boolean.TRUE);
+        channel.setOpt(Channel.BLOCK, Boolean.TRUE);
         if(debug) {
             debugger=new Debugger((JChannel)channel, cummulative);
             debugger.start();
         }
         channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
+        channel.setReceiver(this);
         channel.addChannelListener(this);
     }
 
     public Draw(Channel channel) throws Exception {
         this.channel=channel;
         channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
+        channel.setReceiver(this);
         channel.addChannelListener(this);
     }
 
@@ -211,8 +211,6 @@ public class Draw implements ActionListener, ChannelListener {
         mainFrame.setLocation(15, 25);
         mainFrame.setBounds(new Rectangle(250, 250));
         mainFrame.setVisible(true);
-        if(!no_channel)
-            mainLoop();
     }
 
 
@@ -241,99 +239,50 @@ public class Draw implements ActionListener, ChannelListener {
 
 
 
+    public void receive(Message msg) {
+        byte[] buf=msg.getRawBuffer();
+        if(buf == null) {
+            System.err.println("received null buffer from " + msg.getSrc());
+            return;
+        }
 
-    public void mainLoop() {
-        Object       tmp;
-        Message      msg=null;
-        DrawCommand  comm;
-        boolean      fl=true;
-
-        while(fl) {
-            try {
-                tmp=channel.receive(0);
-                if(tmp == null) continue;
-
-                if(tmp instanceof View) {
-                    View v=(View)tmp;
-                    if(v instanceof MergeView)
-                        System.out.println("** MergeView=" + v);
-                    else
-                        System.out.println("** View=" + v);
-                    member_size=v.size();
-                    if(mainFrame != null)
-                        setTitle();
-                    continue;
-                }
-
-                if(tmp instanceof ExitEvent) {
-                    System.out.println("-- Draw.main(): received EXIT, waiting for ChannelReconnected callback");
-                    setTitle(" Draw Demo - shunned ");
-                    break;
-                }
-
-                if(tmp instanceof BlockEvent) {
-                    System.out.println("--  received BlockEvent");
-                    channel.blockOk();
-                    continue;
-                }
-
-                if(tmp instanceof UnblockEvent) {
-                    System.out.println("-- received UnblockEvent");
-                    continue;
-                }
-
-                if(!(tmp instanceof Message))
-                    continue;
-
-                msg=(Message)tmp;
-                comm=null;
-
-                Object obj=msg.getObject();
-                if(obj instanceof DrawCommand)
-                    comm=(DrawCommand)obj;
-                else if(obj instanceof Message) {
-                    System.out.println("*** Draw.run(): message is " + Util.printMessage((Message)obj));
-                    Util.dumpStack(false);
-                    continue;
-                }
-                else {
-                    if(obj != null)
-                        System.out.println("*** Draw.run(): obj is " + obj.getClass() +
-                                           ", hdrs are" + msg.printObjectHeaders());
-                    else
-                        System.out.println("*** Draw.run(): hdrs are " + msg.printObjectHeaders());
-                    Util.dumpStack(false);
-                    continue;
-                }
-
-                switch(comm.mode) {
+        try {
+            DrawCommand comm=(DrawCommand)Util.streamableFromByteBuffer(DrawCommand.class, buf, msg.getOffset(), msg.getLength());
+            switch(comm.mode) {
                 case DrawCommand.DRAW:
                     if(panel != null)
                         panel.drawPoint(comm);
                     break;
                 case DrawCommand.CLEAR:
                     clearPanel();
-                    continue;
-                default:
-                    System.err.println("***** Draw.run(): received invalid draw command " + comm.mode);
                     break;
-                }
-
+                default:
+                    System.err.println("***** received invalid draw command " + comm.mode);
+                    break;
             }
-            catch(ChannelNotConnectedException not) {
-                System.err.println("Draw: " + not);
-                break;
-            }
-            catch(ChannelClosedException closed) {
-                break;
-            }
-            catch(Exception e) {
-                e.printStackTrace();
-            }
+        }
+        catch(Exception e) {
+            e.printStackTrace();
         }
     }
 
+    public void viewAccepted(View v) {
+        if(v instanceof MergeView)
+            System.out.println("** MergeView=" + v);
+        else
+            System.out.println("** View=" + v);
+        member_size=v.size();
+        if(mainFrame != null)
+            setTitle();
+    }
 
+    public void block() {
+        System.out.println("--  received BlockEvent");
+    }
+
+    public void unblock() {
+        System.out.println("-- received UnblockEvent");
+    }
 
 
 
@@ -349,10 +298,10 @@ public class Draw implements ActionListener, ChannelListener {
     public void sendClearPanelMsg() {
         int                  tmp[]=new int[1]; tmp[0]=0;
         DrawCommand          comm=new DrawCommand(DrawCommand.CLEAR);
-        ObjectOutputStream   os;
 
         try {
-            channel.send(new Message(null, null, comm));
+            byte[] buf=Util.streamableToByteBuffer(comm);
+            channel.send(new Message(null, null, buf));
         }
         catch(Exception ex) {
             System.err.println(ex);
@@ -406,16 +355,12 @@ public class Draw implements ActionListener, ChannelListener {
     }
 
     public void channelShunned() {
-
+        System.out.println("-- received EXIT, waiting for ChannelReconnected callback");
+        setTitle(" Draw Demo - shunned ");
     }
 
     public void channelReconnected(Address addr) {
         setTitle();
-        new Thread() {
-            public void run() {
-                mainLoop();
-            }
-        }.start();
     }
 
 
@@ -459,7 +404,6 @@ public class Draw implements ActionListener, ChannelListener {
         public void mouseMoved(MouseEvent e) {}
 
         public void mouseDragged(MouseEvent e) {
-            ObjectOutputStream  os;
             int                 x=e.getX(), y=e.getY();
             DrawCommand         comm=new DrawCommand(DrawCommand.DRAW, x, y,
                                                      draw_color.getRed(), draw_color.getGreen(), draw_color.getBlue());
@@ -470,7 +414,8 @@ public class Draw implements ActionListener, ChannelListener {
             }
 
             try {
-                channel.send(new Message(null, null, comm));
+                byte[] buf=Util.streamableToByteBuffer(comm);
+                channel.send(new Message(null, null, buf));
                 Thread.yield(); // gives the repainter some breath
             }
             catch(Exception ex) {
