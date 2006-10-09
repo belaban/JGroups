@@ -302,7 +302,7 @@
             $ java -jar jgroups-all.jar
 
             Version:        2.3 alpha
-            CVS:            $Id: installation.xml,v 1.1 2006/04/25 11:49:49 belaban Exp $
+            CVS:            $Id: installation.xml,v 1.2 2006/10/09 13:36:17 belaban Exp $
             History:        (see doc/history.txt for details)
         </screen>
 
@@ -502,7 +502,7 @@
         </para>
 
         <screen>
-            java -Djava.net.preferIPv4Stack=true org.jgroups.demos.Draw -props file:c:\\default.xml
+            java -Djava.net.preferIPv4Stack=true org.jgroups.demos.Draw -props file:c:\\udp.xml
         </screen>
 
         <para>JDK 1.4.1 uses IPv6 by default, although is has a dual

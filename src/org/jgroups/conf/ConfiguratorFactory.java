@@ -26,12 +26,12 @@ import java.security.AccessControlException;
  * parses it so that the ProtocolStack can create a stack.
  * <BR>
  * Currently the factory returns one of the following objects:<BR>
- * 1. XmlConfigurator - parses XML files that are according to the jgroups-protocol.dtd<BR>
+ * 1. XmlConfigurator - parses XML files<BR>
  * 2. PlainConfigurator - uses the old style strings UDP:FRAG: etc etc<BR>
  *
  * @author Filip Hanik (<a href="mailto:filip@filip.net">filip@filip.net)
  * @author Bela Ban
- * @version $Id: ConfiguratorFactory.java,v 1.21 2006/09/15 13:03:28 belaban Exp $
+ * @version $Id: ConfiguratorFactory.java,v 1.22 2006/10/09 13:34:00 belaban Exp $
  */
 public class ConfiguratorFactory {
     public static final String JAXP_MISSING_ERROR_MSG=
@@ -253,7 +253,7 @@ public class ConfiguratorFactory {
                 // if we get here this means we don't have a URL
             }
 
-            // another try - maybe it is a resource, e.g. default.xml
+            // another try - maybe it is a resource, e.g. udp.xml
             if(input == null && ((String)properties).endsWith("xml")) {
                 try {
                     input=Util.getResourceAsStream((String)properties, ConfiguratorFactory.class);
@@ -374,7 +374,7 @@ public class ConfiguratorFactory {
         // }
 
         // Check to see if the properties string is the name of a resource,
-        // e.g. default.xml.
+        // e.g. udp.xml.
         if(configStream == null && properties.endsWith("xml")) {
             configStream=Util.getResourceAsStream(properties, ConfiguratorFactory.class);
         }
