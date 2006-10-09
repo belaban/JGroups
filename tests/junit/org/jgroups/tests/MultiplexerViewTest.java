@@ -13,7 +13,7 @@ import java.util.LinkedList;
 /**
  * Test the multiplexer functionality provided by JChannelFactory, especially the service views and cluster views
  * @author Bela Ban
- * @version $Id: MultiplexerViewTest.java,v 1.5 2006/09/28 15:32:47 belaban Exp $
+ * @version $Id: MultiplexerViewTest.java,v 1.6 2006/10/09 08:36:29 belaban Exp $
  */
 public class MultiplexerViewTest extends TestCase {
     private Channel c1, c2, c3, c4;
@@ -95,16 +95,24 @@ public class MultiplexerViewTest extends TestCase {
 
         List events=receiver.getEvents();
         int num_events=events.size();
-        System.out.println("-- events: " + events);
-        assertEquals("we should have a BLOCK and an UNBLOCK event", 2, num_events);
+        System.out.println("-- receiver: " + events);
+        assertEquals("we should have a BLOCK, UNBLOCK, BLOCK, UNBLOCK sequence", 4, num_events);
         Object evt=events.remove(0);
-        assertTrue(evt instanceof BlockEvent);
+        assertTrue("evt=" + evt, evt instanceof BlockEvent);
         evt=events.remove(0);
-        assertTrue(evt instanceof UnblockEvent);
+        assertTrue("evt=" + evt, evt instanceof UnblockEvent);
+        evt=events.remove(0);
+        assertTrue("evt=" + evt, evt instanceof BlockEvent);
+        evt=events.remove(0);
+        assertTrue("evt=" + evt, evt instanceof UnblockEvent);
 
         events=receiver2.getEvents();
         num_events=events.size();
-        System.out.println("-- events: " + events);
+        System.out.println("-- receiver2: " + events);
+        evt=events.remove(0);
+        assertTrue(evt instanceof BlockEvent);
+        evt=events.remove(0);
+        assertTrue(evt instanceof UnblockEvent);
     }
 
 
