@@ -19,7 +19,7 @@ import java.lang.management.ThreadInfo;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.28 2006/10/04 20:00:28 vlada Exp $
+ * @version $Id: MultiplexerTest.java,v 1.29 2006/10/09 13:13:11 belaban Exp $
  */
 public class MultiplexerTest extends TestCase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -237,7 +237,7 @@ public class MultiplexerTest extends TestCase {
 
         ch1_repl=factory2.createMultiplexerChannel(STACK_NAME, "c1");
         ch1_repl.connect("bla");
-        Util.sleep(500);
+        // Util.sleep(500);
         View v=ch1_repl.getView();
         assertNotNull(v);
         assertEquals(2, v.size());
