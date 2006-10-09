@@ -13,7 +13,7 @@ import java.util.LinkedList;
 /**
  * Test the multiplexer functionality provided by JChannelFactory, especially the service views and cluster views
  * @author Bela Ban
- * @version $Id: MultiplexerViewTest.java,v 1.7 2006/10/09 09:06:22 belaban Exp $
+ * @version $Id: MultiplexerViewTest.java,v 1.9 2006/10/09 13:08:31 belaban Exp $
  */
 public class MultiplexerViewTest extends TestCase {
     private Channel c1, c2, c3, c4;
@@ -124,28 +124,28 @@ public class MultiplexerViewTest extends TestCase {
         MyReceiver receiver=new MyReceiver();
         c1.setReceiver(receiver);
         c1.connect("bla");
-        Util.sleep(500);
+        // Util.sleep(500);
 
         c2=factory.createMultiplexerChannel(STACK_NAME, "service-2");
         c2.setOpt(Channel.BLOCK, Boolean.TRUE);
         MyReceiver receiver2=new MyReceiver();
         c2.setReceiver(receiver2);
         c2.connect("bla");
-        Util.sleep(500);
+        // Util.sleep(500);
 
         c3=factory.createMultiplexerChannel(STACK_NAME, "service-3");
         c3.setOpt(Channel.BLOCK, Boolean.TRUE);
         MyReceiver receiver3=new MyReceiver();
         c3.setReceiver(receiver3);
         c3.connect("bla");
-        Util.sleep(500);
+        // Util.sleep(500);
 
         c4=factory2.createMultiplexerChannel(STACK_NAME, "service-3");
         c4.setOpt(Channel.BLOCK, Boolean.TRUE);
         MyReceiver receiver4=new MyReceiver();
         c4.setReceiver(receiver4);
         c4.connect("bla");
-        Util.sleep(1000);
+        // Util.sleep(1000);
 
         List events=receiver.getEvents();
         checkBlockAndUnBlock(events, "receiver", new Object[]{BLOCK_EVENT, UNBLOCK_EVENT, BLOCK_EVENT, UNBLOCK_EVENT});
@@ -170,13 +170,7 @@ public class MultiplexerViewTest extends TestCase {
         System.out.println("-- Closing c4");
 
         c4.close();
-        Util.sleep(5000);
-
-        System.out.println("receiver: " + receiver.getEvents() + "\n" +
-                           "receiver2: " + receiver2.getEvents() + "\n" +
-            "receiver3: " + receiver3.getEvents() + "\n" +
-                    "receiver4: " + receiver4.getEvents() + "\n"
-        );
+        // Util.sleep(5000);
 
         events=receiver.getEvents();
         checkBlockAndUnBlock(events, "receiver", new Object[]{BLOCK_EVENT, UNBLOCK_EVENT});
