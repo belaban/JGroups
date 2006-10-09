@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.30 2006/10/09 11:35:33 belaban Exp $
+// $Id: Draw.java,v 1.31 2006/10/09 11:47:36 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -49,7 +49,7 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
             return;
 
         channel=new JChannel(props);
-        channel.setOpt(Channel.BLOCK, Boolean.TRUE);
+        // channel.setOpt(Channel.BLOCK, Boolean.TRUE);
         if(debug) {
             debugger=new Debugger((JChannel)channel, cummulative);
             debugger.start();

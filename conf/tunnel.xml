@@ -5,12 +5,36 @@
 <!-- input file: tunnel.old.xml -->
 
 <config>
-    <TUNNEL router_port="12001" router_host="localhost"/>
-    <PING timeout="3000" gossip_refresh="10000" num_initial_members="3" gossip_host="localhost" gossip_port="12001"/>
-    <MERGE2 max_interval="10000" min_interval="5000"/>
-    <FD timeout="3000"/>
+    <TUNNEL router_port="12001" router_host="127.0.0.1"/>
+    <PING timeout="2000"
+          down_thread="false" up_thread="false" num_initial_members="3"
+          gossip_refresh="10000"
+          gossip_host="127.0.0.1"
+          gossip_port="12001"/>
+    <MERGE2 max_interval="20000"
+            down_thread="false" up_thread="false" min_interval="5000"/>
+    <FD_SOCK down_thread="false" up_thread="false"/>
+    <FD timeout="2000" max_tries="3" down_thread="false" up_thread="false" shun="false"/>
     <VERIFY_SUSPECT timeout="1500" down_thread="false" up_thread="false"/>
-    <pbcast.NAKACK gc_lag="100" retransmit_timeout="600,1200,2400,4800"/>
-    <pbcast.STABLE stability_delay="1000" desired_avg_gossip="20000" down_thread="false" max_bytes="0" up_thread="false"/>
-    <pbcast.GMS print_local_addr="true" join_timeout="5000" join_retry_timeout="2000" shun="true"/>
+    <pbcast.NAKACK max_xmit_size="60000"
+                   use_mcast_xmit="false" gc_lag="0"
+                   retransmit_timeout="300,600,1200,2400,4800"
+                   down_thread="false" up_thread="false"
+                   discard_delivered_msgs="true"/>
+    <UNICAST timeout="300,600,1200,2400,3600"
+             down_thread="false" up_thread="false"/>
+    <pbcast.STABLE stability_delay="1000" desired_avg_gossip="5000"
+                   down_thread="false" up_thread="false"
+                   max_bytes="400000"/>
+    <pbcast.GMS print_local_addr="true" join_timeout="3000"
+                down_thread="false" up_thread="false"
+                join_retry_timeout="2000" shun="false"
+                view_bundling="true"
+                view_ack_collection_timeout="5000"/>
+    <FC max_credits="2000000" down_thread="false" up_thread="false"
+        min_threshold="0.10"/>
+    <FRAG2 frag_size="60000" down_thread="false" up_thread="false"/>
+    <pbcast.STREAMING_STATE_TRANSFER down_thread="false" up_thread="false" use_reading_thread="true"/>
+    <!-- pbcast.STATE_TRANSFER down_thread="false" up_thread="false"/ -->
+    <pbcast.FLUSH down_thread="false" up_thread="false" timeout="0"/>
 </config>

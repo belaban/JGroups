@@ -1,6 +1,6 @@
 #
 # This file contains configuration for the JGroups performance tests (org.jgroups.tests.perf package)
-# $Id: config.txt,v 1.10 2006/08/21 11:18:30 belaban Exp $
+# $Id: config.txt,v 1.11 2006/10/09 11:43:44 belaban Exp $
 #
 
 # Class implementing the org.jgroups.tests.perf.Transport interface
@@ -31,7 +31,7 @@ processing_delay=0
 
 # Needs to either contain the full property string, or an URL pointing to a valid
 # location (needs to be changed)
-props=file:c:\\default.xml
+props=file:c:\\udp.xml
 
 
 # Dumps statistics about the transport
