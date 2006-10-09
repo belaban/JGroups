@@ -21,8 +21,7 @@ public class XmlConfigurationTest extends TestCase {
 
     public void testBasic() {
         try {
-            // InputStream default_config = XmlConfigurator.class.getClassLoader().getResourceAsStream("default.xml");
-            InputStream default_config=Util.getResourceAsStream("default.xml", this.getClass());
+            InputStream default_config=Util.getResourceAsStream("udp.xml", this.getClass());
             XmlConfigurator conf=XmlConfigurator.getInstance(default_config);
             if(log.isDebugEnabled()) log.debug(conf.getProtocolStackString());
             assertTrue("Successfully parsed a valid XML configuration file.", true);

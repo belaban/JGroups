@@ -579,7 +579,7 @@
         <para>or</para>
 
         <screen>
-                    java org.javagroups.demos.Draw -props http://www.jgroups.com/default.xml
+                    java org.javagroups.demos.Draw -props http://www.jgroups.com/udp.xml
                 </screen>
 
         <para>In the latter case, an application downloads its protocol stack
