@@ -16,7 +16,7 @@ import java.util.*;
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.13 2006/10/05 07:12:56 belaban Exp $
+ * @version $Id: FlushTest.java,v 1.14 2006/10/09 13:05:02 belaban Exp $
  */
 public class FlushTest extends TestCase {
     Channel c1, c2,c3;
@@ -32,19 +32,19 @@ public class FlushTest extends TestCase {
 
         if(c2 != null) {
             c2.close();
-            Util.sleep(1000);
+            // Util.sleep(1000);
             c2=null;
         }
 
         if(c1 != null) {
             c1.close();
-            Util.sleep(1000);
+            // Util.sleep(1000);
             c1=null;
         }
 
         if(c3 != null) {
             c3.close();
-            Util.sleep(1000);
+            // Util.sleep(1000);
             c3=null;
         }
     }
@@ -55,7 +55,7 @@ public class FlushTest extends TestCase {
         MyReceiver receiver=new MyReceiver("c1");
         c1.setReceiver(receiver);
         c1.connect("bla");
-        Util.sleep(1000);
+        // Util.sleep(1000);
         checkEventSequence(receiver);
     }
 
@@ -95,7 +95,7 @@ public class FlushTest extends TestCase {
         c2.setReceiver(new MySimpleReplier(c2, false));
         c2.connect("bla");
 
-        Util.sleep(100);
+        // Util.sleep(100);
         System.out.println("\n** Getting the state **");
         c2.getState(null, 10000);
         // now send unicast, this might block as described in the case
@@ -134,7 +134,7 @@ public class FlushTest extends TestCase {
         if(sendMessages){
             c1.send(new Message());
         }
-        Util.sleep(1000);
+        // Util.sleep(1000);
 
         c2=createChannel();
         MyReceiver receiver2=new MyReceiver("c2");
@@ -142,7 +142,7 @@ public class FlushTest extends TestCase {
         c2.connect("bla");
         View view=c2.getView();
         assertEquals(2, view.size());
-        Util.sleep(1000);
+        // Util.sleep(1000);
         if(sendMessages){
             c1.send(new Message());
             c2.send(new Message());
@@ -151,11 +151,11 @@ public class FlushTest extends TestCase {
         checkEventSequence(receiver2);
 
         c2.close();
-        Util.sleep(500);
+        // Util.sleep(500);
         if(sendMessages){
             c1.send(new Message());
         }
-        Util.sleep(1000);
+        // Util.sleep(1000);
 
         checkEventSequence(receiver);
     }
@@ -170,7 +170,7 @@ public class FlushTest extends TestCase {
             c1.send(new Message());
         }
 
-        Util.sleep(1000);
+        // Util.sleep(1000);
 
         c2=createChannel();
         MyReceiver receiver2=new MyReceiver("c2");
@@ -178,7 +178,7 @@ public class FlushTest extends TestCase {
         c2.connect("bla");
         View view=c2.getView();
         assertEquals(2, view.size());
-        Util.sleep(1000);
+        // Util.sleep(1000);
 
         if(sendMessages){
             c1.send(new Message());
@@ -191,7 +191,7 @@ public class FlushTest extends TestCase {
         c3.connect("bla");
         view=c3.getView();
         assertEquals(3, view.size());
-        Util.sleep(1000);
+        // Util.sleep(1000);
         if(sendMessages){
             c1.send(new Message());
             c2.send(new Message());
@@ -206,12 +206,12 @@ public class FlushTest extends TestCase {
             c2.send(new Message());
             c2.send(new Message());
         }
-        Util.sleep(1000);
+        // Util.sleep(1000);
 
         //close coordinator one more time
         checkEventSequence(receiver2);
         c2.close();
-        Util.sleep(1000);
+        // Util.sleep(1000);
 
         checkEventSequence(receiver3);
     }
@@ -223,32 +223,32 @@ public class FlushTest extends TestCase {
         MyReceiver receiver=new MyReceiver("c1");
         c1.setReceiver(receiver);
         c1.connect("bla");
-        Util.sleep(1000);
+        // Util.sleep(1000);
         if(sendMessages){
             c1.send(new Message());
             c1.send(new Message());
         }
 
-        Util.sleep(1000);
+        // Util.sleep(1000);
 
         c2=createChannel();
         MyReceiver receiver2=new MyReceiver("c2");
         c2.setReceiver(receiver2);
         c2.connect("bla");
-        Util.sleep(1000);
+        // Util.sleep(1000);
 
 
         c3=createChannel();
         MyReceiver receiver3=new MyReceiver("c3");
         c3.setReceiver(receiver3);
         c3.connect("bla");
-        Util.sleep(1000);
+        // Util.sleep(1000);
         if(sendMessages){
             c1.send(new Message());
             c2.send(new Message());
         }
 
-        Util.sleep(500);
+        // Util.sleep(500);
         if(sendMessages){
             c1.send(new Message());
             c2.send(new Message());
@@ -261,7 +261,7 @@ public class FlushTest extends TestCase {
 
         System.out.println("=== fetching the state ====");
         c2.getState(null, 10000);
-        Util.sleep(2000);
+        // Util.sleep(2000);
         if(sendMessages){
             c1.send(new Message());
             c1.send(new Message());
@@ -275,13 +275,13 @@ public class FlushTest extends TestCase {
 
         c2.close();
         c2=null;
-        Util.sleep(2000);
+        // Util.sleep(2000);
 
         c2=createChannel();
         receiver2=new MyReceiver("c2");
         c2.setReceiver(receiver2);
         c2.connect("bla");
-        Util.sleep(2000);
+        // Util.sleep(2000);
         if(sendMessages){
             c1.send(new Message());
         }
@@ -296,7 +296,7 @@ public class FlushTest extends TestCase {
             c1.send(new Message());
             c2.send(new Message());
         }
-        Util.sleep(2000);
+        // Util.sleep(2000);
 
         checkNonStateTransferMemberSequence(receiver2);
         checkBlockStateUnBlockSequence(receiver);
