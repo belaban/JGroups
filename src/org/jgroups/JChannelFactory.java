@@ -1,10 +1,9 @@
-// $Id: JChannelFactory.java,v 1.31 2006/08/31 10:55:33 belaban Exp $
+// $Id: JChannelFactory.java,v 1.32 2006/10/09 13:35:39 belaban Exp $
 
 package org.jgroups;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.jgroups.conf.ClassPathEntityResolver;
 import org.jgroups.conf.ConfiguratorFactory;
 import org.jgroups.conf.ProtocolStackConfigurator;
 import org.jgroups.conf.XmlConfigurator;
@@ -551,7 +550,6 @@ public class JChannelFactory implements ChannelFactory {
         DocumentBuilderFactory factory=DocumentBuilderFactory.newInstance();
         factory.setValidating(false); //for now
         DocumentBuilder builder=factory.newDocumentBuilder();
-        builder.setEntityResolver(new ClassPathEntityResolver());
         Document document=builder.parse(input);
 
         // The root element of the document should be the "config" element,

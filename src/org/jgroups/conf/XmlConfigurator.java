@@ -1,4 +1,4 @@
-// $Id: XmlConfigurator.java,v 1.16 2006/05/03 08:14:00 belaban Exp $
+// $Id: XmlConfigurator.java,v 1.17 2006/10/09 13:35:31 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -130,7 +130,6 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
             DocumentBuilderFactory factory=DocumentBuilderFactory.newInstance();
             factory.setValidating(false); //for now
             DocumentBuilder builder=factory.newDocumentBuilder();
-            builder.setEntityResolver(new ClassPathEntityResolver());
             Document document=builder.parse(stream);
             Element root=(Element)document.getElementsByTagName("protocol-stack").item(0);
             root.normalize();
@@ -184,7 +183,6 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
             DocumentBuilderFactory factory=DocumentBuilderFactory.newInstance();
             factory.setValidating(false); //for now
             DocumentBuilder builder=factory.newDocumentBuilder();
-            builder.setEntityResolver(new ClassPathEntityResolver());
             Document document=builder.parse(stream);
 
             // The root element of the document should be the "config" element,
