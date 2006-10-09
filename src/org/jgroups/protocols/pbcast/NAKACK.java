@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.79 2006/09/07 07:40:36 belaban Exp $
+// $Id: NAKACK.java,v 1.80 2006/10/09 09:02:33 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -588,7 +588,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
         if(!started) {
             if(warn)
-                log.warn("discarded message as start() has not yet been called, message: " + msg);
+                log.warn("[" + local_addr + "] discarded message as start() has not been called, message: " + msg);
             return;
         }
 

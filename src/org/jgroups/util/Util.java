@@ -26,7 +26,7 @@ import EDU.oswego.cs.dl.util.concurrent.Sync;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.101 2006/10/02 08:31:45 belaban Exp $
+ * @version $Id: Util.java,v 1.102 2006/10/09 09:06:09 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -1291,6 +1291,17 @@ public class Util {
     }
 
     public static String array2String(boolean[] array) {
+        StringBuffer ret=new StringBuffer("[");
+
+        if(array != null) {
+            for(int i=0; i < array.length; i++)
+                ret.append(array[i]).append(" ");
+        }
+        ret.append(']');
+        return ret.toString();
+    }
+
+    public static String array2String(Object[] array) {
         StringBuffer ret=new StringBuffer("[");
 
         if(array != null) {
