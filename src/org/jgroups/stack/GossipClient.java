@@ -1,4 +1,4 @@
-// $Id: GossipClient.java,v 1.13 2006/06/26 08:38:34 belaban Exp $
+// $Id: GossipClient.java,v 1.14 2006/10/09 15:30:27 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -27,7 +27,7 @@ import java.util.*;
  * @author Bela Ban Oct 4 2001
  */
 public class GossipClient {
-    Timer timer=new Timer();
+    Timer timer=new Timer(true);
     final Hashtable groups=new Hashtable();               // groups - Vector of Addresses
     private Refresher refresher_task=new Refresher();
     final Vector gossip_servers=new Vector();          // a list of GossipServers (IpAddress)
@@ -65,11 +65,13 @@ public class GossipClient {
 
     public void stop() {
         timer_running=false;
+        if(refresher_task != null)
+            refresher_task.cancel();
         timer.cancel();
         groups.clear();
         // provide another refresh tools in case the channel gets reconnected
-        timer=new Timer();
-        refresher_task=new Refresher();
+        // timer=new Timer();
+        // refresher_task=new Refresher();
 
     }
 
@@ -116,6 +118,8 @@ public class GossipClient {
         _register(group, mbr); // update entry in GossipServer
 
         if(!timer_running) {
+            timer=new Timer(true);
+            refresher_task=new Refresher();
             timer.schedule(refresher_task, EXPIRY_TIME, EXPIRY_TIME);
             timer_running=true;
         }
@@ -132,8 +136,10 @@ public class GossipClient {
             if(log.isErrorEnabled()) log.error("group is null");
             return null;
         }
-
-        return _getMembers(group);
+        Vector result=_getMembers(group);
+        if(log.isTraceEnabled())
+            log.trace("GET(" + group + ") --> " + result);
+        return result;
     }
 
 
@@ -165,7 +171,7 @@ public class GossipClient {
             }
             try {
                 if(log.isTraceEnabled())
-                    log.trace("REGISTER_REQ --> " + entry.getIpAddress() + ':' + entry.getPort());
+                    log.trace("REGISTER(" + group + ", " + entry.getIpAddress() + ':' + entry.getPort() + ")");
                 sock=new Socket(entry.getIpAddress(), entry.getPort());
                 out=new ObjectOutputStream(sock.getOutputStream());
                 gossip_req=new GossipData(GossipData.REGISTER_REQ, group, mbr, null);
@@ -202,7 +208,6 @@ public class GossipClient {
             }
             
             try {
-                if(log.isTraceEnabled()) log.trace("GET_REQ --> " + entry.getIpAddress() + ':' + entry.getPort());
                 // sock=new Socket(entry.getIpAddress(), entry.getPort());
                 sock=new Socket();
                 destAddr=new InetSocketAddress(entry.getIpAddress(), entry.getPort());
