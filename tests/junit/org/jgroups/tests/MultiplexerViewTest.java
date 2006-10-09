@@ -13,12 +13,14 @@ import java.util.LinkedList;
 /**
  * Test the multiplexer functionality provided by JChannelFactory, especially the service views and cluster views
  * @author Bela Ban
- * @version $Id: MultiplexerViewTest.java,v 1.6 2006/10/09 08:36:29 belaban Exp $
+ * @version $Id: MultiplexerViewTest.java,v 1.8 2006/10/09 09:06:36 belaban Exp $
  */
 public class MultiplexerViewTest extends TestCase {
     private Channel c1, c2, c3, c4;
     static final String CFG="stacks.xml";
     static final String STACK_NAME="udp";
+    static final BlockEvent BLOCK_EVENT=new BlockEvent();
+    static final UnblockEvent UNBLOCK_EVENT=new UnblockEvent();
     JChannelFactory factory, factory2;
 
     public MultiplexerViewTest(String name) {
@@ -122,38 +124,43 @@ public class MultiplexerViewTest extends TestCase {
         MyReceiver receiver=new MyReceiver();
         c1.setReceiver(receiver);
         c1.connect("bla");
+        Util.sleep(500);
 
         c2=factory.createMultiplexerChannel(STACK_NAME, "service-2");
         c2.setOpt(Channel.BLOCK, Boolean.TRUE);
         MyReceiver receiver2=new MyReceiver();
         c2.setReceiver(receiver2);
         c2.connect("bla");
+        Util.sleep(500);
 
         c3=factory.createMultiplexerChannel(STACK_NAME, "service-3");
         c3.setOpt(Channel.BLOCK, Boolean.TRUE);
         MyReceiver receiver3=new MyReceiver();
         c3.setReceiver(receiver3);
         c3.connect("bla");
+        Util.sleep(500);
 
         c4=factory2.createMultiplexerChannel(STACK_NAME, "service-3");
         c4.setOpt(Channel.BLOCK, Boolean.TRUE);
         MyReceiver receiver4=new MyReceiver();
         c4.setReceiver(receiver4);
         c4.connect("bla");
+        Util.sleep(1000);
 
         List events=receiver.getEvents();
-        checkBlockAndUnBlock(events, "receiver");
+        checkBlockAndUnBlock(events, "receiver", new Object[]{BLOCK_EVENT, UNBLOCK_EVENT, BLOCK_EVENT, UNBLOCK_EVENT});
 
         events=receiver2.getEvents();
-        checkBlockAndUnBlock(events, "receiver2");
+        checkBlockAndUnBlock(events, "receiver2", new Object[]{BLOCK_EVENT, UNBLOCK_EVENT});
 
         events=receiver3.getEvents();
-        checkBlockAndUnBlock(events, "receiver3");
+        checkBlockAndUnBlock(events, "receiver3", new Object[]{BLOCK_EVENT, UNBLOCK_EVENT});
 
         events=receiver4.getEvents();
         System.out.println("-- [receiver4] events: " + events);
         // now the new joiner should *not* have a block event !
-        assertFalse("new joiner should not have a BlockEvent", events.contains(new BlockEvent()));
+        // assertFalse("new joiner should not have a BlockEvent", events.contains(new BlockEvent()));
+        checkBlockAndUnBlock(events, "receiver4", new Object[]{BLOCK_EVENT, UNBLOCK_EVENT});
 
         receiver.clear();
         receiver2.clear();
@@ -163,14 +170,16 @@ public class MultiplexerViewTest extends TestCase {
         System.out.println("-- Closing c4");
 
         c4.close();
+        Util.sleep(5000);
+
         events=receiver.getEvents();
-        checkBlockAndUnBlock(events, "receiver");
+        checkBlockAndUnBlock(events, "receiver", new Object[]{BLOCK_EVENT, UNBLOCK_EVENT});
 
         events=receiver2.getEvents();
-        checkBlockAndUnBlock(events, "receiver2");
+        checkBlockAndUnBlock(events, "receiver2", new Object[]{BLOCK_EVENT, UNBLOCK_EVENT});
 
         events=receiver3.getEvents();
-        checkBlockAndUnBlock(events, "receiver3");
+        checkBlockAndUnBlock(events, "receiver3", new Object[]{BLOCK_EVENT, UNBLOCK_EVENT});
 
         events=receiver4.getEvents();
         System.out.println("-- [receiver4] events: " + events);
@@ -181,14 +190,19 @@ public class MultiplexerViewTest extends TestCase {
     }
 
 
-    private void checkBlockAndUnBlock(List events, String service_name) {
+    private void checkBlockAndUnBlock(List events, String service_name, Object[] seq) {
         int num_events=events.size();
         System.out.println("-- [" + service_name + "] events: " + events);
-        assertEquals("[" + service_name + "] we should have a BLOCK and an UNBLOCK event", 2, num_events);
-        Object evt=events.remove(0);
-        assertTrue(evt instanceof BlockEvent);
-        evt=events.remove(0);
-        assertTrue(evt instanceof UnblockEvent);
+        assertEquals("[" + service_name + "] we should have the following sequence: " + Util.array2String(seq), seq.length, num_events);
+
+        Object expected_type;
+        Object actual_type;
+        for(int i=0; i < seq.length; i++) {
+            expected_type=seq[i];
+            actual_type=events.remove(0);
+            assertEquals("element should be " + expected_type.getClass().getName(), actual_type.getClass(), expected_type.getClass());
+        }
+
     }
 
 
