@@ -13,7 +13,7 @@ import java.util.LinkedList;
 /**
  * Test the multiplexer functionality provided by JChannelFactory, especially the service views and cluster views
  * @author Bela Ban
- * @version $Id: MultiplexerViewTest.java,v 1.8 2006/10/09 09:06:36 belaban Exp $
+ * @version $Id: MultiplexerViewTest.java,v 1.7 2006/10/09 09:06:22 belaban Exp $
  */
 public class MultiplexerViewTest extends TestCase {
     private Channel c1, c2, c3, c4;
@@ -171,6 +171,12 @@ public class MultiplexerViewTest extends TestCase {
 
         c4.close();
         Util.sleep(5000);
+
+        System.out.println("receiver: " + receiver.getEvents() + "\n" +
+                           "receiver2: " + receiver2.getEvents() + "\n" +
+            "receiver3: " + receiver3.getEvents() + "\n" +
+                    "receiver4: " + receiver4.getEvents() + "\n"
+        );
 
         events=receiver.getEvents();
         checkBlockAndUnBlock(events, "receiver", new Object[]{BLOCK_EVENT, UNBLOCK_EVENT});
