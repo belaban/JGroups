@@ -3,9 +3,11 @@ package org.jgroups;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import org.jgroups.util.Util;
+
 /**
  * @author Bela Ban
- * @version $Id: ExtendedReceiverAdapter.java,v 1.4 2006/09/27 12:39:14 belaban Exp $
+ * @version $Id: ExtendedReceiverAdapter.java,v 1.5 2006/10/10 22:45:06 vlada Exp $
  */
 public class ExtendedReceiverAdapter implements ExtendedReceiver {
     public byte[] getState(String state_id) {
@@ -38,15 +40,18 @@ public class ExtendedReceiverAdapter implements ExtendedReceiver {
     }
 
     public void getState(OutputStream ostream) {
-
+       Util.closeOutputStream(ostream);    
 	}
 
 	public void getState(String state_id, OutputStream ostream) {
+       Util.closeOutputStream(ostream);
 	}
 
 	public void setState(InputStream istream) {
+       Util.closeInputStream(istream);
 	}
 
 	public void setState(String state_id, InputStream istream) {
+       Util.closeInputStream(istream);
 	}
 }
