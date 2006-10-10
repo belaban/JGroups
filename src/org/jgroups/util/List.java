@@ -1,11 +1,9 @@
-// $Id: List.java,v 1.11 2006/01/14 14:00:44 belaban Exp $
+// $Id: List.java,v 1.12 2006/10/10 15:46:24 belaban Exp $
 
 package org.jgroups.util;
 
 import java.io.*;
-import java.util.Enumeration;
-import java.util.NoSuchElementException;
-import java.util.Vector;
+import java.util.*;
 
 
 /**
@@ -76,6 +74,15 @@ public class List implements Externalizable, Cloneable {
                 head=el;
                 size++;
             }
+        }
+    }
+
+
+    public void addAll(Collection c) {
+        if(c == null)
+            return;
+        for(Iterator it=c.iterator(); it.hasNext();) {
+            add(it.next());
         }
     }
 
