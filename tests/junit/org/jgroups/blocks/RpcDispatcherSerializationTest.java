@@ -171,7 +171,7 @@ public class RpcDispatcherSerializationTest extends TestCase {
                 return out.toByteArray();
             }
             finally {
-                Util.closeOutputStream(oos);
+                Util.close(oos);
             }
         }
 
@@ -195,7 +195,7 @@ public class RpcDispatcherSerializationTest extends TestCase {
                 }
             }
             finally {
-                Util.closeInputStream(in);
+                Util.close(in);
             }
         }
     }
