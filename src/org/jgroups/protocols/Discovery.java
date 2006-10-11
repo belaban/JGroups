@@ -10,7 +10,7 @@ import java.util.*;
 /**
  * The Discovery protocol layer retrieves the initial membership (used by the GMS when started
  * by sending event FIND_INITIAL_MBRS down the stack). We do this by specific subclasses, e.g. by mcasting PING
- * requests to an IP MCAST address or, if gossiping is enabled, by contacting the GossipServer.
+ * requests to an IP MCAST address or, if gossiping is enabled, by contacting the GossipRouter.
  * The responses should allow us to determine the coordinator whom we have to
  * contact, e.g. in case we want to join the group.  When we are a server (after having
  * received the BECOME_SERVER event), we'll respond to PING requests with a PING
@@ -23,7 +23,7 @@ import java.util.*;
  * <li>num_ping_requests - the number of GET_MBRS_REQ messages to be sent (min=1), distributed over timeout ms
  * </ul>
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.15 2006/01/05 10:23:43 belaban Exp $
+ * @version $Id: Discovery.java,v 1.16 2006/10/11 14:38:19 belaban Exp $
  */
 public abstract class Discovery extends Protocol {
     final Vector  members=new Vector(11);
@@ -340,14 +340,13 @@ public abstract class Discovery extends Protocol {
     /* -------------------------- Private methods ---------------------------- */
 
 
-    protected View makeView(Vector mbrs) {
+    protected final View makeView(Vector mbrs) {
         Address coord;
         long id;
         ViewId view_id=new ViewId(local_addr);
 
         coord=view_id.getCoordAddress();
         id=view_id.getId();
-
         return new View(coord, id, mbrs);
     }
 
