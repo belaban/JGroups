@@ -1,4 +1,4 @@
-// $Id: MERGE.java,v 1.12 2006/10/09 14:57:13 belaban Exp $
+// $Id: MERGE.java,v 1.13 2006/10/11 14:40:26 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -6,15 +6,12 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.RouterStub;
-import org.jgroups.util.List;
 import org.jgroups.util.Util;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.Enumeration;
-import java.util.Properties;
-import java.util.Vector;
+import java.util.*;
 
 
 /**
@@ -274,15 +271,12 @@ public class MERGE extends Protocol implements Runnable {
 
                 synchronized(members) {
                     members_to_merge.removeAllElements();
-
-                    for(Enumeration e=rsps.elements(); e.hasMoreElements();) {
-                        mbr=e.nextElement();
+                    for(Iterator it=rsps.iterator(); it.hasNext();) {
+                        mbr=it.next();
                         if(!members.contains(mbr)) {
-
                             if(log.isInfoEnabled())
                                 log.info("membership " + members +
                                         " does not contain " + mbr + "; merging it");
-
                             members_to_merge.addElement(mbr);
                         }
                     }
