@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.23 2006/10/04 12:19:50 belaban Exp $
+// $Id: TUNNEL.java,v 1.24 2006/10/11 14:43:48 belaban Exp $
 
 
 package org.jgroups.protocols;
@@ -230,7 +230,7 @@ public class TUNNEL extends Protocol implements Runnable {
 
         synchronized(stub_mutex) {
             // stub=new RouterStub(router_host, router_port);
-            local_addr=stub.connect(router_host, router_port);
+            local_addr=stub.connect(channel_name, router_host, router_port);
             if(additional_data != null && local_addr instanceof IpAddress)
                 ((IpAddress)local_addr).setAdditionalData(additional_data);
         }
@@ -254,17 +254,27 @@ public class TUNNEL extends Protocol implements Runnable {
     public void run() {
         Message msg;
 
-        while(receiver != null) {
-            msg=stub.receive();
-            if(msg == null) {
-                if(receiver == null) break;
-                if(log.isTraceEnabled()) log.trace("received a null message. Trying to reconnect to router");
-                if(!stub.isConnected())
-                    startReconnector();
-                Util.sleep(5000);
-                continue;
+        while(receiver != null && Thread.currentThread().equals(receiver)) {
+            try {
+                msg=stub.receive();
+                if(msg == null) {
+                    if(receiver == null) break;
+                    if(log.isTraceEnabled()) log.trace("received a null message. Trying to reconnect to router");
+                    if(!stub.isConnected())
+                        startReconnector();
+                    Util.sleep(5000);
+                    continue;
+                }
+                handleIncomingMessage(msg);
             }
-            handleIncomingMessage(msg);
+            catch(Exception e) {
+                if(receiver == null || !Thread.currentThread().equals(receiver))
+                    return;
+                else {
+                    if(log.isTraceEnabled())
+                        log.trace("exception in receiver thread", e);
+                }
+            }
         }
     }
 
@@ -337,7 +347,7 @@ public class TUNNEL extends Protocol implements Runnable {
                 if(log.isErrorEnabled()) log.error("CONNECT:  router stub is null!");
             }
             else {
-                stub.register(channel_name);
+                stub.connect(channel_name);
             }
 
             receiver=new Thread(this, "TUNNEL receiver thread");
@@ -409,7 +419,6 @@ public class TUNNEL extends Protocol implements Runnable {
         public void run() {
             while(Thread.currentThread().equals(my_thread)) {
                 if(stub.reconnect()) {
-                    stub.register(channel_name);
                     if(log.isDebugEnabled()) log.debug("reconnected");
                     return;
                 }
