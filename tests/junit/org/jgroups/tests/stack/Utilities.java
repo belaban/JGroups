@@ -1,23 +1,20 @@
-// $Id: Utilities.java,v 1.9 2006/10/11 08:01:12 belaban Exp $
+// $Id: Utilities.java,v 1.10 2006/10/11 14:33:53 belaban Exp $
 
 package org.jgroups.tests.stack;
 
-import org.jgroups.stack.GossipRouter;
-import org.jgroups.stack.GossipData;
-import org.jgroups.util.Util;
-import org.apache.commons.logging.LogFactory;
 import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.jgroups.stack.GossipClient;
+import org.jgroups.stack.GossipRouter;
+import org.jgroups.stack.IpAddress;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.net.ServerSocket;
-import java.net.Socket;
 
 /**
  * Utility functions shared by stack tests.
  *
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Revision: 1.9 $
+ * @version $Revision: 1.10 $
  * @since 2.2.1
  */
 public class Utilities {
@@ -29,12 +26,31 @@ public class Utilities {
 
     public static int startGossipRouter() throws Exception {
         return startGossipRouter(GossipRouter.EXPIRY_TIME,
+                                 "localhost",
                                  GossipRouter.GOSSIP_REQUEST_TIMEOUT,
                                  GossipRouter.ROUTING_CLIENT_REPLY_TIMEOUT);
     }
 
+
+    public static int startGossipRouter(String bind_addr) throws Exception {
+        return startGossipRouter(GossipRouter.EXPIRY_TIME,
+                                 bind_addr,
+                                 GossipRouter.GOSSIP_REQUEST_TIMEOUT,
+                                 GossipRouter.ROUTING_CLIENT_REPLY_TIMEOUT);
+    }
+
+
     public static int startGossipRouter(long expiryTime) throws Exception {
         return startGossipRouter(expiryTime,
+                                 "localhost",
+                                 GossipRouter.GOSSIP_REQUEST_TIMEOUT,
+                                 GossipRouter.ROUTING_CLIENT_REPLY_TIMEOUT);
+    }
+
+
+    public static int startGossipRouter(long expiryTime, String bind_addr) throws Exception {
+        return startGossipRouter(expiryTime,
+                                 bind_addr,
                                  GossipRouter.GOSSIP_REQUEST_TIMEOUT,
                                  GossipRouter.ROUTING_CLIENT_REPLY_TIMEOUT);
     }
@@ -46,6 +62,7 @@ public class Utilities {
      * @return the port GossipRouter is listening on.
      */
     public static int startGossipRouter(final long expiryTime,
+                                        final String bind_addr,
                                         final long gossipRequestTimeout,
                                         final long routingClientReplyTimeout) throws Exception {
 
@@ -54,7 +71,7 @@ public class Utilities {
 
         final int routerPort=getFreePort();
         try {
-            gossipRouter=new GossipRouter(routerPort, null, expiryTime, gossipRequestTimeout, routingClientReplyTimeout);
+            gossipRouter=new GossipRouter(routerPort, bind_addr, expiryTime, gossipRequestTimeout, routingClientReplyTimeout);
             gossipRouter.start();
         }
         catch(Exception e) {
@@ -63,23 +80,23 @@ public class Utilities {
             throw e;
         }
 
-        DataInputStream dis=null;
-        DataOutputStream dos=null;
+        GossipClient client=null;
 
         // verify the router - try for 10 secs to connect
         long startms=System.currentTimeMillis();
         Exception lastConnectException=null;
         long crtms=startms;
-        Socket sock=null;
 
-        try {
         while(crtms - startms < 10000) {
             try {
-                sock=new Socket("localhost", routerPort);
+                client=new GossipClient(new IpAddress(bind_addr, routerPort), 10000);
+                client.getMembers("Utilities:startGossipRouterConnectionTest");
                 lastConnectException=null;
                 break;
             }
             catch(Exception e) {
+                if(client != null)
+                    client.stop();
                 lastConnectException=e;
                 Thread.sleep(1000);
                 crtms=System.currentTimeMillis();
@@ -89,25 +106,6 @@ public class Utilities {
         if(lastConnectException != null) {
             lastConnectException.printStackTrace();
             throw new Exception("Cannot connect to the router");
-        }
-
-        dis=new DataInputStream(sock.getInputStream());
-        dos=new DataOutputStream(sock.getOutputStream());
-
-        // verify the router - try for 10 sec to send/receive
-        // read the IpAddress
-        Util.readAddress(dis);
-        // write a GET
-        GossipData req=new GossipData(GossipRouter.GET, "nogroup_setup", null, null);
-        req.writeTo(dos);
-        GossipData rsp=new GossipData();
-        rsp.readFrom(dis);
-        System.out.println("router ok");
-        }
-        finally {
-            Util.close(dos);
-            Util.close(dis);
-            Util.close(sock);
         }
         return routerPort;
     }
