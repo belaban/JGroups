@@ -1,4 +1,4 @@
-// $Id: GossipServer.java,v 1.10 2005/06/09 18:31:02 belaban Exp $
+// $Id: GossipServer.java,v 1.11 2006/10/11 06:24:36 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -6,8 +6,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
 
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -35,7 +35,7 @@ public class GossipServer {
     int port=7500;
     ServerSocket srv_sock=null;
     long EXPIRY_TIME=30000;       // time (in msecs) until a cache entry expires
-    CacheCleaner cache_cleaner=null;      // task that is periodically invoked to sweep old entries from the cache
+    private CacheCleaner cache_cleaner=null;      // task that is periodically invoked to sweep old entries from the cache
     final Timer timer=new Timer(true);   // start as daemon thread, so we won't block on it upon termination
     InetAddress bind_address=null;
     protected final Log log=LogFactory.getLog(getClass());
@@ -63,34 +63,33 @@ public class GossipServer {
 
     public void run() {
         Socket sock;
-        ObjectInputStream input;
-        ObjectOutputStream output=null;
+        DataInputStream input;
+        DataOutputStream output=null;
         GossipData gossip_req, gossip_rsp;
         boolean looping=true;
 
         while(looping) {
             try {
                 sock=srv_sock.accept();
-                if(log.isInfoEnabled()) log.info("accepted connection from " + sock.getInetAddress() +
-                                                 ':' + sock.getPort());
+                if(log.isInfoEnabled())
+                    log.info("accepted connection from " + sock.getInetAddress() + ':' + sock.getPort());
                 sock.setSoLinger(true, 500);
-                input=new ObjectInputStream(sock.getInputStream());
-                gossip_req=(GossipData) input.readObject();
+                input=new DataInputStream(sock.getInputStream());
+                gossip_req=new GossipData();
+                gossip_req.readFrom(input);
                 gossip_rsp=processGossip(gossip_req);
                 if(gossip_rsp != null) {
-                    output=new ObjectOutputStream(sock.getOutputStream());
-                    output.writeObject(gossip_rsp);
+                    output=new DataOutputStream(sock.getOutputStream());
+                    gossip_rsp.writeTo(output);
                     output.flush();
                     output.close();
                 }
                 input.close();
                 sock.close();
-                // looping=false;
             }
             catch(Exception ex) {
                 if(log.isErrorEnabled()) log.error("exception=" + ex);
                 ex.printStackTrace(); // +++ remove
-                continue;
             }
         }
     }
@@ -100,7 +99,7 @@ public class GossipServer {
 
 
 
-    void init() throws Exception {
+    final void init() throws Exception {
         if(bind_address == null) {
             srv_sock=new ServerSocket(port, 20);  // backlog of 20 connections
             bind_address=srv_sock.getInetAddress();
@@ -124,18 +123,18 @@ public class GossipServer {
         Address mbr;
 
         if(gossip == null) return null;
-         if(log.isInfoEnabled()) log.info(gossip.toString());
+        if(log.isInfoEnabled()) log.info(gossip.toString());
         switch(gossip.getType()) {
-            case GossipData.REGISTER_REQ:
+            case GossipRouter.REGISTER:
                 group=gossip.getGroup();
-                mbr=gossip.getMbr();
+                mbr=gossip.getAddress();
                 if(group == null || mbr == null) {
                     if(log.isErrorEnabled()) log.error("group or member is null, cannot register member");
                     return null;
                 }
                 return processRegisterRequest(group, mbr);
 
-            case GossipData.GET_REQ:
+            case GossipRouter.GET:
                 group=gossip.getGroup();
                 if(group == null) {
                     if(log.isErrorEnabled()) log.error("group is null, cannot get membership");
@@ -143,7 +142,7 @@ public class GossipServer {
                 }
                 return processGetRequest(group);
 
-            case GossipData.GET_RSP:  // should not be received
+            case GossipRouter.GET_RSP:  // should not be received
                 if(log.isWarnEnabled()) log.warn("received a GET_RSP. Should not be received by server");
                 return null;
 
@@ -164,10 +163,9 @@ public class GossipServer {
         GossipData ret=null;
         Vector mbrs=getMembers(group);
 
-        ret=new GossipData(GossipData.GET_RSP, group, null, mbrs);
-
-            if(log.isInfoEnabled()) log.info("members are " + mbrs +
-                                                           ", gossip_rsp=" + ret);
+        ret=new GossipData(GossipRouter.GET_RSP, group, null, mbrs);
+        if(log.isInfoEnabled())
+            log.info("members are " + mbrs + ", gossip_rsp=" + ret);
         return ret;
     }
 
@@ -216,7 +214,7 @@ public class GossipServer {
     }
 
 
-    Entry findEntry(Vector mbrs, Address mbr) {
+    private Entry findEntry(Vector mbrs, Address mbr) {
         Entry entry=null;
 
         for(int i=0; i < mbrs.size(); i++) {
@@ -277,7 +275,7 @@ public class GossipServer {
             update();
         }
 
-        void update() {
+        final void update() {
             timestamp=System.currentTimeMillis();
         }
 
@@ -332,13 +330,6 @@ public class GossipServer {
             }
             System.out.println("GossipServer [-port <port>] [-expiry <msecs>]");
             return;
-        }
-
-        try {
-
-        }
-        catch(Throwable ex) {
-            System.err.println("GossipServer.main(): " + ex);
         }
 
         try {
