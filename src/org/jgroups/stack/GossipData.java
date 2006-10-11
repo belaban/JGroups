@@ -1,96 +1,75 @@
-// $Id: GossipData.java,v 1.2 2004/03/30 06:47:27 belaban Exp $
+// $Id: GossipData.java,v 1.3 2006/10/11 14:35:45 belaban Exp $
 
 package org.jgroups.stack;
 
 
 import org.jgroups.Address;
+import org.jgroups.util.Streamable;
+import org.jgroups.util.Util;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.*;
 import java.util.Vector;
-
+import java.util.List;
+import java.util.ArrayList;
+import java.util.LinkedList;
 
 
 /**
- * Encapsulates data sent between GossipServer and GossipClient
+ * Encapsulates data sent between GossipRouter and GossipClient
  * @author Bela Ban Oct 4 2001
  */
-public class GossipData implements Externalizable {
-    public static final int REGISTER_REQ = 1;
-    public static final int GET_REQ      = 2;
-    public static final int GET_RSP      = 3;
+public class GossipData implements Streamable {
+    byte    type=0;      // One of GossipRouter type, e.g. CONNECT, REGISTER etc
+    String  group=null;  // CONNECT, GET_REQ and GET_RSP
+    Address addr=null;   // CONNECT
+    List    mbrs=null;   // GET_RSP
 
-    int     type=0;
-    String  group=null;  // REGISTER, GET_REQ and GET_RSP
-    Address mbr=null;    // REGISTER
-    Vector  mbrs=null;   // GET_RSP
-
-
-    public GossipData() {
-	; // used for externalization
+    public GossipData() { // for streamable
     }
 
-    public GossipData(int type, String group, Address mbr, Vector mbrs) {
-	this.type=type;
-	this.group=group;
-	this.mbr=mbr;
-	this.mbrs=mbrs;
+    public GossipData(byte type) {
+        this.type=type;
+    }
+
+    public GossipData(byte type, String group, Address addr, List mbrs) {
+        this.type=type;
+        this.group=group;
+        this.addr=addr;
+        this.mbrs=mbrs;
     }
 
 
-    public int     getType()  {return type;}
-    public String  getGroup() {return group;}
-    public Address getMbr()   {return mbr;}
-    public Vector  getMbrs()  {return mbrs;}
-    
+    public byte    getType()    {return type;}
+    public String  getGroup()   {return group;}
+    public Address getAddress() {return addr;}
+    public List    getMembers() {return mbrs;}
+
+    public void setMembers(List mbrs) {
+        this.mbrs=mbrs;
+    }
 
 
     public String toString() {
-	StringBuffer sb=new StringBuffer();
-	sb.append(type2String(type));
-	switch(type) {
-	case REGISTER_REQ:
-	    sb.append(" group=" + group + ", mbr=" + mbr);
-	    break;
-
-	case GET_REQ:
-	    sb.append(" group=" + group);
-	    break;
-
-	case GET_RSP:
-	    sb.append(" group=" + group + ", mbrs=" + mbrs);
-	    break;
-	}
-	return sb.toString();
+        StringBuffer sb=new StringBuffer();
+        sb.append(GossipRouter.type2String(type)).append( "(").append("group=").append(group).append(", addr=").append(addr);
+        sb.append(", mbrs=").append(mbrs);
+        return sb.toString();
     }
 
 
-    public static String type2String(int t) {
-	switch(t) {
-	case REGISTER_REQ: return "REGISTER_REQ";
-	case GET_REQ:      return "GET_REQ";
-	case GET_RSP:      return "GET_RSP";
-	default:           return "<unknown>";
-	}
+    public void writeTo(DataOutputStream out) throws IOException {
+        out.writeByte(type);
+        Util.writeString(group, out);
+        Util.writeAddress(addr, out);
+        Util.writeAddresses(mbrs, out);
     }
 
+    public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        type=in.readByte();
+        group=Util.readString(in);
+        addr=Util.readAddress(in);
+        mbrs=(List)Util.readAddresses(in, LinkedList.class);
+    }
 
-    public void writeExternal(ObjectOutput out) throws IOException {
-	out.writeInt(type);
-	out.writeUTF(group);
-	out.writeObject(mbr);
-	out.writeObject(mbrs);
-    }
-    
-    
-    
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
- 	type=in.readInt();
-	group=in.readUTF();
-	mbr=(Address)in.readObject();
-	mbrs=(Vector)in.readObject();
-    }
 
 }
