@@ -1,4 +1,4 @@
-// $Id: FRAG.java,v 1.31 2006/04/23 14:34:49 belaban Exp $
+// $Id: FRAG.java,v 1.32 2006/10/11 14:39:41 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -28,7 +28,7 @@ import java.util.*;
  * multicast messages.
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.31 2006/04/23 14:34:49 belaban Exp $
+ * @version $Id: FRAG.java,v 1.32 2006/10/11 14:39:41 belaban Exp $
  */
 public class FRAG extends Protocol {
     private int frag_size=8192;  // conservative value
@@ -228,7 +228,7 @@ public class FRAG extends Protocol {
             log.error("exception occurred trying to fragment message", e);
         }
         finally {
-            Util.closeOutputStream(out);
+            Util.close(out);
         }
     }
 
@@ -276,7 +276,7 @@ public class FRAG extends Protocol {
                 log.error("failed unfragmenting a message", e);
             }
             finally {
-                Util.closeInputStream(in);
+                Util.close(in);
             }
         }
     }

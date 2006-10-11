@@ -1,4 +1,4 @@
-// $Id: LargeState.java,v 1.26 2006/08/09 20:15:25 vlada Exp $
+// $Id: LargeState.java,v 1.27 2006/10/11 14:28:25 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -166,7 +166,7 @@ public class LargeState extends ExtendedReceiverAdapter {
             state_promise.setResult(Boolean.TRUE);
         }
         finally {
-            Util.closeInputStream(istream);
+            Util.close(istream);
         }
     }
 
@@ -199,7 +199,7 @@ public class LargeState extends ExtendedReceiverAdapter {
             }
         }
         finally {
-            Util.closeOutputStream(ostream);
+            Util.close(ostream);
         }
     }
 

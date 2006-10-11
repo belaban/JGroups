@@ -1,4 +1,4 @@
-// $Id: ENCRYPT.java,v 1.25 2006/02/09 13:01:08 belaban Exp $
+// $Id: ENCRYPT.java,v 1.26 2006/10/11 14:39:13 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -384,7 +384,7 @@ public class ENCRYPT extends Protocol {
             queue_up =false;
         } finally
         {
-            Util.closeInputStream(inputStream);
+            Util.close(inputStream);
         }
 
     }
