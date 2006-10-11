@@ -1,4 +1,4 @@
-// $Id: TUNNELDeadLockTest.java,v 1.9 2005/09/29 16:11:04 belaban Exp $
+// $Id: TUNNELDeadLockTest.java,v 1.10 2006/10/11 14:32:38 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -9,28 +9,21 @@ import junit.framework.TestSuite;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.TimeoutException;
-import org.jgroups.stack.Router;
-import org.jgroups.stack.GossipRouter;
+import org.jgroups.tests.stack.Utilities;
 import org.jgroups.util.Promise;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.net.ServerSocket;
-import java.net.Socket;
-
 /**
- * Test designed to make sure the TUNNEL doesn't lock the client and the Router
+ * Test designed to make sure the TUNNEL doesn't lock the client and the GossipRouter
  * under heavy load.
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
- * @version $Revision: 1.9 $
+ * @version $Revision: 1.10 $
  * @see TUNNELDeadLockTest#testStress
  */
 public class TUNNELDeadLockTest extends TestCase {
-
     private JChannel channel;
     private Promise promise;
-    private volatile int receivedCnt;
+    private int receivedCnt;
 
     // the total number of the messages pumped down the channel
     private int msgCount=20000;
@@ -40,7 +33,7 @@ public class TUNNELDeadLockTest extends TestCase {
     // before declaring the test failed.
     private int mainTimeout=60000;
 
-
+    int routerPort=-1;
 
 
     public TUNNELDeadLockTest(String name) {
@@ -50,13 +43,14 @@ public class TUNNELDeadLockTest extends TestCase {
     public void setUp() throws Exception {
         super.setUp();
         promise=new Promise();
+        routerPort=Utilities.startGossipRouter("127.0.0.1");
     }
 
     public void tearDown() throws Exception {
 
         super.tearDown();
 
-        // I prefer to close down the channel innside the test itself, for the
+        // I prefer to close down the channel inside the test itself, for the
         // reason that the channel might be brought in an uncloseable state by
         // the test.
 
@@ -67,6 +61,7 @@ public class TUNNELDeadLockTest extends TestCase {
         channel=null;
         promise.reset();
         promise=null;
+        Utilities.stopGossipRouter();
     }
 
 
@@ -96,8 +91,7 @@ public class TUNNELDeadLockTest extends TestCase {
      * doesn't see all the messages, it declares itself failed.
      */
     public void testStress() throws Exception {
-
-        String props=getTUNNELProps(startRouter());
+        String props=getTUNNELProps(routerPort);
         channel=new JChannel(props);
         channel.connect("agroup");
 
@@ -170,8 +164,7 @@ public class TUNNELDeadLockTest extends TestCase {
 
 
     public static Test suite() {
-        TestSuite s=new TestSuite(TUNNELDeadLockTest.class);
-        return s;
+        return new TestSuite(TUNNELDeadLockTest.class);
     }
 
     public static void main(String[] args) {
@@ -179,78 +172,5 @@ public class TUNNELDeadLockTest extends TestCase {
         System.exit(0);
     }
 
-
-    //
-    // HELPERS
-    //
-
-    /**
-     * Starts the router on a separate thread and makes sure it answers the
-     * requests. Required by TUNNEL.
-     */
-    private int startRouter() throws Exception {
-
-        final int routerPort=getFreePort();
-        Thread routerThread=new Thread(new Runnable() {
-            public void run() {
-                try {
-                    new GossipRouter(routerPort).start();
-                    System.out.println("started GossipRouter on port " + routerPort);
-                }
-                catch(Exception e) {
-                    System.err.println("Failed to start the router " + "on port " + routerPort);
-                    e.printStackTrace();
-                }
-            }
-        });
-        routerThread.start();
-
-        // verify the router - try to connect for 10 secs
-        long startms=System.currentTimeMillis();
-        long crtms=startms;
-        Exception lastConnectException=null;
-        while(crtms - startms < 10000) {
-            Socket s=null;
-            try {
-                s=new Socket("localhost", routerPort);
-            }
-            catch(Exception e) {
-                lastConnectException=e;
-                Thread.sleep(1000);
-                crtms=System.currentTimeMillis();
-                continue;
-            }
-            lastConnectException=null;
-            DataInputStream dis=new DataInputStream(s.getInputStream());
-            DataOutputStream dos=new DataOutputStream(s.getOutputStream());
-
-            // read the IpAddress
-            int len=dis.readInt();
-            byte[] buffer=new byte[len];
-            dis.read(buffer, 0, len);
-
-            // write a GET
-            dos.writeInt(Router.GET);
-            dos.writeUTF("nogroup_setup");
-            dis.readInt();
-
-            s.close();
-            break;
-        }
-        if(lastConnectException != null) {
-            lastConnectException.printStackTrace();
-            fail("Cannot connect to the router");
-        }
-        System.out.println("router ok");
-        return routerPort;
-    }
-
-
-    private int getFreePort() throws Exception {
-        ServerSocket ss=new ServerSocket(0);
-        int port=ss.getLocalPort();
-        ss.close();
-        return port;
-    }
 
 }
