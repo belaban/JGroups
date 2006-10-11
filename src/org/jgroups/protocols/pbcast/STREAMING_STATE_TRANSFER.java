@@ -995,6 +995,8 @@ public class STREAMING_STATE_TRANSFER extends Protocol
       private OutputStream delegate;
 
       private long bytesWrittenCounter = 0;
+      
+      private Channel channelOwner;
 
       public StreamingOutputStreamWrapper(Socket outputStreamOwner) throws IOException
       {
@@ -1011,6 +1013,10 @@ public class STREAMING_STATE_TRANSFER extends Protocol
          }
          try
          {
+            if (channelOwner != null && channelOwner.isConnected())
+            {
+               channelOwner.down(new Event(Event.STATE_TRANSFER_OUTPUTSTREAM_CLOSED));
+            }           
             outputStreamOwner.close();
          }
          catch (IOException e)
