@@ -1,15 +1,15 @@
-// $Id: Utilities.java,v 1.8 2005/05/30 16:15:04 belaban Exp $
+// $Id: Utilities.java,v 1.9 2006/10/11 08:01:12 belaban Exp $
 
 package org.jgroups.tests.stack;
 
 import org.jgroups.stack.GossipRouter;
-import org.jgroups.stack.GossipServer;
+import org.jgroups.stack.GossipData;
+import org.jgroups.util.Util;
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.logging.Log;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -17,7 +17,7 @@ import java.net.Socket;
  * Utility functions shared by stack tests.
  *
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Revision: 1.8 $
+ * @version $Revision: 1.9 $
  * @since 2.2.1
  */
 public class Utilities {
@@ -47,42 +47,35 @@ public class Utilities {
      */
     public static int startGossipRouter(final long expiryTime,
                                         final long gossipRequestTimeout,
-                                        final long routingClientReplyTimeout)
-            throws Exception {
+                                        final long routingClientReplyTimeout) throws Exception {
 
-        if(gossipRouter != null) {
+        if(gossipRouter != null)
             throw new Exception("GossipRouter already started");
-        }
 
         final int routerPort=getFreePort();
-        Thread routerThread=new Thread(new Runnable() {
-            public void run() {
-                try {
-                    gossipRouter=
-                            new GossipRouter(routerPort, null, expiryTime,
-                                             gossipRequestTimeout,
-                                             routingClientReplyTimeout);
-                    gossipRouter.start();
-                }
-                catch(Exception e) {
-                    String msg=
-                            "Failed to start the router on port " + routerPort;
-                    log.error(msg);
-                    gossipRouter=null;
-                }
-            }
-        });
-        routerThread.start();
+        try {
+            gossipRouter=new GossipRouter(routerPort, null, expiryTime, gossipRequestTimeout, routingClientReplyTimeout);
+            gossipRouter.start();
+        }
+        catch(Exception e) {
+            log.error("Failed to start the router on port " + routerPort);
+            gossipRouter=null;
+            throw e;
+        }
+
+        DataInputStream dis=null;
+        DataOutputStream dos=null;
 
         // verify the router - try for 10 secs to connect
         long startms=System.currentTimeMillis();
         Exception lastConnectException=null;
         long crtms=startms;
-        Socket s=null;
+        Socket sock=null;
 
+        try {
         while(crtms - startms < 10000) {
             try {
-                s=new Socket("localhost", routerPort);
+                sock=new Socket("localhost", routerPort);
                 lastConnectException=null;
                 break;
             }
@@ -98,65 +91,29 @@ public class Utilities {
             throw new Exception("Cannot connect to the router");
         }
 
-        final DataInputStream dis=new DataInputStream(s.getInputStream());
-        final DataOutputStream dos=new DataOutputStream(s.getOutputStream());
+        dis=new DataInputStream(sock.getInputStream());
+        dos=new DataOutputStream(sock.getOutputStream());
 
         // verify the router - try for 10 sec to send/receive
-        final Object[] lock=new Object[1];
-        synchronized(lock) {
-            new Thread(new Runnable() {
-                public void run() {
-                    Object result=null;
-                    try {
-                        // read the IpAddress
-                        int len=dis.readInt();
-                        byte[] buffer=new byte[len];
-                        dis.read(buffer, 0, len);
-                        // write a GET
-                        dos.writeInt(GossipRouter.GET);
-                        dos.writeUTF("nogroup_setup");
-                        dis.readInt();
-                        result=new Object();
-                    }
-                    catch(Exception e) {
-                        result=e;
-                    }
-                    finally {
-                        synchronized(lock) {
-                            lock[0]=result;
-                            lock.notify();
-                        }
-                    }
-                }
-            }).start();
-
-            try {
-                lock.wait(10000);
-            }
-            catch(InterruptedException e) {
-            }
-            if(lock[0] == null) {
-                String msg=
-                        "Cannot send/receive to/from the router: timeout";
-                throw new Exception(msg);
-            }
-            else
-                if(lock[0] instanceof Exception) {
-                    String msg=
-                            "Cannot send/receive to/from the router: " +
-                            ((Exception)lock[0]).getMessage();
-                    throw new Exception(msg);
-                }
-        }
-        s.close();
+        // read the IpAddress
+        Util.readAddress(dis);
+        // write a GET
+        GossipData req=new GossipData(GossipRouter.GET, "nogroup_setup", null, null);
+        req.writeTo(dos);
+        GossipData rsp=new GossipData();
+        rsp.readFrom(dis);
         System.out.println("router ok");
+        }
+        finally {
+            Util.close(dos);
+            Util.close(dis);
+            Util.close(sock);
+        }
         return routerPort;
-
     }
 
 
     public static void stopGossipRouter() throws Exception {
-
         if(gossipRouter == null) {
             throw new Exception("There's no GossipRouter running");
         }
@@ -165,76 +122,6 @@ public class Utilities {
         gossipRouter=null;
     }
 
-
-    /**
-     * Starts the GossipServer on a separate thread and sends a null GossipData
-     *
-     * @return the port GossipServer is listening on.
-     * @deprecated Since 2.2.1 GossipServer shouldn't be used anymore. The
-     *             GossipRouter can server Gossip requests too.
-     */
-    public static int startGossipServer(final long expiryTime)
-            throws Exception {
-
-        final int port=getFreePort();
-        Thread gossipThread=new Thread(new Runnable() {
-            public void run() {
-                try {
-                    new GossipServer(port, expiryTime).run();
-                }
-                catch(Exception e) {
-                    String msg=
-                            "Failed to start the gossip server on port " + port;
-                    log.error(msg);
-                    e.printStackTrace();
-                }
-            }
-        });
-        gossipThread.start();
-
-        // verify the server - try to connect for 10 secs
-        long startms=System.currentTimeMillis();
-        Exception lastConnectException=null;
-        long crtms=startms;
-        Socket s=null;
-
-        while(crtms - startms < 10000) {
-            try {
-                s=new Socket("localhost", port);
-                lastConnectException=null;
-                break;
-            }
-            catch(Exception e) {
-                lastConnectException=e;
-                Thread.sleep(1000);
-                crtms=System.currentTimeMillis();
-            }
-        }
-
-        if(lastConnectException != null) {
-            lastConnectException.printStackTrace();
-            throw new Exception("Cannot connect to the gossip server");
-        }
-	 
-        // send a null GossipData which will be silently discared
-        ObjectOutputStream oos=new ObjectOutputStream(s.getOutputStream());
-        oos.writeObject(null);
-        oos.close();
-        s.close();
-        System.out.println("gossip server ok");
-        return port;
-
-    }
-
-
-    /**
-     * Stops the GossipServer.
-     *
-     * @deprecated Since 2.2.1 GossipServer shouldn't be used anymore. The
-     *             GossipRouter can serve Gossip requests too.
-     */
-    public static void stopGossipServer(int port) throws Exception {
-    }
 
 
     /**

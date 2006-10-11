@@ -1,4 +1,4 @@
-// $Id: GossipTest.java,v 1.6 2006/10/11 08:00:15 belaban Exp $
+// $Id: GossipClientTest.java,v 1.1 2006/10/11 08:01:12 belaban Exp $
 
 package org.jgroups.tests.stack;
 
@@ -19,14 +19,14 @@ import java.util.Vector;
  * GossipRouter is supposed to answer Gossip requests too.
  *
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Revision: 1.6 $
+ * @version $Revision: 1.1 $
  * @since 2.2.1
  */
-public class GossipTest extends TestCase {
+public class GossipClientTest extends TestCase {
     private int port=-1;
     private long expiryTime=10000;
 
-    public GossipTest(String name) {
+    public GossipClientTest(String name) {
         super(name);
     }
 
@@ -214,7 +214,7 @@ public class GossipTest extends TestCase {
     }
 
     public static Test suite() {
-        return new TestSuite(GossipTest.class);
+        return new TestSuite(GossipClientTest.class);
     }
 
     public static void main(String[] args) {
