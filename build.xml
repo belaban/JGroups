@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.66 2006/10/02 06:23:22 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.67 2006/10/11 14:23:22 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -186,7 +186,7 @@
     </target>
 
     <target name="gossip-service"
-            description="Creates the service archive used to deploy GossipServer as a JBoss MBean"
+            description="Creates the service archive used to deploy GossipRouter as a JBoss MBean"
             depends="compile">
         <mkdir dir="${dist.dir}/gossiptemp"/>
         <copy  file="${conf.dir}/gossip-service.xml" tofile="${dist.dir}/gossiptemp/jboss-service.xml"/>
