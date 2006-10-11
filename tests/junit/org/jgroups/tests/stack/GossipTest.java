@@ -1,4 +1,4 @@
-// $Id: GossipTest.java,v 1.5 2005/09/29 16:55:07 belaban Exp $
+// $Id: GossipTest.java,v 1.6 2006/10/11 08:00:15 belaban Exp $
 
 package org.jgroups.tests.stack;
 
@@ -10,32 +10,20 @@ import org.jgroups.stack.GossipData;
 import org.jgroups.stack.GossipRouter;
 import org.jgroups.stack.IpAddress;
 
-import java.io.EOFException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.StreamCorruptedException;
+import java.io.*;
 import java.net.Socket;
 import java.util.Vector;
 
 /**
  * Tests Gossip protocol primitives with the new GossipRouter. Since 2.2.1, the
  * GossipRouter is supposed to answer Gossip requests too.
- * <p/>
- * It is possible to switch all tests to use an old GossipServer by setting
- * USE_ROUTER to false;
  *
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Revision: 1.5 $
+ * @version $Revision: 1.6 $
  * @since 2.2.1
  */
 public class GossipTest extends TestCase {
-
-    // configures the test to use the new gossip-enabled Router or the old
-    // GossipServer
-    private final boolean USE_ROUTER=true;
-
     private int port=-1;
-
     private long expiryTime=10000;
 
     public GossipTest(String name) {
@@ -44,112 +32,79 @@ public class GossipTest extends TestCase {
 
     public void setUp() throws Exception {
         super.setUp();
-        if(USE_ROUTER) {
-            port=Utilities.startGossipRouter(expiryTime);
-        }
-        else {
-            port=Utilities.startGossipServer(expiryTime);
-        }
+        port=Utilities.startGossipRouter(expiryTime);
     }
 
     public void tearDown() throws Exception {
         super.tearDown();
-        if(USE_ROUTER) {
-            Utilities.stopGossipRouter();
-        }
-        else {
-            Utilities.stopGossipServer(port);
-        }
+        Utilities.stopGossipRouter();
     }
 
     /**
      * Sends a Gossip GET request for an inexistent group.
      */
     public void testEmptyGET() throws Exception {
-
         String groupName="nosuchgroup";
         Socket s=new Socket("localhost", port);
-        ObjectOutputStream oos=new ObjectOutputStream(s.getOutputStream());
-        GossipData greq=
-                new GossipData(GossipData.GET_REQ, groupName, null, null);
-        oos.writeObject(greq);
+        DataOutputStream oos=new DataOutputStream(s.getOutputStream());
+        GossipData greq=new GossipData(GossipRouter.GET, groupName, null, null);
+        greq.writeTo(oos);
         oos.flush();
-        ObjectInputStream ois=new ObjectInputStream(s.getInputStream());
-        GossipData gres=(GossipData)ois.readObject();
-        assertEquals(GossipData.GET_RSP, gres.getType());
+        DataInputStream ois=new DataInputStream(s.getInputStream());
+        GossipData gres=new GossipData();
+        gres.readFrom(ois);
+        assertEquals(GossipRouter.GET_RSP, gres.getType());
         assertEquals(groupName, gres.getGroup());
-        Vector mbrs=gres.getMbrs();
+        Vector mbrs=gres.getMembers();
         assertNull(mbrs);
-
         oos.close();
         ois.close();
         s.close();
-
     }
 
 
     /**
      * Tests the situation when the gossip client is late in sending the
-     * serialized GossipData, after it opened the connection. If using a
-     * GossipServer, this shouldn't be an issue.  If using the GossipRouter,
+     * serialized GossipData, after it opened the connection. If using the GossipRouter,
      * the client will get a StreamCorruptedException and the call will fail.
      */
     public void testLazyClient() throws Exception {
-
         String groupName="TESTGROUP";
         Socket s=new Socket("localhost", port);
-        ObjectOutputStream oos=new ObjectOutputStream(s.getOutputStream());
-        GossipData greq=
-                new GossipData(GossipData.GET_REQ, groupName, null, null);
-
+        DataOutputStream oos=new DataOutputStream(s.getOutputStream());
+        GossipData greq=new GossipData(GossipRouter.GET, groupName, null, null);
         Thread.sleep(GossipRouter.GOSSIP_REQUEST_TIMEOUT + 500);
-
-        oos.writeObject(greq);
+        greq.writeTo(oos);
         oos.flush();
-        ObjectInputStream ois=null;
+        DataInputStream ois=null;
 
-        if(USE_ROUTER) {
-            try {
-                ois=new ObjectInputStream(s.getInputStream());
-                fail("Stream creation should have failed");
-            }
-            catch(Exception e) {
-                assertTrue(e instanceof StreamCorruptedException);
-            }
+        try {
+            ois=new DataInputStream(s.getInputStream());
+            fail("Stream creation should have failed");
         }
-        else {
-            // old GossipServer
-            ois=new ObjectInputStream(s.getInputStream());
-            GossipData gres=(GossipData)ois.readObject();
-            assertEquals(GossipData.GET_RSP, gres.getType());
-            assertEquals(groupName, gres.getGroup());
-            Vector mbrs=gres.getMbrs();
-            assertNull(mbrs);
-            ois.close();
+        catch(Exception e) {
+            assertTrue(e instanceof StreamCorruptedException);
         }
-
         oos.close();
         s.close();
 
         // send the second request, to make sure the server didn't hang
 
         s=new Socket("localhost", port);
-        oos=new ObjectOutputStream(s.getOutputStream());
-        greq=new GossipData(GossipData.GET_REQ, groupName, null, null);
-
-        oos.writeObject(greq);
+        oos=new DataOutputStream(s.getOutputStream());
+        greq=new GossipData(GossipRouter.GET, groupName, null, null);
+        greq.writeTo(oos);
         oos.flush();
-        ois=new ObjectInputStream(s.getInputStream());
-        GossipData gres=(GossipData)ois.readObject();
-        assertEquals(GossipData.GET_RSP, gres.getType());
+        ois=new DataInputStream(s.getInputStream());
+        GossipData gres=new GossipData();
+        gres.readFrom(ois);
+        assertEquals(GossipRouter.GET_RSP, gres.getType());
         assertEquals(groupName, gres.getGroup());
-        Vector mbrs=gres.getMbrs();
+        Vector mbrs=gres.getMembers();
         assertNull(mbrs);
-
         oos.close();
         ois.close();
         s.close();
-
     }
 
 
@@ -158,15 +113,13 @@ public class GossipTest extends TestCase {
      * group.
      */
     public void test_REGISTER_GET() throws Exception {
-
         String groupName="TESTGROUP";
         int mbrPort=7777;
-
         Socket s=new Socket("localhost", port);
-        ObjectOutputStream oos=new ObjectOutputStream(s.getOutputStream());
+        DataOutputStream oos=new DataOutputStream(s.getOutputStream());
         Address mbr=new IpAddress("localhost", mbrPort);
-        GossipData greq = new GossipData(GossipData.REGISTER_REQ, groupName, mbr, null);
-        oos.writeObject(greq);
+        GossipData greq = new GossipData(GossipRouter.REGISTER, groupName, mbr, null);
+        greq.writeTo(oos);
         oos.flush();
         
         // test for end of stream
@@ -184,56 +137,53 @@ public class GossipTest extends TestCase {
 
         // send GET
         s=new Socket("localhost", port);
-        oos=new ObjectOutputStream(s.getOutputStream());
-        greq=new GossipData(GossipData.GET_REQ, groupName, null, null);
-        oos.writeObject(greq);
+        oos=new DataOutputStream(s.getOutputStream());
+        greq=new GossipData(GossipRouter.GET, groupName, null, null);
+        greq.writeTo(oos);
         oos.flush();
-        ObjectInputStream ois=new ObjectInputStream(s.getInputStream());
-        GossipData gres=(GossipData)ois.readObject();
-        assertEquals(GossipData.GET_RSP, gres.getType());
+        DataInputStream ois=new DataInputStream(s.getInputStream());
+        GossipData gres=new GossipData();
+        gres.readFrom(ois);
+        assertEquals(GossipRouter.GET_RSP, gres.getType());
         assertEquals(groupName, gres.getGroup());
-        Vector mbrs=gres.getMbrs();
+        Vector mbrs=gres.getMembers();
         assertEquals(1, mbrs.size());
         assertEquals(new IpAddress("localhost", mbrPort), mbrs.get(0));
-
         oos.close();
         ois.close();
         s.close();
-
     }
 
     /**
      * Test if a member is removed from group after EXPIRY_TIME ms.
      */
     public void testSweep() throws Exception {
-
         String groupName="TESTGROUP";
         int mbrPort=7777;
 
         Socket s=new Socket("localhost", port);
-        ObjectOutputStream oos=new ObjectOutputStream(s.getOutputStream());
+        DataOutputStream oos=new DataOutputStream(s.getOutputStream());
         Address mbr=new IpAddress("localhost", mbrPort);
-        GossipData greq=
-                new GossipData(GossipData.REGISTER_REQ, groupName, mbr, null);
-        oos.writeObject(greq);
+        GossipData greq=new GossipData(GossipRouter.REGISTER, groupName, mbr, null);
+        greq.writeTo(oos);
         oos.flush();
         oos.close();
         s.close();
 
         // send GET
         s=new Socket("localhost", port);
-        oos=new ObjectOutputStream(s.getOutputStream());
-        greq=new GossipData(GossipData.GET_REQ, groupName, null, null);
-        oos.writeObject(greq);
+        oos=new DataOutputStream(s.getOutputStream());
+        greq=new GossipData(GossipRouter.GET, groupName, null, null);
+        greq.writeTo(oos);
         oos.flush();
-        ObjectInputStream ois=new ObjectInputStream(s.getInputStream());
-        GossipData gres=(GossipData)ois.readObject();
-        assertEquals(GossipData.GET_RSP, gres.getType());
+        DataInputStream ois=new DataInputStream(s.getInputStream());
+        GossipData gres=new GossipData();
+        gres.readFrom(ois);
+        assertEquals(GossipRouter.GET_RSP, gres.getType());
         assertEquals(groupName, gres.getGroup());
-        Vector mbrs=gres.getMbrs();
+        Vector mbrs=gres.getMembers();
         assertEquals(1, mbrs.size());
         assertEquals(new IpAddress("localhost", mbrPort), mbrs.get(0));
-
         oos.close();
         ois.close();
         s.close();
@@ -246,17 +196,17 @@ public class GossipTest extends TestCase {
         // send a second GET after more than EXPIRY_TIME ms
 
         s=new Socket("localhost", port);
-        oos=new ObjectOutputStream(s.getOutputStream());
-        greq=new GossipData(GossipData.GET_REQ, groupName, null, null);
-        oos.writeObject(greq);
+        oos=new DataOutputStream(s.getOutputStream());
+        greq=new GossipData(GossipRouter.GET, groupName, null, null);
+        greq.writeTo(oos);
         oos.flush();
-        ois=new ObjectInputStream(s.getInputStream());
-        gres=(GossipData)ois.readObject();
-        assertEquals(GossipData.GET_RSP, gres.getType());
+        ois=new DataInputStream(s.getInputStream());
+        gres=new GossipData();
+        gres.readFrom(ois);
+        assertEquals(GossipRouter.GET_RSP, gres.getType());
         assertEquals(groupName, gres.getGroup());
-        mbrs=gres.getMbrs();
+        mbrs=gres.getMembers();
         assertTrue(mbrs == null || mbrs.size() == 0);
-
         oos.close();
         ois.close();
         s.close();
@@ -264,8 +214,7 @@ public class GossipTest extends TestCase {
     }
 
     public static Test suite() {
-        TestSuite s=new TestSuite(GossipTest.class);
-        return s;
+        return new TestSuite(GossipTest.class);
     }
 
     public static void main(String[] args) {
