@@ -1,4 +1,4 @@
-// $Id: SIZE.java,v 1.15 2005/08/11 12:43:47 belaban Exp $
+// $Id: SIZE.java,v 1.16 2006/10/11 14:42:06 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -159,7 +159,7 @@ public class SIZE extends Protocol {
                 return 0;
             }
             finally {
-                Util.closeOutputStream(out);
+                Util.close(out);
             }
         }
     }

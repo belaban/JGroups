@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.32 2006/10/09 13:35:39 belaban Exp $
+// $Id: JChannelFactory.java,v 1.33 2006/10/11 14:34:50 belaban Exp $
 
 package org.jgroups;
 
@@ -144,7 +144,7 @@ public class JChannelFactory implements ChannelFactory {
             throw new Exception("failed parsing " + properties, ex);
         }
         finally {
-            Util.closeInputStream(input);
+            Util.close(input);
         }
     }
 
@@ -159,7 +159,7 @@ public class JChannelFactory implements ChannelFactory {
             throw new Exception("failed parsing " + file.toString(), ex);
         }
         finally {
-            Util.closeInputStream(input);
+            Util.close(input);
         }
     }
 
@@ -178,7 +178,7 @@ public class JChannelFactory implements ChannelFactory {
             throw new Exception("failed parsing " + url.toString(), ex);
         }
         finally {
-            Util.closeInputStream(input);
+            Util.close(input);
         }
     }
 
@@ -196,7 +196,7 @@ public class JChannelFactory implements ChannelFactory {
             throw new Exception("failed parsing " + properties, ex);
         }
         finally {
-            Util.closeInputStream(input);
+            Util.close(input);
         }
     }
 

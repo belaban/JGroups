@@ -18,7 +18,7 @@ import org.jgroups.util.Util;
 /**
  * Tests transfer of large states (http://jira.jboss.com/jira/browse/JGRP-225)
  * @author Bela Ban
- * @version $Id: LargeStateTransferTest.java,v 1.3 2006/09/22 12:32:15 belaban Exp $
+ * @version $Id: LargeStateTransferTest.java,v 1.4 2006/10/11 14:31:52 belaban Exp $
  */
 public class LargeStateTransferTest extends TestCase {
     JChannel provider, requester;
@@ -121,7 +121,7 @@ public class LargeStateTransferTest extends TestCase {
             }
             catch (IOException e){}
             finally{
-               Util.closeOutputStream(ostream);
+               Util.close(ostream);
             }
         }
         public void setState(byte[] state) {
@@ -155,7 +155,7 @@ public class LargeStateTransferTest extends TestCase {
             }
             catch (IOException e){                        }
             finally{
-               Util.closeInputStream(ois);
+               Util.close(ois);
             }
             p.setResult(new Integer(size));
         }
