@@ -13,12 +13,12 @@ import java.util.LinkedList;
 /**
  * Test the multiplexer functionality provided by JChannelFactory, especially the service views and cluster views
  * @author Bela Ban
- * @version $Id: MultiplexerViewTest.java,v 1.9 2006/10/09 13:08:31 belaban Exp $
+ * @version $Id: MultiplexerViewTest.java,v 1.10 2006/10/11 04:09:53 vlada Exp $
  */
 public class MultiplexerViewTest extends TestCase {
     private Channel c1, c2, c3, c4;
-    static final String CFG="stacks.xml";
-    static final String STACK_NAME="udp";
+    static String CFG="stacks.xml";
+    static String STACK_NAME="udp";
     static final BlockEvent BLOCK_EVENT=new BlockEvent();
     static final UnblockEvent UNBLOCK_EVENT=new UnblockEvent();
     JChannelFactory factory, factory2;
@@ -30,6 +30,9 @@ public class MultiplexerViewTest extends TestCase {
 
     public void setUp() throws Exception {
         super.setUp();
+        CFG = System.getProperty("cfg",CFG);
+        STACK_NAME = System.getProperty("stack",STACK_NAME);
+        System.out.println("Using stack configuration file " + CFG + " and stack name " + STACK_NAME);
         factory=new JChannelFactory();
         factory.setMultiplexerConfig(MultiplexerViewTest.CFG);
 
@@ -170,7 +173,9 @@ public class MultiplexerViewTest extends TestCase {
         System.out.println("-- Closing c4");
 
         c4.close();
-        // Util.sleep(5000);
+        //close under FLUSH is not *synchronous* as connect/getState 
+        //so we have to sleep here
+        Util.sleep(5000);
 
         events=receiver.getEvents();
         checkBlockAndUnBlock(events, "receiver", new Object[]{BLOCK_EVENT, UNBLOCK_EVENT});
