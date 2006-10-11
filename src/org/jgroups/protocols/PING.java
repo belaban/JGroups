@@ -1,4 +1,4 @@
-// $Id: PING.java,v 1.29 2006/05/16 11:14:27 belaban Exp $
+// $Id: PING.java,v 1.30 2006/10/11 14:41:48 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -10,29 +10,26 @@ import org.jgroups.util.Util;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Enumeration;
-import java.util.Properties;
-import java.util.StringTokenizer;
-import java.util.Vector;
+import java.util.*;
 
 
 /**
  * The PING protocol layer retrieves the initial membership (used by the GMS when started
  * by sending event FIND_INITIAL_MBRS down the stack). We do this by mcasting PING
- * requests to an IP MCAST address (or, if gossiping is enabled, by contacting the GossipServer).
+ * requests to an IP MCAST address (or, if gossiping is enabled, by contacting the GossipRouter).
  * The responses should allow us to determine the coordinator whom we have to
  * contact, e.g. in case we want to join the group.  When we are a server (after having
  * received the BECOME_SERVER event), we'll respond to PING requests with a PING
  * response.<p> The FIND_INITIAL_MBRS event will eventually be answered with a
  * FIND_INITIAL_MBRS_OK event up the stack.
  * The following properties are available
- * property: gossip_host - if you are using GOSSIP then this defines the host of the GossipServer, default is null
- * property: gossip_port - if you are using GOSSIP then this defines the port of the GossipServer, default is null
+ * property: gossip_host - if you are using GOSSIP then this defines the host of the GossipRouter, default is null
+ * property: gossip_port - if you are using GOSSIP then this defines the port of the GossipRouter, default is null
  */
 public class PING extends Discovery {
     String       gossip_host=null;
     int          gossip_port=0;
-    long         gossip_refresh=20000; // time in msecs after which the entry in GossipServer will be refreshed
+    long         gossip_refresh=20000; // time in msecs after which the entry in GossipRouter will be refreshed
     GossipClient client;
     int          port_range=1;        // number of ports to be probed for initial membership
     List         initial_hosts=null;  // hosts to be contacted for the initial membership
@@ -50,8 +47,8 @@ public class PING extends Discovery {
      * The following properties are available
      * property: timeout - the timeout (ms) to wait for the initial members, default is 3000=3 secs
      * property: num_initial_members - the minimum number of initial members for a FIND_INITAL_MBRS, default is 2
-     * property: gossip_host - if you are using GOSSIP then this defines the host of the GossipServer, default is null
-     * property: gossip_port - if you are using GOSSIP then this defines the port of the GossipServer, default is null
+     * property: gossip_host - if you are using GOSSIP then this defines the host of the GossipRouter, default is null
+     * property: gossip_port - if you are using GOSSIP then this defines the port of the GossipRouter, default is null
      *
      * @param props - a property set containing only PING properties
      * @return returns true if all properties were parsed properly
@@ -159,14 +156,14 @@ public class PING extends Discovery {
     public void sendGetMembersRequest() {
         Message msg;
         PingHeader hdr;
-        Vector gossip_rsps;
+        java.util.List gossip_rsps;
 
         if(client != null) {
             gossip_rsps=client.getMembers(group_addr);
             if(gossip_rsps != null && gossip_rsps.size() > 0) {
                 // Set a temporary membership in the UDP layer, so that the following multicast
                 // will be sent to all of them
-                Event view_event=new Event(Event.TMP_VIEW, makeView(gossip_rsps));
+                Event view_event=new Event(Event.TMP_VIEW, makeView(new Vector(gossip_rsps)));
                 passDown(view_event); // needed e.g. by failure detector or UDP
             }
             else {
@@ -175,9 +172,9 @@ public class PING extends Discovery {
             }
 
             if(gossip_rsps.size() > 0) {
-                for(int i=0; i < gossip_rsps.size(); i++) {
-                    Address dest=(Address)gossip_rsps.elementAt(i);
-                    msg=new Message(dest, null, null);  // mcast msg
+                for(Iterator it=gossip_rsps.iterator(); it.hasNext();) {
+                    Address dest=(Address)it.next();
+                    msg=new Message(dest, null, null);  // unicast msg
                     msg.putHeader(getName(), new PingHeader(PingHeader.GET_MBRS_REQ, null));
                     passDown(new Event(Event.MSG, msg));
                 }
