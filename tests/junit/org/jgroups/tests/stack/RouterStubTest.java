@@ -1,4 +1,4 @@
-// $Id: RouterTest.java,v 1.14 2006/10/11 07:57:57 belaban Exp $
+// $Id: RouterStubTest.java,v 1.1 2006/10/11 08:01:12 belaban Exp $
 
 package org.jgroups.tests.stack;
 
@@ -12,8 +12,6 @@ import org.jgroups.Message;
 import org.jgroups.stack.GossipRouter;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.GossipData;
-import org.jgroups.util.List;
-import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
 
 import java.io.*;
@@ -29,20 +27,21 @@ import java.util.Vector;
  * may timeout.
  *
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Revision: 1.14 $
+ * @author Bela Ban
+ * @version $Revision: 1.1 $
  * @since 2.2.1
  */
-public class RouterTest extends TestCase {
+public class RouterStubTest extends TestCase {
     DataInputStream dis=null;
     DataOutputStream dos=null;
     Socket sock=null;
 
-    private static final Log log = LogFactory.getLog(RouterTest.class);
+    private static final Log log = LogFactory.getLog(RouterStubTest.class);
 
     private int routerPort=-1;
     private Random random=new Random();
 
-    public RouterTest(String name) {
+    public RouterStubTest(String name) {
         super(name);
     }
 
@@ -584,7 +583,7 @@ public class RouterTest extends TestCase {
 
 
     public static Test suite() {
-        TestSuite s=new TestSuite(RouterTest.class);
+        TestSuite s=new TestSuite(RouterStubTest.class);
         return s;
     }
 
