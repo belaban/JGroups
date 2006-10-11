@@ -1,4 +1,4 @@
-// $Id: TimeScheduler.java,v 1.13 2006/06/07 19:35:09 belaban Exp $
+// $Id: TimeScheduler.java,v 1.14 2006/10/11 19:01:37 vlada Exp $
 
 package org.jgroups.util;
 
@@ -394,6 +394,9 @@ public class TimeScheduler {
 
             long start=System.currentTimeMillis(), stop, diff;
             try {
+                if(log.isDebugEnabled())
+                   log.debug("Running task " + task);
+                
                 task.run();
                 stop=System.currentTimeMillis();
                 diff=stop-start;
