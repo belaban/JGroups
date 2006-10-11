@@ -1,22 +1,38 @@
 package org.jgroups.tests;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
-import org.jgroups.*;
-import org.jgroups.stack.Protocol;
-import org.jgroups.util.Util;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+
+import junit.framework.Test;
+import junit.framework.TestCase;
+import junit.framework.TestSuite;
+
+import org.jgroups.Address;
+import org.jgroups.BlockEvent;
+import org.jgroups.Channel;
+import org.jgroups.ChannelException;
+import org.jgroups.Event;
+import org.jgroups.ExtendedReceiverAdapter;
+import org.jgroups.GetStateEvent;
+import org.jgroups.JChannel;
+import org.jgroups.Message;
+import org.jgroups.SetStateEvent;
+import org.jgroups.UnblockEvent;
+import org.jgroups.View;
+import org.jgroups.stack.Protocol;
 
 
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.14 2006/10/09 13:05:02 belaban Exp $
+ * @version $Id: FlushTest.java,v 1.15 2006/10/11 18:59:52 vlada Exp $
  */
 public class FlushTest extends TestCase {
     Channel c1, c2,c3;
@@ -220,7 +236,7 @@ public class FlushTest extends TestCase {
 
     private void stateTransferTestHelper(boolean sendMessages) throws ChannelException {
         c1=createChannel();
-        MyReceiver receiver=new MyReceiver("c1");
+        MyReceiver receiver=new MyReceiver(c1,"c1");
         c1.setReceiver(receiver);
         c1.connect("bla");
         // Util.sleep(1000);
@@ -232,14 +248,14 @@ public class FlushTest extends TestCase {
         // Util.sleep(1000);
 
         c2=createChannel();
-        MyReceiver receiver2=new MyReceiver("c2");
+        MyReceiver receiver2=new MyReceiver(c2,"c2");
         c2.setReceiver(receiver2);
         c2.connect("bla");
         // Util.sleep(1000);
 
 
         c3=createChannel();
-        MyReceiver receiver3=new MyReceiver("c3");
+        MyReceiver receiver3=new MyReceiver(c3,"c3");
         c3.setReceiver(receiver3);
         c3.connect("bla");
         // Util.sleep(1000);
@@ -278,7 +294,7 @@ public class FlushTest extends TestCase {
         // Util.sleep(2000);
 
         c2=createChannel();
-        receiver2=new MyReceiver("c2");
+        receiver2=new MyReceiver(c2,"c2");
         c2.setReceiver(receiver2);
         c2.connect("bla");
         // Util.sleep(2000);
@@ -404,10 +420,27 @@ public class FlushTest extends TestCase {
         List events;
         String name;
         boolean verbose = true;
+        Channel channel = null;
 
+        public MyReceiver(Channel ch,String name) {
+           this.name=name;
+           channel = ch;
+           events=Collections.synchronizedList(new LinkedList());
+        }
+        
         public MyReceiver(String name) {
             this.name=name;
             events=Collections.synchronizedList(new LinkedList());
+        }
+        
+        public String getLocalAddress()
+        {
+           String address = "";
+           if (channel != null)
+           {
+              address = channel.getLocalAddress().toString();
+           }
+           return address;
         }
 
         public String getName()
@@ -423,38 +456,38 @@ public class FlushTest extends TestCase {
 
         public void block() {
             if(verbose)
-                System.out.println("[" + name + "]: BLOCK");
+                System.out.println("[" + name + ":" +getLocalAddress() +"]: BLOCK");
             events.add(new BlockEvent());
         }
 
         public void unblock() {
             if(verbose)
-                System.out.println("[" + name + "]: UNBLOCK");
+                System.out.println("[" + name + ":" +getLocalAddress() + "]: UNBLOCK");
             events.add(new UnblockEvent());
         }
 
         public void viewAccepted(View new_view) {
             if(verbose)
-                System.out.println("[" + name + "]: " + new_view);
+                System.out.println("[" + name + ":" +getLocalAddress() + "]: " + new_view);
             events.add(new_view);
         }
 
         public byte[] getState() {
             if(verbose)
-                System.out.println("[" + name + "]: GetStateEvent");
+                System.out.println("[" + name + ":" +getLocalAddress() + "]: GetStateEvent");
             events.add(new GetStateEvent(null, null));
             return new byte[]{'b', 'e', 'l', 'a'};
         }
 
         public void setState(byte[] state) {
             if(verbose)
-                System.out.println("[" + name + "]: SetStateEvent");
+                System.out.println("[" + name + ":" +getLocalAddress() + "]: SetStateEvent");
             events.add(new SetStateEvent(null, null));
         }
 
         public void getState(OutputStream ostream) {
             if(verbose)
-                System.out.println("[" + name + "]: GetStateEvent streamed");
+                System.out.println("[" + name + ":" +getLocalAddress() + "]: GetStateEvent streamed");
             events.add(new GetStateEvent(null, null));
             try {
                 ostream.close();
@@ -466,7 +499,7 @@ public class FlushTest extends TestCase {
 
         public void setState(InputStream istream) {
             if(verbose)
-                System.out.println("[" + name + "]: SetStateEvent streamed");
+                System.out.println("[" + name + ":" +getLocalAddress() + "]: SetStateEvent streamed");
             events.add(new SetStateEvent(null, null));
             try {
                 istream.close();
