@@ -561,7 +561,7 @@
             <para>Although not as efficient (and using more bandwidth), it is
             sometimes the only possibility to reach group members.</para>
           </footnote> (UDP) and to access a well-known server (
-        <emphasis>GossipServer</emphasis> ) for initial membership information
+        <emphasis>GossipRouter</emphasis> ) for initial membership information
         (PING).</para>
 
         <para>To configure UDP to use multiple unicast messages to send a
@@ -569,7 +569,7 @@
         <parameter>ip_mcast</parameter> property has to be set to
         <literal>false</literal> .</para>
 
-        <para>To configure PING to access a GossipServer instead of using IP
+        <para>To configure PING to access a GossipRouter instead of using IP
         multicast the following properties have to be set:</para>
 
         <variablelist>
@@ -577,7 +577,7 @@
             <term>gossip_host</term>
 
             <listitem>
-              <para>The name of the host on which GossipServer is
+              <para>The name of the host on which GossipRouter is
               started</para>
             </listitem>
           </varlistentry>
@@ -586,7 +586,7 @@
             <term>gossip_port</term>
 
             <listitem>
-              <para>The port on which GossipServer is listening</para>
+              <para>The port on which GossipRouter is listening</para>
             </listitem>
           </varlistentry>
 
@@ -595,31 +595,31 @@
 
             <listitem>
               <para>The number of milliseconds to wait until refreshing our
-              address entry with the GossipServer</para>
+              address entry with the GossipRouter</para>
             </listitem>
           </varlistentry>
         </variablelist>
 
-        <para>Before any members are started the GossipServer has to be
+        <para>Before any members are started the GossipRouter has to be
         started, e.g.</para>
 
-        <screen>
-                    java org.jgroups.stack.GossipServer -port 5555
-                </screen>
+          <screen>
+              java org.jgroups.stack.GossipRouter -port 5555 -bindaddress localhost
+          </screen>
 
-        <para>This starts the GossipServer on the local host on port 5555. The
-        GossipServer is essentially a lookup service for groups and members.
+        <para>This starts the GossipRouter on the local host on port 5555. The
+        GossipRouter is essentially a lookup service for groups and members.
         It is a process that runs on a well-known host and port and accepts
         GET(group) and REGISTER(group, member) requests. The REGISTER request
-        registers a member's address and group with the GossipServer. The GET
+        registers a member's address and group with the GossipRouter. The GET
         request retrieves all member addresses given a group name. Each member
         has to periodically ( <parameter>gossip_refresh</parameter> )
-        re-register their address with the GossipServer, otherwise the entry
+        re-register their address with the GossipRouter, otherwise the entry
         for that member will be removed (accommodating for crashed
         members).</para>
 
         <para>The following example shows how to disable the use of IP
-        multicasting and use a GossipServer instead. Only the bottom two
+        multicasting and use a GossipRouter instead. Only the bottom two
         protocols are shown, the rest of the stack is the same as in the
         previous example:</para>
 
@@ -632,19 +632,19 @@
 
         <para>The property <parameter>ip_mcast</parameter> is set to
         <literal>false</literal> in <classname>UDP</classname> and the gossip
-        properties in <classname>PING</classname> define the GossipServer to
+        properties in <classname>PING</classname> define the GossipRouter to
         be on the local host at port 5555 with a refresh rate of 15 seconds.
-        If PING is parameterized with the GossipServer's address
+        If PING is parameterized with the GossipRouter's address
         <emphasis>and</emphasis> port, then gossiping is enabled, otherwise it
         is disabled. If only one parameter is given, gossiping will be
         <emphasis>disabled</emphasis> .</para>
 
-        <para>Make sure to run the GossipServer before starting any members,
+        <para>Make sure to run the GossipRouter before starting any members,
         otherwise the members will not find each other and each member will
         form its own group <footnote>
             <para>This can actually be used to test the MERGE2 protocol: start
             two members (forming two singleton groups because they don't find
-            each other), then start the GossipServer. After some time, the two
+            each other), then start the GossipRouter. After some time, the two
             members will merge into one group</para>
           </footnote> .</para>
       </section>
@@ -740,9 +740,9 @@
 
       <itemizedlist>
         <listitem>
-          <para>PING with GossipServer: same solution as described in <xref
+          <para>PING with GossipRouter: same solution as described in <xref
           linkend="IpNoMulticast" /> . The <parameter>ip_mcast</parameter>
-          property has to be set to <literal>false</literal> . GossipServer
+          property has to be set to <literal>false</literal> . GossipRouter
           has to be started before the first member is started.</para>
         </listitem>
 
@@ -755,7 +755,7 @@
           <para>TCPGOSSIP: essentially the same as the above PING <footnote>
               <para>PING and TCPGOSSIP will be merged in the future.</para>
             </footnote> . The only difference is that TCPGOSSIP allows for
-          multiple GossipServers instead of only one.</para>
+          multiple GossipRouters instead of only one.</para>
         </listitem>
       </itemizedlist>
 
@@ -775,7 +775,7 @@
                 </screen>
 
         <para>The concept behind TCPPING is that no external daemon such as
-        GossipServer is needed. Instead some selected group members assume the
+        GossipRouter is needed. Instead some selected group members assume the
         role of well-known hosts from which initial membership information can
         be retrieved. In the example <parameter>HostA</parameter> and
         <parameter>HostB</parameter> are designated members that will be used
@@ -816,17 +816,17 @@
                 </screen>
 
         <para>The <parameter>initial_hosts</parameter> properties combines
-        both the host and port of a GossipServer, and it is possible to
-        specify more than one GossipServer. In the example there are two
-        GossipServers at ports <literal>5555</literal> and
+        both the host and port of a GossipRouter, and it is possible to
+        specify more than one GossipRouter. In the example there are two
+        GossipRouters at ports <literal>5555</literal> and
         <literal>5556</literal> on the local host. Also,
         <parameter>gossip_refresh_rate</parameter> defines how many
         milliseconds to wait between refreshing the entry with the
-        GossipServers.</para>
+        GossipRouters.</para>
 
-        <para>The advantage of having multiple GossipServers is that, as long
+        <para>The advantage of having multiple GossipRouters is that, as long
         as at least one is running, new members will always be able to
-        retrieve the initial membership. Note that the GossipServer should be
+        retrieve the initial membership. Note that the GossipRouter should be
         started before any of the members.</para>
       </section>
     </section>
@@ -852,13 +852,11 @@
         <para>The most restrictive setups of firewalls usually disable
         <emphasis>all</emphasis> incoming traffic, and only enable a few
         selected ports for outgoing traffic. In the solution below, it is
-        assumed that 2 TCP ports are enabled for outgoing ports; one for the
-        GossipServer and one for the Router.</para>
+        assumed that one TCP port is enabled for outgoing connections to the GossipRouter.</para>
 
         <para>JGroups has a mechanism that allows a programmer to tunnel a
-        firewall. The solution involves a GossipServer and a Router process.
-        Both have to be outside of the firewall, so other members (possibly
-        also behind firewalls) can access it.</para>
+        firewall. The solution involves a GossipRouter, which has to be outside of the firewall,
+        so other members (possibly also behind firewalls) can access it.</para>
 
         <para>The solution works as follows. A channel inside a firewall has
         to use protocol TUNNEL instead of UDP as bottommost layer in the
@@ -867,41 +865,41 @@
 
         <screen>
                     "TUNNEL(router_host=localhost;router_port=12001):" +
-                    "TCPGOSSIP(initial_hosts=localhost[12002];gossip_refresh_rate=10000;" +
+                    "TCPGOSSIP(initial_hosts=localhost[12001];gossip_refresh_rate=10000;" +
                     "num_initial_members=3;up_thread=true;down_thread=true):"
                 </screen>
 
-        <para><classname>TCPGOSSIP</classname> uses the GossipServer (outside
-        the firewall) at port <literal>12002</literal> to register its address
+        <para><classname>TCPGOSSIP</classname> uses the GossipRouter (outside
+        the firewall) at port <literal>12001</literal> to register its address
         (periodically) and to retrieve the initial membership for its
         group.</para>
 
-        <para><classname>TUNNEL</classname> establishes a TCP connection to a
-        <emphasis>Router</emphasis> process (also outside the firewall) that
+        <para><classname>TUNNEL</classname> establishes a TCP connection to the
+        <emphasis>GossipRouter</emphasis> process (also outside the firewall) that
         accepts messages from members and passes them on to other members.
         This connection is initiated by the host inside the firewall and
-        persists as long as the channel is connected to a group. Router will
+        persists as long as the channel is connected to a group. GossipRouter will
         use the <emphasis>same connection</emphasis> to send incoming messages
         to the channel that initiated the connection. This is perfectly legal,
-        as TCP connections are fully duplex. Note that, if Router tried to
+        as TCP connections are fully duplex. Note that, if GossipRouter tried to
         establish its own TCP connection to the channel behind the firewall,
         it would fail. But it is okay to reuse the existing TCP connection,
         established by the channel.</para>
 
         <para>Note that <classname>TUNNEL</classname> has to be given the
-        hostname and port of the Router process. This example assumes a Router
-        is running on the local host at port <literal>12001</literal> and a
-        GossipServer is running at port <literal>12002</literal> .</para>
+        hostname and port of the GossipRouter process. This example assumes a GossipRouter
+        is running on the local host at port <literal>12001</literal>. Both
+        TUNNEL and TCPGOSSIP (or PING) access the same GossipRouter.</para>
 
         <para>Any time a message has to be sent, TUNNEL forwards the message
-        to Router, which distributes it to its destination: if the message's
-        destination field is null (send to all group members), then Router
+        to GossipRouter, which distributes it to its destination: if the message's
+        destination field is null (send to all group members), then GossipRouter
         looks up the members that belong to that group and forwards the
         message to all of them via the TCP connection they established when
-        connecting to Router. If the destination is a valid member address,
+        connecting to GossipRouter. If the destination is a valid member address,
         then that member's TCP connection is looked up, and the message is
         forwarded to it <footnote>
-            <para>To do so, Router has to maintain a table between groups,
+            <para>To do so, GossipRouter has to maintain a table between groups,
             member addresses and TCP connections.</para>
           </footnote> .</para>
 
@@ -910,25 +908,18 @@
 
         <orderedlist>
           <listitem>
-            <para>Check that 2 TCP ports (e.g. 12001 and 12002) are enabled in
+            <para>Check that a TCP port (e.g. 12001) is enabled in
             the firewall for outgoing traffic</para>
           </listitem>
 
           <listitem>
-            <para>Start the GossipServer:</para>
+            <para>Start the GossipRouter:</para>
 
             <screen>
-                            start org.jgroups.stack.GossipServer -port 12002
+                            start org.jgroups.stack.GossipRouter -port 12001
                         </screen>
           </listitem>
 
-          <listitem>
-            <para>Start Router:</para>
-
-            <screen>
-                            java org.jgroups.stack.Router -port 12001
-                        </screen>
-          </listitem>
 
           <listitem>
             <para>Configure the TUNNEL protocol layer as instructed
@@ -957,15 +948,15 @@
           </mediaobject>
         </figure>
 
-        <para>First, the GossipServer and Router processes are created on host
-        B. Note that these should be outside the firewall, and all channels in
-        the same group should use the same GossipServer and Router processes.
+        <para>First, the GossipRouter process is created on host
+        B. Note that host B should be outside the firewall, and all channels in
+        the same group should use the same GossipRouter process.
         When a channel on host A is created, its
         <classname>TCPGOSSIP</classname> protocol will register its address
-        with the GossipServer and retrieve the initial membership (assume this
-        is C). Now, a TCP connection with Router is established by A; this
+        with the GossipRouter and retrieve the initial membership (assume this
+        is C). Now, a TCP connection with the GossipRouter is established by A; this
         will persist until A crashes or voluntarily leaves the group. When A
-        multicasts a message to the group, Router looks up all group members
+        multicasts a message to the group, GossipRouter looks up all group members
         (in this case, A and C) and forwards the message to all members, using
         their TCP connections. In the example, A would receive its own copy of
         the multicast message it sent, and another copy would be sent to
@@ -974,38 +965,24 @@
         <para>This scheme allows for example <emphasis>Java applets</emphasis>
         , which are only allowed to connect back to the host from which they
         were downloaded, to use JGroups: the HTTP server would be located on
-        host B and the gossip and Router daemons would also run on that host.
+        host B and the gossip and GossipRouter daemon would also run on that host.
         An applet downloaded to either A or C would be allowed to make a TCP
         connection to B. Also, applications behind a firewall would be able to
         talk to each other, joining a group.</para>
 
         <para>However, there are several drawbacks: first, the central
-        GossipServer and Router processes constitute a single point of failure
+        GossipRouter process constitute a single point of failure
         (if host B crashes) <footnote>
-            <para>Although multiple GossipServer could be started</para>
+            <para>Although multiple GossipRouters could be started</para>
           </footnote> , second, having to maintain a TCP connection for the
         duration of the connection might use up resources in the host system
-        (e.g. in the Router), leading to scalability problems, third, this
+        (e.g. in the GossipRouter), leading to scalability problems, third, this
         scheme is inappropriate when only a few channels are located behind
         firewalls, and the vast majority can indeed use IP multicast to
         communicate, and finally, it is not always possible to enable outgoing
         traffic on 2 ports in a firewall, e.g. when a user does not 'own' the
         firewall.</para>
       </section>
-    </section>
-
-    <section>
-      <title>Difference between Router and GossipServer</title>
-
-      <para>The Router and GossipServer processes have overlapping
-      functionality: both of them allows a member to fetch initial membership
-      information. In addition the Router provides routing functionality. The
-      reason for not merging the functionalities is that some (probably most)
-      applications only need gossiping, but not routing functionality.
-      Therefore they will use the lightweight GossipServer, without having to
-      use Router whose routing functionality would not be used. As a matter of
-      fact both processes used to be merged in earlier versions of
-      JGroups.</para>
     </section>
   </section>
 
