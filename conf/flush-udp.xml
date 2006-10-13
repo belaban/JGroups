@@ -41,6 +41,7 @@
      <FC max_credits="2000000" down_thread="false" up_thread="false"
          min_threshold="0.10"/>
     <FRAG2 frag_size="60000" down_thread="false" up_thread="false"/>
-    <pbcast.STATE_TRANSFER down_thread="false" up_thread="false"/>
+    <!-- <pbcast.STATE_TRANSFER down_thread="false" up_thread="false"/> -->
+    <pbcast.STREAMING_STATE_TRANSFER down_thread="false" up_thread="false" use_reading_thread="false"/>
     <pbcast.FLUSH down_thread="false" up_thread="false" timeout="1500"/>
 </config>
