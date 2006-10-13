@@ -67,7 +67,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.98 2006/09/28 08:13:19 belaban Exp $
+ * @version $Id: JChannel.java,v 1.99 2006/10/13 23:21:00 vlada Exp $
  */
 public class JChannel extends Channel {
 
@@ -125,6 +125,8 @@ public class JChannel extends Channel {
     private final Promise disconnect_promise=new Promise();
 
     private final Promise state_promise=new Promise();
+    
+    private final Promise flush_unblock_promise=new Promise();
 
     private final Promise flush_promise=new Promise();
 
@@ -132,6 +134,8 @@ public class JChannel extends Channel {
     private long LOCAL_ADDR_TIMEOUT=30000; //=Long.parseLong(System.getProperty("local_addr.timeout", "30000"));
     /*if the states is fetched automatically, this is the default timeout, 5 secs*/
     private static final long GET_STATE_DEFAULT_TIMEOUT=5000;
+    /*if FLUSH is used channel waits for UNBLOCK event, this is the default timeout, 10 secs*/
+    private static final long FLUSH_UNBLOCK_TIMEOUT=10000;
     /*flag to indicate whether to receive blocks, if this is set to true, receive_views is set to true*/
     private boolean receive_blocks=false;
     /*flag to indicate whether to receive local messages
@@ -406,11 +410,30 @@ public class JChannel extends Channel {
         // only connect if we are not a unicast channel
         if(cluster_name != null) {
             connect_promise.reset();
+            
+            if(flush_supported)
+               flush_unblock_promise.reset();
+            
             Event connect_event=new Event(Event.CONNECT, cluster_name);
-            down(connect_event);
+            down(connect_event);            
+                        
             Object res=connect_promise.getResult();  // waits forever until connected (or channel is closed)
             if(res != null && res instanceof Exception) { // the JOIN was rejected by the coordinator
                 throw new ChannelException("connect() failed", (Throwable)res);
+            }
+            
+            //if FLUSH is used do not return from connect() until UNBLOCK event is received 
+            boolean singletonMember = my_view != null && my_view.size() == 1;
+            boolean needToWaitOnFlushCompletion = flush_supported && !singletonMember && !flush_unblock_promise.hasResult();
+            
+            if(needToWaitOnFlushCompletion){
+               try{
+                  flush_unblock_promise.getResultWithTimeout(FLUSH_UNBLOCK_TIMEOUT);
+               }
+               catch (TimeoutException te){
+                  if(log.isWarnEnabled())
+                     log.warn("Waiting on UNBLOCK after connect timed out"); 
+               }
             }
         }
 
@@ -959,10 +982,13 @@ public class JChannel extends Channel {
 
             // crude solution to bug #775120: if we get our first view *before* the CONNECT_OK,
             // we simply set the state to connected
-            if(connected == false) {
+            /*
+             * Bela&Vladimir Oct 10th,2006 - we probably do not need this
+             * 
+             * if(connected == false) {
                 connected=true;
                 connect_promise.setResult(null);
-            }
+            }*/
 
             // unblock queueing of messages due to previous BLOCK event:
             down(new Event(Event.STOP_QUEUEING));
@@ -1019,7 +1045,8 @@ public class JChannel extends Channel {
         case Event.STATE_TRANSFER_INPUTSTREAM:
             StateTransferInfo sti=(StateTransferInfo)evt.getArg();
             InputStream is=sti.inputStream;
-            state_promise.setResult(is != null? Boolean.TRUE : Boolean.FALSE);
+            //Oct 13,2006 moved to down() when Event.STATE_TRANSFER_INPUTSTREAM_CLOSED is received
+            //state_promise.setResult(is != null? Boolean.TRUE : Boolean.FALSE);
 
             if(up_handler != null) {
                 up_handler.up(evt);
@@ -1059,6 +1086,10 @@ public class JChannel extends Channel {
         // If UpHandler is installed, pass all events to it and return (UpHandler is e.g. a building block)
         if(up_handler != null) {
             up_handler.up(evt);
+            
+            if(type == Event.UNBLOCK){
+               flush_unblock_promise.setResult(Boolean.TRUE);
+            }
             return;
         }
 
@@ -1144,6 +1175,9 @@ public class JChannel extends Channel {
                         if(log.isErrorEnabled())
                             log.error("failed calling unblock() on Receiver", t);
                     }
+                    finally{
+                       flush_unblock_promise.setResult(Boolean.TRUE);
+                    }
                     return;
                 }
                 break;
@@ -1184,6 +1218,10 @@ public class JChannel extends Channel {
             catch(Throwable t) {
                 if(log.isErrorEnabled()) log.error("CONFIG event did not contain a hashmap: " + t);
             }
+        }
+        
+        if(evt.getType() ==  Event.STATE_TRANSFER_INPUTSTREAM_CLOSED){                      
+           state_promise.setResult(Boolean.TRUE);
         }
 
         if(prot_stack != null)
@@ -1343,9 +1381,24 @@ public class JChannel extends Channel {
                     + "Add one of the STATE_TRANSFER protocols to your protocol configuration");
         }
 
+        if(flush_supported)
+           flush_unblock_promise.reset();
+        
         state_promise.reset();
-        down(evt);
+        down(evt);        
         Boolean state_transfer_successfull=(Boolean)state_promise.getResult(info.timeout);
+                 
+        //if FLUSH is used do not return from getState() until UNBLOCK event is received         
+        if(flush_supported){
+           try{
+              flush_unblock_promise.getResultWithTimeout(FLUSH_UNBLOCK_TIMEOUT);
+           }
+           catch (TimeoutException te){
+              if(log.isWarnEnabled())
+                 log.warn("Waiting on UNBLOCK after getState timed out"); 
+           }                
+        }
+        
         return state_transfer_successfull != null && state_transfer_successfull.booleanValue();
     }
 
