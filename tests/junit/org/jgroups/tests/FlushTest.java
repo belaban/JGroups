@@ -27,12 +27,13 @@ import org.jgroups.SetStateEvent;
 import org.jgroups.UnblockEvent;
 import org.jgroups.View;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.Util;
 
 
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.15 2006/10/11 18:59:52 vlada Exp $
+ * @version $Id: FlushTest.java,v 1.16 2006/10/13 23:21:00 vlada Exp $
  */
 public class FlushTest extends TestCase {
     Channel c1, c2,c3;
@@ -42,29 +43,38 @@ public class FlushTest extends TestCase {
     public FlushTest(String name) {
         super(name);
     }
+    
+    public void setUp() throws Exception {
+       super.setUp();       
+   }
 
     public void tearDown() throws Exception {
         super.tearDown();
 
+        if(c3 != null) {
+           c3.close();
+           assertFalse(c3.isOpen());
+           assertFalse(c3.isConnected());
+           c3=null;
+        }
+        
         if(c2 != null) {
             c2.close();
-            // Util.sleep(1000);
+            assertFalse(c2.isOpen());
+            assertFalse(c2.isConnected());
             c2=null;
-        }
-
+        }               
+        
         if(c1 != null) {
-            c1.close();
-            // Util.sleep(1000);
-            c1=null;
+           c1.close();
+           assertFalse(c1.isOpen());
+           assertFalse(c1.isConnected());
+           c1=null;
         }
-
-        if(c3 != null) {
-            c3.close();
-            // Util.sleep(1000);
-            c3=null;
-        }
-    }
-
+        
+        Util.sleep(1000);       
+    }  
+   
 
     public void testSingleChannel() throws ChannelException {
         c1=createChannel();
@@ -338,6 +348,7 @@ public class FlushTest extends TestCase {
 
     private void checkEventSequence(MyReceiver receiver) {
        List events = receiver.getEvents();
+       String eventString = "[" + receiver.getName() + ",events:" + events;
        assertNotNull(events);
        int size = events.size();
        for (int i = 0; i < size; i++)
@@ -347,28 +358,28 @@ public class FlushTest extends TestCase {
           {
              if(i+1<size)
              {
-                assertTrue("After Block should be View ",events.get(i+1) instanceof View);
+                assertTrue("After Block should be View " + eventString,events.get(i+1) instanceof View);
              }
              if(i!=0)
              {
-                assertTrue("Before Block should be Unblock ",events.get(i-1) instanceof UnblockEvent);
+                assertTrue("Before Block should be Unblock " + eventString,events.get(i-1) instanceof UnblockEvent);
              }
           }
           if(event instanceof View)
           {
              if(i+1<size)
              {
-                assertTrue("After View should be Unblock ",events.get(i+1) instanceof UnblockEvent);
+                assertTrue("After View should be Unblock " + eventString,events.get(i+1) instanceof UnblockEvent);
              }
-             assertTrue("Before View should be Block ",events.get(i-1) instanceof BlockEvent);
+             assertTrue("Before View should be Block " +eventString,events.get(i-1) instanceof BlockEvent);
           }
           if(event instanceof UnblockEvent)
           {
              if(i+1<size)
              {
-                assertTrue("After UnBlock should be Block ",events.get(i+1) instanceof BlockEvent);
+                assertTrue("After UnBlock should be Block " + eventString,events.get(i+1) instanceof BlockEvent);
              }
-             assertTrue("Before UnBlock should be View ",events.get(i-1) instanceof View);
+             assertTrue("Before UnBlock should be View "+eventString,events.get(i-1) instanceof View);
           }
 
 
@@ -489,22 +500,31 @@ public class FlushTest extends TestCase {
             if(verbose)
                 System.out.println("[" + name + ":" +getLocalAddress() + "]: GetStateEvent streamed");
             events.add(new GetStateEvent(null, null));
-            try {
-                ostream.close();
-            } catch (IOException e) {
-                e.printStackTrace();
+            byte [] payload = new byte[]{'b', 'e', 'l', 'a'};
+            try{
+               ostream.write(payload);
             }
-
+            catch (IOException e){              
+               e.printStackTrace();
+            }
+            finally{
+               Util.close(ostream);
+            }
         }
 
         public void setState(InputStream istream) {
             if(verbose)
                 System.out.println("[" + name + ":" +getLocalAddress() + "]: SetStateEvent streamed");
             events.add(new SetStateEvent(null, null));
-            try {
-                istream.close();
-            } catch (IOException e) {
-                e.printStackTrace();
+            byte [] payload = new byte[4];
+            try{
+               istream.read(payload);
+            }
+            catch (IOException e){              
+               e.printStackTrace();
+            }
+            finally{
+               Util.close(istream);
             }
         }
     }
