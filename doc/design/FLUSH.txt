@@ -3,7 +3,8 @@ FLUSH protocol for default stack
 ================================
 
 Author: Bela Ban
-Version: $Id: FLUSH.txt,v 1.9 2006/09/27 14:09:49 belaban Exp $
+Version: $Id: FLUSH.txt,v 1.10 2006/10/20 18:49:37 vlada Exp $
+See http://jira.jboss.com/jira/browse/JGRP-82
 
 Overview
 --------
@@ -24,38 +25,79 @@ Virtual Synchrony.
 Design
 ------
 As another protocol FLUSH which handles a FLUSH event. FLUSH sits just below the channel, e.g. above STATE_TRANSFER
-and FC. STATE_TRANSFER and GMS can be configured with a boolean use_flush attribute which determines whether flushing
-is used on state transfer and/or view changes. If so, the protocol just sends a SUSPEND event up the stack, where it
-is handled by the FLUSH protcol. The SUSPEND_OK ack sent back by the FLUSH protocol let's the caller know that the
-flush has completed.
+and FC. STATE_TRANSFER and GMS protocol request flush by sending a SUSPEND event up the stack, where it is handled 
+by the FLUSH protcol. The SUSPEND_OK ack sent back by the FLUSH protocol let's the caller know that the flush has 
+completed.
+
 When done (e.g. view was installed or state transferred), the protocol sends up a RESUME event, which will allow
 everyone in the cluster to resume sending.
 
-FLUSH protocol:
-- On SUSPEND event: multicast START_FLUSH to everyone (including self)
+FLUSH protocol (state transfer)
+-------------------------------
+- State requester sends SUSPEND event: multicast START_FLUSH to everyone (including self)
 
 - On reception of START_FLUSH:
-  - invoke the block() callback
-  - set suspended flag to true, all subsequent down() methods will block on mutex
-  - *multicast* a FLUSH_OK message
+  - send BLOCK event up the stack to application level
+  - multicast a FLUSH_OK message
 
 - On reception of FLUSH_OK at each member:
   - Record FLUSH_OK in vector (1 per member)
-  - Once FLUSH_OK messages have been received from all members - send unicast FLUSH_COMPLETED to flush requester
-  (in case of crash notification: mark that member's entry as received, so we don't hang forever)
+  - Once FLUSH_OK messages have been received from all members:
+  	 - send unicast FLUSH_COMPLETED to flush requester 
+  	 - block FLUSH.down(), all threads invoking FLUSH.down() will block on mutex
 
 - After reception of FLUSH_COMPLETED (at flush requester) from all members - send down SUSPEND_OK event
 
 - On RESUME event: multicast STOP_FLUSH message
 
-- On reception of STOP_FLUSH message: unblock mutex at down()
+- On reception of STOP_FLUSH message: 
+	- unblock mutex at down() and send UNBLOCK event up the stack to application level (unless flush requester member)
+	- multicast STOP_FLUSH_OK
 
-- On view change:
-  - Mark crashed member as 'received' (see above)
+- On reception of STOP_FLUSH_OK message: 	
+	- unblock mutex at down() and send UNBLOCK event up the stack to application level (only flush requester member)
 
+
+
+FLUSH protocol (view installation for join/crash/leave)
+-------------------------------------------------------
+
+- Coordinator initiates FLUSH prior to view V2 installation
+
+- Coordinator sends SUSPEND event: multicast START_FLUSH to every surviving/existing member in previous view V1 (including self)
+
+- On reception of START_FLUSH (existing members in V1):
+  - send BLOCK event up the stack to application level
+  - multicast a FLUSH_OK message
+
+- On reception of FLUSH_OK at each existing member in V1:
+  - Record FLUSH_OK in vector (1 per member)
+  - Once FLUSH_OK messages have been received from all members:
+  	 - send unicast FLUSH_COMPLETED to flush requester 
+  	 - block FLUSH.down(), all threads invoking FLUSH.down() will block on mutex
+
+- After reception of FLUSH_COMPLETED (at flush requester) from all members - send up/down SUSPEND_OK event
+
+- On RESUME event: multicast STOP_FLUSH message
+
+- On reception of STOP_FLUSH message (every member from V1): 
+	- unblock mutex at down() and send UNBLOCK event up the stack to application level
+	- multicast STOP_FLUSH_OK
+
+- On reception of STOP_FLUSH_OK message (every member in V2 and not in V1): 	
+	- unblock mutex at down() and send UNBLOCK event up the stack to application level
+	
+	
+	
+Crash handling during FLUSH
+----------------------------
 - On suspect(P)
-  - If P is the flush requester and we're next in line
-    - Run the FLUSH protocol from scratch
+  - Do not expect any FLUSH message exchange from P (effectively exclude from FLUSH)
+  - If P is the flush requester and Q is next member in view 
+    - Run the FLUSH protocol from scratch with Q as flush requester
+
+	
+	
 
 Notes
 -----
@@ -88,6 +130,8 @@ This algorithm also works for a number of JOIN and LEAVE requests (view bundling
 
 FLUSH with join & state transfer
 --------------------------------
+http://jira.jboss.com/jira/browse/JGRP-236 (TODO)
+
 - A new method Channel.connect(String group, boolean transfer_state, String state_id) will be added
 - The JOIN_REQ contains the boolean
 - The algorithm in GMS is the same as the two described above, except that before multicasting the new view and sending
@@ -104,7 +148,7 @@ Phase #1: send START_FLUSH across the cluster, on reception everyone invokes blo
           Channel.blockOk() is called), FLUSH_OK will be broadcast across the cluster. Because FIFO is in place, we
           can be sure that all *multicast* (group) messages from member P are received *before* P's FLUSH_OK message.
 
-Phase #2: send FLUSH_OK across the cluster. When every member has received all FLUSK_OKs from all other member, every
+Phase #2: send FLUSH_OK across the cluster. When every member has received all FLUSH_OKs from all other member, every
           member blocks messages in FLUSH.down().
 
 Phase #3: send FLUSH_COMPLETED to the initiator of the flush
