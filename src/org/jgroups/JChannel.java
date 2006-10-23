@@ -67,7 +67,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.100 2006/10/23 04:54:07 belaban Exp $
+ * @version $Id: JChannel.java,v 1.101 2006/10/23 12:30:33 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -432,12 +432,10 @@ public class JChannel extends Channel {
                }
                catch (TimeoutException te){
                   if(log.isWarnEnabled())
-                     log.warn("Waiting on UNBLOCK after connect timed out");
+                     log.warn("waiting on UNBLOCK after connect timed out");
                }
             }
         }
-
-        /*notify any channel listeners*/
         connected=true;
         notifyChannelConnected(this);
     }
