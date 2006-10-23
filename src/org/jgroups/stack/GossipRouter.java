@@ -1,4 +1,4 @@
-// $Id: GossipRouter.java,v 1.20 2006/10/11 14:37:06 belaban Exp $
+// $Id: GossipRouter.java,v 1.21 2006/10/23 16:16:20 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -71,11 +71,9 @@ public class GossipRouter {
     // failed.
     private long routingClientReplyTimeout;
 
-    // HashMap<String,List<AddressEntry>. Maintains associations between groups and their members
-    private final Hashtable routingTable=new Hashtable();
-
-    // (groupname - vector of AddressEntry's)
-    private final Map gossipTable=new HashMap();
+    // HashMap<String, Map<Address,AddressEntry> >. Maintains associations between groups and their members. Keys=group
+    // names, values = maps of logical address / AddressEntry associations
+    private final Map routingTable=new HashMap();
 
     private ServerSocket srvSock=null;
     private InetAddress bindAddress=null;
@@ -292,12 +290,42 @@ public class GossipRouter {
     // ORDINARY OPERATIONS
     //
 
-    public String dumpRoutingTable() {
-        return dumpTable(routingTable);
-    }
 
-    public String dumpGossipTable() {
-        return dumpTable(gossipTable);
+
+    public String dumpRoutingTable() {
+        String label="routing";
+        StringBuffer sb=new StringBuffer();
+
+        synchronized(routingTable) {
+            if(routingTable.size() == 0) {
+                sb.append("empty ");
+                sb.append(label);
+                sb.append(" table");
+            }
+            else {
+                for(Iterator i=routingTable.keySet().iterator(); i.hasNext();) {
+                    String gname=(String)i.next();
+                    sb.append("GROUP: '" + gname + "'\n");
+                    Map map=(Map)routingTable.get(gname);
+                    if(map == null) {
+                        sb.append("\tnull list of addresses\n");
+                    }
+                    else if(map.size() == 0) {
+                        sb.append("\tempty list of addresses\n");
+                    }
+                    else {
+                        AddressEntry ae;
+                        for(Iterator j=map.values().iterator(); j.hasNext();) {
+                            ae=(AddressEntry)j.next();
+                            sb.append('\t');
+                            sb.append(ae);
+                            sb.append('\n');
+                        }
+                    }
+                }
+            }
+        }
+        return sb.toString();
     }
 
 
@@ -308,7 +336,7 @@ public class GossipRouter {
         Socket sock=null;
         DataInputStream input=null;
         DataOutputStream output=null;
-        Address peer_addr=null, mbr;
+        Address peer_addr=null, mbr, logical_addr;
 
         if(bindAddress == null) {
             bindAddress=srvSock.getInetAddress();
@@ -340,7 +368,7 @@ public class GossipRouter {
                             if(log.isErrorEnabled()) log.error("group or member is null, cannot register member");
                         }
                         else
-                            addGossipEntry(group, new AddressEntry(mbr));
+                            addGossipEntry(group, mbr, new AddressEntry(mbr));
                         Util.close(input);
                         Util.close(sock);
                         break;
@@ -363,14 +391,14 @@ public class GossipRouter {
                     case GossipRouter.GOSSIP_GET:
                         group=req.getGroup();
                         List mbrs=null;
-                        List l=(List)gossipTable.get(group);
-                        if(l != null) {
-                            mbrs=new LinkedList();
-                            for(Iterator i=l.iterator(); i.hasNext();) {
-                                AddressEntry e=(AddressEntry)i.next();
-                                mbrs.add(e.addr);
+                        Map map;
+                        synchronized(routingTable) {
+                            map=(Map)routingTable.get(group);
+                            if(map != null) {
+                                mbrs=new LinkedList(map.keySet());
                             }
                         }
+
                         if(log.isTraceEnabled())
                             log.trace("GOSSIP_GET(" + group + ") --> " + mbrs);
                         output=new DataOutputStream(sock.getOutputStream());
@@ -384,7 +412,16 @@ public class GossipRouter {
                     case GossipRouter.ROUTER_GET:
                         group=req.getGroup();
                         output=new DataOutputStream(sock.getOutputStream());
-                        List ret=getMembers(group);
+
+                        List ret=null;
+                        synchronized(routingTable) {
+                            map=(Map)routingTable.get(group);
+                            if(map != null) {
+                                ret=new LinkedList(map.keySet());
+                            }
+                            else
+                                ret=new LinkedList();
+                        }
                         if(log.isTraceEnabled())
                             log.trace("ROUTER_GET(" + group + ") --> " + ret);
                         rsp=new GossipData(GossipRouter.GET_RSP, group, null, ret);
@@ -406,13 +443,13 @@ public class GossipRouter {
                         output=new DataOutputStream(sock.getOutputStream());
                         peer_addr=new IpAddress(sock.getInetAddress(), sock.getPort());
                         output=new DataOutputStream(sock.getOutputStream());
-                        // return the address of the peer so it can set it
-                        Util.writeAddress(peer_addr, output);
+                        logical_addr=req.getAddress();
                         String group_name=req.getGroup();
+
                         if(log.isTraceEnabled())
-                            log.trace("CONNECT(" + group_name + ", " + peer_addr + ")");
-                        SocketThread st=new SocketThread(sock, input, peer_addr);
-                        addEntry(group_name, new AddressEntry(peer_addr, sock, st, output));
+                            log.trace("CONNECT(" + group_name + ", " + logical_addr + ", " + peer_addr + ")");
+                        SocketThread st=new SocketThread(sock, input, group_name, logical_addr);
+                        addEntry(group_name, logical_addr, new AddressEntry(logical_addr, peer_addr, sock, st, output));
                         st.start();
                         break;
 
@@ -442,7 +479,7 @@ public class GossipRouter {
             }
             catch(Exception e) {
                 if(up)
-                    if(log.isErrorEnabled()) log.error("failure handling a client connection", e);
+                    if(log.isErrorEnabled()) log.error("failure handling a client request", e);
                 Util.close(input);
                 Util.close(output);
                 Util.close(sock);
@@ -458,11 +495,11 @@ public class GossipRouter {
 
         // shutdown the routing threads and cleanup the tables
         synchronized(routingTable) {
-            for(Iterator i=routingTable.keySet().iterator(); i.hasNext();) {
-                String gname=(String)i.next();
-                List l=(List)routingTable.get(gname);
-                if(l != null) {
-                    for(Iterator j=l.iterator(); j.hasNext();) {
+            Map map;
+            for(Iterator i=routingTable.values().iterator(); i.hasNext();) {
+                map=(Map)i.next();
+                if(map != null) {
+                    for(Iterator j=map.values().iterator(); j.hasNext();) {
                         AddressEntry e=(AddressEntry)j.next();
                         e.destroy();
                     }
@@ -470,10 +507,6 @@ public class GossipRouter {
             }
             routingTable.clear();
         }
-        synchronized(gossipTable) {
-            gossipTable.clear();
-        }
-
     }
 
     /**
@@ -498,56 +531,6 @@ public class GossipRouter {
     }
 
 
-    /**
-     * Adds a new member to the group in the gossip table or renews the
-     * membership where is the case.
-     * @since 2.2.1
-     */
-    private void addGossipEntry(String groupname, AddressEntry e) {
-        List val;
-        if(groupname == null) {
-            if(log.isErrorEnabled()) log.error("groupname was null, not added !");
-            return;
-        }
-
-        synchronized(gossipTable) {
-            val=(List)gossipTable.get(groupname);
-            if(val == null) {
-                val=Collections.synchronizedList(new ArrayList());
-                gossipTable.put(groupname, val);
-            }
-            int index=val.indexOf(e);
-            if(index == -1) {
-                val.add(e);
-                return;
-            }
-            ((AddressEntry)val.get(index)).update();
-        }
-    }
-
-
-    private void removeGossipEntry(String groupname, Address mbr) {
-        List val=null;
-        if(groupname == null || mbr == null) {
-            if(log.isErrorEnabled()) log.error("groupname or mbr was null, not removed");
-            return;
-        }
-
-        synchronized(gossipTable) {
-            val=(List)gossipTable.get(groupname);
-            if(val == null)
-                return;
-        }
-        AddressEntry entry;
-        for(Iterator it=val.iterator(); it.hasNext();) {
-            entry=(GossipRouter.AddressEntry)it.next();
-            if(mbr.equals(entry.addr)) {
-                entry.destroy();
-                it.remove();
-                break;
-            }
-        }
-    }
 
 
     /**
@@ -555,30 +538,34 @@ public class GossipRouter {
      * @since 2.2.1
      */
     private void sweep() {
-
         long diff, currentTime=System.currentTimeMillis();
         int num_entries_removed=0;
         String key=null;
         List val;
 
-        synchronized(gossipTable) {
-            for(Iterator i=gossipTable.keySet().iterator(); i.hasNext();) {
-                key=(String)i.next();
-                val=(List)gossipTable.get(key);
-                if(val != null) {
-                    for(Iterator j=val.iterator(); j.hasNext();) {
-                        AddressEntry ae=(AddressEntry)j.next();
-                        diff=currentTime - ae.timestamp;
-                        if(diff > expiryTime) {
-                            j.remove();
-                            if(log.isTraceEnabled())
-                                log.trace("removed " + ae + " from " + key + " (" + diff + " msecs old)");
-                            num_entries_removed++;
-                        }
+        synchronized(routingTable) {
+            Map.Entry entry, entry2;
+            Map map;
+            AddressEntry ae;
+            for(Iterator it=routingTable.entrySet().iterator(); it.hasNext();) {
+                entry=(Map.Entry)it.next();
+                map=(Map)entry.getValue();
+                if(map == null || map.size() == 0) {
+                    it.remove();
+                    continue;
+                }
+                for(Iterator it2=map.entrySet().iterator(); it2.hasNext();) {
+                    entry2=(Map.Entry)it2.next();
+                    ae=(GossipRouter.AddressEntry)entry2.getValue();
+
+                    diff=currentTime - ae.timestamp;
+                    if(diff > expiryTime) {
+                        it2.remove();
+                        if(log.isTraceEnabled())
+                            log.trace("removed " + ae.logical_addr + " (" + diff + " msecs old)");
+                        num_entries_removed++;
                     }
                 }
-                if(val.size() == 0)
-                    i.remove();
             }
         }
 
@@ -588,60 +575,6 @@ public class GossipRouter {
     }
 
 
-    /**
-     * Gets the members of group 'groupname'. Returns them as a List of Addresses.
-     */
-    private List getMembers(String groupname) {
-        List grpmbrs=null;
-        List ret=new LinkedList();
-        AddressEntry entry;
-
-        synchronized(routingTable) {
-            grpmbrs=(List)routingTable.get(groupname);
-            if(grpmbrs != null && grpmbrs.size() > 0) {
-                for(Iterator i=grpmbrs.iterator(); i.hasNext();) {
-                    entry=(AddressEntry)i.next();
-                    ret.add(entry.addr);
-                }
-            }
-        }
-        return ret;
-    }
-
-
-    private String dumpTable(Map map) {
-        String label=(map instanceof Hashtable)? "routing" : "gossip";
-        StringBuffer sb=new StringBuffer();
-        synchronized(map) {
-            if(map.size() == 0) {
-                sb.append("empty ");
-                sb.append(label);
-                sb.append(" table");
-            }
-            else {
-                for(Iterator i=map.keySet().iterator(); i.hasNext();) {
-                    String gname=(String)i.next();
-                    sb.append("GROUP: '" + gname + "'\n");
-                    List l=(List)map.get(gname);
-                    if(l == null) {
-                        sb.append("\tnull list of addresses\n");
-                    }
-                    else if(l.size() == 0) {
-                        sb.append("\tempty list of addresses\n");
-                    }
-                    else {
-                        for(Iterator j=l.iterator(); j.hasNext();) {
-                            AddressEntry ae=(AddressEntry)j.next();
-                            sb.append('\t');
-                            sb.append(ae.toString());
-                            sb.append('\n');
-                        }
-                    }
-                }
-            }
-        }
-        return sb.toString();
-    }
 
 
     private void route(Address dest, String dest_group, byte[] msg, Address sender) {
@@ -651,8 +584,7 @@ public class GossipRouter {
               //      (dest == null? "ALL" : dest.toString()) + ", " + len + " bytes");
         //}
 
-        if(dest == null) {
-            // send to all members in group dest.getChannelName()
+        if(dest == null) { // send to all members in group dest.getChannelName()
             if(dest_group == null) {
                 if(log.isErrorEnabled()) log.error("both dest address and group are null");
             }
@@ -662,11 +594,10 @@ public class GossipRouter {
         }
         else {
             // send to destination address
-            AddressEntry ae=findAddressEntry(dest);
+            AddressEntry ae=findAddressEntry(dest_group, dest);
             if(ae == null) {
                 if(log.isErrorEnabled())
-                    log.error("cannot find " + dest + " in the routing table, routing table=\n" + dumpRoutingTable() +
-                            "\ngossip table=\n" + dumpGossipTable());
+                    log.error("cannot find " + dest + " in the routing table, \nrouting table=\n" + dumpRoutingTable());
                 return;
             }
             if(ae.output == null) {
@@ -678,74 +609,62 @@ public class GossipRouter {
             }
             catch(Exception e) {
                 if(log.isErrorEnabled()) log.error("failed sending message to " + dest + ": " + e.getMessage());
-                removeEntry(ae.sock); // will close socket
+                removeEntry(dest_group, dest); // will close socket
             }
         }
     }
+
+
+
+     private void addEntry(String groupname, Address logical_addr, AddressEntry entry) {
+         addEntry(groupname, logical_addr, entry, false);
+     }
 
 
     /**
      * Adds a new member to the routing group.
      */
-    private void addEntry(String groupname, AddressEntry e) {
-        List val;
-
-        if(groupname == null) {
-            if(log.isErrorEnabled()) log.error("groupname was null, not added !");
+    private void addEntry(String groupname, Address logical_addr, AddressEntry entry, boolean update_only) {
+        if(groupname == null || logical_addr == null) {
+            if(log.isErrorEnabled()) log.error("groupname or logical_addr was null, entry was not added");
             return;
         }
 
         synchronized(routingTable) {
-            val=(List)routingTable.get(groupname);
-            if(val == null) {
-                val=Collections.synchronizedList(new ArrayList());
-                routingTable.put(groupname, val);
+            Map mbrs=(Map)routingTable.get(groupname);
+            if(mbrs == null) {
+                mbrs=new HashMap();
+                mbrs.put(logical_addr, entry);
+                routingTable.put(groupname, mbrs);
             }
-            int index=val.indexOf(e);
-            if(index == -1) {
-                val.add(e);
-                return;
-            }
-            // new connection for an existing member
-            ((AddressEntry)val.remove(index)).destroy();
-            val.add(e);
-        }
-    }
-
-
-    private void removeEntry(Socket sock) {
-        List val;
-        AddressEntry entry;
-        synchronized(routingTable) {
-            for(Enumeration e=routingTable.keys(); e.hasMoreElements();) {
-                val=(List)routingTable.get(e.nextElement());
-                for(Iterator i=val.iterator(); i.hasNext();) {
-                    entry=(AddressEntry)i.next();
-                    if(entry.sock == sock) {
-                        entry.destroy();
-                        i.remove();
+            else {
+                AddressEntry tmp=(AddressEntry)mbrs.get(logical_addr);
+                if(tmp != null) { // already present
+                    if(update_only) {
+                        tmp.update();
                         return;
                     }
+                    tmp.destroy();
                 }
+                mbrs.put(logical_addr, entry);
             }
         }
     }
 
 
-    private void removeEntry(String groupname, Address member) {
-        List val;
+
+    private void removeEntry(String groupname, Address logical_addr) {
+        Map val;
         synchronized(routingTable) {
-            val=(List)routingTable.get(groupname);
+            val=(Map)routingTable.get(groupname);
             if(val == null)
                 return;
         }
         synchronized(val) {
-            for(Iterator it=val.iterator(); it.hasNext();) {
-                AddressEntry entry=(AddressEntry)it.next();
-                if(entry.addr != null && entry.addr.equals(member)) {
-                    it.remove();
-                    return;
-                }
+            AddressEntry entry=(AddressEntry)val.get(logical_addr);
+            if(entry != null) {
+                entry.destroy();
+                val.remove(logical_addr);
             }
         }
     }
@@ -754,35 +673,48 @@ public class GossipRouter {
     /**
      * @return null if not found
      */
-    private AddressEntry findAddressEntry(Address addr) {
-        List val;
-        AddressEntry entry;
-        synchronized(routingTable) {
-            for(Enumeration e=routingTable.keys(); e.hasMoreElements();) {
-                val=(List)routingTable.get(e.nextElement());
-                for(Iterator i=val.iterator(); i.hasNext();) {
-                    entry=(AddressEntry)i.next();
-                    if(addr.equals(entry.addr)) {
-                        return entry;
-                    }
-                }
-            }
+    private AddressEntry findAddressEntry(String group_name, Address logical_addr) {
+        if(group_name == null || logical_addr == null)
             return null;
+        synchronized(routingTable) {
+            Map val=(Map)routingTable.get(group_name);
+            if(val == null)
+                return null;
+            return (AddressEntry)val.get(logical_addr);
         }
     }
 
 
-    private void sendToAllMembersInGroup(String groupname, byte[] msg, Address sender) {
-        List val;
-        val=(List)routingTable.get(groupname);
-        if(val == null || val.size() == 0) {
-            return;
-        }
 
+    /**
+      * Adds a new member to the group in the gossip table or renews the
+      * membership where is the case.
+      * @since 2.2.1
+      */
+     private void addGossipEntry(String groupname, Address logical_addr, AddressEntry e) {
+         addEntry(groupname, logical_addr, e, true);
+     }
+
+
+     private void removeGossipEntry(String groupname, Address mbr) {
+         removeEntry(groupname, mbr);
+     }
+
+
+
+    private void sendToAllMembersInGroup(String groupname, byte[] msg, Address sender) {
+        Map val;
+        val=(Map)routingTable.get(groupname);
+        if(val == null || val.size() == 0)
+            return;
+
+        Map.Entry tmp;
+        AddressEntry entry;
         synchronized(val) {
-            for(Iterator i=val.iterator(); i.hasNext();) {
-                AddressEntry ae=(AddressEntry)i.next();
-                DataOutputStream dos=ae.output;
+            for(Iterator i=val.entrySet().iterator(); i.hasNext();) {
+                tmp=(Map.Entry)i.next();
+                entry=(GossipRouter.AddressEntry)tmp.getValue();
+                DataOutputStream dos=entry.output;
 
                 if(dos != null) {
                     // send only to 'connected' members
@@ -790,8 +722,8 @@ public class GossipRouter {
                         sendToMember(null, dos, msg, sender);
                     }
                     catch(Exception e) {
-                        if(log.isWarnEnabled()) log.warn("cannot send to " + ae.addr + ": " + e.getMessage());
-                        ae.destroy(); // this closes the socket
+                        if(log.isWarnEnabled()) log.warn("cannot send to " + entry.logical_addr + ": " + e.getMessage());
+                        entry.destroy(); // this closes the socket
                         i.remove();
                     }
                 }
@@ -825,7 +757,7 @@ public class GossipRouter {
      * they're null and only the timestamp counts.
      */
     class AddressEntry {
-        Address addr=null;
+        Address logical_addr=null, physical_addr=null;
         Socket sock=null;
         DataOutputStream output=null;
         long timestamp=0;
@@ -835,11 +767,12 @@ public class GossipRouter {
          * AddressEntry for a 'gossip' membership.
          */
         public AddressEntry(Address addr) {
-            this(addr, null, null, null);
+            this(addr, null, null, null, null);
         }
 
-        public AddressEntry(Address addr, Socket sock, SocketThread thread, DataOutputStream output) {
-            this.addr=addr;
+        public AddressEntry(Address logical_addr, Address physical_addr, Socket sock, SocketThread thread, DataOutputStream output) {
+            this.logical_addr=logical_addr;
+            this.physical_addr=physical_addr;
             this.sock=sock;
             this.thread=thread;
             this.output=output;
@@ -850,22 +783,10 @@ public class GossipRouter {
             if(thread != null) {
                 thread.finish();
             }
-            if(output != null) {
-                try {
-                    output.close();
-                }
-                catch(Exception e) {
-                }
-                output=null;
-            }
-            if(sock != null) {
-                try {
-                    sock.close();
-                }
-                catch(Exception e) {
-                }
-                sock=null;
-            }
+            Util.close(output);
+            output=null;
+            Util.close(sock);
+            sock=null;
             timestamp=0;
         }
 
@@ -874,19 +795,19 @@ public class GossipRouter {
         }
 
         public boolean equals(Object other) {
-            return addr.equals(((AddressEntry)other).addr);
+            return logical_addr.equals(((AddressEntry)other).logical_addr);
         }
 
         public String toString() {
-            StringBuffer sb=new StringBuffer("addr=");
-            sb.append(addr);
-            if(sock == null) {
-                sb.append(", timestamp=");
-                sb.append(timestamp);
-            }
-            else {
+            StringBuffer sb=new StringBuffer("logical addr=");
+            sb.append(logical_addr).append(" (").append(physical_addr).append(")");
+            if(sock != null) {
                 sb.append(", sock=");
                 sb.append(sock);
+            }
+            if(timestamp > 0) {
+                sb.append(", timestamp=");
+                sb.append(timestamp);
             }
             return sb.toString();
         }
@@ -903,24 +824,21 @@ public class GossipRouter {
         private volatile boolean active=true;
         Socket sock=null;
         DataInputStream input=null;
-        Address addr=null;
+        Address logical_addr=null;
+        String group_name=null;
 
-        public SocketThread(Socket sock, DataInputStream ois, Address addr) {
+
+        public SocketThread(Socket sock, DataInputStream ois, String group_name, Address logical_addr) {
             super(Util.getGlobalThreadGroup(), "SocketThread " + (threadCounter++));
             this.sock=sock;
             input=ois;
-            this.addr=addr;
+            this.group_name=group_name;
+            this.logical_addr=logical_addr;
         }
 
         void closeSocket() {
-            try {
-                if(input != null)
-                    input.close();
-                if(sock != null)
-                    sock.close();
-            }
-            catch(Exception e) {
-            }
+            Util.close(input);
+            Util.close(sock);
         }
 
         void finish() {
@@ -943,10 +861,6 @@ public class GossipRouter {
                     // 2. Second is the destination address
                     dst_addr=Util.readAddress(input);
 
-                    //if(log.isTraceEnabled()) {
-                      //  log.trace("group " + gname + ", routing request to " + (dst_addr == null? "all" : dst_addr.toString()));
-                    //}
-
                     // 3. Then the length of the byte buffer representing the message
                     len=input.readInt();
                     if(len == 0) {
@@ -957,19 +871,26 @@ public class GossipRouter {
                     // 4. Finally the message itself, as a byte buffer
                     buf=new byte[len];
                     input.readFully(buf, 0, buf.length);  // message
-                    route(dst_addr, gname, buf, addr);
                 }
-                catch(EOFException io_ex) {
+                catch(Exception io_ex) {
                     if(log.isTraceEnabled())
                         log.trace("client " + sock.getInetAddress().getHostName() + ':' + sock.getPort() +
                                 " closed connection; removing it from routing table");
-                    removeEntry(sock); // will close socket
+                    removeEntry(group_name, logical_addr); // will close socket
                     return;
                 }
+
+                try {
+                    route(dst_addr, gname, buf, logical_addr);
+                }
                 catch(Exception e) {
-                    if(log.isErrorEnabled()) log.error("exception=" + e);
+                    if(log.isErrorEnabled()) log.error("failed routing request to " + dst_addr, e);
                     break;
                 }
+
+
+
+
             }
             closeSocket();
         }
@@ -979,12 +900,12 @@ public class GossipRouter {
 
     public static void main(String[] args) throws Exception {
         String arg;
-        int port=8080;
+        int port=12001;
         long expiry=GossipRouter.EXPIRY_TIME;
         long timeout=GossipRouter.GOSSIP_REQUEST_TIMEOUT;
         long routingTimeout=GossipRouter.ROUTING_CLIENT_REPLY_TIMEOUT;
         GossipRouter router=null;
-        String address=null;
+        String bind_addr=null;
 
         for(int i=0; i < args.length; i++) {
             arg=args[i];
@@ -992,8 +913,8 @@ public class GossipRouter {
                 port=Integer.parseInt(args[++i]);
                 continue;
             }
-            if("-bindaddress".equals(arg)) {
-                address=args[++i];
+            if("-bindaddress".equals(arg) || "-bind_addr".equals(arg)) {
+                bind_addr=args[++i];
                 continue;
             }
             if("-expiry".equals(arg)) {
@@ -1015,7 +936,7 @@ public class GossipRouter {
 
         try {
             ClassConfigurator.getInstance(true);
-            router=new GossipRouter(port, address, expiry, timeout, routingTimeout);
+            router=new GossipRouter(port, bind_addr, expiry, timeout, routingTimeout);
             router.start();
         }
         catch(Exception e) {
@@ -1025,7 +946,7 @@ public class GossipRouter {
 
     static void help() {
         System.out.println();
-        System.out.println("GossipRouter [-port <port>] [-bindaddress <address>] [options]");
+        System.out.println("GossipRouter [-port <port>] [-bind_addr <address>] [options]");
         System.out.println("Options: ");
         System.out.println("        -expiry <msecs>   - Time until a gossip cache entry expires.");
         System.out.println("        -timeout <msecs>  - Number of millisecs the router waits to receive");

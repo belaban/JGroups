@@ -15,13 +15,16 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.net.Socket;
+import java.net.InetAddress;
+import java.net.DatagramSocket;
+import java.net.SocketException;
 import java.util.List;
 
 
 /**
  * Client stub that talks to a remote GossipRouter
  * @author Bela Ban
- * @version $Id: RouterStub.java,v 1.19 2006/10/11 14:37:06 belaban Exp $
+ * @version $Id: RouterStub.java,v 1.20 2006/10/23 16:16:20 belaban Exp $
  */
 public class RouterStub {
     String router_host=null;       // name of the router host
@@ -30,6 +33,7 @@ public class RouterStub {
     private ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(512);
     DataOutputStream output=null;            // output stream associated with sock
     DataInputStream input=null;             // input stream associated with sock
+    DatagramSocket my_sock=null;    // needed to generate an ID that's unqique across this host
     Address local_addr=null;        // addr of group mbr. Once assigned, remains the same
     static final long RECONNECT_TIMEOUT=5000; // msecs to wait until next connection retry attempt
     private volatile boolean connected=false;
@@ -37,6 +41,11 @@ public class RouterStub {
     protected static final Log log=LogFactory.getLog(RouterStub.class);
     protected ConnectionListener conn_listener;
     private String groupname=null;
+    private InetAddress bind_addr=null;
+
+    private long last_port=0;
+
+
 
 
     public interface ConnectionListener {
@@ -56,6 +65,14 @@ public class RouterStub {
         this.router_port=router_port;
     }
 
+
+    public InetAddress getBindAddress() {
+        return bind_addr;
+    }
+
+    public void setBindAddress(InetAddress bind_addr) {
+        this.bind_addr=bind_addr;
+    }
 
     public String getRouterHost() {
         return router_host;
@@ -82,54 +99,66 @@ public class RouterStub {
         this.conn_listener=conn_listener;
     }
 
-    public Address getLocalAddress() {
+    public synchronized Address getLocalAddress() throws SocketException {
+        if(local_addr == null)
+            local_addr=generateLocalAddress();
         return local_addr;
     }
 
 
+    private synchronized Address generateLocalAddress() throws SocketException {
+        my_sock=new DatagramSocket(0, bind_addr);
+        local_addr=new IpAddress(bind_addr, my_sock.getLocalPort());
+        return local_addr;
+    }
+
+//    private synchronized long generateUniquePort() {
+//        long ret=System.currentTimeMillis();
+//        if(ret <= last_port) {
+//            ret=++last_port;
+//        }
+//        else {
+//            last_port=ret;
+//        }
+//        return ret;
+//    }
+
     /**
      Register this process with the router under <code>groupname</code>.
      @param groupname The name of the group under which to register
-     @return Address Our address, as returned from the GossipRouter
      */
-    public synchronized Address connect(String groupname) {
-        if(groupname == null || groupname.length() == 0) {
-            if(log.isErrorEnabled()) log.error("groupname is null");
-            return null;
-        }
+    public synchronized void connect(String groupname) throws Exception {
+        if(groupname == null || groupname.length() == 0)
+            throw new Exception("groupname is null");
 
         this.groupname=groupname;
+
+        if(local_addr == null)
+            local_addr=generateLocalAddress();
+
         try {
-            sock=new Socket(router_host, router_port);
+            sock=new Socket(router_host, router_port, bind_addr, 0);
             sock.setSoLinger(true, 500);
             output=new DataOutputStream(sock.getOutputStream());
-            GossipData req=new GossipData(GossipRouter.CONNECT, groupname, null, null);
+            GossipData req=new GossipData(GossipRouter.CONNECT, groupname, local_addr, null);
             req.writeTo(output);
             output.flush();
             input=new DataInputStream(sock.getInputStream()); // retrieve our own address by reading it from the socket
-            Address ret=Util.readAddress(input);
             setConnected(true);
-            // IpAddress uses InetAddress.getLocalHost() to find the host. May not be permitted in applets !
-            if(ret == null && sock != null)
-                ret=new org.jgroups.stack.IpAddress(sock.getLocalPort());
-
-            // set local address; this is the one that we will use from now on !
-            local_addr=ret;
-            return ret;
         }
         catch(Exception e) {
             Util.close(sock); Util.close(input); Util.close(output);
             if(log.isErrorEnabled()) log.error("failed connecting", e);
             setConnected(false);
-            return null;
+            throw e;
         }
     }
 
 
-   public Address connect(String groupname, String router_host, int router_port) throws Exception {
+   public void connect(String groupname, String router_host, int router_port) throws Exception {
         setRouterHost(router_host);
         setRouterPort(router_port);
-        return connect(groupname);
+        connect(groupname);
     }
 
 
@@ -138,7 +167,6 @@ public class RouterStub {
     public synchronized void disconnect() {
         try {
             if(sock == null || output == null || input == null) {
-                if(log.isErrorEnabled()) log.error("no connection to router (groupname=" + groupname + ')');
                 setConnected(false);
                 return;
             }
@@ -167,6 +195,7 @@ public class RouterStub {
             setConnected(false);
             // stop the TUNNEL receiver thread
             reconnect=false;
+            Util.close(my_sock);
             local_addr=null;
         }
     }
@@ -310,17 +339,16 @@ public class RouterStub {
 
 
     /** Tries to establish connection to router. Tries until router is up again. */
-    public boolean reconnect(int max_attempts) {
-        Address new_addr=null;
+    public void reconnect(int max_attempts) throws Exception {
         int num_atttempts=0;
 
-        if(connected) return false;
+        if(connected) return;
         disconnect();
         reconnect=true;
         while(reconnect && (num_atttempts++ < max_attempts || max_attempts == -1)) {
             try {
-                if((new_addr=connect(groupname)) != null)
-                    break;
+                connect(groupname);
+                break;
             }
             catch(Exception ex) { // this is a normal case
                 if(log.isTraceEnabled()) log.trace("failed reconnecting", ex);
@@ -328,18 +356,14 @@ public class RouterStub {
             if(max_attempts == -1)
                 Util.sleep(RECONNECT_TIMEOUT);
         }
-        if(new_addr == null) {
-            return false;
-        }
-        else
-            local_addr=new_addr;
-        if(log.isTraceEnabled()) log.trace("client reconnected, new address is " + new_addr);
-        return true;
+        if(!connected)
+            throw new Exception("reconnect failed");
+        if(log.isTraceEnabled()) log.trace("client reconnected");
     }
 
 
-    public boolean reconnect() {
-        return reconnect(-1);
+    public void reconnect() throws Exception {
+        reconnect(-1);
     }
 
 
@@ -377,11 +401,10 @@ public class RouterStub {
 
         try {
             System.out.println("Registering under " + groupname);
-            my_addr=stub.connect(groupname);
-            System.out.println("My address is " + my_addr);
-
+            stub.connect(groupname);
+            System.out.println("My address is " + stub.getLocalAddress());
+            my_addr=stub2.getLocalAddress();
             stub2.connect(groupname);
-
             System.out.println("Getting members of " + groupname + ": ");
             mbrs=stub.get(groupname);
             System.out.println("Done, mbrs are " + mbrs);

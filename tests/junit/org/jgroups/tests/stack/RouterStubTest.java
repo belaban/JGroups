@@ -8,7 +8,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.Message;
-import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.RouterStub;
 import org.jgroups.util.Promise;
 
@@ -24,7 +23,7 @@ import java.util.Random;
  *
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
  * @author Bela Ban
- * @version $Id: RouterStubTest.java,v 1.2 2006/10/11 14:33:53 belaban Exp $
+ * @version $Id: RouterStubTest.java,v 1.3 2006/10/23 16:16:20 belaban Exp $
  * @since 2.2.1
  */
 public class RouterStubTest extends TestCase {
@@ -71,7 +70,8 @@ public class RouterStubTest extends TestCase {
      */
     public void test_CONNECT_GET() throws Exception {
         log.info("running test_CONNECT_GET");
-        IpAddress localAddr=(IpAddress)stub.connect(groupName);
+        stub.connect(groupName);
+        Address localAddr=stub.getLocalAddress();
         System.out.println("-- my address is " + localAddr);
         assertNotNull(localAddr);
         List groupList=stub.get(groupName);
@@ -86,7 +86,9 @@ public class RouterStubTest extends TestCase {
     public void test_CONNECT_Route_To_Self() throws Exception {
         log.info("running test_CONNECT_Route_To_Self");
         Message msg;
-        Address localAddr=stub.connect(groupName);
+
+        stub.connect(groupName);
+        Address localAddr=stub.getLocalAddress();
 
         // registration is complete
         String payload="THIS IS A MESSAGE PAYLOAD " + random.nextLong();
@@ -114,8 +116,12 @@ public class RouterStubTest extends TestCase {
 
         stub2=new RouterStub("127.0.0.1", routerPort);
 
-        Address addr=stub.connect(groupName);  // register the first member
+
+        stub.connect(groupName);  // register the first member
+        Address addr=stub.getLocalAddress();
+
         stub2.connect(groupName); // register the second member
+        addr=stub2.getLocalAddress();
 
         String payload="THIS IS A MESSAGE PAYLOAD " + random.nextLong();
 
@@ -138,9 +144,14 @@ public class RouterStubTest extends TestCase {
     public void test_CONNECT_Route_To_Other() throws Exception {
         log.info("running test_CONNECT_Route_To_Other");
         Message msg, msgCopy;
-        Address localAddrOne=stub.connect(groupName);
+
+        stub.connect(groupName);
+        Address localAddrOne=stub.getLocalAddress();
+
         stub2=new RouterStub("127.0.0.1", routerPort);
-        Address localAddrTwo=stub2.connect(groupName);
+
+        stub2.connect(groupName);
+        Address localAddrTwo=stub2.getLocalAddress();
         String payload="THIS IS A MESSAGE PAYLOAD " + random.nextLong();
 
         // first member send a simple routing request to the second member
@@ -166,7 +177,10 @@ public class RouterStubTest extends TestCase {
     public void test_CONNECT_RouteStressAll() throws Exception {
         log.info("running test_CONNECT_RouteStressAll, this may take a while .... ");
 
-        final Address localAddrOne=stub.connect(groupName);
+
+        stub.connect(groupName);
+        final Address localAddrOne=stub.getLocalAddress();
+
         stub2=new RouterStub("127.0.0.1", routerPort);
         stub2.connect(groupName);
 
