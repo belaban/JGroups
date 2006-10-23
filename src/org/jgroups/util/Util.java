@@ -26,7 +26,7 @@ import EDU.oswego.cs.dl.util.concurrent.Sync;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.104 2006/10/11 10:08:35 belaban Exp $
+ * @version $Id: Util.java,v 1.105 2006/10/23 13:42:30 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -115,6 +115,12 @@ public class Util {
     public static void close(Socket s) {
         if(s != null) {
             try {s.close();} catch(Exception ex) {}
+        }
+    }
+
+     public static void close(DatagramSocket my_sock) {
+        if(my_sock != null) {
+            try {my_sock.close();} catch(Throwable t) {}
         }
     }
 
@@ -2190,6 +2196,7 @@ public class Util {
         }
         return retval;
     }
+
 
 
 }
