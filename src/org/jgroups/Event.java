@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.23 2006/10/11 19:03:36 vlada Exp $
+// $Id: Event.java,v 1.24 2006/10/23 04:32:59 belaban Exp $
 
 package org.jgroups;
 
@@ -191,6 +191,7 @@ public class Event {
             case STATE_TRANSFER_INPUTSTREAM: return "STATE_TRANSFER_INPUTSTREAM";
             case STATE_TRANSFER_OUTPUTSTREAM:return "STATE_TRANSFER_OUTPUTSTREAM";
             case STATE_TRANSFER_INPUTSTREAM_CLOSED: return "STATE_TRANSFER_INPUTSTREAM_CLOSED";
+            case STATE_TRANSFER_OUTPUTSTREAM_CLOSED: return "STATE_TRANSFER_OUTPUTSTREAM_CLOSED";
             case UNBLOCK:                return "UNBLOCK";
 
             case USER_DEFINED:           return "USER_DEFINED";
