@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.51 2006/08/03 12:50:59 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.52 2006/10/23 16:12:23 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -510,10 +510,7 @@ public class CoordGmsImpl extends GmsImpl {
             if(new_view != null)
                 gms.passDown(new Event(Event.TMP_VIEW, new_view));
 
-            Vector tmp_mbrs=new_view != null? new Vector(new_view.getMembers()) : null;
-            if(tmp_mbrs != null) // exclude the newly joined member from VIEW_ACKs
-                tmp_mbrs.removeAll(new_mbrs);
-
+            Vector tmp_mbrs=new_view != null? new Vector(new_view.getMembers()) : null;         
             if(gms.use_flush) {
                 // First we flush current members. Then we send a view to all joining member and we wait for their ACKs
                 // together with ACKs from current members. After all ACKS have been collected, FLUSH is stopped
@@ -523,6 +520,8 @@ public class CoordGmsImpl extends GmsImpl {
                 gms.castViewChangeWithDest(new_view, null, tmp_mbrs);
             }
             else {
+               if(tmp_mbrs != null) // exclude the newly joined member from VIEW_ACKs
+                  tmp_mbrs.removeAll(new_mbrs);
                 // Broadcast the new view
                 // we'll multicast the new view first and only, when everyone has replied with a VIEW_ACK (or timeout),
                 // send the JOIN_RSP back to the client. This prevents the client from sending multicast messages in
