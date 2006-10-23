@@ -67,7 +67,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.101 2006/10/23 12:30:33 belaban Exp $
+ * @version $Id: JChannel.java,v 1.102 2006/10/23 16:11:09 vlada Exp $
  */
 public class JChannel extends Channel {
 
@@ -424,9 +424,8 @@ public class JChannel extends Channel {
 
             //if FLUSH is used do not return from connect() until UNBLOCK event is received
             boolean singletonMember = my_view != null && my_view.size() == 1;
-            boolean needToWaitOnFlushCompletion = flush_supported && !singletonMember && !flush_unblock_promise.hasResult();
-
-            if(needToWaitOnFlushCompletion){
+            boolean shouldWaitForUnblock = flush_supported && receive_blocks && !singletonMember && !flush_unblock_promise.hasResult();            
+            if(shouldWaitForUnblock){
                try{
                   flush_unblock_promise.getResultWithTimeout(FLUSH_UNBLOCK_TIMEOUT);
                }
@@ -1386,7 +1385,8 @@ public class JChannel extends Channel {
         Boolean state_transfer_successfull=(Boolean)state_promise.getResult(info.timeout);
 
         //if FLUSH is used do not return from getState() until UNBLOCK event is received
-        if(flush_supported){
+        boolean shouldWaitForUnblock = flush_supported && receive_blocks;
+        if(shouldWaitForUnblock){
            try{
               flush_unblock_promise.getResultWithTimeout(FLUSH_UNBLOCK_TIMEOUT);
            }
