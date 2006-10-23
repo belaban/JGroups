@@ -38,7 +38,7 @@ import java.util.*;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.122 2006/09/11 13:44:17 belaban Exp $
+ * @version $Id: UDP.java,v 1.123 2006/10/23 05:52:47 belaban Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -616,7 +616,7 @@ public class UDP extends TP implements Runnable {
 
             // Cannot listen at all, throw an Exception
             if(rcv_port >= max_port + 1) { // +1 due to the increment above
-                throw new Exception("UDP.createSockets(): cannot create a socket on any port in range " +
+                throw new Exception("cannot create a socket on any port in range " +
                         bind_port + '-' + (bind_port + port_range));
             }
         }
