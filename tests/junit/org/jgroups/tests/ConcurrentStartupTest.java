@@ -18,7 +18,7 @@ import java.util.*;
  * See doc/design/ConcurrentStartupTest.txt for details. This will only work 100% correctly once we have
  * FLUSH support (JGroups 2.4)
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.14 2006/10/11 14:29:51 belaban Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.15 2006/10/23 22:51:42 vlada Exp $
  */
 public class ConcurrentStartupTest extends TestCase implements ExtendedReceiver {
     final List list=Collections.synchronizedList(new LinkedList());
@@ -51,6 +51,7 @@ public class ConcurrentStartupTest extends TestCase implements ExtendedReceiver 
 
     public void testMessageSendingAfterConnect() throws Exception {
         channel=new JChannel(PROPS);
+        channel.setOpt(Channel.BLOCK, Boolean.TRUE);
         channel.setReceiver(this);
         channel.connect(GROUP);
         channel.getState(null, 10000);
@@ -245,6 +246,7 @@ public class ConcurrentStartupTest extends TestCase implements ExtendedReceiver 
         public void run() {
             try {
                 ch=new JChannel(PROPS);
+                ch.setOpt(Channel.BLOCK, Boolean.TRUE);
                 ch.setReceiver(new ExtendedReceiverAdapter() {
                     public void receive(Message msg) {
                         if(msg.getBuffer() == null)
