@@ -1,4 +1,4 @@
-// $Id: DisconnectTest.java,v 1.10 2006/10/11 14:31:30 belaban Exp $
+// $Id: DisconnectTest.java,v 1.11 2006/10/23 16:16:20 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -21,7 +21,7 @@ import org.jgroups.util.Promise;
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
  * @author Bela Ban belaban@yahoo.com
- * @version $Revision: 1.10 $
+ * @version $Revision: 1.11 $
  **/
 public class DisconnectTest extends TestCase {
 
@@ -68,12 +68,18 @@ public class DisconnectTest extends TestCase {
      *
      **/
     public void testNullLocalAddress_TUNNEL() throws Exception {
-        String props = getTUNNELProps(routerPort, routerPort);
-        channel = new JChannel(props);
-        channel.connect("testgroup");
-        assertTrue(channel.getLocalAddress()!=null);
-        channel.disconnect();
-        assertNull(channel.getLocalAddress());
+        try {
+            routerPort=Utilities.startGossipRouter();
+            String props = getTUNNELProps(routerPort, routerPort);
+            channel = new JChannel(props);
+            channel.connect("testgroup");
+            assertTrue(channel.getLocalAddress() != null);
+            channel.disconnect();
+            assertNull(channel.getLocalAddress());
+        }
+        finally {
+            Utilities.stopGossipRouter();
+        }
     }
 
 
