@@ -67,7 +67,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.99 2006/10/13 23:21:00 vlada Exp $
+ * @version $Id: JChannel.java,v 1.100 2006/10/23 04:54:07 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -125,7 +125,7 @@ public class JChannel extends Channel {
     private final Promise disconnect_promise=new Promise();
 
     private final Promise state_promise=new Promise();
-    
+
     private final Promise flush_unblock_promise=new Promise();
 
     private final Promise flush_promise=new Promise();
@@ -410,29 +410,29 @@ public class JChannel extends Channel {
         // only connect if we are not a unicast channel
         if(cluster_name != null) {
             connect_promise.reset();
-            
+
             if(flush_supported)
                flush_unblock_promise.reset();
-            
+
             Event connect_event=new Event(Event.CONNECT, cluster_name);
-            down(connect_event);            
-                        
+            down(connect_event);
+
             Object res=connect_promise.getResult();  // waits forever until connected (or channel is closed)
             if(res != null && res instanceof Exception) { // the JOIN was rejected by the coordinator
                 throw new ChannelException("connect() failed", (Throwable)res);
             }
-            
-            //if FLUSH is used do not return from connect() until UNBLOCK event is received 
+
+            //if FLUSH is used do not return from connect() until UNBLOCK event is received
             boolean singletonMember = my_view != null && my_view.size() == 1;
             boolean needToWaitOnFlushCompletion = flush_supported && !singletonMember && !flush_unblock_promise.hasResult();
-            
+
             if(needToWaitOnFlushCompletion){
                try{
                   flush_unblock_promise.getResultWithTimeout(FLUSH_UNBLOCK_TIMEOUT);
                }
                catch (TimeoutException te){
                   if(log.isWarnEnabled())
-                     log.warn("Waiting on UNBLOCK after connect timed out"); 
+                     log.warn("Waiting on UNBLOCK after connect timed out");
                }
             }
         }
@@ -792,7 +792,6 @@ public class JChannel extends Channel {
                     log.warn("option GET_STATE_EVENTS has been deprecated (it is always true now); this option is ignored");
                 break;
 
-
             case LOCAL:
                 if(value instanceof Boolean)
                     receive_local_msgs=((Boolean)value).booleanValue();
@@ -984,7 +983,7 @@ public class JChannel extends Channel {
             // we simply set the state to connected
             /*
              * Bela&Vladimir Oct 10th,2006 - we probably do not need this
-             * 
+             *
              * if(connected == false) {
                 connected=true;
                 connect_promise.setResult(null);
@@ -1086,7 +1085,7 @@ public class JChannel extends Channel {
         // If UpHandler is installed, pass all events to it and return (UpHandler is e.g. a building block)
         if(up_handler != null) {
             up_handler.up(evt);
-            
+
             if(type == Event.UNBLOCK){
                flush_unblock_promise.setResult(Boolean.TRUE);
             }
@@ -1219,8 +1218,8 @@ public class JChannel extends Channel {
                 if(log.isErrorEnabled()) log.error("CONFIG event did not contain a hashmap: " + t);
             }
         }
-        
-        if(evt.getType() ==  Event.STATE_TRANSFER_INPUTSTREAM_CLOSED){                      
+
+        if(evt.getType() ==  Event.STATE_TRANSFER_INPUTSTREAM_CLOSED){
            state_promise.setResult(Boolean.TRUE);
         }
 
@@ -1344,7 +1343,7 @@ public class JChannel extends Channel {
             case Event.BLOCK:
                 return new BlockEvent();
             case Event.UNBLOCK:
-                return new UnblockEvent();                
+                return new UnblockEvent();
             case Event.GET_APPLSTATE:
                 StateTransferInfo info=(StateTransferInfo)evt.getArg();
                 return new GetStateEvent(info.target, info.state_id);
@@ -1352,11 +1351,11 @@ public class JChannel extends Channel {
                 info=(StateTransferInfo)evt.getArg();
                 return new SetStateEvent(info.state, info.state_id);
             case Event.STATE_TRANSFER_OUTPUTSTREAM:
-            	info = (StateTransferInfo)evt.getArg();            	
-                return new StreamingGetStateEvent(info.outputStream,info.state_id);      
+            	info = (StateTransferInfo)evt.getArg();
+                return new StreamingGetStateEvent(info.outputStream,info.state_id);
             case Event.STATE_TRANSFER_INPUTSTREAM:
-            	info = (StateTransferInfo)evt.getArg();            	
-                return new StreamingSetStateEvent(info.inputStream,info.state_id);    
+            	info = (StateTransferInfo)evt.getArg();
+                return new StreamingSetStateEvent(info.inputStream,info.state_id);
             case Event.EXIT:
                 return new ExitEvent();
             default:
@@ -1383,22 +1382,22 @@ public class JChannel extends Channel {
 
         if(flush_supported)
            flush_unblock_promise.reset();
-        
+
         state_promise.reset();
-        down(evt);        
+        down(evt);
         Boolean state_transfer_successfull=(Boolean)state_promise.getResult(info.timeout);
-                 
-        //if FLUSH is used do not return from getState() until UNBLOCK event is received         
+
+        //if FLUSH is used do not return from getState() until UNBLOCK event is received
         if(flush_supported){
            try{
               flush_unblock_promise.getResultWithTimeout(FLUSH_UNBLOCK_TIMEOUT);
            }
            catch (TimeoutException te){
               if(log.isWarnEnabled())
-                 log.warn("Waiting on UNBLOCK after getState timed out"); 
-           }                
+                 log.warn("Waiting on UNBLOCK after getState timed out");
+           }
         }
-        
+
         return state_transfer_successfull != null && state_transfer_successfull.booleanValue();
     }
 
