@@ -11,12 +11,13 @@ import java.util.ArrayList;
 /**
  * Discovers all UDP-based members running on a certain mcast address
  * @author Bela Ban
- * @version $Revision: 1.9 $
+ * @version $Revision: 1.10 $
  * Date: Jun 2, 2003
  * Time: 4:35:29 PM
  */
 public class Probe {
     MulticastSocket mcast_sock;
+    boolean running=true;
 
 
     public Probe() {
@@ -24,7 +25,7 @@ public class Probe {
     }
 
     public void start(InetAddress addr, InetAddress bind_addr, int port, int ttl,
-                      final long timeout, List query) throws Exception {
+                      final long timeout, List query, String match) throws Exception {
         mcast_sock=new MulticastSocket();
         mcast_sock.setTimeToLive(ttl);
         if(bind_addr != null)
@@ -39,16 +40,19 @@ public class Probe {
         DatagramPacket probe=new DatagramPacket(probe_buf, 0, probe_buf.length, addr, port);
         mcast_sock.send(probe);
         System.out.println("\n-- send probe on " + addr + ':' + port + '\n');
-        int i=0;
+
 
         new Thread() {
             public void run() {
                 Util.sleep(timeout);
                 mcast_sock.close();
+                running=false;
             }
         }.start();
 
-        for(;;) {
+        int matched=0, not_matched=0, count=0;
+        String response;
+        while(running) {
             byte[] buf=new byte[65000];
             DatagramPacket rsp=new DatagramPacket(buf, 0, buf.length);
             try {
@@ -60,8 +64,24 @@ public class Probe {
             }
             byte[] data=rsp.getData();
             // System.out.println("received " + rsp.getLength() + " bytes from " + rsp.getSocketAddress());
-            System.out.println("\n#" + ++i + " (" + rsp.getLength() + " bytes): " + new String(data, 0, rsp.getLength()));
+            response=new String(data, 0, rsp.getLength());
+            if(matches(response, match)) {
+                matched++;
+                System.out.println("\n#" + ++count + " (" + rsp.getLength() + " bytes): " + response);
+            }
+            else
+                not_matched++;
         }
+        System.out.println("\nTotal responses=" + count + ", " + matched + " matches, " + not_matched + " non-matches");
+    }
+
+    private boolean matches(String response, String match) {
+        if(response == null)
+            return false;
+        if(match == null)
+            return true;
+        int index=response.indexOf(match);
+        return index > -1;
     }
 
 
@@ -73,6 +93,7 @@ public class Probe {
         final String DEFAULT_DIAG_ADDR="224.0.0.75";
         final int    DEFAULT_DIAG_PORT=7500;
         List         query=new ArrayList();
+        String       match=null;
 
         try {
             for(int i=0; i < args.length; i++) {
@@ -100,6 +121,10 @@ public class Probe {
                     query.add(args[++i]);
                     continue;
                 }
+                if("-match".equals(args[i])) {
+                    match=args[++i];
+                    continue;
+                }
 
                 help();
                 return;
@@ -109,7 +134,7 @@ public class Probe {
                 addr=InetAddress.getByName(DEFAULT_DIAG_ADDR);
             if(port == 0)
                 port=DEFAULT_DIAG_PORT;
-            p.start(addr, bind_addr, port, ttl, timeout, query);
+            p.start(addr, bind_addr, port, ttl, timeout, query, match);
         }
         catch(Throwable t) {
             t.printStackTrace();
@@ -118,7 +143,7 @@ public class Probe {
 
     static void help() {
         System.out.println("Probe [-help] [-addr <addr>] [-bind_addr <addr>] " +
-                "[-port <port>] [-ttl <ttl>] [-timeout <timeout>] [-query <query>]" +
+                "[-port <port>] [-ttl <ttl>] [-timeout <timeout>] [-query <query>] [-match <pattern>]" +
                 " (query can be jmx or props)");
     }
 }
