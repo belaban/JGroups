@@ -631,15 +631,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
                   log.debug("Cleared all requesters for state " + state_id + ",state_requesters=" + state_requesters);
                }
             }
-         }
-         else
-         {
-            if (warn)
-            {
-               log.warn("Attempted to clear " + address + " and state_id " + state_id
-                     + " from requesters,but the entry does not exist");
-            }
-         }
+         }        
       }
    }
 
