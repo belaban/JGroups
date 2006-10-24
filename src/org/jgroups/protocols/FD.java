@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.39 2006/09/22 12:04:39 belaban Exp $
+// $Id: FD.java,v 1.40 2006/10/24 13:15:39 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -29,7 +29,7 @@ import java.util.List;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Revision: 1.39 $
+ * @version $Revision: 1.40 $
  */
 public class FD extends Protocol {
     Address               ping_dest=null;
@@ -44,7 +44,7 @@ public class FD extends Protocol {
     /** Members from which we select ping_dest. may be subset of {@link #members} */
     final List            pingable_mbrs=new CopyOnWriteArrayList();
 
-    boolean               shun=false;
+    boolean               shun=true;
     TimeScheduler         timer=null;
     private Monitor       monitor=null;  // task that performs the actual monitoring for failure detection
     private final Object  monitor_mutex=new Object();
