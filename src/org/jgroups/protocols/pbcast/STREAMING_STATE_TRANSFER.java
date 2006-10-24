@@ -1003,6 +1003,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
          super();
          this.outputStreamOwner = outputStreamOwner;
          this.delegate = new BufferedOutputStream(outputStreamOwner.getOutputStream());
+         this.channelOwner = stack.getChannel();
       }
 
       public void close() throws IOException
