@@ -24,7 +24,7 @@ import java.util.List;
 /**
  * Client stub that talks to a remote GossipRouter
  * @author Bela Ban
- * @version $Id: RouterStub.java,v 1.20 2006/10/23 16:16:20 belaban Exp $
+ * @version $Id: RouterStub.java,v 1.21 2006/10/25 08:08:43 belaban Exp $
  */
 public class RouterStub {
     String router_host=null;       // name of the router host
@@ -43,7 +43,6 @@ public class RouterStub {
     private String groupname=null;
     private InetAddress bind_addr=null;
 
-    private long last_port=0;
 
 
 
@@ -162,9 +161,14 @@ public class RouterStub {
     }
 
 
-
     /** Closes the socket and the input and output streams associated with it */
     public synchronized void disconnect() {
+        disconnect(false);
+    }
+
+
+
+    public synchronized void disconnect(boolean is_reconnect) {
         try {
             if(sock == null || output == null || input == null) {
                 setConnected(false);
@@ -195,8 +199,10 @@ public class RouterStub {
             setConnected(false);
             // stop the TUNNEL receiver thread
             reconnect=false;
-            Util.close(my_sock);
-            local_addr=null;
+            if(is_reconnect) {
+                Util.close(my_sock);
+                local_addr=null;
+            }
         }
     }
 
