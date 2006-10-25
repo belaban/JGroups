@@ -1,4 +1,4 @@
-// $Id: GossipRouter.java,v 1.21 2006/10/23 16:16:20 belaban Exp $
+// $Id: GossipRouter.java,v 1.22 2006/10/25 08:10:05 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -10,7 +10,6 @@ import org.jgroups.util.Util;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.EOFException;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -447,7 +446,7 @@ public class GossipRouter {
                         String group_name=req.getGroup();
 
                         if(log.isTraceEnabled())
-                            log.trace("CONNECT(" + group_name + ", " + logical_addr + ", " + peer_addr + ")");
+                            log.trace("CONNECT(" + group_name + ", " + logical_addr + ")");
                         SocketThread st=new SocketThread(sock, input, group_name, logical_addr);
                         addEntry(group_name, logical_addr, new AddressEntry(logical_addr, peer_addr, sock, st, output));
                         st.start();
@@ -540,8 +539,6 @@ public class GossipRouter {
     private void sweep() {
         long diff, currentTime=System.currentTimeMillis();
         int num_entries_removed=0;
-        String key=null;
-        List val;
 
         synchronized(routingTable) {
             Map.Entry entry, entry2;
@@ -557,7 +554,6 @@ public class GossipRouter {
                 for(Iterator it2=map.entrySet().iterator(); it2.hasNext();) {
                     entry2=(Map.Entry)it2.next();
                     ae=(GossipRouter.AddressEntry)entry2.getValue();
-
                     diff=currentTime - ae.timestamp;
                     if(diff > expiryTime) {
                         it2.remove();
@@ -596,8 +592,8 @@ public class GossipRouter {
             // send to destination address
             AddressEntry ae=findAddressEntry(dest_group, dest);
             if(ae == null) {
-                if(log.isErrorEnabled())
-                    log.error("cannot find " + dest + " in the routing table, \nrouting table=\n" + dumpRoutingTable());
+                if(log.isTraceEnabled())
+                    log.trace("cannot find " + dest + " in the routing table, \nrouting table=\n" + dumpRoutingTable());
                 return;
             }
             if(ae.output == null) {
@@ -801,13 +797,13 @@ public class GossipRouter {
         public String toString() {
             StringBuffer sb=new StringBuffer("logical addr=");
             sb.append(logical_addr).append(" (").append(physical_addr).append(")");
-            if(sock != null) {
-                sb.append(", sock=");
-                sb.append(sock);
-            }
+            //if(sock != null) {
+              //  sb.append(", sock=");
+                //sb.append(sock);
+            //}
             if(timestamp > 0) {
-                sb.append(", timestamp=");
-                sb.append(timestamp);
+                long diff=System.currentTimeMillis() - timestamp;
+                sb.append(", ").append(diff).append(" ms old");
             }
             return sb.toString();
         }
@@ -842,7 +838,6 @@ public class GossipRouter {
         }
 
         void finish() {
-            if(log.isTraceEnabled()) log.trace("terminating the SocketThread for " + sock);
             active=false;
         }
 
@@ -874,7 +869,7 @@ public class GossipRouter {
                 }
                 catch(Exception io_ex) {
                     if(log.isTraceEnabled())
-                        log.trace("client " + sock.getInetAddress().getHostName() + ':' + sock.getPort() +
+                        log.trace(sock.getInetAddress().getHostName() + ':' + sock.getPort() +
                                 " closed connection; removing it from routing table");
                     removeEntry(group_name, logical_addr); // will close socket
                     return;
@@ -887,10 +882,6 @@ public class GossipRouter {
                     if(log.isErrorEnabled()) log.error("failed routing request to " + dst_addr, e);
                     break;
                 }
-
-
-
-
             }
             closeSocket();
         }
