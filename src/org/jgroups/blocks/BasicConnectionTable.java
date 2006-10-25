@@ -19,11 +19,7 @@ import java.io.BufferedOutputStream;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.EOFException;
-import java.util.Map;
-import java.util.Iterator;
-import java.util.HashMap;
-import java.util.Vector;
-import java.util.Collection;
+import java.util.*;
 
 /**
  * Shared class for TCP connection tables.
@@ -259,12 +255,45 @@ public abstract class BasicConnectionTable {
     * Removes all connections from ConnectionTable which are not in c
     * @param c
     */
-   public void retainAll(Collection c) {
-       conns.keySet().retainAll(c);
-   }
+   //public void retainAll(Collection c) {
+     //  conns.keySet().retainAll(c);
+   //}
 
-   /** Used for message reception. */
-   public interface Receiver {
+
+      /**
+       * Removes all connections from ConnectionTable which are not in current_mbrs
+       * @param current_mbrs
+       */
+      public void retainAll(Collection current_mbrs) {
+          if(current_mbrs == null) return;
+          HashMap copy;
+          synchronized(conns) {
+              copy=new HashMap(conns);
+              conns.keySet().retainAll(current_mbrs);
+          }
+
+          // All of the connections that were not retained must be destroyed
+          // so that their resources are cleaned up.
+          Map.Entry entry;
+          for(Iterator it=copy.entrySet().iterator(); it.hasNext();) {
+              entry=(Map.Entry)it.next();
+              Object oKey=entry.getKey();
+              if(!current_mbrs.contains(oKey)) {    // This connection NOT in the resultant connection set
+                  Connection conn=(Connection)entry.getValue();
+                  if(null != conn) {    // Destroy this connection
+                      if(log.isTraceEnabled())
+                          log.trace("Destroy this orphaned connection: " + conn);
+                      conn.destroy();
+                  }
+              }
+          }
+          copy.clear();
+      }
+
+
+
+    /** Used for message reception. */
+    public interface Receiver {
        void receive(Address sender, byte[] data, int offset, int length);
    }
 
@@ -602,31 +631,12 @@ public abstract class BasicConnectionTable {
 
 
        void closeSocket() {
-           if(sock != null) {
-               try {
-                   sock.close(); // should actually close in/out (so we don't need to close them explicitly)
-               }
-               catch(Exception e) {
-               }
-               sock=null;
-           }
-           if(out != null) {
-               try {
-                   out.close(); // flushes data
-               }
-               catch(Exception e) {
-               }
-               // removed 4/22/2003 (request by Roland Kurmann)
-               // out=null;
-           }
-           if(in != null) {
-               try {
-                   in.close();
-               }
-               catch(Exception ex) {
-               }
-               in=null;
-           }
+           Util.close(sock); // should actually close in/out (so we don't need to close them explicitly)
+           sock=null;
+           Util.close(out);  // flushes data
+           // removed 4/22/2003 (request by Roland Kurmann)
+           // out=null;
+           Util.close(in);
        }
 
 
