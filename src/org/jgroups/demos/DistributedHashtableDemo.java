@@ -1,4 +1,4 @@
-// $Id: DistributedHashtableDemo.java,v 1.6 2004/09/23 16:29:35 belaban Exp $
+// $Id: DistributedHashtableDemo.java,v 1.7 2006/10/25 16:26:25 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -281,6 +281,10 @@ public class DistributedHashtableDemo extends Frame implements WindowListener, A
                     PersistenceFactory.getInstance().createManager(args[++i]);
                     continue;
                 }
+                if("-props".equals(arg)) {
+                    props=args[++i];
+                    continue;
+                }
                 help();
                 return;
             }
@@ -299,7 +303,7 @@ public class DistributedHashtableDemo extends Frame implements WindowListener, A
 
 
     static void help() {
-        System.out.println("DistributedHashtableDemo [-help] [-persist]");
+        System.out.println("DistributedHashtableDemo [-help] [-persist] [-props <properties>]");
     }
 
 }
