@@ -1,4 +1,4 @@
-// $Id: InterruptTest.java,v 1.5 2005/05/30 16:15:05 belaban Exp $
+// $Id: InterruptTest.java,v 1.6 2006/10/25 07:05:02 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -29,14 +29,6 @@ public class InterruptTest extends TestCase {
         super(name);
     }
 
-
-    public void setUp() {
-
-    }
-
-    public void tearDown() {
-
-    }
 
     String modeToString(int m) {
         switch(m) {
