@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.67 2006/10/11 14:23:22 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.68 2006/10/25 08:47:32 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -377,7 +377,7 @@
         </junit>
     </target>
 	
-    <target name="one-test" depends="compile,makeKeystore" description="Runs a single unit test">
+    <target name="one-test" depends="compile,makeKeystore" description="Runs a single unit test (use -Dtest=name, e.g -Dtest=org.jgroups.tests.CloseTest one-test)">
         <mkdir dir="${tmp.dir}/tests-results"/>
         <junit printsummary="yes" timeout="${unittest.timeout.low}" fork="yes">
             <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
