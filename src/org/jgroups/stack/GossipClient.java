@@ -21,7 +21,7 @@ import java.util.*;
  * Requires JDK >= 1.3 due to the use of Timer.
  * 
  * @author Bela Ban Oct 4 2001
- * @version $Id: GossipClient.java,v 1.15 2006/10/11 14:37:06 belaban Exp $
+ * @version $Id: GossipClient.java,v 1.16 2006/10/25 08:23:58 belaban Exp $
  */
 public class GossipClient {
     Timer timer=new Timer(true);
@@ -199,7 +199,7 @@ public class GossipClient {
                 out.flush();
             }
             catch(Exception ex) {
-                if(log.isErrorEnabled()) log.error("exception connecting to host " + entry, ex);
+                if(log.isErrorEnabled()) log.error("exception connecting to host " + entry);
             }
             finally {
                 Util.close(out);
@@ -235,7 +235,7 @@ public class GossipClient {
                 out.flush();
             }
             catch(Exception ex) {
-                if(log.isErrorEnabled()) log.error("exception connecting to host " + entry, ex);
+                if(log.isErrorEnabled()) log.error("exception connecting to host " + entry);
             }
             finally {
                 Util.close(out);
@@ -292,7 +292,7 @@ public class GossipClient {
                 }
             }
             catch(Exception ex) {
-                if(log.isErrorEnabled()) log.error("exception connecting to host " + entry, ex);
+                if(log.isErrorEnabled()) log.error("exception connecting to host " + entry);
             }
             finally {
                 Util.close(out);

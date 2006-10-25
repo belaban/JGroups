@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.25 2006/10/23 16:16:20 belaban Exp $
+// $Id: TUNNEL.java,v 1.26 2006/10/25 08:23:57 belaban Exp $
 
 
 package org.jgroups.protocols;
@@ -363,13 +363,12 @@ public class TUNNEL extends Protocol implements Runnable {
                 if(log.isErrorEnabled()) log.error("CONNECT:  router stub is null!");
             }
             else {
-                // stub.connect(channel_name, local_addr);
                 try {
                     createTunnel();
                 }
                 catch(Exception e) {
                     if(log.isErrorEnabled())
-                        log.error("failed connecting to GossipRouter", e);
+                        log.error("failed connecting to GossipRouter at " + router_host + ":" + router_port);
                     break;
                 }
             }

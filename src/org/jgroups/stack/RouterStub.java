@@ -24,7 +24,7 @@ import java.util.List;
 /**
  * Client stub that talks to a remote GossipRouter
  * @author Bela Ban
- * @version $Id: RouterStub.java,v 1.21 2006/10/25 08:08:43 belaban Exp $
+ * @version $Id: RouterStub.java,v 1.22 2006/10/25 08:23:58 belaban Exp $
  */
 public class RouterStub {
     String router_host=null;       // name of the router host
@@ -146,8 +146,9 @@ public class RouterStub {
             setConnected(true);
         }
         catch(Exception e) {
+            if(log.isWarnEnabled())
+                log.warn("failed connecting to " + router_host + ":" + router_port);
             Util.close(sock); Util.close(input); Util.close(output);
-            if(log.isErrorEnabled()) log.error("failed connecting", e);
             setConnected(false);
             throw e;
         }
@@ -190,7 +191,7 @@ public class RouterStub {
             setConnected(false);
         }
         catch(Exception e) {
-            if(log.isErrorEnabled()) log.error("failed unregistering " + local_addr, e);
+            // if(log.isErrorEnabled()) log.error("failed unregistering " + local_addr, e);
         }
         finally {
             Util.close(output);
