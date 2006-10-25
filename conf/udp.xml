@@ -3,7 +3,7 @@
   Default stack using IP multicasting. It is similar to the "udp"
   stack in stacks.xml, but doesn't use streaming state transfer and flushing
   author: Bela Ban
-  version: $Id: udp.xml,v 1.2 2006/09/22 12:26:37 belaban Exp $
+  version: $Id: udp.xml,v 1.3 2006/10/25 12:55:26 belaban Exp $
 -->
 
 <config>
@@ -29,7 +29,7 @@
     <MERGE2 max_interval="30000"
             down_thread="false" up_thread="false" min_interval="10000"/>
     <FD_SOCK down_thread="false" up_thread="false"/>
-    <FD timeout="10000" max_tries="5" down_thread="false" up_thread="false" shun="false"/>
+    <FD timeout="10000" max_tries="5" down_thread="false" up_thread="false" shun="true"/>
     <VERIFY_SUSPECT timeout="1500" down_thread="false" up_thread="false"/>
     <pbcast.NAKACK max_xmit_size="60000"
                    use_mcast_xmit="false" gc_lag="0"
