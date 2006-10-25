@@ -374,11 +374,11 @@ public class StreamingStateTransferTest extends TestCase{
 		}
 
 		public void block() {	
-           System.out.println("Block at " + ch.getLocalAddress());
+           // System.out.println("Block at " + ch.getLocalAddress());
 		}
 
         public void unblock() {
-           System.out.println("Unblock at " + ch.getLocalAddress());
+           // System.out.println("Unblock at " + ch.getLocalAddress());
         }
 
         public byte[] getState() {
