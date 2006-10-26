@@ -67,7 +67,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.103 2006/10/26 13:58:58 belaban Exp $
+ * @version $Id: JChannel.java,v 1.104 2006/10/26 15:03:30 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -424,7 +424,7 @@ public class JChannel extends Channel {
 
             //if FLUSH is used do not return from connect() until UNBLOCK event is received
             boolean singletonMember = my_view != null && my_view.size() == 1;
-            boolean shouldWaitForUnblock = flush_supported && receive_blocks && !singletonMember && !flush_unblock_promise.hasResult();            
+            boolean shouldWaitForUnblock = flush_supported && receive_blocks && !singletonMember && !flush_unblock_promise.hasResult();
             if(shouldWaitForUnblock){
                try{
                   flush_unblock_promise.getResultWithTimeout(FLUSH_UNBLOCK_TIMEOUT);
@@ -1477,7 +1477,7 @@ public class JChannel extends Channel {
      * @param automatic_resume Call {@link #stopFlush()} after the flush
      * @return true if FLUSH completed within the timeout
      */
-    boolean startFlush(long timeout, boolean automatic_resume) {
+    public boolean startFlush(long timeout, boolean automatic_resume) {
         if(!flush_supported) {
             throw new IllegalStateException("Flush is not supported, add pbcast.FLUSH protocol to your configuration");
         }
@@ -1498,7 +1498,7 @@ public class JChannel extends Channel {
         return successfulFlush;
     }
 
-    void stopFlush() {
+    public void stopFlush() {
         if(!flush_supported) {
             throw new IllegalStateException("Flush is not supported, add pbcast.FLUSH protocol to your configuration");
         }
