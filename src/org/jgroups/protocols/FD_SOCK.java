@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.47 2006/09/22 12:02:43 belaban Exp $
+// $Id: FD_SOCK.java,v 1.48 2006/10/26 09:00:04 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -545,8 +545,11 @@ public class FD_SOCK extends Protocol implements Runnable {
     synchronized void sendPingTermination() {
         if(ping_sock != null) {
             try {
-                ping_sock.getOutputStream().write(NORMAL_TERMINATION);
-                ping_sock.getOutputStream().flush();
+                OutputStream out=ping_sock.getOutputStream();
+                if(out != null) {
+                    out.write(NORMAL_TERMINATION);
+                    out.flush();
+                }
             }
             catch(Throwable t) {
                 if(trace)
