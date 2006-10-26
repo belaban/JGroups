@@ -18,7 +18,7 @@ import java.util.List;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.66 2006/09/25 17:14:27 vlada Exp $
+ * @version $Id: GMS.java,v 1.67 2006/10/26 08:22:26 belaban Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -506,8 +506,10 @@ public class GMS extends Protocol {
 
             // Send VIEW_CHANGE event up and down the stack:
             Event view_event=new Event(Event.VIEW_CHANGE, new_view.clone());
-            passDown(view_event); // needed e.g. by failure detector or UDP
+            // changed order of passing view up and down (http://jira.jboss.com/jira/browse/JGRP-347)
             passUp(view_event);
+            passDown(view_event); // needed e.g. by failure detector or UDP
+
 
             coord=determineCoordinator();
             // if(coord != null && coord.equals(local_addr) && !(coord.equals(vid.getCoordAddress()))) {
@@ -1194,7 +1196,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.66 2006/09/25 17:14:27 vlada Exp $
+     * @version $Id: GMS.java,v 1.67 2006/10/26 08:22:26 belaban Exp $
      */
     class ViewHandler implements Runnable {
         Thread                    thread;
