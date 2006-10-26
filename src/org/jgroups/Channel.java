@@ -1,4 +1,4 @@
-// $Id: Channel.java,v 1.23 2006/09/27 12:53:22 belaban Exp $
+// $Id: Channel.java,v 1.24 2006/10/26 14:05:23 belaban Exp $
 
 package org.jgroups;
 
@@ -370,6 +370,11 @@ public abstract class Channel implements Transport {
      @return The object associated with an option.
      */
     abstract public Object getOpt(int option);
+
+
+    abstract public boolean startFlush(long timeout, boolean automatic_resume);
+
+    abstract public void stopFlush();
 
 
     /** Called to acknowledge a block() (callback in <code>MembershipListener</code> or
