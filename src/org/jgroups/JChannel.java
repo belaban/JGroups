@@ -67,7 +67,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.104 2006/10/26 15:03:30 belaban Exp $
+ * @version $Id: JChannel.java,v 1.105 2006/10/26 15:07:51 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -1467,6 +1467,10 @@ public class JChannel extends Channel {
             closer=new CloserThread(evt);
             closer.start();
         }
+    }
+
+    public boolean flushSupported() {
+        return flush_supported;
     }
 
     /**
