@@ -1,4 +1,4 @@
-// $Id: Channel.java,v 1.24 2006/10/26 14:05:23 belaban Exp $
+// $Id: Channel.java,v 1.25 2006/10/26 15:07:34 belaban Exp $
 
 package org.jgroups;
 
@@ -371,6 +371,7 @@ public abstract class Channel implements Transport {
      */
     abstract public Object getOpt(int option);
 
+    abstract public boolean flushSupported();
 
     abstract public boolean startFlush(long timeout, boolean automatic_resume);
 
