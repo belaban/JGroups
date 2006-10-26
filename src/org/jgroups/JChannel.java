@@ -67,7 +67,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.102 2006/10/23 16:11:09 vlada Exp $
+ * @version $Id: JChannel.java,v 1.103 2006/10/26 13:58:58 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -1469,7 +1469,15 @@ public class JChannel extends Channel {
         }
     }
 
-    boolean startFlush(long timeout) {
+    /**
+     * Will berform a flush of the system, ie. all pending messages are flushed out of the system and all members ack
+     * their reception. After this call return, no member will be sending any messages until {@link #stopFlush()} is
+     * called.
+     * @param timeout
+     * @param automatic_resume Call {@link #stopFlush()} after the flush
+     * @return true if FLUSH completed within the timeout
+     */
+    boolean startFlush(long timeout, boolean automatic_resume) {
         if(!flush_supported) {
             throw new IllegalStateException("Flush is not supported, add pbcast.FLUSH protocol to your configuration");
         }
@@ -1483,6 +1491,10 @@ public class JChannel extends Channel {
         }
         catch(TimeoutException e) {
         }
+
+        if(automatic_resume)
+            stopFlush();
+
         return successfulFlush;
     }
 
