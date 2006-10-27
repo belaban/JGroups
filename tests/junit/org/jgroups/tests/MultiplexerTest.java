@@ -19,7 +19,7 @@ import java.lang.management.ThreadInfo;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.30 2006/10/27 06:59:38 belaban Exp $
+ * @version $Id: MultiplexerTest.java,v 1.31 2006/10/27 08:16:05 belaban Exp $
  */
 public class MultiplexerTest extends TestCase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -262,8 +262,11 @@ public class MultiplexerTest extends TestCase {
         c1.put("id", new Long(322649));
         c1_repl.put("hobbies", "biking");
         c1_repl.put("bike", "Centurion");
+         if(ch1.flushSupported())
+            ch1.startFlush(5000, true);
+        else
+            Util.sleep(10000);
 
-        Util.sleep(500);
         System.out.println("c1: " + c1 + ", c1_repl: " + c1_repl);
 
         assertEquals(4, c1.size());
