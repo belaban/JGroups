@@ -17,8 +17,14 @@ import java.util.*;
  * Tests concurrent startup and message sending directly after joining
  * See doc/design/ConcurrentStartupTest.txt for details. This will only work 100% correctly once we have
  * FLUSH support (JGroups 2.4)
+ * 
+ * NOTE: This test is not guaranteed to pass at 100% rate until combined join 
+ * and state transfer using one FLUSH phase is introduced (Jgroups 2.5)[1].
+ * 
+ * [1] http://jira.jboss.com/jira/browse/JGRP-236
+ * 
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.15 2006/10/23 22:51:42 vlada Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.16 2006/10/27 15:12:28 vlada Exp $
  */
 public class ConcurrentStartupTest extends TestCase implements ExtendedReceiver {
     final List list=Collections.synchronizedList(new LinkedList());
