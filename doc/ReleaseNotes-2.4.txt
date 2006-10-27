@@ -2,12 +2,13 @@
 Release Notes JGroups 2.4
 =========================
 
-Version: $Id: ReleaseNotes-2.4.txt,v 1.9 2006/09/13 12:36:53 belaban Exp $
+Version: $Id: ReleaseNotes-2.4.txt,v 1.10 2006/10/27 12:58:17 belaban Exp $
 Author: Bela Ban
 
-JGroups 2.4 is a backward compatible release, that is it can replace previous versions (2.3 - 2.2.7) by simply replacing
+JGroups 2.4 is a backward compatible release, that is it can replace previous versions (2.2.7 - 2.3) by simply replacing
 the JGroups JAR file. The new features are described below.
 
+The manual is online at http://www.jgroups.org/javagroupsnew/docs/manual/html/index.html
 
 
 FLUSH protocol
@@ -68,7 +69,7 @@ Use of variables in configuration files
 ---------------------------------------
 Variables of type ${var:default} or ${var} can now be used in configuration files (both XML and plain text).
 They will get replaced by the result of System.getProperty(var, default). If no system property is set, the
-variables will not get substituted. Note that variables and default values cannot contains characters '{', '}' or ':'.
+variables will not get substituted. Note that variables and default values cannot contain characters '{', '}' or ':'.
 
 
 User-defined Marshaller is now used for return values too
