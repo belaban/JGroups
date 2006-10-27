@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.80 2006/10/09 09:02:33 belaban Exp $
+// $Id: NAKACK.java,v 1.81 2006/10/27 07:02:00 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -618,7 +618,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
         try { // moved passDown() out of synchronized clause (bela Sept 7 2006) http://jira.jboss.com/jira/browse/JGRP-300
             if(trace)
-                log.trace(local_addr + ": sending msg #" + msg_id);
+                log.trace("sending " + local_addr + "#" + msg_id);
             passDown(evt); // if this fails, since msg is in sent_msgs, it can be retransmitted
         }
         catch(Throwable t) { // eat the exception, don't pass it up the stack
