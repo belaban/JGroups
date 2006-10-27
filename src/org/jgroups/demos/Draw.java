@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.32 2006/10/27 15:37:00 belaban Exp $
+// $Id: Draw.java,v 1.33 2006/10/27 16:25:58 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -197,7 +197,7 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
         clear_button=new JButton("Clear");
         clear_button.setFont(default_font);
         clear_button.addActionListener(this);
-        leave_button=new JButton("Leave & Exit");
+        leave_button=new JButton("Leave");
         leave_button.setFont(default_font);
         leave_button.addActionListener(this);
         sub_panel.add("South", clear_button);
@@ -318,7 +318,7 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
             }
             sendClearPanelMsg();
         }
-        else if("Leave & Exit".equals(command)) {
+        else if("Leave".equals(command)) {
             stop();
         }
         else
