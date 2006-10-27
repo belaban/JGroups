@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.48 2006/10/26 09:00:04 belaban Exp $
+// $Id: FD_SOCK.java,v 1.49 2006/10/27 14:08:04 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -444,7 +444,7 @@ public class FD_SOCK extends Protocol implements Runnable {
             }
 
             if(!setupPingSocket(ping_addr)) {
-                // covers use cases #7 and #8 in GmsTests.txt
+                // covers use cases #7 and #8 in ManualTests.txt
                 if(log.isDebugEnabled()) log.debug("could not create socket to " + ping_dest + "; suspecting " + ping_dest);
                 broadcastSuspectMessage(ping_dest);
                 pingable_mbrs.removeElement(ping_dest);
