@@ -1,4 +1,4 @@
-$Id: ManualTests.txt,v 1.4 2006/10/23 17:09:58 vlada Exp $
+$Id: ManualTests.txt,v 1.5 2006/10/27 12:50:50 belaban Exp $
 
 
 Group Membership Service (GMS) Protocol
@@ -7,7 +7,7 @@ Group Membership Service (GMS) Protocol
 
 Hopefully these tests can be automated some time in the
 future. Currently it takes too much time to write automatic tests. The
-tests should be executed before releasing a new tarball of JGroups.
+tests should be executed before releasing a new version of JGroups.
 
 - All the tests use the JGroups/Demos/Draw program
 - All tests should be run with both FD and FD_SOCK
