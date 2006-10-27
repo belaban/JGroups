@@ -63,7 +63,7 @@ public class FLUSH extends Protocol
    private Address localAddress;
 
    /**
-    * Group member that requested FLUSH. 
+    * Group member that requested FLUSH.
     * For view intallations flush coordinator is the group coordinator
     * For state transfer flush coordinator is the state requesting member
     */
@@ -74,7 +74,7 @@ public class FLUSH extends Protocol
    private Set flushOkSet;
 
    private Set flushCompletedSet;
-   
+
    private Set stopFlushOkSet;
 
    private final Object sharedLock = new Object();
@@ -90,10 +90,10 @@ public class FLUSH extends Protocol
     * Default timeout for a group member to be in <code>isBlockState</code>
     */
    private long timeout = 8000;
-   
+
    /**
-    * Default timeout started when <code>Event.BLOCK</code> is passed to 
-    * application. Response <code>Event.BLOCK_OK</code> should be received by 
+    * Default timeout started when <code>Event.BLOCK</code> is passed to
+    * application. Response <code>Event.BLOCK_OK</code> should be received by
     * application within timeout.
     */
    private long block_timeout = 10000;
@@ -101,7 +101,7 @@ public class FLUSH extends Protocol
    private Set suspected;
 
    private volatile boolean receivedFirstView = false;
-   
+
    private volatile boolean receivedMoreThanOneView = false;
 
    private long startFlushTime;
@@ -113,11 +113,11 @@ public class FLUSH extends Protocol
    private double averageFlushDuration;
 
    private Promise flush_promise;
-   
+
    private Promise blockok_promise;
-   
+
    /**
-    * If true configures timeout in GMS and STATE_TRANFER using FLUSH timeout value  
+    * If true configures timeout in GMS and STATE_TRANFER using FLUSH timeout value
     */
    private boolean auto_flush_conf = true;
 
@@ -148,12 +148,12 @@ public class FLUSH extends Protocol
    }
 
    public boolean setProperties(Properties props)
-   {      
+   {
       super.setProperties(props);
       timeout = Util.parseLong(props, "timeout", timeout);
       block_timeout = Util.parseLong(props, "block_timeout", block_timeout);
       auto_flush_conf = Util.parseBoolean(props, "auto_flush_conf", auto_flush_conf);
-      
+
       if (props.size() > 0)
       {
          log.error("the following properties are not recognized: " + props);
@@ -161,7 +161,7 @@ public class FLUSH extends Protocol
       }
       return true;
    }
-   
+
    public void init() throws Exception
    {
       if(auto_flush_conf)
@@ -179,13 +179,13 @@ public class FLUSH extends Protocol
       map.put("flush_supported", Boolean.TRUE);
       passUp(new Event(Event.CONFIG, map));
       passDown(new Event(Event.CONFIG, map));
-      
-      receivedFirstView = false;      
-      receivedMoreThanOneView = false;        
-      isBlockState = true;   
+
+      receivedFirstView = false;
+      receivedMoreThanOneView = false;
+      isBlockState = true;
       shouldReturnLastFromFlush = false;
    }
-   
+
    public void stop()
    {
       synchronized (sharedLock)
@@ -244,8 +244,8 @@ public class FLUSH extends Protocol
    {
       switch (evt.getType())
       {
-         case Event.GET_STATE:                     
-         case Event.MSG :         
+         case Event.GET_STATE:
+         case Event.MSG :
             boolean shouldSuspendByItself = false;
             long start=0, stop=0;
             synchronized (blockMutex)
@@ -263,7 +263,7 @@ public class FLUSH extends Protocol
                         blockMutex.wait(timeout);
                      stop=System.currentTimeMillis();
                      if (isFlushRunning())
-                     {                        
+                     {
                         isBlockState = false;
                         shouldSuspendByItself = true;
                      }
@@ -275,23 +275,23 @@ public class FLUSH extends Protocol
             }
             if(shouldSuspendByItself)
             {
-               log.warn("Ublocking FLUSH.down() at " + localAddress + " after timeout of " + (stop-start) + "ms");
+               log.warn("unblocking FLUSH.down() at " + localAddress + " after timeout of " + (stop-start) + "ms");
                passUp(new Event(Event.SUSPEND_OK));
                passDown(new Event(Event.SUSPEND_OK));
             }
             break;
-            
+
          case Event.CONNECT:
             boolean successfulBlock = sendBlockUpToChannel(block_timeout);
             if (successfulBlock && log.isDebugEnabled())
             {
                log.debug("Blocking of channel " + localAddress + " completed successfully");
-            }    
-            
+            }
+
             //member sending JOIN request returns last from FLUSH
             shouldReturnLastFromFlush = true;
-            break;            
-            
+            break;
+
          case Event.SUSPEND :
             onSuspend((View) evt.getArg());
             return;
@@ -299,7 +299,7 @@ public class FLUSH extends Protocol
          case Event.RESUME :
             onResume();
             return;
-            
+
          case Event.BLOCK_OK:
             blockok_promise.setResult(Boolean.TRUE);
             return;
@@ -324,22 +324,22 @@ public class FLUSH extends Protocol
                   if (successfulBlock && log.isDebugEnabled())
                   {
                      log.debug("Blocking of channel " + localAddress + " completed successfully");
-                  }                  
+                  }
                   onStartFlush(msg.getSrc(), fh);
-               }           
+               }
                else if (fh.type == FlushHeader.STOP_FLUSH)
-               {                  
-                  onStopFlush();                  
-               }               
+               {
+                  onStopFlush();
+               }
                else if (isCurrentFlushMessage(fh))
-               {                                                 				  
+               {
                   if (fh.type == FlushHeader.FLUSH_OK)
                   {
                      onFlushOk(msg.getSrc(), fh.viewID);
                   }
                   else if (fh.type == FlushHeader.STOP_FLUSH_OK)
-                  {                  
-                     onStopFlushOk(msg.getSrc(),fh.viewID);                 
+                  {
+                     onStopFlushOk(msg.getSrc(),fh.viewID);
                   }
                   else if (fh.type == FlushHeader.FLUSH_COMPLETED)
                   {
@@ -355,8 +355,8 @@ public class FLUSH extends Protocol
             }
             break;
 
-         case Event.VIEW_CHANGE :            
-            //if this is channel's first view and its the only member of the group then the 
+         case Event.VIEW_CHANGE :
+            //if this is channel's first view and its the only member of the group then the
             //goal is to pass BLOCK,VIEW,UNBLOCK to application space on the same thread as VIEW.
             View newView = (View) evt.getArg();
             boolean firstView = onViewChange(newView);
@@ -370,9 +370,9 @@ public class FLUSH extends Protocol
                }
                if (log.isDebugEnabled())
                   log.debug("At " + localAddress + " unblocking FLUSH.down() and sending UNBLOCK up");
-              
+
                shouldReturnLastFromFlush = false;
-               passUp(new Event(Event.UNBLOCK));               
+               passUp(new Event(Event.UNBLOCK));
                return;
             }
             break;
@@ -392,10 +392,10 @@ public class FLUSH extends Protocol
          case Event.RESUME :
             onResume();
             return;
-         
-         //state requesting member are returning last from flush round (i.e. JChannel.getState())            
+
+         //state requesting member are returning last from flush round (i.e. JChannel.getState())
          case Event.STATE_TRANSFER_INPUTSTREAM:
-         case Event.GET_STATE_OK:    
+         case Event.GET_STATE_OK:
             shouldReturnLastFromFlush = true;
             break;
       }
