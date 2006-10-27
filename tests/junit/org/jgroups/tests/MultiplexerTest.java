@@ -19,7 +19,7 @@ import java.lang.management.ThreadInfo;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.29 2006/10/09 13:13:11 belaban Exp $
+ * @version $Id: MultiplexerTest.java,v 1.30 2006/10/27 06:59:38 belaban Exp $
  */
 public class MultiplexerTest extends TestCase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -231,22 +231,25 @@ public class MultiplexerTest extends TestCase {
 
     public void testReplicationWithTwoChannels() throws Exception {
         ch1=factory.createMultiplexerChannel(STACK_NAME, "c1");
-        ch1.connect("bla");
         c1=new Cache(ch1, "cache-1");
         assertEquals("cache has to be empty initially", 0, c1.size());
+        ch1.connect("bla");
 
         ch1_repl=factory2.createMultiplexerChannel(STACK_NAME, "c1");
+        c1_repl=new Cache(ch1_repl, "cache-1-repl");
+        assertEquals("cache has to be empty initially", 0, c1_repl.size());
         ch1_repl.connect("bla");
-        // Util.sleep(500);
+
         View v=ch1_repl.getView();
         assertNotNull(v);
         assertEquals(2, v.size());
 
-        c1_repl=new Cache(ch1_repl, "cache-1-repl");
-        assertEquals("cache has to be empty initially", 0, c1_repl.size());
-
+        // System.out.println("****** [c1] PUT(name, Bela) *******");
         c1.put("name", "Bela");
-        Util.sleep(1000);
+        if(ch1.flushSupported())
+            ch1.startFlush(5000, true);
+        else
+            Util.sleep(10000);
 
         System.out.println("c1: " + c1 + ", c1_repl: " + c1_repl);
 
@@ -881,6 +884,7 @@ public class MultiplexerTest extends TestCase {
             Object key=modification[0];
             Object val=modification[1];
             synchronized(data) {
+                // System.out.println("****** [" + name + "] received PUT(" + key + ", " + val + ") " + " from " + msg.getSrc() + " *******");
                 data.put(key,val);
             }
         }
