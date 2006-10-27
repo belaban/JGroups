@@ -62,6 +62,11 @@ public class FLUSH extends Protocol
 
    private Address localAddress;
 
+   /**
+    * Group member that requested FLUSH. 
+    * For view intallations flush coordinator is the group coordinator
+    * For state transfer flush coordinator is the state requesting member
+    */
    private Address flushCoordinator;
 
    private Collection flushMembers;
@@ -76,10 +81,21 @@ public class FLUSH extends Protocol
 
    private final Object blockMutex = new Object();
 
+   /**
+    * Indicates if FLUSH.down() is currently blocking threads
+    */
    private volatile boolean isBlockState = true;
 
-   private long timeout = 4000;
+   /**
+    * Default timeout for a group member to be in <code>isBlockState</code>
+    */
+   private long timeout = 8000;
    
+   /**
+    * Default timeout started when <code>Event.BLOCK</code> is passed to 
+    * application. Response <code>Event.BLOCK_OK</code> should be received by 
+    * application within timeout.
+    */
    private long block_timeout = 10000;
 
    private Set suspected;
@@ -100,8 +116,15 @@ public class FLUSH extends Protocol
    
    private Promise blockok_promise;
    
+   /**
+    * If true configures timeout in GMS and STATE_TRANFER using FLUSH timeout value  
+    */
    private boolean auto_flush_conf = true;
 
+   /**
+    * Indicated member of the group that return last from the FLUSH round (i.e after STOP_FLUSH_OK)
+    * In curent design, this member is joining member and state requesting member
+    */
    private volatile boolean shouldReturnLastFromFlush = false;
 
 
@@ -252,7 +275,7 @@ public class FLUSH extends Protocol
             }
             if(shouldSuspendByItself)
             {
-               log.warn("Forcing FLUSH unblock at " + localAddress + " after " + (stop-start) + "ms");
+               log.warn("Ublocking FLUSH.down() at " + localAddress + " after timeout of " + (stop-start) + "ms");
                passUp(new Event(Event.SUSPEND_OK));
                passDown(new Event(Event.SUSPEND_OK));
             }
@@ -263,7 +286,10 @@ public class FLUSH extends Protocol
             if (successfulBlock && log.isDebugEnabled())
             {
                log.debug("Blocking of channel " + localAddress + " completed successfully");
-            }            
+            }    
+            
+            //member sending JOIN request returns last from FLUSH
+            shouldReturnLastFromFlush = true;
             break;            
             
          case Event.SUSPEND :
@@ -330,8 +356,8 @@ public class FLUSH extends Protocol
             break;
 
          case Event.VIEW_CHANGE :            
-            //if this is our first view the goal is to pass BLOCK,VIEW,UNBLOCK to application 
-            //space on the same thread as VIEW.
+            //if this is channel's first view and its the only member of the group then the 
+            //goal is to pass BLOCK,VIEW,UNBLOCK to application space on the same thread as VIEW.
             View newView = (View) evt.getArg();
             boolean firstView = onViewChange(newView);
             boolean singletonMember = newView.size()==1 && newView.containsMember(localAddress);
@@ -345,6 +371,7 @@ public class FLUSH extends Protocol
                if (log.isDebugEnabled())
                   log.debug("At " + localAddress + " unblocking FLUSH.down() and sending UNBLOCK up");
               
+               shouldReturnLastFromFlush = false;
                passUp(new Event(Event.UNBLOCK));               
                return;
             }
@@ -366,11 +393,9 @@ public class FLUSH extends Protocol
             onResume();
             return;
          
-         //joining and state requesting member are returning last from 
-         //flush round (i.e. JChannel.connect() and JChannel.getState())   
-         case Event.CONNECT_OK:   
+         //state requesting member are returning last from flush round (i.e. JChannel.getState())            
          case Event.STATE_TRANSFER_INPUTSTREAM:
-         case Event.GET_STATE_OK:               
+         case Event.GET_STATE_OK:    
             shouldReturnLastFromFlush = true;
             break;
       }
