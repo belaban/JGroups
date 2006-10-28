@@ -67,7 +67,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.105 2006/10/26 15:07:51 belaban Exp $
+ * @version $Id: JChannel.java,v 1.106 2006/10/28 02:42:32 vlada Exp $
  */
 public class JChannel extends Channel {
 
@@ -976,15 +976,22 @@ public class JChannel extends Channel {
             else
                 my_view=tmp;
 
-            // crude solution to bug #775120: if we get our first view *before* the CONNECT_OK,
-            // we simply set the state to connected
             /*
-             * Bela&Vladimir Oct 10th,2006 - we probably do not need this
+             * Bela&Vladimir Oct 27th,2006 (JGroups 2.4)- we need to switch to 
+             * connected=true because client can invoke channel.getView() in 
+             * viewAccepted() callback invoked on this thread 
+             * (see Event.VIEW_CHANGE handling below)
+             * 
+             * We do not set connect_promise because we want to wait for
+             * CONNECT_OK and then return from user's JChannel.connect() call. 
+             * This is important since we have to wait for Event.UNBLOCK after 
+             * CONNECT_OK if blocks are turned on. See JChannel.connect() for 
+             * details.
              *
-             * if(connected == false) {
-                connected=true;
-                connect_promise.setResult(null);
-            }*/
+             */
+            if(connected == false) {
+                connected=true;                
+            }
 
             // unblock queueing of messages due to previous BLOCK event:
             down(new Event(Event.STOP_QUEUEING));
