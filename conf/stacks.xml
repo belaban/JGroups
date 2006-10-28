@@ -2,7 +2,7 @@
 <!--
   Sample file that defines a number of stacks, used by the multiplexer
   Author: Bela Ban
-  Version: $Id: stacks.xml,v 1.19 2006/10/25 12:55:26 belaban Exp $
+  Version: $Id: stacks.xml,v 1.20 2006/10/28 15:14:36 belaban Exp $
 -->
 <protocol_stacks>
     <stack name="udp"
@@ -52,7 +52,7 @@
             <FRAG2 frag_size="60000" down_thread="false" up_thread="false"/>
             <pbcast.STREAMING_STATE_TRANSFER down_thread="false" up_thread="false" use_reading_thread="true"/>
             <!-- pbcast.STATE_TRANSFER down_thread="false" up_thread="false"/ -->
-            <pbcast.FLUSH down_thread="false" up_thread="false" timeout="2000"/>
+            <pbcast.FLUSH down_thread="false" up_thread="false" timeout="20000"/>
         </config>
     </stack>
 
@@ -105,7 +105,7 @@
             <FRAG2 frag_size="60000" down_thread="false" up_thread="false"/>
             <pbcast.STREAMING_STATE_TRANSFER down_thread="false" up_thread="false" use_reading_thread="true"/>
             <!-- pbcast.STATE_TRANSFER down_thread="false" up_thread="false"/ -->
-            <pbcast.FLUSH down_thread="false" up_thread="false"/>
+            <pbcast.FLUSH down_thread="false" up_thread="false" timeout="20000"/>
         </config>
     </stack>
 
@@ -157,7 +157,7 @@
             <FRAG2 frag_size="60000" down_thread="false" up_thread="false"/>
             <pbcast.STREAMING_STATE_TRANSFER down_thread="false" up_thread="false" use_reading_thread="true"/>
             <!-- pbcast.STATE_TRANSFER down_thread="false" up_thread="false"/ -->
-            <pbcast.FLUSH down_thread="false" up_thread="false"/>
+            <pbcast.FLUSH down_thread="false" up_thread="false" timeout="20000"/>
         </config>
     </stack>
 
@@ -206,7 +206,7 @@
                         view_bundling="true"/>
             <pbcast.STREAMING_STATE_TRANSFER down_thread="false" up_thread="false" use_reading_thread="true"/>
             <!-- pbcast.STATE_TRANSFER down_thread="false" up_thread="false"/ -->
-            <pbcast.FLUSH down_thread="false" up_thread="false"/>
+            <pbcast.FLUSH down_thread="false" up_thread="false" timeout="20000"/>
         </config>
     </stack>
 
@@ -267,7 +267,7 @@
             <FRAG2 frag_size="60000" down_thread="false" up_thread="false"/>
             <pbcast.STREAMING_STATE_TRANSFER down_thread="false" up_thread="false" use_reading_thread="true"/>
             <!-- pbcast.STATE_TRANSFER down_thread="false" up_thread="false"/ -->
-            <pbcast.FLUSH down_thread="false" up_thread="false"/>
+            <pbcast.FLUSH down_thread="false" up_thread="false" timeout="20000"/>
         </config>
     </stack>
 
@@ -323,7 +323,7 @@
                         view_bundling="true"/>
             <pbcast.STREAMING_STATE_TRANSFER down_thread="false" up_thread="false" use_reading_thread="true"/>
             <!-- pbcast.STATE_TRANSFER down_thread="false" up_thread="false"/ -->
-            <pbcast.FLUSH down_thread="false" up_thread="false"/>
+            <pbcast.FLUSH down_thread="false" up_thread="false" timeout="20000"/>
         </config>
     </stack>
 
@@ -362,7 +362,7 @@
             <FRAG2 frag_size="60000" down_thread="false" up_thread="false"/>
             <pbcast.STREAMING_STATE_TRANSFER down_thread="false" up_thread="false" use_reading_thread="true"/>
             <!-- pbcast.STATE_TRANSFER down_thread="false" up_thread="false"/ -->
-            <pbcast.FLUSH down_thread="false" up_thread="false" timeout="0"/>
+            <pbcast.FLUSH down_thread="false" up_thread="false" timeout="20000"/>
         </config>
     </stack>
 
