@@ -18,7 +18,7 @@ import java.util.List;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.67 2006/10/26 08:22:26 belaban Exp $
+ * @version $Id: GMS.java,v 1.68 2006/10/30 11:19:20 belaban Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -402,6 +402,7 @@ public class GMS extends Protocol {
         ack_collector.reset(vid, members);
         size=ack_collector.size();
         passDown(new Event(Event.MSG, view_change_msg));
+
         try {
             ack_collector.waitForAllAcks(view_ack_collection_timeout);
             stop=System.currentTimeMillis();
@@ -441,6 +442,8 @@ public class GMS extends Protocol {
             num_views++;
             prev_views.add(new_view);
         }
+
+        ack_collector.handleView(new_view);
 
         // Discards view with id lower than our own. Will be installed without check if first view
         if(view_id != null) {
@@ -1196,7 +1199,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.67 2006/10/26 08:22:26 belaban Exp $
+     * @version $Id: GMS.java,v 1.68 2006/10/30 11:19:20 belaban Exp $
      */
     class ViewHandler implements Runnable {
         Thread                    thread;
