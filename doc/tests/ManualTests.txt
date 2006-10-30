@@ -1,4 +1,4 @@
-$Id: ManualTests.txt,v 1.5 2006/10/27 12:50:50 belaban Exp $
+$Id: ManualTests.txt,v 1.6 2006/10/30 08:38:50 belaban Exp $
 
 
 Group Membership Service (GMS) Protocol
@@ -71,6 +71,17 @@ Test 5
   --> B should show 1 member
 
 
+Test 5.1
+--------
+(requires FD_SOCK)
+- Start A, B, C
+- Leave A
+- Leave B
+- Leave C
+- Everyone should be able to leave gracefully, no error messages such as
+  "FD_SOCK.up(): I was suspected by 192.168.5.2:1466; ignoring the SUSPECT message"
+
+
 Test 6
 ------
 
@@ -116,7 +127,7 @@ Test 10
   --> B should become new coordinator
   --> Both A and B should show 2 members
   --> The new A may try to join the old one (if still around). This
-      could result in a Join() timeout until the new coordinator has
+      could result in a join() timeout until the new coordinator has
       been determined
 
 
