@@ -15,7 +15,7 @@ import java.util.*;
  * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.34 2006/10/25 13:45:29 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.35 2006/10/30 12:27:55 belaban Exp $
  */
 public class Multiplexer implements UpHandler {
     /** Map<String,MuxChannel>. Maintains the mapping between service IDs and their associated MuxChannels */
@@ -282,7 +282,7 @@ public class Multiplexer implements UpHandler {
                     temp_merge_view=(MergeView)view.clone();
                     if(log.isTraceEnabled())
                         log.trace("received a MergeView: " + temp_merge_view + ", adjusting the service view");
-                    if(!flush_present) {
+                    if(!flush_present && temp_merge_view != null) {
                         try {
                             if(log.isTraceEnabled())
                                 log.trace("calling handleMergeView() from VIEW_CHANGE (flush_present=" + flush_present + ")");
