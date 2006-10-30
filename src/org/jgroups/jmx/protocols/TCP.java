@@ -4,7 +4,7 @@ import java.net.UnknownHostException;
 
 /**
  * @author Bela Ban
- * @version $Id: TCP.java,v 1.3 2006/10/02 06:47:53 belaban Exp $
+ * @version $Id: TCP.java,v 1.4 2006/10/30 20:07:10 bstansberry Exp $
  */
 public class TCP extends TP implements TCPMBean {
     org.jgroups.protocols.TCP p;
@@ -36,7 +36,9 @@ public class TCP extends TP implements TCPMBean {
             p.setBindAddress(bind_addr);
         }
         catch(UnknownHostException e) {
-            throw new IllegalArgumentException(e);
+            IllegalArgumentException iae = new IllegalArgumentException("Unknown host " + bind_addr);
+            iae.initCause(e);
+            throw iae;
         }
     }
 
