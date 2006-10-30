@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.50 2006/10/30 08:39:39 belaban Exp $
+// $Id: FD_SOCK.java,v 1.51 2006/10/30 11:09:40 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -450,9 +450,6 @@ public class FD_SOCK extends Protocol implements Runnable {
             if(!setupPingSocket(ping_addr)) {
                 // covers use cases #7 and #8 in ManualTests.txt
                 if(log.isDebugEnabled()) log.debug("could not create socket to " + ping_dest + "; suspecting " + ping_dest);
-
-                // System.out.println("setupPingSocket(): SUSPECTING " + ping_dest);
-
                 broadcastSuspectMessage(ping_dest);
                 pingable_mbrs.removeElement(ping_dest);
                 continue;
@@ -463,14 +460,11 @@ public class FD_SOCK extends Protocol implements Runnable {
             // at this point ping_input must be non-null, otherwise setupPingSocket() would have thrown an exception
             try {
                 if(ping_input != null) {
-                    //System.out.println("PINGING " + ping_dest + ", ping_input=" + ping_input + ", ping_sock=" + ping_sock.getRemoteSocketAddress() +
-                    //", ping_addr=" + ping_addr );
                     int c=ping_input.read();
                     switch(c) {
                         case NORMAL_TERMINATION:
                             if(log.isDebugEnabled())
                                 log.debug("peer closed socket normally");
-                            //System.out.println(ping_dest + " closed normally");
                             synchronized(pinger_mutex) {
                                 pinger_thread=null;
                             }
@@ -507,10 +501,6 @@ public class FD_SOCK extends Protocol implements Runnable {
         if(!regular_sock_close) { // only suspect if socket was not closed regularly (by interruptPingerThread())
             if(log.isDebugEnabled())
                 log.debug("peer " + ping_dest + " closed socket (" + (ex != null ? ex.getClass().getName() : "eof") + ')');
-
-
-           // System.out.println("SUSPECTING " + ping_dest + ": socket close: " + ex);
-
             broadcastSuspectMessage(ping_dest);
             pingable_mbrs.removeElement(ping_dest);
         }
@@ -570,7 +560,6 @@ public class FD_SOCK extends Protocol implements Runnable {
             try {
                 OutputStream out=ping_sock.getOutputStream();
                 if(out != null) {
-                    //System.out.println("sendPingSignal(): sending " + signalToString(signal) + " to " + ping_sock.getRemoteSocketAddress());
                     out.write(signal);
                     out.flush();
                 }
@@ -1128,7 +1117,6 @@ public class FD_SOCK extends Protocol implements Runnable {
                 if(client_sock != null) {
                     try {
                         OutputStream out=client_sock.getOutputStream();
-                        //System.out.println("stopThread(): sending NORMAL_TERMINATION to " + client_sock.getRemoteSocketAddress());
                         out.write(NORMAL_TERMINATION);
                         out.flush();
                         closeClientSocket();
@@ -1156,12 +1144,10 @@ public class FD_SOCK extends Protocol implements Runnable {
                 int b=0;
                 do {
                     b=in.read();
-                    //System.out.println("***** b=" + b);
                 }
                 while(b != ABNORMAL_TERMINATION && b != NORMAL_TERMINATION);
             }
             catch(IOException ex) {
-                // ex.printStackTrace();
             }
             finally {
                 Socket sock=client_sock; // PATCH: avoid race condition causing NPE
