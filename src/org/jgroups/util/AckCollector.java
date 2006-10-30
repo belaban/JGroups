@@ -11,7 +11,7 @@ import java.util.Vector;
 
 /**
  * @author Bela Ban
- * @version $Id: AckCollector.java,v 1.10 2006/08/01 16:08:01 belaban Exp $
+ * @version $Id: AckCollector.java,v 1.11 2006/10/30 11:19:20 belaban Exp $
  */
 public class AckCollector {
     /** List<Object>: list of members from whom we haven't received an ACK yet */
@@ -49,6 +49,7 @@ public class AckCollector {
 
     public void reset(ViewId v, java.util.List l) {
         synchronized(this) {
+            suspected_mbrs.clear();
             proposed_view=v;
             missing_acks.clear();
             received_acks.clear();
