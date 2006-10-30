@@ -1,4 +1,4 @@
-$Id: ManualTests.txt,v 1.7 2006/10/30 09:38:40 belaban Exp $
+$Id: ManualTests.txt,v 1.8 2006/10/30 11:43:11 belaban Exp $
 
 
 Group Membership Service (GMS) Protocol
@@ -232,13 +232,10 @@ Test 20
 
 Test 21
 -------
-- Run tests 1-4 with 3 nodes
+- Run tests 16-20 with 3 nodes
 
 Test 22
 -------
-- Run Test 4 with DrawMultiplexer with "udp" stack
+- Run Test 4 with DrawMultiplexer with "tcp" stack
 
-Test 23
--------
-- Run test 4 with DrawMultiplexer with "tunnel" stack
 
