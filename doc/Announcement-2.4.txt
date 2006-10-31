@@ -1,0 +1,75 @@
+
+// $Id: Announcement-2.4.txt,v 1.1 2006/10/31 09:19:59 belaban Exp $
+
+
+Finally, after almost 5 months, JGroups 2.4 is here !
+
+There are some cool features that I'll describe in more detail
+below. Over 80 JIRA issues were resolved in 2.4, mostly bug fixes and
+new functionality, but also some performance related issues.
+
+The good news is that 2.4 is API-backward compatible with all previous
+versions down to and including 2.2.7. So, for those folks who are
+using JBoss 4.0.x, which ships with JGroups 2.2.7 by default, this
+means that they can simply replace their JGroups JAR file with the one
+from 2.4 and benefit from the performance enhancements and bug fixes
+that went into 2.4. For details on the JBoss/JGroups combinations see
+http://labs.jboss.com/portal/jbosscache/compatibility/index.html.
+
+I'll now describe the new features briefly.
+
+
+FLUSH
+-----
+
+Flush is a feature that - whenever the group membership is to be
+changed, or a state to be transferred - we tell every node in the
+cluster to stop sending messages and then join/leave a node, or
+transfer the state. When done, we tell all members to resume message
+sending.
+
+Why is this needed ?
+
+In 2 cases: (1) when we use a Multiplexer (see below) and have
+multiple services sharing the same channel that require state transfer
+and (2) when we want virtual synchrony (see below).
+
+So, if you don't use the Multiplexer or don't need virtual synchrony,
+you don't need the FLUSH protocol in your configuration. FLUSH is
+quite expensive because it uses multiple rounds of multicasts across
+the cluster, so remove it if you don't need it. Note that JBoss 5
+requires FLUSH because it uses the Multiplexer: all cluster services
+share one JGroups channel.
+
+
+Multiplexer
+-----------
+
+
+
+Virtual Synchrony
+-----------------
+
+Virtual Synchrony is a model of group communication, developed by Ken
+Birman at Cornell, which has the following properties:
+#1 All members see the same set of messages between views
+#2 All messages sent in a view V are received by all non-faulty members in
+the same view V
+#3 All non-faulty members receive the same sequence of views
+
+With FLUSH, we re-implemented the old virtual synchrony implementation
+of JGroups (vsync.xml), which I wrote in 1998/1999, but which has
+never been tested rigorously. We will phase out the old implementation
+in 3.0, along with other reorganizations of the protocol stack
+packages.
+
+
+Note that we have not yet *fully* implemented virtual synchrony as
+flushing only flushes out messages *sent* by member P, but not those
+*received* by P. Therefore, if member A sends a message M to {A,B,C},
+and crashes immediately afterwards, and only B received M, then C will
+*not* receive M
+
+
+Updated documentation
+---------------------
