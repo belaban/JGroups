@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.72 2006/11/01 08:26:06 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.73 2006/11/02 08:06:56 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -167,6 +167,8 @@
              <fileset dir="${root.dir}">
                  <include name="CREDITS"/>
                  <include name="INSTALL.html"/>
+                 <include name="LICENSE"/>
+                 <include name="EULA"/>
              </fileset>
              <fileset dir="${lib.dir}">
                  <include name="commons-logging*.jar"/>
