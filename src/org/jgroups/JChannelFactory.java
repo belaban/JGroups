@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.33 2006/10/11 14:34:50 belaban Exp $
+// $Id: JChannelFactory.java,v 1.34 2006/11/03 21:04:24 bstansberry Exp $
 
 package org.jgroups;
 
@@ -225,7 +225,8 @@ public class JChannelFactory implements ChannelFactory {
 
     public void setExposeProtocols(boolean expose_protocols) {
         this.expose_protocols=expose_protocols;
-        this.expose_channels=true;
+        if (expose_protocols)
+           this.expose_channels=true;
     }
 
 
