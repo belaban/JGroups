@@ -422,6 +422,8 @@ public class ENCRYPT14KeystoreTest extends TestCase {
 	
 	class MockAddress implements Address{
 
+		private static final long serialVersionUID = -2044466632514705356L;
+
 		/* (non-Javadoc)
 		 * @see org.jgroups.Address#isMulticastAddress()
 		 */

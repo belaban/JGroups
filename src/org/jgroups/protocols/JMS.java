@@ -1,4 +1,4 @@
-// $Id: JMS.java,v 1.14 2006/06/23 09:01:24 belaban Exp $ 
+// $Id: JMS.java,v 1.15 2006/11/13 17:50:14 bstansberry Exp $ 
 
 package org.jgroups.protocols;
 
@@ -523,7 +523,10 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
      * Simple {@link Address} representing the JMS node ID or JMS topic group.
      */
     public static class JMSAddress implements Address {
-        private String address;
+        
+    	private static final long serialVersionUID = -2311584492745452246L;
+		
+    	private String address;
         private boolean isMCast;
 
 
