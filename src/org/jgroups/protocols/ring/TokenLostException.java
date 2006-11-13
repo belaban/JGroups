@@ -1,4 +1,4 @@
-//$Id: TokenLostException.java,v 1.3 2004/09/15 17:40:59 belaban Exp $
+//$Id: TokenLostException.java,v 1.4 2006/11/13 17:42:11 bstansberry Exp $
 
 package org.jgroups.protocols.ring;
 
@@ -8,6 +8,8 @@ import java.io.InterruptedIOException;
 
 public class TokenLostException extends InterruptedIOException
 {
+
+   private static final long serialVersionUID = 5113234317099931071L;
 
    public static final int UNDEFINED = 0;
    public static final int WHILE_RECEIVING = 1;

@@ -10,6 +10,8 @@ package  org.jgroups.persistence;
 public class CannotRetrieveException extends Exception
 {
 
+    private static final long serialVersionUID = -2523227229540681597L;
+	
     /**
      * @param t
      * @param reason implementor-specified runtime reason

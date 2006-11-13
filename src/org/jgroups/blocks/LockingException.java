@@ -1,4 +1,4 @@
-// $Id: LockingException.java,v 1.1 2003/09/09 01:24:08 belaban Exp $
+// $Id: LockingException.java,v 1.2 2006/11/13 17:42:10 bstansberry Exp $
 
 
 package org.jgroups.blocks;
@@ -7,7 +7,10 @@ import java.util.Map;
 
 
 public class LockingException extends Exception {
-    Map failed_lockers=null; // list of members who failed acquiring locks (keys=Address, values=exception string)
+
+	private static final long serialVersionUID = -712594616520011007L;
+	
+	Map failed_lockers=null; // list of members who failed acquiring locks (keys=Address, values=exception string)
 
     public LockingException(String msg) {
 	super(msg);

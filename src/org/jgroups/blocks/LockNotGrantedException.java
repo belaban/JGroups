@@ -8,7 +8,9 @@ package org.jgroups.blocks;
  */
 public class LockNotGrantedException extends Exception {
 
-    public LockNotGrantedException() {
+    private static final long serialVersionUID = 4074824788210185433L;
+
+	public LockNotGrantedException() {
         super();
     }
 
