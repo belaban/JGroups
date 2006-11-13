@@ -1,4 +1,4 @@
-// $Id: ChannelException.java,v 1.6 2005/07/17 11:38:05 chrislott Exp $
+// $Id: ChannelException.java,v 1.7 2006/11/13 17:42:11 bstansberry Exp $
 
 package org.jgroups;
 
@@ -8,7 +8,9 @@ package org.jgroups;
  */
 public class ChannelException extends Exception {
 
-    public ChannelException() {
+    private static final long serialVersionUID = 6041194633384856098L;
+
+	public ChannelException() {
         super();
     }
 

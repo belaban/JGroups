@@ -1,11 +1,13 @@
-// $Id: QueueClosedException.java,v 1.2 2006/07/13 07:16:14 belaban Exp $
+// $Id: QueueClosedException.java,v 1.3 2006/11/13 17:42:11 bstansberry Exp $
 
 package org.jgroups.util;
 
 
 public class QueueClosedException extends Exception {
 
-    public QueueClosedException() {
+    private static final long serialVersionUID = -7575787375592873964L;
+
+	public QueueClosedException() {
 
     }
 
