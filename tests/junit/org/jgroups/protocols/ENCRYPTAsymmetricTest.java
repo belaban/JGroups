@@ -637,6 +637,8 @@ public class ENCRYPTAsymmetricTest extends TestCase {
 	
 	class MockAddress implements Address{
 
+		private static final long serialVersionUID = -479331506050129599L;
+		
 		/* (non-Javadoc)
 		 * @see org.jgroups.Address#isMulticastAddress()
 		 */
