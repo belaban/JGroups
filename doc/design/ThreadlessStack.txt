@@ -4,7 +4,7 @@ Threadless stack
 ================
 
 Author: Bela Ban
-Version: $Id: ThreadlessStack.txt,v 1.1 2006/11/14 16:16:46 belaban Exp $
+Version: $Id: ThreadlessStack.txt,v 1.2 2006/11/14 16:24:01 belaban Exp $
 JIRAs:
 http://jira.jboss.com/jira/browse/JGRP-180 (harden stack),
 http://jira.jboss.com/jira/browse/JGRP-181 (threadless stack),
@@ -13,10 +13,11 @@ http://jira.jboss.com/jira/browse/JGRP-205 (out-of-band messages)
 
 Threadless stack
 ----------------
+
 We will get rid of all queues in the protocols, and their associated threads. This is the same as setting all down_thread
 and up_thread vars to false, but now it is the default.
 
-On the rceeiver's side there will be 2 thread pools (Executors): one for regular messages and one for OOB messages.
+On the receiver's side there will be 2 thread pools (Executors): one for regular messages and one for OOB messages.
 Whenever an OOB message is encountered, the receiver thread (which called receive()) will call Executor.execute() on the
 OOB threadpool with the message as argument, and if it is a regular message it will call Executor.execute() on the
 regular thread pool.
@@ -24,10 +25,20 @@ regular thread pool.
 The type of Executor is chosen by the user (through configuration): DirectExecutor means we will *not* use a separate
 thread, PooledExecutor uses a real thread pool plus a queue in front.
 
+Both thread pools have their own instance of SchedulingPolicy (whose main method is handle(msg)). The purpose of the
+SchedulingPolicy is to schedule handling of messages with respect to others. For example, we could have a sender-based
+policy, which uses queues and places all messages from the same sender into the same queue. Combined with a message
+priority, after placing the message into the correct queue, the processing thread could then pick the message with the
+highest priority first. Other policies: longest queue first, round robin, random, FIFO etc.
+
 
 
 Out-of-band messages (OOB)
 --------------------------
+
+
+Adding priorities to messages
+-----------------------------
 
 
 Reliable events
