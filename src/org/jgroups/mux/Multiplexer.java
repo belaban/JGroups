@@ -15,7 +15,7 @@ import java.util.*;
  * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.35 2006/10/30 12:27:55 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.36 2006/11/16 18:28:37 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
     /** Map<String,MuxChannel>. Maintains the mapping between service IDs and their associated MuxChannels */
@@ -147,16 +147,10 @@ public class Multiplexer implements UpHandler {
         if(!all_true)
             return true; // pseudo
 
-        boolean rc=false;
-        try {
-            startFlush();
-            Set keys=new HashSet(state_transfer_listeners.keySet());
-            rc=fetchServiceStates(target, keys, timeout);
-            state_transfer_listeners.clear();
-        }
-        finally {
-            stopFlush();
-        }
+        boolean rc=false;           
+        Set keys=new HashSet(state_transfer_listeners.keySet());
+        rc=fetchServiceStates(target, keys, timeout);
+        state_transfer_listeners.clear();        
         return rc;
     }
 
