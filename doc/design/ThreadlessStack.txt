@@ -4,7 +4,7 @@ Threadless stack
 ================
 
 Author: Bela Ban
-Version: $Id: ThreadlessStack.txt,v 1.2 2006/11/14 16:24:01 belaban Exp $
+Version: $Id: ThreadlessStack.txt,v 1.3 2006/11/16 20:34:21 belaban Exp $
 JIRAs:
 http://jira.jboss.com/jira/browse/JGRP-180 (harden stack),
 http://jira.jboss.com/jira/browse/JGRP-181 (threadless stack),
@@ -14,8 +14,8 @@ http://jira.jboss.com/jira/browse/JGRP-205 (out-of-band messages)
 Threadless stack
 ----------------
 
-We will get rid of all queues in the protocols, and their associated threads. This is the same as setting all down_thread
-and up_thread vars to false, but now it is the default.
+We will get rid of all queues in the protocols, and their associated threads. This is the same as setting all
+down_thread and up_thread vars to false, but now it is the default.
 
 On the receiver's side there will be 2 thread pools (Executors): one for regular messages and one for OOB messages.
 Whenever an OOB message is encountered, the receiver thread (which called receive()) will call Executor.execute() on the
@@ -35,6 +35,8 @@ highest priority first. Other policies: longest queue first, round robin, random
 
 Out-of-band messages (OOB)
 --------------------------
+
+Could be the same as priorities, e.g. prio=0 is always OOB
 
 
 Adding priorities to messages
