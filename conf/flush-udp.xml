@@ -23,7 +23,7 @@
     <MERGE2 max_interval="100000"
             down_thread="false" up_thread="false" min_interval="20000"/>
     <FD_SOCK down_thread="false" up_thread="false"/>
-    <FD timeout="2000" max_tries="2" down_thread="false" up_thread="false" shun="true"/>
+    <FD timeout="5000" max_tries="3" down_thread="false" up_thread="false" shun="true"/>
     <VERIFY_SUSPECT timeout="1500" down_thread="false" up_thread="false"/>
     <pbcast.NAKACK max_xmit_size="60000"
                    use_mcast_xmit="false" gc_lag="0"
@@ -35,13 +35,13 @@
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000" 
                    down_thread="false" up_thread="false"
                    max_bytes="400000"/>
-    <pbcast.GMS print_local_addr="true" join_timeout="10000"   
+    <pbcast.GMS print_local_addr="true" join_timeout="10000" flush_timeout="5000" 
                 down_thread="false" up_thread="false" view_ack_collection_timeout="7000" 
-                join_retry_timeout="4000" shun="true"/>
+                join_retry_timeout="4000" shun="true" view_bundling="true"/>
      <FC max_credits="2000000" down_thread="false" up_thread="false"
          min_threshold="0.10"/>
     <FRAG2 frag_size="60000" down_thread="false" up_thread="false"/>
-    <!-- <pbcast.STATE_TRANSFER down_thread="false" up_thread="false"/> -->
-    <pbcast.STREAMING_STATE_TRANSFER down_thread="false" up_thread="false" use_reading_thread="false"/>
-    <pbcast.FLUSH down_thread="false" up_thread="false" timeout="5000"/>
+    <!-- <pbcast.STATE_TRANSFER down_thread="false" up_thread="false" flush_timeout="5000"/> -->
+    <pbcast.STREAMING_STATE_TRANSFER down_thread="false" up_thread="false" flush_timeout="5000" use_reading_thread="false"/>
+    <pbcast.FLUSH down_thread="false" up_thread="false" timeout="10000" auto_flush_conf="true"/>
 </config>
