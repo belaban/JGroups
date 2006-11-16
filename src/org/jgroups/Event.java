@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.24 2006/10/23 04:32:59 belaban Exp $
+// $Id: Event.java,v 1.25 2006/11/16 18:27:40 vlada Exp $
 
 package org.jgroups;
 
@@ -82,6 +82,7 @@ public class Event {
     public static final int STATE_TRANSFER_INPUTSTREAM_CLOSED= 73;//arg=null
     public static final int STATE_TRANSFER_OUTPUTSTREAM_CLOSED= 74;//arg=null
     public static final int UNBLOCK                   =75;  //arg=null (indicate end of flush round)
+    public static final int SUSPEND_FAILED            =76;  // arg = null
 
 
     public static final int USER_DEFINED=1000;// arg = <user def., e.g. evt type + data>

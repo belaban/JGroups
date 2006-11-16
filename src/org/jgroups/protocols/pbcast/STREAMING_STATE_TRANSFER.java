@@ -128,6 +128,8 @@ public class STREAMING_STATE_TRANSFER extends Protocol
 
    private int threadCounter;
 
+   private boolean flushProtocolInStack = false;   
+
    public final String getName()
    {
       return NAME;
@@ -153,17 +155,6 @@ public class STREAMING_STATE_TRANSFER extends Protocol
       Vector retval = new Vector();
       retval.addElement(new Integer(Event.GET_DIGEST_STATE));
       retval.addElement(new Integer(Event.SET_DIGEST));
-      return retval;
-   }
-
-   public Vector requiredUpServices()
-   {
-      Vector retval = new Vector();
-      if (use_flush)
-      {
-         retval.addElement(new Integer(Event.SUSPEND));
-         retval.addElement(new Integer(Event.RESUME));
-      }
       return retval;
    }
 
@@ -213,6 +204,11 @@ public class STREAMING_STATE_TRANSFER extends Protocol
    public void start() throws Exception
    {
       passUp(new Event(Event.CONFIG, map));
+      if(!flushProtocolInStack && use_flush)
+      {
+         log.warn("use_flush is true, however, FLUSH protocol not found in stack.");
+         use_flush = false;
+      }
    }
 
    public void stop()
@@ -325,9 +321,13 @@ public class STREAMING_STATE_TRANSFER extends Protocol
             }
             else
             {
-               if (use_flush)
+               boolean successfulFlush = false;
+               if(use_flush) {
+                  successfulFlush = startFlush(flush_timeout, 5);
+               }
+               if (successfulFlush)
                {
-                  startFlush(flush_timeout);
+                  log.info("Successful flush at " + local_addr);
                }
                Message state_req = new Message(target, null, null);
                state_req.putHeader(NAME, new StateHeader(StateHeader.STATE_REQ, local_addr, info.state_id));
@@ -365,6 +365,12 @@ public class STREAMING_STATE_TRANSFER extends Protocol
                flush_promise.setResult(Boolean.TRUE);
             }
             break;
+         case Event.SUSPEND_FAILED :
+            if (use_flush)
+            {                  
+               flush_promise.setResult(Boolean.FALSE);
+            }
+            break;      
          case Event.CONFIG :
             Map config = (Map) evt.getArg();           
             if(config != null && config.containsKey("flush_timeout"))
@@ -372,6 +378,10 @@ public class STREAMING_STATE_TRANSFER extends Protocol
                Long ftimeout = (Long) config.get("flush_timeout");
                use_flush = true;             
                flush_timeout = ftimeout.longValue();                             
+            }
+            if((config != null && !config.containsKey("flush_suported")))
+            {                             
+               flushProtocolInStack = true;                              
             }
             break;   
             
@@ -418,9 +428,13 @@ public class STREAMING_STATE_TRANSFER extends Protocol
          if (digest == null && isDigestNeeded())
          {
             if (warn)
+            {
                log.warn("Should be responding to state requester, but there is no digest !");
-            else
-               digest = digest.copy();
+            }
+         }
+         else if (digest != null && isDigestNeeded())
+         {
+            digest = digest.copy();
          }
 
          if (log.isDebugEnabled())
@@ -451,22 +465,29 @@ public class STREAMING_STATE_TRANSFER extends Protocol
       }
    }
 
-   private boolean startFlush(long timeout)
+   private boolean startFlush(long timeout, int numberOfAttempts)
    {
       boolean successfulFlush = false;
+      flush_promise.reset();
       passUp(new Event(Event.SUSPEND));
       try
-      {
-         flush_promise.reset();
-         flush_promise.getResultWithTimeout(timeout);
-         successfulFlush = true;
+      {         
+         Boolean r = (Boolean) flush_promise.getResultWithTimeout(timeout);
+         successfulFlush = r.booleanValue();
       }
       catch (TimeoutException e)
       {
          log.warn("Initiator of flush and state requesting member " + local_addr
-               + " timed out waiting for flush responses after " 
-               + timeout + " msec");
+               + " timed out waiting for flush responses after " + flush_timeout + " msec");
       }
+
+      if (!successfulFlush && numberOfAttempts > 0)
+      {
+         log.warn("Failed to flush at " + local_addr + " in attempt " + numberOfAttempts
+               + ". Making another attempt ... ");
+         Util.sleepRandom(5000);        
+         successfulFlush = startFlush(flush_timeout, --numberOfAttempts);
+      }     
       return successfulFlush;
    }
 

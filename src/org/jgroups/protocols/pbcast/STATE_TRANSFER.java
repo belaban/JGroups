@@ -19,7 +19,7 @@ import java.util.*;
  * its current state S. Then the member returns both S and D to the requester. The requester
  * first sets its digest to D and then returns the state to the application.
  * @author Bela Ban
- * @version $Id: STATE_TRANSFER.java,v 1.44 2006/09/29 21:48:17 bstansberry Exp $
+ * @version $Id: STATE_TRANSFER.java,v 1.45 2006/11/16 18:27:40 vlada Exp $
  */
 public class STATE_TRANSFER extends Protocol {
     Address        local_addr=null;
@@ -43,7 +43,8 @@ public class STATE_TRANSFER extends Protocol {
     final static   String name="STATE_TRANSFER";
     boolean        use_flush=false;
     long           flush_timeout=4000;
-    Promise        flush_promise;
+    Promise        flush_promise;   
+    boolean        flushProtocolInStack = false;
 
 
     /** All protocol names have to be unique ! */
@@ -61,16 +62,7 @@ public class STATE_TRANSFER extends Protocol {
         retval.addElement(new Integer(Event.SET_DIGEST));
         return retval;
     }
-
-    public Vector requiredUpServices() {
-        Vector retval=new Vector();
-        if(use_flush) {
-            retval.addElement(new Integer(Event.SUSPEND));
-            retval.addElement(new Integer(Event.RESUME));
-        }
-        return retval;
-    }
-
+   
     public void resetStats() {
         super.resetStats();
         num_state_reqs=0;
@@ -101,6 +93,10 @@ public class STATE_TRANSFER extends Protocol {
 
     public void start() throws Exception {
         passUp(new Event(Event.CONFIG, map));
+        if(!flushProtocolInStack && use_flush){
+           log.warn("use_flush property is true, however, FLUSH protocol not found in stack");
+           use_flush = false;
+        }
     }
 
     public void stop() {
@@ -195,8 +191,12 @@ public class STATE_TRANSFER extends Protocol {
                     passUp(new Event(Event.GET_STATE_OK, new StateTransferInfo()));
                 }
                 else {
+                    boolean successfulFlush = false;
                     if(use_flush) {
-                        startFlush(flush_timeout);
+                       successfulFlush = startFlush(flush_timeout, 5);
+                    }
+                    if (successfulFlush){
+                       log.info("Successful flush at " + local_addr);
                     }
                     Message state_req=new Message(target, null, null);
                     state_req.putHeader(name, new StateHeader(StateHeader.STATE_REQ, local_addr, state_id++, null, info.state_id));
@@ -271,6 +271,11 @@ public class STATE_TRANSFER extends Protocol {
             		flush_promise.setResult(Boolean.TRUE);
             	}
             	break;
+            case Event.SUSPEND_FAILED :
+               if (use_flush){                  
+                    flush_promise.setResult(Boolean.FALSE);
+               }
+               break;   
                 
             case Event.CONFIG :
                Map config = (Map) evt.getArg();               
@@ -278,6 +283,9 @@ public class STATE_TRANSFER extends Protocol {
                   Long ftimeout = (Long) config.get("flush_timeout");
                   use_flush = true;                  
                   flush_timeout = ftimeout.longValue();                               
+               }
+               if((config != null && !config.containsKey("flush_suported"))){                                   
+                  flushProtocolInStack = true;                              
                }
                break;     
 
@@ -430,19 +438,26 @@ public class STATE_TRANSFER extends Protocol {
         passUp(new Event(Event.GET_STATE_OK, info));
     }
 
-    private boolean startFlush(long timeout) {
+    private boolean startFlush(long timeout,int numberOfAttempts) {
         boolean successfulFlush=false;
+        flush_promise.reset();
         passUp(new Event(Event.SUSPEND));
-        try {
-            flush_promise.reset();
-            flush_promise.getResultWithTimeout(timeout);
-            successfulFlush=true;
+        try {            
+            Boolean r = (Boolean)flush_promise.getResultWithTimeout(timeout);
+            successfulFlush = r.booleanValue();            
         }
         catch(TimeoutException e) {
            log.warn("Initiator of flush and state requesting member " + local_addr
                  + " timed out waiting for flush responses after " 
                  + flush_timeout + " msec");
         }
+        
+        if(!successfulFlush && numberOfAttempts>0){
+           log.warn("Failed to flush at " + local_addr + ". Making another attempt ... ");
+           Util.sleepRandom(5000);
+           numberOfAttempts--;
+           successfulFlush = startFlush(flush_timeout,numberOfAttempts);            
+        }              
         return successfulFlush;
     }
 

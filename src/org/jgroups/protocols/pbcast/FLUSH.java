@@ -115,17 +115,16 @@ public class FLUSH extends Protocol
    private Promise flush_promise;
 
    private Promise blockok_promise;
+   
+   private volatile boolean inFirstFlushPhase = false;
+   
+   private volatile boolean inSecondFlushPhase = false;  
 
    /**
     * If true configures timeout in GMS and STATE_TRANFER using FLUSH timeout value
     */
    private boolean auto_flush_conf = true;
 
-   /**
-    * Indicated member of the group that return last from the FLUSH round (i.e after STOP_FLUSH_OK)
-    * In curent design, this member is joining member and state requesting member
-    */
-   private volatile boolean shouldReturnLastFromFlush = false;
 
 
    public FLUSH()
@@ -182,8 +181,7 @@ public class FLUSH extends Protocol
 
       receivedFirstView = false;
       receivedMoreThanOneView = false;
-      isBlockState = true;
-      shouldReturnLastFromFlush = false;
+      isBlockState = true;     
    }
 
    public void stop()
@@ -287,13 +285,11 @@ public class FLUSH extends Protocol
             {
                log.debug("Blocking of channel " + localAddress + " completed successfully");
             }
-
-            //member sending JOIN request returns last from FLUSH
-            shouldReturnLastFromFlush = true;
+            
             break;
 
-         case Event.SUSPEND :
-            onSuspend((View) evt.getArg());
+         case Event.SUSPEND :            
+            attemptSuspend(evt);
             return;
 
          case Event.RESUME :
@@ -319,17 +315,52 @@ public class FLUSH extends Protocol
             if (fh != null)
             {
                if (fh.type == FlushHeader.START_FLUSH)
-               {
-                  boolean successfulBlock = sendBlockUpToChannel(block_timeout);
-                  if (successfulBlock && log.isDebugEnabled())
+               {           
+                  boolean notInFlush = !inFirstFlushPhase && !inSecondFlushPhase;
+                  if (notInFlush)
                   {
-                     log.debug("Blocking of channel " + localAddress + " completed successfully");
+                     inFirstFlushPhase = true;
+                     boolean successfulBlock = sendBlockUpToChannel(block_timeout);
+                     if (successfulBlock && log.isDebugEnabled())
+                     {
+                        log.debug("Blocking of channel " + localAddress + " completed successfully");
+                     }
+                     onStartFlush(msg.getSrc(), fh);
                   }
-                  onStartFlush(msg.getSrc(), fh);
+                  else if (inFirstFlushPhase)
+                  {
+                     Address flushRequester = msg.getSrc();
+                     if(flushRequester.compareTo(flushCoordinator)<0)
+                     {                        
+                        rejectFlush(fh.viewID, flushCoordinator);                       
+                        log.warn("Rejecting flush at " + localAddress + " to current flush coordinator " + flushCoordinator + " and switching flush coordinator to " + flushRequester);                        
+                        flushCoordinator = flushRequester;
+                     }
+                     else
+                     {
+                        rejectFlush(fh.viewID, flushRequester);                        
+                        log.warn("Rejecting flush at " + localAddress + " to flush requester " + flushRequester);
+                     }                      
+                  }
+                  else if (inSecondFlushPhase)
+                  {
+                     Address flushRequester = msg.getSrc();
+                     rejectFlush(fh.viewID, flushRequester);                     
+                     log.debug("Rejecting flush in second phase at " + localAddress + " to flush requester " + flushRequester);
+                  }
                }
                else if (fh.type == FlushHeader.STOP_FLUSH)
                {
+                  inFirstFlushPhase = false;
+                  inSecondFlushPhase = true;
                   onStopFlush();
+               }
+               else if (fh.type == FlushHeader.ABORT_FLUSH)
+               {
+                  //abort current flush                  
+                  passUp(new Event(Event.SUSPEND_FAILED));
+                  passDown(new Event(Event.SUSPEND_FAILED));
+
                }
                else if (isCurrentFlushMessage(fh))
                {
@@ -370,8 +401,7 @@ public class FLUSH extends Protocol
                }
                if (log.isDebugEnabled())
                   log.debug("At " + localAddress + " unblocking FLUSH.down() and sending UNBLOCK up");
-
-               shouldReturnLastFromFlush = false;
+               
                passUp(new Event(Event.UNBLOCK));
                return;
             }
@@ -385,19 +415,14 @@ public class FLUSH extends Protocol
             onSuspect((Address) evt.getArg());
             break;
 
-         case Event.SUSPEND :
-            onSuspend((View) evt.getArg());
+         case Event.SUSPEND :           
+            attemptSuspend(evt);
             return;
 
          case Event.RESUME :
             onResume();
             return;
 
-         //state requesting member are returning last from flush round (i.e. JChannel.getState())
-         case Event.STATE_TRANSFER_INPUTSTREAM:
-         case Event.GET_STATE_OK:
-            shouldReturnLastFromFlush = true;
-            break;
       }
 
       passUp(evt);
@@ -409,6 +434,28 @@ public class FLUSH extends Protocol
       retval.addElement(new Integer(Event.SUSPEND));
       retval.addElement(new Integer(Event.RESUME));
       return retval;
+   }
+   
+   private void attemptSuspend(Event evt)
+   {
+      View v = (View) evt.getArg();                           
+      boolean flushIsRunning = inFirstFlushPhase || inSecondFlushPhase;                                 
+      if (!flushIsRunning)
+      {
+         onSuspend(v);
+      }
+      else
+      {
+         passUp(new Event(Event.SUSPEND_FAILED));
+         passDown(new Event(Event.SUSPEND_FAILED));
+      }
+   }
+   
+   private void rejectFlush(long viewId, Address flushRequester)
+   {
+      Message reject = new Message(flushRequester, localAddress, null);
+      reject.putHeader(getName(), new FlushHeader(FlushHeader.ABORT_FLUSH, viewId));
+      passDown(new Event(Event.MSG, reject));
    }
    
    private boolean sendBlockUpToChannel(long btimeout)
@@ -502,20 +549,7 @@ public class FLUSH extends Protocol
          {
             averageFlushDuration = totalTimeInFlush / (double)numberOfFlushes;
          }
-      }
-      
-      if (!shouldReturnLastFromFlush)
-      {         
-         if (log.isDebugEnabled())
-            log.debug("At " + localAddress + " unblocking FLUSH.down() and sending UNBLOCK up");         
-         
-         synchronized (blockMutex)
-         {
-            isBlockState = false;
-            blockMutex.notifyAll();
-         }
-         passUp(new Event(Event.UNBLOCK));
-      }           
+      }            
       //ack this STOP_FLUSH
       Message msg = new Message(null, localAddress, null);
       msg.putHeader(getName(), new FlushHeader(FlushHeader.STOP_FLUSH_OK,currentViewId()));      
@@ -638,19 +672,17 @@ public class FLUSH extends Protocol
 
       if (stopFlushOkCompleted)
       {
-         if (shouldReturnLastFromFlush)
-         {            
-            if (log.isDebugEnabled())
-               log.debug("At " + localAddress + " unblocking FLUSH.down() and sending UNBLOCK up");           
-            
-            synchronized (blockMutex)
-            {
-               isBlockState = false;
-               blockMutex.notifyAll();
-            }
-            
-            passUp(new Event(Event.UNBLOCK));
-         }         
+
+         if (log.isDebugEnabled())
+            log.debug("At " + localAddress + " unblocking FLUSH.down() and sending UNBLOCK up");
+
+         synchronized (blockMutex)
+         {
+            isBlockState = false;
+            blockMutex.notifyAll();
+         }
+
+         passUp(new Event(Event.UNBLOCK));
          synchronized (sharedLock)
          {
             flushCompletedSet.clear();
@@ -660,7 +692,7 @@ public class FLUSH extends Protocol
             suspected.clear();
             flushCoordinator = null;
          }
-         shouldReturnLastFromFlush = false;
+         inSecondFlushPhase = false;
       }     
    }
 
@@ -733,6 +765,8 @@ public class FLUSH extends Protocol
       public static final byte FLUSH_COMPLETED = 3;
       
       public static final byte STOP_FLUSH_OK = 4;
+      
+      public static final byte ABORT_FLUSH = 5;        
 
       byte type;
 
@@ -768,7 +802,9 @@ public class FLUSH extends Protocol
             case STOP_FLUSH :
                return "FLUSH[type=STOP_FLUSH,viewId=" + viewID + "]";
             case STOP_FLUSH_OK :
-               return "FLUSH[type=STOP_FLUSH_OK,viewId=" + viewID + "]";                  
+               return "FLUSH[type=STOP_FLUSH_OK,viewId=" + viewID + "]";   
+            case ABORT_FLUSH :
+               return "FLUSH[type=ABORT_FLUSH,viewId=" + viewID + "]";                  
             case FLUSH_COMPLETED :
                return "FLUSH[type=FLUSH_COMPLETED,viewId=" + viewID + "]";
             default :
