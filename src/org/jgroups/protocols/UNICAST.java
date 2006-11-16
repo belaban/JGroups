@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.63 2006/09/11 13:12:19 belaban Exp $
+// $Id: UNICAST.java,v 1.64 2006/11/16 20:34:12 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -238,8 +238,8 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 }
 
                 if(previous_members.contains(dst)) {
-                    if(trace)
-                        log.trace("discarding message to " + dst + " as this member left the group," +
+                    if(warn)
+                        log.warn("discarding message to " + dst + " as this member left the group," +
                                 " previous_members=" + previous_members);
                     return;
                 }
