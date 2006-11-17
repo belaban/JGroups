@@ -18,7 +18,7 @@ import java.util.List;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.69 2006/11/16 18:27:40 vlada Exp $
+ * @version $Id: GMS.java,v 1.70 2006/11/17 17:24:36 vlada Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -633,9 +633,13 @@ public class GMS extends Protocol {
          }
 
          if (!successfulFlush && numberOfAttempts > 0){
-            log.warn("Failed to flush at GMS coordinator " + local_addr + " in attempt " + numberOfAttempts
-                  + ". Making another attempt ... ");
-            Util.sleepRandom(5000);            
+            
+            long backOffSleepTime = Util.random(5000);
+            if(log.isInfoEnabled())               
+               log.info("Flush in progress detected at GMS coordinator " + local_addr + ". Backing off for "
+                     + backOffSleepTime + " ms. Attempts left " + numberOfAttempts);
+            
+            Util.sleepRandom(backOffSleepTime);            
             successfulFlush = startFlush(new_view, --numberOfAttempts);
          }
        }
@@ -1216,7 +1220,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.69 2006/11/16 18:27:40 vlada Exp $
+     * @version $Id: GMS.java,v 1.70 2006/11/17 17:24:36 vlada Exp $
      */
     class ViewHandler implements Runnable {
         Thread                    thread;

@@ -19,7 +19,7 @@ import java.util.*;
  * its current state S. Then the member returns both S and D to the requester. The requester
  * first sets its digest to D and then returns the state to the application.
  * @author Bela Ban
- * @version $Id: STATE_TRANSFER.java,v 1.45 2006/11/16 18:27:40 vlada Exp $
+ * @version $Id: STATE_TRANSFER.java,v 1.46 2006/11/17 17:24:35 vlada Exp $
  */
 public class STATE_TRANSFER extends Protocol {
     Address        local_addr=null;
@@ -453,10 +453,13 @@ public class STATE_TRANSFER extends Protocol {
         }
         
         if(!successfulFlush && numberOfAttempts>0){
-           log.warn("Failed to flush at " + local_addr + ". Making another attempt ... ");
-           Util.sleepRandom(5000);
-           numberOfAttempts--;
-           successfulFlush = startFlush(flush_timeout,numberOfAttempts);            
+           long backOffSleepTime = Util.random(5000);
+           if(log.isInfoEnabled())               
+              log.info("Flush in progress detected at " + local_addr + ". Backing off for "
+                    + backOffSleepTime + " ms. Attempts left " + numberOfAttempts);
+           
+           Util.sleepRandom(backOffSleepTime);
+           successfulFlush = startFlush(flush_timeout,--numberOfAttempts);            
         }              
         return successfulFlush;
     }

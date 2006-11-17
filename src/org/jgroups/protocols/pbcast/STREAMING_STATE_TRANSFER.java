@@ -483,9 +483,12 @@ public class STREAMING_STATE_TRANSFER extends Protocol
 
       if (!successfulFlush && numberOfAttempts > 0)
       {
-         log.warn("failed to flush at " + local_addr + " in attempt " + numberOfAttempts
-               + ". Making another attempt ... ");
-         Util.sleepRandom(5000);        
+         long backOffSleepTime = Util.random(5000);
+         if(log.isInfoEnabled())               
+            log.info("Flush in progress detected at " + local_addr + ". Backing off for "
+                  + backOffSleepTime + " ms. Attempts left " + numberOfAttempts);
+         
+         Util.sleepRandom(backOffSleepTime);      
          successfulFlush = startFlush(flush_timeout, --numberOfAttempts);
       }     
       return successfulFlush;
