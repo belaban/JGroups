@@ -332,21 +332,30 @@ public class FLUSH extends Protocol
                      Address flushRequester = msg.getSrc();
                      if(flushRequester.compareTo(flushCoordinator)<0)
                      {                        
-                        rejectFlush(fh.viewID, flushCoordinator);                       
-                        log.warn("Rejecting flush at " + localAddress + " to current flush coordinator " + flushCoordinator + " and switching flush coordinator to " + flushRequester);                        
+                        rejectFlush(fh.viewID, flushCoordinator);
+                        if(log.isDebugEnabled())
+                        {
+                           log.debug("Rejecting flush at " + localAddress + " to current flush coordinator " + flushCoordinator + " and switching flush coordinator to " + flushRequester);
+                        }
                         flushCoordinator = flushRequester;
                      }
                      else
                      {
-                        rejectFlush(fh.viewID, flushRequester);                        
-                        log.warn("Rejecting flush at " + localAddress + " to flush requester " + flushRequester);
+                        rejectFlush(fh.viewID, flushRequester); 
+                        if(log.isDebugEnabled())
+                        {
+                           log.debug("Rejecting flush at " + localAddress + " to flush requester " + flushRequester);
+                        }
                      }                      
                   }
                   else if (inSecondFlushPhase)
                   {
                      Address flushRequester = msg.getSrc();
-                     rejectFlush(fh.viewID, flushRequester);                     
-                     log.debug("Rejecting flush in second phase at " + localAddress + " to flush requester " + flushRequester);
+                     rejectFlush(fh.viewID, flushRequester);  
+                     if(log.isDebugEnabled())
+                     {
+                        log.debug("Rejecting flush in second phase at " + localAddress + " to flush requester " + flushRequester);
+                     }
                   }
                }
                else if (fh.type == FlushHeader.STOP_FLUSH)
