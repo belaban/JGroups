@@ -4,7 +4,7 @@ Threadless stack
 ================
 
 Author: Bela Ban
-Version: $Id: ThreadlessStack.txt,v 1.4 2006/11/17 16:30:49 belaban Exp $
+Version: $Id: ThreadlessStack.txt,v 1.5 2006/11/17 17:25:26 belaban Exp $
 JIRAs:
 http://jira.jboss.com/jira/browse/JGRP-180 (harden stack),
 http://jira.jboss.com/jira/browse/JGRP-181 (threadless stack),
@@ -60,6 +60,9 @@ they get a buffer from the pool (blocking until they get a free one). The buffer
 queue of the first thread pool. (Ideally, there are as many buffers as max threads in that pool).
 The alloted thread from the thread pool then unmarshalls the buffer into a Message and returns the buffer to the
 buffer pool, releasing the lock so it can be used for a new packet.
+
+Advantage: we don't need to *copy* the packet (unlike in the old solution where we copied the byte buffer into the
+incoming queue)
 
 
 
