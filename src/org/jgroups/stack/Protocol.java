@@ -1,4 +1,4 @@
-// $Id: Protocol.java,v 1.39 2006/11/17 13:39:20 belaban Exp $
+// $Id: Protocol.java,v 1.40 2006/11/17 13:48:30 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -419,11 +419,6 @@ public abstract class Protocol {
      * by the implementation of <code>Up</code> (when done).
      */
     public void passUp(Event evt) {
-        if(observer != null) {                   // call debugger hook (if installed)
-            if(observer.passUp(evt) == false) {  // false means don't pass up (=discard) event
-                return;
-            }
-        }
         up_prot.receiveUpEvent(evt);
     }
 
@@ -432,11 +427,6 @@ public abstract class Protocol {
      * by the implementation of <code>Down</code> (when done).
      */
     public void passDown(Event evt) {
-        if(observer != null) {                     // call debugger hook (if installed)
-            if(observer.passDown(evt) == false) {  // false means don't pass down (=discard) event
-                return;
-            }
-        }
         down_prot.receiveDownEvent(evt);
     }
 
