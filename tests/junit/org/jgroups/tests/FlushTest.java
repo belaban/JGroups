@@ -21,6 +21,7 @@ import org.jgroups.Event;
 import org.jgroups.ExtendedReceiverAdapter;
 import org.jgroups.GetStateEvent;
 import org.jgroups.JChannel;
+import org.jgroups.JChannelFactory;
 import org.jgroups.Message;
 import org.jgroups.SetStateEvent;
 import org.jgroups.UnblockEvent;
@@ -33,7 +34,7 @@ import EDU.oswego.cs.dl.util.concurrent.Semaphore;
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.17 2006/11/16 18:31:20 vlada Exp $
+ * @version $Id: FlushTest.java,v 1.18 2006/11/17 22:26:24 vlada Exp $
  */
 public class FlushTest extends ChannelTestBase
 {
@@ -165,7 +166,16 @@ public class FlushTest extends ChannelTestBase
 
    public void testChannels(boolean useTransfer)
    {
-      String[] names = {"A", "B", "C", "D"};
+      String[] names = null;
+      if(isMuxChannelUsed())
+      {
+         names = new String[]{"A", "A", "A", "A"}; 
+      }
+      else
+      {
+         names = new String[]{"A", "B", "C", "D"};
+      }
+      
       int count = names.length;
 
       MyReceiver[] channels = new MyReceiver[count];
@@ -178,7 +188,14 @@ public class FlushTest extends ChannelTestBase
          // Create activation threads that will block on the semaphore        
          for (int i = 0; i < count; i++)
          {
-            channels[i] = new MyReceiver(names[i], semaphore, useTransfer);
+            if(isMuxChannelUsed())
+            {
+               channels[i] = new MyReceiver(names[i],muxFactory[i], semaphore, useTransfer);
+            }
+            else
+            {
+               channels[i] = new MyReceiver(names[i], semaphore, useTransfer);
+            }
 
             // Release one ticket at a time to allow the thread to start working                           
             channels[i].start();
@@ -357,12 +374,20 @@ public class FlushTest extends ChannelTestBase
    {
       List events;
 
-      boolean getState;
+      boolean shouldFetchState;
 
-      protected MyReceiver(String name, Semaphore semaphore, boolean getState) throws Exception
+      protected MyReceiver(String name, Semaphore semaphore, boolean shouldFetchState) throws Exception
       {
          super(name, semaphore);
-         this.getState = getState;
+         this.shouldFetchState = shouldFetchState;
+         events = Collections.synchronizedList(new LinkedList());
+         channel.connect("test");
+      }
+      
+      protected MyReceiver(String name, JChannelFactory factory,Semaphore semaphore, boolean shouldFetchState) throws Exception
+      {
+         super(name, factory,semaphore);
+         this.shouldFetchState = shouldFetchState;
          events = Collections.synchronizedList(new LinkedList());
          channel.connect("test");
       }
@@ -443,7 +468,7 @@ public class FlushTest extends ChannelTestBase
 
       protected void useChannel() throws Exception
       {
-         if (getState)
+         if (shouldFetchState)
          {
             channel.getState(null, 25000);
          }
