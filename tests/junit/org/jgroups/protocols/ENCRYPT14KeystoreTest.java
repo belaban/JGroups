@@ -372,7 +372,7 @@ public class ENCRYPT14KeystoreTest extends TestCase {
 		/* (non-Javadoc)
 		 * @see org.jgroups.stack.ProtocolObserver#down(org.jgroups.Event, int)
 		 */
-		public boolean down(Event evt, int num_evts)
+		public boolean down(Event evt)
 		{
 			System.out.println("down:"+evt.toString());
 			

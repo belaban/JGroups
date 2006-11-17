@@ -1,4 +1,4 @@
-// $Id: MessageDispatcherTestAsync.java,v 1.11 2006/08/28 06:51:54 belaban Exp $
+// $Id: MessageDispatcherTestAsync.java,v 1.12 2006/11/17 13:39:21 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -28,7 +28,6 @@ public class MessageDispatcherTestAsync implements RequestHandler {
     MyCollector coll=new MyCollector();
     Debugger debugger=null;
     boolean debug=false;
-    boolean cummulative=false;
     boolean done_submitted=true;
     static final int NUM=10;
 
@@ -63,16 +62,15 @@ public class MessageDispatcherTestAsync implements RequestHandler {
     }
 
 
-    public MessageDispatcherTestAsync(boolean debug, boolean cummulative) {
+    public MessageDispatcherTestAsync(boolean debug) {
         this.debug=debug;
-        this.cummulative=cummulative;
     }
 
 
     public void start() throws Exception {
         channel=new JChannel(props);
         if(debug) {
-            debugger=new Debugger((JChannel)channel, cummulative);
+            debugger=new Debugger((JChannel)channel);
             debugger.start();
         }
         //channel.setOpt(Channel.LOCAL, Boolean.FALSE);
@@ -130,7 +128,7 @@ public class MessageDispatcherTestAsync implements RequestHandler {
     public static void main(String[] args) {
         int c;
         MessageDispatcherTestAsync test=null;
-        boolean debug=false, cummulative=false;
+        boolean debug=false;
 
         for(int i=0; i < args.length; i++) {
             if("-help".equals(args[i])) {
@@ -139,17 +137,13 @@ public class MessageDispatcherTestAsync implements RequestHandler {
             }
             if("-debug".equals(args[i])) {
                 debug=true;
-                continue;
-            }
-            if("-cummulative".equals(args[i])) {
-                cummulative=true;
             }
         }
 
 
 
         try {
-            test=new MessageDispatcherTestAsync(debug, cummulative);
+            test=new MessageDispatcherTestAsync(debug);
             test.start();
             while(true) {
                 System.out.println("[m=mcast " + NUM + " msgs x=exit]");
@@ -177,7 +171,7 @@ public class MessageDispatcherTestAsync implements RequestHandler {
     }
 
     static void help() {
-        System.out.println("MessageDispatcherTestAsync [-debug] [-cummulative]");
+        System.out.println("MessageDispatcherTestAsync [-debug]");
     }
 
 }

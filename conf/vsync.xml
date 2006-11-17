@@ -14,7 +14,7 @@
     <VERIFY_SUSPECT timeout="1500"/>
     <NAKACK />
     <UNICAST timeout="1200,2000,2500"/>
-    <FRAG frag_size="8192" down_thread="false" up_thread="false"/>
+    <FRAG frag_size="8192"  up_thread="false"/>
     <FLUSH />
     <GMS />
     <VIEW_ENFORCER />

@@ -1,4 +1,4 @@
-// $Id: MERGE3.java,v 1.9 2006/01/19 09:53:37 belaban Exp $
+// $Id: MERGE3.java,v 1.10 2006/11/17 13:39:19 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -104,13 +104,6 @@ public class MERGE3 extends Protocol {
     public void startUpHandler() {
     }
 
-
-    /**
-     * This prevents the down-handler thread to be created, which is not needed in the protocol.
-     * DON'T REMOVE ! 
-     */
-    public void startDownHandler() {
-    }
 
 
     public void up(Event evt) {
