@@ -11,7 +11,7 @@ import junit.framework.TestCase;
 import junit.framework.TestSuite;
 
 import org.jgroups.Channel;
-import org.jgroups.ChannelException;
+import org.jgroups.JChannelFactory;
 import org.jgroups.util.Util;
 
 import EDU.oswego.cs.dl.util.concurrent.Semaphore;
@@ -46,7 +46,18 @@ public class StreamingStateTransferTest extends ChannelTestBase
 
    public void testTransfer(boolean useDispatcher)
    {
-      String[] channelNames = {"A", "B", "C", "D", "E"};
+      String[] channelNames = null;
+      
+      //for mux all names are used as app ids and need to be the same
+      if(isMuxChannelUsed())
+      {
+         channelNames = new String[]{"A", "A", "A", "A"}; 
+      }
+      else
+      {
+         channelNames = new String[]{"A", "B", "C", "D"};
+      }
+      
       int channelCount = channelNames.length;
       StreamingStateTransferApplication[] channels = null;
 
@@ -64,7 +75,14 @@ public class StreamingStateTransferTest extends ChannelTestBase
          for (int i = 0; i < channelCount; i++)
          {
 
-            channels[i] = new StreamingStateTransferApplication(channelNames[i],semaphore,useDispatcher);
+            if(isMuxChannelUsed())
+            {
+               channels[i] = new StreamingStateTransferApplication(channelNames[i],muxFactory[i],semaphore);  
+            }
+            else
+            {
+               channels[i] = new StreamingStateTransferApplication(channelNames[i],semaphore,useDispatcher);
+            }
 
             // Start threads and let them join the channel                           
             channels[i].start();
@@ -149,7 +167,12 @@ public class StreamingStateTransferTest extends ChannelTestBase
       public StreamingStateTransferApplication(String name, Semaphore s,boolean useDispatcher) throws Exception
       {
          super(name,new StreamingChannelTestFactory(),s,useDispatcher);
-      }          
+      }    
+      
+      public StreamingStateTransferApplication(String name, JChannelFactory factory,Semaphore s) throws Exception
+      {
+         super(name,factory,s);
+      } 
 
       public void useChannel() throws Exception
       {
