@@ -4,7 +4,7 @@ Threadless stack
 ================
 
 Author: Bela Ban
-Version: $Id: ThreadlessStack.txt,v 1.3 2006/11/16 20:34:21 belaban Exp $
+Version: $Id: ThreadlessStack.txt,v 1.4 2006/11/17 16:30:49 belaban Exp $
 JIRAs:
 http://jira.jboss.com/jira/browse/JGRP-180 (harden stack),
 http://jira.jboss.com/jira/browse/JGRP-181 (threadless stack),
@@ -45,3 +45,39 @@ Adding priorities to messages
 
 Reliable events
 ---------------
+
+
+
+
+Implementation
+==============
+
+
+Buffer pool
+-----------
+Unicast and multicast thread have access to a buffer pool with a fixed size. Before every receive(),
+they get a buffer from the pool (blocking until they get a free one). The buffer is locked and passed into the
+queue of the first thread pool. (Ideally, there are as many buffers as max threads in that pool).
+The alloted thread from the thread pool then unmarshalls the buffer into a Message and returns the buffer to the
+buffer pool, releasing the lock so it can be used for a new packet.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
