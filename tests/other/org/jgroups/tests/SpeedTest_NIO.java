@@ -1,6 +1,6 @@
 package org.jgroups.tests;
 
-// $Id: SpeedTest_NIO.java,v 1.1 2005/06/23 13:31:10 belaban Exp $
+// $Id: SpeedTest_NIO.java,v 1.2 2006/11/17 13:39:21 belaban Exp $
 
 
 import org.jgroups.Channel;
@@ -47,7 +47,7 @@ public class SpeedTest_NIO {
         String props=null, loopback_props;
         String group_name="SpeedTest-Group";
         Message send_msg;
-        boolean debug=false, cummulative=false;
+        boolean debug=false;
         Debugger debugger=null;
         long sleep_time=1; // sleep in msecs between msg sends
         boolean busy_sleep=false;
@@ -110,10 +110,6 @@ public class SpeedTest_NIO {
                 debug=true;
                 continue;
             }
-            if("-cummulative".equals(args[i])) {
-                cummulative=true;
-                continue;
-            }
             if("-busy_sleep".equals(args[i])) {
                 busy_sleep=true;
                 continue;
@@ -158,7 +154,7 @@ public class SpeedTest_NIO {
                 channel=new JChannel(props);
                 channel.connect(group_name);
                 if(debug) {
-                    debugger=new Debugger(channel, cummulative);
+                    debugger=new Debugger(channel);
                     debugger.start();
                 }
             }
@@ -263,8 +259,8 @@ public class SpeedTest_NIO {
 
     static void help() {
         System.out.println("SpeedTest [-help] [-num_msgs <num>] [-sleep <sleeptime in msecs between messages>] " +
-                "[-busy_sleep] [-yield] [-jg] [-loopback] [-props <channel properties>] [-debug] [-cummulative]");
-        System.out.println("Options -props -debug and -cummulative are only valid if -jg is used");
+                "[-busy_sleep] [-yield] [-jg] [-loopback] [-props <channel properties>] [-debug]");
+        System.out.println("Options -props and -debug are only valid if -jg is used");
     }
 
 

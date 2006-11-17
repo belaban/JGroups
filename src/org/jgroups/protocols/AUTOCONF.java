@@ -1,4 +1,4 @@
-// $Id: AUTOCONF.java,v 1.15 2005/08/11 12:43:47 belaban Exp $
+// $Id: AUTOCONF.java,v 1.16 2006/11/17 13:39:19 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -87,11 +87,6 @@ public class AUTOCONF extends Protocol {
     public void startUpHandler() {
     }
 
-    /**
-     * Leave empty: no down_thread will be created, but the down_thread of the neighbor above us will be used
-     */
-    public void startDownHandler() {
-    }
 
 
     /* -------------------------------------- Private metods ------------------------------------------- */

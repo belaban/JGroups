@@ -7,7 +7,7 @@ import java.util.Map;
 
 /**
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.8 2005/08/16 12:58:58 belaban Exp $
+ * @version $Id: Protocol.java,v 1.9 2006/11/17 13:39:18 belaban Exp $
  */
 public class Protocol implements ProtocolMBean {
     org.jgroups.stack.Protocol prot;
@@ -77,8 +77,12 @@ public class Protocol implements ProtocolMBean {
         return prot.upThreadEnabled();
     }
 
+    /**
+     * @deprecated down_threads have been removed, this is false by default
+     * @return boolean False by default
+     */
     public boolean getDownThread() {
-        return prot.downThreadEnabled();
+        return false;
     }
 
     public void setObserver(ProtocolObserver observer) {

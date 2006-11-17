@@ -11,7 +11,7 @@
     <FD_SOCK />
     <VERIFY_SUSPECT timeout="1500"/>
     <UNICAST timeout="1200,2000,2500"/>
-    <FRAG frag_size="8096" down_thread="false" up_thread="false"/>
+    <FRAG frag_size="8096"  up_thread="false"/>
     <TOTAL_TOKEN unblock_sending="10" block_sending="50"/>
     <pbcast.GMS print_local_addr="true" join_timeout="3000" join_retry_timeout="2000" shun="true"/>
     <STATE_TRANSFER />

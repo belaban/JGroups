@@ -1,4 +1,4 @@
-// $Id: Draw2Channels.java,v 1.10 2006/10/09 11:35:19 belaban Exp $
+// $Id: Draw2Channels.java,v 1.11 2006/11/17 13:39:18 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -29,7 +29,6 @@ public class Draw2Channels implements ActionListener {
     private Receiver data_receiver=null;
     private int member_size=1;
     final boolean first=true;
-    final boolean cummulative=true;
     private JFrame mainFrame=null;
     private JPanel sub_panel=null;
     private DrawPanel panel=null;

@@ -1,4 +1,4 @@
-// $Id: FLUSH.java,v 1.10 2005/08/11 12:43:47 belaban Exp $
+// $Id: FLUSH.java,v 1.11 2006/11/17 13:39:19 belaban Exp $
 
 
 
@@ -389,24 +389,13 @@ public class FLUSH extends RpcProtocol {
        (in parallel to the FLUSH event), which causes the FLUSH event processing to return.
     */
     public void receiveDownEvent(Event evt) {
-	if(evt.getType() == Event.BLOCK_OK) { // priority handling, otherwise FLUSH would block !
-	    synchronized(down_queue) {
-		Event event;
-		try {
-		    while(down_queue.size() > 0) {
-			event=(Event)down_queue.remove(10); // wait 10ms at most; queue is *not* empty !
-			down(event);
-		    }
-		}
-		catch(Exception e) {}
-	    }
-
-	    synchronized(block_mutex) {
-		block_mutex.notifyAll();
-	    }
-	    return;
-	}
-	super.receiveDownEvent(evt);
+        if(evt.getType() == Event.BLOCK_OK) { // priority handling, otherwise FLUSH would block !
+            synchronized(block_mutex) {
+                block_mutex.notifyAll();
+            }
+            return;
+        }
+        super.receiveDownEvent(evt);
     }
 
 

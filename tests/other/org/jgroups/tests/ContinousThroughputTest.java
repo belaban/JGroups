@@ -427,7 +427,7 @@ public class ContinousThroughputTest {
             return true;
         }
 
-        public boolean down(Event evt, int num_evts) {
+        public boolean down(Event evt) {
             return true;
         }
 

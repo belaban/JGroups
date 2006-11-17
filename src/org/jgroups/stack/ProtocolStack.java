@@ -1,4 +1,4 @@
-// $Id: ProtocolStack.java,v 1.27 2006/01/27 14:53:57 belaban Exp $
+// $Id: ProtocolStack.java,v 1.28 2006/11/17 13:39:20 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -293,9 +293,6 @@ public class ProtocolStack extends Protocol implements Transport {
         // DON'T REMOVE !!!!  Avoids a superfluous thread
     }
 
-    public void startDownHandler() {
-        // DON'T REMOVE !!!!  Avoids a superfluous thread
-    }
 
 
     /**

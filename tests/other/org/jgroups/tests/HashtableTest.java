@@ -62,7 +62,7 @@ public class HashtableTest {
 	Hashtable            ht;
 	int                  i;
 	byte[]               buf;
-	boolean              use_replicated_hashtable=false, debug=false, cummulative=false;
+	boolean              use_replicated_hashtable=false, debug=false;
 	Debugger             debugger=null;
 
 
@@ -139,11 +139,6 @@ public class HashtableTest {
 	    }
 	    if("-debug".equals(args[i])) {
 		debug=true;
-		continue;
-	    }
-	    if("-cummulative".equals(args[i])) {
-		cummulative=true;
-		continue;
 	    }
 	}
 
@@ -156,14 +151,14 @@ public class HashtableTest {
 	    if(use_replicated_hashtable) {
 		ht=new ReplicatedHashtable("HashtableTest", new JChannelFactory(), props, 1000);
 		if(debug) {
-		    debugger=new Debugger((JChannel)((ReplicatedHashtable)ht).getChannel(), cummulative);
+		    debugger=new Debugger((JChannel)((ReplicatedHashtable)ht).getChannel());
 		}
 		((ReplicatedHashtable)ht).addNotifier(new Notifier(NUM_ITEMS));
 	    }
 	    else {
 		ht=new DistributedHashtable("HashtableTest", new JChannelFactory(), props, 1000);
 		if(debug) {
-		    debugger=new Debugger((JChannel)((DistributedHashtable)ht).getChannel(), cummulative);
+		    debugger=new Debugger((JChannel)((DistributedHashtable)ht).getChannel());
 		}
 		// ((DistributedHashtable)ht).addNotifier(new MyNotifier());
 	    }
@@ -200,7 +195,7 @@ public class HashtableTest {
 
 
     static void help() {
-	System.out.println("HashtableTest [-help] [-use_rht] [-props <properties>] [-debug] [-cummulative]");
+	System.out.println("HashtableTest [-help] [-use_rht] [-props <properties>] [-debug]");
     }
 
 }

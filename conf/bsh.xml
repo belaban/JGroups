@@ -14,7 +14,7 @@
     <org.jgroups.protocols.UNICAST timeout="1200,2400,3600"/>
     <pbcast.STABLE stability_delay="1000"
         desired_avg_gossip="20000" max_bytes="0"/>
-    <FRAG frag_size="8192" down_thread="false" up_thread="false"/>
+    <FRAG frag_size="8192"  up_thread="false"/>
     <BSH />
     <pbcast.GMS print_local_addr="true" join_timeout="3000" join_retry_timeout="2000" shun="true"/>
 </config>

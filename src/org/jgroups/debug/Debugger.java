@@ -1,4 +1,4 @@
-// $Id: Debugger.java,v 1.6 2006/01/23 13:03:09 belaban Exp $
+// $Id: Debugger.java,v 1.7 2006/11/17 13:39:18 belaban Exp $
 
 package org.jgroups.debug;
 
@@ -27,7 +27,6 @@ public class Debugger extends JFrame {
     DefaultTableModel table_model;
     JScrollPane scroll_pane;
     public static final Font helvetica_12=new Font("Helvetica", Font.PLAIN, 12);
-    public boolean cummulative=false; // shows added up/down events instead of up/down queue_size
 
 
 
@@ -45,19 +44,6 @@ public class Debugger extends JFrame {
     public Debugger(JChannel channel, String name) {
         super(name);
         this.channel=channel;
-    }
-
-    public Debugger(JChannel channel, boolean cummulative) {
-        super("Debugger Window");
-        this.channel=channel;
-        this.cummulative=cummulative;
-    }
-
-
-    public Debugger(JChannel channel, boolean cummulative, String name) {
-        super(name);
-        this.channel=channel;
-        this.cummulative=cummulative;
     }
 
 
@@ -87,18 +73,11 @@ public class Debugger extends JFrame {
 
         for(int i=0; i < prots.size(); i++) {
             prot=(Protocol)prots.elementAt(i);
-            view=new ProtocolView(prot, table_model, i, cummulative);
+            view=new ProtocolView(prot, table_model, i);
             prot.setObserver(view);
-            table_model.insertRow(i, new Object[]{"" + (i + 1),
-                                                  prot.getName(), prot.getUpQueue().size() + "",
-                                                  prot.getDownQueue().size() + "", "0", "0"});
-
-            //prot_view=CreateProtocolView(prot.getName());
-            //if(prot_view != null) {
-            //JFrame f=new JFrame("New View for " + prot.GetName());
-            //f.getContentPane().add(prot_view);
-            //f.show();
-            //}
+            table_model.insertRow(i, new Object[]{String.valueOf((i + 1)),
+                    prot.getName(), String.valueOf(prot.getUpQueue().size()),
+                    "0", "0", "0"});
         }
     }
 

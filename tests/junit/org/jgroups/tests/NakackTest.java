@@ -1,4 +1,4 @@
-// $Id: NakackTest.java,v 1.7 2006/01/28 10:51:29 belaban Exp $
+// $Id: NakackTest.java,v 1.8 2006/11/17 13:39:21 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -153,9 +153,6 @@ public class NakackTest extends TestCase {
             ;
         }
 
-        public void startDownHandler() {
-            ;
-        }
 
     }
 }

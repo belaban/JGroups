@@ -1,4 +1,4 @@
-// $Id: PERF.java,v 1.10 2005/08/11 12:43:47 belaban Exp $
+// $Id: PERF.java,v 1.11 2006/11/17 13:39:19 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -30,7 +30,7 @@ import java.util.Vector;
  * </ol>
  *
  * @author Bela Ban Oct 2001
- * @version $Revision: 1.10 $
+ * @version $Revision: 1.11 $
  */
 public class PERF extends Protocol {
     boolean             details=false;
@@ -235,7 +235,7 @@ class PerfObserver implements ProtocolObserver {
     }
 
 
-    public boolean down(Event evt, int num_evts) {
+    public boolean down(Event evt) {
         PerfHeader hdr;
         if(evt.getType() == Event.MSG) {
             hdr=getPerfHeader((Message)evt.getArg());
