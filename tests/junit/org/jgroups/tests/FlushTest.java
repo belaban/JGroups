@@ -34,7 +34,7 @@ import EDU.oswego.cs.dl.util.concurrent.Semaphore;
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.18 2006/11/17 22:26:24 vlada Exp $
+ * @version $Id: FlushTest.java,v 1.19 2006/11/20 22:22:28 vlada Exp $
  */
 public class FlushTest extends ChannelTestBase
 {
@@ -156,26 +156,44 @@ public class FlushTest extends ChannelTestBase
 
    public void testChannelAfterConnect()
    {
-      testChannels(false);
+      String[] names = null;
+      if(isMuxChannelUsed())
+      {
+         names = createMuxApplicationNames(1); 
+      }
+      else
+      {
+         names = new String[]{"A", "B", "C", "D"};
+      }      
+      testChannels(names,false);
    }
 
    public void testChannelsWithStateTransfer()
    {
-      testChannels(true);
-   }
-
-   public void testChannels(boolean useTransfer)
-   {
       String[] names = null;
       if(isMuxChannelUsed())
       {
-         names = new String[]{"A", "A", "A", "A"}; 
+         names = createMuxApplicationNames(1); 
       }
       else
       {
          names = new String[]{"A", "B", "C", "D"};
       }
-      
+      testChannels(names,true);
+   }
+   
+   public void testMultipleServiceMuxChannelWithStateTransfer()
+   {
+      String[] names = null;
+      if(isMuxChannelUsed())
+      {
+         names = createMuxApplicationNames(2);
+         testChannels(names,true);
+      }         
+   }
+
+   public void testChannels(String names[], boolean useTransfer)
+   {     
       int count = names.length;
 
       MyReceiver[] channels = new MyReceiver[count];
@@ -190,7 +208,7 @@ public class FlushTest extends ChannelTestBase
          {
             if(isMuxChannelUsed())
             {
-               channels[i] = new MyReceiver(names[i],muxFactory[i], semaphore, useTransfer);
+               channels[i] = new MyReceiver(names[i],muxFactory[i%getMuxFactoryCount()], semaphore, useTransfer);
             }
             else
             {
@@ -205,11 +223,19 @@ public class FlushTest extends ChannelTestBase
             {
                semaphore.release(1);
             }
-            sleepRandom(1500);
+            sleepThread(2000);
          }
 
-         // Make sure everyone is in sync
-         blockUntilViewsReceived(channels, 60000);
+         
+         if(isMuxChannelUsed())
+         {
+            blockUntilViewsReceived(channels,getMuxFactoryCount(), 60000);
+         }
+         else
+         {
+            blockUntilViewsReceived(channels, 60000);
+         }
+        
 
          //if state transfer is used release all at once
          //clear all channels of view events
@@ -230,13 +256,14 @@ public class FlushTest extends ChannelTestBase
          acquireSemaphore(semaphore, 60000, count);
 
          //Sleep to ensure async message arrive
-         sleepThread(2000);
+         sleepThread(3000);
 
          for (int i = 0; i < count; i++)
          {
             MyReceiver receiver = channels[i];
+            log.info("Events for " + channels[i].getLocalAddress()+channels[i].getName() + " are " + channels[i].getEvents());
             if (useTransfer)
-            {
+            {               
                checkEventStateTransferSequence(receiver);
             }
             else
@@ -310,15 +337,16 @@ public class FlushTest extends ChannelTestBase
       {
          Object event = events.get(i);
          if (event instanceof BlockEvent)
-         {
-            Object o = events.get(i + 1);
+         {            
             if (i + 1 < size)
             {
+               Object o = events.get(i + 1);
                assertTrue("After Block should be state or unblock " + eventString, o instanceof SetStateEvent
                      || o instanceof GetStateEvent || o instanceof UnblockEvent);
             }
-            if (i != 0)
+            else if (i != 0)
             {
+               Object o = events.get(i + 1);
                assertTrue("Before Block should be state or Unblock " + eventString, o instanceof SetStateEvent
                      || o instanceof GetStateEvent || o instanceof UnblockEvent);
             }

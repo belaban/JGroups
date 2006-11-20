@@ -24,7 +24,7 @@ import EDU.oswego.cs.dl.util.concurrent.Semaphore;
 /**
  * Tests concurrent startup with state transfer and concurrent state tranfer.
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.17 2006/11/16 18:31:20 vlada Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.18 2006/11/20 22:22:28 vlada Exp $
  */
 public class ConcurrentStartupTest extends ChannelTestBase
 {
@@ -64,10 +64,10 @@ public class ConcurrentStartupTest extends ChannelTestBase
    {
       String[] names = null;
       
-      //for mux all names are used as app ids and need to be the same
+      //mux applications on top of same channel have to have unique name
       if(isMuxChannelUsed())
       {
-         names = new String[]{"A", "A", "A", "A"}; 
+         names = createMuxApplicationNames(1);
       }
       else
       {
@@ -90,7 +90,7 @@ public class ConcurrentStartupTest extends ChannelTestBase
             {
                if(isMuxChannelUsed())
                {
-                  channels[i] = new ConcurrentStartupChannelWithLargeState(names[i],muxFactory[i],semaphore); 
+                  channels[i] = new ConcurrentStartupChannelWithLargeState(names[i],muxFactory[i%getMuxFactoryCount()],semaphore); 
                }
                else
                {
@@ -102,7 +102,7 @@ public class ConcurrentStartupTest extends ChannelTestBase
              
                if(isMuxChannelUsed())
                {
-                  channels[i] = new ConcurrentStartupChannel(names[i],muxFactory[i],semaphore); 
+                  channels[i] = new ConcurrentStartupChannel(names[i],muxFactory[i%getMuxFactoryCount()],semaphore); 
                }
                else
                {
@@ -117,7 +117,14 @@ public class ConcurrentStartupTest extends ChannelTestBase
          }
 
          // Make sure everyone is in sync
-         blockUntilViewsReceived(channels, 60000);
+         if(isMuxChannelUsed())
+         {
+            blockUntilViewsReceived(channels,getMuxFactoryCount(), 60000);
+         }
+         else
+         {
+            blockUntilViewsReceived(channels, 60000);
+         }
 
          // Sleep to ensure the threads get all the semaphore tickets
          sleepThread(1000);
@@ -190,10 +197,10 @@ public class ConcurrentStartupTest extends ChannelTestBase
    {
       String[] names = null;
       
-      //for mux all names are used as app ids and need to be the same
+      //mux applications on top of same channel have to have unique name
       if(isMuxChannelUsed())
       {
-         names = new String[]{"A", "A", "A", "A"}; 
+         names = createMuxApplicationNames(1); 
       }
       else
       {
@@ -217,7 +224,7 @@ public class ConcurrentStartupTest extends ChannelTestBase
             {
                if(isMuxChannelUsed())
                {
-                  channels[i] = new ConcurrentLargeStateTransfer(names[i],muxFactory[i],semaphore);
+                  channels[i] = new ConcurrentLargeStateTransfer(names[i],muxFactory[i%getMuxFactoryCount()],semaphore);
                }
                else
                {
@@ -228,7 +235,7 @@ public class ConcurrentStartupTest extends ChannelTestBase
             {    
                if(isMuxChannelUsed())
                {
-                  channels[i] = new ConcurrentStateTransfer(names[i],muxFactory[i],semaphore);
+                  channels[i] = new ConcurrentStateTransfer(names[i],muxFactory[i%getMuxFactoryCount()],semaphore);
                }
                else
                {
@@ -242,7 +249,14 @@ public class ConcurrentStartupTest extends ChannelTestBase
          }
 
          // Make sure everyone is in sync
-         //blockUntilViewsReceived(channels, 60000);
+         if(isMuxChannelUsed())
+         {
+            blockUntilViewsReceived(channels,getMuxFactoryCount(), 60000);
+         }
+         else
+         {
+            blockUntilViewsReceived(channels, 60000);
+         }
 
          sleepThread(2000);
          //Unleash hell !
