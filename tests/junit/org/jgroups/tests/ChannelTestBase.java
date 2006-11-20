@@ -38,6 +38,8 @@ import EDU.oswego.cs.dl.util.concurrent.Semaphore;
 public class ChannelTestBase extends TestCase
 {
    private static Random random = new Random();
+   
+   private static String DEFAULT_MUX_FACTORY_COUNT = "4";
 
    static String CHANNEL_CONFIG = "udp.xml";  
    
@@ -58,7 +60,7 @@ public class ChannelTestBase extends TestCase
       super.setUp();          
       if (isMuxChannelUsed())
       {
-         int factoryCount = Integer.parseInt(System.getProperty("mux.factorycount", "4"));         
+         int factoryCount = Integer.parseInt(System.getProperty("mux.factorycount", DEFAULT_MUX_FACTORY_COUNT));         
          muxFactory = new JChannelFactory[factoryCount];
          
          for (int i = 0; i < muxFactory.length; i++)
@@ -107,14 +109,37 @@ public class ChannelTestBase extends TestCase
       }
    }
    
-   protected boolean isMuxChannelUsed()
-   {
-      return Boolean.valueOf(System.getProperty("mux.on", "false")).booleanValue();
-   }
-   
-   protected boolean shouldCompareThreadCount()
-   {
-      return Boolean.valueOf(System.getProperty("threadcount", "false")).booleanValue();
+   /**
+    * Returns an array of mux application/service names with a guarantee that: 
+    * <p>
+    * - there are no application/service name collissions on top of one channel 
+    * (i.e cannot have two application/service(s) with the same name on top of one channel)
+    * <p>
+    * - each generated application/service name is guaranteed to have a corresponding 
+    * pair application/service with the same name on another channel     
+    * 
+    * @param muxApplicationstPerChannelCount
+    * @return
+    */
+   protected String [] createMuxApplicationNames(int muxApplicationstPerChannelCount)
+   {      
+      int channelCount = getMuxFactoryCount();      
+      int start = 64; //start with letter A
+      String names [] = null;      
+      int appCount = channelCount * muxApplicationstPerChannelCount;
+      names = new String[appCount];
+      
+      boolean chooseNext = false;
+      for (int i = 0; i < appCount; i++)
+      {  
+         chooseNext = (i%channelCount == 0)?true:false;         
+         if(chooseNext)
+         {
+            start++;
+         }
+         names[i] = Character.toString((char)start);
+      }      
+      return names;
    }
 
    /**
@@ -125,7 +150,7 @@ public class ChannelTestBase extends TestCase
    {      
       public Channel createChannel(Object id) throws Exception
       {
-         return createChannel(CHANNEL_CONFIG, true);
+         return createChannel(CHANNEL_CONFIG, useBlocking());
       }
 
       protected Channel createChannel(String configFile, boolean useBlocking) throws Exception
@@ -165,10 +190,22 @@ public class ChannelTestBase extends TestCase
 
       public Channel createChannel(Object id) throws Exception
       {
-         log.info("Factory " + f.toString() + " creating mux channel using "
-               + MUX_CHANNEL_CONFIG + " and stack "
-               + MUX_CHANNEL_CONFIG_STACK_NAME);
-         return f.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, id.toString());
+         Channel c = f.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, id.toString());
+         if(useBlocking())
+         {
+            c.setOpt(Channel.BLOCK, Boolean.TRUE);
+         }
+         Address address = c.getLocalAddress(); 
+         String append = "[" + id + "]" + " using " + MUX_CHANNEL_CONFIG + ",stack " + MUX_CHANNEL_CONFIG_STACK_NAME;
+         if (address == null)
+         {
+            log.info("Created unconnected mux channel " + append);
+         }
+         else
+         {
+            log.info("Created mux channel "+ address + append); 
+         }
+         return c;
       }         
    }
    /**
@@ -495,15 +532,57 @@ public class ChannelTestBase extends TestCase
 
       public Address getLocalAddress();
    }
+   
+   /**
+    * Returns true if JVM has been started with mux.on system property 
+    * set to true, false otherwise. 
+    * 
+    * @return
+    */
+   protected static boolean isMuxChannelUsed()
+   {
+      return Boolean.valueOf(System.getProperty("mux.on", "false")).booleanValue();
+   }
+   
+   /**
+    * Returns true if JVM has been started with threadcount system property 
+    * set to true, false otherwise. 
+    * 
+    * @return
+    */
+   protected static boolean shouldCompareThreadCount()
+   {
+      return Boolean.valueOf(System.getProperty("threadcount", "false")).booleanValue();
+   }
+   
+   /**
+    * Returns value of mux.factorycount system property has been set, otherwise returns 
+    * DEFAULT_MUX_FACTORY_COUNT. 
+    * 
+    * @return
+    */
+   protected static int getMuxFactoryCount()
+   {
+      return Integer.parseInt(System.getProperty("mux.factorycount", DEFAULT_MUX_FACTORY_COUNT));   
+   }
+   
+   /**
+    * Returns true if JVM has been started with useBlocking system property 
+    * set to true, false otherwise. 
+    * 
+    * @return
+    */     
+   protected static boolean useBlocking()
+   {
+      return Boolean.valueOf(System.getProperty("useBlocking", "true")).booleanValue();
+   }
 
    /**
     * Checks each channel in the parameter array to see if it has the 
     * exact same view as other channels in an array.    
     */
-   public static boolean areViewsComplete(MemberRetrievable[] channels)
-   {
-      int memberCount = channels.length;
-
+   public static boolean areViewsComplete(MemberRetrievable[] channels,int memberCount)
+   {      
       for (int i = 0; i < memberCount; i++)
       {
          if (!isViewComplete(channels[i], memberCount))
@@ -524,14 +603,28 @@ public class ChannelTestBase extends TestCase
     * @throws RuntimeException if <code>timeout</code> ms have elapse without
     *                          all channels having the same number of members.
     */
-   public static void blockUntilViewsReceived(MemberRetrievable[] channels, long timeout)
+   public static void blockUntilViewsReceived(MemberRetrievable[] channels,long timeout)
+   {
+      blockUntilViewsReceived(channels,channels.length,timeout);
+   }
+   
+   /**
+    * Loops, continually calling {@link #areViewsComplete(MemberRetrievable[])}
+    * until it either returns true or <code>timeout</code> ms have elapsed.
+    *
+    * @param channels  channels which must all have consistent views
+    * @param timeout max number of ms to loop
+    * @throws RuntimeException if <code>timeout</code> ms have elapse without
+    *                          all channels having the same number of members.
+    */
+   public static void blockUntilViewsReceived(MemberRetrievable[] channels, int count, long timeout)
    {
       long failTime = System.currentTimeMillis() + timeout;
 
       while (System.currentTimeMillis() < failTime)
       {
          sleepThread(100);
-         if (areViewsComplete(channels))
+         if (areViewsComplete(channels,count))
          {
             return;
          }

@@ -5,13 +5,19 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 
+import org.jgroups.Address;
 import org.jgroups.Channel;
 import org.jgroups.JChannelFactory;
+import org.jgroups.Message;
 import org.jgroups.util.Util;
 
 import EDU.oswego.cs.dl.util.concurrent.Semaphore;
@@ -31,33 +37,47 @@ public class StreamingStateTransferTest extends ChannelTestBase
    public void setUp() throws Exception
    {
       super.setUp();         
-      CHANNEL_CONFIG = System.getProperty("channel.config.streaming", "conf/flush-udp.xml");      
-   }  
+      CHANNEL_CONFIG = System.getProperty("channel.config.streaming", "flush-udp.xml");      
+   }    
    
-   public void testStreamingStateTransfer()
+   public void testTransfer()
    {
-      testTransfer(false);
-   }
-   
-   public void testRpcStreamingStateTransfer()
-   {
-      testTransfer(true);
-   }
-
-   public void testTransfer(boolean useDispatcher)
-   {
-      String[] channelNames = null;
-      
-      //for mux all names are used as app ids and need to be the same
+      String channelNames [] = null;
+      //mux applications on top of same channel have to have unique name
       if(isMuxChannelUsed())
       {
-         channelNames = new String[]{"A", "A", "A", "A"}; 
+         channelNames = createMuxApplicationNames(1);         
       }
       else
       {
-         channelNames = new String[]{"A", "B", "C", "D"};
+         channelNames = new String[]{"A", "B", "C", "D"};        
       }
-      
+      transferHelper(channelNames,false);
+   }
+   
+   public void testRpcChannelTransfer()
+   {
+      //do this test for regular channels only
+      if(!isMuxChannelUsed())
+      {
+         String channelNames []= new String[]{"A", "B", "C", "D"};   
+         transferHelper(channelNames,true);
+      }
+   }
+   
+   public void testMultipleServiceMuxChannel()
+   {
+      String channelNames [] = null;
+      //mux applications on top of same channel have to have unique name
+      if(isMuxChannelUsed())
+      {
+         channelNames = createMuxApplicationNames(2);  
+         transferHelper(channelNames,false);
+      }           
+   }
+
+   public void transferHelper(String channelNames[], boolean useDispatcher)
+   {                 
       int channelCount = channelNames.length;
       StreamingStateTransferApplication[] channels = null;
 
@@ -77,7 +97,7 @@ public class StreamingStateTransferTest extends ChannelTestBase
 
             if(isMuxChannelUsed())
             {
-               channels[i] = new StreamingStateTransferApplication(channelNames[i],muxFactory[i],semaphore);  
+               channels[i] = new StreamingStateTransferApplication(channelNames[i],muxFactory[i%getMuxFactoryCount()],semaphore);  
             }
             else
             {
@@ -85,23 +105,31 @@ public class StreamingStateTransferTest extends ChannelTestBase
             }
 
             // Start threads and let them join the channel                           
-            channels[i].start();
-            semaphore.release(1);
+            channels[i].start();            
             sleepThread(2000);
+            semaphore.release(1);
+         }               
+         
+         if(isMuxChannelUsed())
+         {
+            blockUntilViewsReceived(channels,getMuxFactoryCount(), 60000);
          }
-
-         // Make sure everyone is in sync
-         blockUntilViewsReceived(channels, 60000);
+         else
+         {
+            blockUntilViewsReceived(channels, 60000);
+         }
+         
 
          //Reacquire the semaphore tickets; when we have them all
          // we know the threads are done         
-         acquireSemaphore(semaphore, 60000, channelCount);         
+         acquireSemaphore(semaphore, 60000, channelCount);          
          
          int getStateInvokedCount = 0;
          int setStateInvokedCount = 0;
          int partialGetStateInvokedCount = 0;
          int partialSetStateInvokedCount = 0;
          
+         sleepThread(3000);
          for (int i = 0; i < channels.length; i++)
          {
             if(channels[i].getStateInvoked)
@@ -119,13 +147,30 @@ public class StreamingStateTransferTest extends ChannelTestBase
             if(channels[i].partialSetStateInvoked)
             {
                partialSetStateInvokedCount++;
-            } 
+            }
+            Map map = channels[i].getMap();
+            for (int j = 0; j < channels.length; j++)
+            {
+               List l = (List) map.get(channels[j].getLocalAddress());
+               int size = l!=null?l.size():0;
+               assertEquals("Correct element count in map ",StreamingStateTransferApplication.COUNT,size);              
+            }
          }
-         
-         assertEquals("Correct invocation count of getState ",1, getStateInvokedCount);
-         assertEquals("Correct invocation count of setState ",channelCount-1,setStateInvokedCount);
-         assertEquals("Correct invocation count of partial getState ",1, partialGetStateInvokedCount);
-         assertEquals("Correct invocation count of partial setState ",channelCount-1,partialSetStateInvokedCount);
+         if(isMuxChannelUsed())
+         {
+            int factor = channelCount/getMuxFactoryCount();
+            assertEquals("Correct invocation count of getState ",1*factor, getStateInvokedCount);
+            assertEquals("Correct invocation count of setState ",(channelCount/factor)-1,setStateInvokedCount/factor);
+            assertEquals("Correct invocation count of partial getState ",1*factor, partialGetStateInvokedCount);
+            assertEquals("Correct invocation count of partial setState ",(channelCount/factor)-1,partialSetStateInvokedCount/factor);
+         }
+         else
+         {
+            assertEquals("Correct invocation count of getState ",1, getStateInvokedCount);
+            assertEquals("Correct invocation count of setState ",channelCount-1,setStateInvokedCount);
+            assertEquals("Correct invocation count of partial getState ",1, partialGetStateInvokedCount);
+            assertEquals("Correct invocation count of partial setState ",channelCount-1,partialSetStateInvokedCount);
+         }
                
       }
       catch (Exception ex)
@@ -152,7 +197,9 @@ public class StreamingStateTransferTest extends ChannelTestBase
 
    protected class StreamingStateTransferApplication extends PushChannelApplicationWithSemaphore
    {            
-      private Object transferObject = new String("JGroups");
+      private Map stateMap = new HashMap();
+      
+      public static final int COUNT = 25;
 
       private Object partialTransferObject = new String("partial");
       
@@ -174,10 +221,34 @@ public class StreamingStateTransferTest extends ChannelTestBase
          super(name,factory,s);
       } 
 
+      public void receive(Message msg)
+      {
+         Address sender = msg.getSrc();
+         synchronized(stateMap)
+         {
+            List list = (List) stateMap.get(sender);
+            if(list == null)
+            {
+               list = new ArrayList();
+               stateMap.put(sender, list);
+            }
+            list.add(msg.getObject());
+         }
+      }
+      
+      public Map getMap()
+      {
+         return stateMap;
+      }
+
       public void useChannel() throws Exception
       {
          channel.connect("test");
-         channel.getState(null, 25000);       
+         for(int i = 0;i < COUNT;i++)
+         {
+            channel.send(null,null,new Integer(i));
+         }
+         channel.getState(null, 25000);                         
          channel.getState(null, name, 25000);
       }
 
@@ -188,7 +259,12 @@ public class StreamingStateTransferTest extends ChannelTestBase
          try
          {
             oos = new ObjectOutputStream(ostream);
-            oos.writeObject(transferObject);
+            HashMap copy = null;
+            synchronized (stateMap)
+            {
+               copy = new HashMap(stateMap);
+            }              
+            oos.writeObject(copy);                         
             oos.flush();
          }
          catch (IOException e)
@@ -208,8 +284,13 @@ public class StreamingStateTransferTest extends ChannelTestBase
          ObjectInputStream ois = null;
          try
          {
-            ois = new ObjectInputStream(istream);            
-            TestCase.assertEquals("Got full state requested ", transferObject,ois.readObject());
+            ois = new ObjectInputStream(istream);
+            Map map = (Map) ois.readObject();
+            synchronized (stateMap)
+            {
+               stateMap.clear();
+               stateMap.putAll(map);
+            }           
          }
          catch (Exception e)
          {
