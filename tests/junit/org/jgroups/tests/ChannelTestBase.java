@@ -55,32 +55,42 @@ public class ChannelTestBase extends TestCase
 
    protected final Log log = LogFactory.getLog(this.getClass());
 
+   public ChannelTestBase()
+   {
+      super();
+   }
+   
+   public ChannelTestBase(String name)
+   {
+      super(name);
+   }
+
    public void setUp() throws Exception
    {
-      super.setUp();          
+      super.setUp();     
+      MUX_CHANNEL_CONFIG = System.getProperty("mux.conf", MUX_CHANNEL_CONFIG);
+      MUX_CHANNEL_CONFIG_STACK_NAME = System.getProperty("mux.conf.stack", MUX_CHANNEL_CONFIG_STACK_NAME);
+      CHANNEL_CONFIG = System.getProperty("channel.conf", CHANNEL_CONFIG);
+      
       if (isMuxChannelUsed())
-      {
-         int factoryCount = Integer.parseInt(System.getProperty("mux.factorycount", DEFAULT_MUX_FACTORY_COUNT));         
-         muxFactory = new JChannelFactory[factoryCount];
+      {                
+         muxFactory = new JChannelFactory[getMuxFactoryCount()];
          
          for (int i = 0; i < muxFactory.length; i++)
          {
             muxFactory[i] = new JChannelFactory();
-            muxFactory[i].setMultiplexerConfig(System.getProperty("mux.config", MUX_CHANNEL_CONFIG));
-         }        
-         MUX_CHANNEL_CONFIG_STACK_NAME = System.getProperty("mux.config.stackname", MUX_CHANNEL_CONFIG_STACK_NAME);
+            muxFactory[i].setMultiplexerConfig(MUX_CHANNEL_CONFIG);
+         }                
       }
       
       if (shouldCompareThreadCount())
       {
          active_threads = Thread.activeCount();
          thread_dump = "active threads before (" + active_threads + "):\n" + Util.activeThreads();
-      }
-      
-      CHANNEL_CONFIG = System.getProperty("channel.config", CHANNEL_CONFIG);     
+      }             
    }
 
-   protected void tearDown() throws Exception
+   public void tearDown() throws Exception
    {
       super.tearDown();
 
@@ -107,6 +117,12 @@ public class ChannelTestBase extends TestCase
          }
          assertEquals(msg, active_threads, current_active_threads);
       }
+   }
+   
+   public void testDummy()
+   {
+      //in case someone runs his test 
+      //we avoid having it fail by having this dummy test method
    }
    
    /**
@@ -140,6 +156,35 @@ public class ChannelTestBase extends TestCase
          names[i] = Character.toString((char)start);
       }      
       return names;
+   }
+   
+   protected Channel createChannel(Object id) throws Exception
+   {
+      Channel c = null;
+      if (isMuxChannelUsed())
+      {
+         for (int i = 0; i < muxFactory.length; i++)
+         {
+            if (!muxFactory[i].hasMuxChannel(MUX_CHANNEL_CONFIG_STACK_NAME, id.toString()))
+            {
+               c = new DefaultMuxChannelTestFactory(muxFactory[i]).createChannel(id);
+               return c;
+            }
+         }
+
+         throw new Exception("Cannot create mux channel with id " + id
+               + " since all currently used channels have already registered service with that id");
+      }
+      else
+      {
+         c = new DefaultChannelTestFactory().createChannel(id);
+      }
+      return c;
+   }
+   
+   protected Channel createChannel() throws Exception
+   {
+      return createChannel("A");
    }
 
    /**
@@ -539,7 +584,7 @@ public class ChannelTestBase extends TestCase
     * 
     * @return
     */
-   protected static boolean isMuxChannelUsed()
+   protected boolean isMuxChannelUsed()
    {
       return Boolean.valueOf(System.getProperty("mux.on", "false")).booleanValue();
    }
@@ -550,7 +595,7 @@ public class ChannelTestBase extends TestCase
     * 
     * @return
     */
-   protected static boolean shouldCompareThreadCount()
+   protected boolean shouldCompareThreadCount()
    {
       return Boolean.valueOf(System.getProperty("threadcount", "false")).booleanValue();
    }
@@ -561,7 +606,7 @@ public class ChannelTestBase extends TestCase
     * 
     * @return
     */
-   protected static int getMuxFactoryCount()
+   protected int getMuxFactoryCount()
    {
       return Integer.parseInt(System.getProperty("mux.factorycount", DEFAULT_MUX_FACTORY_COUNT));   
    }
@@ -572,9 +617,9 @@ public class ChannelTestBase extends TestCase
     * 
     * @return
     */     
-   protected static boolean useBlocking()
+   protected boolean useBlocking()
    {
-      return Boolean.valueOf(System.getProperty("useBlocking", "true")).booleanValue();
+      return Boolean.valueOf(System.getProperty("useBlocking", "false")).booleanValue();
    }
 
    /**

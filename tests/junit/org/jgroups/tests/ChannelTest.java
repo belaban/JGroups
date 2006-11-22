@@ -1,39 +1,39 @@
-// $Id: ChannelTest.java,v 1.2 2006/01/11 15:02:34 belaban Exp $
+// $Id: ChannelTest.java,v 1.3 2006/11/22 19:33:07 vlada Exp $
 
 package org.jgroups.tests;
 
 
 import junit.framework.Test;
-import junit.framework.TestCase;
 import junit.framework.TestSuite;
-import org.jgroups.*;
+
+import org.jgroups.Channel;
+import org.jgroups.ChannelClosedException;
+import org.jgroups.ChannelException;
+import org.jgroups.ChannelNotConnectedException;
+import org.jgroups.TimeoutException;
+import org.jgroups.View;
 
 
 /**
  * Tests various methods in JChannel
  * @author Bela Ban
- * @version $Id: ChannelTest.java,v 1.2 2006/01/11 15:02:34 belaban Exp $
+ * @version $Id: ChannelTest.java,v 1.3 2006/11/22 19:33:07 vlada Exp $
  */
-public class ChannelTest extends TestCase {
-    JChannel ch;
+public class ChannelTest extends ChannelTestBase {
+    Channel ch;
 
-    private static final String GROUP="DiscardTestGroup";
-
-
-    public ChannelTest(String name) {
-        super(name);
-    }
+    private static final String GROUP="DiscardTestGroup";    
 
 
-    protected void setUp() throws Exception {
+    public void setUp() throws Exception {
         super.setUp();
-        ch=new JChannel();
+        ch=createChannel();
         ch.connect(GROUP);
     }
 
-    protected void tearDown() throws Exception {
-        super.tearDown();
+    public void tearDown() throws Exception {
         ch.close();
+        super.tearDown();        
     }
 
     public void testFirstView() throws Exception {

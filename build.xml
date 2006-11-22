@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.73 2006/11/02 08:06:56 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.74 2006/11/22 19:33:07 vlada Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -28,7 +28,15 @@
     <property name="build.compiler.emacs" value="true"/>
     <property name="javadoc.packages" value="org.jgroups.*"/>
     <property name="unittest.timeout.low" value="180000"/>
-    <property name="version" value="2.5.0-alpha"/>
+    <property name="version" value="2.5.0-alpha"/>	
+	<property name="channel.conf" value="udp.xml"/>
+	<property name="channel.conf.flush" value="flush-udp.xml"/>
+	<property name="mux.on" value="false"/>
+	<property name="mux.conf" value="stacks.xml"/>	
+	<property name="mux.conf.stack" value="udp"/>	
+	<property name="mux.factorycount" value="4"/>
+	<property name="threadcount" value="false"/>
+	<property name="test.verbose" value="false"/>
 
 
     <path id="jg.classpath">
@@ -39,6 +47,24 @@
             <include name="*.jar"/>
         </fileset>
     </path>
+	
+	<patternset id="flush.tests">	     
+		<include name="org/jgroups/tests/FlushTest*"/>
+		<include name="org/jgroups/tests/ConcurrentStartupTest*"/>
+	</patternset>
+	
+	<patternset id="mux.tests">	     
+		<include name="org/jgroups/tests/Multiplexer*"/>			
+	</patternset>
+	
+	<patternset id="one.test">	     
+		<include name="**/**/${test}*"/>			
+	</patternset>
+	
+	<patternset id="all.tests">	     
+		<include name="org/jgroups/tests/*"/>	
+		<exclude name="**/DistributedQueueTest*"/>
+	</patternset>
 
 
     <target name="prepare">
@@ -377,83 +403,125 @@
             </batchtest>
         </junit>
     </target>
-	
-    <target name="one-test" depends="compile,makeKeystore" description="Runs a single unit test (use -Dtest=name, e.g -Dtest=org.jgroups.tests.CloseTest one-test)">
-        <mkdir dir="${tmp.dir}/tests-results"/>
-        <junit printsummary="yes" timeout="${unittest.timeout.low}" fork="yes">
-            <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
-            <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
-            <sysproperty key="log4j.configuration" value="file:${conf.dir}/log4j.properties" />
-            <sysproperty key="tests.tmp.dir" value="${tmp.dir}" />
-            <classpath refid="jg.classpath"/>
-            <formatter type="xml" usefile="true"/>
-            <test name="${test}" todir="${tmp.dir}/tests-results"/>
-        </junit>
-    </target>
 		
-    <target name="mux-test-udp" depends="compile" description="Runs mux for udp">
-			
-        <echo message="Multiplexer test for udp stack config"/>
-        <junit printsummary="yes" taskname="udp" timeout="${unittest.timeout.low}" fork="yes" showoutput="true" description="mux tests using udp-sync">
-            <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
-            <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
-            <sysproperty key="log4j.configuration" value="${conf.dir}/log4j.properties" />
-            <sysproperty key="tests.tmp.dir" value="${tmp.dir}" />
-            <sysproperty key="cfg" value="${conf.dir}/stacks.xml" />
-            <sysproperty key="stack" value="udp" />
-            <classpath refid="jg.classpath"/>
-            <formatter type="xml" usefile="true"/>
-            <test name="org.jgroups.tests.MultiplexerTest" todir="${tmp.dir}/tests-results"/>
-        </junit>
+	<macrodef name="testrunner">
+		<text name="text"/>
+		<attribute name="set"/>		
+		<sequential>
+			<echo>@{text}</echo>
+			<echo>Using set: @{set}</echo>
+			<mkdir dir="${tmp.dir}/tests-results"/>
+	        <junit printsummary="yes" timeout="${unittest.timeout.low}" fork="yes" showoutput="${test.verbose}">	        	
+	            <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
+	            <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
+	        	<sysproperty key="cfg" value="${conf.dir}/stacks.xml" />	        	
+	            <sysproperty key="log4j.configuration" value="file:${conf.dir}/log4j.properties" />
+	            <sysproperty key="tests.tmp.dir" value="${tmp.dir}" />
+	        	<sysproperty key="channel.conf" value="${channel.conf}" />
+	        	<sysproperty key="channel.conf.flush" value="${channel.conf.flush}" />	      
+	        	<sysproperty key="mux.on" value="${mux.on}" />
+		 		<sysproperty key="mux.conf" value="${mux.conf}" />
+			 	<sysproperty key="mux.conf.stack" value="${mux.conf.stack}" />
+		 		<sysproperty key="mux.factorycount" value="${mux.factorycount}" />
+		 		<sysproperty key="threadcount" value="${threadcount}" />
+	            <classpath refid="jg.classpath"/>
+	            <formatter type="xml" usefile="true"/>	        	
+	        	<batchtest todir="${tmp.dir}/tests-results">
+	                <fileset dir="${junit.dir}">
+	                	<patternset refid="@{set}"/>
+	                </fileset>
+	            </batchtest>	        	
+	        </junit>
+		</sequential>	
+	</macrodef>
+		
+	<target name="runtests" depends="compile">		 
+		 <testrunner set="${testset}">Tests running with parameters:
+		 	channel.conf=${channel.conf}
+		 	channel.conf.flush=${channel.conf.flush}
+			mux.on=${mux.on} 
+			mux.conf=${mux.conf}
+			mux.conf.stack=${mux.conf.stack}
+			mux.factorycount=${mux.factorycount}
+			threadcount=${threadcount}	
+			test.verbose=${test.verbose}
+		 </testrunner>
+	</target>
+	
+	<target name="all-tests-udp">		 
+		 <antcall target="runtests">		 	
+		 	<param name="testset" value="all.tests"/>
+		 	<param name="channel.conf" value="udp.xml"/>
+		 	<param name="channel.conf.flush" value="flush-udp.xml"/>
+		 </antcall>
+	</target>
+	
+	<target name="all-tests-mux-udp">		 
+		 <antcall target="runtests">		 	
+		 	<param name="testset" value="all.tests"/>	
+		 	<param name="mux.on" value="true"/>
+		 	<param name="mux.conf.stack" value="udp"/>
+		 </antcall>
+	</target>
+	
+	<target name="all-tests-tcp">		 
+		 <antcall target="runtests">		 	
+		 	<param name="testset" value="all.tests"/>	
+		 	<param name="channel.conf" value="tcp.xml"/>
+		 	<param name="channel.conf.flush" value="tcp.xml"/>	
+		 </antcall>
+	</target>
+	
+	<target name="all-tests-mux-tcp">		 
+		 <antcall target="runtests">		 	
+		 	<param name="testset" value="all.tests"/>	
+		 	<param name="mux.on" value="true"/>
+		 	<param name="mux.conf.stack" value="tcp"/>
+		 </antcall>
+	</target>
+	
+	<target name="one-test">		 
+		 <antcall target="runtests">		 	
+		 	<param name="testset" value="one.test"/>
+		 	<param name="test.verbose" value="true"/>
+		 </antcall>
+	</target>
+		
+    <target name="mux-test-udp" depends="compile" description="Runs mux for udp">			
+    	<antcall target="runtests">
+		 	<param name="mux.on" value="true"/>
+		 	<param name="mux.conf.stack" value="udp"/>
+		 	<param name="testset" value="mux.tests"/>
+    		<param name="test.verbose" value="true"/>
+    	</antcall>
     </target>
 	
-    <target name="mux-test-udp-sync" depends="compile" description="Runs mux test for udp-sync">
-			
-        <echo message="Multiplexer test for udp-sync stack config"/>
-        <junit printsummary="yes" taskname="udp-sync" timeout="${unittest.timeout.low}" fork="yes" showoutput="true" description="mux tests using udp-sync">
-            <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
-            <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
-            <sysproperty key="log4j.configuration" value="${conf.dir}/log4j.properties" />
-            <sysproperty key="tests.tmp.dir" value="${tmp.dir}" />
-            <sysproperty key="cfg" value="${conf.dir}/stacks.xml" />
-            <sysproperty key="stack" value="udp-sync" />
-            <classpath refid="jg.classpath"/>
-            <formatter type="xml" usefile="true"/>
-            <test name="org.jgroups.tests.MultiplexerTest" todir="${tmp.dir}/tests-results"/>
-        </junit>
-							
+    <target name="mux-test-udp-sync" description="Runs mux test for udp-sync">			
+    	<antcall target="runtests">
+		 	<param name="mux.on" value="true"/>
+		 	<param name="mux.conf.stack" value="udp-sync"/>
+		 	<param name="testset" value="mux.tests"/>
+    		<param name="test.verbose" value="true"/>
+    	</antcall>			
     </target>
 	
-    <target name="mux-test-tcp" depends="compile" description="Runs mux test for tcp">
-			
-        <echo message="Multiplexer test for tcp stack config"/>
-        <junit printsummary="yes" taskname="tcp" timeout="${unittest.timeout.low}" fork="yes" showoutput="true" description="mux tests using tcp">
-            <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
-            <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
-            <sysproperty key="log4j.configuration" value="${conf.dir}/log4j.properties" />
-            <sysproperty key="tests.tmp.dir" value="${tmp.dir}" />
-            <sysproperty key="cfg" value="${conf.dir}/stacks.xml" />
-            <sysproperty key="stack" value="tcp" />
-            <classpath refid="jg.classpath"/>
-            <formatter type="xml" usefile="true"/>
-            <test name="org.jgroups.tests.MultiplexerTest" todir="${tmp.dir}/tests-results"/>
-        </junit>
+    <target name="mux-test-tcp" description="Runs mux test for tcp">			
+    	<antcall target="runtests">
+		 	<param name="mux.on" value="true"/>
+		 	<param name="mux.conf.stack" value="udp-sync"/>
+		 	<param name="testset" value="mux.tests"/>
+    		<param name="test.verbose" value="true"/>
+    	</antcall>
     </target>
 	
-    <target name="mux-test-tcp-sync" depends="compile" description="Runs mux test for tcp-sync">
-        <echo message="Multiplexer test for tcp-sync stack config"/>
-        <junit printsummary="yes" taskname="tcp" timeout="${unittest.timeout.low}" fork="yes" showoutput="true" description="mux tests using tcp-sync">
-            <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
-            <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
-            <sysproperty key="log4j.configuration" value="${conf.dir}/log4j.properties" />
-            <sysproperty key="tests.tmp.dir" value="${tmp.dir}" />
-            <sysproperty key="cfg" value="${conf.dir}/stacks.xml" />
-            <sysproperty key="stack" value="tcp-sync" />
-            <classpath refid="jg.classpath"/>
-            <formatter type="xml" usefile="true"/>
-            <test name="org.jgroups.tests.MultiplexerTest" todir="${tmp.dir}/tests-results"/>
-        </junit>
-    </target>
+	<target name="mux-test-tcp-sync" description="Runs mux test for udp-sync">			
+    	<antcall target="runtests">
+		 	<param name="mux.on" value="true"/>
+		 	<param name="mux.conf.stack" value="tcp-sync"/>
+		 	<param name="testset" value="mux.tests"/>
+    		<param name="test.verbose" value="true"/>
+    	</antcall>			
+	</target>
 	
 
     <target name="findxalan">

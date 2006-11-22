@@ -37,8 +37,13 @@ public class StreamingStateTransferTest extends ChannelTestBase
    public void setUp() throws Exception
    {
       super.setUp();         
-      CHANNEL_CONFIG = System.getProperty("channel.config.streaming", "flush-udp.xml");      
-   }    
+      CHANNEL_CONFIG = System.getProperty("channel.conf.flush", "flush-udp.xml");      
+   }
+   
+   public boolean useBlocking()
+   {
+      return true;
+   }
    
    public void testTransfer()
    {
@@ -104,10 +109,10 @@ public class StreamingStateTransferTest extends ChannelTestBase
                channels[i] = new StreamingStateTransferApplication(channelNames[i],semaphore,useDispatcher);
             }
 
-            // Start threads and let them join the channel                           
-            channels[i].start();            
-            sleepThread(2000);
+            // Start threads and let them join the channel
             semaphore.release(1);
+            channels[i].start();            
+            sleepThread(2000);            
          }               
          
          if(isMuxChannelUsed())
@@ -214,11 +219,13 @@ public class StreamingStateTransferTest extends ChannelTestBase
       public StreamingStateTransferApplication(String name, Semaphore s,boolean useDispatcher) throws Exception
       {
          super(name,new StreamingChannelTestFactory(),s,useDispatcher);
+         channel.connect("test");
       }    
       
       public StreamingStateTransferApplication(String name, JChannelFactory factory,Semaphore s) throws Exception
       {
          super(name,factory,s);
+         channel.connect("test");
       } 
 
       public void receive(Message msg)
@@ -242,8 +249,7 @@ public class StreamingStateTransferTest extends ChannelTestBase
       }
 
       public void useChannel() throws Exception
-      {
-         channel.connect("test");
+      {        
          for(int i = 0;i < COUNT;i++)
          {
             channel.send(null,null,new Integer(i));

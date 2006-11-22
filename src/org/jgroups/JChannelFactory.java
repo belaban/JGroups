@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.34 2006/11/03 21:04:24 bstansberry Exp $
+// $Id: JChannelFactory.java,v 1.35 2006/11/22 19:33:08 vlada Exp $
 
 package org.jgroups;
 
@@ -24,6 +24,7 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * JChannelFactory creates pure Java implementations of the <code>Channel</code>
@@ -295,6 +296,30 @@ public class JChannelFactory implements ChannelFactory {
                 mux.registerForStateTransfer(id, substate_id);
             return mux.createMuxChannel(this, id, stack_name);
         }
+    }
+    
+    /**
+    * Returns true if this factory has already registered MuxChannel with 
+    * given stack_name and an id, false otherwise.
+    *     
+    * @param stack_name name of the stack used
+    * @param id service id
+    * @return true if such MuxChannel exists, false otherwise
+    */
+   public boolean hasMuxChannel(String stack_name, String id){
+       Entry entry = null;
+       synchronized(channels) {
+          entry=(Entry)channels.get(stack_name);          
+       }
+       if(entry!= null){          
+          synchronized(entry) {
+             if(entry.multiplexer!=null){
+                Set services = entry.multiplexer.getServiceIds();
+                return (services!=null && services.contains(id)); 
+             }
+          }
+       }
+       return false;       
     }
 
     private void registerChannel(JChannel ch, String stack_name) throws Exception {

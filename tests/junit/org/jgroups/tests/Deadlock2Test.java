@@ -1,19 +1,19 @@
-// $Id: Deadlock2Test.java,v 1.10 2006/05/13 08:48:38 belaban Exp $
+// $Id: Deadlock2Test.java,v 1.11 2006/11/22 19:33:07 vlada Exp $
 
 package org.jgroups.tests;
 
+import java.util.Enumeration;
+import java.util.Vector;
+
 import junit.framework.Test;
-import junit.framework.TestCase;
 import junit.framework.TestSuite;
+
 import org.jgroups.Address;
-import org.jgroups.JChannel;
+import org.jgroups.Channel;
 import org.jgroups.blocks.GroupRequest;
 import org.jgroups.blocks.MethodCall;
 import org.jgroups.blocks.RpcDispatcher;
 import org.jgroups.util.RspList;
-
-import java.util.Enumeration;
-import java.util.Vector;
 
 /**
  * Test the distributed RPC deadlock detection mechanism, using one or two channels.
@@ -21,9 +21,9 @@ import java.util.Vector;
  * @author John Giorgiadis
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
  * *
- * @version $Revision: 1.10 $
+ * @version $Revision: 1.11 $
  */
-public class Deadlock2Test extends TestCase {
+public class Deadlock2Test extends ChannelTestBase {
 
     private static boolean DEADLOCK_DETECTION = true;
 
@@ -43,7 +43,7 @@ public class Deadlock2Test extends TestCase {
      * @throws Exception
      */
     public void testOneChannel() throws Exception {
-        JChannel channel = new JChannel();
+        Channel channel = createChannel();
         ServerObject serverObject = new ServerObject("obj1");
         RpcDispatcher disp=new RpcDispatcher(channel, null, null, serverObject, DEADLOCK_DETECTION);
         serverObject.setRpcDispatcher(disp);
@@ -88,13 +88,13 @@ public class Deadlock2Test extends TestCase {
     public void testTwoChannels() throws Throwable {
         ServerObject obj1, obj2 = null;
 
-        JChannel c1 = new JChannel();
+        Channel c1 = createChannel("A");
         obj1 = new ServerObject("obj1");
         RpcDispatcher disp1=new RpcDispatcher(c1, null, null, obj1, DEADLOCK_DETECTION);
         obj1.setRpcDispatcher(disp1);
         c1.connect(name);
 
-        JChannel c2 = new JChannel();
+        Channel c2 = createChannel("A");
         obj2 = new ServerObject("obj2");
         RpcDispatcher disp2=new RpcDispatcher(c2, null, null, obj2, DEADLOCK_DETECTION);
         obj2.setRpcDispatcher(disp2);
@@ -118,13 +118,13 @@ public class Deadlock2Test extends TestCase {
     public void testTwoChannelsWithInitialMulticast() throws Exception {
         ServerObject obj1, obj2 = null;
 
-        JChannel c1 = new JChannel();
+        Channel c1 = createChannel("A");
         obj1 = new ServerObject("obj1");
         RpcDispatcher disp1=new RpcDispatcher(c1, null, null, obj1, DEADLOCK_DETECTION);
         obj1.setRpcDispatcher(disp1);
         c1.connect(name);
 
-        JChannel c2 = new JChannel();
+        Channel c2 = createChannel("A");
         obj2 = new ServerObject("obj2");
         RpcDispatcher disp2=new RpcDispatcher(c2, null, null, obj2, DEADLOCK_DETECTION);
         obj2.setRpcDispatcher(disp2);
