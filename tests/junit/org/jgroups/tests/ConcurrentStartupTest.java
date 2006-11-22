@@ -24,7 +24,7 @@ import EDU.oswego.cs.dl.util.concurrent.Semaphore;
 /**
  * Tests concurrent startup with state transfer and concurrent state tranfer.
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.18 2006/11/20 22:22:28 vlada Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.19 2006/11/22 19:33:07 vlada Exp $
  */
 public class ConcurrentStartupTest extends ChannelTestBase
 {
@@ -35,11 +35,16 @@ public class ConcurrentStartupTest extends ChannelTestBase
    {
       super.setUp();   
       mod = 1;
-      CHANNEL_CONFIG = System.getProperty("channel.config.flush", "flush-udp.xml");      
+      CHANNEL_CONFIG = System.getProperty("channel.conf.flush", "flush-udp.xml");      
    }  
    
+   public boolean useBlocking()
+   {
+      return true;
+   }
+   
    public void testConcurrentStartupLargeState()
-   {      
+   {            
       concurrentStartupHelper(true,false);
    }
    

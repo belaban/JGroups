@@ -34,7 +34,7 @@ import EDU.oswego.cs.dl.util.concurrent.Semaphore;
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.19 2006/11/20 22:22:28 vlada Exp $
+ * @version $Id: FlushTest.java,v 1.20 2006/11/22 19:33:07 vlada Exp $
  */
 public class FlushTest extends ChannelTestBase
 {
@@ -45,7 +45,12 @@ public class FlushTest extends ChannelTestBase
    public void setUp() throws Exception
    {
       super.setUp();
-      CHANNEL_CONFIG = System.getProperty("channel.config.flush", "flush-udp.xml");
+      CHANNEL_CONFIG = System.getProperty("channel.conf.flush", "flush-udp.xml");
+   }
+   
+   public boolean useBlocking()
+   {
+      return true;
    }
 
    public void tearDown() throws Exception
@@ -378,7 +383,7 @@ public class FlushTest extends ChannelTestBase
       receiver.clear();
    }  
 
-   private Channel createChannel() throws ChannelException
+   protected Channel createChannel() throws ChannelException
    {
       Channel ret = new JChannel(CHANNEL_CONFIG);
       ret.setOpt(Channel.BLOCK, Boolean.TRUE);
