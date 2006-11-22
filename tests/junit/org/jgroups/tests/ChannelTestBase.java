@@ -117,13 +117,7 @@ public class ChannelTestBase extends TestCase
          }
          assertEquals(msg, active_threads, current_active_threads);
       }
-   }
-   
-   public void testDummy()
-   {
-      //in case someone runs his test 
-      //we avoid having it fail by having this dummy test method
-   }
+   }   
    
    /**
     * Returns an array of mux application/service names with a guarantee that: 
