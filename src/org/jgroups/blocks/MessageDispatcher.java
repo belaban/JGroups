@@ -35,7 +35,7 @@ import java.util.ArrayList;
  * the application instead of protocol level.
  *
  * @author Bela Ban
- * @version $Id: MessageDispatcher.java,v 1.60.2.1 2006/12/04 13:52:51 belaban Exp $
+ * @version $Id: MessageDispatcher.java,v 1.60.2.2 2006/12/04 22:48:05 vlada Exp $
  */
 public class MessageDispatcher implements RequestHandler {
     protected Channel channel=null;
@@ -748,9 +748,9 @@ public class MessageDispatcher implements RequestHandler {
 
                 case Event.BLOCK:
                     if(membership_listener != null) {
-                        membership_listener.block();
-                        channel.blockOk();
+                        membership_listener.block();                        
                     }
+                    channel.blockOk();
                     break;
                 case Event.UNBLOCK:
                    if(membership_listener instanceof ExtendedMembershipListener) {
