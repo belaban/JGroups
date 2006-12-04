@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.35 2006/11/22 19:33:08 vlada Exp $
+// $Id: JChannelFactory.java,v 1.33.2.1 2006/12/04 22:50:40 vlada Exp $
 
 package org.jgroups;
 
@@ -362,15 +362,22 @@ public class JChannelFactory implements ChannelFactory {
                 }
                 if(entry.multiplexer != null) {
                     try {
-                        Address addr=entry.channel.getLocalAddress();
-                        entry.multiplexer.sendServiceUpMessage(ch.getId(), addr);
+                        Address addr=entry.channel.getLocalAddress();                        
+                        boolean successfulFlush = entry.channel.startFlush(3000, false);
+                        if(!successfulFlush && log.isWarnEnabled()){
+                           log.warn("Flush failed at " + ch.getLocalAddress() + ch.getId());
+                        }
+                        entry.multiplexer.sendServiceUpMessage(ch.getId(), addr,true);
                     }
                     catch(Exception e) {
                         if(log.isErrorEnabled())
                             log.error("failed sending SERVICE_UP message", e);
                     }
-                }
-            }
+                    finally{                     
+                       entry.channel.stopFlush();
+                    }
+                }                
+            }           
         }
         ch.setClosed(false);
         ch.setConnected(true);
@@ -388,13 +395,20 @@ public class JChannelFactory implements ChannelFactory {
                 Multiplexer mux=entry.multiplexer;
                 if(mux != null) {
                     Address addr=entry.channel.getLocalAddress();
-                    try {
-                        mux.sendServiceDownMessage(ch.getId(), addr);
+                    try {                              
+                        boolean successfulFlush = entry.channel.startFlush(3000,false);
+                        if(!successfulFlush && log.isWarnEnabled()){
+                           log.warn("Flush failed at " + ch.getLocalAddress() + ch.getId());
+                        }
+                        mux.sendServiceDownMessage(ch.getId(), addr,true);
                     }
                     catch(Exception e) {
                         if(log.isErrorEnabled())
                             log.error("failed sending SERVICE_DOWN message", e);
                     }
+                    finally{                      
+                       entry.channel.stopFlush();                                    
+                    }                  
                     mux.disconnect(); // disconnects JChannel if all MuxChannels are in disconnected state
                 }
             }
@@ -416,12 +430,19 @@ public class JChannelFactory implements ChannelFactory {
                 if(mux != null) {
                     Address addr=entry.channel.getLocalAddress();
                     if(addr != null) {
-                        try {
-                            mux.sendServiceDownMessage(ch.getId(), addr);
+                        try { 
+                            boolean successfulFlush = entry.channel.startFlush(3000,false);
+                            if(!successfulFlush && log.isWarnEnabled()){
+                               log.warn("Flush failed at " + ch.getLocalAddress() + ch.getId());
+                            }                            
+                            mux.sendServiceDownMessage(ch.getId(), addr,true);
                         }
                         catch(Exception e) {
                             if(log.isErrorEnabled())
                                 log.error("failed sending SERVICE_DOWN message", e);
+                        }
+                        finally{                           
+                           entry.channel.stopFlush();                           
                         }
                     }
                     all_closed=mux.close(); // closes JChannel if all MuxChannels are in closed state
@@ -456,11 +477,18 @@ public class JChannelFactory implements ChannelFactory {
                     if(mux != null) {
                         Address addr=entry.channel.getLocalAddress();
                         try {
-                            mux.sendServiceDownMessage(ch.getId(), addr);
+                            boolean successfulFlush = entry.channel.startFlush(3000,false);
+                            if(!successfulFlush && log.isWarnEnabled()){
+                              log.warn("Flush failed at " + ch.getLocalAddress() + ch.getId());
+                            }
+                            mux.sendServiceDownMessage(ch.getId(), addr,true);
                         }
                         catch(Exception e) {
                             if(log.isErrorEnabled())
                                 log.error("failed sending SERVICE_DOWN message", e);
+                        }
+                        finally{
+                           entry.channel.stopFlush();
                         }
                         all_closed=mux.shutdown(); // closes JChannel if all MuxChannels are in closed state
 
