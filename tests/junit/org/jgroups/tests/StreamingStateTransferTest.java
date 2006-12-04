@@ -80,13 +80,46 @@ public class StreamingStateTransferTest extends ChannelTestBase
          transferHelper(channelNames,false);
       }           
    }
-
+   
+   public void testStateTransferWithCoordinatorCrash()
+   {
+      String channelNames [] = null;
+      //mux applications on top of same channel have to have unique name
+      if(isMuxChannelUsed())
+      {
+         channelNames = createMuxApplicationNames(1);         
+      }
+      else
+      {
+         channelNames = new String[]{"A", "B", "C", "D", "E", "F"};        
+      }
+      transferHelper(channelNames,true,false,false);      
+   }
+   
+   public void testStateTransferWithCoordinatorCrashLargeState()
+   {
+      String channelNames [] = null;
+      //mux applications on top of same channel have to have unique name
+      if(isMuxChannelUsed())
+      {
+         channelNames = createMuxApplicationNames(1);         
+      }
+      else
+      {
+         channelNames = new String[]{"A", "B", "C", "D", "E"};        
+      }
+      transferHelper(channelNames,true,true,false);      
+   }
+   
    public void transferHelper(String channelNames[], boolean useDispatcher)
+   {
+      transferHelper(channelNames,false,false,useDispatcher);
+   }
+
+   public void transferHelper(String channelNames[],boolean crash, boolean largeTransfer,boolean useDispatcher)
    {                 
       int channelCount = channelNames.length;
-      StreamingStateTransferApplication[] channels = null;
-
-      channels = new StreamingStateTransferApplication[channelCount];
+      ArrayList channels = new ArrayList(channelCount);      
 
       //Create a semaphore and take all its tickets
       Semaphore semaphore = new Semaphore(channelCount);
@@ -95,33 +128,42 @@ public class StreamingStateTransferTest extends ChannelTestBase
       {
 
          takeAllPermits(semaphore, channelCount);
-         
+         boolean crashed = false;
          // Create activation threads that will block on the semaphore        
          for (int i = 0; i < channelCount; i++)
          {
-
+            StreamingStateTransferApplication channel = null;
             if(isMuxChannelUsed())
             {
-               channels[i] = new StreamingStateTransferApplication(channelNames[i],muxFactory[i%getMuxFactoryCount()],semaphore);  
+               channel = new StreamingStateTransferApplication(channelNames[i],muxFactory[i%getMuxFactoryCount()],semaphore,largeTransfer);  
             }
             else
             {
-               channels[i] = new StreamingStateTransferApplication(channelNames[i],semaphore,useDispatcher);
+               channel = new StreamingStateTransferApplication(channelNames[i],semaphore,useDispatcher,largeTransfer);
             }
 
             // Start threads and let them join the channel
+            channels.add(channel);
             semaphore.release(1);
-            channels[i].start();            
-            sleepThread(2000);            
+            channel.start();            
+            sleepThread(2000);
+            
+            if(crash && !crashed && i>2)
+            {
+               StreamingStateTransferApplication coord = (StreamingStateTransferApplication) channels.remove(0);
+               coord.cleanup();
+               crashed = true;
+            }
          }               
+         
          
          if(isMuxChannelUsed())
          {
             blockUntilViewsReceived(channels,getMuxFactoryCount(), 60000);
          }
          else
-         {
-            blockUntilViewsReceived(channels, 60000);
+         {            
+            blockUntilViewsReceived(channels, 60000);            
          }
          
 
@@ -135,28 +177,30 @@ public class StreamingStateTransferTest extends ChannelTestBase
          int partialSetStateInvokedCount = 0;
          
          sleepThread(3000);
-         for (int i = 0; i < channels.length; i++)
+         for (int i = 0; i < channels.size(); i++)
          {
-            if(channels[i].getStateInvoked)
+            StreamingStateTransferApplication current = (StreamingStateTransferApplication) channels.get(i);
+            if(current.getStateInvoked)
             {
                getStateInvokedCount++;
             }
-            if(channels[i].setStateInvoked)
+            if(current.setStateInvoked)
             {
                setStateInvokedCount++;
             }  
-            if(channels[i].partialGetStateInvoked)
+            if(current.partialGetStateInvoked)
             {
                partialGetStateInvokedCount++;
             } 
-            if(channels[i].partialSetStateInvoked)
+            if(current.partialSetStateInvoked)
             {
                partialSetStateInvokedCount++;
             }
-            Map map = channels[i].getMap();
-            for (int j = 0; j < channels.length; j++)
+            Map map = current.getMap();
+            for (int j = 0; j < channels.size(); j++)
             {
-               List l = (List) map.get(channels[j].getLocalAddress());
+               StreamingStateTransferApplication app = (StreamingStateTransferApplication) channels.get(j);
+               List l = (List) map.get(app.getLocalAddress());
                int size = l!=null?l.size():0;
                assertEquals("Correct element count in map ",StreamingStateTransferApplication.COUNT,size);              
             }
@@ -184,10 +228,11 @@ public class StreamingStateTransferTest extends ChannelTestBase
       }
       finally
       {
-         for (int i = 0; i < channelCount; i++)
+         for (int i = 0; i < channels.size(); i++)
          {
+            StreamingStateTransferApplication app = (StreamingStateTransferApplication) channels.get(i);
             sleepThread(500);
-            channels[i].cleanup();
+            app.cleanup();
          }
       }
    }
@@ -204,9 +249,7 @@ public class StreamingStateTransferTest extends ChannelTestBase
    {            
       private Map stateMap = new HashMap();
       
-      public static final int COUNT = 25;
-
-      private Object partialTransferObject = new String("partial");
+      public static final int COUNT = 25;      
       
       boolean partialSetStateInvoked = false;
 
@@ -215,16 +258,20 @@ public class StreamingStateTransferTest extends ChannelTestBase
       boolean setStateInvoked = false;
 
       boolean getStateInvoked = false;
+      
+      boolean largeTransfer = false;
 
-      public StreamingStateTransferApplication(String name, Semaphore s,boolean useDispatcher) throws Exception
+      public StreamingStateTransferApplication(String name, Semaphore s,boolean useDispatcher,boolean largeTransfer) throws Exception
       {
          super(name,new StreamingChannelTestFactory(),s,useDispatcher);
-         channel.connect("test");
+         this.largeTransfer = largeTransfer;
+         channel.connect("test");         
       }    
       
-      public StreamingStateTransferApplication(String name, JChannelFactory factory,Semaphore s) throws Exception
+      public StreamingStateTransferApplication(String name, JChannelFactory factory,Semaphore s,boolean largeTransfer) throws Exception
       {
          super(name,factory,s);
+         this.largeTransfer = largeTransfer;
          channel.connect("test");
       } 
 
@@ -260,6 +307,9 @@ public class StreamingStateTransferTest extends ChannelTestBase
 
       public void getState(OutputStream ostream)
       {
+         if(largeTransfer)
+            sleepThread(4000);
+         
          super.getState(ostream);
          ObjectOutputStream oos = null;
          try
@@ -283,9 +333,61 @@ public class StreamingStateTransferTest extends ChannelTestBase
             Util.close(oos);
          }
       }
+      
+      public byte[] getState()
+      {
+         if(largeTransfer)
+            sleepThread(4000);
+         
+         byte[] result = null;
+         try
+         {
+            synchronized (stateMap)
+            {
+               result = Util.objectToByteBuffer(stateMap);
+            }
+         }
+         catch (Exception e)
+         {            
+            e.printStackTrace();
+         }
+         finally
+         {
+            getStateInvoked = true;           
+         }
+         return result;
+      }
+      
+      public void setState(byte [] state)
+      {
+         if(largeTransfer)
+            sleepThread(4000);
+         
+         Map result = null;
+         try
+         {
+            result = (Map) Util.objectFromByteBuffer(state);
+         }
+         catch (Exception e)
+         {            
+            e.printStackTrace();
+         }
+         finally
+         {
+            setStateInvoked = true;           
+         }
+         synchronized(stateMap)
+         {
+            stateMap.clear();
+            stateMap.putAll(result);
+         }
+      }
 
       public void setState(InputStream istream)
       {
+         if(largeTransfer)
+            sleepThread(4000);
+         
          super.setState(istream);
          ObjectInputStream ois = null;
          try
@@ -308,16 +410,60 @@ public class StreamingStateTransferTest extends ChannelTestBase
             Util.close(ois);
          }
       }
+      
+      public void setState(String stateId,byte [] state)
+      {
+         if(largeTransfer)
+            sleepThread(4000);
+         
+         Object nameTransfer = null;         
+         try
+         {
+            nameTransfer = Util.objectFromByteBuffer(state);
+            TestCase.assertEquals("Got partial state requested ", nameTransfer, name);
+         }
+         catch (Exception e)
+         {            
+            e.printStackTrace();
+         }
+         finally
+         {
+            partialSetStateInvoked = true;            
+         }
+      }
+      
+      public byte[] getState(String stateId)
+      {
+         if(largeTransfer)
+            sleepThread(4000);
+         
+         byte[] result = null;
+         try
+         {
+            result = Util.objectToByteBuffer(stateId);
+         }
+         catch (Exception e)
+         {
+            e.printStackTrace();
+         }
+         finally
+         {
+            partialGetStateInvoked = true;            
+         }
+         return result;
+      }
 
       public void setState(String state_id, InputStream istream)
       {
+         if(largeTransfer)
+            sleepThread(4000);
+         
          super.setState(state_id, istream);
          ObjectInputStream ois = null;
          try
          {
             ois = new ObjectInputStream(istream);            
-            TestCase.assertEquals("Got partial state requested ", ois.readObject(), name);           
-            TestCase.assertEquals("Got partial state ", partialTransferObject, ois.readObject());
+            TestCase.assertEquals("Got partial state requested ", ois.readObject(), name);                       
          }
          catch (Exception e)
          {
@@ -332,13 +478,15 @@ public class StreamingStateTransferTest extends ChannelTestBase
 
       public void getState(String state_id, OutputStream ostream)
       {
+         if(largeTransfer)
+            sleepThread(4000);
+         
          super.getState(state_id, ostream);
          ObjectOutputStream oos = null;
          try
          {
             oos = new ObjectOutputStream(ostream);
-            oos.writeObject(state_id);
-            oos.writeObject(partialTransferObject);
+            oos.writeObject(state_id);            
             oos.flush();
          }
          catch (IOException e)

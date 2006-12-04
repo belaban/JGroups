@@ -12,7 +12,7 @@ import java.util.LinkedList;
 /**
  * Test the multiplexer functionality provided by JChannelFactory, especially the service views and cluster views
  * @author Bela Ban
- * @version $Id: MultiplexerViewTest.java,v 1.11 2006/11/22 19:33:07 vlada Exp $
+ * @version $Id: MultiplexerViewTest.java,v 1.12 2006/12/04 19:29:04 vlada Exp $
  */
 public class MultiplexerViewTest extends ChannelTestBase {
     private Channel c1, c2, c3, c4;    
@@ -34,7 +34,8 @@ public class MultiplexerViewTest extends ChannelTestBase {
         factory2.setMultiplexerConfig(MUX_CHANNEL_CONFIG);
     }
 
-    public void tearDown() throws Exception {        
+    public void tearDown() throws Exception {  
+        Util.sleep(1000);
         if(c2 != null)
             c2.close();
         if(c1 != null)
@@ -92,10 +93,13 @@ public class MultiplexerViewTest extends ChannelTestBase {
         c2.setReceiver(receiver2);
         c2.connect("bla");
 
+        //let async block events propagate
+        Util.sleep(1000);
+        
         List events=receiver.getEvents();
         int num_events=events.size();
         System.out.println("-- receiver: " + events);
-        assertEquals("we should have a BLOCK, UNBLOCK, BLOCK, UNBLOCK sequence", 4, num_events);
+        assertEquals("we should have a BLOCK, UNBLOCK, BLOCK, UNBLOCK,BLOCK, UNBLOCK, BLOCK, UNBLOCK sequence", 8, num_events);
         Object evt=events.remove(0);
         assertTrue("evt=" + evt, evt instanceof BlockEvent);
         evt=events.remove(0);
@@ -142,22 +146,25 @@ public class MultiplexerViewTest extends ChannelTestBase {
         MyReceiver receiver4=new MyReceiver();
         c4.setReceiver(receiver4);
         c4.connect("bla");
-        // Util.sleep(1000);
-
+        
+        //let asynch block/unblock events propagate
+        Util.sleep(1000);
         List events=receiver.getEvents();
-        checkBlockAndUnBlock(events, "receiver", new Object[]{BLOCK_EVENT, UNBLOCK_EVENT, BLOCK_EVENT, UNBLOCK_EVENT});
+        checkBlockAndUnBlock(events, "receiver", new Object[]
+      {BLOCK_EVENT, UNBLOCK_EVENT, BLOCK_EVENT, UNBLOCK_EVENT, BLOCK_EVENT, UNBLOCK_EVENT, BLOCK_EVENT, UNBLOCK_EVENT,
+            BLOCK_EVENT, UNBLOCK_EVENT, BLOCK_EVENT, UNBLOCK_EVENT});
 
         events=receiver2.getEvents();
-        checkBlockAndUnBlock(events, "receiver2", new Object[]{BLOCK_EVENT, UNBLOCK_EVENT});
+        checkBlockAndUnBlock(events, "receiver2", new Object[]{BLOCK_EVENT, UNBLOCK_EVENT, BLOCK_EVENT, UNBLOCK_EVENT, BLOCK_EVENT, UNBLOCK_EVENT, BLOCK_EVENT, UNBLOCK_EVENT,});
 
         events=receiver3.getEvents();
-        checkBlockAndUnBlock(events, "receiver3", new Object[]{BLOCK_EVENT, UNBLOCK_EVENT});
+        checkBlockAndUnBlock(events, "receiver3", new Object[]{BLOCK_EVENT, UNBLOCK_EVENT,BLOCK_EVENT, UNBLOCK_EVENT,BLOCK_EVENT, UNBLOCK_EVENT});
 
         events=receiver4.getEvents();
         System.out.println("-- [receiver4] events: " + events);
         // now the new joiner should *not* have a block event !
         // assertFalse("new joiner should not have a BlockEvent", events.contains(new BlockEvent()));
-        checkBlockAndUnBlock(events, "receiver4", new Object[]{BLOCK_EVENT, UNBLOCK_EVENT});
+        checkBlockAndUnBlock(events, "receiver4", new Object[]{BLOCK_EVENT, UNBLOCK_EVENT,BLOCK_EVENT, UNBLOCK_EVENT});
 
         receiver.clear();
         receiver2.clear();
@@ -172,13 +179,13 @@ public class MultiplexerViewTest extends ChannelTestBase {
         Util.sleep(5000);
 
         events=receiver.getEvents();
-        checkBlockAndUnBlock(events, "receiver", new Object[]{BLOCK_EVENT, UNBLOCK_EVENT});
+        checkBlockAndUnBlock(events, "receiver", new Object[]{BLOCK_EVENT, UNBLOCK_EVENT,BLOCK_EVENT, UNBLOCK_EVENT});
 
         events=receiver2.getEvents();
-        checkBlockAndUnBlock(events, "receiver2", new Object[]{BLOCK_EVENT, UNBLOCK_EVENT});
+        checkBlockAndUnBlock(events, "receiver2", new Object[]{BLOCK_EVENT, UNBLOCK_EVENT,BLOCK_EVENT, UNBLOCK_EVENT});
 
         events=receiver3.getEvents();
-        checkBlockAndUnBlock(events, "receiver3", new Object[]{BLOCK_EVENT, UNBLOCK_EVENT});
+        checkBlockAndUnBlock(events, "receiver3", new Object[]{BLOCK_EVENT, UNBLOCK_EVENT,BLOCK_EVENT, UNBLOCK_EVENT});
 
         events=receiver4.getEvents();
         System.out.println("-- [receiver4] events: " + events);

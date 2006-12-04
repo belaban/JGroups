@@ -5,13 +5,18 @@ import java.io.OutputStream;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
+import java.lang.reflect.Constructor;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.StringTokenizer;
 
 import junit.framework.TestCase;
+import junit.framework.TestSuite;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -24,6 +29,7 @@ import org.jgroups.JChannelFactory;
 import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.blocks.RpcDispatcher;
+import org.jgroups.mux.MuxChannel;
 import org.jgroups.util.Util;
 
 import EDU.oswego.cs.dl.util.concurrent.Semaphore;
@@ -37,21 +43,30 @@ import EDU.oswego.cs.dl.util.concurrent.Semaphore;
  */
 public class ChannelTestBase extends TestCase
 {
-   private static Random random = new Random();
    
-   private static String DEFAULT_MUX_FACTORY_COUNT = "4";
+   private static final String TEST_CASES = "tests";
+   private static final String ANT_PROPERTY = "${tests}";
+   private static final String DELIMITER = ",";
+   
+   protected final static Random RANDOM = new Random();
+   
+   private static final int LETTER_A = 64;
+   
+   protected static String DEFAULT_MUX_FACTORY_COUNT = "4";
 
-   static String CHANNEL_CONFIG = "udp.xml";  
+   protected static String CHANNEL_CONFIG = "udp.xml";  
    
-   static String MUX_CHANNEL_CONFIG = "stacks.xml"; 
+   protected static String MUX_CHANNEL_CONFIG = "stacks.xml"; 
    
-   static String MUX_CHANNEL_CONFIG_STACK_NAME ="udp";
+   protected static String MUX_CHANNEL_CONFIG_STACK_NAME ="udp";
 
    protected int active_threads = 0;
    
    protected JChannelFactory muxFactory[] = null;  
 
    protected String thread_dump = null;    
+   
+   protected int currentChannelGeneratedName = LETTER_A;
 
    protected final Log log = LogFactory.getLog(this.getClass());
 
@@ -71,6 +86,8 @@ public class ChannelTestBase extends TestCase
       MUX_CHANNEL_CONFIG = System.getProperty("mux.conf", MUX_CHANNEL_CONFIG);
       MUX_CHANNEL_CONFIG_STACK_NAME = System.getProperty("mux.conf.stack", MUX_CHANNEL_CONFIG_STACK_NAME);
       CHANNEL_CONFIG = System.getProperty("channel.conf", CHANNEL_CONFIG);
+      
+      currentChannelGeneratedName = LETTER_A;
       
       if (isMuxChannelUsed())
       {                
@@ -100,7 +117,7 @@ public class ChannelTestBase extends TestCase
          {
             muxFactory[i].destroy();
          }
-      }
+      }          
       
       Util.sleep(500); // remove this in 2.5 !
 
@@ -133,22 +150,65 @@ public class ChannelTestBase extends TestCase
     */
    protected String [] createMuxApplicationNames(int muxApplicationstPerChannelCount)
    {      
-      int channelCount = getMuxFactoryCount();      
-      int start = 64; //start with letter A
-      String names [] = null;      
-      int appCount = channelCount * muxApplicationstPerChannelCount;
-      names = new String[appCount];
+      return createMuxApplicationNames(muxApplicationstPerChannelCount,getMuxFactoryCount());      
+   }
+   
+   /**
+    * Returns an array of mux application/service names with a guarantee that: 
+    * <p>
+    * - there are no application/service name collissions on top of one channel 
+    * (i.e cannot have two application/service(s) with the same name on top of one channel)
+    * <p>
+    * - each generated application/service name is guaranteed to have a corresponding 
+    * pair application/service with the same name on another channel     
+    * 
+    * @param muxApplicationstPerChannelCount
+    * @param muxFactoryCount how many mux factories should be used (has to be less than getMuxFactoryCount())
+    * @return array of mux application id's represented as String objects
+    */
+   protected String [] createMuxApplicationNames(int muxApplicationstPerChannelCount, int muxFactoryCount)
+   {           
+      if(muxFactoryCount>getMuxFactoryCount())
+      {
+         throw new IllegalArgumentException("Parameter muxFactoryCount hs to be less than or equal to getMuxFactoryCount()");
+      }
       
-      boolean chooseNext = false;
-      for (int i = 0; i < appCount; i++)
+      int startLetter = LETTER_A; 
+      String names [] = null;      
+      int totalMuxAppCount = muxFactoryCount * muxApplicationstPerChannelCount;
+      names = new String[totalMuxAppCount];
+      
+      boolean pickNextLetter = false;
+      for (int i = 0; i < totalMuxAppCount; i++)
       {  
-         chooseNext = (i%channelCount == 0)?true:false;         
-         if(chooseNext)
+         pickNextLetter = (i%muxFactoryCount == 0)?true:false;         
+         if(pickNextLetter)
          {
-            start++;
+            startLetter++;
          }
-         names[i] = Character.toString((char)start);
+         names[i] = Character.toString((char)startLetter);
       }      
+      return names;
+   }
+   
+   /**
+    * Returns channel name as String next in alphabetic sequence since getNextChannelName()
+    * has been called last. Sequence is restarted to letter "A" after each setUp call.
+    * 
+    * @return
+    */
+   protected String getNextChannelName()
+   {
+      return Character.toString((char)++currentChannelGeneratedName);
+   }
+   
+   protected String [] createApplicationNames(int applicationCount)
+   {
+      String names [] = new String[applicationCount];
+      for(int i = 0;i<applicationCount;i++)
+      {
+         names [i] = getNextChannelName();
+      }
       return names;
    }
    
@@ -247,6 +307,14 @@ public class ChannelTestBase extends TestCase
          return c;
       }         
    }
+   
+   public class NextAvailableMuxChannelTestFactory implements ChannelTestFactory
+   {
+      public Channel createChannel(Object id) throws Exception
+      {
+         return ChannelTestBase.this.createChannel(id);
+      }      
+   }
    /**
     * Decouples channel creation for junit tests
     *
@@ -331,6 +399,11 @@ public class ChannelTestBase extends TestCase
             result = v.getMembers();
          }
          return result;
+      }
+      
+      public boolean isUsingMuxChannel()
+      {
+         return channel instanceof MuxChannel;        
       }
 
       public Address getLocalAddress()
@@ -647,6 +720,11 @@ public class ChannelTestBase extends TestCase
       blockUntilViewsReceived(channels,channels.length,timeout);
    }
    
+   public static void blockUntilViewsReceived(Collection channels,long timeout)
+   {
+      blockUntilViewsReceived(channels,channels.size(),timeout);
+   }
+   
    /**
     * Loops, continually calling {@link #areViewsComplete(MemberRetrievable[])}
     * until it either returns true or <code>timeout</code> ms have elapsed.
@@ -664,6 +742,23 @@ public class ChannelTestBase extends TestCase
       {
          sleepThread(100);
          if (areViewsComplete(channels,count))
+         {
+            return;
+         }
+      }
+
+      throw new RuntimeException("timed out before caches had complete views");
+   }
+   
+   public static void blockUntilViewsReceived(Collection channels, int count, long timeout)
+   {
+      long failTime = System.currentTimeMillis() + timeout;
+
+      
+      while (System.currentTimeMillis() < failTime)
+      {
+         sleepThread(100);
+         if (areViewsComplete((MemberRetrievable[])channels.toArray(new MemberRetrievable[channels.size()]),count))
          {
             return;
          }
@@ -743,7 +838,7 @@ public class ChannelTestBase extends TestCase
 
    public static void sleepRandom(int maxTime)
    {
-      sleepThread(random.nextInt(maxTime));
+      sleepThread(RANDOM.nextInt(maxTime));
    }
 
    /**
@@ -762,7 +857,7 @@ public class ChannelTestBase extends TestCase
       {
       }
    }
-
+   
    /* CAUTION: JDK 5 specific code */
    private String dumpThreads()
    {
