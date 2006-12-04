@@ -20,13 +20,12 @@ import org.jgroups.util.Util;
  * methods.
  *
  * @author Bela Ban
- * @version $Id: RpcDispatcherSimpleTest.java,v 1.1 2006/08/28 05:54:33 belaban Exp $
+ * @version $Id: RpcDispatcherSimpleTest.java,v 1.1.2.1 2006/12/04 13:46:38 belaban Exp $
  */
 public class RpcDispatcherSimpleTest {
     Channel channel;
     RpcDispatcher disp;
     RspList rsp_list;
-    String props=null;
 
 
     public int print(int number) throws Exception {
@@ -35,7 +34,7 @@ public class RpcDispatcherSimpleTest {
     }
 
 
-    public void start(int num, long interval) throws Exception {
+    public void start(String props, int num, long interval) throws Exception {
         channel=new JChannel(props);
         channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
         disp=new RpcDispatcher(channel, null, null, this);
@@ -45,7 +44,7 @@ public class RpcDispatcherSimpleTest {
             Util.sleep(interval);
             rsp_list=disp.callRemoteMethods(null, "print", new Object[]{new Integer(i)},
                     new Class[]{int.class}, GroupRequest.GET_ALL, 0);
-            System.out.println("Responses: " + rsp_list);
+            System.out.println("Responses:\n" + rsp_list);
         }
         System.out.println("Closing channel");
         channel.close();
@@ -60,6 +59,7 @@ public class RpcDispatcherSimpleTest {
     public static void main(String[] args) {
         int num=10;
         long interval=1000;
+        String props=null;
         for(int i=0; i < args.length; i++) {
             if(args[i].equals("-num")) {
                 num=Integer.parseInt(args[++i]);
@@ -69,12 +69,16 @@ public class RpcDispatcherSimpleTest {
                 interval=Long.parseLong(args[++i]);
                 continue;
             }
+            if(args[i].equals("-props")) {
+                props=args[++i];
+                continue;
+            }
             help();
             return;
         }
 
         try {
-            new RpcDispatcherSimpleTest().start(num, interval);
+            new RpcDispatcherSimpleTest().start(props, num, interval);
         }
         catch(Exception e) {
             System.err.println(e);
@@ -82,6 +86,6 @@ public class RpcDispatcherSimpleTest {
     }
 
     private static void help() {
-        System.out.println("RpcDispatcherTest [-help] [-num <number of msgs>] [-interval <sleep in ms between calls>]");
+        System.out.println("RpcDispatcherTest [-help] [-props <properties>] [-num <number of msgs>] [-interval <sleep in ms between calls>]");
     }
 }
