@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.26 2006/11/16 20:36:01 belaban Exp $
+// $Id: Event.java,v 1.24.2.1 2006/12/04 22:47:16 vlada Exp $
 
 package org.jgroups;
 
