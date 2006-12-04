@@ -18,7 +18,7 @@ import java.util.List;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.70 2006/11/17 17:24:36 vlada Exp $
+ * @version $Id: GMS.java,v 1.68.2.1 2006/12/04 22:49:18 vlada Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -646,7 +646,13 @@ public class GMS extends Protocol {
        return successfulFlush;
     }
 
-    void stopFlush() {
+    void stopFlush(View view) {
+               
+        //since we did not call startFlush on
+        //empty view do not call RESUME either 
+        if(view != null && view.getMembers().isEmpty())
+           return;
+        
 		if (log.isDebugEnabled()) {
 			log.debug("sending RESUME event");
 		}
@@ -1220,7 +1226,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.70 2006/11/17 17:24:36 vlada Exp $
+     * @version $Id: GMS.java,v 1.68.2.1 2006/12/04 22:49:18 vlada Exp $
      */
     class ViewHandler implements Runnable {
         Thread                    thread;
@@ -1433,7 +1439,7 @@ public class GMS extends Protocol {
                     }
                     finally {
                         if(use_flush)
-                            stopFlush();
+                            stopFlush(firstReq.view);
                     }
                     break;
                 default:

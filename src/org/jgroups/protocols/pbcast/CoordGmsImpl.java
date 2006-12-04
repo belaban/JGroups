@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.53 2006/11/16 18:27:40 vlada Exp $
+// $Id: CoordGmsImpl.java,v 1.52.2.1 2006/12/04 22:49:18 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -477,11 +477,11 @@ public class CoordGmsImpl extends GmsImpl {
         }
 
         JoinRsp join_rsp=null;
-        try {
-            View new_view=gms.getNextView(new_mbrs, leaving_mbrs, suspected_mbrs);
-            if(log.isDebugEnabled())
-                log.debug("new=" + new_mbrs + ", suspected=" + suspected_mbrs + ", leaving=" + leaving_mbrs +
-                        ", new view: " + new_view);
+        View new_view=gms.getNextView(new_mbrs, leaving_mbrs, suspected_mbrs);
+        if(log.isDebugEnabled())
+            log.debug("new=" + new_mbrs + ", suspected=" + suspected_mbrs + ", leaving=" + leaving_mbrs +
+                    ", new view: " + new_view);
+        try {           
 
             // we cannot garbage collect during joining a new member *if* we're the only member
             // Example: {A}, B joins, after returning JoinRsp to B, A garbage collects messages higher than those
@@ -538,7 +538,7 @@ public class CoordGmsImpl extends GmsImpl {
             if(joining_mbrs)
                 gms.passDown(new Event(Event.RESUME_STABLE));
             if(gms.use_flush)
-                gms.stopFlush();
+                gms.stopFlush(new_view);
             if(leaving) {
                 gms.passUp(new Event(Event.DISCONNECT_OK));
                 gms.initState(); // in case connect() is called again
