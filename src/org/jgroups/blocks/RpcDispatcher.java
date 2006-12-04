@@ -1,4 +1,4 @@
-// $Id: RpcDispatcher.java,v 1.26 2006/08/29 08:11:35 belaban Exp $
+// $Id: RpcDispatcher.java,v 1.26.2.1 2006/12/04 13:52:51 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -133,23 +133,37 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
     }
 
 
-
+    public RspList callRemoteMethods(Vector dests, String method_name, Object[] args,
+                                     Class[] types, int mode, long timeout) {
+        return callRemoteMethods(dests, method_name, args, types, mode, timeout, false);
+    }
 
 
     public RspList callRemoteMethods(Vector dests, String method_name, Object[] args,
-                                     Class[] types, int mode, long timeout) {
+                                     Class[] types, int mode, long timeout, boolean use_anycasting) {
         MethodCall method_call=new MethodCall(method_name, args, types);
-        return callRemoteMethods(dests, method_call, mode, timeout);
+        return callRemoteMethods(dests, method_call, mode, timeout, use_anycasting);
     }
+
 
     public RspList callRemoteMethods(Vector dests, String method_name, Object[] args,
                                      String[] signature, int mode, long timeout) {
+        return callRemoteMethods(dests, method_name, args, signature, mode, timeout, false);
+    }
+
+
+    public RspList callRemoteMethods(Vector dests, String method_name, Object[] args,
+                                     String[] signature, int mode, long timeout, boolean use_anycasting) {
         MethodCall method_call=new MethodCall(method_name, args, signature);
-        return callRemoteMethods(dests, method_call, mode, timeout);
+        return callRemoteMethods(dests, method_call, mode, timeout, use_anycasting);
     }
 
 
     public RspList callRemoteMethods(Vector dests, MethodCall method_call, int mode, long timeout) {
+        return callRemoteMethods(dests, method_call, mode, timeout, false);
+    }
+
+    public RspList callRemoteMethods(Vector dests, MethodCall method_call, int mode, long timeout, boolean use_anycasting) {
         if(dests != null && dests.size() == 0) {
             // don't send if dest list is empty
             if(log.isTraceEnabled())
@@ -175,7 +189,7 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         }
 
         Message msg=new Message(null, null, buf);
-        RspList  retval=super.castMessage(dests, msg, mode, timeout);
+        RspList  retval=super.castMessage(dests, msg, mode, timeout, use_anycasting);
         if(log.isTraceEnabled()) log.trace("responses: " + retval);
         return retval;
     }
