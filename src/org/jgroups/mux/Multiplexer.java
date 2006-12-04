@@ -3,6 +3,7 @@ package org.jgroups.mux;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
+import org.jgroups.protocols.pbcast.FLUSH;
 import org.jgroups.stack.StateTransferInfo;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
@@ -15,7 +16,7 @@ import java.util.*;
  * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.36 2006/11/16 18:28:37 vlada Exp $
+ * @version $Id: Multiplexer.java,v 1.37 2006/12/04 19:22:48 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
     /** Map<String,MuxChannel>. Maintains the mapping between service IDs and their associated MuxChannels */
@@ -217,15 +218,15 @@ public class Multiplexer implements UpHandler {
 
 
 
-    public void sendServiceUpMessage(String service, Address host) throws Exception {
-        sendServiceMessage(ServiceInfo.SERVICE_UP, service, host);
+    public void sendServiceUpMessage(String service, Address host,boolean bypassFlush) throws Exception {
+        sendServiceMessage(ServiceInfo.SERVICE_UP, service, host,bypassFlush);
         if(local_addr != null && host != null && local_addr.equals(host))
             handleServiceUp(service, host, false);
     }
 
 
-    public void sendServiceDownMessage(String service, Address host) throws Exception {
-        sendServiceMessage(ServiceInfo.SERVICE_DOWN, service, host);
+    public void sendServiceDownMessage(String service, Address host,boolean bypassFlush) throws Exception {
+        sendServiceMessage(ServiceInfo.SERVICE_DOWN, service, host,bypassFlush);
         if(local_addr != null && host != null && local_addr.equals(host))
             handleServiceDown(service, host, false);
     }
@@ -552,7 +553,7 @@ public class Multiplexer implements UpHandler {
         return (Address)hosts.get(0);
     }
 
-    private void sendServiceMessage(byte type, String service, Address host) throws Exception {
+    private void sendServiceMessage(byte type, String service, Address host,boolean bypassFlush) throws Exception {
         if(host == null)
             host=getLocalAddress();
         if(host == null) {
@@ -566,6 +567,9 @@ public class Multiplexer implements UpHandler {
         MuxHeader hdr=new MuxHeader(si);
         Message service_msg=new Message();
         service_msg.putHeader(NAME, hdr);
+        if(bypassFlush)
+           service_msg.putHeader(FLUSH.NAME, new FLUSH.FlushHeader(FLUSH.FlushHeader.FLUSH_BYPASS));
+        
         channel.send(service_msg);
     }
 
