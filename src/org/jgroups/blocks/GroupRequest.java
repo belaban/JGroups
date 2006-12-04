@@ -1,4 +1,4 @@
-// $Id: GroupRequest.java,v 1.21 2006/08/28 06:51:53 belaban Exp $
+// $Id: GroupRequest.java,v 1.21.2.1 2006/12/04 13:52:51 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -41,7 +41,7 @@ import java.util.*;
  * to do so.<p>
  * <b>Requirements</b>: lossless delivery, e.g. acknowledgment-based message confirmation.
  * @author Bela Ban
- * @version $Revision: 1.21 $
+ * @version $Revision: 1.21.2.1 $
  */
 public class GroupRequest implements RspCollector, Command {
     /** return only first response */
@@ -173,12 +173,16 @@ public class GroupRequest implements RspCollector, Command {
         this.caller=caller;
     }
 
+     public boolean execute() throws Exception {
+         return execute(false);
+     }
+
     /**
      * Sends the message. Returns when n responses have been received, or a
      * timeout  has occurred. <em>n</em> can be the first response, all
      * responses, or a majority  of the responses.
      */
-    public boolean execute() throws Exception {
+    public boolean execute(boolean use_anycasting) throws Exception {
         if(corr == null && transport == null) {
             if(log.isErrorEnabled()) log.error("both corr and transport are null, cannot send group request");
             return false;
@@ -186,7 +190,7 @@ public class GroupRequest implements RspCollector, Command {
 
         try {
             done=false;
-            boolean retval=doExecute(timeout);
+            boolean retval=doExecute(use_anycasting, timeout);
             if(retval == false && log.isTraceEnabled())
                 log.trace("call did not execute correctly, request is " + this.toString());
             return retval;
@@ -414,8 +418,9 @@ public class GroupRequest implements RspCollector, Command {
         return result;
     }
 
+
     /** This method runs with rsp_mutex locked (called by <code>execute()</code>). */
-    private boolean doExecute(long timeout) throws Exception {
+    private boolean doExecute(boolean use_anycasting, long timeout) throws Exception {
         long start_time=0;
         Address suspect;
         req_id=getRequestId();
@@ -436,10 +441,22 @@ public class GroupRequest implements RspCollector, Command {
             if(log.isTraceEnabled()) log.trace(new StringBuffer("sending request (id=").append(req_id).append(')'));
             if(corr != null) {
                 java.util.List tmp=new Vector(members);
-                corr.sendRequest(req_id, tmp, request_msg, rsp_mode == GET_NONE? null : this);
+                corr.sendRequest(req_id, tmp, request_msg, rsp_mode == GET_NONE? null : this, use_anycasting);
             }
             else {
-                transport.send(request_msg);
+                if(use_anycasting) {
+                    List tmp=new ArrayList(members);
+                    Message copy=request_msg.copy(true);
+                    Address mbr;
+                    for(Iterator it=tmp.iterator(); it.hasNext();) {
+                        mbr=(Address)it.next();
+                        copy.setDest(mbr);
+                        transport.send(copy);
+                    }
+                }
+                else {
+                    transport.send(request_msg);
+                }
             }
         }
         catch(Exception ex) {
