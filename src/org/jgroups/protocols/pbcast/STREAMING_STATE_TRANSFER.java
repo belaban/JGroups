@@ -83,26 +83,23 @@ import EDU.oswego.cs.dl.util.concurrent.ThreadFactory;
  */
 public class STREAMING_STATE_TRANSFER extends Protocol
 {
-   Address local_addr = null;
+   private Address local_addr = null;
 
-   final Vector members = new Vector();
+   private final Vector members = new Vector();
 
-   final Map state_requesters = new HashMap();
+   private final Map state_requesters = new HashMap();   
 
-   /** set to true while waiting for a STATE_RSP */
-   boolean waiting_for_state_response = false;
+   private Digest digest = null;
 
-   Digest digest = null;
+   private final HashMap map = new HashMap(); // to store configuration information
 
-   final HashMap map = new HashMap(); // to store configuration information
+   private int num_state_reqs = 0;
 
-   int num_state_reqs = 0;
+   private long num_bytes_sent = 0;
 
-   long num_bytes_sent = 0;
+   private double avg_state_size = 0;
 
-   double avg_state_size = 0;
-
-   final static String NAME = "STREAMING_STATE_TRANSFER";
+   private final static String NAME = "STREAMING_STATE_TRANSFER";
 
    private InetAddress bind_addr;
 
@@ -118,7 +115,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
 
    private boolean use_reading_thread;
 
-   private Promise flush_promise = new Promise();;
+   private final Promise flush_promise = new Promise();;
 
    private volatile boolean use_flush;
 
@@ -128,7 +125,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
 
    private int threadCounter;
 
-   private boolean flushProtocolInStack = false;   
+   private volatile boolean flushProtocolInStack = false;   
 
    public final String getName()
    {
@@ -213,8 +210,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
 
    public void stop()
    {
-      super.stop();
-      waiting_for_state_response = false;
+      super.stop();     
       if (spawner != null)
       {
          spawner.stop();
@@ -327,19 +323,19 @@ public class STREAMING_STATE_TRANSFER extends Protocol
                }
                if (successfulFlush)
                {
-                  log.info("Successful flush at " + local_addr);
+                  log.debug("Successful flush at " + local_addr);
                }
                Message state_req = new Message(target, null, null);
                state_req.putHeader(NAME, new StateHeader(StateHeader.STATE_REQ, local_addr, info.state_id));
+               String stateRequested = info.state_id==null?"full":info.state_id;
                if (log.isDebugEnabled())
-                  log.debug("GET_STATE: asking " + target + " for state");
+                  log.debug("Member " + local_addr + " asking " + target + " for " + stateRequested + " state");
 
                // suspend sending and handling of mesage garbage collection gossip messages,
                // fixes bugs #943480 and #938584). Wake up when state has been received
-               if (log.isDebugEnabled())
-                  log.debug("passing down a SUSPEND_STABLE event");
-               passDown(new Event(Event.SUSPEND_STABLE, new Long(info.timeout)));
-               waiting_for_state_response = true;             
+               if (log.isTraceEnabled())
+                  log.trace("passing down a SUSPEND_STABLE event");
+               passDown(new Event(Event.SUSPEND_STABLE, new Long(info.timeout)));                
                passDown(new Event(Event.MSG, state_req));
             }
             return; // don't pass down any further !
@@ -350,13 +346,13 @@ public class STREAMING_STATE_TRANSFER extends Protocol
                stopFlush();
             }
 
-            if (log.isDebugEnabled())
-               log.debug("STATE_TRANSFER_INPUTSTREAM_CLOSED received");
+            if (log.isTraceEnabled())
+               log.trace("STATE_TRANSFER_INPUTSTREAM_CLOSED received");
             //resume sending and handling of message garbage collection gossip messages,
             // fixes bugs #943480 and #938584). Wakes up a previously suspended message garbage
             // collection protocol (e.g. STABLE)
-            if (log.isDebugEnabled())
-               log.debug("passing down a RESUME_STABLE event");
+            if (log.isTraceEnabled())
+               log.trace("passing down a RESUME_STABLE event");
             passDown(new Event(Event.RESUME_STABLE));
             return;
          case Event.SUSPEND_OK :
@@ -437,8 +433,8 @@ public class STREAMING_STATE_TRANSFER extends Protocol
             digest = digest.copy();
          }
 
-         if (log.isDebugEnabled())
-            log.debug("Iterating state requesters " + state_requesters);
+         if (log.isTraceEnabled())
+            log.trace("Iterating state requesters " + state_requesters);
 
          for (Iterator it = state_requesters.keySet().iterator(); it.hasNext();)
          {
@@ -449,11 +445,11 @@ public class STREAMING_STATE_TRANSFER extends Protocol
                Address requester = (Address) iter.next();
                Message state_rsp = new Message(requester);
                StateHeader hdr = new StateHeader(StateHeader.STATE_RSP, local_addr, spawner.getServerSocketAddress(),
-                     digest, tmp_state_id);
+                                     isDigestNeeded()?digest:null, tmp_state_id);
                state_rsp.putHeader(NAME, hdr);
 
-               if (log.isDebugEnabled())
-                  log.debug("Responding to state requester " + requester + " with address "
+               if (log.isTraceEnabled())
+                  log.trace("Responding to state requester " + requester + " with address "
                         + spawner.getServerSocketAddress() + " and digest " + digest);
                passDown(new Event(Event.MSG, state_rsp));
                if (stats)
@@ -518,14 +514,14 @@ public class STREAMING_STATE_TRANSFER extends Protocol
             {
                public void run()
                {
-                  if (log.isDebugEnabled())
+                  if (log.isTraceEnabled())
                   {
-                     log.debug(Thread.currentThread() + " started.");
+                     log.trace(Thread.currentThread() + " started.");
                   }
                   command.run();
-                  if (log.isDebugEnabled())
+                  if (log.isTraceEnabled())
                   {
-                     log.debug(Thread.currentThread() + " stopped.");
+                     log.trace(Thread.currentThread() + " stopped.");
                   }
                }
             };
@@ -540,7 +536,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
       Address ret = null;
       synchronized (members)
       {
-         if (members != null && !members.isEmpty())
+         if (!members.isEmpty())
          {
             for (int i = 0; i < members.size(); i++)
                if (!local_addr.equals(members.elementAt(i)))
@@ -551,31 +547,11 @@ public class STREAMING_STATE_TRANSFER extends Protocol
    }
 
    private void handleViewChange(View v)
-   {
-      Address old_coord;
-      Vector new_members = v.getMembers();
-      boolean send_up_null_state_rsp = false;
-
+   {                 
       synchronized (members)
-      {
-         old_coord = (Address) (members.size() > 0 ? members.firstElement() : null);
+      {         
          members.clear();
-         members.addAll(new_members);
-
-         // this handles the case where a coord dies during a state transfer; prevents clients from hanging forever
-         // Note this only takes a coordinator crash into account, a getState(target, timeout), where target is not
-         // null is not handled ! (Usually we get the state from the coordinator)
-         // http://jira.jboss.com/jira/browse/JGRP-148
-         if (waiting_for_state_response && old_coord != null && !members.contains(old_coord))
-         {
-            send_up_null_state_rsp = true;
-         }
-      }
-
-      if (send_up_null_state_rsp)
-      {
-         log.warn("discovered that the state provider (" + old_coord
-               + ") crashed; will return null state to application");
+         members.addAll(v.getMembers());      
       }
    }
 
@@ -607,8 +583,8 @@ public class STREAMING_STATE_TRANSFER extends Protocol
          else if (empty)
          {
             digest = null;
-            if (log.isDebugEnabled())
-               log.debug("passing down GET_DIGEST_STATE");
+            if (log.isTraceEnabled())
+               log.trace("passing down GET_DIGEST_STATE");
             passDown(new Event(Event.GET_DIGEST_STATE));
          }
       }
@@ -616,9 +592,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
 
    void handleStateRsp(StateHeader hdr)
    {
-      Digest tmp_digest = hdr.my_digest;
-
-      waiting_for_state_response = false;
+      Digest tmp_digest = hdr.my_digest;      
       if (isDigestNeeded())
       {
          if (tmp_digest == null)
@@ -643,16 +617,16 @@ public class STREAMING_STATE_TRANSFER extends Protocol
          if (requesters != null && !requesters.isEmpty())
          {
             boolean removed = requesters.remove(address);
-            if (log.isDebugEnabled())
+            if (log.isTraceEnabled())
             {
-               log.debug("Attempted to clear " + address + " from requesters, successful=" + removed);
+               log.trace("Attempted to clear " + address + " from requesters, successful=" + removed);
             }
             if (requesters.isEmpty())
             {
                state_requesters.remove(state_id);
-               if (log.isDebugEnabled())
+               if (log.isTraceEnabled())
                {
-                  log.debug("Cleared all requesters for state " + state_id + ",state_requesters=" + state_requesters);
+                  log.trace("Cleared all requesters for state " + state_id + ",state_requesters=" + state_requesters);
                }
             }
          }        
@@ -665,7 +639,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
       String tmp_state_id = hdr.getStateId();
       StreamingInputStreamWrapper wrapper = null;
       StateTransferInfo sti = null;
-      Socket socket = new Socket();
+      final Socket socket = new Socket();
       try
       {
          socket.bind(new InetSocketAddress(bind_addr, 0));
@@ -769,7 +743,10 @@ public class STREAMING_STATE_TRANSFER extends Protocol
 
       public StateProviderThreadSpawner(PooledExecutor pool, ServerSocket stateServingSocket)
       {
-         super();
+         if(pool == null || stateServingSocket == null)
+         {
+            throw new IllegalArgumentException("Cannot create thread pool");
+         }
          this.pool = pool;
          this.serverSocket = stateServingSocket;
          this.address = new IpAddress(STREAMING_STATE_TRANSFER.this.bind_addr, serverSocket.getLocalPort());
@@ -784,8 +761,8 @@ public class STREAMING_STATE_TRANSFER extends Protocol
             {
                if (log.isDebugEnabled())
                   log.debug("StateProviderThreadSpawner listening at " + getServerSocketAddress() + "...");
-               if (log.isDebugEnabled())
-                  log.debug("Pool has " + pool.getPoolSize() + " active threads");
+               if (log.isTraceEnabled())
+                  log.trace("Pool has " + pool.getPoolSize() + " active threads");
                final Socket socket = serverSocket.accept();
                pool.execute(new Runnable()
                {
@@ -805,7 +782,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
                {
                   //we get this exception when we close server socket
                   //exclude that case
-                  if (serverSocket != null && !serverSocket.isClosed())
+                  if (!serverSocket.isClosed())
                   {
                      log.warn("Spawning socket from server socket finished abnormaly", e);
                   }
@@ -828,7 +805,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
          running = false;
          try
          {
-            if (serverSocket != null && !serverSocket.isClosed())
+            if (!serverSocket.isClosed())
             {
                serverSocket.close();
             }
@@ -841,17 +818,14 @@ public class STREAMING_STATE_TRANSFER extends Protocol
             if (log.isDebugEnabled())
                log.debug("Waiting for StateProviderThreadSpawner to die ... ");
 
-            if (runner != null)
+            try
             {
-               try
-               {
-                  runner.join(3000);
-               }
-               catch (InterruptedException ignored)
-               {
-               }
+               runner.join(3000);
             }
-
+            catch (InterruptedException ignored)
+            {
+            }
+           
             if (log.isDebugEnabled())
                log.debug("Shutting the thread pool down... ");
 
