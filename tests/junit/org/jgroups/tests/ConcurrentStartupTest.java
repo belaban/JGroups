@@ -24,7 +24,7 @@ import EDU.oswego.cs.dl.util.concurrent.Semaphore;
 /**
  * Tests concurrent startup with state transfer and concurrent state tranfer.
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.19 2006/11/22 19:33:07 vlada Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.16.2.1 2006/12/04 22:45:49 vlada Exp $
  */
 public class ConcurrentStartupTest extends ChannelTestBase
 {
