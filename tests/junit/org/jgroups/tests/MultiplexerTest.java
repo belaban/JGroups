@@ -15,7 +15,7 @@ import java.io.*;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.32 2006/11/22 19:33:07 vlada Exp $
+ * @version $Id: MultiplexerTest.java,v 1.31.2.1 2006/12/04 22:45:49 vlada Exp $
  */
 public class MultiplexerTest extends ChannelTestBase {
     private Cache c1, c2, c1_repl, c2_repl;
