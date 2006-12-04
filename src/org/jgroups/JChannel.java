@@ -67,7 +67,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.106 2006/10/28 02:42:32 vlada Exp $
+ * @version $Id: JChannel.java,v 1.106.2.1 2006/12/04 22:47:16 vlada Exp $
  */
 public class JChannel extends Channel {
 
@@ -1481,39 +1481,101 @@ public class JChannel extends Channel {
     }
 
     /**
-     * Will berform a flush of the system, ie. all pending messages are flushed out of the system and all members ack
-     * their reception. After this call return, no member will be sending any messages until {@link #stopFlush()} is
-     * called.
+     * Will perform a flush of the system, ie. all pending messages are flushed out of the 
+     * system and all members ack their reception. After this call return, no member will 
+     * be sending any messages until {@link #stopFlush()} is called.
+     * <p>
+     * 
+     * In case of flush collisions random sleep time backoff algorithm is employed and 
+     * flush is reattempted for numberOfAttempts. Therefore this method is guaranteed 
+     * to return after timeout*numberOfAttempts miliseconds.
+     * 
+     * 
      * @param timeout
+     * @param numberOfAttempts if flush was unsuccessful attempt again until numberOfAttempts is 0
      * @param automatic_resume Call {@link #stopFlush()} after the flush
      * @return true if FLUSH completed within the timeout
      */
-    public boolean startFlush(long timeout, boolean automatic_resume) {
+    public boolean startFlush(long timeout, int numberOfAttempts, boolean automatic_resume) {
         if(!flush_supported) {
             throw new IllegalStateException("Flush is not supported, add pbcast.FLUSH protocol to your configuration");
         }
 
-        boolean successfulFlush=false;
+        boolean successfulFlush = false;
+        flush_promise.reset();        
         down(new Event(Event.SUSPEND));
-        try {
-            flush_promise.reset();
-            flush_promise.getResultWithTimeout(timeout);
-            successfulFlush=true;
+        try{  
+           Boolean r = null;
+           if(flush_promise.hasResult()){              
+              r = (Boolean)flush_promise.getResult();
+              successfulFlush = r.booleanValue();
+           }
+           else{              
+              r = (Boolean) flush_promise.getResultWithTimeout(timeout);
+              successfulFlush = r.booleanValue();
+           }
         }
-        catch(TimeoutException e) {
+        catch (TimeoutException e){
+           //it is normal to get timeouts - it is the final outcome that counts 
+           //we will just retry below
+           
+           if(log.isInfoEnabled())
+              log.info("JChannel.startFlush requested by " + local_addr
+                 + " timed out waiting for flush responses after " + timeout + " msec");
         }
+
+        if (!successfulFlush && numberOfAttempts > 0){
+           long backOffSleepTime = Util.random(5000);
+           if(log.isInfoEnabled())               
+              log.info("Flush in progress detected at " + local_addr + ". Backing off for "
+                    + backOffSleepTime + " ms. Attempts left " + numberOfAttempts);
+           
+           Util.sleepRandom(backOffSleepTime);      
+           successfulFlush = startFlush(timeout, --numberOfAttempts ,automatic_resume);
+        }     
 
         if(automatic_resume)
             stopFlush();
 
-        return successfulFlush;
+        return successfulFlush;              
+    }
+    
+    /**
+     * Will perform a flush of the system, ie. all pending messages are flushed out of the 
+     * system and all members ack their reception. After this call return, no member will 
+     * be sending any messages until {@link #stopFlush()} is called.
+     * <p>
+     * 
+     * In case of flush collisions random sleep time backoff algorithm is employed and 
+     * flush is reattempted for a default of three times. Therefore this method is guaranteed 
+     * to return after timeout*3 miliseconds.
+     *     
+     * @param timeout
+     * @param automatic_resume Call {@link #stopFlush()} after the flush
+     * @return true if FLUSH completed within the timeout
+     */
+    public boolean startFlush(long timeout, boolean automatic_resume) {       
+       int defaultNumberOfFlushAttempts = 3;
+       return startFlush(timeout,defaultNumberOfFlushAttempts, automatic_resume);
     }
 
     public void stopFlush() {
         if(!flush_supported) {
             throw new IllegalStateException("Flush is not supported, add pbcast.FLUSH protocol to your configuration");
         }
+        
+        flush_unblock_promise.reset();
         down(new Event(Event.RESUME));
+        
+        //do not return until UNBLOCK event is received        
+        boolean shouldWaitForUnblock = receive_blocks;        
+        if(shouldWaitForUnblock){
+           try{              
+              flush_unblock_promise.getResultWithTimeout(5000);
+           }
+           catch (TimeoutException te){              
+           }
+        }
     }
 
     Address determineCoordinator() {
