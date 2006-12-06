@@ -4,7 +4,7 @@ Threadless stack
 ================
 
 Author: Bela Ban
-Version: $Id: ThreadlessStack.txt,v 1.6 2006/12/06 12:53:36 belaban Exp $
+Version: $Id: ThreadlessStack.txt,v 1.7 2006/12/06 13:29:24 belaban Exp $
 JIRAs:
 http://jira.jboss.com/jira/browse/JGRP-180 (harden stack),
 http://jira.jboss.com/jira/browse/JGRP-181 (threadless stack),
@@ -51,6 +51,25 @@ Reliable events
 
 Implementation
 ==============
+
+
+Message
+-------
+We add a flags byte to a message. Values are
+- OOB (if not set, we have a regular message)
+- HIGH_PRIO (if not set, the messsge has a default priority)
+- (LOW_PRIO): TBD
+
+
+Unmarshaller
+------------
+Executor (DirectExecutor or PooledExecutor (default)) which
+- unmarshals byte buffers into messages
+- performs the version check and
+- discards messages from different groups
+
+When done, the Message is passed either to the OOB or regular thread pool for passing up the stack. The decision is
+made based on whether or not the OOB flag is set in the message.
 
 
 Buffer pool
