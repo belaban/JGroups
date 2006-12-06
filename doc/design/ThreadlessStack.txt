@@ -4,7 +4,7 @@ Threadless stack
 ================
 
 Author: Bela Ban
-Version: $Id: ThreadlessStack.txt,v 1.7 2006/12/06 13:29:24 belaban Exp $
+Version: $Id: ThreadlessStack.txt,v 1.8 2006/12/06 14:06:03 belaban Exp $
 JIRAs:
 http://jira.jboss.com/jira/browse/JGRP-180 (harden stack),
 http://jira.jboss.com/jira/browse/JGRP-181 (threadless stack),
@@ -112,7 +112,12 @@ Todos
   processed in parallel
 
 - Loopback: may have to be run in *same* thread (not pick a different thread from thread pool) because it may
-  already hold locks, and we want it to be able to re-acquire them
+  already hold locks, and we want it to be able to re-acquire them.
+  - Should loopback messages be copied, or do we send the original messages up the stack ?
+  - Should koopback messages be placed into the thread pool (OOB or regular), or simply be passed back up
+    on the same thread ?
+
+- Unmarshaller should reuse a pool of InputStreams, not create a new one for each unmarshalling task
 
 
 
