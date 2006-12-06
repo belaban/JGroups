@@ -4,7 +4,7 @@ Threadless stack
 ================
 
 Author: Bela Ban
-Version: $Id: ThreadlessStack.txt,v 1.5 2006/11/17 17:25:26 belaban Exp $
+Version: $Id: ThreadlessStack.txt,v 1.6 2006/12/06 12:53:36 belaban Exp $
 JIRAs:
 http://jira.jboss.com/jira/browse/JGRP-180 (harden stack),
 http://jira.jboss.com/jira/browse/JGRP-181 (threadless stack),
@@ -63,6 +63,38 @@ buffer pool, releasing the lock so it can be used for a new packet.
 
 Advantage: we don't need to *copy* the packet (unlike in the old solution where we copied the byte buffer into the
 incoming queue)
+
+
+Todos
+------
+
+- Provide XML parsing for thread pool config, e.g.
+<UDP
+            mcast_addr="${jgroups.udp.mcast_addr:228.10.10.10}"
+            mcast_port="${jgroups.udp.mcast_port:45588}">
+        <oob_thread_pool>
+            ...
+        </oob_thread_pool>
+
+        <!-- If no thread_pool element is present, thread pools will be disabled -->
+        <thread_pool min_threads="2"
+                     preallocation="false"
+                     max_threads="10"
+                     keep_alive_time="30000"
+                     rejection_policy="runOnCallersThread">
+            <queue type="FifoInputQueue"
+                    max_bytes="1000000"/>
+        </thread_pool>
+    </UDP>
+
+- Plain config strings will not be supported anymore
+
+- Check UNICAST and NAKACK for correct synchronization: block messages from the *same* sender, other messages can be
+  processed in parallel
+
+- Loopback: may have to be run in *same* thread (not pick a different thread from thread pool) because it may
+  already hold locks, and we want it to be able to re-acquire them
+
 
 
 
