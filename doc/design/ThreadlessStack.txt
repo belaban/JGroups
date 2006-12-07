@@ -4,7 +4,7 @@ Threadless stack
 ================
 
 Author: Bela Ban
-Version: $Id: ThreadlessStack.txt,v 1.9 2006/12/07 10:25:01 belaban Exp $
+Version: $Id: ThreadlessStack.txt,v 1.10 2006/12/07 16:54:34 belaban Exp $
 JIRAs:
 http://jira.jboss.com/jira/browse/JGRP-180 (harden stack),
 http://jira.jboss.com/jira/browse/JGRP-181 (threadless stack),
@@ -129,6 +129,21 @@ Todos
 
 - Implement blocking queue for OOB and regular thread pools which provides priority delivery of messages, e.g. parallel
   delivery of messages from different senders and sequential delivery of messages from the same sender
+
+- Handle dispatching of messages from Unmarshaller to OOB or regular thread pool based on tag. Currently not done;
+  we dispatch all messages to the regular thread pool.
+  - Add flags to Message
+
+- In TP.receive() we unconditionally *copy* the buffer. This doesn't need to be done if
+  - we use a BufferPool or
+  - the Unmarshaller is a DirectExecutor
+
+- Remove TP.use_threadless_stack
+
+- Expose JMX information for all 3 thread pools
+
+- Thread naming in thread pool: better naming (e.g. for Unmarshalling threads sender of message that is being
+  unmarshalled). Don't use increasing numbers for threads (?)
 
 
 
