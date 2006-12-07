@@ -41,7 +41,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.80 2006/12/07 18:14:46 belaban Exp $
+ * @version $Id: TP.java,v 1.81 2006/12/07 18:15:17 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -531,7 +531,7 @@ public abstract class TP extends Protocol {
 
 
         // todo: provide configuration in XML
-        // ====================================== Regular thread pool
+        // ====================================== Regular thread pool ===========================
         if(thread_pool_enabled) { // create a PooledExecutor for the unmarshaller thread pool
             thread_pool_queue=new BoundedLinkedQueue(thread_pool_queue_max_size);
             thread_pool=new PooledExecutor(thread_pool_queue,
