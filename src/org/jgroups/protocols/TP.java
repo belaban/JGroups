@@ -41,7 +41,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.79 2006/12/07 16:58:36 belaban Exp $
+ * @version $Id: TP.java,v 1.80 2006/12/07 18:14:46 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -487,7 +487,6 @@ public abstract class TP extends Protocol {
                     return new Thread(unmarshaller_threads, command, "UnmarshallerThread-" + num++);
                 }
             });
-
         }
         else { // otherwise use the caller's thread to unmarshal the byte buffer into a message
             unmarshaller_thread_pool=new DirectExecutor();
@@ -517,9 +516,9 @@ public abstract class TP extends Protocol {
 
                 ((PooledExecutor)oob_thread_pool).setThreadFactory(new ThreadFactory() {
                     int num=1;
-                    ThreadGroup oob_threads=new ThreadGroup(pool_thread_group, "OOB");
+                    ThreadGroup unmarshaller_threads=new ThreadGroup(pool_thread_group, "OOB");
                     public Thread newThread(Runnable command) {
-                        return new Thread(pool_thread_group, command, "OOB Thread-" + num++);
+                        return new Thread(unmarshaller_threads, command, "OOBThread-" + num++);
                     }
                 });
             }
@@ -528,10 +527,6 @@ public abstract class TP extends Protocol {
             oob_thread_pool=new DirectExecutor();
         }
 
-//        oob_thread_pool=new PooledExecutor(new BoundedBuffer(100), 5);
-//        ((PooledExecutor)oob_thread_pool).setMinimumPoolSize(2);
-//        ((PooledExecutor)oob_thread_pool).setKeepAliveTime(30000);
-//        ((PooledExecutor)oob_thread_pool).runWhenBlocked();
 
 
 
@@ -558,9 +553,9 @@ public abstract class TP extends Protocol {
 
                 ((PooledExecutor)thread_pool).setThreadFactory(new ThreadFactory() {
                     int num=1;
-                    ThreadGroup threads=new ThreadGroup(pool_thread_group, "Incoming");
+                    ThreadGroup unmarshaller_threads=new ThreadGroup(pool_thread_group, "Incoming");
                     public Thread newThread(Runnable command) {
-                        return new Thread(threads, command, "Regular Thread-" + num++);
+                        return new Thread(unmarshaller_threads, command, "Regular Thread-" + num++);
                     }
                 });
             }
@@ -568,14 +563,6 @@ public abstract class TP extends Protocol {
         else { // otherwise use the caller's thread to unmarshal the byte buffer into a message
             thread_pool=new DirectExecutor();
         }
-
-//        thread_pool=new PooledExecutor(new BoundedBuffer(500), 10);
-//        ((PooledExecutor)thread_pool).setMinimumPoolSize(2);
-//        ((PooledExecutor)thread_pool).setKeepAliveTime(30000);
-//        ((PooledExecutor)thread_pool).runWhenBlocked();
-
-        // alternative: disable the thread pool
-        // thread_pool=new DirectExecutor();
 
 
         if(loopback) {
