@@ -6,9 +6,11 @@ import org.jgroups.Address;
 import java.net.UnknownHostException;
 import java.util.List;
 
+import EDU.oswego.cs.dl.util.concurrent.PooledExecutor;
+
 /**
  * @author Bela Ban
- * @version $Id: TP.java,v 1.5 2005/11/09 17:42:25 belaban Exp $
+ * @version $Id: TP.java,v 1.6 2006/12/07 20:07:34 belaban Exp $
  */
 public class TP extends org.jgroups.jmx.Protocol implements TPMBean {
     org.jgroups.protocols.TP tp;
@@ -138,5 +140,93 @@ public class TP extends org.jgroups.jmx.Protocol implements TPMBean {
         return tp.isUseOutgoingPacketHandler();
     }
 
+    public int getUnmarshallerMinPoolSize() {
+        return tp.getUnmarshallerMinPoolSize();
+    }
+
+    public void setUnmarshallerMinPoolSize(int size) {
+        tp.setUnmarshallerMinPoolSize(size);
+    }
+
+    public int getUnmarshallerMaxPoolSize() {
+        return tp.getUnmarshallerMaxPoolSize();
+    }
+
+    public void setUnmarshallerMaxPoolSize(int size) {
+        tp.setUnmarshallerMaxPoolSize(size);
+    }
+
+    public int getUnmarshallerPoolSize() {
+        return tp.getUnmarshallerPoolSize();
+    }
+
+    public long getUnmarshallerKeepAliveTime() {
+        return tp.getUnmarshallerKeepAliveTime();
+    }
+
+    public void setUnmarshallerKeepAliveTime(long time) {
+        tp.setUnmarshallerKeepAliveTime(time);
+    }
+
+
+
+
+    public int getOOBMinPoolSize() {
+         return tp.getOOBMinPoolSize();
+     }
+
+     public void setOOBMinPoolSize(int size) {
+         tp.setOOBMinPoolSize(size);
+     }
+
+     public int getOOBMaxPoolSize() {
+         return tp.getOOBMaxPoolSize();
+     }
+
+     public void setOOBMaxPoolSize(int size) {
+         tp.setOOBMaxPoolSize(size);
+     }
+
+     public int getOOBPoolSize() {
+         return tp.getOOBPoolSize();
+     }
+
+     public long getOOBKeepAliveTime() {
+         return tp.getOOBKeepAliveTime();
+     }
+
+     public void setOOBKeepAliveTime(long time) {
+         tp.setOOBKeepAliveTime(time);
+     }
+
+    
+
+    public int getIncomingMinPoolSize() {
+         return tp.getIncomingMinPoolSize();
+     }
+
+     public void setIncomingMinPoolSize(int size) {
+         tp.setIncomingMinPoolSize(size);
+     }
+
+     public int getIncomingMaxPoolSize() {
+         return tp.getIncomingMaxPoolSize();
+     }
+
+     public void setIncomingMaxPoolSize(int size) {
+         tp.setIncomingMaxPoolSize(size);
+     }
+
+     public int getIncomingPoolSize() {
+         return tp.getIncomingPoolSize();
+     }
+
+     public long getIncomingKeepAliveTime() {
+         return tp.getIncomingKeepAliveTime();
+     }
+
+     public void setIncomingKeepAliveTime(long time) {
+         tp.setIncomingKeepAliveTime(time);
+     }
 
 }
