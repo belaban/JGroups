@@ -1,10 +1,11 @@
 package org.jgroups.protocols;
 
 
-import EDU.oswego.cs.dl.util.concurrent.BoundedLinkedQueue;
+import EDU.oswego.cs.dl.util.concurrent.*;
 import org.jgroups.*;
-import org.jgroups.stack.Protocol;
+import org.jgroups.Channel;
 import org.jgroups.stack.IpAddress;
+import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 import org.jgroups.util.List;
 import org.jgroups.util.Queue;
@@ -40,7 +41,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.78 2006/11/28 17:45:59 belaban Exp $
+ * @version $Id: TP.java,v 1.79 2006/12/07 16:58:36 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -133,6 +134,74 @@ public abstract class TP extends Protocol {
     IncomingMessageHandler incoming_msg_handler;
 
 
+    boolean use_threadless_stack=true; // todo: remove
+    ThreadGroup pool_thread_group=new ThreadGroup(Util.getGlobalThreadGroup(), "Thread Pools");
+    /** ================================== Unmarshaller thread pool ============================== */
+
+    /** Thread pool to handle unmarshalling, version/group matching and dispatching into the OOB or regular thread pools.
+     * The default is PooledExecutor is enabled, otherwise we use DirectExecutor
+     */
+    Executor unmarshaller_thread_pool=null;
+
+    boolean unmarshaller_thread_pool_enabled=true;
+    int unmarshaller_thread_pool_min_threads=2;
+    int unmarshaller_thread_pool_max_threads=10;
+    /** Number of milliseconds after which an idle thread is removed */
+    long unmarshaller_thread_pool_keep_alive_time=30000;
+
+    /** Used if unmarshaller_thread_pool is a PooledExecutor and unmarshaller_thread_pool_queue_enabled is true */
+    EDU.oswego.cs.dl.util.concurrent.Channel unmarshaller_thread_pool_queue=null;
+    /** Whether of not to use a queue with PooledExecutor (ignored with DirectExecutor) */
+    boolean unmarshaller_thread_pool_queue_enabled=true;
+    /** max number of elements in queue (bounded) */
+    int unmarshaller_thread_pool_queue_max_size=500;
+    /** Possible values are "Wait", "Abort", "Discard", "DiscardOldest". These values might change once we switch to
+     * JDK 5's java.util.concurrent package */
+    String unmarshaller_thread_pool_rejection_policy="Run";
+
+
+    /** ================================== OOB thread pool ============================== */
+    /** The thread pool which handles OOB messages */
+    Executor oob_thread_pool;
+    boolean oob_thread_pool_enabled=true;
+    int oob_thread_pool_min_threads=2;
+    int oob_thread_pool_max_threads=10;
+    /** Number of milliseconds after which an idle thread is removed */
+    long oob_thread_pool_keep_alive_time=30000;
+
+    /** Used if oob_thread_pool is a PooledExecutor and oob_thread_pool_queue_enabled is true */
+    EDU.oswego.cs.dl.util.concurrent.Channel oob_thread_pool_queue=null;
+    /** Whether of not to use a queue with PooledExecutor (ignored with DirectExecutor) */
+    boolean oob_thread_pool_queue_enabled=true;
+    /** max number of elements in queue (bounded) */
+    int oob_thread_pool_queue_max_size=500;
+    /** Possible values are "Wait", "Abort", "Discard", "DiscardOldest". These values might change once we switch to
+     * JDK 5's java.util.concurrent package */
+    String oob_thread_pool_rejection_policy="Run";
+
+
+/** ================================== Regular thread pool ============================== */
+
+    /** The thread pool which handles regular messages */
+    Executor thread_pool;
+    boolean thread_pool_enabled=true;
+    int thread_pool_min_threads=2;
+    int thread_pool_max_threads=10;
+    /** Number of milliseconds after which an idle thread is removed */
+    long thread_pool_keep_alive_time=30000;
+
+    /** Used if thread_pool is a PooledExecutor and thread_pool_queue_enabled is true */
+    EDU.oswego.cs.dl.util.concurrent.Channel thread_pool_queue=null;
+    /** Whether of not to use a queue with PooledExecutor (ignored with DirectExecutor) */
+    boolean thread_pool_queue_enabled=true;
+    /** max number of elements in queue (bounded) */
+    int thread_pool_queue_max_size=500;
+    /** Possible values are "Wait", "Abort", "Discard", "DiscardOldest". These values might change once we switch to
+     * JDK 5's java.util.concurrent package */
+    String thread_pool_rejection_policy="Run";
+
+
+
     /** Packets to be sent are stored in outgoing_queue and sent by a separate thread. Enabling this
      * value uses an additional thread */
     boolean               use_outgoing_packet_handler=false;
@@ -188,6 +257,7 @@ public abstract class TP extends Protocol {
     long num_msgs_sent=0, num_msgs_received=0, num_bytes_sent=0, num_bytes_received=0;
 
     static  NumberFormat f;
+    private static final long POOL_SHUTDOWN_WAIT_TIME=5000;
 
     static {
         f=NumberFormat.getNumberInstance();
@@ -389,6 +459,125 @@ public abstract class TP extends Protocol {
             incoming_packet_handler.start();
         }
 
+        // ================================= Unmarshaller thread pool =============================
+        if(unmarshaller_thread_pool_enabled) { // create a PooledExecutor for the unmarshaller thread pool
+            unmarshaller_thread_pool_queue=new BoundedLinkedQueue(unmarshaller_thread_pool_queue_max_size);
+            unmarshaller_thread_pool=new PooledExecutor(unmarshaller_thread_pool_queue,
+                                                        unmarshaller_thread_pool_max_threads);
+            ((PooledExecutor)unmarshaller_thread_pool).setMinimumPoolSize(unmarshaller_thread_pool_min_threads);
+            ((PooledExecutor)unmarshaller_thread_pool).setKeepAliveTime(unmarshaller_thread_pool_keep_alive_time);
+
+            if(unmarshaller_thread_pool_rejection_policy != null) {
+                if(unmarshaller_thread_pool_rejection_policy.equals("abort"))
+                    ((PooledExecutor)unmarshaller_thread_pool).abortWhenBlocked();
+                else if(unmarshaller_thread_pool_rejection_policy.equals("wait"))
+                    ((PooledExecutor)unmarshaller_thread_pool).waitWhenBlocked();
+                else if(unmarshaller_thread_pool_rejection_policy.equals("discard"))
+                    ((PooledExecutor)unmarshaller_thread_pool).discardWhenBlocked();
+                else if(unmarshaller_thread_pool_rejection_policy.equals("discardoldest"))
+                    ((PooledExecutor)unmarshaller_thread_pool).discardOldestWhenBlocked();
+                else
+                    ((PooledExecutor)unmarshaller_thread_pool).runWhenBlocked();
+            }
+
+            ((PooledExecutor)unmarshaller_thread_pool).setThreadFactory(new ThreadFactory() {
+                int num=1;
+                ThreadGroup unmarshaller_threads=new ThreadGroup(pool_thread_group, "Unmarshaller");
+                public Thread newThread(Runnable command) {
+                    return new Thread(unmarshaller_threads, command, "UnmarshallerThread-" + num++);
+                }
+            });
+
+        }
+        else { // otherwise use the caller's thread to unmarshal the byte buffer into a message
+            unmarshaller_thread_pool=new DirectExecutor();
+        }
+
+
+        // todo: provide configuration in XML
+        // ========================================== OOB thread pool ==============================
+        if(oob_thread_pool_enabled) { // create a PooledExecutor for the unmarshaller thread pool
+            oob_thread_pool_queue=new BoundedLinkedQueue(oob_thread_pool_queue_max_size);
+            oob_thread_pool=new PooledExecutor(oob_thread_pool_queue,
+                                                        oob_thread_pool_max_threads);
+            ((PooledExecutor)oob_thread_pool).setMinimumPoolSize(oob_thread_pool_min_threads);
+            ((PooledExecutor)oob_thread_pool).setKeepAliveTime(oob_thread_pool_keep_alive_time);
+
+            if(oob_thread_pool_rejection_policy != null) {
+                if(oob_thread_pool_rejection_policy.equals("abort"))
+                    ((PooledExecutor)oob_thread_pool).abortWhenBlocked();
+                else if(oob_thread_pool_rejection_policy.equals("wait"))
+                    ((PooledExecutor)oob_thread_pool).waitWhenBlocked();
+                else if(oob_thread_pool_rejection_policy.equals("discard"))
+                    ((PooledExecutor)oob_thread_pool).discardWhenBlocked();
+                else if(oob_thread_pool_rejection_policy.equals("discardoldest"))
+                    ((PooledExecutor)oob_thread_pool).discardOldestWhenBlocked();
+                else
+                    ((PooledExecutor)oob_thread_pool).runWhenBlocked();
+
+                ((PooledExecutor)oob_thread_pool).setThreadFactory(new ThreadFactory() {
+                    int num=1;
+                    ThreadGroup oob_threads=new ThreadGroup(pool_thread_group, "OOB");
+                    public Thread newThread(Runnable command) {
+                        return new Thread(pool_thread_group, command, "OOB Thread-" + num++);
+                    }
+                });
+            }
+        }
+        else { // otherwise use the caller's thread to unmarshal the byte buffer into a message
+            oob_thread_pool=new DirectExecutor();
+        }
+
+//        oob_thread_pool=new PooledExecutor(new BoundedBuffer(100), 5);
+//        ((PooledExecutor)oob_thread_pool).setMinimumPoolSize(2);
+//        ((PooledExecutor)oob_thread_pool).setKeepAliveTime(30000);
+//        ((PooledExecutor)oob_thread_pool).runWhenBlocked();
+
+
+
+        // todo: provide configuration in XML
+        // ====================================== Regular thread pool
+        if(thread_pool_enabled) { // create a PooledExecutor for the unmarshaller thread pool
+            thread_pool_queue=new BoundedLinkedQueue(thread_pool_queue_max_size);
+            thread_pool=new PooledExecutor(thread_pool_queue,
+                                                        thread_pool_max_threads);
+            ((PooledExecutor)thread_pool).setMinimumPoolSize(thread_pool_min_threads);
+            ((PooledExecutor)thread_pool).setKeepAliveTime(thread_pool_keep_alive_time);
+
+            if(thread_pool_rejection_policy != null) {
+                if(thread_pool_rejection_policy.equals("abort"))
+                    ((PooledExecutor)thread_pool).abortWhenBlocked();
+                else if(thread_pool_rejection_policy.equals("wait"))
+                    ((PooledExecutor)thread_pool).waitWhenBlocked();
+                else if(thread_pool_rejection_policy.equals("discard"))
+                    ((PooledExecutor)thread_pool).discardWhenBlocked();
+                else if(thread_pool_rejection_policy.equals("discardoldest"))
+                    ((PooledExecutor)thread_pool).discardOldestWhenBlocked();
+                else
+                    ((PooledExecutor)thread_pool).runWhenBlocked();
+
+                ((PooledExecutor)thread_pool).setThreadFactory(new ThreadFactory() {
+                    int num=1;
+                    ThreadGroup threads=new ThreadGroup(pool_thread_group, "Incoming");
+                    public Thread newThread(Runnable command) {
+                        return new Thread(threads, command, "Regular Thread-" + num++);
+                    }
+                });
+            }
+        }
+        else { // otherwise use the caller's thread to unmarshal the byte buffer into a message
+            thread_pool=new DirectExecutor();
+        }
+
+//        thread_pool=new PooledExecutor(new BoundedBuffer(500), 10);
+//        ((PooledExecutor)thread_pool).setMinimumPoolSize(2);
+//        ((PooledExecutor)thread_pool).setKeepAliveTime(30000);
+//        ((PooledExecutor)thread_pool).runWhenBlocked();
+
+        // alternative: disable the thread pool
+        // thread_pool=new DirectExecutor();
+
+
         if(loopback) {
             incoming_msg_queue=new Queue();
             incoming_msg_handler=new IncomingMessageHandler();
@@ -428,6 +617,34 @@ public abstract class TP extends Protocol {
         // 3. Finally stop the incoming message handler
         if(incoming_msg_handler != null)
             incoming_msg_handler.stop();
+
+
+        if(unmarshaller_thread_pool instanceof PooledExecutor) {
+            ((PooledExecutor)unmarshaller_thread_pool).shutdownNow();
+            try {
+                ((PooledExecutor)unmarshaller_thread_pool).awaitTerminationAfterShutdown(POOL_SHUTDOWN_WAIT_TIME);
+            }
+            catch(InterruptedException e) {
+            }
+        }
+
+        if(oob_thread_pool instanceof PooledExecutor) {
+            ((PooledExecutor)oob_thread_pool).shutdownNow();
+            try {
+                ((PooledExecutor)oob_thread_pool).awaitTerminationAfterShutdown(POOL_SHUTDOWN_WAIT_TIME);
+            }
+            catch(InterruptedException e) {
+            }
+        }
+
+        if(thread_pool instanceof PooledExecutor) {
+            ((PooledExecutor)thread_pool).shutdownNow();
+            try {
+                ((PooledExecutor)thread_pool).awaitTerminationAfterShutdown(POOL_SHUTDOWN_WAIT_TIME);
+            }
+            catch(InterruptedException e) {
+            }
+        }
     }
 
 
@@ -542,6 +759,159 @@ public abstract class TP extends Protocol {
             use_incoming_packet_handler=Boolean.valueOf(str).booleanValue();
             props.remove("use_incoming_packet_handler");
         }
+
+        str=props.getProperty("use_threadless_stack");
+        if(str != null) {
+            use_threadless_stack=Boolean.valueOf(str).booleanValue();
+            props.remove("use_threadless_stack");
+        }
+
+        // ======================================= Unmarshaller thread pool =========================================
+
+        str=props.getProperty("unmarshaller_thread_pool.enabled");
+        if(str != null) {
+            unmarshaller_thread_pool_enabled=Boolean.valueOf(str).booleanValue();
+            props.remove("unmarshaller_thread_pool.enabled");
+        }
+
+        str=props.getProperty("unmarshaller_thread_pool.min_threads");
+        if(str != null) {
+            unmarshaller_thread_pool_min_threads=Integer.valueOf(str).intValue();
+            props.remove("unmarshaller_thread_pool.min_threads");
+        }
+
+        str=props.getProperty("unmarshaller_thread_pool.max_threads");
+        if(str != null) {
+            unmarshaller_thread_pool_max_threads=Integer.valueOf(str).intValue();
+            props.remove("unmarshaller_thread_pool.max_threads");
+        }
+
+        str=props.getProperty("unmarshaller_thread_pool.keep_alive_time");
+        if(str != null) {
+            unmarshaller_thread_pool_keep_alive_time=Long.valueOf(str).longValue();
+            props.remove("unmarshaller_thread_pool.keep_alive_time");
+        }
+
+        str=props.getProperty("unmarshaller_thread_pool.queue_enabled");
+        if(str != null) {
+            unmarshaller_thread_pool_queue_enabled=Boolean.valueOf(str).booleanValue();
+            props.remove("unmarshaller_thread_pool.queue_enabled");
+        }
+
+        str=props.getProperty("unmarshaller_thread_pool.queue_max_size");
+        if(str != null) {
+            unmarshaller_thread_pool_queue_max_size=Integer.valueOf(str).intValue();
+            props.remove("unmarshaller_thread_pool.queue_max_size");
+        }
+
+        str=props.getProperty("unmarshaller_thread_pool.rejection_policy");
+        if(str != null) {
+            unmarshaller_thread_pool_rejection_policy=str.toLowerCase().trim();
+            if(!(str.equals("run") || str.equals("wait") || str.equals("abort")|| str.equals("discard")|| str.equals("discardoldest"))) {
+                log.error("rejection policy of " + str + " is unknown");
+                return false;
+            }
+            props.remove("unmarshaller_thread_pool.rejection_policy");
+        }
+
+
+        // ======================================= OOB thread pool =========================================
+        str=props.getProperty("oob_thread_pool.enabled");
+        if(str != null) {
+            oob_thread_pool_enabled=Boolean.valueOf(str).booleanValue();
+            props.remove("oob_thread_pool.enabled");
+        }
+
+        str=props.getProperty("oob_thread_pool.min_threads");
+        if(str != null) {
+            oob_thread_pool_min_threads=Integer.valueOf(str).intValue();
+            props.remove("oob_thread_pool.min_threads");
+        }
+
+        str=props.getProperty("oob_thread_pool.max_threads");
+        if(str != null) {
+            oob_thread_pool_max_threads=Integer.valueOf(str).intValue();
+            props.remove("oob_thread_pool.max_threads");
+        }
+
+        str=props.getProperty("oob_thread_pool.keep_alive_time");
+        if(str != null) {
+            oob_thread_pool_keep_alive_time=Long.valueOf(str).longValue();
+            props.remove("oob_thread_pool.keep_alive_time");
+        }
+
+        str=props.getProperty("oob_thread_pool.queue_enabled");
+        if(str != null) {
+            oob_thread_pool_queue_enabled=Boolean.valueOf(str).booleanValue();
+            props.remove("oob_thread_pool.queue_enabled");
+        }
+
+        str=props.getProperty("oob_thread_pool.queue_max_size");
+        if(str != null) {
+            oob_thread_pool_queue_max_size=Integer.valueOf(str).intValue();
+            props.remove("oob_thread_pool.queue_max_size");
+        }
+
+        str=props.getProperty("oob_thread_pool.rejection_policy");
+        if(str != null) {
+            oob_thread_pool_rejection_policy=str.toLowerCase().trim();
+            if(!(str.equals("run") || str.equals("wait") || str.equals("abort")|| str.equals("discard")|| str.equals("discardoldest"))) {
+                log.error("rejection policy of " + str + " is unknown");
+                return false;
+            }
+            props.remove("oob_thread_pool.rejection_policy");
+        }
+
+
+
+
+        // ======================================= Regular thread pool =========================================
+        str=props.getProperty("thread_pool.enabled");
+        if(str != null) {
+            thread_pool_enabled=Boolean.valueOf(str).booleanValue();
+            props.remove("thread_pool.enabled");
+        }
+
+        str=props.getProperty("thread_pool.min_threads");
+        if(str != null) {
+            thread_pool_min_threads=Integer.valueOf(str).intValue();
+            props.remove("thread_pool.min_threads");
+        }
+
+        str=props.getProperty("thread_pool.max_threads");
+        if(str != null) {
+            thread_pool_max_threads=Integer.valueOf(str).intValue();
+            props.remove("thread_pool.max_threads");
+        }
+
+        str=props.getProperty("thread_pool.keep_alive_time");
+        if(str != null) {
+            thread_pool_keep_alive_time=Long.valueOf(str).longValue();
+            props.remove("thread_pool.keep_alive_time");
+        }
+
+        str=props.getProperty("thread_pool.queue_enabled");
+        if(str != null) {
+            thread_pool_queue_enabled=Boolean.valueOf(str).booleanValue();
+            props.remove("thread_pool.queue_enabled");
+        }
+
+        str=props.getProperty("thread_pool.queue_max_size");
+        if(str != null) {
+            thread_pool_queue_max_size=Integer.valueOf(str).intValue();
+            props.remove("thread_pool.queue_max_size");
+        }
+
+        str=props.getProperty("thread_pool.rejection_policy");
+        if(str != null) {
+            thread_pool_rejection_policy=str.toLowerCase().trim();
+            if(!(str.equals("run") || str.equals("wait") || str.equals("abort")|| str.equals("discard")|| str.equals("discardoldest"))) {
+                log.error("rejection policy of " + str + " is unknown");
+                return false;
+            }
+            props.remove("thread_pool.rejection_policy");
+        }
+
 
         str=props.getProperty("use_outgoing_packet_handler");
         if(str != null) {
@@ -690,15 +1060,16 @@ public abstract class TP extends Protocol {
             Message copy=msg.copy();
 
             // copy.removeHeader(name); // we don't remove the header
-            copy.setSrc(local_addr);
             // copy.setDest(dest);
 
             if(trace) log.trace(new StringBuffer("looping back message ").append(copy));
+            // passUp(evt);
+
+
             try {
                 incoming_msg_queue.add(copy);
             }
             catch(QueueClosedException e) {
-                // log.error("failed adding looped back message to incoming_msg_queue", e);
             }
 
             if(!multicast)
@@ -755,14 +1126,6 @@ public abstract class TP extends Protocol {
      */
     protected final void receive(Address dest, Address sender, byte[] data, int offset, int length) {
         if(data == null) return;
-
-//        if(length == 4) {  // received a diagnostics probe
-//            if(data[offset] == 'd' && data[offset+1] == 'i' && data[offset+2] == 'a' && data[offset+3] == 'g') {
-//                handleDiagnosticProbe(sender);
-//                return;
-//            }
-//        }
-
         boolean mcast=dest == null || dest.isMulticastAddress();
         if(trace){
             StringBuffer sb=new StringBuffer("received (");
@@ -771,13 +1134,20 @@ public abstract class TP extends Protocol {
         }
 
         try {
-            if(use_incoming_packet_handler) {
+            if(use_threadless_stack) {
                 byte[] tmp=new byte[length];
                 System.arraycopy(data, offset, tmp, 0, length);
-                incoming_packet_queue.add(new IncomingQueueEntry(dest, sender, tmp, offset, length));
+                unmarshaller_thread_pool.execute(new IncomingPacket(dest, sender, tmp, offset, length));
             }
-            else
-                handleIncomingPacket(dest, sender, data, offset, length);
+            else {
+                if(use_incoming_packet_handler) {
+                    byte[] tmp=new byte[length];
+                    System.arraycopy(data, offset, tmp, 0, length);
+                    incoming_packet_queue.add(new IncomingPacket(dest, sender, tmp, offset, length));
+                }
+                else
+                    handleIncomingPacket(dest, sender, data, offset, length);
+            }
         }
         catch(Throwable t) {
             if(log.isErrorEnabled())
@@ -1229,18 +1599,143 @@ public abstract class TP extends Protocol {
 
     /* ----------------------------- Inner Classes ---------------------------------------- */
 
-    static class IncomingQueueEntry {
+    class IncomingPacket implements Runnable {
         Address   dest=null;
         Address   sender=null;
         byte[]    buf;
         int       offset, length;
 
-        IncomingQueueEntry(Address dest, Address sender, byte[] buf, int offset, int length) {
+        IncomingPacket(Address dest, Address sender, byte[] buf, int offset, int length) {
             this.dest=dest;
             this.sender=sender;
             this.buf=buf;
             this.offset=offset;
             this.length=length;
+        }
+
+        /** Code copied from handleIncomingPacket */
+        public void run() {
+            short                  version;
+            boolean                is_message_list, multicast;
+            byte                   flags;
+            ExposedByteArrayInputStream  in_stream=null;
+            ExposedBufferedInputStream   buf_in_stream=null;
+            DataInputStream              dis=null;
+
+            try {
+                in_stream=new ExposedByteArrayInputStream(buf, offset, length);
+                buf_in_stream=new ExposedBufferedInputStream(in_stream);
+                dis=new DataInputStream(buf_in_stream);
+                version=dis.readShort();
+                if(Version.compareTo(version) == false) {
+                    if(warn) {
+                        StringBuffer sb=new StringBuffer();
+                        sb.append("packet from ").append(sender).append(" has different version (").append(version);
+                        sb.append(") from ours (").append(Version.printVersion()).append("). ");
+                        if(discard_incompatible_packets)
+                            sb.append("Packet is discarded");
+                        else
+                            sb.append("This may cause problems");
+                        log.warn(sb);
+                    }
+                    if(discard_incompatible_packets)
+                        return;
+                }
+
+                flags=dis.readByte();
+                is_message_list=(flags & LIST) == LIST;
+                multicast=(flags & MULTICAST) == MULTICAST;
+
+                Message msg;
+                Address src;
+                if(is_message_list) { // used if message bundling is enabled
+                    List l=bufferToList(dis, dest, multicast);
+                    for(Enumeration en=l.elements(); en.hasMoreElements();) {
+                        msg=(Message)en.nextElement();
+                        src=msg.getSrc();
+                        if(loopback && multicast && src != null && local_addr.equals(src)) {
+                            continue; // drop message that was already looped back and delivered
+                        }
+                        thread_pool.execute(new IncomingMessage(msg));
+                    }
+                }
+                else {
+                    msg=bufferToMessage(dis, dest, sender, multicast);
+                    src=msg.getSrc();
+                    if(loopback && multicast && src != null && local_addr.equals(src)) {
+                        ; // drop message that was already looped back and delivered
+                    }
+                    else
+                        thread_pool.execute(new IncomingMessage(msg));
+                }
+            }
+            catch(QueueClosedException closed_ex) {
+                ; // swallow exception
+            }
+            catch(Throwable t) {
+                if(log.isErrorEnabled())
+                    log.error("failed unmarshalling message", t);
+            }
+            finally {
+                Util.close(dis);
+                Util.close(buf_in_stream);
+                Util.close(in_stream);
+            }
+        }
+    }
+
+
+    class IncomingMessage implements Runnable {
+        Message msg;
+
+        public IncomingMessage(Message msg) {
+            this.msg=msg;
+        }
+
+        /** Code copied from handleIncomingMessage */
+        public void run() {
+            Event      evt;
+            TpHeader   hdr;
+
+            if(stats) {
+                num_msgs_received++;
+                num_bytes_received+=msg.getLength();
+            }
+
+            evt=new Event(Event.MSG, msg);
+            if(trace) {
+                StringBuffer sb=new StringBuffer("message is ").append(msg).append(", headers are ").append(msg.getHeaders());
+                log.trace(sb);
+            }
+
+            /* Because Protocol.up() is never called by this bottommost layer, we call up() directly in the observer.
+               This allows e.g. PerfObserver to get the time of reception of a message */
+            if(observer != null)
+                observer.up(evt, up_queue.size());
+
+            hdr=(TpHeader)msg.getHeader(name); // replaced removeHeader() with getHeader()
+            if(hdr != null) {
+
+                /* Discard all messages destined for a channel with a different name */
+                String ch_name=hdr.channel_name;
+
+                // Discard if message's group name is not the same as our group name unless the
+                // message is a diagnosis message (special group name DIAG_GROUP)
+                if(ch_name != null && channel_name != null && !channel_name.equals(ch_name) &&
+                        !ch_name.equals(Util.DIAG_GROUP)) {
+                    if(warn)
+                        log.warn(new StringBuffer("discarded message from different group \"").append(ch_name).
+                                append("\" (our group is \"").append(channel_name).append("\"). Sender was ").append(msg.getSrc()));
+                    return;
+                }
+            }
+            else {
+                if(trace)
+                    log.trace(new StringBuffer("message does not have a transport header, msg is ").append(msg).
+                            append(", headers are ").append(msg.getHeaders()).append(", will be discarded"));
+                return;
+            }
+            passUp(evt);
         }
     }
 
@@ -1289,10 +1784,10 @@ public abstract class TP extends Protocol {
         }
 
         public void run() {
-            IncomingQueueEntry entry;
+            IncomingPacket entry;
             while(!incoming_packet_queue.closed() && Thread.currentThread().equals(t)) {
                 try {
-                    entry=(IncomingQueueEntry)incoming_packet_queue.remove();
+                    entry=(IncomingPacket)incoming_packet_queue.remove();
                     handleIncomingPacket(entry.dest, entry.sender, entry.buf, entry.offset, entry.length);
                 }
                 catch(QueueClosedException closed_ex) {
