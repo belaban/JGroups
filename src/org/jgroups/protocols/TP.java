@@ -41,7 +41,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.81 2006/12/07 18:15:17 belaban Exp $
+ * @version $Id: TP.java,v 1.82 2006/12/07 20:07:35 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -323,6 +323,112 @@ public abstract class TP extends Protocol {
             outgoing_queue_max_size=new_size;
         }
     }
+
+
+    public int getUnmarshallerMinPoolSize() {
+        return unmarshaller_thread_pool instanceof PooledExecutor? ((PooledExecutor)unmarshaller_thread_pool).getMinimumPoolSize() : 0;
+    }
+
+    public void setUnmarshallerMinPoolSize(int size) {
+        if(unmarshaller_thread_pool instanceof PooledExecutor)
+            ((PooledExecutor)unmarshaller_thread_pool).setMinimumPoolSize(size);
+    }
+
+    public int getUnmarshallerMaxPoolSize() {
+        return unmarshaller_thread_pool instanceof PooledExecutor? ((PooledExecutor)unmarshaller_thread_pool).getMaximumPoolSize() : 0;
+    }
+
+    public void setUnmarshallerMaxPoolSize(int size) {
+        if(unmarshaller_thread_pool instanceof PooledExecutor)
+            ((PooledExecutor)unmarshaller_thread_pool).setMaximumPoolSize(size);
+    }
+
+    public int getUnmarshallerPoolSize() {
+        return unmarshaller_thread_pool instanceof PooledExecutor? ((PooledExecutor)unmarshaller_thread_pool).getPoolSize() : 0;
+    }
+
+    public long getUnmarshallerKeepAliveTime() {
+        return unmarshaller_thread_pool instanceof PooledExecutor? ((PooledExecutor)unmarshaller_thread_pool).getKeepAliveTime() : 0;
+    }
+
+    public void setUnmarshallerKeepAliveTime(long time) {
+        if(unmarshaller_thread_pool instanceof PooledExecutor)
+            ((PooledExecutor)unmarshaller_thread_pool).setKeepAliveTime(time);
+    }
+
+
+
+
+
+    public int getOOBMinPoolSize() {
+        return oob_thread_pool instanceof PooledExecutor? ((PooledExecutor)oob_thread_pool).getMinimumPoolSize() : 0;
+    }
+
+    public void setOOBMinPoolSize(int size) {
+        if(oob_thread_pool instanceof PooledExecutor)
+            ((PooledExecutor)oob_thread_pool).setMinimumPoolSize(size);
+    }
+
+    public int getOOBMaxPoolSize() {
+        return oob_thread_pool instanceof PooledExecutor? ((PooledExecutor)oob_thread_pool).getMaximumPoolSize() : 0;
+    }
+
+    public void setOOBMaxPoolSize(int size) {
+        if(oob_thread_pool instanceof PooledExecutor)
+            ((PooledExecutor)oob_thread_pool).setMaximumPoolSize(size);
+    }
+
+    public int getOOBPoolSize() {
+        return oob_thread_pool instanceof PooledExecutor? ((PooledExecutor)oob_thread_pool).getPoolSize() : 0;
+    }
+
+    public long getOOBKeepAliveTime() {
+        return oob_thread_pool instanceof PooledExecutor? ((PooledExecutor)oob_thread_pool).getKeepAliveTime() : 0;
+    }
+
+    public void setOOBKeepAliveTime(long time) {
+        if(oob_thread_pool instanceof PooledExecutor)
+            ((PooledExecutor)oob_thread_pool).setKeepAliveTime(time);
+    }
+
+
+
+
+
+    public int getIncomingMinPoolSize() {
+        return thread_pool instanceof PooledExecutor? ((PooledExecutor)thread_pool).getMinimumPoolSize() : 0;
+    }
+
+    public void setIncomingMinPoolSize(int size) {
+        if(thread_pool instanceof PooledExecutor)
+            ((PooledExecutor)thread_pool).setMinimumPoolSize(size);
+    }
+
+    public int getIncomingMaxPoolSize() {
+        return thread_pool instanceof PooledExecutor? ((PooledExecutor)thread_pool).getMaximumPoolSize() : 0;
+    }
+
+    public void setIncomingMaxPoolSize(int size) {
+        if(thread_pool instanceof PooledExecutor)
+            ((PooledExecutor)thread_pool).setMaximumPoolSize(size);
+    }
+
+    public int getIncomingPoolSize() {
+        return thread_pool instanceof PooledExecutor? ((PooledExecutor)thread_pool).getPoolSize() : 0;
+    }
+
+    public long getIncomingKeepAliveTime() {
+        return thread_pool instanceof PooledExecutor? ((PooledExecutor)thread_pool).getKeepAliveTime() : 0;
+    }
+
+    public void setIncomingKeepAliveTime(long time) {
+        if(thread_pool instanceof PooledExecutor)
+            ((PooledExecutor)thread_pool).setKeepAliveTime(time);
+    }
+
+
+
+
 
 
     public Map dumpStats() {
