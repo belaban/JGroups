@@ -4,7 +4,7 @@ Threadless stack
 ================
 
 Author: Bela Ban
-Version: $Id: ThreadlessStack.txt,v 1.13 2006/12/07 20:07:33 belaban Exp $
+Version: $Id: ThreadlessStack.txt,v 1.14 2006/12/07 21:17:58 belaban Exp $
 JIRAs:
 http://jira.jboss.com/jira/browse/JGRP-180 (harden stack),
 http://jira.jboss.com/jira/browse/JGRP-181 (threadless stack),
@@ -158,6 +158,13 @@ Todos
 - Thread pool shut-downs: correct ? Should we use something else rather than shutdownNow() ?
 
 - Enable setting the thread pools programmatically
+
+- Allow the pool size for thread pools to be changed via JMX
+
+- Remove configurability of rejection policy ?
+
+- Thread pool queues are always showing 0 size although they must be filled
+
 
 
 

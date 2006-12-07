@@ -7,10 +7,11 @@ import java.net.UnknownHostException;
 import java.util.List;
 
 import EDU.oswego.cs.dl.util.concurrent.PooledExecutor;
+import EDU.oswego.cs.dl.util.concurrent.BoundedLinkedQueue;
 
 /**
  * @author Bela Ban
- * @version $Id: TP.java,v 1.6 2006/12/07 20:07:34 belaban Exp $
+ * @version $Id: TP.java,v 1.7 2006/12/07 21:17:59 belaban Exp $
  */
 public class TP extends org.jgroups.jmx.Protocol implements TPMBean {
     org.jgroups.protocols.TP tp;
@@ -120,10 +121,6 @@ public class TP extends org.jgroups.jmx.Protocol implements TPMBean {
         tp.setOutgoingQueueMaxSize(new_size);
     }
 
-    public int getIncomingQueueSize() {
-        return tp.getIncomingQueueSize();
-    }
-
     public boolean isLoopback() {
         return tp.isLoopback();
     }
@@ -168,6 +165,18 @@ public class TP extends org.jgroups.jmx.Protocol implements TPMBean {
         tp.setUnmarshallerKeepAliveTime(time);
     }
 
+    public int getUnmarshallerQueueSize() {
+        return tp.getUnmarshallerQueueSize();
+    }
+
+    public int getUnmarshallerMaxQueueSize() {
+        return tp.getUnmarshallerMaxQueueSize();
+    }
+
+    public void setUnmarshallerMaxQueueSize(int size) {
+        tp.setUnmarshallerMaxQueueSize(size);
+    }
+
 
 
 
@@ -199,7 +208,18 @@ public class TP extends org.jgroups.jmx.Protocol implements TPMBean {
          tp.setOOBKeepAliveTime(time);
      }
 
-    
+    public int getOOBQueueSize() {
+        return tp.getOOBQueueSize();
+    }
+
+    public int getOOBMaxQueueSize() {
+        return tp.getOOBMaxQueueSize();
+    }
+
+    public void setOOBMaxQueueSize(int size) {
+        tp.setOOBMaxQueueSize(size);
+    }
+
 
     public int getIncomingMinPoolSize() {
          return tp.getIncomingMinPoolSize();
@@ -228,5 +248,17 @@ public class TP extends org.jgroups.jmx.Protocol implements TPMBean {
      public void setIncomingKeepAliveTime(long time) {
          tp.setIncomingKeepAliveTime(time);
      }
+
+    public int getIncomingQueueSize() {
+        return tp.getIncomingQueueSize();
+    }
+
+    public int getIncomingMaxQueueSize() {
+        return tp.getIncomingMaxQueueSize();
+    }
+
+    public void setIncomingMaxQueueSize(int size) {
+        tp.setIncomingMaxQueueSize(size);
+    }
 
 }
