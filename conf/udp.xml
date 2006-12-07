@@ -3,7 +3,7 @@
   Default stack using IP multicasting. It is similar to the "udp"
   stack in stacks.xml, but doesn't use streaming state transfer and flushing
   author: Bela Ban
-  version: $Id: udp.xml,v 1.5 2006/11/17 13:39:15 belaban Exp $
+  version: $Id: udp.xml,v 1.6 2006/12/07 16:58:36 belaban Exp $
 -->
 
 <config>
@@ -22,8 +22,31 @@
          use_incoming_packet_handler="true"
          use_outgoing_packet_handler="false"
          ip_ttl="${jgroups.udp.ip_ttl:2}"
-          up_thread="false"
-         enable_bundling="true"/>
+         up_thread="false"
+         enable_bundling="true"
+
+         use_threadless_stack="true"
+
+         unmarshaller_thread_pool.enabled="true"
+         unmarshaller_thread_pool.min_threads="4"
+         unmarshaller_thread_pool.max_threads="10"
+         unmarshaller_thread_pool.keep_alive_time="30000"
+         unmarshaller_thread_pool.queue_enabled="true"
+         unmarshaller_thread_pool.queue_max_size="100"
+
+         oob_thread_pool.enabled="true"
+         oob_thread_pool.min_threads="4"
+         oob_thread_pool.max_threads="10"
+         oob_thread_pool.keep_alive_time="30000"
+         oob_thread_pool.queue_enabled="true"
+         oob_thread_pool.queue_max_size="300"
+
+         thread_pool.enabled="true"
+         thread_pool.min_threads="4"
+         thread_pool.max_threads="20"
+         thread_pool.keep_alive_time="30000"
+         thread_pool.queue_enabled="true"
+         thread_pool.queue_max_size="100"/>
     <PING timeout="2000"
            up_thread="false" num_initial_members="3"/>
     <MERGE2 max_interval="30000"
