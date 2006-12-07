@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.81 2006/10/27 07:02:00 belaban Exp $
+// $Id: NAKACK.java,v 1.82 2006/12/07 10:24:24 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -675,7 +675,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         // this is all the more important once we have a threadless stack (http://jira.jboss.com/jira/browse/JGRP-181),
         // where lots of threads can come up to this point concurrently, but only 1 is allowed to pass at a time
         // We *can* deliver messages from *different* senders concurrently, e.g. reception of P1, Q1, P2, Q2 can result in
-        // delivery of P1, Q1, Q2, P2: FIFO (implemented by NAKACK) says messages need to be delivered only in the
+        // delivery of P1, Q1, Q2, P2: FIFO (implemented by NAKACK) says messages need to be delivered in the
         // order in which they were sent by the sender
         synchronized(win) {
             while((msg_to_deliver=win.remove()) != null) {
