@@ -41,7 +41,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.82 2006/12/07 20:07:35 belaban Exp $
+ * @version $Id: TP.java,v 1.83 2006/12/07 21:17:59 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -309,7 +309,6 @@ public abstract class TP extends Protocol {
     public long getMaxBundleTimeout() {return max_bundle_timeout;}
     public void setMaxBundleTimeout(long timeout) {max_bundle_timeout=timeout;}
     public int getOutgoingQueueSize() {return outgoing_queue != null? outgoing_queue.size() : 0;}
-    public int getIncomingQueueSize() {return incoming_packet_queue != null? incoming_packet_queue.size() : 0;}
     public Address getLocalAddress() {return local_addr;}
     public String getChannelName() {return channel_name;}
     public boolean isLoopback() {return loopback;}
@@ -356,6 +355,20 @@ public abstract class TP extends Protocol {
             ((PooledExecutor)unmarshaller_thread_pool).setKeepAliveTime(time);
     }
 
+    public int getUnmarshallerQueueSize() {
+        return unmarshaller_thread_pool_queue instanceof BoundedLinkedQueue? ((BoundedLinkedQueue)unmarshaller_thread_pool_queue).size() : -1;
+    }
+
+    public int getUnmarshallerMaxQueueSize() {
+        return unmarshaller_thread_pool_queue_max_size;
+    }
+
+    public void setUnmarshallerMaxQueueSize(int size) {
+        if(unmarshaller_thread_pool_queue instanceof BoundedLinkedQueue) {
+            ((BoundedLinkedQueue)unmarshaller_thread_pool_queue).setCapacity(size);
+            unmarshaller_thread_pool_queue_max_size=size;
+        }
+    }
 
 
 
@@ -391,7 +404,20 @@ public abstract class TP extends Protocol {
             ((PooledExecutor)oob_thread_pool).setKeepAliveTime(time);
     }
 
+    public int getOOBQueueSize() {
+        return oob_thread_pool_queue instanceof BoundedLinkedQueue? ((BoundedLinkedQueue)oob_thread_pool_queue).size() : -1;
+    }
 
+    public int getOOBMaxQueueSize() {
+        return oob_thread_pool_queue_max_size;
+    }
+
+    public void setOOBMaxQueueSize(int size) {
+        if(oob_thread_pool_queue instanceof BoundedLinkedQueue) {
+            ((BoundedLinkedQueue)oob_thread_pool_queue).setCapacity(size);
+            oob_thread_pool_queue_max_size=size;
+        }
+    }
 
 
 
@@ -426,6 +452,20 @@ public abstract class TP extends Protocol {
             ((PooledExecutor)thread_pool).setKeepAliveTime(time);
     }
 
+    public int getIncomingQueueSize() {
+        return thread_pool_queue instanceof BoundedLinkedQueue? ((BoundedLinkedQueue)thread_pool_queue).size() : -1;
+    }
+
+    public int getIncomingMaxQueueSize() {
+        return thread_pool_queue_max_size;
+    }
+
+    public void setIncomingMaxQueueSize(int size) {
+        if(thread_pool_queue instanceof BoundedLinkedQueue) {
+            ((BoundedLinkedQueue)thread_pool_queue).setCapacity(size);
+            thread_pool_queue_max_size=size;
+        }
+    }
 
 
 
@@ -546,6 +586,8 @@ public abstract class TP extends Protocol {
         }
     }
 
+
+
     /**
      * Creates the unicast and multicast sockets and starts the unicast and multicast receiver threads
      */
@@ -567,67 +609,23 @@ public abstract class TP extends Protocol {
 
         // ================================= Unmarshaller thread pool =============================
         if(unmarshaller_thread_pool_enabled) { // create a PooledExecutor for the unmarshaller thread pool
-            unmarshaller_thread_pool_queue=new BoundedLinkedQueue(unmarshaller_thread_pool_queue_max_size);
-            unmarshaller_thread_pool=new PooledExecutor(unmarshaller_thread_pool_queue,
-                                                        unmarshaller_thread_pool_max_threads);
-            ((PooledExecutor)unmarshaller_thread_pool).setMinimumPoolSize(unmarshaller_thread_pool_min_threads);
-            ((PooledExecutor)unmarshaller_thread_pool).setKeepAliveTime(unmarshaller_thread_pool_keep_alive_time);
-
-            if(unmarshaller_thread_pool_rejection_policy != null) {
-                if(unmarshaller_thread_pool_rejection_policy.equals("abort"))
-                    ((PooledExecutor)unmarshaller_thread_pool).abortWhenBlocked();
-                else if(unmarshaller_thread_pool_rejection_policy.equals("wait"))
-                    ((PooledExecutor)unmarshaller_thread_pool).waitWhenBlocked();
-                else if(unmarshaller_thread_pool_rejection_policy.equals("discard"))
-                    ((PooledExecutor)unmarshaller_thread_pool).discardWhenBlocked();
-                else if(unmarshaller_thread_pool_rejection_policy.equals("discardoldest"))
-                    ((PooledExecutor)unmarshaller_thread_pool).discardOldestWhenBlocked();
-                else
-                    ((PooledExecutor)unmarshaller_thread_pool).runWhenBlocked();
-            }
-
-            ((PooledExecutor)unmarshaller_thread_pool).setThreadFactory(new ThreadFactory() {
-                int num=1;
-                ThreadGroup unmarshaller_threads=new ThreadGroup(pool_thread_group, "Unmarshaller");
-                public Thread newThread(Runnable command) {
-                    return new Thread(unmarshaller_threads, command, "UnmarshallerThread-" + num++);
-                }
-            });
+            if(unmarshaller_thread_pool_queue_enabled)
+                unmarshaller_thread_pool_queue=new BoundedLinkedQueue(unmarshaller_thread_pool_queue_max_size);
+            unmarshaller_thread_pool=createThreadPool(unmarshaller_thread_pool_min_threads, unmarshaller_thread_pool_max_threads,
+                                                      unmarshaller_thread_pool_keep_alive_time, unmarshaller_thread_pool_rejection_policy,
+                                                      unmarshaller_thread_pool_queue, "Unmarshaller", "Unmarshaller-Thread-");
         }
         else { // otherwise use the caller's thread to unmarshal the byte buffer into a message
             unmarshaller_thread_pool=new DirectExecutor();
         }
 
 
-        // todo: provide configuration in XML
         // ========================================== OOB thread pool ==============================
         if(oob_thread_pool_enabled) { // create a PooledExecutor for the unmarshaller thread pool
-            oob_thread_pool_queue=new BoundedLinkedQueue(oob_thread_pool_queue_max_size);
-            oob_thread_pool=new PooledExecutor(oob_thread_pool_queue,
-                                                        oob_thread_pool_max_threads);
-            ((PooledExecutor)oob_thread_pool).setMinimumPoolSize(oob_thread_pool_min_threads);
-            ((PooledExecutor)oob_thread_pool).setKeepAliveTime(oob_thread_pool_keep_alive_time);
-
-            if(oob_thread_pool_rejection_policy != null) {
-                if(oob_thread_pool_rejection_policy.equals("abort"))
-                    ((PooledExecutor)oob_thread_pool).abortWhenBlocked();
-                else if(oob_thread_pool_rejection_policy.equals("wait"))
-                    ((PooledExecutor)oob_thread_pool).waitWhenBlocked();
-                else if(oob_thread_pool_rejection_policy.equals("discard"))
-                    ((PooledExecutor)oob_thread_pool).discardWhenBlocked();
-                else if(oob_thread_pool_rejection_policy.equals("discardoldest"))
-                    ((PooledExecutor)oob_thread_pool).discardOldestWhenBlocked();
-                else
-                    ((PooledExecutor)oob_thread_pool).runWhenBlocked();
-
-                ((PooledExecutor)oob_thread_pool).setThreadFactory(new ThreadFactory() {
-                    int num=1;
-                    ThreadGroup unmarshaller_threads=new ThreadGroup(pool_thread_group, "OOB");
-                    public Thread newThread(Runnable command) {
-                        return new Thread(unmarshaller_threads, command, "OOBThread-" + num++);
-                    }
-                });
-            }
+            if(oob_thread_pool_queue_enabled)
+                oob_thread_pool_queue=new BoundedLinkedQueue(oob_thread_pool_queue_max_size);
+            oob_thread_pool=createThreadPool(oob_thread_pool_min_threads, oob_thread_pool_max_threads, oob_thread_pool_keep_alive_time,
+                                             oob_thread_pool_rejection_policy, oob_thread_pool_queue, "OOB", "OOB Thread-");
         }
         else { // otherwise use the caller's thread to unmarshal the byte buffer into a message
             oob_thread_pool=new DirectExecutor();
@@ -639,32 +637,10 @@ public abstract class TP extends Protocol {
         // todo: provide configuration in XML
         // ====================================== Regular thread pool ===========================
         if(thread_pool_enabled) { // create a PooledExecutor for the unmarshaller thread pool
-            thread_pool_queue=new BoundedLinkedQueue(thread_pool_queue_max_size);
-            thread_pool=new PooledExecutor(thread_pool_queue,
-                                                        thread_pool_max_threads);
-            ((PooledExecutor)thread_pool).setMinimumPoolSize(thread_pool_min_threads);
-            ((PooledExecutor)thread_pool).setKeepAliveTime(thread_pool_keep_alive_time);
-
-            if(thread_pool_rejection_policy != null) {
-                if(thread_pool_rejection_policy.equals("abort"))
-                    ((PooledExecutor)thread_pool).abortWhenBlocked();
-                else if(thread_pool_rejection_policy.equals("wait"))
-                    ((PooledExecutor)thread_pool).waitWhenBlocked();
-                else if(thread_pool_rejection_policy.equals("discard"))
-                    ((PooledExecutor)thread_pool).discardWhenBlocked();
-                else if(thread_pool_rejection_policy.equals("discardoldest"))
-                    ((PooledExecutor)thread_pool).discardOldestWhenBlocked();
-                else
-                    ((PooledExecutor)thread_pool).runWhenBlocked();
-
-                ((PooledExecutor)thread_pool).setThreadFactory(new ThreadFactory() {
-                    int num=1;
-                    ThreadGroup unmarshaller_threads=new ThreadGroup(pool_thread_group, "Incoming");
-                    public Thread newThread(Runnable command) {
-                        return new Thread(unmarshaller_threads, command, "Regular Thread-" + num++);
-                    }
-                });
-            }
+            if(thread_pool_queue_enabled)
+                thread_pool_queue=new BoundedLinkedQueue(thread_pool_queue_max_size);
+            thread_pool=createThreadPool(thread_pool_min_threads, thread_pool_max_threads, thread_pool_keep_alive_time,
+                                         thread_pool_rejection_policy, thread_pool_queue, "Incoming", "Incoming Thread-");
         }
         else { // otherwise use the caller's thread to unmarshal the byte buffer into a message
             thread_pool=new DirectExecutor();
@@ -1684,6 +1660,42 @@ public abstract class TP extends Protocol {
         }
     }
 
+
+    protected Executor createThreadPool(int min_threads, int max_threads, long keep_alive_time, String rejection_policy,
+                                        EDU.oswego.cs.dl.util.concurrent.Channel queue,
+                                        final String thread_group_name, final String thread_name_prefix) {
+        PooledExecutor pool=null;
+        if(queue != null) {
+            pool=new PooledExecutor(queue, max_threads);
+        }
+        else {
+            pool=new PooledExecutor(max_threads);
+        }
+        pool.setMinimumPoolSize(min_threads);
+        pool.setKeepAliveTime(keep_alive_time);
+
+        if(rejection_policy != null) {
+            if(rejection_policy.equals("abort"))
+                pool.abortWhenBlocked();
+            else if(rejection_policy.equals("wait"))
+                pool.waitWhenBlocked();
+            else if(rejection_policy.equals("discard"))
+                pool.discardWhenBlocked();
+            else if(rejection_policy.equals("discardoldest"))
+                pool.discardOldestWhenBlocked();
+            else
+                pool.runWhenBlocked();
+        }
+
+        pool.setThreadFactory(new ThreadFactory() {
+            int num=1;
+            ThreadGroup unmarshaller_threads=new ThreadGroup(pool_thread_group, thread_group_name);
+            public Thread newThread(Runnable command) {
+                return new Thread(unmarshaller_threads, command, thread_name_prefix + num++);
+            }
+        });
+        return pool;
+    }
 
 
     /* ----------------------------- End of Private Methods ---------------------------------------- */
