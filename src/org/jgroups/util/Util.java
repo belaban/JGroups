@@ -26,7 +26,7 @@ import EDU.oswego.cs.dl.util.concurrent.Sync;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.105 2006/10/23 13:42:30 belaban Exp $
+ * @version $Id: Util.java,v 1.106 2006/12/07 16:41:35 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -58,7 +58,7 @@ public class Util {
     /**
      * Global thread group to which all (most!) JGroups threads belong
      */
-    private static ThreadGroup GLOBAL_GROUP=new ThreadGroup("JGroups threads") {
+    private static ThreadGroup GLOBAL_GROUP=new ThreadGroup("JGroups") {
         public void uncaughtException(Thread t, Throwable e) {
             LogFactory.getLog("org.jgroups").error("uncaught exception in " + t + " (thread group=" + GLOBAL_GROUP + " )", e);
         }
