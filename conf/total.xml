@@ -1,7 +1,7 @@
 
 <!--
 Example of a protocol stack based on udp, but with total order (sequencer-based)
-Version: $Id: total.xml,v 1.4 2006/11/17 13:39:15 belaban Exp $
+Version: $Id: total.xml,v 1.5 2006/12/08 08:15:23 belaban Exp $
 -->
 <config>
     <UDP bind_addr="192.168.5.1"
@@ -19,32 +19,26 @@ Version: $Id: total.xml,v 1.4 2006/11/17 13:39:15 belaban Exp $
          use_incoming_packet_handler="true" 
          use_outgoing_packet_handler="false" 
          ip_ttl="2" 
-          up_thread="false"
          enable_bundling="true"/>
     <PING timeout="2000"
-           up_thread="false" num_initial_members="3"/>
+            num_initial_members="3"/>
     <!-- MERGE2 max_interval="100000"
-             up_thread="false" min_interval="20000"/ -->
-    <FD_SOCK  up_thread="false"/>
+              min_interval="20000"/ -->
+    <FD_SOCK  />
     <!--VERIFY_SUSPECT timeout="1500" /-->
     <pbcast.NAKACK max_xmit_size="60000"
                    use_mcast_xmit="false" gc_lag="0"
                    retransmit_timeout="100,200,300,600,1200,2400,4800"
-                    up_thread="false"
                    discard_delivered_msgs="true"/>
-    <UNICAST timeout="300,600,1200,2400,3600"
-              up_thread="false"/>
+    <UNICAST timeout="300,600,1200,2400,3600"/>
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000" 
-                    up_thread="false"
                    max_bytes="400000"/>
-    <VIEW_SYNC avg_send_interval="60000"  up_thread="false" />
+    <VIEW_SYNC avg_send_interval="60000"   />
     <pbcast.GMS print_local_addr="true" join_timeout="3000" 
-                 up_thread="false"
                 join_retry_timeout="2000" shun="true"/>
-
-    <TOTAL up_thread="false"  />
-    <!-- FRAG2 frag_size="60000"  up_thread="true"/ -->
-    <!-- pbcast.STATE_TRANSFER  up_thread="false"/ -->
-    <FC max_credits="2000000"  up_thread="false"
+    <TOTAL/>
+    <!-- FRAG2 frag_size="60000"-->
+    <!-- pbcast.STATE_TRANSFER  / -->
+    <FC max_credits="2000000"
         min_threshold="0.10"/>
 </config>

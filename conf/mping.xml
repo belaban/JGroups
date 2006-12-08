@@ -2,7 +2,7 @@
 
 <!--
 TCP-based stack with IP multicast-based discovery
-Version: $Id: mping.xml,v 1.4 2006/11/17 13:39:14 belaban Exp $
+Version: $Id: mping.xml,v 1.5 2006/12/08 08:15:23 belaban Exp $
 Author: Bela Ban
  -->
 
@@ -22,18 +22,14 @@ Author: Bela Ban
             min_interval="5000"/>
     <FD timeout="2000" 
         max_tries="3"/>
-    <VERIFY_SUSPECT timeout="1500" 
-
-                    up_thread="false"/>
+    <VERIFY_SUSPECT timeout="1500"/>
     <pbcast.NAKACK gc_lag="50" 
                    retransmit_timeout="600,1200,2400,4800"
                    max_xmit_size="60000"/>
     <pbcast.STABLE stability_delay="1000" 
                    desired_avg_gossip="20000" 
-
-                   max_bytes="0" 
-                   up_thread="false"/>
-    <VIEW_SYNC avg_send_interval="60000"  up_thread="false" />
+                   max_bytes="0"/>
+    <VIEW_SYNC avg_send_interval="60000"   />
     <pbcast.GMS print_local_addr="true" 
                 join_timeout="5000" 
                 join_retry_timeout="2000" 
