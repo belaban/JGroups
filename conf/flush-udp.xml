@@ -16,32 +16,28 @@
          use_incoming_packet_handler="true" 
          use_outgoing_packet_handler="false" 
          ip_ttl="2" 
-          up_thread="false"
          enable_bundling="false"/>
     <PING timeout="2000"
-           up_thread="false" num_initial_members="3"/>
+            num_initial_members="3"/>
     <MERGE2 max_interval="100000"
-             up_thread="false" min_interval="20000"/>
-    <FD_SOCK  up_thread="false"/>
-    <FD timeout="5000" max_tries="3"  up_thread="false" shun="true"/>
-    <VERIFY_SUSPECT timeout="1500"  up_thread="false"/>
+              min_interval="20000"/>
+    <FD_SOCK/>
+    <FD timeout="5000" max_tries="3"   shun="true"/>
+    <VERIFY_SUSPECT timeout="1500"  />
     <pbcast.NAKACK max_xmit_size="60000"
                    use_mcast_xmit="false" gc_lag="0"
                    retransmit_timeout="100,200,300,600,1200,2400,4800"
-                    up_thread="false"
                    discard_delivered_msgs="true"/>
-    <UNICAST timeout="300,600,1200,2400,3600"
-              up_thread="false"/>
+    <UNICAST timeout="300,600,1200,2400,3600"/>
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000" 
-                    up_thread="false"
                    max_bytes="400000"/>
     <pbcast.GMS print_local_addr="true" join_timeout="10000" flush_timeout="5000" 
-                 up_thread="false" view_ack_collection_timeout="7000"
+                  view_ack_collection_timeout="7000"
                 join_retry_timeout="4000" shun="true" view_bundling="true"/>
-     <FC max_credits="2000000"  up_thread="false"
+     <FC max_credits="2000000"
          min_threshold="0.10"/>
-    <FRAG2 frag_size="60000"  up_thread="false"/>
-    <!-- <pbcast.STATE_TRANSFER  up_thread="false" flush_timeout="5000"/> -->
-    <pbcast.STREAMING_STATE_TRANSFER  up_thread="false" flush_timeout="5000" use_reading_thread="false"/>
-    <pbcast.FLUSH  up_thread="false" timeout="10000" auto_flush_conf="true"/>
+    <FRAG2 frag_size="60000"  />
+    <!-- <pbcast.STATE_TRANSFER   flush_timeout="5000"/> -->
+    <pbcast.STREAMING_STATE_TRANSFER   flush_timeout="5000" use_reading_thread="false"/>
+    <pbcast.FLUSH   timeout="10000" auto_flush_conf="true"/>
 </config>
