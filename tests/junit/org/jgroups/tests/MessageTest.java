@@ -1,4 +1,4 @@
-// $Id: MessageTest.java,v 1.13 2005/07/08 11:28:26 belaban Exp $
+// $Id: MessageTest.java,v 1.14 2006/12/08 09:22:17 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -30,7 +30,29 @@ public class MessageTest extends TestCase {
         super(name);
     }
 
- 
+
+    public void testFlags() {
+        m1=new Message();
+        assertFalse(m1.isFlagSet(Message.OOB));
+        try {
+            m1.setFlag((byte)1002);
+            fail("1002 is not a byte value");
+        }
+        catch(IllegalArgumentException ex) {
+        }
+        assertEquals(0, m1.getFlags());
+    }
+
+    public void testFlags2() {
+        m1=new Message();
+        m1.setFlag(Message.OOB);
+        assertTrue(m1.isFlagSet(Message.OOB));
+        assertEquals((m1.getFlags() & Message.OOB), Message.OOB);
+        assertFalse(m1.isFlagSet(Message.LOW_PRIO));
+        assertFalse((m1.getFlags() & Message.LOW_PRIO) == Message.LOW_PRIO);
+    }
+
+
     public void testBufferSize() throws Exception {
         m1=new Message(null, null, "bela");
         assertNotNull(m1.getRawBuffer());
@@ -280,6 +302,14 @@ public class MessageTest extends TestCase {
         _testSize(msg);
     }
 
+
+    public void testSizeMessageWithDestAndSrcAndFlags() throws Exception {
+        Message msg=new Message(new IpAddress("127.0.0.1", 3333), new IpAddress("127.0.0.1", 4444), null);
+        msg.setFlag(Message.OOB);
+        msg.setFlag(Message.LOW_PRIO);
+        _testSize(msg);
+    }
+
     public void testSizeMessageWithBuffer() throws Exception {
         Message msg=new Message(null, null, "bela".getBytes());
         _testSize(msg);
@@ -332,8 +362,7 @@ public class MessageTest extends TestCase {
 
 
     public static Test suite() {
-        TestSuite s=new TestSuite(MessageTest.class);
-        return s;
+        return new TestSuite(MessageTest.class);
     }
 
     public static void main(String[] args) {

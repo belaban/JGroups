@@ -4,7 +4,7 @@ Threadless stack
 ================
 
 Author: Bela Ban
-Version: $Id: ThreadlessStack.txt,v 1.15 2006/12/08 07:11:33 belaban Exp $
+Version: $Id: ThreadlessStack.txt,v 1.16 2006/12/08 09:22:16 belaban Exp $
 JIRAs:
 http://jira.jboss.com/jira/browse/JGRP-180 (harden stack),
 http://jira.jboss.com/jira/browse/JGRP-181 (threadless stack),
@@ -115,8 +115,6 @@ Todos
     - OOB thread pool
     - Regular thread pool
 
-- Plain config strings will not be supported anymore
-
 - Check UNICAST and NAKACK for correct synchronization: block messages from the *same* sender, other messages can be
   processed in parallel
 
@@ -133,9 +131,10 @@ Todos
 - Implement blocking queue for OOB and regular thread pools which provides priority delivery of messages, e.g. parallel
   delivery of messages from different senders and sequential delivery of messages from the same sender
 
-- Handle dispatching of messages from Unmarshaller to OOB or regular thread pool based on tag. Currently not done;
+- Handle dispatching of messages from Unmarshaller to OOB or regular thread pool based on flags. Currently not done;
   we dispatch all messages to the regular thread pool.
   - Add flags to Message
+  - Review which messages should be flagged as OOB
 
 - In TP.receive() we unconditionally *copy* the buffer. This doesn't need to be done if
   - we use a BufferPool or
@@ -158,8 +157,6 @@ Todos
 - Thread pool shut-downs: correct ? Should we use something else rather than shutdownNow() ?
 
 - Enable setting the thread pools programmatically
-
-- Allow the pool size for thread pools to be changed via JMX
 
 - Remove configurability of rejection policy ?
 
