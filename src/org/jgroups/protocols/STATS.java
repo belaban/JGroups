@@ -11,7 +11,7 @@ import java.util.*;
 /**
  * Provides various stats
  * @author Bela Ban
- * @version $Id: STATS.java,v 1.4 2006/11/17 13:39:19 belaban Exp $
+ * @version $Id: STATS.java,v 1.5 2006/12/08 07:11:34 belaban Exp $
  */
 public class STATS extends Protocol {
     long sent_msgs, sent_bytes, sent_ucasts, sent_mcasts, received_ucasts, received_mcasts;
@@ -33,8 +33,6 @@ public class STATS extends Protocol {
 
     public boolean setProperties(Properties props) {
         super.setProperties(props);
-        up_thread=false;   // never use an up thread
-
         if(props.size() > 0) {
             log.error("the following properties are not recognized: " + props);
             return false;

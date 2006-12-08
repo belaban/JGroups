@@ -1,4 +1,4 @@
-// $Id: Configurator.java,v 1.17 2006/11/17 13:39:20 belaban Exp $
+// $Id: Configurator.java,v 1.18 2006/12/08 07:11:34 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -71,7 +71,6 @@ public class Configurator {
 
     public void startProtocolStack(Protocol bottom_prot) {
         while(bottom_prot != null) {
-            bottom_prot.startUpHandler();
             bottom_prot=bottom_prot.getUpProtocol();
         }
     }
@@ -79,7 +78,6 @@ public class Configurator {
 
     public void stopProtocolStack(Protocol start_prot) {
         while(start_prot != null) {
-            start_prot.stopInternal();
             start_prot.destroy();
             start_prot=start_prot.getDownProtocol();
         }
@@ -139,10 +137,6 @@ public class Configurator {
         // create an instance of the protocol class and configure it
         prot=config.createLayer(stack);
         prot.init();
-
-        // start the handler threads (unless down_thread or up_thread are set to false)
-        prot.startUpHandler();
-
         return prot;
     }
 

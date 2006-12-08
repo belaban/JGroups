@@ -1,4 +1,4 @@
-// $Id: TotalTokenProtocolObserver.java,v 1.7 2006/11/17 13:39:20 belaban Exp $
+// $Id: TotalTokenProtocolObserver.java,v 1.8 2006/12/08 07:11:34 belaban Exp $
 package org.jgroups.blocks;
 
 import org.apache.commons.logging.Log;
@@ -36,7 +36,7 @@ public class TotalTokenProtocolObserver  implements ProtocolObserver
 	{
 	}
 
-	public boolean up(Event evt, int num_evts)
+	public boolean up(Event evt)
 	{
 		return true;
 	}

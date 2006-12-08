@@ -1,4 +1,4 @@
-// $Id: ProtocolView.java,v 1.3 2006/11/17 13:39:18 belaban Exp $
+// $Id: ProtocolView.java,v 1.4 2006/12/08 07:11:33 belaban Exp $
 
 package org.jgroups.debug;
 
@@ -39,7 +39,7 @@ public class ProtocolView implements ProtocolObserver {
     }
 
 
-    public boolean up(Event evt, int num_evts) {
+    public boolean up(Event evt) {
         tot_up++;
         model.setValueAt(String.valueOf(tot_up), my_index, 2);
         return true;

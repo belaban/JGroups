@@ -1,4 +1,4 @@
-// $Id: JMS.java,v 1.15 2006/11/13 17:50:14 bstansberry Exp $ 
+// $Id: JMS.java,v 1.16 2006/12/08 07:11:34 belaban Exp $ 
 
 package org.jgroups.protocols;
 
@@ -261,7 +261,7 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
                  * we call Up() directly in the observer. This allows e.g.
                  * PerfObserver to get the time of reception of a message */
                 if(observer != null)
-                    observer.up(evt, up_queue.size());
+                    observer.up(evt);
 
                 passUp(evt);
             }

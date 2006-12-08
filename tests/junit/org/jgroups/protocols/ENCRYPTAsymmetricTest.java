@@ -533,7 +533,7 @@ public class ENCRYPTAsymmetricTest extends TestCase {
 
 	
 
-	class MockObserver implements ProtocolObserver {
+	static class MockObserver implements ProtocolObserver {
 
 		private Map upMessages = new HashMap();
 		private Map downMessages = new HashMap();
@@ -549,12 +549,12 @@ public class ENCRYPTAsymmetricTest extends TestCase {
 		private void storeDown(Event evt){
 			downMessages.put("message"+counter++,evt);
 		}
-		public void up(Event evt)
-		{
-			storeUp(evt);
-			System.out.println("Up:"+evt.toString());
-			
-		}
+        public boolean up(Event evt)
+        {
+            storeUp(evt);
+            System.out.println("Up:"+evt.toString());
+            return true;
+        }
 
 		/* (non-Javadoc)
 		 * @see org.jgroups.stack.ProtocolObserver#setProtocol(org.jgroups.stack.Protocol)
@@ -563,15 +563,7 @@ public class ENCRYPTAsymmetricTest extends TestCase {
 		{
 		}
 
-		/* (non-Javadoc)
-		 * @see org.jgroups.stack.ProtocolObserver#up(org.jgroups.Event, int)
-		 */
-		public boolean up(Event evt, int num_evts)
-		{
-			System.out.println("Up:"+evt.toString());
-			
-			return false;
-		}
+
 
 		/* (non-Javadoc)
 		 * @see org.jgroups.stack.ProtocolObserver#passUp(org.jgroups.Event)
