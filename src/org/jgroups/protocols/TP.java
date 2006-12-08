@@ -41,7 +41,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.83 2006/12/07 21:17:59 belaban Exp $
+ * @version $Id: TP.java,v 1.84 2006/12/08 07:11:34 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -632,9 +632,6 @@ public abstract class TP extends Protocol {
         }
 
 
-
-
-        // todo: provide configuration in XML
         // ====================================== Regular thread pool ===========================
         if(thread_pool_enabled) { // create a PooledExecutor for the unmarshaller thread pool
             if(thread_pool_queue_enabled)
@@ -1320,7 +1317,7 @@ public abstract class TP extends Protocol {
         /* Because Protocol.up() is never called by this bottommost layer, we call up() directly in the observer.
         * This allows e.g. PerfObserver to get the time of reception of a message */
         if(observer != null)
-            observer.up(evt, up_queue.size());
+            observer.up(evt);
 
         hdr=(TpHeader)msg.getHeader(name); // replaced removeHeader() with getHeader()
         if(hdr != null) {
@@ -1816,7 +1813,7 @@ public abstract class TP extends Protocol {
             /* Because Protocol.up() is never called by this bottommost layer, we call up() directly in the observer.
                This allows e.g. PerfObserver to get the time of reception of a message */
             if(observer != null)
-                observer.up(evt, up_queue.size());
+                observer.up(evt);
 
             hdr=(TpHeader)msg.getHeader(name); // replaced removeHeader() with getHeader()
             if(hdr != null) {

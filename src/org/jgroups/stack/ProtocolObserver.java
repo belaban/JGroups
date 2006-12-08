@@ -1,4 +1,4 @@
-// $Id: ProtocolObserver.java,v 1.2 2006/11/17 13:39:20 belaban Exp $
+// $Id: ProtocolObserver.java,v 1.3 2006/12/08 07:11:34 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -29,13 +29,10 @@ public interface ProtocolObserver {
 	(waiting on a mutex, GUI thread notifies mutex).
 	@param evt The event to be processed by the protocol. <em>This is not a copy, so changes
 	to the event will be seen by the protocol !</em>
-	@param num_evts The number of events currently in the up-queue (including this event).
-	This number may increase while we're in the callback as the up-handler thread in the
-	upper protocol layer puts new events into the up queue.
 	@return boolean If true the event is processed, else it will be discarded (not be given
 	to the protocol layer to process).
     */
-    boolean up(Event evt, int num_evts);
+    boolean up(Event evt);
 
 
     

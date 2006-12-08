@@ -418,7 +418,7 @@ public class ContinousThroughputTest {
             throw new java.lang.UnsupportedOperationException("Method setProtocol() not yet implemented.");
         }
 
-        public boolean up(Event evt, int num_evts) {
+        public boolean up(Event evt) {
             /** todo: Implement this org.jgroups.debug.ProtocolObserver method*/
             throw new java.lang.UnsupportedOperationException("Method up() not yet implemented.");
         }

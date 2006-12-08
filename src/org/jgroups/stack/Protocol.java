@@ -1,4 +1,4 @@
-// $Id: Protocol.java,v 1.40 2006/11/17 13:48:30 belaban Exp $
+
 
 package org.jgroups.stack;
 
@@ -14,61 +14,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Vector;
 
-
-
-
-class UpHandler extends Thread {
-    private Queue mq=null;
-    private Protocol handler=null;
-    private ProtocolObserver observer=null;
-    protected final Log  log=LogFactory.getLog(this.getClass());
-
-
-    public UpHandler(Queue mq, Protocol handler, ProtocolObserver observer) {
-        super(Util.getGlobalThreadGroup(), "UpHandler");
-        this.mq=mq;
-        this.handler=handler;
-        this.observer=observer;
-        if(handler != null)
-            setName("UpHandler (" + handler.getName() + ')');
-        else
-            setName("UpHandler");
-        setDaemon(true);
-    }
-
-
-    public void setObserver(ProtocolObserver observer) {
-        this.observer=observer;
-    }
-
-
-    /** Removes events from mq and calls handler.up(evt) */
-    public void run() {
-        while(!mq.closed()) {
-            try {
-                Event evt=(Event)mq.remove();
-                if(evt == null) {
-                    if(log.isWarnEnabled()) log.warn("removed null event");
-                    continue;
-                }
-
-                if(observer != null) {                          // call debugger hook (if installed)
-                    if(observer.up(evt, mq.size()) == false) {  // false means discard event
-                        return;
-                    }
-                }
-                handler.up(evt);
-            }
-            catch(QueueClosedException queue_closed) {
-                break;
-            }
-            catch(Throwable e) {
-                if(log.isErrorEnabled()) log.error(getName() + " caught exception", e);
-            }
-        }
-    }
-
-}
 
 
 
@@ -93,17 +38,16 @@ class UpHandler extends Thread {
  * implementing their on Event queuing.<p>
  * <b>Note that each class implementing interface Protocol MUST provide an empty, public
  * constructor !</b>
+ *
+ * @author Bela Ban
+ * @version $Id: Protocol.java,v 1.41 2006/12/08 07:11:34 belaban Exp $
  */
 public abstract class Protocol {
     protected final Properties props=new Properties();
     protected Protocol         up_prot=null, down_prot=null;
     protected ProtocolStack    stack=null;
-    protected final Queue      up_queue=new Queue();
-    protected UpHandler        up_handler=null;
-    protected int              up_thread_prio=-1;
     protected ProtocolObserver observer=null; // hook for debugger
     private final static long  THREAD_JOIN_TIMEOUT=1000;
-    protected boolean          up_thread=true;    // determines whether the up_handler thread should be started
     protected boolean          stats=true;  // determines whether to collect statistics (and expose them via JMX)
     protected final Log        log=LogFactory.getLog(this.getClass());
     protected boolean          trace=log.isTraceEnabled();
@@ -145,13 +89,15 @@ public abstract class Protocol {
 
         str=props.getProperty("up_thread");
         if(str != null) {
-            up_thread=Boolean.valueOf(str).booleanValue();
+            if(warn)
+                log.warn("up_thread was deprecated and is ignored");
             props.remove("up_thread");
         }
 
         str=props.getProperty("up_thread_prio");
         if(str != null) {
-            up_thread_prio=Integer.parseInt(str);
+            if(warn)
+                log.warn("up_thread_prio was deprecated and is ignored");
             props.remove("up_thread_prio");
         }
 
@@ -186,8 +132,11 @@ public abstract class Protocol {
         this.warn=warn;
     }
 
+    /** @deprecated up_thread was removed
+     * @return false by default
+     */
     public boolean upThreadEnabled() {
-        return up_thread;
+        return false;
     }
 
     /**
@@ -264,7 +213,7 @@ public abstract class Protocol {
 
 
     public Queue getUpQueue() {
-        return up_queue;
+        throw new UnsupportedOperationException("queues were removed in 2.5");
     }    // used by Debugger (ProtocolView)
 
     public Queue getDownQueue() {
@@ -322,52 +271,6 @@ public abstract class Protocol {
     }
 
 
-    /** Used internally. If overridden, call this method first. Only creates the up_handler thread
-     if down_thread is true */
-    public void startUpHandler() {
-        if(up_thread) {
-            if(up_handler == null) {
-                up_handler=new UpHandler(up_queue, this, observer);
-                if(up_thread_prio >= 0) {
-                    try {
-                        up_handler.setPriority(up_thread_prio);
-                    }
-                    catch(Throwable t) {
-                        if(log.isErrorEnabled()) log.error("priority " + up_thread_prio +
-                                " could not be set for thread", t);
-                    }
-                }
-                up_handler.start();
-            }
-        }
-    }
-
-
-
-    /** Used internally. If overridden, call parent's method first */
-    public void stopInternal() {
-        up_queue.close(false);  // this should terminate up_handler thread
-
-        if(up_handler != null && up_handler.isAlive()) {
-            try {
-                up_handler.join(THREAD_JOIN_TIMEOUT);
-            }
-            catch(Exception ex) {
-            }
-            if(up_handler != null && up_handler.isAlive()) {
-                up_handler.interrupt();  // still alive ? let's just kill it without mercy...
-                try {
-                    up_handler.join(THREAD_JOIN_TIMEOUT);
-                }
-                catch(Exception ex) {
-                }
-                if(up_handler != null && up_handler.isAlive())
-                    if(log.isErrorEnabled()) log.error("up_handler thread for " + getName() +
-                                                           " was interrupted (in order to be terminated), but is still alive");
-            }
-        }
-        up_handler=null;
-    }
 
 
     /**
@@ -377,21 +280,12 @@ public abstract class Protocol {
      * caller's thread (e.g. the protocol layer below us).
      */
     protected void receiveUpEvent(Event evt) {
-        if(up_handler == null) {
-            if(observer != null) {                               // call debugger hook (if installed)
-                if(observer.up(evt, up_queue.size()) == false) {  // false means discard event
-                    return;
-                }
+        if(observer != null) {                 // call debugger hook (if installed)
+            if(observer.up(evt) == false) {  // false means discard event
+                return;
             }
-            up(evt);
-            return;
         }
-        try {
-            up_queue.add(evt);
-        }
-        catch(Exception e) {
-            if(log.isWarnEnabled()) log.warn("exception: " + e);
-        }
+        up(evt);
     }
 
     /**
