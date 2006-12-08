@@ -1,6 +1,6 @@
 
 // Author: Bela Ban
-// $Id: MarshalingFormat.txt,v 1.4 2005/08/26 11:07:55 belaban Exp $
+// $Id: MarshalingFormat.txt,v 1.5 2006/12/08 09:22:16 belaban Exp $
 
 
 Binary format for marshalled messages
@@ -16,6 +16,7 @@ An org.jgroups.Message is marshalled to a byte stream as follows.
 
 SingleMessage:
 - leading: byte. Has bits set for null src and dest addresses, buf and headers
+- flags: byte
 - src address: Address
 - [length of buf]: int
 - [buf]: byte[] array

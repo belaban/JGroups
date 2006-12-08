@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.53 2006/08/13 15:38:52 belaban Exp $
+// $Id: Message.java,v 1.54 2006/12/08 09:22:16 belaban Exp $
 
 package org.jgroups;
 
@@ -48,13 +48,21 @@ public class Message implements Externalizable, Streamable {
 
     private static final long serialVersionUID=7966206671974139740L;
 
-    static final byte DEST_SET=1;
-    static final byte SRC_SET=2;
-    static final byte BUF_SET=4;
+    static final byte DEST_SET      = 1;
+    static final byte SRC_SET       = 2;
+    static final byte BUF_SET       = 4;
     // static final byte HDRS_SET=8; // bela July 15 2005: not needed, we always create headers
-    static final byte IPADDR_DEST=16;
-    static final byte IPADDR_SRC=32;
-    static final byte SRC_HOST_NULL=64;
+    static final byte IPADDR_DEST   =16;
+    static final byte IPADDR_SRC    =32;
+    static final byte SRC_HOST_NULL =64;
+
+
+    // =========================== Flags ==============================
+    public static final byte OOB       = 1;
+    public static final byte LOW_PRIO  = 2;
+    public static final byte HIGH_PRIO = 4;
+
+    private byte flags=0;
 
     static final HashSet nonStreamableHeaders=new HashSet(); // todo: remove when all headers are streamable
 
@@ -267,13 +275,33 @@ public class Message implements Externalizable, Streamable {
     }
 
     final public Object getObject() {
-        // if(buf == null) return null;
         try {
             return Util.objectFromByteBuffer(buf, offset, length);
         }
         catch(Exception ex) {
             throw new IllegalArgumentException(ex.toString());
         }
+    }
+
+
+    public void setFlag(byte flag) {
+        if(flag > Byte.MAX_VALUE || flag < 0)
+            throw new IllegalArgumentException("flag has to be >= 0 and <= " + Byte.MAX_VALUE);
+        flags += flag;
+    }
+
+    public void clearFlag(byte flag) {
+        if(flag > Byte.MAX_VALUE || flag < 0)
+            throw new IllegalArgumentException("flag has to be >= 0 and <= " + Byte.MAX_VALUE);
+        flags -= flag;
+    }
+
+    public boolean isFlagSet(byte flag) {
+        return (flags & flag) == flag;
+    }
+
+    public byte getFlags() {
+        return flags;
     }
 
 
@@ -360,15 +388,19 @@ public class Message implements Externalizable, Streamable {
         if(headers != null && (size=headers.size()) > 0)
             ret.append(" (").append(size).append(" headers)");
 
-        ret.append(", size = ");
+        ret.append(", size=");
         if(buf != null && length > 0)
             ret.append(length);
         else
             ret.append('0');
         ret.append(" bytes");
+        if(flags > 0)
+            ret.append(", flags=").append(flagsToString());
         ret.append(']');
         return ret.toString();
     }
+
+
 
 
     /** Tries to read an object from the message's buffer and prints it */
@@ -403,6 +435,7 @@ public class Message implements Externalizable, Streamable {
      */
     public long size() {
         long retval=Global.BYTE_SIZE                  // leading byte
+                + Global.BYTE_SIZE                    // flags
                 + length                              // buffer
                 + (buf != null? Global.INT_SIZE : 0); // if buf != null 4 bytes for length
 
@@ -465,6 +498,8 @@ public class Message implements Externalizable, Streamable {
             out.writeBoolean(false);
         }
 
+        out.write(flags);
+
         if(buf == null)
             out.writeInt(0);
         else {
@@ -498,6 +533,8 @@ public class Message implements Externalizable, Streamable {
             if(!DISABLE_CANONICALIZATION)
                 src_addr=canonicalAddress(src_addr);
         }
+
+        flags=in.readByte();
 
         int i=in.readInt();
         if(i != 0) {
@@ -548,6 +585,9 @@ public class Message implements Externalizable, Streamable {
 
         // 1. write the leading byte first
         out.write(leading);
+
+        // the flags (e.g. OOB, LOW_PRIO)
+        out.write(flags);
 
         // 2. dest_addr
 //        if(dest_addr != null) {
@@ -605,6 +645,8 @@ public class Message implements Externalizable, Streamable {
 //            }
 //        }
 
+        flags=in.readByte();
+
         // 2. src_addr
         if((leading & SRC_SET) == SRC_SET) {
             if((leading & IPADDR_SRC) == IPADDR_SRC) {
@@ -643,6 +685,33 @@ public class Message implements Externalizable, Streamable {
 
 
     /* ----------------------------------- Private methods ------------------------------- */
+
+    private String flagsToString() {
+        StringBuffer sb=new StringBuffer();
+        boolean first=true;
+        if(isFlagSet(OOB)) {
+            if(!first)
+                sb.append("|");
+            else
+                first=false;
+            sb.append("OOB");
+        }
+        if(isFlagSet(LOW_PRIO)) {
+            if(!first)
+                sb.append("|");
+            else
+                first=false;
+            sb.append("LOW_PRIO");
+        }
+        if(isFlagSet(HIGH_PRIO)) {
+            if(!first)
+                sb.append("|");
+            else
+                first=false;
+            sb.append("HIGH_PRIO");
+        }
+        return sb.toString();
+    }
 
     private static void writeHeader(Header value, DataOutputStream out) throws IOException {
         int magic_number;
