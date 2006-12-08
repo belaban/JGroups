@@ -294,53 +294,65 @@ public class Test implements Receiver {
     }
 
     private void handleData(Object sender, int num_bytes) {
-        if(all_received)
-            return;
-        if(start == 0) {
-            start=System.currentTimeMillis();
-        }
-
-        num_msgs_received++;
-        num_bytes_received+=num_bytes;
-
-        if(num_msgs_received >= num_msgs_expected) {
-            if(stop == 0)
-                stop=System.currentTimeMillis();
-            all_received=true;
-        }
-
-        if(num_msgs_received % log_interval == 0)
-            System.out.println(new StringBuffer("-- received ").append(num_msgs_received).append(" messages"));
-
-        if(counter % log_interval == 0) {
-            output(dumpStats(counter));
-        }
-
-        MemberInfo info=(MemberInfo)this.senders.get(sender);
-        if(info != null) {
-            if(info.start == 0)
-                info.start=System.currentTimeMillis();
-            info.num_msgs_received++;
-            counter++;
-            info.total_bytes_received+=num_bytes;
-            if(info.num_msgs_received >= info.num_msgs_expected) {
-                info.done=true;
-                if(info.stop == 0)
-                    info.stop=System.currentTimeMillis();
+        MemberInfo info=null;
+        synchronized(this) {
+            if(all_received)
+                return;
+            if(start == 0) {
+                start=System.currentTimeMillis();
             }
-            else {
-                if(processing_delay > 0)
-                    Util.sleep(processing_delay);
+
+            num_msgs_received++;
+            num_bytes_received+=num_bytes;
+
+            if(num_msgs_received >= num_msgs_expected) {
+                if(stop == 0)
+                    stop=System.currentTimeMillis();
+                all_received=true;
+            }
+
+            if(num_msgs_received % log_interval == 0)
+                System.out.println(new StringBuffer("-- received ").append(num_msgs_received).append(" messages"));
+
+            if(counter % log_interval == 0) {
+                output(dumpStats(counter));
+            }
+            info=(MemberInfo)this.senders.get(sender);
+        }
+
+        boolean do_sleep=false;
+        if(info != null) {
+            synchronized(info) {
+                if(info.start == 0)
+                    info.start=System.currentTimeMillis();
+                info.num_msgs_received++;
+                counter++;
+                info.total_bytes_received+=num_bytes;
+                if(info.num_msgs_received >= info.num_msgs_expected) {
+                    info.done=true;
+                    if(info.stop == 0)
+                        info.stop=System.currentTimeMillis();
+                }
+                else {
+                    if(processing_delay > 0)
+                        do_sleep=true;
+                }
             }
         }
         else {
             log.error("-- sender " + sender + " not found in senders hashmap");
         }
 
-        if(all_received) {
-            if(!this.sender)
-                dumpSenders();
-            publisher.start();
+        if(do_sleep && processing_delay > 0) {
+            Util.sleep(processing_delay);
+        }
+
+        synchronized(this) {
+            if(all_received) {
+                if(!this.sender)
+                    dumpSenders();
+                publisher.start();
+            }
         }
     }
 
