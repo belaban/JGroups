@@ -1,4 +1,4 @@
-// $Id: View.java,v 1.12 2006/08/14 16:11:37 belaban Exp $
+// $Id: View.java,v 1.13 2006/12/09 21:58:19 belaban Exp $
 
 package org.jgroups;
 
@@ -95,7 +95,7 @@ public class View implements Externalizable, Cloneable, Streamable {
      * @return a reference to the ordered list of members in this view
      */
     public Vector getMembers() {
-        return members;
+        return Util.unmodifiableVector(members);
     }
 
     /**
