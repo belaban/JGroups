@@ -5,7 +5,7 @@ import java.util.*;
 /**
  * Vector which cannot be modified
  * @author Bela Ban
- * @version $Id: UnmodifiableVector.java,v 1.2 2006/12/09 21:55:19 belaban Exp $
+ * @version $Id: UnmodifiableVector.java,v 1.3 2006/12/09 22:59:34 belaban Exp $
  */
 public class UnmodifiableVector extends Vector {
     Vector v;
@@ -103,7 +103,7 @@ public class UnmodifiableVector extends Vector {
     }
 
     public synchronized Object clone() {
-        return new UnmodifiableVector(v);
+        return v.clone();
     }
 
     public synchronized Object[] toArray() {
