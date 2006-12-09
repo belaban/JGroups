@@ -7,17 +7,15 @@ public class RpcDispatcherAnycastMultipleCallsTest extends TestCase
 {
    private RpcDispatcherAnycastTestServerObject[] targets = null;
 
-   protected void tearDown()
-   {
-      if (targets != null)
-      {
-         for (int i=0; i<targets.length; i++)
-         {
-            if (targets[i] != null) targets[i].shutdown();
-            targets[i] = null;
-         }
-         targets = null;
-      }
+   protected void tearDown() throws Exception {
+       if(targets != null) {
+           for(int i=0; i < targets.length; i++) {
+               if(targets[i] != null) targets[i].shutdown();
+               targets[i]=null;
+           }
+           targets=null;
+       }
+       super.tearDown();
    }
 
    public void test2InstancesAnycastIncludeSelf() throws Exception
