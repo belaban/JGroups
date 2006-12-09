@@ -8,6 +8,7 @@ import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.Address;
+import org.jgroups.util.RspList;
 
 import java.util.Vector;
 
@@ -33,9 +34,12 @@ public class RpcDispatcherAnycastTestServerObject implements MessageListener, Me
 
    public void callRemote(boolean useAnycast, boolean excludeSelf)
    {
-      Vector v = c.getView().getMembers();
+       // we need to copy the vector, otherwise the modification below will throw an exception because the underlying
+       // vector is unmodifiable
+      Vector v = new Vector(c.getView().getMembers());
       if (excludeSelf) v.remove(c.getLocalAddress());
-      d.callRemoteMethods(v, "doSomething", new Object[]{}, new Class[]{}, GroupRequest.GET_ALL, 10000, useAnycast);
+      RspList rsps=d.callRemoteMethods(v, "doSomething", new Object[]{}, new Class[]{}, GroupRequest.GET_ALL, 10000, useAnycast);
+      System.out.println("rsps: " + rsps);
    }
 
    public void shutdown()
