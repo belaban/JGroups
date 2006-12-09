@@ -9,8 +9,11 @@ import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.Address;
 import org.jgroups.util.RspList;
+import org.jgroups.util.Rsp;
 
 import java.util.Vector;
+import java.util.Map;
+import java.util.Iterator;
 
 public class RpcDispatcherAnycastTestServerObject implements MessageListener, MembershipListener
 {
@@ -39,7 +42,15 @@ public class RpcDispatcherAnycastTestServerObject implements MessageListener, Me
       Vector v = new Vector(c.getView().getMembers());
       if (excludeSelf) v.remove(c.getLocalAddress());
       RspList rsps=d.callRemoteMethods(v, "doSomething", new Object[]{}, new Class[]{}, GroupRequest.GET_ALL, 10000, useAnycast);
-      System.out.println("rsps: " + rsps);
+      Map.Entry entry;
+       for(Iterator it=rsps.entrySet().iterator(); it.hasNext();) {
+           entry=(Map.Entry)it.next();
+           Address member=(Address)entry.getKey();
+           Rsp rsp=(Rsp)entry.getValue();
+           if(!rsp.wasReceived())
+               throw new RuntimeException("response from " + member + " was not received, rsp=" + rsp);
+       }
+
    }
 
    public void shutdown()

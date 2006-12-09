@@ -1,7 +1,6 @@
 package org.jgroups.blocks;
 
 import junit.framework.TestCase;
-import org.jgroups.blocks.RpcDispatcherAnycastTestServerObject;
 
 public class RpcDispatcherAnycastMultipleCallsTest extends TestCase
 {
