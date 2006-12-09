@@ -26,7 +26,7 @@ import EDU.oswego.cs.dl.util.concurrent.Sync;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.106 2006/12/07 16:41:35 belaban Exp $
+ * @version $Id: Util.java,v 1.107 2006/12/09 21:57:51 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -1883,6 +1883,11 @@ public class Util {
                 return 16;
         }
         return retval;
+    }
+
+    public static Vector unmodifiableVector(Vector v) {
+        if(v == null) return null;
+        return new UnmodifiableVector(v);
     }
 
     public static String memStats(boolean gc) {
