@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.75 2006/11/24 16:23:51 vlada Exp $ -->
+<!-- $Id: build.xml,v 1.76 2006/12/11 09:00:38 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -213,6 +213,12 @@
              </fileset>
              <fileset dir="${dist.dir}">
                  <include name="jgroups-all*.jar"/>
+             </fileset>
+             <fileset dir="${conf.dir}">
+                 <include name="config.txt"/>
+                 <include name="udp.xml"/>
+                 <include name="tcp*.xml"/>
+                 <include name="mping.xml"/>
              </fileset>
          </copy>
          <mkdir dir="${dist.dir}"/>
