@@ -4,7 +4,7 @@ Threadless stack
 ================
 
 Author: Bela Ban
-Version: $Id: ThreadlessStack.txt,v 1.17 2006/12/11 13:43:41 belaban Exp $
+Version: $Id: ThreadlessStack.txt,v 1.18 2006/12/11 14:50:08 belaban Exp $
 JIRAs:
 http://jira.jboss.com/jira/browse/JGRP-180 (harden stack),
 http://jira.jboss.com/jira/browse/JGRP-181 (threadless stack),
@@ -87,34 +87,6 @@ incoming queue)
 Todos
 ------
 
-- Provide XML parsing for thread pool config, e.g.
-<UDP
-            mcast_addr="${jgroups.udp.mcast_addr:228.10.10.10}"
-            mcast_port="${jgroups.udp.mcast_port:45588}">
-        <oob_thread_pool>
-            ...
-        </oob_thread_pool>
-
-        <!-- If no thread_pool element is present, thread pools will be disabled -->
-        <thread_pool min_threads="2"
-                     preallocation="false"
-                     max_threads="10"
-                     keep_alive_time="30000"
-                     rejection_policy="runOnCallersThread">
-            <queue type="FifoInputQueue"
-                    max_bytes="1000000"/>
-        </thread_pool>
-    </UDP>
-
-    Maybe we won't do that; the 'inline' config doesn't look so bad...
-
-  - Find better (shorter) names for the configuration of the thread pools
-
-  - This needs to be done for
-    - Unmarshaller thread pool
-    - OOB thread pool
-    - Regular thread pool
-
 - Check UNICAST and NAKACK for correct synchronization: block messages from the *same* sender, other messages can be
   processed in parallel
 
@@ -142,15 +114,11 @@ Todos
 
 - Remove TP.use_threadless_stack
 
-- Expose JMX information for all 3 thread pools
-
 - Thread naming in thread pool: better naming (e.g. for Unmarshalling threads sender of message that is being
   unmarshalled). Don't use increasing numbers for threads (?)
   - Append (channel="<GroupName>") to each pool thread's name
 
 - Dynamic resizing of thread pools, e.g. according to number of nodes in a cluster ?
-
-- Allow resizing of thread pools (and other changes) via JMX
 
 - Look at thread interruption policies. Are we handling these correctly ?
   - There are some exceptions due to uncaught interrupt exceptions
@@ -161,8 +129,15 @@ Todos
 
 - Remove configurability of rejection policy ?
 
-- Thread pool queues are always showing 0 size although they *should* be filled
+- Make threads in 3 thread pools daemon threads ?
 
+
+Done
+====
+
+- Expose JMX information for all 3 thread pools
+- Allow resizing of thread pools (and other changes) via JMX
+- Thread pool queues are always showing 0 size although they *should* be filled: CORRECT
 
 
 
