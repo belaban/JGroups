@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.54 2006/12/08 09:22:16 belaban Exp $
+// $Id: Message.java,v 1.55 2006/12/11 13:28:43 belaban Exp $
 
 package org.jgroups;
 
@@ -350,6 +350,7 @@ public class Message implements Externalizable, Streamable {
         Message retval=new Message(false);
         retval.dest_addr=dest_addr;
         retval.src_addr=src_addr;
+        retval.flags=flags;
 
         if(copy_buffer && buf != null) {
 
