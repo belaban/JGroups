@@ -1,0 +1,20 @@
+#!/bin/bash
+
+JG=.
+LIB=$JG
+
+CP=$JG\\classes\;$JG\\conf\;$LIB\\jgroups-all.jar\;$LIB\\commons-logging.jar\;$LIB\\concurrent.jar\;$LIB\\jmxri.jar\;$LIB\\log4j.jar\;$JG\\keystore
+
+
+#FLAGS="-Xmx500M -Xms500M -XX:NewRatio=1 -XX:+AggressiveHeap -verbose:gc -XX:+DisableExplicitGC -XX:ThreadStackSize=32 -XX:CompileThreshold=100"
+
+
+#LOG="-Dorg.apache.commons.logging.Log=org.apache.commons.logging.impl.Jdk14Logger -Djava.util.logging.config.file=c:\logging.properties"
+LOG="-Dlog4j.configuration=file:c:/log4j.properties"
+
+
+FLAGS="$FLAGS -Djava.net.preferIPv4Stack=true -Djgroups.bind_addr=192.168.5.2 -Djgroups.tcpping.initial_hosts=127.0.0.1[7800]"
+
+
+
+java -Ddisable_canonicalization=false -classpath $CP $LOG $FLAGS -Dcom.sun.management.jmxremote -Dresolve.dns=false org.jgroups.$*
