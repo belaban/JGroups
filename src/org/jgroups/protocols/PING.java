@@ -1,4 +1,4 @@
-// $Id: PING.java,v 1.30 2006/10/11 14:41:48 belaban Exp $
+// $Id: PING.java,v 1.31 2006/12/11 15:38:56 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -175,6 +175,7 @@ public class PING extends Discovery {
                 for(Iterator it=gossip_rsps.iterator(); it.hasNext();) {
                     Address dest=(Address)it.next();
                     msg=new Message(dest, null, null);  // unicast msg
+                    msg.setFlag(Message.OOB);
                     msg.putHeader(getName(), new PingHeader(PingHeader.GET_MBRS_REQ, null));
                     passDown(new Event(Event.MSG, msg));
                 }
@@ -187,6 +188,7 @@ public class PING extends Discovery {
                 IpAddress h;
                 List hlist;
                 msg=new Message(null);
+                msg.setFlag(Message.OOB);
                 msg.putHeader(getName(), new PingHeader(PingHeader.GET_MBRS_REQ, null));
                 for(Enumeration en=initial_hosts.elements(); en.hasMoreElements();) {
                     hlist=(List)en.nextElement();
@@ -204,6 +206,7 @@ public class PING extends Discovery {
                 // 1. Mcast GET_MBRS_REQ message
                 hdr=new PingHeader(PingHeader.GET_MBRS_REQ, null);
                 msg=new Message(null);  // mcast msg
+                msg.setFlag(Message.OOB);
                 msg.putHeader(getName(), hdr); // needs to be getName(), so we might get "MPING" !
                 sendMcastDiscoveryRequest(msg);
             }

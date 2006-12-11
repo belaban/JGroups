@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.55 2006/12/11 13:28:43 belaban Exp $
+// $Id: Message.java,v 1.56 2006/12/11 15:38:57 belaban Exp $
 
 package org.jgroups;
 
@@ -59,8 +59,8 @@ public class Message implements Externalizable, Streamable {
 
     // =========================== Flags ==============================
     public static final byte OOB       = 1;
-    public static final byte LOW_PRIO  = 2;
-    public static final byte HIGH_PRIO = 4;
+    public static final byte LOW_PRIO  = 2; // not yet sure if we want this flag...
+    public static final byte HIGH_PRIO = 4; // not yet sure if we want this flag...
 
     private byte flags=0;
 
