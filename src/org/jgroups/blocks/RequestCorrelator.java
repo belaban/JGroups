@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.30 2006/08/29 07:27:14 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.31 2006/12/11 08:24:13 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -232,6 +232,9 @@ public class RequestCorrelator {
         this.marshaller=marshaller;
     }
 
+    public void sendRequest(long id, List dest_mbrs, Message msg, RspCollector coll) throws Exception {
+        sendRequest(id, dest_mbrs, msg, coll, false);
+    }
 
     /**
      * Send a request to a group. If no response collector is given, no
@@ -250,7 +253,7 @@ public class RequestCorrelator {
      * <code>suspect()</code> will be invoked when a message has been received
      * or a member is suspected, respectively.
      */
-    public void sendRequest(long id, List dest_mbrs, Message msg, RspCollector coll) throws Exception {
+    public void sendRequest(long id, List dest_mbrs, Message msg, RspCollector coll, boolean use_anycasting) throws Exception {
         Header hdr;
 
         if(transport == null) {
@@ -264,7 +267,7 @@ public class RequestCorrelator {
         // coresponding entry in the pending requests table
         // iii. If deadlock detection is enabled, set/update the call stack
         // iv. Pass the msg down to the protocol layer below
-        hdr = new Header(Header.REQ, id, (coll != null), name);
+        hdr=new Header(Header.REQ, id, (coll != null), name);
         hdr.dest_mbrs=dest_mbrs;
 
         if (coll != null) {
@@ -282,10 +285,34 @@ public class RequestCorrelator {
         }
         msg.putHeader(name, hdr);
 
-        if(transport instanceof Protocol)
-            ((Protocol)transport).passDown(new Event(Event.MSG, msg));
-        else if(transport instanceof Transport)
-            ((Transport)transport).send(msg);
+        if(transport instanceof Protocol) {
+            if(use_anycasting) {
+                Message copy;
+                for(Iterator it=dest_mbrs.iterator(); it.hasNext();) {
+                    Address mbr=(Address)it.next();
+                    copy=msg.copy(true);
+                    copy.setDest(mbr);
+                    ((Protocol)transport).passDown(new Event(Event.MSG, copy));
+                }
+            }
+            else {
+                ((Protocol)transport).passDown(new Event(Event.MSG, msg));
+            }
+        }
+        else if(transport instanceof Transport) {
+            if(use_anycasting) {
+                Message copy;
+                for(Iterator it=dest_mbrs.iterator(); it.hasNext();) {
+                    Address mbr=(Address)it.next();
+                    copy=msg.copy(true);
+                    copy.setDest(mbr);
+                    ((Transport)transport).send(copy);
+                }
+            }
+            else {
+                ((Transport)transport).send(msg);
+            }
+        }
         else
             throw new IllegalStateException("transport has to be either a Transport or a Protocol, however it is a " + transport.getClass());
     }

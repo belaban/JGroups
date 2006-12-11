@@ -35,7 +35,7 @@ import java.util.ArrayList;
  * the application instead of protocol level.
  *
  * @author Bela Ban
- * @version $Id: MessageDispatcher.java,v 1.62 2006/11/22 19:11:09 vlada Exp $
+ * @version $Id: MessageDispatcher.java,v 1.63 2006/12/11 08:24:13 belaban Exp $
  */
 public class MessageDispatcher implements RequestHandler {
     protected Channel channel=null;
@@ -357,6 +357,11 @@ public class MessageDispatcher implements RequestHandler {
     }
 
 
+    public RspList castMessage(final Vector dests, Message msg, int mode, long timeout) {
+        return castMessage(dests, msg, mode, timeout, false);
+    }
+
+
     /**
      * Cast a message to all members, and wait for <code>mode</code> responses. The responses are returned in a response
      * list, where each response is associated with its sender.<p> Uses <code>GroupRequest</code>.
@@ -373,7 +378,7 @@ public class MessageDispatcher implements RequestHandler {
      * @param timeout If 0: wait forever. Otherwise, wait for <code>mode</code> responses <em>or</em> timeout time.
      * @return RspList A list of responses. Each response is an <code>Object</code> and associated to its sender.
      */
-    public RspList castMessage(final Vector dests, Message msg, int mode, long timeout) {
+    public RspList castMessage(final Vector dests, Message msg, int mode, long timeout, boolean use_anycasting) {
         GroupRequest _req=null;
         Vector real_dests;
         Channel tmp;
@@ -421,7 +426,7 @@ public class MessageDispatcher implements RequestHandler {
         _req=new GroupRequest(msg, corr, real_dests, mode, timeout, 0);
         _req.setCaller(this.local_addr);
         try {
-            _req.execute();
+            _req.execute(use_anycasting);
         }
         catch(Exception ex) {
             throw new RuntimeException("failed executing request " + _req, ex);
