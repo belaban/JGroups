@@ -1,4 +1,4 @@
-// $Id: WANPING.java,v 1.11 2006/04/23 12:52:54 belaban Exp $
+// $Id: WANPING.java,v 1.12 2006/12/11 15:38:56 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -55,6 +55,7 @@ public class WANPING extends Discovery {
 
         hdr=new PingHeader(PingHeader.GET_MBRS_REQ, null);
         msg=new Message(null);
+        msg.setFlag(Message.OOB);
         msg.putHeader(getName(), hdr);
 
         for(Enumeration en=initial_hosts.elements(); en.hasMoreElements();) {
