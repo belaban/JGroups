@@ -43,7 +43,7 @@
     </module>
     <module name='commons-logging'
             licenseType='apache-2.0'
-            version='1.0.3'
+            version='1.1'
             projectHome='http://jakarta.apache.org/commons/logging/'
             description='Apache commons logging. Used for logging (runtime)'>
         <jar name='commons-logging.jar' />
@@ -79,7 +79,7 @@
     </module>
     <module name='log4j'
         licenseType='apache-2.0'
-        version='1.2.6'
+        version='1.2.14'
         projectHome='http://logging.apache.org/'
         description='Java logging framework (runtime)'>
         <jar name='log4j.jar' />
