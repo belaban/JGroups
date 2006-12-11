@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.40 2006/10/24 13:15:39 belaban Exp $
+// $Id: FD.java,v 1.41 2006/12/11 15:50:22 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -29,7 +29,7 @@ import java.util.List;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Revision: 1.40 $
+ * @version $Revision: 1.41 $
  */
 public class FD extends Protocol {
     Address               ping_dest=null;
@@ -318,6 +318,7 @@ public class FD extends Protocol {
 
     private void sendHeartbeatResponse(Address dest) {
         Message hb_ack=new Message(dest, null, null);
+        hb_ack.setFlag(Message.OOB);
         FdHeader tmp_hdr=new FdHeader(FdHeader.HEARTBEAT_ACK);
         tmp_hdr.from=local_addr;
         hb_ack.putHeader(name, tmp_hdr);
@@ -347,6 +348,7 @@ public class FD extends Protocol {
                     if(log.isDebugEnabled())
                         log.debug(hb_sender + " is not in " + members + " ! Shunning it");
                     shun_msg=new Message(hb_sender, null, null);
+                    shun_msg.setFlag(Message.OOB);
                     shun_msg.putHeader(name, new FdHeader(FdHeader.NOT_MEMBER));
                     passDown(new Event(Event.MSG, shun_msg));
                     invalid_pingers.remove(hb_sender);
@@ -493,6 +495,7 @@ public class FD extends Protocol {
 
             // 1. send heartbeat request
             hb_req=new Message(ping_dest, null, null);
+            hb_req.setFlag(Message.OOB);
             hb_req.putHeader(name, new FdHeader(FdHeader.HEARTBEAT));  // send heartbeat request
             if(log.isDebugEnabled())
                 log.debug("sending are-you-alive msg to " + ping_dest + " (own address=" + local_addr + ')');
@@ -668,6 +671,7 @@ public class FD extends Protocol {
                 hdr.from=local_addr;
             }
             suspect_msg=new Message();       // mcast SUSPECT to all members
+            suspect_msg.setFlag(Message.OOB);
             suspect_msg.putHeader(name, hdr);
             if(log.isDebugEnabled())
                 log.debug("broadcasting SUSPECT message [suspected_mbrs=" + suspected_members + "] to group");
