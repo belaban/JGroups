@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.64 2006/11/16 20:34:12 belaban Exp $
+// $Id: UNICAST.java,v 1.65 2006/12/11 14:45:08 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -275,7 +275,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                         if(trace)
                             log.trace(new StringBuffer().append(local_addr).append(" --> DATA(").append(dst).append(": #").
                                     append(seqno));
-                        tmp=Global.copy? msg.copy() : msg;
+                        tmp=msg;
                         entry.sent_msgs.add(seqno, tmp);  // add *including* UnicastHeader, adds to retransmitter
                         entry.sent_msgs_seqno++;
                     }
@@ -412,10 +412,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         if(trace)
             log.trace("[" + local_addr + "] --> XMIT(" + dst + ": #" + seqno + ')');
 
-        if(Global.copy)
-            passDown(new Event(Event.MSG, msg.copy()));
-        else
-            passDown(new Event(Event.MSG, msg));
+        passDown(new Event(Event.MSG, msg));
         num_xmit_requests_received++;
     }
 
@@ -501,6 +498,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
     private void sendAck(Address dst, long seqno) {
         Message ack=new Message(dst);
+        ack.setFlag(Message.OOB);
         ack.putHeader(name, new UnicastHeader(UnicastHeader.ACK, seqno));
         if(trace)
             log.trace(new StringBuffer().append(local_addr).append(" --> ACK(").append(dst).
