@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.56 2006/12/11 15:38:57 belaban Exp $
+// $Id: Message.java,v 1.57 2006/12/11 15:55:45 belaban Exp $
 
 package org.jgroups;
 
@@ -259,6 +259,7 @@ public class Message implements Externalizable, Streamable {
         return length;
     }
 
+    /** Returns a reference to the headers hashmap, which is <em>mutable</em> */
     public Map getHeaders() {
         return headers;
     }

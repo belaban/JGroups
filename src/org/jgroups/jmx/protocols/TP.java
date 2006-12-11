@@ -11,7 +11,7 @@ import EDU.oswego.cs.dl.util.concurrent.BoundedLinkedQueue;
 
 /**
  * @author Bela Ban
- * @version $Id: TP.java,v 1.8 2006/12/11 13:43:41 belaban Exp $
+ * @version $Id: TP.java,v 1.9 2006/12/11 15:51:33 belaban Exp $
  */
 public class TP extends org.jgroups.jmx.Protocol implements TPMBean {
     org.jgroups.protocols.TP tp;
@@ -208,7 +208,7 @@ public class TP extends org.jgroups.jmx.Protocol implements TPMBean {
         tp.setOOBKeepAliveTime(time);
     }
 
-    public long getNumOOBMessages() {
+    public long getOOBMessages() {
         return tp.getOOBMessages();
     }
 
