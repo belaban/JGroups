@@ -1,6 +1,6 @@
 #
 # This file contains configuration for the JGroups performance tests (org.jgroups.tests.perf package)
-# $Id: config.txt,v 1.11 2006/10/09 11:43:44 belaban Exp $
+# $Id: config.txt,v 1.12 2006/12/11 10:16:54 belaban Exp $
 #
 
 # Class implementing the org.jgroups.tests.perf.Transport interface
@@ -21,7 +21,7 @@ msg_size=1000
 num_members=2
 
 # Number of senders in the group. Min 1, max num_members.
-num_senders=1
+num_senders=2
 
 # dump stats every n msgs
 log_interval=1000

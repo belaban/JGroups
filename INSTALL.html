@@ -50,12 +50,17 @@ directory)<br>
 The binary version contains<br>
 <ol>
   <li>jgroups-all.jar: the JGroups library including the demos</li>
-  <li>CREDITS: list of contributors</li>
-  <li>INSTALL.html: this file</li>
   <li>commons-logging.jar</li>
   <li>concurrent.jar</li>
-  <li>log4j.jar<br>
+  <li>log4j.jar</li>
+  <li>jmxri.jar: the JMX reference implementation, this is not needed
+if running in JDK 5 or higher</li>
+  <li>jgroups.bat/jgroups.sh: convenience script to start demo programs
+(set the CLASSPATH etc) - see below</li>
+  <li>Some sample configuration files, udp.xml, mping.xml etc<br>
   </li>
+  <li>CREDITS: list of contributors</li>
+  <li>INSTALL.html: this file</li>
 </ol>
 We no longer ship the Xerces JARs. To run JGroups you have to have an
 XML parser installed on your system. If you use JDK 1.4, you can use
@@ -160,11 +165,12 @@ java -jar jgroups-all.jar<br>
 </b><br>
 You should see the following output (more or less) if the class is
 found:
-<pre><br>Version:        2.2.8 RC1<br>CVS:            $Id: INSTALL.html,v 1.6 2006/10/09 13:36:35 belaban Exp $<br>History:        (see doc/history.txt for details)<br><br><br><br></pre>
+<pre><br>Version:        2.2.8 RC1<br>CVS:            $Id: INSTALL.html,v 1.7 2006/12/11 10:15:23 belaban Exp $<br>History:        (see doc/history.txt for details)<br><br><br><br></pre>
 <h3> Running a Demo Program</h3>
 To test whether JGroups works okay on your machine, run
-<pre><b>java org.jgroups.demos.Draw</b></pre>
-twice. 2 whiteboard windows should appear. If you started them
+<pre><b>./jgroups.sh demos.Draw</b></pre>
+twice (use jgroups.bat on Windows). 2 whiteboard windows should appear.
+If you started them
 simultaneously, they should initially show a membership of 1 in their
 title bars. After some time, both windows should show 2. This means
 that the two instances
@@ -178,8 +184,10 @@ other and the sample won't work. </p>
 <p>You can change the properties of the demo to for example use a
 different transport if multicast doesn't work (it should always work on
 the same
-machine). Please consult the documentation to see how to do this. <br>
-&nbsp; </p>
+machine). For example, to use udp.xml, execute:</p>
+<pre>
+./jgroups.sh demos.Draw -props ./udp.xml</pre>
+<p>&nbsp; </p>
 <h3> Using IP Multicasting without a network connection</h3>
 Sometimes there isn't a network connection (e.g. DSL modem is down), or
 we want to multicast only on the local machine. For this the loopback
@@ -210,9 +218,9 @@ internal network
 Make sure your machine is set up correctly for IP multicast. There
 are 2 test programs that can be used to detect this: McastReceiverTest
 and McastSenderTest. Start McastReceiverTest, e.g.
-<pre><b>java org.jgroups.tests.McastReceiverTest -mcast_addr 224.10.10.10 -port 5555</b></pre>
+<pre><b>./jgroups.sh tests.McastReceiverTest -mcast_addr 224.10.10.10 -port 5555</b></pre>
 Then start McastSenderTest:
-<pre><b>java org.jgroups.tests.McastSenderTest -mcast_addr 224.10.10.10 -port 5555</b></pre>
+<pre><b>./jgroups.sh tests.McastSenderTest -mcast_addr 224.10.10.10 -port 5555</b></pre>
 You should be able to type in the McastSenderTest window and see the
 output in the McastReceiverWindow. If not, try to use -ttl 32 in the
 sender. If this still fails, consult a system administrator to help you
@@ -240,14 +248,14 @@ comes in on, we
 will receive it.<br>
 Now start the sender:<br>
 </p>
-<pre><b>java org.jgroups.tests.McastSenderTest1_4 -mcast_addr 228.8.8.8 -use_all_interfaces</b><br></pre>
+<pre><b>./jgroups.sh tests.McastSenderTest1_4 -mcast_addr 228.8.8.8 -use_all_interfaces</b><br></pre>
 <h3></h3>
 <p>The sender will also determine the available network interfaces and
 send each packet over all interfaces.</p>
 <p>This test can be used to find out which network interface to bind to
 when previously no packets were received. E.g. when you see the
 following output in the receiver:</p>
-<pre>bash-2.03$ <b>java org.jgroups.tests.McastReceiverTest1_4 -mcast_addr 228.8.8.8 -bind_addr 192.168.168.4</b><br>Socket=0.0.0.0/0.0.0.0:5555, bind interface=/192.168.168.4<br>dd [sender=192.168.168.4:5555]<br>dd [sender=192.168.168.1:5555]<br>dd [sender=192.168.168.2:5555]</pre>
+<pre>bash-2.03$ <b>./jgroups.sh tests.McastReceiverTest1_4 -mcast_addr 228.8.8.8 -bind_addr 192.168.168.4</b><br>Socket=0.0.0.0/0.0.0.0:5555, bind interface=/192.168.168.4<br>dd [sender=192.168.168.4:5555]<br>dd [sender=192.168.168.1:5555]<br>dd [sender=192.168.168.2:5555]</pre>
 <p>you know that you can bind to any of the 192.168.168.{1,2,4}
 interfaces to receive your multicast packets. In this case you would
 need to modify
