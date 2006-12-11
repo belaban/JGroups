@@ -67,34 +67,14 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.107 2006/12/04 19:14:57 vlada Exp $
+ * @version $Id: JChannel.java,v 1.108 2006/12/11 08:24:13 belaban Exp $
  */
 public class JChannel extends Channel {
 
     /**
      * The default protocol stack used by the default constructor.
      */
-    public static final String DEFAULT_PROTOCOL_STACK=
-            "UDP(down_thread=false;mcast_send_buf_size=640000;mcast_port=45566;discard_incompatible_packets=true;" +
-                    "ucast_recv_buf_size=20000000;mcast_addr=228.10.10.10;up_thread=false;loopback=false;" +
-                    "mcast_recv_buf_size=25000000;max_bundle_size=64000;max_bundle_timeout=30;" +
-                    "use_incoming_packet_handler=true;use_outgoing_packet_handler=false;" +
-                    "ucast_send_buf_size=640000;tos=16;enable_bundling=true;ip_ttl=2):" +
-            "PING(timeout=2000;down_thread=false;num_initial_members=3;up_thread=false):" +
-            "MERGE2(max_interval=10000;down_thread=false;min_interval=5000;up_thread=false):" +
-            "FD(timeout=2000;max_tries=3;down_thread=false;up_thread=false):" +
-            "VERIFY_SUSPECT(timeout=1500;down_thread=false;up_thread=false):" +
-            "pbcast.NAKACK(max_xmit_size=60000;down_thread=false;use_mcast_xmit=false;gc_lag=0;" +
-                    "discard_delivered_msgs=true;up_thread=false;retransmit_timeout=100,200,300,600,1200,2400,4800):" +
-            "UNICAST(timeout=300,600,1200,2400,3600;down_thread=false;up_thread=false):" +
-            "pbcast.STABLE(stability_delay=1000;desired_avg_gossip=50000;max_bytes=400000;down_thread=false;" +
-                    "up_thread=false):" +
-            "VIEW_SYNC(down_thread=false;avg_send_interval=60000;up_thread=false):" +
-            "pbcast.GMS(print_local_addr=true;join_timeout=3000;down_thread=false;" +
-                    "join_retry_timeout=2000;up_thread=false;shun=true):" +
-            "FC(max_credits=2000000;down_thread=false;up_thread=false;min_threshold=0.10):" +
-            "FRAG2(frag_size=60000;down_thread=false;up_thread=false):" +
-            "pbcast.STATE_TRANSFER(down_thread=false;up_thread=false)";
+    public static final String DEFAULT_PROTOCOL_STACK="udp.xml";
 
     static final String FORCE_PROPS="force.properties";
 
