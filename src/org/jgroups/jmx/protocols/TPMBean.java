@@ -8,7 +8,7 @@ import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: TPMBean.java,v 1.7 2006/12/07 21:17:59 belaban Exp $
+ * @version $Id: TPMBean.java,v 1.8 2006/12/11 13:43:41 belaban Exp $
  */
 public interface TPMBean extends ProtocolMBean {
     Address getLocalAddress();
@@ -57,6 +57,7 @@ public interface TPMBean extends ProtocolMBean {
     int getOOBPoolSize();
     long getOOBKeepAliveTime();
     void setOOBKeepAliveTime(long time);
+    long getNumOOBMessages();
     int getOOBQueueSize();
     int getOOBMaxQueueSize();
     void setOOBMaxQueueSize(int size);
@@ -68,6 +69,7 @@ public interface TPMBean extends ProtocolMBean {
     int getIncomingPoolSize();
     long getIncomingKeepAliveTime();
     void setIncomingKeepAliveTime(long time);
+    long getIncomingMessages();
     int getIncomingQueueSize();
     int getIncomingMaxQueueSize();
     void setIncomingMaxQueueSize(int size);

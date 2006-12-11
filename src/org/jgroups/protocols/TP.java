@@ -41,7 +41,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.84 2006/12/08 07:11:34 belaban Exp $
+ * @version $Id: TP.java,v 1.85 2006/12/11 13:43:42 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -169,6 +169,8 @@ public abstract class TP extends Protocol {
     /** Number of milliseconds after which an idle thread is removed */
     long oob_thread_pool_keep_alive_time=30000;
 
+    long num_oob_msgs_received=0;
+
     /** Used if oob_thread_pool is a PooledExecutor and oob_thread_pool_queue_enabled is true */
     EDU.oswego.cs.dl.util.concurrent.Channel oob_thread_pool_queue=null;
     /** Whether of not to use a queue with PooledExecutor (ignored with DirectExecutor) */
@@ -189,6 +191,8 @@ public abstract class TP extends Protocol {
     int thread_pool_max_threads=10;
     /** Number of milliseconds after which an idle thread is removed */
     long thread_pool_keep_alive_time=30000;
+
+    long num_incoming_msgs_received=0;
 
     /** Used if thread_pool is a PooledExecutor and thread_pool_queue_enabled is true */
     EDU.oswego.cs.dl.util.concurrent.Channel thread_pool_queue=null;
@@ -282,6 +286,7 @@ public abstract class TP extends Protocol {
 
     public void resetStats() {
         num_msgs_sent=num_msgs_received=num_bytes_sent=num_bytes_received=0;
+        num_oob_msgs_received=num_incoming_msgs_received=0;
     }
 
     public long getNumMessagesSent()     {return num_msgs_sent;}
@@ -404,6 +409,10 @@ public abstract class TP extends Protocol {
             ((PooledExecutor)oob_thread_pool).setKeepAliveTime(time);
     }
 
+    public long getOOBMessages() {
+        return num_oob_msgs_received;
+    }
+
     public int getOOBQueueSize() {
         return oob_thread_pool_queue instanceof BoundedLinkedQueue? ((BoundedLinkedQueue)oob_thread_pool_queue).size() : -1;
     }
@@ -450,6 +459,10 @@ public abstract class TP extends Protocol {
     public void setIncomingKeepAliveTime(long time) {
         if(thread_pool instanceof PooledExecutor)
             ((PooledExecutor)thread_pool).setKeepAliveTime(time);
+    }
+
+    public long getIncomingMessages() {
+        return num_incoming_msgs_received;
     }
 
     public int getIncomingQueueSize() {
@@ -1749,26 +1762,16 @@ public abstract class TP extends Protocol {
                 multicast=(flags & MULTICAST) == MULTICAST;
 
                 Message msg;
-                Address src;
                 if(is_message_list) { // used if message bundling is enabled
                     List l=bufferToList(dis, dest, multicast);
                     for(Enumeration en=l.elements(); en.hasMoreElements();) {
                         msg=(Message)en.nextElement();
-                        src=msg.getSrc();
-                        if(loopback && multicast && src != null && local_addr.equals(src)) {
-                            continue; // drop message that was already looped back and delivered
-                        }
-                        thread_pool.execute(new IncomingMessage(msg));
+                        submitToThreadPool(msg, multicast);
                     }
                 }
                 else {
                     msg=bufferToMessage(dis, dest, sender, multicast);
-                    src=msg.getSrc();
-                    if(loopback && multicast && src != null && local_addr.equals(src)) {
-                        ; // drop message that was already looped back and delivered
-                    }
-                    else
-                        thread_pool.execute(new IncomingMessage(msg));
+                    submitToThreadPool(msg, multicast);
                 }
             }
             catch(QueueClosedException closed_ex) {
@@ -1782,6 +1785,23 @@ public abstract class TP extends Protocol {
                 Util.close(dis);
                 Util.close(buf_in_stream);
                 Util.close(in_stream);
+            }
+        }
+
+
+        private void submitToThreadPool(Message msg, boolean multicast) throws InterruptedException {
+            Address src=msg.getSrc();
+            if(loopback && multicast && src != null && local_addr.equals(src)) {
+                return; // drop message that was already looped back and delivered
+            }
+            boolean oob_flag=msg.isFlagSet(Message.OOB);
+            if(oob_flag) {
+                num_oob_msgs_received++;
+                oob_thread_pool.execute(new IncomingMessage(msg));
+            }
+            else {
+                num_incoming_msgs_received++;
+                thread_pool.execute(new IncomingMessage(msg));
             }
         }
     }

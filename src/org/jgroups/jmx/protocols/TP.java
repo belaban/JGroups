@@ -11,7 +11,7 @@ import EDU.oswego.cs.dl.util.concurrent.BoundedLinkedQueue;
 
 /**
  * @author Bela Ban
- * @version $Id: TP.java,v 1.7 2006/12/07 21:17:59 belaban Exp $
+ * @version $Id: TP.java,v 1.8 2006/12/11 13:43:41 belaban Exp $
  */
 public class TP extends org.jgroups.jmx.Protocol implements TPMBean {
     org.jgroups.protocols.TP tp;
@@ -200,13 +200,17 @@ public class TP extends org.jgroups.jmx.Protocol implements TPMBean {
          return tp.getOOBPoolSize();
      }
 
-     public long getOOBKeepAliveTime() {
-         return tp.getOOBKeepAliveTime();
-     }
+    public long getOOBKeepAliveTime() {
+        return tp.getOOBKeepAliveTime();
+    }
 
-     public void setOOBKeepAliveTime(long time) {
-         tp.setOOBKeepAliveTime(time);
-     }
+    public void setOOBKeepAliveTime(long time) {
+        tp.setOOBKeepAliveTime(time);
+    }
+
+    public long getNumOOBMessages() {
+        return tp.getOOBMessages();
+    }
 
     public int getOOBQueueSize() {
         return tp.getOOBQueueSize();
@@ -245,9 +249,13 @@ public class TP extends org.jgroups.jmx.Protocol implements TPMBean {
          return tp.getIncomingKeepAliveTime();
      }
 
-     public void setIncomingKeepAliveTime(long time) {
-         tp.setIncomingKeepAliveTime(time);
-     }
+    public void setIncomingKeepAliveTime(long time) {
+        tp.setIncomingKeepAliveTime(time);
+    }
+
+    public long getIncomingMessages() {
+        return tp.getIncomingMessages();
+    }
 
     public int getIncomingQueueSize() {
         return tp.getIncomingQueueSize();
