@@ -165,7 +165,23 @@ java -jar jgroups-all.jar<br>
 </b><br>
 You should see the following output (more or less) if the class is
 found:
-<pre><br>Version:        2.2.8 RC1<br>CVS:            $Id: INSTALL.html,v 1.7 2006/12/11 10:15:23 belaban Exp $<br>History:        (see doc/history.txt for details)<br><br><br><br></pre>
+<pre><br>Version:        2.2.8 RC1<br>CVS:            $Id: INSTALL.html,v 1.8 2006/12/11 10:21:24 belaban Exp $<br>History:        (see doc/history.txt for details)<br><br><br></pre>
+<h3>Running the performance tests</h3>
+<pre><br></pre>
+By default, we're running 2 senders with 10000 1K messages each, to do
+this, execute the following in 2 shells:<br>
+<br>
+<pre> ./jgroups.sh tests.perf.Test -config ./config.txt  -props ./udp.xml -sender</pre>
+<br>
+You should see output like the following in both shells:<br>
+<br>
+<pre>-- results:</pre>
+<pre><br>192.168.5.2:4301 (myself):</pre>
+<pre>num_msgs_expected=20000, num_msgs_received=20000 (loss rate=0.0%), received=20MB, time=3750ms, msgs/sec=5333.33, throughput=5.33MB</pre>
+<pre><br>192.168.5.2:4311:</pre>
+<pre>num_msgs_expected=20000, num_msgs_received=20000 (loss rate=0.0%), received=20MB, time=3750ms, msgs/sec=5333.33, throughput=5.33MB</pre>
+<pre><br>combined: 5333.33 msgs/sec averaged over all receivers (throughput=5.33MB/sec)</pre>
+<br>
 <h3> Running a Demo Program</h3>
 To test whether JGroups works okay on your machine, run
 <pre><b>./jgroups.sh demos.Draw</b></pre>
@@ -185,8 +201,7 @@ other and the sample won't work. </p>
 different transport if multicast doesn't work (it should always work on
 the same
 machine). For example, to use udp.xml, execute:</p>
-<pre>
-./jgroups.sh demos.Draw -props ./udp.xml</pre>
+<pre>./jgroups.sh demos.Draw -props ./udp.xml</pre>
 <p>&nbsp; </p>
 <h3> Using IP Multicasting without a network connection</h3>
 Sometimes there isn't a network connection (e.g. DSL modem is down), or
