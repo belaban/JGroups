@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.83 2006/12/11 14:31:09 belaban Exp $
+// $Id: NAKACK.java,v 1.84 2006/12/11 14:46:58 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -597,12 +597,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             try { // incrementing seqno and adding the msg to sent_msgs needs to be atomic
                 msg_id=seqno +1;
                 msg.putHeader(name, new NakAckHeader(NakAckHeader.MSG, msg_id));
-                if(Global.copy) {
-                    sent_msgs.put(new Long(msg_id), msg.copy());
-                }
-                else {
-                    sent_msgs.put(new Long(msg_id), msg);
-                }
+                sent_msgs.put(new Long(msg_id), msg);
                 seqno=msg_id;
             }
             catch(Throwable t) {
@@ -768,12 +763,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 // bug report #854887
                 size=len;
             }
-            if(Global.copy) {
-                tmp=m.copy();
-            }
-            else {
-                tmp=m;
-            }
+            tmp=m;
             // tmp.setDest(xmit_requester);
             // tmp.setSrc(local_addr);
             if(tmp.getSrc() == null)
