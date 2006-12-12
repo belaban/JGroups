@@ -4,7 +4,7 @@ Threadless stack
 ================
 
 Author: Bela Ban
-Version: $Id: ThreadlessStack.txt,v 1.19 2006/12/12 09:16:52 belaban Exp $
+Version: $Id: ThreadlessStack.txt,v 1.20 2006/12/12 14:44:55 belaban Exp $
 JIRAs:
 http://jira.jboss.com/jira/browse/JGRP-180 (harden stack),
 http://jira.jboss.com/jira/browse/JGRP-181 (threadless stack),
@@ -124,6 +124,7 @@ Todos
   - There are some exceptions due to uncaught interrupt exceptions
 
 - Thread pool shut-downs: correct ? Should we use something else rather than shutdownNow() ?
+  - Use of shutdown() rather than shutdownNow() ?
 
 - Enable setting the thread pools programmatically
 
