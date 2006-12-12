@@ -35,7 +35,7 @@ import java.util.ArrayList;
  * the application instead of protocol level.
  *
  * @author Bela Ban
- * @version $Id: MessageDispatcher.java,v 1.63 2006/12/11 08:24:13 belaban Exp $
+ * @version $Id: MessageDispatcher.java,v 1.64 2006/12/12 10:17:43 belaban Exp $
  */
 public class MessageDispatcher implements RequestHandler {
     protected Channel channel=null;
@@ -626,14 +626,6 @@ public class MessageDispatcher implements RequestHandler {
             return "MessageDispatcher";
         }
 
-        public void startUpHandler() {
-            // do nothing, DON'T REMOVE !!!!
-        }
-
-
-        public void stopInternal() {
-            // do nothing, DON'T REMOVE !!!!
-        }
 
         protected void receiveUpEvent(Event evt) {
         }

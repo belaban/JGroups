@@ -41,7 +41,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.86 2006/12/12 10:08:44 belaban Exp $
+ * @version $Id: TP.java,v 1.87 2006/12/12 10:17:43 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -1076,13 +1076,6 @@ public abstract class TP extends Protocol {
 
 
 
-    /**
-     * This prevents the up-handler thread to be created, which essentially is superfluous:
-     * messages are received from the network rather than from a layer below.
-     * DON'T REMOVE !
-     */
-    public void startUpHandler() {
-    }
 
     /**
      * handle the UP event.

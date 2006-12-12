@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.27 2006/12/08 07:11:34 belaban Exp $
+// $Id: TUNNEL.java,v 1.28 2006/12/12 10:17:43 belaban Exp $
 
 
 package org.jgroups.protocols;
@@ -106,14 +106,6 @@ public class TUNNEL extends Protocol implements Runnable {
     }
 
 
-
-    /**
-     * This prevents the up-handler thread to be created, which essentially is superfluous:
-     * messages are received from the network rather than from a layer below.
-     * DON'T REMOVE ! 
-     */
-    public void startUpHandler() {
-    }
 
     /** Setup the Protocol instance acording to the configuration string */
     public boolean setProperties(Properties props) {

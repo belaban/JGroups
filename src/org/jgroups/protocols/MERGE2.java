@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.30 2006/11/17 13:39:19 belaban Exp $
+// $Id: MERGE2.java,v 1.31 2006/12/12 10:17:43 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -127,15 +127,6 @@ public class MERGE2 extends Protocol {
         is_coord=false;
         stopTask();
     }
-
-
-    /**
-     * This prevents the up-handler thread to be created, which is not needed in the protocol.
-     * DON'T REMOVE ! 
-     */
-    public void startUpHandler() {
-    }
-
 
 
 

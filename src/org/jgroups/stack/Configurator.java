@@ -1,4 +1,4 @@
-// $Id: Configurator.java,v 1.18 2006/12/08 07:11:34 belaban Exp $
+// $Id: Configurator.java,v 1.19 2006/12/12 10:17:43 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -186,8 +186,7 @@ public class Configurator {
     /**
      * Creates a protocol stack by iterating through the protocol list and connecting
      * adjacent layers. The list starts with the topmost layer and has the bottommost
-     * layer at the tail. When all layers are connected the algorithms traverses the list
-     * once more to call startInternal() on each layer.
+     * layer at the tail.
      * @param protocol_list List of Protocol elements (from top to bottom)
      * @return Protocol stack
      */
