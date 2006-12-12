@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.51 2006/10/30 11:09:40 belaban Exp $
+// $Id: FD_SOCK.java,v 1.52 2006/12/12 08:49:08 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -276,6 +276,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                 hdr=new FdHeader(FdHeader.GET_CACHE_RSP);
                 hdr.cachedAddrs=(Hashtable) cache.clone();
                 msg=new Message(hdr.mbr, null, null);
+                msg.setFlag(Message.OOB);
                 msg.putHeader(name, hdr);
                 passDown(new Event(Event.MSG, msg));
                 break;
@@ -672,6 +673,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                 hdr=new FdHeader(FdHeader.GET_CACHE);
                 hdr.mbr=local_addr;
                 msg=new Message(coord, null, null);
+                msg.setFlag(Message.OOB);
                 msg.putHeader(name, hdr);
                 passDown(new Event(Event.MSG, msg));
                 result=(Hashtable) get_cache_promise.getResult(get_cache_timeout);
@@ -713,6 +715,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         hdr.mbrs=new Vector(1);
         hdr.mbrs.addElement(suspected_mbr);
         suspect_msg=new Message();
+        suspect_msg.setFlag(Message.OOB);
         suspect_msg.putHeader(name, hdr);
         passDown(new Event(Event.MSG, suspect_msg));
 
@@ -726,19 +729,6 @@ public class FD_SOCK extends Protocol implements Runnable {
     }
 
 
-    void broadcastWhoHasSockMessage(Address mbr) {
-        Message msg;
-        FdHeader hdr;
-
-        if(local_addr != null && mbr != null)
-            if(log.isDebugEnabled()) log.debug("[" + local_addr + "]: who-has " + mbr);
-
-        msg=new Message();  // bcast msg
-        hdr=new FdHeader(FdHeader.WHO_HAS_SOCK);
-        hdr.mbr=mbr;
-        msg.putHeader(name, hdr);
-        passDown(new Event(Event.MSG, msg));
-    }
 
 
     /**
@@ -747,6 +737,7 @@ public class FD_SOCK extends Protocol implements Runnable {
      */
     void sendIHaveSockMessage(Address dst, Address mbr, IpAddress addr) {
         Message msg=new Message(dst, null, null);
+        msg.setFlag(Message.OOB);
         FdHeader hdr=new FdHeader(FdHeader.I_HAVE_SOCK);
         hdr.mbr=mbr;
         hdr.sock_addr=addr;
@@ -783,6 +774,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         // 2. Try to get from mbr
         ping_addr_promise.reset();
         ping_addr_req=new Message(mbr, null, null); // unicast
+        ping_addr_req.setFlag(Message.OOB);
         hdr=new FdHeader(FdHeader.WHO_HAS_SOCK);
         hdr.mbr=mbr;
         ping_addr_req.putHeader(name, hdr);
@@ -796,6 +788,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
         // 3. Try to get from all members
         ping_addr_req=new Message(null); // multicast
+        ping_addr_req.setFlag(Message.OOB);
         hdr=new FdHeader(FdHeader.WHO_HAS_SOCK);
         hdr.mbr=mbr;
         ping_addr_req.putHeader(name, hdr);
@@ -805,7 +798,7 @@ public class FD_SOCK extends Protocol implements Runnable {
     }
 
 
-    Address determinePingDest() {
+    private Address determinePingDest() {
         Address tmp;
 
         if(pingable_mbrs == null || pingable_mbrs.size() < 2 || local_addr == null)
@@ -1258,6 +1251,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                 hdr.mbrs=(Vector) suspected_mbrs.clone();
             }
             suspect_msg=new Message();       // mcast SUSPECT to all members
+            suspect_msg.setFlag(Message.OOB);
             suspect_msg.putHeader(name, hdr);
             passDown(new Event(Event.MSG, suspect_msg));
             if(log.isDebugEnabled()) log.debug("task done");
