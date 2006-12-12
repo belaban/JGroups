@@ -19,7 +19,7 @@ import java.util.Vector;
  * install it. Otherwise we simply discard it. This is used to solve the problem for unreliable view
  * dissemination outlined in JGroups/doc/ReliableViewInstallation.txt. This protocol is supposed to be just below GMS.
  * @author Bela Ban
- * @version $Id: VIEW_SYNC.java,v 1.10 2006/08/14 16:30:06 belaban Exp $
+ * @version $Id: VIEW_SYNC.java,v 1.11 2006/12/12 08:59:36 belaban Exp $
  */
 public class VIEW_SYNC extends Protocol {
     Address              local_addr=null;
@@ -100,6 +100,7 @@ public class VIEW_SYNC extends Protocol {
     /** Sends a VIEW_SYNC_REQ to all members, every member replies with a VIEW multicast */
     public void sendViewRequest() {
         Message msg=new Message(null);
+        msg.setFlag(Message.OOB);
         ViewSyncHeader hdr=new ViewSyncHeader(ViewSyncHeader.VIEW_SYNC_REQ, null);
         msg.putHeader(name, hdr);
         passDown(new Event(Event.MSG, msg));
@@ -210,6 +211,7 @@ public class VIEW_SYNC extends Protocol {
         View tmp=(View)(my_view != null? my_view.clone() : null);
         if(tmp == null) return;
         Message msg=new Message(null); // send to the group
+        msg.setFlag(Message.OOB);
         ViewSyncHeader hdr=new ViewSyncHeader(ViewSyncHeader.VIEW_SYNC, tmp);
         msg.putHeader(name, hdr);
         passDown(new Event(Event.MSG, msg));

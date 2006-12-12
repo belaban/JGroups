@@ -20,7 +20,7 @@ import java.lang.reflect.Method;
  * passes SUSPECT event up the stack, otherwise discards it. Has to be placed somewhere above the FD layer and
  * below the GMS layer (receiver of the SUSPECT event). Note that SUSPECT events may be reordered by this protocol.
  * @author Bela Ban
- * @version $Id: VERIFY_SUSPECT.java,v 1.21 2006/09/12 12:01:01 belaban Exp $
+ * @version $Id: VERIFY_SUSPECT.java,v 1.22 2006/12/12 08:54:49 belaban Exp $
  */
 public class VERIFY_SUSPECT extends Protocol implements Runnable {
     private Address     local_addr=null;
@@ -145,6 +145,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
                         else {
                             for(int i=0; i < num_msgs; i++) {
                                 rsp=new Message(hdr.from, null, null);
+                                rsp.setFlag(Message.OOB);
                                 rsp.putHeader(name, new VerifyHeader(VerifyHeader.I_AM_NOT_DEAD, local_addr));
                                 passDown(new Event(Event.MSG, rsp));
                             }
@@ -235,6 +236,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         if(trace) log.trace("verifying that " + mbr + " is dead");
         for(int i=0; i < num_msgs; i++) {
             msg=new Message(mbr, null, null);
+            msg.setFlag(Message.OOB);
             msg.putHeader(name, new VerifyHeader(VerifyHeader.ARE_YOU_DEAD, local_addr));
             passDown(new Event(Event.MSG, msg));
         }
