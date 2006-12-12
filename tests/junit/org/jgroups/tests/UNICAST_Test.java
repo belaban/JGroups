@@ -1,4 +1,4 @@
-// $Id: UNICAST_Test.java,v 1.1 2005/08/24 13:35:07 belaban Exp $
+// $Id: UNICAST_Test.java,v 1.2 2006/12/12 17:32:37 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -27,7 +27,7 @@ public class UNICAST_Test extends TestCase {
     IpAddress a1, a2;
     Vector members;
     View v;
-    Simulator s;
+    Simulator simulator;
 
     final int SIZE=1000; // bytes
     final int NUM_MSGS=10000;
@@ -44,7 +44,7 @@ public class UNICAST_Test extends TestCase {
 
     public void tearDown() throws Exception {
         super.tearDown();
-        s.stop();
+        simulator.stop();
     }
 
 
@@ -129,11 +129,11 @@ public class UNICAST_Test extends TestCase {
     private void _testReceptionOfAllMessages() throws Throwable {
         int num_received=0;
         Receiver r=new Receiver();
-        s.setReceiver(r);
+        simulator.setReceiver(r);
         for(int i=1; i <= NUM_MSGS; i++) {
             Message msg=new Message(a1, null, createPayload(SIZE, i)); // unicast message
             Event evt=new Event(Event.MSG, msg);
-            s.send(evt);
+            simulator.send(evt);
             if(i % 1000 == 0)
                 System.out.println("==> " + i);
         }
@@ -148,7 +148,7 @@ public class UNICAST_Test extends TestCase {
             num_tries--;
         }
         printStats(num_received);
-        assertTrue(num_received == NUM_MSGS);
+        assertEquals(num_received, NUM_MSGS);
     }
 
     private void createStack(Protocol[] stack) throws Exception {
@@ -156,22 +156,21 @@ public class UNICAST_Test extends TestCase {
         members=new Vector();
         members.add(a1);
         v=new View(a1, 1, members);
-        s=new Simulator();
-        s.setLocalAddress(a1);
-        s.setView(v);
-        s.addMember(a1);
-        s.setProtocolStack(stack);
-        s.start();
+        simulator=new Simulator();
+        simulator.setLocalAddress(a1);
+        simulator.setView(v);
+        simulator.addMember(a1);
+        simulator.setProtocolStack(stack);
+        simulator.start();
     }
 
     private void printStats(int num_received) {
-        System.out.println("-- num received=" + num_received + ", stats:\n" + s.dumpStats());
+        System.out.println("-- num received=" + num_received + ", stats:\n" + simulator.dumpStats());
     }
 
 
     public static Test suite() {
-        TestSuite s=new TestSuite(UNICAST_Test.class);
-        return s;
+        return new TestSuite(UNICAST_Test.class);
     }
 
     public static void main(String[] args) {
