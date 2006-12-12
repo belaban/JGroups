@@ -1,4 +1,4 @@
-// $Id: Configurator.java,v 1.19 2006/12/12 10:17:43 belaban Exp $
+// $Id: Configurator.java,v 1.20 2006/12/12 17:30:43 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -144,6 +144,7 @@ public class Configurator {
     /**
      * Inserts an already created (and initialized) protocol into the protocol list. Sets the links
      * to the protocols above and below correctly and adjusts the linked list of protocols accordingly.
+     * This should be done before starting the stack.
      * @param prot  The protocol to be inserted. Before insertion, a sanity check will ensure that none
      *              of the existing protocols have the same name as the new protocol.
      * @param position Where to place the protocol with respect to the neighbor_prot (ABOVE, BELOW)
@@ -155,16 +156,24 @@ public class Configurator {
     public void insertProtocol(Protocol prot, int position, String neighbor_prot, ProtocolStack stack) throws Exception {
         if(neighbor_prot == null) throw new Exception("Configurator.insertProtocol(): neighbor_prot is null");
         if(position != ProtocolStack.ABOVE && position != ProtocolStack.BELOW)
-            throw new Exception("Configurator.insertProtocol(): position has to be ABOVE or BELOW");
+            throw new Exception("position has to be ABOVE or BELOW");
 
 
-        // find the neighbors below and above
+        Protocol neighbor=stack.findProtocol(neighbor_prot);
+        if(neighbor == null)
+            throw new Exception("protocol \"" + neighbor_prot + "\" not found in " + stack.printProtocolSpec(false));
 
-
-
-        // connect to the protocol layer below and above
-
-
+         // connect to the protocol layer below and above
+        if(position == ProtocolStack.BELOW) {
+            prot.setUpProtocol(neighbor);
+            prot.setDownProtocol(neighbor.getDownProtocol());
+            neighbor.setDownProtocol(prot);
+        }
+        else { // ABOVE is default
+            prot.setUpProtocol(neighbor.getUpProtocol());
+            prot.setDownProtocol(neighbor);
+            neighbor.setUpProtocol(prot);
+        }
     }
 
 
