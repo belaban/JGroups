@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.41 2006/12/11 15:50:22 belaban Exp $
+// $Id: FD.java,v 1.42 2006/12/12 08:40:39 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -29,7 +29,7 @@ import java.util.List;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Revision: 1.41 $
+ * @version $Revision: 1.42 $
  */
 public class FD extends Protocol {
     Address               ping_dest=null;
@@ -396,15 +396,15 @@ public class FD extends Protocol {
         public String toString() {
             switch(type) {
                 case HEARTBEAT:
-                    return "[FD: heartbeat]";
+                    return "heartbeat";
                 case HEARTBEAT_ACK:
-                    return "[FD: heartbeat ack]";
+                    return "heartbeat ack";
                 case SUSPECT:
-                    return "[FD: SUSPECT (suspected_mbrs=" + mbrs + ", from=" + from + ")]";
+                    return "SUSPECT (suspected_mbrs=" + mbrs + ", from=" + from + ")";
                 case NOT_MEMBER:
-                    return "[FD: NOT_MEMBER]";
+                    return "NOT_MEMBER";
                 default:
-                    return "[FD: unknown type (" + type + ")]";
+                    return "unknown type (" + type + ")";
             }
         }
 
