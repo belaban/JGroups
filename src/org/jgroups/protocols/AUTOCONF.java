@@ -1,4 +1,4 @@
-// $Id: AUTOCONF.java,v 1.16 2006/11/17 13:39:19 belaban Exp $
+// $Id: AUTOCONF.java,v 1.17 2006/12/12 10:17:43 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -80,12 +80,6 @@ public class AUTOCONF extends Protocol {
         return true;
     }
 
-
-    /**
-     * Leave empty: no up_thread will be created, but the up_thread of the neighbor below us will be used
-     */
-    public void startUpHandler() {
-    }
 
 
 

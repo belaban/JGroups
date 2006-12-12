@@ -1,4 +1,4 @@
-// $Id: BSH.java,v 1.13 2006/11/17 13:39:19 belaban Exp $
+// $Id: BSH.java,v 1.14 2006/12/12 10:17:43 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -54,10 +54,6 @@ public class BSH extends Protocol {
     }
 
     public void destroy() {
-    }
-
-    /** We have no up handler thread */
-    public void startUpHandler() {
     }
 
 

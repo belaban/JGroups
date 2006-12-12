@@ -1,4 +1,4 @@
-// $Id: ProtocolStack.java,v 1.28 2006/11/17 13:39:20 belaban Exp $
+// $Id: ProtocolStack.java,v 1.29 2006/12/12 10:17:43 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -289,11 +289,6 @@ public class ProtocolStack extends Protocol implements Transport {
 
 
 
-    public void startUpHandler() {
-        // DON'T REMOVE !!!!  Avoids a superfluous thread
-    }
-
-
 
     /**
      * Iterates through all the protocols <em>from top to bottom</em> and does the following:
@@ -329,10 +324,6 @@ public class ProtocolStack extends Protocol implements Transport {
      */
     public void flushEvents() {
 
-    }
-
-    public void stopInternal() {
-        // do nothing, DON'T REMOVE !!!!
     }
 
 
