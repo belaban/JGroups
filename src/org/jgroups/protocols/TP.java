@@ -41,7 +41,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.85 2006/12/11 13:43:42 belaban Exp $
+ * @version $Id: TP.java,v 1.86 2006/12/12 10:08:44 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -1214,9 +1214,15 @@ public abstract class TP extends Protocol {
 
         try {
             if(use_threadless_stack) {
-                byte[] tmp=new byte[length];
-                System.arraycopy(data, offset, tmp, 0, length);
-                unmarshaller_thread_pool.execute(new IncomingPacket(dest, sender, tmp, offset, length));
+                if(unmarshaller_thread_pool instanceof DirectExecutor) {
+                    // we don't make a copy of the buffer if we execute on this thread
+                    unmarshaller_thread_pool.execute(new IncomingPacket(dest, sender, data, offset, length));
+                }
+                else {
+                    byte[] tmp=new byte[length];
+                    System.arraycopy(data, offset, tmp, 0, length);
+                    unmarshaller_thread_pool.execute(new IncomingPacket(dest, sender, tmp, offset, length));
+                }
             }
             else {
                 if(use_incoming_packet_handler) {
