@@ -25,7 +25,7 @@ import java.util.*;
  * <br/>This is the second simplified implementation of the same model. The algorithm is sketched out in
  * doc/FlowControl.txt
  * @author Bela Ban
- * @version $Id: FC.java,v 1.53 2006/09/12 12:36:12 belaban Exp $
+ * @version $Id: FC.java,v 1.54 2006/12/12 09:05:12 belaban Exp $
  */
 public class FC extends Protocol {
 
@@ -556,11 +556,14 @@ public class FC extends Protocol {
 
     private void sendCredit(Address dest) {
         Message  msg=new Message(dest, null, null);
+        msg.setFlag(Message.OOB);
         msg.putHeader(name, REPLENISH_HDR);
         passDown(new Event(Event.MSG, msg));
         num_credit_responses_sent++;
     }
 
+    /** We cannot send this request as OOB messages, as the credit request needs to queue up behind the regular messages;
+     * if a receiver cannot process the regular messages, that is a sign that the sender should be throttled ! */
     private void sendCreditRequest(final Address dest) {
         Message  msg=new Message(dest, null, null);
         msg.putHeader(name, CREDIT_REQUEST_HDR);
