@@ -1,4 +1,4 @@
-// $Id: Configurator.java,v 1.20 2006/12/12 17:30:43 belaban Exp $
+// $Id: Configurator.java,v 1.21 2006/12/13 07:42:41 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -166,11 +166,17 @@ public class Configurator {
          // connect to the protocol layer below and above
         if(position == ProtocolStack.BELOW) {
             prot.setUpProtocol(neighbor);
-            prot.setDownProtocol(neighbor.getDownProtocol());
+            Protocol below=neighbor.getDownProtocol();
+            prot.setDownProtocol(below);
+            if(below != null)
+                below.setUpProtocol(prot);
             neighbor.setDownProtocol(prot);
         }
         else { // ABOVE is default
-            prot.setUpProtocol(neighbor.getUpProtocol());
+            Protocol above=neighbor.getUpProtocol();
+            prot.setUpProtocol(above);
+            if(above != null)
+                above.setDownProtocol(prot);
             prot.setDownProtocol(neighbor);
             neighbor.setUpProtocol(prot);
         }
@@ -184,7 +190,18 @@ public class Configurator {
      *                  (otherwise the stack won't be created), the name refers to just 1 protocol.
      * @exception Exception Thrown if the protocol cannot be stopped correctly.
      */
-    public void removeProtocol(String prot_name) throws Exception {
+    public Protocol removeProtocol(Protocol top_prot, String prot_name) throws Exception {
+        if(prot_name == null) return null;
+        Protocol prot=findProtocol(top_prot, prot_name);
+        if(prot == null) return null;
+        Protocol above=prot.getUpProtocol(), below=prot.getDownProtocol();
+        if(above != null)
+            above.setDownProtocol(below);
+        if(below != null)
+            below.setUpProtocol(above);
+        prot.setUpProtocol(null);
+        prot.setDownProtocol(null);
+        return prot;
     }
 
 

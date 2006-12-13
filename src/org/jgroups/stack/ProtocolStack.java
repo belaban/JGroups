@@ -1,4 +1,4 @@
-// $Id: ProtocolStack.java,v 1.29 2006/12/12 10:17:43 belaban Exp $
+// $Id: ProtocolStack.java,v 1.30 2006/12/13 07:42:41 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -231,8 +231,8 @@ public class ProtocolStack extends Protocol implements Transport {
      *                  (otherwise the stack won't be created), the name refers to just 1 protocol.
      * @exception Exception Thrown if the protocol cannot be stopped correctly.
      */
-    public void removeProtocol(String prot_name) throws Exception {
-        conf.removeProtocol(prot_name);
+    public Protocol removeProtocol(String prot_name) throws Exception {
+        return conf.removeProtocol(top_prot, prot_name);
     }
 
 
